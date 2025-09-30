@@ -12,7 +12,6 @@ defmodule Raxol.Core.Metrics.Visualizer do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   @type chart_type :: :line | :bar | :gauge | :histogram
   @type chart_options :: %{
           type: chart_type(),
@@ -35,7 +34,6 @@ defmodule Raxol.Core.Metrics.Visualizer do
     show_grid: true,
     time_range: nil
   }
-
 
   @doc """
   Creates a new chart with the given metrics and options.

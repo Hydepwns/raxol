@@ -108,20 +108,33 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
   # Rapid blink
   defp apply_sgr_code(6, style, _rest), do: Map.put(style, :blink, true)
   defp apply_sgr_code(7, style, _rest), do: Map.put(style, :reverse, true)
-  defp apply_sgr_code(8, style, _rest), do: %{style | hidden: true, conceal: true}
+
+  defp apply_sgr_code(8, style, _rest),
+    do: %{style | hidden: true, conceal: true}
+
   defp apply_sgr_code(9, style, _rest), do: Map.put(style, :strikethrough, true)
 
   # Extended text attributes
   defp apply_sgr_code(20, style, _rest), do: Map.put(style, :fraktur, true)
-  defp apply_sgr_code(21, style, _rest), do: %{style | double_underline: true, underline: false}
+
+  defp apply_sgr_code(21, style, _rest),
+    do: %{style | double_underline: true, underline: false}
 
   # Reset specific attributes
-  defp apply_sgr_code(22, style, _rest), do: %{style | bold: false, dim: false, faint: false}
-  defp apply_sgr_code(23, style, _rest), do: %{style | italic: false, fraktur: false}
-  defp apply_sgr_code(24, style, _rest), do: %{style | underline: false, double_underline: false}
+  defp apply_sgr_code(22, style, _rest),
+    do: %{style | bold: false, dim: false, faint: false}
+
+  defp apply_sgr_code(23, style, _rest),
+    do: %{style | italic: false, fraktur: false}
+
+  defp apply_sgr_code(24, style, _rest),
+    do: %{style | underline: false, double_underline: false}
+
   defp apply_sgr_code(25, style, _rest), do: Map.put(style, :blink, false)
   defp apply_sgr_code(27, style, _rest), do: Map.put(style, :reverse, false)
-  defp apply_sgr_code(28, style, _rest), do: %{style | hidden: false, conceal: false}
+
+  defp apply_sgr_code(28, style, _rest),
+    do: %{style | hidden: false, conceal: false}
 
   defp apply_sgr_code(29, style, _rest),
     do: Map.put(style, :strikethrough, false)
@@ -129,9 +142,15 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
   # Framed, encircled, overlined attributes
   defp apply_sgr_code(51, style, _rest), do: Map.put(style, :framed, true)
   defp apply_sgr_code(52, style, _rest), do: Map.put(style, :encircled, true)
-  defp apply_sgr_code(53, style, _rest), do: %{style | overlined: true, overline: true}
-  defp apply_sgr_code(54, style, _rest), do: %{style | framed: false, encircled: false}
-  defp apply_sgr_code(55, style, _rest), do: %{style | overlined: false, overline: false}
+
+  defp apply_sgr_code(53, style, _rest),
+    do: %{style | overlined: true, overline: true}
+
+  defp apply_sgr_code(54, style, _rest),
+    do: %{style | framed: false, encircled: false}
+
+  defp apply_sgr_code(55, style, _rest),
+    do: %{style | overlined: false, overline: false}
 
   # Basic foreground colors (30-37)
   defp apply_sgr_code(code, style, _rest) when code >= 30 and code <= 37 do

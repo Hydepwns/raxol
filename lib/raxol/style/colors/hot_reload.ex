@@ -22,9 +22,9 @@ defmodule Raxol.Style.Colors.HotReload do
 
   # Client API
 
-#  def start_link(opts \\ []) do
-#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-#  end
+  #  def start_link(opts \\ []) do
+  #    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  #  end
 
   @doc """
   Subscribe to theme change events.

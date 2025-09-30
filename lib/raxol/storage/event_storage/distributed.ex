@@ -26,7 +26,6 @@ defmodule Raxol.Storage.EventStorage.Distributed do
 
   ## Client API
 
-
   @impl Raxol.Storage.EventStorage
   def append_event(storage \\ __MODULE__, event, stream_name) do
     GenServer.call(storage, {:append_event, event, stream_name})

@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Cloud do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   defstruct [
     :sync_enabled,
     :auto_sync,
@@ -24,16 +23,23 @@ defmodule Raxol.Terminal.ScreenBuffer.Cloud do
   @impl true
   def init_manager(opts) do
     config = Keyword.get(opts, :config, default_config())
-    state = case config do
-      %__MODULE__{} = c -> c
-      keyword when is_list(keyword) ->
-        %__MODULE__{
-          sync_enabled: Keyword.get(keyword, :sync_enabled, false),
-          auto_sync: Keyword.get(keyword, :auto_sync, true),
-          sync_interval: Keyword.get(keyword, :sync_interval, 5000)
-        }
-      _ -> default_config()
-    end
+
+    state =
+      case config do
+        %__MODULE__{} = c ->
+          c
+
+        keyword when is_list(keyword) ->
+          %__MODULE__{
+            sync_enabled: Keyword.get(keyword, :sync_enabled, false),
+            auto_sync: Keyword.get(keyword, :auto_sync, true),
+            sync_interval: Keyword.get(keyword, :sync_interval, 5000)
+          }
+
+        _ ->
+          default_config()
+      end
+
     {:ok, state}
   end
 

@@ -68,17 +68,17 @@ defmodule Raxol.UI.State.Streams do
 
     defstruct [:observers, :completed, :error]
 
-#     def start_link(opts \\ []) do
-#       GenServer.start_link(
-#         __MODULE__,
-#         %__MODULE__{
-#           observers: %{},
-#           completed: false,
-#           error: nil
-#         },
-#         opts
-#       )
-#     end
+    #     def start_link(opts \\ []) do
+    #       GenServer.start_link(
+    #         __MODULE__,
+    #         %__MODULE__{
+    #           observers: %{},
+    #           completed: false,
+    #           error: nil
+    #         },
+    #         opts
+    #       )
+    #     end
 
     def next(subject, value) do
       GenServer.call(subject, {:next, value})
@@ -499,9 +499,9 @@ defmodule Raxol.UI.State.Streams do
   defmodule DebouncerServer do
     use Raxol.Core.Behaviours.BaseManager
 
-#     def start_link(observer, delay) do
-#       GenServer.start_link(__MODULE__, {observer, delay})
-#     end
+    #     def start_link(observer, delay) do
+    #       GenServer.start_link(__MODULE__, {observer, delay})
+    #     end
 
     def emit(server, value) do
       _ = GenServer.cast(server, {:emit, value})
@@ -620,9 +620,9 @@ defmodule Raxol.UI.State.Streams do
   defmodule CombinerServer do
     use Raxol.Core.Behaviours.BaseManager
 
-#     def start_link(observables, observer) do
-#       GenServer.start_link(__MODULE__, {length(observables), observer})
-#     end
+    #     def start_link(observables, observer) do
+    #       GenServer.start_link(__MODULE__, {length(observables), observer})
+    #     end
 
     def update(server, index, value) do
       _ = GenServer.cast(server, {:update, index, value})

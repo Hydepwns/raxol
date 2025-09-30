@@ -123,9 +123,10 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   @doc """
   Starts the performance monitor with the given configuration.
   """
-#  def start_link(config \\ %{}) do
-#    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-#  end
+
+  #  def start_link(config \\ %{}) do
+  #    GenServer.start_link(__MODULE__, config, name: __MODULE__)
+  #  end
 
   @doc """
   Starts monitoring a graphics operation.
@@ -263,7 +264,11 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   end
 
   @impl true
-  def handle_manager_call({:start_operation, operation_type, metadata}, _from, state) do
+  def handle_manager_call(
+        {:start_operation, operation_type, metadata},
+        _from,
+        state
+      ) do
     operation_id = generate_operation_id()
     start_time = System.monotonic_time(:microsecond)
 
@@ -361,7 +366,11 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   end
 
   @impl true
-  def handle_manager_call({:configure_alert, alert_name, alert_config}, _from, state) do
+  def handle_manager_call(
+        {:configure_alert, alert_name, alert_config},
+        _from,
+        state
+      ) do
     case validate_alert_config(alert_config) do
       :ok ->
         new_configs = Map.put(state.alert_configs, alert_name, alert_config)

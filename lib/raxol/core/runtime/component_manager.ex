@@ -22,7 +22,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   # Client API
 
-
   # Setter for runtime_pid (for tests)
   def set_runtime_pid(pid) do
     GenServer.cast(__MODULE__, {:set_runtime_pid, pid})
@@ -209,7 +208,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:set_component_state, component_id, new_state}, _from, state) do
+  def handle_manager_call(
+        {:set_component_state, component_id, new_state},
+        _from,
+        state
+      ) do
     case Map.get(state.components, component_id) do
       nil ->
         {:reply, {:error, :not_found}, state}

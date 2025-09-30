@@ -367,7 +367,11 @@ if Code.ensure_loaded?(:ssh) do
       end
     end
 
-    def handle_manager_call(:get_connection_info, _from, %{connected: false} = state) do
+    def handle_manager_call(
+          :get_connection_info,
+          _from,
+          %{connected: false} = state
+        ) do
       {:reply, {:error, :not_connected}, state}
     end
 

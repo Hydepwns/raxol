@@ -29,6 +29,7 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
     case initial_emulator do
       nil ->
         Logger.debug("Terminal emulator server started without initial state")
+
       emulator ->
         Logger.debug(
           "Terminal emulator server started with dimensions #{emulator.width}x#{emulator.height}"
@@ -75,7 +76,11 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
     {:reply, {:ok, emulator}, state}
   end
 
-  def handle_manager_call(:get_cursor_position, _from, %{emulator: emulator} = state) do
+  def handle_manager_call(
+        :get_cursor_position,
+        _from,
+        %{emulator: emulator} = state
+      ) do
     position = Emulator.get_cursor_position(emulator)
     {:reply, {:ok, position}, state}
   end
@@ -99,7 +104,11 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
     {:reply, :ok, %{state | emulator: new_emulator}}
   end
 
-  def handle_manager_call({:handle_input, input}, _from, %{emulator: emulator} = state) do
+  def handle_manager_call(
+        {:handle_input, input},
+        _from,
+        %{emulator: emulator} = state
+      ) do
     case Emulator.process_input(emulator, input) do
       {new_emulator, _output} ->
         {:reply, :ok, %{state | emulator: new_emulator}}

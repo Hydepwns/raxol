@@ -13,7 +13,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
 
   use Raxol.Core.Behaviours.BaseManager
 
-@behaviour Raxol.Core.Behaviours.BaseManager
+  @behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Aliases will be used when implementing full functionality
@@ -67,7 +67,6 @@ defmodule Raxol.Plugins.PluginSystemV2 do
             performance_monitor: nil
 
   # Plugin System v2.0 API
-
 
   @doc """
   Installs a plugin from the marketplace or local source.
@@ -194,7 +193,11 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     end
   end
 
-  def handle_manager_call({:create_sandbox, plugin_id, security_policy}, _from, state) do
+  def handle_manager_call(
+        {:create_sandbox, plugin_id, security_policy},
+        _from,
+        state
+      ) do
     case create_sandbox_impl(plugin_id, security_policy, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}

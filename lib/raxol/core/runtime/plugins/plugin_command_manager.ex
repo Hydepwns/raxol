@@ -6,11 +6,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
 
   use Raxol.Core.Behaviours.BaseManager
 
-@behaviour Raxol.Core.Behaviours.BaseManager
+  @behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Client API
-
 
   @doc """
   Register commands for a plugin.

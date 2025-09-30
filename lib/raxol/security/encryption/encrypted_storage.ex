@@ -195,7 +195,11 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
   end
 
   @impl true
-  def handle_manager_call({:store_file, file_path, encrypted_name, opts}, _from, state) do
+  def handle_manager_call(
+        {:store_file, file_path, encrypted_name, opts},
+        _from,
+        state
+      ) do
     case encrypt_file(file_path, encrypted_name, opts, state) do
       {:ok, metadata, new_state} ->
         {:reply, {:ok, metadata}, new_state}

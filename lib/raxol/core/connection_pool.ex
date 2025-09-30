@@ -70,7 +70,6 @@ defmodule Raxol.Core.ConnectionPool do
 
   # Client API
 
-
   @doc """
   Executes a function with a connection from the pool.
   """
@@ -107,7 +106,6 @@ defmodule Raxol.Core.ConnectionPool do
 
   # Server Callbacks
 
-  @impl true
   @impl true
   def init_manager(opts) do
     opts = Keyword.merge(@default_opts, opts)

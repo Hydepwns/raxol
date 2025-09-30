@@ -12,7 +12,6 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   require Logger
 
   # Configuration constants
@@ -121,7 +120,10 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
   end
 
   @impl true
-  def handle_manager_info({:telemetry_event, event_name, measurements, metadata}, state) do
+  def handle_manager_info(
+        {:telemetry_event, event_name, measurements, metadata},
+        state
+      ) do
     new_state =
       process_telemetry_event(state, event_name, measurements, metadata)
 

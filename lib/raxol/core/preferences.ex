@@ -4,7 +4,6 @@ defmodule Raxol.Core.Preferences do
   """
   use Raxol.Core.Behaviours.BaseManager
 
-
   # BaseManager provides start_link/1 with proper option handling
 
   def get_preference(key, default \\ nil) do

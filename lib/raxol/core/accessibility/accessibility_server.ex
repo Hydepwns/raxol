@@ -72,7 +72,6 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
 
   # Client API
 
-
   @doc """
   Enables accessibility features with the given options.
   """
@@ -458,7 +457,11 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:enable, options, user_preferences_pid}, _from, state) do
+  def handle_manager_call(
+        {:enable, options, user_preferences_pid},
+        _from,
+        state
+      ) do
     preferences = merge_preferences(state.preferences, options)
 
     new_state = %{
@@ -667,7 +670,11 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:register_metadata, element_id, metadata}, _from, state) do
+  def handle_manager_call(
+        {:register_metadata, element_id, metadata},
+        _from,
+        state
+      ) do
     new_metadata = Map.put(state.metadata, element_id, metadata)
     new_state = %{state | metadata: new_metadata}
     {:reply, :ok, new_state}
@@ -694,7 +701,11 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:unregister_component_style, component_type}, _from, state) do
+  def handle_manager_call(
+        {:unregister_component_style, component_type},
+        _from,
+        state
+      ) do
     style_key = {:component_style, component_type}
     new_metadata = Map.delete(state.metadata, style_key)
     new_state = %{state | metadata: new_metadata}
@@ -1057,7 +1068,10 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   # Event handler callbacks (called by EventManager)
   # Group all handle_focus_change_event/1 clauses together - specific clauses first
   def handle_focus_change_event(:focus_change) do
-    Logger.warning("AccessibilityServer.handle_focus_change_event/1 called with just event type, this is a known issue with EventManager dispatch")
+    Logger.warning(
+      "AccessibilityServer.handle_focus_change_event/1 called with just event type, this is a known issue with EventManager dispatch"
+    )
+
     # This is likely a bug in the EventManager but we'll work around it
     # Since we can't get the event data, we'll just silently ignore this call
     :ok
@@ -1068,14 +1082,20 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   end
 
   def handle_focus_change_event(unexpected_arg) do
-    Logger.warning("AccessibilityServer.handle_focus_change_event/1 called with unexpected argument: #{inspect(unexpected_arg)}")
+    Logger.warning(
+      "AccessibilityServer.handle_focus_change_event/1 called with unexpected argument: #{inspect(unexpected_arg)}"
+    )
+
     # Note: This should never match {:focus_change, old_focus, new_focus} as it's handled above
     :ok
   end
 
   # Group all handle_focus_change_event/2 clauses together
 
-  def handle_focus_change_event({:focus_change, old_focus, new_focus}, _metadata) do
+  def handle_focus_change_event(
+        {:focus_change, old_focus, new_focus},
+        _metadata
+      ) do
     handle_focus_change(__MODULE__, old_focus, new_focus)
   end
 
@@ -1125,7 +1145,11 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
       when is_map(metadata) do
     old_focus = Map.get(metadata, :old_focus, nil)
     new_focus = Map.get(metadata, :new_focus, nil)
-    Logger.debug("AccessibilityServer telemetry handler called with metadata: #{inspect(metadata)}")
+
+    Logger.debug(
+      "AccessibilityServer telemetry handler called with metadata: #{inspect(metadata)}"
+    )
+
     handle_focus_change(__MODULE__, old_focus, new_focus)
   end
 

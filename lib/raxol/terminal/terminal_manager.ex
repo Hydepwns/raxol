@@ -53,7 +53,6 @@ defmodule Raxol.Terminal.Manager do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   require Raxol.Core.Runtime.Log
   require Logger
 
@@ -398,7 +397,6 @@ defmodule Raxol.Terminal.Manager do
     new_state = SessionHandler.handle_session_down(pid, state)
     {:noreply, new_state}
   end
-
 end
 
 defmodule Raxol.Terminal.Manager.Callback do

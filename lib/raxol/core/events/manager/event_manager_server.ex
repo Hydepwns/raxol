@@ -54,7 +54,6 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
 
   # Client API
 
-
   @doc """
   Initializes the event manager (for backward compatibility).
   """
@@ -516,7 +515,10 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
       case handler do
         # Traditional module/function handler
         {module, function, _priority} when is_atom(module) and is_atom(function) ->
-          Logger.debug("EventManager calling #{module}.#{function} with event: #{inspect(event)}")
+          Logger.debug(
+            "EventManager calling #{module}.#{function} with event: #{inspect(event)}"
+          )
+
           case Raxol.Core.ErrorHandling.safe_apply(module, function, [event]) do
             {:ok, _result} ->
               Raxol.Core.Runtime.Log.debug(

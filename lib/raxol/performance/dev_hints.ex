@@ -82,6 +82,7 @@ defmodule Raxol.Performance.DevHints do
   @doc """
   Starts the performance hints system.
   """
+
   # start_link is provided by BaseManager
 
   @doc """
@@ -127,40 +128,40 @@ defmodule Raxol.Performance.DevHints do
       _ = :timer.send_interval(60_000, self(), {:cleanup_history})
 
       # Attach to telemetry events
-    events = [
-      [:raxol, :terminal, :parse],
-      [:raxol, :terminal, :write],
-      [:raxol, :terminal, :scroll],
-      [:raxol, :terminal, :clear],
-      [:raxol, :buffer, :write],
-      [:raxol, :buffer, :read],
-      [:raxol, :buffer, :resize],
-      [:raxol, :buffer, :scroll],
-      [:raxol, :render, :frame],
-      [:raxol, :render, :component],
-      [:raxol, :render, :text],
-      [:raxol, :network, :request],
-      [:raxol, :ssh, :command],
-      [:raxol, :plugin, :load],
-      [:raxol, :plugin, :execute]
-    ]
+      events = [
+        [:raxol, :terminal, :parse],
+        [:raxol, :terminal, :write],
+        [:raxol, :terminal, :scroll],
+        [:raxol, :terminal, :clear],
+        [:raxol, :buffer, :write],
+        [:raxol, :buffer, :read],
+        [:raxol, :buffer, :resize],
+        [:raxol, :buffer, :scroll],
+        [:raxol, :render, :frame],
+        [:raxol, :render, :component],
+        [:raxol, :render, :text],
+        [:raxol, :network, :request],
+        [:raxol, :ssh, :command],
+        [:raxol, :plugin, :load],
+        [:raxol, :plugin, :execute]
+      ]
 
-    _ =
-      :telemetry.attach_many(
-        "raxol-dev-hints",
-        events,
-        &handle_telemetry_event/4,
-        self()
-      )
+      _ =
+        :telemetry.attach_many(
+          "raxol-dev-hints",
+          events,
+          &handle_telemetry_event/4,
+          self()
+        )
 
-    state = %__MODULE__{
-      config: config,
-      recent_hints: %{},
-      hint_counts: %{},
-      operation_history: [],
-      pattern_detector: init_pattern_detector(),
-      start_time: System.monotonic_time(:millisecond)
-    }
+      state = %__MODULE__{
+        config: config,
+        recent_hints: %{},
+        hint_counts: %{},
+        operation_history: [],
+        pattern_detector: init_pattern_detector(),
+        start_time: System.monotonic_time(:millisecond)
+      }
 
       Logger.info("[SEARCH] Performance hints enabled for development")
 
@@ -177,7 +178,10 @@ defmodule Raxol.Performance.DevHints do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_cast({:telemetry_event, event, measurements, metadata}, state) do
+  def handle_manager_cast(
+        {:telemetry_event, event, measurements, metadata},
+        state
+      ) do
     state = record_operation(state, event, measurements, metadata)
     state = check_for_hints(state, event, measurements, metadata)
 

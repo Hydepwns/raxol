@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   use Raxol.Core.Behaviours.BaseManager
 
-@behaviour Raxol.Core.Behaviours.BaseManager
+  @behaviour Raxol.Core.Behaviours.BaseManager
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{
@@ -140,7 +140,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   defp process_name(pid) when is_pid(pid), do: pid
   defp process_name(name) when is_atom(name), do: name
   defp process_name(_), do: __MODULE__
-
 
   @doc """
   Initializes the terminal IO system.

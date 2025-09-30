@@ -6,7 +6,6 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   alias Raxol.Terminal.{Emulator, State}
   require Raxol.Core.Runtime.Log
 
@@ -15,6 +14,7 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   @doc """
   Starts the state manager.
   """
+
   # BaseManager provides start_link/1 and start_link/2 automatically
 
   # Server Callbacks

@@ -7,7 +7,6 @@ defmodule Raxol.Core.Runtime.EventSourceTest.TestEventSource do
 
   require Logger
 
-
   @impl true
   def init_manager(opts) do
     args = Keyword.get(opts, :args, %{})

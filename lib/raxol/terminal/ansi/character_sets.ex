@@ -112,7 +112,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
         ?R -> :french
         ?Q -> :french_canadian
         ?K -> :german
-        ?F -> :german  # F is also German character set
+        # F is also German character set
+        ?F -> :german
         ?Y -> :italian
         ?E -> :norwegian_danish
         ?6 -> :portuguese
@@ -251,17 +252,20 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @doc """
     Sets a single shift to the specified G-set.
     """
-    @spec set_single_shift(charset_state(), :g0 | :g1 | :g2 | :g3 | charset()) :: charset_state()
+    @spec set_single_shift(charset_state(), :g0 | :g1 | :g2 | :g3 | charset()) ::
+            charset_state()
     def set_single_shift(state, gset_or_charset) do
       # Handle both gset references and direct charset names
-      charset = case gset_or_charset do
-        gset when gset in [:g0, :g1, :g2, :g3] ->
-          # Resolve the charset from the gset
-          Map.get(state, gset, :us_ascii)
-        charset_name ->
-          # Direct charset name
-          charset_name
-      end
+      charset =
+        case gset_or_charset do
+          gset when gset in [:g0, :g1, :g2, :g3] ->
+            # Resolve the charset from the gset
+            Map.get(state, gset, :us_ascii)
+
+          charset_name ->
+            # Direct charset name
+            charset_name
+        end
 
       %{state | single_shift: charset}
       |> update_active()
@@ -314,7 +318,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
 
       # Convert module to charset name if needed
       resolved_charset =
-        if is_atom(active_charset) and function_exported?(active_charset, :name, 0) do
+        if is_atom(active_charset) and
+             function_exported?(active_charset, :name, 0) do
           active_charset.name()
         else
           active_charset
@@ -885,13 +890,14 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
         charset_module = third_arg || :us_ascii
 
         # Update the state's gset with the new module
-        new_state = case gset do
-          :g0 -> %{state | g0: charset_module}
-          :g1 -> %{state | g1: charset_module}
-          :g2 -> %{state | g2: charset_module}
-          :g3 -> %{state | g3: charset_module}
-          _ -> state
-        end
+        new_state =
+          case gset do
+            :g0 -> %{state | g0: charset_module}
+            :g1 -> %{state | g1: charset_module}
+            :g2 -> %{state | g2: charset_module}
+            :g3 -> %{state | g3: charset_module}
+            _ -> state
+          end
 
         # Update the active charset if this gset is currently active
         StateManager.update_active(new_state)
@@ -987,7 +993,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
 
     # Convert module-based charset to charset atom
     active_charset_atom =
-      if active_charset && is_atom(active_charset) && function_exported?(active_charset, :name, 0) do
+      if active_charset && is_atom(active_charset) &&
+           function_exported?(active_charset, :name, 0) do
         active_charset.name()
       else
         active_charset
@@ -995,7 +1002,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
 
     # Convert module-based single_shift to charset atom
     single_shift_charset =
-      if single_shift && is_atom(single_shift) && function_exported?(single_shift, :name, 0) do
+      if single_shift && is_atom(single_shift) &&
+           function_exported?(single_shift, :name, 0) do
         single_shift.name()
       else
         single_shift
@@ -1003,7 +1011,11 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
 
     # Use the proper Translator module to handle translation
     translated =
-      Translator.translate_char(codepoint, active_charset_atom, single_shift_charset)
+      Translator.translate_char(
+        codepoint,
+        active_charset_atom,
+        single_shift_charset
+      )
 
     # Clear single shift after using it
     new_state =

@@ -102,10 +102,11 @@ defmodule Raxol.Terminal.Event.Handler do
 
       {{:value, {event_type, event_data}}, remaining_queue} ->
         # Process this event and continue with remaining queue
-        updated_emulator = case Map.get(event_struct.handlers, event_type) do
-          nil -> emulator
-          handler -> handler.(emulator, event_data)
-        end
+        updated_emulator =
+          case Map.get(event_struct.handlers, event_type) do
+            nil -> emulator
+            handler -> handler.(emulator, event_data)
+          end
 
         # Update the queue and continue processing
         updated_event_struct = %{event_struct | queue: remaining_queue}
@@ -152,7 +153,11 @@ defmodule Raxol.Terminal.Event.Handler do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:register_handler, event_type, handler}, _from, state) do
+  def handle_manager_call(
+        {:register_handler, event_type, handler},
+        _from,
+        state
+      ) do
     handlers = Map.put(state.handlers, event_type, handler)
     {:reply, :ok, %{state | handlers: handlers}}
   end

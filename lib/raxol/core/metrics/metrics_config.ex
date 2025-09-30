@@ -11,7 +11,6 @@ defmodule Raxol.Core.Metrics.Config do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   @type metric_type :: :performance | :resource | :operation | :system | :custom
   @type config_key ::
           :retention_period
@@ -38,10 +37,6 @@ defmodule Raxol.Core.Metrics.Config do
     retention_policies: [],
     environment: :prod
   }
-
-  @doc """
-  Starts the configuration server.
-  """
 
   @doc """
   Gets the current configuration value for the given key.

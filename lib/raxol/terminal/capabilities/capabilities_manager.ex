@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.Capabilities.Manager do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   alias Raxol.Terminal.Capabilities.Types
 
   @type state :: Types.t()

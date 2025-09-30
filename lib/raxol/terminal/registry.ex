@@ -8,7 +8,6 @@ defmodule Raxol.Terminal.Registry do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   # BaseManager provides start_link/1 with proper option handling
   # Users should pass name: __MODULE__ in options if they want the default name
 

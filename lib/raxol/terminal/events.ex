@@ -51,7 +51,6 @@ defmodule Raxol.Terminal.Events do
     GenServer.cast(__MODULE__, {:trigger_click, position})
   end
 
-
   # BaseManager callbacks
 
   @impl true

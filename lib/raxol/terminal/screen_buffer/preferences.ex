@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Preferences do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   defstruct [
     :font_size,
     :line_height,
@@ -34,18 +33,25 @@ defmodule Raxol.Terminal.ScreenBuffer.Preferences do
   @impl true
   def init_manager(opts) do
     prefs = Keyword.get(opts, :preferences, default_preferences())
-    state = case prefs do
-      %__MODULE__{} = p -> p
-      keyword when is_list(keyword) ->
-        %__MODULE__{
-          scrollback_size: Keyword.get(keyword, :scrollback_size, 1000),
-          tab_width: Keyword.get(keyword, :tab_width, 8),
-          auto_wrap: Keyword.get(keyword, :auto_wrap, true),
-          cursor_style: Keyword.get(keyword, :cursor_style, :block),
-          cursor_blink: Keyword.get(keyword, :cursor_blink, true)
-        }
-      _ -> default_preferences()
-    end
+
+    state =
+      case prefs do
+        %__MODULE__{} = p ->
+          p
+
+        keyword when is_list(keyword) ->
+          %__MODULE__{
+            scrollback_size: Keyword.get(keyword, :scrollback_size, 1000),
+            tab_width: Keyword.get(keyword, :tab_width, 8),
+            auto_wrap: Keyword.get(keyword, :auto_wrap, true),
+            cursor_style: Keyword.get(keyword, :cursor_style, :block),
+            cursor_blink: Keyword.get(keyword, :cursor_blink, true)
+          }
+
+        _ ->
+          default_preferences()
+      end
+
     {:ok, state}
   end
 

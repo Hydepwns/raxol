@@ -18,7 +18,6 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
 
   # Client API
 
-
   @doc """
   Returns a child specification for this server.
   """
@@ -90,7 +89,6 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
 
   # Server Callbacks
 
-  @impl true
   @impl true
   def init_manager(opts) do
     # Start a timer to clean up expired entries periodically

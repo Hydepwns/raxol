@@ -55,7 +55,6 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
 
   # Client API
 
-
   @doc """
   Creates a new window with the given configuration.
   """
@@ -435,7 +434,11 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
   end
 
   @impl true
-  def handle_manager_call({:set_window_title_by_id, window_id, title}, _from, state) do
+  def handle_manager_call(
+        {:set_window_title_by_id, window_id, title},
+        _from,
+        state
+      ) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -493,7 +496,11 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
   end
 
   @impl true
-  def handle_manager_call({:create_child_window, parent_id, config}, _from, state) do
+  def handle_manager_call(
+        {:create_child_window, parent_id, config},
+        _from,
+        state
+      ) do
     case Map.get(state.windows, parent_id) do
       nil ->
         {:reply, {:error, :parent_not_found}, state}

@@ -375,7 +375,10 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     end
   end
 
-  defp get_buffer_region(%ScreenBufferCore{scroll_region: region, height: height}) do
+  defp get_buffer_region(%ScreenBufferCore{
+         scroll_region: region,
+         height: height
+       }) do
     case region do
       {start, ending}
       when is_integer(start) and start >= 0 and is_integer(ending) and

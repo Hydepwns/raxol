@@ -222,7 +222,11 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   end
 
   @impl true
-  def handle_manager_call({:update_mouse_config, mouse_id, config}, _from, state) do
+  def handle_manager_call(
+        {:update_mouse_config, mouse_id, config},
+        _from,
+        state
+      ) do
     case Map.get(state.mice, mouse_id) do
       nil ->
         {:reply, {:error, :mouse_not_found}, state}

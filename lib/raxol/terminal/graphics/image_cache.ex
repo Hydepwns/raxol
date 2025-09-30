@@ -105,6 +105,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
   * `{:ok, pid}` - Successfully started cache server
   * `{:error, reason}` - Failed to start
   """
+
   # BaseManager provides start_link
 
   @doc """

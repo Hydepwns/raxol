@@ -5,7 +5,6 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   defstruct [
     :metrics,
     :start_time,

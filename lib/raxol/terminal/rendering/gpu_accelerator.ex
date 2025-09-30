@@ -241,7 +241,11 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:render, surface_id, terminal_buffer, opts}, _from, state) do
+  def handle_manager_call(
+        {:render, surface_id, terminal_buffer, opts},
+        _from,
+        state
+      ) do
     start_time = System.monotonic_time(:microsecond)
 
     case Map.get(state.surface_cache, surface_id) do

@@ -37,9 +37,9 @@ defmodule Raxol.Extensions.VSCodeBackend do
     end
   end
 
-#  def start_link(opts \\ []) do
-#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-#  end
+  #  def start_link(opts \\ []) do
+  #    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  #  end
 
   @impl true
   def init_manager(_opts) do
@@ -263,7 +263,11 @@ defmodule Raxol.Extensions.VSCodeBackend do
   defp component_file?(file_path) do
     content = File.read!(file_path)
 
-    String.contains?(content, ["defmodule", "@behaviour", "use Raxol.Core.Behaviours.BaseManager"]) and
+    String.contains?(content, [
+      "defmodule",
+      "@behaviour",
+      "use Raxol.Core.Behaviours.BaseManager"
+    ]) and
       not String.contains?(file_path, ["test/", "_test.exs"])
   end
 

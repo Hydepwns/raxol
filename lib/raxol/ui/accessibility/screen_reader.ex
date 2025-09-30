@@ -375,7 +375,11 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:get_accessibility_state, component_id}, _from, state) do
+  def handle_manager_call(
+        {:get_accessibility_state, component_id},
+        _from,
+        state
+      ) do
     case Map.get(state.component_registry, component_id) do
       nil -> {:reply, {:error, :component_not_found}, state}
       component -> {:reply, {:ok, component}, state}

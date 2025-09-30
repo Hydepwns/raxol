@@ -8,7 +8,6 @@ defmodule Raxol.Core.FocusManager.FocusServer do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   require Logger
 
   defstruct [
@@ -161,14 +160,20 @@ defmodule Raxol.Core.FocusManager.FocusServer do
   end
 
   @impl true
-  def handle_manager_call({:register_focusable, component_id, tab_index, opts}, _from, state) do
+  def handle_manager_call(
+        {:register_focusable, component_id, tab_index, opts},
+        _from,
+        state
+      ) do
     component_info = %{
       id: component_id,
       tab_index: tab_index,
       opts: opts
     }
 
-    new_components = Map.put(state.focusable_components, component_id, component_info)
+    new_components =
+      Map.put(state.focusable_components, component_id, component_info)
+
     new_enabled = MapSet.put(state.enabled_components, component_id)
     new_tab_order = rebuild_tab_order(new_components)
 
@@ -298,13 +303,21 @@ defmodule Raxol.Core.FocusManager.FocusServer do
 
   @impl true
   def handle_manager_call({:get_next_focusable, current_focus_id}, _from, state) do
-    next_component = find_next_component(%{state | current_focus: current_focus_id})
+    next_component =
+      find_next_component(%{state | current_focus: current_focus_id})
+
     {:reply, next_component, state}
   end
 
   @impl true
-  def handle_manager_call({:get_previous_focusable, current_focus_id}, _from, state) do
-    prev_component = find_previous_component(%{state | current_focus: current_focus_id})
+  def handle_manager_call(
+        {:get_previous_focusable, current_focus_id},
+        _from,
+        state
+      ) do
+    prev_component =
+      find_previous_component(%{state | current_focus: current_focus_id})
+
     {:reply, prev_component, state}
   end
 
@@ -362,14 +375,22 @@ defmodule Raxol.Core.FocusManager.FocusServer do
   end
 
   @impl true
-  def handle_manager_call({:register_focus_change_handler, handler_fun}, _from, state) do
+  def handle_manager_call(
+        {:register_focus_change_handler, handler_fun},
+        _from,
+        state
+      ) do
     new_handlers = [handler_fun | state.focus_handlers]
     new_state = %{state | focus_handlers: new_handlers}
     {:reply, :ok, new_state}
   end
 
   @impl true
-  def handle_manager_call({:unregister_focus_change_handler, handler_fun}, _from, state) do
+  def handle_manager_call(
+        {:unregister_focus_change_handler, handler_fun},
+        _from,
+        state
+      ) do
     new_handlers = List.delete(state.focus_handlers, handler_fun)
     new_state = %{state | focus_handlers: new_handlers}
     {:reply, :ok, new_state}
@@ -393,7 +414,10 @@ defmodule Raxol.Core.FocusManager.FocusServer do
     case state.current_focus do
       nil ->
         # No current focus, return first component
-        Enum.find(state.tab_order, &MapSet.member?(state.enabled_components, &1))
+        Enum.find(
+          state.tab_order,
+          &MapSet.member?(state.enabled_components, &1)
+        )
 
       current ->
         current_index = Enum.find_index(state.tab_order, &(&1 == current))
@@ -401,7 +425,10 @@ defmodule Raxol.Core.FocusManager.FocusServer do
         case current_index do
           nil ->
             # Current focus not in tab order, return first
-            Enum.find(state.tab_order, &MapSet.member?(state.enabled_components, &1))
+            Enum.find(
+              state.tab_order,
+              &MapSet.member?(state.enabled_components, &1)
+            )
 
           index ->
             # Find next enabled component after current
@@ -411,7 +438,10 @@ defmodule Raxol.Core.FocusManager.FocusServer do
             |> case do
               nil ->
                 # Wrap around to first
-                Enum.find(state.tab_order, &MapSet.member?(state.enabled_components, &1))
+                Enum.find(
+                  state.tab_order,
+                  &MapSet.member?(state.enabled_components, &1)
+                )
 
               component ->
                 component

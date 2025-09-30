@@ -57,10 +57,6 @@ defmodule Raxol.Core.ErrorPatternLearner do
   # Public API
 
   @doc """
-  Start the error pattern learning system.
-  """
-
-  @doc """
   Record a new error occurrence for learning.
   """
   def record_error(error, context \\ %{}) do

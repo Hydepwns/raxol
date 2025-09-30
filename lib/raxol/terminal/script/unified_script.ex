@@ -164,7 +164,11 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  def handle_manager_call({:update_script_config, script_id, config}, _from, state) do
+  def handle_manager_call(
+        {:update_script_config, script_id, config},
+        _from,
+        state
+      ) do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}

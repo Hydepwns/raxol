@@ -573,7 +573,6 @@ defmodule Raxol.Core.StateManager do
     {:ok, %{id: state_id, state: initial_state}}
   end
 
-
   @impl GenServer
   def handle_call({:update, update_fun}, _from, %{state: state} = manager_state) do
     try do

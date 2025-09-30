@@ -12,7 +12,6 @@ defmodule Raxol.Terminal.Driver do
   """
   use Raxol.Core.Behaviours.BaseManager
 
-
   require Raxol.Core.Runtime.Log
   # Import Bitwise for bitwise operations
   # import Bitwise
@@ -210,7 +209,8 @@ defmodule Raxol.Terminal.Driver do
   end
 
   @impl true
-  def handle_manager_info({:register_dispatcher, pid}, state) when is_pid(pid) do
+  def handle_manager_info({:register_dispatcher, pid}, state)
+      when is_pid(pid) do
     Raxol.Core.Runtime.Log.info("Registering dispatcher PID: #{inspect(pid)}")
     # Send initial size event now that we have the PID
     send_initial_resize_event(pid)
@@ -218,7 +218,10 @@ defmodule Raxol.Terminal.Driver do
   end
 
   @impl true
-  def handle_manager_info({:test_input, input_data}, %{dispatcher_pid: nil} = state) do
+  def handle_manager_info(
+        {:test_input, input_data},
+        %{dispatcher_pid: nil} = state
+      ) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Received test input before dispatcher registration: #{inspect(input_data)}",
       %{}

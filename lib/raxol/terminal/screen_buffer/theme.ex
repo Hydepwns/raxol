@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Theme do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   defstruct [
     :name,
     :foreground,
@@ -28,18 +27,25 @@ defmodule Raxol.Terminal.ScreenBuffer.Theme do
   @impl true
   def init_manager(opts) do
     theme = Keyword.get(opts, :theme, default_theme())
-    state = case theme do
-      %__MODULE__{} = t -> t
-      keyword when is_list(keyword) ->
-        %__MODULE__{
-          name: Keyword.get(keyword, :name, "default"),
-          foreground: Keyword.get(keyword, :foreground, "#FFFFFF"),
-          background: Keyword.get(keyword, :background, "#000000"),
-          cursor: Keyword.get(keyword, :cursor, "#FFFFFF"),
-          selection: Keyword.get(keyword, :selection, "#444444")
-        }
-      _ -> default_theme()
-    end
+
+    state =
+      case theme do
+        %__MODULE__{} = t ->
+          t
+
+        keyword when is_list(keyword) ->
+          %__MODULE__{
+            name: Keyword.get(keyword, :name, "default"),
+            foreground: Keyword.get(keyword, :foreground, "#FFFFFF"),
+            background: Keyword.get(keyword, :background, "#000000"),
+            cursor: Keyword.get(keyword, :cursor, "#FFFFFF"),
+            selection: Keyword.get(keyword, :selection, "#444444")
+          }
+
+        _ ->
+          default_theme()
+      end
+
     {:ok, state}
   end
 

@@ -6,7 +6,6 @@ defmodule Raxol.Examples.Form do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   @doc """
   Creates a new form instance.
   """

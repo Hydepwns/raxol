@@ -12,7 +12,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
 
   use Raxol.Core.Behaviours.BaseManager
 
-@behaviour Raxol.Core.Behaviours.BaseManager
+  @behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Performance profiling macro
@@ -116,7 +116,6 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   @max_skip_frames 3
 
   # Client API
-
 
   @doc """
   Optimized tree update that batches changes.

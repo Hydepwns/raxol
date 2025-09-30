@@ -40,6 +40,7 @@ defmodule Raxol.Terminal.Tooltip do
   @doc """
   Starts the tooltip server.
   """
+
   # BaseManager provides start_link/1 with proper option handling
 
   # BaseManager callbacks

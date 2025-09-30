@@ -43,7 +43,6 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
   # Client API
 
-
   def create_window(opts \\ []) do
     GenServer.call(__MODULE__, {:create_window, opts})
   end

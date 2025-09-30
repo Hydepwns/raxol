@@ -245,8 +245,6 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
     {:ok, initial_state}
   end
 
-
-
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(
         {:register_element, graphics_id, element_config},
@@ -287,7 +285,11 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:update_bounds, graphics_id, new_bounds}, _from, state) do
+  def handle_manager_call(
+        {:update_bounds, graphics_id, new_bounds},
+        _from,
+        state
+      ) do
     case Map.get(state.interactive_elements, graphics_id) do
       nil ->
         {:reply, {:error, :element_not_found}, state}
@@ -340,7 +342,11 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:set_text_selection, graphics_id, enabled}, _from, state) do
+  def handle_manager_call(
+        {:set_text_selection, graphics_id, enabled},
+        _from,
+        state
+      ) do
     case Map.get(state.interactive_elements, graphics_id) do
       nil ->
         {:reply, {:error, :element_not_found}, state}

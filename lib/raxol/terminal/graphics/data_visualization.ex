@@ -118,9 +118,10 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   @doc """
   Starts the data visualization manager.
   """
-#  def start_link(opts \\ []) do
-#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-#  end
+
+  #  def start_link(opts \\ []) do
+  #    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  #  end
 
   @doc """
   Creates a real-time streaming chart.

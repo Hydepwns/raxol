@@ -304,12 +304,56 @@ defmodule Raxol.Performance.ETSCacheManager do
   def init_manager(_opts) do
     # Create ETS tables with optimal settings for each cache type
     # Use try/catch to handle case where tables already exist
-    _ = create_table_safe(@csi_parser_cache, [:set, :public, :named_table, read_concurrency: true])
-    _ = create_table_safe(@cell_cache, [:set, :public, :named_table, read_concurrency: true, write_concurrency: true])
-    _ = create_table_safe(@style_cache, [:set, :public, :named_table, read_concurrency: true])
-    _ = create_table_safe(@buffer_cache, [:set, :public, :named_table, read_concurrency: true, write_concurrency: true])
-    _ = create_table_safe(@layout_cache, [:set, :public, :named_table, read_concurrency: true])
-    _ = create_table_safe(@font_metrics_cache, [:set, :public, :named_table, read_concurrency: true, write_concurrency: true])
+    _ =
+      create_table_safe(@csi_parser_cache, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true
+      ])
+
+    _ =
+      create_table_safe(@cell_cache, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true,
+        write_concurrency: true
+      ])
+
+    _ =
+      create_table_safe(@style_cache, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true
+      ])
+
+    _ =
+      create_table_safe(@buffer_cache, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true,
+        write_concurrency: true
+      ])
+
+    _ =
+      create_table_safe(@layout_cache, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true
+      ])
+
+    _ =
+      create_table_safe(@font_metrics_cache, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true,
+        write_concurrency: true
+      ])
 
     # Track hit/miss statistics
     stats = %{

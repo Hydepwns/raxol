@@ -74,7 +74,11 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
     new_state = cancel_existing_timer(state)
 
     # Schedule new timer using TimerManager
-    timer_ref = TimerManager.send_after({:reload_plugin_file_debounced, plugin_id, path}, interval)
+    timer_ref =
+      TimerManager.send_after(
+        {:reload_plugin_file_debounced, plugin_id, path},
+        interval
+      )
 
     %{new_state | file_event_timer: timer_ref}
   end

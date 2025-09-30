@@ -364,7 +364,11 @@ defmodule Raxol.Terminal.Tab.Manager do
     end
   end
 
-  def handle_manager_call({:update_tab_config, tab_id, config_updates}, _from, state) do
+  def handle_manager_call(
+        {:update_tab_config, tab_id, config_updates},
+        _from,
+        state
+      ) do
     case Map.get(state.tabs, tab_id) do
       nil ->
         {:reply, {:error, :tab_not_found}, state}

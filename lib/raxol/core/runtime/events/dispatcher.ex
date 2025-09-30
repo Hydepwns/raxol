@@ -6,7 +6,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   require Raxol.Core.Runtime.Log
   require Raxol.Core.Events.Event
   require Raxol.Core.Runtime.Command

@@ -12,7 +12,7 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
 
   use Raxol.Core.Behaviours.BaseManager
 
-@behaviour Raxol.Core.Behaviours.BaseManager
+  @behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
   require Raxol.Core.Runtime.Log
 
@@ -41,7 +41,6 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
   end
 
   # Public API
-
 
   @doc """
   Submits a render update to the batcher.

@@ -5,7 +5,6 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   @behaviour Raxol.Core.Runtime.Plugins.LoaderBehaviour
 
   require Logger
@@ -23,10 +22,6 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
         }
 
   # Client API
-
-  @doc """
-  Starts the plugin loader.
-  """
 
   @doc """
   Loads a plugin from the given path.

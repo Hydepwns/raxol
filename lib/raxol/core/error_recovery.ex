@@ -40,7 +40,6 @@ defmodule Raxol.Core.ErrorRecovery do
 
   # Client API
 
-
   @doc """
   Executes a function with circuit breaker protection.
 
@@ -207,7 +206,6 @@ defmodule Raxol.Core.ErrorRecovery do
   # Server callbacks
 
   @impl true
-  @impl true
   def init_manager(_opts) do
     state = %{
       circuits: %{},
@@ -245,7 +243,11 @@ defmodule Raxol.Core.ErrorRecovery do
   end
 
   @impl true
-  def handle_manager_call({:mark_feature_degraded, feature, error}, _from, state) do
+  def handle_manager_call(
+        {:mark_feature_degraded, feature, error},
+        _from,
+        state
+      ) do
     degraded_features =
       Map.put(state.degraded_features, feature, %{
         error: error,

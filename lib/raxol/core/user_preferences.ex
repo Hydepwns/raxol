@@ -19,7 +19,6 @@ defmodule Raxol.Core.UserPreferences do
               save_timer: nil
   end
 
-
   @impl true
   def init_manager(opts) do
     preferences = initialize_preferences(Keyword.get(opts, :test_mode?, false))

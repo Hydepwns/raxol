@@ -11,11 +11,9 @@ defmodule Raxol.Core.Renderer.RendererManager do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   alias Raxol.Core.Renderer.Buffer
   alias Raxol.Core.Events.EventManager, as: Manager
   alias Raxol.Core.Runtime.ComponentManager
-
 
   def initialize(opts \\ []) do
     GenServer.call(__MODULE__, {:init, opts})

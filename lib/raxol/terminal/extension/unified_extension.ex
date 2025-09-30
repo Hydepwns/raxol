@@ -309,7 +309,11 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  def handle_manager_call({:configure_extension, extension_id, config}, _from, state) do
+  def handle_manager_call(
+        {:configure_extension, extension_id, config},
+        _from,
+        state
+      ) do
     case Map.get(state.extensions, extension_id) do
       nil ->
         {:reply, {:error, :extension_not_found}, state}
@@ -344,7 +348,11 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  def handle_manager_call({:execute_command, extension_id, command, args}, _from, state) do
+  def handle_manager_call(
+        {:execute_command, extension_id, command, args},
+        _from,
+        state
+      ) do
     case Map.get(state.extensions, extension_id) do
       nil ->
         {:reply, {:error, :extension_not_found}, state}
@@ -445,7 +453,11 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  def handle_manager_call({:unregister_hook, extension_id, hook_name}, _from, state) do
+  def handle_manager_call(
+        {:unregister_hook, extension_id, hook_name},
+        _from,
+        state
+      ) do
     case Map.get(state.extensions, extension_id) do
       nil ->
         {:reply, {:error, :extension_not_found}, state}
@@ -463,7 +475,11 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  def handle_manager_call({:trigger_hook, extension_id, hook_name, args}, _from, state) do
+  def handle_manager_call(
+        {:trigger_hook, extension_id, hook_name, args},
+        _from,
+        state
+      ) do
     case Map.get(state.extensions, extension_id) do
       nil ->
         {:reply, {:error, :extension_not_found}, state}

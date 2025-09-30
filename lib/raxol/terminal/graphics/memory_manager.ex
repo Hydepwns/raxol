@@ -127,9 +127,10 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   @doc """
   Starts the memory manager with the given configuration.
   """
-#  def start_link(config \\ %{}) do
-#    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-#  end
+
+  #  def start_link(config \\ %{}) do
+  #    GenServer.start_link(__MODULE__, config, name: __MODULE__)
+  #  end
 
   @doc """
   Allocates memory for graphics operations.
@@ -308,7 +309,11 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   end
 
   @impl true
-  def handle_manager_call({:allocate_from_pool, pool_id, metadata}, _from, state) do
+  def handle_manager_call(
+        {:allocate_from_pool, pool_id, metadata},
+        _from,
+        state
+      ) do
     case Map.get(state.memory_pools, pool_id) do
       nil ->
         {:reply, {:error, :pool_not_found}, state}
@@ -322,7 +327,11 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   end
 
   @impl true
-  def handle_manager_call({:return_to_pool, pool_id, allocation_id}, _from, state) do
+  def handle_manager_call(
+        {:return_to_pool, pool_id, allocation_id},
+        _from,
+        state
+      ) do
     case {Map.get(state.memory_pools, pool_id),
           Map.get(state.allocations, allocation_id)} do
       {nil, _} ->

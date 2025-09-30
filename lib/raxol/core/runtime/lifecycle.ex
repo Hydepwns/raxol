@@ -3,7 +3,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   require Raxol.Core.Runtime.Log
   require Logger
 
@@ -48,7 +47,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     * `:plugin_manager_opts` - Options to pass to the PluginManager's start_link function.
     * Other options are passed to the application module's `init/1` function.
   """
-  def start_link(app_module, options) when is_atom(app_module) and is_list(options) do
+  def start_link(app_module, options)
+      when is_atom(app_module) and is_list(options) do
     name_option = Keyword.get(options, :name, derive_process_name(app_module))
     opts = [app_module: app_module] ++ options ++ [name: name_option]
     Raxol.Core.Behaviours.BaseManager.start_link(__MODULE__, opts)
@@ -73,10 +73,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   # GenServer callbacks
 
-  @impl GenServer
   @impl true
   def init_manager(options) when is_list(options) do
     app_module = Keyword.fetch!(options, :app_module)
+
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] initializing for #{inspect(app_module)} with options: #{inspect(options)}"
     )
@@ -296,7 +296,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
-  @impl GenServer
   @impl true
   def handle_manager_info({:runtime_initialized, dispatcher_pid}, state) do
     Raxol.Core.Runtime.Log.info_with_context(
@@ -308,7 +307,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, updated_state}
   end
 
-  @impl GenServer
   @impl true
   def handle_manager_info({:plugin_manager_ready, plugin_manager_pid}, state) do
     Raxol.Core.Runtime.Log.info_with_context(
@@ -320,7 +318,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, updated_state}
   end
 
-  @impl GenServer
   @impl true
   def handle_manager_info(:render_needed, state) do
     Raxol.Core.Runtime.Log.debug(
@@ -330,7 +327,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, state}
   end
 
-  @impl GenServer
   @impl true
   def handle_manager_info(unhandled_message, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
@@ -444,7 +440,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
-  @impl GenServer
   @impl true
   def handle_manager_cast(:shutdown, state) do
     Raxol.Core.Runtime.Log.info_with_context(
@@ -478,7 +473,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:stop, :normal, state}
   end
 
-  @impl GenServer
   @impl true
   def handle_manager_cast(unhandled_message, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
@@ -489,13 +483,11 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, state}
   end
 
-  @impl GenServer
   @impl true
   def handle_manager_call(:get_full_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl GenServer
   @impl true
   def handle_manager_call(unhandled_message, _from, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
@@ -506,7 +498,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:reply, {:error, :unknown_call}, state}
   end
 
-  @impl GenServer
   @impl true
   def terminate_manager(reason, state) do
     Raxol.Core.Runtime.Log.info_with_context(

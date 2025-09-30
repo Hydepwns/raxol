@@ -142,7 +142,11 @@ defmodule Raxol.Terminal.Cache.System do
     end
   end
 
-  def handle_manager_call({:put, namespace, key, value, ttl, metadata}, _from, state) do
+  def handle_manager_call(
+        {:put, namespace, key, value, ttl, metadata},
+        _from,
+        state
+      ) do
     case get_namespace(state, namespace) do
       nil ->
         {:reply, {:error, :namespace_not_found}, state}

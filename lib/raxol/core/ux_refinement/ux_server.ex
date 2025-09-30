@@ -8,7 +8,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   require Raxol.Core.Runtime.Log
 
   defstruct [
@@ -131,7 +130,11 @@ defmodule Raxol.Core.UXRefinement.UxServer do
   end
 
   @impl true
-  def handle_manager_call({:enable_feature, feature, opts, user_prefs}, _from, state) do
+  def handle_manager_call(
+        {:enable_feature, feature, opts, user_prefs},
+        _from,
+        state
+      ) do
     {result, new_state} = do_enable_feature(feature, opts, user_prefs, state)
     {:reply, result, new_state}
   end
@@ -171,13 +174,21 @@ defmodule Raxol.Core.UXRefinement.UxServer do
   end
 
   @impl true
-  def handle_manager_call({:get_component_hint, component_id, level}, _from, state) do
+  def handle_manager_call(
+        {:get_component_hint, component_id, level},
+        _from,
+        state
+      ) do
     hint = get_hint_from_state(component_id, level, state)
     {:reply, hint, state}
   end
 
   @impl true
-  def handle_manager_call({:get_component_shortcuts, component_id}, _from, state) do
+  def handle_manager_call(
+        {:get_component_shortcuts, component_id},
+        _from,
+        state
+      ) do
     shortcuts = get_shortcuts_from_state(component_id, state)
     {:reply, shortcuts, state}
   end
@@ -202,7 +213,11 @@ defmodule Raxol.Core.UXRefinement.UxServer do
   end
 
   @impl true
-  def handle_manager_call({:get_accessibility_metadata, component_id}, _from, state) do
+  def handle_manager_call(
+        {:get_accessibility_metadata, component_id},
+        _from,
+        state
+      ) do
     accessibility_enabled = MapSet.member?(state.features, :accessibility)
 
     metadata =

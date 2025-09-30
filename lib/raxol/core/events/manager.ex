@@ -30,6 +30,8 @@ defmodule Raxol.Core.Events.Manager do
   defdelegate unsubscribe(subscription_ref), to: Raxol.Core.Events.EventManager
 
   # Delegate dispatch functions
-  defdelegate dispatch(event_type, event_data), to: Raxol.Core.Events.EventManager
+  defdelegate dispatch(event_type, event_data),
+    to: Raxol.Core.Events.EventManager
+
   defdelegate dispatch(event), to: Raxol.Core.Events.EventManager
 end

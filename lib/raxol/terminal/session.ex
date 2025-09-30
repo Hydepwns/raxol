@@ -188,7 +188,9 @@ defmodule Raxol.Terminal.Session do
 
   def init_manager(opts) when is_list(opts) do
     # Handle keyword list options
-    id = Keyword.get(opts, :id, "session_#{:erlang.unique_integer([:positive])}")
+    id =
+      Keyword.get(opts, :id, "session_#{:erlang.unique_integer([:positive])}")
+
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
     title = Keyword.get(opts, :title, "Raxol Session")

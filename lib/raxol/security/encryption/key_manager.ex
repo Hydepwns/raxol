@@ -64,7 +64,6 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
   ## Client API
 
-
   @doc """
   Generates a new data encryption key.
   """
@@ -222,7 +221,11 @@ defmodule Raxol.Security.Encryption.KeyManager do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:decrypt, key_id, ciphertext, version, opts}, _from, state) do
+  def handle_manager_call(
+        {:decrypt, key_id, ciphertext, version, opts},
+        _from,
+        state
+      ) do
     case perform_decryption(key_id, ciphertext, version, opts, state) do
       {:ok, plaintext, new_state} ->
         audit_key_operation(:decrypt, key_id, version)
@@ -246,7 +249,11 @@ defmodule Raxol.Security.Encryption.KeyManager do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:reencrypt, key_id, ciphertext, old_version}, _from, state) do
+  def handle_manager_call(
+        {:reencrypt, key_id, ciphertext, old_version},
+        _from,
+        state
+      ) do
     case reencrypt_data(key_id, ciphertext, old_version, state) do
       {:ok, new_ciphertext, new_state} ->
         audit_key_operation(:reencrypt, key_id, {old_version, :latest})

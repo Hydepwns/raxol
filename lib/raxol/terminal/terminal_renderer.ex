@@ -203,7 +203,9 @@ defmodule Raxol.Terminal.Renderer do
           nil -> build_style_string_optimized(style, theme)
           template -> template
         end
-      false -> build_style_string_optimized(style, theme)
+
+      false ->
+        build_style_string_optimized(style, theme)
     end
   end
 
@@ -276,7 +278,6 @@ defmodule Raxol.Terminal.Renderer do
     end)
   end
 
-
   defp should_use_templates?(theme, _style_map) do
     # Only use templates when theme is completely nil/undefined
     # If theme is an empty map %{}, that's an intentional choice to disable defaults
@@ -295,6 +296,7 @@ defmodule Raxol.Terminal.Renderer do
         nil ->
           # Apply default theme color when no explicit foreground is set
           default_color = get_default_foreground_color(theme)
+
           case default_color do
             "" -> parts
             _ -> ["color: " <> default_color | parts]
@@ -315,6 +317,7 @@ defmodule Raxol.Terminal.Renderer do
         nil ->
           # Apply default theme background color when no explicit background is set
           default_bg_color = get_default_background_color(theme)
+
           case default_bg_color do
             "" -> parts
             _ -> ["background-color: " <> default_bg_color | parts]
@@ -375,7 +378,9 @@ defmodule Raxol.Terminal.Renderer do
           true -> get_default_color(color)
           false -> ""
         end
-      value -> value
+
+      value ->
+        value
     end
   end
 
@@ -397,7 +402,9 @@ defmodule Raxol.Terminal.Renderer do
           true -> get_default_color(color)
           false -> ""
         end
-      value -> value
+
+      value ->
+        value
     end
   end
 

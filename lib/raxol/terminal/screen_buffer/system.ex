@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.ScreenBuffer.System do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   defstruct [
     :update_interval,
     :auto_update,
@@ -24,16 +23,23 @@ defmodule Raxol.Terminal.ScreenBuffer.System do
   @impl true
   def init_manager(opts) do
     settings = Keyword.get(opts, :settings, default_settings())
-    state = case settings do
-      %__MODULE__{} = s -> s
-      keyword when is_list(keyword) ->
-        %__MODULE__{
-          update_interval: Keyword.get(keyword, :update_interval, 16),
-          auto_update: Keyword.get(keyword, :auto_update, true),
-          debug_mode: Keyword.get(keyword, :debug_mode, false)
-        }
-      _ -> default_settings()
-    end
+
+    state =
+      case settings do
+        %__MODULE__{} = s ->
+          s
+
+        keyword when is_list(keyword) ->
+          %__MODULE__{
+            update_interval: Keyword.get(keyword, :update_interval, 16),
+            auto_update: Keyword.get(keyword, :auto_update, true),
+            debug_mode: Keyword.get(keyword, :debug_mode, false)
+          }
+
+        _ ->
+          default_settings()
+      end
+
     {:ok, state}
   end
 

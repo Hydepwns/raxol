@@ -7,7 +7,6 @@ defmodule Raxol.Web.WebManager do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   # BaseManager provides start_link/1 with proper option handling
   # The default name should be set via options when starting
 

@@ -8,7 +8,6 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   require Logger
 
   defstruct [
@@ -149,7 +148,11 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
   end
 
   @impl true
-  def handle_manager_call({:register_shortcut, shortcut, name, callback, opts}, _from, state) do
+  def handle_manager_call(
+        {:register_shortcut, shortcut, name, callback, opts},
+        _from,
+        state
+      ) do
     context = Keyword.get(opts, :context, :global)
     priority = Keyword.get(opts, :priority, 0)
 
@@ -161,7 +164,9 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
       shortcut: shortcut
     }
 
-    new_shortcuts = Map.put(state.shortcuts, {context, shortcut}, shortcut_entry)
+    new_shortcuts =
+      Map.put(state.shortcuts, {context, shortcut}, shortcut_entry)
+
     new_state = %{state | shortcuts: new_shortcuts}
 
     {:reply, :ok, new_state}
@@ -180,7 +185,9 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
 
   @impl true
   def handle_manager_call(:get_available_shortcuts, _from, state) do
-    shortcuts = filter_shortcuts_by_context(state.shortcuts, state.active_context)
+    shortcuts =
+      filter_shortcuts_by_context(state.shortcuts, state.active_context)
+
     {:reply, shortcuts, state}
   end
 
@@ -238,7 +245,11 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
   end
 
   @impl true
-  def handle_manager_call({:unregister_shortcut, shortcut, context}, _from, state) do
+  def handle_manager_call(
+        {:unregister_shortcut, shortcut, context},
+        _from,
+        state
+      ) do
     key = {context, shortcut}
     new_shortcuts = Map.delete(state.shortcuts, key)
     new_state = %{state | shortcuts: new_shortcuts}
@@ -261,6 +272,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
       nil ->
         # Try global context fallback
         global_key = {:global, event}
+
         case Map.get(state.shortcuts, global_key) do
           nil -> :not_handled
           entry -> execute_shortcut_callback(entry)
@@ -279,6 +291,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
         {module, function, args} -> apply(module, function, args)
         _ -> :invalid_callback
       end
+
       :handled
     rescue
       error ->

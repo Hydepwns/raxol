@@ -107,23 +107,30 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
   @impl Raxol.Core.Behaviours.BaseManager
   def init_manager(_opts) do
     # Start unified timer manager for adaptation checks
-    state = case UnifiedTimerManager.start_adaptive_timer(self(), 1000) do
-      :ok ->
-        %FramerateState{
-          adaptation_timer_ref: :unified_timer
-        }
-      {:error, :not_started} ->
-        # Fallback to Process.send_after in test mode when UnifiedTimerManager isn't running
-        timer_ref = Process.send_after(self(), :adapt_framerate, 1000)
-        %FramerateState{
-          adaptation_timer_ref: timer_ref
-        }
-      error ->
-        Raxol.Core.Runtime.Log.warning("AdaptiveFramerate: Failed to start timer - #{inspect(error)}")
-        %FramerateState{
-          adaptation_timer_ref: nil
-        }
-    end
+    state =
+      case UnifiedTimerManager.start_adaptive_timer(self(), 1000) do
+        :ok ->
+          %FramerateState{
+            adaptation_timer_ref: :unified_timer
+          }
+
+        {:error, :not_started} ->
+          # Fallback to Process.send_after in test mode when UnifiedTimerManager isn't running
+          timer_ref = Process.send_after(self(), :adapt_framerate, 1000)
+
+          %FramerateState{
+            adaptation_timer_ref: timer_ref
+          }
+
+        error ->
+          Raxol.Core.Runtime.Log.warning(
+            "AdaptiveFramerate: Failed to start timer - #{inspect(error)}"
+          )
+
+          %FramerateState{
+            adaptation_timer_ref: nil
+          }
+      end
 
     Raxol.Core.Runtime.Log.debug("AdaptiveFramerate: Started with 60fps target")
 

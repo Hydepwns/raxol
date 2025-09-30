@@ -475,7 +475,6 @@ defmodule Raxol.Plugins.Testing.MockTerminal do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   defstruct [
     :width,
     :height,

@@ -99,8 +99,16 @@ defmodule Raxol.Core.UnifiedStateManager do
   """
   def get_memory_usage do
     case get_manager_pid() do
-      {:ok, pid} -> GenServer.call(pid, :get_memory_usage)
-      {:error, _} -> %{ets_memory_bytes: 0, ets_memory_mb: 0.0, object_count: 0, last_updated: 0}
+      {:ok, pid} ->
+        GenServer.call(pid, :get_memory_usage)
+
+      {:error, _} ->
+        %{
+          ets_memory_bytes: 0,
+          ets_memory_mb: 0.0,
+          object_count: 0,
+          last_updated: 0
+        }
     end
   end
 
@@ -111,12 +119,16 @@ defmodule Raxol.Core.UnifiedStateManager do
     case state do
       %{table: table_name} ->
         case :ets.info(table_name) do
-          :undefined -> :ok
+          :undefined ->
+            :ok
+
           _ ->
             :ets.delete(table_name)
             :ok
         end
-      _ -> :ok
+
+      _ ->
+        :ok
     end
   end
 
@@ -130,6 +142,7 @@ defmodule Raxol.Core.UnifiedStateManager do
     case :ets.info(table_name) do
       :undefined ->
         :ets.new(table_name, [:set, :public, :named_table])
+
       _ ->
         # Table already exists, continue
         :ok
@@ -181,10 +194,11 @@ defmodule Raxol.Core.UnifiedStateManager do
   def handle_manager_call({:update_state, key, update_fn}, _from, state) do
     state_root = get_state_root(state.table)
 
-    current_value = case key do
-      key when is_list(key) -> get_nested_value(state_root, key)
-      key -> Map.get(state_root, normalize_key(key))
-    end
+    current_value =
+      case key do
+        key when is_list(key) -> get_nested_value(state_root, key)
+        key -> Map.get(state_root, normalize_key(key))
+      end
 
     try do
       new_value = update_fn.(current_value)
@@ -206,13 +220,16 @@ defmodule Raxol.Core.UnifiedStateManager do
     {:reply, state.version, state}
   end
 
-  def handle_manager_call(:get_memory_usage, _from, %{table: table_name} = state) do
+  def handle_manager_call(
+        :get_memory_usage,
+        _from,
+        %{table: table_name} = state
+      ) do
     stats = calculate_memory_stats(table_name)
     {:reply, stats, state}
   end
 
   # Private functions
-
 
   defp get_manager_pid do
     case Application.get_env(:raxol, :unified_state_manager) do
@@ -222,6 +239,7 @@ defmodule Raxol.Core.UnifiedStateManager do
         else
           {:error, :process_dead}
         end
+
       _ ->
         case GenServer.whereis(__MODULE__) do
           nil -> {:error, :not_started}
@@ -229,8 +247,6 @@ defmodule Raxol.Core.UnifiedStateManager do
         end
     end
   end
-
-
 
   defp get_state_root(table_name) do
     case :ets.lookup(table_name, :state_root) do
@@ -270,33 +286,40 @@ defmodule Raxol.Core.UnifiedStateManager do
     :ets.insert(state.table, {:state_root, new_state_root})
     :ets.insert(state.table, {:version, new_version})
 
-    %{state |
-      version: new_version,
-      metadata: Map.put(state.metadata, :last_updated, :os.system_time(:millisecond))
+    %{
+      state
+      | version: new_version,
+        metadata:
+          Map.put(state.metadata, :last_updated, :os.system_time(:millisecond))
     }
   end
 
   defp get_nested_value(map, []), do: map
   defp get_nested_value(nil, _), do: nil
+
   defp get_nested_value(map, [key | rest]) when is_map(map) do
     normalized_key = normalize_key(key)
+
     case Map.get(map, normalized_key) do
       nil -> nil
       value -> get_nested_value(value, rest)
     end
   end
+
   defp get_nested_value(_, _), do: nil
 
   defp put_nested_value(map, [key], value) when is_map(map) do
     normalized_key = normalize_key(key)
     Map.put(map, normalized_key, value)
   end
+
   defp put_nested_value(map, [key | rest], value) when is_map(map) do
     normalized_key = normalize_key(key)
     nested_map = Map.get(map, normalized_key, %{})
     updated_nested = put_nested_value(nested_map, rest, value)
     Map.put(map, normalized_key, updated_nested)
   end
+
   defp put_nested_value(%{}, path, value) do
     put_nested_value(%{}, path, value)
   end
@@ -305,15 +328,20 @@ defmodule Raxol.Core.UnifiedStateManager do
     normalized_key = normalize_key(key)
     Map.delete(map, normalized_key)
   end
+
   defp delete_nested_value(map, [key | rest]) when is_map(map) do
     normalized_key = normalize_key(key)
+
     case Map.get(map, normalized_key) do
       nested_map when is_map(nested_map) ->
         updated_nested = delete_nested_value(nested_map, rest)
         Map.put(map, normalized_key, updated_nested)
-      _ -> map
+
+      _ ->
+        map
     end
   end
+
   defp delete_nested_value(map, _), do: map
 
   defp normalize_key(key) when is_atom(key), do: key
@@ -329,6 +357,7 @@ defmodule Raxol.Core.UnifiedStateManager do
           object_count: 0,
           last_updated: :os.system_time(:millisecond)
         }
+
       info ->
         words = Keyword.get(info, :memory, 0)
         wordsize = :erlang.system_info(:wordsize)

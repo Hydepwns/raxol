@@ -75,12 +75,12 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   Starts the graphics manager with the given options.
   """
   @spec start_link(map()) :: GenServer.on_start()
-#  def start_link(opts \\ %{}) do
-#    opts = ensure_map_opts(opts)
-#    name = Map.get(opts, :name, __MODULE__)
-#    gen_server_opts = Map.delete(opts, :name)
-#    GenServer.start_link(__MODULE__, gen_server_opts, name: name)
-#  end
+  #  def start_link(opts \\ %{}) do
+  #    opts = ensure_map_opts(opts)
+  #    name = Map.get(opts, :name, __MODULE__)
+  #    gen_server_opts = Map.delete(opts, :name)
+  #    GenServer.start_link(__MODULE__, gen_server_opts, name: name)
+  #  end
 
   @doc """
   Creates a new graphics context with the given configuration.
@@ -496,7 +496,11 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_manager_call({:display_images, images, shared_options}, _from, state) do
+  def handle_manager_call(
+        {:display_images, images, shared_options},
+        _from,
+        state
+      ) do
     results =
       Enum.map(images, fn
         {image_data, individual_options} ->
@@ -542,7 +546,11 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_manager_call({:optimize_and_display, image_data, options}, _from, state) do
+  def handle_manager_call(
+        {:optimize_and_display, image_data, options},
+        _from,
+        state
+      ) do
     # Create terminal capability profiles based on current system
     terminal_profiles = create_terminal_profiles(state.graphics_support)
 
@@ -741,7 +749,11 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_manager_call({:update_graphics_config, graphics_id, config}, _from, state) do
+  def handle_manager_call(
+        {:update_graphics_config, graphics_id, config},
+        _from,
+        state
+      ) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
         {:reply, {:error, :graphics_not_found}, state}

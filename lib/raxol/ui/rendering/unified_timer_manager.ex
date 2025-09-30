@@ -27,10 +27,14 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   @pipeline_tick_timer :pipeline_tick
 
   # Default intervals (milliseconds)
-  @default_frame_interval 16  # 60fps
-  @default_debounce_interval 8  # 8ms debounce
-  @default_monitor_interval 1000  # 1s monitoring
-  @default_adaptive_interval 2000  # 2s adaptation checks
+  # 60fps
+  @default_frame_interval 16
+  # 8ms debounce
+  @default_debounce_interval 8
+  # 1s monitoring
+  @default_monitor_interval 1000
+  # 2s adaptation checks
+  @default_adaptive_interval 2000
 
   # Client API
 
@@ -40,7 +44,10 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   @spec start_animation_timer(pid(), non_neg_integer()) :: :ok
   def start_animation_timer(target_pid, interval_ms \\ @default_frame_interval) do
     with {:ok, manager_pid} <- get_manager_pid() do
-      GenServer.call(manager_pid, {:start_timer, @animation_frame_timer, target_pid, interval_ms})
+      GenServer.call(
+        manager_pid,
+        {:start_timer, @animation_frame_timer, target_pid, interval_ms}
+      )
     end
   end
 
@@ -48,9 +55,15 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   Starts a render debounce timer to batch rapid render requests.
   """
   @spec start_debounce_timer(pid(), non_neg_integer()) :: :ok
-  def start_debounce_timer(target_pid, interval_ms \\ @default_debounce_interval) do
+  def start_debounce_timer(
+        target_pid,
+        interval_ms \\ @default_debounce_interval
+      ) do
     with {:ok, manager_pid} <- get_manager_pid() do
-      GenServer.call(manager_pid, {:start_timer, @render_debounce_timer, target_pid, interval_ms})
+      GenServer.call(
+        manager_pid,
+        {:start_timer, @render_debounce_timer, target_pid, interval_ms}
+      )
     end
   end
 
@@ -60,7 +73,10 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   @spec start_monitor_timer(pid(), non_neg_integer()) :: :ok
   def start_monitor_timer(target_pid, interval_ms \\ @default_monitor_interval) do
     with {:ok, manager_pid} <- get_manager_pid() do
-      GenServer.call(manager_pid, {:start_timer, @frame_rate_monitor_timer, target_pid, interval_ms})
+      GenServer.call(
+        manager_pid,
+        {:start_timer, @frame_rate_monitor_timer, target_pid, interval_ms}
+      )
     end
   end
 
@@ -68,9 +84,15 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   Starts an adaptive frame rate timer for dynamic performance adjustment.
   """
   @spec start_adaptive_timer(pid(), non_neg_integer()) :: :ok
-  def start_adaptive_timer(target_pid, interval_ms \\ @default_adaptive_interval) do
+  def start_adaptive_timer(
+        target_pid,
+        interval_ms \\ @default_adaptive_interval
+      ) do
     with {:ok, manager_pid} <- get_manager_pid() do
-      GenServer.call(manager_pid, {:start_timer, @adaptive_frame_timer, target_pid, interval_ms})
+      GenServer.call(
+        manager_pid,
+        {:start_timer, @adaptive_frame_timer, target_pid, interval_ms}
+      )
     end
   end
 
@@ -80,7 +102,10 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   @spec start_pipeline_timer(pid(), non_neg_integer()) :: :ok
   def start_pipeline_timer(target_pid, interval_ms) do
     with {:ok, manager_pid} <- get_manager_pid() do
-      GenServer.call(manager_pid, {:start_timer, @pipeline_tick_timer, target_pid, interval_ms})
+      GenServer.call(
+        manager_pid,
+        {:start_timer, @pipeline_tick_timer, target_pid, interval_ms}
+      )
     end
   end
 
@@ -110,7 +135,10 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   @spec update_timer_interval(atom(), non_neg_integer()) :: :ok
   def update_timer_interval(timer_type, new_interval_ms) do
     with {:ok, manager_pid} <- get_manager_pid() do
-      GenServer.call(manager_pid, {:update_interval, timer_type, new_interval_ms})
+      GenServer.call(
+        manager_pid,
+        {:update_interval, timer_type, new_interval_ms}
+      )
     end
   end
 
@@ -146,7 +174,11 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:start_timer, timer_type, target_pid, interval_ms}, _from, state) do
+  def handle_manager_call(
+        {:start_timer, timer_type, target_pid, interval_ms},
+        _from,
+        state
+      ) do
     new_state = start_timer_internal(state, timer_type, target_pid, interval_ms)
     {:reply, :ok, new_state}
   end
@@ -161,7 +193,11 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
     {:reply, :ok, new_state}
   end
 
-  def handle_manager_call({:update_interval, timer_type, new_interval_ms}, _from, state) do
+  def handle_manager_call(
+        {:update_interval, timer_type, new_interval_ms},
+        _from,
+        state
+      ) do
     new_state = update_interval_internal(state, timer_type, new_interval_ms)
     {:reply, :ok, new_state}
   end
@@ -201,21 +237,25 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
         new_target_pids = Map.put(state.target_pids, timer_type, target_pid)
         new_intervals = Map.put(state.intervals, timer_type, interval_ms)
 
-        new_stats = %{state.stats |
-          active_timers: map_size(new_timers)
-        }
+        new_stats = %{state.stats | active_timers: map_size(new_timers)}
 
-        Logger.debug("[UnifiedTimerManager] Started #{timer_type} timer (#{interval_ms}ms) for #{inspect(target_pid)}")
+        Logger.debug(
+          "[UnifiedTimerManager] Started #{timer_type} timer (#{interval_ms}ms) for #{inspect(target_pid)}"
+        )
 
-        %{state |
-          timers: new_timers,
-          target_pids: new_target_pids,
-          intervals: new_intervals,
-          stats: new_stats
+        %{
+          state
+          | timers: new_timers,
+            target_pids: new_target_pids,
+            intervals: new_intervals,
+            stats: new_stats
         }
 
       {:error, reason} ->
-        Logger.error("[UnifiedTimerManager] Failed to start #{timer_type} timer: #{inspect(reason)}")
+        Logger.error(
+          "[UnifiedTimerManager] Failed to start #{timer_type} timer: #{inspect(reason)}"
+        )
+
         state
     end
   end
@@ -232,17 +272,16 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
         new_target_pids = Map.delete(state.target_pids, timer_type)
         new_intervals = Map.delete(state.intervals, timer_type)
 
-        new_stats = %{state.stats |
-          active_timers: map_size(new_timers)
-        }
+        new_stats = %{state.stats | active_timers: map_size(new_timers)}
 
         Logger.debug("[UnifiedTimerManager] Stopped #{timer_type} timer")
 
-        %{state |
-          timers: new_timers,
-          target_pids: new_target_pids,
-          intervals: new_intervals,
-          stats: new_stats
+        %{
+          state
+          | timers: new_timers,
+            target_pids: new_target_pids,
+            intervals: new_intervals,
+            stats: new_stats
         }
     end
   end
@@ -254,18 +293,16 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
 
     Logger.info("[UnifiedTimerManager] Stopped all timers")
 
-    %{state |
-      timers: %{},
-      target_pids: %{},
-      intervals: %{},
-      stats: new_stats
-    }
+    %{state | timers: %{}, target_pids: %{}, intervals: %{}, stats: new_stats}
   end
 
   defp update_interval_internal(state, timer_type, new_interval_ms) do
     case Map.get(state.target_pids, timer_type) do
       nil ->
-        Logger.warning("[UnifiedTimerManager] Cannot update interval for non-existent timer: #{timer_type}")
+        Logger.warning(
+          "[UnifiedTimerManager] Cannot update interval for non-existent timer: #{timer_type}"
+        )
+
         state
 
       target_pid ->
@@ -277,7 +314,10 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   defp handle_timer_tick(state, timer_type) do
     case Map.get(state.target_pids, timer_type) do
       nil ->
-        Logger.warning("[UnifiedTimerManager] Received tick for unknown timer: #{timer_type}")
+        Logger.warning(
+          "[UnifiedTimerManager] Received tick for unknown timer: #{timer_type}"
+        )
+
         state
 
       target_pid ->
@@ -286,8 +326,9 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
         send(target_pid, message)
 
         # Update stats
-        new_stats = %{state.stats |
-          total_messages: state.stats.total_messages + 1
+        new_stats = %{
+          state.stats
+          | total_messages: state.stats.total_messages + 1
         }
 
         %{state | stats: new_stats}

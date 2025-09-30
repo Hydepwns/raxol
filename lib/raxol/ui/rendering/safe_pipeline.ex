@@ -8,7 +8,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
 
   use Raxol.Core.Behaviours.BaseManager
 
-@behaviour Raxol.Core.Behaviours.BaseManager
+  @behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   import Raxol.Core.ErrorHandler

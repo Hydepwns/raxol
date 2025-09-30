@@ -457,7 +457,11 @@ defmodule Raxol.UI.Accessibility.HighContrast do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:configure_color_blindness, type, options}, _from, state) do
+  def handle_manager_call(
+        {:configure_color_blindness, type, options},
+        _from,
+        state
+      ) do
     configure_color_blindness_internal(state, type, options)
   end
 

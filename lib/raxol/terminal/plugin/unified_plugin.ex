@@ -136,7 +136,11 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   @impl true
-  def handle_manager_call({:update_plugin_config, plugin_id, config}, _from, state) do
+  def handle_manager_call(
+        {:update_plugin_config, plugin_id, config},
+        _from,
+        state
+      ) do
     case do_update_plugin_config(plugin_id, config, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}

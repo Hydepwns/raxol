@@ -115,7 +115,7 @@ if Code.ensure_loaded?(:ssh) do
     """
     @spec start(pid(), pty_options()) :: {:ok, pid()} | {:error, term()}
     def start(ssh_client, pty_options \\ %{}) do
-      start_link([ssh_client: ssh_client, pty_options: pty_options])
+      start_link(ssh_client: ssh_client, pty_options: pty_options)
     end
 
     @doc """
@@ -478,7 +478,10 @@ if Code.ensure_loaded?(:ssh) do
       {:noreply, new_state}
     end
 
-    def handle_manager_info({:ssh_cm, connection_ref, {:closed, channel_id}}, state)
+    def handle_manager_info(
+          {:ssh_cm, connection_ref, {:closed, channel_id}},
+          state
+        )
         when connection_ref == state.connection_ref and
                channel_id == state.channel_id do
       Logger.info("SSH session channel closed")

@@ -27,7 +27,6 @@ defmodule Raxol.Events.UnifiedEventHandler do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   require Logger
 
   alias Raxol.Core.Runtime.Events.EventsHandler
@@ -113,6 +112,7 @@ defmodule Raxol.Events.UnifiedEventHandler do
   @doc """
   Start the unified event handler.
   """
+
   # BaseManager provides start_link/1 and start_link/2 automatically
 
   ## GenServer Implementation

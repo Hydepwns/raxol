@@ -13,7 +13,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   require Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
-
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.UI.Layout.Engine, as: LayoutEngine
   alias Raxol.UI.Renderer, as: UIRenderer
@@ -37,7 +36,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   @doc "Starts the Rendering Engine process."
   def start_link(initial_state_map) when is_map(initial_state_map) do
-    Raxol.Core.Behaviours.BaseManager.start_link(__MODULE__, initial_state_map, name: __MODULE__)
+    Raxol.Core.Behaviours.BaseManager.start_link(__MODULE__, initial_state_map,
+      name: __MODULE__
+    )
   end
 
   # --- BaseManager Callbacks ---

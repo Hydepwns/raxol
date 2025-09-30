@@ -66,9 +66,9 @@ defmodule Raxol.Core.Standards.CodeStyle do
           {:ok, pid}
       \"\"\"
       @spec start_link(keyword()) :: GenServer.on_start()
-#       def start_link(opts \\\\ []) do
-#         GenServer.start_link(__MODULE__, opts, name: opts[:name])
-#       end
+    #       def start_link(opts \\\\ []) do
+    #         GenServer.start_link(__MODULE__, opts, name: opts[:name])
+    #       end
 
       # GenServer callbacks
 

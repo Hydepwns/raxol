@@ -92,10 +92,12 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
   # Server Callbacks
   @impl true
   def init_manager(opts) do
-    opts_map = case opts do
-      opts when is_list(opts) -> Map.new(opts)
-      opts when is_map(opts) -> opts
-    end
+    opts_map =
+      case opts do
+        opts when is_list(opts) -> Map.new(opts)
+        opts when is_map(opts) -> opts
+      end
+
     state = %{
       themes: %{},
       theme_paths: Map.get(opts_map, :theme_paths, []),
@@ -151,7 +153,11 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
   end
 
   @impl true
-  def handle_manager_call({:update_theme_config, theme_id, config}, _from, state) do
+  def handle_manager_call(
+        {:update_theme_config, theme_id, config},
+        _from,
+        state
+      ) do
     case do_update_theme_config(theme_id, config, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}

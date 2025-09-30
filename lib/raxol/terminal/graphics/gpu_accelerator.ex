@@ -94,9 +94,10 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   @doc """
   Starts the graphics GPU accelerator.
   """
-#  def start_link(opts \\ []) do
-#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-#  end
+
+  #  def start_link(opts \\ []) do
+  #    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  #  end
 
   @doc """
   Initializes GPU acceleration for terminal graphics.

@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   alias Raxol.Terminal.Buffer
 
   defstruct [

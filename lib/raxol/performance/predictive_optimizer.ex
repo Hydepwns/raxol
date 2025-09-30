@@ -17,7 +17,6 @@ defmodule Raxol.Performance.PredictiveOptimizer do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   require Logger
 
   alias Raxol.Performance.ETSCacheManager
@@ -88,7 +87,10 @@ defmodule Raxol.Performance.PredictiveOptimizer do
   end
 
   @impl true
-  def handle_manager_cast({:record_event, event_name, measurements, metadata}, state) do
+  def handle_manager_cast(
+        {:record_event, event_name, measurements, metadata},
+        state
+      ) do
     # Update pattern history
     pattern = extract_pattern(event_name, metadata)
     new_history = update_pattern_history(state.pattern_history, pattern)

@@ -288,15 +288,14 @@ defmodule Raxol.Terminal.Integration.Main do
   @doc """
   Starts the integration main process.
   """
+
   # start_link is provided by BaseManager
 
   @impl Raxol.Core.Behaviours.BaseManager
-def init_manager(opts) do
+  def init_manager(opts) do
     state = Raxol.Terminal.Integration.init(opts)
     {:ok, state}
   end
-
-
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:handle_input, input_event}, _from, state) do

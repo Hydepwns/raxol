@@ -141,7 +141,11 @@ defmodule Raxol.Terminal.Window.Registry do
   end
 
   @impl true
-  def handle_manager_call({:update_window_state, window_id, new_state}, _from, state) do
+  def handle_manager_call(
+        {:update_window_state, window_id, new_state},
+        _from,
+        state
+      ) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :window_not_found}, state}

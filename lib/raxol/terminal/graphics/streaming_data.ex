@@ -133,9 +133,10 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   @doc """
   Starts the streaming data manager.
   """
-#  def start_link(opts \\ []) do
-#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-#  end
+
+  #  def start_link(opts \\ []) do
+  #    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  #  end
 
   @doc """
   Creates a new streaming data source.
@@ -425,7 +426,11 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   @impl true
-  def handle_manager_call({:get_windowed_data, stream_id, options}, _from, state) do
+  def handle_manager_call(
+        {:get_windowed_data, stream_id, options},
+        _from,
+        state
+      ) do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:reply, {:error, :stream_not_found}, state}

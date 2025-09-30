@@ -11,7 +11,6 @@ defmodule Raxol.Core.Metrics.Cloud do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   @type cloud_service :: :datadog | :prometheus | :cloudwatch
   @type cloud_config :: %{
           service: cloud_service(),

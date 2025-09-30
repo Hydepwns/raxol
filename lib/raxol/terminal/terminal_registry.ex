@@ -119,7 +119,11 @@ defmodule Raxol.Terminal.TerminalRegistry do
   end
 
   @impl true
-  def handle_manager_call({:register, terminal_id, process, metadata}, _from, state) do
+  def handle_manager_call(
+        {:register, terminal_id, process, metadata},
+        _from,
+        state
+      ) do
     case Map.get(state.terminals, terminal_id) do
       nil ->
         # Monitor the process
@@ -236,7 +240,11 @@ defmodule Raxol.Terminal.TerminalRegistry do
   end
 
   @impl true
-  def handle_manager_call({:update_metadata, terminal_id, new_metadata}, _from, state) do
+  def handle_manager_call(
+        {:update_metadata, terminal_id, new_metadata},
+        _from,
+        state
+      ) do
     case get_in(state.terminal_metadata, [terminal_id]) do
       nil ->
         {:reply, {:error, :not_found}, state}

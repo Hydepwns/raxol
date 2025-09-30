@@ -14,7 +14,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   use Raxol.Core.Behaviours.BaseManager
 
-@behaviour Raxol.Core.Behaviours.BaseManager
+  @behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Plugins.{DependencyResolverV2, PluginSandbox}
@@ -217,7 +217,11 @@ defmodule Raxol.Plugins.MarketplaceClient do
   end
 
   @impl true
-  def handle_manager_call({:install_plugin, plugin_id, version, opts}, _from, state) do
+  def handle_manager_call(
+        {:install_plugin, plugin_id, version, opts},
+        _from,
+        state
+      ) do
     case install_plugin_impl(plugin_id, version, opts, state) do
       {:ok, updated_state} ->
         Logger.info(
@@ -278,7 +282,11 @@ defmodule Raxol.Plugins.MarketplaceClient do
   end
 
   @impl true
-  def handle_manager_call({:verify_plugin_security, plugin_id, version}, _from, state) do
+  def handle_manager_call(
+        {:verify_plugin_security, plugin_id, version},
+        _from,
+        state
+      ) do
     case verify_plugin_security_impl(plugin_id, version, state) do
       {:ok, verification_result} ->
         {:reply, {:ok, verification_result}, state}

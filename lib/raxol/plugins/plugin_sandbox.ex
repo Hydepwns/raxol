@@ -198,7 +198,11 @@ defmodule Raxol.Plugins.PluginSandbox do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:create_sandbox, plugin_id, security_policy}, _from, state) do
+  def handle_manager_call(
+        {:create_sandbox, plugin_id, security_policy},
+        _from,
+        state
+      ) do
     case create_sandbox_impl(plugin_id, security_policy, state) do
       {:ok, updated_state} ->
         Logger.info("[PluginSandbox] Created sandbox for #{plugin_id}")

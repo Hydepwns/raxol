@@ -32,7 +32,6 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   alias Raxol.UI.Rendering.Renderer
   alias Raxol.UI.Rendering.TreeDiffer
   alias Raxol.UI.Rendering.UnifiedTimerManager
@@ -52,7 +51,6 @@ defmodule Raxol.UI.Rendering.Pipeline do
   @default_renderer Raxol.UI.Rendering.Renderer
 
   # Public API
-
 
   @doc """
   Child spec for supervision trees.
@@ -453,7 +451,9 @@ defmodule Raxol.UI.Rendering.Pipeline do
     # Handle deferred render from unified timer manager
     case state.deferred_render_data do
       {diff_result, new_tree_for_reference, _unique_id} ->
-        Raxol.Core.Runtime.Log.debug("Pipeline: Processing deferred render from unified timer")
+        Raxol.Core.Runtime.Log.debug(
+          "Pipeline: Processing deferred render from unified timer"
+        )
 
         render_result =
           execute_render_stages(
@@ -467,7 +467,12 @@ defmodule Raxol.UI.Rendering.Pipeline do
         painted_data = render_result
         composed_data = render_result.content
 
-        commit(painted_data, state.renderer, diff_result, new_tree_for_reference)
+        commit(
+          painted_data,
+          state.renderer,
+          diff_result,
+          new_tree_for_reference
+        )
 
         new_state = %{
           state
@@ -482,7 +487,10 @@ defmodule Raxol.UI.Rendering.Pipeline do
         {:noreply, new_state}
 
       nil ->
-        Raxol.Core.Runtime.Log.debug("Pipeline: Received debounce tick but no deferred render data")
+        Raxol.Core.Runtime.Log.debug(
+          "Pipeline: Received debounce tick but no deferred render data"
+        )
+
         {:noreply, state}
     end
   end
@@ -550,15 +558,29 @@ defmodule Raxol.UI.Rendering.Pipeline do
         case should_continue_ticker?(final_state) do
           true ->
             # Try unified timer manager first, fallback to direct timer
-            case UnifiedTimerManager.start_animation_timer(self(), @animation_tick_interval_ms) do
+            case UnifiedTimerManager.start_animation_timer(
+                   self(),
+                   @animation_tick_interval_ms
+                 ) do
               :ok ->
                 %{final_state | animation_ticker_ref: :unified_timer}
+
               {:error, :not_started} ->
                 # Fallback to direct timer if UnifiedTimerManager not available
-                timer_ref = Process.send_after(self(), :animation_tick, @animation_tick_interval_ms)
+                timer_ref =
+                  Process.send_after(
+                    self(),
+                    :animation_tick,
+                    @animation_tick_interval_ms
+                  )
+
                 %{final_state | animation_ticker_ref: timer_ref}
+
               error ->
-                Raxol.Core.Runtime.Log.error("Failed to reschedule animation timer: #{inspect(error)}")
+                Raxol.Core.Runtime.Log.error(
+                  "Failed to reschedule animation timer: #{inspect(error)}"
+                )
+
                 %{final_state | animation_ticker_ref: nil}
             end
 
@@ -696,9 +718,12 @@ defmodule Raxol.UI.Rendering.Pipeline do
     :ok = UnifiedTimerManager.start_debounce_timer(self(), delay)
 
     # Store deferred render data in state instead of timer message
-    state_with_deferred = %{state |
-      render_timer_ref: :unified_timer,
-      deferred_render_data: {diff_result, new_tree_for_reference, System.unique_integer([:positive])}
+    state_with_deferred = %{
+      state
+      | render_timer_ref: :unified_timer,
+        deferred_render_data:
+          {diff_result, new_tree_for_reference,
+           System.unique_integer([:positive])}
     }
 
     state_with_deferred
@@ -735,15 +760,29 @@ defmodule Raxol.UI.Rendering.Pipeline do
         )
 
         # Use unified timer manager instead of direct Process.send_after
-        case UnifiedTimerManager.start_animation_timer(self(), @animation_tick_interval_ms) do
+        case UnifiedTimerManager.start_animation_timer(
+               self(),
+               @animation_tick_interval_ms
+             ) do
           :ok ->
             %{state | animation_ticker_ref: :unified_timer}
+
           {:error, :not_started} ->
             # Fallback to direct timer if UnifiedTimerManager not available
-            timer_ref = Process.send_after(self(), :animation_tick, @animation_tick_interval_ms)
+            timer_ref =
+              Process.send_after(
+                self(),
+                :animation_tick,
+                @animation_tick_interval_ms
+              )
+
             %{state | animation_ticker_ref: timer_ref}
+
           error ->
-            Raxol.Core.Runtime.Log.error("Failed to start animation timer: #{inspect(error)}")
+            Raxol.Core.Runtime.Log.error(
+              "Failed to start animation timer: #{inspect(error)}"
+            )
+
             %{state | animation_ticker_ref: nil}
         end
 
@@ -767,14 +806,20 @@ defmodule Raxol.UI.Rendering.Pipeline do
             Raxol.Core.Runtime.Log.info("Pipeline: Started UnifiedTimerManager")
 
           {:error, {:already_started, _pid}} ->
-            Raxol.Core.Runtime.Log.debug("Pipeline: UnifiedTimerManager already started")
+            Raxol.Core.Runtime.Log.debug(
+              "Pipeline: UnifiedTimerManager already started"
+            )
 
           {:error, reason} ->
-            Raxol.Core.Runtime.Log.error("Pipeline: Failed to start UnifiedTimerManager: #{inspect(reason)}")
+            Raxol.Core.Runtime.Log.error(
+              "Pipeline: Failed to start UnifiedTimerManager: #{inspect(reason)}"
+            )
         end
 
       _pid ->
-        Raxol.Core.Runtime.Log.debug("Pipeline: UnifiedTimerManager already running")
+        Raxol.Core.Runtime.Log.debug(
+          "Pipeline: UnifiedTimerManager already running"
+        )
     end
 
     :ok

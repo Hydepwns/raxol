@@ -83,7 +83,6 @@ defmodule Raxol.Core.CircuitBreaker do
 
   # Client API
 
-
   @doc """
   Executes a function through the circuit breaker.
   """
@@ -134,7 +133,6 @@ defmodule Raxol.Core.CircuitBreaker do
 
   # Server Callbacks
 
-  @impl true
   @impl true
   def init_manager(opts) do
     opts = Keyword.merge(@default_opts, opts)

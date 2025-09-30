@@ -28,7 +28,6 @@ defmodule Raxol.Core.Performance.Profiler do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   require Logger
 
   @type metric_type :: :execution_time | :memory_usage | :call_count | :gc_runs
@@ -59,9 +58,6 @@ defmodule Raxol.Core.Performance.Profiler do
 
   # Client API
 
-  @doc """
-  Starts the profiler GenServer.
-  """
   # BaseManager provides start_link/1 and start_link/2 automatically
 
   @doc """

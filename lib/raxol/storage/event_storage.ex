@@ -188,9 +188,9 @@ defmodule Raxol.Storage.EventStorage.Memory do
 
   ## Client API
 
-#  def start_link(opts \\ []) do
-#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-#  end
+  #  def start_link(opts \\ []) do
+  #    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  #  end
 
   @impl Raxol.Storage.EventStorage
   def append_event(storage \\ __MODULE__, event, stream_name) do
@@ -415,13 +415,13 @@ defmodule Raxol.Storage.EventStorage.Disk do
 
   ## Client API
 
-#  def start_link(opts \\ []) do
-#    config =
-#      Keyword.get(opts, :config, %{})
-#      |> then(&Map.merge(@default_config, &1))
-#
-#    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-#  end
+  #  def start_link(opts \\ []) do
+  #    config =
+  #      Keyword.get(opts, :config, %{})
+  #      |> then(&Map.merge(@default_config, &1))
+  #
+  #    GenServer.start_link(__MODULE__, config, name: __MODULE__)
+  #  end
 
   @impl Raxol.Storage.EventStorage
   def append_event(storage \\ __MODULE__, event, stream_name) do

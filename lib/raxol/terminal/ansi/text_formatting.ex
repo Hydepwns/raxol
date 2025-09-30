@@ -331,7 +331,10 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     def reset_bold(style), do: %{style | bold: false, faint: false}
     def reset_faint(style), do: %{style | faint: false}
     def reset_italic(style), do: %{style | italic: false}
-    def reset_underline(style), do: %{style | underline: false, double_underline: false}
+
+    def reset_underline(style),
+      do: %{style | underline: false, double_underline: false}
+
     def reset_blink(style), do: %{style | blink: false}
     def reset_reverse(style), do: %{style | reverse: false}
     def reset_foreground(style), do: %{style | foreground: nil}
@@ -488,11 +491,13 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
           %{style | background: ansi_code_to_color_name(code - 10)}
 
         code >= 90 and code <= 97 ->
-          base_color = ansi_code_to_color_name(code - 60)  # Convert 90-97 to 30-37
+          # Convert 90-97 to 30-37
+          base_color = ansi_code_to_color_name(code - 60)
           %{style | foreground: base_color, bold: true}
 
         code >= 100 and code <= 107 ->
-          base_color = ansi_code_to_color_name(code - 70)  # Convert 100-107 to 30-37
+          # Convert 100-107 to 30-37
+          base_color = ansi_code_to_color_name(code - 70)
           %{style | background: base_color}
 
         true ->

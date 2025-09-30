@@ -8,12 +8,10 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
   # Client API
-
 
   @doc """
   Sets a cell at the given coordinates asynchronously.

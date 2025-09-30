@@ -252,7 +252,11 @@ defmodule Raxol.Animation.StateServer do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:remove_element_animations, element_id}, _from, state) do
+  def handle_manager_call(
+        {:remove_element_animations, element_id},
+        _from,
+        state
+      ) do
     updated_active_animations = Map.delete(state.active_animations, element_id)
     new_state = %{state | active_animations: updated_active_animations}
     {:reply, :ok, new_state}
@@ -270,7 +274,11 @@ defmodule Raxol.Animation.StateServer do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:batch_update_active_animations, updates}, _from, state) do
+  def handle_manager_call(
+        {:batch_update_active_animations, updates},
+        _from,
+        state
+      ) do
     new_state = apply_batch_updates(state, updates)
     {:reply, :ok, new_state}
   end

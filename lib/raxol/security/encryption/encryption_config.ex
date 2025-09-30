@@ -51,6 +51,7 @@ defmodule Raxol.Security.Encryption.Config do
   @doc """
   Starts the encryption configuration service.
   """
+
   # BaseManager provides start_link/1 automatically
 
   @doc """

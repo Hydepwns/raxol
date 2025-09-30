@@ -27,9 +27,10 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
   @doc """
   Starts the Color System server.
   """
-#  def start_link(opts \\ []) do
-#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-#  end
+
+  #  def start_link(opts \\ []) do
+  #    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  #  end
 
   @doc """
   Returns a child specification for this server.

@@ -150,7 +150,11 @@ defmodule Raxol.Terminal.Graphics.Animation do
   end
 
   @impl true
-  def handle_manager_call({:create_graphics_animation, name, params}, _from, state) do
+  def handle_manager_call(
+        {:create_graphics_animation, name, params},
+        _from,
+        state
+      ) do
     case validate_animation_params(params) do
       :ok ->
         # Create the animation definition with the existing framework
@@ -230,7 +234,11 @@ defmodule Raxol.Terminal.Graphics.Animation do
   end
 
   @impl true
-  def handle_manager_call({:stop_graphics_animation, animation_id}, _from, state) do
+  def handle_manager_call(
+        {:stop_graphics_animation, animation_id},
+        _from,
+        state
+      ) do
     case Map.get(state.active_animations, animation_id) do
       nil ->
         {:reply, {:error, :animation_not_found}, state}

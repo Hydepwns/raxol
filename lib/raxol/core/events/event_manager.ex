@@ -381,8 +381,10 @@ defmodule Raxol.Core.Events.EventManager do
       # For atom events with no data, pass just the event_type
       # For all other events, use standard 2-parameter approach
       case {event_type, event_data} do
-        {event_type, data} when is_atom(event_type) and is_map(data) and map_size(data) == 0 ->
+        {event_type, data}
+        when is_atom(event_type) and is_map(data) and map_size(data) == 0 ->
           apply(target, handler, [event_type])
+
         _ ->
           apply(target, handler, [event_type, event_data])
       end

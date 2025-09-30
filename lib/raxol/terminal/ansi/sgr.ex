@@ -164,7 +164,6 @@ defmodule Raxol.Terminal.ANSI.SGR do
         _ -> nil
       end
     end
-
   end
 
   defmodule Handler do

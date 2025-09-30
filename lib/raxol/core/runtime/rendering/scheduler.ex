@@ -5,7 +5,6 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
 
   use Raxol.Core.Behaviours.BaseManager
 
-
   alias Raxol.Core.Runtime.Rendering.Engine
 
   defmodule State do
@@ -47,7 +46,10 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   end
 
   @impl true
-  def handle_manager_cast(:enable, %State{enabled: false, engine_pid: _pid} = state) do
+  def handle_manager_cast(
+        :enable,
+        %State{enabled: false, engine_pid: _pid} = state
+      ) do
     new_state = schedule_render_tick(%{state | enabled: true})
     {:noreply, new_state}
   end
@@ -102,7 +104,8 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   end
 
   @impl true
-  def handle_manager_info({:render_tick, _other_id}, state), do: {:noreply, state}
+  def handle_manager_info({:render_tick, _other_id}, state),
+    do: {:noreply, state}
 
   # --- Private Helpers ---
 

@@ -68,7 +68,6 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
 
   # Client API
 
-
   @doc """
   Initializes the keyboard navigator.
   Registers event handlers for keyboard navigation.
@@ -243,7 +242,11 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:register_to_group, component_id, group_name}, _from, state) do
+  def handle_manager_call(
+        {:register_to_group, component_id, group_name},
+        _from,
+        state
+      ) do
     group_members = Map.get(state.groups, group_name, [])
 
     updated_members = add_component_to_group(component_id, group_members)

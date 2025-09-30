@@ -194,7 +194,11 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
   end
 
   @impl true
-  def handle_manager_call({:resolve_conflicts, sync_id, conflicts, opts}, _from, state) do
+  def handle_manager_call(
+        {:resolve_conflicts, sync_id, conflicts, opts},
+        _from,
+        state
+      ) do
     case Map.get(state.syncs, sync_id) do
       nil ->
         {:reply, {:error, :sync_not_found}, state}

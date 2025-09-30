@@ -46,6 +46,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   @doc """
   Starts the safe emulator with error handling capabilities.
   """
+
   # BaseManager provides start_link/1 and start_link/2 automatically
 
   @doc """

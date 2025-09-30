@@ -109,6 +109,7 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
   @impl true
   def init_manager(opts) do
     config = Keyword.get(opts, :config, default_config())
+
     state = %__MODULE__{
       config: config,
       active_plugins: %{},
@@ -144,7 +145,11 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
   end
 
   @impl true
-  def handle_manager_call({:install_and_enable_plugin, plugin_id, opts}, _from, state) do
+  def handle_manager_call(
+        {:install_and_enable_plugin, plugin_id, opts},
+        _from,
+        state
+      ) do
     case install_and_enable_plugin_impl(plugin_id, opts, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
@@ -154,7 +159,11 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
     end
   end
 
-  def handle_manager_call({:create_development_plugin, plugin_path, opts}, _from, state) do
+  def handle_manager_call(
+        {:create_development_plugin, plugin_path, opts},
+        _from,
+        state
+      ) do
     case create_development_plugin_impl(plugin_path, opts, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}

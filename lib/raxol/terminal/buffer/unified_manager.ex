@@ -77,7 +77,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   @doc """
   Writes text to the buffer at a specific position.
   """
-  @spec write_at(pid(), non_neg_integer(), non_neg_integer(), String.t()) :: {:ok, pid()}
+  @spec write_at(pid(), non_neg_integer(), non_neg_integer(), String.t()) ::
+          {:ok, pid()}
   def write_at(pid, x, y, text) when is_binary(text) do
     # Set cursor position first
     update_cursor_position(pid, x, y)

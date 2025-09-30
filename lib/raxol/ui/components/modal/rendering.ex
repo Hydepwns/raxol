@@ -17,17 +17,18 @@ defmodule Raxol.UI.Components.Modal.Rendering do
     # Convert style Map to Keyword list for Box.new
     box_style_keyword = Enum.map(box_style_map, fn {k, v} -> {k, v} end)
 
-    Raxol.Core.Renderer.View.Components.Box.new([
+    Raxol.Core.Renderer.View.Components.Box.new(
       id: get_modal_box_id(state),
       style: box_style_keyword,
-      children: Raxol.View.Elements.column(style: %{width: :fill, padding: 1}) do
-        build_modal_elements(
-          render_title(state.title),
-          render_content(state),
-          render_buttons(state.buttons)
-        )
-      end
-    ])
+      children:
+        Raxol.View.Elements.column style: %{width: :fill, padding: 1} do
+          build_modal_elements(
+            render_title(state.title),
+            render_content(state),
+            render_buttons(state.buttons)
+          )
+        end
+    )
   end
 
   @doc "Renders the modal title."
@@ -171,9 +172,10 @@ defmodule Raxol.UI.Components.Modal.Rendering do
       })
 
     # Convert Map to Keyword list for text_input function
-    keyword_props = Enum.map(text_input_props, fn {k, v} ->
-      {String.to_atom(to_string(k)), v}
-    end)
+    keyword_props =
+      Enum.map(text_input_props, fn {k, v} ->
+        {String.to_atom(to_string(k)), v}
+      end)
 
     Raxol.View.Elements.text_input(keyword_props)
   end
@@ -189,9 +191,10 @@ defmodule Raxol.UI.Components.Modal.Rendering do
       })
 
     # Convert Map to Keyword list for checkbox function
-    keyword_props = Enum.map(checkbox_props, fn {k, v} ->
-      {String.to_atom(to_string(k)), v}
-    end)
+    keyword_props =
+      Enum.map(checkbox_props, fn {k, v} ->
+        {String.to_atom(to_string(k)), v}
+      end)
 
     Raxol.View.Elements.checkbox(keyword_props)
   end

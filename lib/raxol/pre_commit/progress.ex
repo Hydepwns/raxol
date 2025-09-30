@@ -17,9 +17,10 @@ defmodule Raxol.PreCommit.Progress do
   @doc """
   Start the progress indicator server.
   """
-#   def start_link(opts \\ []) do
-#     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-#   end
+
+  #   def start_link(opts \\ []) do
+  #     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  #   end
 
   @doc """
   Initialize a new check with pending status.
