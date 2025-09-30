@@ -24,6 +24,7 @@ defmodule Raxol.Core.CircuitBreaker do
       # Define a circuit breaker for an API
       defmodule MyApp.APIBreaker do
         use Raxol.Core.CircuitBreaker,
+  alias Raxol.Core.Runtime.Log
           name: :api_breaker,
           failure_threshold: 5,
           timeout: 30_000
@@ -36,9 +37,6 @@ defmodule Raxol.Core.CircuitBreaker do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   @default_opts [
     failure_threshold: 5,
     success_threshold: 2,
@@ -335,15 +333,15 @@ defmodule Raxol.Core.CircuitBreaker do
       {:ok, result}
     rescue
       error ->
-        Logger.warning("Circuit breaker caught error: #{inspect(error)}")
+        Log.module_warning("Circuit breaker caught error: #{inspect(error)}")
         {:error, error}
     catch
       :exit, reason ->
-        Logger.warning("Circuit breaker caught exit: #{inspect(reason)}")
+        Log.module_warning("Circuit breaker caught exit: #{inspect(reason)}")
         {:error, {:exit, reason}}
 
       kind, reason ->
-        Logger.warning("Circuit breaker caught #{kind}: #{inspect(reason)}")
+        Log.module_warning("Circuit breaker caught #{kind}: #{inspect(reason)}")
         {:error, {kind, reason}}
     end
   end
@@ -379,7 +377,7 @@ defmodule Raxol.Core.CircuitBreaker do
 
   @spec transition_to_open(map()) :: any()
   defp transition_to_open(state) do
-    Logger.info("Circuit breaker #{state.name} transitioning to OPEN")
+    Log.module_info("Circuit breaker #{state.name} transitioning to OPEN")
     state.on_state_change.(state.state, :open)
 
     # Schedule transition to half-open
@@ -390,7 +388,7 @@ defmodule Raxol.Core.CircuitBreaker do
 
   @spec transition_to_half_open(map()) :: any()
   defp transition_to_half_open(state) do
-    Logger.info("Circuit breaker #{state.name} transitioning to HALF-OPEN")
+    Log.module_info("Circuit breaker #{state.name} transitioning to HALF-OPEN")
     state.on_state_change.(state.state, :half_open)
 
     %{
@@ -404,7 +402,7 @@ defmodule Raxol.Core.CircuitBreaker do
 
   @spec transition_to_closed(map()) :: any()
   defp transition_to_closed(state) do
-    Logger.info("Circuit breaker #{state.name} transitioning to CLOSED")
+    Log.module_info("Circuit breaker #{state.name} transitioning to CLOSED")
     state.on_state_change.(state.state, :closed)
 
     %{

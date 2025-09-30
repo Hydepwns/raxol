@@ -1,4 +1,5 @@
 defmodule Raxol.Core.ErrorHandling do
+  alias Raxol.Core.Runtime.Log
   @moduledoc """
   Functional error handling patterns for Raxol.
 
@@ -29,9 +30,6 @@ defmodule Raxol.Core.ErrorHandling do
       # Safe binary operations
       safe_deserialize(binary_data)
   """
-
-  require Logger
-
   @type result(ok) :: {:ok, ok} | {:error, term()}
   @type result(ok, error) :: {:ok, ok} | {:error, error}
 
@@ -118,7 +116,7 @@ defmodule Raxol.Core.ErrorHandling do
         success
 
       {:error, reason} = error ->
-        Logger.error("#{context}: #{inspect(reason)}")
+        Log.module_error("#{context}: #{inspect(reason)}")
         error
     end
   end

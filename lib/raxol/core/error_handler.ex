@@ -1,4 +1,5 @@
 defmodule Raxol.Core.ErrorHandler do
+  alias Raxol.Core.Runtime.Log
   @moduledoc """
   Centralized error handling module for the Raxol application.
 
@@ -25,9 +26,6 @@ defmodule Raxol.Core.ErrorHandler do
       # Custom error recovery
       handle_error {:error, :not_found}, default: "default_value"
   """
-
-  require Logger
-
   @type error_type ::
           :validation
           | :runtime
@@ -320,11 +318,11 @@ defmodule Raxol.Core.ErrorHandler do
       })
 
     case severity do
-      :debug -> Logger.debug(message, metadata)
-      :info -> Logger.info(message, metadata)
-      :warning -> Logger.warning(message, metadata)
-      :error -> Logger.error(message, metadata)
-      :critical -> Logger.error("[CRITICAL] #{message}", metadata)
+      :debug -> Log.module_debug(message, metadata)
+      :info -> Log.module_info(message, metadata)
+      :warning -> Log.module_warning(message, metadata)
+      :error -> Log.module_error(message, metadata)
+      :critical -> Log.module_error("[CRITICAL] #{message}", metadata)
     end
   end
 
@@ -391,7 +389,7 @@ defmodule Raxol.Core.ErrorHandler do
 
   @spec log_retry(any(), any(), any()) :: any()
   defp log_retry(operation, error, retries_left) do
-    Logger.info(
+    Log.module_info(
       "[#{operation}] Retrying after error: #{inspect(error)}. Retries left: #{retries_left}"
     )
   end

@@ -22,16 +22,15 @@ defmodule Raxol.Core.ServerRegistry do
   """
 
   use Supervisor
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @server_specs [
     # Core System Servers
-    {Raxol.Core.State.UnifiedStateManager, name: :state_manager},
-    {Raxol.Events.UnifiedEventHandler, name: :event_handler},
-    {Raxol.Core.Config.UnifiedConfigManager, name: :config_manager},
+    {Raxol.Core.StateManager, name: :state_manager},
+    {Raxol.Events.EventServer, name: :event_handler},
+    {Raxol.Core.Config.ConfigServer, name: :config_manager},
 
     # UI System Servers
-    {Raxol.UI.Theming.UnifiedThemingManager, name: :theme_manager},
+    {Raxol.UI.Theming.ThemeManager, name: :theme_manager},
     {Raxol.Core.Accessibility.AccessibilityServer, name: :accessibility_server},
     {Raxol.Core.I18n.I18nServer, name: :i18n_server},
     {Raxol.UI.State.Management.StateManagementServer, name: :ui_state_server},
@@ -111,7 +110,7 @@ defmodule Raxol.Core.ServerRegistry do
   """
   @spec graceful_shutdown(timeout()) :: :ok
   def graceful_shutdown(timeout \\ 5000) do
-    Logger.info("[SHUTDOWN] Initiating graceful server shutdown")
+    Log.module_info("Initiating graceful server shutdown")
 
     # Shutdown in reverse order to handle dependencies
     shutdown_order = Enum.reverse(@server_specs)
@@ -121,7 +120,7 @@ defmodule Raxol.Core.ServerRegistry do
       shutdown_server(server_name, timeout)
     end)
 
-    Logger.info("[SHUTDOWN] All servers stopped")
+    Log.module_info("All servers stopped")
   end
 
   ## Private Functions
@@ -150,16 +149,16 @@ defmodule Raxol.Core.ServerRegistry do
   defp shutdown_server(server_name, timeout) do
     case get_server(server_name) do
       nil ->
-        Logger.debug("Server #{server_name} not running")
+        Log.module_debug("Server #{server_name} not running")
 
       pid ->
-        Logger.debug("Stopping server #{server_name}")
+        Log.module_debug("Stopping server #{server_name}")
 
         try do
           GenServer.stop(pid, :normal, timeout)
         catch
           :exit, _ ->
-            Logger.warning("Server #{server_name} did not shut down gracefully")
+            Log.module_warning("Server #{server_name} did not shut down gracefully")
         end
     end
   end

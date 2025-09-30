@@ -10,9 +10,8 @@ defmodule Raxol.Core.ErrorReporter do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
   alias Raxol.Core.{ErrorPatternLearner, ErrorTemplates, ErrorExperience}
+  alias Raxol.Core.Runtime.Log
 
   @type report_level :: :minimal | :standard | :comprehensive
   @type report_format :: :text | :json | :markdown | :html
@@ -117,7 +116,7 @@ defmodule Raxol.Core.ErrorReporter do
       last_report_time: DateTime.utc_now()
     }
 
-    Logger.info("ErrorReporter started with session ID: #{session_id}")
+    Log.module_info("ErrorReporter started with session ID: #{session_id}")
     {:ok, state}
   end
 
@@ -140,7 +139,7 @@ defmodule Raxol.Core.ErrorReporter do
       {:reply, {:ok, report}, new_state}
     rescue
       exception ->
-        Logger.error("Failed to generate error report: #{inspect(exception)}")
+        Log.module_error("Failed to generate error report: #{inspect(exception)}")
         {:reply, {:error, exception}, state}
     end
   end
@@ -158,7 +157,7 @@ defmodule Raxol.Core.ErrorReporter do
       {:reply, {:ok, report}, state}
     rescue
       exception ->
-        Logger.error("Failed to generate session report: #{inspect(exception)}")
+        Log.module_error("Failed to generate session report: #{inspect(exception)}")
         {:reply, {:error, exception}, state}
     end
   end
@@ -206,7 +205,7 @@ defmodule Raxol.Core.ErrorReporter do
     updated_config = Map.merge(state.config, new_config)
     new_state = %{state | config: updated_config}
 
-    Logger.info("ErrorReporter configuration updated")
+    Log.module_info("ErrorReporter configuration updated")
     {:reply, {:ok, updated_config}, new_state}
   end
 
@@ -217,7 +216,7 @@ defmodule Raxol.Core.ErrorReporter do
       {:reply, {:ok, export_result}, state}
     rescue
       exception ->
-        Logger.error("Failed to export reports: #{inspect(exception)}")
+        Log.module_error("Failed to export reports: #{inspect(exception)}")
         {:reply, {:error, exception}, state}
     end
   end
@@ -491,7 +490,7 @@ defmodule Raxol.Core.ErrorReporter do
     filepath = Path.join(state.reports_dir, filename)
 
     File.write!(filepath, report)
-    Logger.info("Error report saved to: #{filepath}")
+    Log.module_info("Error report saved to: #{filepath}")
   end
 
   defp ensure_reports_directory do

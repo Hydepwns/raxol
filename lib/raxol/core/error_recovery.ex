@@ -17,9 +17,7 @@ defmodule Raxol.Core.ErrorRecovery do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @type recovery_strategy ::
           :retry | :fallback | :circuit_breaker | :degrade | :cleanup
   @type circuit_state :: :closed | :open | :half_open
@@ -99,7 +97,7 @@ defmodule Raxol.Core.ErrorRecovery do
         {:ok, result}
 
       {:error, _type, _msg, _context} = error ->
-        Logger.warning(
+        Log.module_warning(
           "Primary operation failed, attempting fallback: #{inspect(error)}"
         )
 
@@ -175,7 +173,7 @@ defmodule Raxol.Core.ErrorRecovery do
         {:ok, value}
 
       {{:ok, value}, {:error, cleanup_error}} ->
-        Logger.warning(
+        Log.module_warning(
           "Cleanup failed after successful operation: #{inspect(cleanup_error)}"
         )
 
@@ -462,18 +460,18 @@ defmodule Raxol.Core.ErrorRecovery do
               :ok
             rescue
               e ->
-                Logger.error(
+                Log.module_error(
                   "Cleanup failed with exception: #{Exception.message(e)}"
                 )
 
                 {:error, :cleanup_failed}
             catch
               :exit, reason ->
-                Logger.error("Cleanup failed: #{inspect(reason)}")
+                Log.module_error("Cleanup failed: #{inspect(reason)}")
                 {:error, :cleanup_failed}
 
               kind, payload ->
-                Logger.error("Cleanup failed: #{kind} - #{inspect(payload)}")
+                Log.module_error("Cleanup failed: #{kind} - #{inspect(payload)}")
                 {:error, :cleanup_failed}
             end
           end)
@@ -486,16 +484,16 @@ defmodule Raxol.Core.ErrorRecovery do
             error
 
           nil ->
-            Logger.error("Cleanup timed out")
+            Log.module_error("Cleanup timed out")
             {:error, :cleanup_timeout}
 
           {:exit, reason} ->
-            Logger.error("Cleanup task failed: #{inspect(reason)}")
+            Log.module_error("Cleanup task failed: #{inspect(reason)}")
             {:error, {:cleanup_failed, reason}}
         end
       catch
         :exit, reason ->
-          Logger.error("Cleanup task crashed: #{inspect(reason)}")
+          Log.module_error("Cleanup task crashed: #{inspect(reason)}")
           {:error, {:cleanup_failed, reason}}
       end
 

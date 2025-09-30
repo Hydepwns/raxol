@@ -17,6 +17,7 @@ defmodule Raxol.Core.ConnectionPool do
       # Define a pool for an HTTP service
       defmodule MyApp.APIPool do
         use Raxol.Core.ConnectionPool,
+  alias Raxol.Core.Runtime.Log
           name: :api_pool,
           pool_size: 10,
           max_overflow: 5
@@ -29,9 +30,6 @@ defmodule Raxol.Core.ConnectionPool do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   @default_opts [
     pool_size: 5,
     max_overflow: 10,
@@ -152,7 +150,7 @@ defmodule Raxol.Core.ConnectionPool do
             fun.(conn)
           rescue
             error ->
-              Logger.error("Error in pool transaction: #{inspect(error)}")
+              Log.module_error("Error in pool transaction: #{inspect(error)}")
               {:error, error}
           after
             do_checkin(new_state, conn)
@@ -219,7 +217,7 @@ defmodule Raxol.Core.ConnectionPool do
             [conn | acc]
 
           {:error, reason} ->
-            Logger.warning(
+            Log.module_warning(
               "Failed to create initial connection: #{inspect(reason)}"
             )
 

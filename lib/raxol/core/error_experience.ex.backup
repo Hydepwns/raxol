@@ -144,11 +144,11 @@ defmodule Raxol.Core.ErrorExperience do
   Interactive error recovery console.
   """
   def start_recovery_console(enhanced_error) do
-    Log.info(
+    IO.puts(
       "\n" <> IO.ANSI.red() <> "Raxol Error Recovery Console" <> IO.ANSI.reset()
     )
 
-    Log.info(String.duplicate("=", 35))
+    IO.puts(String.duplicate("=", 35))
 
     display_error_summary(enhanced_error)
     display_suggestions(enhanced_error.suggestions)
@@ -461,13 +461,13 @@ defmodule Raxol.Core.ErrorExperience do
 
   @spec display_error_summary(any()) :: any()
   defp display_error_summary(enhanced_error) do
-    Log.info("\n" <> IO.ANSI.yellow() <> "Error Summary:" <> IO.ANSI.reset())
-    Log.info("Category: #{enhanced_error.category}")
-    Log.info("Severity: #{enhanced_error.severity}")
-    Log.info("Performance Impact: #{enhanced_error.performance_impact}")
+    IO.puts("\n" <> IO.ANSI.yellow() <> "Error Summary:" <> IO.ANSI.reset())
+    IO.puts("Category: #{enhanced_error.category}")
+    IO.puts("Severity: #{enhanced_error.severity}")
+    IO.puts("Performance Impact: #{enhanced_error.performance_impact}")
 
     if enhanced_error.related_optimizations != [] do
-      Log.info(
+      IO.puts(
         "Related Phase 3 Optimizations: #{Enum.join(enhanced_error.related_optimizations, ", ")}"
       )
     end
@@ -475,46 +475,46 @@ defmodule Raxol.Core.ErrorExperience do
 
   @spec display_suggestions(any()) :: any()
   defp display_suggestions(suggestions) do
-    Log.info("\n" <> IO.ANSI.green() <> "Fix Suggestions:" <> IO.ANSI.reset())
+    IO.puts("\n" <> IO.ANSI.green() <> "Fix Suggestions:" <> IO.ANSI.reset())
 
     suggestions
     |> Enum.with_index(1)
     |> Enum.each(fn {suggestion, index} ->
       confidence_bar = String.duplicate("█", round(suggestion.confidence * 10))
-      Log.info("#{index}. #{suggestion.description}")
+      IO.puts("#{index}. #{suggestion.description}")
 
       if suggestion.action do
-        Log.info(
+        IO.puts(
           "   Action: #{IO.ANSI.cyan()}#{suggestion.action}#{IO.ANSI.reset()}"
         )
       end
 
-      Log.info(
+      IO.puts(
         "   Confidence: #{confidence_bar} (#{trunc(suggestion.confidence * 100)}%)"
       )
 
       if suggestion.phase3_context do
-        Log.info("   Phase 3 Context: #{inspect(suggestion.phase3_context)}")
+        IO.puts("   Phase 3 Context: #{inspect(suggestion.phase3_context)}")
       end
 
-      Log.info("")
+      IO.puts("")
     end)
   end
 
   @spec display_performance_context(any()) :: any()
   defp display_performance_context(enhanced_error) do
-    Log.info(
+    IO.puts(
       "\n" <> IO.ANSI.magenta() <> "Performance Context:" <> IO.ANSI.reset()
     )
 
-    Log.info("Impact Level: #{enhanced_error.performance_impact}")
+    IO.puts("Impact Level: #{enhanced_error.performance_impact}")
 
     if enhanced_error.context[:phase3_targets] do
       targets = enhanced_error.context[:phase3_targets]
-      Log.info("Phase 3 Targets: #{inspect(targets)}")
+      IO.puts("Phase 3 Targets: #{inspect(targets)}")
     end
 
-    Log.info(
+    IO.puts(
       "Available Analysis Tools: #{inspect(enhanced_error.context[:analysis_tools] || [])}"
     )
   end
@@ -525,15 +525,15 @@ defmodule Raxol.Core.ErrorExperience do
           | {:reply, any(), any()}
           | {:noreply, any()}
   defp handle_recovery_interaction(enhanced_error) do
-    Log.info("\n" <> IO.ANSI.blue() <> "Recovery Options:" <> IO.ANSI.reset())
+    IO.puts("\n" <> IO.ANSI.blue() <> "Recovery Options:" <> IO.ANSI.reset())
 
     enhanced_error.recovery_options
     |> Enum.with_index(1)
     |> Enum.each(fn {option, index} ->
-      Log.info("#{index}. #{format_recovery_option(option)}")
+      IO.puts("#{index}. #{format_recovery_option(option)}")
     end)
 
-    Log.info("#{length(enhanced_error.recovery_options) + 1}. Exit")
+    IO.puts("#{length(enhanced_error.recovery_options) + 1}. Exit")
 
     choice = IO.gets("Select option: ") |> String.trim() |> String.to_integer()
 
@@ -564,23 +564,23 @@ defmodule Raxol.Core.ErrorExperience do
   defp execute_recovery_option(option, _enhanced_error) do
     case option do
       :analyze ->
-        Log.info("Starting performance analysis...")
+        IO.puts("Starting performance analysis...")
         System.cmd("mix", ["raxol.analyze", "--target", ".", "--benchmark"])
 
       :profile ->
-        Log.info("Starting interactive profiler...")
+        IO.puts("Starting interactive profiler...")
         System.cmd("mix", ["raxol.profile", "--live"])
 
       :debug ->
-        Log.info("Starting debug console...")
+        IO.puts("Starting debug console...")
         System.cmd("mix", ["raxol.debug"])
 
       :debug_render ->
-        Log.info("Starting render pipeline debugging...")
+        IO.puts("Starting render pipeline debugging...")
         System.cmd("mix", ["raxol.debug", "--trace", "Raxol.UI.Rendering.*"])
 
       _ ->
-        Log.info("Executing #{option}...")
+        IO.puts("Executing #{option}...")
         :ok
     end
   end
@@ -609,14 +609,14 @@ defmodule Raxol.Core.ErrorExperience do
     # Auto-trigger tools for critical performance issues
     case enhanced_error.performance_impact do
       :critical ->
-        Log.info("Critical performance impact detected. Starting analysis...")
+        IO.puts("Critical performance impact detected. Starting analysis...")
 
         Task.start(fn ->
           System.cmd("mix", ["raxol.analyze", "--depth", "comprehensive"])
         end)
 
       :high ->
-        Log.info(
+        IO.puts(
           "High performance impact detected. Consider running: mix raxol.analyze"
         )
 

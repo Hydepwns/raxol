@@ -38,8 +38,7 @@ defmodule Raxol.Core.Behaviours.BaseManager do
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       use GenServer
-      require Logger
-
+  alias Raxol.Core.Runtime.Log
       @behaviour Raxol.Core.Behaviours.BaseManager
 
       def start_link(init_opts \\ []) do
@@ -70,17 +69,17 @@ defmodule Raxol.Core.Behaviours.BaseManager do
 
       # Default implementations for optional callbacks
       def handle_manager_call(request, _from, state) do
-        Logger.warning("Unhandled call: #{inspect(request)}")
+        Log.module_warning("Unhandled call: #{inspect(request)}")
         {:reply, {:error, :not_implemented}, state}
       end
 
       def handle_manager_cast(msg, state) do
-        Logger.warning("Unhandled cast: #{inspect(msg)}")
+        Log.module_warning("Unhandled cast: #{inspect(msg)}")
         {:noreply, state}
       end
 
       def handle_manager_info(msg, state) do
-        Logger.debug("Unhandled info: #{inspect(msg)}")
+        Log.module_debug("Unhandled info: #{inspect(msg)}")
         {:noreply, state}
       end
 

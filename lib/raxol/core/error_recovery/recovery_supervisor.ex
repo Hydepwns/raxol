@@ -195,8 +195,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
       recovery_supervisor: self(),
       context_manager: state.context_manager,
       dependency_graph: state.dependency_graph
-      | args
-    ]
+    ] ++ args
 
     %{
       id: child_id,

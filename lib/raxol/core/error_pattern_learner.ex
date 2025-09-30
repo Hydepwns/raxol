@@ -18,9 +18,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @table_name :raxol_error_patterns
   @learning_storage "/tmp/raxol_pattern_learning"
 
@@ -151,7 +149,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     # Schedule periodic cleanup and persistence
     schedule_cleanup()
 
-    Logger.info("Error pattern learning system started")
+    Log.module_info("Error pattern learning system started")
 
     {:ok, initial_state}
   end
@@ -238,7 +236,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
 
     new_state = %{state | patterns: merged_patterns}
 
-    Logger.info("Imported #{map_size(imported_patterns)} error patterns")
+    Log.module_info("Imported #{map_size(imported_patterns)} error patterns")
 
     {:noreply, new_state}
   end
@@ -843,10 +841,10 @@ defmodule Raxol.Core.ErrorPatternLearner do
     case Jason.encode(data, pretty: true) do
       {:ok, json} ->
         File.write!(patterns_file, json)
-        Logger.debug("Error patterns persisted successfully")
+        Log.module_debug("Error patterns persisted successfully")
 
       {:error, reason} ->
-        Logger.error("Failed to persist error patterns: #{reason}")
+        Log.module_error("Failed to persist error patterns: #{reason}")
     end
   end
 

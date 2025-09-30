@@ -33,8 +33,7 @@ defmodule Raxol.Core.Behaviours.BaseRegistry do
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       use GenServer
-      require Logger
-
+  alias Raxol.Core.Runtime.Log
       @behaviour Raxol.Core.Behaviours.BaseRegistry
 
       defstruct registry: %{}, metadata: %{}
@@ -169,19 +168,19 @@ defmodule Raxol.Core.Behaviours.BaseRegistry do
       end
 
       def handle_call(request, _from, state) do
-        Logger.warning("Unhandled call in #{__MODULE__}: #{inspect(request)}")
+        Log.module_warning("Unhandled call in #{__MODULE__}: #{inspect(request)}")
         {:reply, {:error, :not_implemented}, state}
       end
 
       @impl GenServer
       def handle_cast(msg, state) do
-        Logger.warning("Unhandled cast in #{__MODULE__}: #{inspect(msg)}")
+        Log.module_warning("Unhandled cast in #{__MODULE__}: #{inspect(msg)}")
         {:noreply, state}
       end
 
       @impl GenServer
       def handle_info(msg, state) do
-        Logger.debug("Unhandled info in #{__MODULE__}: #{inspect(msg)}")
+        Log.module_debug("Unhandled info in #{__MODULE__}: #{inspect(msg)}")
         {:noreply, state}
       end
 

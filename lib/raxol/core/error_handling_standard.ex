@@ -1,4 +1,5 @@
 defmodule Raxol.Core.ErrorHandlingStandard do
+  alias Raxol.Core.Runtime.Log
   @moduledoc """
   Standardized error handling patterns for the Raxol application.
 
@@ -32,7 +33,7 @@ defmodule Raxol.Core.ErrorHandlingStandard do
           {:ok, result}
         else
           {:error, _reason} = error ->
-            Logger.error("Failed to process data")
+            Log.module_error("Failed to process data")
             error
         end
       end
@@ -45,9 +46,6 @@ defmodule Raxol.Core.ErrorHandlingStandard do
         end
       end
   """
-
-  require Logger
-
   # Standard error types used across the application.
   @type standard_error ::
           :invalid_argument
@@ -120,11 +118,11 @@ defmodule Raxol.Core.ErrorHandlingStandard do
       {:ok, fun.()}
     rescue
       e ->
-        Logger.error("Exception caught: #{inspect(e)}")
+        Log.module_error("Exception caught: #{inspect(e)}")
         {:error, error_type, %{exception: e, stacktrace: __STACKTRACE__}}
     catch
       kind, reason ->
-        Logger.error("Caught #{kind}: #{inspect(reason)}")
+        Log.module_error("Caught #{kind}: #{inspect(reason)}")
         {:error, error_type, %{kind: kind, reason: reason}}
     end
   end
@@ -174,13 +172,13 @@ defmodule Raxol.Core.ErrorHandlingStandard do
         success
 
       error when attempt >= max_attempts ->
-        Logger.warning("Max retry attempts reached (#{max_attempts})")
+        Log.module_warning("Max retry attempts reached (#{max_attempts})")
         error
 
       _error ->
         actual_delay = calculate_delay(delay, max_delay, jitter)
 
-        Logger.debug(
+        Log.module_debug(
           "Retry attempt #{attempt}/#{max_attempts} after #{actual_delay}ms"
         )
 
@@ -287,12 +285,12 @@ defmodule Raxol.Core.ErrorHandlingStandard do
   """
   @spec tap_error(result(any()), String.t()) :: result(any())
   def tap_error({:error, _} = error, message) do
-    Logger.error("#{message}: #{inspect(error)}")
+    Log.module_error("#{message}: #{inspect(error)}")
     error
   end
 
   def tap_error({:error, _, _} = error, message) do
-    Logger.error("#{message}: #{inspect(error)}")
+    Log.module_error("#{message}: #{inspect(error)}")
     error
   end
 

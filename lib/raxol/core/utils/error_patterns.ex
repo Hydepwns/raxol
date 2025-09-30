@@ -1,11 +1,9 @@
 defmodule Raxol.Core.Utils.ErrorPatterns do
+  alias Raxol.Core.Runtime.Log
   @moduledoc """
   Consolidated error handling patterns used throughout the Raxol codebase.
   Provides consistent error handling, logging, and recovery mechanisms.
   """
-
-  require Logger
-
   @type error_reason :: atom() | String.t() | term()
   @type result(success) :: {:ok, success} | {:error, error_reason()}
 
@@ -24,7 +22,7 @@ defmodule Raxol.Core.Utils.ErrorPatterns do
 
         {:error, reason} = error ->
           if log_errors do
-            Logger.warning("#{context} failed: #{inspect(reason)}")
+            Log.module_warning("#{context} failed: #{inspect(reason)}")
           end
 
           error
@@ -35,7 +33,7 @@ defmodule Raxol.Core.Utils.ErrorPatterns do
     rescue
       exception ->
         if log_errors do
-          Logger.error("#{context} raised exception: #{inspect(exception)}")
+          Log.module_error("#{context} raised exception: #{inspect(exception)}")
         end
 
         {:error, {:exception, exception}}

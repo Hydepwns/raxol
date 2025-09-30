@@ -19,8 +19,7 @@ defmodule Raxol.Core.Behaviours.BaseServer do
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       use GenServer
-      require Logger
-
+  alias Raxol.Core.Runtime.Log
       @behaviour Raxol.Core.Behaviours.BaseServer
 
       def start_link(init_opts \\ []) do
@@ -47,7 +46,7 @@ defmodule Raxol.Core.Behaviours.BaseServer do
 
       @impl GenServer
       def terminate(reason, state) do
-        Logger.info("#{__MODULE__} terminating: #{inspect(reason)}")
+        Log.module_info("#{__MODULE__} terminating: #{inspect(reason)}")
 
         if function_exported?(__MODULE__, :handle_shutdown, 1) do
           handle_shutdown(state)
@@ -81,17 +80,17 @@ defmodule Raxol.Core.Behaviours.BaseServer do
       end
 
       def handle_call(request, _from, state) do
-        Logger.warning("Unhandled call in #{__MODULE__}: #{inspect(request)}")
+        Log.module_warning("Unhandled call in #{__MODULE__}: #{inspect(request)}")
         {:reply, {:error, :not_implemented}, state}
       end
 
       def handle_cast(msg, state) do
-        Logger.warning("Unhandled cast in #{__MODULE__}: #{inspect(msg)}")
+        Log.module_warning("Unhandled cast in #{__MODULE__}: #{inspect(msg)}")
         {:noreply, state}
       end
 
       def handle_info(msg, state) do
-        Logger.debug("Unhandled info in #{__MODULE__}: #{inspect(msg)}")
+        Log.module_debug("Unhandled info in #{__MODULE__}: #{inspect(msg)}")
         {:noreply, state}
       end
 
