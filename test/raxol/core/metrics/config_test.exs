@@ -7,17 +7,10 @@ defmodule Raxol.Core.Metrics.ConfigTest do
     alias Raxol.Core.Metrics.Config
 
   setup do
-    # Start the Config GenServer
-    {:ok, pid} = Config.start_link()
+    # Start the Config GenServer with proper name registration
+    {:ok, pid} = start_supervised({Config, [name: Config]})
 
-    on_exit(fn ->
-      # Safely stop the process if it's still alive
-      if Process.alive?(pid) do
-        GenServer.stop(pid, :normal, 1000)
-      end
-    end)
-
-    :ok
+    {:ok, config: pid}
   end
 
   describe "configuration initialization" do
