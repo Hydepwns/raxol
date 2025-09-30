@@ -31,10 +31,11 @@ This directory contains GitHub Actions workflows for CI, testing, and releases.
 
 **Actions removed due to duplication:**
 - **`setup-beam/`**: *(Removed)* - Mock setup action, replaced by standardized `setup-elixir/`
+- **`cache/`**: *(Removed)* - Mock cache action, workflows use standard GitHub cache action
 
 **Workflow role clarifications:**
 - **`nightly.yml`**: Now focuses on comprehensive test matrix and extended scenarios
-- **`performance-tracking.yml`**: Handles historical performance tracking and dashboards (runs at 4 AM UTC)
+- **`performance-tracking.yml`**: Handles historical performance tracking and dashboards (runs every 3 days at 4 AM UTC for efficiency)
 - **`regression-testing.yml`**: Handles performance/memory regression detection for PRs and baseline updates
 
 ## Local Testing with `act`

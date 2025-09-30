@@ -2,8 +2,8 @@ name: Performance Tracking
 
 on:
   schedule:
-    # Run daily at 4 AM UTC (offset from other workflows)
-    - cron: '0 4 * * *'
+    # Run every 3 days at 4 AM UTC to reduce resource usage
+    - cron: '0 4 */3 * *'
   workflow_dispatch:
 
 permissions:

@@ -48,27 +48,6 @@ updates:
       prefix: "ci"
       include: "scope"
     
-  # NPM dependencies (if VSCode extension exists)
-  - package-ecosystem: "npm"
-    directory: "/extensions/vscode"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "04:00"
-    open-pull-requests-limit: 3
-    reviewers:
-      - "droo"
-    labels:
-      - "dependencies"
-      - "javascript"
-    ignore:
-      # Ignore major version updates for critical packages
-      - dependency-name: "vscode"
-        update-types: ["version-update:semver-major"]
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-    
   # Docker dependencies
   - package-ecosystem: "docker"
     directory: "/docker"

@@ -2,7 +2,7 @@ name: PR Check Results
 
 on:
   workflow_run:
-    workflows: ["Unified CI Pipeline", "Raxol Pre-commit Checks"]  # Support both during transition
+    workflows: ["Unified CI Pipeline", "Unified Regression Testing"]
     types: [completed]
 
 permissions:
@@ -66,26 +66,25 @@ jobs:
               status = 'Checks completed with warnings';
             }
             
-            const body = `## ${emoji} Raxol Pre-commit Checks
-            
+            const body = `## ${emoji} Raxol CI Results
+
             **Status**: ${status}
             **Commit**: \`${sha.substring(0, 7)}\`
+            **Workflow**: ${{ github.event.workflow_run.name }}
             **Details**: [View workflow run](${runUrl})
-            
-            ### Check Results
-            
-            | Check | Status |
-            |-------|--------|
-            | Format | ✅ |
-            | Compile | ✅ |
-            | Tests | ✅ |
-            | Security | ✅ |
-            | Credo | ⚠️ |
-            | Dialyzer | ⚠️ |
-            
+
+            ### Results Summary
+
+            The CI pipeline has completed for this PR. ${conclusion === 'success' ?
+              'All checks passed successfully!' :
+              'Some checks need attention. Please review the workflow details.'}
+
             ---
-            
-            💡 **Tip**: Run \`mix raxol.pre_commit\` locally to check your changes before pushing.`;
+
+            💡 **Tips**:
+            - Run \`mix raxol.check\` locally to verify changes before pushing
+            - Use \`mix raxol.test --failed\` to rerun only failed tests
+            - Check \`mix format --check-formatted\` for formatting issues`;
             
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
