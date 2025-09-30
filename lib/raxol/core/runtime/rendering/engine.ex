@@ -11,7 +11,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   """
 
   require Raxol.Core.Runtime.Log
-  use Raxol.Core.Behaviours.BaseManager
+  use GenServer
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.UI.Layout.Engine, as: LayoutEngine
@@ -35,17 +35,32 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # --- Public API ---
 
   @doc "Starts the Rendering Engine process."
+  # Support both map and list initialization
+  def start_link(opts \\ [])
+
   def start_link(initial_state_map) when is_map(initial_state_map) do
-    Raxol.Core.Behaviours.BaseManager.start_link(__MODULE__, initial_state_map,
-      name: __MODULE__
-    )
+    # Convert map to keyword list
+    opts = Map.to_list(initial_state_map) ++ [name: __MODULE__]
+    start_link(opts)
   end
+
+  def start_link(opts) when is_list(opts) do
+    {server_opts, manager_opts} = normalize_and_split_opts(opts)
+    GenServer.start_link(__MODULE__, manager_opts, server_opts)
+  end
+
+  defp normalize_and_split_opts(opts) when is_list(opts) do
+    {Keyword.take(opts, [:name, :timeout, :debug, :spawn_opt]),
+     Keyword.drop(opts, [:name, :timeout, :debug, :spawn_opt])}
+  end
+
+  defp normalize_and_split_opts(_), do: {[], []}
 
   # --- BaseManager Callbacks ---
 
   # Default BaseManager init implementation
   @impl true
-  def init_manager(initial_state_map) do
+  def init(initial_state_map) do
     Raxol.Core.Runtime.Log.info("Rendering Engine initializing...")
 
     Raxol.Core.Runtime.Log.debug(
@@ -65,7 +80,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   @impl true
-  def handle_manager_cast(:render_frame, state) do
+  def handle_cast(:render_frame, state) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine received :render_frame cast. State: #{inspect(state)}"
     )
@@ -100,7 +115,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   @impl true
-  def handle_manager_cast({:update_size, %{width: w, height: h}}, state) do
+  def handle_cast({:update_size, %{width: w, height: h}}, state) do
     Raxol.Core.Runtime.Log.debug(
       "RenderingEngine received size update: #{w}x#{h}"
     )
@@ -112,12 +127,12 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   @impl true
-  def handle_manager_call({:update_props, _new_props}, _from, state) do
+  def handle_call({:update_props, _new_props}, _from, state) do
     {:reply, :ok, state}
   end
 
   @impl true
-  def handle_manager_call({:get_state}, _from, state) do
+  def handle_call({:get_state}, _from, state) do
     {:reply, state, state}
   end
 

@@ -49,7 +49,6 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   # BaseManager provides start_link/1 and start_link/2 automatically
 
-  @doc """
   Safely processes input with validation and error recovery.
   """
   def process_input(pid \\ __MODULE__, input) do
@@ -123,32 +122,30 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   # Server callbacks
 
   @impl true
-  @impl true
   def init_manager(opts) do
-    with {:ok, initial_state} <- create_initial_emulator_state(opts),
-         {:ok, config} <- build_config(opts) do
-      state = %__MODULE__{
-        emulator_state: initial_state,
-        error_stats: init_error_stats(),
-        recovery_state: :healthy,
-        input_buffer: <<>>,
-        last_checkpoint: initial_state,
-        config: config
-      }
+    case {create_initial_emulator_state(opts), build_config(opts)} do
+      {{:ok, initial_state}, {:ok, config}} ->
+        state = %__MODULE__{
+          emulator_state: initial_state,
+          error_stats: init_error_stats(),
+          recovery_state: :healthy,
+          input_buffer: <<>>,
+          last_checkpoint: initial_state,
+          config: config
+        }
 
-      # Schedule periodic health checks
-      schedule_health_check()
+        # Schedule periodic health checks
+        schedule_health_check()
 
-      {:ok, state}
-    else
-      {:error, reason} ->
-        Logger.error("Failed to initialize safe emulator: #{inspect(reason)}")
+        {:ok, state}
+
+      {_, _} ->
+        Logger.error("Failed to initialize safe emulator")
         # Start with minimal fallback state
         {:ok, build_fallback_state()}
     end
   end
 
-  @impl true
   @impl true
   def handle_manager_call({:process_input, input}, _from, state) do
     Telemetry.span(
@@ -172,7 +169,6 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  @impl true
   def handle_manager_call({:handle_sequence, sequence}, _from, state) do
     Telemetry.span([:raxol, :emulator, :sequence], %{sequence: sequence}, fn ->
       with {:ok, valid_sequence} <- perform_sequence_validation(sequence),
@@ -190,7 +186,6 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
     end)
   end
 
-  @impl true
   @impl true
   def handle_manager_call({:resize, width, height}, _from, state) do
     Telemetry.span(
@@ -213,14 +208,12 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  @impl true
   def handle_manager_call(:get_state, _from, state) do
     # Return a safe copy of the state
     safe_state = safe_state_copy(state.emulator_state)
     {:reply, {:ok, safe_state}, state}
   end
 
-  @impl true
   @impl true
   def handle_manager_call(:get_health, _from, state) do
     health = %{
@@ -234,7 +227,6 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  @impl true
   def handle_manager_call(:checkpoint, _from, state) do
     checkpoint = create_checkpoint(state.emulator_state)
     new_state = %{state | last_checkpoint: checkpoint}
@@ -246,7 +238,6 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
     {:reply, {:ok, checkpoint}, new_state}
   end
 
-  @impl true
   @impl true
   def handle_manager_call({:restore, checkpoint}, _from, state) do
     with {:ok, restored_state} <- perform_restore(checkpoint) do
@@ -269,7 +260,6 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  @impl true
   def handle_manager_call(:recover, _from, state) do
     case state.recovery_state do
       %{attempts: attempts} when attempts >= 3 ->
@@ -289,15 +279,12 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  @impl true
   def handle_manager_info(:health_check, state) do
     new_state = perform_health_check(state)
     schedule_health_check()
     {:noreply, new_state}
   end
 
-  @impl true
-  @impl true
   def handle_manager_info({:retry_processing, input}, state) do
     with {:ok, _result} <- process_with_retry(input, state) do
       Logger.info("Retry successful for buffered input")
@@ -311,8 +298,6 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
     end
   end
 
-  @impl true
-  @impl true
   def handle_manager_info(msg, state) do
     Logger.debug("Unhandled message: #{inspect(msg)}")
     {:noreply, state}

@@ -120,7 +120,6 @@ defmodule Raxol.Plugins.PluginSystemV2 do
   # GenServer Implementation
 
   @impl GenServer
-  @impl true
   def init_manager(opts) do
     state = %__MODULE__{
       plugins: %{},
@@ -137,7 +136,6 @@ defmodule Raxol.Plugins.PluginSystemV2 do
   end
 
   @impl GenServer
-  @impl true
   def handle_manager_call({:install_plugin, source, opts}, _from, state) do
     case install_plugin_impl(source, opts, state) do
       {:ok, updated_state} ->

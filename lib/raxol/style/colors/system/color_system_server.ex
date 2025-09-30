@@ -24,9 +24,7 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
 
   # Client API
 
-  @doc """
-  Starts the Color System server.
-  """
+  # start_link is provided by BaseManager
 
   #  def start_link(opts \\ []) do
   #    GenServer.start_link(__MODULE__, opts, name: __MODULE__)

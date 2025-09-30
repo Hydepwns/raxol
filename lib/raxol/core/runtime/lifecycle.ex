@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Lifecycle do
   @moduledoc "Manages the application lifecycle, including startup, shutdown, and terminal interaction."
 
-  use Raxol.Core.Behaviours.BaseManager
+  use GenServer
 
   require Raxol.Core.Runtime.Log
   require Logger
@@ -47,15 +47,11 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     * `:plugin_manager_opts` - Options to pass to the PluginManager's start_link function.
     * Other options are passed to the application module's `init/1` function.
   """
-  def start_link(app_module, options)
+  def start_link(app_module, options \\ [])
       when is_atom(app_module) and is_list(options) do
     name_option = Keyword.get(options, :name, derive_process_name(app_module))
-    opts = [app_module: app_module] ++ options ++ [name: name_option]
-    Raxol.Core.Behaviours.BaseManager.start_link(__MODULE__, opts)
-  end
-
-  def start_link(app_module) when is_atom(app_module) do
-    start_link(app_module, [])
+    opts = [app_module: app_module] ++ options
+    GenServer.start_link(__MODULE__, opts, name: name_option)
   end
 
   @spec derive_process_name(module()) :: any()
@@ -73,8 +69,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   # GenServer callbacks
 
-  @impl true
-  def init_manager(options) when is_list(options) do
+  @impl GenServer
+  def init(options) when is_list(options) do
     app_module = Keyword.fetch!(options, :app_module)
 
     Raxol.Core.Runtime.Log.info_with_context(
@@ -297,7 +293,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   @impl true
-  def handle_manager_info({:runtime_initialized, dispatcher_pid}, state) do
+  def handle_info({:runtime_initialized, dispatcher_pid}, state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "Runtime Lifecycle for #{inspect(state.app_module)} received :runtime_initialized from Dispatcher #{inspect(dispatcher_pid)}."
     )
@@ -308,7 +304,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   @impl true
-  def handle_manager_info({:plugin_manager_ready, plugin_manager_pid}, state) do
+  def handle_info({:plugin_manager_ready, plugin_manager_pid}, state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] Plugin Manager ready notification received from #{inspect(plugin_manager_pid)}."
     )
@@ -319,7 +315,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   @impl true
-  def handle_manager_info(:render_needed, state) do
+  def handle_info(:render_needed, state) do
     Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] Received :render_needed. Passing through or logging."
     )
@@ -328,7 +324,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   @impl true
-  def handle_manager_info(unhandled_message, state) do
+  def handle_info(unhandled_message, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[#{__MODULE__}] Unhandled info message: #{inspect(unhandled_message)}",
       %{}
@@ -441,7 +437,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   @impl true
-  def handle_manager_cast(:shutdown, state) do
+  def handle_cast(:shutdown, state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] Received :shutdown cast for #{inspect(state.app_name)}. Stopping dependent processes..."
     )
@@ -474,7 +470,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   @impl true
-  def handle_manager_cast(unhandled_message, state) do
+  def handle_cast(unhandled_message, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[#{__MODULE__}] Unhandled cast message: #{inspect(unhandled_message)}",
       %{}
@@ -484,12 +480,12 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   @impl true
-  def handle_manager_call(:get_full_state, _from, state) do
+  def handle_call(:get_full_state, _from, state) do
     {:reply, state, state}
   end
 
   @impl true
-  def handle_manager_call(unhandled_message, _from, state) do
+  def handle_call(unhandled_message, _from, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[#{__MODULE__}] Unhandled call message: #{inspect(unhandled_message)}",
       %{}

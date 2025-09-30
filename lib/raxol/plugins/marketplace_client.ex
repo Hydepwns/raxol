@@ -64,9 +64,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   # Marketplace API
 
-  @doc """
-  Starts the marketplace client with configuration.
-  """
+  # start_link is provided by BaseManager
 
   @doc """
   Searches for plugins in the marketplace.

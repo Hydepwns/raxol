@@ -79,10 +79,6 @@ defmodule Raxol.Performance.DevHints do
 
   # Client API
 
-  @doc """
-  Starts the performance hints system.
-  """
-
   # start_link is provided by BaseManager
 
   @doc """

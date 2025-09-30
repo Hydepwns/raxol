@@ -405,13 +405,13 @@ defmodule Raxol.Storage.EventStorage.Disk do
     :file_handles
   ]
 
-  @default_config %{
-    data_directory: "priv/data/events",
-    # 100MB
-    max_file_size: 100_000_000,
-    compression_enabled: true,
-    fsync_every_write: false
-  }
+  # @default_config %{
+  #   data_directory: "priv/data/events",
+  #   # 100MB
+  #   max_file_size: 100_000_000,
+  #   compression_enabled: true,
+  #   fsync_every_write: false
+  # }
 
   ## Client API
 

@@ -105,27 +105,8 @@ defmodule Raxol.Core.Session.SessionManager do
 
   ## Public API
 
-  @doc """
-  Starts the unified session manager.
-  """
-  # BaseManager provides start_link/1 and start_link/2 automatically
-  # We need to override for custom configuration handling
-  def start_link(opts) when is_list(opts) do
-    config =
-      Keyword.get(opts, :config, %{}) |> then(&Map.merge(@default_config, &1))
-
-    Raxol.Core.Behaviours.BaseManager.start_link(__MODULE__, config,
-      name: __MODULE__
-    )
-  end
-
-  def start_link(config) do
-    merged_config = Map.merge(@default_config, config)
-
-    Raxol.Core.Behaviours.BaseManager.start_link(__MODULE__, merged_config,
-      name: __MODULE__
-    )
-  end
+  # BaseManager provides start_link/1 automatically
+  # We don't need to override it
 
   ## Security Session API
 
@@ -320,7 +301,21 @@ defmodule Raxol.Core.Session.SessionManager do
   ## GenServer Implementation
 
   @impl true
-  def init_manager(config) do
+  def init_manager(opts) do
+    # Merge with default config
+    config =
+      case opts do
+        opts when is_list(opts) ->
+          Keyword.get(opts, :config, %{})
+          |> then(&Map.merge(@default_config, &1))
+
+        config when is_map(config) ->
+          Map.merge(@default_config, config)
+
+        _ ->
+          @default_config
+      end
+
     # Initialize session storage structures
     state = %__MODULE__{
       security_sessions: init_security_storage(config),

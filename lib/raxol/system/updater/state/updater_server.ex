@@ -20,9 +20,7 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
 
   # Client API
 
-  @doc """
-  Starts the System Updater State server.
-  """
+  # start_link is provided by BaseManager
 
   #  def start_link(opts \\ []) do
   #    GenServer.start_link(__MODULE__, opts, name: __MODULE__)

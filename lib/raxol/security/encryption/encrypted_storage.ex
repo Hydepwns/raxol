@@ -40,16 +40,16 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
           optional(:async) => boolean()
         }
 
-  @default_config %{
-    backend: :file,
-    base_path: "priv/data/encrypted",
-    # Compress if larger than 1KB
-    compress_threshold: 1024,
-    # 1MB chunks for streaming
-    chunk_size: 1_048_576,
-    verify_integrity: true,
-    cache_encrypted: false
-  }
+  # @default_config %{
+  #   backend: :file,
+  #   base_path: "priv/data/encrypted",
+  #   # Compress if larger than 1KB
+  #   compress_threshold: 1024,
+  #   # 1MB chunks for streaming
+  #   chunk_size: 1_048_576,
+  #   verify_integrity: true,
+  #   cache_encrypted: false
+  # }
 
   ## Client API
 

@@ -14,9 +14,7 @@ defmodule Raxol.PreCommit.Progress do
 
   # Client API
 
-  @doc """
-  Start the progress indicator server.
-  """
+  # start_link is provided by BaseManager
 
   #   def start_link(opts \\ []) do
   #     GenServer.start_link(__MODULE__, opts, name: __MODULE__)

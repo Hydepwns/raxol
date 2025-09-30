@@ -48,9 +48,7 @@ defmodule Raxol.Plugins.HotReloadManager do
 
   # Hot-Reload API
 
-  @doc """
-  Starts the hot-reload manager with file watching enabled.
-  """
+  # start_link is provided by BaseManager
 
   @doc """
   Enables hot-reload for a plugin with specified options.

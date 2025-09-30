@@ -48,10 +48,6 @@ defmodule Raxol.Security.Encryption.Config do
 
   ## Client API
 
-  @doc """
-  Starts the encryption configuration service.
-  """
-
   # BaseManager provides start_link/1 automatically
 
   @doc """

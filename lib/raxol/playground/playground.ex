@@ -32,9 +32,7 @@ defmodule Raxol.Playground do
 
   # Client API
 
-  @doc """
-  Starts the component playground.
-  """
+  # start_link is provided by BaseManager
 
   @doc """
   Launches the playground in the terminal.

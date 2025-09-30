@@ -135,7 +135,6 @@ defmodule Raxol.Events.UnifiedEventHandler do
   end
 
   @impl GenServer
-  @impl true
   def handle_manager_call({:handle_event, event_type, event_data}, _from, state) do
     start_time = System.monotonic_time(:microsecond)
 
