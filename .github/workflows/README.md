@@ -5,24 +5,29 @@ This directory contains GitHub Actions workflows for CI, testing, and releases.
 ## Workflow Files
 
 ### Core Workflows
-- **`ci-unified.yml`**: Main unified CI pipeline with parallelized testing, smart caching, and conditional execution
+- **`ci-unified.yml`**: Main CI pipeline with parallelized testing, smart caching, and conditional execution
 - **`security.yml`**: Comprehensive security scanning (dependencies, secrets, SAST)
 - **`nightly.yml`**: Nightly regression testing with full test matrix
+- **`regression-testing.yml`**: Unified performance and memory regression testing
 - **`release.yml`**: Automated release creation and publishing
 
 ### Supporting Workflows
-- **`cross_platform_tests.yml`**: Cross-platform compatibility testing
 - **`performance-tracking.yml`**: Performance benchmarking and tracking
 - **`pr-comment.yml`**: Automated PR feedback and status updates
-- **`raxol-checks.yml`**: Pre-commit checks (being deprecated in favor of ci-unified.yml)
+- **`deploy-web.yml`**: Web application deployment
 
 ### Legacy/Testing Workflows
-- **`ci.yml`**: Original CI workflow (being replaced by ci-unified.yml)
+- **`ci.yml`**: Original CI workflow (deprecated in favor of main CI pipeline)
 - **`ci-local.yml`**: Simplified CI for local `act` testing
 - **`ci-local-deps.yml`**: Tests dependencies locally
 - **`test-snyk.yml`**: Security testing with Snyk
 - **`dummy-test.yml`**: Quick workflow for verifying `act` setup
 - **`macos-ci-fix.yml`**: macOS-specific CI fixes
+
+### Removed Workflows
+The following workflows have been consolidated into `regression-testing.yml`:
+- **`performance-regression.yml`**: *(Removed)* - Performance regression testing
+- **`memory-regression.yml`**: *(Removed)* - Memory regression testing
 
 ## Local Testing with `act`
 
@@ -70,11 +75,18 @@ The `.github/actions/` directory contains reusable composite actions:
 
 ## CI/CD Architecture
 
-### Unified CI Pipeline (`ci-unified.yml`)
+### Main CI Pipeline (`ci-unified.yml`)
 - **Parallel test execution**: Tests split into unit, integration, and property tests
-- **Smart caching**: Unified cache strategy with dependency detection
+- **Smart caching**: Cache strategy with dependency detection
 - **Conditional execution**: Heavy checks only run when needed
 - **Fast feedback**: Format and compile checks run first
+
+### Regression Testing (`regression-testing.yml`)
+- **Combined testing**: Performance and memory regression testing in a single workflow
+- **Flexible execution**: Can run performance, memory, or both test types
+- **Comprehensive analysis**: Automated regression detection and reporting
+- **Baseline comparison**: Compares current changes against master branch
+- **Performance gates**: Enforces memory and performance thresholds
 
 ### Security Scanning (`security.yml`)
 - **No Docker dependencies**: Uses CLI tools directly
