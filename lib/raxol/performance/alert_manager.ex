@@ -22,7 +22,6 @@ defmodule Raxol.Performance.AlertManager do
   @alert_cooldown_ms 300_000
   # 30 minutes
   @escalation_timeout_ms 1_800_000
-  @max_alerts_per_hour 10
 
   defstruct [
     :alert_channels,
@@ -315,7 +314,7 @@ defmodule Raxol.Performance.AlertManager do
     {:ok, alert_id, new_state}
   end
 
-  defp create_new_alert(alert_id, alert_data, opts, current_time, state) do
+  defp create_new_alert(alert_id, alert_data, _opts, current_time, state) do
     severity = determine_alert_severity(alert_data)
 
     alert = %{
@@ -570,7 +569,7 @@ defmodule Raxol.Performance.AlertManager do
     end)
   end
 
-  defp send_resolution_to_channel(channel_type, config, alert) do
+  defp send_resolution_to_channel(channel_type, _config, alert) do
     Log.module_debug("Sending resolution notification via #{channel_type}", %{
       alert_id: alert.id,
       resolved_by: alert.resolved_by

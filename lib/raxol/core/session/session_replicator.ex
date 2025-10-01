@@ -113,7 +113,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
   # BaseManager Callbacks
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     state = %__MODULE__{
       replication_factor:
         Keyword.get(opts, :replication_factor, @default_replication_factor),
@@ -127,7 +127,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
     }
 
     # Start periodic sync timer
-    sync_timer = Process.send_after(self(), :periodic_sync, state.sync_interval)
+    _sync_timer = Process.send_after(self(), :periodic_sync, state.sync_interval)
 
     # Start anti-entropy timer
     anti_entropy_timer =
@@ -248,7 +248,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
 
   @impl true
   def handle_info({:nodedown, node}, state) do
-    Log.module_warn("Node #{node} left cluster, marking as failed")
+    Log.module_warning("Node #{node} left cluster, marking as failed")
     updated_health = Map.put(state.replica_health, node, :failed)
     {:noreply, %{state | replica_health: updated_health}}
   end
@@ -540,7 +540,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
     %{state | vector_clocks: updated_clocks}
   end
 
-  defp get_replica_nodes_for_session(session_id, state) do
+  defp get_replica_nodes_for_session(session_id, _state) do
     # Get replica nodes from the distributed registry
     case GenServer.call(
            Raxol.Core.Session.DistributedSessionRegistry,
@@ -561,7 +561,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
         update_replica_health(node, :healthy, state)
 
       {:error, reason} ->
-        Log.module_warn(
+        Log.module_warning(
           "Replication to #{node} failed for session #{session_id}: #{inspect(reason)}"
         )
 

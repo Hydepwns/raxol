@@ -202,7 +202,6 @@ defmodule Raxol.Protocols do
   Convenience module for importing all unified protocols.
   """
 
-  alias Raxol.Protocols.CoreProtocols
 
   defdelegate render(component, opts), to: UnifiedProtocols.Component
 

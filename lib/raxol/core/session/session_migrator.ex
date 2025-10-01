@@ -52,7 +52,6 @@ defmodule Raxol.Core.Session.SessionMigrator do
 
   alias Raxol.Core.Session.{
     DistributedSessionRegistry,
-    SessionReplicator,
     DistributedSessionStorage
   }
 
@@ -88,8 +87,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
 
   @default_migration_batch_size 10
   @default_max_concurrent_migrations 3
-  @default_migration_timeout 30_000
-
+  
   # Public API
 
   @spec migrate_session(pid(), binary(), node(), migration_strategy()) ::
@@ -155,7 +153,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
   # BaseManager Callbacks
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     state = %__MODULE__{
       failover_mode: Keyword.get(opts, :failover_mode, :graceful),
       migration_batch_size:
@@ -220,7 +218,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
       {:ok, migration_infos, updated_state} ->
         {:reply, {:ok, migration_infos}, updated_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -231,7 +229,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
       {:ok, migrated_count, updated_state} ->
         {:reply, {:ok, migrated_count}, updated_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -242,7 +240,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
       {:ok, failover_result, updated_state} ->
         {:reply, {:ok, failover_result}, updated_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -267,7 +265,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -278,7 +276,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
       {:ok, rebalanced_count, updated_state} ->
         {:reply, {:ok, rebalanced_count}, updated_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -309,7 +307,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
 
   @impl true
   def handle_info({:nodedown, node}, state) do
-    Log.module_warn("Node #{node} left cluster, initiating failover")
+    Log.module_warning("Node #{node} left cluster, initiating failover")
 
     case state.failover_mode do
       :immediate ->
@@ -845,11 +843,11 @@ defmodule Raxol.Core.Session.SessionMigrator do
   end
 
   defp perform_failover(failed_node, state) do
-    Log.module_warn("Performing failover for failed node: #{failed_node}")
+    Log.module_warning("Performing failover for failed node: #{failed_node}")
 
     # Get sessions that were on the failed node from replicas
     case find_sessions_on_failed_node(failed_node) do
-      {:ok, session_ids} when length(session_ids) > 0 ->
+      {:ok, [_ | _] = session_ids} ->
         # Find healthy nodes for failover
         healthy_nodes = get_healthy_nodes(state)
 

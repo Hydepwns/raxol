@@ -140,7 +140,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
   # BaseManager Callbacks
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     backend = Keyword.get(opts, :backend, :ets)
     storage_config = Keyword.get(opts, :storage_config, %{})
 

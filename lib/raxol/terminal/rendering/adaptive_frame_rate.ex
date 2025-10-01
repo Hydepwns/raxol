@@ -97,16 +97,6 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
         }
 
   # Default configuration
-  @default_config %{
-    target_fps: 60,
-    min_fps: 1,
-    max_fps: 120,
-    strategy: :adaptive,
-    power_mode: :balanced,
-    enable_vsync: true,
-    thermal_throttling: true,
-    network_adaptive: false
-  }
 
   # Frame rate thresholds for different scenarios
   @idle_fps 5

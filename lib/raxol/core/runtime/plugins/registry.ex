@@ -18,7 +18,6 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Core.GlobalRegistry
 
   # Public API
 

@@ -33,7 +33,6 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
-  alias Raxol.Core.ErrorPatternLearner
 
   @recovery_strategies [
     :immediate_restart,
@@ -142,7 +141,7 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
   # GenServer implementation
 
   @impl true
-  def init_manager(opts) do
+  def init_manager(_opts) do
     # Create ETS table for fast pattern lookups
     :ets.new(@table_name, [
       :named_table,

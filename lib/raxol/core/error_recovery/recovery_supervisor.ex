@@ -305,7 +305,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     round(base_duration * backoff_factor)
   end
 
-  defp performance_impact_detected?(restart_info, state) do
+  defp performance_impact_detected?(_restart_info, _state) do
     case AutomatedMonitor.get_status() do
       %{current_metrics: metrics} when not is_nil(metrics) ->
         # Check if current performance is below threshold
@@ -458,7 +458,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     Log.module_warning("Circuit breaking #{child_id} for #{duration}ms")
 
     # Store circuit break info
-    circuit_break_until =
+    _circuit_break_until =
       DateTime.add(DateTime.utc_now(), duration, :millisecond)
 
     # Schedule recovery attempt
@@ -497,7 +497,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     exit(reason)
   end
 
-  defp check_system_health(state) do
+  defp check_system_health(_state) do
     case AutomatedMonitor.get_status() do
       %{current_metrics: metrics} when not is_nil(metrics) ->
         cond do
