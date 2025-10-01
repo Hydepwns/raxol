@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Integration.TabIntegrationTest do
   use ExUnit.Case
   alias Raxol.Terminal.Tab.UnifiedTab
-  alias Raxol.Terminal.Window.UnifiedWindow
+  alias Raxol.Terminal.Window.Manager
   alias Raxol.Terminal.Integration.State
 
   setup do
@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
         :ok
     end
 
-    {:ok, _pid} = UnifiedWindow.start_link()
+    {:ok, _pid} = Manager.start_link()
     {:ok, _pid} = UnifiedTab.start_link()
     :ok
   end

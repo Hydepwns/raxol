@@ -3,7 +3,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
 
   alias Raxol.UI.Components.Input.TextInput
   alias Raxol.Core.Events.Event
-  # import Raxol.Test.UnifiedTestHelper # Removed - default_context not used
+  # import Raxol.Test.TestUtils # Removed - default_context not used
 
   # Helper to initialize component state with optional props
   # Mimics how the component manager might hold state

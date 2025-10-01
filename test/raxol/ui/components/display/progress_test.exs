@@ -2,7 +2,7 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
   use ExUnit.Case, async: true
 
   alias Raxol.UI.Components.Display.Progress
-  import Raxol.Test.UnifiedTestHelper
+  import Raxol.Test.TestUtils
 
   defp default_context,
     do: %{

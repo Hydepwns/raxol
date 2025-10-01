@@ -3,7 +3,7 @@ defmodule Raxol.Style.Colors.SystemTest do
   # Changed to false to prevent concurrent access to shared state
   use ExUnit.Case, async: false
   import Mox
-  import Raxol.Test.UnifiedTestHelper
+  import Raxol.Test.TestUtils
 
   alias Raxol.Style.Colors.{Color, System, Theme}
   alias Raxol.Core.Events.EventManager, as: Manager, as: EventManager

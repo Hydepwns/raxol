@@ -3,7 +3,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
 
   alias Raxol.UI.Rendering.Pipeline
 
-  import Raxol.Test.UnifiedTestHelper
+  import Raxol.Test.TestUtils
 
   setup do
     setup_rendering_test()

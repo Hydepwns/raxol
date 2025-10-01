@@ -1,6 +1,6 @@
 defmodule Raxol.UI.Components.Base.ComponentTest do
   use ExUnit.Case, async: true
-  import Raxol.Test.UnifiedTestHelper, only: [create_test_component: 2]
+  import Raxol.Test.TestUtils, only: [create_test_component: 2]
 
   import Raxol.ComponentTestHelpers,
     only: [

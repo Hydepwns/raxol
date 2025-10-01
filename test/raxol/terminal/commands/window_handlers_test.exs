@@ -252,20 +252,20 @@ defmodule Raxol.Terminal.Commands.WindowHandlerTest do
       new_emulator_neg =
         unwrap_ok(WindowHandler.handle_t(emulator, [4, -100, -50]))
 
-      Raxol.Test.UnifiedTestHelper.assert_window_size(new_emulator_neg, 80, 24)
+      Raxol.Test.TestUtils.assert_window_size(new_emulator_neg, 80, 24)
 
       # Test zero values
       new_emulator_zero =
         unwrap_ok(WindowHandler.handle_t(emulator, [4, 0, 0]))
 
-      Raxol.Test.UnifiedTestHelper.assert_window_size(new_emulator_zero, 80, 24)
+      Raxol.Test.TestUtils.assert_window_size(new_emulator_zero, 80, 24)
     end
 
     test "handles missing parameters for window resize (op 4)", %{
       emulator: emulator
     } do
       new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [4]))
-      Raxol.Test.UnifiedTestHelper.assert_window_size(new_emulator, 80, 24)
+      Raxol.Test.TestUtils.assert_window_size(new_emulator, 80, 24)
     end
 
     test "handles window resize (op 4) with partial height_px param only", %{
@@ -278,7 +278,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlerTest do
       expected_width = div(640, @default_char_width_px)
       expected_height = div(160, @default_char_height_px)
 
-      Raxol.Test.UnifiedTestHelper.assert_window_size(
+      Raxol.Test.TestUtils.assert_window_size(
         new_emulator,
         expected_width,
         expected_height
@@ -299,7 +299,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlerTest do
       new_emulator =
         unwrap_ok(WindowHandler.handle_t(emulator, [4, "invalid", "invalid"]))
 
-      Raxol.Test.UnifiedTestHelper.assert_window_size(new_emulator, 80, 24)
+      Raxol.Test.TestUtils.assert_window_size(new_emulator, 80, 24)
     end
   end
 

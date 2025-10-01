@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Operations.CursorOperationsTest do
   use ExUnit.Case
   alias Raxol.Terminal.Operations.CursorOperations
-  alias Raxol.Test.UnifiedTestHelper
+  alias Raxol.Test.TestUtils
 
   describe "get_cursor_position/1" do
     test "returns initial cursor position" do

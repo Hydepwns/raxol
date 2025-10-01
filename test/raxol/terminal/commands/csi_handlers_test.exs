@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
   defp unwrap_ok(value) when is_map(value), do: value
 
   defp new_emulator() do
-    Raxol.Test.UnifiedTestHelper.create_test_emulator_with_struct_cursor()
+    Raxol.Test.TestUtils.create_test_emulator_with_struct_cursor()
   end
 
   describe "handle_s/2 (Save Cursor Position - SCP)" do

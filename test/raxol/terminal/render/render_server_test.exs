@@ -1,8 +1,8 @@
-defmodule Raxol.Terminal.Render.UnifiedRendererTest do
+defmodule Raxol.Terminal.Render.RenderServerTest do
   use ExUnit.Case, async: false
 
   alias Raxol.Terminal.{
-    Render.UnifiedRenderer,
+    Render.RenderServer,
     Buffer.UnifiedManager,
     Cursor.Manager,
     Integration.State
@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
 
   setup do
     # Start the renderer with the default name (module name)
-    {:ok, pid} = UnifiedRenderer.start_link(name: UnifiedRenderer)
+    {:ok, pid} = RenderServer.start_link(name: RenderServer)
     %{pid: pid}
   end
 
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
         name: :"unified_renderer_custom_#{System.unique_integer([:positive])}"
       ]
 
-      {:ok, pid} = UnifiedRenderer.start_link(opts)
+      {:ok, pid} = RenderServer.start_link(opts)
       state = :sys.get_state(pid)
 
       assert state.fps == 30
@@ -43,11 +43,11 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
 
   describe "terminal operations" do
     test "initializes and shuts down terminal", %{pid: pid} do
-      assert UnifiedRenderer.init_terminal() == :ok
+      assert RenderServer.init_terminal() == :ok
       state = :sys.get_state(pid)
       assert state.termbox_initialized == true
 
-      assert UnifiedRenderer.shutdown_terminal() == :ok
+      assert RenderServer.shutdown_terminal() == :ok
       state = :sys.get_state(pid)
       assert state.termbox_initialized == false
     end
@@ -61,7 +61,7 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
         font_settings: %{size: 14}
       }
 
-      assert UnifiedRenderer.update_config(config) == :ok
+      assert RenderServer.update_config(config) == :ok
       state = :sys.get_state(pid)
 
       assert state.fps == 30
@@ -70,11 +70,11 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
     end
 
     test "sets individual configuration values", %{pid: pid} do
-      assert UnifiedRenderer.set_config_value(:fps, 30) == :ok
+      assert RenderServer.set_config_value(:fps, 30) == :ok
       state = :sys.get_state(pid)
       assert state.fps == 30
 
-      assert UnifiedRenderer.set_config_value(:theme, %{foreground: :white}) ==
+      assert RenderServer.set_config_value(:theme, %{foreground: :white}) ==
                :ok
 
       state = :sys.get_state(pid)
@@ -83,14 +83,14 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
 
     test "resets configuration to defaults", %{pid: pid} do
       # First set some custom values
-      UnifiedRenderer.update_config(%{
+      RenderServer.update_config(%{
         fps: 30,
         theme: %{foreground: :white},
         font_settings: %{size: 14}
       })
 
       # Then reset
-      assert UnifiedRenderer.reset_config() == :ok
+      assert RenderServer.reset_config() == :ok
       state = :sys.get_state(pid)
 
       assert state.fps == 60
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
   describe "rendering" do
     setup %{pid: _pid} do
       # Initialize terminal for rendering tests
-      UnifiedRenderer.init_terminal()
+      RenderServer.init_terminal()
 
       # Create a test state with PID-based buffer manager
       {:ok, buffer_manager_pid} =
@@ -119,7 +119,7 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
     end
 
     test "renders empty buffer", %{pid: _pid, state: state} do
-      assert UnifiedRenderer.render(state) == :ok
+      assert RenderServer.render(state) == :ok
     end
 
     test "renders buffer with content", %{pid: _pid, state: state} do
@@ -129,33 +129,33 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
 
       state = %{state | buffer_manager: buffer_manager}
 
-      assert UnifiedRenderer.render(state) == :ok
+      assert RenderServer.render(state) == :ok
     end
 
     test "handles rendering errors", %{pid: _pid, state: state} do
       # Shutdown terminal to force an error
-      UnifiedRenderer.shutdown_terminal()
+      RenderServer.shutdown_terminal()
 
-      assert UnifiedRenderer.render(state) == {:error, :not_initialized}
+      assert RenderServer.render(state) == {:error, :not_initialized}
     end
   end
 
   describe "cursor operations" do
     test "sets cursor visibility", %{pid: _pid} do
-      assert UnifiedRenderer.set_cursor_visibility(true) == :ok
-      assert UnifiedRenderer.set_cursor_visibility(false) == :ok
+      assert RenderServer.set_cursor_visibility(true) == :ok
+      assert RenderServer.set_cursor_visibility(false) == :ok
     end
   end
 
   describe "window operations" do
     test "sets and gets terminal title", %{pid: _pid} do
       title = "Test Terminal"
-      assert UnifiedRenderer.set_title(title) == :ok
-      assert UnifiedRenderer.get_title() == title
+      assert RenderServer.set_title(title) == :ok
+      assert RenderServer.get_title() == title
     end
 
     test "resizes terminal", %{pid: pid} do
-      assert UnifiedRenderer.resize(100, 50) == :ok
+      assert RenderServer.resize(100, 50) == :ok
       state = :sys.get_state(pid)
       assert state.screen.width == 100
       assert state.screen.height == 50

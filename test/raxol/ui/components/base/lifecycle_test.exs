@@ -2,7 +2,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
   use ExUnit.Case, async: true
   doctest Raxol.UI.Components.Base.Lifecycle
 
-  import Raxol.Test.UnifiedTestHelper
+  import Raxol.Test.TestUtils
 
   import Raxol.UI.Components.Base.Lifecycle,
     only: [mount: 3, render: 2, process_event: 3, unmount: 2]

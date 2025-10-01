@@ -6,7 +6,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   use ExUnit.Case, async: false
   require Mox
   import Mox
-  import Raxol.Test.UnifiedTestHelper
+  import Raxol.Test.TestUtils
 
 
   # Mock modules for testing

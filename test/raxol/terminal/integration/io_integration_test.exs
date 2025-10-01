@@ -7,9 +7,9 @@ defmodule Raxol.Terminal.Integration.IOIntegrationTest do
     # Start the UnifiedIO process
     {:ok, _unified_io_pid} = Raxol.Terminal.IO.UnifiedIO.start_link()
 
-    # Start the UnifiedWindow process
+    # Start the Manager process
     {:ok, _unified_window_pid} =
-      Raxol.Terminal.Window.UnifiedWindow.start_link()
+      Raxol.Terminal.Window.Manager.start_link()
 
     # Start the main integration module
     {:ok, pid} = Main.start_link(%{})

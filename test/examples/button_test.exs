@@ -9,11 +9,11 @@ defmodule Raxol.Examples.ButtonTest do
   import Raxol.Test.Visual.Assertions
 
   setup do
-    {:ok, context} = Raxol.Test.UnifiedTestHelper.setup_test_env()
+    {:ok, context} = Raxol.Test.TestUtils.setup_test_env()
     context = Map.put(context, :snapshots_dir, "test/snapshots")
 
     on_exit(fn ->
-      Raxol.Test.UnifiedTestHelper.cleanup_test_env()
+      Raxol.Test.TestUtils.cleanup_test_env()
     end)
 
     context
@@ -143,7 +143,7 @@ defmodule Raxol.Examples.ButtonTest do
       state =
         Button.new(%{
           label: "Test",
-          theme: Raxol.Test.UnifiedTestHelper.test_theme(),
+          theme: Raxol.Test.TestUtils.test_theme(),
           style: %{}
         })
 
