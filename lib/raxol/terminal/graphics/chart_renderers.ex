@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Graphics.ChartRenderers do
   def create_heatmap_visualization(data, config) do
     chart_id = generate_chart_id()
 
-    case UnifiedGraphics.create_graphics(config) do
+    case GraphicsServer.create_graphics(config) do
       {:ok, graphics_id} ->
         :ok = render_heatmap(graphics_id, data, config)
         {:ok, chart_id, graphics_id}
@@ -44,7 +44,7 @@ defmodule Raxol.Terminal.Graphics.ChartRenderers do
   def create_scatter_visualization(points, config) do
     chart_id = generate_chart_id()
 
-    case UnifiedGraphics.create_graphics(config) do
+    case GraphicsServer.create_graphics(config) do
       {:ok, graphics_id} ->
         :ok = render_scatter_plot(graphics_id, points, config)
         {:ok, chart_id, graphics_id}
@@ -60,7 +60,7 @@ defmodule Raxol.Terminal.Graphics.ChartRenderers do
   def create_histogram_visualization(values, config) do
     chart_id = generate_chart_id()
 
-    case UnifiedGraphics.create_graphics(config) do
+    case GraphicsServer.create_graphics(config) do
       {:ok, graphics_id} ->
         :ok = render_histogram(graphics_id, values, config)
         {:ok, chart_id, graphics_id}

@@ -234,7 +234,7 @@ defmodule Raxol.Core.StateManager do
     end
   end
 
-  # ETS-backed State Operations (from UnifiedStateManager)
+  # ETS-backed State Operations
 
   @doc """
   Gets the current state or a specific key from ETS.
@@ -259,7 +259,7 @@ defmodule Raxol.Core.StateManager do
   end
 
   @doc """
-  Updates a state value with a function (alias for compatibility with UnifiedStateManager).
+  Updates a state value with a function.
   """
   def update_state(key, update_fn) when is_function(update_fn, 1) do
     update_state(key, update_fn, [])
@@ -313,7 +313,7 @@ defmodule Raxol.Core.StateManager do
   defp update_nested(state, _, _), do: state
 
   @doc """
-  Deletes a state value (alias for compatibility with UnifiedStateManager).
+  Deletes a state value.
   """
   def delete_state(key, opts \\ []) do
     case strategy_from_opts(opts) do

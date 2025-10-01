@@ -20,7 +20,6 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
   require Logger
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.UI.Rendering.TimerServer
 
   @fps_60 16
   @fps_45 22
@@ -108,14 +107,14 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
   def init_manager(_opts) do
     # Start unified timer manager for adaptation checks
     state =
-      case UnifiedTimerManager.start_adaptive_timer(self(), 1000) do
+      case Raxol.UI.Rendering.TimerServer.start_adaptive_timer(self(), 1000) do
         :ok ->
           %FramerateState{
-            adaptation_timer_ref: :unified_timer
+            adaptation_timer_ref: :timer_server
           }
 
         {:error, :not_started} ->
-          # Fallback to Process.send_after in test mode when UnifiedTimerManager isn't running
+          # Fallback to Process.send_after in test mode when TimerServer isn't running
           timer_ref = Process.send_after(self(), :adapt_framerate, 1000)
 
           %FramerateState{

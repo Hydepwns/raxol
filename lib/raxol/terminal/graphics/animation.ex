@@ -347,7 +347,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
   defp apply_graphics_properties(graphics_id, properties) do
     # Apply animated properties to the graphics element
     # This would integrate with the unified graphics system
-    case UnifiedGraphics.update_graphics_properties(graphics_id, properties) do
+    case GraphicsServer.update_graphics_properties(graphics_id, properties) do
       :ok ->
         :ok
 

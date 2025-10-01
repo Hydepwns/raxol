@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Commands.CursorUtils do
   @moduledoc """
   Shared utility functions for cursor handling commands.
-  Eliminates code duplication between CursorHandler and UnifiedCommandHandler.
+  Eliminates code duplication between CursorHandler and CSIHandler.
   """
 
   @doc """

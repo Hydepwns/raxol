@@ -349,4 +349,20 @@ defmodule Raxol.Terminal.Window.Manager do
     _ = ensure_started()
     Server.reset()
   end
+
+  @doc """
+  Resizes a window. Alias for set_window_size/3.
+  """
+  @spec resize(window_id(), integer(), integer()) ::
+          {:ok, Window.t()} | {:error, :not_found}
+  def resize(window_id, width, height) do
+    set_window_size(window_id, width, height)
+  end
+
+  @doc """
+  Cleanup the window manager. Alias for reset/0.
+  """
+  def cleanup do
+    reset()
+  end
 end

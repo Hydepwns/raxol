@@ -784,10 +784,9 @@ defmodule Raxol.Terminal.Script.ScriptServer do
         script_id = generate_script_id()
 
         # Store in process dictionary for now, could be enhanced to use GenServer state
-        Raxol.Core.StateManager.set(
+        Raxol.Core.StateManager.set_state(
           :scripts,
-          {:loaded_script, script_id},
-          script
+          %{{:loaded_script, script_id} => script}
         )
 
         Log.module_info("Loaded script: #{script.name} from #{path}")

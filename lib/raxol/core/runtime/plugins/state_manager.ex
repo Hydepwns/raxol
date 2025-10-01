@@ -7,7 +7,7 @@ defmodule StateManager do
   for consistency and performance.
   """
 
-  alias Raxol.Core.StateManager, as: UnifiedStateManager
+  alias Raxol.Core.StateManager
   alias Raxol.Core.Runtime.Log
   @type plugin_id :: String.t()
   @type plugin_module :: module()
@@ -45,7 +45,7 @@ defmodule StateManager do
 
       # Store in unified state manager
       state_key = [:plugins, :states, plugin_id]
-      UnifiedStateManager.set_state(state_key, initial_state)
+      StateManager.set_state(state_key, initial_state)
 
       # Track plugin metadata
       metadata_key = [:plugins, :metadata, plugin_id]
@@ -57,7 +57,7 @@ defmodule StateManager do
         status: :initialized
       }
 
-      UnifiedStateManager.set_state(metadata_key, metadata)
+      StateManager.set_state(metadata_key, metadata)
 
       Log.module_info(
         "Initialized state for plugin #{plugin_id} (#{plugin_module})"
@@ -89,7 +89,7 @@ defmodule StateManager do
 
       # Merge new state with existing state
       updated_state =
-        case UnifiedStateManager.get_state(state_key) do
+        case StateManager.get_state(state_key) do
           nil ->
             state
 
@@ -101,12 +101,12 @@ defmodule StateManager do
             state
         end
 
-      UnifiedStateManager.set_state(state_key, updated_state)
+      StateManager.set_state(state_key, updated_state)
 
       # Update metadata
       metadata_key = [:plugins, :metadata, plugin_id]
 
-      UnifiedStateManager.update_state(metadata_key, fn metadata ->
+      StateManager.update_state(metadata_key, fn metadata ->
         case metadata do
           nil ->
             %{updated_at: :os.system_time(:millisecond), config: config}
@@ -140,7 +140,7 @@ defmodule StateManager do
   def get_plugin_state(plugin_id) do
     state_key = [:plugins, :states, plugin_id]
 
-    case UnifiedStateManager.get_state(state_key) do
+    case StateManager.get_state(state_key) do
       nil -> {:error, :not_found}
       state -> {:ok, state}
     end
@@ -152,7 +152,7 @@ defmodule StateManager do
   @spec set_plugin_state(plugin_id(), plugin_state()) :: :ok
   def set_plugin_state(plugin_id, state) do
     state_key = [:plugins, :states, plugin_id]
-    UnifiedStateManager.set_state(state_key, state)
+    StateManager.set_state(state_key, state)
   end
 
   @doc """
@@ -164,14 +164,14 @@ defmodule StateManager do
     state_key = [:plugins, :states, plugin_id]
 
     try do
-      UnifiedStateManager.update_state(state_key, fn current_state ->
+      StateManager.update_state(state_key, fn current_state ->
         update_fn.(current_state || %{})
       end)
 
       # Update metadata timestamp
       metadata_key = [:plugins, :metadata, plugin_id]
 
-      UnifiedStateManager.update_state(metadata_key, fn metadata ->
+      StateManager.update_state(metadata_key, fn metadata ->
         case metadata do
           nil ->
             %{updated_at: :os.system_time(:millisecond)}
@@ -181,7 +181,7 @@ defmodule StateManager do
         end
       end)
 
-      {:ok, UnifiedStateManager.get_state(state_key)}
+      {:ok, StateManager.get_state(state_key)}
     rescue
       error ->
         Log.module_error(
@@ -197,7 +197,7 @@ defmodule StateManager do
   """
   @spec list_plugin_states() :: [{plugin_id(), plugin_state()}]
   def list_plugin_states do
-    case UnifiedStateManager.get_state([:plugins, :states]) do
+    case StateManager.get_state([:plugins, :states]) do
       nil -> []
       states when is_map(states) -> Map.to_list(states)
       _ -> []
@@ -211,7 +211,7 @@ defmodule StateManager do
   def get_plugin_metadata(plugin_id) do
     metadata_key = [:plugins, :metadata, plugin_id]
 
-    case UnifiedStateManager.get_state(metadata_key) do
+    case StateManager.get_state(metadata_key) do
       nil -> {:error, :not_found}
       metadata -> {:ok, metadata}
     end
@@ -222,8 +222,8 @@ defmodule StateManager do
   """
   @spec remove_plugin(plugin_id()) :: :ok
   def remove_plugin(plugin_id) do
-    UnifiedStateManager.delete_state([:plugins, :states, plugin_id])
-    UnifiedStateManager.delete_state([:plugins, :metadata, plugin_id])
+    StateManager.delete_state([:plugins, :states, plugin_id])
+    StateManager.delete_state([:plugins, :metadata, plugin_id])
     Log.module_info("Removed state for plugin #{plugin_id}")
     :ok
   end
@@ -234,7 +234,7 @@ defmodule StateManager do
   @spec initialize(term()) :: {:ok, term()}
   def initialize(state) do
     # Ensure plugins namespace exists in unified state
-    UnifiedStateManager.set_state([:plugins], %{
+    StateManager.set_state([:plugins], %{
       states: %{},
       metadata: %{},
       initialized_at: :os.system_time(:millisecond)
@@ -249,7 +249,7 @@ defmodule StateManager do
   """
   @spec cleanup() :: :ok
   def cleanup do
-    UnifiedStateManager.delete_state([:plugins])
+    StateManager.delete_state([:plugins])
     Log.module_info("Plugin state manager cleaned up")
     :ok
   end

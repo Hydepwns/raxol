@@ -237,28 +237,15 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   end
 
   def handle_device_command(emulator, params, intermediates, final_byte) do
-    # Delegate to UnifiedCommandHandler for device commands
-    alias Raxol.Terminal.Commands.CommandServer
-
+    # Handle device commands directly
     case final_byte do
       ?c ->
         # Device Attributes (DA)
-        {:ok, updated_emulator} =
-          UnifiedCommandHandler.handle_csi(emulator, "c", params, intermediates)
-
-        updated_emulator
+        handle_device_attributes(emulator, params, intermediates)
 
       ?n ->
         # Device Status Report (DSR)
-        case UnifiedCommandHandler.handle_csi(
-               emulator,
-               "n",
-               params,
-               intermediates
-             ) do
-          {:ok, updated_emulator} -> updated_emulator
-          {:error, _, updated_emulator} -> updated_emulator
-        end
+        handle_device_status_report(emulator, params)
 
       ?s ->
         # Save Cursor Position (SCP)
@@ -270,6 +257,57 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
       _ ->
         # Other device commands not yet implemented
+        emulator
+    end
+  end
+
+  defp handle_device_attributes(emulator, params, intermediates) do
+    case {intermediates, params} do
+      {">", []} ->
+        # CSI > c or CSI > 0 c (Secondary DA)
+        response = "\e[>0;0;0c"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+
+      {">", [0]} ->
+        # CSI > 0 c (Secondary DA)
+        response = "\e[>0;0;0c"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+
+      {"", []} ->
+        # CSI c (Primary DA)
+        response = "\e[?6c"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+
+      {"", [0]} ->
+        # CSI 0 c (Primary DA)
+        response = "\e[?6c"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+
+      _ ->
+        # Ignore all other params
+        emulator
+    end
+  end
+
+  defp handle_device_status_report(emulator, params) do
+    case params do
+      [5] ->
+        # DSR 5n - Report device status (OK)
+        response = "\e[0n"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+
+      [] ->
+        # DSR with no parameters - Report device status (OK)
+        response = "\e[0n"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+
+      [6] ->
+        # DSR 6n - Report cursor position
+        response = "\e[#{emulator.cursor.row + 1};#{emulator.cursor.col + 1}R"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+
+      _ ->
+        # Unknown parameter, ignore
         emulator
     end
   end

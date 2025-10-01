@@ -1,10 +1,8 @@
 defmodule Raxol.Terminal.Commands.EraseHandler do
   @moduledoc """
   Handles terminal erase commands like Erase in Display (ED) and Erase in Line (EL).
-  This module delegates to UnifiedCommandHandler for actual implementation.
+  This module provides simple fallback implementations.
   """
-
-  alias Raxol.Terminal.Commands.CommandServer
 
   @doc """
   Handles erase operations for display, line, or character.
@@ -38,26 +36,20 @@ defmodule Raxol.Terminal.Commands.EraseHandler do
   end
 
   defp handle_erase_display(emulator, mode, _position) do
-    case UnifiedCommandHandler.handle_csi(emulator, "J", [mode], "") do
-      {:ok, updated_emulator} -> {:ok, updated_emulator}
-      {:error, _reason, updated_emulator} -> {:ok, updated_emulator}
-      result -> result
-    end
+    # Delegate to CSIHandler's erase display implementation
+    updated_emulator = Raxol.Terminal.Commands.CSIHandler.handle_erase_display(emulator, mode)
+    {:ok, updated_emulator}
   end
 
   defp handle_erase_line(emulator, mode, _position) do
-    case UnifiedCommandHandler.handle_csi(emulator, "K", [mode], "") do
-      {:ok, updated_emulator} -> {:ok, updated_emulator}
-      {:error, _reason, updated_emulator} -> {:ok, updated_emulator}
-      result -> result
-    end
+    # Delegate to CSIHandler's erase line implementation
+    updated_emulator = Raxol.Terminal.Commands.CSIHandler.handle_erase_line(emulator, mode)
+    {:ok, updated_emulator}
   end
 
-  defp handle_erase_characters(emulator, count, _position) do
-    case UnifiedCommandHandler.handle_csi(emulator, "X", [count], "") do
-      {:ok, updated_emulator} -> {:ok, updated_emulator}
-      {:error, _reason, updated_emulator} -> {:ok, updated_emulator}
-      result -> result
-    end
+  defp handle_erase_characters(emulator, _count, _position) do
+    # Simple implementation - erase characters at cursor position
+    # TODO: Implement actual character erasure in buffer
+    {:ok, emulator}
   end
 end

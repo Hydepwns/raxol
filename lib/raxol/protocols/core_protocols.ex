@@ -203,53 +203,53 @@ defmodule Raxol.Protocols do
   """
 
 
-  defdelegate render(component, opts), to: UnifiedProtocols.Component
+  defdelegate render(component, opts), to: Raxol.Protocols.CoreProtocols.Component
 
   defdelegate handle_event(component, event, state),
-    to: UnifiedProtocols.Component
+    to: Raxol.Protocols.CoreProtocols.Component
 
-  defdelegate apply_style(component, style), to: UnifiedProtocols.Component
-  defdelegate get_metadata(component), to: UnifiedProtocols.Component
-  defdelegate validate(component), to: UnifiedProtocols.Component
+  defdelegate apply_style(component, style), to: Raxol.Protocols.CoreProtocols.Component
+  defdelegate get_metadata(component), to: Raxol.Protocols.CoreProtocols.Component
+  defdelegate validate(component), to: Raxol.Protocols.CoreProtocols.Component
 
-  defdelegate serialize(data, format), to: UnifiedProtocols.Serializable
+  defdelegate serialize(data, format), to: Raxol.Protocols.CoreProtocols.Serializable
 
   defdelegate deserialize(data, format, target_type),
-    to: UnifiedProtocols.Serializable
+    to: Raxol.Protocols.CoreProtocols.Serializable
 
-  defdelegate get_schema(data), to: UnifiedProtocols.Serializable
+  defdelegate get_schema(data), to: Raxol.Protocols.CoreProtocols.Serializable
 
   defdelegate write(buffer, position, data),
-    to: UnifiedProtocols.BufferOperations
+    to: Raxol.Protocols.CoreProtocols.BufferOperations
 
-  defdelegate read(buffer, position), to: UnifiedProtocols.BufferOperations
-  defdelegate clear(buffer, region), to: UnifiedProtocols.BufferOperations
-  defdelegate get_dimensions(buffer), to: UnifiedProtocols.BufferOperations
+  defdelegate read(buffer, position), to: Raxol.Protocols.CoreProtocols.BufferOperations
+  defdelegate clear(buffer, region), to: Raxol.Protocols.CoreProtocols.BufferOperations
+  defdelegate get_dimensions(buffer), to: Raxol.Protocols.CoreProtocols.BufferOperations
 
   defdelegate resize(buffer, width, height),
-    to: UnifiedProtocols.BufferOperations
+    to: Raxol.Protocols.CoreProtocols.BufferOperations
 
   defdelegate scroll(buffer, direction, amount),
-    to: UnifiedProtocols.BufferOperations
+    to: Raxol.Protocols.CoreProtocols.BufferOperations
 
-  defdelegate get_config(configurable), to: UnifiedProtocols.Configurable
+  defdelegate get_config(configurable), to: Raxol.Protocols.CoreProtocols.Configurable
 
   defdelegate set_config(configurable, config),
-    to: UnifiedProtocols.Configurable
+    to: Raxol.Protocols.CoreProtocols.Configurable
 
   defdelegate validate_config(configurable, config),
-    to: UnifiedProtocols.Configurable
+    to: Raxol.Protocols.CoreProtocols.Configurable
 
   defdelegate get_default_config(configurable),
-    to: UnifiedProtocols.Configurable
+    to: Raxol.Protocols.CoreProtocols.Configurable
 
   defdelegate merge_config(configurable, config),
-    to: UnifiedProtocols.Configurable
+    to: Raxol.Protocols.CoreProtocols.Configurable
 
-  defdelegate initialize(component, opts), to: UnifiedProtocols.Lifecycle
-  defdelegate start(component), to: UnifiedProtocols.Lifecycle
-  defdelegate stop(component), to: UnifiedProtocols.Lifecycle
-  defdelegate restart(component), to: UnifiedProtocols.Lifecycle
-  defdelegate cleanup(component), to: UnifiedProtocols.Lifecycle
-  defdelegate get_state(component), to: UnifiedProtocols.Lifecycle
+  defdelegate initialize(component, opts), to: Raxol.Protocols.CoreProtocols.Lifecycle
+  defdelegate start(component), to: Raxol.Protocols.CoreProtocols.Lifecycle
+  defdelegate stop(component), to: Raxol.Protocols.CoreProtocols.Lifecycle
+  defdelegate restart(component), to: Raxol.Protocols.CoreProtocols.Lifecycle
+  defdelegate cleanup(component), to: Raxol.Protocols.CoreProtocols.Lifecycle
+  defdelegate get_state(component), to: Raxol.Protocols.CoreProtocols.Lifecycle
 end

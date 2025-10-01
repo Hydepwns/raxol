@@ -238,7 +238,7 @@ defmodule Raxol.UI.Rendering.TimerServer do
         new_stats = %{state.stats | active_timers: map_size(new_timers)}
 
         Log.module_debug(
-          "[UnifiedTimerManager] Started #{timer_type} timer (#{interval_ms}ms) for #{inspect(target_pid)}"
+          "[TimerServer] Started #{timer_type} timer (#{interval_ms}ms) for #{inspect(target_pid)}"
         )
 
         %{
@@ -251,7 +251,7 @@ defmodule Raxol.UI.Rendering.TimerServer do
 
       {:error, reason} ->
         Log.module_error(
-          "[UnifiedTimerManager] Failed to start #{timer_type} timer: #{inspect(reason)}"
+          "[TimerServer] Failed to start #{timer_type} timer: #{inspect(reason)}"
         )
 
         state
@@ -298,7 +298,7 @@ defmodule Raxol.UI.Rendering.TimerServer do
     case Map.get(state.target_pids, timer_type) do
       nil ->
         Log.module_warning(
-          "[UnifiedTimerManager] Cannot update interval for non-existent timer: #{timer_type}"
+          "[TimerServer] Cannot update interval for non-existent timer: #{timer_type}"
         )
 
         state
@@ -313,7 +313,7 @@ defmodule Raxol.UI.Rendering.TimerServer do
     case Map.get(state.target_pids, timer_type) do
       nil ->
         Log.module_warning(
-          "[UnifiedTimerManager] Received tick for unknown timer: #{timer_type}"
+          "[TimerServer] Received tick for unknown timer: #{timer_type}"
         )
 
         state

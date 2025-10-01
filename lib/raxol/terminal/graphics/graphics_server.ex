@@ -20,14 +20,14 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
   ## Usage
 
       # Automatic protocol detection and image display
-      {:ok, _} = UnifiedGraphics.display_image(image_data, %{
+      {:ok, _} = GraphicsServer.display_image(image_data, %{
         width: 300,
         height: 200,
         format: :png
       })
       
       # Query available protocols
-      graphics_info = UnifiedGraphics.get_graphics_info()
+      graphics_info = GraphicsServer.get_graphics_info()
       
   """
 
@@ -182,14 +182,14 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
   ## Examples
 
       # Display PNG image with automatic protocol detection
-      {:ok, id} = UnifiedGraphics.display_image(png_data, %{
+      {:ok, id} = GraphicsServer.display_image(png_data, %{
         width: 300,
         height: 200,
         format: :png
       })
       
       # Display with specific protocol preference
-      {:ok, id} = UnifiedGraphics.display_image(image_data, %{
+      {:ok, id} = GraphicsServer.display_image(image_data, %{
         width: 400,
         height: 300,
         protocol: :kitty,
@@ -215,7 +215,7 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
 
   ## Examples
 
-      iex> UnifiedGraphics.get_graphics_info()
+      iex> GraphicsServer.get_graphics_info()
       %{
         supported_protocols: [:kitty, :sixel],
         preferred_protocol: :kitty,
@@ -313,7 +313,7 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
   ## Examples
 
       # Process multiple images with shared settings
-      {:ok, ids} = UnifiedGraphics.display_images([
+      {:ok, ids} = GraphicsServer.display_images([
         png_data,
         {jpeg_data, %{quality: 95}},
         svg_data
@@ -459,7 +459,7 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
     }
 
     Log.module_info(
-      "UnifiedGraphics initialized with support: #{inspect(graphics_support)}"
+      "GraphicsServer initialized with support: #{inspect(graphics_support)}"
     )
 
     Log.module_info(

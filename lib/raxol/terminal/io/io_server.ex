@@ -17,8 +17,7 @@ defmodule Raxol.Terminal.IO.IOServer do
 
   alias Raxol.Terminal.{
     ScreenBuffer.Manager,
-    Scroll.UnifiedScroll,
-    Render.UnifiedRenderer,
+    Render.RenderServer,
     Commands.History
   }
 
@@ -87,8 +86,8 @@ defmodule Raxol.Terminal.IO.IOServer do
 
           # Component references
           buffer_manager: UnifiedManager.t(),
-          scroll_buffer: UnifiedScroll.t(),
-          renderer: UnifiedRenderer.t(),
+          scroll_buffer: Raxol.Terminal.Buffer.Scroll.t(),
+          renderer: RenderServer.t(),
           command_history: term(),
 
           # Configuration
@@ -203,7 +202,7 @@ defmodule Raxol.Terminal.IO.IOServer do
   """
   def cleanup(_io, process \\ __MODULE__) do
     # Stop the renderer
-    UnifiedRenderer.shutdown_terminal()
+    RenderServer.shutdown_terminal()
 
     # Reset the state
     GenServer.call(process_name(process), :cleanup)
@@ -270,8 +269,8 @@ defmodule Raxol.Terminal.IO.IOServer do
         memory_limit: config.memory_limit
       )
 
-    scroll_buffer = UnifiedScroll.new(config.scrollback_limit)
-    {:ok, renderer} = UnifiedRenderer.start_link(config.rendering)
+    scroll_buffer = Raxol.Terminal.Buffer.Scroll.new(config.scrollback_limit)
+    {:ok, renderer} = RenderServer.start_link(config.rendering)
     command_history = History.new(config.command_history_limit)
 
     new_state = %{
@@ -341,7 +340,7 @@ defmodule Raxol.Terminal.IO.IOServer do
 
   @impl true
   def handle_manager_call({:set_cursor_visibility, visible}, _from, state) do
-    # Only call UnifiedRenderer if it's available
+    # Only call RenderServer if it's available
     set_cursor_visibility_if_available(visible)
     {:reply, :ok, state}
   end
@@ -397,7 +396,7 @@ defmodule Raxol.Terminal.IO.IOServer do
   defp set_cursor_visibility_if_available(visible) do
     case Process.whereis(Raxol.Terminal.Render.RenderServer) do
       nil -> :ok
-      _pid -> UnifiedRenderer.set_cursor_visibility(visible)
+      _pid -> RenderServer.set_cursor_visibility(visible)
     end
   end
 
@@ -528,9 +527,9 @@ defmodule Raxol.Terminal.IO.IOServer do
     new_buffer_manager = state.buffer_manager
 
     new_scroll_buffer =
-      UnifiedScroll.set_max_height(state.scroll_buffer, config.scrollback_limit)
+      Raxol.Terminal.Buffer.Scroll.set_max_height(state.scroll_buffer, config.scrollback_limit)
 
-    UnifiedRenderer.update_config(config.rendering)
+    RenderServer.update_config(config.rendering)
     new_command_history = History.update_config(state.command_history, config)
 
     {new_buffer_manager, new_scroll_buffer, state.renderer, new_command_history}
@@ -545,8 +544,8 @@ defmodule Raxol.Terminal.IO.IOServer do
         memory_limit: config.memory_limit || 50 * 1024 * 1024
       )
 
-    new_scroll_buffer = UnifiedScroll.new(config.scrollback_limit || 1000)
-    {:ok, new_renderer} = UnifiedRenderer.start_link(config.rendering || %{})
+    new_scroll_buffer = Raxol.Terminal.Buffer.Scroll.new(config.scrollback_limit || 1000)
+    {:ok, new_renderer} = RenderServer.start_link(config.rendering || %{})
     new_command_history = History.new(config.command_history_limit || 1000)
 
     {new_buffer_manager, new_scroll_buffer, new_renderer, new_command_history}
@@ -584,7 +583,7 @@ defmodule Raxol.Terminal.IO.IOServer do
   defp update_renderer_if_exists(nil, _width, _height), do: :ok
 
   defp update_renderer_if_exists(_renderer, width, height) do
-    UnifiedRenderer.resize(width, height)
+    RenderServer.resize(width, height)
   end
 
   defp get_default_config do

@@ -34,7 +34,6 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   alias Raxol.UI.Rendering.Renderer
   alias Raxol.UI.Rendering.TreeDiffer
-  alias Raxol.UI.Rendering.TimerServer
 
   # New pipeline modules
   alias Raxol.UI.Rendering.Pipeline.{State, Stages}
@@ -490,7 +489,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     end
   end
 
-  # Handle direct animation tick (fallback when UnifiedTimerManager unavailable)
+  # Handle direct animation tick (fallback when TimerServer unavailable)
   def handle_manager_info(:animation_tick, state) do
     # Delegate to the main animation tick handler
     handle_manager_info({:animation_tick, :timer_ref}, state)
@@ -553,15 +552,15 @@ defmodule Raxol.UI.Rendering.Pipeline do
         case should_continue_ticker?(final_state) do
           true ->
             # Try unified timer manager first, fallback to direct timer
-            case UnifiedTimerManager.start_animation_timer(
+            case Raxol.UI.Rendering.TimerServer.start_animation_timer(
                    self(),
                    @animation_tick_interval_ms
                  ) do
               :ok ->
-                %{final_state | animation_ticker_ref: :unified_timer}
+                %{final_state | animation_ticker_ref: :timer_server}
 
               {:error, :not_started} ->
-                # Fallback to direct timer if UnifiedTimerManager not available
+                # Fallback to direct timer if TimerServer not available
                 timer_ref =
                   Process.send_after(
                     self(),
@@ -708,7 +707,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     _ = cancel_timer_if_exists(state.render_timer_ref)
 
     # Use unified timer manager for debounce timer
-    :ok = UnifiedTimerManager.start_debounce_timer(self(), delay)
+    :ok = Raxol.UI.Rendering.TimerServer.start_debounce_timer(self(), delay)
 
     # Store deferred render data in state instead of timer message
     state_with_deferred = %{
@@ -726,9 +725,9 @@ defmodule Raxol.UI.Rendering.Pipeline do
     calculate_time_diff(last_render_time, now)
   end
 
-  defp cancel_timer_if_exists(:unified_timer) do
-    # Timer is managed by UnifiedTimerManager, stop debounce timer
-    UnifiedTimerManager.stop_timer(:render_debounce)
+  defp cancel_timer_if_exists(:timer_server) do
+    # Timer is managed by TimerServer, stop debounce timer
+    Raxol.UI.Rendering.TimerServer.stop_timer(:render_debounce)
   end
 
   defp cancel_timer_if_exists(timer_ref) do
@@ -752,16 +751,16 @@ defmodule Raxol.UI.Rendering.Pipeline do
           "Pipeline: Animation ticker not running, starting it."
         )
 
-        # Use unified timer manager instead of direct Process.send_after
-        case UnifiedTimerManager.start_animation_timer(
+        # Use timer server instead of direct Process.send_after
+        case Raxol.UI.Rendering.TimerServer.start_animation_timer(
                self(),
                @animation_tick_interval_ms
              ) do
           :ok ->
-            %{state | animation_ticker_ref: :unified_timer}
+            %{state | animation_ticker_ref: :timer_server}
 
           {:error, :not_started} ->
-            # Fallback to direct timer if UnifiedTimerManager not available
+            # Fallback to direct timer if TimerServer not available
             timer_ref =
               Process.send_after(
                 self(),
@@ -791,27 +790,27 @@ defmodule Raxol.UI.Rendering.Pipeline do
   # Helper functions using pattern matching instead of if statements
 
   defp start_unified_timer_manager do
-    # Start UnifiedTimerManager if not already running
-    case GenServer.whereis(UnifiedTimerManager) do
+    # Start TimerServer if not already running
+    case GenServer.whereis(Raxol.UI.Rendering.TimerServer) do
       nil ->
-        case UnifiedTimerManager.start_link([]) do
+        case Raxol.UI.Rendering.TimerServer.start_link([]) do
           {:ok, _pid} ->
-            Raxol.Core.Runtime.Log.info("Pipeline: Started UnifiedTimerManager")
+            Raxol.Core.Runtime.Log.info("Pipeline: Started TimerServer")
 
           {:error, {:already_started, _pid}} ->
             Raxol.Core.Runtime.Log.debug(
-              "Pipeline: UnifiedTimerManager already started"
+              "Pipeline: TimerServer already started"
             )
 
           {:error, reason} ->
             Raxol.Core.Runtime.Log.error(
-              "Pipeline: Failed to start UnifiedTimerManager: #{inspect(reason)}"
+              "Pipeline: Failed to start TimerServer: #{inspect(reason)}"
             )
         end
 
       _pid ->
         Raxol.Core.Runtime.Log.debug(
-          "Pipeline: UnifiedTimerManager already running"
+          "Pipeline: TimerServer already running"
         )
     end
 

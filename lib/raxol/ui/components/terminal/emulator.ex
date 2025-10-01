@@ -4,7 +4,7 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   """
 
   alias Raxol.Terminal.{
-    IO.UnifiedIO,
+    IO.IOServer,
     Integration.State
   }
 
@@ -35,7 +35,7 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   end
 
   @doc """
-  Processes input and updates terminal state by delegating to UnifiedIO.
+  Processes input and updates terminal state by delegating to IOServer.
   Returns a tuple `{updated_state, output_string}`.
   """
   @spec process_input(term(), emulator_state()) :: {emulator_state(), term()}
@@ -43,8 +43,8 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
     # Wrap input in the expected event format
     event = %{type: :key, key: input}
 
-    # Process input through UnifiedIO
-    {:ok, commands} = UnifiedIO.process_input(event)
+    # Process input through IOServer
+    {:ok, commands} = IOServer.process_input(event)
 
     # Update the component's state
     updated_state = %{state | state: current_state}

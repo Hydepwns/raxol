@@ -27,10 +27,10 @@ defmodule Raxol.Terminal.TerminalServer do
 
   ```
   UnifiedManager
-  ├── Command Processing (UnifiedCommandHandler)
+  ├── Command Processing (CSIHandler)
   ├── Session Management (SessionManager)
   ├── Buffer Management (AdvancedManager) 
-  ├── State Management (UnifiedStateManager)
+  ├── State Management (StateManager)
   ├── Event System (EventManager)
   ├── Plugin System (PluginManager)
   └── Performance Monitor (MetricsManager)
@@ -57,9 +57,7 @@ defmodule Raxol.Terminal.TerminalServer do
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.Commands.CommandServer
   alias Raxol.Terminal.ScreenBuffer.Manager, as: BufferManager
-  alias Raxol.Core.StateManager
   alias Raxol.Core.Events.EventManager
   alias Raxol.Core.Utils.TimerManager
   alias Raxol.Terminal.Emulator
@@ -188,13 +186,13 @@ defmodule Raxol.Terminal.TerminalServer do
   def init_manager(config) do
     # Initialize subsystems
     # BufferManager is a functional module, not a GenServer
-    {:ok, state_manager} = UnifiedStateManager.start_link([])
+    {:ok, state_manager} = Raxol.Core.StateManager.start_link([])
     {:ok, event_manager} = EventManager.start_link()
 
     # Initialize state
     state = %__MODULE__{
       sessions: %{},
-      command_handler: UnifiedCommandHandler,
+      command_handler: Raxol.Terminal.Commands.CSIHandler,
       # Module reference, not a pid
       buffer_manager: BufferManager,
       state_manager: state_manager,
@@ -434,7 +432,7 @@ defmodule Raxol.Terminal.TerminalServer do
 
       session ->
         # Execute command through unified command handler
-        case UnifiedCommandHandler.handle_command(session.emulator, command) do
+        case Raxol.Terminal.Commands.CSIHandler.handle_csi_sequence(session.emulator, command.command, command.params || []) do
           {:ok, updated_emulator} ->
             updated_session = %{
               session
