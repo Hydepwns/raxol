@@ -47,10 +47,6 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   # Client API
 
   @doc """
-  Starts the safe rendering pipeline.
-  """
-
-  @doc """
   Safely renders a frame with automatic error recovery.
   """
   def render(pid \\ __MODULE__, scene) do

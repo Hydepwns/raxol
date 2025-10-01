@@ -130,10 +130,6 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
 
   # Public API
 
-  @doc """
-  Starts the streaming data manager.
-  """
-
   #  def start_link(opts \\ []) do
   #    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   #  end

@@ -119,10 +119,6 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
 
   # Public API
 
-  @doc """
-  Starts the performance monitor with the given configuration.
-  """
-
   #  def start_link(config \\ %{}) do
   #    GenServer.start_link(__MODULE__, config, name: __MODULE__)
   #  end

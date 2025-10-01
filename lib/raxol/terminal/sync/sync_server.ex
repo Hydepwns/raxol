@@ -35,16 +35,6 @@ defmodule Raxol.Terminal.Sync.SyncServer do
   defp process_name(_), do: __MODULE__
 
   @doc """
-  Starts the unified synchronization manager.
-
-  ## Options
-    * `:consistency` - Default consistency level (:strong or :eventual)
-    * `:conflict_resolution` - Default conflict resolution strategy
-    * `:timeout` - Default synchronization timeout in milliseconds
-    * `:retry_count` - Default number of retry attempts
-  """
-
-  @doc """
   Creates a new synchronization context.
 
   ## Parameters
