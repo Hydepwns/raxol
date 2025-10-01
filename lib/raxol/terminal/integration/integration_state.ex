@@ -5,19 +5,18 @@ defmodule Raxol.Terminal.Integration.State do
 
   alias Raxol.Terminal.{
     ScreenBuffer.Manager,
-    Scroll.UnifiedScroll,
-    Render.UnifiedRenderer,
-    IO.UnifiedIO,
-    Window.UnifiedWindow,
+    Render.RenderServer,
+    IO.IOServer,
+    Window.Manager,
     Integration.Config
   }
 
   @type t :: %__MODULE__{
           buffer_manager: Manager.t(),
-          scroll_buffer: UnifiedScroll.t(),
-          renderer: UnifiedRenderer.t(),
-          io: UnifiedIO.t(),
-          window_manager: UnifiedWindow.t(),
+          scroll_buffer: Raxol.Terminal.Buffer.Scroll.t(),
+          renderer: RenderServer.t(),
+          io: IOServer.t(),
+          window_manager: Manager.t(),
           config: Config.t(),
           window: any(),
           buffer: any(),
@@ -48,8 +47,8 @@ defmodule Raxol.Terminal.Integration.State do
   @spec new(map()) :: t()
   def new(_opts \\ []) do
     # Create a new integration state
-    # Only create window if UnifiedWindow process is running
-    case Process.whereis(UnifiedWindow) do
+    # Only create window if Manager process is running
+    case Process.whereis(Manager) do
       nil ->
         %__MODULE__{
           window: nil,
@@ -62,12 +61,7 @@ defmodule Raxol.Terminal.Integration.State do
         }
 
       _pid ->
-        {:ok, window_id} =
-          UnifiedWindow.create_window(%{
-            title: "Raxol Terminal",
-            width: 800,
-            height: 600
-          })
+        {:ok, window_id} = Manager.create_window(800, 600)
 
         # Create mock buffer and renderer managers for testing
         buffer_manager = %{id: "buffer_1"}
@@ -75,7 +69,7 @@ defmodule Raxol.Terminal.Integration.State do
 
         %__MODULE__{
           window: window_id,
-          window_manager: UnifiedWindow,
+          window_manager: Manager,
           buffer_manager: buffer_manager,
           renderer: renderer,
           buffer: nil,
@@ -92,14 +86,7 @@ defmodule Raxol.Terminal.Integration.State do
   def new(width, height, config)
       when is_integer(width) and is_integer(height) and is_map(config) do
     # Create a new integration state with specific dimensions
-    {:ok, _window_id} =
-      UnifiedWindow.create_window(%{
-        title: "Raxol Terminal",
-        # Approximate pixel width
-        width: width * 8,
-        # Approximate pixel height
-        height: height * 16
-      })
+    {:ok, _window_id} = Manager.create_window(width * 8, height * 16)
 
     %__MODULE__{
       width: width,
@@ -119,7 +106,7 @@ defmodule Raxol.Terminal.Integration.State do
   def update(%__MODULE__{} = state, content) when is_binary(content) do
     # Process content through IO system
     try do
-      case UnifiedIO.process_output(content) do
+      case IOServer.process_output(content) do
         {:ok, _commands} ->
           # Only update if buffer_manager is a PID
           case state.buffer_manager do
@@ -136,7 +123,7 @@ defmodule Raxol.Terminal.Integration.State do
           %{state | buffer: content}
       end
     rescue
-      # If UnifiedIO GenServer is not running, fallback to direct buffer update
+      # If IOServer GenServer is not running, fallback to direct buffer update
       _ ->
         %{state | buffer: content}
     end
@@ -167,9 +154,9 @@ defmodule Raxol.Terminal.Integration.State do
   end
 
   defp get_window_buffer_id do
-    case UnifiedWindow.get_active_window() do
+    case Manager.get_active_window() do
       {:ok, window_id} ->
-        case UnifiedWindow.get_window_state(window_id) do
+        case Manager.get_window(window_id) do
           {:ok, window} -> {:ok, window.buffer_id}
           _ -> :error
         end
@@ -186,9 +173,6 @@ defmodule Raxol.Terminal.Integration.State do
         [["Hello, World!"]]
 
       buffer_manager when is_map(buffer_manager) ->
-        # Get the active buffer content
-        _buffer = Manager.get_active_buffer(buffer_manager)
-
         # For now, return empty content as the Core module interface may be different
         ""
 
@@ -202,7 +186,7 @@ defmodule Raxol.Terminal.Integration.State do
   """
   @spec get_scroll_position(t()) :: integer()
   def get_scroll_position(%__MODULE__{} = state) do
-    UnifiedScroll.get_position(state.scroll_buffer)
+    Raxol.Terminal.Buffer.Scroll.get_position(state.scroll_buffer)
   end
 
   @doc """
@@ -232,9 +216,9 @@ defmodule Raxol.Terminal.Integration.State do
   end
 
   defp get_active_window_renderer_id do
-    case UnifiedWindow.get_active_window() do
+    case Manager.get_active_window() do
       {:ok, window_id} ->
-        case UnifiedWindow.get_window_state(window_id) do
+        case Manager.get_window(window_id) do
           {:ok, window} -> {:ok, window.renderer_id}
           _ -> :error
         end
@@ -247,7 +231,7 @@ defmodule Raxol.Terminal.Integration.State do
   defp render_with_renderer(%__MODULE__{} = state, renderer_id) do
     case state.renderer do
       renderer when is_pid(renderer) ->
-        UnifiedRenderer.render(renderer, renderer_id)
+        RenderServer.render(renderer, renderer_id)
         state
 
       _ ->
@@ -260,7 +244,7 @@ defmodule Raxol.Terminal.Integration.State do
   """
   @spec update_renderer_config(t(), map()) :: t()
   def update_renderer_config(%__MODULE__{} = state, config) do
-    UnifiedRenderer.update_config(state.renderer, config)
+    RenderServer.update_config(state.renderer, config)
     state
   end
 
@@ -276,17 +260,17 @@ defmodule Raxol.Terminal.Integration.State do
     # Update the state dimensions
     updated_state = %{state | width: safe_width, height: safe_height}
 
-    # Try to resize the window if UnifiedWindow is available
-    case Process.whereis(UnifiedWindow) do
+    # Try to resize the window if Manager is available
+    case Process.whereis(Manager) do
       nil ->
-        # UnifiedWindow not available, just return updated state
+        # Manager not available, just return updated state
         updated_state
 
       _pid ->
-        case UnifiedWindow.get_active_window() do
+        case Manager.get_active_window() do
           {:ok, window_id} ->
             # Resize the active window
-            case UnifiedWindow.resize(window_id, safe_width, safe_height) do
+            case Manager.resize(window_id, safe_width, safe_height) do
               :ok -> updated_state
               {:error, _} -> updated_state
             end
@@ -320,14 +304,14 @@ defmodule Raxol.Terminal.Integration.State do
   defp cleanup_scroll_buffer(nil), do: :ok
 
   defp cleanup_scroll_buffer(scroll_buffer),
-    do: UnifiedScroll.cleanup(scroll_buffer)
+    do: Raxol.Terminal.Buffer.Scroll.cleanup(scroll_buffer)
 
   defp cleanup_renderer(nil), do: :ok
-  defp cleanup_renderer(renderer), do: UnifiedRenderer.cleanup(renderer)
+  defp cleanup_renderer(renderer), do: RenderServer.cleanup(renderer)
 
   defp cleanup_io(nil), do: :ok
-  defp cleanup_io(io), do: UnifiedIO.cleanup(io)
+  defp cleanup_io(io), do: IOServer.cleanup(io)
 
   defp cleanup_window_manager(nil), do: :ok
-  defp cleanup_window_manager(_window_manager), do: UnifiedWindow.cleanup()
+  defp cleanup_window_manager(_window_manager), do: Manager.cleanup()
 end

@@ -1,12 +1,12 @@
-defmodule Raxol.Test.UnifiedTestHelper do
+defmodule Raxol.Test.TestUtils do
   alias Raxol.Test.SharedUtilities
 
   @moduledoc """
-  Unified test helper consolidating functionality from multiple test helper modules.
+  Consolidated test utilities providing comprehensive testing functionality.
 
   This module combines the functionality from:
   - Raxol.Test.Support.TestHelper (environment/config focus)
-  - Raxol.Test.Helpers (process/assertions focus)  
+  - Raxol.Test.Helpers (process/assertions focus)
   - Raxol.Test.TestHelper (comprehensive utilities)
 
   Provides all test utilities in a single, organized module.

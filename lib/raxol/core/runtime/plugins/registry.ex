@@ -4,14 +4,14 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
 
   @deprecated "Use Raxol.Core.GlobalRegistry with :plugins type instead"
 
-  This module has been consolidated into the unified registry system.
+  This module has been consolidated into the global registry system.
   For new code, use:
 
       # Instead of Registry.register_plugin(id, metadata)
-      UnifiedRegistry.register(:plugins, id, metadata)
-      
+      Raxol.Core.GlobalRegistry.register(:plugins, id, metadata)
+
       # Instead of Registry.list_plugins()
-      UnifiedRegistry.list(:plugins)
+      Raxol.Core.GlobalRegistry.list(:plugins)
   """
 
   use Raxol.Core.Behaviours.BaseManager
@@ -24,29 +24,29 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
   @doc """
   Registers a plugin with its metadata.
   """
-  @deprecated "Use UnifiedRegistry.register(:plugins, plugin_id, metadata) instead"
+  @deprecated "Use Raxol.Core.GlobalRegistry.register(:plugins, plugin_id, metadata) instead"
   @spec register_plugin(atom(), map()) :: :ok
   def register_plugin(plugin_id, metadata)
       when is_atom(plugin_id) and is_map(metadata) do
-    UnifiedRegistry.register(:plugins, plugin_id, metadata)
+    Raxol.Core.GlobalRegistry.register(:plugins, plugin_id, metadata)
   end
 
   @doc """
   Unregisters a plugin by its ID.
   """
-  @deprecated "Use UnifiedRegistry.unregister(:plugins, plugin_id) instead"
+  @deprecated "Use Raxol.Core.GlobalRegistry.unregister(:plugins, plugin_id) instead"
   @spec unregister_plugin(atom()) :: :ok
   def unregister_plugin(plugin_id) when is_atom(plugin_id) do
-    UnifiedRegistry.unregister(:plugins, plugin_id)
+    Raxol.Core.GlobalRegistry.unregister(:plugins, plugin_id)
   end
 
   @doc """
   Lists all registered plugins as {plugin_id, metadata} tuples.
   """
-  @deprecated "Use UnifiedRegistry.list(:plugins) instead"
+  @deprecated "Use Raxol.Core.GlobalRegistry.list(:plugins) instead"
   @spec list_plugins() :: list({atom(), map()})
   def list_plugins do
-    case UnifiedRegistry.list(:plugins) do
+    case Raxol.Core.GlobalRegistry.list(:plugins) do
       plugins when is_list(plugins) ->
         Enum.map(plugins, fn plugin_data ->
           {plugin_data.id, plugin_data}

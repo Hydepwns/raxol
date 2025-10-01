@@ -1,8 +1,8 @@
-defmodule Raxol.Terminal.Buffer.UnifiedBufferServer do
+defmodule Raxol.Terminal.Buffer.BufferManager do
   @moduledoc """
-  Unified buffer manager for terminal operations.
+  Buffer manager for terminal operations.
 
-  This module provides a unified interface for buffer management,
+  This module provides a centralized interface for buffer management,
   consolidating buffer operations for the terminal renderer.
   """
 

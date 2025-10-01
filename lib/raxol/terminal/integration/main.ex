@@ -5,14 +5,13 @@ defmodule Raxol.Terminal.Integration do
 
   This module manages the interaction between various terminal components:
   - State management
-  - Input/output processing (via UnifiedIO)
+  - Input/output processing (via TerminalIO)
   - Buffer management
   - Rendering
   - Configuration
   """
 
   alias Raxol.Terminal.Integration.State
-  alias Raxol.Terminal.IO.IOServer
   alias Raxol.Terminal.Integration.Buffer
   alias Raxol.Terminal.Integration.Renderer, as: IntegrationRenderer
   alias Raxol.Terminal.Integration.Config
@@ -44,16 +43,16 @@ defmodule Raxol.Terminal.Integration do
   end
 
   @doc """
-  Processes user input and updates the terminal state using UnifiedIO.
+  Processes user input and updates the terminal state using TerminalIO.
   """
   def handle_input(%State{} = state, input_event) do
-    # Convert tuple format to map format for UnifiedIO
+    # Convert tuple format to map format for TerminalIO
     converted_event = convert_input_event(input_event)
-    UnifiedIO.process_input(converted_event)
+    Raxol.Terminal.IO.IOServer.process_input(converted_event)
     State.render(state)
   end
 
-  # Convert tuple input events to map format expected by UnifiedIO
+  # Convert tuple input events to map format expected by TerminalIO
   defp convert_input_event({:key, key}) when is_atom(key) do
     %{type: :special_key, key: key}
   end
@@ -85,10 +84,10 @@ defmodule Raxol.Terminal.Integration do
   end
 
   @doc """
-  Writes text to the terminal using UnifiedIO output processing.
+  Writes text to the terminal using TerminalIO output processing.
   """
   def write(%State{} = state, text) do
-    case UnifiedIO.process_output(text) do
+    case Raxol.Terminal.IO.IOServer.process_output(text) do
       {:ok, output} when is_binary(output) ->
         _ = State.render(state)
         output
@@ -158,7 +157,7 @@ defmodule Raxol.Terminal.Integration do
   Updates the configuration.
   """
   def update_config(%State{} = state, config) do
-    UnifiedIO.update_config(config)
+    Raxol.Terminal.IO.IOServer.update_config(config)
     State.update(state, config: config)
   end
 
