@@ -375,7 +375,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     start_time = System.monotonic_time(:millisecond)
 
     # Preserve context before restart
-    context = ContextManager.get_context(state.context_manager, child_id)
+    context = ContextManager.get_context(child_id)
 
     case strategy do
       :immediate ->

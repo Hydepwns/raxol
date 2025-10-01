@@ -301,7 +301,7 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
 
   def create_test_session(
         %TestCluster{} = cluster,
-        complexity \\ :simple,
+        _complexity \\ :simple,
         target_node \\ nil
       ) do
     target_node = target_node || cluster.primary_node
@@ -311,7 +311,7 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
     storage_pid = Map.get(cluster.storage_pids, target_node)
     registry_pid = Map.get(cluster.registry_pids, target_node)
 
-    :ok = DistributedSessionStorage.store(storage_pid, session_id, session_data)
+    :ok = DistributedSessionStorage.store(storage_pid, session_id, session_data, %{})
 
     :ok =
       DistributedSessionRegistry.register_session(
@@ -345,7 +345,7 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
 
       Enum.map(node_sessions, fn {session_id, session_data} ->
         :ok =
-          DistributedSessionStorage.store(storage_pid, session_id, session_data)
+          DistributedSessionStorage.store(storage_pid, session_id, session_data, %{})
 
         :ok =
           DistributedSessionRegistry.register_session(
@@ -468,7 +468,7 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
     end
   end
 
-  def assert_cluster_consistency(%TestCluster{} = cluster, timeout \\ 10000) do
+  def assert_cluster_consistency(%TestCluster{} = cluster, _timeout \\ 10000) do
     # Wait for all pending operations to complete
     Process.sleep(100)
 
@@ -583,7 +583,8 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
               DistributedSessionStorage.store(
                 storage_pid,
                 session_id,
-                session_data
+                session_data,
+                %{}
               )
 
               Process.sleep(:rand.uniform(100))
@@ -659,13 +660,14 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
       primary_replicator =
         Map.get(cluster.replicator_pids, cluster.primary_node)
 
-      DistributedSessionStorage.store(primary_storage, session_id, session_data)
+      DistributedSessionStorage.store(primary_storage, session_id, session_data, %{})
 
       SessionReplicator.replicate_session(
         primary_replicator,
         session_id,
         session_data,
-        cluster.secondary_nodes
+        cluster.secondary_nodes,
+        :quorum
       )
     end)
 
@@ -685,9 +687,9 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
   defp find_session_location(%TestCluster{} = cluster, session_id) do
     cluster.all_nodes
     |> Enum.find_value(fn node ->
-      registry_pid = Map.get(cluster.registry_pids, node)
+      _registry_pid = Map.get(cluster.registry_pids, node)
 
-      case DistributedSessionRegistry.locate_session(registry_pid, session_id) do
+      case DistributedSessionRegistry.locate_session(session_id) do
         {:ok, located_node} -> {:ok, located_node}
         {:error, :not_found} -> nil
         {:error, _reason} -> nil
@@ -762,26 +764,24 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
 
   defp get_all_session_replicas(%TestCluster{} = cluster, session_id) do
     cluster.all_nodes
-    |> Enum.filter_map(
-      fn node ->
-        storage_pid = Map.get(cluster.storage_pids, node)
+    |> Enum.filter(fn node ->
+      storage_pid = Map.get(cluster.storage_pids, node)
 
-        case DistributedSessionStorage.get(storage_pid, session_id) do
-          {:ok, _data} -> true
-          {:error, _} -> false
-        end
-      end,
-      fn node ->
-        storage_pid = Map.get(cluster.storage_pids, node)
-        {:ok, data} = DistributedSessionStorage.get(storage_pid, session_id)
-        data
+      case DistributedSessionStorage.get(storage_pid, session_id) do
+        {:ok, _data} -> true
+        {:error, _} -> false
       end
-    )
+    end)
+    |> Enum.map(fn node ->
+      storage_pid = Map.get(cluster.storage_pids, node)
+      {:ok, data} = DistributedSessionStorage.get(storage_pid, session_id)
+      data
+    end)
   end
 
   defp get_all_registry_states(%TestCluster{} = cluster) do
     Enum.map(cluster.all_nodes, fn node ->
-      registry_pid = Map.get(cluster.registry_pids, node)
+      _registry_pid = Map.get(cluster.registry_pids, node)
       # This would get the internal state of the registry
       # Simplified for now
       {node, %{}}
@@ -806,7 +806,7 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
     Enum.flat_map(cluster.all_nodes, fn node ->
       storage_pid = Map.get(cluster.storage_pids, node)
 
-      case DistributedSessionStorage.list_sessions(storage_pid) do
+      case DistributedSessionStorage.list_sessions(storage_pid, %{}) do
         {:ok, session_ids} -> Enum.map(session_ids, &{&1, node})
         {:error, _} -> []
       end

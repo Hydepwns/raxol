@@ -45,8 +45,6 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
 
-  @behaviour Raxol.Core.Behaviours.BaseManager
-
   defstruct [
     :backend,
     :storage_config,
@@ -186,9 +184,9 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         Log.module_error(
-          "Failed to store session #{session_id}: #{inspect(reason)}"
+          "Failed to store session #{session_id}: #{inspect(error)}"
         )
 
         {:reply, error, state}
@@ -203,7 +201,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
         GenServer.cast(self(), {:update_access_time, session_id})
         {:reply, {:ok, data}, state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -214,7 +212,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -225,7 +223,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
       {:ok, session_ids} ->
         {:reply, {:ok, session_ids}, state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -236,7 +234,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
       {:ok, metadata} ->
         {:reply, {:ok, metadata}, state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -247,7 +245,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
       {:ok, cleanup_count, updated_state} ->
         {:reply, {:ok, cleanup_count}, updated_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -264,7 +262,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
       {:ok, backup_info} ->
         {:reply, {:ok, backup_info}, state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -275,7 +273,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
       {:ok, restore_count, updated_state} ->
         {:reply, {:ok, restore_count}, updated_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end

@@ -32,8 +32,7 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
 
   alias Raxol.Core.ErrorRecovery.{
     RecoverySupervisor,
-    ContextManager,
-    DependencyGraph
+    ContextManager
   }
 
   alias Raxol.Core.ErrorRecovery.EnhancedPatternLearner
@@ -234,16 +233,11 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
     defp busy_wait(start_time, duration_ms) do
       if :erlang.monotonic_time(:millisecond) - start_time < duration_ms do
         # Busy work to simulate CPU load
-        :math.sin(:rand.uniform() * 1000)
+        _ = :math.sin(:rand.uniform() * 1000)
         busy_wait(start_time, duration_ms)
       end
     end
 
-    defp while(condition) do
-      if condition.() do
-        while(condition)
-      end
-    end
   end
 
   # Fault Injection Utilities
@@ -283,7 +277,7 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
       TestWorker.simulate_load(pid, duration)
     end
 
-    def inject_memory_pressure(pid, size_mb \\ 10) do
+    def inject_memory_pressure(_pid, size_mb \\ 10) do
       # Simulate memory pressure
       spawn(fn ->
         data = for _ <- 1..(size_mb * 1024), do: :crypto.strong_rand_bytes(1024)
@@ -346,12 +340,12 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
   end
 
   def assert_context_preserved(
-        context_manager,
+        _context_manager,
         key,
         expected_context,
-        timeout \\ 5000
+        _timeout \\ 5000
       ) do
-    context = ContextManager.get_context(context_manager, key)
+    context = ContextManager.get_context(key)
     assert context == expected_context
   end
 

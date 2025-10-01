@@ -39,8 +39,6 @@ defmodule Raxol.Core.Session.SessionReplicator do
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
 
-  @behaviour Raxol.Core.Behaviours.BaseManager
-
   defstruct [
     :replication_factor,
     :consistency_level,
@@ -158,9 +156,9 @@ defmodule Raxol.Core.Session.SessionReplicator do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         Log.module_error(
-          "Failed to replicate session #{session_id}: #{inspect(reason)}"
+          "Failed to replicate session #{session_id}: #{inspect(error)}"
         )
 
         {:reply, error, state}
@@ -173,9 +171,9 @@ defmodule Raxol.Core.Session.SessionReplicator do
       {:ok, merged_data, updated_state} ->
         {:reply, {:ok, merged_data}, updated_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         Log.module_error(
-          "Failed to sync session #{session_id}: #{inspect(reason)}"
+          "Failed to sync session #{session_id}: #{inspect(error)}"
         )
 
         {:reply, error, state}
@@ -194,7 +192,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
       {:ok, resolved_data, updated_state} ->
         {:reply, {:ok, resolved_data}, updated_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end

@@ -55,8 +55,6 @@ defmodule Raxol.Core.Session.SessionMigrator do
     DistributedSessionStorage
   }
 
-  @behaviour Raxol.Core.Behaviours.BaseManager
-
   defstruct [
     :failover_mode,
     :migration_batch_size,
