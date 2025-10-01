@@ -8,8 +8,7 @@ defmodule Raxol.Terminal.Integration.Config do
   alias Raxol.Terminal.{
     Config,
     ScreenBuffer.Manager,
-    Scroll.UnifiedScroll,
-    Render.UnifiedRenderer
+    Render.RenderServer
   }
 
   alias Raxol.Terminal.Integration.State
@@ -125,7 +124,7 @@ defmodule Raxol.Terminal.Integration.Config do
   Updates the scroll buffer configuration.
   """
   def update_scroll_buffer(scroll_buffer_state, config) do
-    UnifiedScroll.set_max_height(
+    Raxol.Terminal.Buffer.Scroll.set_max_height(
       scroll_buffer_state,
       config.behavior.scrollback_limit
     )
@@ -135,7 +134,7 @@ defmodule Raxol.Terminal.Integration.Config do
   Updates the renderer configuration.
   """
   def update_renderer_config(renderer_state, config) do
-    UnifiedRenderer.update_config(config.rendering)
+    RenderServer.update_config(config.rendering)
     renderer_state
   end
 

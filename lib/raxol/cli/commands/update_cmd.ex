@@ -9,6 +9,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   """
 
   alias Raxol.System.Updater
+  alias Raxol.Core.Runtime.Log
 
   @doc """
   Executes the update command with the provided options and arguments.
@@ -209,9 +210,6 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     "\e[32m#{text}\e[0m"
   end
 
-  defp error_msg(text) do
-    "\e[31m#{text}\e[0m"
-  end
 
   defp get_check_result(version, _opts) when version != nil,
     do: {:update_available, version}

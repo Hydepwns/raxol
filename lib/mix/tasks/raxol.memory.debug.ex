@@ -1,5 +1,6 @@
 defmodule Mix.Tasks.Raxol.Memory.Debug do
   alias Raxol.Utils.MemoryFormatter
+  alias Raxol.Core.Runtime.Log
 
   @moduledoc """
   Memory debugging tools for detecting leaks, hotspots, and optimization opportunities.
