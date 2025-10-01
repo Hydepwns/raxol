@@ -1,6 +1,7 @@
 defmodule Raxol.Terminal.Commands.DCSHandler do
   @moduledoc false
   alias Raxol.Core.Runtime.Log
+
   def handle_dcs(emulator, params, data_string) do
     case params do
       # DECRQSS - Request Status String
@@ -60,13 +61,19 @@ defmodule Raxol.Terminal.Commands.DCSHandler do
 
       # Unknown request type
       unknown ->
-        Log.module_warning("Unhandled DECRQSS request type: #{inspect(unknown)}")
+        Log.module_warning(
+          "Unhandled DECRQSS request type: #{inspect(unknown)}"
+        )
+
         {:ok, emulator}
     end
   end
 
   defp handle_decdld(emulator, _data_string) do
-    Log.module_warning("DECDLD (Downloadable Character Set) not yet implemented")
+    Log.module_warning(
+      "DECDLD (Downloadable Character Set) not yet implemented"
+    )
+
     {:error, :decdld_not_implemented, emulator}
   end
 
@@ -94,7 +101,9 @@ defmodule Raxol.Terminal.Commands.DCSHandler do
 
   # Sixel Graphics support
   defp handle_sixel(emulator, data) do
-    Log.module_debug("DCSHandlers: handle_sixel called with data: #{inspect(data)}")
+    Log.module_debug(
+      "DCSHandlers: handle_sixel called with data: #{inspect(data)}"
+    )
 
     # Initialize sixel state if not present
     sixel_state =
@@ -140,7 +149,9 @@ defmodule Raxol.Terminal.Commands.DCSHandler do
         {:ok, emulator_with_blit}
 
       {_sixel_state, {:error, reason}} ->
-        Log.module_debug("DCSHandlers: sixel processing failed: #{inspect(reason)}")
+        Log.module_debug(
+          "DCSHandlers: sixel processing failed: #{inspect(reason)}"
+        )
 
         # Processing failed, log the error but still update the sixel_state
         Log.module_warning("Sixel processing failed: #{inspect(reason)}")
@@ -235,7 +246,9 @@ defmodule Raxol.Terminal.Commands.DCSHandler do
 
     case Map.get(palette, color_index) do
       {r, g, b} ->
-        Log.module_debug("Found color {#{r}, #{g}, #{b}} for index #{color_index}")
+        Log.module_debug(
+          "Found color {#{r}, #{g}, #{b}} for index #{color_index}"
+        )
 
         # Create a proper TextFormatting struct with the background color
         style =

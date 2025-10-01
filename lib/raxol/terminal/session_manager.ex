@@ -59,6 +59,7 @@ defmodule Raxol.Terminal.SessionManager do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   defmodule Session do
     @enforce_keys [:id, :name, :created_at]
     defstruct [
@@ -479,7 +480,10 @@ defmodule Raxol.Terminal.SessionManager do
             clients: updated_clients
         }
 
-        Log.module_info("Client #{client_id} attached to session '#{session.name}'")
+        Log.module_info(
+          "Client #{client_id} attached to session '#{session.name}'"
+        )
+
         {:reply, {:ok, client}, new_state}
     end
   end
@@ -1000,7 +1004,10 @@ defmodule Raxol.Terminal.SessionManager do
         updated_sessions = Map.put(state.sessions, session_id, updated_session)
         new_state = %{state | sessions: updated_sessions}
 
-        Log.module_info("Created window '#{window_name}' in session #{session_id}")
+        Log.module_info(
+          "Created window '#{window_name}' in session #{session_id}"
+        )
+
         {:reply, {:ok, new_window}, new_state}
 
       false ->

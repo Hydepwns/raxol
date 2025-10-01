@@ -1,5 +1,6 @@
 defmodule Raxol.Benchmark.Storage do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Handles storage and retrieval of benchmark results for historical analysis.
 

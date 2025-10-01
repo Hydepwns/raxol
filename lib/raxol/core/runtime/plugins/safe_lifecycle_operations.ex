@@ -10,6 +10,7 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
   alias Raxol.Core.ErrorHandler
   alias Raxol.Core.ErrorRecovery
   alias Raxol.Core.Runtime.Log
+
   @doc """
   Safely loads a plugin with default config.
   """
@@ -384,7 +385,10 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
 
           {:error, reason} ->
             # Rollback executed operations
-            Log.module_error("Operation failed, rolling back: #{inspect(reason)}")
+            Log.module_error(
+              "Operation failed, rolling back: #{inspect(reason)}"
+            )
+
             rollback_state = rollback_operations(done, initial_state)
             {:halt, {:error, reason, rollback_state}}
         end

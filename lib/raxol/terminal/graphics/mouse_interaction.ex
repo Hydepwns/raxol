@@ -511,7 +511,8 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
             try do
               callback.(Map.put(event, :element, element))
             rescue
-              error -> Log.module_warning("Hover callback error: #{inspect(error)}")
+              error ->
+                Log.module_warning("Hover callback error: #{inspect(error)}")
             end
 
           _ ->
@@ -573,7 +574,8 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
               Map.merge(event, %{element: drag_state.element, drag: drag_info})
             )
           rescue
-            error -> Log.module_warning("Drag callback error: #{inspect(error)}")
+            error ->
+              Log.module_warning("Drag callback error: #{inspect(error)}")
           end
         end
 
@@ -602,7 +604,9 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
           )
         rescue
           error ->
-            Log.module_warning("Selection start callback error: #{inspect(error)}")
+            Log.module_warning(
+              "Selection start callback error: #{inspect(error)}"
+            )
         end
       end
 

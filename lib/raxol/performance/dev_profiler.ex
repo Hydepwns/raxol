@@ -1,5 +1,6 @@
 defmodule Raxol.Performance.DevProfiler do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Development-mode profiler for detailed performance analysis.
 

@@ -1,5 +1,6 @@
 defmodule Raxol.Terminal.Emulator.Telemetry do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Telemetry instrumentation for the terminal emulator.
 

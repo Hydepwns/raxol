@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Events do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   @doc """
   Registers a global click handler that will be called whenever a click occurs.
 

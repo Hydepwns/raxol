@@ -28,7 +28,14 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
   """
 
   import ExUnit.Assertions
-  alias Raxol.Core.ErrorRecovery.{RecoverySupervisor, ContextManager, DependencyGraph}
+  import ExUnit.Callbacks
+
+  alias Raxol.Core.ErrorRecovery.{
+    RecoverySupervisor,
+    ContextManager,
+    DependencyGraph
+  }
+
   alias Raxol.Core.ErrorRecovery.EnhancedPatternLearner
 
   defmacro __using__(_opts) do
@@ -113,7 +120,10 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
     def handle_call({:restore_context, context}, _from, state) do
       Log.module_info("Restoring context for TestWorker: #{inspect(state.id)}")
 
-      updated_state = %{state | context_data: Map.merge(state.context_data, context)}
+      updated_state = %{
+        state
+        | context_data: Map.merge(state.context_data, context)
+      }
 
       {:reply, :ok, updated_state}
     end
@@ -125,7 +135,8 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
           raise "Injected runtime error"
 
         :timeout ->
-          Process.sleep(10_000) # Simulate timeout
+          # Simulate timeout
+          Process.sleep(10_000)
 
         :memory_leak ->
           # Simulate memory allocation
@@ -172,10 +183,7 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
       # Simulate CPU load
       start_time = :erlang.monotonic_time(:millisecond)
 
-      while (:erlang.monotonic_time(:millisecond) - start_time) < duration_ms do
-        # Busy wait to simulate load
-        :math.sin(:rand.uniform() * 1000)
-      end
+      busy_wait(start_time, duration_ms)
 
       {:noreply, state}
     end
@@ -184,7 +192,10 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
     def handle_info({:restore_context, context}, state) do
       Log.module_info("Restoring context for TestWorker: #{inspect(state.id)}")
 
-      updated_state = %{state | context_data: Map.merge(state.context_data, context)}
+      updated_state = %{
+        state
+        | context_data: Map.merge(state.context_data, context)
+      }
 
       {:noreply, updated_state}
     end
@@ -217,6 +228,14 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
 
         _ ->
           {:noreply, state}
+      end
+    end
+
+    defp busy_wait(start_time, duration_ms) do
+      if :erlang.monotonic_time(:millisecond) - start_time < duration_ms do
+        # Busy work to simulate CPU load
+        :math.sin(:rand.uniform() * 1000)
+        busy_wait(start_time, duration_ms)
       end
     end
 
@@ -254,11 +273,12 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
     end
 
     def inject_performance_degradation(pid, severity \\ :medium) do
-      duration = case severity do
-        :low -> 100
-        :medium -> 500
-        :high -> 2000
-      end
+      duration =
+        case severity do
+          :low -> 100
+          :medium -> 500
+          :high -> 2000
+        end
 
       TestWorker.simulate_load(pid, duration)
     end
@@ -267,8 +287,10 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
       # Simulate memory pressure
       spawn(fn ->
         data = for _ <- 1..(size_mb * 1024), do: :crypto.strong_rand_bytes(1024)
-        Process.sleep(5000) # Hold memory for 5 seconds
-        data # Keep reference to prevent GC
+        # Hold memory for 5 seconds
+        Process.sleep(5000)
+        # Keep reference to prevent GC
+        data
       end)
     end
   end
@@ -278,28 +300,31 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
   def create_test_recovery_supervisor(children \\ []) do
     default_children = [
       {TestWorker, [id: :worker1, context_data: %{role: :primary}]},
-      {TestWorker, [id: :worker2, context_data: %{role: :secondary}, depends_on: [:worker1]]}
+      {TestWorker,
+       [id: :worker2, context_data: %{role: :secondary}, depends_on: [:worker1]]}
     ]
 
     all_children = children ++ default_children
 
-    {:ok, supervisor_pid} = RecoverySupervisor.start_link(
-      children: all_children,
-      strategy: :adaptive_one_for_one
-    )
+    {:ok, supervisor_pid} =
+      RecoverySupervisor.start_link(
+        children: all_children,
+        strategy: :adaptive_one_for_one
+      )
 
     supervisor_pid
   end
 
   def create_dependency_chain(count \\ 3) do
     Enum.map(1..count, fn i ->
-      dependencies = if i == 1, do: [], else: [:"worker#{i-1}"]
+      dependencies = if i == 1, do: [], else: [:"worker#{i - 1}"]
 
-      {TestWorker, [
-        id: :"worker#{i}",
-        depends_on: dependencies,
-        context_data: %{chain_position: i}
-      ]}
+      {TestWorker,
+       [
+         id: :"worker#{i}",
+         depends_on: dependencies,
+         context_data: %{chain_position: i}
+       ]}
     end)
   end
 
@@ -320,7 +345,12 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
     assert_receive {:recovery_strategy, ^strategy}, timeout
   end
 
-  def assert_context_preserved(context_manager, key, expected_context, timeout \\ 5000) do
+  def assert_context_preserved(
+        context_manager,
+        key,
+        expected_context,
+        timeout \\ 5000
+      ) do
     context = ContextManager.get_context(context_manager, key)
     assert context == expected_context
   end
@@ -331,7 +361,9 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
     receive do
       :recovery_completed ->
         recovery_time = :erlang.monotonic_time(:millisecond) - start_time
-        assert recovery_time < threshold_ms, "Recovery took #{recovery_time}ms, expected < #{threshold_ms}ms"
+
+        assert recovery_time < threshold_ms,
+               "Recovery took #{recovery_time}ms, expected < #{threshold_ms}ms"
     after
       timeout ->
         flunk("Recovery did not complete within #{timeout}ms")
@@ -372,13 +404,14 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
     # Simulate system load by spawning processes that consume CPU
     num_processes = trunc(cpu_percent / 10)
 
-    processes = for _ <- 1..num_processes do
-      spawn(fn ->
-        end_time = :erlang.monotonic_time(:millisecond) + duration_ms
+    processes =
+      for _ <- 1..num_processes do
+        spawn(fn ->
+          end_time = :erlang.monotonic_time(:millisecond) + duration_ms
 
-        while(fn -> :erlang.monotonic_time(:millisecond) < end_time end)
-      end)
-    end
+          while(fn -> :erlang.monotonic_time(:millisecond) < end_time end)
+        end)
+      end
 
     # Clean up processes after duration
     spawn(fn ->
@@ -409,7 +442,8 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
         flunk("System not stable - additional failure occurred")
     after
       500 ->
-        :ok # System appears stable
+        # System appears stable
+        :ok
     end
   end
 
@@ -430,7 +464,13 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
   end
 
   def generate_recovery_patterns(count \\ 20) do
-    strategies = [:immediate_restart, :delayed_restart, :circuit_break, :graceful_degradation]
+    strategies = [
+      :immediate_restart,
+      :delayed_restart,
+      :circuit_break,
+      :graceful_degradation
+    ]
+
     outcomes = [:success, :failure, :partial_success]
 
     for i <- 1..count do

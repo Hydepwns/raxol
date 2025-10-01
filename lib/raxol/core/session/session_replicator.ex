@@ -64,14 +64,25 @@ defmodule Raxol.Core.Session.SessionReplicator do
 
   # Public API
 
-  def start_link(opts \\ []) do
-    BaseManager.start_link(__MODULE__, opts)
-  end
-
-  @spec replicate_session(pid(), binary(), term(), [node()], replication_strategy()) ::
+  @spec replicate_session(
+          pid(),
+          binary(),
+          term(),
+          [node()],
+          replication_strategy()
+        ) ::
           {:ok, term()} | {:error, term()}
-  def replicate_session(pid, session_id, session_data, replica_nodes, strategy \\ :eventual) do
-    GenServer.call(pid, {:replicate_session, session_id, session_data, replica_nodes, strategy})
+  def replicate_session(
+        pid,
+        session_id,
+        session_data,
+        replica_nodes,
+        strategy
+      ) do
+    GenServer.call(
+      pid,
+      {:replicate_session, session_id, session_data, replica_nodes, strategy}
+    )
   end
 
   @spec sync_session(pid(), binary()) :: {:ok, term()} | {:error, term()}
@@ -79,7 +90,8 @@ defmodule Raxol.Core.Session.SessionReplicator do
     GenServer.call(pid, {:sync_session, session_id})
   end
 
-  @spec get_session_replicas(pid(), binary()) :: {:ok, [node()]} | {:error, term()}
+  @spec get_session_replicas(pid(), binary()) ::
+          {:ok, [node()]} | {:error, term()}
   def get_session_replicas(pid, session_id) do
     GenServer.call(pid, {:get_session_replicas, session_id})
   end
@@ -103,8 +115,10 @@ defmodule Raxol.Core.Session.SessionReplicator do
   @impl true
   def init(opts) do
     state = %__MODULE__{
-      replication_factor: Keyword.get(opts, :replication_factor, @default_replication_factor),
-      consistency_level: Keyword.get(opts, :consistency_level, @default_consistency_level),
+      replication_factor:
+        Keyword.get(opts, :replication_factor, @default_replication_factor),
+      consistency_level:
+        Keyword.get(opts, :consistency_level, @default_consistency_level),
       sync_interval: Keyword.get(opts, :sync_interval, @default_sync_interval),
       vector_clocks: %{},
       pending_replications: %{},
@@ -116,23 +130,39 @@ defmodule Raxol.Core.Session.SessionReplicator do
     sync_timer = Process.send_after(self(), :periodic_sync, state.sync_interval)
 
     # Start anti-entropy timer
-    anti_entropy_timer = Process.send_after(self(), :anti_entropy, @default_anti_entropy_interval)
+    anti_entropy_timer =
+      Process.send_after(self(), :anti_entropy, @default_anti_entropy_interval)
 
     updated_state = %{state | anti_entropy_timer: anti_entropy_timer}
 
-    Log.module_info("SessionReplicator started with replication_factor=#{state.replication_factor}")
+    Log.module_info(
+      "SessionReplicator started with replication_factor=#{state.replication_factor}"
+    )
 
     {:ok, updated_state}
   end
 
   @impl true
-  def handle_call({:replicate_session, session_id, session_data, replica_nodes, strategy}, _from, state) do
-    case perform_replication(session_id, session_data, replica_nodes, strategy, state) do
+  def handle_call(
+        {:replicate_session, session_id, session_data, replica_nodes, strategy},
+        _from,
+        state
+      ) do
+    case perform_replication(
+           session_id,
+           session_data,
+           replica_nodes,
+           strategy,
+           state
+         ) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
 
       {:error, reason} = error ->
-        Log.module_error("Failed to replicate session #{session_id}: #{inspect(reason)}")
+        Log.module_error(
+          "Failed to replicate session #{session_id}: #{inspect(reason)}"
+        )
+
         {:reply, error, state}
     end
   end
@@ -144,7 +174,10 @@ defmodule Raxol.Core.Session.SessionReplicator do
         {:reply, {:ok, merged_data}, updated_state}
 
       {:error, reason} = error ->
-        Log.module_error("Failed to sync session #{session_id}: #{inspect(reason)}")
+        Log.module_error(
+          "Failed to sync session #{session_id}: #{inspect(reason)}"
+        )
+
         {:reply, error, state}
     end
   end
@@ -192,7 +225,9 @@ defmodule Raxol.Core.Session.SessionReplicator do
     updated_state = perform_anti_entropy_repair(state)
 
     # Schedule next anti-entropy
-    timer = Process.send_after(self(), :anti_entropy, @default_anti_entropy_interval)
+    timer =
+      Process.send_after(self(), :anti_entropy, @default_anti_entropy_interval)
+
     updated_state = %{updated_state | anti_entropy_timer: timer}
 
     {:noreply, updated_state}
@@ -220,7 +255,13 @@ defmodule Raxol.Core.Session.SessionReplicator do
 
   # Private Implementation
 
-  defp perform_replication(session_id, session_data, replica_nodes, strategy, state) do
+  defp perform_replication(
+         session_id,
+         session_data,
+         replica_nodes,
+         strategy,
+         state
+       ) do
     vector_clock = increment_vector_clock(session_id, state)
     versioned_data = {vector_clock, session_data}
 
@@ -240,22 +281,36 @@ defmodule Raxol.Core.Session.SessionReplicator do
   end
 
   defp replicate_immediate(session_id, versioned_data, replica_nodes, state) do
-    results = Enum.map(replica_nodes, fn node ->
-      case :rpc.call(node, Raxol.Core.Session.DistributedSessionRegistry, :store_replica, [session_id, versioned_data]) do
-        {:ok, _} -> {:ok, node}
-        {:error, reason} -> {:error, {node, reason}}
-        {:badrpc, reason} -> {:error, {node, {:rpc_error, reason}}}
-      end
-    end)
+    results =
+      Enum.map(replica_nodes, fn node ->
+        case :rpc.call(
+               node,
+               Raxol.Core.Session.DistributedSessionRegistry,
+               :store_replica,
+               [session_id, versioned_data]
+             ) do
+          {:ok, _} -> {:ok, node}
+          {:error, reason} -> {:error, {node, reason}}
+          {:badrpc, reason} -> {:error, {node, {:rpc_error, reason}}}
+        end
+      end)
 
     case Enum.split_with(results, &match?({:ok, _}, &1)) do
       {successes, []} ->
         success_nodes = Enum.map(successes, fn {:ok, node} -> node end)
-        Log.module_debug("Immediate replication successful to nodes: #{inspect(success_nodes)}")
+
+        Log.module_debug(
+          "Immediate replication successful to nodes: #{inspect(success_nodes)}"
+        )
+
         {:ok, update_vector_clock(session_id, versioned_data, state)}
 
       {_successes, failures} ->
-        failure_details = Enum.map(failures, fn {:error, {node, reason}} -> "#{node}: #{inspect(reason)}" end)
+        failure_details =
+          Enum.map(failures, fn {:error, {node, reason}} ->
+            "#{node}: #{inspect(reason)}"
+          end)
+
         {:error, {:partial_failure, failure_details}}
     end
   end
@@ -264,13 +319,26 @@ defmodule Raxol.Core.Session.SessionReplicator do
     # Start async replication to all nodes
     Enum.each(replica_nodes, fn node ->
       Task.start(fn ->
-        result = :rpc.call(node, Raxol.Core.Session.DistributedSessionRegistry, :store_replica, [session_id, versioned_data])
+        result =
+          :rpc.call(
+            node,
+            Raxol.Core.Session.DistributedSessionRegistry,
+            :store_replica,
+            [session_id, versioned_data]
+          )
+
         send(self(), {:replication_result, session_id, node, result})
       end)
     end)
 
     # Add to pending replications for tracking
-    pending = Map.put(state.pending_replications, session_id, {replica_nodes, :erlang.monotonic_time()})
+    pending =
+      Map.put(
+        state.pending_replications,
+        session_id,
+        {replica_nodes, :erlang.monotonic_time()}
+      )
+
     updated_state = %{state | pending_replications: pending}
 
     {:ok, update_vector_clock(session_id, versioned_data, updated_state)}
@@ -283,18 +351,29 @@ defmodule Raxol.Core.Session.SessionReplicator do
     parent = self()
     ref = make_ref()
 
-    tasks = Enum.map(replica_nodes, fn node ->
-      Task.async(fn ->
-        result = :rpc.call(node, Raxol.Core.Session.DistributedSessionRegistry, :store_replica, [session_id, versioned_data])
-        send(parent, {ref, node, result})
-        result
+    tasks =
+      Enum.map(replica_nodes, fn node ->
+        Task.async(fn ->
+          result =
+            :rpc.call(
+              node,
+              Raxol.Core.Session.DistributedSessionRegistry,
+              :store_replica,
+              [session_id, versioned_data]
+            )
+
+          send(parent, {ref, node, result})
+          result
+        end)
       end)
-    end)
 
     # Wait for quorum responses
     case wait_for_quorum_responses(ref, required_replicas, 5000) do
       {:ok, successful_nodes} ->
-        Log.module_debug("Quorum replication successful to #{length(successful_nodes)}/#{required_replicas} nodes")
+        Log.module_debug(
+          "Quorum replication successful to #{length(successful_nodes)}/#{required_replicas} nodes"
+        )
+
         {:ok, update_vector_clock(session_id, versioned_data, state)}
 
       {:error, reason} ->
@@ -308,11 +387,19 @@ defmodule Raxol.Core.Session.SessionReplicator do
     # Fire and forget to all nodes
     Enum.each(replica_nodes, fn node ->
       spawn(fn ->
-        :rpc.call(node, Raxol.Core.Session.DistributedSessionRegistry, :store_replica, [session_id, versioned_data])
+        :rpc.call(
+          node,
+          Raxol.Core.Session.DistributedSessionRegistry,
+          :store_replica,
+          [session_id, versioned_data]
+        )
       end)
     end)
 
-    Log.module_debug("Best effort replication initiated for session #{session_id}")
+    Log.module_debug(
+      "Best effort replication initiated for session #{session_id}"
+    )
+
     {:ok, update_vector_clock(session_id, versioned_data, state)}
   end
 
@@ -320,18 +407,42 @@ defmodule Raxol.Core.Session.SessionReplicator do
     wait_for_quorum_responses(ref, required_count, timeout, [], 0)
   end
 
-  defp wait_for_quorum_responses(_ref, required_count, _timeout, successful_nodes, success_count)
+  defp wait_for_quorum_responses(
+         _ref,
+         required_count,
+         _timeout,
+         successful_nodes,
+         success_count
+       )
        when success_count >= required_count do
     {:ok, successful_nodes}
   end
 
-  defp wait_for_quorum_responses(ref, required_count, timeout, successful_nodes, success_count) do
+  defp wait_for_quorum_responses(
+         ref,
+         required_count,
+         timeout,
+         successful_nodes,
+         success_count
+       ) do
     receive do
       {^ref, node, {:ok, _}} ->
-        wait_for_quorum_responses(ref, required_count, timeout, [node | successful_nodes], success_count + 1)
+        wait_for_quorum_responses(
+          ref,
+          required_count,
+          timeout,
+          [node | successful_nodes],
+          success_count + 1
+        )
 
       {^ref, _node, _error} ->
-        wait_for_quorum_responses(ref, required_count, timeout, successful_nodes, success_count)
+        wait_for_quorum_responses(
+          ref,
+          required_count,
+          timeout,
+          successful_nodes,
+          success_count
+        )
     after
       timeout ->
         {:error, {:quorum_timeout, success_count, required_count}}
@@ -342,20 +453,27 @@ defmodule Raxol.Core.Session.SessionReplicator do
     replica_nodes = get_replica_nodes_for_session(session_id, state)
 
     # Fetch session data from all replicas
-    replica_data = Enum.map(replica_nodes, fn node ->
-      case :rpc.call(node, Raxol.Core.Session.DistributedSessionRegistry, :get_replica, [session_id]) do
-        {:ok, data} -> {node, data}
-        {:error, :not_found} -> {node, nil}
-        error -> {node, {:error, error}}
-      end
-    end)
+    replica_data =
+      Enum.map(replica_nodes, fn node ->
+        case :rpc.call(
+               node,
+               Raxol.Core.Session.DistributedSessionRegistry,
+               :get_replica,
+               [session_id]
+             ) do
+          {:ok, data} -> {node, data}
+          {:error, :not_found} -> {node, nil}
+          error -> {node, {:error, error}}
+        end
+      end)
 
     # Filter out errors and merge valid data
-    valid_data = Enum.filter(replica_data, fn
-      {_node, nil} -> false
-      {_node, {:error, _}} -> false
-      {_node, _data} -> true
-    end)
+    valid_data =
+      Enum.filter(replica_data, fn
+        {_node, nil} -> false
+        {_node, {:error, _}} -> false
+        {_node, _data} -> true
+      end)
 
     case valid_data do
       [] ->
@@ -369,9 +487,10 @@ defmodule Raxol.Core.Session.SessionReplicator do
 
   defp merge_session_versions(data_list) do
     # Extract versioned data and sort by vector clock causality
-    versioned_data = Enum.map(data_list, fn {_node, {vector_clock, data}} ->
-      {vector_clock, data}
-    end)
+    versioned_data =
+      Enum.map(data_list, fn {_node, {vector_clock, data}} ->
+        {vector_clock, data}
+      end)
 
     # Find the most recent version using vector clock comparison
     case find_concurrent_versions(versioned_data) do
@@ -379,18 +498,23 @@ defmodule Raxol.Core.Session.SessionReplicator do
         # No conflicts, return latest version
         elem(latest_version, 1)
 
-      {_latest, conflicts} ->
+      {latest, conflicts} ->
         # Resolve conflicts using last-writer-wins with node priority
-        resolve_concurrent_versions([elem(latest_version, 1) | conflicts])
+        resolve_concurrent_versions([elem(latest, 1) | conflicts])
     end
   end
 
   defp find_concurrent_versions(versioned_data) do
     # For simplicity, use timestamp-based ordering
     # In production, implement proper vector clock comparison
-    sorted_data = Enum.sort_by(versioned_data, fn {vector_clock, _data} ->
-      Map.values(vector_clock) |> Enum.sum()
-    end, :desc)
+    sorted_data =
+      Enum.sort_by(
+        versioned_data,
+        fn {vector_clock, _data} ->
+          Map.values(vector_clock) |> Enum.sum()
+        end,
+        :desc
+      )
 
     case sorted_data do
       [latest | rest] -> {latest, Enum.map(rest, &elem(&1, 1))}
@@ -418,7 +542,10 @@ defmodule Raxol.Core.Session.SessionReplicator do
 
   defp get_replica_nodes_for_session(session_id, state) do
     # Get replica nodes from the distributed registry
-    case GenServer.call(Raxol.Core.Session.DistributedSessionRegistry, {:get_replica_nodes, session_id}) do
+    case GenServer.call(
+           Raxol.Core.Session.DistributedSessionRegistry,
+           {:get_replica_nodes, session_id}
+         ) do
       {:ok, nodes} -> nodes
       {:error, _} -> []
     end
@@ -427,15 +554,24 @@ defmodule Raxol.Core.Session.SessionReplicator do
   defp handle_replication_result(session_id, node, result, state) do
     case result do
       {:ok, _} ->
-        Log.module_debug("Replication to #{node} successful for session #{session_id}")
+        Log.module_debug(
+          "Replication to #{node} successful for session #{session_id}"
+        )
+
         update_replica_health(node, :healthy, state)
 
       {:error, reason} ->
-        Log.module_warn("Replication to #{node} failed for session #{session_id}: #{inspect(reason)}")
+        Log.module_warn(
+          "Replication to #{node} failed for session #{session_id}: #{inspect(reason)}"
+        )
+
         update_replica_health(node, :degraded, state)
 
       {:badrpc, reason} ->
-        Log.module_error("RPC error to #{node} for session #{session_id}: #{inspect(reason)}")
+        Log.module_error(
+          "RPC error to #{node} for session #{session_id}: #{inspect(reason)}"
+        )
+
         update_replica_health(node, :failed, state)
     end
   end
@@ -447,7 +583,9 @@ defmodule Raxol.Core.Session.SessionReplicator do
 
   defp perform_periodic_sync(state) do
     # Sync sessions that have pending replications
-    Enum.reduce(state.pending_replications, state, fn {session_id, {_nodes, timestamp}}, acc_state ->
+    Enum.reduce(state.pending_replications, state, fn {session_id,
+                                                       {_nodes, timestamp}},
+                                                      acc_state ->
       # Only sync if replication is older than sync interval
       age = :erlang.monotonic_time() - timestamp
 
@@ -488,7 +626,11 @@ defmodule Raxol.Core.Session.SessionReplicator do
     case sync_session_replicas(session_id, state) do
       {:ok, resolved_data, updated_state} ->
         # Update conflict count
-        updated_state = %{updated_state | sync_conflicts: updated_state.sync_conflicts + 1}
+        updated_state = %{
+          updated_state
+          | sync_conflicts: updated_state.sync_conflicts + 1
+        }
+
         {:ok, resolved_data, updated_state}
 
       {:error, reason} ->

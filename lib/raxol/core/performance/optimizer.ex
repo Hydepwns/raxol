@@ -13,6 +13,7 @@ defmodule Raxol.Core.Performance.Optimizer do
 
   import Raxol.Core.Performance.Profiler
   alias Raxol.Core.Runtime.Log
+
   @doc """
   Optimizes database queries to prevent N+1 problems.
 

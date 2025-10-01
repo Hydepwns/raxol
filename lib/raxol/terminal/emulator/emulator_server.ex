@@ -26,7 +26,9 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
     # Log initialization if we have an emulator
     case initial_emulator do
       nil ->
-        Log.module_debug("Terminal emulator server started without initial state")
+        Log.module_debug(
+          "Terminal emulator server started without initial state"
+        )
 
       emulator ->
         Log.module_debug(

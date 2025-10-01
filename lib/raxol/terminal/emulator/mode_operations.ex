@@ -13,8 +13,14 @@ defmodule Raxol.Terminal.Emulator.ModeOperations do
   """
   @spec set_mode(emulator(), atom()) :: {:ok, emulator()} | {:error, term()}
   def set_mode(emulator, mode) do
-    Log.module_debug("ModeOperations.set_mode called with mode=#{inspect(mode)}")
-    Log.module_debug("ModeOperations.set_mode: about to call ModeManager.set_mode")
+    Log.module_debug(
+      "ModeOperations.set_mode called with mode=#{inspect(mode)}"
+    )
+
+    Log.module_debug(
+      "ModeOperations.set_mode: about to call ModeManager.set_mode"
+    )
+
     result = Raxol.Terminal.ModeManager.set_mode(emulator, [mode])
 
     Log.module_debug(
@@ -23,7 +29,10 @@ defmodule Raxol.Terminal.Emulator.ModeOperations do
 
     case result do
       {:ok, new_emulator} ->
-        Log.module_debug("ModeOperations.set_mode: returning {:ok, new_emulator}")
+        Log.module_debug(
+          "ModeOperations.set_mode: returning {:ok, new_emulator}"
+        )
+
         {:ok, new_emulator}
 
       {:error, reason} ->
@@ -40,7 +49,9 @@ defmodule Raxol.Terminal.Emulator.ModeOperations do
   """
   @spec reset_mode(emulator(), atom()) :: {:ok, emulator()} | {:error, term()}
   def reset_mode(emulator, mode) do
-    Log.module_debug("ModeOperations.reset_mode called with mode=#{inspect(mode)}")
+    Log.module_debug(
+      "ModeOperations.reset_mode called with mode=#{inspect(mode)}"
+    )
 
     Log.module_debug(
       "ModeOperations.reset_mode: about to call ModeManager.reset_mode"
@@ -54,7 +65,10 @@ defmodule Raxol.Terminal.Emulator.ModeOperations do
 
     case result do
       {:ok, new_emulator} ->
-        Log.module_debug("ModeOperations.reset_mode: returning {:ok, new_emulator}")
+        Log.module_debug(
+          "ModeOperations.reset_mode: returning {:ok, new_emulator}"
+        )
+
         {:ok, new_emulator}
 
       {:error, reason} ->

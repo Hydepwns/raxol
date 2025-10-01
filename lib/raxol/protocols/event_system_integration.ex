@@ -261,7 +261,9 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   end
 
   defp default_error_handler(event, error) do
-    Log.module_error("Event handling error for #{event.type}: #{inspect(error)}")
+    Log.module_error(
+      "Event handling error for #{event.type}: #{inspect(error)}"
+    )
   end
 
   @doc """

@@ -33,6 +33,7 @@ defmodule Raxol.Performance.DevHints do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   @default_config %{
     enabled: Mix.env() == :dev,
     thresholds: %{

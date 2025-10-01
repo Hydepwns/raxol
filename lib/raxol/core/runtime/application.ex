@@ -190,7 +190,7 @@ defmodule Raxol.Core.Runtime.Application do
   @spec delegate_init(module(), context()) ::
           {model(), list(Raxol.Core.Runtime.Command.t())} | {:error, term()}
   def delegate_init(app_module, context) when is_atom(app_module) do
-  alias Raxol.Core.Runtime.Log
+    alias Raxol.Core.Runtime.Log
     require Logger
 
     Log.info("[#{__MODULE__}] Delegating init to #{inspect(app_module)}...")

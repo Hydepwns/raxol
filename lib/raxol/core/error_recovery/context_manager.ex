@@ -31,8 +31,10 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
   alias Raxol.Core.Runtime.Log
 
   @table_name :raxol_recovery_context
-  @cleanup_interval 60_000 # 1 minute
-  @default_ttl 300_000 # 5 minutes
+  # 1 minute
+  @cleanup_interval 60_000
+  # 5 minutes
+  @default_ttl 300_000
 
   defstruct [
     :table,
@@ -44,19 +46,15 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
   @type context_key :: term()
 
   @type context_entry :: %{
-    key: context_key(),
-    data: context_data(),
-    stored_at: DateTime.t(),
-    ttl_ms: non_neg_integer(),
-    access_count: non_neg_integer(),
-    last_accessed: DateTime.t()
-  }
+          key: context_key(),
+          data: context_data(),
+          stored_at: DateTime.t(),
+          ttl_ms: non_neg_integer(),
+          access_count: non_neg_integer(),
+          last_accessed: DateTime.t()
+        }
 
   # Public API
-
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Store context data for a process or component.
@@ -129,13 +127,14 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
     ttl_ms = Keyword.get(opts, :ttl_ms, @default_ttl)
 
     # Create ETS table for fast context storage
-    table = :ets.new(@table_name, [
-      :named_table,
-      :public,
-      :set,
-      {:read_concurrency, true},
-      {:write_concurrency, true}
-    ])
+    table =
+      :ets.new(@table_name, [
+        :named_table,
+        :public,
+        :set,
+        {:read_concurrency, true},
+        {:write_concurrency, true}
+      ])
 
     # Schedule periodic cleanup
     schedule_cleanup()
@@ -237,38 +236,40 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
 
   @impl true
   def handle_manager_call({:get_context, key}, _from, state) do
-    context = case :ets.lookup(state.table, key) do
-      [{^key, entry}] ->
-        # Check if expired
-        if context_expired?(entry) do
-          :ets.delete(state.table, key)
+    context =
+      case :ets.lookup(state.table, key) do
+        [{^key, entry}] ->
+          # Check if expired
+          if context_expired?(entry) do
+            :ets.delete(state.table, key)
+            nil
+          else
+            # Update access info
+            updated_entry = %{
+              entry
+              | last_accessed: DateTime.utc_now(),
+                access_count: entry.access_count + 1
+            }
+
+            :ets.insert(state.table, {key, updated_entry})
+
+            entry.data
+          end
+
+        [] ->
           nil
-        else
-          # Update access info
-          updated_entry = %{
-            entry
-            | last_accessed: DateTime.utc_now(),
-              access_count: entry.access_count + 1
-          }
-
-          :ets.insert(state.table, {key, updated_entry})
-
-          entry.data
-        end
-
-      [] ->
-        nil
-    end
+      end
 
     {:reply, context, state}
   end
 
   @impl true
   def handle_manager_call({:has_context, key}, _from, state) do
-    exists = case :ets.lookup(state.table, key) do
-      [{^key, entry}] -> not context_expired?(entry)
-      [] -> false
-    end
+    exists =
+      case :ets.lookup(state.table, key) do
+        [{^key, entry}] -> not context_expired?(entry)
+        [] -> false
+      end
 
     {:reply, exists, state}
   end
@@ -280,7 +281,8 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
     stats = %{
       total_contexts: length(all_contexts),
       expired_contexts: count_expired_contexts(all_contexts),
-      memory_usage_bytes: :ets.info(state.table, :memory) * :erlang.system_info(:wordsize),
+      memory_usage_bytes:
+        :ets.info(state.table, :memory) * :erlang.system_info(:wordsize),
       last_cleanup: state.last_cleanup,
       average_access_count: calculate_average_access_count(all_contexts),
       contexts_by_age: group_contexts_by_age(all_contexts)
@@ -305,7 +307,9 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
     {expired_count, new_state} = cleanup_expired_contexts(state)
 
     if expired_count > 0 do
-      Log.module_debug("Periodic cleanup removed #{expired_count} expired contexts")
+      Log.module_debug(
+        "Periodic cleanup removed #{expired_count} expired contexts"
+      )
     end
 
     # Schedule next cleanup

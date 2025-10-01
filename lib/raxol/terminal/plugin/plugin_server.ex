@@ -371,7 +371,9 @@ defmodule Raxol.Terminal.Plugin.PluginServer do
   end
 
   defp log_plugin_directory_error(path, reason) do
-    Log.module_error("Failed to read plugin directory #{path}: #{inspect(reason)}")
+    Log.module_error(
+      "Failed to read plugin directory #{path}: #{inspect(reason)}"
+    )
   end
 
   # Theme Plugin Functions

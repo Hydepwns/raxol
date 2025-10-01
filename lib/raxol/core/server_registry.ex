@@ -23,6 +23,7 @@ defmodule Raxol.Core.ServerRegistry do
 
   use Supervisor
   alias Raxol.Core.Runtime.Log
+
   @server_specs [
     # Core System Servers
     {Raxol.Core.StateManager, name: :state_manager},
@@ -158,7 +159,9 @@ defmodule Raxol.Core.ServerRegistry do
           GenServer.stop(pid, :normal, timeout)
         catch
           :exit, _ ->
-            Log.module_warning("Server #{server_name} did not shut down gracefully")
+            Log.module_warning(
+              "Server #{server_name} did not shut down gracefully"
+            )
         end
     end
   end

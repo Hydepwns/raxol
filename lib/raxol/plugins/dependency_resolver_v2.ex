@@ -1,5 +1,6 @@
 defmodule Raxol.Plugins.DependencyResolverV2 do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Advanced dependency resolution system for Plugin System v2.0.
 

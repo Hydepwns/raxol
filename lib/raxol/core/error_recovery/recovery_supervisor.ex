@@ -51,24 +51,26 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   ]
 
   @type recovery_strategy ::
-    :adaptive_one_for_one |
-    :adaptive_one_for_all |
-    :adaptive_rest_for_one |
-    :circuit_breaker
+          :adaptive_one_for_one
+          | :adaptive_one_for_all
+          | :adaptive_rest_for_one
+          | :circuit_breaker
 
   @type restart_info :: %{
-    child_id: term(),
-    timestamp: DateTime.t(),
-    error: term(),
-    restart_count: non_neg_integer(),
-    recovery_time_ms: non_neg_integer()
-  }
+          child_id: term(),
+          timestamp: DateTime.t(),
+          error: term(),
+          restart_count: non_neg_integer(),
+          recovery_time_ms: non_neg_integer()
+        }
 
   def start_link(opts) do
     children = Keyword.get(opts, :children, [])
     supervisor_opts = Keyword.drop(opts, [:children])
 
-    Supervisor.start_link(__MODULE__, {children, supervisor_opts}, name: __MODULE__)
+    Supervisor.start_link(__MODULE__, {children, supervisor_opts},
+      name: __MODULE__
+    )
   end
 
   @impl true
@@ -100,7 +102,8 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     # Start children with enhanced supervision
     enhanced_children = enhance_children_specs(children, state)
 
-    supervisor_strategy = adapt_supervisor_strategy(strategy, max_restarts, max_seconds)
+    supervisor_strategy =
+      adapt_supervisor_strategy(strategy, max_restarts, max_seconds)
 
     Log.module_info("Starting RecoverySupervisor with strategy: #{strategy}")
 
@@ -173,8 +176,10 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     end
 
     # Update restart history
-    updated_history = [restart_info | state.restart_history]
-    |> Enum.take(100) # Keep last 100 restarts
+    updated_history =
+      [restart_info | state.restart_history]
+      # Keep last 100 restarts
+      |> Enum.take(100)
 
     %{state | restart_history: updated_history}
   end
@@ -191,11 +196,12 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     child_id = extract_child_id(spec)
 
     # Add recovery enhancement
-    enhanced_args = [
-      recovery_supervisor: self(),
-      context_manager: state.context_manager,
-      dependency_graph: state.dependency_graph
-    ] ++ args
+    enhanced_args =
+      [
+        recovery_supervisor: self(),
+        context_manager: state.context_manager,
+        dependency_graph: state.dependency_graph
+      ] ++ args
 
     %{
       id: child_id,
@@ -215,7 +221,11 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   defp extract_child_id(%{id: id}), do: id
   defp extract_child_id(spec), do: spec
 
-  defp adapt_supervisor_strategy(:adaptive_one_for_one, max_restarts, max_seconds) do
+  defp adapt_supervisor_strategy(
+         :adaptive_one_for_one,
+         max_restarts,
+         max_seconds
+       ) do
     [
       strategy: :one_for_one,
       max_restarts: max_restarts,
@@ -223,7 +233,11 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     ]
   end
 
-  defp adapt_supervisor_strategy(:adaptive_one_for_all, max_restarts, max_seconds) do
+  defp adapt_supervisor_strategy(
+         :adaptive_one_for_all,
+         max_restarts,
+         max_seconds
+       ) do
     [
       strategy: :one_for_all,
       max_restarts: max_restarts,
@@ -231,7 +245,11 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     ]
   end
 
-  defp adapt_supervisor_strategy(:adaptive_rest_for_one, max_restarts, max_seconds) do
+  defp adapt_supervisor_strategy(
+         :adaptive_rest_for_one,
+         max_restarts,
+         max_seconds
+       ) do
     [
       strategy: :rest_for_one,
       max_restarts: max_restarts,
@@ -253,7 +271,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     state.restart_history
     |> Enum.filter(fn restart ->
       restart.child_id == child_id and
-      DateTime.compare(restart.timestamp, cutoff) == :gt
+        DateTime.compare(restart.timestamp, cutoff) == :gt
     end)
     |> length()
   end
@@ -266,7 +284,8 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
 
       # Performance impact detected - graceful degradation
       performance_impact_detected?(restart_info, state) ->
-        {:graceful_degradation, determine_fallback(restart_info.child_id, state)}
+        {:graceful_degradation,
+         determine_fallback(restart_info.child_id, state)}
 
       # Dependencies failed - check dependency strategy
       has_failed_dependencies?(restart_info.child_id, state) ->
@@ -280,7 +299,8 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
 
   defp calculate_circuit_break_duration(restart_info) do
     # Exponential backoff based on restart count
-    base_duration = 5000 # 5 seconds
+    # 5 seconds
+    base_duration = 5000
     backoff_factor = :math.pow(2, min(restart_info.restart_count, 6))
     round(base_duration * backoff_factor)
   end
@@ -306,7 +326,8 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   end
 
   defp has_failed_dependencies?(child_id, state) do
-    dependencies = DependencyGraph.get_dependencies(state.dependency_graph, child_id)
+    dependencies =
+      DependencyGraph.get_dependencies(state.dependency_graph, child_id)
 
     Enum.any?(dependencies, fn dep_id ->
       not is_child_running?(dep_id)
@@ -316,7 +337,8 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   defp determine_dependency_action(child_id, state) do
     case DependencyGraph.get_restart_strategy(state.dependency_graph, child_id) do
       :wait_for_dependencies ->
-        {:circuit_break, 10_000} # Wait 10 seconds for dependencies
+        # Wait 10 seconds for dependencies
+        {:circuit_break, 10_000}
 
       :restart_with_dependencies ->
         {:restart, :with_dependencies}
@@ -406,12 +428,17 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
 
       :critical ->
         # Switch to graceful degradation
-        execute_graceful_degradation(child_id, determine_fallback(child_id, state), state)
+        execute_graceful_degradation(
+          child_id,
+          determine_fallback(child_id, state),
+          state
+        )
     end
   end
 
   defp restart_with_dependencies(child_id, context, state) do
-    dependencies = DependencyGraph.get_dependencies(state.dependency_graph, child_id)
+    dependencies =
+      DependencyGraph.get_dependencies(state.dependency_graph, child_id)
 
     # Restart dependencies first
     Enum.each(dependencies, fn dep_id ->
@@ -431,7 +458,8 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     Log.module_warning("Circuit breaking #{child_id} for #{duration}ms")
 
     # Store circuit break info
-    circuit_break_until = DateTime.add(DateTime.utc_now(), duration, :millisecond)
+    circuit_break_until =
+      DateTime.add(DateTime.utc_now(), duration, :millisecond)
 
     # Schedule recovery attempt
     Process.send_after(self(), {:attempt_recovery, child_id}, duration)

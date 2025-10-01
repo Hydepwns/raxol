@@ -8,6 +8,7 @@ defmodule Raxol.Terminal.Tooltip do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   @doc """
   Shows a tooltip with the given text at the current cursor position.
 

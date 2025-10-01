@@ -8,6 +8,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   defstruct [
     :shortcuts,
     :active_context,

@@ -1,5 +1,6 @@
 defmodule Raxol.Security.Auditor do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Security auditing and validation module for Raxol.
 

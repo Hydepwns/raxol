@@ -7,6 +7,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
   alias Raxol.Terminal.ScreenBuffer.Manager
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Core.Runtime.Log
+
   @doc """
   Initializes the underlying terminal system.
   Must be called before other rendering functions.
@@ -163,7 +164,10 @@ defmodule Raxol.Terminal.Integration.Renderer do
         %{state | config: updated_config}
 
       {:error, reason} ->
-        Log.module_error("Failed to set config value #{key}: #{inspect(reason)}")
+        Log.module_error(
+          "Failed to set config value #{key}: #{inspect(reason)}"
+        )
+
         state
     end
   end
@@ -557,7 +561,10 @@ defmodule Raxol.Terminal.Integration.Renderer do
         state
 
       other ->
-        Log.module_error("Unexpected response from tb_set_title: #{inspect(other)}")
+        Log.module_error(
+          "Unexpected response from tb_set_title: #{inspect(other)}"
+        )
+
         state
     end
   end

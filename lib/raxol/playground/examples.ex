@@ -547,7 +547,9 @@ defmodule Raxol.Playground.Examples do
           Log.console("\n#{preview}")
 
         :complete ->
-          Log.console("\n#{IO.ANSI.green()}[+] Example completed#{IO.ANSI.reset()}")
+          Log.console(
+            "\n#{IO.ANSI.green()}[+] Example completed#{IO.ANSI.reset()}"
+          )
 
         _ ->
           :ok
@@ -579,7 +581,9 @@ defmodule Raxol.Playground.Examples do
   end
 
   defp run_composition_example(example) do
-    Log.console("\n#{IO.ANSI.bright()}Building interface...#{IO.ANSI.reset()}\n")
+    Log.console(
+      "\n#{IO.ANSI.bright()}Building interface...#{IO.ANSI.reset()}\n"
+    )
 
     example.components
     |> Enum.with_index(1)

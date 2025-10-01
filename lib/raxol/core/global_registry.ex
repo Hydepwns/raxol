@@ -26,6 +26,7 @@ defmodule Raxol.Core.GlobalRegistry do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   @type registry_type ::
           :sessions | :plugins | :commands | :themes | :components
   @type entry_id :: String.t() | atom()

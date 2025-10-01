@@ -20,7 +20,9 @@ defmodule Raxol.Architecture.CQRS.Setup do
     CloseTerminalCommand,
     ApplyThemeCommand
   }
+
   alias Raxol.Core.Runtime.Log
+
   alias Raxol.Handlers.{
     CreateTerminalHandler,
     UpdateTerminalHandler,

@@ -18,6 +18,7 @@ defmodule Raxol.Core.ErrorRecovery do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   @type recovery_strategy ::
           :retry | :fallback | :circuit_breaker | :degrade | :cleanup
   @type circuit_state :: :closed | :open | :half_open
@@ -471,7 +472,10 @@ defmodule Raxol.Core.ErrorRecovery do
                 {:error, :cleanup_failed}
 
               kind, payload ->
-                Log.module_error("Cleanup failed: #{kind} - #{inspect(payload)}")
+                Log.module_error(
+                  "Cleanup failed: #{kind} - #{inspect(payload)}"
+                )
+
                 {:error, :cleanup_failed}
             end
           end)

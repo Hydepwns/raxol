@@ -1,5 +1,6 @@
 defmodule Raxol.Core.ErrorHandler do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Centralized error handling module for the Raxol application.
 

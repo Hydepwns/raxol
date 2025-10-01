@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Supervisor do
 
   use Supervisor
   alias Raxol.Core.Runtime.Log
+
   def start_link(init_arg) do
     Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
   end

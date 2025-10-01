@@ -41,24 +41,24 @@ defmodule Raxol.Core.ErrorRecovery.DependencyGraph do
   @type dependency_graph :: %__MODULE__{}
 
   @type node_info :: %{
-    id: node_id(),
-    module: module(),
-    priority: integer(),
-    critical: boolean(),
-    fallback_strategy: fallback_strategy()
-  }
+          id: node_id(),
+          module: module(),
+          priority: integer(),
+          critical: boolean(),
+          fallback_strategy: fallback_strategy()
+        }
 
   @type fallback_strategy ::
-    :disable |
-    {:fallback_module, module()} |
-    {:notification, String.t()} |
-    :graceful_degradation
+          :disable
+          | {:fallback_module, module()}
+          | {:notification, String.t()}
+          | :graceful_degradation
 
   @type restart_strategy ::
-    :wait_for_dependencies |
-    :restart_with_dependencies |
-    :independent |
-    :graceful_degradation
+          :wait_for_dependencies
+          | :restart_with_dependencies
+          | :independent
+          | :graceful_degradation
 
   # Public API
 
@@ -336,7 +336,9 @@ defmodule Raxol.Core.ErrorRecovery.DependencyGraph do
       |> Map.keys()
       |> Enum.filter(fn node_id ->
         affected_count = length(get_affected_nodes(graph, node_id))
-        affected_count >= 2 || Map.get(graph.nodes, node_id, %{}) |> Map.get(:critical, false)
+
+        affected_count >= 2 ||
+          Map.get(graph.nodes, node_id, %{}) |> Map.get(:critical, false)
       end)
 
     %{graph | critical_paths: critical_nodes}
@@ -383,11 +385,15 @@ defmodule Raxol.Core.ErrorRecovery.DependencyGraph do
   end
 
   defp estimate_downtime(node_info, affected_nodes) do
-    base_restart_time = case Map.get(node_info, :priority, 5) do
-      p when p <= 2 -> 500  # High priority - fast restart
-      p when p <= 5 -> 1000 # Medium priority
-      _ -> 2000             # Low priority
-    end
+    base_restart_time =
+      case Map.get(node_info, :priority, 5) do
+        # High priority - fast restart
+        p when p <= 2 -> 500
+        # Medium priority
+        p when p <= 5 -> 1000
+        # Low priority
+        _ -> 2000
+      end
 
     # Add time for affected nodes
     cascade_time = length(affected_nodes) * 200

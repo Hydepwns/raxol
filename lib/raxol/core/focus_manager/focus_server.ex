@@ -8,6 +8,7 @@ defmodule Raxol.Core.FocusManager.FocusServer do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   defstruct [
     :focusable_components,
     :current_focus,

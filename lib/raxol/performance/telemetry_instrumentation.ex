@@ -1,5 +1,6 @@
 defmodule Raxol.Performance.TelemetryInstrumentation do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Telemetry instrumentation for Raxol hot paths.
 
@@ -277,7 +278,9 @@ defmodule Raxol.Performance.TelemetryInstrumentation do
     cache_name = metadata.cache_name
 
     # This could be sent to a monitoring system
-    Log.module_debug("Cache #{type} for #{cache_name}: #{inspect(measurements)}")
+    Log.module_debug(
+      "Cache #{type} for #{cache_name}: #{inspect(measurements)}"
+    )
   end
 
   defp handle_slow_operation(event, measurements, metadata, %{

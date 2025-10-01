@@ -216,8 +216,11 @@ defmodule Raxol.Core.Config.ConfigServer do
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_info(:auto_save, state) do
     case save_config_to_file(state) do
-      :ok -> Log.module_debug("Auto-saved configuration successfully")
-      {:error, reason} -> Log.module_warning("Auto-save failed: #{inspect(reason)}")
+      :ok ->
+        Log.module_debug("Auto-saved configuration successfully")
+
+      {:error, reason} ->
+        Log.module_warning("Auto-save failed: #{inspect(reason)}")
     end
 
     schedule_auto_save(state.persistence.save_interval)

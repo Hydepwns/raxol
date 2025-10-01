@@ -5,6 +5,7 @@ defmodule Raxol.UI.Events.ScrollTracker do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   defstruct [
     :config,
     :scroll_position,

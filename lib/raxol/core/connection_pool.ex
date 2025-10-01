@@ -30,6 +30,7 @@ defmodule Raxol.Core.ConnectionPool do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   @default_opts [
     pool_size: 5,
     max_overflow: 10,

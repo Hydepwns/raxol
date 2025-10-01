@@ -1,5 +1,6 @@
 defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   iTerm2 inline images protocol implementation.
 

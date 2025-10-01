@@ -50,22 +50,23 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
     # Ensure the application is started
     Mix.Task.run("app.start")
 
-    {opts, commands, _} = OptionParser.parse(args,
-      switches: [
-        render_threshold: :float,
-        memory_threshold: :float,
-        parse_threshold: :float,
-        error_threshold: :float,
-        output: :string,
-        format: :string,
-        help: :boolean
-      ],
-      aliases: [
-        h: :help,
-        o: :output,
-        f: :format
-      ]
-    )
+    {opts, commands, _} =
+      OptionParser.parse(args,
+        switches: [
+          render_threshold: :float,
+          memory_threshold: :float,
+          parse_threshold: :float,
+          error_threshold: :float,
+          output: :string,
+          format: :string,
+          help: :boolean
+        ],
+        aliases: [
+          h: :help,
+          o: :output,
+          f: :format
+        ]
+      )
 
     if opts[:help] || commands == [] do
       print_help()
@@ -84,14 +85,20 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
       :ok ->
         Log.console("✓ Performance monitoring started successfully")
         Log.console("Monitor will collect metrics every 30 seconds")
-        Log.console("Use 'mix raxol.perf.monitor status' to view current metrics")
+
+        Log.console(
+          "Use 'mix raxol.perf.monitor status' to view current metrics"
+        )
 
       {:already_running, current_metrics} ->
         Log.console("⚠ Performance monitoring is already running")
         print_current_metrics(current_metrics)
 
       {:error, reason} ->
-        Log.error("✗ Failed to start performance monitoring: #{inspect(reason)}")
+        Log.error(
+          "✗ Failed to start performance monitoring: #{inspect(reason)}"
+        )
+
         System.halt(1)
     end
   end
@@ -102,6 +109,7 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
     case AutomatedMonitor.stop_monitoring() do
       :ok ->
         Log.console("✓ Performance monitoring stopped")
+
       {:error, reason} ->
         Log.error("✗ Failed to stop performance monitoring: #{inspect(reason)}")
         System.halt(1)
@@ -116,7 +124,11 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
 
       status ->
         Log.console("=== Performance Monitoring Status ===")
-        Log.console("Status: #{if status.monitoring_enabled, do: "ACTIVE", else: "INACTIVE"}")
+
+        Log.console(
+          "Status: #{if status.monitoring_enabled, do: "ACTIVE", else: "INACTIVE"}"
+        )
+
         Log.console("Active alerts: #{status.alert_count}")
         Log.console("")
 
@@ -126,6 +138,7 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
         if length(status.recommendations) > 0 do
           Log.console("")
           Log.console("=== Optimization Recommendations ===")
+
           Enum.each(status.recommendations, fn rec ->
             Log.console("• #{rec}")
           end)
@@ -146,7 +159,10 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
 
       {:error, :insufficient_data} ->
         Log.console("⚠ Insufficient data for regression analysis")
-        Log.console("Run monitoring for at least 5 minutes to collect baseline data")
+
+        Log.console(
+          "Run monitoring for at least 5 minutes to collect baseline data"
+        )
 
       {:error, reason} ->
         Log.error("✗ Regression check failed: #{inspect(reason)}")
@@ -162,7 +178,10 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
 
     case AutomatedMonitor.get_status() do
       %{monitoring_enabled: false} ->
-        Log.console("⚠ No monitoring data available - monitoring is not running")
+        Log.console(
+          "⚠ No monitoring data available - monitoring is not running"
+        )
+
         System.halt(1)
 
       status ->
@@ -171,6 +190,7 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
         case output_file do
           nil ->
             Log.console(report)
+
           file_path ->
             File.write!(file_path, report)
             Log.console("✓ Performance report written to #{file_path}")
@@ -185,6 +205,7 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
 
       alerts ->
         Log.console("=== Active Performance Alerts ===")
+
         Enum.each(alerts, fn {alert_key, alert_data} ->
           violation = alert_data.violation
           Log.console("#{alert_key}:")
@@ -206,23 +227,26 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
   defp build_thresholds_from_opts(opts) do
     thresholds = %{}
 
-    thresholds = if opts[:render_threshold] do
-      Map.put(thresholds, :avg_render_time_ms, opts[:render_threshold])
-    else
-      thresholds
-    end
+    thresholds =
+      if opts[:render_threshold] do
+        Map.put(thresholds, :avg_render_time_ms, opts[:render_threshold])
+      else
+        thresholds
+      end
 
-    thresholds = if opts[:memory_threshold] do
-      Map.put(thresholds, :memory_usage_mb, opts[:memory_threshold])
-    else
-      thresholds
-    end
+    thresholds =
+      if opts[:memory_threshold] do
+        Map.put(thresholds, :memory_usage_mb, opts[:memory_threshold])
+      else
+        thresholds
+      end
 
-    thresholds = if opts[:parse_threshold] do
-      Map.put(thresholds, :parse_time_us, opts[:parse_threshold])
-    else
-      thresholds
-    end
+    thresholds =
+      if opts[:parse_threshold] do
+        Map.put(thresholds, :parse_time_us, opts[:parse_threshold])
+      else
+        thresholds
+      end
 
     if opts[:error_threshold] do
       Map.put(thresholds, :error_rate_percent, opts[:error_threshold])
@@ -275,45 +299,66 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
     Log.console("=== Threshold Status ===")
 
     # Check render thresholds
-    render_status = if metrics.render_performance.avg_ms > thresholds.avg_render_time_ms do
-      "⚠ EXCEEDED"
-    else
-      "✓ OK"
-    end
-    Log.console("Render time: #{render_status} (#{Float.round(metrics.render_performance.avg_ms, 2)}ms / #{thresholds.avg_render_time_ms}ms)")
+    render_status =
+      if metrics.render_performance.avg_ms > thresholds.avg_render_time_ms do
+        "⚠ EXCEEDED"
+      else
+        "✓ OK"
+      end
+
+    Log.console(
+      "Render time: #{render_status} (#{Float.round(metrics.render_performance.avg_ms, 2)}ms / #{thresholds.avg_render_time_ms}ms)"
+    )
 
     # Check memory thresholds
-    memory_status = if metrics.memory_usage.total_mb > thresholds.memory_usage_mb do
-      "⚠ EXCEEDED"
-    else
-      "✓ OK"
-    end
-    Log.console("Memory usage: #{memory_status} (#{Float.round(metrics.memory_usage.total_mb, 1)}MB / #{thresholds.memory_usage_mb}MB)")
+    memory_status =
+      if metrics.memory_usage.total_mb > thresholds.memory_usage_mb do
+        "⚠ EXCEEDED"
+      else
+        "✓ OK"
+      end
+
+    Log.console(
+      "Memory usage: #{memory_status} (#{Float.round(metrics.memory_usage.total_mb, 1)}MB / #{thresholds.memory_usage_mb}MB)"
+    )
 
     # Check parse thresholds
-    parse_status = if metrics.parse_performance.avg_us > thresholds.parse_time_us do
-      "⚠ EXCEEDED"
-    else
-      "✓ OK"
-    end
-    Log.console("Parse time: #{parse_status} (#{Float.round(metrics.parse_performance.avg_us, 1)}μs / #{thresholds.parse_time_us}μs)")
+    parse_status =
+      if metrics.parse_performance.avg_us > thresholds.parse_time_us do
+        "⚠ EXCEEDED"
+      else
+        "✓ OK"
+      end
+
+    Log.console(
+      "Parse time: #{parse_status} (#{Float.round(metrics.parse_performance.avg_us, 1)}μs / #{thresholds.parse_time_us}μs)"
+    )
 
     # Check error thresholds
-    error_status = if metrics.error_rates.error_rate_percent > thresholds.error_rate_percent do
-      "⚠ EXCEEDED"
-    else
-      "✓ OK"
-    end
-    Log.console("Error rate: #{error_status} (#{Float.round(metrics.error_rates.error_rate_percent, 2)}% / #{thresholds.error_rate_percent}%)")
+    error_status =
+      if metrics.error_rates.error_rate_percent > thresholds.error_rate_percent do
+        "⚠ EXCEEDED"
+      else
+        "✓ OK"
+      end
+
+    Log.console(
+      "Error rate: #{error_status} (#{Float.round(metrics.error_rates.error_rate_percent, 2)}% / #{thresholds.error_rate_percent}%)"
+    )
   end
 
-  defp print_threshold_status(_, _), do: Log.console("Threshold status: No data available")
+  defp print_threshold_status(_, _),
+    do: Log.console("Threshold status: No data available")
 
   defp print_regression(regression) do
     Log.console("  #{regression.type} (#{regression.metric}):")
     Log.console("    Baseline: #{regression.baseline}")
     Log.console("    Current: #{regression.current}")
-    Log.console("    Regression: #{Float.round(regression.regression_percent, 1)}%")
+
+    Log.console(
+      "    Regression: #{Float.round(regression.regression_percent, 1)}%"
+    )
+
     Log.console("")
   end
 
@@ -322,15 +367,18 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
   end
 
   defp generate_performance_report(status, "csv") do
-    headers = "timestamp,render_avg_ms,render_max_ms,parse_avg_us,memory_total_mb,error_rate_percent\n"
+    headers =
+      "timestamp,render_avg_ms,render_max_ms,parse_avg_us,memory_total_mb,error_rate_percent\n"
+
     metrics = status.current_metrics
 
-    row = "#{metrics.timestamp}," <>
-          "#{metrics.render_performance.avg_ms}," <>
-          "#{metrics.render_performance.max_ms}," <>
-          "#{metrics.parse_performance.avg_us}," <>
-          "#{metrics.memory_usage.total_mb}," <>
-          "#{metrics.error_rates.error_rate_percent}\n"
+    row =
+      "#{metrics.timestamp}," <>
+        "#{metrics.render_performance.avg_ms}," <>
+        "#{metrics.render_performance.max_ms}," <>
+        "#{metrics.parse_performance.avg_us}," <>
+        "#{metrics.memory_usage.total_mb}," <>
+        "#{metrics.error_rates.error_rate_percent}\n"
 
     headers <> row
   end
@@ -382,9 +430,15 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
 
   defp format_metrics_for_report(_), do: "No metrics data available"
 
-  defp format_baseline_comparison(baseline, current) when is_map(baseline) and is_map(current) do
-    render_change = ((current.render_performance.avg_ms - baseline.render_performance.avg_ms) / baseline.render_performance.avg_ms) * 100
-    memory_change = ((current.memory_usage.total_mb - baseline.memory_usage.total_mb) / baseline.memory_usage.total_mb) * 100
+  defp format_baseline_comparison(baseline, current)
+       when is_map(baseline) and is_map(current) do
+    render_change =
+      (current.render_performance.avg_ms - baseline.render_performance.avg_ms) /
+        baseline.render_performance.avg_ms * 100
+
+    memory_change =
+      (current.memory_usage.total_mb - baseline.memory_usage.total_mb) /
+        baseline.memory_usage.total_mb * 100
 
     """
     Render Performance Change: #{Float.round(render_change, 1)}%
@@ -392,7 +446,8 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
     """
   end
 
-  defp format_baseline_comparison(_, _), do: "No baseline data available for comparison"
+  defp format_baseline_comparison(_, _),
+    do: "No baseline data available for comparison"
 
   defp format_thresholds(thresholds) do
     """

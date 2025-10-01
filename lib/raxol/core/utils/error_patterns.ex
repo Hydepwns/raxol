@@ -1,5 +1,6 @@
 defmodule Raxol.Core.Utils.ErrorPatterns do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Consolidated error handling patterns used throughout the Raxol codebase.
   Provides consistent error handling, logging, and recovery mechanisms.

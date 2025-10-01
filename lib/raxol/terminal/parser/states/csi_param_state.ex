@@ -7,6 +7,7 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
   alias Raxol.Terminal.Parser.ParserState, as: State
   alias Raxol.Terminal.Commands.Executor
   alias Raxol.Core.Runtime.Log
+
   @doc """
   Processes input when the parser is in the :csi_param state.
   Collects parameter digits (0-9) and semicolons (;).

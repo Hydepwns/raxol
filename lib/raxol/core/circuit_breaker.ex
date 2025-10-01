@@ -37,6 +37,7 @@ defmodule Raxol.Core.CircuitBreaker do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   @default_opts [
     failure_threshold: 5,
     success_threshold: 2,

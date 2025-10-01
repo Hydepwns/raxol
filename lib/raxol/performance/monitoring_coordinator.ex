@@ -121,18 +121,21 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     case state.monitoring_enabled do
       true ->
         {:reply, {:already_running, get_current_status(state)}, state}
+
       false ->
         config = merge_user_config(state.monitoring_config, user_config)
+
         case start_all_components(config) do
           {:ok, component_statuses} ->
             # Collect initial baseline
             baseline = collect_initial_baseline()
 
-            new_state = %{state |
-              monitoring_enabled: true,
-              component_status: component_statuses,
-              baseline_data: baseline,
-              monitoring_config: config
+            new_state = %{
+              state
+              | monitoring_enabled: true,
+                component_status: component_statuses,
+                baseline_data: baseline,
+                monitoring_config: config
             }
 
             Log.module_info("Comprehensive performance monitoring started", %{
@@ -143,7 +146,10 @@ defmodule Raxol.Performance.MonitoringCoordinator do
             {:reply, :ok, new_state}
 
           {:error, reason} ->
-            Log.module_error("Failed to start performance monitoring", %{reason: reason})
+            Log.module_error("Failed to start performance monitoring", %{
+              reason: reason
+            })
+
             {:reply, {:error, reason}, state}
         end
     end
@@ -153,20 +159,25 @@ defmodule Raxol.Performance.MonitoringCoordinator do
   def handle_manager_call(:stop_monitoring, _from, state) do
     case stop_all_components() do
       :ok ->
-        new_state = %{state |
-          monitoring_enabled: false,
-          component_status: %{
-            automated_monitor: :stopped,
-            alert_manager: :running,  # AlertManager stays running
-            adaptive_optimizer: :stopped
-          }
+        new_state = %{
+          state
+          | monitoring_enabled: false,
+            component_status: %{
+              automated_monitor: :stopped,
+              # AlertManager stays running
+              alert_manager: :running,
+              adaptive_optimizer: :stopped
+            }
         }
 
         Log.module_info("Performance monitoring stopped")
         {:reply, :ok, new_state}
 
       {:error, reason} ->
-        Log.module_error("Failed to stop performance monitoring", %{reason: reason})
+        Log.module_error("Failed to stop performance monitoring", %{
+          reason: reason
+        })
+
         {:reply, {:error, reason}, state}
     end
   end
@@ -186,7 +197,10 @@ defmodule Raxol.Performance.MonitoringCoordinator do
       configure_optimization_triggers()
     end
 
-    Log.module_info("Auto-optimization #{if enabled, do: "enabled", else: "disabled"}")
+    Log.module_info(
+      "Auto-optimization #{if enabled, do: "enabled", else: "disabled"}"
+    )
+
     {:reply, :ok, new_state}
   end
 
@@ -197,6 +211,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
         Log.module_info("Manual performance optimization completed", %{
           results: optimization_results
         })
+
         {:reply, {:ok, optimization_results}, state}
 
       {:error, reason} ->
@@ -210,7 +225,8 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     merged_config = merge_user_config(state.monitoring_config, new_config)
 
     # Update running components with new config
-    update_results = update_component_configs(merged_config, state.component_status)
+    update_results =
+      update_component_configs(merged_config, state.component_status)
 
     new_state = %{state | monitoring_config: merged_config}
 
@@ -232,7 +248,9 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     case perform_regression_analysis(time_range, state) do
       {:ok, analysis} ->
         # Store regression data for trend analysis
-        updated_detector = update_regression_data(state.regression_detector, analysis)
+        updated_detector =
+          update_regression_data(state.regression_detector, analysis)
+
         new_state = %{state | regression_detector: updated_detector}
 
         {:reply, {:ok, analysis}, new_state}
@@ -257,12 +275,15 @@ defmodule Raxol.Performance.MonitoringCoordinator do
         rate_limits: Keyword.get(opts, :rate_limits, %{})
       },
       adaptive_optimizer: %{
-        optimization_interval: Keyword.get(opts, :optimization_interval, 300_000),
+        optimization_interval:
+          Keyword.get(opts, :optimization_interval, 300_000),
         auto_trigger: Keyword.get(opts, :auto_optimization, true)
       },
       regression_detection: %{
-        baseline_window: Keyword.get(opts, :baseline_window, 3600_000),  # 1 hour
-        regression_threshold: Keyword.get(opts, :regression_threshold, 0.15),  # 15%
+        # 1 hour
+        baseline_window: Keyword.get(opts, :baseline_window, 3600_000),
+        # 15%
+        regression_threshold: Keyword.get(opts, :regression_threshold, 0.15),
         confidence_level: Keyword.get(opts, :confidence_level, 0.95)
       }
     }
@@ -277,11 +298,12 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     results = %{}
 
     # Start AutomatedMonitor
-    monitor_result = case AutomatedMonitor.start_monitoring(config.automated_monitor) do
-      :ok -> {:ok, :running}
-      {:already_running, _} -> {:ok, :running}
-      error -> error
-    end
+    monitor_result =
+      case AutomatedMonitor.start_monitoring(config.automated_monitor) do
+        :ok -> {:ok, :running}
+        {:already_running, _} -> {:ok, :running}
+        error -> error
+      end
 
     results = Map.put(results, :automated_monitor, monitor_result)
 
@@ -289,31 +311,37 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     results = Map.put(results, :alert_manager, {:ok, :running})
 
     # Start AdaptiveOptimizer if auto-optimization is enabled
-    optimizer_result = if config.adaptive_optimizer.auto_trigger do
-      case AdaptiveOptimizer.start_link(config.adaptive_optimizer) do
-        {:ok, _} -> {:ok, :running}
-        {:error, {:already_started, _}} -> {:ok, :running}
-        error -> error
+    optimizer_result =
+      if config.adaptive_optimizer.auto_trigger do
+        case AdaptiveOptimizer.start_link(config.adaptive_optimizer) do
+          {:ok, _} -> {:ok, :running}
+          {:error, {:already_started, _}} -> {:ok, :running}
+          error -> error
+        end
+      else
+        {:ok, :disabled}
       end
-    else
-      {:ok, :disabled}
-    end
 
     results = Map.put(results, :adaptive_optimizer, optimizer_result)
 
     # Check if all components started successfully
     case Enum.all?(results, fn {_component, result} ->
-      match?({:ok, _}, result)
-    end) do
+           match?({:ok, _}, result)
+         end) do
       true ->
-        status_map = Enum.into(results, %{}, fn {component, {:ok, status}} ->
-          {component, status}
-        end)
+        status_map =
+          Enum.into(results, %{}, fn {component, {:ok, status}} ->
+            {component, status}
+          end)
+
         {:ok, status_map}
+
       false ->
-        failed_components = Enum.filter(results, fn {_component, result} ->
-          not match?({:ok, _}, result)
-        end)
+        failed_components =
+          Enum.filter(results, fn {_component, result} ->
+            not match?({:ok, _}, result)
+          end)
+
         {:error, {:component_start_failed, failed_components}}
     end
   end
@@ -322,18 +350,23 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     results = []
 
     # Stop AutomatedMonitor
-    monitor_result = case AutomatedMonitor.stop_monitoring() do
-      :ok -> :ok
-      error -> error
-    end
+    monitor_result =
+      case AutomatedMonitor.stop_monitoring() do
+        :ok -> :ok
+        error -> error
+      end
+
     results = [monitor_result | results]
 
     # Stop AdaptiveOptimizer (if running)
-    optimizer_result = case GenServer.stop(AdaptiveOptimizer, :normal, 5000) do
-      :ok -> :ok
-      {:error, :noproc} -> :ok  # Already stopped
-      error -> error
-    end
+    optimizer_result =
+      case GenServer.stop(AdaptiveOptimizer, :normal, 5000) do
+        :ok -> :ok
+        # Already stopped
+        {:error, :noproc} -> :ok
+        error -> error
+      end
+
     results = [optimizer_result | results]
 
     # Check if all stops were successful
@@ -350,6 +383,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     case AutomatedMonitor.get_status() do
       %{current_metrics: metrics} when map_size(metrics) > 0 ->
         metrics
+
       _ ->
         %{}
     end
@@ -427,6 +461,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
       case AdaptiveOptimizer.optimize_now() do
         {:ok, _} ->
           Log.module_info("Automatic optimization completed successfully")
+
         {:error, reason} ->
           Log.module_error("Automatic optimization failed", %{reason: reason})
       end
@@ -440,19 +475,21 @@ defmodule Raxol.Performance.MonitoringCoordinator do
       {:cache_optimization, fn -> perform_cache_optimization() end}
     ]
 
-    results = Enum.map(optimization_tasks, fn {task_name, task_func} ->
-      try do
-        result = task_func.()
-        {task_name, result}
-      rescue
-        error ->
-          {task_name, {:error, error}}
-      end
-    end)
+    results =
+      Enum.map(optimization_tasks, fn {task_name, task_func} ->
+        try do
+          result = task_func.()
+          {task_name, result}
+        rescue
+          error ->
+            {task_name, {:error, error}}
+        end
+      end)
 
-    successful_optimizations = Enum.filter(results, fn {_name, result} ->
-      match?({:ok, _}, result)
-    end)
+    successful_optimizations =
+      Enum.filter(results, fn {_name, result} ->
+        match?({:ok, _}, result)
+      end)
 
     case length(successful_optimizations) do
       0 -> {:error, :all_optimizations_failed}
@@ -478,13 +515,19 @@ defmodule Raxol.Performance.MonitoringCoordinator do
 
     # Update AutomatedMonitor config
     if component_status.automated_monitor == :running do
-      monitor_update = AutomatedMonitor.update_thresholds(new_config.automated_monitor.thresholds)
+      monitor_update =
+        AutomatedMonitor.update_thresholds(
+          new_config.automated_monitor.thresholds
+        )
+
       updates = Map.put(updates, :automated_monitor, monitor_update)
     end
 
     # Update AlertManager config
     if component_status.alert_manager == :running do
-      alert_update = AlertManager.configure_channels(new_config.alert_manager.channels)
+      alert_update =
+        AlertManager.configure_channels(new_config.alert_manager.channels)
+
       updates = Map.put(updates, :alert_manager, alert_update)
     end
 
@@ -507,6 +550,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     case {state.baseline_data, get_automated_monitor_status()} do
       {baseline, %{current_metrics: current}} when map_size(baseline) > 0 ->
         calculate_baseline_deltas(baseline, current)
+
       _ ->
         %{status: :insufficient_data}
     end
@@ -514,23 +558,26 @@ defmodule Raxol.Performance.MonitoringCoordinator do
 
   defp calculate_baseline_deltas(baseline, current) do
     %{
-      render_performance_delta: calculate_percentage_change(
-        baseline.render_performance.avg_ms,
-        current.render_performance.avg_ms
-      ),
-      memory_usage_delta: calculate_percentage_change(
-        baseline.memory_usage.total_mb,
-        current.memory_usage.total_mb
-      ),
-      parse_performance_delta: calculate_percentage_change(
-        baseline.parse_performance.avg_us,
-        current.parse_performance.avg_us
-      )
+      render_performance_delta:
+        calculate_percentage_change(
+          baseline.render_performance.avg_ms,
+          current.render_performance.avg_ms
+        ),
+      memory_usage_delta:
+        calculate_percentage_change(
+          baseline.memory_usage.total_mb,
+          current.memory_usage.total_mb
+        ),
+      parse_performance_delta:
+        calculate_percentage_change(
+          baseline.parse_performance.avg_us,
+          current.parse_performance.avg_us
+        )
     }
   end
 
   defp calculate_percentage_change(baseline, current) do
-    ((current - baseline) / baseline) * 100
+    (current - baseline) / baseline * 100
   end
 
   defp assess_system_health do
@@ -539,8 +586,9 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     process_limit = :erlang.system_info(:process_limit)
 
     %{
-      memory_usage_percent: (memory_info[:total] / (memory_info[:total] + memory_info[:system])) * 100,
-      process_usage_percent: (process_count / process_limit) * 100,
+      memory_usage_percent:
+        memory_info[:total] / (memory_info[:total] + memory_info[:system]) * 100,
+      process_usage_percent: process_count / process_limit * 100,
       schedulers_online: :erlang.system_info(:schedulers_online),
       uptime_ms: :erlang.statistics(:wall_clock) |> elem(0)
     }
@@ -548,8 +596,10 @@ defmodule Raxol.Performance.MonitoringCoordinator do
 
   defp initialize_regression_detector do
     %{
-      baseline_window_ms: 3600_000,  # 1 hour
-      regression_threshold: 0.15,    # 15%
+      # 1 hour
+      baseline_window_ms: 3600_000,
+      # 15%
+      regression_threshold: 0.15,
       confidence_level: 0.95,
       historical_data: [],
       trend_analysis: %{}
@@ -559,8 +609,11 @@ defmodule Raxol.Performance.MonitoringCoordinator do
   defp perform_regression_analysis(time_range, state) do
     case AutomatedMonitor.check_regressions() do
       {:ok, regressions} ->
-        enhanced_analysis = enhance_regression_analysis(regressions, time_range, state)
+        enhanced_analysis =
+          enhance_regression_analysis(regressions, time_range, state)
+
         {:ok, enhanced_analysis}
+
       error ->
         error
     end
@@ -573,7 +626,8 @@ defmodule Raxol.Performance.MonitoringCoordinator do
       severity_distribution: calculate_severity_distribution(regressions),
       trend_analysis: analyze_regression_trends(state.regression_detector),
       recommended_actions: generate_regression_recommendations(regressions),
-      confidence_score: calculate_regression_confidence(regressions, state.regression_detector)
+      confidence_score:
+        calculate_regression_confidence(regressions, state.regression_detector)
     }
   end
 
@@ -609,16 +663,22 @@ defmodule Raxol.Performance.MonitoringCoordinator do
 
   defp calculate_regression_frequency(detector) do
     case detector.historical_data do
-      [] -> 0
+      [] ->
+        0
+
       data ->
         time_span = List.last(data).timestamp - List.first(data).timestamp
-        length(data) / (time_span / 86_400_000)  # regressions per day
+        # regressions per day
+        length(data) / (time_span / 86_400_000)
     end
   end
 
   defp detect_seasonal_patterns(_detector) do
     # Placeholder for seasonal pattern detection
-    %{patterns_detected: false, analysis: "Insufficient data for pattern detection"}
+    %{
+      patterns_detected: false,
+      analysis: "Insufficient data for pattern detection"
+    }
   end
 
   defp generate_regression_recommendations(regressions) do
@@ -627,10 +687,13 @@ defmodule Raxol.Performance.MonitoringCoordinator do
       case regression.type do
         :render_performance ->
           "Consider optimizing render pipeline or reducing component complexity"
+
         :parse_performance ->
           "Review ANSI parsing efficiency or increase buffer sizes"
+
         :memory_usage ->
           "Investigate memory leaks or enable more aggressive garbage collection"
+
         _ ->
           "General performance review recommended"
       end
@@ -645,7 +708,8 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     # Adjust based on data consistency
     case length(regressions) do
       0 -> 1.0
-      count when count > 5 -> base_confidence * 0.8  # Too many regressions might indicate noise
+      # Too many regressions might indicate noise
+      count when count > 5 -> base_confidence * 0.8
       _ -> base_confidence
     end
   end
@@ -657,8 +721,10 @@ defmodule Raxol.Performance.MonitoringCoordinator do
       regression_count: analysis.regression_count
     }
 
-    updated_history = [new_data_point | detector.historical_data]
-    |> Enum.take(100)  # Keep last 100 data points
+    updated_history =
+      [new_data_point | detector.historical_data]
+      # Keep last 100 data points
+      |> Enum.take(100)
 
     %{detector | historical_data: updated_history}
   end

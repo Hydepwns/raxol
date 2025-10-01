@@ -1,5 +1,6 @@
 defmodule Raxol.Core.ErrorHandlingStandard do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Standardized error handling patterns for the Raxol application.
 

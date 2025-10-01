@@ -49,6 +49,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   # @behaviour Raxol.Terminal.Rendering.Backend  # Commented out due to init/1 conflict with GenServer
 
   defstruct [
@@ -484,7 +485,9 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   defp render_metal(_state, _surface, terminal_buffer, _opts) do
     # Placeholder for Metal rendering
     # Would encode render commands, submit to GPU, etc.
-    Log.module_debug("Rendering #{length(terminal_buffer)} characters with Metal")
+    Log.module_debug(
+      "Rendering #{length(terminal_buffer)} characters with Metal"
+    )
 
     # Simulate render operations
     # Simulate GPU work
@@ -524,7 +527,9 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   defp render_vulkan(_state, _surface, terminal_buffer, _opts) do
     # Placeholder for Vulkan rendering
-    Log.module_debug("Rendering #{length(terminal_buffer)} characters with Vulkan")
+    Log.module_debug(
+      "Rendering #{length(terminal_buffer)} characters with Vulkan"
+    )
 
     # Simulate render operations
     # Simulate GPU work

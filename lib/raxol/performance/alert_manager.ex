@@ -18,8 +18,10 @@ defmodule Raxol.Performance.AlertManager do
   alias Raxol.Core.Runtime.Log
 
   # Alert configuration
-  @alert_cooldown_ms 300_000        # 5 minutes
-  @escalation_timeout_ms 1_800_000  # 30 minutes
+  # 5 minutes
+  @alert_cooldown_ms 300_000
+  # 30 minutes
+  @escalation_timeout_ms 1_800_000
   @max_alerts_per_hour 10
 
   defstruct [
@@ -106,25 +108,36 @@ defmodule Raxol.Performance.AlertManager do
     case process_alert(alert_data, opts, state) do
       {:ok, alert_id, new_state} ->
         {:reply, {:ok, alert_id}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
+
       {:rate_limited, next_allowed} ->
         {:reply, {:rate_limited, next_allowed}, state}
     end
   end
 
   @impl true
-  def handle_manager_call({:acknowledge_alert, alert_id, user_info}, _from, state) do
+  def handle_manager_call(
+        {:acknowledge_alert, alert_id, user_info},
+        _from,
+        state
+      ) do
     case Map.get(state.active_alerts, alert_id) do
       nil ->
         {:reply, {:error, :alert_not_found}, state}
+
       alert ->
-        updated_alert = %{alert |
-          status: :acknowledged,
-          acknowledged_by: user_info,
-          acknowledged_at: System.system_time(:millisecond)
+        updated_alert = %{
+          alert
+          | status: :acknowledged,
+            acknowledged_by: user_info,
+            acknowledged_at: System.system_time(:millisecond)
         }
-        new_active_alerts = Map.put(state.active_alerts, alert_id, updated_alert)
+
+        new_active_alerts =
+          Map.put(state.active_alerts, alert_id, updated_alert)
+
         new_state = %{state | active_alerts: new_active_alerts}
 
         Log.module_info("Alert acknowledged", %{
@@ -138,24 +151,32 @@ defmodule Raxol.Performance.AlertManager do
   end
 
   @impl true
-  def handle_manager_call({:resolve_alert, alert_id, resolution_info}, _from, state) do
+  def handle_manager_call(
+        {:resolve_alert, alert_id, resolution_info},
+        _from,
+        state
+      ) do
     case Map.get(state.active_alerts, alert_id) do
       nil ->
         {:reply, {:error, :alert_not_found}, state}
+
       alert ->
-        resolved_alert = %{alert |
-          status: :resolved,
-          resolved_by: resolution_info.user,
-          resolved_at: System.system_time(:millisecond),
-          resolution_notes: resolution_info.notes
+        resolved_alert = %{
+          alert
+          | status: :resolved,
+            resolved_by: resolution_info.user,
+            resolved_at: System.system_time(:millisecond),
+            resolution_notes: resolution_info.notes
         }
 
         # Move to history
         new_history = [resolved_alert | state.alert_history]
         new_active_alerts = Map.delete(state.active_alerts, alert_id)
-        new_state = %{state |
-          active_alerts: new_active_alerts,
-          alert_history: new_history
+
+        new_state = %{
+          state
+          | active_alerts: new_active_alerts,
+            alert_history: new_history
         }
 
         # Send resolution notification
@@ -205,7 +226,8 @@ defmodule Raxol.Performance.AlertManager do
     new_rate_limits =
       state.rate_limits
       |> Enum.filter(fn {_key, last_time} ->
-        current_time - last_time < 3_600_000  # 1 hour
+        # 1 hour
+        current_time - last_time < 3_600_000
       end)
       |> Map.new()
 
@@ -229,12 +251,14 @@ defmodule Raxol.Performance.AlertManager do
     case check_rate_limit(alert_data, current_time, state.rate_limits) do
       {:rate_limited, next_allowed} ->
         {:rate_limited, next_allowed}
+
       :ok ->
         # Check for existing similar alerts (deduplication)
         case find_similar_alert(alert_data, state.active_alerts) do
           {:existing, existing_id} ->
             # Update existing alert instead of creating new one
             update_existing_alert(existing_id, alert_data, state)
+
           nil ->
             # Create new alert
             create_new_alert(alert_id, alert_data, opts, current_time, state)
@@ -266,16 +290,18 @@ defmodule Raxol.Performance.AlertManager do
 
   defp alerts_similar?(new_alert, existing_alert) do
     new_alert.type == existing_alert.type and
-    new_alert.metric == existing_alert.metric and
-    existing_alert.status == :active
+      new_alert.metric == existing_alert.metric and
+      existing_alert.status == :active
   end
 
   defp update_existing_alert(alert_id, alert_data, state) do
     existing_alert = Map.get(state.active_alerts, alert_id)
-    updated_alert = %{existing_alert |
-      occurrence_count: existing_alert.occurrence_count + 1,
-      last_occurrence: System.system_time(:millisecond),
-      current_value: alert_data.value
+
+    updated_alert = %{
+      existing_alert
+      | occurrence_count: existing_alert.occurrence_count + 1,
+        last_occurrence: System.system_time(:millisecond),
+        current_value: alert_data.value
     }
 
     new_active_alerts = Map.put(state.active_alerts, alert_id, updated_alert)
@@ -314,9 +340,10 @@ defmodule Raxol.Performance.AlertManager do
     rate_key = "#{alert_data.type}_#{alert_data.metric}"
     new_rate_limits = Map.put(state.rate_limits, rate_key, current_time)
 
-    new_state = %{state |
-      active_alerts: new_active_alerts,
-      rate_limits: new_rate_limits
+    new_state = %{
+      state
+      | active_alerts: new_active_alerts,
+        rate_limits: new_rate_limits
     }
 
     # Send alert notifications
@@ -329,24 +356,34 @@ defmodule Raxol.Performance.AlertManager do
           value: alert_data.value,
           threshold: alert_data.threshold
         })
+
         {:ok, alert_id, new_state}
+
       {:error, reason} ->
         Log.module_error("Failed to send alert notifications", %{
           alert_id: alert_id,
           reason: reason
         })
+
         {:error, reason}
     end
   end
 
   defp generate_alert_id(alert_data) do
     timestamp = System.system_time(:millisecond)
-    hash = :crypto.hash(:sha256, "#{alert_data.type}_#{alert_data.metric}_#{timestamp}")
+
+    hash =
+      :crypto.hash(
+        :sha256,
+        "#{alert_data.type}_#{alert_data.metric}_#{timestamp}"
+      )
+
     Base.encode16(hash, case: :lower) |> String.slice(0, 12)
   end
 
   defp determine_alert_severity(alert_data) do
     ratio = alert_data.value / alert_data.threshold
+
     cond do
       ratio > 3.0 -> :critical
       ratio > 2.0 -> :high
@@ -357,11 +394,13 @@ defmodule Raxol.Performance.AlertManager do
 
   defp send_alert_notifications(alert, state) do
     # Send through all configured channels based on severity
-    channels_to_use = get_channels_for_severity(alert.severity, state.alert_channels)
+    channels_to_use =
+      get_channels_for_severity(alert.severity, state.alert_channels)
 
-    results = Enum.map(channels_to_use, fn {channel_name, channel_config} ->
-      send_to_channel(channel_name, channel_config, alert)
-    end)
+    results =
+      Enum.map(channels_to_use, fn {channel_name, channel_config} ->
+        send_to_channel(channel_name, channel_config, alert)
+      end)
 
     case Enum.any?(results, fn result -> result == :ok end) do
       true -> :ok
@@ -377,19 +416,25 @@ defmodule Raxol.Performance.AlertManager do
   defp get_channels_for_severity(:high, channels) do
     # High severity alerts go to primary channels
     channels
-    |> Enum.filter(fn {_name, config} -> config.priority in [:high, :critical] end)
+    |> Enum.filter(fn {_name, config} ->
+      config.priority in [:high, :critical]
+    end)
   end
 
   defp get_channels_for_severity(:medium, channels) do
     # Medium alerts go to standard channels
     channels
-    |> Enum.filter(fn {_name, config} -> config.priority in [:medium, :high, :critical] end)
+    |> Enum.filter(fn {_name, config} ->
+      config.priority in [:medium, :high, :critical]
+    end)
   end
 
   defp get_channels_for_severity(:low, channels) do
     # Low alerts only go to monitoring channels
     channels
-    |> Enum.filter(fn {_name, config} -> config.priority == :low or config.type == :monitoring end)
+    |> Enum.filter(fn {_name, config} ->
+      config.priority == :low or config.type == :monitoring
+    end)
   end
 
   defp send_to_channel(:email, config, alert) do
@@ -414,11 +459,15 @@ defmodule Raxol.Performance.AlertManager do
       threshold: alert.threshold,
       severity: alert.severity
     })
+
     :ok
   end
 
   defp send_to_channel(channel_type, _config, alert) do
-    Log.module_warning("Unsupported alert channel: #{channel_type}", %{alert_id: alert.id})
+    Log.module_warning("Unsupported alert channel: #{channel_type}", %{
+      alert_id: alert.id
+    })
+
     {:error, :unsupported_channel}
   end
 
@@ -429,6 +478,7 @@ defmodule Raxol.Performance.AlertManager do
       alert_id: alert.id,
       severity: alert.severity
     })
+
     :ok
   end
 
@@ -439,6 +489,7 @@ defmodule Raxol.Performance.AlertManager do
       alert_id: alert.id,
       severity: alert.severity
     })
+
     :ok
   end
 
@@ -449,6 +500,7 @@ defmodule Raxol.Performance.AlertManager do
       alert_id: alert.id,
       severity: alert.severity
     })
+
     :ok
   end
 
@@ -471,15 +523,17 @@ defmodule Raxol.Performance.AlertManager do
   defp check_escalation(active_alerts, current_time) do
     Enum.filter(active_alerts, fn {_id, alert} ->
       alert.status == :active and
-      (current_time - alert.created_at) > @escalation_timeout_ms and
-      alert.escalation_level == 0
+        current_time - alert.created_at > @escalation_timeout_ms and
+        alert.escalation_level == 0
     end)
   end
 
   defp process_escalations(escalated_alerts, state) do
     Enum.reduce(escalated_alerts, state, fn {alert_id, alert}, acc_state ->
       escalated_alert = %{alert | escalation_level: 1}
-      new_active_alerts = Map.put(acc_state.active_alerts, alert_id, escalated_alert)
+
+      new_active_alerts =
+        Map.put(acc_state.active_alerts, alert_id, escalated_alert)
 
       Log.module_warning("Alert escalated due to timeout", %{
         alert_id: alert_id,
@@ -495,7 +549,8 @@ defmodule Raxol.Performance.AlertManager do
 
   defp send_escalation_notification(alert, state) do
     # Escalations always go to critical channels
-    critical_channels = get_channels_for_severity(:critical, state.alert_channels)
+    critical_channels =
+      get_channels_for_severity(:critical, state.alert_channels)
 
     Enum.each(critical_channels, fn {channel_name, channel_config} ->
       send_to_channel(channel_name, channel_config, alert)
@@ -503,7 +558,9 @@ defmodule Raxol.Performance.AlertManager do
   end
 
   defp send_resolution_notification(alert, state) do
-    Log.module_info("Sending alert resolution notification", %{alert_id: alert.id})
+    Log.module_info("Sending alert resolution notification", %{
+      alert_id: alert.id
+    })
 
     # Send resolution through primary channels
     primary_channels = get_channels_for_severity(:high, state.alert_channels)
@@ -518,6 +575,7 @@ defmodule Raxol.Performance.AlertManager do
       alert_id: alert.id,
       resolved_by: alert.resolved_by
     })
+
     :ok
   end
 
@@ -525,14 +583,16 @@ defmodule Raxol.Performance.AlertManager do
     current_time = System.system_time(:millisecond)
     last_24h = current_time - 86_400_000
 
-    recent_alerts = Enum.filter(state.alert_history, fn alert ->
-      alert.created_at > last_24h
-    end)
+    recent_alerts =
+      Enum.filter(state.alert_history, fn alert ->
+        alert.created_at > last_24h
+      end)
 
     %{
       active_alerts: map_size(state.active_alerts),
       total_alerts_24h: length(recent_alerts),
-      critical_alerts_24h: Enum.count(recent_alerts, &(&1.severity == :critical)),
+      critical_alerts_24h:
+        Enum.count(recent_alerts, &(&1.severity == :critical)),
       avg_resolution_time_ms: calculate_avg_resolution_time(recent_alerts),
       alert_rate_per_hour: length(recent_alerts) / 24,
       top_alert_types: get_top_alert_types(recent_alerts)
@@ -543,18 +603,24 @@ defmodule Raxol.Performance.AlertManager do
     resolved_alerts = Enum.filter(alerts, &(&1.status == :resolved))
 
     case resolved_alerts do
-      [] -> 0
+      [] ->
+        0
+
       alerts ->
-        total_time = Enum.sum(Enum.map(alerts, fn alert ->
-          alert.resolved_at - alert.created_at
-        end))
+        total_time =
+          Enum.sum(
+            Enum.map(alerts, fn alert ->
+              alert.resolved_at - alert.created_at
+            end)
+          )
+
         div(total_time, length(alerts))
     end
   end
 
   defp get_top_alert_types(alerts) do
     alerts
-    |> Enum.group_by(&({&1.type, &1.metric}))
+    |> Enum.group_by(&{&1.type, &1.metric})
     |> Enum.map(fn {type, type_alerts} -> {type, length(type_alerts)} end)
     |> Enum.sort_by(fn {_type, count} -> count end, :desc)
     |> Enum.take(5)

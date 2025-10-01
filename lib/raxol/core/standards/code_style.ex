@@ -238,7 +238,7 @@ defmodule Raxol.Core.Standards.CodeStyle do
         use ExUnit.Case, async: true
 
         alias ModuleName
-  alias Raxol.Core.Runtime.Log
+      alias Raxol.Core.Runtime.Log
 
         describe "function_name/arity" do
           setup do

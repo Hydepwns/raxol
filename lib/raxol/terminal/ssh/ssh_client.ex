@@ -35,7 +35,8 @@ if Code.ensure_loaded?(:ssh) do
     """
 
     use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Runtime.Log
+    alias Raxol.Core.Runtime.Log
+
     @type connection_options :: %{
             optional(:username) => String.t(),
             optional(:password) => String.t(),
@@ -745,7 +746,10 @@ if Code.ensure_loaded?(:ssh) do
           {:ok, channel_id}
 
         {:error, reason} ->
-          Log.module_debug("Failed to create keepalive channel: #{inspect(reason)}")
+          Log.module_debug(
+            "Failed to create keepalive channel: #{inspect(reason)}"
+          )
+
           {:error, reason}
       end
     end

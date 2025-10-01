@@ -106,7 +106,10 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
       storage_path: Keyword.get(opts, :storage_path, "priv/palettes.json")
     }
 
-    Log.module_info("Palette registry started with #{map_size(palettes)} palettes")
+    Log.module_info(
+      "Palette registry started with #{map_size(palettes)} palettes"
+    )
+
     {:ok, state}
   end
 
@@ -121,7 +124,10 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
         {:reply, :ok, new_state}
 
       {:error, reason} ->
-        Log.module_warning("Failed to register palette #{name}: #{inspect(reason)}")
+        Log.module_warning(
+          "Failed to register palette #{name}: #{inspect(reason)}"
+        )
+
         {:reply, {:error, reason}, state}
     end
   end
@@ -217,7 +223,10 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
   defp save_palettes_to_storage(palettes, storage_path) do
     # This would save to a JSON file or database
     # For now, just log - implement persistence as needed
-    Log.module_debug("Would save #{map_size(palettes)} palettes to #{storage_path}")
+    Log.module_debug(
+      "Would save #{map_size(palettes)} palettes to #{storage_path}"
+    )
+
     :ok
   end
 end

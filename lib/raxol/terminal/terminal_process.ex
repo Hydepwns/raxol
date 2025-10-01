@@ -41,15 +41,6 @@ defmodule Raxol.Terminal.TerminalProcess do
           accessibility_options: map() | nil
         }
 
-  ## Client API
-
-  @doc """
-  Starts a terminal process.
-  """
-  def start_link(terminal_config) do
-    Raxol.Core.Behaviours.BaseManager.start_link(__MODULE__, terminal_config)
-  end
-
   ## BaseManager Implementation
 
   @impl true
@@ -169,7 +160,10 @@ defmodule Raxol.Terminal.TerminalProcess do
   def handle_manager_info(:initialize_terminal, state) do
     case initialize_terminal_components(state) do
       {:ok, new_state} ->
-        Log.module_info("Terminal #{state.terminal_id} initialized successfully")
+        Log.module_info(
+          "Terminal #{state.terminal_id} initialized successfully"
+        )
+
         {:noreply, %{new_state | state: :active}}
 
       {:error, reason} ->
@@ -190,7 +184,9 @@ defmodule Raxol.Terminal.TerminalProcess do
 
   @impl true
   def terminate(reason, state) do
-    Log.module_info("Terminal #{state.terminal_id} terminating: #{inspect(reason)}")
+    Log.module_info(
+      "Terminal #{state.terminal_id} terminating: #{inspect(reason)}"
+    )
 
     # Clean up resources
     cleanup_terminal_resources(state)

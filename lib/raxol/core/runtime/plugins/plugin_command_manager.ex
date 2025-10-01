@@ -166,7 +166,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
       end
     rescue
       e ->
-        Log.module_error("Error executing command #{command.name}: #{inspect(e)}")
+        Log.module_error(
+          "Error executing command #{command.name}: #{inspect(e)}"
+        )
+
         {:error, e}
     end
   end

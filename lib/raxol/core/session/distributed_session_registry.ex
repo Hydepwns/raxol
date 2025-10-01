@@ -68,39 +68,39 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
   @type session_id :: String.t()
   @type node_id :: atom()
   @type session_data :: term()
-  @type session_affinity :: :cpu_bound | :memory_bound | :io_bound | :network_bound
+  @type session_affinity ::
+          :cpu_bound | :memory_bound | :io_bound | :network_bound
 
   @type session_meta :: %{
-    session_id: session_id(),
-    created_at: DateTime.t(),
-    last_accessed: DateTime.t(),
-    access_count: non_neg_integer(),
-    affinity: session_affinity(),
-    replicas: non_neg_integer(),
-    version: non_neg_integer(),
-    checksum: String.t()
-  }
+          session_id: session_id(),
+          created_at: DateTime.t(),
+          last_accessed: DateTime.t(),
+          access_count: non_neg_integer(),
+          affinity: session_affinity(),
+          replicas: non_neg_integer(),
+          version: non_neg_integer(),
+          checksum: String.t()
+        }
 
   @type node_info :: %{
-    node_id: node_id(),
-    last_heartbeat: DateTime.t(),
-    cpu_usage: float(),
-    memory_usage: float(),
-    session_count: non_neg_integer(),
-    status: :active | :draining | :unhealthy
-  }
+          node_id: node_id(),
+          last_heartbeat: DateTime.t(),
+          cpu_usage: float(),
+          memory_usage: float(),
+          session_count: non_neg_integer(),
+          status: :active | :draining | :unhealthy
+        }
 
   # Public API
-
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Register a session in the distributed registry.
   """
   def register_session(session_id, session_data, opts \\ []) do
-    GenServer.call(__MODULE__, {:register_session, session_id, session_data, opts})
+    GenServer.call(
+      __MODULE__,
+      {:register_session, session_id, session_data, opts}
+    )
   end
 
   @doc """
@@ -178,7 +178,9 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
   @impl true
   def init_manager(opts) do
     node_id = Keyword.get(opts, :node_id, node())
-    replication_factor = Keyword.get(opts, :replication_factor, @default_replication_factor)
+
+    replication_factor =
+      Keyword.get(opts, :replication_factor, @default_replication_factor)
 
     # Initialize hash ring with current node
     hash_ring = initialize_hash_ring([node_id])
@@ -190,11 +192,13 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
     # Discover existing cluster nodes
     cluster_nodes = discover_cluster_nodes()
-    updated_ring = if length(cluster_nodes) > 1 do
-      rebuild_hash_ring(cluster_nodes)
-    else
-      hash_ring
-    end
+
+    updated_ring =
+      if length(cluster_nodes) > 1 do
+        rebuild_hash_ring(cluster_nodes)
+      else
+        hash_ring
+      end
 
     # Start periodic timers
     heartbeat_timer = schedule_heartbeat()
@@ -222,7 +226,11 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
   end
 
   @impl true
-  def handle_manager_call({:register_session, session_id, session_data, opts}, _from, state) do
+  def handle_manager_call(
+        {:register_session, session_id, session_data, opts},
+        _from,
+        state
+      ) do
     affinity = Keyword.get(opts, :affinity, :cpu_bound)
     replicas = Keyword.get(opts, :replicas, state.replication_factor)
 
@@ -230,13 +238,21 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
       {:ok, primary_node, replica_nodes} ->
         meta = create_session_meta(session_id, affinity, replicas)
 
-        case register_session_on_nodes(session_id, session_data, meta, primary_node, replica_nodes, state) do
+        case register_session_on_nodes(
+               session_id,
+               session_data,
+               meta,
+               primary_node,
+               replica_nodes,
+               state
+             ) do
           :ok ->
-            updated_sessions = Map.put(state.sessions, session_id, %{
-              primary_node: primary_node,
-              replica_nodes: replica_nodes,
-              meta: meta
-            })
+            updated_sessions =
+              Map.put(state.sessions, session_id, %{
+                primary_node: primary_node,
+                replica_nodes: replica_nodes,
+                meta: meta
+              })
 
             new_state = %{state | sessions: updated_sessions}
             {:reply, {:ok, primary_node, replica_nodes}, new_state}
@@ -264,7 +280,8 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
         end
 
       session_info ->
-        {:reply, {:ok, {session_info.primary_node, session_info.replica_nodes}}, state}
+        {:reply, {:ok, {session_info.primary_node, session_info.replica_nodes}},
+         state}
     end
   end
 
@@ -280,7 +297,11 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
   end
 
   @impl true
-  def handle_manager_call({:update_session, session_id, session_data}, _from, state) do
+  def handle_manager_call(
+        {:update_session, session_id, session_data},
+        _from,
+        state
+      ) do
     case update_session_across_replicas(session_id, session_data, state) do
       :ok ->
         {:reply, :ok, state}
@@ -304,7 +325,11 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
   end
 
   @impl true
-  def handle_manager_call({:migrate_session, session_id, target_node}, _from, state) do
+  def handle_manager_call(
+        {:migrate_session, session_id, target_node},
+        _from,
+        state
+      ) do
     case execute_session_migration(session_id, target_node, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -403,11 +428,18 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
   defp add_node_to_ring(ring, node) do
     # Create virtual nodes for better distribution
-    virtual_nodes = for i <- 1..(@hash_ring_size div 32) do
-      hash_key = "#{node}:#{i}"
-      hash = :crypto.hash(:sha256, hash_key) |> Base.encode16() |> String.slice(0, 8) |> String.to_integer(16)
-      {hash, node}
-    end
+    virtual_nodes =
+      for i <- 1..div(2048, 32) do
+        hash_key = "#{node}:#{i}"
+
+        hash =
+          :crypto.hash(:sha256, hash_key)
+          |> Base.encode16()
+          |> String.slice(0, 8)
+          |> String.to_integer(16)
+
+        {hash, node}
+      end
 
     Enum.reduce(virtual_nodes, ring, fn {hash, node_id}, acc ->
       Map.put(acc, hash, node_id)
@@ -423,7 +455,9 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
     case find_primary_node(session_hash, state.hash_ring) do
       {:ok, primary_node} ->
-        replica_nodes = find_replica_nodes(primary_node, replicas - 1, affinity, state)
+        replica_nodes =
+          find_replica_nodes(primary_node, replicas - 1, affinity, state)
+
         {:ok, primary_node, replica_nodes}
 
       {:error, reason} ->
@@ -487,32 +521,34 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
     base_score = 100
 
     # Adjust score based on node health
-    health_penalty = case Map.get(node_info, :status, :active) do
-      :active -> 0
-      :draining -> -50
-      :unhealthy -> -100
-    end
+    health_penalty =
+      case Map.get(node_info, :status, :active) do
+        :active -> 0
+        :draining -> -50
+        :unhealthy -> -100
+      end
 
     # Adjust score based on affinity
-    affinity_bonus = case affinity do
-      :cpu_bound ->
-        cpu_usage = Map.get(node_info, :cpu_usage, 0.5)
-        (1.0 - cpu_usage) * 20
+    affinity_bonus =
+      case affinity do
+        :cpu_bound ->
+          cpu_usage = Map.get(node_info, :cpu_usage, 0.5)
+          (1.0 - cpu_usage) * 20
 
-      :memory_bound ->
-        memory_usage = Map.get(node_info, :memory_usage, 0.5)
-        (1.0 - memory_usage) * 20
+        :memory_bound ->
+          memory_usage = Map.get(node_info, :memory_usage, 0.5)
+          (1.0 - memory_usage) * 20
 
-      :io_bound ->
-        # Prefer nodes with lower session count for I/O bound sessions
-        session_count = Map.get(node_info, :session_count, 0)
-        max(0, 20 - session_count)
+        :io_bound ->
+          # Prefer nodes with lower session count for I/O bound sessions
+          session_count = Map.get(node_info, :session_count, 0)
+          max(0, 20 - session_count)
 
-      :network_bound ->
-        # For now, treat similar to I/O bound
-        session_count = Map.get(node_info, :session_count, 0)
-        max(0, 15 - session_count)
-    end
+        :network_bound ->
+          # For now, treat similar to I/O bound
+          session_count = Map.get(node_info, :session_count, 0)
+          max(0, 15 - session_count)
+      end
 
     base_score + health_penalty + affinity_bonus
   end
@@ -534,18 +570,35 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
     :crypto.hash(:md5, session_id) |> Base.encode16()
   end
 
-  defp register_session_on_nodes(session_id, session_data, meta, primary_node, replica_nodes, state) do
+  defp register_session_on_nodes(
+         session_id,
+         session_data,
+         meta,
+         primary_node,
+         replica_nodes,
+         state
+       ) do
     all_nodes = [primary_node | replica_nodes]
 
-    results = Enum.map(all_nodes, fn node ->
-      if node == state.node_id do
-        # Local registration
-        DistributedSessionStorage.store_session(state.storage, session_id, session_data, meta)
-      else
-        # Remote registration
-        call_remote_node(node, :register_session, [session_id, session_data, meta])
-      end
-    end)
+    results =
+      Enum.map(all_nodes, fn node ->
+        if node == state.node_id do
+          # Local registration
+          DistributedSessionStorage.store_session(
+            state.storage,
+            session_id,
+            session_data,
+            meta
+          )
+        else
+          # Remote registration
+          call_remote_node(node, :register_session, [
+            session_id,
+            session_data,
+            meta
+          ])
+        end
+      end)
 
     case Enum.all?(results, &match?(:ok, &1)) do
       true -> :ok
@@ -566,7 +619,11 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
           {:error, _reason} ->
             # Try replica nodes
-            get_session_from_replicas(session_info.replica_nodes, session_id, state)
+            get_session_from_replicas(
+              session_info.replica_nodes,
+              session_id,
+              state
+            )
         end
     end
   end
@@ -602,13 +659,23 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
         all_nodes = [session_info.primary_node | session_info.replica_nodes]
         updated_meta = update_session_meta(session_info.meta)
 
-        results = Enum.map(all_nodes, fn node ->
-          if node == state.node_id do
-            DistributedSessionStorage.update_session(state.storage, session_id, session_data, updated_meta)
-          else
-            call_remote_node(node, :update_session, [session_id, session_data, updated_meta])
-          end
-        end)
+        results =
+          Enum.map(all_nodes, fn node ->
+            if node == state.node_id do
+              DistributedSessionStorage.update_session(
+                state.storage,
+                session_id,
+                session_data,
+                updated_meta
+              )
+            else
+              call_remote_node(node, :update_session, [
+                session_id,
+                session_data,
+                updated_meta
+              ])
+            end
+          end)
 
         case Enum.count(results, &match?(:ok, &1)) do
           count when count > length(all_nodes) / 2 ->
@@ -697,7 +764,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
     # Get sessions where this node is primary or replica
     Enum.filter(state.sessions, fn {_session_id, session_info} ->
       session_info.primary_node == state.node_id or
-      state.node_id in session_info.replica_nodes
+        state.node_id in session_info.replica_nodes
     end)
     |> Enum.map(fn {session_id, _info} -> session_id end)
   end
@@ -722,14 +789,15 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
     # Add node to hash ring and rebalance sessions
     updated_ring = add_node_to_ring(state.hash_ring, node_id)
 
-    updated_nodes = Map.put(state.nodes, node_id, %{
-      node_id: node_id,
-      last_heartbeat: DateTime.utc_now(),
-      cpu_usage: 0.0,
-      memory_usage: 0.0,
-      session_count: 0,
-      status: :active
-    })
+    updated_nodes =
+      Map.put(state.nodes, node_id, %{
+        node_id: node_id,
+        last_heartbeat: DateTime.utc_now(),
+        cpu_usage: 0.0,
+        memory_usage: 0.0,
+        session_count: 0,
+        status: :active
+      })
 
     new_state = %{state | hash_ring: updated_ring, nodes: updated_nodes}
 

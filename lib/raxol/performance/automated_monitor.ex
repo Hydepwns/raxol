@@ -19,19 +19,29 @@ defmodule Raxol.Performance.AutomatedMonitor do
   alias Raxol.Performance.AdaptiveOptimizer
 
   # Monitoring intervals
-  @metrics_collection_interval 30_000  # 30 seconds
-  @health_check_interval 60_000        # 1 minute
-  @regression_check_interval 300_000   # 5 minutes
-  @alert_cooldown_period 900_000       # 15 minutes
+  # 30 seconds
+  @metrics_collection_interval 30_000
+  # 1 minute
+  @health_check_interval 60_000
+  # 5 minutes
+  @regression_check_interval 300_000
+  # 15 minutes
+  @alert_cooldown_period 900_000
 
   # Performance thresholds (configurable)
   @default_thresholds %{
-    avg_render_time_ms: 16.67,     # 60fps target
-    max_render_time_ms: 33.33,     # 30fps minimum
-    memory_usage_mb: 50.0,         # 50MB baseline
-    memory_growth_rate: 0.05,      # 5% per minute max
-    parse_time_us: 500.0,          # 0.5ms per operation
-    error_rate_percent: 1.0        # 1% error rate max
+    # 60fps target
+    avg_render_time_ms: 16.67,
+    # 30fps minimum
+    max_render_time_ms: 33.33,
+    # 50MB baseline
+    memory_usage_mb: 50.0,
+    # 5% per minute max
+    memory_growth_rate: 0.05,
+    # 0.5ms per operation
+    parse_time_us: 500.0,
+    # 1% error rate max
+    error_rate_percent: 1.0
   }
 
   defstruct [
@@ -116,6 +126,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
     case state.monitoring_enabled do
       true ->
         {:reply, {:already_running, state.current_metrics}, state}
+
       false ->
         # Start monitoring timers
         :timer.send_interval(@metrics_collection_interval, :collect_metrics)
@@ -125,9 +136,10 @@ defmodule Raxol.Performance.AutomatedMonitor do
         # Collect initial baseline
         baseline = collect_baseline_metrics()
 
-        new_state = %{state |
-          monitoring_enabled: true,
-          baseline_metrics: baseline
+        new_state = %{
+          state
+          | monitoring_enabled: true,
+            baseline_metrics: baseline
         }
 
         Log.module_info("Automated performance monitoring started", %{
@@ -156,6 +168,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
       alert_count: map_size(state.alert_state),
       recommendations: state.optimization_recommendations
     }
+
     {:reply, status, state}
   end
 
@@ -163,8 +176,13 @@ defmodule Raxol.Performance.AutomatedMonitor do
   def handle_manager_call(:check_regressions, _from, state) do
     case check_performance_regressions(state) do
       {:ok, regressions} ->
-        new_state = %{state | last_regression_check: System.system_time(:millisecond)}
+        new_state = %{
+          state
+          | last_regression_check: System.system_time(:millisecond)
+        }
+
         {:reply, {:ok, regressions}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -175,7 +193,10 @@ defmodule Raxol.Performance.AutomatedMonitor do
     updated_thresholds = Map.merge(state.thresholds, new_thresholds)
     new_state = %{state | thresholds: updated_thresholds}
 
-    Log.module_info("Performance thresholds updated", %{new_thresholds: new_thresholds})
+    Log.module_info("Performance thresholds updated", %{
+      new_thresholds: new_thresholds
+    })
+
     {:reply, :ok, new_state}
   end
 
@@ -184,7 +205,8 @@ defmodule Raxol.Performance.AutomatedMonitor do
     active_alerts =
       state.alert_state
       |> Enum.filter(fn {_key, alert} ->
-        System.system_time(:millisecond) - alert.triggered_at < @alert_cooldown_period
+        System.system_time(:millisecond) - alert.triggered_at <
+          @alert_cooldown_period
       end)
       |> Map.new()
 
@@ -192,12 +214,19 @@ defmodule Raxol.Performance.AutomatedMonitor do
   end
 
   @impl true
-  def handle_manager_info(:collect_metrics, state) when state.monitoring_enabled do
+  def handle_manager_info(:collect_metrics, state)
+      when state.monitoring_enabled do
     current_metrics = collect_current_metrics()
     new_state = %{state | current_metrics: current_metrics}
 
     # Check for threshold violations
-    alerts = check_threshold_violations(current_metrics, state.thresholds, state.alert_state)
+    alerts =
+      check_threshold_violations(
+        current_metrics,
+        state.thresholds,
+        state.alert_state
+      )
+
     final_state = %{new_state | alert_state: alerts}
 
     {:noreply, final_state}
@@ -205,15 +234,24 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
   @impl true
   def handle_manager_info(:health_check, state) when state.monitoring_enabled do
-    health_status = perform_health_check(state.current_metrics, state.thresholds)
+    health_status =
+      perform_health_check(state.current_metrics, state.thresholds)
 
     case health_status do
       :healthy ->
         Log.module_debug("Performance health check: healthy")
+
       {:warning, issues} ->
-        Log.module_warning("Performance health check: warnings detected", %{issues: issues})
+        Log.module_warning("Performance health check: warnings detected", %{
+          issues: issues
+        })
+
       {:critical, issues} ->
-        Log.module_error("Performance health check: critical issues detected", %{issues: issues})
+        Log.module_error(
+          "Performance health check: critical issues detected",
+          %{issues: issues}
+        )
+
         # Trigger emergency optimization
         AdaptiveOptimizer.optimize_now()
     end
@@ -222,18 +260,29 @@ defmodule Raxol.Performance.AutomatedMonitor do
   end
 
   @impl true
-  def handle_manager_info(:regression_check, state) when state.monitoring_enabled do
+  def handle_manager_info(:regression_check, state)
+      when state.monitoring_enabled do
     case check_performance_regressions(state) do
       {:ok, []} ->
-        Log.module_debug("Performance regression check: no regressions detected")
+        Log.module_debug(
+          "Performance regression check: no regressions detected"
+        )
+
       {:ok, regressions} ->
-        Log.module_warning("Performance regressions detected", %{regressions: regressions})
+        Log.module_warning("Performance regressions detected", %{
+          regressions: regressions
+        })
+
         # Update optimization recommendations
         recommendations = generate_optimization_recommendations(regressions)
         new_state = %{state | optimization_recommendations: recommendations}
         {:noreply, new_state}
+
       {:error, reason} ->
-        Log.module_error("Performance regression check failed", %{reason: reason})
+        Log.module_error("Performance regression check failed", %{
+          reason: reason
+        })
+
         {:noreply, state}
     end
   end
@@ -292,13 +341,18 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
   defp collect_render_metrics do
     render_events = get_telemetry_events([:raxol, :ui, :render])
-    durations = Enum.map(render_events, fn {measurements, _} -> measurements.duration end)
+
+    durations =
+      Enum.map(render_events, fn {measurements, _} -> measurements.duration end)
 
     case durations do
-      [] -> %{avg_ms: 0.0, max_ms: 0.0, count: 0}
+      [] ->
+        %{avg_ms: 0.0, max_ms: 0.0, count: 0}
+
       _ ->
         avg_us = Enum.sum(durations) / length(durations)
         max_us = Enum.max(durations)
+
         %{
           avg_ms: avg_us / 1000,
           max_ms: max_us / 1000,
@@ -309,10 +363,14 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
   defp collect_parse_metrics do
     parse_events = get_telemetry_events([:raxol, :terminal, :parse])
-    durations = Enum.map(parse_events, fn {measurements, _} -> measurements.duration end)
+
+    durations =
+      Enum.map(parse_events, fn {measurements, _} -> measurements.duration end)
 
     case durations do
-      [] -> %{avg_us: 0.0, max_us: 0.0, count: 0}
+      [] ->
+        %{avg_us: 0.0, max_us: 0.0, count: 0}
+
       _ ->
         %{
           avg_us: Enum.sum(durations) / length(durations),
@@ -324,6 +382,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
   defp collect_memory_metrics do
     memory_info = :erlang.memory()
+
     %{
       total_mb: memory_info[:total] / (1024 * 1024),
       processes_mb: memory_info[:processes] / (1024 * 1024),
@@ -334,12 +393,20 @@ defmodule Raxol.Performance.AutomatedMonitor do
   defp collect_error_metrics do
     all_events = get_all_telemetry_events()
     total_events = length(all_events)
-    error_events = Enum.count(all_events, fn {measurements, _} ->
-      Map.get(measurements, :error, false)
-    end)
 
-    error_rate = if total_events > 0, do: (error_events / total_events) * 100, else: 0.0
-    %{error_rate_percent: error_rate, total_events: total_events, error_events: error_events}
+    error_events =
+      Enum.count(all_events, fn {measurements, _} ->
+        Map.get(measurements, :error, false)
+      end)
+
+    error_rate =
+      if total_events > 0, do: error_events / total_events * 100, else: 0.0
+
+    %{
+      error_rate_percent: error_rate,
+      total_events: total_events,
+      error_events: error_events
+    }
   end
 
   defp get_telemetry_events(event_pattern) do
@@ -361,20 +428,22 @@ defmodule Raxol.Performance.AutomatedMonitor do
   end
 
   defp check_threshold_violations(metrics, thresholds, current_alerts) do
-    violations = [
-      check_render_thresholds(metrics.render_performance, thresholds),
-      check_parse_thresholds(metrics.parse_performance, thresholds),
-      check_memory_thresholds(metrics.memory_usage, thresholds),
-      check_error_thresholds(metrics.error_rates, thresholds)
-    ]
-    |> Enum.filter(& &1)
-    |> List.flatten()
+    violations =
+      [
+        check_render_thresholds(metrics.render_performance, thresholds),
+        check_parse_thresholds(metrics.parse_performance, thresholds),
+        check_memory_thresholds(metrics.memory_usage, thresholds),
+        check_error_thresholds(metrics.error_rates, thresholds)
+      ]
+      |> Enum.filter(& &1)
+      |> List.flatten()
 
     # Update alert state
     new_alerts =
       violations
       |> Enum.reduce(current_alerts, fn violation, acc ->
         alert_key = "#{violation.type}_#{violation.metric}"
+
         Map.put(acc, alert_key, %{
           violation: violation,
           triggered_at: System.system_time(:millisecond),
@@ -391,14 +460,31 @@ defmodule Raxol.Performance.AutomatedMonitor do
   defp check_render_thresholds(render_metrics, thresholds) do
     violations = []
 
-    violations = if render_metrics.avg_ms > thresholds.avg_render_time_ms do
-      [%{type: :render, metric: :avg_time, value: render_metrics.avg_ms, threshold: thresholds.avg_render_time_ms} | violations]
-    else
-      violations
-    end
+    violations =
+      if render_metrics.avg_ms > thresholds.avg_render_time_ms do
+        [
+          %{
+            type: :render,
+            metric: :avg_time,
+            value: render_metrics.avg_ms,
+            threshold: thresholds.avg_render_time_ms
+          }
+          | violations
+        ]
+      else
+        violations
+      end
 
     if render_metrics.max_ms > thresholds.max_render_time_ms do
-      [%{type: :render, metric: :max_time, value: render_metrics.max_ms, threshold: thresholds.max_render_time_ms} | violations]
+      [
+        %{
+          type: :render,
+          metric: :max_time,
+          value: render_metrics.max_ms,
+          threshold: thresholds.max_render_time_ms
+        }
+        | violations
+      ]
     else
       violations
     end
@@ -406,7 +492,14 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
   defp check_parse_thresholds(parse_metrics, thresholds) do
     if parse_metrics.avg_us > thresholds.parse_time_us do
-      [%{type: :parse, metric: :avg_time, value: parse_metrics.avg_us, threshold: thresholds.parse_time_us}]
+      [
+        %{
+          type: :parse,
+          metric: :avg_time,
+          value: parse_metrics.avg_us,
+          threshold: thresholds.parse_time_us
+        }
+      ]
     else
       []
     end
@@ -414,7 +507,14 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
   defp check_memory_thresholds(memory_metrics, thresholds) do
     if memory_metrics.total_mb > thresholds.memory_usage_mb do
-      [%{type: :memory, metric: :total_usage, value: memory_metrics.total_mb, threshold: thresholds.memory_usage_mb}]
+      [
+        %{
+          type: :memory,
+          metric: :total_usage,
+          value: memory_metrics.total_mb,
+          threshold: thresholds.memory_usage_mb
+        }
+      ]
     else
       []
     end
@@ -422,7 +522,14 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
   defp check_error_thresholds(error_metrics, thresholds) do
     if error_metrics.error_rate_percent > thresholds.error_rate_percent do
-      [%{type: :error, metric: :error_rate, value: error_metrics.error_rate_percent, threshold: thresholds.error_rate_percent}]
+      [
+        %{
+          type: :error,
+          metric: :error_rate,
+          value: error_metrics.error_rate_percent,
+          threshold: thresholds.error_rate_percent
+        }
+      ]
     else
       []
     end
@@ -440,6 +547,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
   defp determine_severity(violation) do
     ratio = violation.value / violation.threshold
+
     cond do
       ratio > 2.0 -> :critical
       ratio > 1.5 -> :high
@@ -452,13 +560,17 @@ defmodule Raxol.Performance.AutomatedMonitor do
     issues = []
 
     # Check if any metrics are critically over threshold
-    critical_issues = [
-      check_critical_render_performance(current_metrics.render_performance, thresholds),
-      check_critical_memory_usage(current_metrics.memory_usage, thresholds),
-      check_critical_error_rate(current_metrics.error_rates, thresholds)
-    ]
-    |> Enum.filter(& &1)
-    |> List.flatten()
+    critical_issues =
+      [
+        check_critical_render_performance(
+          current_metrics.render_performance,
+          thresholds
+        ),
+        check_critical_memory_usage(current_metrics.memory_usage, thresholds),
+        check_critical_error_rate(current_metrics.error_rates, thresholds)
+      ]
+      |> Enum.filter(& &1)
+      |> List.flatten()
 
     case critical_issues do
       [] -> :healthy
@@ -468,15 +580,17 @@ defmodule Raxol.Performance.AutomatedMonitor do
   end
 
   defp check_critical_render_performance(render_metrics, thresholds) do
-    if render_metrics.avg_ms > (thresholds.avg_render_time_ms * 2) do
-      ["Critical render performance degradation: #{render_metrics.avg_ms}ms avg"]
+    if render_metrics.avg_ms > thresholds.avg_render_time_ms * 2 do
+      [
+        "Critical render performance degradation: #{render_metrics.avg_ms}ms avg"
+      ]
     else
       []
     end
   end
 
   defp check_critical_memory_usage(memory_metrics, thresholds) do
-    if memory_metrics.total_mb > (thresholds.memory_usage_mb * 2) do
+    if memory_metrics.total_mb > thresholds.memory_usage_mb * 2 do
       ["Critical memory usage: #{memory_metrics.total_mb}MB"]
     else
       []
@@ -484,7 +598,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
   end
 
   defp check_critical_error_rate(error_metrics, thresholds) do
-    if error_metrics.error_rate_percent > (thresholds.error_rate_percent * 5) do
+    if error_metrics.error_rate_percent > thresholds.error_rate_percent * 5 do
       ["Critical error rate: #{error_metrics.error_rate_percent}%"]
     else
       []
@@ -493,9 +607,11 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
   defp check_performance_regressions(state) do
     case {state.baseline_metrics, state.current_metrics} do
-      {baseline, current} when map_size(baseline) > 0 and map_size(current) > 0 ->
+      {baseline, current}
+      when map_size(baseline) > 0 and map_size(current) > 0 ->
         regressions = detect_regressions(baseline, current)
         {:ok, regressions}
+
       _ ->
         {:error, :insufficient_data}
     end
@@ -505,18 +621,35 @@ defmodule Raxol.Performance.AutomatedMonitor do
     regressions = []
 
     # Check render performance regression
-    regressions = check_render_regression(baseline.render_performance, current.render_performance, regressions)
+    regressions =
+      check_render_regression(
+        baseline.render_performance,
+        current.render_performance,
+        regressions
+      )
 
     # Check parse performance regression
-    regressions = check_parse_regression(baseline.parse_performance, current.parse_performance, regressions)
+    regressions =
+      check_parse_regression(
+        baseline.parse_performance,
+        current.parse_performance,
+        regressions
+      )
 
     # Check memory regression
-    check_memory_regression(baseline.memory_usage, current.memory_usage, regressions)
+    check_memory_regression(
+      baseline.memory_usage,
+      current.memory_usage,
+      regressions
+    )
   end
 
   defp check_render_regression(baseline_render, current_render, regressions) do
-    avg_regression = (current_render.avg_ms - baseline_render.avg_ms) / baseline_render.avg_ms
-    if avg_regression > 0.15 do  # 15% regression threshold
+    avg_regression =
+      (current_render.avg_ms - baseline_render.avg_ms) / baseline_render.avg_ms
+
+    # 15% regression threshold
+    if avg_regression > 0.15 do
       regression = %{
         type: :render_performance,
         metric: :avg_render_time,
@@ -524,6 +657,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
         current: current_render.avg_ms,
         regression_percent: avg_regression * 100
       }
+
       [regression | regressions]
     else
       regressions
@@ -531,8 +665,11 @@ defmodule Raxol.Performance.AutomatedMonitor do
   end
 
   defp check_parse_regression(baseline_parse, current_parse, regressions) do
-    avg_regression = (current_parse.avg_us - baseline_parse.avg_us) / baseline_parse.avg_us
-    if avg_regression > 0.20 do  # 20% regression threshold
+    avg_regression =
+      (current_parse.avg_us - baseline_parse.avg_us) / baseline_parse.avg_us
+
+    # 20% regression threshold
+    if avg_regression > 0.20 do
       regression = %{
         type: :parse_performance,
         metric: :avg_parse_time,
@@ -540,6 +677,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
         current: current_parse.avg_us,
         regression_percent: avg_regression * 100
       }
+
       [regression | regressions]
     else
       regressions
@@ -547,8 +685,12 @@ defmodule Raxol.Performance.AutomatedMonitor do
   end
 
   defp check_memory_regression(baseline_memory, current_memory, regressions) do
-    memory_regression = (current_memory.total_mb - baseline_memory.total_mb) / baseline_memory.total_mb
-    if memory_regression > 0.25 do  # 25% memory growth threshold
+    memory_regression =
+      (current_memory.total_mb - baseline_memory.total_mb) /
+        baseline_memory.total_mb
+
+    # 25% memory growth threshold
+    if memory_regression > 0.25 do
       regression = %{
         type: :memory_usage,
         metric: :total_memory,
@@ -556,6 +698,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
         current: current_memory.total_mb,
         regression_percent: memory_regression * 100
       }
+
       [regression | regressions]
     else
       regressions
@@ -568,10 +711,13 @@ defmodule Raxol.Performance.AutomatedMonitor do
       case regression.type do
         :render_performance ->
           "Consider reducing render complexity or enabling adaptive framerate"
+
         :parse_performance ->
           "Optimize ANSI parsing logic or increase parser buffer size"
+
         :memory_usage ->
           "Enable aggressive garbage collection or reduce cache sizes"
+
         _ ->
           "General performance optimization recommended"
       end

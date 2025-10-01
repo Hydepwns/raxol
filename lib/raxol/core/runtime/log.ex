@@ -1,5 +1,6 @@
 defmodule Raxol.Core.Runtime.Log do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Centralized logging system for Raxol with structured context, performance tracking,
   and consistent formatting across all modules.
@@ -173,8 +174,12 @@ defmodule Raxol.Core.Runtime.Log do
   """
   def debug_if(condition, msg, context \\ nil) do
     case condition do
-      true -> module_debug(msg, context)
-      false -> :ok
+      true ->
+        module_debug(msg, context)
+
+      false ->
+        :ok
+
       module when is_atom(module) ->
         case debug_enabled_for_module?(module) do
           true -> module_debug(msg, context)
@@ -208,6 +213,7 @@ defmodule Raxol.Core.Runtime.Log do
 
   defp module_log(level, msg, context) do
     calling_module = get_calling_module()
+
     enriched_context =
       context
       |> normalize_context()
@@ -266,6 +272,7 @@ defmodule Raxol.Core.Runtime.Log do
   end
 
   defp format_console_message(msg, nil), do: "[CONSOLE] #{msg}"
+
   defp format_console_message(msg, context) do
     "[CONSOLE] #{msg} | #{inspect(context)}"
   end
@@ -325,7 +332,14 @@ defmodule Raxol.Core.Runtime.Log do
   defp is_warning_message?(_), do: false
 
   defp is_performance_related?(msg) when is_binary(msg) do
-    perf_keywords = ["performance", "timing", "duration", "benchmark", "profile"]
+    perf_keywords = [
+      "performance",
+      "timing",
+      "duration",
+      "benchmark",
+      "profile"
+    ]
+
     msg_lower = String.downcase(msg)
     Enum.any?(perf_keywords, &String.contains?(msg_lower, &1))
   end

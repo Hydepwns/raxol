@@ -1,5 +1,6 @@
 defmodule Raxol.Core.Session.SecuritySession do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Security session implementation for the unified session manager.
 
@@ -305,7 +306,9 @@ defmodule Raxol.Core.Session.SecuritySession do
         end)
 
         if length(expired) > 0 do
-          Log.module_info("Cleaned up #{length(expired)} expired security sessions")
+          Log.module_info(
+            "Cleaned up #{length(expired)} expired security sessions"
+          )
         end
 
       {:error, :table_not_found} ->

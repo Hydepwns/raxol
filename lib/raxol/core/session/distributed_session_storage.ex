@@ -71,21 +71,20 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
         }
 
   @default_shard_count 64
-  @default_cleanup_interval 3600_000  # 1 hour
-  @default_compression_threshold 1024  # 1KB
+  # 1 hour
+  @default_cleanup_interval 3600_000
+  # 1KB
+  @default_compression_threshold 1024
 
   # Public API
 
-  def start_link(opts \\ []) do
-    BaseManager.start_link(__MODULE__, opts)
-  end
-
   @spec store(pid(), binary(), term(), map()) :: :ok | {:error, term()}
-  def store(pid, session_id, data, metadata \\ %{}) do
+  def store(pid, session_id, data, metadata) do
     GenServer.call(pid, {:store, session_id, data, metadata})
   end
 
-  @spec get(pid(), binary()) :: {:ok, term()} | {:error, :not_found} | {:error, term()}
+  @spec get(pid(), binary()) ::
+          {:ok, term()} | {:error, :not_found} | {:error, term()}
   def get(pid, session_id) do
     GenServer.call(pid, {:get, session_id})
   end
@@ -96,11 +95,12 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
   end
 
   @spec list_sessions(pid(), map()) :: {:ok, [binary()]} | {:error, term()}
-  def list_sessions(pid, filters \\ %{}) do
+  def list_sessions(pid, filters) do
     GenServer.call(pid, {:list_sessions, filters})
   end
 
-  @spec get_metadata(pid(), binary()) :: {:ok, session_metadata()} | {:error, term()}
+  @spec get_metadata(pid(), binary()) ::
+          {:ok, session_metadata()} | {:error, term()}
   def get_metadata(pid, session_id) do
     GenServer.call(pid, {:get_metadata, session_id})
   end
@@ -110,7 +110,8 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     GenServer.cast(pid, {:update_access_time, session_id})
   end
 
-  @spec cleanup_expired_sessions(pid()) :: {:ok, non_neg_integer()} | {:error, term()}
+  @spec cleanup_expired_sessions(pid()) ::
+          {:ok, non_neg_integer()} | {:error, term()}
   def cleanup_expired_sessions(pid) do
     GenServer.call(pid, :cleanup_expired_sessions)
   end
@@ -130,7 +131,8 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     GenServer.call(pid, {:backup_sessions, backup_path}, 30_000)
   end
 
-  @spec restore_sessions(pid(), binary()) :: {:ok, non_neg_integer()} | {:error, term()}
+  @spec restore_sessions(pid(), binary()) ::
+          {:ok, non_neg_integer()} | {:error, term()}
   def restore_sessions(pid, backup_path) do
     GenServer.call(pid, {:restore_sessions, backup_path}, 30_000)
   end
@@ -146,7 +148,8 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
       backend: backend,
       storage_config: storage_config,
       shard_count: Keyword.get(opts, :shard_count, @default_shard_count),
-      cleanup_interval: Keyword.get(opts, :cleanup_interval, @default_cleanup_interval),
+      cleanup_interval:
+        Keyword.get(opts, :cleanup_interval, @default_cleanup_interval),
       compression_enabled: Keyword.get(opts, :compression_enabled, true),
       encryption_enabled: Keyword.get(opts, :encryption_enabled, false),
       wal_enabled: Keyword.get(opts, :wal_enabled, true),
@@ -157,14 +160,22 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     case initialize_backend(state) do
       {:ok, updated_state} ->
         # Start cleanup timer
-        cleanup_timer = Process.send_after(self(), :cleanup_expired, state.cleanup_interval)
+        cleanup_timer =
+          Process.send_after(self(), :cleanup_expired, state.cleanup_interval)
+
         final_state = %{updated_state | cleanup_timer: cleanup_timer}
 
-        Log.module_info("DistributedSessionStorage started with backend=#{backend}, shards=#{state.shard_count}")
+        Log.module_info(
+          "DistributedSessionStorage started with backend=#{backend}, shards=#{state.shard_count}"
+        )
+
         {:ok, final_state}
 
       {:error, reason} ->
-        Log.module_error("Failed to initialize storage backend #{backend}: #{inspect(reason)}")
+        Log.module_error(
+          "Failed to initialize storage backend #{backend}: #{inspect(reason)}"
+        )
+
         {:stop, reason}
     end
   end
@@ -176,7 +187,10 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
         {:reply, :ok, updated_state}
 
       {:error, reason} = error ->
-        Log.module_error("Failed to store session #{session_id}: #{inspect(reason)}")
+        Log.module_error(
+          "Failed to store session #{session_id}: #{inspect(reason)}"
+        )
+
         {:reply, error, state}
     end
   end
@@ -287,7 +301,9 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
         end
 
         # Schedule next cleanup
-        cleanup_timer = Process.send_after(self(), :cleanup_expired, state.cleanup_interval)
+        cleanup_timer =
+          Process.send_after(self(), :cleanup_expired, state.cleanup_interval)
+
         final_state = %{updated_state | cleanup_timer: cleanup_timer}
 
         {:noreply, final_state}
@@ -296,7 +312,9 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
         Log.module_error("Failed to perform cleanup: #{inspect(reason)}")
 
         # Schedule next cleanup anyway
-        cleanup_timer = Process.send_after(self(), :cleanup_expired, state.cleanup_interval)
+        cleanup_timer =
+          Process.send_after(self(), :cleanup_expired, state.cleanup_interval)
+
         updated_state = %{state | cleanup_timer: cleanup_timer}
 
         {:noreply, updated_state}
@@ -307,14 +325,29 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
 
   defp initialize_backend(%{backend: :ets} = state) do
     # Create ETS tables for each shard
-    shard_tables = for shard_id <- 0..(state.shard_count - 1) do
-      table_name = :"session_shard_#{shard_id}"
-      table = :ets.new(table_name, [:set, :public, :named_table, {:read_concurrency, true}])
-      {shard_id, table}
-    end
+    shard_tables =
+      for shard_id <- 0..(state.shard_count - 1) do
+        table_name = :"session_shard_#{shard_id}"
+
+        table =
+          :ets.new(table_name, [
+            :set,
+            :public,
+            :named_table,
+            {:read_concurrency, true}
+          ])
+
+        {shard_id, table}
+      end
 
     # Create metadata table
-    metadata_table = :ets.new(:session_metadata, [:set, :public, :named_table, {:read_concurrency, true}])
+    metadata_table =
+      :ets.new(:session_metadata, [
+        :set,
+        :public,
+        :named_table,
+        {:read_concurrency, true}
+      ])
 
     config = %{
       shard_tables: Map.new(shard_tables),
@@ -332,6 +365,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
           session_table: :distributed_sessions,
           metadata_table: :session_metadata
         }
+
         {:ok, %{state | storage_config: config}}
 
       {:error, reason} ->
@@ -372,7 +406,9 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     ]
 
     # Get replication nodes from config
-    replication_nodes = Map.get(state.storage_config, :replication_nodes, [Node.self()])
+    replication_nodes =
+      Map.get(state.storage_config, :replication_nodes, [Node.self()])
+
     disc_copies = Map.get(state.storage_config, :disc_copies, [Node.self()])
     ram_copies = Map.get(state.storage_config, :ram_copies, [])
 
@@ -395,7 +431,8 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
       {:disc_copies, disc_copies},
       {:ram_copies, ram_copies},
       {:type, :set},
-      {:storage_properties, [{:ets, [{:read_concurrency, true}, {:write_concurrency, true}]}]}
+      {:storage_properties,
+       [{:ets, [{:read_concurrency, true}, {:write_concurrency, true}]}]}
     ]
 
     metadata_table_def = [
@@ -424,31 +461,41 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
 
   defp setup_dets_files(state) do
     # Create DETS files for each shard
-    storage_dir = Map.get(state.storage_config, :storage_dir, "priv/session_storage")
+    storage_dir =
+      Map.get(state.storage_config, :storage_dir, "priv/session_storage")
+
     File.mkdir_p!(storage_dir)
 
-    shard_files = for shard_id <- 0..(state.shard_count - 1) do
-      file_path = Path.join(storage_dir, "session_shard_#{shard_id}.dets")
+    shard_files =
+      for shard_id <- 0..(state.shard_count - 1) do
+        file_path = Path.join(storage_dir, "session_shard_#{shard_id}.dets")
 
-      case :dets.open_file(:"shard_#{shard_id}", [{:file, String.to_charlist(file_path)}, {:type, :set}]) do
-        {:ok, table} ->
-          {shard_id, table}
+        case :dets.open_file(:"shard_#{shard_id}", [
+               {:file, String.to_charlist(file_path)},
+               {:type, :set}
+             ]) do
+          {:ok, table} ->
+            {shard_id, table}
 
-        {:error, reason} ->
-          throw({:dets_open_failed, shard_id, reason})
+          {:error, reason} ->
+            throw({:dets_open_failed, shard_id, reason})
+        end
       end
-    end
 
     # Create metadata file
     metadata_path = Path.join(storage_dir, "session_metadata.dets")
 
-    case :dets.open_file(:session_metadata, [{:file, String.to_charlist(metadata_path)}, {:type, :set}]) do
+    case :dets.open_file(:session_metadata, [
+           {:file, String.to_charlist(metadata_path)},
+           {:type, :set}
+         ]) do
       {:ok, metadata_table} ->
         config = %{
           shard_files: Map.new(shard_files),
           metadata_table: metadata_table,
           storage_dir: storage_dir
         }
+
         {:ok, config}
 
       {:error, reason} ->
@@ -464,37 +511,62 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     now = DateTime.utc_now()
 
     # Prepare session metadata
-    session_metadata = Map.merge(%{
-      created_at: now,
-      last_accessed: now,
-      expires_at: nil,
-      size_bytes: calculate_data_size(data),
-      access_count: 1
-    }, metadata)
+    session_metadata =
+      Map.merge(
+        %{
+          created_at: now,
+          last_accessed: now,
+          expires_at: nil,
+          size_bytes: calculate_data_size(data),
+          access_count: 1
+        },
+        metadata
+      )
 
     # Compress data if enabled and above threshold
-    processed_data = if state.compression_enabled and session_metadata.size_bytes > @default_compression_threshold do
-      compress_data(data)
-    else
-      data
-    end
+    processed_data =
+      if state.compression_enabled and
+           session_metadata.size_bytes > @default_compression_threshold do
+        compress_data(data)
+      else
+        data
+      end
 
     # Encrypt data if enabled
-    final_data = if state.encryption_enabled do
-      encrypt_data(processed_data)
-    else
-      processed_data
-    end
+    final_data =
+      if state.encryption_enabled do
+        encrypt_data(processed_data)
+      else
+        processed_data
+      end
 
     case state.backend do
       :ets ->
-        store_ets_session(session_id, shard_id, final_data, session_metadata, state)
+        store_ets_session(
+          session_id,
+          shard_id,
+          final_data,
+          session_metadata,
+          state
+        )
 
       :mnesia ->
-        store_mnesia_session(session_id, shard_id, final_data, session_metadata, state)
+        store_mnesia_session(
+          session_id,
+          shard_id,
+          final_data,
+          session_metadata,
+          state
+        )
 
       :dets ->
-        store_dets_session(session_id, shard_id, final_data, session_metadata, state)
+        store_dets_session(
+          session_id,
+          shard_id,
+          final_data,
+          session_metadata,
+          state
+        )
     end
   end
 
@@ -554,7 +626,9 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
       :ok ->
         case :dets.insert(metadata_table, {session_id, metadata}) do
           :ok ->
-            updated_stats = update_stats(state.stats, :store, metadata.size_bytes)
+            updated_stats =
+              update_stats(state.stats, :store, metadata.size_bytes)
+
             {:ok, %{state | stats: updated_stats}}
 
           {:error, reason} ->
@@ -598,7 +672,10 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
   defp get_mnesia_session(session_id, _state) do
     transaction_fn = fn ->
       case :mnesia.read(:distributed_sessions, session_id) do
-        [{:distributed_sessions, ^session_id, _shard_id, data, _metadata, _created, _accessed, _expires}] ->
+        [
+          {:distributed_sessions, ^session_id, _shard_id, data, _metadata,
+           _created, _accessed, _expires}
+        ] ->
           data
 
         [] ->
@@ -716,15 +793,17 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
   end
 
   defp process_retrieved_data(data, state) do
-    processed = if state.encryption_enabled do
-      decrypt_data(data)
-    else
-      data
-    end
+    processed =
+      if state.encryption_enabled do
+        decrypt_data(data)
+      else
+        data
+      end
 
     if state.compression_enabled do
       case data do
-        <<120, 156, _rest::binary>> -> decompress_data(processed)  # zlib magic number
+        # zlib magic number
+        <<120, 156, _rest::binary>> -> decompress_data(processed)
         _ -> processed
       end
     else
@@ -746,16 +825,18 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
 
     case operation do
       :store ->
-        %{stats |
-          total_sessions: stats.total_sessions + 1,
-          total_size_bytes: stats.total_size_bytes + size_delta,
-          operations: operations
+        %{
+          stats
+          | total_sessions: stats.total_sessions + 1,
+            total_size_bytes: stats.total_size_bytes + size_delta,
+            operations: operations
         }
 
       :delete ->
-        %{stats |
-          total_sessions: max(0, stats.total_sessions - 1),
-          operations: operations
+        %{
+          stats
+          | total_sessions: max(0, stats.total_sessions - 1),
+            operations: operations
         }
 
       :get ->

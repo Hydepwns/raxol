@@ -34,7 +34,8 @@ if Code.ensure_loaded?(:ssh) do
     """
 
     use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Runtime.Log
+    alias Raxol.Core.Runtime.Log
+
     @type pty_options :: %{
             optional(:term) => String.t(),
             optional(:width) => pos_integer(),
@@ -325,12 +326,18 @@ if Code.ensure_loaded?(:ssh) do
               {:ok, state}
 
             {:error, reason} ->
-              Log.module_error("Failed to start SSH session: #{inspect(reason)}")
+              Log.module_error(
+                "Failed to start SSH session: #{inspect(reason)}"
+              )
+
               {:stop, {:session_start_failed, reason}}
           end
 
         {:error, reason} ->
-          Log.module_error("Failed to get SSH connection info: #{inspect(reason)}")
+          Log.module_error(
+            "Failed to get SSH connection info: #{inspect(reason)}"
+          )
+
           {:stop, {:connection_info_failed, reason}}
       end
     end

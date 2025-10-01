@@ -489,7 +489,10 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
         String.pad_trailing("  result = expensive_operation(param)", length)
 
       4 ->
-        String.pad_trailing("  Log.module_info(\"Processing #{line_num}\")", length)
+        String.pad_trailing(
+          "  Log.module_info(\"Processing #{line_num}\")",
+          length
+        )
 
       5 ->
         String.pad_trailing("  {:ok, result}", length)

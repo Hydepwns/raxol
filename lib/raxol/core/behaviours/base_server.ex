@@ -19,7 +19,7 @@ defmodule Raxol.Core.Behaviours.BaseServer do
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       use GenServer
-  alias Raxol.Core.Runtime.Log
+      alias Raxol.Core.Runtime.Log
       @behaviour Raxol.Core.Behaviours.BaseServer
 
       def start_link(init_opts \\ []) do
@@ -80,7 +80,10 @@ defmodule Raxol.Core.Behaviours.BaseServer do
       end
 
       def handle_call(request, _from, state) do
-        Log.module_warning("Unhandled call in #{__MODULE__}: #{inspect(request)}")
+        Log.module_warning(
+          "Unhandled call in #{__MODULE__}: #{inspect(request)}"
+        )
+
         {:reply, {:error, :not_implemented}, state}
       end
 

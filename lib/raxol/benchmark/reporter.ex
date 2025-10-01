@@ -1,5 +1,6 @@
 defmodule Raxol.Benchmark.Reporter do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Generates comprehensive performance reports from benchmark results.
 
@@ -48,7 +49,9 @@ defmodule Raxol.Benchmark.Reporter do
       Path.join(output_path, "#{filename}.md")
     )
 
-    Log.module_info("Comparison report generated at #{output_path}/#{filename}.*")
+    Log.module_info(
+      "Comparison report generated at #{output_path}/#{filename}.*"
+    )
 
     comparison
   end

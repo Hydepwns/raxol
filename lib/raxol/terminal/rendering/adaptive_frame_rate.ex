@@ -52,6 +52,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   defstruct [
     :config,
     :current_fps,

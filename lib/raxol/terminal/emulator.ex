@@ -797,7 +797,9 @@ defmodule Raxol.Terminal.Emulator do
   @doc "Handles ESC > sequence (DECKPNM - Disable application keypad mode)."
   def handle_esc_greater(emulator) do
     # DECKPNM - Disable application keypad mode (ESC >)
-    Log.module_debug("Emulator.handle_esc_greater called - resetting decckm mode")
+    Log.module_debug(
+      "Emulator.handle_esc_greater called - resetting decckm mode"
+    )
 
     Log.module_debug(
       "Initial cursor_keys_mode: #{inspect(emulator.mode_manager.cursor_keys_mode)}"
@@ -874,7 +876,7 @@ defmodule Raxol.Terminal.Emulator do
     alias Raxol.Terminal.ScreenBuffer
     alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
     alias Raxol.Terminal.Cursor.Manager, as: CursorManager
-  alias Raxol.Core.Runtime.Log
+    alias Raxol.Core.Runtime.Log
 
     # Extract options with defaults
     enable_history = Keyword.get(opts, :enable_history, true)

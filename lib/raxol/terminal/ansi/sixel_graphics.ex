@@ -479,7 +479,10 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
         {updated_state, :ok}
 
       {:error, reason} ->
-        Log.module_debug("SixelGraphics: Parser returned error: #{inspect(reason)}")
+        Log.module_debug(
+          "SixelGraphics: Parser returned error: #{inspect(reason)}"
+        )
+
         # Return unchanged state and error
         {state_with_palette, {:error, reason}}
     end

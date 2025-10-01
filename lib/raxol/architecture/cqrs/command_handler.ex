@@ -64,6 +64,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
       @behaviour Raxol.Architecture.CQRS.CommandHandler
 
       import Raxol.Architecture.CQRS.CommandHandler
+
       @doc """
       Publishes a domain event through the event store.
       """
@@ -95,7 +96,10 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
             :ok
 
           {:error, reason} ->
-            Log.module_error("Failed to publish events batch: #{inspect(reason)}")
+            Log.module_error(
+              "Failed to publish events batch: #{inspect(reason)}"
+            )
+
             {:error, :events_publication_failed}
         end
       end

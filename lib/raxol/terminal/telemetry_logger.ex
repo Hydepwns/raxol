@@ -1,5 +1,6 @@
 defmodule Raxol.Terminal.TelemetryLogger do
   alias Raxol.Core.Runtime.Log
+
   @moduledoc """
   Logs all Raxol.Terminal telemetry events for observability and debugging.
 

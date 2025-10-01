@@ -21,6 +21,7 @@ defmodule Raxol.Audit.Logger do
   alias Raxol.Audit.{Events, Storage, Analyzer, Exporter}
   alias Raxol.Core.Utils.TimerManager
   alias Raxol.Core.Runtime.Log
+
   alias Raxol.Audit.Events.{
     AuthorizationEvent,
     ConfigurationChangeEvent

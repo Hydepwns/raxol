@@ -433,7 +433,9 @@ defmodule Raxol.Playground do
   end
 
   defp display_examples(examples) do
-    Log.console("\n#{IO.ANSI.bright()}Interactive Examples:#{IO.ANSI.reset()}\n")
+    Log.console(
+      "\n#{IO.ANSI.bright()}Interactive Examples:#{IO.ANSI.reset()}\n"
+    )
 
     examples
     |> Enum.each(fn {category, example_list} ->

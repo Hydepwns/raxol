@@ -346,7 +346,9 @@ defmodule Raxol.Performance.PredictiveOptimizer do
   end
 
   defp perform_optimization(state) do
-    Log.module_info("Performing predictive optimization based on telemetry data")
+    Log.module_info(
+      "Performing predictive optimization based on telemetry data"
+    )
 
     optimizations = []
 

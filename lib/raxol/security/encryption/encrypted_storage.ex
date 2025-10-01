@@ -162,7 +162,10 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     # Start async encryption worker
     _ = start_async_encryption_worker(config[:async_encryption])
 
-    Log.module_info("Encrypted storage initialized with backend: #{config.backend}")
+    Log.module_info(
+      "Encrypted storage initialized with backend: #{config.backend}"
+    )
+
     {:ok, state}
   end
 

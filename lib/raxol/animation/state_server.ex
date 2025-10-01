@@ -30,6 +30,7 @@ defmodule Raxol.Animation.StateServer do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   @default_state %{
     settings: %{},
     animations: %{},
@@ -327,7 +328,10 @@ defmodule Raxol.Animation.StateServer do
             end
 
           _ ->
-            Log.module_warning("Unknown batch update operation: #{inspect(update)}")
+            Log.module_warning(
+              "Unknown batch update operation: #{inspect(update)}"
+            )
+
             acc
         end
       end)

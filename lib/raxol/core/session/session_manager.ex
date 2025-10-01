@@ -59,6 +59,7 @@ defmodule Raxol.Core.Session.SessionManager do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+
   alias Raxol.Core.Session.{
     SecuritySession,
     WebSession,

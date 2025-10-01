@@ -106,7 +106,7 @@ defmodule Raxol.UI.Rendering.Renderer do
       Raxol.Terminal.Emulator.update_active_buffer(emulator, updated_buffer)
 
     new_state = put_emulator(state, updated_emulator)
-  alias Raxol.Core.Runtime.Log
+    alias Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(
       "Partial render ops (line-based): #{inspect(ops)} (buffer updated)"
@@ -175,7 +175,7 @@ defmodule Raxol.UI.Rendering.Renderer do
     {new_state, _} = do_partial_render([], data, data, state)
 
     notify_test_pid_for_render(state.test_pid != nil, state.test_pid, ops)
-  alias Raxol.Core.Runtime.Log
+    alias Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(
       "Renderer received render: #{inspect(data)} (buffer updated)"
@@ -204,7 +204,7 @@ defmodule Raxol.UI.Rendering.Renderer do
     {new_state, _} = do_partial_render([], new_tree, new_tree, state)
 
     send_rendered_ops_to_test_pid(state.test_pid != nil, state.test_pid, ops)
-  alias Raxol.Core.Runtime.Log
+    alias Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(
       "Renderer received full replacement diff: #{inspect(new_tree)}"
@@ -250,7 +250,8 @@ defmodule Raxol.UI.Rendering.Renderer do
       updated_subtree,
       updated_tree
     )
-  alias Raxol.Core.Runtime.Log
+
+    alias Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(
       "Renderer applied partial update at path #{inspect(path)}. Updated subtree: #{inspect(updated_subtree)}"

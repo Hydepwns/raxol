@@ -38,7 +38,7 @@ defmodule Raxol.Core.Behaviours.BaseManager do
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       use GenServer
-  alias Raxol.Core.Runtime.Log
+      alias Raxol.Core.Runtime.Log
       @behaviour Raxol.Core.Behaviours.BaseManager
 
       def start_link(init_opts \\ []) do

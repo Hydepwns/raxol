@@ -8,6 +8,7 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
 
   use GenServer
   alias Raxol.Core.Runtime.Log
+
   defstruct [
     :handlers,
     :middleware,

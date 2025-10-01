@@ -61,25 +61,26 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
   @type recovery_context :: map()
 
   @type recovery_pattern :: %{
-    error_signature: String.t(),
-    strategy: recovery_strategy(),
-    success_rate: float(),
-    avg_recovery_time_ms: float(),
-    performance_impact: atom(),
-    context_correlations: map(),
-    last_updated: DateTime.t()
-  }
+          error_signature: String.t(),
+          strategy: recovery_strategy(),
+          success_rate: float(),
+          avg_recovery_time_ms: float(),
+          performance_impact: atom(),
+          context_correlations: map(),
+          last_updated: DateTime.t()
+        }
 
   # Public API
-
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Record a recovery attempt and its outcome.
   """
-  def record_recovery_attempt(error_signature, strategy, outcome, context \\ %{}) do
+  def record_recovery_attempt(
+        error_signature,
+        strategy,
+        outcome,
+        context
+      ) do
     GenServer.cast(__MODULE__, {
       :record_recovery_attempt,
       error_signature,
@@ -93,8 +94,11 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
   @doc """
   Get the recommended recovery strategy for an error.
   """
-  def recommend_recovery_strategy(error_signature, context \\ %{}) do
-    GenServer.call(__MODULE__, {:recommend_recovery_strategy, error_signature, context})
+  def recommend_recovery_strategy(error_signature, context) do
+    GenServer.call(
+      __MODULE__,
+      {:recommend_recovery_strategy, error_signature, context}
+    )
   end
 
   @doc """
@@ -115,7 +119,10 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
   Update adaptive thresholds based on system performance.
   """
   def update_adaptive_thresholds(performance_metrics) do
-    GenServer.cast(__MODULE__, {:update_adaptive_thresholds, performance_metrics})
+    GenServer.cast(
+      __MODULE__,
+      {:update_adaptive_thresholds, performance_metrics}
+    )
   end
 
   @doc """
@@ -128,7 +135,7 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
   @doc """
   Export recovery learning data.
   """
-  def export_recovery_data(format \\ :json) do
+  def export_recovery_data(format) do
     GenServer.call(__MODULE__, {:export_recovery_data, format})
   end
 
@@ -156,49 +163,56 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
   end
 
   @impl true
-  def handle_manager_cast({
-    :record_recovery_attempt,
-    error_signature,
-    strategy,
-    outcome,
-    context,
-    timestamp
-  }, state) do
+  def handle_manager_cast(
+        {
+          :record_recovery_attempt,
+          error_signature,
+          strategy,
+          outcome,
+          context,
+          timestamp
+        },
+        state
+      ) do
     # Update strategy success rates
-    updated_rates = update_strategy_success_rate(
-      state.strategy_success_rates,
-      error_signature,
-      strategy,
-      outcome
-    )
+    updated_rates =
+      update_strategy_success_rate(
+        state.strategy_success_rates,
+        error_signature,
+        strategy,
+        outcome
+      )
 
     # Update recovery patterns
-    updated_patterns = update_recovery_pattern(
-      state.recovery_patterns,
-      error_signature,
-      strategy,
-      outcome,
-      context,
-      timestamp
-    )
+    updated_patterns =
+      update_recovery_pattern(
+        state.recovery_patterns,
+        error_signature,
+        strategy,
+        outcome,
+        context,
+        timestamp
+      )
 
     # Update performance correlations
-    updated_correlations = update_performance_correlations(
-      state.performance_correlations,
-      error_signature,
-      strategy,
-      outcome,
-      context
-    )
+    updated_correlations =
+      update_performance_correlations(
+        state.performance_correlations,
+        error_signature,
+        strategy,
+        outcome,
+        context
+      )
 
     # Update context strategies
-    updated_context_strategies = update_context_strategies(
-      state.context_strategies,
-      error_signature,
-      strategy,
-      outcome,
-      context
-    )
+    updated_context_strategies =
+      update_context_strategies(
+        state.context_strategies,
+        error_signature,
+        strategy,
+        outcome,
+        context
+      )
 
     # Store in ETS for fast access
     store_pattern_in_ets(error_signature, strategy, outcome, context)
@@ -218,11 +232,15 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
   end
 
   @impl true
-  def handle_manager_cast({:update_adaptive_thresholds, performance_metrics}, state) do
-    updated_thresholds = calculate_adaptive_thresholds(
-      state.adaptive_thresholds,
-      performance_metrics
-    )
+  def handle_manager_cast(
+        {:update_adaptive_thresholds, performance_metrics},
+        state
+      ) do
+    updated_thresholds =
+      calculate_adaptive_thresholds(
+        state.adaptive_thresholds,
+        performance_metrics
+      )
 
     new_state = %{state | adaptive_thresholds: updated_thresholds}
 
@@ -230,14 +248,23 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
   end
 
   @impl true
-  def handle_manager_call({:recommend_recovery_strategy, error_signature, context}, _from, state) do
-    strategy = recommend_strategy_based_on_learning(state, error_signature, context)
+  def handle_manager_call(
+        {:recommend_recovery_strategy, error_signature, context},
+        _from,
+        state
+      ) do
+    strategy =
+      recommend_strategy_based_on_learning(state, error_signature, context)
 
     {:reply, strategy, state}
   end
 
   @impl true
-  def handle_manager_call({:get_strategy_success_rates, error_signature}, _from, state) do
+  def handle_manager_call(
+        {:get_strategy_success_rates, error_signature},
+        _from,
+        state
+      ) do
     rates = Map.get(state.strategy_success_rates, error_signature, %{})
 
     {:reply, rates, state}
@@ -300,54 +327,67 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
     key = {error_signature, strategy}
     current_rate = Map.get(rates, key, 0.5)
 
-    new_rate = case outcome do
-      :success -> min(0.95, current_rate + 0.1)
-      :partial_success -> current_rate + 0.05
-      :failure -> max(0.05, current_rate - 0.1)
-    end
+    new_rate =
+      case outcome do
+        :success -> min(0.95, current_rate + 0.1)
+        :partial_success -> current_rate + 0.05
+        :failure -> max(0.05, current_rate - 0.1)
+      end
 
     Map.put(rates, key, new_rate)
   end
 
-  defp update_recovery_pattern(patterns, error_signature, strategy, outcome, context, timestamp) do
+  defp update_recovery_pattern(
+         patterns,
+         error_signature,
+         strategy,
+         outcome,
+         context,
+         timestamp
+       ) do
     key = {error_signature, strategy}
 
-    pattern = Map.get(patterns, key, %{
-      error_signature: error_signature,
-      strategy: strategy,
-      success_rate: 0.5,
-      avg_recovery_time_ms: 0.0,
-      performance_impact: :unknown,
-      context_correlations: %{},
-      last_updated: timestamp
-    })
+    pattern =
+      Map.get(patterns, key, %{
+        error_signature: error_signature,
+        strategy: strategy,
+        success_rate: 0.5,
+        avg_recovery_time_ms: 0.0,
+        performance_impact: :unknown,
+        context_correlations: %{},
+        last_updated: timestamp
+      })
 
     # Update success rate
-    success_value = case outcome do
-      :success -> 1.0
-      :partial_success -> 0.5
-      :failure -> 0.0
-    end
+    success_value =
+      case outcome do
+        :success -> 1.0
+        :partial_success -> 0.5
+        :failure -> 0.0
+      end
 
-    new_success_rate = (pattern.success_rate * 0.9) + (success_value * 0.1)
+    new_success_rate = pattern.success_rate * 0.9 + success_value * 0.1
 
     # Update recovery time if provided
     recovery_time = Map.get(context, :recovery_time_ms, 0)
-    new_avg_time = if recovery_time > 0 do
-      (pattern.avg_recovery_time_ms * 0.9) + (recovery_time * 0.1)
-    else
-      pattern.avg_recovery_time_ms
-    end
+
+    new_avg_time =
+      if recovery_time > 0 do
+        pattern.avg_recovery_time_ms * 0.9 + recovery_time * 0.1
+      else
+        pattern.avg_recovery_time_ms
+      end
 
     # Update performance impact
     performance_impact = determine_performance_impact(context)
 
     # Update context correlations
-    updated_correlations = update_context_correlations(
-      pattern.context_correlations,
-      context,
-      outcome
-    )
+    updated_correlations =
+      update_context_correlations(
+        pattern.context_correlations,
+        context,
+        outcome
+      )
 
     updated_pattern = %{
       pattern
@@ -361,16 +401,24 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
     Map.put(patterns, key, updated_pattern)
   end
 
-  defp update_performance_correlations(correlations, error_signature, strategy, outcome, context) do
+  defp update_performance_correlations(
+         correlations,
+         error_signature,
+         strategy,
+         outcome,
+         context
+       ) do
     performance_impact = Map.get(context, :performance_impact, :unknown)
 
     if performance_impact != :unknown do
       key = {error_signature, performance_impact}
       strategies = Map.get(correlations, key, %{})
 
-      updated_strategies = Map.update(strategies, strategy, [outcome], fn outcomes ->
-        [outcome | outcomes] |> Enum.take(20) # Keep last 20 outcomes
-      end)
+      updated_strategies =
+        Map.update(strategies, strategy, [outcome], fn outcomes ->
+          # Keep last 20 outcomes
+          [outcome | outcomes] |> Enum.take(20)
+        end)
 
       Map.put(correlations, key, updated_strategies)
     else
@@ -378,17 +426,25 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
     end
   end
 
-  defp update_context_strategies(context_strategies, error_signature, strategy, outcome, context) do
+  defp update_context_strategies(
+         context_strategies,
+         error_signature,
+         strategy,
+         outcome,
+         context
+       ) do
     # Extract relevant context features
     context_features = extract_context_features(context)
 
-    Enum.reduce(context_features, context_strategies, fn {feature, value}, acc ->
+    Enum.reduce(context_features, context_strategies, fn {feature, value},
+                                                         acc ->
       key = {error_signature, feature, value}
       strategy_outcomes = Map.get(acc, key, %{})
 
-      updated_outcomes = Map.update(strategy_outcomes, strategy, [outcome], fn outcomes ->
-        [outcome | outcomes] |> Enum.take(10)
-      end)
+      updated_outcomes =
+        Map.update(strategy_outcomes, strategy, [outcome], fn outcomes ->
+          [outcome | outcomes] |> Enum.take(10)
+        end)
 
       Map.put(acc, key, updated_outcomes)
     end)
@@ -408,29 +464,33 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
 
   defp recommend_strategy_based_on_learning(state, error_signature, context) do
     # Get success rates for this error signature
-    strategy_rates = get_strategy_success_rates_for_error(state, error_signature)
+    strategy_rates =
+      get_strategy_success_rates_for_error(state, error_signature)
 
     # Get context-specific recommendations
-    context_recommendations = get_context_specific_recommendations(
-      state,
-      error_signature,
-      context
-    )
+    context_recommendations =
+      get_context_specific_recommendations(
+        state,
+        error_signature,
+        context
+      )
 
     # Get performance-aware recommendations
-    performance_recommendations = get_performance_aware_recommendations(
-      state,
-      error_signature,
-      context
-    )
+    performance_recommendations =
+      get_performance_aware_recommendations(
+        state,
+        error_signature,
+        context
+      )
 
     # Combine all recommendations with weights
-    combined_scores = combine_recommendation_scores(
-      strategy_rates,
-      context_recommendations,
-      performance_recommendations,
-      state.adaptive_thresholds
-    )
+    combined_scores =
+      combine_recommendation_scores(
+        strategy_rates,
+        context_recommendations,
+        performance_recommendations,
+        state.adaptive_thresholds
+      )
 
     # Select best strategy
     select_best_strategy(combined_scores, context)
@@ -457,7 +517,9 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
           acc
 
         strategy_outcomes ->
-          strategy_scores = calculate_strategy_scores_from_outcomes(strategy_outcomes)
+          strategy_scores =
+            calculate_strategy_scores_from_outcomes(strategy_outcomes)
+
           Map.merge(acc, strategy_scores, fn _k, v1, v2 -> (v1 + v2) / 2 end)
       end
     end)
@@ -466,7 +528,10 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
   defp get_performance_aware_recommendations(state, error_signature, context) do
     performance_impact = Map.get(context, :performance_impact, :unknown)
 
-    case Map.get(state.performance_correlations, {error_signature, performance_impact}) do
+    case Map.get(
+           state.performance_correlations,
+           {error_signature, performance_impact}
+         ) do
       nil ->
         %{}
 
@@ -476,11 +541,11 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
   end
 
   defp combine_recommendation_scores(
-    strategy_rates,
-    context_recommendations,
-    performance_recommendations,
-    adaptive_thresholds
-  ) do
+         strategy_rates,
+         context_recommendations,
+         performance_recommendations,
+         adaptive_thresholds
+       ) do
     @recovery_strategies
     |> Enum.map(fn strategy ->
       base_score = Map.get(strategy_rates, strategy, 0.5)
@@ -490,7 +555,9 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
       # Apply adaptive thresholds
       threshold_modifier = get_threshold_modifier(strategy, adaptive_thresholds)
 
-      combined_score = (base_score * 0.4 + context_score * 0.3 + performance_score * 0.3) * threshold_modifier
+      combined_score =
+        (base_score * 0.4 + context_score * 0.3 + performance_score * 0.3) *
+          threshold_modifier
 
       {strategy, combined_score}
     end)
@@ -503,12 +570,22 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
     performance_impact = Map.get(context, :performance_impact, :low)
 
     # Apply context-based filters
-    filtered_strategies = filter_strategies_by_context(combined_scores, restart_count, performance_impact)
+    filtered_strategies =
+      filter_strategies_by_context(
+        combined_scores,
+        restart_count,
+        performance_impact
+      )
 
     # Select strategy with highest score
-    case Enum.max_by(filtered_strategies, fn {_strategy, score} -> score end, fn -> nil end) do
+    case Enum.max_by(
+           filtered_strategies,
+           fn {_strategy, score} -> score end,
+           fn -> nil end
+         ) do
       {strategy, _score} -> strategy
-      nil -> :immediate_restart # Fallback
+      # Fallback
+      nil -> :immediate_restart
     end
   end
 
@@ -518,13 +595,10 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
       case {strategy, restart_count, performance_impact} do
         # Don't use immediate restart if we've restarted many times
         {:immediate_restart, count, _} when count > 2 -> false
-
         # Prefer circuit breaking for high restart counts
         {:circuit_break, count, _} when count > 1 -> true
-
         # Use graceful degradation for high performance impact
         {:graceful_degradation, _, :high} -> true
-
         # General filtering
         _ -> true
       end
@@ -579,7 +653,9 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
       value_outcomes = Map.get(feature_outcomes, value, [])
 
       updated_outcomes = [outcome | value_outcomes] |> Enum.take(10)
-      updated_feature_outcomes = Map.put(feature_outcomes, value, updated_outcomes)
+
+      updated_feature_outcomes =
+        Map.put(feature_outcomes, value, updated_outcomes)
 
       Map.put(acc, feature, updated_feature_outcomes)
     end)
@@ -602,7 +678,13 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
 
     current_thresholds
     |> Enum.map(fn {strategy, threshold} ->
-      adjusted_threshold = adjust_threshold_for_performance(strategy, threshold, performance_factor)
+      adjusted_threshold =
+        adjust_threshold_for_performance(
+          strategy,
+          threshold,
+          performance_factor
+        )
+
       {strategy, adjusted_threshold}
     end)
     |> Map.new()
@@ -617,7 +699,11 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
     (render_factor + memory_factor + error_factor) / 3
   end
 
-  defp adjust_threshold_for_performance(strategy, current_threshold, performance_factor) do
+  defp adjust_threshold_for_performance(
+         strategy,
+         current_threshold,
+         performance_factor
+       ) do
     case strategy do
       # Favor less aggressive strategies when performance is poor
       :immediate_restart -> current_threshold * (performance_factor * 0.8)
@@ -652,7 +738,9 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
     end)
     |> Enum.group_by(fn {strategy, _rate} -> strategy end)
     |> Enum.map(fn {strategy, rates} ->
-      avg_rate = rates |> Enum.map(fn {_s, r} -> r end) |> Enum.sum() / length(rates)
+      avg_rate =
+        (rates |> Enum.map(fn {_s, r} -> r end) |> Enum.sum()) / length(rates)
+
       {strategy, avg_rate}
     end)
     |> Map.new()
@@ -688,19 +776,22 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
       strategy: String.to_atom(data["strategy"]),
       success_rate: data["success_rate"] || 0.5,
       avg_recovery_time_ms: data["avg_recovery_time_ms"] || 0.0,
-      performance_impact: String.to_atom(data["performance_impact"] || "unknown"),
+      performance_impact:
+        String.to_atom(data["performance_impact"] || "unknown"),
       context_correlations: data["context_correlations"] || %{},
       last_updated: parse_datetime(data["last_updated"])
     }
   end
 
   defp parse_datetime(nil), do: DateTime.utc_now()
+
   defp parse_datetime(datetime_string) when is_binary(datetime_string) do
     case DateTime.from_iso8601(datetime_string) do
       {:ok, dt, _} -> dt
       _ -> DateTime.utc_now()
     end
   end
+
   defp parse_datetime(datetime), do: datetime
 
   defp maybe_persist_learning_data(state) do

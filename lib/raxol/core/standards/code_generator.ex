@@ -189,7 +189,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
       use RaxolWeb, :live_view
 
       alias Phoenix.LiveView.Socket
-  alias Raxol.Core.Runtime.Log
+    alias Raxol.Core.Runtime.Log
 
       @impl true
       def mount(params, session, socket) do

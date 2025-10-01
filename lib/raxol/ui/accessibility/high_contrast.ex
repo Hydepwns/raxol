@@ -365,7 +365,10 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     # Apply initial theme
     {:ok, final_state} = apply_theme_internal(state, initial_theme)
 
-    Log.module_info("High contrast system initialized with theme: #{initial_theme}")
+    Log.module_info(
+      "High contrast system initialized with theme: #{initial_theme}"
+    )
+
     {:ok, final_state}
   end
 
