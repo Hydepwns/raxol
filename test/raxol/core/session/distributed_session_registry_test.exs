@@ -8,7 +8,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistryTest do
     test "registers and locates sessions correctly" do
       cluster = create_test_cluster(3)
 
-      {session_id, session_data} = create_test_session(cluster, :simple)
+      {session_id, _session_data} = create_test_session(cluster, :simple)
 
       # Verify session can be located
       assert_session_exists(cluster, session_id)
@@ -343,7 +343,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistryTest do
     test "works correctly with session replication" do
       cluster = create_test_cluster(3, replication_factor: 2)
 
-      {session_id, session_data} = create_test_session(cluster, :simple)
+      {session_id, _session_data} = create_test_session(cluster, :simple)
 
       # Verify session is replicated
       assert_session_replicated(cluster, session_id, 2)
@@ -372,5 +372,16 @@ defmodule Raxol.Core.Session.DistributedSessionRegistryTest do
 
       cleanup_test_cluster(cluster)
     end
+  end
+
+  # Helper function to find where a session is located in the cluster
+  defp find_session_location(cluster, session_id) do
+    Enum.find_value(cluster.all_nodes, {:error, :not_found}, fn node ->
+      registry_pid = Map.get(cluster.registry_pids, node)
+      case DistributedSessionRegistry.locate_session(registry_pid, session_id) do
+        {:ok, location} -> {:ok, location}
+        _ -> nil
+      end
+    end)
   end
 end
