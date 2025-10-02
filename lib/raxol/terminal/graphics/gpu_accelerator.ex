@@ -213,7 +213,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
         {:reply, {:ok, gpu_state.gpu_context}, gpu_state}
 
       {:error, reason} ->
-        Log.module_warning("GPU acceleration unavailable: #{inspect(reason)}")
+        Log.warning("GPU acceleration unavailable: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
     end
   end

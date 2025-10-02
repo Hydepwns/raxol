@@ -411,7 +411,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
   @impl true
   def handle_manager_info({:node_left, node_id}, state) do
-    Log.module_warning("Node #{node_id} left the cluster")
+    Log.warning("Node #{node_id} left the cluster")
     new_state = handle_node_departure(node_id, state)
     {:noreply, new_state}
   end

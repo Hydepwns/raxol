@@ -377,7 +377,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   @impl true
   def handle_manager_info({:monitoring, stats}, state) do
     # Update monitoring statistics
-    Log.module_debug("Memory stats: #{inspect(stats)}")
+    Log.debug("Memory stats: #{inspect(stats)}")
     {:noreply, state}
   end
 

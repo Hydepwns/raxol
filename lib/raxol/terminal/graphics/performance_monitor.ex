@@ -210,7 +210,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
         threshold: 100.0,  # 100ms
         comparison: :greater_than,
         consecutive_violations: 3,
-        callback: fn metrics -> Log.module_warning("High latency detected") end
+        callback: fn metrics -> Log.warning("High latency detected") end
       })
   """
   @spec configure_alert(atom(), alert_config()) :: :ok | {:error, term()}
@@ -698,11 +698,11 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
         try do
           callback.(config, operation, value)
         rescue
-          error -> Log.module_error("Alert callback failed: #{inspect(error)}")
+          error -> Log.error("Alert callback failed: #{inspect(error)}")
         end
 
       _ ->
-        Log.module_warning(
+        Log.warning(
           "Performance alert triggered: #{inspect(config)} value: #{value}"
         )
     end

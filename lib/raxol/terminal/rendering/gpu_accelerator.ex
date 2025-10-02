@@ -215,7 +215,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
          }}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "Failed to initialize GPU acceleration: #{inspect(reason)}"
         )
 
@@ -369,7 +369,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
         {:ok, %{device: device, queue: queue, pipeline: pipeline}}
 
       {:error, reason} ->
-        Log.module_warning(
+        Log.warning(
           "Metal initialization failed: #{inspect(reason)}, falling back to Vulkan"
         )
 
@@ -383,7 +383,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
         {:ok, %{device: device, queue: queue, pipeline: pipeline}}
 
       {:error, reason} ->
-        Log.module_warning(
+        Log.warning(
           "Vulkan initialization failed: #{inspect(reason)}, falling back to software"
         )
 
@@ -485,7 +485,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   defp render_metal(_state, _surface, terminal_buffer, _opts) do
     # Placeholder for Metal rendering
     # Would encode render commands, submit to GPU, etc.
-    Log.module_debug(
+    Log.debug(
       "Rendering #{length(terminal_buffer)} characters with Metal"
     )
 
@@ -527,7 +527,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   defp render_vulkan(_state, _surface, terminal_buffer, _opts) do
     # Placeholder for Vulkan rendering
-    Log.module_debug(
+    Log.debug(
       "Rendering #{length(terminal_buffer)} characters with Vulkan"
     )
 
@@ -541,7 +541,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   # Software fallback implementation
   defp render_software(_state, _surface, terminal_buffer, _opts) do
     # Software rasterization fallback
-    Log.module_debug(
+    Log.debug(
       "Rendering #{length(terminal_buffer)} characters with software fallback"
     )
 
@@ -553,7 +553,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   defp apply_effect(state, effect_type, params) do
     # Placeholder for effect application
-    Log.module_debug(
+    Log.debug(
       "Applying effect #{effect_type} with params #{inspect(params)}"
     )
 
@@ -562,7 +562,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   defp remove_effect(state, effect_type) do
     # Placeholder for effect removal
-    Log.module_debug("Removing effect #{effect_type}")
+    Log.debug("Removing effect #{effect_type}")
     {:ok, state}
   end
 

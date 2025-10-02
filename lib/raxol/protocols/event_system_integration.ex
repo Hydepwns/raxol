@@ -262,7 +262,7 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   end
 
   defp default_error_handler(event, error) do
-    Log.module_error(
+    Log.error(
       "Event handling error for #{event.type}: #{inspect(error)}"
     )
   end
@@ -292,7 +292,7 @@ defmodule Raxol.Protocols.EventSystemIntegration do
       duration = System.monotonic_time(:millisecond) - event.timestamp
 
       if duration > threshold do
-        Log.module_warning(
+        Log.warning(
           "Slow event processing: #{event.type} took #{duration}ms"
         )
       end

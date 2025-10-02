@@ -186,7 +186,7 @@ defmodule Raxol.UI.State.Streams do
         :ok
       else
         {:error, reason} ->
-          Raxol.Core.Runtime.Log.module_warning(
+          Raxol.Core.Runtime.Log.warning(
             "Observer function failed: #{inspect(reason)}"
           )
 
@@ -344,7 +344,7 @@ defmodule Raxol.UI.State.Streams do
         result
 
       {:error, error} ->
-        Raxol.Core.Runtime.Log.module_error(
+        Raxol.Core.Runtime.Log.error(
           "Store subscription failed: #{inspect(error)}"
         )
 

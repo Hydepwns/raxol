@@ -334,15 +334,15 @@ defmodule Raxol.Core.CircuitBreaker do
       {:ok, result}
     rescue
       error ->
-        Log.module_warning("Circuit breaker caught error: #{inspect(error)}")
+        Log.warning("Circuit breaker caught error: #{inspect(error)}")
         {:error, error}
     catch
       :exit, reason ->
-        Log.module_warning("Circuit breaker caught exit: #{inspect(reason)}")
+        Log.warning("Circuit breaker caught exit: #{inspect(reason)}")
         {:error, {:exit, reason}}
 
       kind, reason ->
-        Log.module_warning("Circuit breaker caught #{kind}: #{inspect(reason)}")
+        Log.warning("Circuit breaker caught #{kind}: #{inspect(reason)}")
         {:error, {kind, reason}}
     end
   end

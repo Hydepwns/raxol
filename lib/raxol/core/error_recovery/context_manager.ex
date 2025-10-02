@@ -163,7 +163,7 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
 
     :ets.insert(state.table, {key, entry})
 
-    Log.module_debug("Context stored for key: #{inspect(key)}")
+    Log.debug("Context stored for key: #{inspect(key)}")
 
     {:noreply, state}
   end
@@ -172,7 +172,7 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
   def handle_manager_cast({:remove_context, key}, state) do
     :ets.delete(state.table, key)
 
-    Log.module_debug("Context removed for key: #{inspect(key)}")
+    Log.debug("Context removed for key: #{inspect(key)}")
 
     {:noreply, state}
   end
@@ -192,7 +192,7 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
 
         :ets.insert(state.table, {key, updated_entry})
 
-        Log.module_debug("Context updated for key: #{inspect(key)}")
+        Log.debug("Context updated for key: #{inspect(key)}")
 
       [] ->
         # Context doesn't exist, create new one
@@ -229,7 +229,7 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
   def handle_manager_cast(:cleanup_expired, state) do
     {expired_count, new_state} = cleanup_expired_contexts(state)
 
-    Log.module_debug("Cleaned up #{expired_count} expired contexts")
+    Log.debug("Cleaned up #{expired_count} expired contexts")
 
     {:noreply, new_state}
   end
@@ -307,7 +307,7 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
     {expired_count, new_state} = cleanup_expired_contexts(state)
 
     if expired_count > 0 do
-      Log.module_debug(
+      Log.debug(
         "Periodic cleanup removed #{expired_count} expired contexts"
       )
     end

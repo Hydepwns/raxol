@@ -266,7 +266,7 @@ defmodule Raxol.Terminal.Input.FileDropHandler do
         {:ok, watcher_pid}
 
       {:error, reason} ->
-        Log.module_warning("Failed to start file watcher: #{inspect(reason)}")
+        Log.warning("Failed to start file watcher: #{inspect(reason)}")
         {:error, reason}
     end
   end
@@ -582,7 +582,7 @@ defmodule Raxol.Terminal.Input.FileDropHandler do
         callback.(path)
       rescue
         error ->
-          Log.module_warning("File watcher callback error: #{inspect(error)}")
+          Log.warning("File watcher callback error: #{inspect(error)}")
       end
     end
   end

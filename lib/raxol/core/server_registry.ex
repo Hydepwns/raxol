@@ -150,16 +150,16 @@ defmodule Raxol.Core.ServerRegistry do
   defp shutdown_server(server_name, timeout) do
     case get_server(server_name) do
       nil ->
-        Log.module_debug("Server #{server_name} not running")
+        Log.debug("Server #{server_name} not running")
 
       pid ->
-        Log.module_debug("Stopping server #{server_name}")
+        Log.debug("Stopping server #{server_name}")
 
         try do
           GenServer.stop(pid, :normal, timeout)
         catch
           :exit, _ ->
-            Log.module_warning(
+            Log.warning(
               "Server #{server_name} did not shut down gracefully"
             )
         end

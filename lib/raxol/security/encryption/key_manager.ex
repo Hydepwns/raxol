@@ -327,7 +327,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
         # Generate new master key
         key = :crypto.strong_rand_bytes(32)
 
-        Log.module_warning(
+        Log.warning(
           "Generated new master key - should be persisted securely!"
         )
 
@@ -648,7 +648,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
   defp generate_key_in_hsm(algorithm, _hsm_client) do
     # Simulate HSM key generation
-    Log.module_debug("Generating #{algorithm} key in HSM")
+    Log.debug("Generating #{algorithm} key in HSM")
     :crypto.strong_rand_bytes(32)
   end
 
@@ -828,7 +828,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
         user: get_current_user()
       )
     else
-      Log.module_debug("Audit logging skipped - audit logger not available",
+      Log.debug("Audit logging skipped - audit logger not available",
         operation: operation,
         key_id: key_id
       )
@@ -879,7 +879,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
         new_state
 
       {:error, reason} ->
-        Log.module_error("Failed to rotate key #{key_id}: #{inspect(reason)}")
+        Log.error("Failed to rotate key #{key_id}: #{inspect(reason)}")
         acc_state
     end
   end

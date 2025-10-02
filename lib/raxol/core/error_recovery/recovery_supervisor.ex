@@ -455,7 +455,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   end
 
   defp execute_circuit_break(child_id, duration, _state) do
-    Log.module_warning("Circuit breaking #{child_id} for #{duration}ms")
+    Log.warning("Circuit breaking #{child_id} for #{duration}ms")
 
     # Store circuit break info
     _circuit_break_until =
@@ -491,7 +491,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   end
 
   defp escalate_to_parent(child_id, reason, _state) do
-    Log.module_error("Escalating failure of #{child_id} to parent supervisor")
+    Log.error("Escalating failure of #{child_id} to parent supervisor")
 
     # Let the parent supervisor handle this
     exit(reason)

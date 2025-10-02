@@ -852,7 +852,7 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
   defp log_slow_render_if_needed(render_time_ms, threshold, component_module)
        when render_time_ms > threshold do
-    Log.module_warning(
+    Log.warning(
       "Slow render detected: #{component_module} took #{Float.round(render_time_ms, 2)}ms"
     )
   end

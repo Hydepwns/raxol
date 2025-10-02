@@ -34,7 +34,7 @@ defmodule Raxol.Core.ErrorHandlingStandard do
           {:ok, result}
         else
           {:error, _reason} = error ->
-            Log.module_error("Failed to process data")
+            Log.error("Failed to process data")
             error
         end
       end
@@ -119,11 +119,11 @@ defmodule Raxol.Core.ErrorHandlingStandard do
       {:ok, fun.()}
     rescue
       e ->
-        Log.module_error("Exception caught: #{inspect(e)}")
+        Log.error("Exception caught: #{inspect(e)}")
         {:error, error_type, %{exception: e, stacktrace: __STACKTRACE__}}
     catch
       kind, reason ->
-        Log.module_error("Caught #{kind}: #{inspect(reason)}")
+        Log.error("Caught #{kind}: #{inspect(reason)}")
         {:error, error_type, %{kind: kind, reason: reason}}
     end
   end
@@ -173,13 +173,13 @@ defmodule Raxol.Core.ErrorHandlingStandard do
         success
 
       error when attempt >= max_attempts ->
-        Log.module_warning("Max retry attempts reached (#{max_attempts})")
+        Log.warning("Max retry attempts reached (#{max_attempts})")
         error
 
       _error ->
         actual_delay = calculate_delay(delay, max_delay, jitter)
 
-        Log.module_debug(
+        Log.debug(
           "Retry attempt #{attempt}/#{max_attempts} after #{actual_delay}ms"
         )
 
@@ -286,12 +286,12 @@ defmodule Raxol.Core.ErrorHandlingStandard do
   """
   @spec tap_error(result(any()), String.t()) :: result(any())
   def tap_error({:error, _} = error, message) do
-    Log.module_error("#{message}: #{inspect(error)}")
+    Log.error("#{message}: #{inspect(error)}")
     error
   end
 
   def tap_error({:error, _, _} = error, message) do
-    Log.module_error("#{message}: #{inspect(error)}")
+    Log.error("#{message}: #{inspect(error)}")
     error
   end
 

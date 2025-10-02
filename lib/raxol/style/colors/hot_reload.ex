@@ -279,7 +279,7 @@ defmodule Raxol.Style.Colors.HotReload do
 
           _ ->
             # Log.info("[HotReload DEBUG] Failed to load theme: #{theme_name}")
-            Log.module_debug("Failed to load theme: #{theme_name}")
+            Log.debug("Failed to load theme: #{theme_name}")
         end
     end
   end

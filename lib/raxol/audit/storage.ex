@@ -333,7 +333,7 @@ defmodule Raxol.Audit.Storage do
       {:ok, paginated}
     else
       {:error, reason} ->
-        Log.module_error("Query execution failed: #{inspect(reason)}")
+        Log.error("Query execution failed: #{inspect(reason)}")
         {:error, :query_failed}
     end
   end

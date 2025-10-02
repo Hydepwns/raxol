@@ -576,7 +576,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   def handle_error(error, _context) do
     # Log the error with context
-    Log.module_error("Application error occurred: #{inspect(error)}")
+    Log.error("Application error occurred: #{inspect(error)}")
 
     # Handle different error types based on test expectations
     case error do
@@ -625,7 +625,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
         result
 
       {:error, error} ->
-        Log.module_error("Cleanup failed: #{inspect(error)}")
+        Log.error("Cleanup failed: #{inspect(error)}")
         {:error, :cleanup_failed}
     end
   end

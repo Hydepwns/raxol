@@ -215,7 +215,7 @@ defmodule Raxol.Audit.Logger do
   Logs a debug message.
   """
   def debug(message) do
-    Log.module_debug("#{message}")
+    Log.debug("#{message}")
   end
 
   @doc """
@@ -320,7 +320,7 @@ defmodule Raxol.Audit.Logger do
             {:reply, :ok, new_state}
 
           {:error, reason} ->
-            Log.module_error("Failed to log audit event: #{inspect(reason)}")
+            Log.error("Failed to log audit event: #{inspect(reason)}")
             {:reply, {:error, reason}, state}
         end
 
@@ -510,7 +510,7 @@ defmodule Raxol.Audit.Logger do
             {:ok, %{state | buffer: []}}
 
           {:error, reason} ->
-            Log.module_error("Failed to flush audit buffer: #{inspect(reason)}")
+            Log.error("Failed to flush audit buffer: #{inspect(reason)}")
             {:error, reason}
         end
     end
@@ -687,7 +687,7 @@ defmodule Raxol.Audit.Logger do
         Log.info("Daily integrity check passed")
 
       {:error, reason} ->
-        Log.module_error("Daily integrity check failed: #{inspect(reason)}")
+        Log.error("Daily integrity check failed: #{inspect(reason)}")
         # Send critical alert
         send_alerts(%{integrity_check_failed: reason}, :critical, state)
     end

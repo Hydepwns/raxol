@@ -352,7 +352,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
         :ok
 
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.module_warning(
+        Raxol.Core.Runtime.Log.warning(
           "Failed to apply graphics properties: #{inspect(reason)}"
         )
     end

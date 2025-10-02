@@ -110,7 +110,7 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
     plugin_id = manifest.name
     dependencies = manifest.dependencies || []
 
-    Log.module_debug("Resolving dependencies for #{plugin_id}")
+    Log.debug("Resolving dependencies for #{plugin_id}")
 
     case collect_all_dependencies(
            dependencies,
@@ -139,7 +139,7 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
     Enum.reduce_while(dependencies, {:ok, []}, fn {dep_id, requirement},
                                                   {:ok, acc} ->
       if MapSet.member?(visited, dep_id) do
-        Log.module_warning(
+        Log.warning(
           "[DependencyResolver] Circular dependency detected: #{dep_id}"
         )
 

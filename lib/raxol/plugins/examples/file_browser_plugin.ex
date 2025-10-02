@@ -625,7 +625,7 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
 
   @impl true
   def handle_manager_info(msg, state) do
-    Log.module_debug("Received message: #{inspect(msg)}")
+    Log.debug("Received message: #{inspect(msg)}")
     {:noreply, state}
   end
 end

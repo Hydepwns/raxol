@@ -138,7 +138,7 @@ defmodule Raxol.Events.EventServer do
     result =
       case Map.get(state.handlers, event_type) do
         nil ->
-          Log.module_warning("No handler for event type: #{event_type}")
+          Log.warning("No handler for event type: #{event_type}")
           {:error, :no_handler}
 
         handler_module ->
@@ -176,7 +176,7 @@ defmodule Raxol.Events.EventServer do
       end
     rescue
       error ->
-        Log.module_error("Event handler error: #{inspect(error)}")
+        Log.error("Event handler error: #{inspect(error)}")
         {:error, {:handler_exception, error}}
     end
   end

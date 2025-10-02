@@ -74,7 +74,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
             :ok
 
           {:error, reason} ->
-            Log.module_error(
+            Log.error(
               "Failed to publish event #{inspect(event.__struct__)}: #{inspect(reason)}"
             )
 
@@ -96,7 +96,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
             :ok
 
           {:error, reason} ->
-            Log.module_error(
+            Log.error(
               "Failed to publish events batch: #{inspect(reason)}"
             )
 
@@ -138,7 +138,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
                 {:ok, data}
 
               {:error, reason} ->
-                Log.module_warning(
+                Log.warning(
                   "Command failed: #{inspect(command_type)} - #{inspect(reason)}"
                 )
 
@@ -148,7 +148,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
           {:error, error} ->
             execution_time = System.monotonic_time(:microsecond) - start_time
 
-            Log.module_error(
+            Log.error(
               "Command handler crashed: #{inspect(command_type)} after #{execution_time}μs - #{inspect(error)}"
             )
 
@@ -281,7 +281,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
           {:cont, :ok}
 
         {:error, reason} ->
-          Log.module_error("Compensation failed: #{inspect(reason)}")
+          Log.error("Compensation failed: #{inspect(reason)}")
           {:halt, {:error, reason}}
       end
     end)

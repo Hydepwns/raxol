@@ -57,7 +57,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
         result
 
       {:error, {:exit, {:timeout, _}}} ->
-        Log.module_warning("Render timeout, using cached frame")
+        Log.warning("Render timeout, using cached frame")
         {:ok, :cached}
 
       {:error, error} ->
@@ -204,7 +204,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
         {:DOWN, _ref, :process, pid, reason},
         %{pipeline: pid} = state
       ) do
-    Log.module_error("Rendering pipeline crashed: #{inspect(reason)}")
+    Log.error("Rendering pipeline crashed: #{inspect(reason)}")
 
     # Attempt to restart pipeline
     new_state = restart_pipeline(state)
@@ -242,11 +242,11 @@ defmodule Raxol.UI.Rendering.SafePipeline do
         {:ok, result, new_state}
 
       {:error, :circuit_open, _message, _metadata} ->
-        Log.module_warning("Circuit breaker open, using fallback renderer")
+        Log.warning("Circuit breaker open, using fallback renderer")
         use_fallback_renderer(scene, state)
 
       {:error, :circuit_failure, message, _metadata} ->
-        Log.module_error("Render failed: #{message}")
+        Log.error("Render failed: #{message}")
 
         handle_render_error(
           message,
@@ -287,7 +287,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   end
 
   defp handle_render_error(scene, reason, from, state) do
-    Log.module_warning("Render error: #{inspect(reason)}")
+    Log.warning("Render error: #{inspect(reason)}")
 
     handle_fallback_decision(
       state.config.enable_fallback,
@@ -317,7 +317,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
         handle_animation_frame(skip_frame, animation, opts, state)
 
       {:error, reason} ->
-        Log.module_error("Invalid animation: #{inspect(reason)}")
+        Log.error("Invalid animation: #{inspect(reason)}")
         state
     end
   end
@@ -443,7 +443,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
         %{state | pipeline: new_pid}
 
       {:error, reason} ->
-        Log.module_error("Failed to restart pipeline: #{inspect(reason)}")
+        Log.error("Failed to restart pipeline: #{inspect(reason)}")
         state
     end
   end
@@ -532,7 +532,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
     do: state
 
   defp handle_performance_threshold(true, state, render_time, threshold_ms) do
-    Log.module_warning(
+    Log.warning(
       "Performance threshold exceeded (#{render_time}ms > #{threshold_ms}ms)"
     )
 

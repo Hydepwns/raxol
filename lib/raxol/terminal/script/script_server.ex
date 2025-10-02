@@ -348,11 +348,11 @@ defmodule Raxol.Terminal.Script.ScriptServer do
         result
 
       nil ->
-        Log.module_error("Script execution timeout")
+        Log.error("Script execution timeout")
         {:error, :execution_timeout}
 
       {:exit, reason} ->
-        Log.module_error("Script execution failed: #{inspect(reason)}")
+        Log.error("Script execution failed: #{inspect(reason)}")
         {:error, :execution_failed}
     end
   end
@@ -379,11 +379,11 @@ defmodule Raxol.Terminal.Script.ScriptServer do
         result
 
       nil ->
-        Log.module_error("Elixir script compilation/execution timeout")
+        Log.error("Elixir script compilation/execution timeout")
         {:error, :execution_failed}
 
       {:exit, reason} ->
-        Log.module_error("Script execution failed: #{inspect(reason)}")
+        Log.error("Script execution failed: #{inspect(reason)}")
         {:error, :execution_failed}
     end
   end
@@ -505,11 +505,11 @@ defmodule Raxol.Terminal.Script.ScriptServer do
         :ok
 
       nil ->
-        Log.module_error("Script export timeout")
+        Log.error("Script export timeout")
         {:error, :export_failed}
 
       {:exit, reason} ->
-        Log.module_error("Script export failed: #{inspect(reason)}")
+        Log.error("Script export failed: #{inspect(reason)}")
         {:error, :export_failed}
     end
   end
@@ -546,11 +546,11 @@ defmodule Raxol.Terminal.Script.ScriptServer do
         result
 
       nil ->
-        Log.module_error("Script import timeout")
+        Log.error("Script import timeout")
         {:error, :import_failed}
 
       {:exit, reason} ->
-        Log.module_error("Script import failed: #{inspect(reason)}")
+        Log.error("Script import failed: #{inspect(reason)}")
         {:error, :import_failed}
     end
   end
@@ -658,7 +658,7 @@ defmodule Raxol.Terminal.Script.ScriptServer do
           load_script_from_single_file(path)
 
         _ ->
-          Log.module_warning("Invalid script path: #{path}")
+          Log.warning("Invalid script path: #{path}")
       end
     end)
   end
@@ -669,7 +669,7 @@ defmodule Raxol.Terminal.Script.ScriptServer do
         Enum.each(entries, &process_directory_entry(path, &1))
 
       {:error, reason} ->
-        Log.module_error("Failed to list directory #{path}: #{inspect(reason)}")
+        Log.error("Failed to list directory #{path}: #{inspect(reason)}")
     end
   end
 
@@ -792,7 +792,7 @@ defmodule Raxol.Terminal.Script.ScriptServer do
         Log.info("Loaded script: #{script.name} from #{path}")
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "Failed to load script from #{path}: #{inspect(reason)}"
         )
     end

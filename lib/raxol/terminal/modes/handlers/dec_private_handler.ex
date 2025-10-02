@@ -73,26 +73,26 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   defp apply_mode_effects(mode_def, value, emulator) do
-    Log.module_debug(
+    Log.debug(
       "DECPrivateHandler.apply_mode_effects called with mode_def.name=#{inspect(mode_def.name)}, value=#{inspect(value)}"
     )
 
     case get_mode_handler(mode_def.name) do
       {:ok, handler} ->
-        Log.module_debug(
+        Log.debug(
           "DECPrivateHandler.apply_mode_effects: calling handler for #{inspect(mode_def.name)}"
         )
 
         result = handler.(value, emulator)
 
-        Log.module_debug(
+        Log.debug(
           "DECPrivateHandler.apply_mode_effects: handler returned #{inspect(result)}"
         )
 
         result
 
       :error ->
-        Log.module_debug(
+        Log.debug(
           "DECPrivateHandler.apply_mode_effects: no handler found for #{inspect(mode_def.name)}"
         )
 
@@ -238,7 +238,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
   def handle_alt_screen(value, emulator) do
     # Mode 47 - Switch to/from alternate screen without save/restore
-    Log.module_debug(
+    Log.debug(
       "DECPrivateHandler.handle_alt_screen called with value=#{inspect(value)}"
     )
 

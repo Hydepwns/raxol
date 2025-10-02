@@ -311,7 +311,7 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
   Handles GenServer call for unknown requests.
   """
   def handle_unknown_request(request, state) do
-    Log.module_warning("Unknown request: #{inspect(request)}")
+    Log.warning("Unknown request: #{inspect(request)}")
     {{:error, :unknown_request}, state}
   end
 

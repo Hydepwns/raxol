@@ -139,7 +139,7 @@ defmodule Raxol.Core.ErrorReporter do
       {:reply, {:ok, report}, new_state}
     rescue
       exception ->
-        Log.module_error(
+        Log.error(
           "Failed to generate error report: #{inspect(exception)}"
         )
 
@@ -160,7 +160,7 @@ defmodule Raxol.Core.ErrorReporter do
       {:reply, {:ok, report}, state}
     rescue
       exception ->
-        Log.module_error(
+        Log.error(
           "Failed to generate session report: #{inspect(exception)}"
         )
 
@@ -222,7 +222,7 @@ defmodule Raxol.Core.ErrorReporter do
       {:reply, {:ok, export_result}, state}
     rescue
       exception ->
-        Log.module_error("Failed to export reports: #{inspect(exception)}")
+        Log.error("Failed to export reports: #{inspect(exception)}")
         {:reply, {:error, exception}, state}
     end
   end

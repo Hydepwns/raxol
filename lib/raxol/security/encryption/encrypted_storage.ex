@@ -665,7 +665,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
   defp check_hmac_match(true, _key), do: :ok
 
   defp check_hmac_match(false, key) do
-    Log.module_error("HMAC verification failed for key: #{key}")
+    Log.error("HMAC verification failed for key: #{key}")
     audit_security_event(:integrity_failure, key)
     {:error, :integrity_check_failed}
   end

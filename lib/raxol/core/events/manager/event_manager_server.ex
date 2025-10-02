@@ -498,14 +498,14 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
   defp do_dispatch(state, event) do
     event_type = extract_event_type(event)
 
-    Log.module_debug(
+    Log.debug(
       "EventManager.Server dispatching event: #{inspect(event)}, type: #{inspect(event_type)}"
     )
 
     # Execute handlers in priority order
     handlers = Map.get(state.handlers, event_type, [])
 
-    Log.module_debug(
+    Log.debug(
       "Found #{length(handlers)} handlers for event type #{inspect(event_type)}: #{inspect(handlers)}"
     )
 
@@ -513,7 +513,7 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
       case handler do
         # Traditional module/function handler
         {module, function, _priority} when is_atom(module) and is_atom(function) ->
-          Log.module_debug(
+          Log.debug(
             "EventManager calling #{module}.#{function} with event: #{inspect(event)}"
           )
 
@@ -524,7 +524,7 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
               )
 
             {:error, reason} ->
-              Log.module_error(
+              Log.error(
                 "Event handler #{module}.#{function} failed: #{inspect(reason)}"
               )
           end
@@ -544,7 +544,7 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
                   )
 
                 {:error, reason} ->
-                  Log.module_error(
+                  Log.error(
                     "Event handler #{handler_id} failed: #{inspect(reason)}"
                   )
               end
@@ -554,7 +554,7 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
           end
 
         _ ->
-          Log.module_warning("Unknown handler format: #{inspect(handler)}")
+          Log.warning("Unknown handler format: #{inspect(handler)}")
       end
     end)
 

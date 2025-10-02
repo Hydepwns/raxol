@@ -841,10 +841,10 @@ defmodule Raxol.Core.ErrorPatternLearner do
     case Jason.encode(data, pretty: true) do
       {:ok, json} ->
         File.write!(patterns_file, json)
-        Log.module_debug("Error patterns persisted successfully")
+        Log.debug("Error patterns persisted successfully")
 
       {:error, reason} ->
-        Log.module_error("Failed to persist error patterns: #{reason}")
+        Log.error("Failed to persist error patterns: #{reason}")
     end
   end
 

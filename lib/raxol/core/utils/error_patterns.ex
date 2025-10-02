@@ -23,7 +23,7 @@ defmodule Raxol.Core.Utils.ErrorPatterns do
 
         {:error, reason} = error ->
           if log_errors do
-            Log.module_warning("#{context} failed: #{inspect(reason)}")
+            Log.warning("#{context} failed: #{inspect(reason)}")
           end
 
           error
@@ -34,7 +34,7 @@ defmodule Raxol.Core.Utils.ErrorPatterns do
     rescue
       exception ->
         if log_errors do
-          Log.module_error("#{context} raised exception: #{inspect(exception)}")
+          Log.error("#{context} raised exception: #{inspect(exception)}")
         end
 
         {:error, {:exception, exception}}

@@ -373,7 +373,7 @@ defmodule Raxol.Core.Performance.Profiler do
   defp log_slow_operation_if_needed(operation, metrics) do
     case metrics.duration_us > 1_000_000 do
       true ->
-        Log.module_warning(
+        Log.warning(
           "[Performance] Slow operation #{operation}: #{metrics.duration_us / 1_000_000}s"
         )
 

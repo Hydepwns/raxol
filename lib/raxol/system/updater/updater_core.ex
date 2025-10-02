@@ -410,8 +410,8 @@ defmodule Raxol.System.Updater.Core do
         :ok
 
       {:error, reason} ->
-        Log.module_error("Delta update failed: #{reason}")
-        Log.module_warning("Falling back to full update...")
+        Log.error("Delta update failed: #{reason}")
+        Log.warning("Falling back to full update...")
         do_self_update(version)
     end
   end

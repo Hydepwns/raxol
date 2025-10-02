@@ -20,7 +20,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
       duration = end_time - start_time
 
       _ =
-        Log.module_debug(
+        Log.debug(
           "Profile: #{unquote(name)} took #{duration}μs",
           [duration: duration] ++ unquote(metadata)
         )
@@ -462,7 +462,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
 
   defp log_slow_frame(frame_time, budget_ms)
        when frame_time > budget_ms * 1.5 do
-    Log.module_warning("Slow frame: #{frame_time}ms")
+    Log.warning("Slow frame: #{frame_time}ms")
   end
 
   defp log_slow_frame(_frame_time, _budget_ms), do: :ok

@@ -325,7 +325,7 @@ if Code.ensure_loaded?(:ssh) do
               {:ok, state}
 
             {:error, reason} ->
-              Log.module_error(
+              Log.error(
                 "Failed to start SSH session: #{inspect(reason)}"
               )
 
@@ -333,7 +333,7 @@ if Code.ensure_loaded?(:ssh) do
           end
 
         {:error, reason} ->
-          Log.module_error(
+          Log.error(
             "Failed to get SSH connection info: #{inspect(reason)}"
           )
 
@@ -416,7 +416,7 @@ if Code.ensure_loaded?(:ssh) do
           {:noreply, update_activity(new_state)}
 
         {:error, reason} ->
-          Log.module_warning("Failed to send input: #{inspect(reason)}")
+          Log.warning("Failed to send input: #{inspect(reason)}")
           {:noreply, state}
       end
     end
@@ -500,7 +500,7 @@ if Code.ensure_loaded?(:ssh) do
     end
 
     def handle_manager_info(msg, state) do
-      Log.module_debug("Unhandled SSH session message: #{inspect(msg)}")
+      Log.debug("Unhandled SSH session message: #{inspect(msg)}")
       {:noreply, state}
     end
 
@@ -595,11 +595,11 @@ if Code.ensure_loaded?(:ssh) do
              String.to_charlist(signal_name)
            ) do
         :ok ->
-          Log.module_debug("Sent signal #{signal_name} to SSH session")
+          Log.debug("Sent signal #{signal_name} to SSH session")
           :ok
 
         {:error, reason} ->
-          Log.module_warning(
+          Log.warning(
             "Failed to send signal #{signal_name}: #{inspect(reason)}"
           )
 
@@ -689,11 +689,11 @@ if Code.ensure_loaded?(:ssh) do
                0
              ) do
           :ok ->
-            Log.module_debug("Sent control character for #{signal_name}")
+            Log.debug("Sent control character for #{signal_name}")
             :ok
 
           {:error, reason} ->
-            Log.module_debug("Workaround failed: #{inspect(reason)}")
+            Log.debug("Workaround failed: #{inspect(reason)}")
             {:error, :signal_not_supported}
         end
       else

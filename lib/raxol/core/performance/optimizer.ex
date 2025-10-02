@@ -284,7 +284,7 @@ defmodule Raxol.Core.Performance.Optimizer do
               end
 
             {:error, reason} ->
-              Log.module_warning(
+              Log.warning(
                 "Failed to get connection from pool #{pool_name}: #{inspect(reason)}"
               )
 

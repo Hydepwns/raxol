@@ -813,7 +813,7 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_info(msg, state) do
-    Log.module_debug("Received message: #{inspect(msg)}")
+    Log.debug("Received message: #{inspect(msg)}")
     {:noreply, state}
   end
 end

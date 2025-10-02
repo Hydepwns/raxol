@@ -359,7 +359,7 @@ defmodule Raxol.Performance.AlertManager do
         {:ok, alert_id, new_state}
 
       {:error, reason} ->
-        Log.module_error("Failed to send alert notifications", %{
+        Log.error("Failed to send alert notifications", %{
           alert_id: alert_id,
           reason: reason
         })
@@ -450,7 +450,7 @@ defmodule Raxol.Performance.AlertManager do
 
   defp send_to_channel(:log, _config, alert) do
     # Always send to centralized logging
-    Log.module_warning("Performance Alert", %{
+    Log.warning("Performance Alert", %{
       alert_id: alert.id,
       type: alert.type,
       metric: alert.metric,
@@ -463,7 +463,7 @@ defmodule Raxol.Performance.AlertManager do
   end
 
   defp send_to_channel(channel_type, _config, alert) do
-    Log.module_warning("Unsupported alert channel: #{channel_type}", %{
+    Log.warning("Unsupported alert channel: #{channel_type}", %{
       alert_id: alert.id
     })
 
@@ -472,7 +472,7 @@ defmodule Raxol.Performance.AlertManager do
 
   defp send_email_alert(config, alert) do
     # Email implementation would go here
-    Log.module_debug("Would send email alert", %{
+    Log.debug("Would send email alert", %{
       to: config.recipients,
       alert_id: alert.id,
       severity: alert.severity
@@ -483,7 +483,7 @@ defmodule Raxol.Performance.AlertManager do
 
   defp send_slack_alert(config, alert) do
     # Slack implementation would go here
-    Log.module_debug("Would send Slack alert", %{
+    Log.debug("Would send Slack alert", %{
       channel: config.channel,
       alert_id: alert.id,
       severity: alert.severity
@@ -494,7 +494,7 @@ defmodule Raxol.Performance.AlertManager do
 
   defp send_webhook_alert(config, alert) do
     # Webhook implementation would go here
-    Log.module_debug("Would send webhook alert", %{
+    Log.debug("Would send webhook alert", %{
       url: config.url,
       alert_id: alert.id,
       severity: alert.severity
@@ -534,7 +534,7 @@ defmodule Raxol.Performance.AlertManager do
       new_active_alerts =
         Map.put(acc_state.active_alerts, alert_id, escalated_alert)
 
-      Log.module_warning("Alert escalated due to timeout", %{
+      Log.warning("Alert escalated due to timeout", %{
         alert_id: alert_id,
         duration_ms: System.system_time(:millisecond) - alert.created_at
       })
@@ -570,7 +570,7 @@ defmodule Raxol.Performance.AlertManager do
   end
 
   defp send_resolution_to_channel(channel_type, _config, alert) do
-    Log.module_debug("Sending resolution notification via #{channel_type}", %{
+    Log.debug("Sending resolution notification via #{channel_type}", %{
       alert_id: alert.id,
       resolved_by: alert.resolved_by
     })

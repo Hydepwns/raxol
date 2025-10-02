@@ -462,7 +462,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
         try do
           callback.(Map.put(event, :element, element))
         rescue
-          error -> Log.module_warning("Click callback error: #{inspect(error)}")
+          error -> Log.warning("Click callback error: #{inspect(error)}")
         end
 
       _ ->
@@ -478,7 +478,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
           callback.(Map.put(event, :element, element))
         rescue
           error ->
-            Log.module_warning("Double-click callback error: #{inspect(error)}")
+            Log.warning("Double-click callback error: #{inspect(error)}")
         end
 
       {:triple, callbacks} when is_map_key(callbacks, :on_triple_click) ->
@@ -488,7 +488,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
           callback.(Map.put(event, :element, element))
         rescue
           error ->
-            Log.module_warning("Triple-click callback error: #{inspect(error)}")
+            Log.warning("Triple-click callback error: #{inspect(error)}")
         end
 
       _ ->
@@ -512,7 +512,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
               callback.(Map.put(event, :element, element))
             rescue
               error ->
-                Log.module_warning("Hover callback error: #{inspect(error)}")
+                Log.warning("Hover callback error: #{inspect(error)}")
             end
 
           _ ->
@@ -544,7 +544,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
             element.callbacks.on_drag_start.(Map.put(event, :element, element))
           rescue
             error ->
-              Log.module_warning("Drag start callback error: #{inspect(error)}")
+              Log.warning("Drag start callback error: #{inspect(error)}")
           end
         end
 
@@ -575,7 +575,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
             )
           rescue
             error ->
-              Log.module_warning("Drag callback error: #{inspect(error)}")
+              Log.warning("Drag callback error: #{inspect(error)}")
           end
         end
 
@@ -604,7 +604,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
           )
         rescue
           error ->
-            Log.module_warning(
+            Log.warning(
               "Selection start callback error: #{inspect(error)}"
             )
         end
@@ -646,7 +646,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
               )
             rescue
               error ->
-                Log.module_warning("Drag end callback error: #{inspect(error)}")
+                Log.warning("Drag end callback error: #{inspect(error)}")
             end
           end
 
@@ -676,7 +676,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
               )
             rescue
               error ->
-                Log.module_warning(
+                Log.warning(
                   "Selection end callback error: #{inspect(error)}"
                 )
             end
@@ -703,7 +703,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
         element.callbacks.on_context_menu.(Map.put(event, :element, element))
       rescue
         error ->
-          Log.module_warning("Context menu callback error: #{inspect(error)}")
+          Log.warning("Context menu callback error: #{inspect(error)}")
       end
     end
 
@@ -754,7 +754,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
               )
             rescue
               error ->
-                Log.module_warning(
+                Log.warning(
                   "Selection change callback error: #{inspect(error)}"
                 )
             end

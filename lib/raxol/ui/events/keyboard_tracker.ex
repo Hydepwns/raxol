@@ -46,7 +46,7 @@ defmodule Raxol.UI.Events.KeyboardTracker do
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_cast({:key_event, event}, state) do
     # Process keyboard event
-    Log.module_debug("Processing key event: #{inspect(event)}")
+    Log.debug("Processing key event: #{inspect(event)}")
     {:noreply, state}
   end
 

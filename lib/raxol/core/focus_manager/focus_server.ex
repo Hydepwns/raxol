@@ -495,7 +495,7 @@ defmodule Raxol.Core.FocusManager.FocusServer do
         handler.(old_focus, new_focus)
       rescue
         error ->
-          Log.module_warning("Focus change handler error: #{inspect(error)}")
+          Log.warning("Focus change handler error: #{inspect(error)}")
       end
     end)
   end

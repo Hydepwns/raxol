@@ -415,7 +415,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
 
             new_state = %{state | theme_registry: new_registry}
 
-            Log.module_warning(
+            Log.warning(
               "Theme registered with compliance issues: #{inspect(issues)}"
             )
 

@@ -105,7 +105,7 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
         performance_impact: Keyword.get(opts, :performance_impact, :low)
       }
 
-      Log.module_debug("TestWorker started: #{inspect(state.id)}")
+      Log.debug("TestWorker started: #{inspect(state.id)}")
 
       {:ok, state}
     end

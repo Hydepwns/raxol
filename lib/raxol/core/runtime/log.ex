@@ -56,7 +56,7 @@ defmodule Raxol.Core.Runtime.Log do
   Logs a warning with context.
   """
   def warning_with_context(msg, context) do
-    Log.module_warning("#{msg} | Context: #{inspect(context)}")
+    Log.warning("#{msg} | Context: #{inspect(context)}")
   end
 
   def info_with_context(msg) do
@@ -68,11 +68,11 @@ defmodule Raxol.Core.Runtime.Log do
   end
 
   def debug_with_context(msg, context) do
-    Log.module_debug("#{msg} | Context: #{inspect(context)}")
+    Log.debug("#{msg} | Context: #{inspect(context)}")
   end
 
   def error_with_context(msg, context) do
-    Log.module_error("#{msg} | Context: #{inspect(context)}")
+    Log.error("#{msg} | Context: #{inspect(context)}")
   end
 
   def info(msg), do: log(:info, msg)
@@ -95,9 +95,9 @@ defmodule Raxol.Core.Runtime.Log do
 
     case level do
       :info -> Log.info(message)
-      :debug -> Log.module_debug(message)
-      :warn -> Log.module_warning(message)
-      :error -> Log.module_error(message)
+      :debug -> Log.debug(message)
+      :warn -> Log.warning(message)
+      :error -> Log.error(message)
     end
   end
 
@@ -297,9 +297,9 @@ defmodule Raxol.Core.Runtime.Log do
 
     case level do
       :info -> Log.info(msg)
-      :debug -> Log.module_debug(msg)
-      :warn -> Log.module_warning(msg)
-      :error -> Log.module_error(msg)
+      :debug -> Log.debug(msg)
+      :warn -> Log.warning(msg)
+      :error -> Log.error(msg)
     end
 
     # Clear metadata to avoid pollution

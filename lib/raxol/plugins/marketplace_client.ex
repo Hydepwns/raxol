@@ -226,7 +226,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "[MarketplaceClient] Failed to install #{plugin_id}@#{version}: #{inspect(reason)}"
         )
 
@@ -331,7 +331,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
         {:noreply, updated_state}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "[MarketplaceClient] Failed to check for updates: #{inspect(reason)}"
         )
 
@@ -344,7 +344,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   defp search_plugins_impl(query, filters, _state) do
     # Mock implementation - would make HTTP request to marketplace
-    Log.module_debug("Searching for plugins: #{query}")
+    Log.debug("Searching for plugins: #{query}")
 
     # Simulate marketplace response
     mock_results = [
@@ -400,7 +400,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   defp fetch_plugin_info_from_marketplace(plugin_id, version, _state) do
     # Mock implementation - would make HTTP request
-    Log.module_debug(
+    Log.debug(
       "[MarketplaceClient] Fetching plugin info: #{plugin_id}@#{version}"
     )
 
@@ -508,7 +508,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   defp verify_plugin_security_impl(plugin_id, version, _state) do
     # Mock implementation - would verify signatures and check security
-    Log.module_debug(
+    Log.debug(
       "[MarketplaceClient] Verifying security for #{plugin_id}@#{version}"
     )
 

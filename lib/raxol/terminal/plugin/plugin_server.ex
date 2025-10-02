@@ -352,7 +352,7 @@ defmodule Raxol.Terminal.Plugin.PluginServer do
       :ok
     else
       {:error, reason} ->
-        Log.module_debug("Skipping #{file}: #{inspect(reason)}")
+        Log.debug("Skipping #{file}: #{inspect(reason)}")
     end
   end
 
@@ -371,7 +371,7 @@ defmodule Raxol.Terminal.Plugin.PluginServer do
   end
 
   defp log_plugin_directory_error(path, reason) do
-    Log.module_error(
+    Log.error(
       "Failed to read plugin directory #{path}: #{inspect(reason)}"
     )
   end
@@ -471,7 +471,7 @@ defmodule Raxol.Terminal.Plugin.PluginServer do
         result
 
       {:error, error} ->
-        Log.module_error("Compilation failed: #{inspect(error)}")
+        Log.error("Compilation failed: #{inspect(error)}")
         {:error, :compilation_failed}
     end
   end
@@ -719,7 +719,7 @@ defmodule Raxol.Terminal.Plugin.PluginServer do
             result
 
           {:error, error} ->
-            Log.module_error("#{plugin_type} cleanup failed: #{inspect(error)}")
+            Log.error("#{plugin_type} cleanup failed: #{inspect(error)}")
             {:error, :cleanup_failed}
         end
 
@@ -734,7 +734,7 @@ defmodule Raxol.Terminal.Plugin.PluginServer do
         safe_apply(module, function, args)
 
       false ->
-        Log.module_warning(
+        Log.warning(
           "Function #{function}/#{length(args)} not exported from #{plugin_type} module"
         )
 

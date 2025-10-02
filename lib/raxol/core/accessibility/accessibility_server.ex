@@ -1067,7 +1067,7 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   # Event handler callbacks (called by EventManager)
   # Group all handle_focus_change_event/1 clauses together - specific clauses first
   def handle_focus_change_event(:focus_change) do
-    Log.module_warning(
+    Log.warning(
       "AccessibilityServer.handle_focus_change_event/1 called with just event type, this is a known issue with EventManager dispatch"
     )
 
@@ -1081,7 +1081,7 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   end
 
   def handle_focus_change_event(unexpected_arg) do
-    Log.module_warning(
+    Log.warning(
       "AccessibilityServer.handle_focus_change_event/1 called with unexpected argument: #{inspect(unexpected_arg)}"
     )
 
@@ -1145,7 +1145,7 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     old_focus = Map.get(metadata, :old_focus, nil)
     new_focus = Map.get(metadata, :new_focus, nil)
 
-    Log.module_debug(
+    Log.debug(
       "AccessibilityServer telemetry handler called with metadata: #{inspect(metadata)}"
     )
 

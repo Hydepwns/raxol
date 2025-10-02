@@ -481,7 +481,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
         {:ok, state}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "Failed to create data directory #{data_dir}: #{inspect(reason)}"
         )
 

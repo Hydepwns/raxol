@@ -143,7 +143,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
         %{state | config: updated_config}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "Failed to apply renderer configuration: #{inspect(reason)}"
         )
 
@@ -164,7 +164,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
         %{state | config: updated_config}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "Failed to set config value #{key}: #{inspect(reason)}"
         )
 
@@ -185,7 +185,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
         %{state | config: default_config}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "Failed to reset renderer configuration: #{inspect(reason)}"
         )
 
@@ -374,7 +374,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
                :ok
 
              int_val when is_integer(int_val) ->
-               Log.module_warning(
+               Log.warning(
                  "Terminal integration renderer failed to initialize: #{inspect(int_val)}",
                  %{error: int_val}
                )
@@ -382,7 +382,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
                {:error, {:init_failed_with_code, int_val}}
 
              other ->
-               Log.module_error(
+               Log.error(
                  "[Renderer] Termbox2 NIF tb_init() returned unexpected value: #{inspect(other)}"
                )
 
@@ -393,7 +393,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
         result
 
       {:error, reason} ->
-        Log.module_error("""
+        Log.error("""
         [Renderer] Caught exception/exit during :termbox2_nif.tb_init() call.
         Reason: #{inspect(reason)}
         """)
@@ -419,7 +419,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
         result
 
       {:error, reason} ->
-        Log.module_error("""
+        Log.error("""
         [Renderer] Caught exception/exit during :termbox2_nif.tb_shutdown() call.
         Reason: #{inspect(reason)}
         """)
@@ -520,7 +520,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
         %{state | width: width, height: height}
 
       {:error, reason} ->
-        Log.module_error("Invalid resize dimensions: #{inspect(reason)}")
+        Log.error("Invalid resize dimensions: #{inspect(reason)}")
         state
     end
   end
@@ -540,7 +540,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
         }
 
       {:error, reason} ->
-        Log.module_error("Failed to set cursor visibility: #{inspect(reason)}")
+        Log.error("Failed to set cursor visibility: #{inspect(reason)}")
         state
     end
   end
@@ -557,11 +557,11 @@ defmodule Raxol.Terminal.Integration.Renderer do
         %{state | config: Map.put(state.config || %{}, :title, title)}
 
       {:error, reason} ->
-        Log.module_error("Failed to set terminal title: #{inspect(reason)}")
+        Log.error("Failed to set terminal title: #{inspect(reason)}")
         state
 
       other ->
-        Log.module_error(
+        Log.error(
           "Unexpected response from tb_set_title: #{inspect(other)}"
         )
 

@@ -241,7 +241,7 @@ defmodule Raxol.Security.SessionManager do
         }}, state}
     else
       false ->
-        Log.module_warning("Invalid token for session #{session_id}")
+        Log.warning("Invalid token for session #{session_id}")
         {:reply, {:error, :invalid_token}, state}
 
       true ->

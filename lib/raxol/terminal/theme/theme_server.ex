@@ -380,7 +380,7 @@ defmodule Raxol.Terminal.Theme.ThemeServer do
         Enum.each(files, &load_theme_from_path(path, &1))
 
       {:error, reason} ->
-        Log.module_error("Failed to list theme directory #{path}: #{reason}")
+        Log.error("Failed to list theme directory #{path}: #{reason}")
     end
   end
 

@@ -55,7 +55,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
         {:error, :input_too_large}
 
       {:error, :timeout} ->
-        Log.module_error("Input processing timeout")
+        Log.error("Input processing timeout")
         {:error, :timeout}
 
       {:error, reason} ->
@@ -135,7 +135,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
         {:ok, state}
 
       {_, _} ->
-        Log.module_error("Failed to initialize safe emulator")
+        Log.error("Failed to initialize safe emulator")
         # Start with minimal fallback state
         {:ok, build_fallback_state()}
     end
@@ -287,7 +287,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
       {:noreply, new_state}
     else
       {:error, reason} ->
-        Log.module_error("Retry failed, discarding input: #{inspect(reason)}")
+        Log.error("Retry failed, discarding input: #{inspect(reason)}")
         new_state = %{state | input_buffer: <<>>, recovery_state: :degraded}
         {:noreply, new_state}
     end
@@ -295,7 +295,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   @impl true
   def handle_manager_info(msg, state) do
-    Log.module_debug("Unhandled message: #{inspect(msg)}")
+    Log.debug("Unhandled message: #{inspect(msg)}")
     {:noreply, state}
   end
 
@@ -409,7 +409,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
         result
 
       {:error, reason} ->
-        Log.module_error("Exception in input chunking: #{inspect(reason)}")
+        Log.error("Exception in input chunking: #{inspect(reason)}")
         {:error, {:chunking_exception, reason}}
     end
   end
@@ -480,7 +480,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
         result
 
       {:error, reason} ->
-        Log.module_error("Exception applying sequence: #{inspect(reason)}")
+        Log.error("Exception applying sequence: #{inspect(reason)}")
         {:error, {:application_exception, reason}}
     end
   end

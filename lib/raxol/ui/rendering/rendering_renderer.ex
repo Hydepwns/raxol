@@ -164,7 +164,7 @@ defmodule Raxol.UI.Rendering.Renderer do
 
   @impl true
   def handle_manager_cast({:render, data}, state) do
-    Log.module_debug(
+    Log.debug(
       "[Renderer] handle_cast {:render, data} called with data=#{inspect(data)}, test_pid=#{inspect(state.test_pid)}"
     )
 
@@ -270,7 +270,7 @@ defmodule Raxol.UI.Rendering.Renderer do
   # Helper functions for pattern matching refactoring
 
   defp notify_test_pid_for_render(true, test_pid, ops) do
-    Log.module_debug(
+    Log.debug(
       "[Renderer] Sending {:renderer_rendered, ops} to test_pid #{inspect(test_pid)} with ops=#{inspect(ops)}"
     )
 
@@ -278,7 +278,7 @@ defmodule Raxol.UI.Rendering.Renderer do
   end
 
   defp notify_test_pid_for_render(false, _test_pid, _ops) do
-    Log.module_debug(
+    Log.debug(
       "[Renderer] No test_pid set, not sending {:renderer_rendered, ops} message"
     )
   end

@@ -158,7 +158,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
         {:reply, :ok, updated_state}
 
       {:error, _reason} = error ->
-        Log.module_error(
+        Log.error(
           "Failed to replicate session #{session_id}: #{inspect(error)}"
         )
 
@@ -173,7 +173,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
         {:reply, {:ok, merged_data}, updated_state}
 
       {:error, _reason} = error ->
-        Log.module_error(
+        Log.error(
           "Failed to sync session #{session_id}: #{inspect(error)}"
         )
 
@@ -247,7 +247,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
 
   @impl true
   def handle_info({:nodedown, node}, state) do
-    Log.module_warning("Node #{node} left cluster, marking as failed")
+    Log.warning("Node #{node} left cluster, marking as failed")
     updated_health = Map.put(state.replica_health, node, :failed)
     {:noreply, %{state | replica_health: updated_health}}
   end
@@ -298,7 +298,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
       {successes, []} ->
         success_nodes = Enum.map(successes, fn {:ok, node} -> node end)
 
-        Log.module_debug(
+        Log.debug(
           "Immediate replication successful to nodes: #{inspect(success_nodes)}"
         )
 
@@ -369,7 +369,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
     # Wait for quorum responses
     case wait_for_quorum_responses(ref, required_replicas, 5000) do
       {:ok, successful_nodes} ->
-        Log.module_debug(
+        Log.debug(
           "Quorum replication successful to #{length(successful_nodes)}/#{required_replicas} nodes"
         )
 
@@ -395,7 +395,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
       end)
     end)
 
-    Log.module_debug(
+    Log.debug(
       "Best effort replication initiated for session #{session_id}"
     )
 
@@ -553,21 +553,21 @@ defmodule Raxol.Core.Session.SessionReplicator do
   defp handle_replication_result(session_id, node, result, state) do
     case result do
       {:ok, _} ->
-        Log.module_debug(
+        Log.debug(
           "Replication to #{node} successful for session #{session_id}"
         )
 
         update_replica_health(node, :healthy, state)
 
       {:error, reason} ->
-        Log.module_warning(
+        Log.warning(
           "Replication to #{node} failed for session #{session_id}: #{inspect(reason)}"
         )
 
         update_replica_health(node, :degraded, state)
 
       {:badrpc, reason} ->
-        Log.module_error(
+        Log.error(
           "RPC error to #{node} for session #{session_id}: #{inspect(reason)}"
         )
 

@@ -52,12 +52,12 @@ defmodule Raxol.Terminal.Tooltip do
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_cast({:show, text}, state) do
     # In a real implementation, this would render the tooltip
-    Log.module_debug("Showing tooltip: #{text}")
+    Log.debug("Showing tooltip: #{text}")
     {:noreply, %{state | visible: true, text: text}}
   end
 
   def handle_manager_cast(:hide, state) do
-    Log.module_debug("Hiding tooltip")
+    Log.debug("Hiding tooltip")
     {:noreply, %{state | visible: false, text: ""}}
   end
 

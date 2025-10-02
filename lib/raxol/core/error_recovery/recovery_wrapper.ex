@@ -118,7 +118,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
         {:ok, state}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "Failed to start wrapped process #{wrapped_module}: #{inspect(reason)}"
         )
 
@@ -191,7 +191,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
         {:DOWN, _ref, :process, pid, reason},
         %{wrapped_pid: pid} = state
       ) do
-    Log.module_warning(
+    Log.warning(
       "Wrapped process #{state.wrapped_module} terminated: #{inspect(reason)}"
     )
 
@@ -263,7 +263,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
   defp restore_context_if_available(context_key, wrapped_pid, _context_manager) do
     case ContextManager.get_context(context_key) do
       nil ->
-        Log.module_debug("No previous context found for #{context_key}")
+        Log.debug("No previous context found for #{context_key}")
 
       context ->
         Log.info("Restoring context for #{context_key}")
@@ -320,7 +320,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
     # Capture final state before termination
     case get_state_from_wrapped_process(state.wrapped_pid) do
       {:error, _reason} ->
-        Log.module_debug(
+        Log.debug(
           "Could not capture final state for #{state.context_key}"
         )
 
@@ -396,7 +396,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
   end
 
   defp handle_wrapped_error(reason, state) do
-    Log.module_warning(
+    Log.warning(
       "Error communicating with wrapped process: #{inspect(reason)}"
     )
 

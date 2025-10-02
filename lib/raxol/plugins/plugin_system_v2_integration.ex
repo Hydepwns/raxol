@@ -135,7 +135,7 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
         {:noreply, final_state}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "[PluginSystemV2Integration] Failed to initialize: #{inspect(reason)}"
         )
 
@@ -227,7 +227,7 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
         {:ok, :started}
 
       error ->
-        Log.module_error(
+        Log.error(
           "[PluginSystemV2Integration] Failed to start Plugin System: #{inspect(error)}"
         )
 
@@ -243,7 +243,7 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
           {:ok, :started}
 
         error ->
-          Log.module_error(
+          Log.error(
             "[PluginSystemV2Integration] Failed to start Sandbox: #{inspect(error)}"
           )
 
@@ -267,7 +267,7 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
           {:ok, :started}
 
         error ->
-          Log.module_error(
+          Log.error(
             "[PluginSystemV2Integration] Failed to start Hot-Reload: #{inspect(error)}"
           )
 
@@ -291,7 +291,7 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
           {:ok, :started}
 
         error ->
-          Log.module_error(
+          Log.error(
             "[PluginSystemV2Integration] Failed to start Marketplace: #{inspect(error)}"
           )
 
@@ -350,7 +350,7 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
       {:ok, %{state | active_plugins: updated_active}}
     else
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "[PluginSystemV2Integration] Failed to install #{plugin_id}: #{inspect(reason)}"
         )
 
@@ -398,7 +398,7 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
       {:ok, %{state | active_plugins: updated_active}}
     else
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "[PluginSystemV2Integration] Failed to create development plugin: #{inspect(reason)}"
         )
 

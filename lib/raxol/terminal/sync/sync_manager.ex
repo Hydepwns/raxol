@@ -240,14 +240,14 @@ defmodule Raxol.Terminal.Sync.Manager do
     existing_version = existing_component.version
     new_version = Map.get(new_state, :version, existing_version + 1)
 
-    Log.module_debug(
+    Log.debug(
       "[Manager] do_sync_state: component_id=#{component_id}, type=#{component_type}, new_version=#{inspect(new_version)}, existing_version=#{inspect(existing_version)}"
     )
 
     # Apply consistency rules based on component type
     case should_update_state(component_type, new_version, existing_version) do
       :update ->
-        Log.module_debug("Updating state for #{component_id}")
+        Log.debug("Updating state for #{component_id}")
 
         component = %Component{
           id: component_id,
@@ -263,11 +263,11 @@ defmodule Raxol.Terminal.Sync.Manager do
         {:ok, component}
 
       :keep_existing ->
-        Log.module_debug("Keeping existing state for #{component_id}")
+        Log.debug("Keeping existing state for #{component_id}")
         {:ok, existing_component}
 
       :conflict ->
-        Log.module_debug("Version conflict for #{component_id}")
+        Log.debug("Version conflict for #{component_id}")
         # Increment conflict count and keep existing state
         _component_with_conflict = %Component{
           existing_component

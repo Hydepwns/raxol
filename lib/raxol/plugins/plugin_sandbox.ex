@@ -207,7 +207,7 @@ defmodule Raxol.Plugins.PluginSandbox do
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "[PluginSandbox] Failed to create sandbox for #{plugin_id}: #{inspect(reason)}"
         )
 
@@ -455,14 +455,14 @@ defmodule Raxol.Plugins.PluginSandbox do
 
   defp start_plugin_resource_monitor(plugin_id, _security_policy) do
     # Mock implementation - would start actual resource monitoring
-    Log.module_debug("Started resource monitor for #{plugin_id}")
+    Log.debug("Started resource monitor for #{plugin_id}")
     :mock_monitor
   end
 
   defp start_plugin_audit_logger(plugin_id, security_policy) do
     # Mock implementation - would start actual audit logging
     if security_policy.audit_level != :none do
-      Log.module_debug("Started audit logger for #{plugin_id}")
+      Log.debug("Started audit logger for #{plugin_id}")
     end
 
     :mock_logger
@@ -476,7 +476,7 @@ defmodule Raxol.Plugins.PluginSandbox do
 
   defp apply_resource_limits(security_policy) do
     # Apply memory and CPU limits (would use system-specific mechanisms)
-    Log.module_debug(
+    Log.debug(
       "[PluginSandbox] Applied resource limits: #{inspect(security_policy.resource_limits)}"
     )
   end
@@ -499,7 +499,7 @@ defmodule Raxol.Plugins.PluginSandbox do
   end
 
   defp log_security_violation(plugin_id, violation, state) do
-    Log.module_warning(
+    Log.warning(
       "[PluginSandbox] Security violation for #{plugin_id}: #{inspect(violation)}"
     )
 
@@ -513,7 +513,7 @@ defmodule Raxol.Plugins.PluginSandbox do
 
         # Check if violation threshold exceeded
         if length(updated_violations) >= 5 do
-          Log.module_error(
+          Log.error(
             "[PluginSandbox] Too many violations for #{plugin_id}, considering shutdown"
           )
         end
@@ -541,12 +541,12 @@ defmodule Raxol.Plugins.PluginSandbox do
   defp initialize_violation_handlers(_opts) do
     %{
       execution_denied: fn plugin_id, details ->
-        Log.module_warning(
+        Log.warning(
           "[PluginSandbox] Execution denied for #{plugin_id}: #{inspect(details)}"
         )
       end,
       resource_exceeded: fn plugin_id, resource, limit ->
-        Log.module_warning(
+        Log.warning(
           "[PluginSandbox] Resource limit exceeded for #{plugin_id}: #{resource} > #{limit}"
         )
       end

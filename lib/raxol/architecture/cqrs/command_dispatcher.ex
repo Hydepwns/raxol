@@ -219,7 +219,7 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
     |> apply([])
   rescue
     error ->
-      Log.module_error("Command execution failed: #{inspect(error)}")
+      Log.error("Command execution failed: #{inspect(error)}")
       {:error, {:execution_failed, error}}
   end
 
@@ -229,7 +229,7 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
         middleware.call(command, next_fn)
 
       false ->
-        Log.module_warning(
+        Log.warning(
           "Middleware #{middleware} does not implement call/2, skipping"
         )
 
@@ -237,7 +237,7 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
     end
   rescue
     error ->
-      Log.module_error("Middleware #{middleware} failed: #{inspect(error)}")
+      Log.error("Middleware #{middleware} failed: #{inspect(error)}")
       {:error, {:middleware_failed, middleware, error}}
   end
 
@@ -252,7 +252,7 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
             handler.call(command)
 
           false ->
-            Log.module_error(
+            Log.error(
               "Handler #{handler} does not implement handle/1 or call/1"
             )
 
@@ -261,7 +261,7 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
     end
   rescue
     error ->
-      Log.module_error("Handler #{handler} failed: #{inspect(error)}")
+      Log.error("Handler #{handler} failed: #{inspect(error)}")
       {:error, {:handler_failed, handler, error}}
   end
 

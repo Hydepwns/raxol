@@ -815,10 +815,10 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
     case Jason.encode(data, pretty: true) do
       {:ok, json} ->
         File.write!(patterns_file, json)
-        Log.module_debug("Recovery learning data persisted successfully")
+        Log.debug("Recovery learning data persisted successfully")
 
       {:error, reason} ->
-        Log.module_error("Failed to persist recovery learning data: #{reason}")
+        Log.error("Failed to persist recovery learning data: #{reason}")
     end
   end
 end

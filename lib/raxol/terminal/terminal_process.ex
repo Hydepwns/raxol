@@ -165,7 +165,7 @@ defmodule Raxol.Terminal.TerminalProcess do
         {:noreply, %{new_state | state: :active}}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "Failed to initialize terminal #{state.terminal_id}: #{inspect(reason)}"
         )
 
@@ -347,13 +347,13 @@ defmodule Raxol.Terminal.TerminalProcess do
       saved_at: System.system_time(:millisecond)
     }
 
-    Log.module_debug("Session saved for terminal #{state.terminal_id}")
+    Log.debug("Session saved for terminal #{state.terminal_id}")
     :ok
   end
 
   defp cleanup_terminal_resources(state) do
     # Clean up any resources like file handles, processes, etc.
-    Log.module_debug("Cleaning up resources for terminal #{state.terminal_id}")
+    Log.debug("Cleaning up resources for terminal #{state.terminal_id}")
     :ok
   end
 

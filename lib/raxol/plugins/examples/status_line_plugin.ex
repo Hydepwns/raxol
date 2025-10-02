@@ -140,7 +140,7 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
   end
 
   def handle_manager_info(msg, state) do
-    Log.module_debug("Received message: #{inspect(msg)}")
+    Log.debug("Received message: #{inspect(msg)}")
     {:noreply, state}
   end
 

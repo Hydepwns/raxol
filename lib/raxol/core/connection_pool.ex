@@ -151,7 +151,7 @@ defmodule Raxol.Core.ConnectionPool do
             fun.(conn)
           rescue
             error ->
-              Log.module_error("Error in pool transaction: #{inspect(error)}")
+              Log.error("Error in pool transaction: #{inspect(error)}")
               {:error, error}
           after
             do_checkin(new_state, conn)
@@ -218,7 +218,7 @@ defmodule Raxol.Core.ConnectionPool do
             [conn | acc]
 
           {:error, reason} ->
-            Log.module_warning(
+            Log.warning(
               "Failed to create initial connection: #{inspect(reason)}"
             )
 

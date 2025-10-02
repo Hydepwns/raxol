@@ -16,12 +16,12 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
           {:continue, Emulator.t(), State.t(), binary()}
           | {:handled, Emulator.t()}
   def handle(emulator, _parser_state, <<"[", rest::binary>>) do
-    # Log.module_debug("EscapeState.handle: Detected CSI, rest=#{inspect(rest)}")
+    # Log.debug("EscapeState.handle: Detected CSI, rest=#{inspect(rest)}")
 
     case rest do
       <<final_byte, rest2::binary>> when final_byte in ?@..?~ ->
         # No params, direct CSI final byte
-        # Log.module_debug(
+        # Log.debug(
         #   "EscapeState.handle: CSI with no params, final_byte=#{inspect(final_byte)}"
         # )
 
@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
   end
 
   def handle(emulator, %State{state: :escape} = parser_state, input) do
-    # Log.module_debug(
+    # Log.debug(
     #   "EscapeState.handle: input=#{inspect(input)}, parser_state=#{inspect(parser_state)}"
     # )
 

@@ -149,7 +149,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
         :ok
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "[VSCodeBackend] Error reading from stdin: #{inspect(reason)}"
         )
 
@@ -161,7 +161,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
             GenServer.cast(__MODULE__, {:handle_message, message})
 
           {:error, _} ->
-            Log.module_warning(
+            Log.warning(
               "[VSCodeBackend] Invalid JSON received: #{inspect(data)}"
             )
         end

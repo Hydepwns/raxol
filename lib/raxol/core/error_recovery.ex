@@ -98,7 +98,7 @@ defmodule Raxol.Core.ErrorRecovery do
         {:ok, result}
 
       {:error, _type, _msg, _context} = error ->
-        Log.module_warning(
+        Log.warning(
           "Primary operation failed, attempting fallback: #{inspect(error)}"
         )
 
@@ -174,7 +174,7 @@ defmodule Raxol.Core.ErrorRecovery do
         {:ok, value}
 
       {{:ok, value}, {:error, cleanup_error}} ->
-        Log.module_warning(
+        Log.warning(
           "Cleanup failed after successful operation: #{inspect(cleanup_error)}"
         )
 
@@ -461,18 +461,18 @@ defmodule Raxol.Core.ErrorRecovery do
               :ok
             rescue
               e ->
-                Log.module_error(
+                Log.error(
                   "Cleanup failed with exception: #{Exception.message(e)}"
                 )
 
                 {:error, :cleanup_failed}
             catch
               :exit, reason ->
-                Log.module_error("Cleanup failed: #{inspect(reason)}")
+                Log.error("Cleanup failed: #{inspect(reason)}")
                 {:error, :cleanup_failed}
 
               kind, payload ->
-                Log.module_error(
+                Log.error(
                   "Cleanup failed: #{kind} - #{inspect(payload)}"
                 )
 
@@ -488,16 +488,16 @@ defmodule Raxol.Core.ErrorRecovery do
             error
 
           nil ->
-            Log.module_error("Cleanup timed out")
+            Log.error("Cleanup timed out")
             {:error, :cleanup_timeout}
 
           {:exit, reason} ->
-            Log.module_error("Cleanup task failed: #{inspect(reason)}")
+            Log.error("Cleanup task failed: #{inspect(reason)}")
             {:error, {:cleanup_failed, reason}}
         end
       catch
         :exit, reason ->
-          Log.module_error("Cleanup task crashed: #{inspect(reason)}")
+          Log.error("Cleanup task crashed: #{inspect(reason)}")
           {:error, {:cleanup_failed, reason}}
       end
 

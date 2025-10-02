@@ -488,7 +488,7 @@ defmodule Raxol.Animation.Gestures.GestureServer do
                 :ok
 
               {:error, reason} ->
-                Log.module_warning("Gesture handler failed: #{inspect(reason)}")
+                Log.warning("Gesture handler failed: #{inspect(reason)}")
             end
           end)
         end)

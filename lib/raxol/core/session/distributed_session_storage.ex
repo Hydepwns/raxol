@@ -169,7 +169,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
         {:ok, final_state}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "Failed to initialize storage backend #{backend}: #{inspect(reason)}"
         )
 
@@ -184,7 +184,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
         {:reply, :ok, updated_state}
 
       {:error, _reason} = error ->
-        Log.module_error(
+        Log.error(
           "Failed to store session #{session_id}: #{inspect(error)}"
         )
 
@@ -306,7 +306,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
         {:noreply, final_state}
 
       {:error, reason} ->
-        Log.module_error("Failed to perform cleanup: #{inspect(reason)}")
+        Log.error("Failed to perform cleanup: #{inspect(reason)}")
 
         # Schedule next cleanup anyway
         cleanup_timer =

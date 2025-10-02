@@ -534,7 +534,7 @@ defmodule Raxol.Terminal.TerminalServer do
   end
 
   defp cleanup_impl(state) do
-    Log.module_debug("Running unified manager cleanup")
+    Log.debug("Running unified manager cleanup")
 
     # Clean up inactive sessions
     # 1 hour

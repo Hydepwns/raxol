@@ -354,7 +354,7 @@ defmodule Raxol.Security.Auditor do
   end
 
   defp audit_unauthorized_attempt(user, resource, action) do
-    Log.module_warning(
+    Log.warning(
       "Unauthorized attempt: user=#{inspect(user)}, resource=#{resource}, action=#{action}"
     )
 

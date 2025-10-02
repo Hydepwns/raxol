@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Supervisor do
         {:ok, pid}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "Failed to start terminal #{terminal_config.terminal_id}: #{inspect(reason)}"
         )
 
@@ -77,7 +77,7 @@ defmodule Raxol.Terminal.Supervisor do
             :ok
 
           {:error, reason} ->
-            Log.module_error(
+            Log.error(
               "Failed to stop terminal #{terminal_id}: #{inspect(reason)}"
             )
 

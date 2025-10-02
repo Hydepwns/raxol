@@ -120,11 +120,11 @@ defmodule Raxol.Core.Standards.CodeStyle do
           {:ok, result}
         else
           {:error, :validation_failed} = error ->
-            Log.module_error("Validation failed: \#{inspect(input)}")
+            Log.error("Validation failed: \#{inspect(input)}")
             error
 
           {:error, reason} = error ->
-            Log.module_error("Operation failed: \#{inspect(reason)}")
+            Log.error("Operation failed: \#{inspect(reason)}")
             error
         end
       end

@@ -771,9 +771,9 @@ defmodule Raxol.Terminal.Emulator do
   @doc "Handles ESC = sequence (DECKPAM - Enable application keypad mode)."
   def handle_esc_equals(emulator) do
     # DECKPAM - Enable application keypad mode (ESC =)
-    Log.module_debug("Emulator.handle_esc_equals called - setting decckm mode")
+    Log.debug("Emulator.handle_esc_equals called - setting decckm mode")
 
-    Log.module_debug(
+    Log.debug(
       "Initial cursor_keys_mode: #{inspect(emulator.mode_manager.cursor_keys_mode)}"
     )
 
@@ -781,16 +781,16 @@ defmodule Raxol.Terminal.Emulator do
 
     case result do
       {:ok, new_emulator} ->
-        Log.module_debug("ModeOperations.set_mode succeeded")
+        Log.debug("ModeOperations.set_mode succeeded")
 
-        Log.module_debug(
+        Log.debug(
           "Final cursor_keys_mode: #{inspect(new_emulator.mode_manager.cursor_keys_mode)}"
         )
 
         new_emulator
 
       {:error, reason} ->
-        Log.module_debug("ModeOperations.set_mode failed: #{inspect(reason)}")
+        Log.debug("ModeOperations.set_mode failed: #{inspect(reason)}")
         emulator
     end
   end
@@ -798,11 +798,11 @@ defmodule Raxol.Terminal.Emulator do
   @doc "Handles ESC > sequence (DECKPNM - Disable application keypad mode)."
   def handle_esc_greater(emulator) do
     # DECKPNM - Disable application keypad mode (ESC >)
-    Log.module_debug(
+    Log.debug(
       "Emulator.handle_esc_greater called - resetting decckm mode"
     )
 
-    Log.module_debug(
+    Log.debug(
       "Initial cursor_keys_mode: #{inspect(emulator.mode_manager.cursor_keys_mode)}"
     )
 
@@ -810,16 +810,16 @@ defmodule Raxol.Terminal.Emulator do
 
     case result do
       {:ok, new_emulator} ->
-        Log.module_debug("ModeOperations.reset_mode succeeded")
+        Log.debug("ModeOperations.reset_mode succeeded")
 
-        Log.module_debug(
+        Log.debug(
           "Final cursor_keys_mode: #{inspect(new_emulator.mode_manager.cursor_keys_mode)}"
         )
 
         new_emulator
 
       {:error, reason} ->
-        Log.module_debug("ModeOperations.reset_mode failed: #{inspect(reason)}")
+        Log.debug("ModeOperations.reset_mode failed: #{inspect(reason)}")
         emulator
     end
   end
@@ -864,7 +864,7 @@ defmodule Raxol.Terminal.Emulator do
       Coordinator.new(width, height, opts)
     rescue
       error ->
-        Log.module_warning(
+        Log.warning(
           "Failed to create full emulator with GenServers: #{inspect(error)}"
         )
 

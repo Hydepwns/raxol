@@ -225,7 +225,7 @@ defmodule Raxol.Plugins.HotReloadManager do
         {:noreply, updated_state}
 
       {:error, reason} ->
-        Log.module_error(
+        Log.error(
           "[HotReloadManager] Failed to handle file change: #{inspect(reason)}"
         )
 
@@ -235,7 +235,7 @@ defmodule Raxol.Plugins.HotReloadManager do
 
   @impl true
   def handle_manager_info({:reload_timeout, plugin_id}, state) do
-    Log.module_error("Reload timeout for plugin #{plugin_id}")
+    Log.error("Reload timeout for plugin #{plugin_id}")
     updated_active = Map.delete(state.active_reloads, plugin_id)
     {:noreply, %{state | active_reloads: updated_active}}
   end
@@ -333,14 +333,14 @@ defmodule Raxol.Plugins.HotReloadManager do
               true ->
                 case rollback_plugin_impl(plugin_id, updated_history_state) do
                   {:ok, final_state} ->
-                    Log.module_warning(
+                    Log.warning(
                       "[HotReloadManager] Reload failed, rolled back #{plugin_id}"
                     )
 
                     {:ok, final_state}
 
                   {:error, rollback_error} ->
-                    Log.module_error(
+                    Log.error(
                       "[HotReloadManager] Reload and rollback both failed for #{plugin_id}"
                     )
 
@@ -533,7 +533,7 @@ defmodule Raxol.Plugins.HotReloadManager do
 
   defp start_file_watcher(_opts) do
     # Mock implementation - would start actual file watcher
-    Log.module_debug("Started file watcher")
+    Log.debug("Started file watcher")
     :mock_file_watcher
   end
 
@@ -542,12 +542,12 @@ defmodule Raxol.Plugins.HotReloadManager do
   end
 
   defp add_path_to_watcher(path, plugin_id, _watcher_pid) do
-    Log.module_debug("Watching #{path} for #{plugin_id}")
+    Log.debug("Watching #{path} for #{plugin_id}")
     :ok
   end
 
   defp remove_path_from_watcher(path, plugin_id, _watcher_pid) do
-    Log.module_debug("Stopped watching #{path} for #{plugin_id}")
+    Log.debug("Stopped watching #{path} for #{plugin_id}")
     :ok
   end
 

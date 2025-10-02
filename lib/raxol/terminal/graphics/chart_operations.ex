@@ -49,14 +49,14 @@ defmodule Raxol.Terminal.Graphics.ChartOperations do
   Handles chart click events.
   """
   def handle_chart_click(chart_id, _event) do
-    Log.module_debug("Chart clicked: #{chart_id}")
+    Log.debug("Chart clicked: #{chart_id}")
   end
 
   @doc """
   Handles chart hover events.
   """
   def handle_chart_hover(chart_id, _event) do
-    Log.module_debug("Chart hover: #{chart_id}")
+    Log.debug("Chart hover: #{chart_id}")
   end
 
   @doc """

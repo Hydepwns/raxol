@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Input.Buffer do
         rescue
           error ->
             # Log error but continue
-            Log.module_error("Input buffer callback error: #{inspect(error)}")
+            Log.error("Input buffer callback error: #{inspect(error)}")
         end
 
         # If we have remaining partial sequences, we should discard them on timeout

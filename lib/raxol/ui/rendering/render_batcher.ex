@@ -313,7 +313,7 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
   defp send_to_pipeline(tree, _diff_result, damage_regions) do
     # This would call the main rendering pipeline
     # For now, just log the action
-    Log.module_debug(
+    Log.debug(
       "RenderBatcher: Would send to pipeline - tree nodes: #{count_tree_nodes(tree)}, damage regions: #{map_size(damage_regions)}"
     )
 

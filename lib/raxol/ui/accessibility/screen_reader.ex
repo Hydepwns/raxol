@@ -341,7 +341,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     # Announce component registration in verbose mode
     _announcement = announce_component_registration(new_state, validated_config)
 
-    Log.module_debug("Component registered: #{component_id}")
+    Log.debug("Component registered: #{component_id}")
     {:reply, :ok, new_state}
   end
 
@@ -468,7 +468,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   def handle_manager_cast({:update_property, component_id, properties}, state) do
     case Map.get(state.component_registry, component_id) do
       nil ->
-        Log.module_warning(
+        Log.warning(
           "Attempted to update non-existent component: #{component_id}"
         )
 
@@ -763,25 +763,25 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   defp announce_to_nvda(text, priority) do
     # Use NVDA Controller Client API
     # This would be implemented as NIFs in practice
-    Log.module_debug("NVDA Announcement (#{priority}): #{text}")
+    Log.debug("NVDA Announcement (#{priority}): #{text}")
     :ok
   end
 
   defp announce_to_jaws(text, priority) do
     # Use JAWS API
-    Log.module_debug("JAWS Announcement (#{priority}): #{text}")
+    Log.debug("JAWS Announcement (#{priority}): #{text}")
     :ok
   end
 
   defp announce_to_voiceover(text, priority) do
     # Use macOS Accessibility API
-    Log.module_debug("VoiceOver Announcement (#{priority}): #{text}")
+    Log.debug("VoiceOver Announcement (#{priority}): #{text}")
     :ok
   end
 
   defp announce_to_orca(text, priority) do
     # Use AT-SPI interface
-    Log.module_debug("Orca Announcement (#{priority}): #{text}")
+    Log.debug("Orca Announcement (#{priority}): #{text}")
     :ok
   end
 
@@ -1256,7 +1256,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         :ok
 
       cue ->
-        Log.module_debug(
+        Log.debug(
           "Audio cue: #{cue_type} (#{cue.frequency}Hz, #{cue.duration}ms)"
         )
 
@@ -1325,7 +1325,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         validated
 
       false ->
-        Log.module_warning(
+        Log.warning(
           "Invalid ARIA role: #{validated.role}, using :application"
         )
 

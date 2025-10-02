@@ -409,7 +409,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
         end)
 
       _ ->
-        Log.module_warning("Could not list plugins for reload")
+        Log.warning("Could not list plugins for reload")
     end
   end
 
@@ -452,7 +452,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
 
   @impl true
   def handle_manager_info(msg, state) do
-    Log.module_debug("Received message: #{inspect(msg)}")
+    Log.debug("Received message: #{inspect(msg)}")
     {:noreply, state}
   end
 end

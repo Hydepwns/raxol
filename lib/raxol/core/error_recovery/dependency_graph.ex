@@ -291,7 +291,7 @@ defmodule Raxol.Core.ErrorRecovery.DependencyGraph do
         graph
 
       cycles ->
-        Log.module_warning("Circular dependencies detected: #{inspect(cycles)}")
+        Log.warning("Circular dependencies detected: #{inspect(cycles)}")
         # Could potentially break cycles or warn user
         graph
     end

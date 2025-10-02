@@ -71,7 +71,7 @@ defmodule Raxol.Config.Loader do
           {:ok, config}
 
         {:error, reason} ->
-          Log.module_warning(
+          Log.warning(
             "Failed to load configuration from #{directory}: #{inspect(reason)}"
           )
 
@@ -224,7 +224,7 @@ defmodule Raxol.Config.Loader do
   defp handle_file_change(false, _file_path, _callback), do: :ok
 
   defp handle_file_change(true, file_path, callback) do
-    Log.module_debug("Configuration file changed: #{file_path}")
+    Log.debug("Configuration file changed: #{file_path}")
 
     case load_file(file_path) do
       {:ok, config} ->

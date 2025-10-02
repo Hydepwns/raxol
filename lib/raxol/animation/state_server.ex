@@ -328,7 +328,7 @@ defmodule Raxol.Animation.StateServer do
             end
 
           _ ->
-            Log.module_warning(
+            Log.warning(
               "Unknown batch update operation: #{inspect(update)}"
             )
 

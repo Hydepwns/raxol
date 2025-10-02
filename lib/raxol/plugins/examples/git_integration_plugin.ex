@@ -161,7 +161,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
         {:reply, :ok, updated_state}
 
       {error, _code} ->
-        Log.module_error("Failed to stage file #{file}: #{error}")
+        Log.error("Failed to stage file #{file}: #{error}")
         {:reply, {:error, error}, state}
     end
   end
@@ -173,7 +173,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
         {:reply, :ok, updated_state}
 
       {error, _code} ->
-        Log.module_error("Failed to unstage file #{file}: #{error}")
+        Log.error("Failed to unstage file #{file}: #{error}")
         {:reply, {:error, error}, state}
     end
   end
@@ -185,7 +185,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
         {:reply, {:ok, output}, updated_state}
 
       {error, _code} ->
-        Log.module_error("Failed to commit: #{error}")
+        Log.error("Failed to commit: #{error}")
         {:reply, {:error, error}, state}
     end
   end
@@ -197,7 +197,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
         {:reply, :ok, updated_state}
 
       {error, _code} ->
-        Log.module_error("Failed to checkout branch #{branch}: #{error}")
+        Log.error("Failed to checkout branch #{branch}: #{error}")
         {:reply, {:error, error}, state}
     end
   end
@@ -209,7 +209,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
         {:reply, :ok, updated_state}
 
       {error, _code} ->
-        Log.module_error("Failed to create branch #{name}: #{error}")
+        Log.error("Failed to create branch #{name}: #{error}")
         {:reply, {:error, error}, state}
     end
   end

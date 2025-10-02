@@ -69,17 +69,17 @@ defmodule Raxol.Core.Behaviours.BaseManager do
 
       # Default implementations for optional callbacks
       def handle_manager_call(request, _from, state) do
-        Log.module_warning("Unhandled call: #{inspect(request)}")
+        Log.warning("Unhandled call: #{inspect(request)}")
         {:reply, {:error, :not_implemented}, state}
       end
 
       def handle_manager_cast(msg, state) do
-        Log.module_warning("Unhandled cast: #{inspect(msg)}")
+        Log.warning("Unhandled cast: #{inspect(msg)}")
         {:noreply, state}
       end
 
       def handle_manager_info(msg, state) do
-        Log.module_debug("Unhandled info: #{inspect(msg)}")
+        Log.debug("Unhandled info: #{inspect(msg)}")
         {:noreply, state}
       end
 

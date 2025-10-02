@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
   end
 
   defp handle_insert_mode(true, emulator) do
-    Log.module_debug(
+    Log.debug(
       "StandardHandler.handle_insert_mode/2 called with value: true"
     )
 
@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
   end
 
   defp handle_insert_mode(false, emulator) do
-    Log.module_debug(
+    Log.debug(
       "StandardHandler.handle_insert_mode/2 called with value: false"
     )
 

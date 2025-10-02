@@ -194,7 +194,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
             {:reply, {:ok, migration_info}, updated_state}
 
           {:error, reason} = error ->
-            Log.module_error(
+            Log.error(
               "Failed to start migration for session #{session_id}: #{inspect(reason)}"
             )
 
@@ -305,7 +305,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
 
   @impl true
   def handle_info({:nodedown, node}, state) do
-    Log.module_warning("Node #{node} left cluster, initiating failover")
+    Log.warning("Node #{node} left cluster, initiating failover")
 
     case state.failover_mode do
       :immediate ->
@@ -841,7 +841,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
   end
 
   defp perform_failover(failed_node, state) do
-    Log.module_warning("Performing failover for failed node: #{failed_node}")
+    Log.warning("Performing failover for failed node: #{failed_node}")
 
     # Get sessions that were on the failed node from replicas
     case find_sessions_on_failed_node(failed_node) do
@@ -922,7 +922,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
             completed_migration
           )
 
-        Log.module_debug(
+        Log.debug(
           "Migration completed for session #{session_id}: #{inspect(result)}"
         )
 
@@ -958,7 +958,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
             failed_migration
           )
 
-        Log.module_error(
+        Log.error(
           "Migration failed for session #{session_id}: #{inspect(reason)}"
         )
 

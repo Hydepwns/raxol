@@ -79,7 +79,7 @@ defmodule Raxol.Performance.DevProfiler do
 
   def profile(opts, fun) when is_list(opts) and is_function(fun) do
     if Mix.env() != :dev do
-      Log.module_warning("DevProfiler: development mode only")
+      Log.warning("DevProfiler: development mode only")
       fun.()
     end
 
@@ -141,7 +141,7 @@ defmodule Raxol.Performance.DevProfiler do
   """
   def start_continuous(opts \\ []) do
     if Mix.env() != :dev do
-      Log.module_warning("Continuous profiling: development only")
+      Log.warning("Continuous profiling: development only")
       :ignored
     end
 
@@ -461,10 +461,10 @@ defmodule Raxol.Performance.DevProfiler do
     hints = (hints ++ analysis.system.issues) |> Enum.map(&"System: #{&1}")
 
     if length(hints) > 0 do
-      Log.module_warning("Analysis hints:")
+      Log.warning("Analysis hints:")
 
       Enum.each(hints, fn hint ->
-        Log.module_warning("  • #{hint}")
+        Log.warning("  • #{hint}")
       end)
     else
       Log.info("No issues detected")
@@ -641,7 +641,7 @@ defmodule Raxol.Performance.DevProfiler do
       Log.info("Growth: #{Float.round(growth_mb, 2)}MB/#{duration}ms")
 
       if growth_mb > 10 do
-        Log.module_warning("Significant memory growth")
+        Log.warning("Significant memory growth")
       end
     end
 

@@ -586,7 +586,7 @@ defmodule Raxol.Terminal.SessionManager do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_info(:cleanup_sessions, state) do
-    Log.module_debug("Running session cleanup")
+    Log.debug("Running session cleanup")
     new_state = cleanup_expired_sessions(state)
     {:noreply, new_state}
   end
@@ -871,7 +871,7 @@ defmodule Raxol.Terminal.SessionManager do
       {:ok, session}
     else
       {:error, reason} ->
-        Log.module_warning(
+        Log.warning(
           "Failed to restore session from #{file}: #{inspect(reason)}"
         )
 
@@ -1087,7 +1087,7 @@ defmodule Raxol.Terminal.SessionManager do
         end)
 
       {:error, reason} ->
-        Log.module_warning(
+        Log.warning(
           "Could not list persistence directory: #{inspect(reason)}"
         )
 

@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Sync.System do
 
   # Client API
   def sync(sync_id, key, value, opts \\ []) do
-    Log.module_debug(
+    Log.debug(
       "[System] sync called: sync_id=#{sync_id}, key=#{key}, value=#{inspect(value)}, opts=#{inspect(opts)}"
     )
 

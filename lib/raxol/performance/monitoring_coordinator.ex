@@ -146,7 +146,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
             {:reply, :ok, new_state}
 
           {:error, reason} ->
-            Log.module_error("Failed to start performance monitoring", %{
+            Log.error("Failed to start performance monitoring", %{
               reason: reason
             })
 
@@ -174,7 +174,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
         {:reply, :ok, new_state}
 
       {:error, reason} ->
-        Log.module_error("Failed to stop performance monitoring", %{
+        Log.error("Failed to stop performance monitoring", %{
           reason: reason
         })
 
@@ -213,7 +213,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
         {:reply, {:ok, optimization_results}, state}
 
       {:error, reason} ->
-        Log.module_error("Performance optimization failed", %{reason: reason})
+        Log.error("Performance optimization failed", %{reason: reason})
         {:reply, {:error, reason}, state}
     end
   end
@@ -461,7 +461,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
           Log.info("Automatic optimization completed successfully")
 
         {:error, reason} ->
-          Log.module_error("Automatic optimization failed", %{reason: reason})
+          Log.error("Automatic optimization failed", %{reason: reason})
       end
     end)
   end

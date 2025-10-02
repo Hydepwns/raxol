@@ -294,7 +294,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
       :handled
     rescue
       error ->
-        Log.module_warning("Shortcut callback error: #{inspect(error)}")
+        Log.warning("Shortcut callback error: #{inspect(error)}")
         :callback_error
     end
   end

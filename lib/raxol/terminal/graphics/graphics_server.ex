@@ -471,7 +471,7 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
              processed_options
            ) do
       # Execute the display command (would normally write to terminal)
-      Log.module_debug("Graphics command: #{inspect(command)}")
+      Log.debug("Graphics command: #{inspect(command)}")
 
       new_state =
         update_graphics_state_with_image_info(

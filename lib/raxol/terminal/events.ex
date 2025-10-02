@@ -85,7 +85,7 @@ defmodule Raxol.Terminal.Events do
           :ok
 
         {:error, reason} ->
-          Log.module_error("Click handler error: #{inspect(reason)}")
+          Log.error("Click handler error: #{inspect(reason)}")
       end
     end)
 

@@ -480,7 +480,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
     if gset do
       # Debug log for testing
-      Log.module_debug("handle_scs params_buffer: #{inspect(params_buffer)}")
+      Log.debug("handle_scs params_buffer: #{inspect(params_buffer)}")
 
       char_code =
         case params_buffer do
@@ -488,7 +488,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
             ?0
 
           "1" ->
-            Log.module_debug("Matched '1' string, returning ?A (#{?A})")
+            Log.debug("Matched '1' string, returning ?A (#{?A})")
             # Test compatibility - "1" maps to UK ASCII (character 'A')
             ?A
 

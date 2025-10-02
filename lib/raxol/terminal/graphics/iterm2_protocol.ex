@@ -152,7 +152,7 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
       true ->
         case build_osc_sequence(data, options) do
           {:ok, sequence} ->
-            Log.module_debug(
+            Log.debug(
               "Generated iTerm2 image sequence: #{String.length(sequence)} bytes"
             )
 
@@ -457,7 +457,7 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
         {:error, {:image_too_large, byte_size(data)}}
 
       detect_image_format(data) == nil ->
-        Log.module_warning("Could not detect image format from data")
+        Log.warning("Could not detect image format from data")
         # Continue anyway, might still work
         :ok
 

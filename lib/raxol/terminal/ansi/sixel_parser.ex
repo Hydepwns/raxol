@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   @spec parse(binary(), ParserState.t()) ::
           {:ok, ParserState.t()} | {:error, atom()}
   def parse(data, state) when is_binary(data) do
-    Log.module_debug(
+    Log.debug(
       "SixelParser: Incoming palette color 1 is #{inspect(Map.get(state.palette, 1, :not_found))}"
     )
 
@@ -250,17 +250,17 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   end
 
   defp handle_data_character(char_byte, remaining_data, state) do
-    Log.module_debug(
+    Log.debug(
       "SixelParser: [handle_data_character] BEFORE pixel gen, palette color 1 is #{inspect(Map.get(state.palette, 1, :not_found))}"
     )
 
-    Log.module_debug(
+    Log.debug(
       "SixelParser: Processing character byte: #{char_byte} ('#{<<char_byte>>}')"
     )
 
     case SixelPatternMap.get_pattern(char_byte) do
       pattern_int when is_integer(pattern_int) ->
-        Log.module_debug(
+        Log.debug(
           "SixelParser: Got pattern #{pattern_int} for character #{char_byte}"
         )
 
@@ -275,13 +275,13 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
             state.max_x
           )
 
-        Log.module_debug(
+        Log.debug(
           "SixelParser: Generated pixels, buffer size: #{map_size(final_buffer)}"
         )
 
-        Log.module_debug("SixelParser: Final buffer: #{inspect(final_buffer)}")
+        Log.debug("SixelParser: Final buffer: #{inspect(final_buffer)}")
 
-        Log.module_debug(
+        Log.debug(
           "SixelParser: [handle_data_character] AFTER pixel gen, palette color 1 is #{inspect(Map.get(state.palette, 1, :not_found))}"
         )
 
@@ -295,7 +295,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
         })
 
       nil ->
-        Log.module_debug(
+        Log.debug(
           "SixelParser: No pattern found for character #{char_byte}"
         )
 

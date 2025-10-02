@@ -336,7 +336,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     # Adjust FPS based on focus state
     updated_state = apply_focus_adjustment(new_state, focus_state)
 
-    Log.module_debug(
+    Log.debug(
       "Focus state changed to #{focus_state}, FPS: #{updated_state.current_fps}"
     )
 
@@ -597,7 +597,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     # Periodic optimization based on performance metrics
     case should_optimize?(state) do
       true ->
-        Log.module_debug("Running FPS optimization")
+        Log.debug("Running FPS optimization")
         calculate_optimal_fps(state)
 
       false ->

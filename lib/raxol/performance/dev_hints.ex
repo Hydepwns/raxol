@@ -327,7 +327,7 @@ defmodule Raxol.Performance.DevHints do
         _ -> "[TIP]"
       end
 
-    Log.module_warning([
+    Log.warning([
       IO.ANSI.yellow(),
       category_emoji,
       " Performance Hint [#{category}]: ",
@@ -337,7 +337,7 @@ defmodule Raxol.Performance.DevHints do
     ])
 
     if map_size(metadata) > 0 do
-      Log.module_debug("Hint metadata: #{inspect(metadata)}")
+      Log.debug("Hint metadata: #{inspect(metadata)}")
     end
   end
 

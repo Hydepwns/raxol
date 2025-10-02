@@ -80,7 +80,7 @@ defmodule Raxol.Core.Behaviours.BaseServer do
       end
 
       def handle_call(request, _from, state) do
-        Log.module_warning(
+        Log.warning(
           "Unhandled call in #{__MODULE__}: #{inspect(request)}"
         )
 
@@ -88,12 +88,12 @@ defmodule Raxol.Core.Behaviours.BaseServer do
       end
 
       def handle_cast(msg, state) do
-        Log.module_warning("Unhandled cast in #{__MODULE__}: #{inspect(msg)}")
+        Log.warning("Unhandled cast in #{__MODULE__}: #{inspect(msg)}")
         {:noreply, state}
       end
 
       def handle_info(msg, state) do
-        Log.module_debug("Unhandled info in #{__MODULE__}: #{inspect(msg)}")
+        Log.debug("Unhandled info in #{__MODULE__}: #{inspect(msg)}")
         {:noreply, state}
       end
 

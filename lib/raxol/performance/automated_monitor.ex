@@ -238,15 +238,15 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
     case health_status do
       :healthy ->
-        Log.module_debug("Performance health check: healthy")
+        Log.debug("Performance health check: healthy")
 
       {:warning, issues} ->
-        Log.module_warning("Performance health check: warnings detected", %{
+        Log.warning("Performance health check: warnings detected", %{
           issues: issues
         })
 
       {:critical, issues} ->
-        Log.module_error(
+        Log.error(
           "Performance health check: critical issues detected",
           %{issues: issues}
         )
@@ -263,12 +263,12 @@ defmodule Raxol.Performance.AutomatedMonitor do
       when state.monitoring_enabled do
     case check_performance_regressions(state) do
       {:ok, []} ->
-        Log.module_debug(
+        Log.debug(
           "Performance regression check: no regressions detected"
         )
 
       {:ok, regressions} ->
-        Log.module_warning("Performance regressions detected", %{
+        Log.warning("Performance regressions detected", %{
           regressions: regressions
         })
 
@@ -278,7 +278,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
         {:noreply, new_state}
 
       {:error, reason} ->
-        Log.module_error("Performance regression check failed", %{
+        Log.error("Performance regression check failed", %{
           reason: reason
         })
 
@@ -535,7 +535,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
   end
 
   defp log_performance_alert(violation) do
-    Log.module_warning("Performance threshold violation detected", %{
+    Log.warning("Performance threshold violation detected", %{
       type: violation.type,
       metric: violation.metric,
       current_value: violation.value,

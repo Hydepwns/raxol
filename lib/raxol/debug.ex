@@ -84,7 +84,7 @@ defmodule Raxol.Debug do
          context <- Keyword.get(opts, :context, %{}),
          metadata <- Keyword.get(opts, :metadata, []),
          formatted_message <- format_debug_message(component, message, context) do
-      Log.module_debug(formatted_message, metadata)
+      Log.debug(formatted_message, metadata)
     end
 
     :ok
@@ -470,7 +470,7 @@ defmodule Raxol.Debug do
         memory = :erlang.memory()
         stats = :erlang.statistics(:run_queue)
 
-        Log.module_debug(
+        Log.debug(
           "Performance: memory=#{inspect(memory)}, run_queue=#{inspect(stats)}"
         )
 

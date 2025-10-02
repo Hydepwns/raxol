@@ -117,7 +117,7 @@ defmodule Raxol.Core.ErrorHandling do
         success
 
       {:error, reason} = error ->
-        Log.module_error("#{context}: #{inspect(reason)}")
+        Log.error("#{context}: #{inspect(reason)}")
         error
     end
   end

@@ -64,7 +64,7 @@ defmodule StateManager do
       {:ok, initial_state}
     rescue
       error ->
-        Log.module_error(
+        Log.error(
           "Failed to initialize plugin state for #{plugin_module}: #{inspect(error)}"
         )
 
@@ -118,11 +118,11 @@ defmodule StateManager do
         end
       end)
 
-      Log.module_debug("Updated legacy state for plugin #{plugin_id}")
+      Log.debug("Updated legacy state for plugin #{plugin_id}")
       {:ok, updated_state}
     rescue
       error ->
-        Log.module_error(
+        Log.error(
           "Failed to update legacy plugin state for #{plugin_id}: #{inspect(error)}"
         )
 
@@ -182,7 +182,7 @@ defmodule StateManager do
       {:ok, StateManager.get_state(state_key)}
     rescue
       error ->
-        Log.module_error(
+        Log.error(
           "Failed to update plugin state for #{plugin_id}: #{inspect(error)}"
         )
 

@@ -56,7 +56,7 @@ defmodule Raxol.Benchmark.Runner do
 
     case Enum.any?(regressions) do
       true ->
-        Log.module_warning("Performance regressions detected!")
+        Log.warning("Performance regressions detected!")
         Analyzer.report_regressions(regressions)
 
       false ->

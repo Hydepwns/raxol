@@ -212,7 +212,7 @@ defmodule Raxol.Application do
       Raxol.Repo
     else
       if feature_enabled?(:database) do
-        Log.module_debug(
+        Log.debug(
           "[Raxol.Application] Database feature enabled but Raxol.Repo module not available - continuing without database"
         )
       end
@@ -239,7 +239,7 @@ defmodule Raxol.Application do
       endpoints
     else
       if feature_enabled?(:web_interface) do
-        Log.module_debug(
+        Log.debug(
           "[Raxol.Application] Web interface feature enabled but RaxolWeb.Endpoint module not available - continuing without web interface"
         )
       end
@@ -276,7 +276,7 @@ defmodule Raxol.Application do
       {Raxol.Core.Telemetry.Supervisor, [mode: mode]}
     else
       if feature_enabled?(:telemetry) do
-        Log.module_debug(
+        Log.debug(
           "[Raxol.Application] Telemetry feature enabled but Raxol.Core.Telemetry.Supervisor module not available - continuing without telemetry"
         )
       end
@@ -319,7 +319,7 @@ defmodule Raxol.Application do
 
       # Force terminal driver if explicitly requested
       {false, _, _, "true"} ->
-        Log.module_warning(
+        Log.warning(
           "[Raxol.Application] Forcing terminal driver despite no TTY"
         )
 
@@ -384,7 +384,7 @@ defmodule Raxol.Application do
           error
 
         {:error, reason} = error ->
-          Log.module_error(
+          Log.error(
             "[Raxol.Application] Failed to start supervisor: #{inspect(reason)}"
           )
 
@@ -392,7 +392,7 @@ defmodule Raxol.Application do
       end
     rescue
       exception ->
-        Log.module_error("""
+        Log.error("""
         [Raxol.Application] Exception during startup:
         #{Exception.format(:error, exception, __STACKTRACE__)}
         """)
@@ -402,14 +402,14 @@ defmodule Raxol.Application do
   end
 
   defp handle_child_start_failure(child, reason) do
-    Log.module_error("""
+    Log.error("""
     [Raxol.Application] Failed to start child: #{inspect(child)}
     Reason: #{inspect(reason)}
     """)
 
     # Attempt graceful degradation for non-critical services
     if optional_child?(child) do
-      Log.module_warning(
+      Log.warning(
         "[Raxol.Application] Continuing without optional service: #{inspect(child)}"
       )
     end
@@ -483,7 +483,7 @@ defmodule Raxol.Application do
     max_memory = Application.get_env(:raxol, :max_memory_mb, 500) * 1_048_576
 
     if memory_bytes > max_memory do
-      Log.module_warning("""
+      Log.warning("""
       [Raxol.Application] Memory usage exceeds threshold:
       Current: #{div(memory_bytes, 1_048_576)}MB
       Max: #{div(max_memory, 1_048_576)}MB
@@ -498,7 +498,7 @@ defmodule Raxol.Application do
     max_processes = Application.get_env(:raxol, :max_processes, 10_000)
 
     if process_count > max_processes do
-      Log.module_warning("""
+      Log.warning("""
       [Raxol.Application] Process count exceeds threshold:
       Current: #{process_count}
       Max: #{max_processes}

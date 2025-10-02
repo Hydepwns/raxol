@@ -406,7 +406,7 @@ defmodule Raxol.Audit.Analyzer do
 
   defp send_security_alert(analysis_result, _state) do
     Task.start(fn ->
-      Log.module_warning("Security Alert: #{inspect(analysis_result)}")
+      Log.warning("Security Alert: #{inspect(analysis_result)}")
       # Here you would integrate with alerting systems (PagerDuty, Slack, etc.)
     end)
   end
@@ -791,7 +791,7 @@ defmodule Raxol.Audit.Analyzer do
   defp log_patterns_if_found([]), do: :ok
 
   defp log_patterns_if_found(patterns) do
-    Log.module_warning(
+    Log.warning(
       "Patterns detected in recent events: #{inspect(patterns)}"
     )
   end

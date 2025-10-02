@@ -182,7 +182,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
         diff_result \\ nil,
         new_tree \\ nil
       ) do
-    Log.module_debug(
+    Log.debug(
       "[Pipeline] commit called with painted_output=#{inspect(painted_output)}, diff_result=#{inspect(diff_result)}, new_tree=#{inspect(new_tree)}"
     )
 
@@ -592,7 +592,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
   ## Private Helpers
 
   defp schedule_or_execute_render(diff_result, new_tree_for_reference, state) do
-    Log.module_debug(
+    Log.debug(
       "[Pipeline] schedule_or_execute_render called with diff_result=#{inspect(diff_result)}, new_tree=#{inspect(new_tree_for_reference)}"
     )
 

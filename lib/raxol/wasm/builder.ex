@@ -26,7 +26,7 @@ defmodule Raxol.WASM.Builder do
       {:ok, wasm_info()}
     else
       {:error, reason} = error ->
-        Log.module_error("WASM build failed: #{inspect(reason)}")
+        Log.error("WASM build failed: #{inspect(reason)}")
         error
     end
   end
@@ -329,7 +329,7 @@ defmodule Raxol.WASM.Builder do
         :ok
 
       {output, _} ->
-        Log.module_error("WASM compilation failed: #{output}")
+        Log.error("WASM compilation failed: #{output}")
         {:error, :compilation_failed}
     end
   end
@@ -541,7 +541,7 @@ defmodule Raxol.WASM.Builder do
           :ok
 
         {output, _} ->
-          Log.module_warning(
+          Log.warning(
             "wasm-opt not available, skipping optimization: #{output}"
           )
 
