@@ -263,9 +263,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
       when state.monitoring_enabled do
     case check_performance_regressions(state) do
       {:ok, []} ->
-        Log.debug(
-          "Performance regression check: no regressions detected"
-        )
+        Log.debug("Performance regression check: no regressions detected")
 
       {:ok, regressions} ->
         Log.warning("Performance regressions detected", %{

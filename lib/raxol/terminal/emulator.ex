@@ -798,9 +798,7 @@ defmodule Raxol.Terminal.Emulator do
   @doc "Handles ESC > sequence (DECKPNM - Disable application keypad mode)."
   def handle_esc_greater(emulator) do
     # DECKPNM - Disable application keypad mode (ESC >)
-    Log.debug(
-      "Emulator.handle_esc_greater called - resetting decckm mode"
-    )
+    Log.debug("Emulator.handle_esc_greater called - resetting decckm mode")
 
     Log.debug(
       "Initial cursor_keys_mode: #{inspect(emulator.mode_manager.cursor_keys_mode)}"

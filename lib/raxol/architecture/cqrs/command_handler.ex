@@ -96,9 +96,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
             :ok
 
           {:error, reason} ->
-            Log.error(
-              "Failed to publish events batch: #{inspect(reason)}"
-            )
+            Log.error("Failed to publish events batch: #{inspect(reason)}")
 
             {:error, :events_publication_failed}
         end

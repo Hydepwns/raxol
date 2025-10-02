@@ -792,9 +792,7 @@ defmodule Raxol.Terminal.Script.ScriptServer do
         Log.info("Loaded script: #{script.name} from #{path}")
 
       {:error, reason} ->
-        Log.error(
-          "Failed to load script from #{path}: #{inspect(reason)}"
-        )
+        Log.error("Failed to load script from #{path}: #{inspect(reason)}")
     end
   end
 end

@@ -267,9 +267,7 @@ defmodule Raxol.Terminal.ModeManager do
         DECPrivateHandler.handle_mode_change(mode_def.name, value, emulator)
 
       :standard ->
-        Log.debug(
-          "ModeManager.apply_mode_effects: routing to StandardHandler"
-        )
+        Log.debug("ModeManager.apply_mode_effects: routing to StandardHandler")
 
         StandardHandler.handle_mode_change(mode_def.name, value, emulator)
 

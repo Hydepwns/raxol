@@ -320,9 +320,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
     # Capture final state before termination
     case get_state_from_wrapped_process(state.wrapped_pid) do
       {:error, _reason} ->
-        Log.debug(
-          "Could not capture final state for #{state.context_key}"
-        )
+        Log.debug("Could not capture final state for #{state.context_key}")
 
       final_state ->
         ContextManager.store_context(
@@ -396,9 +394,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
   end
 
   defp handle_wrapped_error(reason, state) do
-    Log.warning(
-      "Error communicating with wrapped process: #{inspect(reason)}"
-    )
+    Log.warning("Error communicating with wrapped process: #{inspect(reason)}")
 
     updated_state = %{state | error_count: state.error_count + 1}
 

@@ -91,9 +91,7 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
       end,
       fn ->
         # Fallback - restore from backup
-        Log.warning(
-          "Plugin reload failed, restoring from backup: #{plugin_id}"
-        )
+        Log.warning("Plugin reload failed, restoring from backup: #{plugin_id}")
 
         restore_plugin_state(plugin_id, backup, state)
       end
@@ -385,9 +383,7 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
 
           {:error, reason} ->
             # Rollback executed operations
-            Log.error(
-              "Operation failed, rolling back: #{inspect(reason)}"
-            )
+            Log.error("Operation failed, rolling back: #{inspect(reason)}")
 
             rollback_state = rollback_operations(done, initial_state)
             {:halt, {:error, reason, rollback_state}}

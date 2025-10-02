@@ -62,9 +62,7 @@ defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
   end
 
   defp handle_insert_mode(true, emulator) do
-    Log.debug(
-      "StandardHandler.handle_insert_mode/2 called with value: true"
-    )
+    Log.debug("StandardHandler.handle_insert_mode/2 called with value: true")
 
     # Insert Mode (IRM)
     # When enabled, new text is inserted at the cursor position
@@ -73,9 +71,7 @@ defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
   end
 
   defp handle_insert_mode(false, emulator) do
-    Log.debug(
-      "StandardHandler.handle_insert_mode/2 called with value: false"
-    )
+    Log.debug("StandardHandler.handle_insert_mode/2 called with value: false")
 
     # Replace Mode (default)
     # When disabled, new text overwrites existing text

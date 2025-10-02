@@ -327,9 +327,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
         # Generate new master key
         key = :crypto.strong_rand_bytes(32)
 
-        Log.warning(
-          "Generated new master key - should be persisted securely!"
-        )
+        Log.warning("Generated new master key - should be persisted securely!")
 
         key
 

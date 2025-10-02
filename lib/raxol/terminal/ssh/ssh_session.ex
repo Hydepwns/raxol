@@ -325,17 +325,13 @@ if Code.ensure_loaded?(:ssh) do
               {:ok, state}
 
             {:error, reason} ->
-              Log.error(
-                "Failed to start SSH session: #{inspect(reason)}"
-              )
+              Log.error("Failed to start SSH session: #{inspect(reason)}")
 
               {:stop, {:session_start_failed, reason}}
           end
 
         {:error, reason} ->
-          Log.error(
-            "Failed to get SSH connection info: #{inspect(reason)}"
-          )
+          Log.error("Failed to get SSH connection info: #{inspect(reason)}")
 
           {:stop, {:connection_info_failed, reason}}
       end

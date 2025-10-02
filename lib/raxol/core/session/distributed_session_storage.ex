@@ -184,9 +184,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
         {:reply, :ok, updated_state}
 
       {:error, _reason} = error ->
-        Log.error(
-          "Failed to store session #{session_id}: #{inspect(error)}"
-        )
+        Log.error("Failed to store session #{session_id}: #{inspect(error)}")
 
         {:reply, error, state}
     end

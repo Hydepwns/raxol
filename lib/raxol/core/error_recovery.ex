@@ -472,9 +472,7 @@ defmodule Raxol.Core.ErrorRecovery do
                 {:error, :cleanup_failed}
 
               kind, payload ->
-                Log.error(
-                  "Cleanup failed: #{kind} - #{inspect(payload)}"
-                )
+                Log.error("Cleanup failed: #{kind} - #{inspect(payload)}")
 
                 {:error, :cleanup_failed}
             end

@@ -159,9 +159,7 @@ defmodule Raxol.Core.ServerRegistry do
           GenServer.stop(pid, :normal, timeout)
         catch
           :exit, _ ->
-            Log.warning(
-              "Server #{server_name} did not shut down gracefully"
-            )
+            Log.warning("Server #{server_name} did not shut down gracefully")
         end
     end
   end

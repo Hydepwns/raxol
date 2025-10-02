@@ -168,9 +168,7 @@ defmodule Raxol.Core.Behaviours.BaseRegistry do
       end
 
       def handle_call(request, _from, state) do
-        Log.warning(
-          "Unhandled call in #{__MODULE__}: #{inspect(request)}"
-        )
+        Log.warning("Unhandled call in #{__MODULE__}: #{inspect(request)}")
 
         {:reply, {:error, :not_implemented}, state}
       end

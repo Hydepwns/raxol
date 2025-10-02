@@ -295,9 +295,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
         })
 
       nil ->
-        Log.debug(
-          "SixelParser: No pattern found for character #{char_byte}"
-        )
+        Log.debug("SixelParser: No pattern found for character #{char_byte}")
 
         case remaining_data do
           <<"\e\\", _::binary>> ->

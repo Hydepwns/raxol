@@ -1087,9 +1087,7 @@ defmodule Raxol.Terminal.SessionManager do
         end)
 
       {:error, reason} ->
-        Log.warning(
-          "Could not list persistence directory: #{inspect(reason)}"
-        )
+        Log.warning("Could not list persistence directory: #{inspect(reason)}")
 
         %{}
     end

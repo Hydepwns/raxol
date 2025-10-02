@@ -486,9 +486,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
         {:ok, new_state, results}
 
       {:error, {kind, error, _stacktrace}} ->
-        Log.error(
-          "Adaptive optimization failed: #{kind} - #{inspect(error)}"
-        )
+        Log.error("Adaptive optimization failed: #{kind} - #{inspect(error)}")
 
         {:error, {kind, error}}
     end

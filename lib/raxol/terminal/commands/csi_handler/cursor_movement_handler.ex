@@ -135,9 +135,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
       handle_cursor_position_direct(emulator, row, col)
     rescue
       error ->
-        Log.error(
-          "Cursor position from params failed: #{inspect(error)}"
-        )
+        Log.error("Cursor position from params failed: #{inspect(error)}")
 
         {:ok, emulator}
     end
@@ -181,9 +179,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
 
       updated_emulator = %{emulator | cursor: new_cursor}
 
-      Log.debug(
-        "Cursor position set to (#{bounded_col}, #{bounded_row})"
-      )
+      Log.debug("Cursor position set to (#{bounded_col}, #{bounded_row})")
 
       {:ok, updated_emulator}
     rescue

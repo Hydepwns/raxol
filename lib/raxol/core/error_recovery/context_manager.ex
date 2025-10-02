@@ -307,9 +307,7 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
     {expired_count, new_state} = cleanup_expired_contexts(state)
 
     if expired_count > 0 do
-      Log.debug(
-        "Periodic cleanup removed #{expired_count} expired contexts"
-      )
+      Log.debug("Periodic cleanup removed #{expired_count} expired contexts")
     end
 
     # Schedule next cleanup

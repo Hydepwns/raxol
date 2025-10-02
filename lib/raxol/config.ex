@@ -123,9 +123,7 @@ defmodule Raxol.Config do
         {:ok, final_state}
 
       {:error, reason} ->
-        Log.warning(
-          "Failed to load config: #{inspect(reason)}, using defaults"
-        )
+        Log.warning("Failed to load config: #{inspect(reason)}, using defaults")
 
         default_state = %{initial_state | config: default_config()}
         {:ok, default_state}

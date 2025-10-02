@@ -278,9 +278,7 @@ defmodule Raxol.Performance.TelemetryInstrumentation do
     cache_name = metadata.cache_name
 
     # This could be sent to a monitoring system
-    Log.debug(
-      "Cache #{type} for #{cache_name}: #{inspect(measurements)}"
-    )
+    Log.debug("Cache #{type} for #{cache_name}: #{inspect(measurements)}")
   end
 
   defp handle_slow_operation(event, measurements, metadata, %{

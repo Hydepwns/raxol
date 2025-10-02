@@ -604,9 +604,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
           )
         rescue
           error ->
-            Log.warning(
-              "Selection start callback error: #{inspect(error)}"
-            )
+            Log.warning("Selection start callback error: #{inspect(error)}")
         end
       end
 
@@ -676,9 +674,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
               )
             rescue
               error ->
-                Log.warning(
-                  "Selection end callback error: #{inspect(error)}"
-                )
+                Log.warning("Selection end callback error: #{inspect(error)}")
             end
           end
 

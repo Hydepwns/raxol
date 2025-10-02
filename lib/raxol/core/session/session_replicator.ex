@@ -173,9 +173,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
         {:reply, {:ok, merged_data}, updated_state}
 
       {:error, _reason} = error ->
-        Log.error(
-          "Failed to sync session #{session_id}: #{inspect(error)}"
-        )
+        Log.error("Failed to sync session #{session_id}: #{inspect(error)}")
 
         {:reply, error, state}
     end
@@ -395,9 +393,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
       end)
     end)
 
-    Log.debug(
-      "Best effort replication initiated for session #{session_id}"
-    )
+    Log.debug("Best effort replication initiated for session #{session_id}")
 
     {:ok, update_vector_clock(session_id, versioned_data, state)}
   end
@@ -553,9 +549,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
   defp handle_replication_result(session_id, node, result, state) do
     case result do
       {:ok, _} ->
-        Log.debug(
-          "Replication to #{node} successful for session #{session_id}"
-        )
+        Log.debug("Replication to #{node} successful for session #{session_id}")
 
         update_replica_health(node, :healthy, state)
 

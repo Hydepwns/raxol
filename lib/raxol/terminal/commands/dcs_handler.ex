@@ -61,18 +61,14 @@ defmodule Raxol.Terminal.Commands.DCSHandler do
 
       # Unknown request type
       unknown ->
-        Log.warning(
-          "Unhandled DECRQSS request type: #{inspect(unknown)}"
-        )
+        Log.warning("Unhandled DECRQSS request type: #{inspect(unknown)}")
 
         {:ok, emulator}
     end
   end
 
   defp handle_decdld(emulator, _data_string) do
-    Log.warning(
-      "DECDLD (Downloadable Character Set) not yet implemented"
-    )
+    Log.warning("DECDLD (Downloadable Character Set) not yet implemented")
 
     {:error, :decdld_not_implemented, emulator}
   end
@@ -101,9 +97,7 @@ defmodule Raxol.Terminal.Commands.DCSHandler do
 
   # Sixel Graphics support
   defp handle_sixel(emulator, data) do
-    Log.debug(
-      "DCSHandlers: handle_sixel called with data: #{inspect(data)}"
-    )
+    Log.debug("DCSHandlers: handle_sixel called with data: #{inspect(data)}")
 
     # Initialize sixel state if not present
     sixel_state =
@@ -116,9 +110,7 @@ defmodule Raxol.Terminal.Commands.DCSHandler do
     # Construct the full DCS sequence for the sixel parser
     full_dcs_sequence = "\ePq#{data}\e\\"
 
-    Log.debug(
-      "DCSHandlers: Full DCS sequence: #{inspect(full_dcs_sequence)}"
-    )
+    Log.debug("DCSHandlers: Full DCS sequence: #{inspect(full_dcs_sequence)}")
 
     # Process sixel data using the proper SixelGraphics module
     case Raxol.Terminal.ANSI.SixelGraphics.process_sequence(
@@ -149,9 +141,7 @@ defmodule Raxol.Terminal.Commands.DCSHandler do
         {:ok, emulator_with_blit}
 
       {_sixel_state, {:error, reason}} ->
-        Log.debug(
-          "DCSHandlers: sixel processing failed: #{inspect(reason)}"
-        )
+        Log.debug("DCSHandlers: sixel processing failed: #{inspect(reason)}")
 
         # Processing failed, log the error but still update the sixel_state
         Log.warning("Sixel processing failed: #{inspect(reason)}")
@@ -246,9 +236,7 @@ defmodule Raxol.Terminal.Commands.DCSHandler do
 
     case Map.get(palette, color_index) do
       {r, g, b} ->
-        Log.debug(
-          "Found color {#{r}, #{g}, #{b}} for index #{color_index}"
-        )
+        Log.debug("Found color {#{r}, #{g}, #{b}} for index #{color_index}")
 
         # Create a proper TextFormatting struct with the background color
         style =

@@ -1325,9 +1325,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         validated
 
       false ->
-        Log.warning(
-          "Invalid ARIA role: #{validated.role}, using :application"
-        )
+        Log.warning("Invalid ARIA role: #{validated.role}, using :application")
 
         %{validated | role: :application}
     end

@@ -215,9 +215,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
          }}
 
       {:error, reason} ->
-        Log.error(
-          "Failed to initialize GPU acceleration: #{inspect(reason)}"
-        )
+        Log.error("Failed to initialize GPU acceleration: #{inspect(reason)}")
 
         {:error, reason}
     end
@@ -485,9 +483,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   defp render_metal(_state, _surface, terminal_buffer, _opts) do
     # Placeholder for Metal rendering
     # Would encode render commands, submit to GPU, etc.
-    Log.debug(
-      "Rendering #{length(terminal_buffer)} characters with Metal"
-    )
+    Log.debug("Rendering #{length(terminal_buffer)} characters with Metal")
 
     # Simulate render operations
     # Simulate GPU work
@@ -527,9 +523,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   defp render_vulkan(_state, _surface, terminal_buffer, _opts) do
     # Placeholder for Vulkan rendering
-    Log.debug(
-      "Rendering #{length(terminal_buffer)} characters with Vulkan"
-    )
+    Log.debug("Rendering #{length(terminal_buffer)} characters with Vulkan")
 
     # Simulate render operations
     # Simulate GPU work
@@ -553,9 +547,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   defp apply_effect(state, effect_type, params) do
     # Placeholder for effect application
-    Log.debug(
-      "Applying effect #{effect_type} with params #{inspect(params)}"
-    )
+    Log.debug("Applying effect #{effect_type} with params #{inspect(params)}")
 
     {:ok, state}
   end

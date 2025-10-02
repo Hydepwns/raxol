@@ -791,9 +791,7 @@ defmodule Raxol.Audit.Analyzer do
   defp log_patterns_if_found([]), do: :ok
 
   defp log_patterns_if_found(patterns) do
-    Log.warning(
-      "Patterns detected in recent events: #{inspect(patterns)}"
-    )
+    Log.warning("Patterns detected in recent events: #{inspect(patterns)}")
   end
 
   defp add_privilege_escalation_pattern(patterns, priv_events)

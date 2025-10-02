@@ -143,9 +143,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
         %{state | config: updated_config}
 
       {:error, reason} ->
-        Log.error(
-          "Failed to apply renderer configuration: #{inspect(reason)}"
-        )
+        Log.error("Failed to apply renderer configuration: #{inspect(reason)}")
 
         state
     end
@@ -164,9 +162,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
         %{state | config: updated_config}
 
       {:error, reason} ->
-        Log.error(
-          "Failed to set config value #{key}: #{inspect(reason)}"
-        )
+        Log.error("Failed to set config value #{key}: #{inspect(reason)}")
 
         state
     end
@@ -185,9 +181,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
         %{state | config: default_config}
 
       {:error, reason} ->
-        Log.error(
-          "Failed to reset renderer configuration: #{inspect(reason)}"
-        )
+        Log.error("Failed to reset renderer configuration: #{inspect(reason)}")
 
         state
     end
@@ -561,9 +555,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
         state
 
       other ->
-        Log.error(
-          "Unexpected response from tb_set_title: #{inspect(other)}"
-        )
+        Log.error("Unexpected response from tb_set_title: #{inspect(other)}")
 
         state
     end

@@ -744,9 +744,7 @@ if Code.ensure_loaded?(:ssh) do
           {:ok, channel_id}
 
         {:error, reason} ->
-          Log.debug(
-            "Failed to create keepalive channel: #{inspect(reason)}"
-          )
+          Log.debug("Failed to create keepalive channel: #{inspect(reason)}")
 
           {:error, reason}
       end
