@@ -156,7 +156,7 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
     # Load existing patterns
     initial_state = load_recovery_patterns()
 
-    Log.module_info("Enhanced pattern learner started for recovery scenarios")
+    Log.info("Enhanced pattern learner started for recovery scenarios")
 
     {:ok, initial_state}
   end

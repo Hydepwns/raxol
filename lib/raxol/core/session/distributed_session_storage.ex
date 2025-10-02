@@ -162,7 +162,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
 
         final_state = %{updated_state | cleanup_timer: cleanup_timer}
 
-        Log.module_info(
+        Log.info(
           "DistributedSessionStorage started with backend=#{backend}, shards=#{state.shard_count}"
         )
 
@@ -294,7 +294,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     case perform_cleanup(state) do
       {:ok, cleanup_count, updated_state} ->
         if cleanup_count > 0 do
-          Log.module_info("Cleaned up #{cleanup_count} expired sessions")
+          Log.info("Cleaned up #{cleanup_count} expired sessions")
         end
 
         # Schedule next cleanup

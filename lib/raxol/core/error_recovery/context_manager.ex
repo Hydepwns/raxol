@@ -145,7 +145,7 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
       last_cleanup: DateTime.utc_now()
     }
 
-    Log.module_info("ContextManager started with TTL: #{ttl_ms}ms")
+    Log.info("ContextManager started with TTL: #{ttl_ms}ms")
 
     {:ok, state}
   end
@@ -220,7 +220,7 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
       end)
       |> length()
 
-    Log.module_info("Imported #{imported_count} contexts")
+    Log.info("Imported #{imported_count} contexts")
 
     {:noreply, state}
   end

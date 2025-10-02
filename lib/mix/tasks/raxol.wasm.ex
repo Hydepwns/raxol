@@ -97,7 +97,7 @@ defmodule Mix.Tasks.Raxol.Wasm do
 
     # Clean if requested
     if opts[:clean] do
-      Log.module_info("Cleaning WASM build artifacts...")
+      Log.info("Cleaning WASM build artifacts...")
       Builder.clean()
     end
 
@@ -107,10 +107,10 @@ defmodule Mix.Tasks.Raxol.Wasm do
     # Build or watch
     result =
       if opts[:watch] do
-        Log.module_info("Starting WASM watch mode...")
+        Log.info("Starting WASM watch mode...")
         Builder.watch(build_opts)
       else
-        Log.module_info("Building WASM module...")
+        Log.info("Building WASM module...")
         Builder.build(build_opts)
       end
 
@@ -177,7 +177,7 @@ defmodule Mix.Tasks.Raxol.Wasm do
     port = 8080
     root = "priv/static"
 
-    Log.module_info("Starting web server on http://localhost:#{port}")
+    Log.info("Starting web server on http://localhost:#{port}")
 
     # Start a simple HTTP server using Erlang's built-in httpd
     {:ok, _pid} =

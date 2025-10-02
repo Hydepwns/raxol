@@ -258,7 +258,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   defp log_health_check(:healthy, _measurements, _metadata), do: :ok
 
   defp log_health_check(status, measurements, _metadata) do
-    Log.module_info("""
+    Log.info("""
     Emulator health check:
       Status: #{status}
       Value: #{measurements[:status]}

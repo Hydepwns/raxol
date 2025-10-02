@@ -237,7 +237,7 @@ defmodule Raxol.Storage.EventStorage.Memory do
       config: %{}
     }
 
-    Log.module_info("Memory event storage initialized")
+    Log.info("Memory event storage initialized")
     {:ok, state}
   end
 
@@ -464,7 +464,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
     # Ensure data directory exists
     case File.mkdir_p(data_dir) do
       :ok ->
-        Log.module_info("Disk event storage initialized at #{data_dir}")
+        Log.info("Disk event storage initialized at #{data_dir}")
 
         # Load existing streams index
         streams_index = load_streams_index(data_dir)

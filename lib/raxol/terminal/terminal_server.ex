@@ -205,7 +205,7 @@ defmodule Raxol.Terminal.TerminalServer do
     # Schedule cleanup
     _ = schedule_cleanup(config.cleanup_interval)
 
-    Log.module_info("Unified terminal manager initialized")
+    Log.info("Unified terminal manager initialized")
     {:ok, state}
   end
 
@@ -213,9 +213,7 @@ defmodule Raxol.Terminal.TerminalServer do
   def handle_manager_call({:create_session, user_id, config}, _from, state) do
     case create_session_impl(state, user_id, config) do
       {:ok, session_id, updated_state} ->
-        Log.module_info(
-          "Created terminal session #{session_id} for user #{user_id}"
-        )
+        Log.info("Created terminal session #{session_id} for user #{user_id}")
 
         {:reply, {:ok, session_id}, updated_state}
 
@@ -227,7 +225,7 @@ defmodule Raxol.Terminal.TerminalServer do
   def handle_manager_call({:terminate_session, session_id}, _from, state) do
     case terminate_session_impl(state, session_id) do
       {:ok, updated_state} ->
-        Log.module_info("Terminated terminal session #{session_id}")
+        Log.info("Terminated terminal session #{session_id}")
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
@@ -560,7 +558,7 @@ defmodule Raxol.Terminal.TerminalServer do
 
     updated_state = %{state | sessions: active_sessions_map}
 
-    Log.module_info("Cleaned up #{length(inactive_sessions)} inactive sessions")
+    Log.info("Cleaned up #{length(inactive_sessions)} inactive sessions")
     updated_state
   end
 

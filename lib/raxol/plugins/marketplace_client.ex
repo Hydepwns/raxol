@@ -165,7 +165,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
     # Schedule periodic update checks
     schedule_update_check()
 
-    Log.module_info(
+    Log.info(
       "[MarketplaceClient] Initialized with marketplace: #{state.marketplace_url}"
     )
 
@@ -219,7 +219,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
       ) do
     case install_plugin_impl(plugin_id, version, opts, state) do
       {:ok, updated_state} ->
-        Log.module_info(
+        Log.info(
           "[MarketplaceClient] Successfully installed #{plugin_id}@#{version}"
         )
 
@@ -238,7 +238,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
   def handle_manager_call({:uninstall_plugin, plugin_id}, _from, state) do
     case uninstall_plugin_impl(plugin_id, state) do
       {:ok, updated_state} ->
-        Log.module_info("Successfully uninstalled #{plugin_id}")
+        Log.info("Successfully uninstalled #{plugin_id}")
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
@@ -322,7 +322,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
     case check_for_updates_impl(state) do
       {:ok, updates, updated_state} ->
         if length(updates) > 0 do
-          Log.module_info(
+          Log.info(
             "[MarketplaceClient] Found #{length(updates)} plugin updates available"
           )
         end
@@ -479,7 +479,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   defp download_and_install_plugin(plugin_info, dependencies, _opts, state) do
     # Mock implementation - would download and install plugin
-    Log.module_info(
+    Log.info(
       "[MarketplaceClient] Installing #{plugin_info.name} with #{length(dependencies)} dependencies"
     )
 
@@ -659,7 +659,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
       _install_info ->
         # Remove plugin and clean up dependencies
-        Log.module_info("Uninstalling #{plugin_id}")
+        Log.info("Uninstalling #{plugin_id}")
 
         updated_installed = Map.delete(state.installed_plugins, plugin_id)
         {:ok, %{state | installed_plugins: updated_installed}}

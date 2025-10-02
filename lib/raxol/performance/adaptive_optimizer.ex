@@ -73,7 +73,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
     # Setup telemetry event handlers
     setup_telemetry_handlers()
 
-    Log.module_info("Adaptive optimizer started with production configuration")
+    Log.info("Adaptive optimizer started with production configuration")
     {:ok, state}
   end
 
@@ -434,7 +434,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
 
   defp perform_adaptive_optimization(state) do
     Raxol.Core.ErrorHandling.safe_call_with_info(fn ->
-      Log.module_info(
+      Log.info(
         "Starting adaptive optimization cycle #{state.optimization_state.optimization_cycles + 1}"
       )
 
@@ -475,7 +475,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
         next_optimization_in: @optimization_interval
       }
 
-      Log.module_info(
+      Log.info(
         "Adaptive optimization completed: #{length(application_results)} optimizations applied"
       )
 

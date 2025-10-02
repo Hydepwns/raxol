@@ -121,7 +121,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
         start_time = System.monotonic_time(:microsecond)
         command_type = command.__struct__
 
-        Log.module_info("Processing command: #{inspect(command_type)}")
+        Log.info("Processing command: #{inspect(command_type)}")
 
         case Raxol.Core.ErrorHandling.safe_call(fn ->
                handler_fn.(command, context)
@@ -131,7 +131,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
 
             case result do
               {:ok, data} ->
-                Log.module_info(
+                Log.info(
                   "Command processed successfully: #{inspect(command_type)} in #{execution_time}μs"
                 )
 

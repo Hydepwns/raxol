@@ -108,7 +108,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     # Start AlertManager (always available)
     {:ok, _} = AlertManager.start_link(config.alert_manager)
 
-    Log.module_info("Performance MonitoringCoordinator initialized", %{
+    Log.info("Performance MonitoringCoordinator initialized", %{
       auto_optimization: state.auto_optimization_enabled,
       config: config
     })
@@ -138,7 +138,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
                 monitoring_config: config
             }
 
-            Log.module_info("Comprehensive performance monitoring started", %{
+            Log.info("Comprehensive performance monitoring started", %{
               components: Map.keys(component_statuses),
               baseline_metrics: Map.keys(baseline)
             })
@@ -170,7 +170,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
             }
         }
 
-        Log.module_info("Performance monitoring stopped")
+        Log.info("Performance monitoring stopped")
         {:reply, :ok, new_state}
 
       {:error, reason} ->
@@ -197,9 +197,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
       configure_optimization_triggers()
     end
 
-    Log.module_info(
-      "Auto-optimization #{if enabled, do: "enabled", else: "disabled"}"
-    )
+    Log.info("Auto-optimization #{if enabled, do: "enabled", else: "disabled"}")
 
     {:reply, :ok, new_state}
   end
@@ -208,7 +206,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
   def handle_manager_call(:optimize_performance, _from, state) do
     case perform_comprehensive_optimization(state) do
       {:ok, optimization_results} ->
-        Log.module_info("Manual performance optimization completed", %{
+        Log.info("Manual performance optimization completed", %{
           results: optimization_results
         })
 
@@ -230,7 +228,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
 
     new_state = %{state | monitoring_config: merged_config}
 
-    Log.module_info("Monitoring configuration updated", %{
+    Log.info("Monitoring configuration updated", %{
       components_updated: Map.keys(update_results)
     })
 
@@ -450,7 +448,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
   end
 
   defp handle_optimization_trigger(event, measurements, metadata, _config) do
-    Log.module_info("Automatic optimization triggered", %{
+    Log.info("Automatic optimization triggered", %{
       event: event,
       measurements: measurements,
       metadata: metadata
@@ -460,7 +458,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     Task.start(fn ->
       case AdaptiveOptimizer.optimize_now() do
         {:ok, _} ->
-          Log.module_info("Automatic optimization completed successfully")
+          Log.info("Automatic optimization completed successfully")
 
         {:error, reason} ->
           Log.module_error("Automatic optimization failed", %{reason: reason})

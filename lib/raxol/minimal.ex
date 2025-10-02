@@ -223,7 +223,7 @@ defmodule Raxol.Minimal do
       )
     end
 
-    Log.module_info("Minimal terminal started in #{startup_time}μs")
+    Log.info("Minimal terminal started in #{startup_time}μs")
 
     {:ok, state}
   end

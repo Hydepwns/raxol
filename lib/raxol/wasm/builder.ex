@@ -14,7 +14,7 @@ defmodule Raxol.WASM.Builder do
   Builds the WASM module with all configurations.
   """
   def build(opts \\ []) do
-    Log.module_info("Starting WASM build for Raxol...")
+    Log.info("Starting WASM build for Raxol...")
 
     with :ok <- prepare_directories(),
          :ok <- generate_wasm_wrapper(),
@@ -22,7 +22,7 @@ defmodule Raxol.WASM.Builder do
          :ok <- generate_js_bindings(),
          :ok <- optimize_wasm(opts),
          :ok <- copy_assets() do
-      Log.module_info("WASM build completed successfully!")
+      Log.info("WASM build completed successfully!")
       {:ok, wasm_info()}
     else
       {:error, reason} = error ->
@@ -35,7 +35,7 @@ defmodule Raxol.WASM.Builder do
   Cleans the WASM build artifacts.
   """
   def clean do
-    Log.module_info("Cleaning WASM build artifacts...")
+    Log.info("Cleaning WASM build artifacts...")
 
     [@wasm_output_dir, @js_output_dir]
     |> Enum.each(&File.rm_rf!/1)
@@ -47,7 +47,7 @@ defmodule Raxol.WASM.Builder do
   Watches for changes and rebuilds WASM.
   """
   def watch(opts \\ []) do
-    Log.module_info("Starting WASM watch mode...")
+    Log.info("Starting WASM watch mode...")
 
     # Initial build
     build(opts)
@@ -69,7 +69,7 @@ defmodule Raxol.WASM.Builder do
   end
 
   defp generate_wasm_wrapper do
-    Log.module_info("Generating WASM wrapper...")
+    Log.info("Generating WASM wrapper...")
 
     wrapper_content = """
     // Auto-generated WASM wrapper for Raxol
@@ -306,7 +306,7 @@ defmodule Raxol.WASM.Builder do
   end
 
   defp compile_to_wasm(opts) do
-    Log.module_info("Compiling to WASM...")
+    Log.info("Compiling to WASM...")
 
     optimization = Keyword.get(opts, :optimization, "-O2")
 
@@ -325,7 +325,7 @@ defmodule Raxol.WASM.Builder do
 
     case System.cmd("sh", ["-c", cmd], stderr_to_stdout: true) do
       {_, 0} ->
-        Log.module_info("WASM compilation successful")
+        Log.info("WASM compilation successful")
         :ok
 
       {output, _} ->
@@ -335,7 +335,7 @@ defmodule Raxol.WASM.Builder do
   end
 
   defp generate_js_bindings do
-    Log.module_info("Generating JavaScript bindings...")
+    Log.info("Generating JavaScript bindings...")
 
     js_content = """
     // Raxol WebAssembly JavaScript Bindings
@@ -524,7 +524,7 @@ defmodule Raxol.WASM.Builder do
 
   defp optimize_wasm(opts) do
     if Keyword.get(opts, :optimize, true) do
-      Log.module_info("Optimizing WASM binary...")
+      Log.info("Optimizing WASM binary...")
 
       # Use wasm-opt if available
       cmd =
@@ -537,7 +537,7 @@ defmodule Raxol.WASM.Builder do
             "#{@wasm_output_dir}/raxol.wasm"
           )
 
-          Log.module_info("WASM optimization successful")
+          Log.info("WASM optimization successful")
           :ok
 
         {output, _} ->
@@ -553,7 +553,7 @@ defmodule Raxol.WASM.Builder do
   end
 
   defp copy_assets do
-    Log.module_info("Copying web assets...")
+    Log.info("Copying web assets...")
 
     # Copy HTML demo file
     html_content = """
@@ -777,7 +777,7 @@ defmodule Raxol.WASM.Builder do
     receive do
       {:file_event, _pid, {path, _events}} ->
         if String.ends_with?(path, ".ex") or String.ends_with?(path, ".exs") do
-          Log.module_info("Detected change in #{path}, rebuilding...")
+          Log.info("Detected change in #{path}, rebuilding...")
           build(opts)
         end
 

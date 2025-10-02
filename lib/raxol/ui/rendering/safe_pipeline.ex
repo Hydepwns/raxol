@@ -194,7 +194,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   def handle_manager_cast({:set_performance_mode, enabled}, state) do
     new_monitor = Map.put(state.performance_monitor, :performance_mode, enabled)
 
-    Log.module_info("Performance mode #{get_performance_mode_status(enabled)}")
+    Log.info("Performance mode #{get_performance_mode_status(enabled)}")
 
     {:noreply, %{state | performance_monitor: new_monitor}}
   end
@@ -439,7 +439,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
     case Pipeline.start_link([]) do
       {:ok, new_pid} ->
         Process.monitor(new_pid)
-        Log.module_info("Pipeline restarted successfully")
+        Log.info("Pipeline restarted successfully")
         %{state | pipeline: new_pid}
 
       {:error, reason} ->

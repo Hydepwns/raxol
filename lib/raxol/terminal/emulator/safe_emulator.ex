@@ -282,7 +282,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   def handle_manager_info({:retry_processing, input}, state) do
     with {:ok, _result} <- process_with_retry(input, state) do
-      Log.module_info("Retry successful for buffered input")
+      Log.info("Retry successful for buffered input")
       new_state = %{state | input_buffer: <<>>, recovery_state: :healthy}
       {:noreply, new_state}
     else

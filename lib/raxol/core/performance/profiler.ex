@@ -353,7 +353,7 @@ defmodule Raxol.Core.Performance.Profiler do
   @spec log_new_suggestions(any(), any()) :: any()
   defp log_new_suggestions(new_suggestions, old_suggestions)
        when new_suggestions != old_suggestions do
-    Log.module_info("New performance optimization suggestions available")
+    Log.info("New performance optimization suggestions available")
   end
 
   @spec log_new_suggestions(any(), any()) :: any()

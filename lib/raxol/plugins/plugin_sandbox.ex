@@ -191,7 +191,7 @@ defmodule Raxol.Plugins.PluginSandbox do
       violation_handlers: initialize_violation_handlers(opts)
     }
 
-    Log.module_info("Initialized with security monitoring")
+    Log.info("Initialized with security monitoring")
     {:ok, state}
   end
 
@@ -203,7 +203,7 @@ defmodule Raxol.Plugins.PluginSandbox do
       ) do
     case create_sandbox_impl(plugin_id, security_policy, state) do
       {:ok, updated_state} ->
-        Log.module_info("Created sandbox for #{plugin_id}")
+        Log.info("Created sandbox for #{plugin_id}")
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
@@ -239,7 +239,7 @@ defmodule Raxol.Plugins.PluginSandbox do
   def handle_manager_call({:destroy_sandbox, plugin_id}, _from, state) do
     case destroy_sandbox_impl(plugin_id, state) do
       {:ok, updated_state} ->
-        Log.module_info("Destroyed sandbox for #{plugin_id}")
+        Log.info("Destroyed sandbox for #{plugin_id}")
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
@@ -493,7 +493,7 @@ defmodule Raxol.Plugins.PluginSandbox do
 
   defp apply_policy_update(sandbox_context, _new_policy) do
     # Apply new security policy to running processes
-    Log.module_info(
+    Log.info(
       "[PluginSandbox] Applied policy update for #{sandbox_context.plugin_id}"
     )
   end

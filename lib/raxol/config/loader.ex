@@ -64,7 +64,7 @@ defmodule Raxol.Config.Loader do
 
       case load_files(config_files) do
         {:ok, config} ->
-          Log.module_info(
+          Log.info(
             "Loaded configuration from #{length(config_files)} files in #{directory}"
           )
 
@@ -169,7 +169,7 @@ defmodule Raxol.Config.Loader do
 
     case File.copy(path, backup_path) do
       {:ok, _} ->
-        Log.module_info("Configuration backed up to #{backup_path}")
+        Log.info("Configuration backed up to #{backup_path}")
         {:ok, backup_path}
 
       {:error, reason} ->

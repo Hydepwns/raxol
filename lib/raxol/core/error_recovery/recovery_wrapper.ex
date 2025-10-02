@@ -113,7 +113,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
           start_time: DateTime.utc_now()
         }
 
-        Log.module_info("RecoveryWrapper started for #{wrapped_module}")
+        Log.info("RecoveryWrapper started for #{wrapped_module}")
 
         {:ok, state}
 
@@ -237,7 +237,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
 
   @impl true
   def terminate(reason, state) do
-    Log.module_info("RecoveryWrapper terminating: #{inspect(reason)}")
+    Log.info("RecoveryWrapper terminating: #{inspect(reason)}")
 
     # Preserve final context
     preserve_final_context(state)
@@ -266,7 +266,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
         Log.module_debug("No previous context found for #{context_key}")
 
       context ->
-        Log.module_info("Restoring context for #{context_key}")
+        Log.info("Restoring context for #{context_key}")
         restore_context_to_wrapped(wrapped_pid, context)
     end
   end
@@ -332,7 +332,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
           ttl_ms: 600_000
         )
 
-        Log.module_info("Final context preserved for #{state.context_key}")
+        Log.info("Final context preserved for #{state.context_key}")
     end
   end
 

@@ -627,7 +627,7 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
   end
 
   defp default_analytics_provider(event_name, event_data) do
-    Log.module_info("Analytics: #{event_name} - #{inspect(event_data)}")
+    Log.info("Analytics: #{event_name} - #{inspect(event_data)}")
   end
 
   defp render_based_on_auth_state(

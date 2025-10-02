@@ -174,7 +174,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
     # Monitor cluster nodes
     :net_kernel.monitor_nodes(true)
 
-    Log.module_info(
+    Log.info(
       "SessionMigrator started with failover_mode=#{state.failover_mode}"
     )
 
@@ -298,7 +298,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
 
   @impl true
   def handle_info({:nodeup, node}, state) do
-    Log.module_info("Node #{node} joined cluster")
+    Log.info("Node #{node} joined cluster")
     updated_health = Map.put(state.node_health, node, :healthy)
     {:noreply, %{state | node_health: updated_health}}
   end
@@ -315,7 +315,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
         Process.send_after(self(), {:delayed_failover, node}, 5000)
 
       :manual ->
-        Log.module_info(
+        Log.info(
           "Manual failover mode - administrator intervention required for node #{node}"
         )
     end
@@ -857,7 +857,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
             # Failover sessions to healthy nodes
             failover_count = perform_session_failover(session_ids, nodes, state)
 
-            Log.module_info(
+            Log.info(
               "Completed failover for #{failover_count} sessions from node #{failed_node}"
             )
 
@@ -871,7 +871,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
         end
 
       {:ok, []} ->
-        Log.module_info("No sessions found on failed node #{failed_node}")
+        Log.info("No sessions found on failed node #{failed_node}")
         {:ok, %{failed_node: failed_node, sessions_migrated: 0}, state}
 
       {:error, reason} ->

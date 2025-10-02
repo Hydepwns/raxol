@@ -49,9 +49,7 @@ defmodule Raxol.Benchmark.Reporter do
       Path.join(output_path, "#{filename}.md")
     )
 
-    Log.module_info(
-      "Comparison report generated at #{output_path}/#{filename}.*"
-    )
+    Log.info("Comparison report generated at #{output_path}/#{filename}.*")
 
     comparison
   end
@@ -293,7 +291,7 @@ defmodule Raxol.Benchmark.Reporter do
     file_path = Path.join(output_path, "benchmark_report_#{timestamp()}.html")
     File.write!(file_path, html_content)
 
-    Log.module_info("HTML report generated at #{file_path}")
+    Log.info("HTML report generated at #{file_path}")
     {:ok, file_path}
   end
 
@@ -304,7 +302,7 @@ defmodule Raxol.Benchmark.Reporter do
     json_content = Jason.encode!(report_data, pretty: true)
     File.write!(file_path, json_content)
 
-    Log.module_info("JSON report generated at #{file_path}")
+    Log.info("JSON report generated at #{file_path}")
     {:ok, file_path}
   end
 
@@ -315,7 +313,7 @@ defmodule Raxol.Benchmark.Reporter do
     file_path = Path.join(output_path, "benchmark_report_#{timestamp()}.md")
     File.write!(file_path, md_content)
 
-    Log.module_info("Markdown report generated at #{file_path}")
+    Log.info("Markdown report generated at #{file_path}")
     {:ok, file_path}
   end
 

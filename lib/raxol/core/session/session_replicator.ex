@@ -134,7 +134,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
 
     updated_state = %{state | anti_entropy_timer: anti_entropy_timer}
 
-    Log.module_info(
+    Log.info(
       "SessionReplicator started with replication_factor=#{state.replication_factor}"
     )
 
@@ -240,7 +240,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
 
   @impl true
   def handle_info({:nodeup, node}, state) do
-    Log.module_info("Node #{node} joined cluster, updating replica health")
+    Log.info("Node #{node} joined cluster, updating replica health")
     updated_health = Map.put(state.replica_health, node, :healthy)
     {:noreply, %{state | replica_health: updated_health}}
   end

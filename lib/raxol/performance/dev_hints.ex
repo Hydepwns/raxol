@@ -118,7 +118,7 @@ defmodule Raxol.Performance.DevHints do
     config = get_config(opts)
 
     if config.enabled do
-      Log.module_info("Attaching telemetry handlers")
+      Log.info("Attaching telemetry handlers")
 
       # Schedule periodic cleanup
       _ = :timer.send_interval(60_000, self(), {:cleanup_history})
@@ -159,7 +159,7 @@ defmodule Raxol.Performance.DevHints do
         start_time: System.monotonic_time(:millisecond)
       }
 
-      Log.module_info("Performance hints enabled for development")
+      Log.info("Performance hints enabled for development")
 
       {:ok, state}
     else

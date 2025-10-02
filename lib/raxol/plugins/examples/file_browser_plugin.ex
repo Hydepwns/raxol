@@ -71,7 +71,7 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
   # Initialization
   @impl true
   def init_manager(config) do
-    Log.module_info("Initializing with config: #{inspect(config)}")
+    Log.info("Initializing with config: #{inspect(config)}")
 
     initial_path = Path.expand(config.initial_path || ".")
 
@@ -564,28 +564,28 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
 
   # File operations
   defp open_file(path) do
-    Log.module_info("Opening file: #{path}")
+    Log.info("Opening file: #{path}")
     # Send event to open file in editor
     send(self(), {:open_file, path})
   end
 
   defp start_filter(state) do
-    Log.module_info("Starting filter mode")
+    Log.info("Starting filter mode")
     {:ok, state}
   end
 
   defp create_file_prompt(state) do
-    Log.module_info("Create file prompt")
+    Log.info("Create file prompt")
     {:ok, state}
   end
 
   defp delete_file_prompt(state) do
-    Log.module_info("Delete file prompt")
+    Log.info("Delete file prompt")
     {:ok, state}
   end
 
   defp rename_file_prompt(state) do
-    Log.module_info("Rename file prompt")
+    Log.info("Rename file prompt")
     {:ok, state}
   end
 

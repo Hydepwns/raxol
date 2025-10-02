@@ -129,7 +129,7 @@ defmodule Raxol.Audit.Storage do
         TimerManager.intervals().hour
       )
 
-    Log.module_info("Audit storage initialized at #{storage_path}")
+    Log.info("Audit storage initialized at #{storage_path}")
     {:ok, Map.put(state, :timers, timers)}
   end
 
@@ -516,7 +516,7 @@ defmodule Raxol.Audit.Storage do
     compressed = :zlib.gzip(File.read!(file_path))
     File.write!(compressed_path, compressed)
     File.rm!(file_path)
-    Log.module_info("Compressed audit log: #{compressed_path}")
+    Log.info("Compressed audit log: #{compressed_path}")
   end
 
   defp load_all_events(state) do

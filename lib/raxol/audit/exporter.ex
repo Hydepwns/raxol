@@ -92,7 +92,7 @@ defmodule Raxol.Audit.Exporter do
     # Process export queue periodically using TimerManager
     {:ok, _} = TimerManager.start_interval(:process_queue, 10_000)
 
-    Log.module_info("Audit exporter initialized")
+    Log.info("Audit exporter initialized")
     {:ok, state}
   end
 
@@ -656,7 +656,7 @@ defmodule Raxol.Audit.Exporter do
 
   defp perform_scheduled_export(schedule) do
     # Execute scheduled export
-    Log.module_info("Performing scheduled export: #{inspect(schedule)}")
+    Log.info("Performing scheduled export: #{inspect(schedule)}")
   end
 
   defp init_siem_connections(config) do

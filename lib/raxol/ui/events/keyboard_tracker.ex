@@ -39,7 +39,7 @@ defmodule Raxol.UI.Events.KeyboardTracker do
       accessibility_mode: Keyword.get(opts, :accessibility_mode, false)
     }
 
-    Log.module_info("Keyboard tracker initialized")
+    Log.info("Keyboard tracker initialized")
     {:ok, state}
   end
 

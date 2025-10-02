@@ -111,7 +111,7 @@ defmodule Raxol.Core.ServerRegistry do
   """
   @spec graceful_shutdown(timeout()) :: :ok
   def graceful_shutdown(timeout \\ 5000) do
-    Log.module_info("Initiating graceful server shutdown")
+    Log.info("Initiating graceful server shutdown")
 
     # Shutdown in reverse order to handle dependencies
     shutdown_order = Enum.reverse(@server_specs)
@@ -121,7 +121,7 @@ defmodule Raxol.Core.ServerRegistry do
       shutdown_server(server_name, timeout)
     end)
 
-    Log.module_info("All servers stopped")
+    Log.info("All servers stopped")
   end
 
   ## Private Functions

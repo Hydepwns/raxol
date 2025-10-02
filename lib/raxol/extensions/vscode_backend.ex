@@ -48,7 +48,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
   end
 
   defp initialize_mode("vscode_ext", capabilities) do
-    Log.module_info("Starting in VS Code extension mode")
+    Log.info("Starting in VS Code extension mode")
     # Start listening for stdin messages from the extension
     _ = Task.start_link(&listen_for_messages/0)
     _ = send_capabilities(capabilities)
@@ -145,7 +145,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
   defp listen_for_messages do
     case IO.read(:stdio, :line) do
       :eof ->
-        Log.module_info("EOF received, stopping message listener")
+        Log.info("EOF received, stopping message listener")
         :ok
 
       {:error, reason} ->
@@ -189,13 +189,13 @@ defmodule Raxol.Extensions.VSCodeBackend do
   end
 
   defp handle_extension_message(%{"type" => "shutdown"}, state) do
-    Log.module_info("Shutdown requested by extension")
+    Log.info("Shutdown requested by extension")
     System.stop()
     {:ok, state}
   end
 
   defp handle_extension_message(message, state) do
-    Log.module_info("Received message: #{inspect(message)}")
+    Log.info("Received message: #{inspect(message)}")
     {:ok, state}
   end
 

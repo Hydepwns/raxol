@@ -149,7 +149,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     # Schedule periodic cleanup and persistence
     schedule_cleanup()
 
-    Log.module_info("Error pattern learning system started")
+    Log.info("Error pattern learning system started")
 
     {:ok, initial_state}
   end
@@ -236,7 +236,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
 
     new_state = %{state | patterns: merged_patterns}
 
-    Log.module_info("Imported #{map_size(imported_patterns)} error patterns")
+    Log.info("Imported #{map_size(imported_patterns)} error patterns")
 
     {:noreply, new_state}
   end

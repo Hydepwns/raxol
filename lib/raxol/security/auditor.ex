@@ -346,7 +346,7 @@ defmodule Raxol.Security.Auditor do
   end
 
   defp audit_access_attempt(user, resource, action) do
-    Log.module_info(
+    Log.info(
       "Access attempt: user=#{inspect(user)}, resource=#{resource}, action=#{action}"
     )
 

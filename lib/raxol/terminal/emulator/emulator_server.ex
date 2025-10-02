@@ -135,7 +135,7 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_info({:EXIT, _pid, reason}, state) do
-    Log.module_info(
+    Log.info(
       "Terminal emulator server received EXIT signal: #{inspect(reason)}"
     )
 
@@ -146,7 +146,7 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
 
   @impl GenServer
   def terminate(reason, %{session_id: session_id}) do
-    Log.module_info(
+    Log.info(
       "Terminal emulator server #{session_id} terminating: #{inspect(reason)}"
     )
 

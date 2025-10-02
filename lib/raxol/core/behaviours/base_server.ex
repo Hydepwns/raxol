@@ -46,7 +46,7 @@ defmodule Raxol.Core.Behaviours.BaseServer do
 
       @impl GenServer
       def terminate(reason, state) do
-        Log.module_info("#{__MODULE__} terminating: #{inspect(reason)}")
+        Log.info("#{__MODULE__} terminating: #{inspect(reason)}")
 
         if function_exported?(__MODULE__, :handle_shutdown, 1) do
           handle_shutdown(state)

@@ -112,7 +112,7 @@ defmodule Raxol.Terminal.TerminalRegistry do
         Process.send_after(self(), :subscribe_to_events, 100)
       end
 
-    Log.module_info("Terminal registry initialized")
+    Log.info("Terminal registry initialized")
     {:ok, state}
   end
 
@@ -158,7 +158,7 @@ defmodule Raxol.Terminal.TerminalRegistry do
             user_terminals: new_user_terminals
         }
 
-        Log.module_info(
+        Log.info(
           "Registered terminal #{terminal_id} with process #{inspect(process)}"
         )
 
@@ -178,7 +178,7 @@ defmodule Raxol.Terminal.TerminalRegistry do
 
       process ->
         new_state = do_unregister_terminal(terminal_id, process, state)
-        Log.module_info("Unregistered terminal #{terminal_id}")
+        Log.info("Unregistered terminal #{terminal_id}")
         {:reply, :ok, new_state}
     end
   end

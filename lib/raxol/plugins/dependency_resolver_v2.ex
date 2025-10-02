@@ -123,7 +123,7 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
             {:ok, all_deps}
 
           conflicts ->
-            Log.module_info(
+            Log.info(
               "[DependencyResolver] Detected conflicts: #{inspect(conflicts)}"
             )
 

@@ -296,7 +296,7 @@ defmodule Raxol.Security.SessionManager do
         :ets.delete(:sessions, session_id)
         :ets.delete_object(:user_sessions, {session.user_id, session_id})
 
-        Log.module_info("Session invalidated: #{session_id}")
+        Log.info("Session invalidated: #{session_id}")
     end
   end
 
@@ -372,7 +372,7 @@ defmodule Raxol.Security.SessionManager do
 
     case length(expired) > 0 do
       true ->
-        Log.module_info("Cleaned up #{length(expired)} expired sessions")
+        Log.info("Cleaned up #{length(expired)} expired sessions")
 
       false ->
         :ok

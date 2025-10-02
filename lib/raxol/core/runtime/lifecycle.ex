@@ -534,17 +534,17 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
     case env_type do
       :terminal ->
-        Log.module_info("Initializing terminal environment")
-        Log.module_info("Terminal environment initialized successfully")
+        Log.info("Initializing terminal environment")
+        Log.info("Terminal environment initialized successfully")
         options
 
       :web ->
-        Log.module_info("Initializing web environment")
-        Log.module_info("Terminal initialization failed")
+        Log.info("Initializing web environment")
+        Log.info("Terminal initialization failed")
         options
 
       unknown ->
-        Log.module_info("Unknown environment type: #{inspect(unknown)}")
+        Log.info("Unknown environment type: #{inspect(unknown)}")
         options
     end
   end
@@ -582,20 +582,20 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     case error do
       {:application_error, reason} ->
         # For application errors, stop the process
-        Log.module_info("Application error: #{inspect(reason)}")
-        Log.module_info("Stopping application")
+        Log.info("Application error: #{inspect(reason)}")
+        Log.info("Stopping application")
         {:stop, :normal, %{}}
 
       {:termbox_error, reason} ->
         # For termbox errors, log and attempt retry
-        Log.module_info("Termbox error: #{inspect(reason)}")
-        Log.module_info("Attempting to restore terminal")
+        Log.info("Termbox error: #{inspect(reason)}")
+        Log.info("Attempting to restore terminal")
         {:stop, :normal, %{}}
 
       {:unknown_error, _reason} ->
         # For unknown errors, log and continue
-        Log.module_info("Unknown error: #{inspect(error)}")
-        Log.module_info("Continuing execution")
+        Log.info("Unknown error: #{inspect(error)}")
+        Log.info("Continuing execution")
         {:stop, :normal, %{}}
 
       %{type: :runtime_error} ->
@@ -615,8 +615,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   def handle_cleanup(context) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            # Log cleanup operation
-           Log.module_info("Cleaning up for app: #{context.app_name}")
-           Log.module_info("Cleanup completed")
+           Log.info("Cleaning up for app: #{context.app_name}")
+           Log.info("Cleanup completed")
 
            # Cleanup is handled by individual components
            :ok

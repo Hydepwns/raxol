@@ -489,7 +489,7 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
 
       4 ->
         String.pad_trailing(
-          "  Log.module_info(\"Processing #{line_num}\")",
+          "  Log.info(\"Processing #{line_num}\")",
           length
         )
 

@@ -363,9 +363,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     # Apply initial theme
     {:ok, final_state} = apply_theme_internal(state, initial_theme)
 
-    Log.module_info(
-      "High contrast system initialized with theme: #{initial_theme}"
-    )
+    Log.info("High contrast system initialized with theme: #{initial_theme}")
 
     {:ok, final_state}
   end
@@ -401,7 +399,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
 
             new_state = %{state | theme_registry: new_registry}
 
-            Log.module_info(
+            Log.info(
               "Custom theme registered: #{validated_theme.name} (#{compliance_info.level})"
             )
 
@@ -472,7 +470,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     # Re-apply current theme to adjust for large text
     {:ok, updated_state} = reapply_current_theme(new_state)
 
-    Log.module_info("Large text mode #{format_enabled_status(enabled)}")
+    Log.info("Large text mode #{format_enabled_status(enabled)}")
 
     {:reply, :ok, updated_state}
   end
@@ -486,7 +484,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     # Re-apply current theme with inversion
     {:ok, updated_state} = reapply_current_theme(new_state)
 
-    Log.module_info("Color inversion #{format_enabled_status(new_invert)}")
+    Log.info("Color inversion #{format_enabled_status(new_invert)}")
 
     {:reply, :ok, updated_state}
   end
@@ -833,7 +831,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
   defp apply_theme_to_system(theme, _config) do
     # This would apply the theme to the actual terminal UI system
     # For now, we'll log the application
-    Log.module_info("Applying high contrast theme: #{theme.name}")
+    Log.info("Applying high contrast theme: #{theme.name}")
 
     # Would integrate with ColorManager to update system colors
     # TODO: Implement proper theme system integration
@@ -1106,7 +1104,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     # Re-apply current theme with color blindness corrections
     {:ok, updated_state} = reapply_current_theme(new_state)
 
-    Log.module_info("Color blindness support configured: #{type}")
+    Log.info("Color blindness support configured: #{type}")
     {:reply, :ok, updated_state}
   end
 

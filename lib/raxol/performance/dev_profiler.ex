@@ -85,7 +85,7 @@ defmodule Raxol.Performance.DevProfiler do
 
     opts = Keyword.merge(@default_opts, opts)
 
-    Log.module_info("Starting profiling")
+    Log.info("Starting profiling")
 
     start_time = System.monotonic_time(:microsecond)
     memory_before = if opts[:memory], do: get_memory_info(), else: nil
@@ -177,7 +177,7 @@ defmodule Raxol.Performance.DevProfiler do
   Profile memory usage over time.
   """
   def profile_memory(duration \\ 10_000) do
-    Log.module_info("Memory profiling: #{duration}ms")
+    Log.info("Memory profiling: #{duration}ms")
 
     samples = []
     start_time = System.monotonic_time(:millisecond)
@@ -467,7 +467,7 @@ defmodule Raxol.Performance.DevProfiler do
         Log.module_warning("  • #{hint}")
       end)
     else
-      Log.module_info("No issues detected")
+      Log.info("No issues detected")
     end
 
     hints
@@ -556,17 +556,17 @@ defmodule Raxol.Performance.DevProfiler do
   defp output_report(report, format) do
     case format do
       :text ->
-        Log.module_info(report)
+        Log.info(report)
 
       :html ->
         html_report = generate_html_report(report)
         filename = "/tmp/raxol_profile_#{:os.system_time()}.html"
         _ = File.write!(filename, html_report)
-        Log.module_info("HTML report written to: #{filename}")
+        Log.info("HTML report written to: #{filename}")
 
       :json ->
         json_report = Jason.encode!(parse_report_to_map(report))
-        Log.module_info("JSON Report: #{json_report}")
+        Log.info("JSON Report: #{json_report}")
     end
   end
 
@@ -623,7 +623,7 @@ defmodule Raxol.Performance.DevProfiler do
       Process.sleep(100)
       collect_memory_samples([sample | samples], end_time)
     else
-      Log.module_info("Complete. #{length(samples)} samples.")
+      Log.info("Complete. #{length(samples)} samples.")
 
       analyze_memory_samples(samples)
     end
@@ -638,7 +638,7 @@ defmodule Raxol.Performance.DevProfiler do
       growth_mb = growth / (1024 * 1024)
       duration = last.timestamp - first.timestamp
 
-      Log.module_info("Growth: #{Float.round(growth_mb, 2)}MB/#{duration}ms")
+      Log.info("Growth: #{Float.round(growth_mb, 2)}MB/#{duration}ms")
 
       if growth_mb > 10 do
         Log.module_warning("Significant memory growth")

@@ -106,9 +106,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
       storage_path: Keyword.get(opts, :storage_path, "priv/palettes.json")
     }
 
-    Log.module_info(
-      "Palette registry started with #{map_size(palettes)} palettes"
-    )
+    Log.info("Palette registry started with #{map_size(palettes)} palettes")
 
     {:ok, state}
   end
@@ -120,7 +118,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
         new_palettes = Map.put(state.palettes, name, colors)
         new_state = %{state | palettes: new_palettes}
         save_palettes_to_storage(new_state.palettes, state.storage_path)
-        Log.module_info("Registered palette: #{name}")
+        Log.info("Registered palette: #{name}")
         {:reply, :ok, new_state}
 
       {:error, reason} ->
@@ -142,7 +140,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
         new_palettes = Map.delete(state.palettes, name)
         new_state = %{state | palettes: new_palettes}
         save_palettes_to_storage(new_state.palettes, state.storage_path)
-        Log.module_info("Unregistered palette: #{name}")
+        Log.info("Unregistered palette: #{name}")
         {:reply, :ok, new_state}
     end
   end
@@ -182,7 +180,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
             new_palettes = Map.put(state.palettes, name, colors)
             new_state = %{state | palettes: new_palettes}
             save_palettes_to_storage(new_state.palettes, state.storage_path)
-            Log.module_info("Updated palette: #{name}")
+            Log.info("Updated palette: #{name}")
             {:reply, :ok, new_state}
 
           {:error, reason} ->

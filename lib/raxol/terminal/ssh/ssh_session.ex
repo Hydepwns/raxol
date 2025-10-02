@@ -321,7 +321,7 @@ if Code.ensure_loaded?(:ssh) do
                 exit_status: nil
               }
 
-              Log.module_info("SSH session started on channel #{channel_id}")
+              Log.info("SSH session started on channel #{channel_id}")
               {:ok, state}
 
             {:error, reason} ->
@@ -478,7 +478,7 @@ if Code.ensure_loaded?(:ssh) do
         )
         when connection_ref == state.connection_ref and
                channel_id == state.channel_id do
-      Log.module_info("SSH session exit status: #{status}")
+      Log.info("SSH session exit status: #{status}")
       new_state = %{state | exit_status: status}
       {:noreply, new_state}
     end
@@ -489,7 +489,7 @@ if Code.ensure_loaded?(:ssh) do
         )
         when connection_ref == state.connection_ref and
                channel_id == state.channel_id do
-      Log.module_info("SSH session channel closed")
+      Log.info("SSH session channel closed")
       {:stop, :normal, state}
     end
 
@@ -506,7 +506,7 @@ if Code.ensure_loaded?(:ssh) do
 
     @impl true
     def terminate(reason, state) do
-      Log.module_info("SSH session terminating: #{inspect(reason)}")
+      Log.info("SSH session terminating: #{inspect(reason)}")
 
       # Stop recording if active
       stop_session_recording(state)
@@ -729,7 +729,7 @@ if Code.ensure_loaded?(:ssh) do
           # Close immediately, we'll append later
           File.close(file)
           new_state = %{state | recording: true, recording_file: file_path}
-          Log.module_info("Started recording SSH session to #{file_path}")
+          Log.info("Started recording SSH session to #{file_path}")
           {:ok, new_state}
 
         {:error, reason} ->
@@ -739,7 +739,7 @@ if Code.ensure_loaded?(:ssh) do
 
     defp stop_session_recording(state) do
       if state.recording && state.recording_file do
-        Log.module_info("Stopped recording SSH session")
+        Log.info("Stopped recording SSH session")
       end
 
       %{state | recording: false, recording_file: nil}

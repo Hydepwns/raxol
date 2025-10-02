@@ -40,11 +40,11 @@ defmodule Raxol.Playground do
 
     case start_link(port: port) do
       {:ok, _pid} ->
-        Log.module_info("Raxol Playground started on port #{port}")
+        Log.info("Raxol Playground started on port #{port}")
         run_playground()
 
       {:error, {:already_started, _pid}} ->
-        Log.module_info("Playground already running")
+        Log.info("Playground already running")
         run_playground()
 
       {:error, reason} ->

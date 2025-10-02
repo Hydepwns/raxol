@@ -241,7 +241,7 @@ defmodule Raxol.Core.Session.SecuritySession do
           {session.user_id, session_id}
         )
 
-        Log.module_info("Security session invalidated: #{session_id}")
+        Log.info("Security session invalidated: #{session_id}")
         sessions_state
     end
   end
@@ -306,9 +306,7 @@ defmodule Raxol.Core.Session.SecuritySession do
         end)
 
         if length(expired) > 0 do
-          Log.module_info(
-            "Cleaned up #{length(expired)} expired security sessions"
-          )
+          Log.info("Cleaned up #{length(expired)} expired security sessions")
         end
 
       {:error, :table_not_found} ->

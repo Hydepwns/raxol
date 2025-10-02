@@ -59,7 +59,7 @@ defmodule Raxol.Benchmark.Storage do
     data = serialize_baseline(results)
 
     File.write!(path, data)
-    Log.module_info("Baseline saved for #{suite_name}")
+    Log.info("Baseline saved for #{suite_name}")
 
     :ok
   end
@@ -92,7 +92,7 @@ defmodule Raxol.Benchmark.Storage do
     path = snapshot_path(version)
     File.write!(path, :erlang.term_to_binary(snapshot))
 
-    Log.module_info("Snapshot created for version #{version}")
+    Log.info("Snapshot created for version #{version}")
 
     :ok
   end
@@ -132,7 +132,7 @@ defmodule Raxol.Benchmark.Storage do
     csv_content = generate_csv(results)
     File.write!(output_file, csv_content)
 
-    Log.module_info("Results exported to #{output_file}")
+    Log.info("Results exported to #{output_file}")
 
     :ok
   end
@@ -150,7 +150,7 @@ defmodule Raxol.Benchmark.Storage do
       |> Enum.map(&File.rm/1)
       |> Enum.count(&(&1 == :ok))
 
-    Log.module_info("Cleaned up #{deleted_count} old benchmark files")
+    Log.info("Cleaned up #{deleted_count} old benchmark files")
 
     {:ok, deleted_count}
   end

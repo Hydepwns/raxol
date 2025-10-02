@@ -35,7 +35,7 @@ defmodule Raxol.Architecture.CQRS.Setup do
   Sets up the CQRS system by registering handlers and middleware.
   """
   def setup do
-    Log.module_info("Setting up CQRS system...")
+    Log.info("Setting up CQRS system...")
 
     # Add middleware in the correct order (executed in reverse)
     :ok = CommandDispatcher.add_middleware(LoggingMiddleware)
@@ -66,7 +66,7 @@ defmodule Raxol.Architecture.CQRS.Setup do
     :ok =
       CommandDispatcher.register_handler(ApplyThemeCommand, ApplyThemeHandler)
 
-    Log.module_info("CQRS system setup completed")
+    Log.info("CQRS system setup completed")
     :ok
   end
 

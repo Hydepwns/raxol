@@ -328,7 +328,7 @@ defmodule Raxol.Core.Session.SessionManager do
     cleanup_timer = schedule_cleanup(config.cleanup_interval)
     final_state = %{state | cleanup_timer: cleanup_timer}
 
-    Log.module_info("Unified session manager initialized")
+    Log.info("Unified session manager initialized")
     {:ok, final_state}
   end
 
@@ -602,7 +602,7 @@ defmodule Raxol.Core.Session.SessionManager do
 
   @impl true
   def handle_manager_call(:cleanup_all_sessions, _from, state) do
-    Log.module_info("Running unified session cleanup")
+    Log.info("Running unified session cleanup")
 
     # Cleanup security sessions
     updated_security =

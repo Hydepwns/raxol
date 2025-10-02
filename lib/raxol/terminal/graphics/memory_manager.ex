@@ -517,7 +517,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
 
     new_state = %{state | allocations: remaining_allocations, stats: new_stats}
 
-    Log.module_info(
+    Log.info(
       "GC collected #{length(collected_allocations)} allocations, freed #{freed_memory} bytes"
     )
 
@@ -629,7 +629,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
 
     case usage_ratio > state.config.gc_threshold do
       true ->
-        Log.module_info(
+        Log.info(
           "Memory pressure detected (#{Float.round(usage_ratio * 100, 1)}%), triggering GC"
         )
 

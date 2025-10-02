@@ -789,7 +789,7 @@ defmodule Raxol.Terminal.Script.ScriptServer do
           %{{:loaded_script, script_id} => script}
         )
 
-        Log.module_info("Loaded script: #{script.name} from #{path}")
+        Log.info("Loaded script: #{script.name} from #{path}")
 
       {:error, reason} ->
         Log.module_error(

@@ -118,7 +118,7 @@ defmodule Raxol.Terminal.Graphics.ChartOperations do
   """
   def setup_streaming_connection(chart_id, stream_config) do
     # Setup streaming data connection
-    Log.module_info("Setting up streaming for chart #{chart_id}")
+    Log.info("Setting up streaming for chart #{chart_id}")
 
     {:ok,
      %{

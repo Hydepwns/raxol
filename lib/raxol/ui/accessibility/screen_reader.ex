@@ -300,7 +300,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     # Announce screen reader initialization
     _announcement = announce_initialization(state)
 
-    Log.module_info("Screen reader support initialized: #{screen_reader_type}")
+    Log.info("Screen reader support initialized: #{screen_reader_type}")
     {:ok, state}
   end
 
@@ -1211,7 +1211,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   defp handle_speech_announcement(false, _type, text, priority) do
     # Fallback to system speech synthesis or logging
-    Log.module_info("Screen Reader Announcement (#{priority}): #{text}")
+    Log.info("Screen Reader Announcement (#{priority}): #{text}")
     try_system_tts(text)
   end
 

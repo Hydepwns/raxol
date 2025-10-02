@@ -199,7 +199,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
     case initialize_backend(backend, config) do
       {:ok, state} ->
-        Log.module_info("GPU acceleration initialized with #{backend} backend")
+        Log.info("GPU acceleration initialized with #{backend} backend")
 
         {:ok,
          %__MODULE__{
@@ -392,7 +392,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   end
 
   defp initialize_backend(:software, _config) do
-    Log.module_info("Using software rendering fallback")
+    Log.info("Using software rendering fallback")
     {:ok, %{device: :software, queue: :software, pipeline: :software}}
   end
 

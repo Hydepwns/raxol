@@ -142,7 +142,7 @@ defmodule Raxol.Plugins.HotReloadManager do
       active_reloads: %{}
     }
 
-    Log.module_info("Initialized with file watching")
+    Log.info("Initialized with file watching")
     {:ok, state}
   end
 
@@ -154,7 +154,7 @@ defmodule Raxol.Plugins.HotReloadManager do
       ) do
     case enable_hot_reload_impl(plugin_id, plugin_path, opts, state) do
       {:ok, updated_state} ->
-        Log.module_info(
+        Log.info(
           "[HotReloadManager] Enabled hot-reload for #{plugin_id} at #{plugin_path}"
         )
 
@@ -169,7 +169,7 @@ defmodule Raxol.Plugins.HotReloadManager do
   def handle_manager_call({:disable_hot_reload, plugin_id}, _from, state) do
     case disable_hot_reload_impl(plugin_id, state) do
       {:ok, updated_state} ->
-        Log.module_info("Disabled hot-reload for #{plugin_id}")
+        Log.info("Disabled hot-reload for #{plugin_id}")
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
@@ -192,7 +192,7 @@ defmodule Raxol.Plugins.HotReloadManager do
   def handle_manager_call({:rollback_plugin, plugin_id}, _from, state) do
     case rollback_plugin_impl(plugin_id, state) do
       {:ok, updated_state} ->
-        Log.module_info("Rolled back plugin #{plugin_id}")
+        Log.info("Rolled back plugin #{plugin_id}")
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
@@ -356,7 +356,7 @@ defmodule Raxol.Plugins.HotReloadManager do
   end
 
   defp perform_reload(plugin_id, opts, state) do
-    Log.module_info(
+    Log.info(
       "[HotReloadManager] Starting #{opts.strategy} reload for #{plugin_id}"
     )
 
@@ -575,19 +575,19 @@ defmodule Raxol.Plugins.HotReloadManager do
 
   defp reload_plugin_module(_plugin_id) do
     # Mock implementation - would reload plugin module
-    Log.module_info("Reloading plugin module")
+    Log.info("Reloading plugin module")
     :ok
   end
 
   defp stop_plugin_gracefully(_plugin_id, _timeout) do
     # Mock implementation - would gracefully stop plugin
-    Log.module_info("Stopping plugin gracefully")
+    Log.info("Stopping plugin gracefully")
     :ok
   end
 
   defp start_plugin(_plugin_id) do
     # Mock implementation - would start plugin
-    Log.module_info("Starting plugin")
+    Log.info("Starting plugin")
     :ok
   end
 
@@ -598,7 +598,7 @@ defmodule Raxol.Plugins.HotReloadManager do
 
   defp restore_plugin_from_backup(_plugin_id, _backup_state) do
     # Mock implementation - would restore from backup
-    Log.module_info("Restoring plugin from backup")
+    Log.info("Restoring plugin from backup")
     :ok
   end
 

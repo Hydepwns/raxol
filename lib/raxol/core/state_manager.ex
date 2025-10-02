@@ -567,7 +567,7 @@ defmodule Raxol.Core.StateManager do
         _ -> {nil, %{}}
       end
 
-    Log.module_info("Starting managed state: #{state_id}")
+    Log.info("Starting managed state: #{state_id}")
     {:ok, %{id: state_id, state: initial_state}}
   end
 

@@ -111,11 +111,11 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
 
     case state.repo_path do
       nil ->
-        Log.module_info("Git Integration: No git repository found")
+        Log.info("Git Integration: No git repository found")
         {:ok, state}
 
       repo_path ->
-        Log.module_info("Git Integration: Found repository at #{repo_path}")
+        Log.info("Git Integration: Found repository at #{repo_path}")
 
         # Start file watcher and timer based on auto-refresh setting
         {watcher_pid, timer} =

@@ -34,7 +34,7 @@ defmodule Raxol.Terminal.TelemetryLogger do
 
   @doc false
   def handle_event(event_name, measurements, metadata, _config) do
-    Log.module_info(
+    Log.info(
       "[TELEMETRY] #{inspect(event_name)}: #{inspect(measurements)} | #{inspect(metadata)}"
     )
   end

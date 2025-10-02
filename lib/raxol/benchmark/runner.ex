@@ -31,7 +31,7 @@ defmodule Raxol.Benchmark.Runner do
   Runs a complete benchmark suite with all configured benchmarks.
   """
   def run_all(opts \\ []) do
-    Log.module_info("Starting comprehensive benchmark suite...")
+    Log.info("Starting comprehensive benchmark suite...")
 
     suites = [
       terminal_benchmarks(),
@@ -44,7 +44,7 @@ defmodule Raxol.Benchmark.Runner do
 
     results =
       Enum.map(suites, fn suite ->
-        Log.module_info("Running #{suite.name} benchmarks...")
+        Log.info("Running #{suite.name} benchmarks...")
         run_suite(suite, opts)
       end)
 
@@ -116,7 +116,7 @@ defmodule Raxol.Benchmark.Runner do
   Profiles a specific operation with detailed analysis.
   """
   def profile(name, operation, opts \\ []) do
-    Log.module_info("Profiling #{name}...")
+    Log.info("Profiling #{name}...")
 
     # Run with profiling enabled
     profile_opts =

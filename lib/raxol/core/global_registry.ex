@@ -216,7 +216,7 @@ defmodule Raxol.Core.GlobalRegistry do
       config: config
     }
 
-    Log.module_info("Unified Registry started")
+    Log.info("Unified Registry started")
     {:ok, state}
   end
 

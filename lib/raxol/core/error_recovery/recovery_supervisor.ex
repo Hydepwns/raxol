@@ -105,7 +105,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     supervisor_strategy =
       adapt_supervisor_strategy(strategy, max_restarts, max_seconds)
 
-    Log.module_info("Starting RecoverySupervisor with strategy: #{strategy}")
+    Log.info("Starting RecoverySupervisor with strategy: #{strategy}")
 
     Supervisor.init(enhanced_children, supervisor_strategy)
   end
@@ -397,7 +397,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   end
 
   defp restart_child_immediately(child_id, context) do
-    Log.module_info("Immediately restarting child: #{child_id}")
+    Log.info("Immediately restarting child: #{child_id}")
 
     # Standard supervisor restart
     Supervisor.restart_child(__MODULE__, child_id)
@@ -409,13 +409,13 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   end
 
   defp schedule_delayed_restart(child_id, context, delay) do
-    Log.module_info("Scheduling delayed restart for #{child_id} in #{delay}ms")
+    Log.info("Scheduling delayed restart for #{child_id} in #{delay}ms")
 
     Process.send_after(self(), {:delayed_restart, child_id, context}, delay)
   end
 
   defp execute_careful_restart(child_id, context, state) do
-    Log.module_info("Executing careful restart for #{child_id}")
+    Log.info("Executing careful restart for #{child_id}")
 
     # Check system health before restart
     case check_system_health(state) do
@@ -473,7 +473,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   end
 
   defp execute_graceful_degradation(child_id, fallback, _state) do
-    Log.module_info("Executing graceful degradation for #{child_id}")
+    Log.info("Executing graceful degradation for #{child_id}")
 
     case fallback do
       :disable ->

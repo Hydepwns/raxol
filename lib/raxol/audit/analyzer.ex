@@ -93,7 +93,7 @@ defmodule Raxol.Audit.Analyzer do
     {:ok, _} =
       TimerManager.start_interval(:update_profiles, intervals.five_minutes)
 
-    Log.module_info("Audit analyzer initialized")
+    Log.info("Audit analyzer initialized")
     {:ok, state}
   end
 

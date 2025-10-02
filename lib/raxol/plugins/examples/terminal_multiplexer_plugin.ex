@@ -89,7 +89,7 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   # Initialization
   @impl Raxol.Core.Behaviours.BaseManager
   def init_manager(config) do
-    Log.module_info("Initializing with config: #{inspect(config)}")
+    Log.info("Initializing with config: #{inspect(config)}")
 
     # Create default session with one window
     default_session = create_session("main")
@@ -532,7 +532,7 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
 
   defp zoom_pane(state) do
     # Toggle pane zoom
-    Log.module_info("Toggling pane zoom")
+    Log.info("Toggling pane zoom")
     {:ok, state}
   end
 
@@ -548,18 +548,18 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   end
 
   defp detach_session(state) do
-    Log.module_info("Detaching from session")
+    Log.info("Detaching from session")
     {:ok, state}
   end
 
   defp show_sessions(state) do
-    Log.module_info("Showing sessions")
+    Log.info("Showing sessions")
     render_session_list(state)
     {:ok, state}
   end
 
   defp show_windows(state) do
-    Log.module_info("Showing windows")
+    Log.info("Showing windows")
     render_window_list(state)
     {:ok, state}
   end
@@ -575,7 +575,7 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
 
   defp handle_command_mode(key, state) do
     # Build command string
-    Log.module_info("Command mode input: #{key}")
+    Log.info("Command mode input: #{key}")
     {:ok, state}
   end
 
@@ -663,7 +663,7 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   defp spawn_terminal(shell) do
     # Placeholder - would spawn actual terminal process
     spawn(fn ->
-      Log.module_info("Terminal spawned: #{shell}")
+      Log.info("Terminal spawned: #{shell}")
       Process.sleep(:infinity)
     end)
   end
@@ -736,7 +736,7 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   end
 
   defp resize_layout(state, width, height) do
-    Log.module_info("Resizing layout to #{width}x#{height}")
+    Log.info("Resizing layout to #{width}x#{height}")
     {:ok, state}
   end
 
@@ -749,20 +749,20 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   end
 
   defp handle_mouse_event(action, x, y, state) do
-    Log.module_info("Mouse event: #{action} at (#{x}, #{y})")
+    Log.info("Mouse event: #{action} at (#{x}, #{y})")
     {:ok, state}
   end
 
   defp render_session_list(state) do
     sessions = Map.values(state.sessions)
     # Render session selection UI
-    Log.module_info("Sessions: #{inspect(sessions)}")
+    Log.info("Sessions: #{inspect(sessions)}")
   end
 
   defp render_window_list(state) do
     session = get_active_session(state)
     # Render window selection UI
-    Log.module_info("Windows: #{inspect(session.windows)}")
+    Log.info("Windows: #{inspect(session.windows)}")
   end
 
   defp display_overlay(state, content) do

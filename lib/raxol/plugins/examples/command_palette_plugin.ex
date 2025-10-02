@@ -53,7 +53,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
   # Initialization
   @impl true
   def init_manager(config) do
-    Log.module_info("Initializing with config: #{inspect(config)}")
+    Log.info("Initializing with config: #{inspect(config)}")
 
     state = %__MODULE__{
       config: config,
@@ -280,7 +280,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
         {:ok, state}
 
       command ->
-        Log.module_info("Executing command: #{command.id}")
+        Log.info("Executing command: #{command.id}")
 
         # Execute command action
         spawn(fn -> command.action.() end)
@@ -380,27 +380,27 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
 
   # Command actions
   defp clear_terminal do
-    Log.module_info("Clearing terminal")
+    Log.info("Clearing terminal")
     # Implementation would clear the terminal
   end
 
   defp split_terminal(direction) do
-    Log.module_info("Splitting terminal #{direction}")
+    Log.info("Splitting terminal #{direction}")
     # Implementation would split the terminal
   end
 
   defp open_file_dialog do
-    Log.module_info("Opening file dialog")
+    Log.info("Opening file dialog")
     # Implementation would show file picker
   end
 
   defp change_theme_dialog do
-    Log.module_info("Opening theme selector")
+    Log.info("Opening theme selector")
     # Implementation would show theme picker
   end
 
   defp reload_all_plugins do
-    Log.module_info("Reloading all plugins")
+    Log.info("Reloading all plugins")
     # Trigger hot-reload for all plugins using available method
     case Raxol.Plugins.Manager.list_plugins() do
       {:ok, plugins} ->
@@ -414,7 +414,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
   end
 
   defp open_documentation do
-    Log.module_info("Opening documentation")
+    Log.info("Opening documentation")
     # Open browser with docs
     System.cmd("open", ["https://docs.raxol.io"])
   end

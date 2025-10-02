@@ -415,7 +415,7 @@ if Code.ensure_loaded?(:ssh) do
 
     @impl true
     def terminate_manager(reason, state) do
-      Log.module_info("SSH client terminating: #{inspect(reason)}")
+      Log.info("SSH client terminating: #{inspect(reason)}")
       perform_disconnect(state)
       :ok
     end
@@ -445,7 +445,7 @@ if Code.ensure_loaded?(:ssh) do
              state.options.connect_timeout
            ) do
         {:ok, connection_ref} ->
-          Log.module_info("SSH connected to #{state.host}:#{state.port}")
+          Log.info("SSH connected to #{state.host}:#{state.port}")
 
           connection_info = %{
             host: state.host,
@@ -622,9 +622,7 @@ if Code.ensure_loaded?(:ssh) do
     defp start_shell_session(_state, options) do
       # This would typically create a new SSHSession process
       # For now, return a placeholder
-      Log.module_info(
-        "Starting SSH shell session with options: #{inspect(options)}"
-      )
+      Log.info("Starting SSH shell session with options: #{inspect(options)}")
 
       {:ok, spawn(fn -> Process.sleep(:infinity) end)}
     end
@@ -647,7 +645,7 @@ if Code.ensure_loaded?(:ssh) do
     defp perform_disconnect(state) do
       if state.connected && state.connection_ref do
         :ssh.close(state.connection_ref)
-        Log.module_info("SSH disconnected from #{state.host}:#{state.port}")
+        Log.info("SSH disconnected from #{state.host}:#{state.port}")
       end
 
       if state.keepalive_timer do
@@ -764,7 +762,7 @@ if Code.ensure_loaded?(:ssh) do
 
     defp attempt_reconnect(state) do
       if state.reconnect_attempts < @max_reconnect_attempts do
-        Log.module_info(
+        Log.info(
           "Attempting SSH reconnect (#{state.reconnect_attempts + 1}/#{@max_reconnect_attempts})"
         )
 

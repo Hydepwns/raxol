@@ -116,7 +116,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
     # Subscribe to telemetry events
     :ok = attach_telemetry_handlers()
 
-    Log.module_info("Automated performance monitor initialized")
+    Log.info("Automated performance monitor initialized")
     {:ok, state}
   end
 
@@ -141,7 +141,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
             baseline_metrics: baseline
         }
 
-        Log.module_info("Automated performance monitoring started", %{
+        Log.info("Automated performance monitoring started", %{
           thresholds: state.thresholds,
           baseline: baseline
         })
@@ -153,7 +153,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
   @impl true
   def handle_manager_call(:stop_monitoring, _from, state) do
     new_state = %{state | monitoring_enabled: false}
-    Log.module_info("Automated performance monitoring stopped")
+    Log.info("Automated performance monitoring stopped")
     {:reply, :ok, new_state}
   end
 
@@ -192,7 +192,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
     updated_thresholds = Map.merge(state.thresholds, new_thresholds)
     new_state = %{state | thresholds: updated_thresholds}
 
-    Log.module_info("Performance thresholds updated", %{
+    Log.info("Performance thresholds updated", %{
       new_thresholds: new_thresholds
     })
 

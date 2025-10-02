@@ -320,7 +320,7 @@ defmodule Raxol.Core.ErrorHandler do
 
     case severity do
       :debug -> Log.module_debug(message, metadata)
-      :info -> Log.module_info(message, metadata)
+      :info -> Log.info(message, metadata)
       :warning -> Log.module_warning(message, metadata)
       :error -> Log.module_error(message, metadata)
       :critical -> Log.module_error("[CRITICAL] #{message}", metadata)
@@ -390,7 +390,7 @@ defmodule Raxol.Core.ErrorHandler do
 
   @spec log_retry(any(), any(), any()) :: any()
   defp log_retry(operation, error, retries_left) do
-    Log.module_info(
+    Log.info(
       "[#{operation}] Retrying after error: #{inspect(error)}. Retries left: #{retries_left}"
     )
   end

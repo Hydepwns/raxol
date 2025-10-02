@@ -127,7 +127,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
       performance_monitor: start_performance_monitor(opts)
     }
 
-    Log.module_info("Initialized with enhanced capabilities")
+    Log.info("Initialized with enhanced capabilities")
     {:ok, state}
   end
 
@@ -205,28 +205,26 @@ defmodule Raxol.Plugins.PluginSystemV2 do
 
   defp install_plugin_impl(source, _opts, state) do
     # Implementation will be added in next steps
-    Log.module_info("Installing plugin from #{inspect(source)}")
+    Log.info("Installing plugin from #{inspect(source)}")
     {:ok, state}
   end
 
   defp load_plugin_with_deps(plugin_id, _opts, state) do
     # Implementation will be added in next steps
-    Log.module_info(
-      "[PluginSystemV2] Loading plugin with dependencies: #{plugin_id}"
-    )
+    Log.info("[PluginSystemV2] Loading plugin with dependencies: #{plugin_id}")
 
     {:ok, state}
   end
 
   defp hot_reload_plugin_impl(plugin_id, _opts, state) do
     # Implementation will be added in next steps
-    Log.module_info("Hot-reloading plugin: #{plugin_id}")
+    Log.info("Hot-reloading plugin: #{plugin_id}")
     {:ok, state}
   end
 
   defp resolve_dependencies_impl(manifest, _state) do
     # Implementation will be added in next steps
-    Log.module_info("Resolving dependencies for #{manifest.name}")
+    Log.info("Resolving dependencies for #{manifest.name}")
     {:ok, []}
   end
 
@@ -248,7 +246,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
 
   defp list_marketplace_plugins_impl(filters, _state) do
     # Implementation will be added in next steps
-    Log.module_info(
+    Log.info(
       "[PluginSystemV2] Listing marketplace plugins with filters: #{inspect(filters)}"
     )
 
@@ -257,7 +255,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
 
   defp create_sandbox_impl(plugin_id, _security_policy, state) do
     # Implementation will be added in next steps
-    Log.module_info("Creating sandbox for #{plugin_id}")
+    Log.info("Creating sandbox for #{plugin_id}")
     {:ok, state}
   end
 

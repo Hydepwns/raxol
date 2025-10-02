@@ -183,7 +183,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
     # Every minute
     _ = :timer.send_interval(60_000, :cleanup_cache)
 
-    Log.module_info("Key manager initialized")
+    Log.info("Key manager initialized")
     {:ok, state}
   end
 
@@ -353,7 +353,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
   defp init_hsm_client(hsm_config) do
     # Initialize HSM connection
     # This would connect to actual HSM in production
-    Log.module_info("HSM client initialized (simulated)")
+    Log.info("HSM client initialized (simulated)")
     %{connected: true, config: hsm_config}
   end
 
@@ -875,7 +875,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
   defp process_key_rotation(true, key_id, acc_state) do
     case rotate_encryption_key(key_id, acc_state) do
       {:ok, _new_version, new_state} ->
-        Log.module_info("Automatically rotated key #{key_id}")
+        Log.info("Automatically rotated key #{key_id}")
         new_state
 
       {:error, reason} ->

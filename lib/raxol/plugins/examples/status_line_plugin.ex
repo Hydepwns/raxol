@@ -58,7 +58,7 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
   # Initialization
   @impl true
   def init_manager(config) do
-    Log.module_info("Initializing with config: #{inspect(config)}")
+    Log.info("Initializing with config: #{inspect(config)}")
 
     state = %__MODULE__{
       config: config,

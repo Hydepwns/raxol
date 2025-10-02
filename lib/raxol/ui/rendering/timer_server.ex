@@ -167,7 +167,7 @@ defmodule Raxol.UI.Rendering.TimerServer do
       }
     }
 
-    Log.module_info("Started with options: #{inspect(opts)}")
+    Log.info("Started with options: #{inspect(opts)}")
     {:ok, state}
   end
 
@@ -289,7 +289,7 @@ defmodule Raxol.UI.Rendering.TimerServer do
 
     new_stats = %{state.stats | active_timers: 0}
 
-    Log.module_info("Stopped all timers")
+    Log.info("Stopped all timers")
 
     %{state | timers: %{}, target_pids: %{}, intervals: %{}, stats: new_stats}
   end

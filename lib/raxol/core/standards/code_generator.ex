@@ -61,7 +61,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
           #{_format_initial_state(state_fields, opts)}
         }
 
-        Log.module_info("#{module_name} started with options: \#{inspect(opts)}")
+        Log.info("#{module_name} started with options: \#{inspect(opts)}")
         {:ok, state}
       end
 

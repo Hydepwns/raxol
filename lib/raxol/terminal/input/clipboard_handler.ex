@@ -303,7 +303,7 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
     if force_osc52 or should_use_osc52?() do
       case generate_osc52_copy(text, options) do
         {:ok, sequence} ->
-          Log.module_info("Generated OSC 52 clipboard copy sequence")
+          Log.info("Generated OSC 52 clipboard copy sequence")
           {:ok, {:osc52, sequence}}
 
         error ->
@@ -318,9 +318,7 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
           # Fallback to OSC 52
           case generate_osc52_copy(text, options) do
             {:ok, sequence} ->
-              Log.module_info(
-                "Falling back to OSC 52 after local clipboard failure"
-              )
+              Log.info("Falling back to OSC 52 after local clipboard failure")
 
               {:ok, {:osc52, sequence}}
 
@@ -339,7 +337,7 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
       # This is more complex and usually handled at a higher level
       case generate_osc52_query(Map.get(options, :target, :clipboard)) do
         {:ok, sequence} ->
-          Log.module_info("Generated OSC 52 clipboard query sequence")
+          Log.info("Generated OSC 52 clipboard query sequence")
           {:ok, {:osc52_query, sequence}}
 
         error ->

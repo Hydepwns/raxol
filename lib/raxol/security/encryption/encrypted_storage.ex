@@ -162,9 +162,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     # Start async encryption worker
     _ = start_async_encryption_worker(config[:async_encryption])
 
-    Log.module_info(
-      "Encrypted storage initialized with backend: #{config.backend}"
-    )
+    Log.info("Encrypted storage initialized with backend: #{config.backend}")
 
     {:ok, state}
   end
@@ -737,7 +735,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
         end
       end)
 
-    Log.module_info("Re-encrypted #{count} items with new key")
+    Log.info("Re-encrypted #{count} items with new key")
     {:ok, count, new_state}
   end
 

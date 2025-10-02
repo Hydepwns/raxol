@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Supervisor do
            {Raxol.Terminal.TerminalProcess, terminal_config}
          ) do
       {:ok, pid} ->
-        Log.module_info(
+        Log.info(
           "Started terminal #{terminal_config.terminal_id} with pid #{inspect(pid)}"
         )
 
@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.Supervisor do
                pid
              ) do
           :ok ->
-            Log.module_info("Stopped terminal #{terminal_id}")
+            Log.info("Stopped terminal #{terminal_id}")
             :ok
 
           {:error, reason} ->

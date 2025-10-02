@@ -216,7 +216,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
       stats: init_stats()
     }
 
-    Log.module_info(
+    Log.info(
       "Adaptive frame rate initialized: target=#{config.target_fps}fps, strategy=#{config.strategy}"
     )
 
@@ -244,7 +244,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     # Recalculate optimal FPS with new power mode
     updated_state = calculate_optimal_fps(new_state)
 
-    Log.module_info(
+    Log.info(
       "Power mode changed to #{power_mode}, new FPS: #{updated_state.current_fps}"
     )
 
@@ -259,7 +259,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     # Recalculate with new strategy
     updated_state = calculate_optimal_fps(new_state)
 
-    Log.module_info(
+    Log.info(
       "Strategy changed to #{strategy}, new FPS: #{updated_state.current_fps}"
     )
 
@@ -276,7 +276,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
         config: Map.put(state.config, :forced_fps, clamped_fps)
     }
 
-    Log.module_info("FPS forced to #{clamped_fps}")
+    Log.info("FPS forced to #{clamped_fps}")
     {:reply, :ok, new_state}
   end
 
@@ -288,7 +288,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     # Recalculate optimal FPS
     updated_state = calculate_optimal_fps(new_state)
 
-    Log.module_info("Resumed adaptive FPS: #{updated_state.current_fps}")
+    Log.info("Resumed adaptive FPS: #{updated_state.current_fps}")
     {:reply, :ok, updated_state}
   end
 
@@ -297,7 +297,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     new_config = %{state.config | enable_vsync: enabled}
     new_state = %{state | config: new_config}
 
-    Log.module_info("VSync #{get_vsync_status(enabled)}")
+    Log.info("VSync #{get_vsync_status(enabled)}")
     {:reply, :ok, new_state}
   end
 
@@ -423,7 +423,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
   defp apply_throttling_if_needed(true, state, throttle_factor) do
     new_fps = round(state.current_fps * throttle_factor)
 
-    Log.module_info(
+    Log.info(
       "Thermal throttling applied: #{state.current_fps} -> #{new_fps} fps"
     )
 

@@ -117,7 +117,7 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
 
     @impl true
     def handle_call({:restore_context, context}, _from, state) do
-      Log.module_info("Restoring context for TestWorker: #{inspect(state.id)}")
+      Log.info("Restoring context for TestWorker: #{inspect(state.id)}")
 
       updated_state = %{
         state
@@ -189,7 +189,7 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
 
     @impl true
     def handle_info({:restore_context, context}, state) do
-      Log.module_info("Restoring context for TestWorker: #{inspect(state.id)}")
+      Log.info("Restoring context for TestWorker: #{inspect(state.id)}")
 
       updated_state = %{
         state

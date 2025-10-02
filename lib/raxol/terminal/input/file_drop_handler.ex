@@ -261,9 +261,7 @@ defmodule Raxol.Terminal.Input.FileDropHandler do
 
     case start_file_watcher(file_paths, callbacks) do
       {:ok, watcher_pid} ->
-        Log.module_info(
-          "Started file watcher for #{length(files)} dropped files"
-        )
+        Log.info("Started file watcher for #{length(files)} dropped files")
 
         {:ok, watcher_pid}
 

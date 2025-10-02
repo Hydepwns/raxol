@@ -398,7 +398,7 @@ defmodule Raxol.System.Updater.Core do
   end
 
   defp do_delta_update(version, delta_info) do
-    Log.module_info(
+    Log.info(
       "Delta update available (#{delta_info.savings_percent}% smaller download)"
     )
 

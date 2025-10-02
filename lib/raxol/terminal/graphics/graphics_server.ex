@@ -446,13 +446,11 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
       cache_pid: cache_pid
     }
 
-    Log.module_info(
+    Log.info(
       "GraphicsServer initialized with support: #{inspect(graphics_support)}"
     )
 
-    Log.module_info(
-      "Image cache #{if cache_enabled, do: "enabled", else: "disabled"}"
-    )
+    Log.info("Image cache #{if cache_enabled, do: "enabled", else: "disabled"}")
 
     {:ok, state}
   end

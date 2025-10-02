@@ -283,7 +283,7 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
 
   @spec cleanup_plugin_resources(String.t() | integer()) :: any()
   defp cleanup_plugin_resources(plugin_id) do
-    Log.module_info("Cleaning up resources for plugin: #{plugin_id}")
+    Log.info("Cleaning up resources for plugin: #{plugin_id}")
     # Clean up any resources (files, connections, etc.)
     :ok
   end

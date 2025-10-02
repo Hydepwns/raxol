@@ -75,7 +75,7 @@ defmodule Raxol.Application do
 
   @impl Application
   def stop(_state) do
-    Log.module_info("Shutting down...")
+    Log.info("Shutting down...")
     :ok
   end
 
@@ -115,7 +115,7 @@ defmodule Raxol.Application do
       )
     end
 
-    Log.module_info("Starting in #{mode} mode")
+    Raxol.Core.Runtime.Log.info("Starting in #{mode} mode")
   end
 
   # Children Configuration
@@ -301,15 +301,13 @@ defmodule Raxol.Application do
           System.get_env("RAXOL_FORCE_TERMINAL")} do
       # Skip terminal driver in minimal mode
       {_, _, "minimal", _} ->
-        Log.module_info(
-          "[Raxol.Application] Minimal mode - terminal driver disabled"
-        )
+        Log.info("[Raxol.Application] Minimal mode - terminal driver disabled")
 
         []
 
       # Skip terminal driver on Fly.io
       {_, fly_app, _, _} when is_binary(fly_app) ->
-        Log.module_info(
+        Log.info(
           "[Raxol.Application] Running on Fly.io (#{fly_app}) - terminal driver disabled"
         )
 
@@ -375,7 +373,7 @@ defmodule Raxol.Application do
     try do
       case Supervisor.start_link(children, opts) do
         {:ok, pid} = success ->
-          Log.module_info(
+          Log.info(
             "[Raxol.Application] Supervisor started successfully: #{inspect(pid)}"
           )
 
@@ -521,7 +519,7 @@ defmodule Raxol.Application do
     )
 
     if success do
-      Log.module_info("Started in #{duration}μs (#{mode} mode)")
+      Log.info("Started in #{duration}μs (#{mode} mode)")
     end
   end
 

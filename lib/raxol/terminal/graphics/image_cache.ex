@@ -257,7 +257,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
       cleanup_timer: cleanup_timer
     }
 
-    Log.module_info("ImageCache started with config: #{inspect(final_config)}")
+    Log.info("ImageCache started with config: #{inspect(final_config)}")
     {:ok, initial_state}
   end
 

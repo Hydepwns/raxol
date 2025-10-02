@@ -59,9 +59,7 @@ defmodule StateManager do
 
       StateManager.set_state(metadata_key, metadata)
 
-      Log.module_info(
-        "Initialized state for plugin #{plugin_id} (#{plugin_module})"
-      )
+      Log.info("Initialized state for plugin #{plugin_id} (#{plugin_module})")
 
       {:ok, initial_state}
     rescue
@@ -224,7 +222,7 @@ defmodule StateManager do
   def remove_plugin(plugin_id) do
     StateManager.delete_state([:plugins, :states, plugin_id])
     StateManager.delete_state([:plugins, :metadata, plugin_id])
-    Log.module_info("Removed state for plugin #{plugin_id}")
+    Log.info("Removed state for plugin #{plugin_id}")
     :ok
   end
 
@@ -240,7 +238,7 @@ defmodule StateManager do
       initialized_at: :os.system_time(:millisecond)
     })
 
-    Log.module_info("Plugin state manager initialized")
+    Log.info("Plugin state manager initialized")
     {:ok, state}
   end
 
@@ -250,7 +248,7 @@ defmodule StateManager do
   @spec cleanup() :: :ok
   def cleanup do
     StateManager.delete_state([:plugins])
-    Log.module_info("Plugin state manager cleaned up")
+    Log.info("Plugin state manager cleaned up")
     :ok
   end
 

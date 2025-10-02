@@ -104,7 +104,7 @@ defmodule Raxol.Security.Encryption.Config do
       retention_policies: init_retention_policies()
     }
 
-    Log.module_info("Encryption configuration initialized")
+    Log.info("Encryption configuration initialized")
     {:ok, state}
   end
 

@@ -403,7 +403,7 @@ defmodule Raxol.Terminal.SessionManager do
     restored_sessions = restore_persisted_sessions(state)
     final_state = %{state | sessions: restored_sessions}
 
-    Log.module_info(
+    Log.info(
       "Session manager started with #{map_size(restored_sessions)} restored sessions"
     )
 
@@ -416,7 +416,7 @@ defmodule Raxol.Terminal.SessionManager do
 
     case create_new_session(session_id, name, config, state) do
       {:ok, session, new_state} ->
-        Log.module_info("Created session '#{name}' (#{session_id})")
+        Log.info("Created session '#{name}' (#{session_id})")
         {:reply, {:ok, session}, new_state}
 
       {:error, reason} ->
@@ -451,7 +451,7 @@ defmodule Raxol.Terminal.SessionManager do
         updated_sessions = Map.delete(new_state.sessions, session_id)
         final_state = %{new_state | sessions: updated_sessions}
 
-        Log.module_info("Destroyed session '#{session.name}' (#{session_id})")
+        Log.info("Destroyed session '#{session.name}' (#{session_id})")
         {:reply, :ok, final_state}
     end
   end
@@ -480,9 +480,7 @@ defmodule Raxol.Terminal.SessionManager do
             clients: updated_clients
         }
 
-        Log.module_info(
-          "Client #{client_id} attached to session '#{session.name}'"
-        )
+        Log.info("Client #{client_id} attached to session '#{session.name}'")
 
         {:reply, {:ok, client}, new_state}
     end
@@ -513,7 +511,7 @@ defmodule Raxol.Terminal.SessionManager do
             clients: updated_clients
         }
 
-        Log.module_info("Client #{client_id} detached from session")
+        Log.info("Client #{client_id} detached from session")
         {:reply, :ok, new_state}
     end
   end
@@ -869,7 +867,7 @@ defmodule Raxol.Terminal.SessionManager do
   defp restore_session_from_file(file) do
     with {:ok, data} <- File.read(file),
          {:ok, session} <- deserialize_session(data) do
-      Log.module_info("Restored session '#{session.name}' from #{file}")
+      Log.info("Restored session '#{session.name}' from #{file}")
       {:ok, session}
     else
       {:error, reason} ->
@@ -916,7 +914,7 @@ defmodule Raxol.Terminal.SessionManager do
   defp start_network_server(port) do
     # Placeholder for network server to enable remote sessions
     # In practice, would start a TCP/WebSocket server
-    Log.module_info("Session sharing server started on port #{port}")
+    Log.info("Session sharing server started on port #{port}")
     %{port: port, enabled: true}
   end
 
@@ -1004,9 +1002,7 @@ defmodule Raxol.Terminal.SessionManager do
         updated_sessions = Map.put(state.sessions, session_id, updated_session)
         new_state = %{state | sessions: updated_sessions}
 
-        Log.module_info(
-          "Created window '#{window_name}' in session #{session_id}"
-        )
+        Log.info("Created window '#{window_name}' in session #{session_id}")
 
         {:reply, {:ok, new_window}, new_state}
 
@@ -1060,7 +1056,7 @@ defmodule Raxol.Terminal.SessionManager do
   defp cleanup_expired_sessions_if_any([], _active, state), do: state
 
   defp cleanup_expired_sessions_if_any(expired, active, state) do
-    Log.module_info("Cleaning up #{length(expired)} expired sessions")
+    Log.info("Cleaning up #{length(expired)} expired sessions")
 
     # Cleanup each expired session
     Enum.each(expired, fn {_id, session} ->

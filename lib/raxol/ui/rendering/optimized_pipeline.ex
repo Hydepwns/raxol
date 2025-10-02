@@ -411,7 +411,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   """
   def enable_gpu_acceleration do
     # This would interface with GPU rendering libraries
-    Log.module_info("GPU acceleration enabled")
+    Log.info("GPU acceleration enabled")
     :ok
   end
 

@@ -85,7 +85,7 @@ defmodule Raxol.Storage.EventStorage.Distributed do
       consistency_level: config.consistency_level
     }
 
-    Log.module_info(
+    Log.info(
       "Distributed event storage initialized with replication factor #{config.replication_factor}"
     )
 

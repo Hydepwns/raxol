@@ -239,7 +239,7 @@ defmodule Raxol.Security.UserContext.ContextServer do
     audit_log = [entry | state.audit_log] |> Enum.take(state.max_audit_entries)
 
     # Log for external systems if needed
-    Log.module_info("Security audit: User #{user} performed #{action}", entry)
+    Log.info("Security audit: User #{user} performed #{action}", entry)
 
     {:noreply, %{state | audit_log: audit_log}}
   end

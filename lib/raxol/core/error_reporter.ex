@@ -116,7 +116,7 @@ defmodule Raxol.Core.ErrorReporter do
       last_report_time: DateTime.utc_now()
     }
 
-    Log.module_info("ErrorReporter started with session ID: #{session_id}")
+    Log.info("ErrorReporter started with session ID: #{session_id}")
     {:ok, state}
   end
 
@@ -211,7 +211,7 @@ defmodule Raxol.Core.ErrorReporter do
     updated_config = Map.merge(state.config, new_config)
     new_state = %{state | config: updated_config}
 
-    Log.module_info("ErrorReporter configuration updated")
+    Log.info("ErrorReporter configuration updated")
     {:reply, {:ok, updated_config}, new_state}
   end
 
@@ -496,7 +496,7 @@ defmodule Raxol.Core.ErrorReporter do
     filepath = Path.join(state.reports_dir, filename)
 
     File.write!(filepath, report)
-    Log.module_info("Error report saved to: #{filepath}")
+    Log.info("Error report saved to: #{filepath}")
   end
 
   defp ensure_reports_directory do

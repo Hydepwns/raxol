@@ -307,7 +307,7 @@ defmodule Raxol.Audit.Logger do
 
     state = Map.put(state, :timers, timers)
 
-    Log.module_info("Audit logger initialized with config: #{inspect(config)}")
+    Log.info("Audit logger initialized with config: #{inspect(config)}")
     {:ok, state}
   end
 
@@ -684,7 +684,7 @@ defmodule Raxol.Audit.Logger do
 
     case verify_log_integrity(state, start_time, end_time) do
       :ok ->
-        Log.module_info("Daily integrity check passed")
+        Log.info("Daily integrity check passed")
 
       {:error, reason} ->
         Log.module_error("Daily integrity check failed: #{inspect(reason)}")

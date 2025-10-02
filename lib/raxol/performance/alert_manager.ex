@@ -94,7 +94,7 @@ defmodule Raxol.Performance.AlertManager do
     # Start cleanup timer
     :timer.send_interval(60_000, :cleanup_alerts)
 
-    Log.module_info("Performance AlertManager initialized", %{
+    Log.info("Performance AlertManager initialized", %{
       channels: Map.keys(state.alert_channels),
       integrations: Map.keys(state.external_integrations)
     })
@@ -139,7 +139,7 @@ defmodule Raxol.Performance.AlertManager do
 
         new_state = %{state | active_alerts: new_active_alerts}
 
-        Log.module_info("Alert acknowledged", %{
+        Log.info("Alert acknowledged", %{
           alert_id: alert_id,
           user: user_info,
           type: alert.type
@@ -181,7 +181,7 @@ defmodule Raxol.Performance.AlertManager do
         # Send resolution notification
         send_resolution_notification(resolved_alert, new_state)
 
-        Log.module_info("Alert resolved", %{
+        Log.info("Alert resolved", %{
           alert_id: alert_id,
           user: resolution_info.user,
           type: alert.type,
@@ -197,7 +197,7 @@ defmodule Raxol.Performance.AlertManager do
     new_channels = Map.merge(state.alert_channels, channel_config)
     new_state = %{state | alert_channels: new_channels}
 
-    Log.module_info("Alert channels updated", %{
+    Log.info("Alert channels updated", %{
       channels: Map.keys(new_channels)
     })
 
@@ -348,7 +348,7 @@ defmodule Raxol.Performance.AlertManager do
     # Send alert notifications
     case send_alert_notifications(alert, new_state) do
       :ok ->
-        Log.module_info("Performance alert sent", %{
+        Log.info("Performance alert sent", %{
           alert_id: alert_id,
           type: alert.type,
           severity: severity,
@@ -509,7 +509,7 @@ defmodule Raxol.Performance.AlertManager do
   end
 
   defp send_alert_update(alert, state) do
-    Log.module_info("Alert occurrence threshold reached", %{
+    Log.info("Alert occurrence threshold reached", %{
       alert_id: alert.id,
       occurrences: alert.occurrence_count,
       duration_ms: System.system_time(:millisecond) - alert.created_at
@@ -557,7 +557,7 @@ defmodule Raxol.Performance.AlertManager do
   end
 
   defp send_resolution_notification(alert, state) do
-    Log.module_info("Sending alert resolution notification", %{
+    Log.info("Sending alert resolution notification", %{
       alert_id: alert.id
     })
 

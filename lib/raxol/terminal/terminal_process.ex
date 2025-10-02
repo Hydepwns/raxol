@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.TerminalProcess do
     # Start initialization in background
     send(self(), :initialize_terminal)
 
-    Log.module_info("Terminal process started: #{terminal_config.terminal_id}")
+    Log.info("Terminal process started: #{terminal_config.terminal_id}")
     {:ok, state}
   end
 
@@ -160,9 +160,7 @@ defmodule Raxol.Terminal.TerminalProcess do
   def handle_manager_info(:initialize_terminal, state) do
     case initialize_terminal_components(state) do
       {:ok, new_state} ->
-        Log.module_info(
-          "Terminal #{state.terminal_id} initialized successfully"
-        )
+        Log.info("Terminal #{state.terminal_id} initialized successfully")
 
         {:noreply, %{new_state | state: :active}}
 
@@ -184,9 +182,7 @@ defmodule Raxol.Terminal.TerminalProcess do
 
   @impl true
   def terminate(reason, state) do
-    Log.module_info(
-      "Terminal #{state.terminal_id} terminating: #{inspect(reason)}"
-    )
+    Log.info("Terminal #{state.terminal_id} terminating: #{inspect(reason)}")
 
     # Clean up resources
     cleanup_terminal_resources(state)

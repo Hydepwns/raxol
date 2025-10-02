@@ -218,7 +218,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
     # Announce this node to the cluster
     announce_node_join(state)
 
-    Log.module_info("Distributed session registry started on node #{node_id}")
+    Log.info("Distributed session registry started on node #{node_id}")
 
     {:ok, state}
   end
@@ -404,7 +404,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
   @impl true
   def handle_manager_info({:node_joined, node_id}, state) do
-    Log.module_info("Node #{node_id} joined the cluster")
+    Log.info("Node #{node_id} joined the cluster")
     new_state = handle_node_join(node_id, state)
     {:noreply, new_state}
   end

@@ -378,7 +378,7 @@ defmodule Raxol.Core.CircuitBreaker do
 
   @spec transition_to_open(map()) :: any()
   defp transition_to_open(state) do
-    Log.module_info("Circuit breaker #{state.name} transitioning to OPEN")
+    Log.info("Circuit breaker #{state.name} transitioning to OPEN")
     state.on_state_change.(state.state, :open)
 
     # Schedule transition to half-open
@@ -389,7 +389,7 @@ defmodule Raxol.Core.CircuitBreaker do
 
   @spec transition_to_half_open(map()) :: any()
   defp transition_to_half_open(state) do
-    Log.module_info("Circuit breaker #{state.name} transitioning to HALF-OPEN")
+    Log.info("Circuit breaker #{state.name} transitioning to HALF-OPEN")
     state.on_state_change.(state.state, :half_open)
 
     %{
@@ -403,7 +403,7 @@ defmodule Raxol.Core.CircuitBreaker do
 
   @spec transition_to_closed(map()) :: any()
   defp transition_to_closed(state) do
-    Log.module_info("Circuit breaker #{state.name} transitioning to CLOSED")
+    Log.info("Circuit breaker #{state.name} transitioning to CLOSED")
     state.on_state_change.(state.state, :closed)
 
     %{

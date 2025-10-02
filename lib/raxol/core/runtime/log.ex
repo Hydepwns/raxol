@@ -33,7 +33,7 @@ defmodule Raxol.Core.Runtime.Log do
       end)
 
       # Module-aware logging (automatically detects calling module)
-      Log.module_info("Operation completed")
+      Log.info("Operation completed")
 
       # Migration from IO.puts
       Log.console("Debug output for development")
@@ -64,7 +64,7 @@ defmodule Raxol.Core.Runtime.Log do
   end
 
   def info_with_context(msg, context) do
-    Log.module_info("#{msg} | Context: #{inspect(context)}")
+    Log.info("#{msg} | Context: #{inspect(context)}")
   end
 
   def debug_with_context(msg, context) do
@@ -94,7 +94,7 @@ defmodule Raxol.Core.Runtime.Log do
       end
 
     case level do
-      :info -> Log.module_info(message)
+      :info -> Log.info(message)
       :debug -> Log.module_debug(message)
       :warn -> Log.module_warning(message)
       :error -> Log.module_error(message)
@@ -296,7 +296,7 @@ defmodule Raxol.Core.Runtime.Log do
     Logger.metadata(metadata)
 
     case level do
-      :info -> Log.module_info(msg)
+      :info -> Log.info(msg)
       :debug -> Log.module_debug(msg)
       :warn -> Log.module_warning(msg)
       :error -> Log.module_error(msg)

@@ -264,7 +264,7 @@ defmodule Raxol.Debug do
         Application.put_env(:raxol, :debug_mode, true)
     end
 
-    Log.module_info("Debug mode enabled for #{component}")
+    Log.info("Debug mode enabled for #{component}")
     :ok
   end
 
@@ -296,7 +296,7 @@ defmodule Raxol.Debug do
         Application.put_env(:raxol, :debug_mode, false)
     end
 
-    Log.module_info("Debug mode disabled for #{component}")
+    Log.info("Debug mode disabled for #{component}")
     :ok
   end
 

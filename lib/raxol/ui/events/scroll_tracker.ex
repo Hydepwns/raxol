@@ -39,7 +39,7 @@ defmodule Raxol.UI.Events.ScrollTracker do
       virtual_viewport: nil
     }
 
-    Log.module_info("Scroll tracker initialized")
+    Log.info("Scroll tracker initialized")
     {:ok, state}
   end
 

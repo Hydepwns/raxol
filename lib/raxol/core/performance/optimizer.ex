@@ -470,7 +470,7 @@ defmodule Raxol.Core.Performance.Optimizer do
 
     case Registry.start_link(keys: :unique, name: registry_name) do
       {:ok, _pid} ->
-        Log.module_info("Initialized simple connection pool: #{pool_name}")
+        Log.info("Initialized simple connection pool: #{pool_name}")
         {:ok, pool_name}
 
       {:error, {:already_started, _pid}} ->
