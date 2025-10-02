@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Log do
-  alias Raxol.Core.Runtime.Log
+  require Logger
 
   @moduledoc """
   Centralized logging system for Raxol with structured context, performance tracking,
@@ -56,7 +56,7 @@ defmodule Raxol.Core.Runtime.Log do
   Logs a warning with context.
   """
   def warning_with_context(msg, context) do
-    Log.warning("#{msg} | Context: #{inspect(context)}")
+    warning("#{msg} | Context: #{inspect(context)}")
   end
 
   def info_with_context(msg) do
@@ -64,15 +64,15 @@ defmodule Raxol.Core.Runtime.Log do
   end
 
   def info_with_context(msg, context) do
-    Log.info("#{msg} | Context: #{inspect(context)}")
+    info("#{msg} | Context: #{inspect(context)}")
   end
 
   def debug_with_context(msg, context) do
-    Log.debug("#{msg} | Context: #{inspect(context)}")
+    debug("#{msg} | Context: #{inspect(context)}")
   end
 
   def error_with_context(msg, context) do
-    Log.error("#{msg} | Context: #{inspect(context)}")
+    error("#{msg} | Context: #{inspect(context)}")
   end
 
   def info(msg), do: log(:info, msg)
@@ -94,10 +94,10 @@ defmodule Raxol.Core.Runtime.Log do
       end
 
     case level do
-      :info -> Log.info(message)
-      :debug -> Log.debug(message)
-      :warn -> Log.warning(message)
-      :error -> Log.error(message)
+      :info -> Logger.info(message)
+      :debug -> Logger.debug(message)
+      :warn -> Logger.warning(message)
+      :error -> Logger.error(message)
     end
   end
 
@@ -145,7 +145,7 @@ defmodule Raxol.Core.Runtime.Log do
     case Application.get_env(:raxol, :environment, :prod) do
       env when env in [:dev, :test] ->
         formatted = format_console_message(msg, context)
-        Log.info(formatted)
+        info(formatted)
 
       _ ->
         debug(msg, context)
@@ -296,10 +296,10 @@ defmodule Raxol.Core.Runtime.Log do
     Logger.metadata(metadata)
 
     case level do
-      :info -> Log.info(msg)
-      :debug -> Log.debug(msg)
-      :warn -> Log.warning(msg)
-      :error -> Log.error(msg)
+      :info -> Logger.info(msg)
+      :debug -> Logger.debug(msg)
+      :warn -> Logger.warning(msg)
+      :error -> Logger.error(msg)
     end
 
     # Clear metadata to avoid pollution

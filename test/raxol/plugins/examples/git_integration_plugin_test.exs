@@ -11,6 +11,18 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
   end
   defp safe_stop(_), do: :ok
 
+  # Helper to create a temporary directory for testing
+  defp create_temp_directory do
+    temp_dir = Path.join(System.tmp_dir!(), "git_test_#{:erlang.unique_integer([:positive])}")
+    File.mkdir_p!(temp_dir)
+    temp_dir
+  end
+
+  # Helper to clean up temporary directory
+  defp cleanup_temp_directory(path) do
+    File.rm_rf!(path)
+  end
+
   describe "plugin manifest" do
     test "has valid manifest structure" do
       assert {:ok, manifest} = validate_manifest(GitIntegrationPlugin)
