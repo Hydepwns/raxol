@@ -12,7 +12,6 @@ defmodule Raxol.Terminal.CommandProcessor do
   alias Raxol.Terminal.Commands.CommandsParser, as: Parser
 
   alias Raxol.Terminal.Emulator
-  require Raxol.Core.Runtime.Log
 
   @doc """
   Processes a command string and executes it on the emulator.

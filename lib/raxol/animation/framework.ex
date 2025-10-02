@@ -50,12 +50,13 @@ defmodule Raxol.Animation.Framework do
   - If you provide a fully qualified path (e.g., `[:elements, "foo", :opacity]`), it will be used as-is.
   """
 
-  require Raxol.Core.Runtime.Log
   alias Raxol.Animation.Adaptation
   alias Raxol.Animation.AnimationProcessor, as: Processor
   alias Raxol.Animation.Lifecycle
   alias Raxol.Animation.StateManager, as: StateManager
   alias Raxol.Core.Runtime.ProcessStore
+
+  require Raxol.Core.Runtime.Log
 
   @animation_fps 30
   @animation_frame_ms round(1000 / @animation_fps)

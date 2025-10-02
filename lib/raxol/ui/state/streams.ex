@@ -18,7 +18,6 @@ defmodule Raxol.UI.State.Streams do
   """
 
   alias Raxol.UI.State.Store
-  alias Raxol.Core.Runtime.Log
   # Observable definition
   defmodule Observable do
     @enforce_keys [:subscribe_fn]
@@ -187,7 +186,10 @@ defmodule Raxol.UI.State.Streams do
         :ok
       else
         {:error, reason} ->
-          Log.module_warning("Observer function failed: #{inspect(reason)}")
+          Raxol.Core.Runtime.Log.module_warning(
+            "Observer function failed: #{inspect(reason)}"
+          )
+
           :ok
       end
     end
@@ -342,7 +344,10 @@ defmodule Raxol.UI.State.Streams do
         result
 
       {:error, error} ->
-        Log.module_error("Store subscription failed: #{inspect(error)}")
+        Raxol.Core.Runtime.Log.module_error(
+          "Store subscription failed: #{inspect(error)}"
+        )
+
         fn -> :ok end
     end
   end
@@ -470,8 +475,8 @@ defmodule Raxol.UI.State.Streams do
     Observable.new(fn observer ->
       {:ok, debouncer} =
         Raxol.UI.State.Streams.DebouncerServer.start_link(
-          observer,
-          milliseconds
+          name: {:local, :"debouncer_#{System.unique_integer([:positive])}"},
+          config: {observer, milliseconds}
         )
 
       new_observer =
@@ -511,7 +516,8 @@ defmodule Raxol.UI.State.Streams do
     end
 
     @impl true
-    def init_manager({observer, delay}) do
+    def init_manager(opts) do
+      {observer, delay} = Keyword.get(opts, :config)
       {:ok, %{observer: observer, delay: delay, timer: nil, last_value: nil}}
     end
 
@@ -580,7 +586,10 @@ defmodule Raxol.UI.State.Streams do
   def combine_latest(observables) when is_list(observables) do
     Observable.new(fn observer ->
       {:ok, combiner} =
-        Raxol.UI.State.Streams.CombinerServer.start_link(observables, observer)
+        Raxol.UI.State.Streams.CombinerServer.start_link(
+          name: {:local, :"combiner_#{System.unique_integer([:positive])}"},
+          config: {length(observables), observer}
+        )
 
       # Subscribe to all observables
       subscriptions =
@@ -638,7 +647,9 @@ defmodule Raxol.UI.State.Streams do
     end
 
     @impl true
-    def init_manager({count, observer}) do
+    def init_manager(opts) do
+      {count, observer} = Keyword.get(opts, :config)
+
       {:ok,
        %{
          values: List.duplicate(nil, count),
@@ -674,18 +685,16 @@ defmodule Raxol.UI.State.Streams do
 
     defp handle_combiner_update(state, index, value) do
       new_values = List.replace_at(state.values, index, value)
-      new_has_value = List.replace_at(state.has_value_flags, index, true)
+      new_has_value = List.replace_at(state.has_value, index, true)
 
       case Enum.all?(new_has_value) do
         true ->
           Raxol.UI.State.Streams.safe_apply(state.observer.next, new_values)
 
-          {:noreply,
-           %{state | values: new_values, has_value_flags: new_has_value}}
+          {:noreply, %{state | values: new_values, has_value: new_has_value}}
 
         false ->
-          {:noreply,
-           %{state | values: new_values, has_value_flags: new_has_value}}
+          {:noreply, %{state | values: new_values, has_value: new_has_value}}
       end
     end
 

@@ -237,7 +237,6 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
         busy_wait(start_time, duration_ms)
       end
     end
-
   end
 
   # Fault Injection Utilities

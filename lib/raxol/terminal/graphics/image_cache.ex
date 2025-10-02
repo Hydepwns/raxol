@@ -92,20 +92,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
     :cleanup_timer
   ]
 
-  @doc """
-  Starts the image cache server.
-
-  ## Parameters
-
-  * `config` - Cache configuration options
-
-  ## Returns
-
-  * `{:ok, pid}` - Successfully started cache server
-  * `{:error, reason}` - Failed to start
-  """
-
-  # BaseManager provides start_link
+  # BaseManager provides start_link/1 which handles the configuration
 
   @doc """
   Retrieves a cached image by key.

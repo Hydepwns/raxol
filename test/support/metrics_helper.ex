@@ -116,7 +116,7 @@ defmodule Raxol.Test.MetricsHelper do
       :ok
   """
   def record_test_metric(name, type, value, opts \\ []) do
-    Raxol.Core.Metrics.UnifiedCollector.record_metric(name, type, value, opts)
+    Raxol.Core.Metrics.MetricsCollector.record_metric(name, type, value, opts)
   end
 
   @doc """
@@ -139,10 +139,10 @@ defmodule Raxol.Test.MetricsHelper do
   def verify_metric(name, type, expected_value, opts \\ []) do
     expected_tags = Keyword.get(opts, :tags, [])
 
-    case Raxol.Core.Metrics.UnifiedCollector.get_metric(name, type, opts) do
+    case Raxol.Core.Metrics.MetricsCollector.get_metric(name, type, opts) do
       [] ->
         # Check if metric exists with different tags
-        case Raxol.Core.Metrics.UnifiedCollector.get_metric(name, type, []) do
+        case Raxol.Core.Metrics.MetricsCollector.get_metric(name, type, []) do
           [] ->
             {:error, :metric_not_found}
 
@@ -334,7 +334,7 @@ defmodule Raxol.Test.MetricsHelper do
   Gets a metric value by name and type.
   """
   def get_metric_value(name, type) do
-    case Raxol.Core.Metrics.UnifiedCollector.get_metric(name, type) do
+    case Raxol.Core.Metrics.MetricsCollector.get_metric(name, type) do
       [] -> nil
       [metric | _] -> metric.value
       _ -> nil
@@ -345,7 +345,7 @@ defmodule Raxol.Test.MetricsHelper do
   Collects metrics of a specific type.
   """
   def collect_metrics(type, _opts \\ []) do
-    Raxol.Core.Metrics.UnifiedCollector.get_metrics_by_type(type)
+    Raxol.Core.Metrics.MetricsCollector.get_metrics_by_type(type)
   end
 
   @doc """
@@ -359,7 +359,7 @@ defmodule Raxol.Test.MetricsHelper do
   Clears all metrics from the collector.
   """
   def clear_metrics(collector) do
-    Raxol.Core.Metrics.UnifiedCollector.clear_metrics(collector)
+    Raxol.Core.Metrics.MetricsCollector.clear_metrics(collector)
   end
 
   @doc """
@@ -489,7 +489,7 @@ defmodule Raxol.Test.MetricsHelper do
   defp start_collector_conditional(false, _opts), do: nil
 
   defp start_collector_conditional(true, opts) do
-    case Raxol.Core.Metrics.UnifiedCollector.start_link(
+    case Raxol.Core.Metrics.MetricsCollector.start_link(
            Keyword.get(opts, :collector_opts,
              retention_period: :timer.minutes(5),
              max_samples: 100,
@@ -511,7 +511,7 @@ defmodule Raxol.Test.MetricsHelper do
   defp stop_collector_if_alive(collector) when collector != nil and true do
     stop_process_if_alive(
       collector,
-      &Raxol.Core.Metrics.UnifiedCollector.stop/1
+      &Raxol.Core.Metrics.MetricsCollector.stop/1
     )
   end
 

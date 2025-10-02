@@ -32,7 +32,6 @@ defmodule Raxol.Terminal.Graphics.Animation do
   alias Raxol.Animation.Framework
   alias Raxol.Animation.Interpolate
   alias Raxol.Terminal.Graphics.GraphicsServer
-  alias Raxol.Core.Runtime.Log
 
   @type animation_id :: String.t()
   @type graphics_id :: non_neg_integer()
@@ -176,7 +175,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
   end
 
   @impl true
-  def handle_call(
+  def handle_manager_call(
         {:start_graphics_animation, name, graphics_id, options},
         _from,
         state
@@ -211,7 +210,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
   end
 
   @impl true
-  def handle_call(
+  def handle_manager_call(
         {:create_image_animation, name, frames, options},
         _from,
         state
@@ -228,6 +227,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
     end
   end
 
+  @impl true
   def handle_manager_call(:get_performance_metrics, _from, state) do
     {:reply, state.performance_metrics, state}
   end
@@ -352,7 +352,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
         :ok
 
       {:error, reason} ->
-        Log.module_warning(
+        Raxol.Core.Runtime.Log.module_warning(
           "Failed to apply graphics properties: #{inspect(reason)}"
         )
     end

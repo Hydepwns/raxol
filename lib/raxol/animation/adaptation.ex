@@ -8,10 +8,11 @@ defmodule Raxol.Animation.Adaptation do
   - Handling preference change notifications
   """
 
-  require Raxol.Core.Runtime.Log
   alias Raxol.Animation.Accessibility, as: AnimAccessibility
   alias Raxol.Animation.Lifecycle
   alias Raxol.Animation.StateManager, as: StateManager
+
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Re-adapt existing animations if settings have changed.

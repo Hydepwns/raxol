@@ -14,9 +14,8 @@ defmodule Raxol.Performance.AutomatedMonitor do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Runtime.Log
-  alias Raxol.Performance.TelemetryInstrumentation
   alias Raxol.Performance.AdaptiveOptimizer
+  alias Raxol.Core.Runtime.Log
 
   # Monitoring intervals
   # 30 seconds
@@ -122,7 +121,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
   end
 
   @impl true
-  def handle_manager_call({:start_monitoring, opts}, _from, state) do
+  def handle_manager_call({:start_monitoring, _opts}, _from, state) do
     case state.monitoring_enabled do
       true ->
         {:reply, {:already_running, state.current_metrics}, state}
@@ -557,8 +556,6 @@ defmodule Raxol.Performance.AutomatedMonitor do
   end
 
   defp perform_health_check(current_metrics, thresholds) do
-    issues = []
-
     # Check if any metrics are critically over threshold
     critical_issues =
       [

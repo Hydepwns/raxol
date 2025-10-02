@@ -6,6 +6,8 @@ defmodule Raxol.Playground.Examples do
   different component capabilities and use cases.
   """
 
+  alias Raxol.Core.Runtime.Log
+
   @doc """
   Gets all available examples organized by category.
   """

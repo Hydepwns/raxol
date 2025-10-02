@@ -14,7 +14,6 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
   """
 
   use Mix.Task
-  alias Raxol.Core.Runtime.Log
 
   @shortdoc "Run enhanced memory performance benchmarks"
 

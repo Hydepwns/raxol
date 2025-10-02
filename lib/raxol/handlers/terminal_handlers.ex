@@ -483,7 +483,6 @@ defmodule Raxol.Handlers.ApplyThemeHandler do
   alias Raxol.Commands.ApplyThemeCommand
   alias Raxol.Events.TerminalThemeAppliedEvent
   alias Raxol.Terminal.TerminalRegistry
-  alias Raxol.UI.Theming.ThemeManager
 
   @impl true
   def handle(%ApplyThemeCommand{} = command, context) do
@@ -548,12 +547,14 @@ defmodule Raxol.Handlers.ApplyThemeHandler do
     end
   end
 
-  defp load_theme(theme_id) do
-    case UnifiedThemingManager.get_theme(theme_id) do
-      {:ok, theme} -> {:ok, theme}
-      {:error, :not_found} -> {:error, :theme_not_found}
-      {:error, reason} -> {:error, reason}
-    end
+  defp load_theme(_theme_id) do
+    # TODO: Implement proper theme loading system
+    # case UnifiedThemingManager.get_theme(theme_id) do
+    #   {:ok, theme} -> {:ok, theme}
+    #   {:error, :not_found} -> {:error, :theme_not_found}
+    #   {:error, reason} -> {:error, reason}
+    # end
+    {:error, :theme_system_not_implemented}
   end
 
   defp resolve_theme_settings(theme, command) do

@@ -310,7 +310,7 @@ defmodule Raxol.Plugins.Testing.PluginTestFramework do
   defp typeof(_), do: :unknown
 end
 
-defmodule Raxol.Plugins.Testing.Assertions do
+defmodule Raxol.Plugins.Testing.FrameworkAssertions do
   @moduledoc """
   Custom assertions for plugin testing
   """

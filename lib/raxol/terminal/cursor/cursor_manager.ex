@@ -4,6 +4,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Handles cursor position, visibility, style, and blinking state.
   """
 
+  alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
   require Raxol.Core.Runtime.Log

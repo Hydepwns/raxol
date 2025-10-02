@@ -42,6 +42,8 @@ defmodule Mix.Tasks.Raxol.Mutation do
 
   """
 
+  alias Raxol.Core.Runtime.Log
+
   @switches [
     target: :string,
     mutations: :integer,

@@ -10,6 +10,8 @@ defmodule Raxol.Terminal.Driver do
   - Sending parsed events to the `Dispatcher`
   - Restoring terminal state on exit
   """
+
+  alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
   require Raxol.Core.Runtime.Log

@@ -113,6 +113,7 @@ defmodule Raxol.Terminal.Cache.System do
     System.monotonic_time(:millisecond)
   end
 
+  @impl Raxol.Core.Behaviours.BaseManager
   def init_manager(opts) do
     max_size = Keyword.get(opts, :max_size, 100 * 1024 * 1024)
     default_ttl = Keyword.get(opts, :default_ttl, 3600)
@@ -132,6 +133,7 @@ defmodule Raxol.Terminal.Cache.System do
     {:ok, state}
   end
 
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:get, namespace, key}, _from, state) do
     case get_namespace(state, namespace) do
       nil ->

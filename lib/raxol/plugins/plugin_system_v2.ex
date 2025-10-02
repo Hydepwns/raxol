@@ -12,7 +12,6 @@ defmodule Raxol.Plugins.PluginSystemV2 do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Runtime.Log
   # Aliases will be used when implementing full functionality
   # alias Raxol.Plugins.{Plugin, PluginDependency}
   # alias Raxol.Core.Runtime.Plugins.PluginManager
@@ -116,7 +115,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
 
   # GenServer Implementation
 
-  @impl GenServer
+  @impl Raxol.Core.Behaviours.BaseManager
   def init_manager(opts) do
     state = %__MODULE__{
       plugins: %{},
@@ -132,7 +131,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     {:ok, state}
   end
 
-  @impl GenServer
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:install_plugin, source, opts}, _from, state) do
     case install_plugin_impl(source, opts, state) do
       {:ok, updated_state} ->

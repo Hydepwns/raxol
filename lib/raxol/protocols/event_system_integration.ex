@@ -9,6 +9,7 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   alias Raxol.Protocols.EventHandler
   alias Raxol.Core.Events.EventManager
   alias Raxol.Core.Runtime.Log
+  require Logger
 
   # Event Bus struct
   defmodule EventBus do

@@ -20,7 +20,6 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
   require Logger
   require Raxol.Core.Runtime.Log
 
-
   @fps_60 16
   @fps_45 22
   @fps_30 33

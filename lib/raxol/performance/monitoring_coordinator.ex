@@ -14,10 +14,10 @@ defmodule Raxol.Performance.MonitoringCoordinator do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Runtime.Log
   alias Raxol.Performance.AutomatedMonitor
   alias Raxol.Performance.AlertManager
   alias Raxol.Performance.AdaptiveOptimizer
+  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :monitoring_config,
@@ -468,7 +468,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     end)
   end
 
-  defp perform_comprehensive_optimization(state) do
+  defp perform_comprehensive_optimization(_state) do
     optimization_tasks = [
       {:adaptive_optimizer, fn -> AdaptiveOptimizer.optimize_now() end},
       {:memory_optimization, fn -> perform_memory_optimization() end},
@@ -500,7 +500,6 @@ defmodule Raxol.Performance.MonitoringCoordinator do
   defp perform_memory_optimization do
     # Trigger garbage collection and memory cleanup
     :erlang.garbage_collect()
-    System.gc()
     {:ok, :memory_cleaned}
   end
 
@@ -514,22 +513,28 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     updates = %{}
 
     # Update AutomatedMonitor config
-    if component_status.automated_monitor == :running do
-      monitor_update =
-        AutomatedMonitor.update_thresholds(
-          new_config.automated_monitor.thresholds
-        )
+    updates =
+      if component_status.automated_monitor == :running do
+        monitor_update =
+          AutomatedMonitor.update_thresholds(
+            new_config.automated_monitor.thresholds
+          )
 
-      updates = Map.put(updates, :automated_monitor, monitor_update)
-    end
+        Map.put(updates, :automated_monitor, monitor_update)
+      else
+        updates
+      end
 
     # Update AlertManager config
-    if component_status.alert_manager == :running do
-      alert_update =
-        AlertManager.configure_channels(new_config.alert_manager.channels)
+    updates =
+      if component_status.alert_manager == :running do
+        alert_update =
+          AlertManager.configure_channels(new_config.alert_manager.channels)
 
-      updates = Map.put(updates, :alert_manager, alert_update)
-    end
+        Map.put(updates, :alert_manager, alert_update)
+      else
+        updates
+      end
 
     updates
   end
@@ -619,7 +624,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     end
   end
 
-  defp enhance_regression_analysis(regressions, time_range, state) do
+  defp enhance_regression_analysis(regressions, _time_range, state) do
     %{
       detected_regressions: regressions,
       regression_count: length(regressions),

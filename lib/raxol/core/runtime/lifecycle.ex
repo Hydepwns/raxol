@@ -491,7 +491,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:reply, {:error, :unknown_call}, state}
   end
 
-  @impl true
   def terminate_manager(reason, state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] terminating for #{inspect(state.app_name)}. Reason: #{inspect(reason)}"

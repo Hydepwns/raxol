@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
   alias Raxol.Terminal.Commands.History
   alias Raxol.Terminal.Input.InputHandler
   alias Raxol.Terminal.TerminalParser, as: Parser
+
   require Raxol.Core.Runtime.Log
 
   @behaviour Raxol.Terminal.Parser.StateBehaviour

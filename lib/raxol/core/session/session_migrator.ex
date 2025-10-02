@@ -85,7 +85,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
 
   @default_migration_batch_size 10
   @default_max_concurrent_migrations 3
-  
+
   # Public API
 
   @spec migrate_session(pid(), binary(), node(), migration_strategy()) ::

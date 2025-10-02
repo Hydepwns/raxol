@@ -30,7 +30,6 @@ defmodule Raxol.Events.EventServer do
   alias Raxol.Plugins.EventHandler, as: PluginsEventHandler
   alias Raxol.Terminal.EventHandler, as: TerminalEventHandler
   alias Raxol.Core.Accessibility.EventHandler, as: AccessibilityEventHandler
-  alias Raxol.Core.Runtime.Log
 
   @type event_type :: :terminal | :plugin | :ui | :accessibility | :system
   @type event_data :: map()
@@ -132,7 +131,7 @@ defmodule Raxol.Events.EventServer do
     {:ok, state}
   end
 
-  @impl GenServer
+  @impl true
   def handle_manager_call({:handle_event, event_type, event_data}, _from, state) do
     start_time = System.monotonic_time(:microsecond)
 

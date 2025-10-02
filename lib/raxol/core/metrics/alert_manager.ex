@@ -10,6 +10,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
   - Alert history
   """
 
+  alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
   alias Raxol.Core.Metrics.{MetricsCollector, Aggregator}

@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.ParserState, as: State
-  alias Raxol.Core.Runtime.Log
   @behaviour Raxol.Terminal.Parser.StateBehaviour
 
   @impl Raxol.Terminal.Parser.StateBehaviour

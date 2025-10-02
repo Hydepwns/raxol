@@ -36,6 +36,8 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
     SuiteRegistry
   }
 
+  alias Raxol.Core.Runtime.Log
+
   @shortdoc "Advanced benchmarking with statistical analysis"
 
   @switches [

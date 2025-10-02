@@ -63,8 +63,6 @@ defmodule Raxol.UI.Accessibility.HighContrast do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Platform
-  alias Raxol.UI.Theming.ThemeManager
-  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :config,
@@ -838,12 +836,13 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     Log.module_info("Applying high contrast theme: #{theme.name}")
 
     # Would integrate with ColorManager to update system colors
-    UnifiedThemingManager.update_palette(%{
-      background: theme.background,
-      foreground: theme.foreground,
-      accent: theme.accent
-      # ... other colors
-    })
+    # TODO: Implement proper theme system integration
+    # UnifiedThemingManager.update_palette(%{
+    #   background: theme.background,
+    #   foreground: theme.foreground,
+    #   accent: theme.accent
+    #   # ... other colors
+    # })
 
     :ok
   end

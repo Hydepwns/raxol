@@ -22,6 +22,7 @@ defmodule Raxol.UI.Components.Terminal do
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
+
   require Raxol.Core.Runtime.Log
 
   # Require view macros

@@ -210,7 +210,6 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     "\e[32m#{text}\e[0m"
   end
 
-
   defp get_check_result(version, _opts) when version != nil,
     do: {:update_available, version}
 

@@ -14,10 +14,10 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
       Raxol.Core.GlobalRegistry.list(:plugins)
   """
 
+  alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
   require Raxol.Core.Runtime.Log
-
 
   # Public API
 

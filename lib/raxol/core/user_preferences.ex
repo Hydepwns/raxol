@@ -5,6 +5,7 @@ defmodule Raxol.Core.UserPreferences do
   Acts as a GenServer holding the preferences state and handles persistence.
   """
 
+  alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
   require Raxol.Core.Runtime.Log

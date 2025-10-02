@@ -26,6 +26,7 @@ defmodule Raxol.Terminal.Emulator do
 
   alias Raxol.Terminal.Emulator.Coordinator
   alias Raxol.Terminal.Emulator.ModeOperations
+  alias Raxol.Core.Runtime.Log
 
   @behaviour Raxol.Terminal.EmulatorBehaviour
 
@@ -876,7 +877,6 @@ defmodule Raxol.Terminal.Emulator do
     alias Raxol.Terminal.ScreenBuffer
     alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
     alias Raxol.Terminal.Cursor.Manager, as: CursorManager
-    alias Raxol.Core.Runtime.Log
 
     # Extract options with defaults
     enable_history = Keyword.get(opts, :enable_history, true)

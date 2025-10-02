@@ -311,7 +311,13 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
     storage_pid = Map.get(cluster.storage_pids, target_node)
     registry_pid = Map.get(cluster.registry_pids, target_node)
 
-    :ok = DistributedSessionStorage.store(storage_pid, session_id, session_data, %{})
+    :ok =
+      DistributedSessionStorage.store(
+        storage_pid,
+        session_id,
+        session_data,
+        %{}
+      )
 
     :ok =
       DistributedSessionRegistry.register_session(
@@ -345,7 +351,12 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
 
       Enum.map(node_sessions, fn {session_id, session_data} ->
         :ok =
-          DistributedSessionStorage.store(storage_pid, session_id, session_data, %{})
+          DistributedSessionStorage.store(
+            storage_pid,
+            session_id,
+            session_data,
+            %{}
+          )
 
         :ok =
           DistributedSessionRegistry.register_session(
@@ -660,7 +671,12 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
       primary_replicator =
         Map.get(cluster.replicator_pids, cluster.primary_node)
 
-      DistributedSessionStorage.store(primary_storage, session_id, session_data, %{})
+      DistributedSessionStorage.store(
+        primary_storage,
+        session_id,
+        session_data,
+        %{}
+      )
 
       SessionReplicator.replicate_session(
         primary_replicator,

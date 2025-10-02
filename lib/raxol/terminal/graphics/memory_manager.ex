@@ -55,7 +55,6 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Runtime.Log
   # bytes
   @type memory_budget :: non_neg_integer()
   @type allocation_id :: String.t()
@@ -122,14 +121,6 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   }
 
   # Public API
-
-  @doc """
-  Starts the memory manager with the given configuration.
-  """
-
-  #  def start_link(config \\ %{}) do
-  #    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  #  end
 
   @doc """
   Allocates memory for graphics operations.

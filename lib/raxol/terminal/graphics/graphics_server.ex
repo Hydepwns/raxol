@@ -37,7 +37,6 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
   alias Raxol.Terminal.Graphics.ImageCache
   alias Raxol.Terminal.ANSI.SixelGraphics
   alias Raxol.System.Platform
-  alias Raxol.Core.Runtime.Log
 
   # Types
   @type graphics_id :: non_neg_integer()
@@ -70,17 +69,6 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
         }
 
   # Client API
-  @doc """
-  Starts the graphics manager with the given options.
-  """
-  @spec start_link(map()) :: GenServer.on_start()
-  #  def start_link(opts \\ %{}) do
-  #    opts = ensure_map_opts(opts)
-  #    name = Map.get(opts, :name, __MODULE__)
-  #    gen_server_opts = Map.delete(opts, :name)
-  #    GenServer.start_link(__MODULE__, gen_server_opts, name: name)
-  #  end
-
   @doc """
   Creates a new graphics context with the given configuration.
   """
@@ -904,9 +892,6 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
       quality: 90
     }
   end
-
-  defp ensure_map_opts(opts) when is_map(opts), do: opts
-  defp ensure_map_opts(opts), do: Enum.into(opts, %{})
 
   defp update_graphics_buffer(data, graphics_state, graphics_id, state) do
     handle_buffer_update(

@@ -3,6 +3,7 @@ defmodule Raxol.Benchmark do
   Benchmarking utilities for Raxol.
   """
 
+  alias Raxol.Core.Runtime.Log
   alias Raxol.SequenceExecutor
   alias Raxol.Sequence
 

@@ -5,6 +5,7 @@ defmodule Raxol.Benchmark.CompetitorSuite do
   This is a simplified version that avoids DSL compilation issues.
   """
 
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Emulator
 
   # Competitors data for reference and reporting

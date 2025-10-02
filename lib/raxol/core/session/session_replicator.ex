@@ -125,7 +125,8 @@ defmodule Raxol.Core.Session.SessionReplicator do
     }
 
     # Start periodic sync timer
-    _sync_timer = Process.send_after(self(), :periodic_sync, state.sync_interval)
+    _sync_timer =
+      Process.send_after(self(), :periodic_sync, state.sync_interval)
 
     # Start anti-entropy timer
     anti_entropy_timer =

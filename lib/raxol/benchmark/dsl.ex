@@ -6,6 +6,8 @@ defmodule Raxol.Benchmark.DSL do
   Benchmarks are defined as regular module functions for better compatibility.
   """
 
+  alias Raxol.Core.Runtime.Log
+
   defmacro __using__(_opts) do
     quote do
       import Raxol.Benchmark.DSL

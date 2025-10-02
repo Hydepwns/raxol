@@ -432,7 +432,11 @@ defmodule Raxol.Terminal.TerminalServer do
 
       session ->
         # Execute command through unified command handler
-        case Raxol.Terminal.Commands.CSIHandler.handle_csi_sequence(session.emulator, command.command, command.params || []) do
+        case Raxol.Terminal.Commands.CSIHandler.handle_csi_sequence(
+               session.emulator,
+               command.command,
+               command.params || []
+             ) do
           {:ok, updated_emulator} ->
             updated_session = %{
               session

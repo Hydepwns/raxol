@@ -2,6 +2,7 @@ defmodule Raxol.UI.Components.Display.Table do
   @moduledoc """
   A component for displaying tabular data with sorting, filtering, and pagination.
   """
+
   require Raxol.Core.Runtime.Log
 
   # alias Raxol.Core.Renderer.Element

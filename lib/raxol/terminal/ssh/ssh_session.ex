@@ -34,7 +34,6 @@ if Code.ensure_loaded?(:ssh) do
     """
 
     use Raxol.Core.Behaviours.BaseManager
-    alias Raxol.Core.Runtime.Log
 
     @type pty_options :: %{
             optional(:term) => String.t(),
@@ -775,7 +774,7 @@ else
 
     use Raxol.Core.Behaviours.BaseManager
 
-    def start(client, pty_options \\ %{}) do
+    def start(_client, _pty_options \\ %{}) do
       {:error, :ssh_not_available}
     end
 

@@ -4,6 +4,8 @@ defmodule Raxol.PreCommit.ErrorFormatter do
   and fix suggestions.
   """
 
+  alias Raxol.Core.Runtime.Log
+
   @doc """
   Format an error with context and fix suggestions.
   """

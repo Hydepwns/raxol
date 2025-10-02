@@ -39,7 +39,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     command_module =
       Keyword.get(opts, :command_module, Raxol.Core.Runtime.Command)
 
-    Raxol.Core.Behaviours.BaseManager.start_link(
+    GenServer.start_link(
       __MODULE__,
       {runtime_pid, initial_state, command_module},
       name: __MODULE__

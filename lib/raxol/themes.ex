@@ -90,7 +90,6 @@ defmodule Raxol.Themes do
   # GenServer callbacks
 
   @impl true
-  @impl true
   def init_manager(:ok) do
     default_theme = %{
       background: :default,
@@ -108,7 +107,6 @@ defmodule Raxol.Themes do
   end
 
   @impl true
-  @impl true
   def handle_manager_call({:apply_theme, theme}, _from, state) do
     # Validate theme structure
     case validate_theme(theme) do
@@ -124,12 +122,10 @@ defmodule Raxol.Themes do
   end
 
   @impl true
-  @impl true
   def handle_manager_call(:get_current_theme, _from, state) do
     {:reply, state.current_theme, state}
   end
 
-  @impl true
   @impl true
   def handle_manager_call({:load_theme, theme_identifier}, _from, state) do
     case load_theme_from_identifier(theme_identifier) do
@@ -144,13 +140,11 @@ defmodule Raxol.Themes do
   end
 
   @impl true
-  @impl true
   def handle_manager_call(:list_themes, _from, state) do
     themes = ["default", "dark", "light", "high_contrast"]
     {:reply, themes, state}
   end
 
-  @impl true
   @impl true
   def handle_manager_call({:register_callback, module, fun}, _from, state) do
     callback = {module, fun}

@@ -43,7 +43,6 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :backend,

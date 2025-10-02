@@ -186,7 +186,7 @@ defmodule Raxol.MixProject do
       {:ecto_sql, "~> 3.12"},
       {:postgrex, "~> 0.21.1", runtime: false},
       # Password hashing
-      {:bcrypt_elixir, "~> 3.3"},
+      {:bcrypt_elixir, "~> 3.3"}
     ]
   end
 

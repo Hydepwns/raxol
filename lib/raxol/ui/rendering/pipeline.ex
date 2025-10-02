@@ -809,9 +809,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
         end
 
       _pid ->
-        Raxol.Core.Runtime.Log.debug(
-          "Pipeline: TimerServer already running"
-        )
+        Raxol.Core.Runtime.Log.debug("Pipeline: TimerServer already running")
     end
 
     :ok

@@ -40,7 +40,6 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Terminal.Rendering.GPUAccelerator, as: BaseGPUAccelerator
   alias Raxol.Terminal.Graphics.ImageProcessor
-  alias Raxol.Core.Runtime.Log
 
   @type gpu_context :: %{
           backend: :metal | :vulkan | :opengl | :software,
@@ -89,14 +88,6 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   }
 
   # Public API
-
-  @doc """
-  Starts the graphics GPU accelerator.
-  """
-
-  #  def start_link(opts \\ []) do
-  #    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  #  end
 
   @doc """
   Initializes GPU acceleration for terminal graphics.

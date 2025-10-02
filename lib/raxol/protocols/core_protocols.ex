@@ -202,17 +202,22 @@ defmodule Raxol.Protocols do
   Convenience module for importing all unified protocols.
   """
 
-
-  defdelegate render(component, opts), to: Raxol.Protocols.CoreProtocols.Component
+  defdelegate render(component, opts),
+    to: Raxol.Protocols.CoreProtocols.Component
 
   defdelegate handle_event(component, event, state),
     to: Raxol.Protocols.CoreProtocols.Component
 
-  defdelegate apply_style(component, style), to: Raxol.Protocols.CoreProtocols.Component
-  defdelegate get_metadata(component), to: Raxol.Protocols.CoreProtocols.Component
+  defdelegate apply_style(component, style),
+    to: Raxol.Protocols.CoreProtocols.Component
+
+  defdelegate get_metadata(component),
+    to: Raxol.Protocols.CoreProtocols.Component
+
   defdelegate validate(component), to: Raxol.Protocols.CoreProtocols.Component
 
-  defdelegate serialize(data, format), to: Raxol.Protocols.CoreProtocols.Serializable
+  defdelegate serialize(data, format),
+    to: Raxol.Protocols.CoreProtocols.Serializable
 
   defdelegate deserialize(data, format, target_type),
     to: Raxol.Protocols.CoreProtocols.Serializable
@@ -222,9 +227,14 @@ defmodule Raxol.Protocols do
   defdelegate write(buffer, position, data),
     to: Raxol.Protocols.CoreProtocols.BufferOperations
 
-  defdelegate read(buffer, position), to: Raxol.Protocols.CoreProtocols.BufferOperations
-  defdelegate clear(buffer, region), to: Raxol.Protocols.CoreProtocols.BufferOperations
-  defdelegate get_dimensions(buffer), to: Raxol.Protocols.CoreProtocols.BufferOperations
+  defdelegate read(buffer, position),
+    to: Raxol.Protocols.CoreProtocols.BufferOperations
+
+  defdelegate clear(buffer, region),
+    to: Raxol.Protocols.CoreProtocols.BufferOperations
+
+  defdelegate get_dimensions(buffer),
+    to: Raxol.Protocols.CoreProtocols.BufferOperations
 
   defdelegate resize(buffer, width, height),
     to: Raxol.Protocols.CoreProtocols.BufferOperations
@@ -232,7 +242,8 @@ defmodule Raxol.Protocols do
   defdelegate scroll(buffer, direction, amount),
     to: Raxol.Protocols.CoreProtocols.BufferOperations
 
-  defdelegate get_config(configurable), to: Raxol.Protocols.CoreProtocols.Configurable
+  defdelegate get_config(configurable),
+    to: Raxol.Protocols.CoreProtocols.Configurable
 
   defdelegate set_config(configurable, config),
     to: Raxol.Protocols.CoreProtocols.Configurable
@@ -246,7 +257,9 @@ defmodule Raxol.Protocols do
   defdelegate merge_config(configurable, config),
     to: Raxol.Protocols.CoreProtocols.Configurable
 
-  defdelegate initialize(component, opts), to: Raxol.Protocols.CoreProtocols.Lifecycle
+  defdelegate initialize(component, opts),
+    to: Raxol.Protocols.CoreProtocols.Lifecycle
+
   defdelegate start(component), to: Raxol.Protocols.CoreProtocols.Lifecycle
   defdelegate stop(component), to: Raxol.Protocols.CoreProtocols.Lifecycle
   defdelegate restart(component), to: Raxol.Protocols.CoreProtocols.Lifecycle

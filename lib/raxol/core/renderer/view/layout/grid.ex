@@ -4,6 +4,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   Provides functionality for creating and managing grid layouts with customizable columns and rows.
   """
 
+  alias Raxol.Core.Runtime.Log
   @spec validate_columns(any()) :: {:ok, any()} | {:error, any()}
   defp validate_columns(columns) when is_integer(columns) and columns < 1 do
     raise ArgumentError, "Grid must have at least 1 column"

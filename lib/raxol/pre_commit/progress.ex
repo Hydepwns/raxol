@@ -6,6 +6,7 @@ defmodule Raxol.PreCommit.Progress do
   indicators and clear status updates.
   """
 
+  alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
   @spinner_frames ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]

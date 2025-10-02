@@ -42,15 +42,13 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Runtime.Log
   alias Raxol.Core.Session.{DistributedSessionStorage, SessionReplicator}
   alias Raxol.Core.ErrorRecovery.ContextManager
+  alias Raxol.Core.Runtime.Log
 
-  @hash_ring_size 2048
   @default_replication_factor 3
   @heartbeat_interval 5_000
   @session_sync_interval 30_000
-  @node_timeout 15_000
 
   defstruct [
     :node_id,
@@ -584,7 +582,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
       Enum.map(all_nodes, fn node ->
         if node == state.node_id do
           # Local registration
-          DistributedSessionStorage.store_session(
+          DistributedSessionStorage.store(
             state.storage,
             session_id,
             session_data,
@@ -630,7 +628,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
   defp get_session_from_node(node_id, session_id, state) do
     if node_id == state.node_id do
-      DistributedSessionStorage.get_session(state.storage, session_id)
+      DistributedSessionStorage.get(state.storage, session_id)
     else
       call_remote_node(node_id, :get_session, [session_id])
     end
@@ -662,7 +660,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
         results =
           Enum.map(all_nodes, fn node ->
             if node == state.node_id do
-              DistributedSessionStorage.update_session(
+              DistributedSessionStorage.store(
                 state.storage,
                 session_id,
                 session_data,

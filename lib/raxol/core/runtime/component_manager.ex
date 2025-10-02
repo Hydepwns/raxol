@@ -13,6 +13,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   - Full backward compatibility maintained
   """
 
+  alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
   require Raxol.Core.Runtime.Log

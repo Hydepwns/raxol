@@ -239,12 +239,16 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
 
   defp register_commands do
     # Register with command system
-    :ok = Raxol.Commands.register("rainbow", __MODULE__)
+    # TODO: Implement proper command registration system
+    # :ok = Raxol.Commands.register("rainbow", __MODULE__)
+    :ok
   end
 
   defp unregister_commands do
     # Unregister from command system
-    :ok = Raxol.Commands.unregister("rainbow")
+    # TODO: Implement proper command unregistration system
+    # :ok = Raxol.Commands.unregister("rainbow")
+    :ok
   end
 
   defp build_palette(color_list) do

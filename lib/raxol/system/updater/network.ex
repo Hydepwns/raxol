@@ -3,6 +3,7 @@ defmodule Raxol.System.Updater.Network do
   Network operations for the Raxol System Updater including HTTP requests, GitHub API, file downloads, and archive operations.
   """
 
+  alias Raxol.Core.Runtime.Log
   @github_repo "username/raxol"
 
   def fetch_latest_version do

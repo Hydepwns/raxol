@@ -24,9 +24,9 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
   """
 
   use GenServer
-  alias Raxol.Core.Runtime.Log
   alias Raxol.Core.ErrorRecovery.ContextManager
   alias Raxol.Core.ErrorPatternLearner
+  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :wrapped_module,
@@ -260,8 +260,8 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
     end
   end
 
-  defp restore_context_if_available(context_key, wrapped_pid, context_manager) do
-    case ContextManager.get_context(context_manager, context_key) do
+  defp restore_context_if_available(context_key, wrapped_pid, _context_manager) do
+    case ContextManager.get_context(context_key) do
       nil ->
         Log.module_debug("No previous context found for #{context_key}")
 
@@ -308,7 +308,6 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
       wrapped_state ->
         # Store context in context manager
         ContextManager.store_context(
-          state.context_manager,
           state.context_key,
           wrapped_state
         )
@@ -327,7 +326,6 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
 
       final_state ->
         ContextManager.store_context(
-          state.context_manager,
           state.context_key,
           final_state,
           # Keep final context for 10 minutes

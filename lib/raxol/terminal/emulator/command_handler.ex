@@ -388,17 +388,22 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   # Additional CSI command handlers that delegate to CSIHandler
   defp handle_erase_character(params, emulator, _intermediates) do
-    Raxol.Terminal.Commands.CSIHandler.handle_csi_sequence(emulator, "X", params)
+    Raxol.Terminal.Commands.CSIHandler.handle_csi_sequence(
+      emulator,
+      "X",
+      params
+    )
     |> extract_emulator()
   end
 
   defp handle_cursor_next_line(params, emulator, _intermediates) do
     # Move cursor down N lines and to beginning of line
-    count = case params do
-      [] -> 1
-      [n] when is_integer(n) -> max(1, n)
-      _ -> 1
-    end
+    count =
+      case params do
+        [] -> 1
+        [n] when is_integer(n) -> max(1, n)
+        _ -> 1
+      end
 
     # Move down count lines
     emulator = Emulator.move_cursor_down(emulator, count)
@@ -408,11 +413,12 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp handle_cursor_previous_line(params, emulator, _intermediates) do
     # Move cursor up N lines and to beginning of line
-    count = case params do
-      [] -> 1
-      [n] when is_integer(n) -> max(1, n)
-      _ -> 1
-    end
+    count =
+      case params do
+        [] -> 1
+        [n] when is_integer(n) -> max(1, n)
+        _ -> 1
+      end
 
     # Move up count lines
     emulator = Emulator.move_cursor_up(emulator, count)
@@ -422,11 +428,12 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp handle_cursor_horizontal_absolute(params, emulator, _intermediates) do
     # Move cursor to absolute column position
-    col = case params do
-      [] -> 1
-      [n] when is_integer(n) -> max(1, n)
-      _ -> 1
-    end
+    col =
+      case params do
+        [] -> 1
+        [n] when is_integer(n) -> max(1, n)
+        _ -> 1
+      end
 
     # Convert to 0-based and clamp to screen width
     new_col = min(col - 1, emulator.width - 1)
@@ -435,11 +442,12 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp handle_cursor_vertical_absolute(params, emulator, _intermediates) do
     # Move cursor to absolute row position
-    row = case params do
-      [] -> 1
-      [n] when is_integer(n) -> max(1, n)
-      _ -> 1
-    end
+    row =
+      case params do
+        [] -> 1
+        [n] when is_integer(n) -> max(1, n)
+        _ -> 1
+      end
 
     # Convert to 0-based and clamp to screen height
     new_row = min(row - 1, emulator.height - 1)
@@ -448,11 +456,12 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp handle_insert_lines(params, emulator, _intermediates) do
     # Insert N blank lines at cursor position
-    _count = case params do
-      [] -> 1
-      [n] when is_integer(n) -> max(1, n)
-      _ -> 1
-    end
+    _count =
+      case params do
+        [] -> 1
+        [n] when is_integer(n) -> max(1, n)
+        _ -> 1
+      end
 
     # Simple implementation - return emulator unchanged for now
     # TODO: Implement actual line insertion
@@ -461,11 +470,12 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp handle_delete_lines(params, emulator, _intermediates) do
     # Delete N lines at cursor position
-    _count = case params do
-      [] -> 1
-      [n] when is_integer(n) -> max(1, n)
-      _ -> 1
-    end
+    _count =
+      case params do
+        [] -> 1
+        [n] when is_integer(n) -> max(1, n)
+        _ -> 1
+      end
 
     # Simple implementation - return emulator unchanged for now
     # TODO: Implement actual line deletion
@@ -474,11 +484,12 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp handle_insert_characters(params, emulator, _intermediates) do
     # Insert N blank characters at cursor position
-    _count = case params do
-      [] -> 1
-      [n] when is_integer(n) -> max(1, n)
-      _ -> 1
-    end
+    _count =
+      case params do
+        [] -> 1
+        [n] when is_integer(n) -> max(1, n)
+        _ -> 1
+      end
 
     # Simple implementation - return emulator unchanged for now
     # TODO: Implement actual character insertion
@@ -487,11 +498,12 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp handle_delete_characters(params, emulator, _intermediates) do
     # Delete N characters at cursor position
-    _count = case params do
-      [] -> 1
-      [n] when is_integer(n) -> max(1, n)
-      _ -> 1
-    end
+    _count =
+      case params do
+        [] -> 1
+        [n] when is_integer(n) -> max(1, n)
+        _ -> 1
+      end
 
     # Simple implementation - return emulator unchanged for now
     # TODO: Implement actual character deletion
@@ -500,11 +512,12 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp handle_scroll_up(params, emulator, _intermediates) do
     # Scroll up N lines
-    _count = case params do
-      [] -> 1
-      [n] when is_integer(n) -> max(1, n)
-      _ -> 1
-    end
+    _count =
+      case params do
+        [] -> 1
+        [n] when is_integer(n) -> max(1, n)
+        _ -> 1
+      end
 
     # Simple implementation - return emulator unchanged for now
     # TODO: Implement actual scroll up
@@ -513,11 +526,12 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp handle_scroll_down(params, emulator, _intermediates) do
     # Scroll down N lines
-    _count = case params do
-      [] -> 1
-      [n] when is_integer(n) -> max(1, n)
-      _ -> 1
-    end
+    _count =
+      case params do
+        [] -> 1
+        [n] when is_integer(n) -> max(1, n)
+        _ -> 1
+      end
 
     # Simple implementation - return emulator unchanged for now
     # TODO: Implement actual scroll down
@@ -525,12 +539,22 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
   end
 
   defp handle_set_mode(params, emulator, intermediates) do
-    Raxol.Terminal.Commands.CSIHandler.handle_h_or_l(emulator, params, intermediates, ?h)
+    Raxol.Terminal.Commands.CSIHandler.handle_h_or_l(
+      emulator,
+      params,
+      intermediates,
+      ?h
+    )
     |> extract_emulator()
   end
 
   defp handle_reset_mode(params, emulator, intermediates) do
-    Raxol.Terminal.Commands.CSIHandler.handle_h_or_l(emulator, params, intermediates, ?l)
+    Raxol.Terminal.Commands.CSIHandler.handle_h_or_l(
+      emulator,
+      params,
+      intermediates,
+      ?l
+    )
     |> extract_emulator()
   end
 

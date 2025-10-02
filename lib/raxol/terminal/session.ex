@@ -15,12 +15,13 @@ defmodule Raxol.Terminal.Session do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
   alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
   alias Raxol.Terminal.Session.Storage
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
+
+  require Raxol.Core.Runtime.Log
 
   @type t :: %__MODULE__{
           id: String.t(),
@@ -43,18 +44,6 @@ defmodule Raxol.Terminal.Session do
     :theme,
     auto_save: true
   ]
-
-  @doc """
-  Starts a new terminal session.
-
-  ## Examples
-
-      iex> {:ok, pid} = Session.start_link(%{width: 80, height: 24})
-      iex> Process.alive?(pid)
-      true
-  """
-  @spec start_link(keyword()) :: GenServer.on_start()
-  # BaseManager provides start_link
 
   @doc """
   Stops a terminal session.
@@ -186,6 +175,7 @@ defmodule Raxol.Terminal.Session do
 
   # Callbacks
 
+  @impl true
   def init_manager(opts) when is_list(opts) do
     # Handle keyword list options
     id =
@@ -232,6 +222,7 @@ defmodule Raxol.Terminal.Session do
     {:ok, state}
   end
 
+  @impl true
   def handle_manager_cast({:input, input}, state) do
     # Handle process_input with safe execution
     new_state = safe_process_input(state, input)
@@ -247,6 +238,7 @@ defmodule Raxol.Terminal.Session do
     {:noreply, state}
   end
 
+  @impl true
   def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
@@ -270,6 +262,7 @@ defmodule Raxol.Terminal.Session do
     {:reply, result, state}
   end
 
+  @impl true
   def handle_manager_info(:auto_save, state) do
     _ = execute_auto_save(state.auto_save, state)
 

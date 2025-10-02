@@ -14,6 +14,7 @@ defmodule Raxol.Metrics do
   REFACTORED: All try/catch blocks replaced with functional error handling patterns.
   """
 
+  alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
   alias Raxol.Repo

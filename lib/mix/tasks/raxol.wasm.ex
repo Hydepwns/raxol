@@ -78,6 +78,7 @@ defmodule Mix.Tasks.Raxol.Wasm do
 
   use Mix.Task
   alias Raxol.WASM.Builder
+  alias Raxol.Core.Runtime.Log
 
   @switches [
     watch: :boolean,
@@ -222,7 +223,6 @@ defmodule Mix.Tasks.Raxol.Wasm.Clean do
   use Mix.Task
 
   alias Raxol.WASM.Builder
-  alias Raxol.Core.Runtime.Log
 
   @impl Mix.Task
   def run(_args) do

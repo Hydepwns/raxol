@@ -6,6 +6,7 @@ defmodule Raxol.Core.UXRefinement.UxServer do
   replacing the Process dictionary usage with proper OTP patterns.
   """
 
+  alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
   require Raxol.Core.Runtime.Log

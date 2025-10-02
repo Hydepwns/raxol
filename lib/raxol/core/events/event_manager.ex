@@ -10,6 +10,7 @@ defmodule Raxol.Core.Events.EventManager do
   is maintained for backward compatibility but will be deprecated in a future version.
   """
 
+  alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
   require Raxol.Core.Runtime.Log

@@ -9,6 +9,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
   - Utility functions (error handling, cleanup)
   """
 
+  alias Raxol.Core.Runtime.Log
+
   @type t :: %{
           plugins: map(),
           state: term(),

@@ -527,7 +527,10 @@ defmodule Raxol.Terminal.IO.IOServer do
     new_buffer_manager = state.buffer_manager
 
     new_scroll_buffer =
-      Raxol.Terminal.Buffer.Scroll.set_max_height(state.scroll_buffer, config.scrollback_limit)
+      Raxol.Terminal.Buffer.Scroll.set_max_height(
+        state.scroll_buffer,
+        config.scrollback_limit
+      )
 
     RenderServer.update_config(config.rendering)
     new_command_history = History.update_config(state.command_history, config)
@@ -544,7 +547,9 @@ defmodule Raxol.Terminal.IO.IOServer do
         memory_limit: config.memory_limit || 50 * 1024 * 1024
       )
 
-    new_scroll_buffer = Raxol.Terminal.Buffer.Scroll.new(config.scrollback_limit || 1000)
+    new_scroll_buffer =
+      Raxol.Terminal.Buffer.Scroll.new(config.scrollback_limit || 1000)
+
     {:ok, new_renderer} = RenderServer.start_link(config.rendering || %{})
     new_command_history = History.new(config.command_history_limit || 1000)
 
