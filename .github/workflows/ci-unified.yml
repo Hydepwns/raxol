@@ -17,6 +17,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: read
+
 env:
   MIX_ENV: test
   SKIP_TERMBOX2_TESTS: true
@@ -495,7 +499,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Download coverage artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           path: cover
       

@@ -8,6 +8,17 @@ on:
     branches: [master]
     paths: ['web/**', 'lib/**', 'mix.exs']
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  SKIP_TERMBOX2_TESTS: true
+  TMPDIR: /tmp
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -15,15 +26,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Setup Development Environment
         uses: ./.github/actions/setup-elixir
         with:
-          elixir-version: '1.17.3'
-          otp-version: '27.0'
+          elixir-version: "1.17.3"
+          otp-version: "27.0"
           cache-key: deps-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
-          install-deps: 'false'
+          install-deps: "false"
 
       - name: Install dependencies
         run: |

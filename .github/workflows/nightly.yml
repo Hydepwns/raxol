@@ -15,9 +15,14 @@ on:
         type: boolean
         default: true
 
+permissions:
+  contents: read
+  actions: read
+
 env:
   MIX_ENV: test
   SKIP_TERMBOX2_TESTS: true
+  TMPDIR: /tmp
 
 jobs:
   test-matrix:

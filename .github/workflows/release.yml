@@ -1,6 +1,13 @@
 name: Release
 
+permissions:
+  contents: write
+  packages: write
+
 env:
+  MIX_ENV: test
+  SKIP_TERMBOX2_TESTS: true
+  TMPDIR: /tmp
   ELIXIR_VERSION: "1.17.3"
   OTP_VERSION: "27.0"
 
@@ -15,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Cache Mix dependencies
         uses: actions/cache@v4

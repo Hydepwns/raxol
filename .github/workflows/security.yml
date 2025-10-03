@@ -10,7 +10,18 @@ on:
     - cron: '0 3 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
 env:
+  MIX_ENV: test
+  SKIP_TERMBOX2_TESTS: true
+  TMPDIR: /tmp
   ELIXIR_VERSION: "1.17.3"
   OTP_VERSION: "27.0"
 
@@ -21,7 +32,9 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-      
+        with:
+          submodules: recursive
+
       - name: Setup Elixir
         uses: ./.github/actions/setup-elixir
         with:
@@ -49,7 +62,9 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-      
+        with:
+          submodules: recursive
+
       - name: Setup Elixir
         uses: ./.github/actions/setup-elixir
         with:
@@ -118,7 +133,7 @@ jobs:
         with:
           elixir-version: ${{ env.ELIXIR_VERSION }}
           otp-version: ${{ env.OTP_VERSION }}
-          install-deps: 'false'
+          install-deps: "false"
           node-version: '20'
           node-cache: 'npm'
       
@@ -145,7 +160,7 @@ jobs:
         with:
           elixir-version: ${{ env.ELIXIR_VERSION }}
           otp-version: ${{ env.OTP_VERSION }}
-          install-deps: 'false'
+          install-deps: "false"
           node-version: '20'
       
       - name: Install and run Snyk CLI
