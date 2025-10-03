@@ -38,6 +38,11 @@ defmodule Raxol.Terminal.Event.Handler do
       nil ->
         emulator
 
+      %Event{} = event_struct ->
+        # Direct struct mode for testing
+        new_handlers = Map.delete(event_struct.handlers, event_type)
+        %{emulator | event: %{event_struct | handlers: new_handlers}}
+
       event_pid ->
         GenServer.call(event_pid, {:unregister_handler, event_type})
         emulator
@@ -88,6 +93,10 @@ defmodule Raxol.Terminal.Event.Handler do
       nil ->
         emulator
 
+      %Event{} = event_struct ->
+        # Direct struct mode for testing
+        %{emulator | event: %{event_struct | queue: :queue.new()}}
+
       event_pid ->
         GenServer.call(event_pid, :clear_event_queue)
         emulator
@@ -104,8 +113,14 @@ defmodule Raxol.Terminal.Event.Handler do
         # Process this event and continue with remaining queue
         updated_emulator =
           case Map.get(event_struct.handlers, event_type) do
-            nil -> emulator
-            handler -> handler.(emulator, event_data)
+            nil ->
+              emulator
+
+            handler ->
+              case handler.(emulator, event_data) do
+                {:ok, result} -> result
+                result -> result
+              end
           end
 
         # Update the queue and continue processing
@@ -119,6 +134,10 @@ defmodule Raxol.Terminal.Event.Handler do
     case emulator.event do
       nil ->
         emulator
+
+      %Event{} = _event_struct ->
+        # Direct struct mode for testing - reset to new event
+        %{emulator | event: new()}
 
       event_pid ->
         GenServer.call(event_pid, :reset)
@@ -134,8 +153,14 @@ defmodule Raxol.Terminal.Event.Handler do
       %Event{} = event_struct ->
         # Direct struct mode for testing
         case Map.get(event_struct.handlers, event_type) do
-          nil -> {:ok, emulator}
-          handler -> {:ok, handler.(emulator, event_data)}
+          nil ->
+            {:ok, emulator}
+
+          handler ->
+            case handler.(emulator, event_data) do
+              {:ok, result} -> {:ok, result}
+              result -> {:ok, result}
+            end
         end
 
       event_pid ->

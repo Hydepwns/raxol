@@ -52,7 +52,10 @@ defmodule Raxol.Terminal.Driver do
   # --- BaseManager Callbacks ---
 
   @impl true
-  def init_manager(dispatcher_pid) do
+  def init_manager(opts) do
+    # Extract dispatcher_pid from opts - handle both keyword list and raw value
+    dispatcher_pid = extract_dispatcher_pid(opts)
+
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] init called with dispatcher: #{inspect(dispatcher_pid)}"
     )
@@ -274,6 +277,14 @@ defmodule Raxol.Terminal.Driver do
   def handle_manager_cast({:test_input, input_data}, state) do
     handle_manager_info({:test_input, input_data}, state)
   end
+
+  # Private helper to extract dispatcher_pid from init opts
+  defp extract_dispatcher_pid(opts) when is_list(opts) do
+    Keyword.get(opts, :dispatcher_pid)
+  end
+
+  defp extract_dispatcher_pid(pid) when is_pid(pid), do: pid
+  defp extract_dispatcher_pid(_), do: nil
 
   defp handle_termbox_recovery(reason, state) do
     case terminate_termbox() do

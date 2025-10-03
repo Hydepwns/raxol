@@ -456,58 +456,78 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp handle_insert_lines(params, emulator, _intermediates) do
     # Insert N blank lines at cursor position
-    _count =
+    count =
       case params do
         [] -> 1
         [n] when is_integer(n) -> max(1, n)
         _ -> 1
       end
 
-    # Simple implementation - return emulator unchanged for now
-    # TODO: Implement actual line insertion
-    emulator
+    Raxol.Terminal.Commands.Screen.insert_lines(emulator, count)
   end
 
   defp handle_delete_lines(params, emulator, _intermediates) do
     # Delete N lines at cursor position
-    _count =
+    count =
       case params do
         [] -> 1
         [n] when is_integer(n) -> max(1, n)
         _ -> 1
       end
 
-    # Simple implementation - return emulator unchanged for now
-    # TODO: Implement actual line deletion
-    emulator
+    Raxol.Terminal.Commands.Screen.delete_lines(emulator, count)
   end
 
   defp handle_insert_characters(params, emulator, _intermediates) do
     # Insert N blank characters at cursor position
-    _count =
+    count =
       case params do
         [] -> 1
         [n] when is_integer(n) -> max(1, n)
         _ -> 1
       end
 
-    # Simple implementation - return emulator unchanged for now
-    # TODO: Implement actual character insertion
-    emulator
+    {cursor_y, cursor_x} =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    buffer = Raxol.Terminal.Emulator.get_screen_buffer(emulator)
+
+    updated_buffer =
+      Raxol.Terminal.Buffer.CharEditor.insert_characters(
+        buffer,
+        cursor_y,
+        cursor_x,
+        count,
+        emulator.style
+      )
+
+    Raxol.Terminal.Emulator.update_active_buffer(emulator, updated_buffer)
   end
 
   defp handle_delete_characters(params, emulator, _intermediates) do
     # Delete N characters at cursor position
-    _count =
+    count =
       case params do
         [] -> 1
         [n] when is_integer(n) -> max(1, n)
         _ -> 1
       end
 
-    # Simple implementation - return emulator unchanged for now
-    # TODO: Implement actual character deletion
-    emulator
+    {cursor_y, cursor_x} =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    buffer = Raxol.Terminal.Emulator.get_screen_buffer(emulator)
+
+    updated_buffer =
+      Raxol.Terminal.Buffer.CharEditor.delete_characters(
+        buffer,
+        cursor_y,
+        cursor_x,
+        count,
+        emulator.style
+      )
+
+    Raxol.Terminal.Emulator.update_active_buffer(emulator, updated_buffer)
   end
 
   defp handle_scroll_up(params, emulator, _intermediates) do

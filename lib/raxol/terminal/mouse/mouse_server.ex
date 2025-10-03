@@ -151,11 +151,14 @@ defmodule Raxol.Terminal.Mouse.MouseServer do
   # Server Callbacks
   @impl true
   def init_manager(opts) do
+    # Convert opts to map if it's a keyword list
+    opts_map = if is_list(opts), do: Map.new(opts), else: opts
+
     state = %{
       mice: %{},
       active_mouse: nil,
       next_id: 1,
-      config: Map.merge(default_config(), opts)
+      config: Map.merge(default_config(), opts_map)
     }
 
     {:ok, state}

@@ -400,6 +400,13 @@ defmodule Raxol.Terminal.IO.IOServer do
     end
   end
 
+  defp update_render_server_config_if_available(rendering_config) do
+    case Process.whereis(Raxol.Terminal.Render.RenderServer) do
+      nil -> :ok
+      _pid -> RenderServer.update_config(rendering_config)
+    end
+  end
+
   # Private Functions
 
   defp process_input_event(state, event) do
@@ -532,7 +539,7 @@ defmodule Raxol.Terminal.IO.IOServer do
         config.scrollback_limit
       )
 
-    RenderServer.update_config(config.rendering)
+    update_render_server_config_if_available(config.rendering)
     new_command_history = History.update_config(state.command_history, config)
 
     {new_buffer_manager, new_scroll_buffer, state.renderer, new_command_history}

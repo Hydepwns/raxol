@@ -106,11 +106,19 @@ defmodule Raxol.Terminal.Tab.TabServer do
   # Server Callbacks
   @impl true
   def init_manager(opts) do
+    # Convert opts to map if it's a list
+    opts_map =
+      case opts do
+        map when is_map(map) -> map
+        list when is_list(list) -> Enum.into(list, %{})
+        _ -> %{}
+      end
+
     state = %{
       tabs: %{},
       active_tab: nil,
       next_id: 1,
-      config: Map.merge(default_config(), opts)
+      config: Map.merge(default_config(), opts_map)
     }
 
     {:ok, state}

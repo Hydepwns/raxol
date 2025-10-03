@@ -163,6 +163,14 @@ defmodule Raxol.Terminal.ScreenManager do
   end
 
   @doc """
+  Gets the selected text from the buffer.
+  """
+  @spec get_selected_text(ScreenBuffer.t()) :: String.t()
+  def get_selected_text(buffer) do
+    ScreenBuffer.get_selected_text(buffer)
+  end
+
+  @doc """
   Gets the selection start coordinates.
   """
   @spec get_selection_start(ScreenBuffer.t()) ::
