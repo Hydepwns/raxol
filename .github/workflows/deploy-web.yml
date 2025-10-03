@@ -24,24 +24,21 @@ jobs:
           otp-version: '27.0'
           cache-key: deps-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
           install-deps: 'false'
-          node-version: '20'
-          node-cache: 'npm'
-          node-cache-dependency-path: web/assets/package-lock.json
 
       - name: Install dependencies
         run: |
           cd web
           mix deps.get --only prod
 
-      - name: Install Node dependencies
-        run: |
-          cd web/assets
-          npm ci
-
-      - name: Build assets
+      - name: Build assets (if needed)
         run: |
           cd web
-          mix assets.deploy
+          if [ -f "assets/package.json" ]; then
+            cd assets && npm ci && cd ..
+            mix assets.deploy
+          else
+            echo "No Node assets found, skipping asset build"
+          fi
 
       - name: Build Phoenix app
         env:
