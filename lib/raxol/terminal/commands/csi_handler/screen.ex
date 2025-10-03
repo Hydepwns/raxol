@@ -44,31 +44,67 @@ defmodule Raxol.Terminal.Commands.CSIHandler.Screen do
   end
 
   defp handle_insert_characters(emulator, params) do
-    _count = get_param(params, 0, 1)
-    # Simple implementation - insert blank characters at cursor position
-    # TODO: Implement actual character insertion in buffer
-    {:ok, emulator}
+    count = get_param(params, 0, 1)
+
+    {cursor_y, cursor_x} =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    buffer = Raxol.Terminal.Emulator.get_screen_buffer(emulator)
+
+    updated_buffer =
+      Raxol.Terminal.Buffer.CharEditor.insert_characters(
+        buffer,
+        cursor_y,
+        cursor_x,
+        count,
+        emulator.style
+      )
+
+    updated_emulator =
+      Raxol.Terminal.Emulator.update_active_buffer(emulator, updated_buffer)
+
+    {:ok, updated_emulator}
   end
 
   defp handle_delete_characters(emulator, params) do
-    _count = get_param(params, 0, 1)
-    # Simple implementation - delete characters at cursor position
-    # TODO: Implement actual character deletion in buffer
-    {:ok, emulator}
+    count = get_param(params, 0, 1)
+
+    {cursor_y, cursor_x} =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    buffer = Raxol.Terminal.Emulator.get_screen_buffer(emulator)
+
+    updated_buffer =
+      Raxol.Terminal.Buffer.CharEditor.delete_characters(
+        buffer,
+        cursor_y,
+        cursor_x,
+        count,
+        emulator.style
+      )
+
+    updated_emulator =
+      Raxol.Terminal.Emulator.update_active_buffer(emulator, updated_buffer)
+
+    {:ok, updated_emulator}
   end
 
   defp handle_insert_lines(emulator, params) do
-    _count = get_param(params, 0, 1)
-    # Simple implementation - insert blank lines at cursor position
-    # TODO: Implement actual line insertion in buffer
-    {:ok, emulator}
+    count = get_param(params, 0, 1)
+
+    updated_emulator =
+      Raxol.Terminal.Commands.Screen.insert_lines(emulator, count)
+
+    {:ok, updated_emulator}
   end
 
   defp handle_delete_lines(emulator, params) do
-    _count = get_param(params, 0, 1)
-    # Simple implementation - delete lines at cursor position
-    # TODO: Implement actual line deletion in buffer
-    {:ok, emulator}
+    count = get_param(params, 0, 1)
+
+    updated_emulator =
+      Raxol.Terminal.Commands.Screen.delete_lines(emulator, count)
+
+    {:ok, updated_emulator}
   end
 
   defp handle_erase_characters(emulator, params) do

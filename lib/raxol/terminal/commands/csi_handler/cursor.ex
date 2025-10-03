@@ -74,12 +74,13 @@ defmodule Raxol.Terminal.Commands.CSIHandler.Cursor do
       case cursor do
         %{row: _, col: _} = c ->
           # Full cursor struct
-          %{
-            c
-            | row: bounded_row,
-              col: bounded_col,
-              position: {bounded_row, bounded_col}
-          }
+          updated = %{c | row: bounded_row, col: bounded_col}
+
+          if Map.has_key?(c, :position) do
+            Map.put(updated, :position, {bounded_row, bounded_col})
+          else
+            updated
+          end
 
         _ ->
           # Minimal cursor - just update position

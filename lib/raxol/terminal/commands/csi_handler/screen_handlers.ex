@@ -76,9 +76,9 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ScreenHandlers do
   end
 
   defp clear_entire_screen(emulator) do
-    # Simple implementation - return emulator unchanged
-    # TODO: Implement actual screen clearing
-    emulator
+    alias Raxol.Terminal.Emulator
+
+    Emulator.erase_in_display(emulator, 2)
   end
 
   defp clear_from_cursor_to_end_of_line(emulator) do

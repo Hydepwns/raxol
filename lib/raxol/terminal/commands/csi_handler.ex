@@ -66,8 +66,8 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     # Delegate to cursor handler for cursor commands
     case Cursor.handle_command(emulator, params, command_str) do
       {:error, :unknown_cursor_command} ->
-        # Try other handlers
-        handle_other_csi(emulator, command, params)
+        # Try other handlers - use command_str since that's normalized
+        handle_other_csi(emulator, command_str, params)
 
       {:ok, updated_emulator} ->
         updated_emulator
@@ -76,43 +76,79 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
   defp handle_other_csi(emulator, command, params) do
     case command do
-      ?J ->
-        # ED - Erase Display
-        mode =
-          case params do
-            [] -> 0
-            [p] when is_integer(p) -> p
-            _ -> 0
-          end
+      "@" ->
+        # ICH - Insert Character
+        count = parse_count_param(params)
+        handle_insert_character(emulator, count)
 
+      "P" ->
+        # DCH - Delete Character
+        count = parse_count_param(params)
+        handle_delete_character(emulator, count)
+
+      "L" ->
+        # IL - Insert Line
+        count = parse_count_param(params)
+        handle_insert_line(emulator, count)
+
+      "M" ->
+        # DL - Delete Line
+        count = parse_count_param(params)
+        handle_delete_line(emulator, count)
+
+      "J" ->
+        # ED - Erase Display
+        mode = parse_mode_param(params)
         handle_erase_display(emulator, mode)
 
-      ?K ->
+      "K" ->
         # EL - Erase Line
-        mode =
-          case params do
-            [] -> 0
-            [p] when is_integer(p) -> p
-            _ -> 0
-          end
-
+        mode = parse_mode_param(params)
         handle_erase_line(emulator, mode)
 
-      ?m ->
+      "m" ->
         # SGR - Select Graphic Rendition (text formatting/colors)
         handle_sgr(emulator, params)
 
-      ?s ->
+      "s" ->
         # Save cursor position
         save_cursor_position(emulator)
 
-      ?u ->
+      "u" ->
         # Restore cursor position
         restore_cursor_position(emulator)
 
       _ ->
         # For other unknown sequences, return emulator unchanged
         emulator
+    end
+  end
+
+  defp parse_count_param(params) do
+    val = get_param(params, 0, 1)
+    max(1, val)
+  end
+
+  defp parse_mode_param(params) do
+    get_param(params, 0, 0)
+  end
+
+  defp get_param(params, index, default) do
+    case Enum.at(params, index) do
+      nil ->
+        default
+
+      val when is_integer(val) ->
+        val
+
+      val when is_binary(val) ->
+        case Integer.parse(val) do
+          {n, ""} -> n
+          _ -> default
+        end
+
+      _ ->
+        default
     end
   end
 
@@ -123,6 +159,58 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
       {:ok, updated_emulator} -> updated_emulator
       {:error, _reason, fallback_emulator} -> fallback_emulator
     end
+  end
+
+  defp handle_insert_character(emulator, count) do
+    alias Raxol.Terminal.Buffer.CharEditor
+
+    {cursor_y, cursor_x} =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    buffer = Raxol.Terminal.Emulator.get_screen_buffer(emulator)
+
+    updated_buffer =
+      CharEditor.insert_characters(
+        buffer,
+        cursor_y,
+        cursor_x,
+        count,
+        emulator.style
+      )
+
+    Raxol.Terminal.Emulator.update_active_buffer(emulator, updated_buffer)
+  end
+
+  defp handle_delete_character(emulator, count) do
+    alias Raxol.Terminal.Buffer.CharEditor
+
+    {cursor_y, cursor_x} =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    buffer = Raxol.Terminal.Emulator.get_screen_buffer(emulator)
+
+    updated_buffer =
+      CharEditor.delete_characters(
+        buffer,
+        cursor_y,
+        cursor_x,
+        count,
+        emulator.style
+      )
+
+    Raxol.Terminal.Emulator.update_active_buffer(emulator, updated_buffer)
+  end
+
+  defp handle_insert_line(emulator, count) do
+    alias Raxol.Terminal.Commands.Screen
+
+    Screen.insert_lines(emulator, count)
+  end
+
+  defp handle_delete_line(emulator, count) do
+    alias Raxol.Terminal.Commands.Screen
+
+    Screen.delete_lines(emulator, count)
   end
 
   defp handle_sgr(emulator, params) do
