@@ -4,8 +4,6 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   Handles insertion of single and multiple lines with style support.
   """
 
-  alias Raxol.Terminal.Buffer.LineOperations.Utils
-
   @doc """
   Insert empty lines at the current cursor position.
   """

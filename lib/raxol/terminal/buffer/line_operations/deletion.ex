@@ -4,8 +4,6 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
   Handles deletion of single and multiple lines, with support for scroll regions.
   """
 
-  alias Raxol.Terminal.Buffer.LineOperations.Utils
-
   @doc """
   Delete lines from a buffer.
   """
