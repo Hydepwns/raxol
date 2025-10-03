@@ -698,11 +698,21 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   end
 
   @doc """
-  Inserts lines in region with style (stub with 5 args).
+  Inserts lines at position y with count, within a scroll region.
   """
-  @spec insert_lines(Core.t(), integer(), integer(), non_neg_integer(), map()) ::
+  @spec insert_lines(
+          Core.t(),
+          integer(),
+          integer(),
+          map(),
+          {integer(), integer()}
+        ) ::
           Core.t()
-  def insert_lines(buffer, _x, _y, _count, _style), do: buffer
+  def insert_lines(buffer, y, count, style, {top, bottom}) do
+    alias Raxol.Terminal.Buffer.LineOperations
+    # LineOperations expects: (buffer, y, count, top, bottom, style)
+    LineOperations.insert_lines(buffer, y, count, top, bottom, style)
+  end
 
   @doc """
   Prepends lines to buffer.

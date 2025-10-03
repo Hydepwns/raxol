@@ -188,7 +188,9 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
   defp do_load_plugin(plugin_module, config, state)
        when is_atom(plugin_module) do
     # Call the plugin's init function safely
-    case Raxol.Core.ErrorHandling.safe_call(fn -> plugin_module.init(config) end) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           plugin_module.init(config)
+         end) do
       {:ok, {:ok, plugin_state}} ->
         # Extract plugin metadata from the state
         plugin_id = Map.get(plugin_state, :name, plugin_module |> to_string())

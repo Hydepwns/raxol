@@ -32,10 +32,9 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
 
   @spec insert_lines(map(), integer(), integer(), integer(), integer(), map()) ::
           map()
-  def insert_lines(buffer, y, count, scroll_top, scroll_bottom, style) do
-    buffer
-    |> do_insert_lines_in_region(y, count, scroll_top, scroll_bottom)
-    |> fill_new_lines(y, count, style)
+  def insert_lines(buffer, y, count, scroll_top, scroll_bottom, _style) do
+    # do_insert_lines_in_region already creates blank lines with style
+    do_insert_lines_in_region(buffer, y, count, scroll_top, scroll_bottom)
   end
 
   @doc """
@@ -80,42 +79,46 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
 
   # Helper functions
   defp do_insert_lines_in_region(buffer, y, count, top, bottom) do
-    lines = Map.get(buffer, :lines, %{})
-    height = Map.get(buffer, :height, 24)
-    width = Map.get(buffer, :width, 80)
+    alias Raxol.Terminal.ScreenBuffer.DataAdapter
 
-    new_lines =
-      Enum.reduce(0..(height - 1), %{}, fn line_y, acc ->
-        cond do
-          # Outside scroll region - keep unchanged
-          line_y < top or line_y > bottom ->
-            original_line = Map.get(lines, line_y)
-            Map.put(acc, line_y, original_line)
+    DataAdapter.with_lines_format(buffer, fn buffer_with_lines ->
+      lines = Map.get(buffer_with_lines, :lines, %{})
+      height = Map.get(buffer_with_lines, :height, 24)
+      width = Map.get(buffer_with_lines, :width, 80)
 
-          # Before insertion point - keep unchanged
-          line_y < y ->
-            Map.put(acc, line_y, Map.get(lines, line_y))
+      new_lines =
+        Enum.reduce(0..(height - 1), %{}, fn line_y, acc ->
+          cond do
+            # Outside scroll region - keep unchanged
+            line_y < top or line_y > bottom ->
+              original_line = Map.get(lines, line_y)
+              Map.put(acc, line_y, original_line)
 
-          # New inserted lines
-          line_y < y + count ->
-            Map.put(acc, line_y, create_empty_line(width, %{}))
+            # Before insertion point - keep unchanged
+            line_y < y ->
+              Map.put(acc, line_y, Map.get(lines, line_y))
 
-          # Shifted lines within region
-          line_y <= bottom ->
-            source_y = line_y - count
+            # New inserted lines
+            line_y < y + count ->
+              Map.put(acc, line_y, create_empty_line(width, %{}))
 
-            if source_y <= bottom - count do
-              Map.put(acc, line_y, Map.get(lines, source_y))
-            else
+            # Shifted lines within region
+            line_y <= bottom ->
+              source_y = line_y - count
+
+              if source_y <= bottom - count do
+                Map.put(acc, line_y, Map.get(lines, source_y))
+              else
+                acc
+              end
+
+            true ->
               acc
-            end
+          end
+        end)
 
-          true ->
-            acc
-        end
-      end)
-
-    %{buffer | lines: new_lines}
+      %{buffer_with_lines | lines: new_lines}
+    end)
   end
 
   defp create_empty_line(width, style) do
@@ -184,8 +187,4 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   end
 
   defp build_shifted_line(_lines, _source_y, _max_source), do: nil
-
-  defp fill_new_lines(buffer, start_y, count, style) do
-    Utils.fill_new_lines(buffer, start_y, count, style)
-  end
 end

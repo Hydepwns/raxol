@@ -803,10 +803,20 @@ defmodule Raxol.Terminal.ScreenBuffer do
     Operations.insert_lines(buffer, y, count, style)
   end
 
-  # Higher-arity insert_lines for region
   @doc """
-  Inserts blank lines at a specific position within a region.
+  Inserts lines at a specific position within a scroll region.
+
+  ## Parameters
+  - y: position to insert at
+  - count: number of lines to insert
+  - style: style for the blank lines
+  - {top, bottom}: scroll region boundaries
   """
+  def insert_lines(buffer, y, count, style, {top, bottom}) do
+    Operations.insert_lines(buffer, y, count, style, {top, bottom})
+  end
+
+  # Higher-arity insert_lines for region (legacy interface)
   def insert_lines(buffer, lines, y, top, bottom) do
     Operations.insert_lines(buffer, lines, y, top, bottom)
   end

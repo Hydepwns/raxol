@@ -170,7 +170,12 @@ defmodule Raxol.UI.Components.Progress.Spinner do
   """
   @spec saving() :: state()
   def saving do
-    init(%{style: :pulse, text: "Saving", colors: [:yellow, :green], speed: 500})
+    init(%{
+      style: :pulse,
+      text: "Saving",
+      colors: [:yellow, :green],
+      speed: 500
+    })
   end
 
   @doc """

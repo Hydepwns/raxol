@@ -16,43 +16,6 @@ defmodule Raxol.Security.Auditor do
   @type security_risk :: :low | :medium | :high | :critical
   @type audit_result :: {:ok, :passed} | {:error, security_risk, String.t()}
 
-  # Common attack patterns
-  @sql_injection_patterns [
-    # SQL injection with quotes
-    ~r/('\s*(;|union|or|and)\s*)/i,
-    # SQL comments after quote
-    ~r/('--'|"--")/,
-    # SQL comments at end
-    ~r/(--\s*$|;\s*--)/i,
-    # Block comments
-    ~r/(\/\*|\*\/)/,
-    # SQL Server extended procedures
-    ~r/(xp_|sp_)/i,
-    # Classic OR 1=1
-    ~r/(\bor\b\s+'?1'?\s*=\s*'?1'?)/i,
-    # Injection with statement
-    ~r/(';\s*(drop|delete|update|insert)\s+)/i,
-    # UNION SELECT attack
-    ~r/\bunion\s+select\b/i,
-    # DROP TABLE attack
-    ~r/\bdrop\s+table\b/i
-  ]
-
-  @xss_patterns [
-    ~r/<script[^>]*>.*?<\/script>/i,
-    ~r/javascript:/i,
-    ~r/on\w+\s*=/i,
-    ~r/<iframe/i,
-    ~r/<object/i,
-    ~r/<embed/i
-  ]
-
-  @path_traversal_patterns [
-    ~r/\.\.[\/\\]/,
-    ~r/\.\.%2[fF]/,
-    ~r/%2e%2e/i
-  ]
-
   @doc """
   Validates and sanitizes user input.
 
@@ -255,15 +218,42 @@ defmodule Raxol.Security.Auditor do
   defp check_patterns(input, _), do: {:ok, input}
 
   defp contains_sql_injection?(input) do
-    Enum.any?(@sql_injection_patterns, &Regex.match?(&1, input))
+    sql_injection_patterns = [
+      ~r/('\s*(;|union|or|and)\s*)/i,
+      ~r/('--'|"--")/,
+      ~r/(--\s*$|;\s*--)/i,
+      ~r/(\/\*|\*\/)/,
+      ~r/(xp_|sp_)/i,
+      ~r/(\bor\b\s+'?1'?\s*=\s*'?1'?)/i,
+      ~r/(';\s*(drop|delete|update|insert)\s+)/i,
+      ~r/\bunion\s+select\b/i,
+      ~r/\bdrop\s+table\b/i
+    ]
+
+    Enum.any?(sql_injection_patterns, &Regex.match?(&1, input))
   end
 
   defp contains_xss?(input) do
-    Enum.any?(@xss_patterns, &Regex.match?(&1, input))
+    xss_patterns = [
+      ~r/<script[^>]*>.*?<\/script>/i,
+      ~r/javascript:/i,
+      ~r/on\w+\s*=/i,
+      ~r/<iframe/i,
+      ~r/<object/i,
+      ~r/<embed/i
+    ]
+
+    Enum.any?(xss_patterns, &Regex.match?(&1, input))
   end
 
   defp contains_path_traversal?(input) do
-    Enum.any?(@path_traversal_patterns, &Regex.match?(&1, input))
+    path_traversal_patterns = [
+      ~r/\.\.[\/\\]/,
+      ~r/\.\.%2[fF]/,
+      ~r/%2e%2e/i
+    ]
+
+    Enum.any?(path_traversal_patterns, &Regex.match?(&1, input))
   end
 
   defp sanitize_input(input, :text, _opts) do

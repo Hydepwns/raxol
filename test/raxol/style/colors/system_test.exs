@@ -56,7 +56,7 @@ defmodule Raxol.Style.Colors.SystemTest do
     # Start the ColorSystemServer if not already running
     case Process.whereis(Raxol.Style.Colors.System.ColorSystemServer) do
       nil ->
-        {:ok, _pid} = Raxol.Style.Colors.System.ColorSystemServer.start_link([])
+        {:ok, _pid} = Raxol.Style.Colors.System.ColorSystemServer.start_link(name: Raxol.Style.Colors.System.ColorSystemServer)
       pid ->
         pid
     end
@@ -67,8 +67,14 @@ defmodule Raxol.Style.Colors.SystemTest do
     on_exit(fn ->
       # Stop ColorSystemServer if it was started in this test
       case Process.whereis(Raxol.Style.Colors.System.ColorSystemServer) do
-        nil -> :ok
-        pid -> GenServer.stop(pid, :normal, 100)
+        nil ->
+          :ok
+        pid ->
+          if Process.alive?(pid) do
+            GenServer.stop(pid, :normal, 100)
+          else
+            :ok
+          end
       end
     end)
 

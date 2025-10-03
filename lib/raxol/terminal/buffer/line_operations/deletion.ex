@@ -43,10 +43,9 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
 
   @spec delete_lines(map(), integer(), integer(), integer(), integer(), map()) ::
           map()
-  def delete_lines(buffer, start_y, count, scroll_top, scroll_bottom, style) do
-    buffer
-    |> delete_lines_in_region(start_y, count, scroll_top, scroll_bottom)
-    |> fill_new_lines(scroll_bottom - count + 1, count, style)
+  def delete_lines(buffer, start_y, count, scroll_top, scroll_bottom, _style) do
+    # delete_lines_in_region already fills with empty lines
+    delete_lines_in_region(buffer, start_y, count, scroll_top, scroll_bottom)
   end
 
   @doc """
@@ -60,31 +59,36 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
           integer()
         ) :: map()
   def delete_lines_in_region(buffer, start_y, count, top, bottom) do
-    lines = Map.get(buffer, :lines, %{})
+    alias Raxol.Terminal.ScreenBuffer.DataAdapter
 
-    # Build new line mapping
-    new_lines =
-      Enum.reduce(0..(Map.get(buffer, :height, 24) - 1), %{}, fn y, acc ->
-        cond do
-          # Before scroll region
-          y < top or y > bottom ->
-            Map.put(acc, y, Map.get(lines, y))
+    DataAdapter.with_lines_format(buffer, fn buffer_with_lines ->
+      lines = Map.get(buffer_with_lines, :lines, %{})
 
-          # Lines before deletion point
-          y < start_y ->
-            Map.put(acc, y, Map.get(lines, y))
+      # Build new line mapping
+      new_lines =
+        Enum.reduce(0..(Map.get(buffer_with_lines, :height, 24) - 1), %{}, fn y,
+                                                                              acc ->
+          cond do
+            # Before scroll region
+            y < top or y > bottom ->
+              Map.put(acc, y, Map.get(lines, y))
 
-          # Shift lines up after deletion
-          y + count <= bottom ->
-            Map.put(acc, y, Map.get(lines, y + count))
+            # Lines before deletion point
+            y < start_y ->
+              Map.put(acc, y, Map.get(lines, y))
 
-          # Fill with empty lines at bottom
-          true ->
-            Map.put(acc, y, create_empty_line(buffer))
-        end
-      end)
+            # Shift lines up after deletion
+            y + count <= bottom ->
+              Map.put(acc, y, Map.get(lines, y + count))
 
-    %{buffer | lines: new_lines}
+            # Fill with empty lines at bottom
+            true ->
+              Map.put(acc, y, create_empty_line(buffer_with_lines))
+          end
+        end)
+
+      %{buffer_with_lines | lines: new_lines}
+    end)
   end
 
   # Helper functions
@@ -117,8 +121,4 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
 
   defp map_shifted_line(_lines, _source_y, _height),
     do: create_empty_line_with_defaults()
-
-  defp fill_new_lines(buffer, start_y, count, style) do
-    Utils.fill_new_lines(buffer, start_y, count, style)
-  end
 end

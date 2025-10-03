@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   @spec clear_screen(Emulator.t(), integer()) :: Emulator.t()
   def clear_screen(emulator, mode) do
     buffer = Emulator.get_screen_buffer(emulator)
-    {x, y} = Emulator.get_cursor_position(emulator)
+    {y, x} = Emulator.get_cursor_position(emulator)
     # Log.info("[DEBUG clear_screen] mode=#{mode}, cursor=(#{x},#{y})")
     scroll_region = ScreenBuffer.get_scroll_region(buffer)
 
@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   def clear_line(emulator, mode) do
     buffer = Emulator.get_screen_buffer(emulator)
 
-    {cursor_x, cursor_y} = Emulator.get_cursor_position(emulator)
+    {cursor_y, cursor_x} = Emulator.get_cursor_position(emulator)
 
     Raxol.Core.Runtime.Log.debug(
       "[Screen.clear_line] CALLED with mode: #{mode}, cursor_x: #{cursor_x}, cursor_y from emulator: #{cursor_y}"
@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.Commands.Screen do
 
   @spec insert_lines(Emulator.t(), integer()) :: Emulator.t()
   def insert_lines(emulator, count) do
-    {_, cursor_y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+    {cursor_y, _} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
     buffer = Emulator.get_screen_buffer(emulator)
 
     # Apply scroll region constraints if active
@@ -114,9 +114,15 @@ defmodule Raxol.Terminal.Commands.Screen do
     # Only insert if cursor is within the scroll region
     case cursor_y >= top && cursor_y <= bottom do
       true ->
-        # Insert count lines at cursor_y
+        # Insert count lines at cursor_y, passing the scroll region
         new_buffer =
-          ScreenBuffer.insert_lines(buffer, cursor_y, count, emulator.style)
+          ScreenBuffer.insert_lines(
+            buffer,
+            cursor_y,
+            count,
+            emulator.style,
+            {top, bottom}
+          )
 
         Emulator.update_active_buffer(emulator, new_buffer)
 
@@ -128,7 +134,7 @@ defmodule Raxol.Terminal.Commands.Screen do
 
   @spec delete_lines(Emulator.t(), integer()) :: Emulator.t()
   def delete_lines(emulator, count) do
-    {_, cursor_y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+    {cursor_y, _} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
     buffer = Emulator.get_screen_buffer(emulator)
 
     # Apply scroll region constraints if active
