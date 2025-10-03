@@ -2,7 +2,7 @@ defmodule Raxol.Style.Colors.HotReloadTest do
   # Run tests serially to avoid GenServer name conflict
   use ExUnit.Case
 
-  alias Raxol.Style.Colors.{HotReload, Theme}
+  alias Raxol.Style.Colors.HotReload
 
   @test_theme %{
     name: "Test Theme",
@@ -45,14 +45,20 @@ defmodule Raxol.Style.Colors.HotReloadTest do
     File.mkdir_p!(tmp_dir)
 
     # Stop any existing HotReload process to avoid conflicts
-    try do
-      GenServer.stop(HotReload, :normal, 1000)
-    catch
-      :exit, _ -> :ok
+    case Process.whereis(HotReload) do
+      nil -> :ok
+      pid when is_pid(pid) ->
+        if Process.alive?(pid) do
+          try do
+            GenServer.stop(pid, :normal, 1000)
+          catch
+            :exit, _ -> :ok
+          end
+        end
     end
 
     # Start the hot-reload server for this test
-    {:ok, pid} = HotReload.start_link()
+    {:ok, pid} = HotReload.start_link(name: HotReload)
 
     # Ensure the server is watching the test path
     HotReload.watch_path(tmp_dir)
@@ -62,11 +68,13 @@ defmodule Raxol.Style.Colors.HotReloadTest do
 
     # Cleanup after each test
     on_exit(fn ->
-      # Stop the server
-      try do
-        GenServer.stop(pid, :normal, 1000)
-      catch
-        :exit, _ -> :ok
+      # Stop the server if still alive
+      if Process.alive?(pid) do
+        try do
+          GenServer.stop(pid, :normal, 1000)
+        catch
+          :exit, _ -> :ok
+        end
       end
 
       # Clean up temp directory
