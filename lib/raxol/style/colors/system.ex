@@ -62,25 +62,16 @@ defmodule Raxol.Style.Colors.System do
   def init(opts \\ []) do
     ensure_server_started()
 
-    # Get accessibility options if they exist
-    accessibility_options = Server.get_accessibility_options()
-
-    # Determine high contrast setting
-    high_contrast =
-      case accessibility_options do
-        nil ->
-          Keyword.get(opts, :high_contrast, false)
-
-        options ->
-          Keyword.get(opts, :high_contrast, options[:high_contrast] || false)
-      end
-
-    # Initialize the system with options
-    Server.init_system(Keyword.put(opts, :high_contrast, high_contrast))
-
-    # Apply the initial theme
+    # Don't call server during initialization to avoid deadlock
+    # The server is initialized via ensure_server_started()
+    # Just apply the initial theme if needed
     initial_theme_id = Keyword.get(opts, :theme, @default_theme)
-    apply_theme(initial_theme_id, high_contrast: high_contrast)
+    high_contrast = Keyword.get(opts, :high_contrast, false)
+
+    # Only apply theme if it's not the default
+    if initial_theme_id != @default_theme or high_contrast do
+      apply_theme(initial_theme_id, high_contrast: high_contrast)
+    end
 
     :ok
   end

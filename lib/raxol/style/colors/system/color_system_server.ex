@@ -172,18 +172,26 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
       registered_themes: %{}
     }
 
-    # Register event handler for accessibility changes
-    EventManager.register_handler(
-      :accessibility_high_contrast,
-      __MODULE__,
-      :handle_high_contrast
-    )
+    # Register event handler for accessibility changes if EventManager is available
+    case Process.whereis(EventManager) do
+      nil ->
+        Logger.debug(
+          "EventManager not available, skipping event handler registration"
+        )
 
-    EventManager.register_handler(
-      :accessibility_preference_changed,
-      __MODULE__,
-      :handle_accessibility_preference_changed
-    )
+      _pid ->
+        EventManager.register_handler(
+          :accessibility_high_contrast,
+          __MODULE__,
+          :handle_high_contrast
+        )
+
+        EventManager.register_handler(
+          :accessibility_preference_changed,
+          __MODULE__,
+          :handle_accessibility_preference_changed
+        )
+    end
 
     {:ok, state}
   end
