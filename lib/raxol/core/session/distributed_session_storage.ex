@@ -54,7 +54,8 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     :wal_enabled,
     :backup_config,
     :cleanup_timer,
-    :stats
+    :stats,
+    :table_prefix
   ]
 
   @type backend_type :: :ets | :dets | :mnesia | :external
@@ -141,6 +142,15 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     backend = Keyword.get(opts, :backend, :ets)
     storage_config = Keyword.get(opts, :storage_config, %{})
 
+    # Generate unique table prefix for test isolation
+    table_prefix =
+      Keyword.get(opts, :table_prefix) ||
+        if Application.get_env(:raxol, :env) == :test do
+          "session_#{:erlang.unique_integer([:positive])}"
+        else
+          "session"
+        end
+
     state = %__MODULE__{
       backend: backend,
       storage_config: storage_config,
@@ -151,7 +161,8 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
       encryption_enabled: Keyword.get(opts, :encryption_enabled, false),
       wal_enabled: Keyword.get(opts, :wal_enabled, true),
       backup_config: Keyword.get(opts, :backup_config, %{}),
-      stats: init_stats()
+      stats: init_stats(),
+      table_prefix: table_prefix
     }
 
     case initialize_backend(state) do
@@ -316,33 +327,97 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     end
   end
 
+  @impl true
+  def terminate(_reason, state) do
+    # Clean up ETS tables in test environment
+    if Application.get_env(:raxol, :env) == :test and state.backend == :ets do
+      # Clean up shard tables
+      for shard_id <- 0..(state.shard_count - 1) do
+        table_name = :"#{state.table_prefix}_shard_#{shard_id}"
+
+        case :ets.whereis(table_name) do
+          :undefined ->
+            :ok
+
+          _table ->
+            try do
+              :ets.delete(table_name)
+            rescue
+              _ -> :ok
+            end
+        end
+      end
+
+      # Clean up metadata table
+      metadata_table_name = :"#{state.table_prefix}_metadata"
+
+      case :ets.whereis(metadata_table_name) do
+        :undefined ->
+          :ok
+
+        _table ->
+          try do
+            :ets.delete(metadata_table_name)
+          rescue
+            _ -> :ok
+          end
+      end
+    end
+
+    :ok
+  end
+
   # Private Implementation
 
   defp initialize_backend(%{backend: :ets} = state) do
-    # Create ETS tables for each shard
+    # Create ETS tables for each shard with unique prefix
     shard_tables =
       for shard_id <- 0..(state.shard_count - 1) do
-        table_name = :"session_shard_#{shard_id}"
+        table_name = :"#{state.table_prefix}_shard_#{shard_id}"
 
+        # Try to create the table, handle if it already exists in tests
         table =
-          :ets.new(table_name, [
+          case :ets.whereis(table_name) do
+            :undefined ->
+              :ets.new(table_name, [
+                :set,
+                :public,
+                :named_table,
+                {:read_concurrency, true}
+              ])
+
+            existing ->
+              # In test mode, clean existing table
+              if Application.get_env(:raxol, :env) == :test do
+                :ets.delete_all_objects(existing)
+              end
+
+              existing
+          end
+
+        {shard_id, table}
+      end
+
+    # Create metadata table with unique prefix
+    metadata_table_name = :"#{state.table_prefix}_metadata"
+
+    metadata_table =
+      case :ets.whereis(metadata_table_name) do
+        :undefined ->
+          :ets.new(metadata_table_name, [
             :set,
             :public,
             :named_table,
             {:read_concurrency, true}
           ])
 
-        {shard_id, table}
-      end
+        existing ->
+          if Application.get_env(:raxol, :env) == :test do
+            :ets.delete_all_objects(existing)
+          end
 
-    # Create metadata table
-    metadata_table =
-      :ets.new(:session_metadata, [
-        :set,
-        :public,
-        :named_table,
-        {:read_concurrency, true}
-      ])
+          existing
+      end
 
     config = %{
       shard_tables: Map.new(shard_tables),

@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Operations.SelectionOperations do
 
   def get_selection(emulator) do
     buffer = ScreenManager.get_screen_buffer(emulator)
-    ScreenManager.get_selection(buffer)
+    ScreenManager.get_selected_text(buffer)
   end
 
   def get_selection_start(emulator) do

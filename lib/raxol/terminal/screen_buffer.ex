@@ -49,7 +49,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
     RegionOperations,
     BehaviourImpl,
     Operations,
-    Attributes
+    Attributes,
+    Selection
   }
 
   defstruct [
@@ -677,24 +678,42 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   # === Selection Operations ===
 
-  defdelegate start_selection(buffer, x, y), to: Attributes
-  defdelegate update_selection(buffer, x, y), to: Attributes
-  defdelegate get_selection(buffer), to: Attributes
-  defdelegate in_selection?(buffer, x, y), to: Attributes
+  defdelegate start_selection(buffer, x, y), to: Selection
+  defdelegate clear_selection(buffer), to: Selection
+  defdelegate get_selected_text(buffer), to: Selection
 
-  defdelegate get_selection_boundaries(buffer),
-    to: Attributes
+  def update_selection(buffer, x, y) do
+    case buffer.selection do
+      {sx, sy, _, _} -> %{buffer | selection: {sx, sy, x, y}}
+      nil -> buffer
+    end
+  end
+
+  def get_selection(buffer), do: buffer.selection
+
+  def in_selection?(buffer, x, y), do: Selection.selected?(buffer, x, y)
+
+  def get_selection_boundaries(buffer), do: buffer.selection
 
   defdelegate get_text_in_region(buffer, start_x, start_y, end_x, end_y),
     to: Attributes
 
-  defdelegate clear_selection(buffer), to: Attributes
-  defdelegate selection_active?(buffer), to: Attributes
+  def selection_active?(buffer), do: buffer.selection != nil
 
-  defdelegate get_selection_start(buffer),
-    to: Attributes
+  def get_selection_start(buffer) do
+    case buffer.selection do
+      {sx, sy, _, _} -> {sx, sy}
+      nil -> nil
+    end
+  end
 
-  defdelegate get_selection_end(buffer), to: Attributes
+  def get_selection_end(buffer) do
+    case buffer.selection do
+      {sx, sy, sx, sy} -> nil
+      {_, _, ex, ey} -> {ex, ey}
+      nil -> nil
+    end
+  end
 
   # === Scroll Region Operations ===
 

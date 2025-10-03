@@ -299,10 +299,14 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
     # Clear from cursor to beginning of current line
     buffer = clear_to_beginning_of_line(buffer)
 
-    # Clear all lines above
-    Enum.reduce(0..(y - 1), buffer, fn line_y, acc ->
-      clear_line(acc, line_y)
-    end)
+    # Clear all lines above (only if there are lines above)
+    if y > 0 do
+      Enum.reduce(0..(y - 1), buffer, fn line_y, acc ->
+        clear_line(acc, line_y)
+      end)
+    else
+      buffer
+    end
   end
 
   @doc """
@@ -542,11 +546,21 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   def delete_lines(buffer, _count), do: buffer
 
   @doc """
-  Deletes lines in region (stub with 5 args).
+  Deletes lines at position y with count, within a region.
   """
-  @spec delete_lines(Core.t(), integer(), integer(), integer(), integer()) ::
+  @spec delete_lines(
+          Core.t(),
+          integer(),
+          integer(),
+          map(),
+          {integer(), integer()}
+        ) ::
           Core.t()
-  def delete_lines(buffer, _x1, _y1, _x2, _y2), do: buffer
+  def delete_lines(buffer, y, count, style, {top, bottom}) do
+    alias Raxol.Terminal.Buffer.LineOperations
+    # LineOperations expects: (buffer, y, count, top, bottom, style)
+    LineOperations.delete_lines(buffer, y, count, top, bottom, style)
+  end
 
   @doc """
   Erases characters (stub with 2 args).
@@ -674,11 +688,14 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   def insert_lines(buffer, _count), do: buffer
 
   @doc """
-  Inserts lines in region (stub with 4 args).
+  Inserts lines at position y with count.
   """
   @spec insert_lines(Core.t(), integer(), integer(), non_neg_integer()) ::
           Core.t()
-  def insert_lines(buffer, _x, _y, _count), do: buffer
+  def insert_lines(buffer, y, count, style) do
+    alias Raxol.Terminal.Buffer.LineOperations
+    LineOperations.insert_lines(buffer, y, count, style)
+  end
 
   @doc """
   Inserts lines in region with style (stub with 5 args).
@@ -729,8 +746,41 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   end
 
   @doc """
-  Shifts region to line (stub).
+  Shifts region content so that target_line appears at the top of the region.
   """
-  @spec shift_region_to_line(Core.t(), integer(), integer()) :: Core.t()
-  def shift_region_to_line(buffer, _from_line, _to_line), do: buffer
+  @spec shift_region_to_line(Core.t(), {integer(), integer()}, integer()) ::
+          Core.t()
+  def shift_region_to_line(buffer, {top, bottom}, target_line) do
+    shift_amount = target_line - top
+
+    cond do
+      shift_amount == 0 ->
+        %{buffer | scroll_position: target_line}
+
+      shift_amount > 0 ->
+        region_height = bottom - top + 1
+        lines_to_shift = min(shift_amount, region_height)
+
+        new_cells =
+          Enum.with_index(buffer.cells)
+          |> Enum.map(fn {line, y} ->
+            cond do
+              y < top or y > bottom ->
+                line
+
+              y <= bottom - lines_to_shift ->
+                source_y = y + lines_to_shift
+                Enum.at(buffer.cells, source_y, line)
+
+              true ->
+                List.duplicate(%Cell{char: " "}, buffer.width)
+            end
+          end)
+
+        %{buffer | cells: new_cells, scroll_position: target_line}
+
+      true ->
+        %{buffer | scroll_position: target_line}
+    end
+  end
 end

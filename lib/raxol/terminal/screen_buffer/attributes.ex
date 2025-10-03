@@ -362,7 +362,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   """
   @spec start_selection(Core.t(), non_neg_integer(), non_neg_integer()) ::
           Core.t()
-  def start_selection(buffer, x, y), do: %{buffer | selection: {x, y, x, y}}
+  def start_selection(buffer, x, y), do: %{buffer | selection: {x, y, nil, nil}}
 
   @doc """
   Updates selection (stub).
@@ -372,7 +372,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   def update_selection(buffer, x, y) do
     case buffer.selection do
       {sx, sy, _, _} -> %{buffer | selection: {sx, sy, x, y}}
-      nil -> %{buffer | selection: {x, y, x, y}}
+      nil -> buffer
     end
   end
 
@@ -406,6 +406,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   @spec get_selection_end(Core.t()) :: {integer(), integer()} | nil
   def get_selection_end(buffer) do
     case buffer.selection do
+      {_, _, nil, nil} -> nil
       {_, _, ex, ey} -> {ex, ey}
       nil -> nil
     end
@@ -423,7 +424,35 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   """
   @spec in_selection?(Core.t(), non_neg_integer(), non_neg_integer()) ::
           boolean()
-  def in_selection?(_buffer, _x, _y), do: false
+  def in_selection?(buffer, x, y) do
+    case buffer.selection do
+      {sx, sy, ex, ey} when ex != nil and ey != nil ->
+        {start_x, start_y, end_x, end_y} = normalize_selection(sx, sy, ex, ey)
+        position_in_selection?(x, y, start_x, start_y, end_x, end_y)
+
+      _ ->
+        false
+    end
+  end
+
+  defp normalize_selection(x1, y1, x2, y2) do
+    if y1 < y2 or (y1 == y2 and x1 <= x2) do
+      {x1, y1, x2, y2}
+    else
+      {x2, y2, x1, y1}
+    end
+  end
+
+  defp position_in_selection?(x, y, start_x, start_y, end_x, end_y) do
+    cond do
+      y < start_y or y > end_y -> false
+      y > start_y and y < end_y -> true
+      y == start_y and y == end_y -> x >= start_x and x <= end_x
+      y == start_y -> x >= start_x
+      y == end_y -> x <= end_x
+      true -> false
+    end
+  end
 
   @doc """
   Gets text in region.
