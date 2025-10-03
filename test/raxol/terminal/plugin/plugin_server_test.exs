@@ -1,10 +1,17 @@
 defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
   use ExUnit.Case, async: false
-  alias Raxol.Terminal.Plugin.UnifiedPlugin
+  alias Raxol.Terminal.Plugin.PluginServer
 
   setup do
-    {:ok, _pid} =
-      UnifiedPlugin.start_link(
+    # Stop any existing PluginServer
+    case Process.whereis(PluginServer) do
+      nil -> :ok
+      pid -> GenServer.stop(pid)
+    end
+
+    {:ok, pid} =
+      PluginServer.start_link(
+        name: PluginServer,
         plugin_paths: ["test/fixtures/plugins"],
         auto_load: false
       )
@@ -15,6 +22,9 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
     on_exit(fn ->
       # Always restore the theme file after each test
       File.write!(theme_file, original_content)
+      if Process.alive?(pid) do
+        GenServer.stop(pid)
+      end
     end)
 
     :ok
@@ -24,7 +34,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
     test ~c"loads and unloads plugins" do
       # Load theme plugin
       assert {:ok, theme_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/theme",
                  :theme,
                  name: "Test Theme",
@@ -33,7 +43,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
       # Load script plugin
       assert {:ok, script_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/script",
                  :script,
                  name: "Test Script",
@@ -41,21 +51,21 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
                )
 
       # Get plugin states
-      assert {:ok, theme_state} = UnifiedPlugin.get_plugin_state(theme_id)
-      assert {:ok, script_state} = UnifiedPlugin.get_plugin_state(script_id)
+      assert {:ok, theme_state} = PluginServer.get_plugin_state(theme_id)
+      assert {:ok, script_state} = PluginServer.get_plugin_state(script_id)
 
       assert theme_state.type == :theme
       assert script_state.type == :script
 
       # Unload plugins
-      assert :ok = UnifiedPlugin.unload_plugin(theme_id)
-      assert :ok = UnifiedPlugin.unload_plugin(script_id)
+      assert :ok = PluginServer.unload_plugin(theme_id)
+      assert :ok = PluginServer.unload_plugin(script_id)
 
       assert {:error, :plugin_not_found} =
-               UnifiedPlugin.get_plugin_state(theme_id)
+               PluginServer.get_plugin_state(theme_id)
 
       assert {:error, :plugin_not_found} =
-               UnifiedPlugin.get_plugin_state(script_id)
+               PluginServer.get_plugin_state(script_id)
     end
 
     test ~c"handles plugin configuration" do
@@ -69,7 +79,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
       }
 
       assert {:ok, plugin_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/theme",
                  :theme,
                  name: "Test Theme",
@@ -86,10 +96,10 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
         font: "sans-serif"
       }
 
-      assert :ok = UnifiedPlugin.update_plugin_config(plugin_id, new_config)
+      assert :ok = PluginServer.update_plugin_config(plugin_id, new_config)
 
       # Verify config update
-      assert {:ok, plugin_state} = UnifiedPlugin.get_plugin_state(plugin_id)
+      assert {:ok, plugin_state} = PluginServer.get_plugin_state(plugin_id)
       assert plugin_state.config == new_config
     end
   end
@@ -97,7 +107,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
   describe "plugin types" do
     test ~c"handles theme plugins" do
       assert {:ok, plugin_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/theme",
                  :theme,
                  name: "Test Theme",
@@ -106,7 +116,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
       # Execute theme function
       assert {:ok, result} =
-               UnifiedPlugin.execute_plugin_function(
+               PluginServer.execute_plugin_function(
                  plugin_id,
                  :apply_theme,
                  [%{colors: %{background: "#000000"}}]
@@ -117,7 +127,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
     test ~c"handles script plugins" do
       assert {:ok, plugin_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/script",
                  :script,
                  name: "Test Script",
@@ -126,7 +136,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
       # Execute script function
       assert {:ok, result} =
-               UnifiedPlugin.execute_plugin_function(
+               PluginServer.execute_plugin_function(
                  plugin_id,
                  :run_script,
                  ["test_script"]
@@ -138,7 +148,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
     test ~c"handles extension plugins" do
       assert {:ok, plugin_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/extension",
                  :extension,
                  name: "Test Extension",
@@ -147,7 +157,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
       # Execute extension function
       assert {:ok, result} =
-               UnifiedPlugin.execute_plugin_function(
+               PluginServer.execute_plugin_function(
                  plugin_id,
                  :run_extension,
                  ["test_extension"]
@@ -162,7 +172,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
     test ~c"lists plugins with filters" do
       # Load different types of plugins
       assert {:ok, theme_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/theme",
                  :theme,
                  name: "Test Theme",
@@ -170,7 +180,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
                )
 
       assert {:ok, _script_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/script",
                  :script,
                  name: "Test Script",
@@ -178,23 +188,23 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
                )
 
       # Get all plugins
-      assert {:ok, all_plugins} = UnifiedPlugin.get_plugins()
+      assert {:ok, all_plugins} = PluginServer.get_plugins()
       assert map_size(all_plugins) == 2
 
       # Filter by type
-      assert {:ok, theme_plugins} = UnifiedPlugin.get_plugins(type: :theme)
+      assert {:ok, theme_plugins} = PluginServer.get_plugins(type: :theme)
       assert map_size(theme_plugins) == 1
       assert Map.has_key?(theme_plugins, theme_id)
 
       # Filter by status
-      assert {:ok, active_plugins} = UnifiedPlugin.get_plugins(status: :active)
+      assert {:ok, active_plugins} = PluginServer.get_plugins(status: :active)
       assert map_size(active_plugins) == 2
     end
 
     test ~c"handles plugin dependencies" do
       # Load dependent plugin - currently fails due to missing dependency
       assert {:error, :module_not_found} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/dependent",
                  :extension,
                  name: "Dependent Plugin",
@@ -204,7 +214,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
       # Load base plugin first
       assert {:ok, base_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/base",
                  :extension,
                  name: "base_plugin",
@@ -213,7 +223,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
       # Now dependent plugin should load successfully
       assert {:ok, dependent_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/dependent",
                  :extension,
                  name: "Dependent Plugin",
@@ -222,9 +232,9 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
                )
 
       # Verify both plugins are active
-      assert {:ok, base_state} = UnifiedPlugin.get_plugin_state(base_id)
+      assert {:ok, base_state} = PluginServer.get_plugin_state(base_id)
       assert base_state.status == :active
-      assert {:ok, dependent_state} = UnifiedPlugin.get_plugin_state(dependent_id)
+      assert {:ok, dependent_state} = PluginServer.get_plugin_state(dependent_id)
       assert dependent_state.status == :active
     end
   end
@@ -232,7 +242,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
   describe "error handling" do
     test ~c"handles invalid plugin types" do
       assert {:error, :invalid_plugin_type} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/invalid",
                  :invalid_type,
                  name: "Invalid Plugin",
@@ -242,7 +252,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
     test ~c"handles invalid plugin formats" do
       assert {:error, :enoent} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/invalid",
                  :theme,
                  name: "Invalid Plugin"
@@ -252,18 +262,18 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
     test ~c"handles non-existent plugins" do
       assert {:error, :plugin_not_found} =
-               UnifiedPlugin.get_plugin_state("non_existent")
+               PluginServer.get_plugin_state("non_existent")
 
       assert {:error, :plugin_not_found} =
-               UnifiedPlugin.unload_plugin("non_existent")
+               PluginServer.unload_plugin("non_existent")
 
       assert {:error, :plugin_not_found} =
-               UnifiedPlugin.update_plugin_config("non_existent", %{})
+               PluginServer.update_plugin_config("non_existent", %{})
     end
 
     test ~c"handles invalid configurations" do
       assert {:ok, plugin_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/theme",
                  :theme,
                  name: "Test Theme",
@@ -271,7 +281,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
                )
 
       assert {:error, :invalid_config_format} =
-               UnifiedPlugin.update_plugin_config(plugin_id, "invalid_config")
+               PluginServer.update_plugin_config(plugin_id, "invalid_config")
     end
   end
 
@@ -279,7 +289,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
     test ~c"reloads plugins successfully" do
       # Load plugin
       assert {:ok, plugin_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  "test/fixtures/plugins/theme",
                  :theme,
                  name: "Test Theme",
@@ -290,10 +300,10 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
       # (In a real test, we would modify the plugin file here)
 
       # Reload plugin
-      assert :ok = UnifiedPlugin.reload_plugin(plugin_id)
+      assert :ok = PluginServer.reload_plugin(plugin_id)
 
       # Verify plugin is still active
-      assert {:ok, plugin_state} = UnifiedPlugin.get_plugin_state(plugin_id)
+      assert {:ok, plugin_state} = PluginServer.get_plugin_state(plugin_id)
       assert plugin_state.status == :active
     end
 
@@ -309,7 +319,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
       # Load plugin from temporary location
       assert {:ok, plugin_id} =
-               UnifiedPlugin.load_plugin(
+               PluginServer.load_plugin(
                  temp_theme_dir,
                  :theme,
                  name: "Test Theme",
@@ -327,10 +337,10 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
       try do
         # Attempt to reload - should fail
-        assert {:error, :reload_failed, _state} = UnifiedPlugin.reload_plugin(plugin_id)
+        assert {:error, :reload_failed, _state} = PluginServer.reload_plugin(plugin_id)
 
         # Verify plugin is in error state
-        assert {:ok, plugin_state} = UnifiedPlugin.get_plugin_state(plugin_id)
+        assert {:ok, plugin_state} = PluginServer.get_plugin_state(plugin_id)
         assert plugin_state.status == :error
       after
         # Clean up: restore the temporary file and remove the temp directory

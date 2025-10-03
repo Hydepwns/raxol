@@ -38,9 +38,7 @@ defmodule Raxol.Protocols.Phase2IntegrationTest do
   alias Raxol.Protocols.{
     ComponentFramework,
     PluginSystemIntegration,
-    EventSystemIntegration,
-    UIComponentImplementations,
-    ThemeImplementations
+    EventSystemIntegration
   }
 
   alias Raxol.Protocols.{Renderable, Styleable, EventHandler, Serializable}

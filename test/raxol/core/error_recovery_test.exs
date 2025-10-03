@@ -4,11 +4,20 @@ defmodule Raxol.Core.ErrorRecoveryTest do
   alias Raxol.Core.ErrorRecovery
 
   setup do
-    # Start ErrorRecovery if not already running
-    case GenServer.whereis(ErrorRecovery) do
-      nil -> {:ok, _pid} = ErrorRecovery.start_link()
-      _pid -> :ok
+    # Stop any existing ErrorRecovery
+    case Process.whereis(ErrorRecovery) do
+      nil -> :ok
+      pid -> GenServer.stop(pid)
     end
+
+    # Start ErrorRecovery with proper name registration
+    {:ok, pid} = ErrorRecovery.start_link(name: ErrorRecovery)
+
+    on_exit(fn ->
+      if Process.alive?(pid) do
+        GenServer.stop(pid)
+      end
+    end)
 
     :ok
   end

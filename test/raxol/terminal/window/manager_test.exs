@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Window.ManagerTest do
     end
     
     start_supervised!(Window.Registry)
-    start_supervised!(Raxol.Terminal.Window.Manager.WindowManagerServer)
+    start_supervised!({Raxol.Terminal.Window.Manager.WindowManagerServer, [name: Raxol.Terminal.Window.Manager.WindowManagerServer]})
     :ok
   end
 

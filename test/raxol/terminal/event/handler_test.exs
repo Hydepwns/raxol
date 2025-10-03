@@ -3,6 +3,13 @@ defmodule Raxol.Terminal.Event.HandlerTest do
   alias Raxol.Terminal.Event.Handler
   alias Raxol.Test.TestUtils
 
+  setup do
+    # Create emulator with event field initialized for handler tests
+    emulator = TestUtils.create_test_emulator()
+    emulator_with_event = %{emulator | event: Handler.new()}
+    {:ok, emulator: emulator_with_event}
+  end
+
   describe "new/0" do
     test "creates a new event handler with default values" do
       event = Handler.new()
@@ -12,8 +19,7 @@ defmodule Raxol.Terminal.Event.HandlerTest do
   end
 
   describe "register_handler/3" do
-    test "registers a new event handler" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+    test "registers a new event handler", %{emulator: emulator} do
       handler = fn emulator, _data -> emulator end
       _updated_emulator = Handler.register_handler(emulator, :test_event, handler)
       # Since event is now a PID, we can't directly access handlers
@@ -21,8 +27,7 @@ defmodule Raxol.Terminal.Event.HandlerTest do
       assert true
     end
 
-    test "updates existing event handler" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+    test "updates existing event handler", %{emulator: emulator} do
       handler1 = fn emulator, _data -> emulator end
       handler2 = fn emulator, _data -> emulator end
       emulator_with_handler1 = Handler.register_handler(emulator, :test_event, handler1)
@@ -34,8 +39,7 @@ defmodule Raxol.Terminal.Event.HandlerTest do
   end
 
   describe "unregister_handler/2" do
-    test "removes an event handler" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+    test "removes an event handler", %{emulator: emulator} do
       handler = fn emulator, _data -> emulator end
       emulator_with_handler = Handler.register_handler(emulator, :test_event, handler)
       _emulator_without_handler = Handler.unregister_handler(emulator_with_handler, :test_event)
@@ -44,8 +48,7 @@ defmodule Raxol.Terminal.Event.HandlerTest do
       assert true
     end
 
-    test "does nothing for non-existent handler" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+    test "does nothing for non-existent handler", %{emulator: emulator} do
       _updated_emulator = Handler.unregister_handler(emulator, :non_existent)
       # Since event is now a PID, we can't directly access handlers
       # The test passes if no exception is raised
@@ -54,8 +57,7 @@ defmodule Raxol.Terminal.Event.HandlerTest do
   end
 
   describe "dispatch_event/3" do
-    test "calls registered handler with event data" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+    test "calls registered handler with event data", %{emulator: emulator} do
       test_pid = self()
 
       handler = fn emulator, data ->
@@ -68,16 +70,14 @@ defmodule Raxol.Terminal.Event.HandlerTest do
       assert_receive {:event_handled, "test_data"}
     end
 
-    test "returns emulator unchanged when no handler exists" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+    test "returns emulator unchanged when no handler exists", %{emulator: emulator} do
       result = Handler.dispatch_event(emulator, :non_existent, "test_data")
       assert result == {:ok, emulator}
     end
   end
 
   describe "queue_event/3" do
-    test "adds event to queue" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+    test "adds event to queue", %{emulator: emulator} do
       emulator = Handler.queue_event(emulator, :test_event, "test_data")
       queue = Handler.get_event_queue(emulator)
       refute :queue.is_empty(queue)
@@ -85,8 +85,7 @@ defmodule Raxol.Terminal.Event.HandlerTest do
   end
 
   describe "process_events/1" do
-    test "processes all queued events" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+    test "processes all queued events", %{emulator: emulator} do
       test_pid = self()
 
       handler = fn emulator, data ->
@@ -104,16 +103,14 @@ defmodule Raxol.Terminal.Event.HandlerTest do
       assert :queue.is_empty(queue)
     end
 
-    test "handles empty queue" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+    test "handles empty queue", %{emulator: emulator} do
       result = Handler.process_events(emulator)
       assert result == emulator
     end
   end
 
   describe "get_event_queue/1" do
-    test "returns the current event queue" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+    test "returns the current event queue", %{emulator: emulator} do
       emulator = Handler.queue_event(emulator, :test_event, "test_data")
       queue = Handler.get_event_queue(emulator)
       refute :queue.is_empty(queue)
@@ -121,8 +118,7 @@ defmodule Raxol.Terminal.Event.HandlerTest do
   end
 
   describe "clear_event_queue/1" do
-    test "removes all events from queue" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+    test "removes all events from queue", %{emulator: emulator} do
       emulator = Handler.queue_event(emulator, :test_event, "test_data")
       emulator = Handler.clear_event_queue(emulator)
       queue = Handler.get_event_queue(emulator)
@@ -131,8 +127,7 @@ defmodule Raxol.Terminal.Event.HandlerTest do
   end
 
   describe "reset_event_handler/1" do
-    test "resets event handler to initial state" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+    test "resets event handler to initial state", %{emulator: emulator} do
       handler = fn emulator, _data -> emulator end
       emulator = Handler.register_handler(emulator, :test_event, handler)
       emulator = Handler.queue_event(emulator, :test_event, "test_data")

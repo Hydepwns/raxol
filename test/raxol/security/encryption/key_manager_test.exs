@@ -3,9 +3,16 @@ defmodule Raxol.Security.Encryption.KeyManagerTest do
   alias Raxol.Security.Encryption.KeyManager
 
   setup do
+    # Start ContextServer first as KeyManager depends on it
+    {:ok, _context_pid} =
+      Raxol.Security.UserContext.ContextServer.start_link(
+        name: Raxol.Security.UserContext.ContextServer
+      )
+
     # Start key manager for tests (without explicit audit logger)
     {:ok, _pid} =
       KeyManager.start_link(
+        name: KeyManager,
         config: %{
           rotation_days: 1,
           cache_ttl_ms: 100,
@@ -14,12 +21,23 @@ defmodule Raxol.Security.Encryption.KeyManagerTest do
       )
 
     on_exit(fn ->
+      # Stop KeyManager
       case Process.whereis(KeyManager) do
         nil ->
           :ok
         pid when is_pid(pid) ->
           if Process.alive?(pid) do
             GenServer.stop(KeyManager, :normal, 500)
+          end
+      end
+
+      # Stop ContextServer
+      case Process.whereis(Raxol.Security.UserContext.ContextServer) do
+        nil ->
+          :ok
+        pid when is_pid(pid) ->
+          if Process.alive?(pid) do
+            GenServer.stop(Raxol.Security.UserContext.ContextServer, :normal, 500)
           end
       end
       # Let the audit logger handle its own cleanup

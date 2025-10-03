@@ -3,23 +3,21 @@ defmodule Raxol.Terminal.Cache.SystemTest do
   alias Raxol.Terminal.Cache.System
 
   setup do
-    # Ensure Cache.System is started for tests
-    # It uses a named GenServer, so we need to handle it differently
-    case Process.whereis(System) do
-      nil ->
-        # Not running, start it
-        {:ok, _pid} = System.start_link()
-
-      _pid ->
-        # Already running, clear all caches to reset state
-        # This will also reset statistics since they're per-namespace
-        :ok
+    # Stop any existing Cache.System
+    cache_system_name = Raxol.Terminal.Cache.System
+    case Process.whereis(cache_system_name) do
+      nil -> :ok
+      pid -> GenServer.stop(pid)
     end
 
-    # Clear all namespaces to ensure clean state and reset stats
-    System.clear(namespace: :general)
-    System.clear(namespace: :cells)
-    System.clear(namespace: :metadata)
+    # Start Cache.System with proper name registration
+    {:ok, pid} = System.start_link(name: cache_system_name)
+
+    on_exit(fn ->
+      if Process.alive?(pid) do
+        GenServer.stop(pid)
+      end
+    end)
 
     :ok
   end

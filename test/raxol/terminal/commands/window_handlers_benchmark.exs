@@ -2,15 +2,14 @@ defmodule Raxol.Terminal.Commands.WindowHandlerBenchmark do
   use ExUnit.Case
   alias Raxol.Terminal.Commands.WindowHandler
   alias Raxol.Test.PerformanceHelper
-  alias Raxol.Test.WindowTestHelper
 
   setup do
-    {:ok, emulator: WindowUnifiedTestHelper.create_test_emulator()}
+    {:ok, emulator: Raxol.Test.WindowTestHelper.create_test_emulator()}
   end
 
   describe "window handlers performance" do
     test "basic window operations", %{emulator: emulator} do
-      for {params, name} <- WindowUnifiedTestHelper.basic_window_operations() do
+      for {params, name} <- Raxol.Test.WindowTestHelper.basic_window_operations() do
         PerformanceHelper.assert_performance(
           fn -> WindowHandler.handle_t(emulator, params) end,
           name
@@ -19,7 +18,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlerBenchmark do
     end
 
     test "window reporting operations", %{emulator: emulator} do
-      for {params, name} <- WindowUnifiedTestHelper.reporting_operations() do
+      for {params, name} <- Raxol.Test.WindowTestHelper.reporting_operations() do
         PerformanceHelper.assert_performance(
           fn -> WindowHandler.handle_t(emulator, params) end,
           name
@@ -28,7 +27,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlerBenchmark do
     end
 
     test "parameter validation performance", %{emulator: emulator} do
-      for {params, name} <- WindowUnifiedTestHelper.invalid_parameters() do
+      for {params, name} <- Raxol.Test.WindowTestHelper.invalid_parameters() do
         PerformanceHelper.assert_performance(
           fn -> WindowHandler.handle_t(emulator, params) end,
           name
@@ -37,7 +36,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlerBenchmark do
     end
 
     test "buffer resize performance", %{emulator: emulator} do
-      for {width, height} <- WindowUnifiedTestHelper.test_window_sizes() do
+      for {width, height} <- Raxol.Test.WindowTestHelper.test_window_sizes() do
         PerformanceHelper.assert_performance(
           fn -> WindowHandler.handle_t(emulator, [4, width, height]) end,
           "#{width}x#{height} resize",
@@ -48,7 +47,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlerBenchmark do
 
     test "concurrent operations", %{emulator: emulator} do
       operations =
-        Enum.map(WindowUnifiedTestHelper.basic_window_operations(), fn {params, _} ->
+        Enum.map(Raxol.Test.WindowTestHelper.basic_window_operations(), fn {params, _} ->
           fn -> WindowHandler.handle_t(emulator, params) end
         end)
 

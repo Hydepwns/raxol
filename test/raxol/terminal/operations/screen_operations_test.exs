@@ -2,10 +2,9 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
   use ExUnit.Case
   alias Raxol.Terminal.Operations.ScreenOperations
   alias Raxol.Test.TestUtils
-
   describe "clear_screen/1" do
     test "clears entire screen" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
       emulator = ScreenOperations.write_string(emulator, 0, 0, "test", %{})
       emulator = ScreenOperations.clear_screen(emulator)
       assert String.trim(ScreenOperations.get_content(emulator)) == ""
@@ -14,7 +13,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "clear_line/1" do
     test "clears current line" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
       emulator = ScreenOperations.write_string(emulator, 0, 0, "test", %{})
       emulator = ScreenOperations.clear_line(emulator)
       assert String.trim(ScreenOperations.get_line(emulator, 0)) == ""
@@ -23,7 +22,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "erase_display/1" do
     test "erases entire display" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
       emulator = ScreenOperations.write_string(emulator, 0, 0, "test", %{})
       emulator = ScreenOperations.erase_display(emulator)
       assert String.trim(ScreenOperations.get_content(emulator)) == ""
@@ -32,7 +31,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "erase_in_display/1" do
     test "erases from cursor to end of screen" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
       emulator = ScreenOperations.write_string(emulator, 0, 0, "test1", %{})
       emulator = ScreenOperations.write_string(emulator, 0, 1, "test2", %{})
       emulator = ScreenOperations.write_string(emulator, 0, 2, "test3", %{})
@@ -52,7 +51,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "erase_line/1" do
     test "erases entire line" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
       emulator = ScreenOperations.write_string(emulator, 0, 0, "test", %{})
       emulator = ScreenOperations.erase_line(emulator)
       assert String.trim(ScreenOperations.get_line(emulator, 0)) == ""
@@ -61,7 +60,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "erase_in_line/1" do
     test "erases from cursor to end of line" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
 
       emulator =
         ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
@@ -76,7 +75,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "erase_from_cursor_to_end/1" do
     test "erases from cursor to end of screen" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
       emulator = ScreenOperations.write_string(emulator, 0, 0, "test1", %{})
       emulator = ScreenOperations.write_string(emulator, 0, 1, "test2", %{})
       emulator = ScreenOperations.set_cursor_position(emulator, 0, 0)
@@ -88,7 +87,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "erase_from_start_to_cursor/1" do
     test "erases from start to cursor" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
 
       emulator =
         ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
@@ -101,7 +100,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "erase_chars/2" do
     test "erases specified number of characters" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
 
       emulator =
         ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
@@ -114,7 +113,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "delete_chars/2" do
     test "deletes specified number of characters" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
 
       emulator =
         ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
@@ -127,7 +126,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "insert_chars/2" do
     test "inserts specified number of spaces" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
 
       emulator =
         ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
@@ -142,7 +141,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "delete_lines/2" do
     test "deletes specified number of lines" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
       emulator = ScreenOperations.write_string(emulator, 0, 0, "line1", %{})
       emulator = ScreenOperations.write_string(emulator, 0, 1, "line2", %{})
       emulator = ScreenOperations.write_string(emulator, 0, 2, "line3", %{})
@@ -156,7 +155,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "insert_lines/2" do
     test "inserts specified number of blank lines" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
       emulator = ScreenOperations.write_string(emulator, 0, 0, "line1", %{})
       emulator = ScreenOperations.write_string(emulator, 0, 1, "line2", %{})
       emulator = ScreenOperations.set_cursor_position(emulator, 0, 0)
@@ -171,7 +170,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
   describe "prepend_lines/2" do
     test "prepends specified number of blank lines" do
-      emulator = UnifiedTestHelper.create_test_emulator()
+      emulator = TestUtils.create_test_emulator()
       emulator = ScreenOperations.write_string(emulator, 0, 0, "line1", %{})
       emulator = ScreenOperations.write_string(emulator, 0, 1, "line2", %{})
       emulator = ScreenOperations.set_cursor_position(emulator, 0, 0)

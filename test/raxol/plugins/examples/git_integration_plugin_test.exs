@@ -11,17 +11,8 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
   end
   defp safe_stop(_), do: :ok
 
-  # Helper to create a temporary directory for testing
-  defp create_temp_directory do
-    temp_dir = Path.join(System.tmp_dir!(), "git_test_#{:erlang.unique_integer([:positive])}")
-    File.mkdir_p!(temp_dir)
-    temp_dir
-  end
-
-  # Helper to clean up temporary directory
-  defp cleanup_temp_directory(path) do
-    File.rm_rf!(path)
-  end
+  # Note: create_temp_directory, cleanup_temp_directory, with_temp_directory,
+  # and capture_plugin_logs are provided by PluginTestFramework
 
   describe "plugin manifest" do
     test "has valid manifest structure" do
@@ -167,7 +158,9 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
 
         # Initialize plugin from within the git repository
         config = create_test_config(%{auto_refresh: false})
-        {:ok, pid} = GitIntegrationPlugin.start_link(config)
+        {:ok, pid} = GitIntegrationPlugin.start_link([
+          name: Raxol.Plugins.Examples.GitIntegrationPlugin
+        ] ++ config)
 
         on_exit(fn ->
           if Process.alive?(pid) do

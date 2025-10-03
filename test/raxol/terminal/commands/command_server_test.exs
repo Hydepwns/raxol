@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Commands.CSIHandlerTest do
+defmodule Raxol.Terminal.Commands.CSICommandServerTest do
   use ExUnit.Case, async: true
 
   alias Raxol.Terminal.Commands.CSIHandler

@@ -1,11 +1,12 @@
 defmodule Raxol.Terminal.Integration.IOIntegrationTest do
   use ExUnit.Case
+  @moduletag :integration
 
   alias Raxol.Terminal.Integration.Main
 
   setup do
     # Start the UnifiedIO process
-    {:ok, _unified_io_pid} = Raxol.Terminal.IO.UnifiedIO.start_link()
+    {:ok, _unified_io_pid} = Raxol.Terminal.IO.IOServer.start_link(name: Raxol.Terminal.IO.IOServer)
 
     # Start the Manager process
     {:ok, _unified_window_pid} =

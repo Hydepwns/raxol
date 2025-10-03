@@ -7,10 +7,10 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
   alias Raxol.Core.Metrics.AlertManager
 
   setup do
-    # Start UnifiedCollector for metrics dependency if not already started
-    # UnifiedCollector uses BaseManager and requires a name parameter
+    # Start MetricsCollector for metrics dependency if not already started
+    # MetricsCollector uses BaseManager and requires a name parameter
     uc_pid =
-      case Raxol.Core.Metrics.UnifiedCollector.start_link(name: Raxol.Core.Metrics.UnifiedCollector) do
+      case Raxol.Core.Metrics.MetricsCollector.start_link(name: Raxol.Core.Metrics.MetricsCollector) do
         {:ok, pid} ->
           pid
 
@@ -18,7 +18,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
           pid
 
         {:error, reason} ->
-          raise "Failed to start UnifiedCollector: #{inspect(reason)}"
+          raise "Failed to start MetricsCollector: #{inspect(reason)}"
       end
 
     # Use a unique name for each test to avoid conflicts
@@ -35,7 +35,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         :exit, {:timeout, _} -> :ok  # Timeout is acceptable in cleanup
       end
 
-      # Also stop UnifiedCollector if we started it
+      # Also stop MetricsCollector if we started it
       try do
         if uc_pid && Process.alive?(uc_pid) do
           GenServer.stop(uc_pid, :normal, 1000)
@@ -109,8 +109,8 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       test_name: test_name,
       pid: pid
     } do
-      # Record metrics into UnifiedCollector
-      Raxol.Core.Metrics.UnifiedCollector.record_metric(
+      # Record metrics into MetricsCollector
+      Raxol.Core.Metrics.MetricsCollector.record_metric(
         "test_metric",
         :custom,
         60,
@@ -136,8 +136,8 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       test_name: test_name,
       pid: pid
     } do
-      # Record metrics into UnifiedCollector
-      Raxol.Core.Metrics.UnifiedCollector.record_metric(
+      # Record metrics into MetricsCollector
+      Raxol.Core.Metrics.MetricsCollector.record_metric(
         "test_metric",
         :custom,
         40,
@@ -163,8 +163,8 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       test_name: test_name,
       pid: pid
     } do
-      # Record metrics into UnifiedCollector
-      Raxol.Core.Metrics.UnifiedCollector.record_metric(
+      # Record metrics into MetricsCollector
+      Raxol.Core.Metrics.MetricsCollector.record_metric(
         "test_metric",
         :custom,
         60,
@@ -215,8 +215,8 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       test_name: test_name,
       pid: pid
     } do
-      # Record metrics into UnifiedCollector
-      Raxol.Core.Metrics.UnifiedCollector.record_metric(
+      # Record metrics into MetricsCollector
+      Raxol.Core.Metrics.MetricsCollector.record_metric(
         "test_metric",
         :custom,
         60,
@@ -254,15 +254,15 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
       {:ok, rule_id} = AlertManager.add_rule(rule, test_name)
 
-      # Record metrics into UnifiedCollector
-      Raxol.Core.Metrics.UnifiedCollector.record_metric(
+      # Record metrics into MetricsCollector
+      Raxol.Core.Metrics.MetricsCollector.record_metric(
         "test_metric",
         :custom,
         60,
         tags: %{service: "test", region: "us"}
       )
 
-      Raxol.Core.Metrics.UnifiedCollector.record_metric(
+      Raxol.Core.Metrics.MetricsCollector.record_metric(
         "test_metric",
         :custom,
         40,

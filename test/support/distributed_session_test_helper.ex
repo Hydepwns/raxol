@@ -700,12 +700,12 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
 
   # Private Helper Functions
 
-  defp find_session_location(%TestCluster{} = cluster, session_id) do
+  def find_session_location(%TestCluster{} = cluster, session_id) do
     cluster.all_nodes
     |> Enum.find_value(fn node ->
-      _registry_pid = Map.get(cluster.registry_pids, node)
+      registry_pid = Map.get(cluster.registry_pids, node)
 
-      case DistributedSessionRegistry.locate_session(session_id) do
+      case DistributedSessionRegistry.locate_session(registry_pid, session_id) do
         {:ok, located_node} -> {:ok, located_node}
         {:error, :not_found} -> nil
         {:error, _reason} -> nil

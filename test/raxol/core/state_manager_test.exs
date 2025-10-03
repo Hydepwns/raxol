@@ -329,13 +329,16 @@ defmodule Raxol.Core.StateManagerTest do
 
   describe "cleanup and error handling" do
     test "cleanup removes ETS table", %{table: table} do
+      # Create the ETS table first
+      :ets.new(table, [:set, :public, :named_table])
+
       # Table should exist before cleanup
       assert :ets.info(table) != :undefined
-      
+
       # Get state for cleanup
       state = %{table: table, version: 1}
       :ok = StateManager.cleanup(state)
-      
+
       # Table should be deleted
       assert :ets.info(table) == :undefined
     end

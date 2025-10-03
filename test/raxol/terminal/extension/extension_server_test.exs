@@ -1,10 +1,11 @@
-defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
+defmodule Raxol.Terminal.Extension.ExtensionServerTest do
   use ExUnit.Case, async: false
-  alias Raxol.Terminal.Extension.UnifiedExtension
+  alias Raxol.Terminal.Extension.ExtensionServer
 
   setup do
     {:ok, _pid} =
-      UnifiedExtension.start_link(
+      ExtensionServer.start_link(
+        name: ExtensionServer,
         extension_paths: ["test/fixtures/extensions"],
         auto_load: false
       )
@@ -16,7 +17,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
     test "loads and unloads extensions" do
       # Load extension
       assert {:ok, extension_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/theme",
                  :theme,
                  name: "Test Theme",
@@ -28,7 +29,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
       # Get extension state
       assert {:ok, extension_state} =
-               UnifiedExtension.get_extension_state(extension_id)
+               ExtensionServer.get_extension_state(extension_id)
 
       assert extension_state.name == "Test Theme"
       assert extension_state.type == :theme
@@ -38,10 +39,10 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
       assert extension_state.license == "MIT"
 
       # Unload extension
-      assert :ok = UnifiedExtension.unload_extension(extension_id)
+      assert :ok = ExtensionServer.unload_extension(extension_id)
 
       assert {:error, :extension_not_found} =
-               UnifiedExtension.get_extension_state(extension_id)
+               ExtensionServer.get_extension_state(extension_id)
     end
 
     test "handles extension configuration" do
@@ -60,7 +61,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
       }
 
       assert {:ok, extension_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/theme",
                  :theme,
                  name: "Test Theme",
@@ -82,14 +83,14 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
       }
 
       assert :ok =
-               UnifiedExtension.update_extension_config(
+               ExtensionServer.update_extension_config(
                  extension_id,
                  new_config
                )
 
       # Verify config update
       assert {:ok, extension_state} =
-               UnifiedExtension.get_extension_state(extension_id)
+               ExtensionServer.get_extension_state(extension_id)
 
       assert extension_state.config == new_config
     end
@@ -99,25 +100,25 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
     test "activates and deactivates extensions" do
       # Load extension
       assert {:ok, extension_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/theme",
                  :theme,
                  name: "Test Theme"
                )
 
       # Activate extension
-      assert :ok = UnifiedExtension.activate_extension(extension_id)
+      assert :ok = ExtensionServer.activate_extension(extension_id)
 
       assert {:ok, extension_state} =
-               UnifiedExtension.get_extension_state(extension_id)
+               ExtensionServer.get_extension_state(extension_id)
 
       assert extension_state.active == true
 
       # Deactivate extension
-      assert :ok = UnifiedExtension.deactivate_extension(extension_id)
+      assert :ok = ExtensionServer.deactivate_extension(extension_id)
 
       assert {:ok, extension_state} =
-               UnifiedExtension.get_extension_state(extension_id)
+               ExtensionServer.get_extension_state(extension_id)
 
       assert extension_state.active == false
     end
@@ -125,7 +126,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
     test "handles invalid activation states" do
       # Load extension
       assert {:ok, extension_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/theme",
                  :theme,
                  name: "Test Theme"
@@ -133,14 +134,14 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
       # Try to deactivate idle extension
       assert {:error, :invalid_extension_state} =
-               UnifiedExtension.deactivate_extension(extension_id)
+               ExtensionServer.deactivate_extension(extension_id)
 
       # Activate extension
-      assert :ok = UnifiedExtension.activate_extension(extension_id)
+      assert :ok = ExtensionServer.activate_extension(extension_id)
 
       # Try to activate active extension
       assert {:error, :invalid_extension_state} =
-               UnifiedExtension.activate_extension(extension_id)
+               ExtensionServer.activate_extension(extension_id)
     end
   end
 
@@ -148,7 +149,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
     test "executes extension commands" do
       # Load extension with commands
       assert {:ok, extension_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/script",
                  :script,
                  name: "Test Script",
@@ -157,7 +158,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
       # Execute command
       assert {:ok, result} =
-               UnifiedExtension.execute_command(extension_id, "run", [
+               ExtensionServer.execute_command(extension_id, "run", [
                  "arg1",
                  "arg2"
                ])
@@ -166,7 +167,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
       # Try to execute non-existent command
       assert {:error, :command_not_found} =
-               UnifiedExtension.execute_command(extension_id, "invalid")
+               ExtensionServer.execute_command(extension_id, "invalid")
     end
   end
 
@@ -174,32 +175,32 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
     test "lists extensions with filters" do
       # Load different extensions
       assert {:ok, _theme_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/theme",
                  :theme,
                  name: "Test Theme"
                )
 
       assert {:ok, script_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/script",
                  :script,
                  name: "Test Script"
                )
 
       # Get all extensions
-      assert {:ok, all_extensions} = UnifiedExtension.get_extensions()
+      assert {:ok, all_extensions} = ExtensionServer.get_extensions()
       assert length(all_extensions) == 2
 
       # Filter by type
       assert {:ok, theme_extensions} =
-               UnifiedExtension.get_extensions(type: :theme)
+               ExtensionServer.get_extensions(type: :theme)
 
       assert length(theme_extensions) == 1
 
       # Filter by status (inactive extensions)
       assert {:ok, idle_extensions} =
-               UnifiedExtension.get_extensions(active: false)
+               ExtensionServer.get_extensions(active: false)
 
       assert length(idle_extensions) == 2
     end
@@ -207,7 +208,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
     test "exports and imports extensions" do
       # Load extension
       assert {:ok, extension_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/theme",
                  :theme,
                  name: "Test Theme"
@@ -215,17 +216,17 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
       # Export extension
       export_path = "test/fixtures/extensions/exported.json"
-      assert :ok = UnifiedExtension.export_extension(extension_id, export_path)
+      assert :ok = ExtensionServer.export_extension(extension_id, export_path)
 
       # Import extension
-      assert {:ok, imported_id} = UnifiedExtension.import_extension(export_path)
+      assert {:ok, imported_id} = ExtensionServer.import_extension(export_path)
 
       # Verify imported extension
       assert {:ok, original_state} =
-               UnifiedExtension.get_extension_state(extension_id)
+               ExtensionServer.get_extension_state(extension_id)
 
       assert {:ok, imported_state} =
-               UnifiedExtension.get_extension_state(imported_id)
+               ExtensionServer.get_extension_state(imported_id)
 
       assert imported_state.name == original_state.name
       assert imported_state.type == original_state.type
@@ -240,7 +241,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
     test "registers and unregisters hooks" do
       # Load extension with hooks
       assert {:ok, extension_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/plugin",
                  :plugin,
                  name: "Test Plugin",
@@ -251,23 +252,23 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
       callback = fn args -> {:ok, args} end
 
       assert :ok =
-               UnifiedExtension.register_hook(extension_id, "init", callback)
+               ExtensionServer.register_hook(extension_id, "init", callback)
 
       # Trigger hook
-      assert {:ok, result} = UnifiedExtension.trigger_hook(extension_id, "init", ["test"])
+      assert {:ok, result} = ExtensionServer.trigger_hook(extension_id, "init", ["test"])
       assert result == {:ok, ["test"]}
 
       # Unregister hook
-      assert :ok = UnifiedExtension.unregister_hook(extension_id, "init")
+      assert :ok = ExtensionServer.unregister_hook(extension_id, "init")
 
       # Verify hook is unregistered
-      assert {:error, :hook_not_found} = UnifiedExtension.trigger_hook(extension_id, "init", ["test"])
+      assert {:error, :hook_not_found} = ExtensionServer.trigger_hook(extension_id, "init", ["test"])
     end
 
     test "handles hook errors" do
       # Load extension with hooks
       assert {:ok, extension_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/plugin",
                  :plugin,
                  name: "Test Plugin",
@@ -278,10 +279,10 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
       callback = fn _args -> raise "Hook error" end
 
       assert :ok =
-               UnifiedExtension.register_hook(extension_id, "error", callback)
+               ExtensionServer.register_hook(extension_id, "error", callback)
 
       # Trigger hook
-      assert {:ok, result} = UnifiedExtension.trigger_hook(extension_id, "error", ["test"])
+      assert {:ok, result} = ExtensionServer.trigger_hook(extension_id, "error", ["test"])
       assert result == {:error, :hook_execution_failed}
     end
   end
@@ -289,7 +290,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
   describe "error handling" do
     test "handles invalid extension types" do
       assert {:error, {:module_load_failed, :invalid_extension_type}} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/invalid",
                  :invalid_type,
                  name: "Invalid Extension"
@@ -298,14 +299,14 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
     test "handles invalid configurations" do
       assert {:ok, extension_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/theme",
                  :theme,
                  name: "Test Theme"
                )
 
       assert {:error, :invalid_extension_config} =
-               UnifiedExtension.update_extension_config(
+               ExtensionServer.update_extension_config(
                  extension_id,
                  "invalid_config"
                )
@@ -313,7 +314,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
     test "handles invalid dependencies" do
       assert {:error, :invalid_extension_dependencies} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/theme",
                  :theme,
                  name: "Test Theme",
@@ -323,19 +324,19 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
     test "handles non-existent extensions" do
       assert {:error, :extension_not_found} =
-               UnifiedExtension.get_extension_state("non_existent")
+               ExtensionServer.get_extension_state("non_existent")
 
       assert {:error, :extension_not_found} =
-               UnifiedExtension.unload_extension("non_existent")
+               ExtensionServer.unload_extension("non_existent")
 
       assert {:error, :extension_not_found} =
-               UnifiedExtension.update_extension_config("non_existent", %{})
+               ExtensionServer.update_extension_config("non_existent", %{})
     end
 
     test "handles invalid hook names" do
       # Load extension
       assert {:ok, extension_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/plugin",
                  :plugin,
                  name: "Test Plugin",
@@ -346,7 +347,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
       callback = fn args -> {:ok, args} end
 
       assert {:error, :hook_not_found} =
-               UnifiedExtension.register_hook(extension_id, "invalid", callback)
+               ExtensionServer.register_hook(extension_id, "invalid", callback)
     end
   end
 
@@ -354,7 +355,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
     test "handles different extension types" do
       # Theme extension
       assert {:ok, theme_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/theme",
                  :theme,
                  name: "Test Theme"
@@ -362,7 +363,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
       # Script extension
       assert {:ok, script_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/script",
                  :script,
                  name: "Test Script"
@@ -370,7 +371,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
       # Plugin extension
       assert {:ok, plugin_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/plugin",
                  :plugin,
                  name: "Test Plugin"
@@ -378,23 +379,23 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
       # Custom extension
       assert {:ok, custom_id} =
-               UnifiedExtension.load_extension(
+               ExtensionServer.load_extension(
                  "test/fixtures/extensions/custom",
                  :custom,
                  name: "Test Custom"
                )
 
       # Verify extension states
-      assert {:ok, theme_state} = UnifiedExtension.get_extension_state(theme_id)
+      assert {:ok, theme_state} = ExtensionServer.get_extension_state(theme_id)
 
       assert {:ok, script_state} =
-               UnifiedExtension.get_extension_state(script_id)
+               ExtensionServer.get_extension_state(script_id)
 
       assert {:ok, plugin_state} =
-               UnifiedExtension.get_extension_state(plugin_id)
+               ExtensionServer.get_extension_state(plugin_id)
 
       assert {:ok, custom_state} =
-               UnifiedExtension.get_extension_state(custom_id)
+               ExtensionServer.get_extension_state(custom_id)
 
       assert theme_state.type == :theme
       assert script_state.type == :script

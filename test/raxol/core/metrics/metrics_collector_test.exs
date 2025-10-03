@@ -1,24 +1,37 @@
-defmodule Raxol.Core.Metrics.UnifiedCollectorTest do
+defmodule Raxol.Core.Metrics.MetricsCollectorTest do
   @moduledoc """
   Tests for the unified metrics collector, including performance, resource,
   operation, custom, and system metrics collection.
   """
-  use ExUnit.Case
-    alias Raxol.Core.Metrics.UnifiedCollector
+  use ExUnit.Case, async: false
+  alias Raxol.Core.Metrics.MetricsCollector
 
   setup do
-    {:ok, _pid} = UnifiedCollector.start_link()
+    # Stop any existing MetricsCollector
+    case Process.whereis(MetricsCollector) do
+      nil -> :ok
+      pid -> GenServer.stop(pid)
+    end
+
+    {:ok, pid} = MetricsCollector.start_link(name: MetricsCollector)
+
+    on_exit(fn ->
+      if Process.alive?(pid) do
+        GenServer.stop(pid)
+      end
+    end)
+
     :ok
   end
 
   describe "performance metrics" do
     test "records and retrieves performance metrics" do
       # Record some performance metrics
-      UnifiedCollector.record_performance(:frame_time, 16)
-      UnifiedCollector.record_performance(:render_time, 8)
+      MetricsCollector.record_performance(:frame_time, 16)
+      MetricsCollector.record_performance(:render_time, 8)
 
       # Get all metrics
-      metrics = UnifiedCollector.get_metrics()
+      metrics = MetricsCollector.get_metrics()
       performance_metrics = metrics.performance
 
       # Verify metrics were recorded
@@ -38,11 +51,11 @@ defmodule Raxol.Core.Metrics.UnifiedCollectorTest do
     test "maintains metric history limit" do
       # Record more metrics than the history limit
       Enum.each(1..1100, fn i ->
-        UnifiedCollector.record_performance(:test_metric, i)
+        MetricsCollector.record_performance(:test_metric, i)
       end)
 
       # Get metrics
-      metrics = UnifiedCollector.get_metrics()
+      metrics = MetricsCollector.get_metrics()
       test_metrics = metrics.performance.test_metric
 
       # Verify history limit is maintained
@@ -54,11 +67,11 @@ defmodule Raxol.Core.Metrics.UnifiedCollectorTest do
   describe "resource metrics" do
     test "records and retrieves resource metrics" do
       # Record some resource metrics
-      UnifiedCollector.record_resource(:memory_usage, 1024)
-      UnifiedCollector.record_resource(:cpu_usage, 50)
+      MetricsCollector.record_resource(:memory_usage, 1024)
+      MetricsCollector.record_resource(:cpu_usage, 50)
 
       # Get resource metrics
-      resource_metrics = UnifiedCollector.get_metrics_by_type(:resource)
+      resource_metrics = MetricsCollector.get_metrics_by_type(:resource)
 
       # Verify metrics were recorded
       assert Map.has_key?(resource_metrics, :memory_usage)
@@ -78,11 +91,11 @@ defmodule Raxol.Core.Metrics.UnifiedCollectorTest do
   describe "operation metrics" do
     test "records and retrieves operation metrics" do
       # Record some operation metrics
-      UnifiedCollector.record_operation(:buffer_write, 5)
-      UnifiedCollector.record_operation(:buffer_read, 3)
+      MetricsCollector.record_operation(:buffer_write, 5)
+      MetricsCollector.record_operation(:buffer_read, 3)
 
       # Get operation metrics
-      operation_metrics = UnifiedCollector.get_metrics_by_type(:operation)
+      operation_metrics = MetricsCollector.get_metrics_by_type(:operation)
 
       # Verify metrics were recorded
       assert Map.has_key?(operation_metrics, :buffer_write)
@@ -102,11 +115,11 @@ defmodule Raxol.Core.Metrics.UnifiedCollectorTest do
   describe "custom metrics" do
     test "records and retrieves custom metrics" do
       # Record some custom metrics
-      UnifiedCollector.record_custom("user.login_time", 150)
-      UnifiedCollector.record_custom("api.request_time", 200)
+      MetricsCollector.record_custom("user.login_time", 150)
+      MetricsCollector.record_custom("api.request_time", 200)
 
       # Get custom metrics
-      custom_metrics = UnifiedCollector.get_metrics_by_type(:custom)
+      custom_metrics = MetricsCollector.get_metrics_by_type(:custom)
 
       # Verify metrics were recorded
       assert Map.has_key?(custom_metrics, "user.login_time")
@@ -128,7 +141,7 @@ defmodule Raxol.Core.Metrics.UnifiedCollectorTest do
       # Wait for the periodic system metrics collection to run
       Process.sleep(200)
 
-      metrics = UnifiedCollector.get_metrics_by_type(:resource)
+      metrics = MetricsCollector.get_metrics_by_type(:resource)
       resource_metrics = Map.keys(metrics)
       assert :process_count in resource_metrics
       assert :runtime_ratio in resource_metrics
@@ -139,11 +152,11 @@ defmodule Raxol.Core.Metrics.UnifiedCollectorTest do
   describe "metric tags" do
     test "records metrics with tags" do
       # Record metrics with tags
-      UnifiedCollector.record_performance(:frame_time, 16, tags: [:ui, :render])
-      UnifiedCollector.record_resource(:memory_usage, 1024, tags: [:system])
+      MetricsCollector.record_performance(:frame_time, 16, tags: [:ui, :render])
+      MetricsCollector.record_resource(:memory_usage, 1024, tags: [:system])
 
       # Get metrics
-      metrics = UnifiedCollector.get_metrics()
+      metrics = MetricsCollector.get_metrics()
 
       # Verify tags were recorded
       frame_time = hd(metrics.performance.frame_time)

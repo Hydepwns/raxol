@@ -142,6 +142,12 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
     # Start Mock Plugin Manager
     {:ok, mock_pm_pid} = MockPluginManager.start_link([])
 
+    # Start UserPreferences server for the test
+    {:ok, _user_prefs} = Raxol.Core.UserPreferences.start_link(
+      name: Raxol.Core.UserPreferences,
+      test_mode?: true
+    )
+
     # Define initial state for Dispatcher
     initial_state = %{
       app_module: MockApp,

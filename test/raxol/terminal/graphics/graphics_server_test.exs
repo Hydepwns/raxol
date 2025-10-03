@@ -3,7 +3,17 @@ defmodule Raxol.Terminal.Graphics.GraphicsServerTest do
   alias Raxol.Terminal.Graphics.GraphicsServer
 
   setup do
-    {:ok, _pid} = GraphicsServer.start_link()
+    {:ok, _pid} = GraphicsServer.start_link(name: Raxol.Terminal.Graphics.GraphicsServer)
+
+    on_exit(fn ->
+      try do
+        GenServer.stop(Raxol.Terminal.Graphics.GraphicsServer, :normal, 1000)
+      catch
+        :exit, {:noproc, _} -> :ok
+        :exit, {:timeout, _} -> :ok
+      end
+    end)
+
     :ok
   end
 

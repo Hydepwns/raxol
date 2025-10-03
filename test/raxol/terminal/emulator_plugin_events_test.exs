@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.EmulatorPluginEventsTest do
   use ExUnit.Case
-
+  alias Raxol.Test.TestUtils
 
   setup context do
-    Raxol.EmulatorPluginUnifiedTestHelper.setup_emulator_plugin_test(context)
+    Raxol.EmulatorPluginTestHelper.setup_emulator_plugin_test(context)
   end
 end

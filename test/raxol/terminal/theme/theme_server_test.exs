@@ -1,13 +1,18 @@
-defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
+defmodule Raxol.Terminal.Theme.ThemeServerTest do
   use ExUnit.Case, async: false
-  alias Raxol.Terminal.Theme.UnifiedTheme
+  alias Raxol.Terminal.Theme.ThemeServer
 
   setup do
     {:ok, pid} =
-      UnifiedTheme.start_link(
+      ThemeServer.start_link(
+        name: Raxol.Terminal.Theme.ThemeServer,
         theme_paths: ["test/fixtures/themes"],
         auto_load: false
       )
+
+    on_exit(fn ->
+      if Process.alive?(pid), do: GenServer.stop(pid, :normal)
+    end)
 
     %{pid: pid}
   end
@@ -25,7 +30,7 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
 
     test "initializes with custom configuration" do
       {:ok, pid} =
-        UnifiedTheme.start_link(
+        ThemeServer.start_link(
           name: :custom_config_test,
           theme_paths: ["custom/path"],
           auto_load: true,
@@ -42,9 +47,9 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
   describe "load_theme/2" do
     test "loads a valid theme from file", %{pid: _pid} do
       assert {:ok, theme_id} =
-               UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+               ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
-      assert {:ok, theme_state} = UnifiedTheme.get_theme_state(theme_id)
+      assert {:ok, theme_state} = ThemeServer.get_theme_state(theme_id)
       assert theme_state.name == "Dark Theme"
       assert theme_state.version == "1.0.0"
 
@@ -64,9 +69,9 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       opts = [name: "Custom Dark", version: "2.0.0"]
 
       assert {:ok, theme_id} =
-               UnifiedTheme.load_theme("test/fixtures/themes/dark.json", opts)
+               ThemeServer.load_theme("test/fixtures/themes/dark.json", opts)
 
-      assert {:ok, theme_state} = UnifiedTheme.get_theme_state(theme_id)
+      assert {:ok, theme_state} = ThemeServer.get_theme_state(theme_id)
       # Original name from file
       assert theme_state.name == "Dark Theme"
       # Original version from file
@@ -75,7 +80,7 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
 
     test "returns error for non-existent file", %{pid: _pid} do
       assert {:error, {:file_read_error, :enoent}} =
-               UnifiedTheme.load_theme("non/existent/path.json")
+               ThemeServer.load_theme("non/existent/path.json")
     end
 
     test "returns error for invalid JSON", %{pid: _pid} do
@@ -85,7 +90,7 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       File.write!(temp_file, invalid_json)
 
       assert {:error, {:invalid_theme_format, _}} =
-               UnifiedTheme.load_theme(temp_file)
+               ThemeServer.load_theme(temp_file)
 
       # Cleanup
       File.rm!(temp_file)
@@ -103,7 +108,7 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       File.write!(temp_file, Jason.encode!(incomplete_theme))
 
       assert {:error, :invalid_theme_format} =
-               UnifiedTheme.load_theme(temp_file)
+               ThemeServer.load_theme(temp_file)
 
       # Cleanup
       File.rm!(temp_file)
@@ -114,34 +119,34 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
     test "unloads an existing theme", %{pid: _pid} do
       # First load a theme
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
-      assert {:ok, _theme_state} = UnifiedTheme.get_theme_state(theme_id)
+      assert {:ok, _theme_state} = ThemeServer.get_theme_state(theme_id)
 
       # Then unload it
-      assert :ok = UnifiedTheme.unload_theme(theme_id)
-      assert {:error, :theme_not_found} = UnifiedTheme.get_theme_state(theme_id)
+      assert :ok = ThemeServer.unload_theme(theme_id)
+      assert {:error, :theme_not_found} = ThemeServer.get_theme_state(theme_id)
     end
 
     test "returns error for non-existent theme", %{pid: _pid} do
       assert {:error, :theme_not_found} =
-               UnifiedTheme.unload_theme("non_existent_theme")
+               ThemeServer.unload_theme("non_existent_theme")
     end
   end
 
   describe "get_theme_state/1" do
     test "returns theme state for existing theme", %{pid: _pid} do
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
-      assert {:ok, theme_state} = UnifiedTheme.get_theme_state(theme_id)
+      assert {:ok, theme_state} = ThemeServer.get_theme_state(theme_id)
       assert theme_state.name == "Dark Theme"
       assert theme_state.status == :active
     end
 
     test "returns error for non-existent theme", %{pid: _pid} do
       assert {:error, :theme_not_found} =
-               UnifiedTheme.get_theme_state("non_existent_theme")
+               ThemeServer.get_theme_state("non_existent_theme")
     end
   end
 
@@ -149,12 +154,12 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
     test "returns all loaded themes", %{pid: _pid} do
       # Load multiple themes
       {:ok, dark_theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
       {:ok, light_theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/light.json")
+        ThemeServer.load_theme("test/fixtures/themes/light.json")
 
-      assert {:ok, themes} = UnifiedTheme.get_themes()
+      assert {:ok, themes} = ThemeServer.get_themes()
       assert map_size(themes) == 2
       assert Map.has_key?(themes, dark_theme_id)
       assert Map.has_key?(themes, light_theme_id)
@@ -162,18 +167,18 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
 
     test "filters themes by status", %{pid: _pid} do
       {:ok, dark_theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
-      assert {:ok, themes} = UnifiedTheme.get_themes(status: :active)
+      assert {:ok, themes} = ThemeServer.get_themes(status: :active)
       assert map_size(themes) == 1
       assert Map.has_key?(themes, dark_theme_id)
 
-      assert {:ok, themes} = UnifiedTheme.get_themes(status: :inactive)
+      assert {:ok, themes} = ThemeServer.get_themes(status: :inactive)
       assert map_size(themes) == 0
     end
 
     test "returns empty map when no themes loaded", %{pid: _pid} do
-      assert {:ok, themes} = UnifiedTheme.get_themes()
+      assert {:ok, themes} = ThemeServer.get_themes()
       assert themes == %{}
     end
   end
@@ -181,12 +186,12 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
   describe "update_theme_config/2" do
     test "updates theme configuration", %{pid: _pid} do
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
       new_config = %{custom_setting: "value", another_setting: 123}
-      assert :ok = UnifiedTheme.update_theme_config(theme_id, new_config)
+      assert :ok = ThemeServer.update_theme_config(theme_id, new_config)
 
-      assert {:ok, theme_state} = UnifiedTheme.get_theme_state(theme_id)
+      assert {:ok, theme_state} = ThemeServer.get_theme_state(theme_id)
       assert theme_state.config == new_config
     end
 
@@ -194,24 +199,24 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       config = %{setting: "value"}
 
       assert {:error, :theme_not_found} =
-               UnifiedTheme.update_theme_config("non_existent", config)
+               ThemeServer.update_theme_config("non_existent", config)
     end
 
     test "returns error for invalid config format", %{pid: _pid} do
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
       assert {:error, :invalid_config_format} =
-               UnifiedTheme.update_theme_config(theme_id, "not_a_map")
+               ThemeServer.update_theme_config(theme_id, "not_a_map")
     end
   end
 
   describe "apply_theme/1" do
     test "applies an active theme", %{pid: pid} do
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
-      assert :ok = UnifiedTheme.apply_theme(theme_id)
+      assert :ok = ThemeServer.apply_theme(theme_id)
 
       state = :sys.get_state(pid)
       assert state.current_theme == theme_id
@@ -219,7 +224,7 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
 
     test "returns error for non-existent theme", %{pid: _pid} do
       assert {:error, :theme_not_found} =
-               UnifiedTheme.apply_theme("non_existent_theme")
+               ThemeServer.apply_theme("non_existent_theme")
     end
 
     test "returns error for inactive theme", %{pid: pid} do
@@ -227,7 +232,7 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       # Since the current implementation always sets status to :active,
       # we'll test the error path by creating a theme with inactive status
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
       # Manually set the theme status to inactive in the state
       state = :sys.get_state(pid)
@@ -238,12 +243,12 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       new_state = Map.put(state.themes, theme_id, inactive_theme)
       :sys.replace_state(pid, fn _ -> Map.put(state, :themes, new_state) end)
 
-      assert {:error, :theme_inactive} = UnifiedTheme.apply_theme(theme_id)
+      assert {:error, :theme_inactive} = ThemeServer.apply_theme(theme_id)
     end
 
     test "returns error for theme with error status", %{pid: pid} do
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
       # Manually set the theme status to error in the state
       state = :sys.get_state(pid)
@@ -251,16 +256,16 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       new_state = Map.put(state.themes, theme_id, error_theme)
       :sys.replace_state(pid, fn _ -> Map.put(state, :themes, new_state) end)
 
-      assert {:error, :theme_error} = UnifiedTheme.apply_theme(theme_id)
+      assert {:error, :theme_error} = ThemeServer.apply_theme(theme_id)
     end
   end
 
   describe "preview_theme/1" do
     test "previews an active theme", %{pid: pid} do
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
-      assert :ok = UnifiedTheme.preview_theme(theme_id)
+      assert :ok = ThemeServer.preview_theme(theme_id)
 
       state = :sys.get_state(pid)
       assert state.preview_theme == theme_id
@@ -268,12 +273,12 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
 
     test "returns error for non-existent theme", %{pid: _pid} do
       assert {:error, :theme_not_found} =
-               UnifiedTheme.preview_theme("non_existent_theme")
+               ThemeServer.preview_theme("non_existent_theme")
     end
 
     test "returns error for inactive theme", %{pid: pid} do
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
       # Manually set the theme status to inactive
       state = :sys.get_state(pid)
@@ -284,18 +289,18 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       new_state = Map.put(state.themes, theme_id, inactive_theme)
       :sys.replace_state(pid, fn _ -> Map.put(state, :themes, new_state) end)
 
-      assert {:error, :theme_inactive} = UnifiedTheme.preview_theme(theme_id)
+      assert {:error, :theme_inactive} = ThemeServer.preview_theme(theme_id)
     end
   end
 
   describe "export_theme/2" do
     test "exports theme to file", %{pid: _pid} do
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
       export_path = Path.join(System.tmp_dir!(), "exported_theme.json")
 
-      assert :ok = UnifiedTheme.export_theme(theme_id, export_path)
+      assert :ok = ThemeServer.export_theme(theme_id, export_path)
       assert File.exists?(export_path)
 
       # Verify the exported content
@@ -311,18 +316,18 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       export_path = Path.join(System.tmp_dir!(), "exported_theme.json")
 
       assert {:error, :theme_not_found} =
-               UnifiedTheme.export_theme("non_existent", export_path)
+               ThemeServer.export_theme("non_existent", export_path)
     end
 
     test "returns error for invalid export path", %{pid: _pid} do
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
       # Try to export to a directory (which should fail)
       invalid_path = System.tmp_dir!()
 
       assert {:error, {:file_write_error, :eisdir}} =
-               UnifiedTheme.export_theme(theme_id, invalid_path)
+               ThemeServer.export_theme(theme_id, invalid_path)
     end
   end
 
@@ -330,16 +335,16 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
     test "imports theme from file", %{pid: _pid} do
       import_path = "test/fixtures/themes/light.json"
 
-      assert {:ok, theme_id} = UnifiedTheme.import_theme(import_path)
+      assert {:ok, theme_id} = ThemeServer.import_theme(import_path)
 
-      assert {:ok, theme_state} = UnifiedTheme.get_theme_state(theme_id)
+      assert {:ok, theme_state} = ThemeServer.get_theme_state(theme_id)
       assert theme_state.name == "Light Theme"
       assert theme_state.status == :active
     end
 
     test "returns error for non-existent file", %{pid: _pid} do
       assert {:error, {:file_read_error, :enoent}} =
-               UnifiedTheme.import_theme("non/existent/path.json")
+               ThemeServer.import_theme("non/existent/path.json")
     end
 
     test "returns error for invalid JSON", %{pid: _pid} do
@@ -349,7 +354,7 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       File.write!(temp_file, invalid_json)
 
       assert {:error, {:invalid_theme_format, _}} =
-               UnifiedTheme.import_theme(temp_file)
+               ThemeServer.import_theme(temp_file)
 
       # Cleanup
       File.rm!(temp_file)
@@ -361,18 +366,18 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       path = "test/fixtures/themes/dark.json"
 
       # Load the same theme twice
-      {:ok, theme_id1} = UnifiedTheme.load_theme(path)
-      {:ok, theme_id2} = UnifiedTheme.load_theme(path)
+      {:ok, theme_id1} = ThemeServer.load_theme(path)
+      {:ok, theme_id2} = ThemeServer.load_theme(path)
 
       assert theme_id1 == theme_id2
     end
 
     test "generates different IDs for different paths", %{pid: _pid} do
       {:ok, dark_theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
       {:ok, light_theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/light.json")
+        ThemeServer.load_theme("test/fixtures/themes/light.json")
 
       assert dark_theme_id != light_theme_id
     end
@@ -382,9 +387,9 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
     test "validates theme with all required fields", %{pid: _pid} do
       # This test uses the existing valid theme files
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
-      assert {:ok, theme_state} = UnifiedTheme.get_theme_state(theme_id)
+      assert {:ok, theme_state} = ThemeServer.get_theme_state(theme_id)
 
       # Verify all required fields are present
       required_fields = [
@@ -416,7 +421,7 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       File.write!(temp_file, Jason.encode!(incomplete_theme))
 
       assert {:error, :invalid_theme_format} =
-               UnifiedTheme.load_theme(temp_file)
+               ThemeServer.load_theme(temp_file)
 
       # Cleanup
       File.rm!(temp_file)
@@ -426,14 +431,14 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
   describe "state management" do
     test "maintains separate states for multiple instances", %{pid: _pid} do
       # Start another instance
-      {:ok, pid2} = UnifiedTheme.start_link(name: :test_instance_2)
+      {:ok, pid2} = ThemeServer.start_link(name: :test_instance_2)
 
       # Load theme in first instance
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
       # Verify theme exists in first instance
-      assert {:ok, _theme_state} = UnifiedTheme.get_theme_state(theme_id)
+      assert {:ok, _theme_state} = ThemeServer.get_theme_state(theme_id)
 
       # Verify theme doesn't exist in second instance
       assert {:error, :theme_not_found} =
@@ -444,10 +449,10 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       # Load multiple themes concurrently
       tasks = [
         Task.async(fn ->
-          UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+          ThemeServer.load_theme("test/fixtures/themes/dark.json")
         end),
         Task.async(fn ->
-          UnifiedTheme.load_theme("test/fixtures/themes/light.json")
+          ThemeServer.load_theme("test/fixtures/themes/light.json")
         end)
       ]
 
@@ -457,7 +462,7 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       assert Enum.all?(results, fn {status, _} -> status == :ok end)
 
       # Verify both themes are loaded
-      assert {:ok, themes} = UnifiedTheme.get_themes()
+      assert {:ok, themes} = ThemeServer.get_themes()
       assert map_size(themes) == 2
     end
   end
@@ -466,7 +471,7 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
     test "handles file system errors gracefully", %{pid: _pid} do
       # Test with a directory that doesn't exist
       assert {:error, {:file_read_error, :enoent}} =
-               UnifiedTheme.load_theme("/non/existent/path/theme.json")
+               ThemeServer.load_theme("/non/existent/path/theme.json")
     end
 
     test "handles JSON parsing errors", %{pid: _pid} do
@@ -475,7 +480,7 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       File.write!(temp_file, "{ invalid json")
 
       assert {:error, {:invalid_theme_format, _}} =
-               UnifiedTheme.load_theme(temp_file)
+               ThemeServer.load_theme(temp_file)
 
       # Cleanup
       File.rm!(temp_file)
@@ -485,10 +490,10 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
       # This test verifies that the system handles cleanup errors
       # The current implementation always returns :ok for cleanup
       {:ok, theme_id} =
-        UnifiedTheme.load_theme("test/fixtures/themes/dark.json")
+        ThemeServer.load_theme("test/fixtures/themes/dark.json")
 
       # Unloading should always succeed
-      assert :ok = UnifiedTheme.unload_theme(theme_id)
+      assert :ok = ThemeServer.unload_theme(theme_id)
     end
   end
 end

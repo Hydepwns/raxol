@@ -45,6 +45,12 @@ defmodule Raxol.Animation.FrameworkTest do
     {:ok, _pid} = start_supervised({UserPreferences, user_prefs_opts})
     Logger.debug("UserPreferences started successfully")
 
+    # Start AccessibilityServer for the test
+    {:ok, _accessibility_pid} = Raxol.Core.Accessibility.AccessibilityServer.start_link(
+      name: Raxol.Core.Accessibility.AccessibilityServer
+    )
+    Logger.debug("AccessibilityServer started successfully")
+
     Framework.init(%{}, local_user_prefs_name)
     Logger.debug("Framework initialized")
 

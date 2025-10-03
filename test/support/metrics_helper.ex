@@ -489,14 +489,19 @@ defmodule Raxol.Test.MetricsHelper do
   defp start_collector_conditional(false, _opts), do: nil
 
   defp start_collector_conditional(true, opts) do
-    case Raxol.Core.Metrics.MetricsCollector.start_link(
-           Keyword.get(opts, :collector_opts,
-             retention_period: :timer.minutes(5),
-             max_samples: 100,
-             flush_interval: :timer.seconds(1),
-             cloud_enabled: false
-           )
-         ) do
+    collector_opts =
+      Keyword.get(opts, :collector_opts,
+        retention_period: :timer.minutes(5),
+        max_samples: 100,
+        flush_interval: :timer.seconds(1),
+        cloud_enabled: false
+      )
+
+    # Merge with name to ensure process is registered
+    start_opts =
+      Keyword.merge([name: Raxol.Core.Metrics.MetricsCollector], collector_opts)
+
+    case Raxol.Core.Metrics.MetricsCollector.start_link(start_opts) do
       {:ok, pid} ->
         pid
 
@@ -504,7 +509,7 @@ defmodule Raxol.Test.MetricsHelper do
         pid
 
       {:error, reason} ->
-        raise "Failed to start UnifiedCollector: #{inspect(reason)}"
+        raise "Failed to start MetricsCollector: #{inspect(reason)}"
     end
   end
 

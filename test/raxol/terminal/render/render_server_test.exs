@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Render.RenderServerTest do
 
   alias Raxol.Terminal.{
     Render.RenderServer,
-    Buffer.UnifiedManager,
+    Buffer.BufferManager,
     Cursor.Manager,
     Integration.State
   }
@@ -106,7 +106,7 @@ defmodule Raxol.Terminal.Render.RenderServerTest do
 
       # Create a test state with PID-based buffer manager
       {:ok, buffer_manager_pid} =
-        UnifiedManager.start_link(width: 80, height: 24)
+        BufferManager.start_link(width: 80, height: 24)
 
       cursor_manager = Manager.new(0, 0)
 
@@ -124,10 +124,7 @@ defmodule Raxol.Terminal.Render.RenderServerTest do
 
     test "renders buffer with content", %{pid: _pid, state: state} do
       # Add some content to the buffer
-      {:ok, buffer_manager} =
-        UnifiedManager.write(state.buffer_manager, "Hello, World!")
-
-      state = %{state | buffer_manager: buffer_manager}
+      {:ok, _buffer_pid} = BufferManager.write(state.buffer_manager, "Hello, World!")
 
       assert RenderServer.render(state) == :ok
     end

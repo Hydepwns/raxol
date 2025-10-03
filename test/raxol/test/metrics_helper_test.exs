@@ -16,7 +16,7 @@ defmodule Raxol.Test.MetricsHelperTest do
   describe "setup_metrics_test/1" do
     test ~c"starts metrics collector with default options" do
       context = MetricsHelper.setup_metrics_test()
-      assert Process.whereis(Raxol.Core.Metrics.UnifiedCollector)
+      assert Process.whereis(Raxol.Core.Metrics.MetricsCollector)
       MetricsHelper.cleanup_metrics_test(context)
     end
 
@@ -28,20 +28,20 @@ defmodule Raxol.Test.MetricsHelperTest do
           flush_interval: 2000
         )
 
-      assert Process.whereis(Raxol.Core.Metrics.UnifiedCollector)
+      assert Process.whereis(Raxol.Core.Metrics.MetricsCollector)
       MetricsHelper.cleanup_metrics_test(context)
     end
 
     @tag skip_setup: true
     test ~c"can start without collector" do
       # Ensure any existing collector is stopped first
-      if pid = Process.whereis(Raxol.Core.Metrics.UnifiedCollector) do
+      if pid = Process.whereis(Raxol.Core.Metrics.MetricsCollector) do
         GenServer.stop(pid)
         Process.sleep(10)
       end
 
       context = MetricsHelper.setup_metrics_test(start_collector: false)
-      refute Process.whereis(Raxol.Core.Metrics.UnifiedCollector)
+      refute Process.whereis(Raxol.Core.Metrics.MetricsCollector)
       MetricsHelper.cleanup_metrics_test(context)
     end
   end
@@ -168,22 +168,22 @@ defmodule Raxol.Test.MetricsHelperTest do
   describe "cleanup_metrics_test/1" do
     test ~c"stops metrics collector" do
       context = MetricsHelper.setup_metrics_test()
-      assert Process.whereis(Raxol.Core.Metrics.UnifiedCollector)
+      assert Process.whereis(Raxol.Core.Metrics.MetricsCollector)
       :ok = MetricsHelper.cleanup_metrics_test(context)
-      refute Process.whereis(Raxol.Core.Metrics.UnifiedCollector)
+      refute Process.whereis(Raxol.Core.Metrics.MetricsCollector)
     end
 
     @tag skip_setup: true
     test ~c"handles already stopped collector" do
       # Ensure any existing collector is stopped first
-      if pid = Process.whereis(Raxol.Core.Metrics.UnifiedCollector) do
+      if pid = Process.whereis(Raxol.Core.Metrics.MetricsCollector) do
         GenServer.stop(pid)
         Process.sleep(10)
       end
 
       context = MetricsHelper.setup_metrics_test(start_collector: false)
       :ok = MetricsHelper.cleanup_metrics_test(context)
-      refute Process.whereis(Raxol.Core.Metrics.UnifiedCollector)
+      refute Process.whereis(Raxol.Core.Metrics.MetricsCollector)
     end
   end
 end

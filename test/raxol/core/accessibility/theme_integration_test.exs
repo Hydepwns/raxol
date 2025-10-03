@@ -12,18 +12,22 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   setup do
     # Start UserPreferences in test mode if not already started
     _user_prefs_pid =
-      case UserPreferences.start_link(test_mode?: true) do
+      case UserPreferences.start_link(name: UserPreferences, test_mode?: true) do
         {:ok, pid} -> pid
         {:error, {:already_started, pid}} -> pid
       end
 
-    # Initialize dependencies
-    EventManager.init()
+    # Start EventManager if not already started
+    _event_manager_pid =
+      case EventManager.start_link(name: EventManager) do
+        {:ok, pid} -> pid
+        {:error, {:already_started, pid}} -> pid
+      end
 
     # Clean up after tests
     on_exit(fn ->
       ThemeIntegration.cleanup()
-      # Don't stop UserPreferences - let it be managed by the application
+      # Don't stop UserPreferences or EventManager - let them be managed by the application
     end)
 
     :ok

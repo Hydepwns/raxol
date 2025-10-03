@@ -5,7 +5,6 @@ defmodule Raxol.Examples.ButtonTest do
   use Raxol.Test.Visual
   
   alias Raxol.UI.Components.Input.Button
-  alias Raxol.Examples.Form
   import Raxol.Test.Visual.Assertions
 
   setup do

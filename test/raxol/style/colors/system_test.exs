@@ -53,8 +53,24 @@ defmodule Raxol.Style.Colors.SystemTest do
 
     System.init()
 
+    # Start the ColorSystemServer if not already running
+    case Process.whereis(Raxol.Style.Colors.System.ColorSystemServer) do
+      nil ->
+        {:ok, _pid} = Raxol.Style.Colors.System.ColorSystemServer.start_link([])
+      pid ->
+        pid
+    end
+
     # Explicitly set the process dictionary for the current theme
     Raxol.Core.Runtime.ProcessStore.put(:color_system_current_theme, :standard)
+
+    on_exit(fn ->
+      # Stop ColorSystemServer if it was started in this test
+      case Process.whereis(Raxol.Style.Colors.System.ColorSystemServer) do
+        nil -> :ok
+        pid -> GenServer.stop(pid, :normal, 100)
+      end
+    end)
 
     {:ok, context}
   end

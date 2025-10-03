@@ -8,20 +8,20 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
     case Process.whereis(System) do
       nil ->
         # Start the cache system if it's not running
-        {:ok, _pid} =
-          System.start_link(
-            max_size: 1024 * 1024,
-            default_ttl: 3600,
-            eviction_policy: :lru,
-            compression_enabled: true,
-            namespace_configs: %{
-              buffer: %{max_size: 512 * 1024},
-              animation: %{max_size: 256 * 1024},
-              scroll: %{max_size: 128 * 1024},
-              clipboard: %{max_size: 64 * 1024},
-              general: %{max_size: 20_000}
-            }
-          )
+        start_supervised!({System, [
+          name: System,
+          max_size: 1024 * 1024,
+          default_ttl: 3600,
+          eviction_policy: :lru,
+          compression_enabled: true,
+          namespace_configs: %{
+            buffer: %{max_size: 512 * 1024},
+            animation: %{max_size: 256 * 1024},
+            scroll: %{max_size: 128 * 1024},
+            clipboard: %{max_size: 64 * 1024},
+            general: %{max_size: 20_000}
+          }
+        ]})
 
       _pid ->
         :ok
