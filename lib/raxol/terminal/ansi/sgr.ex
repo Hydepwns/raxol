@@ -125,13 +125,13 @@ defmodule Raxol.Terminal.ANSI.SGR do
         n when n >= 40 and n <= 47 ->
           %{style | background: color_from_sgr(n - 40)}
 
-        # Bright foreground colors (also set bold)
+        # Bright foreground colors
         n when n >= 90 and n <= 97 ->
-          %{style | foreground: color_from_sgr(n - 90), bold: true}
+          %{style | foreground: bright_color_from_sgr(n - 90)}
 
         # Bright background colors
         n when n >= 100 and n <= 107 ->
-          %{style | background: color_from_sgr(n - 100)}
+          %{style | background: bright_color_from_sgr(n - 100)}
 
         # Default foreground/background
         39 ->
@@ -161,6 +161,20 @@ defmodule Raxol.Terminal.ANSI.SGR do
         5 -> :magenta
         6 -> :cyan
         7 -> :white
+        _ -> nil
+      end
+    end
+
+    defp bright_color_from_sgr(n) do
+      case n do
+        0 -> :bright_black
+        1 -> :bright_red
+        2 -> :bright_green
+        3 -> :bright_yellow
+        4 -> :bright_blue
+        5 -> :bright_magenta
+        6 -> :bright_cyan
+        7 -> :bright_white
         _ -> nil
       end
     end
