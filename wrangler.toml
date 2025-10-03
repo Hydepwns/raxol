@@ -7,18 +7,18 @@ name = "raxol-playground"
 [env.production.vars]
 MIX_ENV = "prod"
 PHX_SERVER = "true"
-NODE_VERSION = "23.4.0"
-ERLANG_VERSION = "25.3.2.7"
-ELIXIR_VERSION = "1.17.1"
+NODE_VERSION = "20.10.0"
+ERLANG_VERSION = "27.0"
+ELIXIR_VERSION = "1.17.3"
 
 [env.preview]
 name = "raxol-playground-preview"
 [env.preview.vars]
 MIX_ENV = "prod"
 PHX_SERVER = "true"
-NODE_VERSION = "23.4.0"
-ERLANG_VERSION = "25.3.2.7"
-ELIXIR_VERSION = "1.17.1"
+NODE_VERSION = "20.10.0"
+ERLANG_VERSION = "27.0"
+ELIXIR_VERSION = "1.17.3"
 
 # Functions for SSR (if needed later)
 # [functions]

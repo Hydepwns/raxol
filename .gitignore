@@ -71,6 +71,7 @@ priv/data/events/
 *.sqlite3
 *.sqlite3-journal
 docker/postgres-data/
+.postgres/
 
 # Node.js dependencies
 /node_modules/
