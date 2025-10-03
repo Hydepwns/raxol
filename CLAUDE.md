@@ -284,6 +284,58 @@ Note: The Muzak library (`{:muzak, "~> 1.1"}`) is installed as a dependency but 
 - **No Emojis**: Do not use emoji characters in code or output
 - **Error Handling**: Use {:ok, result} and {:error, reason} tuples with pattern matching
 
+## Deployment and Hosting
+
+### Production Infrastructure
+
+Raxol uses a multi-tier deployment strategy. See `docs/architecture/DEPLOYMENT.md` for complete details.
+
+**Primary Hosting: Fly.io** (Production)
+- URL: `https://raxol.fly.dev`
+- Full Phoenix LiveView application with backend
+- 2 machines running, auto-scaling enabled
+- Deployment: `flyctl deploy` (uses `docker/Dockerfile.web`)
+- Configuration: `fly.toml`
+- Status: Active and production-ready
+
+**Secondary: Cloudflare Pages** (Optional CDN)
+- Static assets only (`web/priv/static`)
+- Automated via `.github/workflows/deploy-web.yml`
+- Purpose: CDN for static content, not for main playground
+- Limitation: No backend/Phoenix runtime, no WebSockets
+
+**Tertiary: GitHub Pages** (Metrics Dashboard)
+- Performance benchmarks and metrics only
+- Via `.github/workflows/performance-tracking.yml`
+- Not for application hosting
+
+### Key Distinction
+
+**Fly.io is the primary hosting provider** because:
+1. Supports full Phoenix LiveView functionality
+2. Has WebSocket support for real-time features
+3. Runs complete Elixir/OTP backend
+4. Currently deployed and operational
+5. Your purchased domain `raxol.io` should point here
+
+Cloudflare Pages only serves static files and cannot run the Phoenix backend needed for the interactive playground.
+
+### Deployment Commands
+
+```bash
+# Deploy to Fly.io
+flyctl deploy
+
+# Check status
+flyctl status --app raxol
+
+# View logs
+flyctl logs --app raxol
+
+# SSH into machine
+flyctl ssh console
+```
+
 ### Important Notes
 
 - Always use absolute paths when working with files
