@@ -64,10 +64,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-changes
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.check-changes.outputs.performance-changes == 'true'
-    
+
     steps:
       - uses: actions/checkout@v5
-      
+        with:
+          submodules: recursive
+
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
@@ -119,10 +121,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-changes
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.check-changes.outputs.performance-changes == 'true'
-    
+
     steps:
       - uses: actions/checkout@v5
-      
+        with:
+          submodules: recursive
+
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
