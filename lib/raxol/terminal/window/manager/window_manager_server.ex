@@ -253,11 +253,22 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     GenServer.call(server, :reset)
   end
 
+  @doc """
+  Split a window horizontally or vertically.
+  """
+  def split_window(window_id, direction) do
+    split_window(__MODULE__, window_id, direction)
+  end
+
+  def split_window(server, window_id, direction) when is_atom(server) do
+    GenServer.call(server, {:split_window, window_id, direction})
+  end
+
   # BaseManager Callbacks
 
   @impl true
-  def init_manager(initial_state) do
-    {:ok, initial_state}
+  def init_manager(_opts) do
+    {:ok, @default_state}
   end
 
   @impl true
@@ -623,6 +634,43 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
   end
 
   @impl true
+  def handle_manager_call({:split_window, window_id, direction}, _from, state) do
+    case Map.get(state.windows, window_id) do
+      nil ->
+        {:reply, {:error, :window_not_found}, state}
+
+      parent_window ->
+        child_window_id = "window_#{state.next_window_id}"
+
+        child_window = %Window{
+          id: child_window_id,
+          title: "",
+          size: calculate_split_size(parent_window.size, direction),
+          position: {0, 0},
+          parent: window_id
+        }
+
+        updated_parent = %{
+          parent_window
+          | children: [child_window_id | parent_window.children]
+        }
+
+        new_state = %{
+          state
+          | windows:
+              Map.merge(state.windows, %{
+                window_id => updated_parent,
+                child_window_id => child_window
+              }),
+            window_order: [child_window_id | state.window_order],
+            next_window_id: state.next_window_id + 1
+        }
+
+        {:reply, {:ok, child_window_id}, new_state}
+    end
+  end
+
+  @impl true
   def handle_manager_call(:reset, _from, _state) do
     {:reply, :ok, @default_state}
   end
@@ -644,6 +692,14 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
 
   defp update_active_after_destroy(active_window, _window_id, _new_window_order) do
     active_window
+  end
+
+  defp calculate_split_size({width, height}, :horizontal) do
+    {width, div(height, 2)}
+  end
+
+  defp calculate_split_size({width, height}, :vertical) do
+    {div(width, 2), height}
   end
 
   defp handle_set_active_window(false, _window_id, state) do

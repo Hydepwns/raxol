@@ -360,6 +360,38 @@ defmodule Raxol.Terminal.Window.Manager do
   end
 
   @doc """
+  Split a window horizontally or vertically.
+  """
+  def split_window(window_id, direction) do
+    Server.split_window(window_id, direction)
+  end
+
+  @doc """
+  Set the title of a window.
+  """
+  def set_title(window_id, title) do
+    Server.set_window_title(Server, window_id, title)
+  end
+
+  @doc """
+  Move a window to the specified position.
+  """
+  def move(window_id, x, y) do
+    set_window_position(window_id, x, y)
+  end
+
+  @doc """
+  Set the stacking order of a window.
+  """
+  def set_stacking_order(window_id, order) do
+    case order do
+      :front -> move_window_to_front(window_id)
+      :back -> move_window_to_back(window_id)
+      _ -> {:error, :invalid_order}
+    end
+  end
+
+  @doc """
   Cleanup the window manager. Alias for reset/0.
   """
   def cleanup do
