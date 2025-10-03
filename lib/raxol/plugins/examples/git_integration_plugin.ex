@@ -118,13 +118,16 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
         Log.info("Git Integration: Found repository at #{repo_path}")
 
         # Start file watcher and timer based on auto-refresh setting
+        auto_refresh = Keyword.get(config, :auto_refresh, false)
+        refresh_interval = Keyword.get(config, :refresh_interval, 5000)
+
         {watcher_pid, timer} =
-          case config.auto_refresh do
+          case auto_refresh do
             true ->
               watcher = start_file_watcher(repo_path)
 
               refresh_timer =
-                :timer.send_interval(config.refresh_interval, :refresh)
+                :timer.send_interval(refresh_interval, :refresh)
 
               {watcher, refresh_timer}
 
@@ -314,7 +317,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   end
 
   defp load_commit_history(state, repo_path) do
-    depth = state.config.graph_depth
+    depth = Keyword.get(state.config, :graph_depth, 20)
 
     case run_git_command(["log", "--oneline", "-#{depth}"], repo_path) do
       {output, 0} ->

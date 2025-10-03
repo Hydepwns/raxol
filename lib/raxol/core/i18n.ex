@@ -28,8 +28,17 @@ defmodule Raxol.Core.I18n do
   Now initializes the GenServer state instead of Process dictionary.
   """
   def init(config \\ []) do
-    ensure_server_started(config)
-    I18nServer.init_i18n(@server, config)
+    # Normalize config to map - handle both keyword lists and maps
+    config_map =
+      cond do
+        is_map(config) -> config
+        is_list(config) and Keyword.keyword?(config) -> Enum.into(config, %{})
+        is_list(config) and config == [] -> %{}
+        true -> config
+      end
+
+    ensure_server_started(config_map)
+    I18nServer.init_i18n(@server, config_map)
   end
 
   @doc """

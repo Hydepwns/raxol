@@ -295,7 +295,12 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   """
   @spec get_text_scale() :: float()
   def get_text_scale do
-    large_text = UserPreferences.get(pref_key(:large_text)) || false
+    # Only try to get preference if the process exists
+    large_text =
+      case Process.whereis(UserPreferences) do
+        nil -> false
+        _pid -> UserPreferences.get(pref_key(:large_text)) || false
+      end
 
     get_text_scale_factor(large_text)
   end

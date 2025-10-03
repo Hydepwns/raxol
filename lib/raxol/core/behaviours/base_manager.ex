@@ -96,7 +96,8 @@ defmodule Raxol.Core.Behaviours.BaseManager do
         {Keyword.take(opts, server_keys), Keyword.drop(opts, server_keys)}
       end
 
-      defp normalize_and_split_opts(_), do: {[], []}
+      # Handle single non-keyword value (e.g., a PID) - pass it through as init arg
+      defp normalize_and_split_opts(value), do: {[], value}
 
       defp normalize_init_result({:ok, state}), do: {:ok, state}
       defp normalize_init_result({:error, reason}), do: {:stop, reason}

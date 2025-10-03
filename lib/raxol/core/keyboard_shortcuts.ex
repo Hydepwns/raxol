@@ -31,7 +31,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   def ensure_started do
     case Process.whereis(Server) do
       nil ->
-        {:ok, _pid} = Server.start_link()
+        {:ok, _pid} = Server.start_link(name: Server)
         :ok
 
       _pid ->

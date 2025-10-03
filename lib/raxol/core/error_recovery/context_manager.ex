@@ -126,15 +126,34 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
   def init_manager(opts) do
     ttl_ms = Keyword.get(opts, :ttl_ms, @default_ttl)
 
+    # Generate unique table name for test isolation
+    table_name =
+      if Application.get_env(:raxol, :env) == :test do
+        :"raxol_recovery_context_#{:erlang.unique_integer([:positive])}"
+      else
+        @table_name
+      end
+
     # Create ETS table for fast context storage
     table =
-      :ets.new(@table_name, [
-        :named_table,
-        :public,
-        :set,
-        {:read_concurrency, true},
-        {:write_concurrency, true}
-      ])
+      case :ets.whereis(table_name) do
+        :undefined ->
+          :ets.new(table_name, [
+            :named_table,
+            :public,
+            :set,
+            {:read_concurrency, true},
+            {:write_concurrency, true}
+          ])
+
+        existing ->
+          # In test mode, clean existing table
+          if Application.get_env(:raxol, :env) == :test do
+            :ets.delete_all_objects(existing)
+          end
+
+          existing
+      end
 
     # Schedule periodic cleanup
     schedule_cleanup()

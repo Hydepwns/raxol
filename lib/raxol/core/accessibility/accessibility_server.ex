@@ -43,6 +43,7 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+  require Logger
   alias Raxol.Core.Events.EventManager, as: EventManager
   alias Raxol.Core.Runtime.Log
 
@@ -480,7 +481,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     register_event_handlers()
 
     # Dispatch accessibility enabled event
-    EventManager.dispatch({:accessibility_enabled, preferences})
+    if Process.whereis(EventManager),
+      do: EventManager.dispatch({:accessibility_enabled, preferences})
 
     {:reply, :ok, new_state}
   end
@@ -493,7 +495,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     unregister_event_handlers()
 
     # Dispatch accessibility disabled event
-    EventManager.dispatch(:accessibility_disabled)
+    if Process.whereis(EventManager),
+      do: EventManager.dispatch(:accessibility_disabled)
 
     {:reply, :ok, new_state}
   end
@@ -519,7 +522,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     end
 
     # Dispatch preference change event
-    EventManager.dispatch({:accessibility_preference_changed, key, value})
+    if Process.whereis(EventManager),
+      do: EventManager.dispatch({:accessibility_preference_changed, key, value})
 
     # Special handling for high contrast to notify ColorSystem
     if key == :high_contrast do
@@ -554,7 +558,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     end
 
     # Dispatch preference change event
-    EventManager.dispatch({:accessibility_preference_changed, key, value})
+    if Process.whereis(EventManager),
+      do: EventManager.dispatch({:accessibility_preference_changed, key, value})
 
     # Special handling for high contrast to notify ColorSystem
     if key == :high_contrast do
@@ -795,9 +800,11 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
 
     # Dispatch event for other systems
     _ =
-      EventManager.dispatch(:screen_reader_announcement, %{
-        text: announcement_text
-      })
+      if Process.whereis(EventManager) do
+        EventManager.dispatch(:screen_reader_announcement, %{
+          text: announcement_text
+        })
+      end
 
     new_announcements = %{
       state.announcements
@@ -893,43 +900,59 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   end
 
   defp register_event_handlers do
-    EventManager.register_handler(
-      :focus_change,
-      __MODULE__,
-      :handle_focus_change_event
-    )
+    case Process.whereis(EventManager) do
+      nil ->
+        Logger.debug(
+          "EventManager not available, skipping event handler registration"
+        )
 
-    EventManager.register_handler(
-      :preference_changed,
-      __MODULE__,
-      :handle_preference_changed_event
-    )
+        :ok
 
-    EventManager.register_handler(
-      :theme_changed,
-      __MODULE__,
-      :handle_theme_changed_event
-    )
+      _pid ->
+        EventManager.register_handler(
+          :focus_change,
+          __MODULE__,
+          :handle_focus_change_event
+        )
+
+        EventManager.register_handler(
+          :preference_changed,
+          __MODULE__,
+          :handle_preference_changed_event
+        )
+
+        EventManager.register_handler(
+          :theme_changed,
+          __MODULE__,
+          :handle_theme_changed_event
+        )
+    end
   end
 
   defp unregister_event_handlers do
-    EventManager.unregister_handler(
-      :focus_change,
-      __MODULE__,
-      :handle_focus_change_event
-    )
+    case Process.whereis(EventManager) do
+      nil ->
+        :ok
 
-    EventManager.unregister_handler(
-      :preference_changed,
-      __MODULE__,
-      :handle_preference_changed_event
-    )
+      _pid ->
+        EventManager.unregister_handler(
+          :focus_change,
+          __MODULE__,
+          :handle_focus_change_event
+        )
 
-    EventManager.unregister_handler(
-      :theme_changed,
-      __MODULE__,
-      :handle_theme_changed_event
-    )
+        EventManager.unregister_handler(
+          :preference_changed,
+          __MODULE__,
+          :handle_preference_changed_event
+        )
+
+        EventManager.unregister_handler(
+          :theme_changed,
+          __MODULE__,
+          :handle_theme_changed_event
+        )
+    end
   end
 
   @spec process_announcement(map(), String.t(), keyword()) :: any()
@@ -1012,7 +1035,11 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     call_callback_if_present(callback, announcement.message)
 
     # Dispatch event for other systems
-    EventManager.dispatch({:screen_reader_announcement, announcement.message})
+    if Process.whereis(EventManager),
+      do:
+        EventManager.dispatch(
+          {:screen_reader_announcement, announcement.message}
+        )
 
     Raxol.Core.Runtime.Log.debug(
       "deliver_announcement: dispatched screen reader event"

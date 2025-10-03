@@ -413,7 +413,10 @@ defmodule Raxol.Plugins.Testing.Helpers do
       diff_context: 3
     }
 
-    Map.merge(default_config, overrides)
+    # Return as keyword list for compatibility with BaseManager
+    default_config
+    |> Map.merge(overrides)
+    |> Map.to_list()
   end
 
   def simulate_file_change(plugin_pid, path, events \\ [:modified]) do
