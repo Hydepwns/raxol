@@ -7,9 +7,7 @@ defmodule Raxol.Core.AccessibilityMutationCoverageTest do
   - Boolean operations (true/false, and/or)
   """
   use ExUnit.Case, async: false
-  
-  alias Raxol.Core.Accessibility
-  
+
   describe "text scaling arithmetic operations" do
     test "get_text_scale returns correct scale values" do
       # Test the arithmetic operations in text scaling

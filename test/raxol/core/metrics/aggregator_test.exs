@@ -7,12 +7,14 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
   alias Raxol.Core.Metrics.Aggregator
 
   setup do
-    {:ok, _pid} = Aggregator.start_link()
+    {:ok, _pid} = Aggregator.start_link(name: Aggregator)
 
-    # Setup meck for UnifiedCollector once for all tests
+    # Setup meck for MetricsCollector once for all tests
     setup_meck()
 
     on_exit(fn ->
+      pid = Process.whereis(Aggregator)
+      if pid && Process.alive?(pid), do: GenServer.stop(Aggregator)
       cleanup_meck()
     end)
 
@@ -21,7 +23,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
   defp setup_meck do
     try do
-      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
+      :meck.new(Raxol.Core.Metrics.MetricsCollector, [:passthrough])
     catch
       :error, {:already_started, _} -> :ok
     end
@@ -29,7 +31,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
   defp cleanup_meck do
     try do
-      :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+      :meck.unload(Raxol.Core.Metrics.MetricsCollector)
     catch
       :error, {:not_mocked, _} -> :ok
     end
@@ -94,7 +96,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
     test "aggregates metrics by mean", %{rule_id: rule_id} do
       metrics = create_test_metrics([10, 20, 30])
 
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
+      :meck.expect(Raxol.Core.Metrics.MetricsCollector, :get_metrics, fn _name,
                                                                          _tags ->
         metrics
       end)
@@ -117,7 +119,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       metrics = create_test_metrics([10, 20, 30])
 
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
+      :meck.expect(Raxol.Core.Metrics.MetricsCollector, :get_metrics, fn _name,
                                                                          _tags ->
         metrics
       end)
@@ -156,7 +158,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
         }
       ]
 
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
+      :meck.expect(Raxol.Core.Metrics.MetricsCollector, :get_metrics, fn _name,
                                                                          _tags ->
         metrics
       end)
@@ -193,7 +195,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       metrics = create_test_metrics([10, 20, 30, 40])
 
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
+      :meck.expect(Raxol.Core.Metrics.MetricsCollector, :get_metrics, fn _name,
                                                                          _tags ->
         metrics
       end)
@@ -215,7 +217,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       metrics = create_test_metrics([10, 20, 30, 40, 50])
 
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
+      :meck.expect(Raxol.Core.Metrics.MetricsCollector, :get_metrics, fn _name,
                                                                          _tags ->
         metrics
       end)

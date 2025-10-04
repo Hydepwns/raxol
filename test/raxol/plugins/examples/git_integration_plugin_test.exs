@@ -57,6 +57,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
   describe "plugin initialization" do
     test "starts successfully with valid config" do
       config = create_test_config(%{
+        name: GitIntegrationPlugin,
         auto_refresh: false,
         refresh_interval: 5000,
         show_untracked: true
@@ -73,7 +74,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
       # Test in directory without git repo
       with_temp_directory(fn temp_dir ->
         File.cd!(temp_dir, fn ->
-          config = create_test_config()
+          config = create_test_config(%{name: GitIntegrationPlugin})
           {:ok, pid} = GitIntegrationPlugin.start_link(config)
 
           status = GitIntegrationPlugin.get_status()
@@ -90,7 +91,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
       # Skip if no git repo in test environment
       case System.cmd("git", ["rev-parse", "--show-toplevel"]) do
         {_path, 0} ->
-          config = create_test_config()
+          config = create_test_config(%{name: GitIntegrationPlugin})
           {:ok, pid} = GitIntegrationPlugin.start_link(config)
 
           status = GitIntegrationPlugin.get_status()
@@ -116,7 +117,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
           System.cmd("git", ["add", "README.md"])
           System.cmd("git", ["commit", "-m", "Initial commit"])
 
-          config = create_test_config()
+          config = create_test_config(%{name: GitIntegrationPlugin})
           {:ok, pid} = GitIntegrationPlugin.start_link(config)
 
           # Wait for initialization
@@ -325,7 +326,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
     end
 
     test "handles refresh command" do
-      config = create_test_config()
+      config = create_test_config(%{name: GitIntegrationPlugin})
       {:ok, plugin} = GitIntegrationPlugin.start_link(config)
 
       state = %GitIntegrationPlugin{config: config}
@@ -414,7 +415,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
 
   describe "performance tests" do
     test "render performance is acceptable" do
-      config = create_test_config()
+      config = create_test_config(%{name: GitIntegrationPlugin})
       {:ok, plugin} = GitIntegrationPlugin.start_link(config)
 
       # Create state with some data
@@ -446,7 +447,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
       # Test with actual git repo if available
       case System.cmd("git", ["rev-parse", "--show-toplevel"]) do
         {_path, 0} ->
-          config = create_test_config(%{auto_refresh: false})
+          config = create_test_config(%{name: GitIntegrationPlugin, auto_refresh: false})
           {:ok, plugin} = GitIntegrationPlugin.start_link(config)
 
           # Benchmark status fetching
@@ -477,7 +478,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
           System.cmd("git", ["config", "user.email", "test@example.com"])
           System.cmd("git", ["config", "user.name", "Test User"])
 
-          config = create_test_config()
+          config = create_test_config(%{name: GitIntegrationPlugin})
           {:ok, plugin} = GitIntegrationPlugin.start_link(config)
 
           # Try to stage non-existent file
@@ -493,7 +494,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
 
     test "logs errors appropriately" do
       logs = capture_plugin_logs(fn ->
-        config = create_test_config()
+        config = create_test_config(%{name: GitIntegrationPlugin})
         {:ok, plugin} = GitIntegrationPlugin.start_link(config)
 
         # Trigger an error condition

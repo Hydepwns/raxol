@@ -1,6 +1,5 @@
 defmodule Raxol.Terminal.EmulatorPluginErrorHandlingTest do
   use ExUnit.Case
-  alias Raxol.Test.TestUtils  # import Raxol.Test.EventAssertions
 
   # alias Raxol.EmulatorPluginTestHelper
 

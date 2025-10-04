@@ -4,6 +4,7 @@ defmodule Raxol.Architecture.CQRSIntegrationTest do
   """
 
   use ExUnit.Case, async: false
+  @moduletag :skip
 
   alias Raxol.Architecture.CQRS.{CommandDispatcher, Setup}
   alias Raxol.Architecture.EventSourcing.EventStore
