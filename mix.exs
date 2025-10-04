@@ -156,7 +156,7 @@ defmodule Raxol.MixProject do
       # Connection pooling library (optional)
       {:poolboy, "~> 1.5", optional: true},
       # Tutorial loading frontmatter parser
-      {:yaml_elixir, "~> 2.11"},
+      {:yaml_elixir, "~> 2.12"},
       # Syntax highlighting core
       {:makeup, "~> 1.2"},
       # Elixir syntax highlighting
@@ -173,8 +173,8 @@ defmodule Raxol.MixProject do
       {:phoenix, "~> 1.8.1"},
       {:phoenix_pubsub, "~> 2.1"},
       {:phoenix_ecto, "~> 4.4"},
-      {:phoenix_live_view, "~> 1.1.12"},
-      {:phoenix_html, "~> 4.0"},
+      {:phoenix_live_view, "~> 1.1.13"},
+      {:phoenix_html, "~> 4.3"},
       {:plug_cowboy, "~> 2.7"},
       {:phoenix_live_dashboard, "~> 0.8.7", only: :dev},
       {:phoenix_live_reload, "~> 1.6.1", only: :dev}
