@@ -1,0 +1,1 @@
+../../../../../lib/raxol/live_view/terminal_component.ex

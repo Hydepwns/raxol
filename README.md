@@ -17,17 +17,39 @@ Terminal framework supporting React, Svelte, LiveView, and HEEx UI patterns.
 - Multi-framework UI support (React, Svelte, LiveView, HEEx)
 - Enterprise features: audit logging, encryption, SAML/OIDC
 - Graphics: Sixel support, session continuity
+- **NEW**: VIM navigation, command parser, fuzzy search, virtual filesystem, cursor effects
+
+## Modular Packages (v2.0+)
+
+Raxol is now available as focused, independently releasable packages:
+
+- **[raxol_core](packages/raxol_core/)** - Lightweight buffer primitives (< 100KB, zero deps)
+- **[raxol_liveview](packages/raxol_liveview/)** - Phoenix LiveView integration
+- **[raxol_plugin](packages/raxol_plugin/)** - Plugin system
+- **raxol** (coming soon) - Full framework (includes all packages)
+
+**[View Package Guide →](PACKAGES.md)**
 
 ## Quick Start
 
 ### Installation
 
-```elixir
-# Full installation with runtime (for terminal applications)
-{:raxol, "~> 1.5.4"}
+Choose your package based on needs:
 
-# Components-only (no terminal runtime, just UI components)
-{:raxol, "~> 1.5.4", runtime: false}
+```elixir
+# Minimal - Just terminal buffers
+{:raxol_core, "~> 2.0"}
+
+# Web integration - Add LiveView support
+{:raxol_core, "~> 2.0"},
+{:raxol_liveview, "~> 2.0"}
+
+# Extensible apps - Add plugin system
+{:raxol_core, "~> 2.0"},
+{:raxol_plugin, "~> 2.0"}
+
+# Or use v1.x (full framework)
+{:raxol, "~> 1.5.4"}
 ```
 
 Using `runtime: false` provides UI components without terminal emulator runtime for:
@@ -151,12 +173,42 @@ This makes Raxol perfect as a lightweight UI component library for web applicati
 
 ## Documentation
 
-**[Full Documentation →](https://hexdocs.pm/raxol)** - Complete API reference and guides
+### Getting Started
+
+- **[Quickstart](docs/getting-started/QUICKSTART.md)** - 5/10/15 minute tutorials
+- **[Core Concepts](docs/getting-started/CORE_CONCEPTS.md)** - Understand buffers and rendering
+- **[Migration Guide](docs/getting-started/MIGRATION_FROM_DIY.md)** - For teams with existing terminal code
+
+### Cookbooks
+
+- **[LiveView Integration](docs/cookbook/LIVEVIEW_INTEGRATION.md)** - Render terminals in Phoenix
+- **[Performance Optimization](docs/cookbook/PERFORMANCE_OPTIMIZATION.md)** - 60fps techniques
+- **[Theming](docs/cookbook/THEMING.md)** - Custom color schemes
+
+### Features
+
+- **[VIM Navigation](docs/features/VIM_NAVIGATION.md)** - VIM-style keybindings and movement
+- **[Command Parser](docs/features/COMMAND_PARSER.md)** - Tab completion, history, argument parsing
+- **[Fuzzy Search](docs/features/FUZZY_SEARCH.md)** - Multi-mode search with highlighting
+- **[File System](docs/features/FILESYSTEM.md)** - Virtual filesystem with Unix commands
+- **[Cursor Effects](docs/features/CURSOR_EFFECTS.md)** - Visual trails and glow effects
+- **[Features Overview](docs/features/README.md)** - Complete guide to all features
+
+### API Reference
+
+- **[Buffer API](docs/core/BUFFER_API.md)** - Complete buffer operations reference
+- **[Architecture](docs/core/ARCHITECTURE.md)** - Design decisions and internals
+- **[Full Documentation](https://hexdocs.pm/raxol)** - Complete API reference
 
 ### Recent Features
+- **Feature Additions** (v2.0.0 Phase 6) - VIM navigation, command parser, fuzzy search, filesystem, cursor effects
+- **Documentation Overhaul** (v2.0.0 Phase 4) - Beginner-friendly guides and practical cookbooks
+- **Plugin System** (v2.0.0 Phase 3) - Spotify plugin showcase
+- **LiveView Integration** (v2.0.0 Phase 2) - Terminal rendering in Phoenix
+- **Raxol.Core** (v2.0.0 Phase 1) - Lightweight buffer primitives (< 100KB, zero deps)
 - **Code Consolidation** (v1.5.4) - BaseManager pattern, TimerManager integration, 99.8% test coverage
-- **Type Spec Generator** (v1.4.1) - Automated type specification generation with `mix raxol.gen.specs`
-- **Unified Configuration** (v1.4.1) - TOML-based configuration system via `Raxol.Config`
+- **Type Spec Generator** (v1.4.1) - Automated type specification generation
+- **Unified Configuration** (v1.4.1) - TOML-based configuration system
 
 ## VS Code Extension
 

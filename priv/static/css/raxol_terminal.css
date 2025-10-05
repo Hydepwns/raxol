@@ -1,0 +1,336 @@
+/*
+ * Raxol Terminal CSS
+ * Core styles for rendering terminal buffers in Phoenix LiveView
+ *
+ * Usage:
+ *   <link rel="stylesheet" href="/css/raxol_terminal.css">
+ */
+
+/* ===== Base Terminal Styles ===== */
+
+.raxol-terminal {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+  font-size: 14px;
+  line-height: 1.2;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 0;
+}
+
+.raxol-line {
+  display: block;
+  min-height: 1.2em;
+}
+
+.raxol-cell {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+}
+
+/* ===== Cursor Styles ===== */
+
+.raxol-cursor {
+  animation: blink 1s step-end infinite;
+}
+
+.raxol-cursor-block {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.raxol-cursor-underline {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.raxol-cursor-bar {
+  border-left: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* ===== Text Attributes ===== */
+
+.raxol-bold {
+  font-weight: bold;
+}
+
+.raxol-italic {
+  font-style: italic;
+}
+
+.raxol-underline {
+  text-decoration: underline;
+}
+
+.raxol-strikethrough {
+  text-decoration: line-through;
+}
+
+.raxol-reverse {
+  filter: invert(1);
+}
+
+/* ===== Standard ANSI Colors (Foreground) ===== */
+
+.raxol-fg-black { color: #000000; }
+.raxol-fg-red { color: #cd3131; }
+.raxol-fg-green { color: #0dbc79; }
+.raxol-fg-yellow { color: #e5e510; }
+.raxol-fg-blue { color: #2472c8; }
+.raxol-fg-magenta { color: #bc3fbc; }
+.raxol-fg-cyan { color: #11a8cd; }
+.raxol-fg-white { color: #e5e5e5; }
+
+/* Bright colors */
+.raxol-fg-bright_black { color: #666666; }
+.raxol-fg-bright_red { color: #f14c4c; }
+.raxol-fg-bright_green { color: #23d18b; }
+.raxol-fg-bright_yellow { color: #f5f543; }
+.raxol-fg-bright_blue { color: #3b8eea; }
+.raxol-fg-bright_magenta { color: #d670d6; }
+.raxol-fg-bright_cyan { color: #29b8db; }
+.raxol-fg-bright_white { color: #ffffff; }
+
+/* ===== Standard ANSI Colors (Background) ===== */
+
+.raxol-bg-black { background-color: #000000; }
+.raxol-bg-red { background-color: #cd3131; }
+.raxol-bg-green { background-color: #0dbc79; }
+.raxol-bg-yellow { background-color: #e5e510; }
+.raxol-bg-blue { background-color: #2472c8; }
+.raxol-bg-magenta { background-color: #bc3fbc; }
+.raxol-bg-cyan { background-color: #11a8cd; }
+.raxol-bg-white { background-color: #e5e5e5; }
+
+/* Bright colors */
+.raxol-bg-bright_black { background-color: #666666; }
+.raxol-bg-bright_red { background-color: #f14c4c; }
+.raxol-bg-bright_green { background-color: #23d18b; }
+.raxol-bg-bright_yellow { background-color: #f5f543; }
+.raxol-bg-bright_blue { background-color: #3b8eea; }
+.raxol-bg-bright_magenta { background-color: #d670d6; }
+.raxol-bg-bright_cyan { background-color: #29b8db; }
+.raxol-bg-bright_white { background-color: #ffffff; }
+
+/* ===== Theme: Nord ===== */
+
+.raxol-theme-nord {
+  background-color: #2e3440;
+  color: #d8dee9;
+}
+
+.raxol-theme-nord .raxol-fg-black { color: #3b4252; }
+.raxol-theme-nord .raxol-fg-red { color: #bf616a; }
+.raxol-theme-nord .raxol-fg-green { color: #a3be8c; }
+.raxol-theme-nord .raxol-fg-yellow { color: #ebcb8b; }
+.raxol-theme-nord .raxol-fg-blue { color: #81a1c1; }
+.raxol-theme-nord .raxol-fg-magenta { color: #b48ead; }
+.raxol-theme-nord .raxol-fg-cyan { color: #88c0d0; }
+.raxol-theme-nord .raxol-fg-white { color: #e5e9f0; }
+
+.raxol-theme-nord .raxol-bg-black { background-color: #3b4252; }
+.raxol-theme-nord .raxol-bg-red { background-color: #bf616a; }
+.raxol-theme-nord .raxol-bg-green { background-color: #a3be8c; }
+.raxol-theme-nord .raxol-bg-yellow { background-color: #ebcb8b; }
+.raxol-theme-nord .raxol-bg-blue { background-color: #81a1c1; }
+.raxol-theme-nord .raxol-bg-magenta { background-color: #b48ead; }
+.raxol-theme-nord .raxol-bg-cyan { background-color: #88c0d0; }
+.raxol-theme-nord .raxol-bg-white { background-color: #e5e9f0; }
+
+/* ===== Theme: Dracula ===== */
+
+.raxol-theme-dracula {
+  background-color: #282a36;
+  color: #f8f8f2;
+}
+
+.raxol-theme-dracula .raxol-fg-black { color: #21222c; }
+.raxol-theme-dracula .raxol-fg-red { color: #ff5555; }
+.raxol-theme-dracula .raxol-fg-green { color: #50fa7b; }
+.raxol-theme-dracula .raxol-fg-yellow { color: #f1fa8c; }
+.raxol-theme-dracula .raxol-fg-blue { color: #bd93f9; }
+.raxol-theme-dracula .raxol-fg-magenta { color: #ff79c6; }
+.raxol-theme-dracula .raxol-fg-cyan { color: #8be9fd; }
+.raxol-theme-dracula .raxol-fg-white { color: #f8f8f2; }
+
+.raxol-theme-dracula .raxol-bg-black { background-color: #21222c; }
+.raxol-theme-dracula .raxol-bg-red { background-color: #ff5555; }
+.raxol-theme-dracula .raxol-bg-green { background-color: #50fa7b; }
+.raxol-theme-dracula .raxol-bg-yellow { background-color: #f1fa8c; }
+.raxol-theme-dracula .raxol-bg-blue { background-color: #bd93f9; }
+.raxol-theme-dracula .raxol-bg-magenta { background-color: #ff79c6; }
+.raxol-theme-dracula .raxol-bg-cyan { background-color: #8be9fd; }
+.raxol-theme-dracula .raxol-bg-white { background-color: #f8f8f2; }
+
+/* ===== Theme: Solarized Dark ===== */
+
+.raxol-theme-solarized_dark {
+  background-color: #002b36;
+  color: #839496;
+}
+
+.raxol-theme-solarized_dark .raxol-fg-black { color: #073642; }
+.raxol-theme-solarized_dark .raxol-fg-red { color: #dc322f; }
+.raxol-theme-solarized_dark .raxol-fg-green { color: #859900; }
+.raxol-theme-solarized_dark .raxol-fg-yellow { color: #b58900; }
+.raxol-theme-solarized_dark .raxol-fg-blue { color: #268bd2; }
+.raxol-theme-solarized_dark .raxol-fg-magenta { color: #d33682; }
+.raxol-theme-solarized_dark .raxol-fg-cyan { color: #2aa198; }
+.raxol-theme-solarized_dark .raxol-fg-white { color: #eee8d5; }
+
+.raxol-theme-solarized_dark .raxol-bg-black { background-color: #073642; }
+.raxol-theme-solarized_dark .raxol-bg-red { background-color: #dc322f; }
+.raxol-theme-solarized_dark .raxol-bg-green { background-color: #859900; }
+.raxol-theme-solarized_dark .raxol-bg-yellow { background-color: #b58900; }
+.raxol-theme-solarized_dark .raxol-bg-blue { background-color: #268bd2; }
+.raxol-theme-solarized_dark .raxol-bg-magenta { background-color: #d33682; }
+.raxol-theme-solarized_dark .raxol-bg-cyan { background-color: #2aa198; }
+.raxol-theme-solarized_dark .raxol-bg-white { background-color: #eee8d5; }
+
+/* ===== Theme: Solarized Light ===== */
+
+.raxol-theme-solarized_light {
+  background-color: #fdf6e3;
+  color: #657b83;
+}
+
+.raxol-theme-solarized_light .raxol-fg-black { color: #073642; }
+.raxol-theme-solarized_light .raxol-fg-red { color: #dc322f; }
+.raxol-theme-solarized_light .raxol-fg-green { color: #859900; }
+.raxol-theme-solarized_light .raxol-fg-yellow { color: #b58900; }
+.raxol-theme-solarized_light .raxol-fg-blue { color: #268bd2; }
+.raxol-theme-solarized_light .raxol-fg-magenta { color: #d33682; }
+.raxol-theme-solarized_light .raxol-fg-cyan { color: #2aa198; }
+.raxol-theme-solarized_light .raxol-fg-white { color: #002b36; }
+
+.raxol-theme-solarized_light .raxol-bg-black { background-color: #073642; }
+.raxol-theme-solarized_light .raxol-bg-red { background-color: #dc322f; }
+.raxol-theme-solarized_light .raxol-bg-green { background-color: #859900; }
+.raxol-theme-solarized_light .raxol-bg-yellow { background-color: #b58900; }
+.raxol-theme-solarized_light .raxol-bg-blue { background-color: #268bd2; }
+.raxol-theme-solarized_light .raxol-bg-magenta { background-color: #d33682; }
+.raxol-theme-solarized_light .raxol-bg-cyan { background-color: #2aa198; }
+.raxol-theme-solarized_light .raxol-bg-white { background-color: #002b36; }
+
+/* ===== Theme: Monokai ===== */
+
+.raxol-theme-monokai {
+  background-color: #272822;
+  color: #f8f8f2;
+}
+
+.raxol-theme-monokai .raxol-fg-black { color: #272822; }
+.raxol-theme-monokai .raxol-fg-red { color: #f92672; }
+.raxol-theme-monokai .raxol-fg-green { color: #a6e22e; }
+.raxol-theme-monokai .raxol-fg-yellow { color: #f4bf75; }
+.raxol-theme-monokai .raxol-fg-blue { color: #66d9ef; }
+.raxol-theme-monokai .raxol-fg-magenta { color: #ae81ff; }
+.raxol-theme-monokai .raxol-fg-cyan { color: #a1efe4; }
+.raxol-theme-monokai .raxol-fg-white { color: #f8f8f2; }
+
+.raxol-theme-monokai .raxol-bg-black { background-color: #272822; }
+.raxol-theme-monokai .raxol-bg-red { background-color: #f92672; }
+.raxol-theme-monokai .raxol-bg-green { background-color: #a6e22e; }
+.raxol-theme-monokai .raxol-bg-yellow { background-color: #f4bf75; }
+.raxol-theme-monokai .raxol-bg-blue { background-color: #66d9ef; }
+.raxol-theme-monokai .raxol-bg-magenta { background-color: #ae81ff; }
+.raxol-theme-monokai .raxol-bg-cyan { background-color: #a1efe4; }
+.raxol-theme-monokai .raxol-bg-white { background-color: #f8f8f2; }
+
+/* ===== Diff Visualization ===== */
+
+.raxol-diff .raxol-diff-changed {
+  background-color: rgba(255, 255, 0, 0.2);
+  outline: 1px solid rgba(255, 255, 0, 0.5);
+}
+
+/* ===== Accessibility ===== */
+
+.raxol-terminal:focus {
+  outline: 2px solid #0078d4;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .raxol-terminal {
+    border: 2px solid currentColor;
+  }
+
+  .raxol-cursor-block {
+    background-color: currentColor;
+    color: CanvasText;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .raxol-cursor {
+    animation: none;
+  }
+}
+
+/* ===== Responsive Sizing ===== */
+
+@media (max-width: 768px) {
+  .raxol-terminal {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .raxol-terminal {
+    font-size: 10px;
+    padding: 4px;
+  }
+}
+
+/* ===== Selection Support ===== */
+
+.raxol-terminal ::selection {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.raxol-terminal ::-moz-selection {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ===== Container Utilities ===== */
+
+.raxol-container {
+  max-width: 100%;
+  overflow: auto;
+}
+
+.raxol-container-fixed {
+  width: fit-content;
+  min-width: 640px;
+}
+
+.raxol-container-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.raxol-container-fullscreen .raxol-terminal {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
+}
