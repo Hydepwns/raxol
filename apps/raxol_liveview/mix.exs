@@ -32,7 +32,7 @@ defmodule Raxol.LiveView.MixProject do
   defp deps do
     [
       # Core dependency
-      {:raxol_core, "~> 2.0", path: "../raxol_core"},
+      {:raxol_core, "~> 2.0"},
 
       # Phoenix LiveView
       {:phoenix_live_view, "~> 0.20 or ~> 1.0"},

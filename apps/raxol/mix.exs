@@ -32,9 +32,9 @@ defmodule Raxol.MixProject do
   defp deps do
     [
       # Raxol packages - everything included
-      {:raxol_core, "~> 2.0", path: "../raxol_core"},
-      {:raxol_liveview, "~> 2.0", path: "../raxol_liveview"},
-      {:raxol_plugin, "~> 2.0", path: "../raxol_plugin"},
+      {:raxol_core, "~> 2.0"},
+      {:raxol_liveview, "~> 2.0"},
+      {:raxol_plugin, "~> 2.0"},
 
       # Dev dependencies
       {:ex_doc, "~> 0.29", only: :dev, runtime: false}

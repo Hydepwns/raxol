@@ -32,7 +32,7 @@ defmodule Raxol.Plugin.MixProject do
   defp deps do
     [
       # Core dependency
-      {:raxol_core, "~> 2.0", path: "../raxol_core"},
+      {:raxol_core, "~> 2.0"},
 
       # Dev dependencies
       {:ex_doc, "~> 0.29", only: :dev, runtime: false}
