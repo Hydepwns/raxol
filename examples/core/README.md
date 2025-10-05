@@ -35,4 +35,4 @@ mix run examples/core/01_hello_buffer/main.exs
 ## Status
 
 All examples are currently in development as part of Phase 1 (Issue #54).
-See TODO.md for the complete v2.0 roadmap.
+See [docs/project/TODO.md](../../docs/project/TODO.md) for the complete v2.0 roadmap.
