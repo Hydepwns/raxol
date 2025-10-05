@@ -49,7 +49,7 @@ Choose your package based on needs:
 {:raxol_plugin, "~> 2.0"}
 
 # Or use v1.x (full framework)
-{:raxol, "~> 1.5.4"}
+{:raxol, "~> 2.0"}
 ```
 
 Using `runtime: false` provides UI components without terminal emulator runtime for:

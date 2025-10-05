@@ -1,7 +1,7 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "1.5.4"
+  @version "2.0.0"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
@@ -164,7 +164,10 @@ defmodule Raxol.MixProject do
       # System clipboard access
       {:clipboard, "~> 0.2.1"},
       # Efficient circular buffer implementation
-      {:circular_buffer, "~> 1.0"}
+      {:circular_buffer, "~> 1.0"},
+      # Plugin dependencies (optional - only needed for specific plugins)
+      {:req, "~> 0.5", optional: true},
+      {:oauth2, "~> 2.1", optional: true}
     ]
   end
 

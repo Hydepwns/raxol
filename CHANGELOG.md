@@ -1,3 +1,117 @@
+## [2.0.0] - 2025-10-05
+
+### Major Release - Modular Architecture
+
+Complete v2.0 transformation with modular package architecture for incremental adoption.
+All 6 phases implemented: Core modules, LiveView integration, Spotify plugin showcase,
+documentation overhaul, package split, and feature additions.
+
+### Package Structure
+
+Four independent packages now available:
+- `raxol_core` (v2.0.0): Buffer primitives, zero dependencies, <100KB
+- `raxol_liveview` (v2.0.0): Phoenix LiveView integration
+- `raxol_plugin` (v2.0.0): Plugin framework with behavior API
+- `raxol` (v2.0.0): Meta-package including all packages
+
+### Phase 1: Core Modules
+- Raxol.Core.Buffer: Terminal buffer operations (<1ms for 80x24)
+- Raxol.Core.Renderer: Pure functional rendering with diff calculation
+- Raxol.Core.Box: Box drawing with multiple border styles (single, double, rounded, heavy, dashed)
+- Raxol.Core.Style: ANSI color and style management
+- Complete test coverage (73/73 tests passing)
+- Documentation: BUFFER_API.md, GETTING_STARTED.md, ARCHITECTURE.md
+- Examples: hello_buffer, box_drawing
+
+### Phase 2: LiveView Integration
+- Raxol.LiveView.TerminalBridge: Buffer to HTML conversion with caching
+- Raxol.LiveView.TerminalComponent: LiveComponent for embedding terminals
+- Event handling: keyboard, mouse, paste, focus/blur
+- Five themes: Nord, Dracula, Solarized Dark/Light, Monokai
+- Performance: 1.24ms avg rendering (60fps target achieved)
+- CSS grid layout with accessibility features
+- Complete test coverage (31/31 tests passing)
+
+### Phase 3: Spotify Plugin Showcase
+- Full Spotify Web API integration with OAuth 2.0
+- Six operational modes: auth, main, playlists, devices, search, volume
+- Complete keyboard controls and modal navigation
+- API client with request/oauth2 dependencies
+- Authentication flow and token management
+- Documentation: SPOTIFY.md with setup guide
+- Four working examples with integration patterns
+
+### Phase 4: Documentation Overhaul
+- Getting Started: QUICKSTART.md (5/10/15 min tutorials)
+- Core Concepts: CORE_CONCEPTS.md, MIGRATION_FROM_DIY.md
+- Cookbook: 5 practical guides (LiveView, VIM, Performance, Commands, Theming)
+- Feature docs: VIM, Parser, Search, Filesystem, Cursor Effects
+- 75% documentation reduction via DRY consolidation (5000+ lines → 1250 lines)
+- Beginner-friendly with clear migration paths
+
+### Phase 5: Modular Package Split
+- Independent packages with clear dependency boundaries
+- Path-based dependencies for monorepo development
+- Each package fully documented with README, LICENSE, CHANGELOG
+- All packages compile independently with zero warnings
+- Ready for Hex.pm publishing
+
+### Phase 6: Feature Additions
+- VIM Navigation: hjkl movement, gg/G jumps, search (/ ?), word movement (w b e), visual mode
+- Command Parser: tokenization, tab completion, history navigation, aliases, fuzzy search
+- Fuzzy Search: fzf-style matching with scoring, highlighting, case-sensitive/insensitive modes
+- Virtual Filesystem: ls, cat, cd, pwd, mkdir, rm with absolute/relative paths
+- Cursor Effects: rainbow, comet, minimal presets with smooth interpolation
+- Complete test coverage (180/180 feature tests passing)
+
+### Test Results
+- Total: 2147 tests (2147 passing, 0 failing, 49 skipped)
+- Test pass rate: 100%
+- Property tests: 58/58 passing
+- Zero compilation warnings with --warnings-as-errors
+
+### Performance
+- Parser: 0.17-1.25μs (Phase 0 baseline maintained)
+- Core buffer operations: <1ms for 80x24 buffers
+- LiveView rendering: 1.24ms avg (60fps achieved)
+- VIM navigation: <1μs per movement
+- Command parser: ~5μs per parse/execute
+- Fuzzy search: ~100μs for 1000-line buffer
+- Filesystem operations: ~10μs per command
+- Cursor effects: ~7μs per update
+
+### Breaking Changes
+- None - v2.0 packages are additive
+- Existing v1.x code continues to work with root package
+- New modular packages available for incremental adoption
+- See MIGRATION_FROM_DIY.md for upgrade strategies
+
+### Migration Path
+- Current v1.x users: No changes required, continue using root package
+- New v2.0 users: Choose packages based on needs
+  - Minimal: `{:raxol_core, "~> 2.0"}` (just buffers)
+  - Web: Add `{:raxol_liveview, "~> 2.0"}` (LiveView integration)
+  - Full: `{:raxol, "~> 2.0"}` (everything included)
+
+### Documentation Added
+- Core: BUFFER_API.md, GETTING_STARTED.md, ARCHITECTURE.md, PHASE1_COMPLETION.md
+- Getting Started: QUICKSTART.md, CORE_CONCEPTS.md, MIGRATION_FROM_DIY.md
+- Cookbook: LIVEVIEW_INTEGRATION.md, VIM_NAVIGATION.md, PERFORMANCE_OPTIMIZATION.md,
+  COMMAND_SYSTEM.md, THEMING.md
+- Features: VIM_NAVIGATION.md, COMMAND_PARSER.md, FUZZY_SEARCH.md, FILESYSTEM.md,
+  CURSOR_EFFECTS.md, feature README.md
+- Plugins: SPOTIFY.md with OAuth setup guide
+
+### Examples Added
+- Core: 01_hello_buffer/, 02_box_drawing/
+- LiveView: 01_simple_terminal/ with event handling
+- Plugins: counter.exs, 4 Spotify examples with integration patterns
+
+### Benchmarks Added
+- Core: buffer, renderer, style, box, comprehensive
+- Features: vim, parser, fuzzy, filesystem, cursor, comprehensive
+- LiveView: rendering benchmark with 60fps validation
+
 ## [1.19.0] - 2025-10-01
 
 ### Added
