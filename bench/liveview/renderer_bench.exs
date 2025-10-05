@@ -1,11 +1,11 @@
-# Performance benchmarks for RaxolWeb.Renderer
+# Performance benchmarks for Raxol.LiveView.Renderer
 #
-# Run with: mix run bench/raxol_web_renderer_bench.exs
+# Run with: mix run bench/liveview/renderer_bench.exs
 #
 # These benchmarks measure the performance of the core rendering engine
 # to ensure it can handle 60fps updates (< 16.67ms per frame).
 
-alias RaxolWeb.Renderer
+alias Raxol.LiveView.Renderer
 
 # Helper to create buffers of various sizes
 defmodule BenchHelper do
@@ -17,7 +17,8 @@ defmodule BenchHelper do
       for _y <- 1..height do
         cells =
           for x <- 1..width do
-            char = if varied, do: Enum.random(~w(a b c d e f g h i j)), else: " "
+            char =
+              if varied, do: Enum.random(~w(a b c d e f g h i j)), else: " "
 
             style =
               if styled do
@@ -30,7 +31,14 @@ defmodule BenchHelper do
                   bg_color: nil
                 }
               else
-                %{bold: false, italic: false, underline: false, reverse: false, fg_color: nil, bg_color: nil}
+                %{
+                  bold: false,
+                  italic: false,
+                  underline: false,
+                  reverse: false,
+                  fg_color: nil,
+                  bg_color: nil
+                }
               end
 
             %{char: char, style: style}
@@ -69,7 +77,7 @@ defmodule BenchHelper do
   end
 end
 
-IO.puts("\n=== RaxolWeb Renderer Performance Benchmarks ===\n")
+IO.puts("\n=== Raxol LiveView Renderer Performance Benchmarks ===\n")
 
 # Benchmark 1: First render (cold cache)
 IO.puts("1. First Render (Cold Cache)")
@@ -88,7 +96,9 @@ for {width, height} <- [{80, 24}, {120, 40}, {200, 50}] do
   fps = 1000 / time_ms
   status = if time_ms < 16.67, do: "✓", else: "✗"
 
-  IO.puts("   #{width}x#{height}: #{Float.round(time_ms, 2)}ms (#{Float.round(fps, 1)}fps) #{status}")
+  IO.puts(
+    "   #{width}x#{height}: #{Float.round(time_ms, 2)}ms (#{Float.round(fps, 1)}fps) #{status}"
+  )
 end
 
 # Benchmark 2: Subsequent renders (warm cache, no changes)
@@ -131,7 +141,9 @@ for {width, height, change_pct} <- [{80, 24, 10}, {80, 24, 50}, {120, 40, 10}] d
   fps = 1000 / time_ms
   status = if time_ms < 16.67, do: "✓", else: "✗"
 
-  IO.puts("   #{width}x#{height} (#{change_pct}% changed): #{Float.round(time_ms, 2)}ms (#{Float.round(fps, 1)}fps) #{status}")
+  IO.puts(
+    "   #{width}x#{height} (#{change_pct}% changed): #{Float.round(time_ms, 2)}ms (#{Float.round(fps, 1)}fps) #{status}"
+  )
 end
 
 # Benchmark 4: Styled content rendering
@@ -151,7 +163,9 @@ for {width, height} <- [{80, 24}, {120, 40}] do
   fps = 1000 / time_ms
   status = if time_ms < 16.67, do: "✓", else: "✗"
 
-  IO.puts("   #{width}x#{height} (styled): #{Float.round(time_ms, 2)}ms (#{Float.round(fps, 1)}fps) #{status}")
+  IO.puts(
+    "   #{width}x#{height} (styled): #{Float.round(time_ms, 2)}ms (#{Float.round(fps, 1)}fps) #{status}"
+  )
 end
 
 # Benchmark 5: Cache hit ratio
@@ -169,7 +183,10 @@ for {width, height, styled} <- [{80, 24, false}, {80, 24, true}] do
   status = if hit_ratio_pct > 90, do: "✓", else: "✗"
 
   styled_label = if styled, do: " (styled)", else: ""
-  IO.puts("   #{width}x#{height}#{styled_label}: #{Float.round(hit_ratio_pct, 1)}% hit ratio #{status}")
+
+  IO.puts(
+    "   #{width}x#{height}#{styled_label}: #{Float.round(hit_ratio_pct, 1)}% hit ratio #{status}"
+  )
 end
 
 # Benchmark 6: Sustained rendering (simulate animation)
@@ -217,4 +234,7 @@ IO.puts("✓ = Passed")
 IO.puts("✗ = Failed")
 IO.puts("\nTarget: 60fps rendering (<16.67ms per frame)")
 IO.puts("Cache target: >90% hit ratio for common content")
-IO.puts("\nRun `mix profile.fprof bench/raxol_web_renderer_bench.exs` for detailed profiling.")
+
+IO.puts(
+  "\nRun `mix profile.fprof bench/raxol_web_renderer_bench.exs` for detailed profiling."
+)

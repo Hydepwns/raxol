@@ -1,6 +1,9 @@
-defmodule Raxol.LiveView.TerminalComponent do
+defmodule Raxol.LiveView.TerminalComponentLegacy do
   @moduledoc """
-  Phoenix LiveComponent for embedding terminal buffers in LiveView.
+  Legacy Phoenix LiveComponent for embedding terminal buffers in LiveView.
+
+  NOTE: This is the legacy implementation. New code should use Raxol.LiveView.TerminalComponent
+  from lib/raxol/liveview/terminal_component.ex.
 
   Provides a drop-in terminal component with event handling, theming,
   and performance optimizations for 60fps rendering.

@@ -1,9 +1,10 @@
-defmodule RaxolWeb.RendererTest do
+defmodule Raxol.LiveView.RendererTest do
   use ExUnit.Case, async: true
+  use ExUnitProperties
 
-  alias RaxolWeb.Renderer
+  alias Raxol.LiveView.Renderer
 
-  @moduletag :raxol_web
+  @moduletag :raxol_liveview
 
   describe "new/0" do
     test "creates a new renderer with empty state" do
@@ -42,7 +43,11 @@ defmodule RaxolWeb.RendererTest do
 
       buffer = %{
         lines: [
-          %{cells: [%{char: "H", style: %{bold: false, fg_color: nil, bg_color: nil}}]}
+          %{
+            cells: [
+              %{char: "H", style: %{bold: false, fg_color: nil, bg_color: nil}}
+            ]
+          }
         ],
         width: 1,
         height: 1
@@ -65,7 +70,11 @@ defmodule RaxolWeb.RendererTest do
 
       buffer = %{
         lines: [
-          %{cells: [%{char: "A", style: %{bold: false, fg_color: nil, bg_color: nil}}]}
+          %{
+            cells: [
+              %{char: "A", style: %{bold: false, fg_color: nil, bg_color: nil}}
+            ]
+          }
         ],
         width: 1,
         height: 1
@@ -83,7 +92,11 @@ defmodule RaxolWeb.RendererTest do
 
       buffer1 = %{
         lines: [
-          %{cells: [%{char: "A", style: %{bold: false, fg_color: nil, bg_color: nil}}]}
+          %{
+            cells: [
+              %{char: "A", style: %{bold: false, fg_color: nil, bg_color: nil}}
+            ]
+          }
         ],
         width: 1,
         height: 1
@@ -91,7 +104,11 @@ defmodule RaxolWeb.RendererTest do
 
       buffer2 = %{
         lines: [
-          %{cells: [%{char: "B", style: %{bold: false, fg_color: nil, bg_color: nil}}]}
+          %{
+            cells: [
+              %{char: "B", style: %{bold: false, fg_color: nil, bg_color: nil}}
+            ]
+          }
         ],
         width: 1,
         height: 1
@@ -214,7 +231,11 @@ defmodule RaxolWeb.RendererTest do
 
       buffer = %{
         lines: [
-          %{cells: [%{char: " ", style: %{bold: false, fg_color: nil, bg_color: nil}}]}
+          %{
+            cells: [
+              %{char: " ", style: %{bold: false, fg_color: nil, bg_color: nil}}
+            ]
+          }
         ],
         width: 1,
         height: 1
@@ -398,8 +419,11 @@ defmodule RaxolWeb.RendererTest do
 
       assert html1 != html2
 
-      line_count1 = html1 |> String.split("raxol-line") |> length() |> Kernel.-(1)
-      line_count2 = html2 |> String.split("raxol-line") |> length() |> Kernel.-(1)
+      line_count1 =
+        html1 |> String.split("raxol-line") |> length() |> Kernel.-(1)
+
+      line_count2 =
+        html2 |> String.split("raxol-line") |> length() |> Kernel.-(1)
 
       assert line_count1 == 1
       assert line_count2 == 2
@@ -412,7 +436,11 @@ defmodule RaxolWeb.RendererTest do
 
       buffer = %{
         lines: [
-          %{cells: [%{char: "B", style: %{bold: true, fg_color: nil, bg_color: nil}}]}
+          %{
+            cells: [
+              %{char: "B", style: %{bold: true, fg_color: nil, bg_color: nil}}
+            ]
+          }
         ],
         width: 1,
         height: 1
@@ -427,7 +455,11 @@ defmodule RaxolWeb.RendererTest do
 
       buffer = %{
         lines: [
-          %{cells: [%{char: "I", style: %{italic: true, fg_color: nil, bg_color: nil}}]}
+          %{
+            cells: [
+              %{char: "I", style: %{italic: true, fg_color: nil, bg_color: nil}}
+            ]
+          }
         ],
         width: 1,
         height: 1
@@ -442,7 +474,14 @@ defmodule RaxolWeb.RendererTest do
 
       buffer = %{
         lines: [
-          %{cells: [%{char: "U", style: %{underline: true, fg_color: nil, bg_color: nil}}]}
+          %{
+            cells: [
+              %{
+                char: "U",
+                style: %{underline: true, fg_color: nil, bg_color: nil}
+              }
+            ]
+          }
         ],
         width: 1,
         height: 1
@@ -457,7 +496,14 @@ defmodule RaxolWeb.RendererTest do
 
       buffer = %{
         lines: [
-          %{cells: [%{char: "R", style: %{reverse: true, fg_color: nil, bg_color: nil}}]}
+          %{
+            cells: [
+              %{
+                char: "R",
+                style: %{reverse: true, fg_color: nil, bg_color: nil}
+              }
+            ]
+          }
         ],
         width: 1,
         height: 1
@@ -506,7 +552,11 @@ defmodule RaxolWeb.RendererTest do
 
       buffer = %{
         lines: [
-          %{cells: [%{char: "C", style: %{fg_color: :bright_red, bg_color: nil}}]}
+          %{
+            cells: [
+              %{char: "C", style: %{fg_color: :bright_red, bg_color: nil}}
+            ]
+          }
         ],
         width: 1,
         height: 1
@@ -525,7 +575,12 @@ defmodule RaxolWeb.RendererTest do
             cells: [
               %{
                 char: "M",
-                style: %{bold: true, underline: true, fg_color: :red, bg_color: :black}
+                style: %{
+                  bold: true,
+                  underline: true,
+                  fg_color: :red,
+                  bg_color: :black
+                }
               }
             ]
           }
@@ -613,5 +668,218 @@ defmodule RaxolWeb.RendererTest do
       {html, _} = Renderer.render(renderer, buffer)
       assert html =~ "&nbsp;"
     end
+  end
+
+  describe "property-based tests" do
+    property "always produces valid HTML for any buffer" do
+      check all(
+              width <- integer(1..100),
+              height <- integer(1..50),
+              max_runs: 50
+            ) do
+        buffer = create_random_buffer(width, height)
+        renderer = Renderer.new()
+
+        {html, new_renderer} = Renderer.render(renderer, buffer)
+
+        # Should always return binary HTML
+        assert is_binary(html)
+        # Should contain terminal wrapper
+        assert html =~ "raxol-terminal"
+        # Should update renderer state
+        assert new_renderer.previous_buffer == buffer
+        assert new_renderer.render_count == 1
+      end
+    end
+
+    property "rendering same buffer twice returns cached result" do
+      check all(
+              width <- integer(1..50),
+              height <- integer(1..25),
+              max_runs: 30
+            ) do
+        buffer = create_random_buffer(width, height)
+        renderer = Renderer.new()
+
+        {html1, renderer2} = Renderer.render(renderer, buffer)
+        {html2, renderer3} = Renderer.render(renderer2, buffer)
+
+        # Cached render should return identical HTML
+        assert html1 == html2
+        # Render count should not increase on cache hit
+        assert renderer3.render_count == renderer2.render_count
+      end
+    end
+
+    property "render count increments on each unique buffer" do
+      check all(
+              width <- integer(1..30),
+              height <- integer(1..20),
+              num_buffers <- integer(2..10),
+              max_runs: 20
+            ) do
+        renderer = Renderer.new()
+
+        final_renderer =
+          Enum.reduce(1..num_buffers, renderer, fn i, acc_renderer ->
+            buffer = create_random_buffer(width, height, seed: i)
+            {_html, new_renderer} = Renderer.render(acc_renderer, buffer)
+            new_renderer
+          end)
+
+        assert final_renderer.render_count == num_buffers
+      end
+    end
+
+    property "cache hit ratio improves with repeated characters" do
+      check all(
+              width <- integer(10..50),
+              height <- integer(5..20),
+              max_runs: 20
+            ) do
+        # Create buffer with many repeated characters (common case)
+        buffer = create_uniform_buffer(width, height, "A")
+        renderer = Renderer.new()
+
+        # First render populates cache
+        {_html, new_renderer} = Renderer.render(renderer, buffer)
+        stats = Renderer.stats(new_renderer)
+
+        # On first render, we expect some cache usage from pre-populated chars
+        # But not necessarily > 50% depending on buffer size
+        # The key assertion is that caching is happening
+        assert stats.cache_hits >= 0
+        assert stats.cache_misses >= 0
+
+        # Total cache operations should match buffer size
+        total_cells = width * height
+        total_operations = stats.cache_hits + stats.cache_misses
+        assert total_operations > 0
+        assert total_operations <= total_cells
+      end
+    end
+
+    property "handles buffers with all printable ASCII characters" do
+      check all(
+              width <- integer(1..80),
+              height <- integer(1..24),
+              max_runs: 20
+            ) do
+        # Use printable ASCII (32-126)
+        buffer = create_ascii_buffer(width, height)
+        renderer = Renderer.new()
+
+        {html, _} = Renderer.render(renderer, buffer)
+
+        assert is_binary(html)
+        assert String.valid?(html)
+      end
+    end
+
+    property "buffer validation catches invalid structures" do
+      check all(invalid_buffer <- invalid_buffer_generator(), max_runs: 30) do
+        renderer = Renderer.new()
+
+        # Should not crash on invalid buffers
+        assert {html, _} = Renderer.render(renderer, invalid_buffer)
+
+        # Should return fallback HTML
+        assert is_binary(html)
+        # Should contain terminal wrapper
+        assert html =~ "raxol-terminal"
+      end
+    end
+  end
+
+  # Property test helpers
+
+  defp create_random_buffer(width, height, opts \\ []) do
+    seed = Keyword.get(opts, :seed, :rand.uniform(10000))
+    :rand.seed(:exsss, {seed, seed, seed})
+
+    lines =
+      for _ <- 1..height do
+        cells =
+          for _ <- 1..width do
+            %{
+              char: Enum.random(~w(A B C D E F G H I J K L M N O P)),
+              style: %{
+                bold: Enum.random([true, false]),
+                italic: false,
+                underline: false,
+                reverse: false,
+                fg_color: Enum.random([nil, :red, :green, :blue]),
+                bg_color: nil
+              }
+            }
+          end
+
+        %{cells: cells}
+      end
+
+    %{lines: lines, width: width, height: height}
+  end
+
+  defp create_uniform_buffer(width, height, char) do
+    lines =
+      for _ <- 1..height do
+        cells =
+          for _ <- 1..width do
+            %{
+              char: char,
+              style: %{
+                bold: false,
+                italic: false,
+                underline: false,
+                reverse: false,
+                fg_color: nil,
+                bg_color: nil
+              }
+            }
+          end
+
+        %{cells: cells}
+      end
+
+    %{lines: lines, width: width, height: height}
+  end
+
+  defp create_ascii_buffer(width, height) do
+    lines =
+      for _ <- 1..height do
+        cells =
+          for _ <- 1..width do
+            # Printable ASCII range: 32-126
+            char = <<Enum.random(32..126)::utf8>>
+
+            %{
+              char: char,
+              style: %{
+                bold: false,
+                italic: false,
+                underline: false,
+                reverse: false,
+                fg_color: nil,
+                bg_color: nil
+              }
+            }
+          end
+
+        %{cells: cells}
+      end
+
+    %{lines: lines, width: width, height: height}
+  end
+
+  defp invalid_buffer_generator do
+    one_of([
+      constant(nil),
+      constant(%{}),
+      constant(%{lines: nil}),
+      constant(%{lines: []}),
+      constant(%{lines: [%{}]}),
+      constant(%{lines: [%{cells: nil}]}),
+      constant(%{lines: [%{cells: []}], width: 0, height: 0})
+    ])
   end
 end

@@ -1,9 +1,9 @@
-defmodule RaxolWeb.ThemesTest do
+defmodule Raxol.LiveView.ThemesTest do
   use ExUnit.Case, async: true
 
-  alias RaxolWeb.Themes
+  alias Raxol.LiveView.Themes
 
-  @moduletag :raxol_web
+  @moduletag :raxol_liveview
 
   describe "get/1" do
     test "returns synthwave84 theme" do

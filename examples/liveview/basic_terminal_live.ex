@@ -1,6 +1,6 @@
-defmodule RaxolWeb.Examples.BasicTerminalLive do
+defmodule Raxol.LiveView.Examples.BasicTerminalLive do
   @moduledoc """
-  Basic example showing how to use RaxolWeb.LiveView.TerminalComponent.
+  Basic example showing how to use Raxol.LiveView.TerminalComponent.
 
   This is a minimal working example that demonstrates:
   - Creating a terminal buffer
@@ -10,7 +10,7 @@ defmodule RaxolWeb.Examples.BasicTerminalLive do
 
   ## Usage in router.ex
 
-      live "/terminal", RaxolWeb.Examples.BasicTerminalLive
+      live "/terminal", Raxol.LiveView.Examples.BasicTerminalLive
 
   ## What it does
 
@@ -21,7 +21,7 @@ defmodule RaxolWeb.Examples.BasicTerminalLive do
   """
 
   use Phoenix.LiveView
-  alias RaxolWeb.LiveView.TerminalComponent
+  alias Raxol.LiveView.TerminalComponent
 
   @impl true
   def mount(_params, _session, socket) do
@@ -35,7 +35,7 @@ defmodule RaxolWeb.Examples.BasicTerminalLive do
   def render(assigns) do
     ~H"""
     <div class="terminal-example">
-      <h1>RaxolWeb Basic Example</h1>
+      <h1>Raxol LiveView Basic Example</h1>
 
       <.live_component
         module={TerminalComponent}
@@ -81,12 +81,12 @@ defmodule RaxolWeb.Examples.BasicTerminalLive do
     lines = [
       create_line("┌────────────────────────────────────────────────────────┐"),
       create_line("│                                                        │"),
-      create_line("│           Welcome to RaxolWeb Terminal!               │",
+      create_line("│           Welcome to Raxol Terminal!                  │",
         bold: true
       ),
       create_line("│                                                        │"),
       create_line("│  This is a basic example of terminal rendering        │"),
-      create_line("│  using Phoenix LiveView and RaxolWeb.                 │"),
+      create_line("│  using Phoenix LiveView and Raxol.LiveView.           │"),
       create_line("│                                                        │"),
       create_line("│  Features:                                            │"),
       create_styled_line("│    • Real-time updates", :green),
@@ -118,12 +118,12 @@ defmodule RaxolWeb.Examples.BasicTerminalLive do
     lines = [
       create_line("┌────────────────────────────────────────────────────────┐"),
       create_line("│                                                        │"),
-      create_line("│           Welcome to RaxolWeb Terminal!               │",
+      create_line("│           Welcome to Raxol Terminal!                  │",
         bold: true
       ),
       create_line("│                                                        │"),
       create_line("│  This is a basic example of terminal rendering        │"),
-      create_line("│  using Phoenix LiveView and RaxolWeb.                 │"),
+      create_line("│  using Phoenix LiveView and Raxol.LiveView.           │"),
       create_line("│                                                        │"),
       create_line("│  Features:                                            │"),
       create_styled_line("│    • Real-time updates", :green),

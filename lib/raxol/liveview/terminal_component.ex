@@ -1,4 +1,4 @@
-defmodule RaxolWeb.LiveView.TerminalComponent do
+defmodule Raxol.LiveView.TerminalComponent do
   @moduledoc """
   A Phoenix LiveView component for rendering terminal buffers in web browsers.
 
@@ -19,7 +19,7 @@ defmodule RaxolWeb.LiveView.TerminalComponent do
   ## Basic Usage
 
       <.live_component
-        module={RaxolWeb.LiveView.TerminalComponent}
+        module={Raxol.LiveView.TerminalComponent}
         id="terminal"
         buffer={@buffer}
       />
@@ -27,7 +27,7 @@ defmodule RaxolWeb.LiveView.TerminalComponent do
   ## Full Example
 
       <.live_component
-        module={RaxolWeb.LiveView.TerminalComponent}
+        module={Raxol.LiveView.TerminalComponent}
         id="terminal"
         buffer={@buffer}
         theme={:synthwave84}
@@ -106,7 +106,7 @@ defmodule RaxolWeb.LiveView.TerminalComponent do
   """
 
   use Phoenix.LiveComponent
-  alias RaxolWeb.{Renderer, Themes}
+  alias Raxol.LiveView.{Renderer, Themes}
 
   @doc """
   Initializes the component with a new renderer instance.
@@ -152,34 +152,26 @@ defmodule RaxolWeb.LiveView.TerminalComponent do
   """
   @impl true
   def update(assigns, socket) do
-    # Extract configuration
-    theme = Map.get(assigns, :theme, :synthwave84)
-    width = Map.get(assigns, :width, 80)
-    height = Map.get(assigns, :height, 24)
-    crt_mode = Map.get(assigns, :crt_mode, false)
-    high_contrast = Map.get(assigns, :high_contrast, false)
-    aria_label = Map.get(assigns, :aria_label, "Interactive terminal")
+    config = extract_config(assigns)
 
-    # Get or validate buffer
-    buffer = Map.get(assigns, :buffer, create_blank_buffer(width, height))
+    buffer =
+      Map.get(
+        assigns,
+        :buffer,
+        create_blank_buffer(config.width, config.height)
+      )
 
     # Render buffer to HTML
     {html, new_renderer} = Renderer.render(socket.assigns.renderer, buffer)
 
     # Generate theme CSS if theme changed
     theme_css =
-      if theme != socket.assigns[:current_theme] do
-        theme_data =
-          if is_atom(theme) do
-            Themes.get(theme) || Themes.get(:synthwave84)
-          else
-            theme
-          end
-
-        Themes.to_css(theme_data, ".raxol-terminal-#{assigns.id}")
-      else
+      generate_theme_css(
+        config.theme,
+        assigns.id,
+        socket.assigns[:current_theme],
         socket.assigns[:theme_css]
-      end
+      )
 
     {:ok,
      socket
@@ -187,14 +179,14 @@ defmodule RaxolWeb.LiveView.TerminalComponent do
      |> assign(:buffer, buffer)
      |> assign(:terminal_html, html)
      |> assign(:renderer, new_renderer)
-     |> assign(:theme, theme)
-     |> assign(:current_theme, theme)
+     |> assign(:theme, config.theme)
+     |> assign(:current_theme, config.theme)
      |> assign(:theme_css, theme_css)
-     |> assign(:width, width)
-     |> assign(:height, height)
-     |> assign(:crt_mode, crt_mode)
-     |> assign(:high_contrast, high_contrast)
-     |> assign(:aria_label, aria_label)
+     |> assign(:width, config.width)
+     |> assign(:height, config.height)
+     |> assign(:crt_mode, config.crt_mode)
+     |> assign(:high_contrast, config.high_contrast)
+     |> assign(:aria_label, config.aria_label)
      |> assign(:on_keypress, Map.get(assigns, :on_keypress))
      |> assign(:on_cell_click, Map.get(assigns, :on_cell_click))}
   end
@@ -339,6 +331,40 @@ defmodule RaxolWeb.LiveView.TerminalComponent do
   end
 
   # Helpers
+
+  defp extract_config(assigns) do
+    %{
+      theme: Map.get(assigns, :theme, :synthwave84),
+      width: Map.get(assigns, :width, 80),
+      height: Map.get(assigns, :height, 24),
+      crt_mode: Map.get(assigns, :crt_mode, false),
+      high_contrast: Map.get(assigns, :high_contrast, false),
+      aria_label: Map.get(assigns, :aria_label, "Interactive terminal")
+    }
+  end
+
+  @spec generate_theme_css(
+          atom() | map(),
+          String.t(),
+          atom() | map() | nil,
+          String.t() | nil
+        ) :: String.t() | nil
+  defp generate_theme_css(theme, _id, current_theme, current_css)
+       when theme == current_theme do
+    current_css
+  end
+
+  defp generate_theme_css(theme, id, _current_theme, _current_css) do
+    theme_data = resolve_theme(theme)
+    Themes.to_css(theme_data, ".raxol-terminal-#{id}")
+  end
+
+  @spec resolve_theme(atom() | map()) :: map()
+  defp resolve_theme(theme) when is_atom(theme) do
+    Themes.get(theme) || Themes.get(:synthwave84)
+  end
+
+  defp resolve_theme(theme) when is_map(theme), do: theme
 
   @doc false
   @spec create_blank_buffer(integer(), integer()) :: map()

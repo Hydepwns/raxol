@@ -1,10 +1,10 @@
-defmodule RaxolWeb.LiveView.TerminalComponentTest do
+defmodule Raxol.LiveView.TerminalComponentTest do
   use ExUnit.Case, async: true
 
-  alias RaxolWeb.LiveView.TerminalComponent
-  alias RaxolWeb.Renderer
+  alias Raxol.LiveView.TerminalComponent
+  alias Raxol.LiveView.Renderer
 
-  @moduletag :raxol_web
+  @moduletag :raxol_liveview
 
   @simple_buffer %{
     lines: [
@@ -111,7 +111,10 @@ defmodule RaxolWeb.LiveView.TerminalComponentTest do
       socket = make_socket()
 
       {:ok, updated_socket} =
-        TerminalComponent.update(%{id: "test", aria_label: "Custom terminal"}, socket)
+        TerminalComponent.update(
+          %{id: "test", aria_label: "Custom terminal"},
+          socket
+        )
 
       assert updated_socket.assigns.aria_label == "Custom terminal"
     end
@@ -156,7 +159,16 @@ defmodule RaxolWeb.LiveView.TerminalComponentTest do
     end
 
     test "handles all built-in themes" do
-      themes = [:synthwave84, :nord, :dracula, :monokai, :gruvbox, :solarized_dark, :tokyo_night]
+      themes = [
+        :synthwave84,
+        :nord,
+        :dracula,
+        :monokai,
+        :gruvbox,
+        :solarized_dark,
+        :tokyo_night
+      ]
+
       socket = make_socket()
 
       for theme <- themes do
@@ -173,7 +185,11 @@ defmodule RaxolWeb.LiveView.TerminalComponentTest do
 
       {:ok, updated_socket} =
         TerminalComponent.update(
-          %{id: "test", on_keypress: "handle_key", on_cell_click: "handle_click"},
+          %{
+            id: "test",
+            on_keypress: "handle_key",
+            on_cell_click: "handle_click"
+          },
           socket
         )
 
@@ -251,7 +267,10 @@ defmodule RaxolWeb.LiveView.TerminalComponentTest do
       socket = make_socket()
 
       {:ok, updated_socket} =
-        TerminalComponent.update(%{id: "test", theme: :nonexistent_theme}, socket)
+        TerminalComponent.update(
+          %{id: "test", theme: :nonexistent_theme},
+          socket
+        )
 
       # Should fall back to synthwave84
       assert updated_socket.assigns.theme == :nonexistent_theme

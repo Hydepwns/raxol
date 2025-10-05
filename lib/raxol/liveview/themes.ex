@@ -1,4 +1,4 @@
-defmodule RaxolWeb.Themes do
+defmodule Raxol.LiveView.Themes do
   @moduledoc """
   Built-in theme system for Raxol web terminals.
 
@@ -8,14 +8,25 @@ defmodule RaxolWeb.Themes do
   ## Usage
 
       # Get a built-in theme
-      theme = RaxolWeb.Themes.get(:synthwave84)
+      {:ok, theme} = Raxol.LiveView.Themes.get_theme(:synthwave84)
+
+      # Or use the unsafe version (returns theme or default)
+      theme = Raxol.LiveView.Themes.get(:synthwave84)
+
+      # Validate a custom theme
+      case Raxol.LiveView.Themes.validate_theme(custom_theme) do
+        :ok -> # theme is valid
+        {:error, reason} -> # handle error
+      end
 
       # Generate CSS for a theme
-      css = RaxolWeb.Themes.to_css(theme)
+      css = Raxol.LiveView.Themes.to_css(theme)
 
       # List available themes
-      themes = RaxolWeb.Themes.list()
+      themes = Raxol.LiveView.Themes.list()
   """
+
+  alias Raxol.Core.Runtime.Log
 
   @type theme :: %{
           name: atom(),
@@ -44,17 +55,45 @@ defmodule RaxolWeb.Themes do
         }
 
   @doc """
-  Returns a built-in theme by name.
+  Returns a built-in theme by name, or nil if not found.
+
+  For a version that returns `{:ok, theme} | {:error, reason}`, use `get_theme/1`.
   """
   @spec get(atom()) :: theme() | nil
-  def get(:synthwave84), do: synthwave84()
-  def get(:nord), do: nord()
-  def get(:dracula), do: dracula()
-  def get(:monokai), do: monokai()
-  def get(:gruvbox), do: gruvbox()
-  def get(:solarized_dark), do: solarized_dark()
-  def get(:tokyo_night), do: tokyo_night()
+  def get(name) when is_atom(name) do
+    case get_theme(name) do
+      {:ok, theme} -> theme
+      {:error, _} -> nil
+    end
+  end
+
   def get(_), do: nil
+
+  @doc """
+  Returns a built-in theme by name.
+
+  Returns `{:ok, theme}` on success or `{:error, :theme_not_found}` if the theme doesn't exist.
+  """
+  @spec get_theme(atom()) :: {:ok, theme()} | {:error, :theme_not_found}
+  def get_theme(:synthwave84), do: {:ok, synthwave84()}
+  def get_theme(:nord), do: {:ok, nord()}
+  def get_theme(:dracula), do: {:ok, dracula()}
+  def get_theme(:monokai), do: {:ok, monokai()}
+  def get_theme(:gruvbox), do: {:ok, gruvbox()}
+  def get_theme(:solarized_dark), do: {:ok, solarized_dark()}
+  def get_theme(:tokyo_night), do: {:ok, tokyo_night()}
+
+  def get_theme(name) when is_atom(name) do
+    Log.warning("Unknown theme requested: #{inspect(name)}",
+      module: __MODULE__,
+      function: :get_theme,
+      available_themes: list()
+    )
+
+    {:error, :theme_not_found}
+  end
+
+  def get_theme(_), do: {:error, :theme_not_found}
 
   @doc """
   Lists all available theme names.
@@ -73,12 +112,84 @@ defmodule RaxolWeb.Themes do
   end
 
   @doc """
+  Validates a theme structure.
+
+  Returns `:ok` if valid, or `{:error, reason}` if invalid.
+  """
+  @spec validate_theme(any()) :: :ok | {:error, atom()}
+  def validate_theme(%{
+        name: _,
+        background: _,
+        foreground: _,
+        cursor: _,
+        selection: _,
+        colors: colors
+      })
+      when is_map(colors) do
+    required_colors = [
+      :black,
+      :red,
+      :green,
+      :yellow,
+      :blue,
+      :magenta,
+      :cyan,
+      :white,
+      :bright_black,
+      :bright_red,
+      :bright_green,
+      :bright_yellow,
+      :bright_blue,
+      :bright_magenta,
+      :bright_cyan,
+      :bright_white
+    ]
+
+    missing_colors = Enum.reject(required_colors, &Map.has_key?(colors, &1))
+
+    case missing_colors do
+      [] -> :ok
+      missing -> {:error, {:missing_colors, missing}}
+    end
+  end
+
+  def validate_theme(_), do: {:error, :invalid_theme_structure}
+
+  @doc """
   Generates CSS for a theme.
 
   Returns CSS as a string that can be injected into a page or style tag.
+  If the theme is invalid, returns minimal fallback CSS and logs a warning.
   """
   @spec to_css(theme(), String.t()) :: String.t()
-  def to_css(theme, selector \\ ".raxol-terminal") do
+  def to_css(theme, selector \\ ".raxol-terminal")
+
+  def to_css(theme, selector) when is_map(theme) do
+    case validate_theme(theme) do
+      :ok ->
+        generate_theme_css(theme, selector)
+
+      {:error, reason} ->
+        Log.warning("Invalid theme provided to to_css: #{inspect(reason)}",
+          module: __MODULE__,
+          function: :to_css
+        )
+
+        generate_fallback_css(selector)
+    end
+  end
+
+  def to_css(_, selector) do
+    Log.error("to_css called with non-map theme",
+      module: __MODULE__,
+      function: :to_css
+    )
+
+    generate_fallback_css(selector)
+  end
+
+  @spec generate_theme_css(theme(), String.t()) :: String.t()
+  defp generate_theme_css(theme, selector) do
     """
     #{selector} {
       background-color: #{theme.background};
@@ -129,6 +240,19 @@ defmodule RaxolWeb.Themes do
     #{selector} .raxol-underline { text-decoration: underline; }
     #{selector} .raxol-reverse {
       filter: invert(1);
+    }
+    """
+  end
+
+  @spec generate_fallback_css(String.t()) :: String.t()
+  defp generate_fallback_css(selector) do
+    """
+    #{selector} {
+      background-color: #1a1a1a;
+      color: #ffffff;
+    }
+    #{selector} .raxol-cell {
+      color: #ffffff;
     }
     """
   end
