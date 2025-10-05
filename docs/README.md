@@ -6,20 +6,19 @@ Navigation for Raxol documentation.
 
 ### Essentials
 - [Installation](../README.md#installation)
-- [Getting Started](getting-started.md)
+- [Getting Started](getting-started/QUICKSTART.md)
 - [API Reference](api-reference.md)
 - [Examples](../examples/README.md)
 
 ### Core Documentation
-- [Development](development.md)
+- [Development](DEVELOPMENT.md)
 - [UI Components](components.md)
-- [Performance](performance.md)
 - [Testing](testing.md)
 - [Security](security.md)
 
 ### Guides
 - [Custom Components](guides/custom_components.md)
-- [Performance Optimization](guides/performance_optimization.md)
+- [Performance](cookbook/PERFORMANCE_OPTIMIZATION.md)
 - [Accessibility](guides/accessibility_implementation_guide.md)
 - [Multi-Framework](guides/multi_framework_migration_guide.md)
 
