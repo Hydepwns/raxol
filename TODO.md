@@ -4,7 +4,109 @@
 **Updated**: 2025-10-05
 **Tests**: 100% passing (2147 tests - 2147 passing, 0 failing, 49 skipped) ✅ PERFECT!
 **Performance**: Parser 0.17-1.25μs | Core avg 264μs | LiveView avg 1.24ms ✅
-**Status**: v2.0.0 packages committed and ready for Hex.pm publishing!
+**Status**: Resolving package naming conflict before Hex.pm publishing
+
+## Hex.pm Publishing Plan (2025-10-05)
+
+### Issue: Package Naming Conflict
+
+**Problem Discovered:**
+- Root package: `raxol` (full monolithic framework at v2.0.0)
+- apps/raxol: meta-package with SAME NAME (conflict!)
+
+**Resolution Strategy:**
+
+1. **Keep Root Package as Full Framework**
+   - `/mix.exs` - Main `raxol` package (full framework)
+   - Contains all code in `lib/`
+   - Version 2.0.0
+   - This is what users know
+
+2. **Remove/Rename Meta-Package**
+   - Delete or rename `apps/raxol` directory
+   - No need for meta-package - users can choose individual packages
+
+3. **Publish Only Modular Packages**
+   - `raxol_core` - Buffer primitives (zero dependencies)
+   - `raxol_plugin` - Plugin framework
+   - `raxol_liveview` - Phoenix LiveView integration
+
+### Publishing Order (After Conflict Resolution)
+
+**Step 1: Fix Naming Conflict**
+```bash
+# Option A: Remove meta-package entirely
+rm -rf apps/raxol
+
+# Option B: Rename to raxol_bundle or similar
+mv apps/raxol apps/raxol_bundle
+```
+
+**Step 2: Publish Core Package (No Dependencies)**
+```bash
+cd apps/raxol_core
+mix hex.publish
+# Confirm with Y when prompted
+```
+
+**Step 3: Publish Plugin Package (Depends on Core)**
+```bash
+cd ../raxol_plugin
+mix deps.get  # Fetch raxol_core from Hex
+mix hex.publish
+```
+
+**Step 4: Publish LiveView Package (Depends on Core)**
+```bash
+cd ../raxol_liveview
+mix deps.get  # Fetch raxol_core from Hex
+mix hex.publish
+```
+
+**Step 5: Verify All Packages Published**
+```bash
+mix hex.info raxol_core
+mix hex.info raxol_plugin
+mix hex.info raxol_liveview
+```
+
+**Step 6: Update Root Package (Optional)**
+```bash
+cd ../..  # Back to root
+# Update root mix.exs if needed
+# Optionally publish root raxol package
+```
+
+### User Package Selection After Publishing
+
+**Minimal (buffer operations only):**
+```elixir
+{:raxol_core, "~> 2.0"}
+```
+
+**Web Integration:**
+```elixir
+{:raxol_core, "~> 2.0"},
+{:raxol_liveview, "~> 2.0"}
+```
+
+**Full Framework (existing users):**
+```elixir
+{:raxol, "~> 2.0"}  # Root package with everything
+```
+
+### Checklist Before Publishing
+
+- [ ] Resolve naming conflict (remove or rename apps/raxol)
+- [ ] Verify all package READMEs use GitHub links (not relative paths)
+- [ ] Confirm all packages have LICENSE and CHANGELOG.md
+- [ ] Test compilation of each package independently
+- [ ] Authenticate with Hex.pm: `mix hex.user auth`
+- [ ] Publish in correct order (core → plugin → liveview)
+- [ ] Verify each package appears on Hex.pm
+- [ ] Test installation in fresh project
+- [ ] Create git tag: `git tag v2.0.0 && git push origin v2.0.0`
+- [ ] Update HEX_PUBLISHING.md with actual results
 
 ## Latest Session Summary (2025-10-05)
 
