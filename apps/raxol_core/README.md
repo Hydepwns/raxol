@@ -245,7 +245,7 @@ Raxol Core is part of the modular Raxol framework:
 
 ## Examples
 
-See the [examples directory](../../examples/core/) for:
+Full examples available in the [main repository](https://github.com/Hydepwns/raxol/tree/master/examples/core):
 - 01_hello_buffer - Basic buffer operations
 - 02_box_drawing - Box drawing and styling
 - 03_styled_text - Text styling
@@ -253,17 +253,18 @@ See the [examples directory](../../examples/core/) for:
 
 ## Documentation
 
-- [Buffer API](../../docs/core/BUFFER_API.md)
-- [Getting Started](../../docs/getting-started/QUICKSTART.md)
-- [Core Concepts](../../docs/getting-started/CORE_CONCEPTS.md)
+Additional documentation available in the [main repository](https://github.com/Hydepwns/raxol):
+- [Buffer API](https://github.com/Hydepwns/raxol/blob/master/docs/core/BUFFER_API.md)
+- [Getting Started](https://github.com/Hydepwns/raxol/blob/master/docs/getting-started/QUICKSTART.md)
+- [Core Concepts](https://github.com/Hydepwns/raxol/blob/master/docs/getting-started/CORE_CONCEPTS.md)
 
 ## License
 
-MIT License - See [LICENSE](../../LICENSE) for details
+MIT License - See LICENSE file included in this package
 
 ## Contributing
 
-Contributions welcome! See [CONTRIBUTING.md](../../CONTRIBUTING.md)
+Contributions welcome! Please visit the [main repository](https://github.com/Hydepwns/raxol) for contribution guidelines
 
 ## Credits
 
