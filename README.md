@@ -28,6 +28,8 @@ Raxol is now available as focused, independently releasable packages:
 - **[raxol_plugin](https://hex.pm/packages/raxol_plugin)** - Plugin system
 - **raxol** - Full framework (includes all packages)
 
+See **[Package Guide](docs/getting-started/PACKAGES.md)** for detailed comparison, migration paths, and installation instructions.
+
 ## Quick Start
 
 ### Installation

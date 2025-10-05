@@ -7,6 +7,7 @@ Navigation for Raxol documentation.
 ### Essentials
 - [Installation](../README.md#installation)
 - [Getting Started](getting-started/QUICKSTART.md)
+- [Package Guide](getting-started/PACKAGES.md)
 - [API Reference](api-reference.md)
 - [Examples](../examples/README.md)
 

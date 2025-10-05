@@ -2,6 +2,8 @@
 
 Already built your own terminal rendering? This guide shows how to integrate or migrate to Raxol.
 
+**New to Raxol?** See the [Package Guide](./PACKAGES.md) to choose the right package for your needs.
+
 ## Table of Contents
 
 - [Why Migrate?](#why-migrate)
