@@ -1,0 +1,413 @@
+/**
+ * RaxolWeb - Standalone CSS for Terminal Rendering
+ *
+ * Self-contained CSS for rendering terminal UIs in web browsers with
+ * character-perfect monospace grid alignment.
+ *
+ * Usage:
+ *   Include this CSS in your Phoenix LiveView application:
+ *   <link rel="stylesheet" href="/path/to/raxol_web.css">
+ *
+ * Or inject it programmatically via the TerminalComponent which includes
+ * these styles automatically in its render function.
+ *
+ * @license MIT
+ * @version 1.0.0
+ */
+
+/* ========================================================================
+   Core Terminal Grid System
+   ======================================================================== */
+
+/**
+ * Terminal wrapper - outermost container
+ * Provides layout, theming, and accessibility context
+ */
+.raxol-terminal-wrapper {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+
+  /* Sizing */
+  width: fit-content;
+  min-height: 0;
+
+  /* Spacing */
+  margin: 0 auto;
+  padding: 1rem;
+
+  /* Appearance */
+  background-color: #1a1b26;
+  border: 1px solid #333;
+  border-radius: 4px;
+
+  /* Typography */
+  font-family: 'Monaspace Argon', 'JetBrains Mono', 'Fira Code',
+               'Cascadia Code', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #c0caf5;
+
+  /* Positioning context */
+  position: relative;
+
+  /* Scrolling */
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  /* Accessibility */
+  outline: none;
+}
+
+.raxol-terminal-wrapper:focus-visible {
+  outline: 3px solid #7aa2f7;
+  outline-offset: 2px;
+}
+
+/**
+ * Terminal content container
+ * Holds the actual terminal grid of characters
+ */
+.raxol-terminal {
+  /* Grid layout */
+  display: block;
+  width: fit-content;
+
+  /* Spacing */
+  margin: 0;
+  padding: 0;
+
+  /* Font rendering optimization */
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  text-rendering: optimizeLegibility;
+
+  /* No overflow breaks grid alignment */
+  overflow: hidden;
+}
+
+/**
+ * Terminal line - single row of characters
+ * Each line must be exactly line-height tall
+ */
+.raxol-line {
+  display: block;
+  height: 1.4em;
+  line-height: 1.4;
+  white-space: pre;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/**
+ * Terminal cell - single character position
+ * CRITICAL: Must be exactly 1ch wide for grid alignment
+ */
+.raxol-cell {
+  display: inline;
+  width: 1ch;
+
+  /* Prevent overflow */
+  overflow: hidden;
+
+  /* Allow ligatures for better readability */
+  font-variant-ligatures: contextual;
+}
+
+/* ========================================================================
+   Text Styles
+   ======================================================================== */
+
+.raxol-bold {
+  font-weight: bold;
+}
+
+.raxol-italic {
+  font-style: italic;
+}
+
+.raxol-underline {
+  text-decoration: underline;
+}
+
+.raxol-reverse {
+  filter: invert(1);
+}
+
+/* ========================================================================
+   Cursor
+   ======================================================================== */
+
+.raxol-cursor {
+  animation: raxol-cursor-blink 1s step-end infinite;
+}
+
+@keyframes raxol-cursor-blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  50.01%, 100% {
+    opacity: 0.3;
+  }
+}
+
+/* ========================================================================
+   CRT Mode Effects
+   ======================================================================== */
+
+.raxol-terminal-wrapper.raxol-crt-mode {
+  /* Screen curvature */
+  border-radius: 8px;
+
+  /* Edge glow */
+  box-shadow:
+    0 0 20px rgba(100, 200, 255, 0.15),
+    inset 0 0 60px rgba(0, 0, 0, 0.3);
+}
+
+/* Scanlines overlay */
+.raxol-terminal-wrapper.raxol-crt-mode::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1000;
+
+  /* Horizontal scanlines */
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 0, 0, 0.15) 1px,
+    rgba(0, 0, 0, 0.15) 2px
+  );
+
+  /* Subtle flicker */
+  animation: raxol-scanline-flicker 0.15s infinite alternate;
+}
+
+/* Vignette effect */
+.raxol-terminal-wrapper.raxol-crt-mode::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 999;
+
+  /* Darker at edges */
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0) 50%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+}
+
+/* Phosphor glow on text */
+.raxol-terminal-wrapper.raxol-crt-mode .raxol-terminal {
+  text-shadow:
+    0 0 1px currentColor,
+    0 0 2px rgba(100, 200, 255, 0.2);
+
+  /* Subtle blur for CRT effect */
+  filter: blur(0.15px);
+}
+
+/* Enhanced cursor glow in CRT mode */
+.raxol-terminal-wrapper.raxol-crt-mode .raxol-cursor {
+  text-shadow:
+    0 0 4px currentColor,
+    0 0 8px currentColor,
+    0 0 12px rgba(100, 200, 255, 0.6);
+  animation: raxol-cursor-glow 1s ease-in-out infinite alternate;
+}
+
+@keyframes raxol-scanline-flicker {
+  0% { opacity: 0.95; }
+  100% { opacity: 1; }
+}
+
+@keyframes raxol-cursor-glow {
+  0% { filter: brightness(1); }
+  100% { filter: brightness(1.2); }
+}
+
+/* ========================================================================
+   High Contrast Mode
+   ======================================================================== */
+
+.raxol-terminal-wrapper.raxol-high-contrast {
+  background-color: #000000;
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.raxol-terminal-wrapper.raxol-high-contrast .raxol-terminal {
+  filter: contrast(1.5) brightness(1.1);
+}
+
+.raxol-terminal-wrapper.raxol-high-contrast .raxol-cell {
+  color: #ffffff;
+  text-shadow: none;
+}
+
+.raxol-terminal-wrapper.raxol-high-contrast .raxol-cursor {
+  background-color: #ffffff;
+  color: #000000;
+  border: 2px solid #00ffff;
+}
+
+.raxol-terminal-wrapper.raxol-high-contrast .raxol-bold {
+  font-weight: 900;
+}
+
+/* ========================================================================
+   Accessibility
+   ======================================================================== */
+
+/* Screen reader only */
+.raxol-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus within for keyboard navigation */
+.raxol-terminal-wrapper:focus-within {
+  box-shadow: 0 0 0 3px rgba(122, 162, 247, 0.3);
+}
+
+/* Skip to content link */
+.raxol-skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 10000;
+}
+
+.raxol-skip-to-content:focus {
+  top: 0;
+}
+
+/* ========================================================================
+   Reduced Motion
+   ======================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .raxol-cursor,
+  .raxol-terminal-wrapper.raxol-crt-mode::before,
+  .raxol-terminal-wrapper.raxol-crt-mode .raxol-cursor {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .raxol-terminal-wrapper.raxol-crt-mode .raxol-terminal {
+    text-shadow: none;
+    filter: none;
+  }
+}
+
+/* ========================================================================
+   Prefers High Contrast
+   ======================================================================== */
+
+@media (prefers-contrast: high) {
+  .raxol-terminal-wrapper {
+    background-color: #000000;
+    color: #ffffff;
+    border: 3px solid #ffffff;
+  }
+
+  .raxol-terminal {
+    filter: contrast(1.3);
+  }
+
+  .raxol-cursor {
+    border: 2px solid #ffff00;
+  }
+}
+
+/* ========================================================================
+   Selection
+   ======================================================================== */
+
+.raxol-terminal ::selection {
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+}
+
+/* ========================================================================
+   Performance Optimizations
+   ======================================================================== */
+
+.raxol-terminal-wrapper,
+.raxol-terminal-wrapper.raxol-crt-mode,
+.raxol-terminal-wrapper.raxol-crt-mode::before,
+.raxol-terminal-wrapper.raxol-crt-mode::after {
+  will-change: auto;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* ========================================================================
+   Responsive Design
+   ======================================================================== */
+
+@media screen and (max-width: 768px) {
+  .raxol-terminal-wrapper {
+    font-size: 12px;
+    padding: 0.5rem;
+  }
+
+  .raxol-line {
+    height: 1.3em;
+    line-height: 1.3;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .raxol-terminal-wrapper {
+    font-size: 10px;
+    padding: 0.25rem;
+  }
+}
+
+/* ========================================================================
+   Print Styles
+   ======================================================================== */
+
+@media print {
+  .raxol-terminal-wrapper {
+    border: 1px solid #000;
+    box-shadow: none;
+  }
+
+  .raxol-terminal-wrapper.raxol-crt-mode::before,
+  .raxol-terminal-wrapper.raxol-crt-mode::after {
+    display: none;
+  }
+
+  .raxol-cursor {
+    animation: none;
+    opacity: 1;
+  }
+}
