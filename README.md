@@ -23,12 +23,10 @@ Terminal framework supporting React, Svelte, LiveView, and HEEx UI patterns.
 
 Raxol is now available as focused, independently releasable packages:
 
-- **[raxol_core](packages/raxol_core/)** - Lightweight buffer primitives (< 100KB, zero deps)
-- **[raxol_liveview](packages/raxol_liveview/)** - Phoenix LiveView integration
-- **[raxol_plugin](packages/raxol_plugin/)** - Plugin system
-- **raxol** (coming soon) - Full framework (includes all packages)
-
-**[View Package Guide →](PACKAGES.md)**
+- **[raxol_core](https://hex.pm/packages/raxol_core)** - Lightweight buffer primitives (< 100KB, zero deps)
+- **[raxol_liveview](https://hex.pm/packages/raxol_liveview)** - Phoenix LiveView integration
+- **[raxol_plugin](https://hex.pm/packages/raxol_plugin)** - Plugin system
+- **raxol** - Full framework (includes all packages)
 
 ## Quick Start
 
@@ -175,29 +173,29 @@ This makes Raxol perfect as a lightweight UI component library for web applicati
 
 ### Getting Started
 
-- **[Quickstart](docs/getting-started/QUICKSTART.md)** - 5/10/15 minute tutorials
-- **[Core Concepts](docs/getting-started/CORE_CONCEPTS.md)** - Understand buffers and rendering
-- **[Migration Guide](docs/getting-started/MIGRATION_FROM_DIY.md)** - For teams with existing terminal code
+- **[Quickstart](https://github.com/Hydepwns/raxol/blob/master/docs/getting-started/QUICKSTART.md)** - 5/10/15 minute tutorials
+- **[Core Concepts](https://github.com/Hydepwns/raxol/blob/master/docs/getting-started/CORE_CONCEPTS.md)** - Understand buffers and rendering
+- **[Migration Guide](https://github.com/Hydepwns/raxol/blob/master/docs/getting-started/MIGRATION_FROM_DIY.md)** - For teams with existing terminal code
 
 ### Cookbooks
 
-- **[LiveView Integration](docs/cookbook/LIVEVIEW_INTEGRATION.md)** - Render terminals in Phoenix
-- **[Performance Optimization](docs/cookbook/PERFORMANCE_OPTIMIZATION.md)** - 60fps techniques
-- **[Theming](docs/cookbook/THEMING.md)** - Custom color schemes
+- **[LiveView Integration](https://github.com/Hydepwns/raxol/blob/master/docs/cookbook/LIVEVIEW_INTEGRATION.md)** - Render terminals in Phoenix
+- **[Performance Optimization](https://github.com/Hydepwns/raxol/blob/master/docs/cookbook/PERFORMANCE_OPTIMIZATION.md)** - 60fps techniques
+- **[Theming](https://github.com/Hydepwns/raxol/blob/master/docs/cookbook/THEMING.md)** - Custom color schemes
 
 ### Features
 
-- **[VIM Navigation](docs/features/VIM_NAVIGATION.md)** - VIM-style keybindings and movement
-- **[Command Parser](docs/features/COMMAND_PARSER.md)** - Tab completion, history, argument parsing
-- **[Fuzzy Search](docs/features/FUZZY_SEARCH.md)** - Multi-mode search with highlighting
-- **[File System](docs/features/FILESYSTEM.md)** - Virtual filesystem with Unix commands
-- **[Cursor Effects](docs/features/CURSOR_EFFECTS.md)** - Visual trails and glow effects
-- **[Features Overview](docs/features/README.md)** - Complete guide to all features
+- **[VIM Navigation](https://github.com/Hydepwns/raxol/blob/master/docs/features/VIM_NAVIGATION.md)** - VIM-style keybindings and movement
+- **[Command Parser](https://github.com/Hydepwns/raxol/blob/master/docs/features/COMMAND_PARSER.md)** - Tab completion, history, argument parsing
+- **[Fuzzy Search](https://github.com/Hydepwns/raxol/blob/master/docs/features/FUZZY_SEARCH.md)** - Multi-mode search with highlighting
+- **[File System](https://github.com/Hydepwns/raxol/blob/master/docs/features/FILESYSTEM.md)** - Virtual filesystem with Unix commands
+- **[Cursor Effects](https://github.com/Hydepwns/raxol/blob/master/docs/features/CURSOR_EFFECTS.md)** - Visual trails and glow effects
+- **[Features Overview](https://github.com/Hydepwns/raxol/blob/master/docs/features/README.md)** - Complete guide to all features
 
 ### API Reference
 
-- **[Buffer API](docs/core/BUFFER_API.md)** - Complete buffer operations reference
-- **[Architecture](docs/core/ARCHITECTURE.md)** - Design decisions and internals
+- **[Buffer API](https://github.com/Hydepwns/raxol/blob/master/docs/core/BUFFER_API.md)** - Complete buffer operations reference
+- **[Architecture](https://github.com/Hydepwns/raxol/blob/master/docs/core/ARCHITECTURE.md)** - Design decisions and internals
 - **[Full Documentation](https://hexdocs.pm/raxol)** - Complete API reference
 
 ### Recent Features
