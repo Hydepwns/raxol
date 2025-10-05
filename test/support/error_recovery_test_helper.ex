@@ -292,12 +292,33 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
 
   def create_test_recovery_supervisor(children \\ []) do
     default_children = [
-      {TestWorker, [id: :worker1, context_data: %{role: :primary}]},
-      {TestWorker,
-       [id: :worker2, context_data: %{role: :secondary}, depends_on: [:worker1]]}
+      Supervisor.child_spec(
+        {TestWorker, [id: :worker1, context_data: %{role: :primary}]},
+        id: :worker1
+      ),
+      Supervisor.child_spec(
+        {TestWorker,
+         [
+           id: :worker2,
+           context_data: %{role: :secondary},
+           depends_on: [:worker1]
+         ]},
+        id: :worker2
+      )
     ]
 
-    all_children = children ++ default_children
+    # Transform children to use Supervisor.child_spec for unique IDs
+    transformed_children =
+      Enum.map(children, fn
+        {TestWorker, opts} ->
+          id = Keyword.get(opts, :id, make_ref())
+          Supervisor.child_spec({TestWorker, opts}, id: id)
+
+        other ->
+          other
+      end)
+
+    all_children = transformed_children ++ default_children
 
     {:ok, supervisor_pid} =
       RecoverySupervisor.start_link(
