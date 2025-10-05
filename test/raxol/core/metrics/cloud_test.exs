@@ -7,12 +7,18 @@ defmodule Raxol.Core.Metrics.CloudTest do
   alias Raxol.Core.Metrics.Cloud
 
   setup do
-    {:ok, _pid} = Cloud.start_link(test_pid: self())
+    # Start Cloud service with proper name registration
+    {:ok, _pid} = Cloud.start_link(name: Cloud, test_pid: self())
 
     on_exit(fn ->
       case Process.whereis(Cloud) do
-        nil -> :ok
-        pid -> Process.exit(pid, :normal)
+        nil ->
+          :ok
+
+        pid when is_pid(pid) ->
+          if Process.alive?(pid) do
+            GenServer.stop(pid, :normal, 1000)
+          end
       end
     end)
 

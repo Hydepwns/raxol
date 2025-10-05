@@ -625,7 +625,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   Gets scroll region (stub).
   """
   @spec get_region(Core.t()) :: {integer(), integer()} | nil
-  def get_region(buffer), do: buffer.scroll_region
+  def get_region(%{scroll_region: region}), do: region
+  def get_region(_buffer), do: nil
 
   @doc """
   Inserts spaces at cursor position, shifting content to the right.

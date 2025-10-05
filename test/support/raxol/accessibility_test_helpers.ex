@@ -481,6 +481,13 @@ defmodule Raxol.AccessibilityTestHelpers do
   end
 
   @doc """
+  Spy handler for screen reader announcements (2-arity version for EventManager).
+  """
+  def handle_announcement_spy(:screen_reader_announcement, message) do
+    handle_announcement_spy({:screen_reader_announcement, message})
+  end
+
+  @doc """
   Spy handler for shortcut execution.
   """
   def handle_shortcut_spy({:shortcut_executed, {shortcut_id, _shortcut}}) do

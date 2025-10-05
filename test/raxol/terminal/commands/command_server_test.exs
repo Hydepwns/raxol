@@ -2,6 +2,7 @@ defmodule Raxol.Terminal.Commands.CSICommandServerTest do
   use ExUnit.Case, async: true
 
   alias Raxol.Terminal.Commands.CSIHandler
+  alias Raxol.Terminal.Emulator
 
   describe "CSI command handling" do
     test "handles cursor movement commands correctly" do
@@ -32,7 +33,7 @@ defmodule Raxol.Terminal.Commands.CSICommandServerTest do
 
     test "handles erase commands" do
       # Test erase display and line commands
-      emulator = %{cursor: %{row: 5, col: 5}, width: 80, height: 24}
+      emulator = Emulator.new(80, 24, [])
 
       # Test erase commands
       erase_commands = ["J", "K"]
