@@ -139,8 +139,7 @@ jobs:
   npm-audit:
     name: NPM Security Audit
     runs-on: ubuntu-latest
-    if: hashFiles('**/package-lock.json') != ''
-    
+
     steps:
       - uses: actions/checkout@v5
       
