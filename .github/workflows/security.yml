@@ -36,11 +36,19 @@ jobs:
           submodules: recursive
 
       - name: Setup Elixir
-        uses: ./.github/actions/setup-elixir
+        uses: erlef/setup-beam@v1
         with:
           elixir-version: ${{ env.ELIXIR_VERSION }}
           otp-version: ${{ env.OTP_VERSION }}
-      
+
+      - name: Install Hex and Rebar
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+
+      - name: Install dependencies
+        run: mix deps.get
+
       - name: Check for vulnerable dependencies
         run: |
           # Install mix_audit if not present
@@ -66,11 +74,19 @@ jobs:
           submodules: recursive
 
       - name: Setup Elixir
-        uses: ./.github/actions/setup-elixir
+        uses: erlef/setup-beam@v1
         with:
           elixir-version: ${{ env.ELIXIR_VERSION }}
           otp-version: ${{ env.OTP_VERSION }}
-      
+
+      - name: Install Hex and Rebar
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+
+      - name: Install dependencies
+        run: mix deps.get
+
       - name: Run Sobelow
         run: |
           # Install Sobelow if not in deps
@@ -128,15 +144,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       
-      - name: Setup Development Environment
-        uses: ./.github/actions/setup-elixir
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          elixir-version: ${{ env.ELIXIR_VERSION }}
-          otp-version: ${{ env.OTP_VERSION }}
-          install-deps: "false"
           node-version: '20'
-          node-cache: 'npm'
-      
+          cache: 'npm'
+
       - name: Run npm audit
         run: |
           # Check all directories with package.json
@@ -155,14 +168,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       
-      - name: Setup Development Environment for Snyk CLI
-        uses: ./.github/actions/setup-elixir
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          elixir-version: ${{ env.ELIXIR_VERSION }}
-          otp-version: ${{ env.OTP_VERSION }}
-          install-deps: "false"
           node-version: '20'
-      
+
       - name: Install and run Snyk CLI
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
