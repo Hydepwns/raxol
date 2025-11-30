@@ -23,7 +23,7 @@ defmodule RaxolPlayground.MixProject do
       {:raxol, path: ".."},
       {:phoenix, "~> 1.8.1"},
       {:phoenix_live_view, "~> 1.1.12"},
-      {:phoenix_html, "~> 4.0"},
+      {:phoenix_html, "~> 4.3"},
       {:phoenix_live_reload, "~> 1.6.1", only: :dev},
       {:phoenix_pubsub, "~> 2.1"},
       {:jason, "~> 1.4.4"},
