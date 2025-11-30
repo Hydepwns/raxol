@@ -606,7 +606,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
 
     test "handles clear from cursor to beginning of screen" do
       emulator = Raxol.Terminal.Emulator.new(80, 24)
-      result = CSIHandler.handle_screen_clear(emulator, [?1])
+      result = CSIHandler.handle_screen_clear(emulator, [1])
       # Handle both {:ok, emulator} and emulator return values
       emulator_result =
         case result do
@@ -619,7 +619,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
 
     test "handles clear entire screen" do
       emulator = Raxol.Terminal.Emulator.new(80, 24)
-      result = CSIHandler.handle_screen_clear(emulator, [?2])
+      result = CSIHandler.handle_screen_clear(emulator, [2])
       # Handle both {:ok, emulator} and emulator return values
       emulator_result =
         case result do
@@ -647,7 +647,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
 
     test "handles clear from start to cursor" do
       emulator = Raxol.Terminal.Emulator.new(80, 24)
-      result = CSIHandler.handle_line_clear(emulator, [?1])
+      result = CSIHandler.handle_line_clear(emulator, [1])
       # Handle both {:ok, emulator} and emulator return values
       emulator_result =
         case result do
@@ -660,7 +660,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
 
     test "handles clear entire line" do
       emulator = Raxol.Terminal.Emulator.new(80, 24)
-      result = CSIHandler.handle_line_clear(emulator, [?2])
+      result = CSIHandler.handle_line_clear(emulator, [2])
       # Handle both {:ok, emulator} and emulator return values
       emulator_result =
         case result do

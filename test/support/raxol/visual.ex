@@ -382,7 +382,7 @@ defmodule Raxol.Test.Visual do
   def test_themed_rendering(component, themes) when is_map(themes) do
     Enum.map(themes, fn {name, partial_theme_map} ->
       # Get the original full theme struct from the component's render_context
-      original_full_theme_struct = get_in(component.render_context.theme)
+      original_full_theme_struct = component.render_context.theme
 
       # Merge the partial_theme_map into the original_full_theme_struct
       # This ensures that :component_styles and other essential keys from the original struct are preserved.

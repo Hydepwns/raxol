@@ -5,7 +5,17 @@ defmodule Raxol.Core.Performance.ProfilerTest do
   alias Raxol.Core.Performance.Profiler
 
   setup do
-    {:ok, _pid} = Profiler.start_link()
+    {:ok, _pid} = Profiler.start_link(name: Raxol.Core.Performance.Profiler)
+    on_exit(fn ->
+      try do
+        case Process.whereis(Raxol.Core.Performance.Profiler) do
+          pid when is_pid(pid) -> GenServer.stop(pid, :normal, 100)
+          nil -> :ok
+        end
+      catch
+        :exit, _ -> :ok
+      end
+    end)
     Profiler.clear()
     :ok
   end
