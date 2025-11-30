@@ -79,7 +79,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
 
     # Ensure AccessibilityServer is started and supervised
     accessibility_pid =
-      start_supervised!({Raxol.Core.Accessibility.AccessibilityServer, []})
+      start_supervised!({Raxol.Core.Accessibility.AccessibilityServer, [name: Raxol.Core.Accessibility.AccessibilityServer]})
 
     # Wait a bit to ensure servers are ready
     Process.sleep(10)
