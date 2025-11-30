@@ -38,7 +38,7 @@ defmodule Raxol.Terminal.Window.Manager do
   def ensure_started do
     case Process.whereis(Server) do
       nil ->
-        case Server.start_link() do
+        case Server.start_link(name: Server) do
           {:ok, _pid} -> :ok
           {:error, {:already_started, _pid}} -> :ok
           error -> error

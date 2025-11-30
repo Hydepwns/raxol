@@ -5,8 +5,8 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
   alias Raxol.Terminal.Mouse.MouseServer
 
   setup do
-    {:ok, _graphics_pid} = GraphicsServer.start_link()
-    {:ok, _mouse_pid} = MouseServer.start_link()
+    {:ok, _graphics_pid} = start_supervised({GraphicsServer, [name: GraphicsServer]})
+    {:ok, _mouse_pid} = start_supervised({MouseServer, [name: MouseServer]})
     :ok
   end
 

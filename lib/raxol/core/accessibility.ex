@@ -35,7 +35,7 @@ defmodule Raxol.Core.Accessibility do
   def ensure_started do
     case Process.whereis(AccessibilityServer) do
       nil ->
-        case AccessibilityServer.start_link() do
+        case AccessibilityServer.start_link(name: AccessibilityServer) do
           {:ok, _pid} -> :ok
           {:error, {:already_started, _pid}} -> :ok
           error -> error
