@@ -1,26 +1,28 @@
 defmodule Raxol.Terminal.SessionTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Raxol.Terminal.Session
   alias Raxol.Terminal.Renderer
   alias Raxol.Terminal.ScreenBuffer
 
-  setup do
-    # Start the application
-    Application.start(:raxol)
+  setup_all do
+    # Start GlobalRegistry if not running - needed for session registration
+    case Process.whereis(Raxol.Core.GlobalRegistry) do
+      nil ->
+        {:ok, _} = start_supervised({Raxol.Core.GlobalRegistry, [name: Raxol.Core.GlobalRegistry]})
+      _pid ->
+        :ok
+    end
 
+    :ok
+  end
+
+  setup do
     # Clean up any existing session files
     File.rm_rf!(".tmp/sessions")
     File.mkdir_p!(".tmp/sessions")
 
     {:ok, pid} = Session.start_link(id: "test_session")
     %{pid: pid}
-  end
-
-  setup_all do
-    # Ensure application is stopped after all tests
-    on_exit(fn ->
-      Application.stop(:raxol)
-    end)
   end
 
   defp minimal_session_struct(id, width, height, title, theme) do

@@ -66,7 +66,8 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
     end
 
     # Start UserPreferences which is required by the application lifecycle
-    case start_supervised(Raxol.Core.UserPreferences) do
+    # Must pass name option so it registers with the expected module name
+    case start_supervised({Raxol.Core.UserPreferences, [name: Raxol.Core.UserPreferences]}) do
       {:ok, _pid} ->
         :ok
 
