@@ -25,6 +25,12 @@ defmodule RaxolWeb.Endpoint do
     gzip: false,
     only: ~w(css fonts images js favicon.ico robots.txt)
 
+  # Tidewave AI development assistant
+  if Code.ensure_loaded?(Tidewave) do
+    plug Tidewave,
+      inspect_opts: [charlists: :as_lists, limit: 100, pretty: true]
+  end
+
   # Code reloading for development
   if code_reloading? do
     plug Phoenix.CodeReloader

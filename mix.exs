@@ -8,7 +8,7 @@ defmodule Raxol.MixProject do
     [
       app: :raxol,
       version: @version,
-      elixir: "~> 1.16 or ~> 1.17",
+      elixir: "~> 1.16 or ~> 1.17 or ~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       elixirc_options: [
         warnings_as_errors: Mix.env() == :prod,
@@ -219,6 +219,10 @@ defmodule Raxol.MixProject do
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
 
+      # AI development tools
+      {:tidewave, "~> 0.5", only: :dev},
+      {:usage_rules, "~> 0.1", only: :dev},
+
       # Testing
       {:mox, "~> 1.2", only: :test},
       {:muzak, "~> 1.1", only: :test, runtime: false},
@@ -305,7 +309,11 @@ defmodule Raxol.MixProject do
       "release.prod": ["run scripts/release.exs --env prod"],
       "release.all": ["run scripts/release.exs --env prod --all"],
       "release.clean": ["run scripts/release.exs --clean"],
-      "release.tag": ["run scripts/release.exs --tag"]
+      "release.tag": ["run scripts/release.exs --tag"],
+      # AI development tools
+      "usage_rules.update": [
+        "usage_rules.sync CLAUDE.md usage_rules:all phoenix ecto --inline usage_rules:all --link-to-folder deps --remove-missing --yes"
+      ]
     ]
   end
 
