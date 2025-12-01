@@ -104,17 +104,17 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
   @doc """
   Handle high contrast mode changes.
   """
-  def handle_high_contrast(event) do
-    GenServer.cast(__MODULE__, {:handle_high_contrast, event})
+  def handle_high_contrast(_event_type, event_data) do
+    GenServer.cast(__MODULE__, {:handle_high_contrast, event_data})
   end
 
   @doc """
   Handle accessibility preference changes.
   """
-  def handle_accessibility_preference_changed(event) do
+  def handle_accessibility_preference_changed(_event_type, event_data) do
     GenServer.cast(
       __MODULE__,
-      {:handle_accessibility_preference_changed, event}
+      {:handle_accessibility_preference_changed, event_data}
     )
   end
 
@@ -412,11 +412,10 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
     {:noreply, updated_state}
   end
 
-  # Handle accessibility preference events
+  # Handle accessibility preference events - high contrast changes
   @impl true
   def handle_manager_cast(
-        {:handle_accessibility_preference_changed,
-         {:accessibility_preference_changed, :high_contrast, enabled}},
+        {:handle_accessibility_preference_changed, %{high_contrast: enabled}},
         state
       ) do
     updated_state = %{

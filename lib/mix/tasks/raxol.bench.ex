@@ -344,7 +344,7 @@ defmodule Mix.Tasks.Raxol.Bench do
   defp bench_event_dispatch do
     alias Raxol.Core.Events.EventManager
     # Handle already_started case in CI/test environments
-    case EventManager.start_link() do
+    case EventManager.start_link(name: EventManager) do
       {:ok, _pid} -> :ok
       {:error, {:already_started, _pid}} -> :ok
     end

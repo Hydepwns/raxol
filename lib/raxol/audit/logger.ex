@@ -494,20 +494,35 @@ defmodule Raxol.Audit.Logger do
       false ->
         events_to_flush = Enum.reverse(state.buffer)
 
+        # Transform audit events to EventStore format
+        es_events =
+          Enum.map(events_to_flush, fn event ->
+            %{
+              event_type: Map.get(event, :category, :audit),
+              data: event
+            }
+          end)
+
         # Store in event store
         stream_name = "audit-#{Date.utc_today() |> Date.to_iso8601()}"
 
         case EventStore.append_events(
                state.event_store,
-               events_to_flush,
-               stream_name
+               es_events,
+               stream_name,
+               %{}
              ) do
           {:ok, _event_ids} ->
             # Also store in specialized audit storage
-            Storage.store_batch(state.storage, events_to_flush)
+            case Storage.store_batch(state.storage, events_to_flush) do
+              :ok ->
+                # Clear buffer
+                {:ok, %{state | buffer: []}}
 
-            # Clear buffer
-            {:ok, %{state | buffer: []}}
+              {:error, reason} ->
+                Log.error("Failed to store audit batch: #{inspect(reason)}")
+                {:error, reason}
+            end
 
           {:error, reason} ->
             Log.error("Failed to flush audit buffer: #{inspect(reason)}")

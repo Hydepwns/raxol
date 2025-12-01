@@ -203,10 +203,8 @@ defmodule Raxol.Extensions.VSCodeBackend do
     input = Map.get(payload, "input", "")
     context = Map.get(payload, "context", %{})
 
-    case handle_completion_request(input, context) do
-      {:ok, result} -> %{status: "success", data: result}
-      {:error, reason} -> %{status: "error", error: inspect(reason)}
-    end
+    {:ok, result} = handle_completion_request(input, context)
+    %{status: "success", data: result}
   end
 
   defp process_request(%{
@@ -217,10 +215,8 @@ defmodule Raxol.Extensions.VSCodeBackend do
     component_name = Map.get(payload, "component_name", "unknown")
     metrics = Map.get(payload, "metrics", %{})
 
-    case handle_performance_analysis(code, component_name, metrics) do
-      {:ok, result} -> %{status: "success", data: result}
-      {:error, reason} -> %{status: "error", error: inspect(reason)}
-    end
+    {:ok, result} = handle_performance_analysis(code, component_name, metrics)
+    %{status: "success", data: result}
   end
 
   defp process_request(%{"action" => "analyze_component", "payload" => payload}) do

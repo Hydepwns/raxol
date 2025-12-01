@@ -32,7 +32,7 @@ defmodule Raxol.Style.Colors.System do
   defp ensure_server_started do
     case Process.whereis(Server) do
       nil ->
-        {:ok, _pid} = Server.start_link()
+        {:ok, _pid} = Server.start_link(name: Server)
         :ok
 
       _pid ->
@@ -145,9 +145,12 @@ defmodule Raxol.Style.Colors.System do
   @doc """
   Handle high contrast mode changes from the accessibility module.
   """
-  def handle_high_contrast(event) do
+  def handle_high_contrast(
+        event_type \\ :accessibility_high_contrast,
+        event_data
+      ) do
     ensure_server_started()
-    Server.handle_high_contrast(event)
+    Server.handle_high_contrast(event_type, event_data)
   end
 
   @doc """

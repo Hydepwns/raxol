@@ -252,11 +252,8 @@ defmodule Raxol.Protocols.EventSystemIntegration do
 
   defp fallback_dispatch(target, event, state) do
     # Try to use the existing event system
-    case EventManager.dispatch(event) do
-      :ok -> {:ok, target, state}
-      {:error, reason} -> {:error, reason}
-      _ -> {:unhandled, target, state}
-    end
+    :ok = EventManager.dispatch(event)
+    {:ok, target, state}
   rescue
     _ -> {:unhandled, target, state}
   end

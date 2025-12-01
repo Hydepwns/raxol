@@ -50,8 +50,7 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
   def file_rm_rf(path) do
     case File.rm_rf(path) do
       {:ok, _} -> :ok
-      {:error, reason, _} -> {:error, reason}
-      {:error, reason} -> {:error, reason}
+      {:error, reason, _path} -> {:error, reason}
     end
   end
 
