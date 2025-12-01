@@ -210,13 +210,10 @@ defmodule Raxol.UI.Components.Display.Table do
           {:noreply, state}
       end
 
-    # Convert {:noreply, state} or {:noreply, state, commands} to expected format
+    # Convert {:noreply, state} to expected format, pass through other results
     case result do
       {:noreply, new_state} ->
         {new_state, []}
-
-      {:noreply, new_state, commands} ->
-        {new_state, commands}
 
       other ->
         other

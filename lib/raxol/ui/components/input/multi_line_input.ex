@@ -274,9 +274,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   def handle_clipboard_content(content, state) do
     {start_pos, end_pos} = get_clipboard_position_range(state)
 
-    {new_value, _replaced} =
+    updated_state =
       Raxol.UI.Components.Input.MultiLineInput.TextHelper.replace_text_range(
-        state.lines,
+        state,
         start_pos,
         end_pos,
         content
@@ -292,9 +292,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
       )
 
     new_state = %{
-      state
-      | value: new_value,
-        cursor_pos: {new_row, new_col},
+      updated_state
+      | cursor_pos: {new_row, new_col},
         selection_start: nil,
         selection_end: nil
     }
@@ -659,12 +658,12 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   defp do_cut_with_selection(nil, state), do: {:noreply, state, nil}
 
   defp do_cut_with_selection(_selection, state) do
-    {new_state, cmd} =
+    new_state =
       Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper.cut_selection(
         state
       )
 
-    trigger_on_change({:noreply, ensure_cursor_visible(new_state), cmd}, state)
+    trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
   end
 
   defp get_clipboard_position_range(%{selection_start: nil} = state),
