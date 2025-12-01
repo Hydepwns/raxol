@@ -133,43 +133,23 @@ defmodule Raxol.Plugins.PluginSystemV2 do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:install_plugin, source, opts}, _from, state) do
-    case install_plugin_impl(source, opts, state) do
-      {:ok, updated_state} ->
-        {:reply, :ok, updated_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, updated_state} = install_plugin_impl(source, opts, state)
+    {:reply, :ok, updated_state}
   end
 
   def handle_manager_call({:load_plugin, plugin_id, opts}, _from, state) do
-    case load_plugin_with_deps(plugin_id, opts, state) do
-      {:ok, updated_state} ->
-        {:reply, :ok, updated_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, updated_state} = load_plugin_with_deps(plugin_id, opts, state)
+    {:reply, :ok, updated_state}
   end
 
   def handle_manager_call({:hot_reload_plugin, plugin_id, opts}, _from, state) do
-    case hot_reload_plugin_impl(plugin_id, opts, state) do
-      {:ok, updated_state} ->
-        {:reply, :ok, updated_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, updated_state} = hot_reload_plugin_impl(plugin_id, opts, state)
+    {:reply, :ok, updated_state}
   end
 
   def handle_manager_call({:resolve_dependencies, manifest}, _from, state) do
-    case resolve_dependencies_impl(manifest, state) do
-      {:ok, resolution} ->
-        {:reply, {:ok, resolution}, state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, resolution} = resolve_dependencies_impl(manifest, state)
+    {:reply, {:ok, resolution}, state}
   end
 
   def handle_manager_call({:get_plugin_status, plugin_id}, _from, state) do
@@ -178,13 +158,8 @@ defmodule Raxol.Plugins.PluginSystemV2 do
   end
 
   def handle_manager_call({:list_marketplace_plugins, filters}, _from, state) do
-    case list_marketplace_plugins_impl(filters, state) do
-      {:ok, plugins} ->
-        {:reply, {:ok, plugins}, state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, plugins} = list_marketplace_plugins_impl(filters, state)
+    {:reply, {:ok, plugins}, state}
   end
 
   def handle_manager_call(
@@ -192,13 +167,10 @@ defmodule Raxol.Plugins.PluginSystemV2 do
         _from,
         state
       ) do
-    case create_sandbox_impl(plugin_id, security_policy, state) do
-      {:ok, updated_state} ->
-        {:reply, :ok, updated_state}
+    {:ok, updated_state} =
+      create_sandbox_impl(plugin_id, security_policy, state)
 
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:reply, :ok, updated_state}
   end
 
   # Implementation Functions (Private)

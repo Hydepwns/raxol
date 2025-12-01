@@ -178,13 +178,8 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
   end
 
   def handle_manager_call(:run_integration_demo, _from, state) do
-    case run_integration_demo_impl(state) do
-      {:ok, demo_results} ->
-        {:reply, {:ok, demo_results}, state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, demo_results} = run_integration_demo_impl(state)
+    {:reply, {:ok, demo_results}, state}
   end
 
   # Private Implementation

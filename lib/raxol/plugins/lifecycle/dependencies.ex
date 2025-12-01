@@ -9,16 +9,7 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
   def validate_plugin_dependencies(plugin, manager) do
     case check_for_circular_dependency(plugin, manager) do
       :ok ->
-        case check_dependencies(plugin, manager) do
-          :ok ->
-            :ok
-
-          {:error, :missing_dependencies, missing, chain} ->
-            {:error, :missing_dependencies, missing, chain}
-
-          {:error, reason} ->
-            {:error, reason}
-        end
+        check_dependencies(plugin, manager)
 
       {:error, {:circular_dependency, name}} ->
         {:error, {:circular_dependency, name}}

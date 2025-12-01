@@ -342,42 +342,48 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   # Private Implementation
 
+  @spec search_plugins_impl(String.t(), map(), map()) ::
+          {:ok, list()} | {:error, term()}
   defp search_plugins_impl(query, filters, _state) do
     # Mock implementation - would make HTTP request to marketplace
-    Log.debug("Searching for plugins: #{query}")
+    try do
+      Log.debug("Searching for plugins: #{query}")
 
-    # Simulate marketplace response
-    mock_results = [
-      %{
-        id: "terminal-themes",
-        name: "Terminal Themes",
-        version: "2.1.0",
-        description: "Beautiful color themes for your terminal",
-        author: "theme-creator",
-        license: "MIT",
-        category: "Appearance",
-        tags: ["themes", "colors", "ui"],
-        rating: 4.8,
-        downloads: 12543,
-        trust_level: :verified
-      },
-      %{
-        id: "git-integration",
-        name: "Git Integration",
-        version: "1.5.4",
-        description: "Seamless Git integration with status display",
-        author: "git-dev",
-        license: "Apache-2.0",
-        category: "Development",
-        tags: ["git", "vcs", "development"],
-        rating: 4.6,
-        downloads: 8921,
-        trust_level: :trusted
-      }
-    ]
+      # Simulate marketplace response
+      mock_results = [
+        %{
+          id: "terminal-themes",
+          name: "Terminal Themes",
+          version: "2.1.0",
+          description: "Beautiful color themes for your terminal",
+          author: "theme-creator",
+          license: "MIT",
+          category: "Appearance",
+          tags: ["themes", "colors", "ui"],
+          rating: 4.8,
+          downloads: 12543,
+          trust_level: :verified
+        },
+        %{
+          id: "git-integration",
+          name: "Git Integration",
+          version: "1.5.4",
+          description: "Seamless Git integration with status display",
+          author: "git-dev",
+          license: "Apache-2.0",
+          category: "Development",
+          tags: ["git", "vcs", "development"],
+          rating: 4.6,
+          downloads: 8921,
+          trust_level: :trusted
+        }
+      ]
 
-    filtered_results = apply_search_filters(mock_results, filters)
-    {:ok, filtered_results}
+      filtered_results = apply_search_filters(mock_results, filters)
+      {:ok, filtered_results}
+    rescue
+      e -> {:error, Exception.message(e)}
+    end
   end
 
   defp get_plugin_info_impl(plugin_id, version, state) do
@@ -477,25 +483,31 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
+  @spec download_and_install_plugin(map(), list(), keyword(), map()) ::
+          {:ok, map()} | {:error, term()}
   defp download_and_install_plugin(plugin_info, dependencies, _opts, state) do
     # Mock implementation - would download and install plugin
-    Log.info(
-      "[MarketplaceClient] Installing #{plugin_info.name} with #{length(dependencies)} dependencies"
-    )
+    try do
+      Log.info(
+        "[MarketplaceClient] Installing #{plugin_info.name} with #{length(dependencies)} dependencies"
+      )
 
-    # Simulate successful installation
-    installation_info = %{
-      plugin_id: plugin_info.id,
-      version: plugin_info.version,
-      installed_at: DateTime.utc_now(),
-      installation_path: "/path/to/plugins/#{plugin_info.id}",
-      dependencies: dependencies
-    }
+      # Simulate successful installation
+      installation_info = %{
+        plugin_id: plugin_info.id,
+        version: plugin_info.version,
+        installed_at: DateTime.utc_now(),
+        installation_path: "/path/to/plugins/#{plugin_info.id}",
+        dependencies: dependencies
+      }
 
-    updated_installed =
-      Map.put(state.installed_plugins, plugin_info.id, installation_info)
+      updated_installed =
+        Map.put(state.installed_plugins, plugin_info.id, installation_info)
 
-    {:ok, %{state | installed_plugins: updated_installed}}
+      {:ok, %{state | installed_plugins: updated_installed}}
+    rescue
+      e -> {:error, Exception.message(e)}
+    end
   end
 
   defp resolve_plugin_dependencies(plugin_info) do
@@ -506,43 +518,54 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
+  @spec verify_plugin_security_impl(String.t(), String.t(), map()) ::
+          {:ok, map()} | {:error, term()}
   defp verify_plugin_security_impl(plugin_id, version, _state) do
     # Mock implementation - would verify signatures and check security
-    Log.debug(
-      "[MarketplaceClient] Verifying security for #{plugin_id}@#{version}"
-    )
+    try do
+      Log.debug(
+        "[MarketplaceClient] Verifying security for #{plugin_id}@#{version}"
+      )
 
-    security_result = %{
-      safe: true,
-      trust_level: :verified,
-      signature_valid: true,
-      checksum_valid: true,
-      issues: [],
-      scanned_at: DateTime.utc_now()
-    }
+      security_result = %{
+        safe: true,
+        trust_level: :verified,
+        signature_valid: true,
+        checksum_valid: true,
+        issues: [],
+        scanned_at: DateTime.utc_now()
+      }
 
-    {:ok, security_result}
+      {:ok, security_result}
+    rescue
+      e -> {:error, Exception.message(e)}
+    end
   end
 
+  @spec check_for_updates_impl(map()) :: {:ok, list(), map()} | {:error, term()}
   defp check_for_updates_impl(state) do
-    # Check each installed plugin for updates
-    updates =
-      Enum.reduce(state.installed_plugins, [], fn {plugin_id, install_info},
-                                                  acc ->
-        case check_plugin_update(plugin_id, install_info.version, state) do
-          # No update available
-          {:ok, nil} -> acc
-          {:ok, update_info} -> [update_info | acc]
-          # Skip errors
-          {:error, _reason} -> acc
-        end
-      end)
+    try do
+      # Check each installed plugin for updates
+      updates =
+        Enum.reduce(state.installed_plugins, [], fn {plugin_id, install_info},
+                                                    acc ->
+          case check_plugin_update(plugin_id, install_info.version, state) do
+            # No update available
+            {:ok, nil} -> acc
+            {:ok, update_info} -> [update_info | acc]
+            # Skip errors
+            {:error, _reason} -> acc
+          end
+        end)
 
-    # Update notification list
-    updated_notifications = updates ++ state.update_notifications
-    updated_state = %{state | update_notifications: updated_notifications}
+      # Update notification list
+      updated_notifications = updates ++ state.update_notifications
+      updated_state = %{state | update_notifications: updated_notifications}
 
-    {:ok, updates, updated_state}
+      {:ok, updates, updated_state}
+    rescue
+      e -> {:error, Exception.message(e)}
+    end
   end
 
   defp check_plugin_update(plugin_id, current_version, state) do
@@ -706,28 +729,40 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end)
   end
 
+  @spec get_plugin_reviews_impl(String.t(), map()) ::
+          {:ok, list()} | {:error, term()}
   defp get_plugin_reviews_impl(_plugin_id, _state) do
     # Mock implementation - would fetch reviews from marketplace
-    reviews = [
-      %{
-        rating: 5,
-        title: "Excellent plugin!",
-        review: "Works perfectly and easy to configure.",
-        author: "user123",
-        verified_purchase: true,
-        created_at: ~U[2023-09-15 08:30:00Z]
-      }
-    ]
+    try do
+      reviews = [
+        %{
+          rating: 5,
+          title: "Excellent plugin!",
+          review: "Works perfectly and easy to configure.",
+          author: "user123",
+          verified_purchase: true,
+          created_at: ~U[2023-09-15 08:30:00Z]
+        }
+      ]
 
-    {:ok, reviews}
+      {:ok, reviews}
+    rescue
+      e -> {:error, Exception.message(e)}
+    end
   end
 
+  @spec submit_plugin_review_impl(String.t(), integer(), String.t(), map()) ::
+          {:ok, map()} | {:error, term()}
   defp submit_plugin_review_impl(_plugin_id, _rating, _review_text, _state) do
     # Mock implementation - would submit review to marketplace
-    {:ok,
-     %{
-       status: :submitted,
-       message: "Review submitted successfully"
-     }}
+    try do
+      {:ok,
+       %{
+         status: :submitted,
+         message: "Review submitted successfully"
+       }}
+    rescue
+      e -> {:error, Exception.message(e)}
+    end
   end
 end

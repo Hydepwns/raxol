@@ -168,14 +168,9 @@ defmodule Raxol.Plugins.Spotify do
   ## Input Handlers
 
   defp handle_auth_input("a", _modifiers, state) do
-    case Auth.start_auth(state.config) do
-      {:ok, auth_url} ->
-        error = "Open: #{auth_url}"
-        {:ok, %{state | auth_status: :pending, error: error}}
-
-      {:error, reason} ->
-        {:ok, %{state | error: "Auth failed: #{inspect(reason)}"}}
-    end
+    {:ok, auth_url} = Auth.start_auth(state.config)
+    error = "Open: #{auth_url}"
+    {:ok, %{state | auth_status: :pending, error: error}}
   end
 
   defp handle_auth_input("q", _modifiers, state) do

@@ -52,21 +52,17 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
   Supports: ^1.2.0, ~> 2.1, >= 1.0.0, == 1.5.0, < 2.0.0
   """
   def version_satisfies?(version, requirement) do
-    case parse_requirement(requirement) do
-      {:ok, {operator, target_version}} ->
-        case Version.parse(version) do
-          {:ok, parsed_version} ->
-            case Version.parse(target_version) do
-              {:ok, parsed_target} ->
-                check_version_constraint(
-                  parsed_version,
-                  operator,
-                  parsed_target
-                )
+    {:ok, {operator, target_version}} = parse_requirement(requirement)
 
-              :error ->
-                false
-            end
+    case Version.parse(version) do
+      {:ok, parsed_version} ->
+        case Version.parse(target_version) do
+          {:ok, parsed_target} ->
+            check_version_constraint(
+              parsed_version,
+              operator,
+              parsed_target
+            )
 
           :error ->
             false

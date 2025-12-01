@@ -573,22 +573,37 @@ defmodule Raxol.Plugins.HotReloadManager do
     :ok
   end
 
+  @spec reload_plugin_module(any()) :: :ok | {:error, String.t()}
   defp reload_plugin_module(_plugin_id) do
     # Mock implementation - would reload plugin module
-    Log.info("Reloading plugin module")
-    :ok
+    try do
+      Log.info("Reloading plugin module")
+      :ok
+    rescue
+      e -> {:error, Exception.message(e)}
+    end
   end
 
+  @spec stop_plugin_gracefully(any(), any()) :: :ok | {:error, String.t()}
   defp stop_plugin_gracefully(_plugin_id, _timeout) do
     # Mock implementation - would gracefully stop plugin
-    Log.info("Stopping plugin gracefully")
-    :ok
+    try do
+      Log.info("Stopping plugin gracefully")
+      :ok
+    rescue
+      e -> {:error, Exception.message(e)}
+    end
   end
 
+  @spec start_plugin(any()) :: :ok | {:error, String.t()}
   defp start_plugin(_plugin_id) do
     # Mock implementation - would start plugin
-    Log.info("Starting plugin")
-    :ok
+    try do
+      Log.info("Starting plugin")
+      :ok
+    rescue
+      e -> {:error, Exception.message(e)}
+    end
   end
 
   defp find_dependent_plugins(_plugin_id, _dependency_graph) do
@@ -596,10 +611,15 @@ defmodule Raxol.Plugins.HotReloadManager do
     []
   end
 
+  @spec restore_plugin_from_backup(any(), any()) :: :ok | {:error, String.t()}
   defp restore_plugin_from_backup(_plugin_id, _backup_state) do
     # Mock implementation - would restore from backup
-    Log.info("Restoring plugin from backup")
-    :ok
+    try do
+      Log.info("Restoring plugin from backup")
+      :ok
+    rescue
+      e -> {:error, Exception.message(e)}
+    end
   end
 
   defp should_trigger_reload(watch_config, file_change) do
