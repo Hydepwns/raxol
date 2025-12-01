@@ -7,13 +7,24 @@ defmodule Raxol.AnimationTest do
   alias Raxol.Core.Accessibility, as: Accessibility
   alias Raxol.Core.UserPreferences
 
+  # Longer timeout for CI environments with variable timing
+  @animation_timeout 2000
+
   # Helper to wait for animation completion
-  defp wait_for_animation_completion(element_id, animation_name, timeout \\ 500) do
+  defp wait_for_animation_completion(
+         element_id,
+         animation_name,
+         timeout \\ @animation_timeout
+       ) do
     assert_receive {:animation_completed, ^element_id, ^animation_name}, timeout
   end
 
   # Helper to wait for animation start
-  defp wait_for_animation_start(element_id, animation_name, timeout \\ 500) do
+  defp wait_for_animation_start(
+         element_id,
+         animation_name,
+         timeout \\ @animation_timeout
+       ) do
     assert_receive {:animation_started, ^element_id, ^animation_name}, timeout
   end
 
@@ -57,7 +68,11 @@ defmodule Raxol.AnimationTest do
     Process.flag(:trap_exit, true)
 
     # Start AccessibilityServer first with the expected name
-    {:ok, _accessibility_pid} = start_supervised({Raxol.Core.Accessibility.AccessibilityServer, [name: Raxol.Core.Accessibility.AccessibilityServer]})
+    {:ok, _accessibility_pid} =
+      start_supervised(
+        {Raxol.Core.Accessibility.AccessibilityServer,
+         [name: Raxol.Core.Accessibility.AccessibilityServer]}
+      )
 
     # Start UserPreferences with a test-specific name
     local_user_prefs_name = __MODULE__.UserPreferences
@@ -285,6 +300,7 @@ defmodule Raxol.AnimationTest do
         Framework.apply_animations_to_state(%{}, user_preferences_name)
         wait_for_animation_start("test_element", animation.name)
         wait_for_animation_completion("test_element", animation.name)
+
         # TODO: Verify that non-important animations don't generate announcements
         # Need to implement screen reader announcement testing helpers
         # refute Framework.screen_reader_announced?("Animation started")

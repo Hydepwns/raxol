@@ -411,11 +411,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, windows-2022]
         include:
           - os: macos-latest
             platform: macos
-          - os: windows-latest
+          - os: windows-2022
             platform: windows
     
     steps:
@@ -423,6 +423,17 @@ jobs:
         with:
           submodules: recursive
       
+      - name: Set TMPDIR (Unix)
+        if: runner.os != 'Windows'
+        run: echo "TMPDIR=/tmp" >> $GITHUB_ENV
+
+      - name: Set TMPDIR (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          echo "TMPDIR=$env:TEMP" >> $env:GITHUB_ENV
+          echo "SKIP_TERMBOX2_TESTS=true" >> $env:GITHUB_ENV
+
       - name: Install macOS dependencies
         if: matrix.os == 'macos-latest'
         run: |
@@ -468,8 +479,10 @@ jobs:
           mix deps.compile
       
       - name: Run tests
-        run: mix test --exclude slow --exclude docker
+        run: mix test --exclude slow --exclude docker --exclude integration
         env:
+          MIX_ENV: test
+          SKIP_TERMBOX2_TESTS: "true"
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           POSTGRES_USER: postgres

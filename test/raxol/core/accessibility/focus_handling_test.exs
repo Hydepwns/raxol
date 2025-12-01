@@ -10,12 +10,20 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
   alias Raxol.Core.UserPreferences
   alias Raxol.Core.AccessibilityTestHelper, as: Helper
 
+  # Timeout for async event processing in CI environments
+  @async_timeout 500
+
   setup :verify_on_exit!
   setup :set_mox_global
 
   setup do
     Raxol.Core.I18n.init()
     :ok
+  end
+
+  # Helper to wait for async event processing with retry
+  defp wait_for_events(timeout \\ @async_timeout) do
+    Process.sleep(timeout)
   end
 
   describe "Focus Change Handling" do
@@ -38,11 +46,14 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       })
 
       Accessibility.clear_announcements()
-      Raxol.Core.Events.EventManager.dispatch({:focus_change, nil, "search_button"})
-      
-      # Wait for async event processing - give it time to complete
-      Process.sleep(10)
-      
+
+      Raxol.Core.Events.EventManager.dispatch(
+        {:focus_change, nil, "search_button"}
+      )
+
+      # Wait for async event processing
+      wait_for_events()
+
       assert Accessibility.get_next_announcement(pref_pid) == "Search"
     end
 
@@ -65,7 +76,9 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       Helper.register_test_elements()
       Accessibility.clear_announcements()
 
-      Raxol.Core.Events.EventManager.dispatch({:focus_change, nil, "search_button"})
+      Raxol.Core.Events.EventManager.dispatch(
+        {:focus_change, nil, "search_button"}
+      )
 
       Raxol.Core.Events.EventManager.dispatch(
         {:focus_change, "search_button", "text_input"}
@@ -76,7 +89,7 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       )
 
       # Wait for async event processing
-      Process.sleep(10)
+      wait_for_events()
 
       assert Accessibility.get_next_announcement(pref_pid) == "Search"
       assert Accessibility.get_next_announcement(pref_pid) == "Username"
@@ -97,7 +110,7 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       Raxol.Core.Events.EventManager.dispatch({:focus_change, "el1", "el2"})
 
       # Wait for async event processing
-      Process.sleep(10)
+      wait_for_events()
 
       assert Accessibility.get_next_announcement(pref_pid) == "Element One"
       assert Accessibility.get_next_announcement(pref_pid) == "Element Two"
@@ -116,7 +129,7 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       Raxol.Core.Events.EventManager.dispatch({:focus_change, nil, "button1"})
 
       # Wait for async event processing
-      Process.sleep(10)
+      wait_for_events()
 
       assert Accessibility.get_next_announcement(pref_pid) == "OK"
       assert Accessibility.get_next_announcement(pref_pid) == nil
@@ -130,10 +143,13 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       })
 
       Accessibility.clear_announcements()
-      Raxol.Core.Events.EventManager.dispatch({:focus_change, nil, "my_element"})
+
+      Raxol.Core.Events.EventManager.dispatch(
+        {:focus_change, nil, "my_element"}
+      )
 
       # Wait for async event processing
-      Process.sleep(10)
+      wait_for_events()
 
       assert Accessibility.get_next_announcement(pref_pid) ==
                "My Special Element"

@@ -298,7 +298,12 @@ defmodule Mix.Tasks.Raxol.Bench do
       end,
       "memory_plugin_system" => fn ->
         alias Raxol.Plugins.Manager
-        {:ok, _pid} = Manager.start_link()
+        # Handle already_started case in CI/test environments
+        case Manager.start_link() do
+          {:ok, _pid} -> :ok
+          {:error, {:already_started, _pid}} -> :ok
+        end
+
         Manager.list_plugins()
       end
     }
@@ -338,7 +343,11 @@ defmodule Mix.Tasks.Raxol.Bench do
 
   defp bench_event_dispatch do
     alias Raxol.Core.Events.EventManager
-    {:ok, _pid} = EventManager.start_link()
+    # Handle already_started case in CI/test environments
+    case EventManager.start_link() do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
 
     1..20
     |> Enum.map(fn i ->
@@ -349,7 +358,11 @@ defmodule Mix.Tasks.Raxol.Bench do
 
   defp bench_plugin_operations do
     alias Raxol.Plugins.Manager
-    {:ok, _pid} = Manager.start_link()
+    # Handle already_started case in CI/test environments
+    case Manager.start_link() do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
 
     1..5
     |> Enum.map(fn _ ->
