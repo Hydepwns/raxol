@@ -23,6 +23,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
   end
 
   describe "Buffer Fill Performance" do
+    @tag :slow
     test ~c"measures performance of filling large buffers" do
       sizes = [
         # Standard terminal
@@ -57,6 +58,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
       end)
     end
 
+    @tag :slow
     test ~c"measures performance of partial buffer updates" do
       buffer = Buffer.new({200, 100})
 
@@ -150,6 +152,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
   end
 
   describe "Memory Usage" do
+    @tag :slow
     test ~c"measures memory usage of buffer operations" do
       sizes = [
         # Standard terminal

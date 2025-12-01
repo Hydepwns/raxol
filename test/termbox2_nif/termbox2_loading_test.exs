@@ -11,6 +11,7 @@ defmodule Termbox2LoadingTest do
       assert Code.ensure_loaded?(:termbox2_nif)
     end
 
+    @tag :docker
     test "NIF functions are defined" do
       # Check that all expected functions exist
       expected_functions = [

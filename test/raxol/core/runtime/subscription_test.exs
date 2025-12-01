@@ -137,7 +137,24 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
 
   describe "start/2" do
     setup do
+      # Start EventManager for event subscriptions
+      case Raxol.Core.Events.EventManager.start_link(
+             name: Raxol.Core.Events.EventManager
+           ) do
+        {:ok, _pid} -> :ok
+        {:error, {:already_started, _pid}} -> :ok
+      end
+
       context = %{pid: self()}
+
+      on_exit(fn ->
+        # Only cleanup if EventManager is still running
+        case Process.whereis(Raxol.Core.Events.EventManager) do
+          nil -> :ok
+          _pid -> Raxol.Core.Events.EventManager.cleanup()
+        end
+      end)
+
       {:ok, context: context}
     end
 
@@ -205,7 +222,24 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
 
   describe "stop/1" do
     setup do
+      # Start EventManager for event subscriptions
+      case Raxol.Core.Events.EventManager.start_link(
+             name: Raxol.Core.Events.EventManager
+           ) do
+        {:ok, _pid} -> :ok
+        {:error, {:already_started, _pid}} -> :ok
+      end
+
       context = %{pid: self()}
+
+      on_exit(fn ->
+        # Only cleanup if EventManager is still running
+        case Process.whereis(Raxol.Core.Events.EventManager) do
+          nil -> :ok
+          _pid -> Raxol.Core.Events.EventManager.cleanup()
+        end
+      end)
+
       {:ok, context: context}
     end
 

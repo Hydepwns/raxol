@@ -63,9 +63,13 @@ defmodule Raxol.Terminal.ConfigTest do
   }
 
   setup do
-    # Clean up any existing config files
-    File.rm_rf!(".tmp/configs")
-    File.mkdir_p!(".tmp/configs")
+    # Clean up any existing config files (ignore errors)
+    File.rm_rf(".tmp/configs")
+    File.mkdir_p(".tmp/configs")
+
+    on_exit(fn ->
+      File.rm_rf(".tmp/configs")
+    end)
 
     config = Config.new()
     %{config: config}

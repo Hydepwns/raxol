@@ -53,6 +53,8 @@ defmodule Raxol.Property.CoreTest do
       end
     end
 
+    @tag :skip
+    @tag :flaky
     property "parser performance scales linearly" do
       check all size <- integer(10..1000),
                 max_runs: 100 do

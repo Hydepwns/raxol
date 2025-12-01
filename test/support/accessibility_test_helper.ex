@@ -64,9 +64,14 @@ defmodule Raxol.Core.AccessibilityTestHelper do
 
   def setup_test_preferences_with_events(prefs_name) do
     # Ensure EventManager is started and supervised (if not already running)
+    # Must use name: option so Process.whereis can find it
     case Process.whereis(Raxol.Core.Events.EventManager) do
       nil ->
-        start_supervised!({Raxol.Core.Events.EventManager, []})
+        start_supervised!(
+          {Raxol.Core.Events.EventManager,
+           [name: Raxol.Core.Events.EventManager]}
+        )
+
         Process.sleep(10)
 
       _pid ->

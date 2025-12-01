@@ -136,12 +136,8 @@ defmodule Raxol.Test.BufferHelper do
       {:ok, "Hello, World!"}
   """
   def read_test_data(manager, opts \\ []) do
-    case Raxol.Terminal.ScreenBuffer.Manager.read(manager, opts) do
-      data when is_binary(data) -> {:ok, data}
-      data when is_list(data) -> {:ok, data}
-      {:error, reason} -> {:error, reason}
-      other -> {:ok, other}
-    end
+    data = Raxol.Terminal.ScreenBuffer.Manager.read(manager, opts)
+    {:ok, data}
   end
 
   @doc """
@@ -161,10 +157,12 @@ defmodule Raxol.Test.BufferHelper do
       :ok
   """
   def verify_buffer_content(manager, expected_content, opts \\ []) do
-    case read_test_data(manager, opts) do
-      {:ok, ^expected_content} -> :ok
-      {:ok, actual_content} -> {:error, {:unexpected_content, actual_content}}
-      {:error, reason} -> {:error, reason}
+    {:ok, actual_content} = read_test_data(manager, opts)
+
+    if actual_content == expected_content do
+      :ok
+    else
+      {:error, {:unexpected_content, actual_content}}
     end
   end
 
@@ -199,27 +197,26 @@ defmodule Raxol.Test.BufferHelper do
               ""
           end
 
-        case Raxol.Terminal.ScreenBuffer.Manager.write(manager, data, []) do
-          :ok -> {:ok, %{write_time: 5, memory_usage: 1024}}
-          {:ok, _} -> {:ok, %{write_time: 5, memory_usage: 1024}}
-          result -> {:ok, result}
-        end
+        {:ok, _result} =
+          Raxol.Terminal.ScreenBuffer.Manager.write(manager, data, [])
+
+        {:ok, %{write_time: 5, memory_usage: 1024}}
 
       :clear ->
-        case Raxol.Terminal.ScreenBuffer.Manager.clear_damage(manager) do
-          {:ok, _} -> {:ok, %{clear_time: 2}}
-          result -> {:ok, result}
-        end
+        _result = Raxol.Terminal.ScreenBuffer.Manager.clear_damage(manager)
+        {:ok, %{clear_time: 2}}
 
       :resize ->
-        case Raxol.Terminal.ScreenBuffer.Manager.resize(
-               manager,
-               Keyword.get(opts, :size, {80, 24}),
-               opts
-             ) do
-          {:ok, _} -> {:ok, %{resize_time: 10}}
-          result -> {:ok, result}
-        end
+        {width, height} = Keyword.get(opts, :size, {80, 24})
+
+        result =
+          Raxol.Terminal.ScreenBuffer.Manager.resize(
+            manager,
+            width,
+            height
+          )
+
+        {:ok, %{resize_time: 10, result: result}}
 
       _ ->
         {:error, :invalid_operation}

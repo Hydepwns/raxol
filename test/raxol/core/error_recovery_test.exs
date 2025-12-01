@@ -29,7 +29,8 @@ defmodule Raxol.Core.ErrorRecoveryTest do
           {:ok, "success"}
         end)
 
-      assert result == {:ok, {:ok, "success"}}
+      # Circuit breaker propagates the user function result directly
+      assert result == {:ok, "success"}
     end
 
     test "opens circuit after threshold failures" do

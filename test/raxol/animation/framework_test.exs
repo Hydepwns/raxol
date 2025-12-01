@@ -35,6 +35,17 @@ defmodule Raxol.Animation.FrameworkTest do
   # Start UserPreferences for these tests
   setup do
     Logger.debug("Starting setup block")
+
+    # Start EventManager for event-based tests
+    case Raxol.Core.Events.EventManager.start_link(
+           name: Raxol.Core.Events.EventManager
+         ) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
+    Logger.debug("EventManager started successfully")
+
     local_user_prefs_name = __MODULE__.UserPreferences
     user_prefs_opts = [name: local_user_prefs_name, test_mode?: true]
 
@@ -80,6 +91,14 @@ defmodule Raxol.Animation.FrameworkTest do
     on_exit(fn ->
       Framework.stop()
       Logger.debug("Framework stopped in on_exit")
+
+      # Cleanup EventManager
+      case Process.whereis(Raxol.Core.Events.EventManager) do
+        nil -> :ok
+        _pid -> Raxol.Core.Events.EventManager.cleanup()
+      end
+
+      Logger.debug("EventManager cleanup completed")
     end)
 
     :ok

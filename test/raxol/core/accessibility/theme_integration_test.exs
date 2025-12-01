@@ -29,9 +29,11 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
 
     # Clean up after tests
     on_exit(fn ->
-      ThemeIntegration.cleanup()
-
-      # Don't stop UserPreferences or EventManager - let them be managed by the application
+      # Only cleanup if EventManager is still running
+      case Process.whereis(EventManager) do
+        nil -> :ok
+        pid when is_pid(pid) -> ThemeIntegration.cleanup()
+      end
     end)
 
     :ok
