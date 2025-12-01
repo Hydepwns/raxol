@@ -155,16 +155,11 @@ defmodule Raxol.Core.Config.ConfigServer do
   end
 
   def handle_manager_call({:set, namespace, key, value}, _from, state) do
-    case validate_config_value(namespace, key, value) do
-      :ok ->
-        namespace_config = Map.get(state, namespace, %{})
-        updated_namespace = Map.put(namespace_config, key, value)
-        new_state = Map.put(state, namespace, updated_namespace)
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    :ok = validate_config_value(namespace, key, value)
+    namespace_config = Map.get(state, namespace, %{})
+    updated_namespace = Map.put(namespace_config, key, value)
+    new_state = Map.put(state, namespace, updated_namespace)
+    {:reply, :ok, new_state}
   end
 
   def handle_manager_call({:get_namespace, namespace}, _from, state) do
@@ -173,14 +168,9 @@ defmodule Raxol.Core.Config.ConfigServer do
   end
 
   def handle_manager_call({:set_namespace, namespace, config}, _from, state) do
-    case validate_namespace_config(namespace, config) do
-      :ok ->
-        new_state = Map.put(state, namespace, config)
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    :ok = validate_namespace_config(namespace, config)
+    new_state = Map.put(state, namespace, config)
+    {:reply, :ok, new_state}
   end
 
   def handle_manager_call(:load_from_file, _from, state) do

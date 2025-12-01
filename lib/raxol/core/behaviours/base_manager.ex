@@ -6,8 +6,10 @@ defmodule Raxol.Core.Behaviours.BaseManager do
 
   @doc """
   Called to initialize the manager state.
+  Must return {:ok, state}. For initialization failures, raise an exception
+  to let the supervisor handle restart logic.
   """
-  @callback init_manager(keyword()) :: {:ok, any()} | {:error, any()}
+  @callback init_manager(keyword()) :: {:ok, any()}
 
   @doc """
   Called to handle manager-specific requests.
@@ -100,8 +102,6 @@ defmodule Raxol.Core.Behaviours.BaseManager do
       defp normalize_and_split_opts(value), do: {[], value}
 
       defp normalize_init_result({:ok, state}), do: {:ok, state}
-      defp normalize_init_result({:error, reason}), do: {:stop, reason}
-      defp normalize_init_result(other), do: {:stop, {:bad_return_value, other}}
 
       # All callbacks are overridable
       defoverridable init_manager: 1,

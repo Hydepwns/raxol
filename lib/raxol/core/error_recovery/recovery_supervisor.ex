@@ -218,7 +218,6 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   end
 
   defp extract_child_id({module, _args}), do: module
-  defp extract_child_id(%{id: id}), do: id
   defp extract_child_id(spec), do: spec
 
   defp adapt_supervisor_strategy(
@@ -345,6 +344,13 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
 
       :graceful_degradation ->
         {:graceful_degradation, determine_fallback(child_id, state)}
+
+      :escalate ->
+        :escalate
+
+      _unknown ->
+        # Unknown strategy - escalate to parent supervisor
+        :escalate
     end
   end
 

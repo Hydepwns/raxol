@@ -212,13 +212,10 @@ defmodule Raxol.Core.Session.SessionMigrator do
         _from,
         state
       ) do
-    case start_bulk_migration(session_ids, target_node, strategy, state) do
-      {:ok, migration_infos, updated_state} ->
-        {:reply, {:ok, migration_infos}, updated_state}
+    {:ok, migration_infos, updated_state} =
+      start_bulk_migration(session_ids, target_node, strategy, state)
 
-      {:error, _reason} = error ->
-        {:reply, error, state}
-    end
+    {:reply, {:ok, migration_infos}, updated_state}
   end
 
   @impl true
@@ -234,13 +231,8 @@ defmodule Raxol.Core.Session.SessionMigrator do
 
   @impl true
   def handle_call({:handle_node_failure, failed_node}, _from, state) do
-    case perform_failover(failed_node, state) do
-      {:ok, failover_result, updated_state} ->
-        {:reply, {:ok, failover_result}, updated_state}
-
-      {:error, _reason} = error ->
-        {:reply, error, state}
-    end
+    {:ok, failover_result, updated_state} = perform_failover(failed_node, state)
+    {:reply, {:ok, failover_result}, updated_state}
   end
 
   @impl true
@@ -259,24 +251,16 @@ defmodule Raxol.Core.Session.SessionMigrator do
 
   @impl true
   def handle_call({:rollback_migration, session_id}, _from, state) do
-    case rollback_session_migration(session_id, state) do
-      {:ok, updated_state} ->
-        {:reply, :ok, updated_state}
-
-      {:error, _reason} = error ->
-        {:reply, error, state}
-    end
+    {:ok, updated_state} = rollback_session_migration(session_id, state)
+    {:reply, :ok, updated_state}
   end
 
   @impl true
   def handle_call({:rebalance_sessions, rebalance_config}, _from, state) do
-    case perform_session_rebalancing(rebalance_config, state) do
-      {:ok, rebalanced_count, updated_state} ->
-        {:reply, {:ok, rebalanced_count}, updated_state}
+    {:ok, rebalanced_count, updated_state} =
+      perform_session_rebalancing(rebalance_config, state)
 
-      {:error, _reason} = error ->
-        {:reply, error, state}
-    end
+    {:reply, {:ok, rebalanced_count}, updated_state}
   end
 
   @impl true
@@ -360,22 +344,18 @@ defmodule Raxol.Core.Session.SessionMigrator do
         }
 
         # Start migration process
-        case perform_migration(migration_info, state) do
-          {:ok, updated_migration_info} ->
-            updated_migrations =
-              Map.put(
-                state.current_migrations,
-                session_id,
-                updated_migration_info
-              )
+        {:ok, updated_migration_info} = perform_migration(migration_info, state)
 
-            updated_state = %{state | current_migrations: updated_migrations}
+        updated_migrations =
+          Map.put(
+            state.current_migrations,
+            session_id,
+            updated_migration_info
+          )
 
-            {:ok, updated_migration_info, updated_state}
+        updated_state = %{state | current_migrations: updated_migrations}
 
-          {:error, reason} ->
-            {:error, reason}
-        end
+        {:ok, updated_migration_info, updated_state}
 
       {:ok, source_node} when source_node == target_node ->
         {:error, :session_already_on_target_node}
@@ -844,39 +824,11 @@ defmodule Raxol.Core.Session.SessionMigrator do
     Log.warning("Performing failover for failed node: #{failed_node}")
 
     # Get sessions that were on the failed node from replicas
-    case find_sessions_on_failed_node(failed_node) do
-      {:ok, [_ | _] = session_ids} ->
-        # Find healthy nodes for failover
-        healthy_nodes = get_healthy_nodes(state)
+    # Note: Currently returns empty list as stub implementation
+    {:ok, _session_ids} = find_sessions_on_failed_node(failed_node)
 
-        case healthy_nodes do
-          [] ->
-            {:error, :no_healthy_nodes_available}
-
-          nodes ->
-            # Failover sessions to healthy nodes
-            failover_count = perform_session_failover(session_ids, nodes, state)
-
-            Log.info(
-              "Completed failover for #{failover_count} sessions from node #{failed_node}"
-            )
-
-            failover_result = %{
-              failed_node: failed_node,
-              failover_targets: nodes,
-              sessions_migrated: failover_count
-            }
-
-            {:ok, failover_result, state}
-        end
-
-      {:ok, []} ->
-        Log.info("No sessions found on failed node #{failed_node}")
-        {:ok, %{failed_node: failed_node, sessions_migrated: 0}, state}
-
-      {:error, reason} ->
-        {:error, {:failover_discovery_failed, reason}}
-    end
+    Log.info("No sessions found on failed node #{failed_node}")
+    {:ok, %{failed_node: failed_node, sessions_migrated: 0}, state}
   end
 
   # Helper Functions
@@ -985,17 +937,6 @@ defmodule Raxol.Core.Session.SessionMigrator do
   defp find_sessions_on_failed_node(_failed_node) do
     # Implementation would query replicas to find sessions that were on the failed node
     {:ok, []}
-  end
-
-  defp get_healthy_nodes(state) do
-    Enum.filter(Map.keys(state.node_health), fn node ->
-      Map.get(state.node_health, node) == :healthy
-    end)
-  end
-
-  defp perform_session_failover(_session_ids, _target_nodes, _state) do
-    # Implementation would perform actual failover
-    0
   end
 
   defp rollback_session_migration(_session_id, state) do

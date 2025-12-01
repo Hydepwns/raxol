@@ -63,29 +63,35 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   def cleanup do
     handle_test_cleanup(Mix.env() == :test)
 
-    EventManager.unregister_handler(
-      :accessibility_high_contrast,
-      __MODULE__,
-      :handle_high_contrast
-    )
+    # Wrap handler cleanup in try-catch to handle cases where
+    # EventManager may have been stopped
+    try do
+      EventManager.unregister_handler(
+        :accessibility_high_contrast,
+        __MODULE__,
+        :handle_high_contrast
+      )
 
-    EventManager.unregister_handler(
-      :accessibility_reduced_motion,
-      __MODULE__,
-      :handle_reduced_motion
-    )
+      EventManager.unregister_handler(
+        :accessibility_reduced_motion,
+        __MODULE__,
+        :handle_reduced_motion
+      )
 
-    EventManager.unregister_handler(
-      :accessibility_large_text,
-      __MODULE__,
-      :handle_large_text
-    )
+      EventManager.unregister_handler(
+        :accessibility_large_text,
+        __MODULE__,
+        :handle_large_text
+      )
 
-    EventManager.unregister_handler(
-      :theme_changed,
-      Raxol.Core.Accessibility,
-      :handle_theme_changed_event
-    )
+      EventManager.unregister_handler(
+        :theme_changed,
+        Raxol.Core.Accessibility,
+        :handle_theme_changed_event
+      )
+    catch
+      :exit, _ -> :ok
+    end
 
     :ok
   end
@@ -320,8 +326,15 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   defp handle_test_cleanup(true) do
     # Only try to reset if the process exists
     case Process.whereis(UserPreferences) do
-      nil -> :ok
-      _pid -> UserPreferences.reset_to_defaults_for_test!()
+      nil ->
+        :ok
+
+      pid when is_pid(pid) ->
+        try do
+          UserPreferences.reset_to_defaults_for_test!()
+        catch
+          :exit, _ -> :ok
+        end
     end
   end
 

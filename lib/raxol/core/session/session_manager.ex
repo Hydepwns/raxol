@@ -567,17 +567,14 @@ defmodule Raxol.Core.Session.SessionManager do
         {:reply, {:error, :session_not_found}, state}
 
       session ->
-        case MultiplexerSession.attach_client(session, client_config) do
-          {:ok, client, updated_session} ->
-            updated_sessions =
-              Map.put(state.multiplexer_sessions, session_id, updated_session)
+        {:ok, client, updated_session} =
+          MultiplexerSession.attach_client(session, client_config)
 
-            new_state = %{state | multiplexer_sessions: updated_sessions}
-            {:reply, {:ok, client}, new_state}
+        updated_sessions =
+          Map.put(state.multiplexer_sessions, session_id, updated_session)
 
-          {:error, reason} ->
-            {:reply, {:error, reason}, state}
-        end
+        new_state = %{state | multiplexer_sessions: updated_sessions}
+        {:reply, {:ok, client}, new_state}
     end
   end
 

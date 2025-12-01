@@ -187,8 +187,15 @@ defmodule Raxol.Core.Events.EventManager do
   @spec cleanup() :: :ok
   def cleanup do
     case GenServer.whereis(__MODULE__) do
-      nil -> :ok
-      pid -> GenServer.stop(pid)
+      nil ->
+        :ok
+
+      pid ->
+        try do
+          GenServer.stop(pid)
+        catch
+          :exit, _ -> :ok
+        end
     end
   end
 

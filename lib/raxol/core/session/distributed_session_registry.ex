@@ -390,15 +390,10 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
   @impl true
   def handle_manager_call({:unregister_session, session_id}, _from, state) do
-    case remove_session_from_cluster(session_id, state) do
-      :ok ->
-        updated_sessions = Map.delete(state.sessions, session_id)
-        new_state = %{state | sessions: updated_sessions}
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    :ok = remove_session_from_cluster(session_id, state)
+    updated_sessions = Map.delete(state.sessions, session_id)
+    new_state = %{state | sessions: updated_sessions}
+    {:reply, :ok, new_state}
   end
 
   @impl true
@@ -407,13 +402,8 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
         _from,
         state
       ) do
-    case execute_session_migration(session_id, target_node, state) do
-      {:ok, new_state} ->
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, new_state} = execute_session_migration(session_id, target_node, state)
+    {:reply, :ok, new_state}
   end
 
   @impl true
@@ -430,35 +420,20 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
   @impl true
   def handle_manager_call(:sync_sessions, _from, state) do
-    case force_session_synchronization(state) do
-      {:ok, new_state} ->
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, new_state} = force_session_synchronization(state)
+    {:reply, :ok, new_state}
   end
 
   @impl true
   def handle_manager_call({:add_node, node_id}, _from, state) do
-    case add_node_to_cluster(node_id, state) do
-      {:ok, new_state} ->
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, new_state} = add_node_to_cluster(node_id, state)
+    {:reply, :ok, new_state}
   end
 
   @impl true
   def handle_manager_call({:remove_node, node_id}, _from, state) do
-    case remove_node_from_cluster(node_id, state) do
-      {:ok, new_state} ->
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, new_state} = remove_node_from_cluster(node_id, state)
+    {:reply, :ok, new_state}
   end
 
   @impl true

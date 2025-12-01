@@ -227,35 +227,20 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
 
   @impl true
   def handle_call({:list_sessions, filters}, _from, state) do
-    case list_session_ids(filters, state) do
-      {:ok, session_ids} ->
-        {:reply, {:ok, session_ids}, state}
-
-      {:error, _reason} = error ->
-        {:reply, error, state}
-    end
+    {:ok, session_ids} = list_session_ids(filters, state)
+    {:reply, {:ok, session_ids}, state}
   end
 
   @impl true
   def handle_call({:get_metadata, session_id}, _from, state) do
-    case get_session_metadata(session_id, state) do
-      {:ok, metadata} ->
-        {:reply, {:ok, metadata}, state}
-
-      {:error, _reason} = error ->
-        {:reply, error, state}
-    end
+    result = get_session_metadata(session_id, state)
+    {:reply, result, state}
   end
 
   @impl true
   def handle_call(:cleanup_expired_sessions, _from, state) do
-    case perform_cleanup(state) do
-      {:ok, cleanup_count, updated_state} ->
-        {:reply, {:ok, cleanup_count}, updated_state}
-
-      {:error, _reason} = error ->
-        {:reply, error, state}
-    end
+    {:ok, cleanup_count, updated_state} = perform_cleanup(state)
+    {:reply, {:ok, cleanup_count}, updated_state}
   end
 
   @impl true
@@ -266,65 +251,37 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
 
   @impl true
   def handle_call({:backup_sessions, backup_path}, _from, state) do
-    case create_backup(backup_path, state) do
-      {:ok, backup_info} ->
-        {:reply, {:ok, backup_info}, state}
-
-      {:error, _reason} = error ->
-        {:reply, error, state}
-    end
+    result = create_backup(backup_path, state)
+    {:reply, result, state}
   end
 
   @impl true
   def handle_call({:restore_sessions, backup_path}, _from, state) do
-    case restore_backup(backup_path, state) do
-      {:ok, restore_count, updated_state} ->
-        {:reply, {:ok, restore_count}, updated_state}
-
-      {:error, _reason} = error ->
-        {:reply, error, state}
-    end
+    {:ok, restore_count, updated_state} = restore_backup(backup_path, state)
+    {:reply, {:ok, restore_count}, updated_state}
   end
 
   @impl true
   def handle_cast({:update_access_time, session_id}, state) do
-    case update_session_access_time(session_id, state) do
-      {:ok, updated_state} ->
-        {:noreply, updated_state}
-
-      {:error, _reason} ->
-        # Non-critical operation, continue
-        {:noreply, state}
-    end
+    {:ok, updated_state} = update_session_access_time(session_id, state)
+    {:noreply, updated_state}
   end
 
   @impl true
   def handle_info(:cleanup_expired, state) do
-    case perform_cleanup(state) do
-      {:ok, cleanup_count, updated_state} ->
-        if cleanup_count > 0 do
-          Log.info("Cleaned up #{cleanup_count} expired sessions")
-        end
+    {:ok, cleanup_count, updated_state} = perform_cleanup(state)
 
-        # Schedule next cleanup
-        cleanup_timer =
-          Process.send_after(self(), :cleanup_expired, state.cleanup_interval)
-
-        final_state = %{updated_state | cleanup_timer: cleanup_timer}
-
-        {:noreply, final_state}
-
-      {:error, reason} ->
-        Log.error("Failed to perform cleanup: #{inspect(reason)}")
-
-        # Schedule next cleanup anyway
-        cleanup_timer =
-          Process.send_after(self(), :cleanup_expired, state.cleanup_interval)
-
-        updated_state = %{state | cleanup_timer: cleanup_timer}
-
-        {:noreply, updated_state}
+    if cleanup_count > 0 do
+      Log.info("Cleaned up #{cleanup_count} expired sessions")
     end
+
+    # Schedule next cleanup
+    cleanup_timer =
+      Process.send_after(self(), :cleanup_expired, state.cleanup_interval)
+
+    final_state = %{updated_state | cleanup_timer: cleanup_timer}
+
+    {:noreply, final_state}
   end
 
   @impl true
