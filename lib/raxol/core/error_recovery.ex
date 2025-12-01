@@ -267,16 +267,26 @@ defmodule Raxol.Core.ErrorRecovery do
           any()
   defp execute_with_circuit(circuit_name, fun, _timeout, _threshold) do
     case safe_execute(fun) do
-      {:ok, result} ->
+      {:ok, {:ok, _} = success_result} ->
         GenServer.call(__MODULE__, {:record_success, circuit_name})
-        {:ok, result}
+        success_result
 
-      error ->
+      {:ok, {:error, _} = error_result} ->
+        GenServer.call(__MODULE__, {:record_failure, circuit_name})
+        error_result
+
+      {:ok, {:error, _type, _msg, _context} = error_result} ->
+        GenServer.call(__MODULE__, {:record_failure, circuit_name})
+        error_result
+
+      {:ok, other} ->
+        GenServer.call(__MODULE__, {:record_success, circuit_name})
+        {:ok, other}
+
+      {:error, type, msg, context} ->
         GenServer.call(__MODULE__, {:record_failure, circuit_name})
 
-        {:error, _type, msg, context} = error
-
-        {:error, :circuit_failure, msg,
+        {:error, :circuit_failure, "#{type}: #{msg}",
          Map.put(context, :circuit, circuit_name)}
     end
   end

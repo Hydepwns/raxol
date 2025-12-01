@@ -2,8 +2,8 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
   use ExUnit.Case
   
   setup_all do
-    start_supervised!({Raxol.Terminal.Window.UnifiedWindow, %{}})
-    start_supervised!({Raxol.Terminal.IO.IOServer, %{}})
+    start_supervised!({Raxol.Terminal.Window.WindowServer, [name: Raxol.Terminal.Window.WindowServer]})
+    start_supervised!({Raxol.Terminal.IO.IOServer, [name: Raxol.Terminal.IO.IOServer]})
     :ok
   end
 
@@ -14,9 +14,6 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
   end
 
   alias Raxol.UI.Components.Terminal.Emulator, as: EmulatorComponent
-  alias Raxol.Terminal.{ScreenBuffer, Cursor, Cell}
-  alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.Emulator, as: CoreEmulator
 
   # Helper function to create a proper test initial state
   defp create_test_initial_state do
@@ -84,7 +81,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
 
   test ~c"processes basic input", %{initial_state: initial_state} do
     # Process input and verify it returns a tuple
-    {updated_state, output} =
+    {updated_state, _output} =
       EmulatorComponent.process_input("Hello", initial_state)
 
     # Verify the structure
@@ -113,11 +110,6 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
   test ~c"handles cursor movement", %{initial_state: initial_state} do
     # Use the shared initial state instead of creating a new one
     result = EmulatorComponent.process_input("\e[5;10H", initial_state)
-    {new_state, output} = result
-
-    # For debugging, let's just check the structure if it's a tuple
-    if is_tuple(result) do
-    end
 
     # Re-add a simple assertion to ensure the test runs and we see output
     assert match?({_, _}, result)

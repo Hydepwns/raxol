@@ -9,6 +9,14 @@ defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
     reloading_enabled =
       Keyword.has_key?(context[:tags] || [], :enable_plugin_reloading)
 
+    # Start ErrorRecovery if not already running
+    case Process.whereis(Raxol.Core.ErrorRecovery) do
+      nil ->
+        {:ok, _} = Raxol.Core.ErrorRecovery.start_link(name: Raxol.Core.ErrorRecovery)
+      _pid ->
+        :ok
+    end
+
     {:ok, _pid} =
       Manager.start_link(
         name: Manager,

@@ -120,10 +120,34 @@ defmodule Raxol.Core.ErrorHandler do
           fun
         )
 
+      {:error, {:exit, reason}} ->
+        handle_rescued_error(
+          operation,
+          {:exit, reason},
+          context,
+          severity,
+          fallback,
+          retries_left,
+          retry_delay,
+          fun
+        )
+
       {:error, {error, _stacktrace}} ->
         handle_rescued_error(
           operation,
           error,
+          context,
+          severity,
+          fallback,
+          retries_left,
+          retry_delay,
+          fun
+        )
+
+      {:error, other_error} ->
+        handle_rescued_error(
+          operation,
+          other_error,
           context,
           severity,
           fallback,

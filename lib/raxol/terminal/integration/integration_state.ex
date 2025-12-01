@@ -45,8 +45,26 @@ defmodule Raxol.Terminal.Integration.State do
   Creates a new integration state with the given options.
   """
   @spec new(map()) :: t()
-  def new(_opts \\ []) do
-    # Create a new integration state
+  def new(opts \\ [])
+
+  def new(%{buffer_manager: bm, cursor_manager: cm, renderer: r} = params) do
+    # Use passed components directly
+    %__MODULE__{
+      buffer_manager: bm,
+      cursor_manager: cm,
+      renderer: r,
+      scroll_buffer: Map.get(params, :scroll_buffer),
+      config: Map.get(params, :config, Config.default_config()),
+      window: nil,
+      window_manager: nil,
+      buffer: nil,
+      input: nil,
+      output: nil
+    }
+  end
+
+  def new(_opts) do
+    # Fallback: Create a new integration state
     # Only create window if Manager process is running
     case Process.whereis(Manager) do
       nil ->
