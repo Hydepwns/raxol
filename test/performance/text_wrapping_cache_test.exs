@@ -6,10 +6,10 @@ defmodule Raxol.Performance.TextWrappingCacheTest do
   alias Raxol.Performance.ETSCacheManager
 
   setup do
-    # Ensure cache manager is running
-    case Process.whereis(ETSCacheManager) do
-      nil -> {:ok, _} = ETSCacheManager.start_link()
-      _pid -> :ok
+    # Ensure cache manager is running with name for GenServer.call
+    case ETSCacheManager.start_link(name: ETSCacheManager) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
     end
 
     # Warm up font metrics cache

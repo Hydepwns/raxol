@@ -153,14 +153,18 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
         state
       ) do
     context = Keyword.get(opts, :context, :global)
-    priority = Keyword.get(opts, :priority, 0)
+    priority = Keyword.get(opts, :priority, :medium)
+    description = Keyword.get(opts, :description, "")
 
     shortcut_entry = %{
       name: name,
       callback: callback,
       context: context,
       priority: priority,
-      shortcut: shortcut
+      shortcut: shortcut,
+      raw: shortcut,
+      description: description,
+      key_combo: parse_key_combo(shortcut)
     }
 
     new_shortcuts =
@@ -245,12 +249,18 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
 
   @impl true
   def handle_manager_call(
-        {:unregister_shortcut, shortcut, context},
+        {:unregister_shortcut, name, context},
         _from,
         state
       ) do
-    key = {context, shortcut}
-    new_shortcuts = Map.delete(state.shortcuts, key)
+    # Find and remove shortcut by name in the given context
+    new_shortcuts =
+      state.shortcuts
+      |> Enum.reject(fn {{ctx, _key}, entry} ->
+        ctx == context and entry.name == name
+      end)
+      |> Map.new()
+
     new_state = %{state | shortcuts: new_shortcuts}
     {:reply, :ok, new_state}
   end
@@ -265,12 +275,16 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
   end
 
   defp find_and_execute_shortcut(state, event) do
-    key = {state.active_context, event}
+    # Convert event to shortcut string format for lookup
+    shortcut_string = event_to_shortcut_string(event)
 
-    case Map.get(state.shortcuts, key) do
+    # First try context-specific shortcut
+    context_key = {state.active_context, shortcut_string}
+
+    case Map.get(state.shortcuts, context_key) do
       nil ->
         # Try global context fallback
-        global_key = {:global, event}
+        global_key = {:global, shortcut_string}
 
         case Map.get(state.shortcuts, global_key) do
           nil -> :not_handled
@@ -281,6 +295,27 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
         execute_shortcut_callback(entry)
     end
   end
+
+  defp event_to_shortcut_string(%{data: {:key, key, modifiers}}) do
+    # Convert event data to shortcut string format like "Ctrl+S"
+    modifier_strings =
+      modifiers
+      |> Enum.map(fn
+        :ctrl -> "Ctrl"
+        :alt -> "Alt"
+        :shift -> "Shift"
+        :meta -> "Meta"
+        other -> other |> to_string() |> String.capitalize()
+      end)
+
+    key_string = key |> to_string() |> String.upcase()
+
+    (modifier_strings ++ [key_string])
+    |> Enum.join("+")
+  end
+
+  defp event_to_shortcut_string(%{data: data}) when is_binary(data), do: data
+  defp event_to_shortcut_string(_), do: ""
 
   defp execute_shortcut_callback(entry) do
     try do
@@ -302,22 +337,91 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
   defp filter_shortcuts_by_context(shortcuts, context) do
     shortcuts
     |> Enum.filter(fn {{ctx, _key}, _entry} ->
-      ctx == context or ctx == :global
+      ctx == context
+    end)
+    |> Enum.map(fn {{_ctx, key}, entry} ->
+      # Normalize key to lowercase with underscores
+      normalized_key = normalize_shortcut_key(key)
+      {normalized_key, entry}
     end)
     |> Map.new()
   end
 
+  defp normalize_shortcut_key(key) when is_binary(key) do
+    # Split, sort modifiers, rejoin for consistent key format
+    parts =
+      key
+      |> String.split("+")
+      |> Enum.map(&String.downcase/1)
+      |> Enum.map(&String.trim/1)
+
+    {modifiers, keys} =
+      Enum.split_with(parts, fn part ->
+        part in ["ctrl", "alt", "shift", "meta", "cmd", "command", "super"]
+      end)
+
+    (Enum.sort(modifiers) ++ keys)
+    |> Enum.join("_")
+  end
+
+  defp normalize_shortcut_key(key), do: inspect(key)
+
+  defp parse_key_combo(shortcut) when is_binary(shortcut) do
+    parts =
+      shortcut
+      |> String.split("+")
+      |> Enum.map(&String.trim/1)
+      |> Enum.map(&String.downcase/1)
+
+    {modifiers, keys} =
+      Enum.split_with(parts, fn part ->
+        part in ["ctrl", "alt", "shift", "meta", "cmd", "command", "super"]
+      end)
+
+    key =
+      case keys do
+        [k | _] -> String.to_atom(k)
+        [] -> nil
+      end
+
+    modifier_atoms =
+      modifiers
+      |> Enum.map(fn
+        "ctrl" -> :ctrl
+        "alt" -> :alt
+        "shift" -> :shift
+        "meta" -> :meta
+        "cmd" -> :meta
+        "command" -> :meta
+        "super" -> :meta
+        other -> String.to_atom(other)
+      end)
+      |> Enum.sort()
+
+    %{key: key, modifiers: modifier_atoms}
+  end
+
+  defp parse_key_combo(_), do: %{key: nil, modifiers: []}
+
   defp build_shortcuts_help(shortcuts, active_context) do
     relevant_shortcuts = filter_shortcuts_by_context(shortcuts, active_context)
 
-    relevant_shortcuts
-    |> Enum.map(fn {{_context, key}, entry} ->
-      "#{format_key(key)}: #{entry.name}"
-    end)
-    |> Enum.sort()
-    |> Enum.join("\n")
-  end
+    context_name =
+      case active_context do
+        :global -> "Global"
+        ctx -> ctx |> to_string() |> String.capitalize()
+      end
 
-  defp format_key(key) when is_binary(key), do: key
-  defp format_key(key), do: inspect(key)
+    header = "Available keyboard shortcuts for #{context_name}:\n"
+
+    shortcut_lines =
+      relevant_shortcuts
+      |> Enum.map(fn {_normalized_key, entry} ->
+        "#{entry.raw}: #{entry.description || entry.name}"
+      end)
+      |> Enum.sort()
+      |> Enum.join("\n")
+
+    header <> shortcut_lines
+  end
 end
