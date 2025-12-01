@@ -4,12 +4,13 @@ defmodule Clock do
   # use Raxol.View
   import Raxol.View
 
-  alias Raxol.{EventManager, Window}
+  alias Raxol.Core.Events.EventManager
+  alias Raxol.Window
 
   def start do
     {:ok, _pid} = Window.start_link()
-    {:ok, _pid} = EventManager.start_link()
-    :ok = EventManager.subscribe(self())
+    {:ok, _pid} = EventManager.start_link(name: EventManager)
+    {:ok, _ref} = EventManager.subscribe([:keyboard])
     loop()
   end
 

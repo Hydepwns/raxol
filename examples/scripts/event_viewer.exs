@@ -15,7 +15,8 @@ defmodule EventViewer do
   # use Raxol.View
   import Raxol.View
 
-  alias Raxol.{EventManager, Window}
+  alias Raxol.Core.Events.EventManager
+  alias Raxol.Window
 
   # Removed alias Raxol.View as import Raxol.View is used
 
@@ -27,8 +28,8 @@ defmodule EventViewer do
 
   def start do
     {:ok, _pid} = Window.start_link(input_mode: @input_mode)
-    {:ok, _pid} = EventManager.start_link()
-    :ok = EventManager.subscribe(self())
+    {:ok, _pid} = EventManager.start_link(name: EventManager)
+    {:ok, _ref} = EventManager.subscribe([:keyboard, :mouse, :resize])
 
     # Initial update removed, first event will render
     # :ok = Window.update(layout())
@@ -38,7 +39,7 @@ defmodule EventViewer do
   def loop do
     receive do
       {:event, %{ch: ?q}} ->
-        :ok = EventManager.stop()
+        :ok = EventManager.cleanup()
         :ok = Window.close()
 
       {:event, %{} = event} ->

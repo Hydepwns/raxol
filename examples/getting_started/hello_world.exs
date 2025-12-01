@@ -5,7 +5,8 @@
 #
 # Run this example with: mix run examples/without-runtime/hello_world.exs
 
-alias Raxol.{EventManager, Window}
+alias Raxol.Core.Events.EventManager
+alias Raxol.Window
 # No longer using the `view` macro directly
 # use Raxol.View
 
@@ -17,10 +18,10 @@ import Raxol.View
 
 # Next, we start the event manager, which will translate terminal events into
 # Elixir messages for our process.
-{:ok, _pid} = EventManager.start_link()
+{:ok, _pid} = EventManager.start_link(name: EventManager)
 
 # Let's subscribe `self()` to receive events from the event manager.
-:ok = EventManager.subscribe(self())
+:ok = EventManager.subscribe([:keyboard])
 
 # Now we define the view using the ~V sigil.
 # view do
