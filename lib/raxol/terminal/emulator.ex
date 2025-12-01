@@ -714,17 +714,6 @@ defmodule Raxol.Terminal.Emulator do
       {updated_emulator, output} when is_list(output) ->
         # Convert list output to string for backward compatibility
         {updated_emulator, IO.iodata_to_binary(output)}
-
-      {updated_emulator, output, _extra} ->
-        # Handle unexpected 3-tuple by ignoring extra element
-        output_str =
-          if is_list(output), do: IO.iodata_to_binary(output), else: output
-
-        {updated_emulator, output_str}
-
-      _other ->
-        # Return the original emulator with empty output instead of erroring
-        {emulator, ""}
     end
   end
 

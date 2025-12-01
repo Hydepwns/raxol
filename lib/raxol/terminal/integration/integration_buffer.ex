@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Integration.Buffer do
   """
   def clear(%State{} = state) do
     # Clear the buffer manager
-    {:ok, buffer_manager} = Manager.clear(state.buffer_manager)
+    buffer_manager = Manager.clear(state.buffer_manager)
 
     # Reset the cursor position
     cursor_manager = Manager.reset_position(state.cursor_manager)
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Integration.Buffer do
     scroll_buffer = Scroll.scroll(state.scroll_buffer, direction, amount)
 
     # Update the buffer manager's visible region
-    {:ok, buffer_manager} =
+    buffer_manager =
       Manager.update_visible_region(
         state.buffer_manager,
         Scroll.get_visible_region(scroll_buffer)
@@ -115,8 +115,7 @@ defmodule Raxol.Terminal.Integration.Buffer do
   """
   def resize(%State{} = state, width, height) do
     # Resize the buffer manager
-    {:ok, buffer_manager} =
-      Manager.resize(state.buffer_manager, width, height)
+    buffer_manager = Manager.resize(state.buffer_manager, width, height)
 
     # Update the scroll buffer
     scroll_buffer = Scroll.resize(state.scroll_buffer, height)

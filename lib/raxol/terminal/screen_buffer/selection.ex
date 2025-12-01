@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   """
 
   alias Raxol.Terminal.ScreenBuffer.Core
+  alias Raxol.Terminal.ScreenBuffer.SharedOperations
   alias Raxol.Terminal.Cell
 
   @type selection ::
@@ -51,7 +52,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   def get_selection(buffer) do
     case buffer.selection do
       nil -> nil
-      {x1, y1, x2, y2} -> normalize_selection(x1, y1, x2, y2)
+      {x1, y1, x2, y2} -> SharedOperations.normalize_selection(x1, y1, x2, y2)
     end
   end
 
@@ -73,7 +74,14 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
         false
 
       {start_x, start_y, end_x, end_y} ->
-        position_in_selection?(x, y, start_x, start_y, end_x, end_y)
+        SharedOperations.position_in_selection?(
+          x,
+          y,
+          start_x,
+          start_y,
+          end_x,
+          end_y
+        )
     end
   end
 
@@ -200,14 +208,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
 
   # Private helper functions
 
-  defp normalize_selection(x1, y1, x2, y2) do
-    if y1 < y2 or (y1 == y2 and x1 <= x2) do
-      {x1, y1, x2, y2}
-    else
-      {x2, y2, x1, y1}
-    end
-  end
-
   defp extract_text_region(buffer, start_x, start_y, end_x, end_y) do
     lines = extract_lines_region(buffer, start_x, start_y, end_x, end_y)
     Enum.join(lines, "\n")
@@ -300,16 +300,5 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
 
   defp word_char?(char) do
     String.match?(char, ~r/[a-zA-Z0-9_]/)
-  end
-
-  defp position_in_selection?(x, y, start_x, start_y, end_x, end_y) do
-    cond do
-      y < start_y or y > end_y -> false
-      y > start_y and y < end_y -> true
-      y == start_y and y == end_y -> x >= start_x and x <= end_x
-      y == start_y -> x >= start_x
-      y == end_y -> x <= end_x
-      true -> false
-    end
   end
 end

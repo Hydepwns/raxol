@@ -185,10 +185,11 @@ defmodule Raxol.Terminal.Emulator.EmulatorState do
   end
 
   defp validate_state(%EmulatorStruct{charset_state: charset_state}) do
+    # Validate charset state - returns {:ok, state} or {:error, reason}
     case Raxol.Terminal.ANSI.CharacterSets.StateManager.validate_state(
            charset_state
          ) do
-      :ok -> :ok
+      {:ok, _state} -> :ok
       {:error, reason} -> {:error, reason}
     end
   end

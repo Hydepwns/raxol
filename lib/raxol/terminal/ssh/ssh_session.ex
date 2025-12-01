@@ -789,7 +789,9 @@ else
     # BaseManager callbacks (required)
     @impl true
     def init_manager(_) do
-      {:stop, :ssh_not_available}
+      # SSH not available - return a dummy state
+      # All operations will return {:error, :ssh_not_available}
+      {:ok, %{ssh_available: false}}
     end
 
     @impl true

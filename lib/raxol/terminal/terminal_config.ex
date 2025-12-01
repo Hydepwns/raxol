@@ -296,13 +296,8 @@ defmodule Raxol.Terminal.Config do
   The updated configuration with merged options.
   """
   def merge_opts(config, opts) when is_map(opts) do
-    case validate_config(opts) do
-      :ok ->
-        do_merge_opts(config, opts)
-
-      {:error, reason} ->
-        raise ArgumentError, "Invalid config options: #{inspect(reason)}"
-    end
+    :ok = validate_config(opts)
+    do_merge_opts(config, opts)
   end
 
   @doc """

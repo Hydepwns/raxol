@@ -187,7 +187,7 @@ defmodule Raxol.Terminal.TerminalServer do
     # Initialize subsystems
     # BufferManager is a functional module, not a GenServer
     {:ok, state_manager} = Raxol.Core.StateManager.start_link([])
-    {:ok, event_manager} = EventManager.start_link()
+    {:ok, event_manager} = EventManager.start_link(name: EventManager)
 
     # Initialize state
     state = %__MODULE__{
@@ -390,25 +390,22 @@ defmodule Raxol.Terminal.TerminalServer do
 
       session ->
         # Process input through emulator
-        case process_emulator_input(session.emulator, input) do
-          {:ok, updated_emulator, output} ->
-            # Update session
-            updated_session = %{
-              session
-              | emulator: updated_emulator,
-                last_activity: DateTime.utc_now()
-            }
+        {:ok, updated_emulator, output} =
+          process_emulator_input(session.emulator, input)
 
-            updated_sessions =
-              Map.put(state.sessions, session_id, updated_session)
+        # Update session
+        updated_session = %{
+          session
+          | emulator: updated_emulator,
+            last_activity: DateTime.utc_now()
+        }
 
-            updated_state = %{state | sessions: updated_sessions}
+        updated_sessions =
+          Map.put(state.sessions, session_id, updated_session)
 
-            {:ok, output, updated_state}
+        updated_state = %{state | sessions: updated_sessions}
 
-          {:error, reason} ->
-            {:error, reason}
-        end
+        {:ok, output, updated_state}
     end
   end
 

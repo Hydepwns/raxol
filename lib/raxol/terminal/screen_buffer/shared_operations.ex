@@ -128,4 +128,55 @@ defmodule Raxol.Terminal.ScreenBuffer.SharedOperations do
   defp within_bounds?(buffer, x, y) do
     x >= 0 and y >= 0 and x < buffer.width and y < buffer.height
   end
+
+  @doc """
+  Normalizes selection coordinates so that start is always before end.
+  Returns {start_x, start_y, end_x, end_y} in proper order.
+
+  ## Parameters
+    - x1, y1: First selection point
+    - x2, y2: Second selection point
+
+  ## Returns
+    Tuple with normalized coordinates {start_x, start_y, end_x, end_y}
+  """
+  @spec normalize_selection(integer(), integer(), integer(), integer()) ::
+          {integer(), integer(), integer(), integer()}
+  def normalize_selection(x1, y1, x2, y2) do
+    if y1 < y2 or (y1 == y2 and x1 <= x2) do
+      {x1, y1, x2, y2}
+    else
+      {x2, y2, x1, y1}
+    end
+  end
+
+  @doc """
+  Checks if a position (x, y) is within the selection boundaries.
+
+  ## Parameters
+    - x, y: Position to check
+    - start_x, start_y: Selection start coordinates
+    - end_x, end_y: Selection end coordinates
+
+  ## Returns
+    Boolean indicating if position is within selection
+  """
+  @spec position_in_selection?(
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer()
+        ) :: boolean()
+  def position_in_selection?(x, y, start_x, start_y, end_x, end_y) do
+    cond do
+      y < start_y or y > end_y -> false
+      y > start_y and y < end_y -> true
+      y == start_y and y == end_y -> x >= start_x and x <= end_x
+      y == start_y -> x >= start_x
+      y == end_y -> x <= end_x
+      true -> false
+    end
+  end
 end

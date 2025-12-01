@@ -155,10 +155,8 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   def handle_erase_line(emulator, mode) do
     alias Raxol.Terminal.Commands.CSIHandler.ScreenHandlers
 
-    case ScreenHandlers.handle_erase_line(emulator, mode) do
-      {:ok, updated_emulator} -> updated_emulator
-      {:error, _reason, fallback_emulator} -> fallback_emulator
-    end
+    {:ok, updated_emulator} = ScreenHandlers.handle_erase_line(emulator, mode)
+    updated_emulator
   end
 
   defp handle_insert_character(emulator, count) do
@@ -727,10 +725,10 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   def handle_erase_display(emulator, mode) do
     alias Raxol.Terminal.Commands.CSIHandler.ScreenHandlers
 
-    case ScreenHandlers.handle_erase_display(emulator, mode) do
-      {:ok, updated_emulator} -> updated_emulator
-      {:error, _reason, fallback_emulator} -> fallback_emulator
-    end
+    {:ok, updated_emulator} =
+      ScreenHandlers.handle_erase_display(emulator, mode)
+
+    updated_emulator
   end
 
   # Missing functions that tests expect

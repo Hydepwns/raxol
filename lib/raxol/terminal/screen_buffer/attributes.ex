@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   """
 
   alias Raxol.Terminal.ScreenBuffer.Core
+  alias Raxol.Terminal.ScreenBuffer.SharedOperations
   alias Raxol.Terminal.ANSI.TextFormatting
 
   # Cursor operations
@@ -427,30 +428,20 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   def in_selection?(buffer, x, y) do
     case buffer.selection do
       {sx, sy, ex, ey} when ex != nil and ey != nil ->
-        {start_x, start_y, end_x, end_y} = normalize_selection(sx, sy, ex, ey)
-        position_in_selection?(x, y, start_x, start_y, end_x, end_y)
+        {start_x, start_y, end_x, end_y} =
+          SharedOperations.normalize_selection(sx, sy, ex, ey)
+
+        SharedOperations.position_in_selection?(
+          x,
+          y,
+          start_x,
+          start_y,
+          end_x,
+          end_y
+        )
 
       _ ->
         false
-    end
-  end
-
-  defp normalize_selection(x1, y1, x2, y2) do
-    if y1 < y2 or (y1 == y2 and x1 <= x2) do
-      {x1, y1, x2, y2}
-    else
-      {x2, y2, x1, y1}
-    end
-  end
-
-  defp position_in_selection?(x, y, start_x, start_y, end_x, end_y) do
-    cond do
-      y < start_y or y > end_y -> false
-      y > start_y and y < end_y -> true
-      y == start_y and y == end_y -> x >= start_x and x <= end_x
-      y == start_y -> x >= start_x
-      y == end_y -> x <= end_x
-      true -> false
     end
   end
 
