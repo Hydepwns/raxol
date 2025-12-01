@@ -6,6 +6,14 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
   alias Raxol.Core.Runtime.Events.Handler, as: Handlers
 
   setup do
+    # Start EventManager first
+    case Raxol.Core.Events.EventManager.start_link(
+           name: Raxol.Core.Events.EventManager
+         ) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
     # Clean up any existing handlers before each test
     ProcessStore.clear()
 

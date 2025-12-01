@@ -67,6 +67,14 @@ defmodule Raxol.AnimationTest do
   setup _context do
     Process.flag(:trap_exit, true)
 
+    # Start EventManager first
+    case Raxol.Core.Events.EventManager.start_link(
+           name: Raxol.Core.Events.EventManager
+         ) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
     # Start AccessibilityServer first with the expected name
     {:ok, _accessibility_pid} =
       start_supervised(
