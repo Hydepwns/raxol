@@ -43,7 +43,7 @@ jobs:
       should-run-heavy: ${{ steps.check-changes.outputs.should-run-heavy }}
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
           fetch-depth: 0  # Need full history for change detection
@@ -107,7 +107,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       
@@ -135,7 +135,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       
@@ -166,7 +166,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       
@@ -219,7 +219,7 @@ jobs:
           --health-retries 5
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       
@@ -261,7 +261,7 @@ jobs:
     if: needs.setup.outputs.should-run-heavy == 'true'
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       
@@ -302,7 +302,7 @@ jobs:
     continue-on-error: true
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       
@@ -332,7 +332,7 @@ jobs:
     continue-on-error: true
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       
@@ -372,7 +372,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       
@@ -419,7 +419,7 @@ jobs:
             platform: windows
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       
@@ -501,7 +501,7 @@ jobs:
     if: false
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       
