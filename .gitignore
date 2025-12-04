@@ -5,6 +5,9 @@
 # If you run "mix test --cover", coverage assets end up here.
 /cover/
 
+# Test-generated themes directory (themes belong in priv/themes/)
+/themes/
+
 # The directory Mix downloads your dependencies sources to.
 /deps/
 /web/deps/
