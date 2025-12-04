@@ -65,31 +65,34 @@ defmodule Mix.Tasks.Raxol.Check do
 
     print_summary(results)
 
-    case Enum.any?(results, fn {_, status} -> status != :ok end) do
+    # Only fail on actual errors, not warnings or skipped checks
+    case Enum.any?(results, fn {_, status} -> status == :error end) do
       true -> Mix.raise("Some checks failed")
       false -> :ok
     end
   end
 
   defp determine_checks(opts) do
-    cond do
-      opts[:only] ->
-        parse_check_list(opts[:only])
+    base_checks =
+      cond do
+        opts[:only] ->
+          parse_check_list(opts[:only])
 
-      opts[:quick] ->
-        @quick_checks
+        opts[:quick] ->
+          @quick_checks
 
-      true ->
-        checks = @all_checks
+        true ->
+          @all_checks
+      end
 
-        case opts[:skip] do
-          nil ->
-            checks
+    # Apply skip filter after determining base checks
+    case opts[:skip] do
+      nil ->
+        base_checks
 
-          skip_str ->
-            skip = parse_check_list(skip_str)
-            Enum.reject(checks, &(&1 in skip))
-        end
+      skip_str ->
+        skip = parse_check_list(skip_str)
+        Enum.reject(base_checks, &(&1 in skip))
     end
   end
 
