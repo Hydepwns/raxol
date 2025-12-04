@@ -2,14 +2,7 @@
 
 # Plugin Memory Benchmark
 # Tests memory usage patterns for plugin system operations
-
-Mix.install([
-  {:benchee, "~> 1.1"},
-  {:jason, "~> 1.4"}
-])
-
-# Add project lib path
-Code.append_path("lib")
+# NOTE: Run with `mix run bench/memory/plugin_memory_benchmark.exs`
 
 defmodule PluginMemoryBenchmark do
   @moduledoc """
@@ -26,16 +19,18 @@ defmodule PluginMemoryBenchmark do
   alias Raxol.Core.Runtime.{PluginManager, EventSystem}
 
   def run_benchmarks(opts \\ []) do
-    config = [
-      time: 3,
-      memory_time: 2,
-      warmup: 1,
-      formatters: [
-        Benchee.Formatters.HTML,
-        Benchee.Formatters.Console,
-        {Benchee.Formatters.JSON, file: "bench/output/plugin_memory.json"}
+    config =
+      [
+        time: 3,
+        memory_time: 2,
+        warmup: 1,
+        formatters: [
+          Benchee.Formatters.HTML,
+          Benchee.Formatters.Console,
+          {Benchee.Formatters.JSON, file: "bench/output/plugin_memory.json"}
+        ]
       ]
-    ] |> Keyword.merge(opts)
+      |> Keyword.merge(opts)
 
     IO.puts("Running Plugin Memory Benchmarks...")
     IO.puts("Config: #{inspect(config)}")
@@ -49,7 +44,9 @@ defmodule PluginMemoryBenchmark do
         "plugin_communication" => fn -> plugin_communication_operations() end,
         "resource_management" => fn -> resource_management_operations() end,
         "plugin_hot_reload" => fn -> plugin_hot_reload_operations() end,
-        "memory_intensive_plugins" => fn -> memory_intensive_plugin_operations() end
+        "memory_intensive_plugins" => fn ->
+          memory_intensive_plugin_operations()
+        end
       },
       config
     )
@@ -70,14 +67,15 @@ defmodule PluginMemoryBenchmark do
 
   # Test loading multiple plugins
   defp multiple_plugin_load do
-    plugins = Enum.map(1..5, fn i ->
-      %{
-        name: "test_plugin_#{i}",
-        version: "1.0.0",
-        module: String.to_atom("TestPlugin#{i}"),
-        config: %{id: i}
-      }
-    end)
+    plugins =
+      Enum.map(1..5, fn i ->
+        %{
+          name: "test_plugin_#{i}",
+          version: "1.0.0",
+          module: String.to_atom("TestPlugin#{i}"),
+          config: %{id: i}
+        }
+      end)
 
     {:ok, _manager} = PluginManager.start_link([])
 
@@ -118,21 +116,23 @@ defmodule PluginMemoryBenchmark do
     {:ok, _event_system} = EventSystem.start_link([])
 
     # Register multiple event handlers
-    handlers = Enum.map(1..10, fn i ->
-      handler_fn = fn event ->
-        # Simulate some processing
-        Process.sleep(1)
-        {:ok, "Processed #{event.type} by handler #{i}"}
-      end
+    handlers =
+      Enum.map(1..10, fn i ->
+        handler_fn = fn event ->
+          # Simulate some processing
+          Process.sleep(1)
+          {:ok, "Processed #{event.type} by handler #{i}"}
+        end
 
-      EventSystem.register_handler("test_event", handler_fn)
-      handler_fn
-    end)
+        EventSystem.register_handler("test_event", handler_fn)
+        handler_fn
+      end)
 
     # Dispatch multiple events
-    events = Enum.map(1..20, fn i ->
-      %{type: "test_event", data: %{id: i, payload: "Event #{i}"}}
-    end)
+    events =
+      Enum.map(1..20, fn i ->
+        %{type: "test_event", data: %{id: i, payload: "Event #{i}"}}
+      end)
 
     Enum.map(events, fn event ->
       EventSystem.dispatch(event)
@@ -164,9 +164,10 @@ defmodule PluginMemoryBenchmark do
     {:ok, plugin_b} = PluginManager.load_plugin(plugin_b_config)
 
     # Simulate inter-plugin communication
-    messages = Enum.map(1..10, fn i ->
-      %{from: "plugin_a", to: "plugin_b", data: "Message #{i}"}
-    end)
+    messages =
+      Enum.map(1..10, fn i ->
+        %{from: "plugin_a", to: "plugin_b", data: "Message #{i}"}
+      end)
 
     Enum.map(messages, fn message ->
       PluginManager.send_message(plugin_a, plugin_b, message)
@@ -180,29 +181,34 @@ defmodule PluginMemoryBenchmark do
     {:ok, _manager} = PluginManager.start_link([])
 
     # Create plugins that manage resources
-    resource_plugins = Enum.map(1..3, fn i ->
-      plugin_config = %{
-        name: "resource_plugin_#{i}",
-        version: "1.0.0",
-        module: String.to_atom("ResourcePlugin#{i}"),
-        config: %{
-          resources: Enum.map(1..5, fn j ->
-            %{id: "resource_#{i}_#{j}", type: "memory", size: 1024 * j}
-          end)
+    resource_plugins =
+      Enum.map(1..3, fn i ->
+        plugin_config = %{
+          name: "resource_plugin_#{i}",
+          version: "1.0.0",
+          module: String.to_atom("ResourcePlugin#{i}"),
+          config: %{
+            resources:
+              Enum.map(1..5, fn j ->
+                %{id: "resource_#{i}_#{j}", type: "memory", size: 1024 * j}
+              end)
+          }
         }
-      }
 
-      {:ok, plugin} = PluginManager.load_plugin(plugin_config)
+        {:ok, plugin} = PluginManager.load_plugin(plugin_config)
 
-      # Allocate resources
-      PluginManager.allocate_resources(plugin)
+        # Allocate resources
+        PluginManager.allocate_resources(plugin)
 
-      plugin
-    end)
+        plugin
+      end)
 
     # Simulate resource usage
     Enum.map(resource_plugins, fn plugin ->
-      PluginManager.use_resources(plugin, %{operation: "process_data", size: 2048})
+      PluginManager.use_resources(plugin, %{
+        operation: "process_data",
+        size: 2048
+      })
     end)
 
     # Cleanup resources
@@ -250,30 +256,32 @@ defmodule PluginMemoryBenchmark do
     {:ok, _manager} = PluginManager.start_link([])
 
     # Create memory-intensive plugins
-    memory_plugins = Enum.map(1..3, fn i ->
-      plugin_config = %{
-        name: "memory_intensive_plugin_#{i}",
-        version: "1.0.0",
-        module: String.to_atom("MemoryIntensivePlugin#{i}"),
-        config: %{
-          memory_size: 1024 * 1024 * i,  # 1MB, 2MB, 3MB
-          operations: 1000
+    memory_plugins =
+      Enum.map(1..3, fn i ->
+        plugin_config = %{
+          name: "memory_intensive_plugin_#{i}",
+          version: "1.0.0",
+          module: String.to_atom("MemoryIntensivePlugin#{i}"),
+          config: %{
+            # 1MB, 2MB, 3MB
+            memory_size: 1024 * 1024 * i,
+            operations: 1000
+          }
         }
-      }
 
-      {:ok, plugin} = PluginManager.load_plugin(plugin_config)
-      PluginManager.start_plugin(plugin)
+        {:ok, plugin} = PluginManager.load_plugin(plugin_config)
+        PluginManager.start_plugin(plugin)
 
-      # Simulate memory-intensive operations
-      large_data = :binary.copy(<<0>>, plugin_config.config.memory_size)
+        # Simulate memory-intensive operations
+        large_data = :binary.copy(<<0>>, plugin_config.config.memory_size)
 
-      Enum.each(1..plugin_config.config.operations, fn _op ->
-        # Simulate processing large data
-        _processed = :crypto.hash(:sha256, large_data)
+        Enum.each(1..plugin_config.config.operations, fn _op ->
+          # Simulate processing large data
+          _processed = :crypto.hash(:sha256, large_data)
+        end)
+
+        {plugin, large_data}
       end)
-
-      {plugin, large_data}
-    end)
 
     # Cleanup
     Enum.each(memory_plugins, fn {plugin, _data} ->
@@ -300,31 +308,37 @@ end
 
 defmodule CommunicationPluginA do
   def init(_config), do: {:ok, %{name: "plugin_a"}}
-  def handle_message(state, message), do: {:ok, state, "Received: #{inspect(message)}"}
+
+  def handle_message(state, message),
+    do: {:ok, state, "Received: #{inspect(message)}"}
 end
 
 defmodule CommunicationPluginB do
   def init(_config), do: {:ok, %{name: "plugin_b"}}
-  def handle_message(state, message), do: {:ok, state, "Processed: #{inspect(message)}"}
+
+  def handle_message(state, message),
+    do: {:ok, state, "Processed: #{inspect(message)}"}
 end
 
 # Parse command line arguments
-{opts, _args, _invalid} = OptionParser.parse(System.argv(),
-  switches: [
-    json: :boolean,
-    time: :integer,
-    memory_time: :integer,
-    warmup: :integer
-  ]
-)
+{opts, _args, _invalid} =
+  OptionParser.parse(System.argv(),
+    switches: [
+      json: :boolean,
+      time: :integer,
+      memory_time: :integer,
+      warmup: :integer
+    ]
+  )
 
 # Configure benchmark options
 benchmark_opts = []
 
 if opts[:json] do
-  benchmark_opts = Keyword.put(benchmark_opts, :formatters, [
-    {Benchee.Formatters.JSON, file: "/dev/stdout"}
-  ])
+  benchmark_opts =
+    Keyword.put(benchmark_opts, :formatters, [
+      {Benchee.Formatters.JSON, file: "/dev/stdout"}
+    ])
 end
 
 if opts[:time] do

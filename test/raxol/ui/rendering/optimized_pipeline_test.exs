@@ -160,6 +160,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipelineTest do
   end
 
   describe "TreeDiffer performance benchmarks" do
+    @tag :slow
     test "meets diff performance targets" do
       # Create trees of varying complexity
       simple_tree = %{type: :view, children: [%{type: :label, attrs: %{text: "Hello"}}]}
@@ -194,6 +195,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipelineTest do
       assert avg_complex_us < 100.0  # < 100μs per complex diff
     end
 
+    @tag :slow
     test "diff algorithm scales efficiently" do
       # Create trees of increasing size
       sizes = [10, 50, 100, 200]

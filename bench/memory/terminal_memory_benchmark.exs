@@ -2,14 +2,7 @@
 
 # Terminal Memory Benchmark
 # Tests memory usage patterns for terminal operations
-
-Mix.install([
-  {:benchee, "~> 1.1"},
-  {:jason, "~> 1.4"}
-])
-
-# Add project lib path
-Code.append_path("lib")
+# NOTE: Run with `mix run bench/memory/terminal_memory_benchmark.exs`
 
 defmodule TerminalMemoryBenchmark do
   @moduledoc """
@@ -25,16 +18,18 @@ defmodule TerminalMemoryBenchmark do
   alias Raxol.Terminal.{Buffer, ANSI.AnsiParser, Cursor.Manager}
 
   def run_benchmarks(opts \\ []) do
-    config = [
-      time: 3,
-      memory_time: 2,
-      warmup: 1,
-      formatters: [
-        Benchee.Formatters.HTML,
-        Benchee.Formatters.Console,
-        {Benchee.Formatters.JSON, file: "bench/output/terminal_memory.json"}
+    config =
+      [
+        time: 3,
+        memory_time: 2,
+        warmup: 1,
+        formatters: [
+          Benchee.Formatters.HTML,
+          Benchee.Formatters.Console,
+          {Benchee.Formatters.JSON, file: "bench/output/terminal_memory.json"}
+        ]
       ]
-    ] |> Keyword.merge(opts)
+      |> Keyword.merge(opts)
 
     IO.puts("Running Terminal Memory Benchmarks...")
     IO.puts("Config: #{inspect(config)}")
@@ -79,6 +74,7 @@ defmodule TerminalMemoryBenchmark do
     # Write multiple lines
     Enum.reduce(1..10, buffer, fn line_num, acc_buffer ->
       content = "Line #{line_num}: #{String.duplicate("test ", 10)}"
+
       case Buffer.write_at(acc_buffer, 0, line_num - 1, content) do
         {:ok, new_buffer} -> new_buffer
         _ -> acc_buffer
@@ -120,13 +116,15 @@ defmodule TerminalMemoryBenchmark do
     {:ok, buffer} = Buffer.create(200, 60)
 
     # Fill buffer with content
-    filled_buffer = Enum.reduce(0..59, buffer, fn row, acc_buffer ->
-      content = String.duplicate("█", 200)
-      case Buffer.write_at(acc_buffer, 0, row, content) do
-        {:ok, new_buffer} -> new_buffer
-        _ -> acc_buffer
-      end
-    end)
+    filled_buffer =
+      Enum.reduce(0..59, buffer, fn row, acc_buffer ->
+        content = String.duplicate("█", 200)
+
+        case Buffer.write_at(acc_buffer, 0, row, content) do
+          {:ok, new_buffer} -> new_buffer
+          _ -> acc_buffer
+        end
+      end)
 
     # Render the buffer
     Buffer.render(filled_buffer)
@@ -135,15 +133,17 @@ defmodule TerminalMemoryBenchmark do
   # Memory intensive operations that stress the system
   defp memory_intensive_operations do
     # Create multiple buffers
-    buffers = Enum.map(1..5, fn _i ->
-      {:ok, buffer} = Buffer.create(100, 30)
-      buffer
-    end)
+    buffers =
+      Enum.map(1..5, fn _i ->
+        {:ok, buffer} = Buffer.create(100, 30)
+        buffer
+      end)
 
     # Process complex ANSI sequences
-    complex_sequences = Enum.map(1..100, fn i ->
-      "\e[#{rem(i, 8) + 30}m\e[#{rem(i, 2) + 1}mComplex #{i}\e[0m"
-    end)
+    complex_sequences =
+      Enum.map(1..100, fn i ->
+        "\e[#{rem(i, 8) + 30}m\e[#{rem(i, 2) + 1}mComplex #{i}\e[0m"
+      end)
 
     parsed_sequences = Enum.map(complex_sequences, &AnsiParser.parse/1)
 
@@ -153,22 +153,24 @@ defmodule TerminalMemoryBenchmark do
 end
 
 # Parse command line arguments
-{opts, _args, _invalid} = OptionParser.parse(System.argv(),
-  switches: [
-    json: :boolean,
-    time: :integer,
-    memory_time: :integer,
-    warmup: :integer
-  ]
-)
+{opts, _args, _invalid} =
+  OptionParser.parse(System.argv(),
+    switches: [
+      json: :boolean,
+      time: :integer,
+      memory_time: :integer,
+      warmup: :integer
+    ]
+  )
 
 # Configure benchmark options
 benchmark_opts = []
 
 if opts[:json] do
-  benchmark_opts = Keyword.put(benchmark_opts, :formatters, [
-    {Benchee.Formatters.JSON, file: "/dev/stdout"}
-  ])
+  benchmark_opts =
+    Keyword.put(benchmark_opts, :formatters, [
+      {Benchee.Formatters.JSON, file: "/dev/stdout"}
+    ])
 end
 
 if opts[:time] do
