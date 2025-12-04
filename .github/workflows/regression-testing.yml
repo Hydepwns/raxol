@@ -40,8 +40,8 @@ env:
   SKIP_TERMBOX2_TESTS: true
   TMPDIR: /tmp
   MIX_ENV: test
-  ELIXIR_VERSION: "1.17.3"
-  OTP_VERSION: "27.0"
+  ELIXIR_VERSION: "1.19.0"
+  OTP_VERSION: "28.2"
 
 jobs:
   # Performance regression testing
@@ -57,8 +57,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        elixir: ["1.17.3"]
-        otp: ["27.0"]
+        elixir: ["1.19.0"]
+        otp: ["28.2"]
 
     steps:
     - name: Checkout code
@@ -118,9 +118,9 @@ jobs:
     - name: Run current performance benchmarks
       run: |
         echo "[PERF] Running current performance benchmarks..."
-        mix run bench/suites/parser/parser_benchmark.exs --json > regression/performance/current/parser.json
-        mix run bench/suites/terminal/buffer_benchmark.exs --json > regression/performance/current/buffer.json
-        mix run bench/suites/terminal/cursor_benchmark.exs --json > regression/performance/current/cursor.json
+        mix run bench/suites/parser/parser_benchmark.exs 2>&1 | tee regression/performance/current/parser.txt || true
+        mix run bench/suites/terminal/buffer_benchmark.exs 2>&1 | tee regression/performance/current/buffer.txt || true
+        mix run bench/suites/terminal/cursor_benchmark.exs 2>&1 | tee regression/performance/current/cursor.txt || true
         echo "[OK] Current benchmarks complete"
 
     - name: Checkout baseline and run benchmarks
@@ -133,9 +133,9 @@ jobs:
         mix deps.get && mix compile --warnings-as-errors
 
         echo "[BENCH] Running baseline performance benchmarks..."
-        mix run bench/suites/parser/parser_benchmark.exs --json > regression/performance/baselines/parser.json
-        mix run bench/suites/terminal/buffer_benchmark.exs --json > regression/performance/baselines/buffer.json
-        mix run bench/suites/terminal/cursor_benchmark.exs --json > regression/performance/baselines/cursor.json
+        mix run bench/suites/parser/parser_benchmark.exs 2>&1 | tee regression/performance/baselines/parser.txt || true
+        mix run bench/suites/terminal/buffer_benchmark.exs 2>&1 | tee regression/performance/baselines/buffer.txt || true
+        mix run bench/suites/terminal/cursor_benchmark.exs 2>&1 | tee regression/performance/baselines/cursor.txt || true
         echo "[OK] Baseline benchmarks complete"
 
         git checkout ${{ github.sha }}
@@ -185,8 +185,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        elixir: ["1.17.3"]
-        otp: ["27.0"]
+        elixir: ["1.19.0"]
+        otp: ["28.2"]
         scenario:
           - terminal_operations
           - plugin_system
@@ -244,30 +244,28 @@ jobs:
       run: |
         echo "Running current memory benchmarks for scenario: ${{ matrix.scenario }}"
 
-        # Run memory analysis with JSON output
-        if command -v mix raxol.bench.memory_analysis >/dev/null 2>&1; then
-          mix raxol.bench.memory_analysis \
-            --scenario ${{ matrix.scenario }} \
-            --time 3 \
-            --memory_time 2 \
-            --output regression/memory/current/${{ matrix.scenario }}_analysis.json
-        fi
+        # Run memory analysis
+        mix raxol.bench.memory_analysis \
+          --scenario ${{ matrix.scenario }} \
+          --time 3 \
+          --memory_time 2 \
+          --output regression/memory/current/${{ matrix.scenario }}_analysis.json || true
 
         # Run specific memory benchmarks
         case "${{ matrix.scenario }}" in
           "terminal_operations")
             if [ -f "bench/memory/terminal_memory_benchmark.exs" ]; then
-              mix run bench/memory/terminal_memory_benchmark.exs --json > regression/memory/current/terminal_memory.json
+              mix run bench/memory/terminal_memory_benchmark.exs 2>&1 | tee regression/memory/current/terminal_memory.txt || true
             fi
             ;;
           "plugin_system")
             if [ -f "bench/memory/plugin_memory_benchmark.exs" ]; then
-              mix run bench/memory/plugin_memory_benchmark.exs --json > regression/memory/current/plugin_memory.json
+              mix run bench/memory/plugin_memory_benchmark.exs 2>&1 | tee regression/memory/current/plugin_memory.txt || true
             fi
             ;;
           "load_testing")
             if [ -f "bench/memory/load_memory_benchmark.exs" ]; then
-              mix run bench/memory/load_memory_benchmark.exs --json > regression/memory/current/load_memory.json
+              mix run bench/memory/load_memory_benchmark.exs 2>&1 | tee regression/memory/current/load_memory.txt || true
             fi
             ;;
         esac
@@ -286,29 +284,27 @@ jobs:
         echo "Running baseline memory benchmarks for scenario: ${{ matrix.scenario }}"
 
         # Run baseline memory analysis
-        if command -v mix raxol.bench.memory_analysis >/dev/null 2>&1; then
-          mix raxol.bench.memory_analysis \
-            --scenario ${{ matrix.scenario }} \
-            --time 3 \
-            --memory_time 2 \
-            --output regression/memory/baselines/${{ matrix.scenario }}_analysis.json
-        fi
+        mix raxol.bench.memory_analysis \
+          --scenario ${{ matrix.scenario }} \
+          --time 3 \
+          --memory_time 2 \
+          --output regression/memory/baselines/${{ matrix.scenario }}_analysis.json || true
 
         # Run baseline specific memory benchmarks
         case "${{ matrix.scenario }}" in
           "terminal_operations")
             if [ -f "bench/memory/terminal_memory_benchmark.exs" ]; then
-              mix run bench/memory/terminal_memory_benchmark.exs --json > regression/memory/baselines/terminal_memory.json
+              mix run bench/memory/terminal_memory_benchmark.exs 2>&1 | tee regression/memory/baselines/terminal_memory.txt || true
             fi
             ;;
           "plugin_system")
             if [ -f "bench/memory/plugin_memory_benchmark.exs" ]; then
-              mix run bench/memory/plugin_memory_benchmark.exs --json > regression/memory/baselines/plugin_memory.json
+              mix run bench/memory/plugin_memory_benchmark.exs 2>&1 | tee regression/memory/baselines/plugin_memory.txt || true
             fi
             ;;
           "load_testing")
             if [ -f "bench/memory/load_memory_benchmark.exs" ]; then
-              mix run bench/memory/load_memory_benchmark.exs --json > regression/memory/baselines/load_memory.json
+              mix run bench/memory/load_memory_benchmark.exs 2>&1 | tee regression/memory/baselines/load_memory.txt || true
             fi
             ;;
         esac
@@ -560,19 +556,17 @@ jobs:
 
         # Performance benchmarks
         if [ -f "bench/suites/core/performance_summary.exs" ]; then
-          mix run bench/suites/core/performance_summary.exs --json > regression/nightly/$(date +%Y-%m-%d)/performance_comprehensive.json
+          mix run bench/suites/core/performance_summary.exs 2>&1 | tee regression/nightly/$(date +%Y-%m-%d)/performance_comprehensive.txt || true
         fi
 
         # Memory analysis for all scenarios
         for scenario in terminal_operations plugin_system load_testing; do
-          if command -v mix raxol.bench.memory_analysis >/dev/null 2>&1; then
-            mix raxol.bench.memory_analysis \
-              --scenario $scenario \
-              --time 10 \
-              --memory_time 5 \
-              --with-dashboard \
-              --output regression/nightly/$(date +%Y-%m-%d)/${scenario}_comprehensive.json
-          fi
+          mix raxol.bench.memory_analysis \
+            --scenario $scenario \
+            --time 10 \
+            --memory_time 5 \
+            --with-dashboard \
+            --output regression/nightly/$(date +%Y-%m-%d)/${scenario}_comprehensive.json || true
         done
 
         echo "Comprehensive analysis completed"

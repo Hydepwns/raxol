@@ -8,8 +8,8 @@ env:
   MIX_ENV: test
   SKIP_TERMBOX2_TESTS: true
   TMPDIR: /tmp
-  ELIXIR_VERSION: "1.17.3"
-  OTP_VERSION: "27.0"
+  ELIXIR_VERSION: "1.19.0"
+  OTP_VERSION: "28.2"
 
 on:
   push:
