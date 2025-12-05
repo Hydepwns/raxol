@@ -89,22 +89,22 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
   end
 
   defp handle_sequence_type({:csi_cursor_up, params, remaining, _}, emulator) do
-    {CursorHandler.handle_A(params, emulator), remaining}
+    {CursorHandler.handle_a(params, emulator), remaining}
   end
 
   defp handle_sequence_type({:csi_cursor_down, params, remaining, _}, emulator) do
-    {CursorHandler.handle_B(params, emulator), remaining}
+    {CursorHandler.handle_b(params, emulator), remaining}
   end
 
   defp handle_sequence_type(
          {:csi_cursor_forward, params, remaining, _},
          emulator
        ) do
-    {CursorHandler.handle_C(params, emulator), remaining}
+    {CursorHandler.handle_c(params, emulator), remaining}
   end
 
   defp handle_sequence_type({:csi_cursor_back, params, remaining, _}, emulator) do
-    {CursorHandler.handle_D(params, emulator), remaining}
+    {CursorHandler.handle_d_cub(params, emulator), remaining}
   end
 
   defp handle_sequence_type({:csi_cursor_show, remaining, _}, emulator) do
@@ -192,10 +192,10 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
       "handle_sequence_type cursor_horizontal_absolute col=#{inspect(col)}"
     )
 
-    result = CursorHandler.handle_G(emulator, [col + 1])
+    result = CursorHandler.handle_cha(emulator, [col + 1])
 
     Raxol.Core.Runtime.Log.debug(
-      "CursorHandler.handle_G result: #{inspect(result)}"
+      "CursorHandler.handle_cha result: #{inspect(result)}"
     )
 
     case result do

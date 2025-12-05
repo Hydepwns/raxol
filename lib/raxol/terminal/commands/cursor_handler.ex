@@ -147,8 +147,8 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
   @spec handle_g(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_g(emulator, params) do
-    # handle_g is the same as handle_G (Cursor Horizontal Absolute)
-    handle_G(emulator, params)
+    # handle_g is the same as handle_cha (Cursor Horizontal Absolute)
+    handle_cha(emulator, params)
   end
 
   @doc """
@@ -430,7 +430,7 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
   @doc """
   Handles CSI A - Cursor Up (CUU)
   """
-  def handle_A(emulator, params) do
+  def handle_a(emulator, params) do
     count = get_valid_pos_param(params, 0, 1)
     {:ok, move_cursor_up(emulator, count)}
   end
@@ -438,7 +438,7 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
   @doc """
   Handles CSI B - Cursor Down (CUD)
   """
-  def handle_B(emulator, params) do
+  def handle_b(emulator, params) do
     count = get_valid_pos_param(params, 0, 1)
     {:ok, move_cursor_down(emulator, count)}
   end
@@ -446,7 +446,7 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
   @doc """
   Handles CSI C - Cursor Forward (CUF)
   """
-  def handle_C(emulator, params) do
+  def handle_c(emulator, params) do
     count = get_valid_pos_param(params, 0, 1)
     {:ok, move_cursor_forward(emulator, count)}
   end
@@ -454,7 +454,7 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
   @doc """
   Handles CSI D - Cursor Back (CUB)
   """
-  def handle_D(emulator, params) do
+  def handle_d_cub(emulator, params) do
     count = get_valid_pos_param(params, 0, 1)
     {:ok, move_cursor_back(emulator, count)}
   end
@@ -462,7 +462,7 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
   @doc """
   Handles CSI G - Cursor Horizontal Absolute (CHA)
   """
-  def handle_G(emulator, params) do
+  def handle_cha(emulator, params) do
     # Convert to 0-based
     column = get_valid_pos_param(params, 0, 1) - 1
 
@@ -474,7 +474,7 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
   Handles CSI E - Cursor Next Line (CNL)
   Moves cursor to beginning of line n lines down
   """
-  def handle_E(emulator, params) do
+  def handle_e(emulator, params) do
     count = get_valid_pos_param(params, 0, 1)
 
     # Move down by count lines
@@ -494,7 +494,7 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
   Handles CSI F - Cursor Previous Line (CPL)
   Moves cursor to beginning of line n lines up
   """
-  def handle_F(emulator, params) do
+  def handle_cpl(emulator, params) do
     count = get_valid_pos_param(params, 0, 1)
 
     # Move up by count lines
@@ -514,7 +514,7 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
   Handles CSI H - Cursor Position (CUP)
   Sets cursor position to row;column
   """
-  def handle_H(emulator, params) do
+  def handle_h(emulator, params) do
     handle_cup(emulator, params)
   end
 end
