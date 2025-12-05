@@ -125,7 +125,7 @@ defmodule Raxol.Core.ErrorRecovery.DependencyGraph do
   @doc """
   Check if a node is on a critical path.
   """
-  def is_critical?(graph, node_id) do
+  def critical?(graph, node_id) do
     node_id in graph.critical_paths
   end
 
@@ -154,7 +154,7 @@ defmodule Raxol.Core.ErrorRecovery.DependencyGraph do
 
     %{
       affected_count: length(affected_nodes),
-      critical_path_affected: is_critical?(graph, node_id),
+      critical_path_affected: critical?(graph, node_id),
       estimated_downtime: estimate_downtime(node_info, affected_nodes),
       cascade_risk: would_cascade?(graph, node_id)
     }
