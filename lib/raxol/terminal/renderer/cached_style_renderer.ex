@@ -257,16 +257,16 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
     style_map = normalize_style(style_struct)
 
     cond do
-      is_default_style?(style_map) ->
+      default_style?(style_map) ->
         :default
 
-      is_simple_color_style?(style_map) ->
+      simple_color_style?(style_map) ->
         get_simple_color_key(style_map)
 
-      is_simple_attribute_style?(style_map) ->
+      simple_attribute_style?(style_map) ->
         get_simple_attribute_key(style_map)
 
-      is_common_combination?(style_map) ->
+      common_combination?(style_map) ->
         get_combination_key(style_map)
 
       true ->
@@ -274,22 +274,22 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
     end
   end
 
-  defp is_default_style?(style_map) do
+  defp default_style?(style_map) do
     all_default_values?(style_map)
   end
 
-  defp is_simple_color_style?(style_map) do
+  defp simple_color_style?(style_map) do
     has_only_foreground_color?(style_map) and
-      is_basic_color?(Map.get(style_map, :foreground))
+      basic_color?(Map.get(style_map, :foreground))
   end
 
-  defp is_simple_attribute_style?(style_map) do
+  defp simple_attribute_style?(style_map) do
     has_single_text_attribute?(style_map)
   end
 
-  defp is_common_combination?(style_map) do
-    is_bold_color_combination?(style_map) or
-      is_underline_color_combination?(style_map)
+  defp common_combination?(style_map) do
+    bold_color_combination?(style_map) or
+      underline_color_combination?(style_map)
   end
 
   defp build_style_string_optimized(style_struct, theme) do
@@ -340,7 +340,7 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
       Map.get(style_map, :underline, false) == false
   end
 
-  defp is_basic_color?(color)
+  defp basic_color?(color)
        when color in [
               :red,
               :green,
@@ -353,7 +353,7 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
             ],
        do: true
 
-  defp is_basic_color?(_), do: false
+  defp basic_color?(_), do: false
 
   defp get_simple_color_key(style_map) do
     case Map.get(style_map, :foreground) do
@@ -390,15 +390,15 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
     end
   end
 
-  defp is_bold_color_combination?(style_map) do
+  defp bold_color_combination?(style_map) do
     Map.get(style_map, :bold, false) == true and
-      is_basic_color?(Map.get(style_map, :foreground)) and
+      basic_color?(Map.get(style_map, :foreground)) and
       Map.get(style_map, :background) == nil and
       Map.get(style_map, :italic, false) == false and
       Map.get(style_map, :underline, false) == false
   end
 
-  defp is_underline_color_combination?(style_map) do
+  defp underline_color_combination?(style_map) do
     Map.get(style_map, :underline, false) == true and
       Map.get(style_map, :foreground) == :red and
       Map.get(style_map, :background) == nil and
@@ -408,7 +408,7 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
 
   defp get_combination_key(style_map) do
     cond do
-      is_bold_color_combination?(style_map) ->
+      bold_color_combination?(style_map) ->
         case Map.get(style_map, :foreground) do
           :red -> :bold_red
           :green -> :bold_green
@@ -416,7 +416,7 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
           _ -> nil
         end
 
-      is_underline_color_combination?(style_map) ->
+      underline_color_combination?(style_map) ->
         :underline_red
 
       true ->
