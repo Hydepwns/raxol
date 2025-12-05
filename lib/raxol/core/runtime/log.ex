@@ -308,30 +308,30 @@ defmodule Raxol.Core.Runtime.Log do
 
   defp classify_log_data(msg, data) do
     cond do
-      is_error_message?(msg) -> {:error, %{error_detected: true, data: data}}
-      is_warning_message?(msg) -> {:warn, %{warning_detected: true, data: data}}
-      is_performance_related?(msg) -> {:info, %{performance: true, data: data}}
+      error_message?(msg) -> {:error, %{error_detected: true, data: data}}
+      warning_message?(msg) -> {:warn, %{warning_detected: true, data: data}}
+      performance_related?(msg) -> {:info, %{performance: true, data: data}}
       true -> {:info, %{data: data}}
     end
   end
 
-  defp is_error_message?(msg) when is_binary(msg) do
+  defp error_message?(msg) when is_binary(msg) do
     error_keywords = ["error", "failed", "exception", "crash", "timeout"]
     msg_lower = String.downcase(msg)
     Enum.any?(error_keywords, &String.contains?(msg_lower, &1))
   end
 
-  defp is_error_message?(_), do: false
+  defp error_message?(_), do: false
 
-  defp is_warning_message?(msg) when is_binary(msg) do
+  defp warning_message?(msg) when is_binary(msg) do
     warning_keywords = ["warning", "deprecated", "slow", "retry", "fallback"]
     msg_lower = String.downcase(msg)
     Enum.any?(warning_keywords, &String.contains?(msg_lower, &1))
   end
 
-  defp is_warning_message?(_), do: false
+  defp warning_message?(_), do: false
 
-  defp is_performance_related?(msg) when is_binary(msg) do
+  defp performance_related?(msg) when is_binary(msg) do
     perf_keywords = [
       "performance",
       "timing",
@@ -344,7 +344,7 @@ defmodule Raxol.Core.Runtime.Log do
     Enum.any?(perf_keywords, &String.contains?(msg_lower, &1))
   end
 
-  defp is_performance_related?(_), do: false
+  defp performance_related?(_), do: false
 
   defp debug_enabled_for_module?(module) do
     case Application.get_env(:raxol, :debug_modules, []) do
