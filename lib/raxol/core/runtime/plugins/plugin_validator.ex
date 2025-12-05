@@ -320,13 +320,15 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   @spec validate_initialization_time(module()) :: {:ok, any()} | {:error, any()}
   defp validate_initialization_time(plugin_module) do
     # Measure plugin initialization time using functional approach
-    with {:ok, time} <- safe_measure_init_time(plugin_module) do
-      # 5 seconds in microseconds
-      max_init_time = 5_000_000
+    case safe_measure_init_time(plugin_module) do
+      {:ok, time} ->
+        # 5 seconds in microseconds
+        max_init_time = 5_000_000
 
-      validate_initialization_time_limit(time, max_init_time)
-    else
-      {:error, reason} -> {:error, {:initialization_failed, reason}}
+        validate_initialization_time_limit(time, max_init_time)
+
+      {:error, reason} ->
+        {:error, {:initialization_failed, reason}}
     end
   end
 

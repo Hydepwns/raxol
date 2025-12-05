@@ -40,9 +40,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   @spec process_namespace(String.t() | atom()) :: any()
   defp process_namespace(namespace) when is_binary(namespace) do
     # Functional approach to converting namespace string to atom
-    with {:ok, atom} <- safe_string_to_existing_atom(namespace) do
-      atom
-    else
+    case safe_string_to_existing_atom(namespace) do
+      {:ok, atom} ->
+        atom
+
       {:error, _} ->
         Raxol.Core.Runtime.Log.debug(
           "Namespace string could not be converted to an existing atom."
@@ -88,9 +89,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   def register_plugin_commands(plugin_module, _plugin_state, command_table) do
     case function_exported?(plugin_module, :get_commands, 0) do
       true ->
-        with {:ok, commands} <- safe_get_commands(plugin_module) do
-          process_commands(plugin_module, commands, command_table)
-        else
+        case safe_get_commands(plugin_module) do
+          {:ok, commands} ->
+            process_commands(plugin_module, commands, command_table)
+
           {:error, error} ->
             log_command_error(plugin_module, error)
             command_table
@@ -261,14 +263,16 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
 
   @spec lookup_valid_command(any(), String.t() | atom(), list()) :: any()
   defp lookup_valid_command(command_table, command_name_str, args) do
-    with :ok <- validate_command_args(args) do
-      # Search for the command in all namespaces in the command table
-      case find_command_in_table(command_table, command_name_str) do
-        {:ok, result} -> {:ok, result}
-        {:error, :not_found} -> {:error, :not_found}
-      end
-    else
-      {:error, :invalid_args} -> {:error, :invalid_args}
+    case validate_command_args(args) do
+      :ok ->
+        # Search for the command in all namespaces in the command table
+        case find_command_in_table(command_table, command_name_str) do
+          {:ok, result} -> {:ok, result}
+          {:error, :not_found} -> {:error, :not_found}
+        end
+
+      {:error, :invalid_args} ->
+        {:error, :invalid_args}
     end
   end
 

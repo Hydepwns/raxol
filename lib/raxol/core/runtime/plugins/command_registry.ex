@@ -194,10 +194,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
   @spec register_commands(any(), module(), map(), any()) :: any()
   defp register_commands(commands, plugin_module, plugin_state, command_table) do
-    with {:ok, new_commands} <- safe_map_commands(commands, plugin_state) do
-      updated_table = Map.put(command_table, plugin_module, new_commands)
-      {:ok, updated_table}
-    else
+    case safe_map_commands(commands, plugin_state) do
+      {:ok, new_commands} ->
+        updated_table = Map.put(command_table, plugin_module, new_commands)
+        {:ok, updated_table}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "Failed to register commands: #{inspect(reason)}"
