@@ -534,7 +534,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
         # 5 minutes
         :medium -> now - info.last_accessed > 300_000
         # 30 minutes
-        :long -> now - info.last_accessed > 1800_000
+        :long -> now - info.last_accessed > 1_800_000
       end
     end)
   end

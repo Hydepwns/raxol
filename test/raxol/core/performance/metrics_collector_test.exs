@@ -106,7 +106,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
       _initial_memory = collector.memory_usage
 
       # Create some garbage and force it to stay in memory
-      garbage = Enum.map(1..10000, & &1)
+      garbage = Enum.map(1..10_000, & &1)
 
       # Ensure garbage stays in memory by referencing it
       ProcessStore.put(:test_garbage, garbage)

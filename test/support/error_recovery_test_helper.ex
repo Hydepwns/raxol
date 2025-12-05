@@ -436,7 +436,7 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
     processes
   end
 
-  def wait_for_recovery(timeout \\ 10000) do
+  def wait_for_recovery(timeout \\ 10_000) do
     receive do
       :recovery_completed ->
         :ok

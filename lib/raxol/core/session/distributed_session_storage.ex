@@ -70,7 +70,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
 
   @default_shard_count 64
   # 1 hour
-  @default_cleanup_interval 3600_000
+  @default_cleanup_interval 3_600_000
   # 1KB
   @default_compression_threshold 1024
 

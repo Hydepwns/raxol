@@ -265,7 +265,7 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
           id: i,
           title: "Tab #{i}",
           active: i == 1,
-          process_id: :rand.uniform(10000),
+          process_id: :rand.uniform(10_000),
           working_directory: "/tmp/test_#{i}"
         }
       end
@@ -479,7 +479,7 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
     end
   end
 
-  def assert_cluster_consistency(%TestCluster{} = cluster, _timeout \\ 10000) do
+  def assert_cluster_consistency(%TestCluster{} = cluster, _timeout \\ 10_000) do
     # Wait for all pending operations to complete
     Process.sleep(100)
 
@@ -640,7 +640,7 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
           cluster,
           session_ids,
           target_node,
-          30000
+          30_000
         )
 
         end_time = :erlang.monotonic_time(:millisecond)

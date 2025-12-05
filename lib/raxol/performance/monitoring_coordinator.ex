@@ -279,7 +279,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
       },
       regression_detection: %{
         # 1 hour
-        baseline_window: Keyword.get(opts, :baseline_window, 3600_000),
+        baseline_window: Keyword.get(opts, :baseline_window, 3_600_000),
         # 15%
         regression_threshold: Keyword.get(opts, :regression_threshold, 0.15),
         confidence_level: Keyword.get(opts, :confidence_level, 0.95)
@@ -600,7 +600,7 @@ defmodule Raxol.Performance.MonitoringCoordinator do
   defp initialize_regression_detector do
     %{
       # 1 hour
-      baseline_window_ms: 3600_000,
+      baseline_window_ms: 3_600_000,
       # 15%
       regression_threshold: 0.15,
       confidence_level: 0.95,
