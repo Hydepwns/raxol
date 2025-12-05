@@ -453,7 +453,7 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   defp find_adjacent_pane(panes, current, direction) do
     candidates =
       Enum.filter(panes, fn pane ->
-        pane.id != current.id and is_adjacent?(current, pane, direction)
+        pane.id != current.id and adjacent?(current, pane, direction)
       end)
 
     # Return closest pane
@@ -466,10 +466,10 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
     )
   end
 
-  defp is_adjacent?(pane1, pane2, :up), do: pane2.y < pane1.y
-  defp is_adjacent?(pane1, pane2, :down), do: pane2.y > pane1.y
-  defp is_adjacent?(pane1, pane2, :left), do: pane2.x < pane1.x
-  defp is_adjacent?(pane1, pane2, :right), do: pane2.x > pane1.x
+  defp adjacent?(pane1, pane2, :up), do: pane2.y < pane1.y
+  defp adjacent?(pane1, pane2, :down), do: pane2.y > pane1.y
+  defp adjacent?(pane1, pane2, :left), do: pane2.x < pane1.x
+  defp adjacent?(pane1, pane2, :right), do: pane2.x > pane1.x
 
   defp distance(pane1, pane2) do
     dx = pane1.x + div(pane1.width, 2) - (pane2.x + div(pane2.width, 2))
