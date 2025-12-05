@@ -406,7 +406,7 @@ defmodule Raxol.MixProject do
           "docs/core/ARCHITECTURE.md",
           "docs/core/GETTING_STARTED.md"
         ],
-        "Cookbook": [
+        Cookbook: [
           "docs/cookbook/README.md",
           "docs/cookbook/LIVEVIEW_INTEGRATION.md",
           "docs/cookbook/THEMING.md",
@@ -414,10 +414,10 @@ defmodule Raxol.MixProject do
           "docs/cookbook/PERFORMANCE_OPTIMIZATION.md",
           "docs/cookbook/VIM_NAVIGATION.md"
         ],
-        "Plugins": [
+        Plugins: [
           "docs/plugins/PLUGIN_DEVELOPMENT_GUIDE.md"
         ],
-        "Packages": [
+        Packages: [
           "apps/raxol_core/README.md",
           "apps/raxol_liveview/README.md",
           "apps/raxol_plugin/README.md"
@@ -426,7 +426,7 @@ defmodule Raxol.MixProject do
           "examples/core/README.md",
           "docs/bench/README.md"
         ],
-        "Project": [
+        Project: [
           "docs/project/TODO.md"
         ],
         "Project Info": [
