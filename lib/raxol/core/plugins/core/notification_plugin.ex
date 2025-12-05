@@ -213,16 +213,16 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
          os_name,
          state
        ) do
-    with {:ok, result} <-
-           run_notification_command(
-             interaction_mod,
-             executable,
-             args,
-             os_name,
-             state
-           ) do
-      result
-    else
+    case run_notification_command(
+           interaction_mod,
+           executable,
+           args,
+           os_name,
+           state
+         ) do
+      {:ok, result} ->
+        result
+
       {:error, {e, stacktrace}} ->
         handle_command_exception(e, stacktrace, state)
 
