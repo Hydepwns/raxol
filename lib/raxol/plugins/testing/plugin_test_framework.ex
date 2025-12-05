@@ -209,7 +209,7 @@ defmodule Raxol.Plugins.Testing.PluginTestFramework do
       Enum.flat_map(validations, fn {field, expected_type} ->
         value = Map.get(manifest, field)
 
-        if value != nil and not is_type?(value, expected_type) do
+        if value != nil and not type?(value, expected_type) do
           [{field, expected_type, typeof(value)}]
         else
           []
@@ -296,11 +296,11 @@ defmodule Raxol.Plugins.Testing.PluginTestFramework do
     errors
   end
 
-  defp is_type?(value, :string), do: is_binary(value)
-  defp is_type?(value, :integer), do: is_integer(value)
-  defp is_type?(value, :boolean), do: is_boolean(value)
-  defp is_type?(value, :list), do: is_list(value)
-  defp is_type?(value, :map), do: is_map(value)
+  defp type?(value, :string), do: is_binary(value)
+  defp type?(value, :integer), do: is_integer(value)
+  defp type?(value, :boolean), do: is_boolean(value)
+  defp type?(value, :list), do: is_list(value)
+  defp type?(value, :map), do: is_map(value)
 
   defp typeof(value) when is_binary(value), do: :string
   defp typeof(value) when is_integer(value), do: :integer
