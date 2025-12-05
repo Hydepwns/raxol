@@ -211,29 +211,29 @@ defmodule Raxol.Terminal.Renderer do
 
   defp get_template_match(style_map) do
     cond do
-      is_default_style?(style_map) ->
+      default_style?(style_map) ->
         # Don't use static template for default style - need dynamic theme colors
         nil
 
-      is_simple_color_match?(style_map, :red) ->
+      simple_color_match?(style_map, :red) ->
         Map.get(@style_templates, :red)
 
-      is_simple_color_match?(style_map, :green) ->
+      simple_color_match?(style_map, :green) ->
         Map.get(@style_templates, :green)
 
-      is_simple_color_match?(style_map, :blue) ->
+      simple_color_match?(style_map, :blue) ->
         Map.get(@style_templates, :blue)
 
-      is_simple_attribute_match?(style_map, :bold) ->
+      simple_attribute_match?(style_map, :bold) ->
         Map.get(@style_templates, :bold)
 
-      is_bold_color_combo?(style_map, :red) ->
+      bold_color_combo?(style_map, :red) ->
         Map.get(@style_templates, :bold_red)
 
-      is_bold_color_combo?(style_map, :green) ->
+      bold_color_combo?(style_map, :green) ->
         Map.get(@style_templates, :bold_green)
 
-      is_bold_color_combo?(style_map, :blue) ->
+      bold_color_combo?(style_map, :blue) ->
         Map.get(@style_templates, :bold_blue)
 
       true ->
@@ -242,7 +242,7 @@ defmodule Raxol.Terminal.Renderer do
   end
 
   # Fast template matchers using pattern matching
-  defp is_simple_color_match?(style_map, color) do
+  defp simple_color_match?(style_map, color) do
     Map.get(style_map, :foreground) == color and
       not Map.get(style_map, :bold, false) and
       not Map.get(style_map, :italic, false) and
@@ -250,7 +250,7 @@ defmodule Raxol.Terminal.Renderer do
       is_nil(Map.get(style_map, :background))
   end
 
-  defp is_simple_attribute_match?(style_map, attr) do
+  defp simple_attribute_match?(style_map, attr) do
     Map.get(style_map, attr, false) == true and
       is_nil(Map.get(style_map, :foreground)) and
       is_nil(Map.get(style_map, :background)) and
@@ -259,7 +259,7 @@ defmodule Raxol.Terminal.Renderer do
       (attr != :bold or not Map.get(style_map, :italic, false))
   end
 
-  defp is_bold_color_combo?(style_map, color) do
+  defp bold_color_combo?(style_map, color) do
     Map.get(style_map, :foreground) == color and
       Map.get(style_map, :bold, false) == true and
       not Map.get(style_map, :italic, false) and
@@ -268,7 +268,7 @@ defmodule Raxol.Terminal.Renderer do
   end
 
   # Template matching helper
-  defp is_default_style?(style_map) do
+  defp default_style?(style_map) do
     Enum.all?([:foreground, :background, :bold, :italic, :underline], fn key ->
       case Map.get(style_map, key) do
         nil -> true

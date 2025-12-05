@@ -75,7 +75,7 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
 
   defp render_sixel(data, bounds, opts) do
     # Check if data is already a Sixel sequence (starts with DCS)
-    case is_sixel_sequence?(data) do
+    case sixel_sequence?(data) do
       true ->
         # Data is already Sixel - use it directly
         create_sixel_cells(data, bounds)
@@ -100,12 +100,12 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   end
 
   @doc false
-  defp is_sixel_sequence?(data) when is_binary(data) do
+  defp sixel_sequence?(data) when is_binary(data) do
     # Check for DCS Sixel start sequence
     String.starts_with?(data, "\e[") or String.starts_with?(data, "\eP")
   end
 
-  defp is_sixel_sequence?(_), do: false
+  defp sixel_sequence?(_), do: false
 
   defp render_kitty(data, bounds, opts) do
     case load_image_data(data) do
