@@ -329,7 +329,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
       DependencyGraph.get_dependencies(state.dependency_graph, child_id)
 
     Enum.any?(dependencies, fn dep_id ->
-      not is_child_running?(dep_id)
+      not child_running?(dep_id)
     end)
   end
 
@@ -448,7 +448,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
 
     # Restart dependencies first
     Enum.each(dependencies, fn dep_id ->
-      if not is_child_running?(dep_id) do
+      if not child_running?(dep_id) do
         Supervisor.restart_child(__MODULE__, dep_id)
       end
     end)
@@ -525,7 +525,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     end
   end
 
-  defp is_child_running?(child_id) do
+  defp child_running?(child_id) do
     case Supervisor.which_children(__MODULE__) do
       children when is_list(children) ->
         Enum.any?(children, fn
