@@ -380,7 +380,7 @@ defmodule Raxol.Debug do
         profile_count: 0,
         start_time: DateTime.utc_now()
       },
-      max_logs: opts[:max_logs] || 10000,
+      max_logs: opts[:max_logs] || 10_000,
       max_traces: opts[:max_traces] || 5000
     }
 

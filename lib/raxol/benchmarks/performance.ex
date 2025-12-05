@@ -53,7 +53,7 @@ defmodule Raxol.Benchmarks.Performance.EventHandling do
     %{
       mean_latency: 0.5,
       p99_latency: 1.2,
-      throughput: 10000,
+      throughput: 10_000,
       unit: "ms"
     }
   end

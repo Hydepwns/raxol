@@ -287,7 +287,7 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
       flicker_test: Enum.map_join(1..50, "", fn _ -> "\e[2J\e[1;1HFlash\e[2J" end),
       
       # Large data with escapes
-      large_formatted: Enum.map_join(1..10000, "", fn i ->
+      large_formatted: Enum.map_join(1..10_000, "", fn i ->
         color = rem(i, 7) + 31
         "\e[#{color}m#{i}\e[0m "
       end)

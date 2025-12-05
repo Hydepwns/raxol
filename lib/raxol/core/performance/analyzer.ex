@@ -44,7 +44,7 @@ defmodule Raxol.Core.Performance.Analyzer do
         fps: 60,
         avg_frame_time: 16.5,
         jank_count: 2,
-        memory_usage: 1234567,
+        memory_usage: 1_234_567,
         gc_stats: %{...}
       }
       iex> Analyzer.analyze(metrics)

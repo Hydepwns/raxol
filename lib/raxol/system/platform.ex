@@ -339,7 +339,7 @@ defmodule Raxol.System.Platform do
         sixel_graphics: false,
         iterm2_graphics: false,
         terminal_type: :kitty,
-        capabilities: %{max_image_size: 100000000}
+        capabilities: %{max_image_size: 100_000_000}
       }
   """
   @spec detect_graphics_support() :: %{
@@ -454,8 +454,8 @@ defmodule Raxol.System.Platform do
       supports_animation: true,
       supports_transparency: true,
       supports_chunked_transmission: true,
-      max_image_width: 10000,
-      max_image_height: 10000
+      max_image_width: 10_000,
+      max_image_height: 10_000
     }
   end
 

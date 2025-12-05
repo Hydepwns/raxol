@@ -37,7 +37,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
       # Report several renders with different timings
       :ok = AdaptiveFramerate.report_render(5000, 10, 2, manager)  # 5ms render
       :ok = AdaptiveFramerate.report_render(8000, 15, 1, manager)  # 8ms render
-      :ok = AdaptiveFramerate.report_render(12000, 20, 3, manager) # 12ms render
+      :ok = AdaptiveFramerate.report_render(12_000, 20, 3, manager) # 12ms render
       
       # Allow a moment for processing
       Process.sleep(10)
@@ -53,7 +53,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
       # Test edge cases
       :ok = AdaptiveFramerate.report_render(0, 0, 0, manager)
       :ok = AdaptiveFramerate.report_render(1, 1, 1, manager)
-      :ok = AdaptiveFramerate.report_render(999999, 999, 100, manager)
+      :ok = AdaptiveFramerate.report_render(999_999, 999, 100, manager)
       
       Process.sleep(10)
       
@@ -67,7 +67,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
     test "adapts to high render times", %{manager: manager} do
       # Report consistently high render times (>25ms)
       for _ <- 1..5 do
-        :ok = AdaptiveFramerate.report_render(30000, 50, 5, manager)
+        :ok = AdaptiveFramerate.report_render(30_000, 50, 5, manager)
         Process.sleep(2)
       end
       
@@ -107,7 +107,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
       initial_stats = AdaptiveFramerate.get_stats(manager)
       
       # Report only 1-2 samples (less than the 3 required)
-      :ok = AdaptiveFramerate.report_render(50000, 200, 20, manager)
+      :ok = AdaptiveFramerate.report_render(50_000, 200, 20, manager)
       
       :ok = AdaptiveFramerate.force_adaptation(manager)
       Process.sleep(10)
@@ -125,7 +125,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
     test "tracks adaptation statistics", %{manager: manager} do
       # Force several adaptations
       for i <- 1..3 do
-        render_time = 15000 + (i * 10000)  # Increasing render times
+        render_time = 15_000 + (i * 10_000)  # Increasing render times
         for _ <- 1..5 do
           :ok = AdaptiveFramerate.report_render(render_time, 50, 5, manager)
         end
@@ -167,7 +167,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
       
       # Test with extreme values
       :ok = AdaptiveFramerate.report_render(0, 0, 0, manager)
-      :ok = AdaptiveFramerate.report_render(1000000, 1000, 1000, manager)  
+      :ok = AdaptiveFramerate.report_render(1_000_000, 1000, 1000, manager)  
       
       Process.sleep(10)
       
@@ -184,7 +184,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
       # Test interval conversions by checking adaptation behavior
       for _ <- 1..5 do
         # Render times that should trigger 30fps
-        :ok = AdaptiveFramerate.report_render(35000, 250, 15, manager)
+        :ok = AdaptiveFramerate.report_render(35_000, 250, 15, manager)
       end
       
       :ok = AdaptiveFramerate.force_adaptation(manager)
@@ -201,8 +201,8 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
       # Test various condition combinations
       test_cases = [
         {5000, 30, 2},    # Low complexity, fast render -> should stay 60fps
-        {15000, 120, 8},  # Medium complexity -> should go to 45fps  
-        {30000, 250, 20}, # High complexity, slow render -> should go to 30fps
+        {15_000, 120, 8},  # Medium complexity -> should go to 45fps  
+        {30_000, 250, 20}, # High complexity, slow render -> should go to 30fps
       ]
       
       for {render_time, complexity, damage} <- test_cases do
@@ -223,7 +223,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
         stats = AdaptiveFramerate.get_stats(manager)
         
         case {render_time, complexity} do
-          {t, _} when t > 25000 -> assert stats.current_fps <= 50  # More variance for timing
+          {t, _} when t > 25_000 -> assert stats.current_fps <= 50  # More variance for timing
           {_, c} when c > 100 -> assert stats.current_fps <= 50    # Allow adaptive behavior
           _ -> assert stats.current_fps >= 30                      # Allow broader range
         end

@@ -130,7 +130,7 @@ defmodule Raxol.Plugins.PluginSandbox do
         max_memory_mb: 128,
         max_cpu_percent: 50,
         max_file_descriptors: 64,
-        max_execution_time_ms: 10000,
+        max_execution_time_ms: 10_000,
         max_network_connections: 2
       },
       allowed_modules: [
@@ -170,7 +170,7 @@ defmodule Raxol.Plugins.PluginSandbox do
         max_memory_mb: 512,
         max_cpu_percent: 80,
         max_file_descriptors: 256,
-        max_execution_time_ms: 30000,
+        max_execution_time_ms: 30_000,
         max_network_connections: 10
       },
       allowed_modules: :all,

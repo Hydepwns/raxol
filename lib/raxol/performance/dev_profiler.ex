@@ -130,7 +130,7 @@ defmodule Raxol.Performance.DevProfiler do
 
   ## Options
 
-  - `:interval` - Profiling interval in milliseconds (default: 30000)
+  - `:interval` - Profiling interval in milliseconds (default: 30_000)
   - `:duration` - Duration of each profiling session (default: 5000)
   - `:auto_hints` - Enable automatic performance hints (default: true)
 

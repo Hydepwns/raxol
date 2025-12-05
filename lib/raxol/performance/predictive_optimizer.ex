@@ -301,7 +301,7 @@ defmodule Raxol.Performance.PredictiveOptimizer do
 
     workload =
       cond do
-        total_ops > 10000 and avg_duration < 100 -> :high_throughput
+        total_ops > 10_000 and avg_duration < 100 -> :high_throughput
         total_ops > 5000 -> :heavy
         avg_duration > 1000 -> :slow_operations
         true -> :normal

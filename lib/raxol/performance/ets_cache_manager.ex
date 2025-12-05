@@ -24,11 +24,11 @@ defmodule Raxol.Performance.ETSCacheManager do
   @font_metrics_cache :raxol_font_metrics_cache
 
   @max_csi_entries 1000
-  @max_cell_entries 10000
+  @max_cell_entries 10_000
   @max_style_entries 5000
   @max_buffer_entries 2000
   @max_layout_entries 1000
-  @max_font_metrics_entries 10000
+  @max_font_metrics_entries 10_000
 
   # Client API
 

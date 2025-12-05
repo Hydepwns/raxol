@@ -178,8 +178,8 @@ defmodule Raxol.System.PlatformGraphicsTest do
       assert capabilities.supports_animation == true
       assert capabilities.supports_transparency == true
       assert capabilities.supports_chunked_transmission == true
-      assert capabilities.max_image_width == 10000
-      assert capabilities.max_image_height == 10000
+      assert capabilities.max_image_width == 10_000
+      assert capabilities.max_image_height == 10_000
       
       # Restore environment
       case original_term do

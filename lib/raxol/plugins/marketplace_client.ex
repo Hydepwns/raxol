@@ -361,7 +361,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
           category: "Appearance",
           tags: ["themes", "colors", "ui"],
           rating: 4.8,
-          downloads: 12543,
+          downloads: 12_543,
           trust_level: :verified
         },
         %{
@@ -423,7 +423,7 @@ defmodule Raxol.Plugins.MarketplaceClient do
            category: "Appearance",
            tags: ["themes", "colors", "ui", "customization"],
            rating: 4.8,
-           downloads: 12543,
+           downloads: 12_543,
            repository: "https://github.com/theme-creator/terminal-themes",
            documentation: "https://terminal-themes.dev/docs",
            screenshots: ["https://cdn.marketplace.com/screenshots/themes-1.png"],

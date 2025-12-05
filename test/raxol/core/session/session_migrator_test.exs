@@ -110,7 +110,7 @@ defmodule Raxol.Core.Session.SessionMigratorTest do
 
       # Wait for all migrations to complete
       Enum.each(session_ids, fn session_id ->
-        assert_session_migrated(cluster, session_id, target_node, 10000)
+        assert_session_migrated(cluster, session_id, target_node, 10_000)
       end)
 
       # Verify all sessions are on target node
@@ -411,7 +411,7 @@ defmodule Raxol.Core.Session.SessionMigratorTest do
       end)
 
       # Wait for all migrations to complete
-      migration_results = Enum.map(migration_tasks, &Task.await(&1, 10000))
+      migration_results = Enum.map(migration_tasks, &Task.await(&1, 10_000))
 
       # Verify most migrations succeeded
       successful_migrations = Enum.count(migration_results, fn

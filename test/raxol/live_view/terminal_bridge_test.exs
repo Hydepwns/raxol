@@ -295,7 +295,7 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
         end)
 
       # Should be well under 16ms (16000μs) for 60fps
-      assert time_us < 16000, "Rendering took #{time_us}μs (target: < 16000μs)"
+      assert time_us < 16_000, "Rendering took #{time_us}μs (target: < 16_000μs)"
     end
 
     test "diff rendering is efficient" do
@@ -312,7 +312,7 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
         end)
 
       # Diff should also be fast
-      assert time_us < 16000, "Diff rendering took #{time_us}μs (target: < 16000μs)"
+      assert time_us < 16_000, "Diff rendering took #{time_us}μs (target: < 16_000μs)"
     end
   end
 end

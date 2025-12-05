@@ -262,7 +262,7 @@ defmodule Raxol.Core.Config.ConfigServer do
       encryption_enabled: false,
       key_rotation_hours: 24,
       audit_logging: true,
-      max_session_duration: 86400
+      max_session_duration: 86_400
     }
   end
 

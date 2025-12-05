@@ -794,7 +794,7 @@ defmodule Raxol.LiveView.RendererTest do
   # Property test helpers
 
   defp create_random_buffer(width, height, opts \\ []) do
-    seed = Keyword.get(opts, :seed, :rand.uniform(10000))
+    seed = Keyword.get(opts, :seed, :rand.uniform(10_000))
     :rand.seed(:exsss, {seed, seed, seed})
 
     lines =

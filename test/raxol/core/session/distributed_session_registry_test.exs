@@ -247,7 +247,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistryTest do
       end
 
       # Wait for all sessions to be created
-      Enum.each(tasks, &Task.await(&1, 10000))
+      Enum.each(tasks, &Task.await(&1, 10_000))
 
       end_time = :erlang.monotonic_time(:millisecond)
       total_time = end_time - start_time

@@ -38,12 +38,12 @@ defmodule Raxol.System.DeltaUpdaterTest do
               "assets": [
                 {
                   "name": "raxol-1.2.0-macos.tar.gz",
-                  "size": 15000000,
+                  "size": 15_000_000,
                   "browser_download_url": "https://github.com/username/raxol/releases/download/v1.2.0/raxol-1.2.0-macos.tar.gz"
                 },
                 {
                   "name": "raxol-delta-1.1.0-1.2.0-macos.bin",
-                  "size": 1500000,
+                  "size": 1_500_000,
                   "browser_download_url": "https://github.com/username/raxol/releases/download/v1.2.0/raxol-delta-1.1.0-1.2.0-macos.bin"
                 }
               ]
@@ -79,12 +79,12 @@ defmodule Raxol.System.DeltaUpdaterTest do
               "assets": [
                 {
                   "name": "raxol-1.3.0-macos.tar.gz",
-                  "size": 16000000,
+                  "size": 16_000_000,
                   "browser_download_url": "https://github.com/username/raxol/releases/download/v1.3.0/raxol-1.3.0-macos.tar.gz"
                 },
                 {
                   "name": "raxol-1.3.0-linux.tar.gz",
-                  "size": 15000000,
+                  "size": 15_000_000,
                   "browser_download_url": "https://github.com/username/raxol/releases/download/v1.3.0/raxol-1.3.0-linux.tar.gz"
                 }
               ]

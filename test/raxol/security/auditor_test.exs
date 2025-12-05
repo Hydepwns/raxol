@@ -214,7 +214,7 @@ defmodule Raxol.Security.AuditorTest do
         "content-security-policy" => "default-src 'self'",
         "x-content-type-options" => "nosniff",
         "x-frame-options" => "DENY",
-        "strict-transport-security" => "max-age=31536000"
+        "strict-transport-security" => "max-age=31_536_000"
       }
 
       assert {:ok, :secure} = Auditor.validate_security_headers(headers)

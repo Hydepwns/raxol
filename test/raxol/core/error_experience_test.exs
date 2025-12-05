@@ -93,7 +93,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
   describe "generate_error_report/1" do
     test "generates complete error report" do
       error = %RuntimeError{message: "parser performance below threshold"}
-      enhanced = ErrorExperience.classify_and_enhance(error, %{duration_ms: 10000})
+      enhanced = ErrorExperience.classify_and_enhance(error, %{duration_ms: 10_000})
 
       report = ErrorExperience.generate_error_report(enhanced)
 
@@ -122,7 +122,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
   describe "error classification patterns" do
     test "recognizes slow parsing patterns" do
       error = %RuntimeError{message: "timeout during ANSI sequence parsing"}
-      enhanced = ErrorExperience.classify_and_enhance(error, %{parse_time_us: 15000})
+      enhanced = ErrorExperience.classify_and_enhance(error, %{parse_time_us: 15_000})
 
       assert enhanced.category == :terminal_io
       assert enhanced.performance_impact != :none
@@ -220,7 +220,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
   describe "performance impact assessment" do
     test "correctly assesses critical performance impact" do
       error = %RuntimeError{message: "system timeout, memory allocation failed"}
-      enhanced = ErrorExperience.classify_and_enhance(error, %{memory_mb: 10.0, timeout_ms: 30000})
+      enhanced = ErrorExperience.classify_and_enhance(error, %{memory_mb: 10.0, timeout_ms: 30_000})
 
       # Performance assessment algorithm may return :high or :critical for severe cases
       assert enhanced.performance_impact in [:high, :critical]

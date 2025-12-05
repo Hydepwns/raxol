@@ -344,7 +344,7 @@ defmodule Raxol.Audit.Storage do
         get_base_events_by_filter(filters, state)
       end)
 
-    case Task.yield(task, 10000) || Task.shutdown(task) do
+    case Task.yield(task, 10_000) || Task.shutdown(task) do
       {:ok, events} -> {:ok, events}
       nil -> {:error, :load_events_timeout}
       {:exit, reason} -> {:error, {:load_events_failed, reason}}
