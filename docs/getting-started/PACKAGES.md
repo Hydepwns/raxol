@@ -8,7 +8,7 @@ Raxol is designed as a set of focused, independently releasable packages that yo
 
 ## Available Packages
 
-### [raxol_core](packages/raxol_core/)
+### [raxol_core](../../apps/raxol_core/README.md)
 Buffer primitives and terminal rendering core. Zero dependencies, lightweight (< 100KB).
 
 ```elixir
@@ -35,7 +35,7 @@ Buffer primitives and terminal rendering core. Zero dependencies, lightweight (<
 
 ---
 
-### [raxol_liveview](packages/raxol_liveview/)
+### [raxol_liveview](../../apps/raxol_liveview/README.md)
 Phoenix LiveView integration for browser-based terminal rendering.
 
 ```elixir
@@ -62,7 +62,7 @@ Phoenix LiveView integration for browser-based terminal rendering.
 
 ---
 
-### [raxol_plugin](packages/raxol_plugin/)
+### [raxol_plugin](../../apps/raxol_plugin/README.md)
 Plugin system for extensible terminal applications.
 
 ```elixir
@@ -419,7 +419,7 @@ See [README](../../README.md#components-only-mode) for details.
 - **[Core Concepts](./CORE_CONCEPTS.md)** - Understand buffers and rendering
 - **[Migration Guide](./MIGRATION_FROM_DIY.md)** - Migrate from custom code
 - **[API Reference](../core/BUFFER_API.md)** - Complete API documentation
-- **[Cookbook](../cookbook/)** - Practical recipes and patterns
+- **[Cookbook](../cookbook/README.md)** - Practical recipes and patterns
 
 ---
 

@@ -829,20 +829,31 @@ defmodule Raxol.UI.Accessibility.HighContrast do
   end
 
   defp apply_theme_to_system(theme, _config) do
-    # This would apply the theme to the actual terminal UI system
-    # For now, we'll log the application
+    # Apply the theme to the UI theme system
     Log.info("Applying high contrast theme: #{theme.name}")
 
-    # Would integrate with ColorManager to update system colors
-    # TODO: Implement proper theme system integration
-    # UnifiedThemingManager.update_palette(%{
-    #   background: theme.background,
-    #   foreground: theme.foreground,
-    #   accent: theme.accent
-    #   # ... other colors
-    # })
+    # Update the theme manager palette with the high contrast theme colors
+    palette = %{
+      background: theme.background,
+      foreground: theme.foreground,
+      accent: theme.accent,
+      secondary: theme.secondary,
+      success: theme.success,
+      warning: theme.warning,
+      error: theme.error,
+      info: theme.info,
+      border: theme.border,
+      shadow: theme.shadow
+    }
 
-    :ok
+    case Raxol.UI.Theming.ThemeManager.update_palette(palette) do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        Log.warning("Failed to update theme palette: #{inspect(reason)}")
+        :ok
+    end
   end
 
   defp detect_system_high_contrast do

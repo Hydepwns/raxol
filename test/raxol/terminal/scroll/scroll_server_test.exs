@@ -125,29 +125,28 @@ defmodule Raxol.Terminal.Scroll.ScrollBufferTest do
     end
   end
 
-  # TODO: Re-enable when scroll_region functions are implemented
-  # describe "set_scroll_region/3" do
-  #   test ~c"sets valid scroll region" do
-  #     scroll = Scroll.new(1000)
-  #     scroll = Scroll.set_scroll_region(scroll, 1, 5)
-  #     assert scroll.scroll_region == {1, 5}
-  #   end
+  describe "set_scroll_region/3" do
+    test "sets valid scroll region" do
+      scroll = Scroll.new(1000)
+      scroll = Scroll.set_scroll_region(scroll, 1, 5)
+      assert scroll.scroll_region == {1, 5}
+    end
 
-  #   test ~c"ignores invalid scroll region" do
-  #     scroll = Scroll.new(1000)
-  #     scroll = Scroll.set_scroll_region(scroll, 5, 1)
-  #     assert scroll.scroll_region == nil
-  #   end
-  # end
+    test "ignores invalid scroll region" do
+      scroll = Scroll.new(1000)
+      scroll = Scroll.set_scroll_region(scroll, 5, 1)
+      assert scroll.scroll_region == nil
+    end
+  end
 
-  # describe "clear_scroll_region/1" do
-  #   test ~c"clears scroll region" do
-  #     scroll = Scroll.new(1000)
-  #     scroll = Scroll.set_scroll_region(scroll, 1, 5)
-  #     scroll = Scroll.clear_scroll_region(scroll)
-  #     assert scroll.scroll_region == nil
-  #   end
-  # end
+  describe "clear_scroll_region/1" do
+    test "clears scroll region" do
+      scroll = Scroll.new(1000)
+      scroll = Scroll.set_scroll_region(scroll, 1, 5)
+      scroll = Scroll.clear_scroll_region(scroll)
+      assert scroll.scroll_region == nil
+    end
+  end
 
   # describe "get_visible_region/1" do
   #   test ~c"returns full range when no scroll region" do

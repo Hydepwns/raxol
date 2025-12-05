@@ -442,13 +442,13 @@ length = String.length(text)  # 7 (visual characters)
 
 - **API Reference**: See [BUFFER_API.md](./BUFFER_API.md) for complete function documentation
 - **Architecture**: Read [ARCHITECTURE.md](./ARCHITECTURE.md) to understand design decisions
-- **Examples**: Explore [examples/core/](../../examples/core/) for more patterns
-- **Benchmarks**: Check [bench/core/](../../bench/core/) for performance data
+- **Examples**: Explore [examples/core/README.md](../../examples/core/README.md) for more patterns
+- **Benchmarks**: Check [benchmarks](../../docs/bench/README.md) for performance data
 
 ## Getting Help
 
 - GitHub Issues: Report bugs or request features
-- Documentation: Browse the [docs/](../) directory
-- Examples: Working code in [examples/](../../examples/)
+- Documentation: Browse the docs directory
+- Examples: Working code in the examples directory
 
 Happy terminal hacking!

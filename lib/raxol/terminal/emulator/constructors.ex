@@ -112,6 +112,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
       command_history: [],
       current_command_buffer: "",
       max_command_history: 100,
+      history_buffer: Raxol.Terminal.HistoryBuffer.new(),
 
       # Other fields
       output_buffer: "",
@@ -232,6 +233,10 @@ defmodule Raxol.Terminal.Emulator.Constructors do
       command_history: [],
       current_command_buffer: "",
       max_command_history: Keyword.get(opts, :max_command_history, 100),
+      history_buffer:
+        Raxol.Terminal.HistoryBuffer.new(
+          Keyword.get(opts, :max_command_history, 1000)
+        ),
 
       # Other fields
       output_buffer: "",

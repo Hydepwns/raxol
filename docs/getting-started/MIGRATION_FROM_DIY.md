@@ -702,7 +702,7 @@ A: Yes! We'd love to see it. Open a PR with your adapter in `lib/raxol/adapters/
 - **[Quickstart](./QUICKSTART.md)** - Get started quickly
 - **[Core Concepts](./CORE_CONCEPTS.md)** - Understand architecture
 - **[API Reference](../core/BUFFER_API.md)** - Complete function docs
-- **[Cookbook](../cookbook/)** - Practical recipes
+- **[Cookbook](../cookbook/README.md)** - Practical recipes
 - **GitHub Issues** - Ask questions, request features
 
 ### Community Support

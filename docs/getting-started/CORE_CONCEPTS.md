@@ -581,7 +581,7 @@ my_format = convert_buffer_to_my_format(buffer)
 ## Next Steps
 
 - **[Migration Guide](./MIGRATION_FROM_DIY.md)** - Integrate Raxol with existing code
-- **[Cookbook](../cookbook/)** - Practical patterns and recipes
+- **[Cookbook](../cookbook/README.md)** - Practical patterns and recipes
 - **[API Reference](../core/BUFFER_API.md)** - Complete function documentation
 - **[Architecture](../core/ARCHITECTURE.md)** - Deep dive into implementation details
 

@@ -134,10 +134,9 @@ defmodule Raxol.Core.StateManagerTest do
       assert StateManager.get_state(:to_delete, opts) == "will be removed"
       assert StateManager.get_state(:to_keep, opts) == "will stay"
 
-      # Delete functionality not implemented in current StateManager
-      # TODO: Implement delete_state function
-      # :ok = StateManager.delete_state(:to_delete, opts)
-      # assert StateManager.get_state(:to_delete, opts) == nil
+      # Delete functionality is implemented
+      :ok = StateManager.delete_state(:to_delete, opts)
+      assert StateManager.get_state(:to_delete, opts) == nil
       assert StateManager.get_state(:to_keep, opts) == "will stay"
     end
   end

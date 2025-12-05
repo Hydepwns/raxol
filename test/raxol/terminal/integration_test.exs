@@ -104,7 +104,9 @@ defmodule Raxol.Terminal.IntegrationTest do
       # With newlines and wrapping, the actual behavior shows some character overlap
       # Accept the current behavior as it shows all 3 visible lines have content
       actual_text = buffer_text(state.main_screen_buffer)
-      assert String.contains?(actual_text, "Line") && String.split(actual_text, "\n") |> length() == 3
+
+      assert String.contains?(actual_text, "Line") &&
+               String.split(actual_text, "\n") |> length() == 3
     end
   end
 
@@ -200,21 +202,27 @@ defmodule Raxol.Terminal.IntegrationTest do
       {state_after_cmd1, _} =
         Emulator.process_input(initial_state, "command1\n")
 
-      # TODO: Command history integration needs implementation
-      # Commands are processed but not automatically added to history
-      # assert Raxol.Terminal.Command.Manager.get_command_history(
-      #          state_after_cmd1.command
-      #        ) == ["command1"]
-      
-      # For now, just test that input processing works
-      assert state_after_cmd1 != initial_state
+      # Verify command was added to history
+      history = Raxol.Terminal.HistoryManager.get_all_commands(state_after_cmd1)
+      assert history == ["command1"]
+
+      # Process another command
+      {state_after_cmd2, _} =
+        Emulator.process_input(state_after_cmd1, "command2\n")
+
+      history2 =
+        Raxol.Terminal.HistoryManager.get_all_commands(state_after_cmd2)
+
+      assert history2 == ["command2", "command1"]
 
       # Process an empty command (should be ignored)
-      {state_after_empty, _} = Emulator.process_input(state_after_cmd1, "\n")
-      
-      # TODO: All command history functionality needs implementation
-      # The infrastructure exists but input processing doesn't integrate with it
-      assert state_after_empty != nil
+      {state_after_empty, _} = Emulator.process_input(state_after_cmd2, "\n")
+
+      # Empty commands should not be added to history
+      history_after_empty =
+        Raxol.Terminal.HistoryManager.get_all_commands(state_after_empty)
+
+      assert history_after_empty == ["command2", "command1"]
     end
   end
 
@@ -289,7 +297,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       # Get the first cell and verify it has the correct background color
       first_cell =
         ScreenBuffer.get_cell_at(final_state.main_screen_buffer, 0, 0)
-      
+
       # Fix: expect the correct format {:rgb, r, g, b} instead of {r, g, b}
       assert first_cell.style.background == {:rgb, 0, 0, 0}
 
@@ -315,11 +323,22 @@ defmodule Raxol.Terminal.IntegrationTest do
       {final_state, _output} =
         Emulator.process_input(initial_state, sixel_sequence)
 
-      # TODO: Sixel pixel rendering needs implementation
-      # The parser works but doesn't actually render pixels to the buffer
-      # For now just test that sixel processing doesn't crash
+      # Verify Sixel rendering is working
       assert final_state != nil
       assert final_state != initial_state
+
+      # Get the screen buffer to check rendered pixels
+      buffer = Emulator.get_screen_buffer(final_state)
+      assert buffer != nil
+
+      # The sixel_data() returns "#0;2;0;0;0#0?" which defines color 0 as black (0,0,0)
+      # and draws pattern '?' (ASCII 63, pattern 0). Pattern 0 means no pixels are set.
+      # Since no pixels are drawn, we just verify the state was updated
+      assert final_state.sixel_state != nil
+      assert is_map(final_state.sixel_state.palette)
+
+      # Verify the palette contains the defined color
+      assert Map.get(final_state.sixel_state.palette, 0) == {0, 0, 0}
     end
   end
 end

@@ -18,7 +18,8 @@ defmodule Raxol.Terminal.Buffer.Scroll do
           max_height: non_neg_integer(),
           compression_ratio: float(),
           memory_limit: non_neg_integer(),
-          memory_usage: non_neg_integer()
+          memory_usage: non_neg_integer(),
+          scroll_region: {non_neg_integer(), non_neg_integer()} | nil
         }
 
   defstruct [
@@ -28,7 +29,8 @@ defmodule Raxol.Terminal.Buffer.Scroll do
     :max_height,
     :compression_ratio,
     :memory_limit,
-    :memory_usage
+    :memory_usage,
+    scroll_region: nil
   ]
 
   @doc """
@@ -303,5 +305,44 @@ defmodule Raxol.Terminal.Buffer.Scroll do
   defp minimize_cell_attributes(cell) do
     # Access :style, not :attributes
     %{cell | style: Map.take(cell.style, [:foreground, :background])}
+  end
+
+  @doc """
+  Sets the scroll region.
+
+  ## Parameters
+    - scroll: The scroll buffer
+    - top: Top boundary of the scroll region
+    - bottom: Bottom boundary of the scroll region
+
+  ## Examples
+
+      iex> scroll = Scroll.new(1000)
+      iex> scroll = Scroll.set_scroll_region(scroll, 1, 5)
+      iex> scroll.scroll_region
+      {1, 5}
+  """
+  def set_scroll_region(%__MODULE__{} = scroll, top, bottom)
+      when is_integer(top) and is_integer(bottom) and top < bottom do
+    %{scroll | scroll_region: {top, bottom}}
+  end
+
+  def set_scroll_region(%__MODULE__{} = scroll, _top, _bottom) do
+    scroll
+  end
+
+  @doc """
+  Clears the scroll region.
+
+  ## Examples
+
+      iex> scroll = Scroll.new(1000)
+      iex> scroll = Scroll.set_scroll_region(scroll, 1, 5)
+      iex> scroll = Scroll.clear_scroll_region(scroll)
+      iex> scroll.scroll_region
+      nil
+  """
+  def clear_scroll_region(%__MODULE__{} = scroll) do
+    %{scroll | scroll_region: nil}
   end
 end

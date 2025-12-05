@@ -523,13 +523,67 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   end
 
   defp render_diff_view(state, width, height) do
-    lines = [render_header("Diff View", state.current_branch, width)]
-    # TODO: Implement diff rendering
-    lines = lines ++ ["Diff view not yet implemented"]
+    header = render_header("Diff View", state.current_branch, width)
 
-    lines
-    |> Enum.take(height)
-    |> pad_to_height(height, width)
+    # Get the diff from git
+    case run_git_command(["diff", "--color=never"], state.repo_path) do
+      {diff_output, 0} ->
+        diff_lines =
+          diff_output
+          |> String.split("\n", trim: true)
+          |> Enum.map(&format_diff_line(&1, width))
+
+        # Combine header with diff lines
+        [header | diff_lines]
+        |> Enum.take(height)
+        |> pad_to_height(height, width)
+
+      {error, _code} ->
+        # Show error if diff fails
+        error_lines = [
+          header,
+          "Error getting diff: #{String.trim(error)}"
+        ]
+
+        error_lines
+        |> Enum.take(height)
+        |> pad_to_height(height, width)
+    end
+  end
+
+  defp format_diff_line(line, width) do
+    # Colorize diff lines based on prefix
+    styled_line =
+      cond do
+        String.starts_with?(line, "+") and not String.starts_with?(line, "+++") ->
+          # Addition - green
+          "\e[32m#{line}\e[0m"
+
+        String.starts_with?(line, "-") and not String.starts_with?(line, "---") ->
+          # Deletion - red
+          "\e[31m#{line}\e[0m"
+
+        String.starts_with?(line, "@@") ->
+          # Hunk header - cyan
+          "\e[36m#{line}\e[0m"
+
+        String.starts_with?(line, "diff --git") ->
+          # File header - bold
+          "\e[1m#{line}\e[0m"
+
+        String.starts_with?(line, "index") or String.starts_with?(line, "---") or
+            String.starts_with?(line, "+++") ->
+          # Meta information - dim
+          "\e[2m#{line}\e[0m"
+
+        true ->
+          # Context lines - normal
+          line
+      end
+
+    # Truncate or pad to width
+    String.slice(styled_line, 0, width - 1)
+    |> String.pad_trailing(width)
   end
 
   defp render_header(title, branch, width) do

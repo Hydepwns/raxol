@@ -175,7 +175,6 @@ defmodule Raxol.Terminal.Commands.DCSHandlerTest do
                  ) do
               {:ok, emu} -> emu
               {:error, _reason, emu} -> emu
-              %Emulator{} = emu -> emu
             end
 
           # Ensure emulator state is unchanged for output_buffer
@@ -347,7 +346,6 @@ defmodule Raxol.Terminal.Commands.DCSHandlerTest do
                  ) do
               {:ok, emu} -> emu
               {:error, _reason, emu} -> emu
-              %Emulator{} = emu -> emu
             end
 
           # Check if the returned value is an emulator struct and output buffer is unchanged

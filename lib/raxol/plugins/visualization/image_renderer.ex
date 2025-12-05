@@ -74,21 +74,38 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   end
 
   defp render_sixel(data, bounds, opts) do
-    case load_image_data(data) do
-      {:ok, image_data} ->
-        # Convert image to sixel format
-        sixel_data = convert_to_sixel(image_data, bounds)
-        # Create cells with sixel escape sequence
-        create_sixel_cells(sixel_data, bounds)
+    # Check if data is already a Sixel sequence (starts with DCS)
+    case is_sixel_sequence?(data) do
+      true ->
+        # Data is already Sixel - use it directly
+        create_sixel_cells(data, bounds)
 
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error(
-          "[ImageRenderer] Failed to load image: #{inspect(reason)}"
-        )
+      false ->
+        # Try to load and convert image data to Sixel
+        case load_image_data(data) do
+          {:ok, image_data} ->
+            # Convert image to sixel format
+            sixel_data = convert_to_sixel(image_data, bounds)
+            # Create cells with sixel escape sequence
+            create_sixel_cells(sixel_data, bounds)
 
-        draw_placeholder(data, Map.get(opts, :title, "Image"), bounds)
+          {:error, reason} ->
+            Raxol.Core.Runtime.Log.error(
+              "[ImageRenderer] Failed to load image: #{inspect(reason)}"
+            )
+
+            draw_placeholder(data, Map.get(opts, :title, "Image"), bounds)
+        end
     end
   end
+
+  @doc false
+  defp is_sixel_sequence?(data) when is_binary(data) do
+    # Check for DCS Sixel start sequence
+    String.starts_with?(data, "\e[") or String.starts_with?(data, "\eP")
+  end
+
+  defp is_sixel_sequence?(_), do: false
 
   defp render_kitty(data, bounds, opts) do
     case load_image_data(data) do
@@ -148,10 +165,24 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   end
 
   defp encode_sixel(_image) do
-    # Convert image to sixel format using sixel encoder
-    # This is a placeholder - you'll need to implement or use a sixel encoder library
-    # For now, return a basic sixel pattern
-    "\x1bPq\"1;1;1;1#0;2;0;0;0#1;2;100;100;100#2;2;0;100;0#1~~@@\x1b\\"
+    # For now, we rely on external Sixel encoders or pre-generated Sixel data
+    # A full implementation would convert Mogrify image to pixel data
+    # and build a SixelGraphics state with pixel_buffer, then encode it
+
+    # This is a simple test pattern for demonstration
+    # In practice, users should provide Sixel-encoded data or use external tools
+    state = Raxol.Terminal.ANSI.SixelGraphics.new(10, 10)
+
+    # Create a simple pattern in pixel buffer
+    pixel_buffer =
+      for x <- 0..9, y <- 0..9, into: %{} do
+        {{x, y}, rem(x + y, 4)}
+      end
+
+    state_with_pixels = %{state | pixel_buffer: pixel_buffer}
+
+    # Encode to Sixel format
+    Raxol.Terminal.ANSI.SixelGraphics.encode(state_with_pixels)
   end
 
   defp convert_to_kitty(image_data, bounds) do
@@ -166,18 +197,83 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
     end
   end
 
-  defp create_sixel_cells(sixel_data, %{width: width, height: height}) do
-    # For now, create placeholder cells until sixel is properly implemented
-    # TODO: Implement proper sixel cell creation
-    _ = sixel_data
+  defp create_sixel_cells(sixel_data, bounds) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           create_sixel_cells_from_buffer(sixel_data, bounds)
+         end) do
+      {:ok, cells} ->
+        cells
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error(
+          "[ImageRenderer] Error creating Sixel cells: #{inspect(reason)}"
+        )
+
+        empty_cell_grid(bounds.width, bounds.height)
+    end
+  end
+
+  @doc false
+  defp create_sixel_cells_from_buffer(sixel_data, %{
+         width: width,
+         height: height
+       }) do
+    state = Raxol.Terminal.ANSI.SixelGraphics.new()
+
+    case Raxol.Terminal.ANSI.SixelGraphics.process_sequence(state, sixel_data) do
+      {updated_state, :ok} ->
+        pixel_buffer_to_cells(updated_state, width, height)
+
+      {_state, {:error, reason}} ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[ImageRenderer] Sixel processing failed: #{inspect(reason)}",
+          %{}
+        )
+
+        empty_cell_grid(width, height)
+    end
+  end
+
+  @doc false
+  @spec pixel_buffer_to_cells(map(), non_neg_integer(), non_neg_integer()) :: [
+          [Cell.t()]
+        ]
+  defp pixel_buffer_to_cells(
+         %{pixel_buffer: buffer, palette: palette},
+         width,
+         height
+       ) do
+    for y <- 0..(height - 1) do
+      for x <- 0..(width - 1) do
+        build_cell(buffer, palette, x, y)
+      end
+    end
+  end
+
+  @doc false
+  defp build_cell(buffer, palette, x, y) do
+    with color_index when not is_nil(color_index) <- Map.get(buffer, {x, y}),
+         {r, g, b} <- Map.get(palette, color_index) do
+      Cell.new_sixel(
+        " ",
+        %Raxol.Terminal.ANSI.TextFormatting{background: {:rgb, r, g, b}}
+      )
+    else
+      nil -> Cell.new(" ")
+      _ -> Cell.new_sixel(" ")
+    end
+  end
+
+  @doc false
+  @spec empty_cell_grid(non_neg_integer(), non_neg_integer()) :: [[Cell.t()]]
+  defp empty_cell_grid(width, height) do
     List.duplicate(List.duplicate(Cell.new(" "), width), height)
   end
 
-  defp create_kitty_cells(kitty_data, %{width: width, height: height}) do
-    # For now, create placeholder cells until kitty graphics is properly implemented
-    # TODO: Implement proper kitty graphics cell creation
-    _ = kitty_data
-    List.duplicate(List.duplicate(Cell.new(" "), width), height)
+  defp create_kitty_cells(_kitty_data, %{width: width, height: height}) do
+    # Kitty graphics protocol support for UI component integration.
+    # Future enhancement: implement Kitty protocol cell creation
+    empty_cell_grid(width, height)
   end
 
   # --- Private Image Drawing Logic ---

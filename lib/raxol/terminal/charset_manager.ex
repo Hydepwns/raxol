@@ -3,12 +3,13 @@ defmodule Raxol.Terminal.CharsetManager do
   Manages the terminal character sets.
   """
 
-  defstruct state: %{}, g_set: :g0, designated_charsets: %{}
+  defstruct state: %{}, g_set: :g0, designated_charsets: %{}, single_shift: nil
 
   @type t :: %__MODULE__{
           state: map(),
           g_set: atom(),
-          designated_charsets: map()
+          designated_charsets: map(),
+          single_shift: atom() | nil
         }
 
   @doc """
@@ -67,23 +68,47 @@ defmodule Raxol.Terminal.CharsetManager do
   """
   @spec reset_state(t()) :: t()
   def reset_state(state) do
-    %{state | state: %{}, g_set: :g0, designated_charsets: %{}}
+    %{
+      state
+      | state: %{},
+        g_set: :g0,
+        designated_charsets: %{},
+        single_shift: nil
+    }
   end
 
   @doc """
   Applies a single shift to the state.
+
+  Single shift temporarily invokes G2 or G3 for the next character only.
+  Valid shifts are :g2 (SS2) and :g3 (SS3).
   """
   @spec apply_single_shift(t(), atom()) :: t()
-  def apply_single_shift(state, _shift) do
-    # TODO: Implement single shift application
+  def apply_single_shift(state, shift) when shift in [:g2, :g3] do
+    %{state | single_shift: shift}
+  end
+
+  def apply_single_shift(state, _invalid_shift) do
     state
   end
 
   @doc """
   Gets the current single shift.
+
+  Returns the currently active single shift (:g2 or :g3), or nil if no single shift is active.
   """
-  @spec get_single_shift(t()) :: atom()
-  def get_single_shift(_state) do
-    :ok
+  @spec get_single_shift(t()) :: atom() | nil
+  def get_single_shift(state) do
+    state.single_shift
+  end
+
+  @doc """
+  Clears the single shift after processing one character.
+
+  This should be called after processing a character when a single shift is active.
+  """
+  @spec clear_single_shift(t()) :: t()
+  def clear_single_shift(state) do
+    %{state | single_shift: nil}
   end
 end

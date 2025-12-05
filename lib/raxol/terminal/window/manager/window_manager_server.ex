@@ -264,6 +264,17 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     GenServer.call(server, {:split_window, window_id, direction})
   end
 
+  @doc """
+  Updates the window manager configuration.
+  """
+  def update_config(config) do
+    update_config(__MODULE__, config)
+  end
+
+  def update_config(server, config) when is_atom(server) do
+    GenServer.call(server, {:update_config, config})
+  end
+
   # BaseManager Callbacks
 
   @impl true
@@ -673,6 +684,12 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
   @impl true
   def handle_manager_call(:reset, _from, _state) do
     {:reply, :ok, @default_state}
+  end
+
+  @impl true
+  def handle_manager_call({:update_config, config}, _from, state) do
+    new_state = Map.merge(state, config)
+    {:reply, :ok, new_state}
   end
 
   # Private helper functions

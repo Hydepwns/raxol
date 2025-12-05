@@ -547,14 +547,23 @@ defmodule Raxol.Handlers.ApplyThemeHandler do
     end
   end
 
-  defp load_theme(_theme_id) do
-    # TODO: Implement proper theme loading system
-    # case UnifiedThemingManager.get_theme(theme_id) do
-    #   {:ok, theme} -> {:ok, theme}
-    #   {:error, :not_found} -> {:error, :theme_not_found}
-    #   {:error, reason} -> {:error, reason}
-    # end
-    {:error, :theme_system_not_implemented}
+  defp load_theme(theme_id) do
+    case Raxol.Themes.load_theme(theme_id) do
+      {:ok, basic_theme} ->
+        # Convert basic theme structure to full theme structure
+        full_theme = %{
+          id: theme_id,
+          name: theme_id |> to_string() |> String.capitalize(),
+          color_scheme: basic_theme,
+          font_settings: %{},
+          accessibility_options: %{}
+        }
+
+        {:ok, full_theme}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp resolve_theme_settings(theme, command) do

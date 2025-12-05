@@ -392,6 +392,14 @@ defmodule Raxol.Terminal.Window.Manager do
   end
 
   @doc """
+  Updates the window manager configuration.
+  """
+  def update_config(config) do
+    _ = ensure_started()
+    Server.update_config(config)
+  end
+
+  @doc """
   Cleanup the window manager. Alias for reset/0.
   """
   def cleanup do

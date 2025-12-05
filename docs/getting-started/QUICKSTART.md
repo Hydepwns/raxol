@@ -445,7 +445,7 @@ buffer = Box.draw_box(buffer, 40, 0, 40, 24, :single)     # Right panel
 
 - **[Core Concepts](./CORE_CONCEPTS.md)** - Deep dive into buffers and rendering
 - **[Migration Guide](./MIGRATION_FROM_DIY.md)** - Already have a terminal renderer?
-- **[Cookbook](../cookbook/)** - Practical patterns and recipes
+- **[Cookbook](../cookbook/README.md)** - Practical patterns and recipes
 - **[API Reference](../core/BUFFER_API.md)** - Complete function documentation
 
 ### Examples Directory

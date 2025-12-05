@@ -85,6 +85,20 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
     ]
   end
 
+  # Optional callback for command registration (not part of core behavior)
+  # The plugin framework checks for this function and automatically registers
+  # the commands when the plugin is loaded.
+  def get_commands do
+    [
+      {:rainbow_start, :handle_rainbow_start, 2},
+      {:rainbow_stop, :handle_rainbow_stop, 2},
+      {:rainbow_speed, :handle_rainbow_speed, 2},
+      {:rainbow_palette, :handle_rainbow_palette, 2},
+      {:rainbow_next, :handle_rainbow_next, 2},
+      {:rainbow_help, :handle_rainbow_help, 2}
+    ]
+  end
+
   @impl true
   def cleanup(state) do
     stop_animation(state)
@@ -213,6 +227,75 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
     {:ok, state}
   end
 
+  # Command handlers for plugin command system
+  def handle_rainbow_start(_args, state) do
+    state = start_animation(state)
+    {:ok, state, "Rainbow animation started"}
+  end
+
+  def handle_rainbow_stop(_args, state) do
+    state = stop_animation(state)
+    {:ok, state, "Rainbow animation stopped"}
+  end
+
+  def handle_rainbow_speed([speed_str], state) do
+    case Integer.parse(speed_str) do
+      {speed, _} when speed > 0 ->
+        new_config = %{state.config | animation_speed: speed}
+        state = %{state | config: new_config}
+
+        state =
+          if state.animation_timer,
+            do: restart_animation(state),
+            else: state
+
+        {:ok, state, "Animation speed set to #{speed}ms"}
+
+      _ ->
+        {:error, "Invalid speed value", state}
+    end
+  end
+
+  def handle_rainbow_speed(_invalid_args, state) do
+    {:error, "Usage: rainbow_speed <milliseconds>", state}
+  end
+
+  def handle_rainbow_palette(colors, state) when is_list(colors) do
+    palette_atoms = Enum.map(colors, &String.to_atom/1)
+    new_config = %{state.config | color_palette: palette_atoms}
+
+    state = %{
+      state
+      | config: new_config,
+        palette: build_palette(palette_atoms)
+    }
+
+    {:ok, state, "Color palette updated"}
+  end
+
+  def handle_rainbow_palette(_invalid_args, state) do
+    {:error, "Usage: rainbow_palette <color1> <color2> ...", state}
+  end
+
+  def handle_rainbow_next(_args, state) do
+    state = rotate_color(state)
+    {:ok, state, "Rotated to next color"}
+  end
+
+  def handle_rainbow_help(_args, state) do
+    help_text = """
+    Rainbow Theme Plugin Commands:
+    - rainbow_start              Start color animation
+    - rainbow_stop               Stop color animation
+    - rainbow_speed <ms>         Set animation speed
+    - rainbow_palette <colors>   Set color palette
+    - rainbow_next               Rotate to next color
+    - rainbow_help               Show this help message
+    """
+
+    {:ok, state, help_text}
+  end
+
   # Hot-reload support
   def migrate_state(old_version, old_state, new_config) do
     # Handle state migration between versions
@@ -238,16 +321,15 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
   # Private functions
 
   defp register_commands do
-    # Register with command system
-    # TODO: Implement proper command registration system
-    # :ok = Raxol.Commands.register("rainbow", __MODULE__)
+    # Command registration is handled automatically by the plugin framework
+    # via the get_commands/0 callback. Commands declared in get_commands/0
+    # are automatically registered when the plugin loads.
     :ok
   end
 
   defp unregister_commands do
-    # Unregister from command system
-    # TODO: Implement proper command unregistration system
-    # :ok = Raxol.Commands.unregister("rainbow")
+    # Command unregistration is handled automatically by the plugin framework
+    # when the plugin is unloaded. No manual cleanup is required.
     :ok
   end
 

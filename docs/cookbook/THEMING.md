@@ -670,7 +670,7 @@ end
 
 - **[LiveView Cookbook](./LIVEVIEW_INTEGRATION.md)** - Web integration
 - **[Performance Cookbook](./PERFORMANCE_OPTIMIZATION.md)** - Optimization techniques
-- **[Contributing](../../.github/CONTRIBUTING.md)** - Share your themes!
+- **[Contributing](.github/CONTRIBUTING.md)** - Share your themes!
 
 ---
 

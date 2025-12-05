@@ -87,6 +87,7 @@ defmodule Raxol.Terminal.Emulator do
     # Command history
     command_history: [],
     max_command_history: 100,
+    history_buffer: nil,
 
     # Scrollback buffer
     scrollback_buffer: [],
@@ -707,13 +708,67 @@ defmodule Raxol.Terminal.Emulator do
     result =
       Raxol.Terminal.Input.CoreHandler.process_terminal_input(emulator, input)
 
-    case result do
-      {updated_emulator, output} when is_binary(output) ->
-        {updated_emulator, output}
+    {updated_emulator, output} =
+      case result do
+        {updated_emulator, output} when is_binary(output) ->
+          {updated_emulator, output}
 
-      {updated_emulator, output} when is_list(output) ->
-        # Convert list output to string for backward compatibility
-        {updated_emulator, IO.iodata_to_binary(output)}
+        {updated_emulator, output} when is_list(output) ->
+          # Convert list output to string for backward compatibility
+          {updated_emulator, IO.iodata_to_binary(output)}
+      end
+
+    # Track command history if enabled
+    updated_emulator =
+      case updated_emulator.history_buffer do
+        nil ->
+          updated_emulator
+
+        _buffer ->
+          track_command_history(updated_emulator, input)
+      end
+
+    {updated_emulator, output}
+  end
+
+  # Helper function to track commands in history
+  defp track_command_history(emulator, input) do
+    current_buffer = emulator.current_command_buffer || ""
+
+    # Extract printable characters and check for newline
+    {new_buffer, should_add_to_history} =
+      String.graphemes(input)
+      |> Enum.reduce({current_buffer, false}, fn char, {buffer, add_history} ->
+        case char do
+          "\n" ->
+            # Newline encountered - mark for history addition
+            {buffer, true}
+
+          "\r" ->
+            # Carriage return - treat like newline
+            {buffer, true}
+
+          # Skip escape sequences and control characters
+          <<c>> when c < 32 and c != ?\t ->
+            {buffer, add_history}
+
+          # Printable character or tab
+          printable ->
+            {buffer <> printable, add_history}
+        end
+      end)
+
+    case should_add_to_history do
+      true when byte_size(new_buffer) > 0 ->
+        # Add command to history and clear buffer
+        emulator_with_history =
+          Raxol.Terminal.HistoryManager.add_command(emulator, new_buffer)
+
+        %{emulator_with_history | current_command_buffer: ""}
+
+      _ ->
+        # Update buffer but don't add to history yet
+        %{emulator | current_command_buffer: new_buffer}
     end
   end
 
@@ -897,6 +952,11 @@ defmodule Raxol.Terminal.Emulator do
     command_history = if enable_history, do: [], else: nil
     current_command_buffer = if enable_history, do: "", else: nil
 
+    history_buffer =
+      if enable_history,
+        do: Raxol.Terminal.HistoryBuffer.new(),
+        else: nil
+
     %__MODULE__{
       # Core components (no PIDs for basic emulator)
       state: %{
@@ -957,6 +1017,7 @@ defmodule Raxol.Terminal.Emulator do
       state_stack: [],
       command_history: command_history,
       max_command_history: if(enable_history, do: 100, else: 0),
+      history_buffer: history_buffer,
       scrollback_buffer: [],
       scrollback_limit: scrollback_limit,
       output_buffer: "",

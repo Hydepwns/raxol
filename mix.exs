@@ -1,7 +1,7 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "2.0.0"
+  @version "2.0.1"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
@@ -127,6 +127,9 @@ defmodule Raxol.MixProject do
 
   defp deps do
     [
+      # Modular Raxol Packages (path deps for development, version deps for publishing)
+      modular_packages(),
+
       # Core Terminal Dependencies
       core_deps(),
 
@@ -149,6 +152,24 @@ defmodule Raxol.MixProject do
       i18n_deps()
     ]
     |> List.flatten()
+  end
+
+  defp modular_packages do
+    if Mix.env() == :prod or System.get_env("HEX_BUILD") do
+      # Use hex versions for publishing
+      [
+        {:raxol_core, "~> 2.0"},
+        {:raxol_plugin, "~> 2.0"},
+        {:raxol_liveview, "~> 2.0"}
+      ]
+    else
+      # Use path dependencies for local development
+      [
+        {:raxol_core, path: "apps/raxol_core", override: true},
+        {:raxol_plugin, path: "apps/raxol_plugin", override: true},
+        {:raxol_liveview, path: "apps/raxol_liveview", override: true}
+      ]
+    end
   end
 
   defp core_deps do
@@ -319,7 +340,7 @@ defmodule Raxol.MixProject do
 
   defp description do
     """
-    The Next.js of Terminal UIs - Build blazing-fast, interactive terminal applications with React-style components, 60fps animations, and seamless web continuity. Enterprise-compliant with 3.3μs parsing performance.
+    Meta-package for Raxol terminal framework. Includes core buffer primitives, plugin system, and Phoenix LiveView integration. Build fast terminal UIs with React-style components.
     """
   end
 
@@ -327,7 +348,7 @@ defmodule Raxol.MixProject do
     [
       name: "raxol",
       files:
-        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md docs examples),
+        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md docs examples .github/CONTRIBUTING.md),
       maintainers: ["DROO AMOR"],
       licenses: ["MIT"],
       links: %{
@@ -344,23 +365,75 @@ defmodule Raxol.MixProject do
 
   defp docs do
     [
-      main: "readme",
+      main: "readme-1",
       logo: "assets/logo.svg",
       extras: [
         "README.md",
         "CHANGELOG.md",
         "LICENSE.md",
-        "CONTRIBUTING.md"
+        ".github/CONTRIBUTING.md",
+        "docs/getting-started/PACKAGES.md",
+        "docs/getting-started/QUICKSTART.md",
+        "docs/getting-started/CORE_CONCEPTS.md",
+        "docs/getting-started/MIGRATION_FROM_DIY.md",
+        "docs/core/BUFFER_API.md",
+        "docs/core/ARCHITECTURE.md",
+        "docs/core/GETTING_STARTED.md",
+        "docs/cookbook/README.md",
+        "docs/cookbook/LIVEVIEW_INTEGRATION.md",
+        "docs/cookbook/THEMING.md",
+        "docs/cookbook/COMMAND_SYSTEM.md",
+        "docs/cookbook/PERFORMANCE_OPTIMIZATION.md",
+        "docs/cookbook/VIM_NAVIGATION.md",
+        "docs/plugins/PLUGIN_DEVELOPMENT_GUIDE.md",
+        "docs/bench/README.md",
+        "docs/project/TODO.md",
+        "examples/core/README.md",
+        "apps/raxol_core/README.md",
+        "apps/raxol_liveview/README.md",
+        "apps/raxol_plugin/README.md"
       ],
       groups_for_extras: [
         "Getting Started": [
-          "README.md"
+          "README.md",
+          "docs/getting-started/PACKAGES.md",
+          "docs/getting-started/QUICKSTART.md",
+          "docs/getting-started/CORE_CONCEPTS.md",
+          "docs/getting-started/MIGRATION_FROM_DIY.md"
+        ],
+        "Core Concepts": [
+          "docs/core/BUFFER_API.md",
+          "docs/core/ARCHITECTURE.md",
+          "docs/core/GETTING_STARTED.md"
+        ],
+        "Cookbook": [
+          "docs/cookbook/README.md",
+          "docs/cookbook/LIVEVIEW_INTEGRATION.md",
+          "docs/cookbook/THEMING.md",
+          "docs/cookbook/COMMAND_SYSTEM.md",
+          "docs/cookbook/PERFORMANCE_OPTIMIZATION.md",
+          "docs/cookbook/VIM_NAVIGATION.md"
+        ],
+        "Plugins": [
+          "docs/plugins/PLUGIN_DEVELOPMENT_GUIDE.md"
+        ],
+        "Packages": [
+          "apps/raxol_core/README.md",
+          "apps/raxol_liveview/README.md",
+          "apps/raxol_plugin/README.md"
+        ],
+        "Examples & Benchmarks": [
+          "examples/core/README.md",
+          "docs/bench/README.md"
+        ],
+        "Project": [
+          "docs/project/TODO.md"
         ],
         "Project Info": [
           "CHANGELOG.md",
-          "LICENSE.md"
-        ],
-        Contributing: ["CONTRIBUTING.md"]
+          "LICENSE.md",
+          ".github/CONTRIBUTING.md"
+        ]
       ],
       groups_for_modules: [
         Core: [
