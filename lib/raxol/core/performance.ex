@@ -161,9 +161,8 @@ defmodule Raxol.Core.Performance do
   end
 
   defp safe_get_collector_metrics do
-    with {:ok, collector} <- safe_get_collector() do
-      extract_collector_metrics(collector)
-    else
+    case safe_get_collector() do
+      {:ok, collector} -> extract_collector_metrics(collector)
       # Return empty metrics on error
       _ -> {:ok, %{}}
     end

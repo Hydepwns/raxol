@@ -168,9 +168,8 @@ defmodule Raxol.Core.Metrics do
   """
   @spec get_metrics() :: {:ok, map()} | {:error, term()}
   def get_metrics do
-    with {:ok, metrics} <- safe_get_all_metrics() do
-      {:ok, metrics}
-    else
+    case safe_get_all_metrics() do
+      {:ok, metrics} -> {:ok, metrics}
       {:error, reason} -> {:error, {:metrics_get_failed, reason}}
     end
   end
