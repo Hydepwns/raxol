@@ -95,6 +95,8 @@ jobs:
           # Install Hex and Rebar for OTP compatibility
           mix local.hex --force
           mix local.rebar --force
+          # Clean build to avoid OTP version conflicts
+          mix deps.clean --all || true
           mix deps.get
           mix deps.compile
       
@@ -146,6 +148,8 @@ jobs:
           # Install Hex and Rebar for OTP compatibility
           mix local.hex --force
           mix local.rebar --force
+          # Clean build to avoid OTP version conflicts
+          mix deps.clean --all || true
           mix deps.get
           mix deps.compile
 
@@ -213,6 +217,8 @@ jobs:
           # Install Hex and Rebar for OTP compatibility
           mix local.hex --force
           mix local.rebar --force
+          # Clean build to avoid OTP version conflicts
+          mix deps.clean --all || true
           mix deps.get
           mix deps.compile
       
@@ -280,6 +286,8 @@ jobs:
           # Install Hex and Rebar for OTP compatibility
           mix local.hex --force
           mix local.rebar --force
+          # Clean build to avoid OTP version conflicts
+          mix deps.clean --all || true
           mix deps.get
           mix deps.compile
 
