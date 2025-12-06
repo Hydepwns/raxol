@@ -90,6 +90,8 @@ jobs:
       
       - name: Install dependencies
         run: |
+          # Uninstall and reinstall Hex to ensure OTP compatibility
+          mix archive.uninstall hex --force || true
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
@@ -138,6 +140,8 @@ jobs:
 
       - name: Install dependencies
         run: |
+          # Uninstall and reinstall Hex to ensure OTP compatibility
+          mix archive.uninstall hex --force || true
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
@@ -202,6 +206,8 @@ jobs:
       
       - name: Install dependencies
         run: |
+          # Uninstall and reinstall Hex to ensure OTP compatibility
+          mix archive.uninstall hex --force || true
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
@@ -266,6 +272,8 @@ jobs:
 
       - name: Install dependencies
         run: |
+          # Uninstall and reinstall Hex to ensure OTP compatibility
+          mix archive.uninstall hex --force || true
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
