@@ -25,7 +25,13 @@ defmodule Raxol.MixProject do
       docs: docs(),
       name: "Raxol",
       source_url: @source_url,
-      test_coverage: [tool: ExCoveralls],
+      test_coverage: [
+        tool: ExCoveralls,
+        ignore_modules: [
+          :termbox2_nif,
+          Termbox2Nif
+        ]
+      ],
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.detail": :test,
