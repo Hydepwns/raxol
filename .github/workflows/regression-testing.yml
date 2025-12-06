@@ -104,6 +104,7 @@ jobs:
         mix local.hex --force
         mix local.rebar --force
         mix deps.get
+        mix deps.compile
 
     - name: Compile
       run: |
@@ -118,9 +119,23 @@ jobs:
     - name: Run current performance benchmarks
       run: |
         echo "[PERF] Running current performance benchmarks..."
-        mix run bench/suites/parser/parser_benchmark.exs 2>&1 | tee regression/performance/current/parser.txt || true
-        mix run bench/suites/terminal/buffer_benchmark.exs 2>&1 | tee regression/performance/current/buffer.txt || true
-        mix run bench/suites/terminal/cursor_benchmark.exs 2>&1 | tee regression/performance/current/cursor.txt || true
+        if [ -f "bench/suites/parser/parser_benchmark.exs" ]; then
+          mix run bench/suites/parser/parser_benchmark.exs 2>&1 | tee regression/performance/current/parser.txt || true
+        else
+          echo "Parser benchmark not found, skipping..." | tee regression/performance/current/parser.txt
+        fi
+
+        if [ -f "bench/suites/terminal/buffer_benchmark.exs" ]; then
+          mix run bench/suites/terminal/buffer_benchmark.exs 2>&1 | tee regression/performance/current/buffer.txt || true
+        else
+          echo "Buffer benchmark not found, skipping..." | tee regression/performance/current/buffer.txt
+        fi
+
+        if [ -f "bench/suites/terminal/cursor_benchmark.exs" ]; then
+          mix run bench/suites/terminal/cursor_benchmark.exs 2>&1 | tee regression/performance/current/cursor.txt || true
+        else
+          echo "Cursor benchmark not found, skipping..." | tee regression/performance/current/cursor.txt
+        fi
         echo "[OK] Current benchmarks complete"
 
     - name: Checkout baseline and run benchmarks
@@ -133,9 +148,23 @@ jobs:
         mix deps.get && mix compile --warnings-as-errors
 
         echo "[BENCH] Running baseline performance benchmarks..."
-        mix run bench/suites/parser/parser_benchmark.exs 2>&1 | tee regression/performance/baselines/parser.txt || true
-        mix run bench/suites/terminal/buffer_benchmark.exs 2>&1 | tee regression/performance/baselines/buffer.txt || true
-        mix run bench/suites/terminal/cursor_benchmark.exs 2>&1 | tee regression/performance/baselines/cursor.txt || true
+        if [ -f "bench/suites/parser/parser_benchmark.exs" ]; then
+          mix run bench/suites/parser/parser_benchmark.exs 2>&1 | tee regression/performance/baselines/parser.txt || true
+        else
+          echo "Parser benchmark not found, skipping..." | tee regression/performance/baselines/parser.txt
+        fi
+
+        if [ -f "bench/suites/terminal/buffer_benchmark.exs" ]; then
+          mix run bench/suites/terminal/buffer_benchmark.exs 2>&1 | tee regression/performance/baselines/buffer.txt || true
+        else
+          echo "Buffer benchmark not found, skipping..." | tee regression/performance/baselines/buffer.txt
+        fi
+
+        if [ -f "bench/suites/terminal/cursor_benchmark.exs" ]; then
+          mix run bench/suites/terminal/cursor_benchmark.exs 2>&1 | tee regression/performance/baselines/cursor.txt || true
+        else
+          echo "Cursor benchmark not found, skipping..." | tee regression/performance/baselines/cursor.txt
+        fi
         echo "[OK] Baseline benchmarks complete"
 
         git checkout ${{ github.sha }}
@@ -228,6 +257,7 @@ jobs:
         mix local.hex --force
         mix local.rebar --force
         mix deps.get
+        mix deps.compile
 
     - name: Compile
       run: |
@@ -244,12 +274,16 @@ jobs:
       run: |
         echo "Running current memory benchmarks for scenario: ${{ matrix.scenario }}"
 
-        # Run memory analysis
-        mix raxol.bench.memory_analysis \
-          --scenario ${{ matrix.scenario }} \
-          --time 3 \
-          --memory_time 2 \
-          --output regression/memory/current/${{ matrix.scenario }}_analysis.json || true
+        # Run memory analysis if task exists
+        if mix help raxol.bench.memory_analysis &>/dev/null; then
+          mix raxol.bench.memory_analysis \
+            --scenario ${{ matrix.scenario }} \
+            --time 3 \
+            --memory_time 2 \
+            --output regression/memory/current/${{ matrix.scenario }}_analysis.json || true
+        else
+          echo "Memory analysis task not found, creating placeholder..." | tee regression/memory/current/${{ matrix.scenario }}_analysis.json
+        fi
 
         # Run specific memory benchmarks
         case "${{ matrix.scenario }}" in
@@ -283,12 +317,16 @@ jobs:
 
         echo "Running baseline memory benchmarks for scenario: ${{ matrix.scenario }}"
 
-        # Run baseline memory analysis
-        mix raxol.bench.memory_analysis \
-          --scenario ${{ matrix.scenario }} \
-          --time 3 \
-          --memory_time 2 \
-          --output regression/memory/baselines/${{ matrix.scenario }}_analysis.json || true
+        # Run baseline memory analysis if task exists
+        if mix help raxol.bench.memory_analysis &>/dev/null; then
+          mix raxol.bench.memory_analysis \
+            --scenario ${{ matrix.scenario }} \
+            --time 3 \
+            --memory_time 2 \
+            --output regression/memory/baselines/${{ matrix.scenario }}_analysis.json || true
+        else
+          echo "Memory analysis task not found, creating placeholder..." | tee regression/memory/baselines/${{ matrix.scenario }}_analysis.json
+        fi
 
         # Run baseline specific memory benchmarks
         case "${{ matrix.scenario }}" in
@@ -546,7 +584,10 @@ jobs:
         mix local.hex --force
         mix local.rebar --force
         mix deps.get
-        mix compile
+        mix deps.compile
+
+    - name: Compile project
+      run: mix compile
 
     - name: Run comprehensive analysis
       run: |
@@ -557,17 +598,23 @@ jobs:
         # Performance benchmarks
         if [ -f "bench/suites/core/performance_summary.exs" ]; then
           mix run bench/suites/core/performance_summary.exs 2>&1 | tee regression/nightly/$(date +%Y-%m-%d)/performance_comprehensive.txt || true
+        else
+          echo "Performance summary benchmark not found, skipping..." | tee regression/nightly/$(date +%Y-%m-%d)/performance_comprehensive.txt
         fi
 
-        # Memory analysis for all scenarios
-        for scenario in terminal_operations plugin_system load_testing; do
-          mix raxol.bench.memory_analysis \
-            --scenario $scenario \
-            --time 10 \
-            --memory_time 5 \
-            --with-dashboard \
-            --output regression/nightly/$(date +%Y-%m-%d)/${scenario}_comprehensive.json || true
-        done
+        # Memory analysis for all scenarios (if task exists)
+        if mix help raxol.bench.memory_analysis &>/dev/null; then
+          for scenario in terminal_operations plugin_system load_testing; do
+            mix raxol.bench.memory_analysis \
+              --scenario $scenario \
+              --time 10 \
+              --memory_time 5 \
+              --with-dashboard \
+              --output regression/nightly/$(date +%Y-%m-%d)/${scenario}_comprehensive.json || true
+          done
+        else
+          echo "Memory analysis task not found, skipping nightly memory tests..."
+        fi
 
         echo "Comprehensive analysis completed"
 
