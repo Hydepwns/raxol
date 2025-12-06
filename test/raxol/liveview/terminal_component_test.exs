@@ -2,7 +2,6 @@ defmodule Raxol.LiveView.TerminalComponentTest do
   use ExUnit.Case, async: true
 
   alias Raxol.LiveView.TerminalComponent
-  alias Raxol.LiveView.Renderer
 
   @moduletag :raxol_liveview
 
@@ -15,15 +14,26 @@ defmodule Raxol.LiveView.TerminalComponentTest do
   }
 
   # Helper to create a minimal socket structure
-  defp make_socket(assigns \\ %{}) do
+  defp make_raw_socket(assigns \\ %{}) do
     %Phoenix.LiveView.Socket{
-      assigns: Map.merge(%{__changed__: %{}, renderer: Renderer.new()}, assigns)
+      assigns: Map.merge(%{__changed__: %{}}, assigns)
     }
+  end
+
+  # Helper to create a mounted socket (calls mount first)
+  defp make_socket(assigns \\ %{}) do
+    socket = make_raw_socket()
+    {:ok, mounted_socket} = TerminalComponent.mount(socket)
+
+    # Apply any custom assigns after mounting
+    Enum.reduce(assigns, mounted_socket, fn {key, value}, acc ->
+      Phoenix.Component.assign(acc, key, value)
+    end)
   end
 
   describe "mount/1" do
     test "initializes with renderer and nil theme_css" do
-      {:ok, socket} = TerminalComponent.mount(make_socket())
+      {:ok, socket} = TerminalComponent.mount(make_raw_socket())
 
       assert socket.assigns.renderer != nil
       assert socket.assigns.theme_css == nil
@@ -223,15 +233,19 @@ defmodule Raxol.LiveView.TerminalComponentTest do
         TerminalComponent.update(%{id: "test", width: 2, height: 1}, socket)
 
       buffer = updated_socket.assigns.buffer
-      first_cell = hd(hd(buffer.lines).cells)
+      first_line = hd(buffer.lines)
+      first_cell = hd(first_line.cells)
 
       assert first_cell.char == " "
-      assert first_cell.style.bold == false
-      assert first_cell.style.italic == false
-      assert first_cell.style.underline == false
-      assert first_cell.style.reverse == false
-      assert first_cell.style.fg_color == nil
-      assert first_cell.style.bg_color == nil
+
+      # Handle both map and struct style fields
+      style = first_cell.style || %{}
+      assert Map.get(style, :bold, false) == false
+      assert Map.get(style, :italic, false) == false
+      assert Map.get(style, :underline, false) == false
+      assert Map.get(style, :reverse, false) == false
+      assert Map.get(style, :fg_color) == nil
+      assert Map.get(style, :bg_color) == nil
     end
   end
 

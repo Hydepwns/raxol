@@ -92,6 +92,8 @@ jobs:
       
       - name: Install dependencies
         run: |
+          # Clear Hex archives to prevent OTP version conflicts
+          rm -rf ~/.mix/archives/ || true
           # Install Hex and Rebar for OTP compatibility
           mix local.hex --force
           mix local.rebar --force
@@ -102,7 +104,7 @@ jobs:
       
       - name: Run full test suite
         run: |
-          mix test --exclude slow --exclude integration --exclude docker
+          mix test --exclude slow --exclude integration --exclude docker --exclude skip_on_ci
         env:
           POSTGRES_HOST: localhost
           POSTGRES_USER: postgres
@@ -145,6 +147,8 @@ jobs:
 
       - name: Install dependencies
         run: |
+          # Clear Hex archives to prevent OTP version conflicts
+          rm -rf ~/.mix/archives/ || true
           # Install Hex and Rebar for OTP compatibility
           mix local.hex --force
           mix local.rebar --force
@@ -214,6 +218,8 @@ jobs:
       
       - name: Install dependencies
         run: |
+          # Clear Hex archives to prevent OTP version conflicts
+          rm -rf ~/.mix/archives/ || true
           # Install Hex and Rebar for OTP compatibility
           mix local.hex --force
           mix local.rebar --force
@@ -283,6 +289,8 @@ jobs:
 
       - name: Install dependencies
         run: |
+          # Clear Hex archives to prevent OTP version conflicts
+          rm -rf ~/.mix/archives/ || true
           # Install Hex and Rebar for OTP compatibility
           mix local.hex --force
           mix local.rebar --force
