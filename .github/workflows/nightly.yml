@@ -76,6 +76,8 @@ jobs:
         with:
           elixir-version: ${{ matrix.elixir }}
           otp-version: ${{ matrix.otp }}
+          install-hex: false
+          install-rebar: false
       
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -90,8 +92,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          # Uninstall and reinstall Hex to ensure OTP compatibility
-          mix archive.uninstall hex --force || true
+          # Install Hex and Rebar for OTP compatibility
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
@@ -129,6 +130,8 @@ jobs:
         with:
           elixir-version: "1.19.0"
           otp-version: "28.2"
+          install-hex: false
+          install-rebar: false
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -140,8 +143,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Uninstall and reinstall Hex to ensure OTP compatibility
-          mix archive.uninstall hex --force || true
+          # Install Hex and Rebar for OTP compatibility
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
@@ -192,6 +194,8 @@ jobs:
         with:
           elixir-version: "1.19.0"
           otp-version: "28.2"
+          install-hex: false
+          install-rebar: false
 
       - name: Cache dependencies and PLTs
         uses: actions/cache@v4
@@ -206,8 +210,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          # Uninstall and reinstall Hex to ensure OTP compatibility
-          mix archive.uninstall hex --force || true
+          # Install Hex and Rebar for OTP compatibility
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
@@ -261,6 +264,8 @@ jobs:
         with:
           elixir-version: "1.19.0"
           otp-version: "28.2"
+          install-hex: false
+          install-rebar: false
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -272,8 +277,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Uninstall and reinstall Hex to ensure OTP compatibility
-          mix archive.uninstall hex --force || true
+          # Install Hex and Rebar for OTP compatibility
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
