@@ -138,7 +138,191 @@ This TODO is organized by priority:
 
 ## CRITICAL PRIORITIES
 
-*No critical blockers identified*
+### CI/CD Pipeline Stabilization
+**Priority**: High
+**Status**: In Progress (Phase 1 Complete - Dec 6, 2025)
+**Estimated Effort**: 3-5 days total
+
+#### Phase 1: Immediate Fixes ✅ (Completed Dec 6, 2025)
+**Completed Tasks**:
+- Fixed `delta_updater_test.exs` JSON parsing (removed Elixir underscores from JSON strings)
+- Added hex/rebar installation to all CI workflow jobs
+- Added explicit `mix deps.compile` steps to ensure dependencies are built
+- Added graceful fallbacks for missing benchmark files
+- Added file existence checks before running benchmarks
+- Fixed format and compile checks in Unified CI Pipeline
+
+**Results**:
+- ✅ Unified CI Pipeline: Format and compile checks now passing
+- ✅ Performance Tracking: Running successfully with fallbacks
+- ✅ Regression Testing: Compilation errors resolved
+- ✅ Security Scanning: Continues to pass
+- ⚠️ Nightly Build: Still failing - requires Phase 2 investigation
+
+**Commits**:
+- d84103ae: Core CI fixes for workflows and tests
+- 0089fe35: Unified CI workflow hex/rebar installation
+
+#### Phase 2: Nightly Build Investigation (Next Priority)
+**Status**: Not Started
+**Estimated Effort**: 2-3 days
+**Goal**: Identify and fix root causes of nightly build test failures
+
+**Current Failure Summary** (from Dec 6, 2025 runs):
+- Test Matrix: 10/11 jobs failing across multiple Elixir/OTP/OS combinations
+- Dialyzer: Failing with exit code 1
+- Extended Integration Tests: Passing ✅
+- Extended Scenarios: Passing ✅
+
+**Affected Combinations**:
+- Elixir 1.17.3, 1.18.3, 1.19.0
+- OTP 27.2, 28.2
+- Ubuntu Latest, macOS Latest
+- Common pattern: Test suite failures, not compilation errors
+
+**Investigation Plan**:
+
+1. **Isolate Failure Patterns** (4-6 hours)
+   - [ ] Download and analyze logs from failed nightly runs
+   - [ ] Identify common failing tests across all matrix combinations
+   - [ ] Check if failures are environment-specific (macOS vs Ubuntu)
+   - [ ] Check if failures are version-specific (Elixir/OTP combinations)
+   - [ ] Look for timing-related issues (race conditions, timeouts)
+
+   **Commands**:
+   ```bash
+   # Get detailed logs for specific failing run
+   gh run view 19981649364 --log-failed
+
+   # Compare logs across different matrix combinations
+   gh api repos/Hydepwns/raxol/actions/jobs/57309039453/logs  # Ubuntu 1.17.3/27.2
+   gh api repos/Hydepwns/raxol/actions/jobs/57309039461/logs  # macOS 1.18.3/28.2
+
+   # Extract test names from failures
+   gh run view 19981649364 --log-failed | grep "test.*(" | sort | uniq -c
+   ```
+
+2. **Reproduce Locally** (2-4 hours)
+   - [ ] Set up test environment matching CI matrix
+   - [ ] Run failing tests locally with same Elixir/OTP versions
+   - [ ] Use asdf to test multiple version combinations:
+   ```bash
+   # Test with different Elixir versions
+   asdf local elixir 1.17.3
+   asdf local erlang 27.2
+   TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test
+
+   asdf local elixir 1.19.0
+   asdf local erlang 28.2
+   TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test
+   ```
+   - [ ] Check for environment variable differences between local and CI
+   - [ ] Verify all required services are running (postgres, redis if needed)
+
+3. **Categorize Failures** (2-3 hours)
+   - [ ] **Flaky Tests**: Identify tests that pass sometimes, fail others
+   - [ ] **Environment-Specific**: Tests that fail only on macOS or Ubuntu
+   - [ ] **Version-Specific**: Tests that fail on certain Elixir/OTP versions
+   - [ ] **Timeout Issues**: Tests exceeding time limits
+   - [ ] **Resource Issues**: Memory/CPU constraints in CI environment
+   - [ ] **Mock/Stub Issues**: Mox expectations not being met
+
+   **Analysis**:
+   ```bash
+   # Run tests multiple times to detect flaky tests
+   for i in {1..10}; do
+     echo "Run $i"
+     TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test --seed 0
+   done
+
+   # Check for timeout-related failures
+   TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test --trace
+   ```
+
+4. **Fix Root Causes** (4-8 hours)
+   **Potential Fixes**:
+   - [ ] Add proper setup/teardown for flaky tests
+   - [ ] Increase timeouts for slow-running tests in CI
+   - [ ] Add platform-specific test tags (@tag :skip_on_macos, @tag :skip_on_ubuntu)
+   - [ ] Fix race conditions with proper process synchronization
+   - [ ] Add retries for network-dependent tests
+   - [ ] Update test fixtures for version compatibility
+   - [ ] Fix Mox expectations for async tests
+
+   **Example Fixes**:
+   ```elixir
+   # Add setup to ensure clean state
+   setup do
+     on_exit(fn ->
+       # Clean up processes, ETS tables, etc.
+     end)
+   end
+
+   # Add platform-specific skip
+   @tag :skip_on_macos
+   test "something that only works on Linux" do
+     # ...
+   end
+
+   # Increase timeout for slow tests
+   @tag timeout: 60_000
+   test "slow integration test" do
+     # ...
+   end
+   ```
+
+5. **Dialyzer Failures** (2-3 hours)
+   - [ ] Run dialyzer locally to reproduce issues:
+   ```bash
+   mix dialyzer --format github
+   ```
+   - [ ] Check for new type spec warnings
+   - [ ] Fix type mismatches or add proper specs
+   - [ ] Consider making Dialyzer non-blocking if issues are non-critical:
+   ```yaml
+   - name: Run Dialyzer
+     run: mix dialyzer
+     continue-on-error: true  # Add this if needed
+   ```
+
+6. **Update Workflow Configuration** (1-2 hours)
+   - [ ] Add better error reporting in nightly.yml
+   - [ ] Add test result summaries to GitHub Actions output
+   - [ ] Consider reducing test matrix to critical combinations only:
+   ```yaml
+   # Current: 11 combinations (3 Elixir × 2 OTP × 2 OS - 1 excluded)
+   # Proposed: 4-6 critical combinations
+   matrix:
+     include:
+       - elixir: "1.17.3"
+         otp: "27.2"
+         os: ubuntu-latest
+       - elixir: "1.19.0"
+         otp: "28.2"
+         os: ubuntu-latest
+       - elixir: "1.19.0"
+         otp: "28.2"
+         os: macos-latest
+   ```
+   - [ ] Add test artifact uploads with better paths
+   - [ ] Add summary step showing which tests failed
+
+**Success Criteria**:
+- [ ] Nightly build passes on all tested configurations
+- [ ] OR: Failing tests are properly tagged/skipped with documented reasons
+- [ ] Dialyzer runs without errors (or is marked continue-on-error with issue tracking)
+- [ ] Test matrix reduced to maintainable size if needed
+- [ ] All flaky tests identified and fixed or marked
+
+**Files to Check**:
+- `.github/workflows/nightly.yml`
+- Test files showing consistent failures
+- Dialyzer PLT files and type specs
+- Test helper modules for proper setup/teardown
+
+**Links**:
+- Latest nightly run: https://github.com/Hydepwns/raxol/actions/runs/19981649364
+- Workflow file: `.github/workflows/nightly.yml`
 
 ---
 
