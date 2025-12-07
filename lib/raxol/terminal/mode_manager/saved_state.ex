@@ -111,14 +111,15 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
   end
 
   defp restore_mode_state(emulator, mode_state) do
-    mode_manager =
+    %Raxol.Terminal.ModeManager{} =
+      mode_manager =
       case emulator.mode_manager do
         %Raxol.Terminal.ModeManager{} = mm -> mm
         mm when is_map(mm) -> struct(Raxol.Terminal.ModeManager, mm)
         _ -> Raxol.Terminal.ModeManager.new()
       end
 
-    updated_mode_manager = %Raxol.Terminal.ModeManager{
+    updated_mode_manager = %{
       mode_manager
       | cursor_visible: mode_state.cursor_visible,
         auto_wrap: mode_state.auto_wrap,

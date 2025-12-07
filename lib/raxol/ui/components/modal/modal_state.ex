@@ -67,7 +67,10 @@ defmodule Raxol.UI.Components.Modal.State do
   @doc "Handles prompt submission."
   @spec handle_prompt_submission(Raxol.UI.Components.Modal.t(), any()) ::
           {Raxol.UI.Components.Modal.t(), list()}
-  def handle_prompt_submission(%Raxol.UI.Components.Modal{} = state, original_msg) do
+  def handle_prompt_submission(
+        %Raxol.UI.Components.Modal{} = state,
+        original_msg
+      ) do
     # If there are fields, validate as form
     case length(state.form_state.fields) do
       count when count > 0 ->
@@ -101,7 +104,11 @@ defmodule Raxol.UI.Components.Modal.State do
   @doc "Updates field value and clears errors."
   @spec update_field_value(Raxol.UI.Components.Modal.t(), any(), any()) ::
           {Raxol.UI.Components.Modal.t(), list()}
-  def update_field_value(%Raxol.UI.Components.Modal{} = state, field_id, new_value) do
+  def update_field_value(
+        %Raxol.UI.Components.Modal{} = state,
+        field_id,
+        new_value
+      ) do
     updated_fields =
       Enum.map(state.form_state.fields, fn field ->
         case field.id == field_id do
