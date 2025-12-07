@@ -41,7 +41,12 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
       env_vars = System.get_env()
 
       # Common environment variables that should exist on all platforms
-      assert Map.has_key?(env_vars, "PATH")
+      # Windows uses case-insensitive env vars, may be "PATH" or "Path"
+      path_exists =
+        Map.has_key?(env_vars, "PATH") ||
+          Map.has_key?(env_vars, "Path")
+
+      assert path_exists
 
       # At least one of these should exist
       assert Map.has_key?(env_vars, "HOME") ||

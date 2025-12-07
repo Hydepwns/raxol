@@ -41,7 +41,9 @@ defmodule Raxol.MinimalTest do
       end_time = System.monotonic_time(:microsecond)
 
       startup_time_ms = (end_time - start_time) / 1000
-      assert startup_time_ms < 50, "Startup time should be under 50ms, got #{startup_time_ms}ms"
+      # Use larger timeout on Windows CI for timing variability
+      timeout_ms = if :os.type() == {:win32, :nt}, do: 150, else: 50
+      assert startup_time_ms < timeout_ms, "Startup time should be under #{timeout_ms}ms, got #{startup_time_ms}ms"
 
       GenServer.stop(pid)
     end

@@ -1,9 +1,13 @@
 defmodule Termbox2LoadingTest do
   @moduledoc """
   Tests for verifying that the termbox2_nif module loads correctly.
-  These tests don't require a TTY and always run.
+  These tests don't require a TTY and always run on Unix platforms.
+  On Windows, termbox2 NIF is not compiled (pure Elixir IOTerminal is used instead).
   """
   use ExUnit.Case
+
+  # Skip all NIF loading tests on Windows (NIF not compiled there)
+  @moduletag :unix_only
 
   describe "NIF loading" do
     test "termbox2_nif module is loaded" do

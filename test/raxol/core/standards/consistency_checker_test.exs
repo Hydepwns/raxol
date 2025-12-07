@@ -96,7 +96,7 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       content = """
       defmodule TestModule do
         @moduledoc "Test module"
-        
+
         @doc "Long line function"
         def very_long_function_name_that_exceeds_the_recommended_character_limit_of_one_hundred_and_twenty_characters_per_line do
           :ok
@@ -106,6 +106,9 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
 
       File.write!("test_long_lines.ex", content)
 
+      # Add small delay on Windows to ensure file is written
+      if :os.type() == {:win32, :nt}, do: Process.sleep(10)
+
       assert {:ok, issues} = ConsistencyChecker.check_file("test_long_lines.ex")
 
       assert Enum.any?(issues, fn issue ->
@@ -113,6 +116,8 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
                  issue.message =~ "exceeds 120 characters"
              end)
 
+      # Ensure file is closed before deletion on Windows
+      if :os.type() == {:win32, :nt}, do: Process.sleep(10)
       File.rm!("test_long_lines.ex")
     end
 

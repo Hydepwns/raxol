@@ -19,8 +19,23 @@ if System.get_env("SKIP_TERMBOX2_TESTS") == "true" do
   ExUnit.configure(exclude: [docker: true])
 end
 
+# --- Platform-specific Test Skip Logic ---
+# Skip Unix-only tests (like NIF loading) on Windows
+if :os.type() == {:win32, :nt} do
+  IO.puts(
+    :stderr,
+    "[CI] Skipping Unix-only tests on Windows (termbox2 NIF not compiled)"
+  )
+
+  ExUnit.configure(exclude: [unix_only: true])
+end
+
 # To mark a test as Docker-dependent, use:
 #   @tag :docker
+#   test "..." do ... end
+#
+# To mark a test as Unix-only, use:
+#   @tag :unix_only
 #   test "..." do ... end
 
 # Start ExUnit

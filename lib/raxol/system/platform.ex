@@ -697,8 +697,31 @@ defmodule Raxol.System.Platform do
   end
 
   defp detect_windows_unicode do
-    # Windows Terminal and WSL have better unicode support than native cmd/powershell
+    # Windows 10+ has native VT100/Unicode support
+    # Windows Terminal and WSL have even better unicode support
     windows_terminal?() || wsl?() ||
-      System.get_env("TERM") == "xterm-256color"
+      System.get_env("TERM") == "xterm-256color" ||
+      is_windows_10_or_later()
+  end
+
+  defp is_windows_10_or_later do
+    case get_windows_version() do
+      "unknown" ->
+        # Assume Windows 10+ if version detection fails
+        true
+
+      version ->
+        # Parse version string like "10.0.19045.2006"
+        case String.split(version, ".") do
+          [major | _] when is_binary(major) ->
+            case Integer.parse(major) do
+              {maj_num, _} -> maj_num >= 10
+              _ -> true
+            end
+
+          _ ->
+            true
+        end
+    end
   end
 end

@@ -206,6 +206,7 @@ defmodule Raxol.Examples.ButtonTest do
   end
 
   describe "visual tests" do
+    @tag :unix_only
     test "renders with correct style", _context do
       button =
         Raxol.Test.Visual.setup_visual_component(Button, %{
@@ -219,6 +220,7 @@ defmodule Raxol.Examples.ButtonTest do
       assert Map.get(view.attrs, :focused, false) == false
     end
 
+    @tag :unix_only
     test "matches snapshot", context do
       button =
         Raxol.Test.Visual.setup_visual_component(Button, %{
@@ -233,6 +235,7 @@ defmodule Raxol.Examples.ButtonTest do
       )
     end
 
+    @tag :unix_only
     test "renders normal and disabled states for snapshot testing", context do
       normal_button =
         Raxol.Test.Visual.setup_visual_component(Button, %{

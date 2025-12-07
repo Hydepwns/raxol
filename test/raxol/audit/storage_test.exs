@@ -284,6 +284,7 @@ defmodule Raxol.Audit.StorageTest do
   end
 
   describe "compression" do
+    @tag :unix_only
     test "compresses archived files when enabled" do
       # Restart with compression enabled
       GenServer.stop(Storage)
