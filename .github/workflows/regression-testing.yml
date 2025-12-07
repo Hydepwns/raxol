@@ -120,7 +120,7 @@ jobs:
       run: |
         echo "[PERF] Running current performance benchmarks..."
         if [ -f "bench/suites/parser/parser_benchmark.exs" ]; then
-          elixir bench/suites/parser/parser_benchmark.exs --json > regression/performance/current/parser.json 2>/dev/null || true
+          elixir bench/suites/parser/parser_benchmark.exs --json 2>/dev/null | tail -1 > regression/performance/current/parser.json || true
         else
           echo "Parser benchmark not found, creating placeholder..."
           mkdir -p regression/performance/current
@@ -128,7 +128,7 @@ jobs:
         fi
 
         if [ -f "bench/suites/terminal/buffer_benchmark.exs" ]; then
-          elixir bench/suites/terminal/buffer_benchmark.exs --json > regression/performance/current/buffer.json 2>/dev/null || true
+          elixir bench/suites/terminal/buffer_benchmark.exs --json 2>/dev/null | tail -1 > regression/performance/current/buffer.json || true
         else
           echo "Buffer benchmark not found, creating placeholder..."
           mkdir -p regression/performance/current
@@ -136,7 +136,7 @@ jobs:
         fi
 
         if [ -f "bench/suites/terminal/cursor_benchmark.exs" ]; then
-          elixir bench/suites/terminal/cursor_benchmark.exs --json > regression/performance/current/cursor.json 2>/dev/null || true
+          elixir bench/suites/terminal/cursor_benchmark.exs --json 2>/dev/null | tail -1 > regression/performance/current/cursor.json || true
         else
           echo "Cursor benchmark not found, creating placeholder..."
           mkdir -p regression/performance/current
@@ -155,7 +155,7 @@ jobs:
 
         echo "[BENCH] Running baseline performance benchmarks..."
         if [ -f "bench/suites/parser/parser_benchmark.exs" ]; then
-          elixir bench/suites/parser/parser_benchmark.exs --json > regression/performance/baselines/parser.json 2>/dev/null || true
+          elixir bench/suites/parser/parser_benchmark.exs --json 2>/dev/null | tail -1 > regression/performance/baselines/parser.json || true
         else
           echo "Parser benchmark not found, creating placeholder..."
           mkdir -p regression/performance/baselines
@@ -163,7 +163,7 @@ jobs:
         fi
 
         if [ -f "bench/suites/terminal/buffer_benchmark.exs" ]; then
-          elixir bench/suites/terminal/buffer_benchmark.exs --json > regression/performance/baselines/buffer.json 2>/dev/null || true
+          elixir bench/suites/terminal/buffer_benchmark.exs --json 2>/dev/null | tail -1 > regression/performance/baselines/buffer.json || true
         else
           echo "Buffer benchmark not found, creating placeholder..."
           mkdir -p regression/performance/baselines
@@ -171,7 +171,7 @@ jobs:
         fi
 
         if [ -f "bench/suites/terminal/cursor_benchmark.exs" ]; then
-          elixir bench/suites/terminal/cursor_benchmark.exs --json > regression/performance/baselines/cursor.json 2>/dev/null || true
+          elixir bench/suites/terminal/cursor_benchmark.exs --json 2>/dev/null | tail -1 > regression/performance/baselines/cursor.json || true
         else
           echo "Cursor benchmark not found, creating placeholder..."
           mkdir -p regression/performance/baselines
@@ -299,17 +299,17 @@ jobs:
         case "${{ matrix.scenario }}" in
           "terminal_operations")
             if [ -f "bench/memory/terminal_memory_benchmark.exs" ]; then
-              mix run bench/memory/terminal_memory_benchmark.exs 2>&1 | tee regression/memory/current/terminal_memory.txt || true
+              mix run bench/memory/terminal_memory_benchmark.exs -- --json 2>/dev/null | tail -1 > regression/memory/current/${{ matrix.scenario }}_memory.json || true
             fi
             ;;
           "plugin_system")
             if [ -f "bench/memory/plugin_memory_benchmark.exs" ]; then
-              mix run bench/memory/plugin_memory_benchmark.exs 2>&1 | tee regression/memory/current/plugin_memory.txt || true
+              mix run bench/memory/plugin_memory_benchmark.exs -- --json 2>/dev/null | tail -1 > regression/memory/current/${{ matrix.scenario }}_memory.json || true
             fi
             ;;
           "load_testing")
             if [ -f "bench/memory/load_memory_benchmark.exs" ]; then
-              mix run bench/memory/load_memory_benchmark.exs 2>&1 | tee regression/memory/current/load_memory.txt || true
+              mix run bench/memory/load_memory_benchmark.exs -- --json 2>/dev/null | tail -1 > regression/memory/current/${{ matrix.scenario }}_memory.json || true
             fi
             ;;
         esac
@@ -342,17 +342,17 @@ jobs:
         case "${{ matrix.scenario }}" in
           "terminal_operations")
             if [ -f "bench/memory/terminal_memory_benchmark.exs" ]; then
-              mix run bench/memory/terminal_memory_benchmark.exs 2>&1 | tee regression/memory/baselines/terminal_memory.txt || true
+              mix run bench/memory/terminal_memory_benchmark.exs -- --json 2>/dev/null | tail -1 > regression/memory/baselines/${{ matrix.scenario }}_memory.json || true
             fi
             ;;
           "plugin_system")
             if [ -f "bench/memory/plugin_memory_benchmark.exs" ]; then
-              mix run bench/memory/plugin_memory_benchmark.exs 2>&1 | tee regression/memory/baselines/plugin_memory.txt || true
+              mix run bench/memory/plugin_memory_benchmark.exs -- --json 2>/dev/null | tail -1 > regression/memory/baselines/${{ matrix.scenario }}_memory.json || true
             fi
             ;;
           "load_testing")
             if [ -f "bench/memory/load_memory_benchmark.exs" ]; then
-              mix run bench/memory/load_memory_benchmark.exs 2>&1 | tee regression/memory/baselines/load_memory.txt || true
+              mix run bench/memory/load_memory_benchmark.exs -- --json 2>/dev/null | tail -1 > regression/memory/baselines/${{ matrix.scenario }}_memory.json || true
             fi
             ;;
         esac
