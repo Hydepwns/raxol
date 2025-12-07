@@ -86,6 +86,13 @@ defmodule Raxol.LiveView.TerminalComponentLegacy do
 
   @impl true
   def mount(socket) do
+    socket =
+      socket
+      |> assign(:renderer, TerminalBridge)
+      |> assign(:theme_css, nil)
+      |> assign(:width, 80)
+      |> assign(:height, 24)
+
     {:ok, socket}
   end
 
@@ -93,15 +100,43 @@ defmodule Raxol.LiveView.TerminalComponentLegacy do
   def update(assigns, socket) do
     start_time = System.monotonic_time(:millisecond)
 
+    # Get theme, defaulting to :synthwave84
+    theme = Map.get(assigns, :theme, :synthwave84)
+
+    # Get dimensions
+    width = Map.get(assigns, :width, socket.assigns[:width] || 80)
+    height = Map.get(assigns, :height, socket.assigns[:height] || 24)
+
+    # Get or create buffer
+    buffer = Map.get(assigns, :buffer) || create_blank_buffer(width, height)
+
+    # Generate theme CSS if theme changed
+    theme_css =
+      if theme != Map.get(socket.assigns, :theme) or
+           socket.assigns[:theme_css] == nil do
+        generate_theme_css(theme, Map.get(assigns, :css_prefix, "raxol"))
+      else
+        Map.get(socket.assigns, :theme_css)
+      end
+
+    # Get aria_label
+    aria_label = Map.get(assigns, :aria_label, "Terminal output")
+
     socket =
       socket
-      |> assign(:buffer, Map.get(assigns, :buffer))
+      |> assign(:buffer, buffer)
       |> assign(:id, Map.get(assigns, :id))
-      |> assign(:theme, Map.get(assigns, :theme, :default))
+      |> assign(:theme, theme)
+      |> assign(:theme_css, theme_css)
+      |> assign(:width, width)
+      |> assign(:height, height)
+      |> assign(:aria_label, aria_label)
       |> assign(:cursor_position, Map.get(assigns, :cursor_position))
       |> assign(:cursor_style, Map.get(assigns, :cursor_style, :block))
       |> assign(:css_prefix, Map.get(assigns, :css_prefix, "raxol"))
       |> assign(:show_cursor, Map.get(assigns, :show_cursor, true))
+      |> assign(:crt_mode, Map.get(assigns, :crt_mode, false))
+      |> assign(:high_contrast, Map.get(assigns, :high_contrast, false))
       |> assign(:on_keypress, Map.get(assigns, :on_keypress))
       |> assign(:on_click, Map.get(assigns, :on_click))
       |> assign(:on_paste, Map.get(assigns, :on_paste))
@@ -122,6 +157,40 @@ defmodule Raxol.LiveView.TerminalComponentLegacy do
     end
 
     {:ok, socket}
+  end
+
+  defp create_blank_buffer(width, height) do
+    blank_line = %{
+      cells: List.duplicate(%{char: " ", style: %{}}, width)
+    }
+
+    %{
+      lines: List.duplicate(blank_line, height),
+      width: width,
+      height: height
+    }
+  end
+
+  defp generate_theme_css(theme, css_prefix) do
+    theme_colors = get_theme_colors(theme)
+
+    """
+    .#{css_prefix}-container {
+      background-color: #{Map.get(theme_colors, :background, "#282a36")};
+      color: #{Map.get(theme_colors, :foreground, "#f8f8f2")};
+    }
+    """
+  end
+
+  defp get_theme_colors(theme) do
+    case theme do
+      :synthwave84 -> %{background: "#262335", foreground: "#fede5d"}
+      :nord -> %{background: "#2e3440", foreground: "#d8dee9"}
+      :dracula -> %{background: "#282a36", foreground: "#f8f8f2"}
+      :monokai -> %{background: "#272822", foreground: "#f8f8f2"}
+      :solarized_dark -> %{background: "#002b36", foreground: "#839496"}
+      _ -> %{background: "#282a36", foreground: "#f8f8f2"}
+    end
   end
 
   @impl true
