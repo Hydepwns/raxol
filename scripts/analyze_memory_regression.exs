@@ -1,3 +1,5 @@
+Mix.install([{:jason, "~> 1.4"}])
+
 defmodule MemoryRegressionAnalyzer do
   @moduledoc """
   Memory regression analysis for CI/CD pipeline.

@@ -194,9 +194,7 @@ jobs:
           performance-baseline-master-
 
     - name: Generate performance report
-      run: |
-        mix archive.install hex jason 1.4.4 --force
-        elixir scripts/analyze_performance_regression.exs
+      run: elixir scripts/analyze_performance_regression.exs
 
     - name: Upload performance artifacts
       uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3
@@ -376,9 +374,7 @@ jobs:
           memory-baseline-master-${{ matrix.scenario }}-
 
     - name: Generate memory report
-      run: |
-        mix archive.install hex jason 1.4.4 --force
-        elixir scripts/analyze_memory_regression.exs ${{ matrix.scenario }}
+      run: elixir scripts/analyze_memory_regression.exs ${{ matrix.scenario }}
 
     - name: Upload memory artifacts
       uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3

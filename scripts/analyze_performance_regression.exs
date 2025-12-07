@@ -1,3 +1,5 @@
+Mix.install([{:jason, "~> 1.4"}])
+
 defmodule PerformanceRegressionAnalyzer do
   @moduledoc """
   Performance regression analysis for CI/CD pipeline.
@@ -34,7 +36,7 @@ defmodule PerformanceRegressionAnalyzer do
     end
   end
 
-  defp compare_benchmarks(baseline, current, module_name) when baseline == %{} do
+  defp compare_benchmarks(baseline, _current, module_name) when baseline == %{} do
     IO.puts("[WARN] No baseline data for #{module_name}, skipping comparison")
     %{status: :no_baseline, regressions: [], improvements: []}
   end
