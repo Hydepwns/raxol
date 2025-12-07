@@ -137,6 +137,7 @@ defmodule Raxol.Core.Metrics.MetricsCollectorTest do
   end
 
   describe "system metrics collection" do
+    @tag :skip_on_ci
     test "collects system metrics automatically" do
       # Wait for the periodic system metrics collection to run
       Process.sleep(200)

@@ -896,7 +896,8 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
     new_state = %{state | hash_ring: updated_ring, nodes: updated_nodes}
 
-    # TODO: Trigger session rebalancing
+    # NOTE: Session rebalancing not yet implemented. Future enhancement will
+    # redistribute sessions across nodes when topology changes.
     {:ok, new_state}
   end
 
@@ -909,7 +910,8 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
     new_state = %{state | hash_ring: updated_ring, nodes: updated_nodes}
 
-    # TODO: Migrate sessions from removed node
+    # NOTE: Session migration not yet implemented. Future enhancement will
+    # automatically migrate sessions from removed nodes to remaining nodes.
     {:ok, new_state}
   end
 

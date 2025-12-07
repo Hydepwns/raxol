@@ -1,4 +1,10 @@
 defmodule RaxolPlaygroundWeb do
+  @moduledoc """
+  Phoenix web interface module for Raxol Playground.
+
+  Provides web-specific functionality including router helpers, controllers,
+  live views, and static asset paths for the Raxol web playground.
+  """
   def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
 
   def router do

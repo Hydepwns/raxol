@@ -62,8 +62,8 @@ defmodule Raxol.System.DeltaUpdaterTest do
 
       assert match?({:ok, _}, result)
       {:ok, delta_info} = result
-      assert delta_info.delta_size == 1500000
-      assert delta_info.full_size == 15000000
+      assert delta_info.delta_size == 1_500_000
+      assert delta_info.full_size == 15_000_000
       assert delta_info.savings_percent == 90
     end
 

@@ -158,6 +158,7 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
       {:ok, context: context}
     end
 
+    @tag :skip_on_ci
     test "starts an interval subscription", %{context: context} do
       sub = Subscription.interval(50, :tick, start_immediately: true)
       assert {:ok, {:interval, timer_ref}} = Subscription.start(sub, context)

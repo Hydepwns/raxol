@@ -539,8 +539,8 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
         _ -> 1
       end
 
-    # Simple implementation - return emulator unchanged for now
-    # TODO: Implement actual scroll up
+    # NOTE: Scrolling not yet implemented. Future enhancement will add
+    # viewport scrolling support for handling scroll regions and history.
     emulator
   end
 
@@ -553,8 +553,8 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
         _ -> 1
       end
 
-    # Simple implementation - return emulator unchanged for now
-    # TODO: Implement actual scroll down
+    # NOTE: Scrolling not yet implemented. Future enhancement will add
+    # viewport scrolling support for handling scroll regions and history.
     emulator
   end
 

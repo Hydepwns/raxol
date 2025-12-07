@@ -12,8 +12,8 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParserCached do
   Parses a CSI sequence with caching.
   """
   def parse(sequence) do
-    # For now, directly parse without caching to fix tests
-    # TODO: Add actual caching implementation
+    # NOTE: Direct parsing without caching. Future enhancement will add
+    # memoization for frequently-used CSI sequences to improve performance.
     CSIParser.parse(sequence)
   end
 

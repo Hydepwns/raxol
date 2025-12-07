@@ -12,8 +12,8 @@ defmodule Raxol.Terminal.CellCached do
   Creates a new cell with caching.
   """
   def new(char, style \\ nil) do
-    # For now, directly create without caching to fix tests
-    # TODO: Add actual caching implementation
+    # NOTE: Direct cell creation without caching. Future enhancement will add
+    # cell pooling and reuse to reduce allocation overhead.
     Cell.new(char, style)
   end
 

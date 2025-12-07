@@ -258,6 +258,7 @@ defmodule Raxol.Test.MockPlugins do
 
   # --- Mock Plugin for Init Crash Testing ---
   defmodule MockOnInitCrashPlugin do
+    @moduledoc "Mock plugin that crashes during initialization for testing error handling."
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
 
     @spec init(term()) :: no_return()
@@ -286,6 +287,7 @@ defmodule Raxol.Test.MockPlugins do
 
   # --- Mock Plugin for Terminate Crash Testing ---
   defmodule MockOnTerminateCrashPlugin do
+    @moduledoc "Mock plugin that crashes during termination for testing cleanup error handling."
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
 
     def init(_config) do
