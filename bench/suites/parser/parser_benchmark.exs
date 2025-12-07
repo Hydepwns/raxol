@@ -36,7 +36,8 @@ defmodule ParserBenchmark do
     warmup: 2,
     formatters: [
       Benchee.Formatters.Console,
-      {Benchee.Formatters.HTML, file: "bench/output/parser_benchmark.html"}
+      {Benchee.Formatters.HTML, file: "bench/output/parser_benchmark.html"},
+      {Benchee.Formatters.JSON, file: "regression/performance/current/parser.json"}
     ])
     
     profile_csi_parsing(emulator)

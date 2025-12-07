@@ -122,19 +122,25 @@ jobs:
         if [ -f "bench/suites/parser/parser_benchmark.exs" ]; then
           mix run bench/suites/parser/parser_benchmark.exs 2>&1 | tee regression/performance/current/parser.txt || true
         else
-          echo "Parser benchmark not found, skipping..." | tee regression/performance/current/parser.txt
+          echo "Parser benchmark not found, creating placeholder..."
+          mkdir -p regression/performance/current
+          echo '{"timestamp":"","module":"parser","statistics":{"average":0,"memory":0}}' > regression/performance/current/parser.json
         fi
 
         if [ -f "bench/suites/terminal/buffer_benchmark.exs" ]; then
-          mix run bench/suites/terminal/buffer_benchmark.exs 2>&1 | tee regression/performance/current/buffer.txt || true
+          elixir bench/suites/terminal/buffer_benchmark.exs --json > regression/performance/current/buffer.json 2>&1 || true
         else
-          echo "Buffer benchmark not found, skipping..." | tee regression/performance/current/buffer.txt
+          echo "Buffer benchmark not found, creating placeholder..."
+          mkdir -p regression/performance/current
+          echo '{"timestamp":"","module":"buffer","statistics":{"average":0,"memory":0}}' > regression/performance/current/buffer.json
         fi
 
         if [ -f "bench/suites/terminal/cursor_benchmark.exs" ]; then
-          mix run bench/suites/terminal/cursor_benchmark.exs 2>&1 | tee regression/performance/current/cursor.txt || true
+          elixir bench/suites/terminal/cursor_benchmark.exs --json > regression/performance/current/cursor.json 2>&1 || true
         else
-          echo "Cursor benchmark not found, skipping..." | tee regression/performance/current/cursor.txt
+          echo "Cursor benchmark not found, creating placeholder..."
+          mkdir -p regression/performance/current
+          echo '{"timestamp":"","module":"cursor","statistics":{"average":0,"memory":0}}' > regression/performance/current/cursor.json
         fi
         echo "[OK] Current benchmarks complete"
 
@@ -151,19 +157,25 @@ jobs:
         if [ -f "bench/suites/parser/parser_benchmark.exs" ]; then
           mix run bench/suites/parser/parser_benchmark.exs 2>&1 | tee regression/performance/baselines/parser.txt || true
         else
-          echo "Parser benchmark not found, skipping..." | tee regression/performance/baselines/parser.txt
+          echo "Parser benchmark not found, creating placeholder..."
+          mkdir -p regression/performance/baselines
+          echo '{"timestamp":"","module":"parser","statistics":{"average":0,"memory":0}}' > regression/performance/baselines/parser.json
         fi
 
         if [ -f "bench/suites/terminal/buffer_benchmark.exs" ]; then
-          mix run bench/suites/terminal/buffer_benchmark.exs 2>&1 | tee regression/performance/baselines/buffer.txt || true
+          elixir bench/suites/terminal/buffer_benchmark.exs --json > regression/performance/baselines/buffer.json 2>&1 || true
         else
-          echo "Buffer benchmark not found, skipping..." | tee regression/performance/baselines/buffer.txt
+          echo "Buffer benchmark not found, creating placeholder..."
+          mkdir -p regression/performance/baselines
+          echo '{"timestamp":"","module":"buffer","statistics":{"average":0,"memory":0}}' > regression/performance/baselines/buffer.json
         fi
 
         if [ -f "bench/suites/terminal/cursor_benchmark.exs" ]; then
-          mix run bench/suites/terminal/cursor_benchmark.exs 2>&1 | tee regression/performance/baselines/cursor.txt || true
+          elixir bench/suites/terminal/cursor_benchmark.exs --json > regression/performance/baselines/cursor.json 2>&1 || true
         else
-          echo "Cursor benchmark not found, skipping..." | tee regression/performance/baselines/cursor.txt
+          echo "Cursor benchmark not found, creating placeholder..."
+          mkdir -p regression/performance/baselines
+          echo '{"timestamp":"","module":"cursor","statistics":{"average":0,"memory":0}}' > regression/performance/baselines/cursor.json
         fi
         echo "[OK] Baseline benchmarks complete"
 
