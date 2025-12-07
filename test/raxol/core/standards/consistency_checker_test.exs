@@ -140,12 +140,17 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
 
       File.write!("test_good_code.ex", content)
 
+      # Add delay on Windows to ensure file is written and closed
+      if :os.type() == {:win32, :nt}, do: Process.sleep(50)
+
       assert {:ok, issues} = ConsistencyChecker.check_file("test_good_code.ex")
 
       # Should have minimal issues
       # Allow for module name mismatch
       assert length(issues) <= 1
 
+      # Ensure file is closed before deletion on Windows
+      if :os.type() == {:win32, :nt}, do: Process.sleep(50)
       File.rm!("test_good_code.ex")
     end
   end

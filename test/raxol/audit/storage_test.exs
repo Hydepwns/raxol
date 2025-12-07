@@ -268,6 +268,7 @@ defmodule Raxol.Audit.StorageTest do
   end
 
   describe "file rotation" do
+    @tag :unix_only
     test "rotates files when triggered" do
       # Store some events
       events = create_test_events(5)
