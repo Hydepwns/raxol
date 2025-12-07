@@ -35,7 +35,9 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
   Optimized version of process_input that minimizes allocations and function calls.
   """
   def process_input(emulator, input) do
-    cached :input_processing, key: "process_#{:erlang.phash2(input)}", ttl: 1000 do
+    cached :input_processing,
+      key: "process_#{:erlang.phash2(input)}",
+      ttl: 1000 do
       do_process_input(emulator, input)
     end
   end

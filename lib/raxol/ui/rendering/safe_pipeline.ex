@@ -149,7 +149,8 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   @impl true
   def handle_manager_call({:render, scene}, from, state) do
     # Profile render operation
-    profile :render, metadata: %{scene_complexity: estimate_complexity(scene)} do
+    profile :render,
+      metadata: %{scene_complexity: estimate_complexity(scene)} do
       case safe_render(scene, state) do
         {:ok, result, new_state} ->
           {:reply, {:ok, result}, new_state}

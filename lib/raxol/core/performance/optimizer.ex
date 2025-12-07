@@ -246,7 +246,8 @@ defmodule Raxol.Core.Performance.Optimizer do
     records
     |> Stream.chunk_every(batch_size)
     |> Enum.each(fn batch ->
-      profile :ets_batch_insert, metadata: %{table: table, size: length(batch)} do
+      profile :ets_batch_insert,
+        metadata: %{table: table, size: length(batch)} do
         :ets.insert(table, batch)
       end
     end)
