@@ -138,10 +138,16 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       end
       """
 
-      File.write!("test_good_code.ex", content)
+      # Use File.open with explicit sync to ensure file is written before reading
+      # This prevents Windows file I/O race conditions
+      {:ok, file} = File.open("test_good_code.ex", [:write])
+      IO.write(file, content)
+      :ok = :file.sync(file)
+      :ok = File.close(file)
 
-      # Add delay on Windows to ensure file is written and closed
-      if :os.type() == {:win32, :nt}, do: Process.sleep(50)
+      # Verify file exists and is readable
+      assert File.exists?("test_good_code.ex")
+      {:ok, _} = File.read("test_good_code.ex")
 
       assert {:ok, issues} = ConsistencyChecker.check_file("test_good_code.ex")
 
@@ -149,8 +155,6 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       # Allow for module name mismatch
       assert length(issues) <= 1
 
-      # Ensure file is closed before deletion on Windows
-      if :os.type() == {:win32, :nt}, do: Process.sleep(50)
       File.rm!("test_good_code.ex")
     end
   end
