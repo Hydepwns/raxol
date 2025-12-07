@@ -82,22 +82,8 @@ mix raxol.docs              # Generate documentation
 ```
 
 ### Testing
-```bash
-# Standard test commands (always use TMPDIR=/tmp and SKIP_TERMBOX2_TESTS=true)
-TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test --exclude slow --exclude integration --exclude docker
 
-# Run specific test file
-TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test test/path/to/test_file.exs
-
-# Run failed tests only
-TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test --failed
-
-# Run tests with max failures limit
-TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test --max-failures 5
-
-# Run tests without warnings as errors (for debugging)
-TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test --no-warnings-as-errors
-```
+See [Test Commands](docs/_includes/test-commands.md) for standard testing patterns.
 
 ### Building & Compilation
 ```bash
@@ -234,8 +220,8 @@ Tests use several key helpers and patterns:
 
 ### Performance Considerations
 
-- Parser operations optimized to 3.3μs/op
-- Memory usage kept under 2.8MB per session  
+See [Performance Metrics](docs/_includes/performance-metrics.md).
+
 - Extensive benchmarking suite in `bench/`
 - Render operations under 1ms for 60fps capability
 - Automated performance regression detection in CI (5% tolerance)

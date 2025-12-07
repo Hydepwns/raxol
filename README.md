@@ -32,49 +32,7 @@ See **[Package Guide](docs/getting-started/PACKAGES.md)** for detailed compariso
 
 ## Quick Start
 
-### Installation
-
-Choose your package based on needs:
-
-```elixir
-# Minimal - Just terminal buffers
-{:raxol_core, "~> 2.0"}
-
-# Web integration - Add LiveView support
-{:raxol_core, "~> 2.0"},
-{:raxol_liveview, "~> 2.0"}
-
-# Extensible apps - Add plugin system
-{:raxol_core, "~> 2.0"},
-{:raxol_plugin, "~> 2.0"}
-
-# Or use v1.x (full framework)
-{:raxol, "~> 2.0"}
-```
-
-Using `runtime: false` provides UI components without terminal emulator runtime for:
-- Web applications
-- Component libraries
-- Testing UI logic
-- Reduced application size
-
-### Development Setup
-
-```bash
-# Clone and explore
-git clone https://github.com/Hydepwns/raxol.git
-cd raxol
-mix deps.get
-
-# Run quality checks
-mix raxol.check
-
-# Run tests
-TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test
-
-# Generate type specs
-mix raxol.gen.specs lib --recursive
-```
+See [Installation Guide](docs/_includes/installation.md) and [Quickstart Tutorial](docs/getting-started/QUICKSTART.md).
 
 ## Choose Your Framework
 
@@ -157,19 +115,7 @@ This makes Raxol perfect as a lightweight UI component library for web applicati
 
 ## Performance
 
-| Metric       | Raxol         | Alacritty    | Kitty        | iTerm2       | WezTerm      |
-|--------------|---------------|--------------|--------------|--------------|--------------|
-| Parser Speed | 3.3μs/op      | ~5μs/op      | ~4μs/op      | ~15μs/op     | ~6μs/op      |
-| Memory Usage | 2.8MB         | ~15MB        | ~25MB        | ~50MB        | ~20MB        |
-| Startup Time | <10ms         | ~50ms        | ~40ms        | ~100ms       | ~60ms        |
-| Test Suite   | 793 tests     | ~800 tests   | ~600 tests   | ~500 tests   | ~700 tests   |
-
-### Additional Metrics
-- Cursor Operations: 0.5μs per movement
-- Buffer Write: 1.2μs per character
-- Screen Clear: <50μs for full screen
-- Input Latency: <2ms keyboard to screen
-- Render Performance: 60 FPS maintained
+See [Performance Metrics](docs/_includes/performance-metrics.md) and [Benchmark Docs](docs/bench/).
 
 ## Documentation
 
