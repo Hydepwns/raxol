@@ -6,6 +6,17 @@ defmodule :termbox2_nif do
   @on_load :load_nif
 
   def load_nif do
+    # Skip NIF loading on Windows - use pure Elixir driver instead
+    case :os.type() do
+      {:win32, _} ->
+        :ok
+
+      {:unix, _} ->
+        load_unix_nif()
+    end
+  end
+
+  defp load_unix_nif do
     # Try raxol app's priv directory first (since termbox2_nif is part of raxol)
     priv_dir =
       case :code.priv_dir(:raxol) do
