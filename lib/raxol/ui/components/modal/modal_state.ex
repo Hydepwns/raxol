@@ -8,7 +8,7 @@ defmodule Raxol.UI.Components.Modal.State do
   @doc "Handles form submission with validation."
   @spec handle_form_submission(Raxol.UI.Components.Modal.t(), any()) ::
           {Raxol.UI.Components.Modal.t(), list()}
-  def handle_form_submission(state, original_msg) do
+  def handle_form_submission(%Raxol.UI.Components.Modal{} = state, original_msg) do
     Raxol.Core.Runtime.Log.debug(
       "[DEBUG] handle_form_submission called with state.visible=#{inspect(state.visible)} and fields=#{inspect(state.form_state.fields)}"
     )
@@ -25,7 +25,7 @@ defmodule Raxol.UI.Components.Modal.State do
         new_form_state = %{state.form_state | fields: validated_fields}
 
         result =
-          {%Raxol.UI.Components.Modal{
+          {%{
              state
              | form_state: new_form_state,
                visible: true
@@ -42,7 +42,7 @@ defmodule Raxol.UI.Components.Modal.State do
         cleared_fields = Enum.map(validated_fields, &Map.put(&1, :error, nil))
         new_form_state = %{state.form_state | fields: cleared_fields}
 
-        new_state = %Raxol.UI.Components.Modal{
+        new_state = %{
           state
           | visible: false,
             form_state: new_form_state
@@ -67,7 +67,7 @@ defmodule Raxol.UI.Components.Modal.State do
   @doc "Handles prompt submission."
   @spec handle_prompt_submission(Raxol.UI.Components.Modal.t(), any()) ::
           {Raxol.UI.Components.Modal.t(), list()}
-  def handle_prompt_submission(state, original_msg) do
+  def handle_prompt_submission(%Raxol.UI.Components.Modal{} = state, original_msg) do
     # If there are fields, validate as form
     case length(state.form_state.fields) do
       count when count > 0 ->
@@ -75,7 +75,7 @@ defmodule Raxol.UI.Components.Modal.State do
 
       0 ->
         # No fields: just hide and send command
-        new_state = %Raxol.UI.Components.Modal{state | visible: false}
+        new_state = %{state | visible: false}
 
         _ =
           send(
@@ -101,7 +101,7 @@ defmodule Raxol.UI.Components.Modal.State do
   @doc "Updates field value and clears errors."
   @spec update_field_value(Raxol.UI.Components.Modal.t(), any(), any()) ::
           {Raxol.UI.Components.Modal.t(), list()}
-  def update_field_value(state, field_id, new_value) do
+  def update_field_value(%Raxol.UI.Components.Modal{} = state, field_id, new_value) do
     updated_fields =
       Enum.map(state.form_state.fields, fn field ->
         case field.id == field_id do
@@ -115,13 +115,13 @@ defmodule Raxol.UI.Components.Modal.State do
       end)
 
     new_form_state = %{state.form_state | fields: updated_fields}
-    {%Raxol.UI.Components.Modal{state | form_state: new_form_state}, []}
+    {%{state | form_state: new_form_state}, []}
   end
 
   @doc "Changes focus between form fields."
   @spec change_focus(Raxol.UI.Components.Modal.t(), integer()) ::
           {Raxol.UI.Components.Modal.t(), list()}
-  def change_focus(state, direction) do
+  def change_focus(%Raxol.UI.Components.Modal{} = state, direction) do
     field_count = length(state.form_state.fields)
 
     Raxol.Core.Runtime.Log.debug(
@@ -138,7 +138,7 @@ defmodule Raxol.UI.Components.Modal.State do
 
         new_form_state = %{state.form_state | focus_index: new_index}
 
-        new_state = %Raxol.UI.Components.Modal{
+        new_state = %{
           state
           | form_state: new_form_state
         }

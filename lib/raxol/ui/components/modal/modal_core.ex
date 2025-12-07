@@ -78,9 +78,9 @@ defmodule Raxol.UI.Components.Modal.Core do
   @doc "Handles show/hide state changes."
   @spec handle_show(Raxol.UI.Components.Modal.t()) ::
           {Raxol.UI.Components.Modal.t(), list()}
-  def handle_show(state) do
+  def handle_show(%Raxol.UI.Components.Modal{} = state) do
     cmd = Raxol.UI.Components.Modal.State.set_focus_command(state)
-    new_state = %Raxol.UI.Components.Modal{state | visible: true}
+    new_state = %{state | visible: true}
 
     _ =
       send(
@@ -94,8 +94,8 @@ defmodule Raxol.UI.Components.Modal.Core do
   @doc "Handles hiding the modal."
   @spec handle_hide(Raxol.UI.Components.Modal.t()) ::
           {Raxol.UI.Components.Modal.t(), list()}
-  def handle_hide(state) do
-    new_state = %Raxol.UI.Components.Modal{state | visible: false}
+  def handle_hide(%Raxol.UI.Components.Modal{} = state) do
+    new_state = %{state | visible: false}
 
     _ =
       send(
@@ -109,8 +109,8 @@ defmodule Raxol.UI.Components.Modal.Core do
   @doc "Handles cancel operations."
   @spec handle_cancel(Raxol.UI.Components.Modal.t(), any()) ::
           {Raxol.UI.Components.Modal.t(), list()}
-  def handle_cancel(state, original_msg) do
-    new_state = %Raxol.UI.Components.Modal{state | visible: false}
+  def handle_cancel(%Raxol.UI.Components.Modal{} = state, original_msg) do
+    new_state = %{state | visible: false}
 
     _ =
       send(
@@ -124,8 +124,8 @@ defmodule Raxol.UI.Components.Modal.Core do
   @doc "Handles button click operations."
   @spec handle_button_click(Raxol.UI.Components.Modal.t(), any()) ::
           {Raxol.UI.Components.Modal.t(), list()}
-  def handle_button_click(state, btn_msg) do
-    new_state = %Raxol.UI.Components.Modal{state | visible: false}
+  def handle_button_click(%Raxol.UI.Components.Modal{} = state, btn_msg) do
+    new_state = %{state | visible: false}
 
     _ =
       send(
