@@ -242,12 +242,33 @@ mix raxol.profile <module_name>
 ./scripts/dev.sh bench
 ```
 
-### NIF Integration
+### Terminal Backend & Cross-Platform Support
 
-The project includes a NIF (Native Implemented Function) for termbox2:
-- C source in `lib/termbox2_nif/c_src/`
-- Built automatically via `elixir_make` 
-- Makefile handles compilation during `mix deps.compile`
+Raxol uses a hybrid terminal backend approach for optimal cross-platform support:
+
+**Unix/macOS** (termbox2_nif):
+- Native C NIF in `lib/termbox2_nif/c_src/`
+- Built automatically via `elixir_make` on Unix platforms only
+- Optimal performance: ~50μs per frame
+- Full VT100/ANSI compliance
+
+**Windows** (IOTerminal - Pure Elixir):
+- Pure Elixir implementation in `lib/raxol/terminal/io_terminal.ex`
+- Uses OTP 28+ raw mode and IO.ANSI
+- Windows 10+ VT100 support
+- Good performance: ~500μs per frame
+- No C compilation required
+
+**Driver** (`lib/raxol/terminal/driver.ex`):
+- Automatic backend selection at runtime
+- Uses termbox2_nif when available (Unix/macOS)
+- Falls back to IOTerminal when NIF unavailable (Windows)
+- Consistent API across all platforms
+
+**Platform Detection**:
+- Compilation: `termbox2_nif/mix.exs` checks `:os.type()` and skips NIF build on Windows
+- Runtime: `Driver.ex` checks `Code.ensure_loaded?(:termbox2_nif)`
+- Graceful degradation ensures terminal features work everywhere
 
 ### Naming Conventions
 

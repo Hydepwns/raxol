@@ -295,6 +295,7 @@ This TODO is organized by priority:
 ## FUTURE ROADMAP
 
 ### Platform Expansion (Q2 2025)
+- ✅ **Windows support** (Completed Dec 2025) - Pure Elixir driver with OTP 28+ raw mode
 - WASM production support
 - PWA capabilities
 - Mobile terminal support

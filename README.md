@@ -18,6 +18,17 @@ Terminal framework supporting React, Svelte, LiveView, and HEEx UI patterns.
 - Enterprise features: audit logging, encryption, SAML/OIDC
 - Graphics: Sixel support, session continuity
 - **NEW**: VIM navigation, command parser, fuzzy search, virtual filesystem, cursor effects
+- **Cross-platform**: Windows, macOS, Linux support
+
+### Platform Support
+
+Raxol works on all major platforms with automatic backend selection:
+
+- **Unix/macOS**: Native termbox2 NIF for optimal performance (~50μs per frame)
+- **Windows 10+**: Pure Elixir driver using OTP 28+ raw mode (~500μs per frame)
+- **All platforms**: Consistent API, automatic fallback, full feature parity
+
+Windows support uses VT100 terminal emulation (enabled by default in Windows 10+). No additional setup required.
 
 ## Modular Packages (v2.0+)
 
