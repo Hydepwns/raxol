@@ -47,7 +47,7 @@ defmodule MemoryRegressionAnalyzer do
     end
   end
 
-  defp compare_analysis(baseline, current) when baseline == %{} do
+  defp compare_analysis(baseline, _current) when baseline == %{} do
     %{status: :no_baseline, regressions: [], improvements: []}
   end
 
@@ -86,7 +86,7 @@ defmodule MemoryRegressionAnalyzer do
     }
   end
 
-  defp compare_benchmark(baseline, current) when baseline == %{} do
+  defp compare_benchmark(baseline, _current) when baseline == %{} do
     %{status: :no_baseline, regressions: [], improvements: []}
   end
 
@@ -174,7 +174,7 @@ defmodule MemoryRegressionAnalyzer do
     end
   end
 
-  defp check_memory_gates(analysis, benchmark) do
+  defp check_memory_gates(analysis, _benchmark) do
     gates = []
 
     # Gate 1: Peak memory should not exceed 3MB per session

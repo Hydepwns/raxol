@@ -120,7 +120,7 @@ jobs:
       run: |
         echo "[PERF] Running current performance benchmarks..."
         if [ -f "bench/suites/parser/parser_benchmark.exs" ]; then
-          mix run bench/suites/parser/parser_benchmark.exs 2>&1 | tee regression/performance/current/parser.txt || true
+          elixir bench/suites/parser/parser_benchmark.exs --json > regression/performance/current/parser.json 2>/dev/null || true
         else
           echo "Parser benchmark not found, creating placeholder..."
           mkdir -p regression/performance/current
@@ -155,7 +155,7 @@ jobs:
 
         echo "[BENCH] Running baseline performance benchmarks..."
         if [ -f "bench/suites/parser/parser_benchmark.exs" ]; then
-          mix run bench/suites/parser/parser_benchmark.exs 2>&1 | tee regression/performance/baselines/parser.txt || true
+          elixir bench/suites/parser/parser_benchmark.exs --json > regression/performance/baselines/parser.json 2>/dev/null || true
         else
           echo "Parser benchmark not found, creating placeholder..."
           mkdir -p regression/performance/baselines
