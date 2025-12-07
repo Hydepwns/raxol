@@ -155,7 +155,17 @@ defmodule Raxol.Plugins.PluginConfig do
   # Private functions
 
   defp config_file_path do
-    Path.join([System.get_env("HOME"), @config_dir, @config_file])
+    # Cross-platform home directory detection
+    # Unix/macOS: HOME
+    # Windows: USERPROFILE or HOMEPATH
+    home_dir =
+      System.get_env("HOME") ||
+      System.get_env("USERPROFILE") ||
+      System.get_env("HOMEPATH") ||
+      # Fallback to system tmp directory if all else fails
+      System.tmp_dir()
+
+    Path.join([home_dir, @config_dir, @config_file])
   end
 end
 

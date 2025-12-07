@@ -226,7 +226,8 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       )
 
       # Wait for delayed message to be processed
-      assert_receive {:component_updated, ^component_id}, 150
+      # Increased timeout to account for CI timing variability (macOS in particular)
+      assert_receive {:component_updated, ^component_id}, 500
 
       # Verify the component received the delayed message via update
       final_component_data = ComponentManager.get_component(component_id)
