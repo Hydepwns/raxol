@@ -175,7 +175,9 @@ defmodule Raxol.LiveView.TerminalComponent do
       |> Enum.map(fn line ->
         cells_html =
           line.cells
-          |> Enum.map(fn cell -> Phoenix.HTML.html_escape(cell.char) end)
+          |> Enum.map(fn cell ->
+            cell.char |> Phoenix.HTML.html_escape() |> Phoenix.HTML.safe_to_string()
+          end)
           |> Enum.join("")
 
         "<div class=\"raxol-line\">#{cells_html}</div>"
