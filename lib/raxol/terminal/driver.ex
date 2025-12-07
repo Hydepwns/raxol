@@ -19,6 +19,7 @@ defmodule Raxol.Terminal.Driver do
   # import Bitwise
 
   alias Raxol.Core.Events.Event
+  alias Raxol.Terminal.IOTerminal
 
   # Check if termbox2_nif is available at compile time
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
@@ -41,7 +42,8 @@ defmodule Raxol.Terminal.Driver do
     defstruct dispatcher_pid: nil,
               original_stty: nil,
               termbox_state: :uninitialized,
-              init_retries: 0
+              init_retries: 0,
+              io_terminal_state: nil
   end
 
   # --- Public API ---
@@ -107,16 +109,25 @@ defmodule Raxol.Terminal.Driver do
 
       {_, true, _} ->
         Raxol.Core.Runtime.Log.debug(
-          "[TerminalDriver] TTY detected, calling Termbox2Nif.tb_init()..."
+          "[TerminalDriver] TTY detected, initializing terminal backend..."
         )
 
-        _ =
+        {_terminal_init_result, io_terminal_state} =
           if @termbox2_available do
-            apply(:termbox2_nif, :tb_init, [])
+            {apply(:termbox2_nif, :tb_init, []), nil}
           else
-            0
+            # Use pure Elixir IOTerminal when NIF not available
+            Raxol.Core.Runtime.Log.info(
+              "[TerminalDriver] Using pure Elixir IOTerminal (NIF not available)"
+            )
+
+            case IOTerminal.init() do
+              {:ok, io_state} -> {0, io_state}
+              {:error, _reason} -> {-1, nil}
+            end
           end
 
+        state = %{state | io_terminal_state: io_terminal_state}
         {:ok, state}
 
       {_, false, _} ->
@@ -464,6 +475,8 @@ defmodule Raxol.Terminal.Driver do
     if @termbox2_available do
       :termbox2_nif.tb_shutdown()
     else
+      # Shutdown IOTerminal if it was initialized
+      IOTerminal.shutdown()
       0
     end
   end
@@ -479,7 +492,11 @@ defmodule Raxol.Terminal.Driver do
     if @termbox2_available do
       :termbox2_nif.tb_width()
     else
-      80
+      # Use IOTerminal for size detection
+      case IOTerminal.get_terminal_size() do
+        {:ok, {width, _height}} -> width
+        _ -> 80
+      end
     end
   end
 
@@ -487,7 +504,11 @@ defmodule Raxol.Terminal.Driver do
     if @termbox2_available do
       :termbox2_nif.tb_height()
     else
-      24
+      # Use IOTerminal for size detection
+      case IOTerminal.get_terminal_size() do
+        {:ok, {_width, height}} -> height
+        _ -> 24
+      end
     end
   end
 
