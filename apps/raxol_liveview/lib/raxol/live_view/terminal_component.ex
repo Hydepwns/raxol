@@ -116,7 +116,7 @@ defmodule Raxol.LiveView.TerminalComponent do
       end
 
     # Get aria_label
-    aria_label = Map.get(assigns, :aria_label, "Terminal output")
+    aria_label = Map.get(assigns, :aria_label, "Interactive terminal")
 
     socket =
       socket
