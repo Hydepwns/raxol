@@ -1,4 +1,6 @@
-# Cookbook: LiveView Integration
+# LiveView Integration
+
+> [Documentation](../README.md) > [Cookbook](README.md) > LiveView Integration
 
 Practical recipes for rendering terminals in Phoenix LiveView.
 

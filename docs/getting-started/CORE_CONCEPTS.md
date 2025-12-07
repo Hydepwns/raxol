@@ -1,5 +1,7 @@
 # Core Concepts
 
+> [Documentation](../README.md) > [Getting Started](QUICKSTART.md) > Core Concepts
+
 Understand the fundamentals of Raxol's architecture and design philosophy.
 
 ## Table of Contents

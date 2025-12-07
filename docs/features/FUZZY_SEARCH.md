@@ -1,5 +1,7 @@
 # Fuzzy Search
 
+> [Documentation](../README.md) > [Features](README.md) > Fuzzy Search
+
 Multi-mode search with fuzzy, exact, and regex matching.
 
 ## Usage

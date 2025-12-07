@@ -1,4 +1,6 @@
-# Raxol.Core Buffer API Reference
+# Buffer API Reference
+
+> [Documentation](../README.md) > [Core](../README.md#core-library) > Buffer API
 
 Complete API documentation for the Raxol.Core buffer primitives.
 

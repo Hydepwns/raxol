@@ -1,4 +1,6 @@
-# Raxol.Core Architecture
+# Architecture
+
+> [Documentation](../README.md) > [Core](../README.md#core-library) > Architecture
 
 Design decisions, patterns, and implementation details for Raxol.Core.
 

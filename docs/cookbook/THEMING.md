@@ -1,4 +1,6 @@
-# Cookbook: Theming
+# Theming
+
+> [Documentation](../README.md) > [Cookbook](README.md) > Theming
 
 Create custom color schemes and themes for your terminals.
 

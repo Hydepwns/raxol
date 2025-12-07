@@ -1,4 +1,6 @@
-# Cookbook: Performance Optimization
+# Performance Optimization
+
+> [Documentation](../README.md) > [Cookbook](README.md) > Performance Optimization
 
 Techniques for achieving 60fps terminal rendering.
 

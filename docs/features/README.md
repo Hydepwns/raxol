@@ -1,4 +1,6 @@
-# Raxol Features
+# Features
+
+> [Documentation](../README.md) > Features
 
 Advanced terminal interface features from droodotfoo.
 

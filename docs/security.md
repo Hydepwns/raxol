@@ -1,6 +1,8 @@
-# Security
+# Security Guide
 
-Enterprise-grade security for terminal applications.
+> [Documentation](README.md) > Security
+
+Enterprise-grade security features for terminal applications.
 
 ## Quick Start
 

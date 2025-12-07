@@ -2,52 +2,35 @@
 
 Welcome to the comprehensive documentation for developing plugins in the Raxol terminal emulator. This directory contains everything you need to create powerful, efficient, and well-tested plugins.
 
-## Documentation Overview
+## Documentation
 
-### [GUIDE] Plugin Development Guide
-The complete reference for plugin development, covering:
-- Quick start guide with basic examples
-- Plugin architecture and system integration
-- Plugin manifests and configuration
-- Core plugin behaviours and callbacks
-- Example implementations from the Raxol codebase
-- Performance considerations and best practices
-- API reference and troubleshooting
+### [GUIDE.md](GUIDE.md) - Complete Development Guide
+Plugin development from basics to advanced:
+- Quick start with basic structure
+- Lifecycle states and transitions
+- Event system and commands
+- Capabilities (UI, keyboard, status line)
+- Performance and error handling
 
-### [LIFECYCLE] Plugin Lifecycle and Hooks
-Deep dive into plugin lifecycle management:
-- Complete lifecycle states and transitions
-- Required and optional callback implementations
-- Event system integration and filtering
-- Command registration and handling
-- State management patterns
-- Hot reload and state migration
-- Resource cleanup and error handling
+### [TEMPLATES.md](TEMPLATES.md) - Ready-to-Use Templates
+Complete working templates:
+- Basic Plugin (simple functionality)
+- UI Plugin (interactive panels)
+- Background Plugin (periodic tasks)
+- File System Plugin (file watching)
 
-### [TEMPLATES] Plugin Templates
-Ready-to-use templates for common plugin types:
-- **Basic Plugin Template**: Simple functionality without UI
-- **UI Plugin Template**: Interactive overlays and panels
-- **Background Plugin Template**: Periodic tasks and monitoring
-- **File System Plugin Template**: File watching and directory operations
-- Complete implementation examples with best practices
-
-### [TESTING] Plugin Testing Guide
-Comprehensive testing strategies and patterns:
-- Unit testing for plugin components
-- Integration testing with the Raxol system
-- Event filtering and command handling tests
-- Property-based testing for robustness
-- Mock and fixture support
-- Performance and load testing
-- CI/CD integration examples
+### [TESTING.md](TESTING.md) - Testing Guide
+Testing strategies and patterns:
+- Unit and integration tests
+- Event filtering tests
+- Property-based testing
+- Performance testing
 
 ## Quick Start
 
-1. **Choose a Template**: Start with the appropriate template from [PLUGIN_TEMPLATES.md](./PLUGIN_TEMPLATES.md)
-2. **Understand the Lifecycle**: Read [PLUGIN_LIFECYCLE_HOOKS.md](./PLUGIN_LIFECYCLE_HOOKS.md) to understand how plugins work
-3. **Follow the Guide**: Use [PLUGIN_DEVELOPMENT_GUIDE.md](./PLUGIN_DEVELOPMENT_GUIDE.md) for detailed implementation
-4. **Test Thoroughly**: Apply patterns from [PLUGIN_TESTING_GUIDE.md](./PLUGIN_TESTING_GUIDE.md)
+1. **Read the Guide**: [GUIDE.md](GUIDE.md) - Complete lifecycle and development
+2. **Choose a Template**: [TEMPLATES.md](TEMPLATES.md) - Working examples
+3. **Test Thoroughly**: [TESTING.md](TESTING.md) - Testing patterns
 
 ## Existing Plugin Examples
 

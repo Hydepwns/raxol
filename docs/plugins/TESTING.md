@@ -1,12 +1,10 @@
-# Plugin Testing Guide
+# Plugin Testing
 
-**Version**: v1.6.0
-**Last Updated**: 2025-09-26
-**Target**: Plugin developers
+> [Documentation](../README.md) > [Plugins](README.md) > Testing
 
-## Overview
+**Version**: v1.6.0 | **Target**: Plugin developers | **Level**: Intermediate
 
-This guide covers comprehensive testing strategies for Raxol plugins, including unit testing, integration testing, and testing patterns specific to the plugin system architecture.
+Complete guide to testing Raxol plugins with unit, integration, and property-based strategies.
 
 ## Testing Environment Setup
 

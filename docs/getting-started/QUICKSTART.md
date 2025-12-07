@@ -1,16 +1,22 @@
-# Raxol Quickstart
+# Quickstart Guide
 
-Get started with Raxol in 5, 10, or 15 minutes. Choose your path based on what you need.
+> [Documentation](../README.md) > [Getting Started](CORE_CONCEPTS.md) > Quickstart
+
+Get started with Raxol in 5, 10, or 15 minutes. Choose your path.
 
 ## What is Raxol?
 
-Raxol is a terminal UI framework for Elixir that scales from simple buffers to full applications:
+Raxol is a terminal UI framework for Elixir that scales from simple buffers to full applications.
 
-- **Raxol.Core** - Lightweight buffer primitives (< 100KB, zero deps)
-- **Raxol.LiveView** - Render terminals in Phoenix LiveView
-- **Raxol** (full) - Complete framework with plugins and enterprise features
+### Packages
 
-Start small, add features as needed.
+- **Raxol.Core** - Pure functional buffer primitives (< 100KB, zero deps, < 1ms ops)
+  - Perfect for: CLI tools, LiveView components, incremental adoption
+- **Raxol.LiveView** - Phoenix LiveView integration
+- **Raxol.Plugin** - Extensible plugin system
+- **Raxol** (full) - Complete framework with enterprise features
+
+Start small, add features as needed. See [Package Guide](PACKAGES.md) for detailed comparison.
 
 ---
 

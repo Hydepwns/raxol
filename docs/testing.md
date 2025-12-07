@@ -1,19 +1,12 @@
-# Testing
+# Testing Guide
 
-Comprehensive testing for terminal applications.
+> [Documentation](README.md) > Testing
+
+Comprehensive testing strategies for terminal applications.
 
 ## Quick Start
 
-```bash
-# Run all tests
-SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test
-
-# Run specific test
-SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test test/my_test.exs
-
-# Run with coverage
-mix test --cover
-```
+See [Test Commands](_includes/test-commands.md) for standard testing patterns.
 
 ## Test Helpers
 

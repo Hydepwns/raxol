@@ -1,5 +1,7 @@
 # Command Parser
 
+> [Documentation](../README.md) > [Features](README.md) > Command Parser
+
 CLI with tab completion, history, and argument parsing.
 
 ## Usage

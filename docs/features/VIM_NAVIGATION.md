@@ -1,5 +1,7 @@
 # VIM Navigation
 
+> [Documentation](../README.md) > [Features](README.md) > VIM Navigation
+
 VIM-style keybindings for terminal buffers.
 
 ## Usage

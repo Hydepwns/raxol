@@ -1,6 +1,6 @@
-# Raxol WebAssembly Deployment Guide
+# WebAssembly Deployment Guide
 
-## Overview
+> [Documentation](../README.md) > [Deployment](README.md) > WASM
 
 Raxol can be compiled to WebAssembly (WASM) for deployment in web browsers, enabling terminal emulation directly in the browser without server-side processing. This guide covers building, deploying, and integrating Raxol's WASM module.
 

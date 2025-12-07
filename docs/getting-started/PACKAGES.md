@@ -1,4 +1,6 @@
-# Raxol Packages
+# Package Guide
+
+> [Documentation](../README.md) > [Getting Started](QUICKSTART.md) > Packages
 
 Modular architecture for incremental adoption. Choose the packages you need.
 

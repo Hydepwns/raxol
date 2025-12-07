@@ -1,5 +1,7 @@
 # Cursor Effects
 
+> [Documentation](../README.md) > [Features](README.md) > Cursor Effects
+
 Visual cursor trails and glow effects.
 
 ## Usage

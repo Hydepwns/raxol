@@ -1,6 +1,8 @@
-# Development
+# Development Guide
 
-Everything you need to develop with Raxol.
+> [Documentation](README.md) > Development
+
+Complete setup, commands, and troubleshooting for Raxol development.
 
 ## Setup
 
@@ -255,9 +257,51 @@ mix raxol.precompile
 MIX_ENV=prod mix release
 ```
 
+## Quick Reference
+
+### Common Patterns
+
+**Terminal**
+```elixir
+{:ok, t} = Raxol.Terminal.start(width: 80, height: 24)
+Raxol.Terminal.write(t, "Hello \e[32mWorld\e[0m")
+```
+
+**Components**
+```elixir
+defmodule MyComponent do
+  use Raxol.Component
+  def init(props), do: %{text: props[:text]}
+  def render(state, _), do: text(state.text)
+end
+```
+
+**Error Handling**
+```elixir
+case safe_call(fn -> risky() end) do
+  {:ok, result} -> result
+  {:error, _} -> default
+end
+```
+
+### ANSI Codes
+```
+\e[H         Home
+\e[2J        Clear screen
+\e[31m       Red text
+\e[1m        Bold
+\e[?25l      Hide cursor
+```
+
+### Keyboard Events
+```elixir
+{:key, :enter}
+{:key, :escape}
+{:key, "j", [:ctrl]}
+{:mouse, :click, row, col}
+```
+
 ## Resources
 
 - [Architecture Decision Records](adr/)
-- [API Reference](api-reference.md)
-- [Error Handling Guide](error-handling.md)
-- [Functional Programming](functional-programming.md)
+- HexDocs API Reference: https://hexdocs.pm/raxol
