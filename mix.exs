@@ -15,7 +15,7 @@ defmodule Raxol.MixProject do
         ignore_module_conflict: true,
         compile_order: [:cell, :operations]
       ],
-      compilers: Mix.compilers() ++ [:elixir_make],
+      compilers: compilers(),
       consolidate_protocols: Mix.env() != :test,
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -83,6 +83,16 @@ defmodule Raxol.MixProject do
         ]
       ]
     ]
+  end
+
+  # Platform-specific compilers
+  # Only include :elixir_make on Unix (for termbox2 NIF)
+  # Windows uses pure Elixir IOTerminal driver
+  defp compilers do
+    case :os.type() do
+      {:unix, _} -> Mix.compilers() ++ [:elixir_make]
+      {:win32, _} -> Mix.compilers()
+    end
   end
 
   # Raxol is primarily a library/toolkit; applications using it define their own OTP app.
