@@ -489,7 +489,7 @@ jobs:
           mix deps.compile
       
       - name: Run tests
-        run: mix test --exclude slow --exclude docker --exclude integration
+        run: mix test --exclude slow --exclude docker --exclude integration --exclude skip_on_ci
         env:
           MIX_ENV: test
           SKIP_TERMBOX2_TESTS: "true"

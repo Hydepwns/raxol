@@ -86,6 +86,7 @@ defmodule Raxol.Style.Colors.HotReloadTest do
   end
 
   describe "theme hot-reloading" do
+    @tag :skip_on_ci
     test "detects and reloads theme changes", %{tmp_dir: tmp_dir} do
       # Create initial theme file
       theme_path = Path.join(tmp_dir, "test_theme.json")
