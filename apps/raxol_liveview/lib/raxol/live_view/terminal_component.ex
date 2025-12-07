@@ -118,9 +118,13 @@ defmodule Raxol.LiveView.TerminalComponent do
     # Get aria_label
     aria_label = Map.get(assigns, :aria_label, "Interactive terminal")
 
+    # Render buffer to HTML
+    terminal_html = render_buffer_to_html(buffer)
+
     socket =
       socket
       |> assign(:buffer, buffer)
+      |> assign(:terminal_html, terminal_html)
       |> assign(:id, Map.get(assigns, :id))
       |> assign(:theme, theme)
       |> assign(:theme_css, theme_css)
@@ -162,6 +166,23 @@ defmodule Raxol.LiveView.TerminalComponent do
       width: width,
       height: height
     }
+  end
+
+  defp render_buffer_to_html(buffer) do
+    # Simple HTML rendering - convert buffer to HTML string
+    lines_html =
+      buffer.lines
+      |> Enum.map(fn line ->
+        cells_html =
+          line.cells
+          |> Enum.map(fn cell -> Phoenix.HTML.html_escape(cell.char) end)
+          |> Enum.join("")
+
+        "<div class=\"raxol-line\">#{cells_html}</div>"
+      end)
+      |> Enum.join("\n")
+
+    "<div class=\"raxol-terminal\">#{lines_html}</div>"
   end
 
   defp generate_theme_css(theme, css_prefix) do
