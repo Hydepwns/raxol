@@ -34,13 +34,6 @@ defmodule Raxol.UI.Components.Modal.Events do
   end
 
   def handle_visible_event_dispatch(
-        %Raxol.Core.Events.Event{type: :key, data: %{key: "Escape"}},
-        state
-      ) do
-    {:button_click, find_cancel_message(state.buttons)}
-  end
-
-  def handle_visible_event_dispatch(
         %{type: :key, data: %{key: "Enter"}},
         state
       )
