@@ -128,6 +128,7 @@ defmodule Raxol.LiveView.TerminalComponent do
       |> assign(:terminal_html, terminal_html)
       |> assign(:id, Map.get(assigns, :id))
       |> assign(:theme, theme)
+      |> assign(:current_theme, theme)
       |> assign(:theme_css, theme_css)
       |> assign(:width, width)
       |> assign(:height, height)
