@@ -128,7 +128,7 @@ jobs:
         fi
 
         if [ -f "bench/suites/terminal/buffer_benchmark.exs" ]; then
-          elixir bench/suites/terminal/buffer_benchmark.exs --json > regression/performance/current/buffer.json 2>&1 || true
+          elixir bench/suites/terminal/buffer_benchmark.exs --json > regression/performance/current/buffer.json 2>/dev/null || true
         else
           echo "Buffer benchmark not found, creating placeholder..."
           mkdir -p regression/performance/current
@@ -136,7 +136,7 @@ jobs:
         fi
 
         if [ -f "bench/suites/terminal/cursor_benchmark.exs" ]; then
-          elixir bench/suites/terminal/cursor_benchmark.exs --json > regression/performance/current/cursor.json 2>&1 || true
+          elixir bench/suites/terminal/cursor_benchmark.exs --json > regression/performance/current/cursor.json 2>/dev/null || true
         else
           echo "Cursor benchmark not found, creating placeholder..."
           mkdir -p regression/performance/current
@@ -163,7 +163,7 @@ jobs:
         fi
 
         if [ -f "bench/suites/terminal/buffer_benchmark.exs" ]; then
-          elixir bench/suites/terminal/buffer_benchmark.exs --json > regression/performance/baselines/buffer.json 2>&1 || true
+          elixir bench/suites/terminal/buffer_benchmark.exs --json > regression/performance/baselines/buffer.json 2>/dev/null || true
         else
           echo "Buffer benchmark not found, creating placeholder..."
           mkdir -p regression/performance/baselines
@@ -171,7 +171,7 @@ jobs:
         fi
 
         if [ -f "bench/suites/terminal/cursor_benchmark.exs" ]; then
-          elixir bench/suites/terminal/cursor_benchmark.exs --json > regression/performance/baselines/cursor.json 2>&1 || true
+          elixir bench/suites/terminal/cursor_benchmark.exs --json > regression/performance/baselines/cursor.json 2>/dev/null || true
         else
           echo "Cursor benchmark not found, creating placeholder..."
           mkdir -p regression/performance/baselines
