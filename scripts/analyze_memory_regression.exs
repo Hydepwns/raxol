@@ -35,14 +35,22 @@ defmodule MemoryRegressionAnalyzer do
 
   defp load_analysis(path) do
     case File.read(path) do
-      {:ok, content} -> Jason.decode!(content)
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} -> data
+          {:error, _} -> %{}
+        end
       {:error, _} -> %{}
     end
   end
 
   defp load_benchmark(path) do
     case File.read(path) do
-      {:ok, content} -> Jason.decode!(content)
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} -> data
+          {:error, _} -> %{}
+        end
       {:error, _} -> %{}
     end
   end
