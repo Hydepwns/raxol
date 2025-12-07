@@ -292,7 +292,8 @@ jobs:
             --memory_time 2 \
             --output regression/memory/current/${{ matrix.scenario }}_analysis.json || true
         else
-          echo "Memory analysis task not found, creating placeholder..." | tee regression/memory/current/${{ matrix.scenario }}_analysis.json
+          echo "Memory analysis task not found, creating placeholder..."
+          echo '{}' > regression/memory/current/${{ matrix.scenario }}_analysis.json
         fi
 
         # Run specific memory benchmarks
@@ -300,16 +301,22 @@ jobs:
           "terminal_operations")
             if [ -f "bench/memory/terminal_memory_benchmark.exs" ]; then
               mix run bench/memory/terminal_memory_benchmark.exs -- --json 2>/dev/null | tail -1 > regression/memory/current/${{ matrix.scenario }}_memory.json || true
+            else
+              echo '{}' > regression/memory/current/${{ matrix.scenario }}_memory.json
             fi
             ;;
           "plugin_system")
             if [ -f "bench/memory/plugin_memory_benchmark.exs" ]; then
               mix run bench/memory/plugin_memory_benchmark.exs -- --json 2>/dev/null | tail -1 > regression/memory/current/${{ matrix.scenario }}_memory.json || true
+            else
+              echo '{}' > regression/memory/current/${{ matrix.scenario }}_memory.json
             fi
             ;;
           "load_testing")
             if [ -f "bench/memory/load_memory_benchmark.exs" ]; then
               mix run bench/memory/load_memory_benchmark.exs -- --json 2>/dev/null | tail -1 > regression/memory/current/${{ matrix.scenario }}_memory.json || true
+            else
+              echo '{}' > regression/memory/current/${{ matrix.scenario }}_memory.json
             fi
             ;;
         esac
@@ -335,7 +342,8 @@ jobs:
             --memory_time 2 \
             --output regression/memory/baselines/${{ matrix.scenario }}_analysis.json || true
         else
-          echo "Memory analysis task not found, creating placeholder..." | tee regression/memory/baselines/${{ matrix.scenario }}_analysis.json
+          echo "Memory analysis task not found, creating placeholder..."
+          echo '{}' > regression/memory/baselines/${{ matrix.scenario }}_analysis.json
         fi
 
         # Run baseline specific memory benchmarks
@@ -343,16 +351,22 @@ jobs:
           "terminal_operations")
             if [ -f "bench/memory/terminal_memory_benchmark.exs" ]; then
               mix run bench/memory/terminal_memory_benchmark.exs -- --json 2>/dev/null | tail -1 > regression/memory/baselines/${{ matrix.scenario }}_memory.json || true
+            else
+              echo '{}' > regression/memory/baselines/${{ matrix.scenario }}_memory.json
             fi
             ;;
           "plugin_system")
             if [ -f "bench/memory/plugin_memory_benchmark.exs" ]; then
               mix run bench/memory/plugin_memory_benchmark.exs -- --json 2>/dev/null | tail -1 > regression/memory/baselines/${{ matrix.scenario }}_memory.json || true
+            else
+              echo '{}' > regression/memory/baselines/${{ matrix.scenario }}_memory.json
             fi
             ;;
           "load_testing")
             if [ -f "bench/memory/load_memory_benchmark.exs" ]; then
               mix run bench/memory/load_memory_benchmark.exs -- --json 2>/dev/null | tail -1 > regression/memory/baselines/${{ matrix.scenario }}_memory.json || true
+            else
+              echo '{}' > regression/memory/baselines/${{ matrix.scenario }}_memory.json
             fi
             ;;
         esac
