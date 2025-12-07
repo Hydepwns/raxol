@@ -108,11 +108,12 @@ defmodule Raxol.LiveView.TerminalComponent do
     buffer = Map.get(assigns, :buffer) || create_blank_buffer(width, height)
 
     # Generate theme CSS if theme changed
+    current_theme = socket.assigns[:theme] || socket.assigns[:current_theme]
     theme_css =
-      if theme != Map.get(socket.assigns, :theme) or socket.assigns[:theme_css] == nil do
+      if theme != current_theme or socket.assigns[:theme_css] == nil do
         generate_theme_css(theme, Map.get(assigns, :css_prefix, "raxol"))
       else
-        Map.get(socket.assigns, :theme_css)
+        socket.assigns[:theme_css]
       end
 
     # Get aria_label
@@ -139,6 +140,7 @@ defmodule Raxol.LiveView.TerminalComponent do
       |> assign(:high_contrast, Map.get(assigns, :high_contrast, false))
       |> assign(:on_keypress, Map.get(assigns, :on_keypress))
       |> assign(:on_click, Map.get(assigns, :on_click))
+      |> assign(:on_cell_click, Map.get(assigns, :on_cell_click))
       |> assign(:on_paste, Map.get(assigns, :on_paste))
       |> assign(:on_focus, Map.get(assigns, :on_focus))
       |> assign(:on_blur, Map.get(assigns, :on_blur))
