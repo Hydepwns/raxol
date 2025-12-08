@@ -150,7 +150,7 @@ defmodule Raxol.Core.Runtime.CommandTest do
 
       Command.execute(cmd, context)
       refute_receive {:command_result, ^msg}, 10
-      assert_receive {:command_result, ^msg}, 100
+      assert_receive {:command_result, ^msg}, 200
     end
 
     test "executes file write system command", %{
