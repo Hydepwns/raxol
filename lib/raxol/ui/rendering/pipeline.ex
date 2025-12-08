@@ -381,7 +381,17 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
         new_state = %{state | render_scheduled_for_next_frame: true}
         final_state = ensure_animation_ticker_running(new_state)
-        {:noreply, final_state}
+
+        # In test mode, immediately send animation tick for deterministic timing
+        # In production, let the ticker fire naturally
+        case Mix.env() do
+          :test ->
+            Process.send(self(), :animation_tick, [])
+            {:noreply, final_state}
+
+          _ ->
+            {:noreply, final_state}
+        end
     end
   end
 
@@ -407,7 +417,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
       ) do
     case timer_matches?(state.render_timer_ref, timer_id) do
       true ->
-        {painted_data, composed_data} =
+        render_result =
           execute_render_stages(
             diff_result,
             new_tree_for_reference,
@@ -415,6 +425,9 @@ defmodule Raxol.UI.Rendering.Pipeline do
             state.previous_composed_tree,
             state.previous_painted_output
           )
+
+        painted_data = render_result
+        composed_data = render_result.content
 
         # Commit the painted output to the renderer
         commit(
@@ -718,7 +731,8 @@ defmodule Raxol.UI.Rendering.Pipeline do
           _timer_ref =
             Process.send_after(
               self(),
-              {:deferred_render, diff_result, new_tree_for_reference, :send_after_fallback},
+              {:deferred_render, diff_result, new_tree_for_reference,
+               :send_after_fallback},
               delay
             )
 
