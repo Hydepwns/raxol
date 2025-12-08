@@ -64,11 +64,11 @@ jobs:
       - name: Setup OS dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install openssl@1.1 postgresql@14
+          brew install openssl@1.1 postgresql@16
           echo "LDFLAGS=-L$(brew --prefix openssl@1.1)/lib" >> $GITHUB_ENV
           echo "CFLAGS=-I$(brew --prefix openssl@1.1)/include" >> $GITHUB_ENV
-          
-          brew services start postgresql@14 || true
+
+          brew services start postgresql@16 || true
           sleep 5
           createuser -s postgres || true
           psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" postgres || true
@@ -125,6 +125,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
@@ -183,10 +185,12 @@ jobs:
   dialyzer-full:
     name: Full Dialyzer Check
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v5
-      
+        with:
+          submodules: recursive
+
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
@@ -225,7 +229,7 @@ jobs:
   integration-tests:
     name: Extended Integration Tests
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:14
@@ -240,7 +244,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      
+
       redis:
         image: redis:7
         ports:
@@ -250,9 +254,11 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
