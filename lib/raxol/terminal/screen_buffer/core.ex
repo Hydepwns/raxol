@@ -182,13 +182,15 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   defp validate_dimension(_dimension, default), do: default
 
-  defp create_empty_grid(width, height) do
+  defp create_empty_grid(width, height) when width > 0 and height > 0 do
     for _y <- 0..(height - 1) do
       for _x <- 0..(width - 1) do
         Cell.empty()
       end
     end
   end
+
+  defp create_empty_grid(_width, _height), do: []
 
   defp resize_grid(cells, old_width, old_height, new_width, new_height) do
     # Crop or extend height

@@ -350,6 +350,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   @impl true
+  def handle_manager_info({:dispatcher_ready, _pid}, state) do
+    # Acknowledge dispatcher initialization in test mode
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_manager_info(msg, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Dispatcher received unhandled info message",

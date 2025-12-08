@@ -1,6 +1,6 @@
 defmodule Raxol.Plugins.PluginSystemTest do
   use ExUnit.Case
-  
+
   @moduledoc """
   Tests for the plugin system functionality including plugin loading, configuration,
   and lifecycle management.
@@ -46,7 +46,6 @@ defmodule Raxol.Plugins.PluginSystemTest do
       # Create a test plugin that depends on HyperlinkPlugin
       defmodule TestDependentPlugin do
         use Raxol.Plugins.Plugin
-        @dependencies ["hyperlink"]
 
         @moduledoc """
         Test plugin that depends on HyperlinkPlugin for testing dependency loading.

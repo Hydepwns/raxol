@@ -114,7 +114,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       {:error, {:already_started, _pid}} -> :ok
     end
 
-
     # Stub all ThemeBehaviour callbacks to prevent missing function errors
     Mox.stub(ThemeMock, :register, fn _ -> :ok end)
     Mox.stub(ThemeMock, :get, fn _ -> nil end)
@@ -143,10 +142,11 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
     {:ok, mock_pm_pid} = MockPluginManager.start_link([])
 
     # Start UserPreferences server for the test
-    {:ok, _user_prefs} = Raxol.Core.UserPreferences.start_link(
-      name: Raxol.Core.UserPreferences,
-      test_mode?: true
-    )
+    {:ok, _user_prefs} =
+      Raxol.Core.UserPreferences.start_link(
+        name: Raxol.Core.UserPreferences,
+        test_mode?: true
+      )
 
     # Define initial state for Dispatcher
     initial_state = %{
@@ -170,8 +170,21 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
     Mox.verify_on_exit!()
 
     on_exit(fn ->
-      if Process.alive?(dispatcher), do: GenServer.stop(dispatcher)
-      if Process.alive?(mock_pm_pid), do: GenServer.stop(mock_pm_pid)
+      # Cleanup Dispatcher process
+      try do
+        if Process.alive?(dispatcher), do: GenServer.stop(dispatcher)
+      catch
+        :exit, {:noproc, _} -> :ok
+        :exit, _ -> :ok
+      end
+
+      # Cleanup MockPluginManager process
+      try do
+        if Process.alive?(mock_pm_pid), do: GenServer.stop(mock_pm_pid)
+      catch
+        :exit, {:noproc, _} -> :ok
+        :exit, _ -> :ok
+      end
 
       # Cleanup UserPreferences process
       try do
