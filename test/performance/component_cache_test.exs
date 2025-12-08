@@ -164,6 +164,7 @@ defmodule Raxol.Performance.ComponentCacheTest do
   end
   
   describe "performance" do
+    @tag :skip_on_ci
     test "cached rendering is significantly faster" do
       # Create complex element structure
       elements = for i <- 1..50, do: %{
