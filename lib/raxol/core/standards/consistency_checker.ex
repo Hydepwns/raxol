@@ -86,10 +86,14 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     """
   end
 
-  # Private functions
+  @doc """
+  Analyzes a file's AST and content for consistency issues.
 
+  This function is useful for testing or when you already have the content
+  and AST available and want to bypass file I/O.
+  """
   @spec analyze_file(String.t(), String.t(), any()) :: any()
-  defp analyze_file(file_path, content, ast) do
+  def analyze_file(file_path, content, ast) do
     lines = String.split(content, "\n")
 
     []

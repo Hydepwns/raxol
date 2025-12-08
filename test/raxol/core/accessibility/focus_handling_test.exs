@@ -168,6 +168,9 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
         {:focus_change, nil, "no_label_element"}
       )
 
+      # Wait for async event processing (needed on Windows)
+      wait_for_events()
+
       assert Accessibility.get_next_announcement(pref_pid) == nil
 
       Accessibility.clear_announcements()
@@ -175,6 +178,9 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       Raxol.Core.Events.EventManager.dispatch(
         {:focus_change, nil, "completely_unknown_element"}
       )
+
+      # Wait for async event processing (needed on Windows)
+      wait_for_events()
 
       assert Accessibility.get_next_announcement(pref_pid) == nil
     end

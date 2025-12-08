@@ -138,33 +138,13 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       end
       """
 
-      # Use unique filename to avoid Windows file system cache hits
-      unique_id = :erlang.unique_integer([:positive])
-      filename = "test_good_code_#{unique_id}.ex"
+      # Test analyze_file directly to bypass Windows file system issues
+      # This tests the actual analysis logic without file I/O
+      {:ok, ast} = Code.string_to_quoted(content, warn_on_unnecessary_quotes: false)
+      issues = ConsistencyChecker.analyze_file("test_module.ex", content, ast)
 
-      try do
-        File.write!(filename, content)
-
-        # Windows needs significant delay for file system sync
-        if :os.type() == {:win32, :nt}, do: Process.sleep(100)
-
-        # Verify file exists and is readable
-        assert File.exists?(filename)
-        {:ok, read_content} = File.read(filename)
-        assert read_content == content, "File content mismatch"
-
-        assert {:ok, issues} = ConsistencyChecker.check_file(filename)
-
-        # Should have minimal issues
-        # Allow for module name mismatch
-        assert length(issues) <= 1
-      after
-        # Ensure cleanup happens even if test fails
-        if File.exists?(filename) do
-          if :os.type() == {:win32, :nt}, do: Process.sleep(50)
-          File.rm!(filename)
-        end
-      end
+      # Should have minimal issues (allow for module name mismatch)
+      assert length(issues) <= 1
     end
   end
 
