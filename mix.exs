@@ -267,6 +267,7 @@ defmodule Raxol.MixProject do
       {:excoveralls, "~> 0.18", only: :test},
       {:floki, ">= 0.30.0", only: :test},
       {:stream_data, "~> 1.1", only: [:dev, :test]},
+      {:junit_formatter, "~> 3.4", only: :test},
 
       # Benchmarking suite
       {:benchee, "~> 1.3", only: [:dev, :test]},

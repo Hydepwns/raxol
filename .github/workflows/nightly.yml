@@ -114,7 +114,7 @@ jobs:
         with:
           name: test-results-${{ matrix.os }}-${{ matrix.elixir }}-${{ matrix.otp }}
           path: |
-            _build/test/lib/*/test-results.xml
+            _build/test/lib/*/test-junit-report.xml
           retention-days: 30
           if-no-files-found: warn
 
@@ -177,7 +177,7 @@ jobs:
         with:
           name: extended-test-results-$(date +%Y%m%d)
           path: |
-            _build/test/lib/*/test-results.xml
+            _build/test/lib/*/test-junit-report.xml
             extended-report.md
           retention-days: 90
           if-no-files-found: warn

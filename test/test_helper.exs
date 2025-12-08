@@ -41,7 +41,7 @@ end
 # Start ExUnit
 IO.puts("[TestHelper] Starting ExUnit...")
 ExUnit.start(max_failures: 10)
-ExUnit.configure(formatters: [ExUnit.CLIFormatter])
+ExUnit.configure(formatters: [ExUnit.CLIFormatter, JUnitFormatter])
 
 # Set test environment
 IO.puts("[TestHelper] Setting test environment...")
