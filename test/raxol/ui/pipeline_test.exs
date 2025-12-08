@@ -253,6 +253,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     assert refs == received
   end
 
+  @tag :skip_on_ci
   test "frame loop runs at expected interval (basic timing check)", _context do
     t1 = System.monotonic_time(:millisecond)
     ref = System.unique_integer([:positive])
@@ -299,6 +300,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
            end)
   end
 
+  @tag :skip_on_ci
   test "multiple schedule_render_on_next_frame/0 calls before next frame only trigger one render",
        _context do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())

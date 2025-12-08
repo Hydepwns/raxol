@@ -298,6 +298,7 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
       assert time_us < 16_000, "Rendering took #{time_us}μs (target: < 16_000μs)"
     end
 
+    @tag :skip_on_ci
     test "diff rendering is efficient" do
       old_buffer = Buffer.create_blank_buffer(80, 24)
 

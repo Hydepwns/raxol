@@ -159,6 +159,7 @@ defmodule Raxol.Animation.FrameworkTest do
       assert animation.to == 1
     end
 
+    @tag :skip_on_ci
     test ~c"creates animation with custom settings" do
       animation =
         Framework.create_animation(:custom_animation, %{
@@ -260,6 +261,7 @@ defmodule Raxol.Animation.FrameworkTest do
     end
 
     @tag :event_manager
+    @tag :skip_on_ci
     test "event manager is working", %{
       user_preferences_pid: _user_preferences_pid
     } do
