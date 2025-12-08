@@ -109,7 +109,7 @@ defmodule Raxol.Style.Colors.HotReloadTest do
       assert theme.name == "Updated Theme"
     end
 
-    @tag :unix_only
+    @tag :skip_on_ci
     test "handles multiple theme files", %{tmp_dir: tmp_dir} do
       # Create multiple theme files
       theme1_path = Path.join(tmp_dir, "theme1.json")
