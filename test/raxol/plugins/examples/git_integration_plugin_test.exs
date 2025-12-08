@@ -5,10 +5,15 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
 
   # Helper to safely stop a GenServer process
   defp safe_stop(pid) when is_pid(pid) do
-    if Process.alive?(pid), do: GenServer.stop(pid, :normal, 5000)
-  rescue
-    _ -> :ok
+    if Process.alive?(pid) do
+      try do
+        GenServer.stop(pid, :normal, 5000)
+      catch
+        :exit, _ -> :ok
+      end
+    end
   end
+
   defp safe_stop(_), do: :ok
 
   # Note: create_temp_directory, cleanup_temp_directory, with_temp_directory,

@@ -94,8 +94,11 @@ defmodule Raxol.Security.UserContext.ContextServer do
 
   @impl true
   def init_manager(opts) do
-    # Monitor processes to clean up when they die
-    {:ok, _pid} = :pg.start_link()
+    # Ensure :pg is started (handle case where it's already running)
+    case :pg.start_link() do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
 
     state = %{
       # Map of pid -> user context
