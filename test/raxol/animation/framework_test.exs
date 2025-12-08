@@ -160,7 +160,7 @@ defmodule Raxol.Animation.FrameworkTest do
     end
 
     @tag :skip_on_ci
-    test ~c"creates animation with custom settings" do
+    test "creates animation with custom settings" do
       animation =
         Framework.create_animation(:custom_animation, %{
           type: :slide,
