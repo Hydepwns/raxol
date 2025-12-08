@@ -140,12 +140,18 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
 
       File.write!("test_good_code.ex", content)
 
-      # Windows needs longer delay for file system sync
-      if :os.type() == {:win32, :nt}, do: Process.sleep(50)
+      # Windows needs significant delay for file system sync (200ms)
+      if :os.type() == {:win32, :nt}, do: Process.sleep(200)
 
       # Verify file content is correct before checking
       {:ok, read_content} = File.read("test_good_code.ex")
       assert read_content == content, "File content mismatch on read"
+
+      # On Windows, verify file can be re-read to ensure caches are in sync
+      if :os.type() == {:win32, :nt} do
+        {:ok, verify_content} = File.read("test_good_code.ex")
+        assert verify_content == content
+      end
 
       assert {:ok, issues} = ConsistencyChecker.check_file("test_good_code.ex")
 
@@ -154,7 +160,7 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       assert length(issues) <= 1
 
       # Ensure file is closed before deletion on Windows
-      if :os.type() == {:win32, :nt}, do: Process.sleep(50)
+      if :os.type() == {:win32, :nt}, do: Process.sleep(100)
       File.rm!("test_good_code.ex")
     end
   end
