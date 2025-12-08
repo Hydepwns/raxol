@@ -114,8 +114,22 @@ defmodule Raxol.AnimationTest do
     assert_receive {:preferences_applied, ^local_user_prefs_name}, 100
 
     on_exit(fn ->
-      Framework.stop()
-      Animation.stop()
+      # Cleanup Framework process
+      try do
+        Framework.stop()
+      catch
+        :exit, {:noproc, _} -> :ok
+        :exit, _ -> :ok
+      end
+
+      # Cleanup Animation process
+      try do
+        Animation.stop()
+      catch
+        :exit, {:noproc, _} -> :ok
+        :exit, _ -> :ok
+      end
+
       # Only disable accessibility if the process is still alive
       try do
         Accessibility.disable(local_user_prefs_name)
