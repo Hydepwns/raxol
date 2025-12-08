@@ -706,19 +706,34 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
     _ = cancel_timer_if_exists(state.render_timer_ref)
 
-    # Use unified timer manager for debounce timer
-    :ok = Raxol.UI.Rendering.TimerServer.start_debounce_timer(self(), delay)
+    # Try unified timer manager, fallback to Process.send_after
+    timer_ref =
+      case Raxol.UI.Rendering.TimerServer.start_debounce_timer(self(), delay) do
+        :ok ->
+          :unified_timer
 
-    # Store deferred render data in state instead of timer message
-    state_with_deferred = %{
-      state
-      | render_timer_ref: :unified_timer,
-        deferred_render_data:
-          {diff_result, new_tree_for_reference,
-           System.unique_integer([:positive])}
-    }
+        {:error, :not_started} ->
+          # Fallback to direct timer if TimerServer not available (test mode)
+          # Process.send_after returns a timer_ref, but we use a marker for matching
+          _timer_ref =
+            Process.send_after(
+              self(),
+              {:deferred_render, diff_result, new_tree_for_reference, :send_after_fallback},
+              delay
+            )
 
-    state_with_deferred
+          # Store a marker that we're using fallback timer
+          :send_after_fallback
+
+        error ->
+          Raxol.Core.Runtime.Log.error(
+            "Failed to start debounce timer: #{inspect(error)}"
+          )
+
+          nil
+      end
+
+    %{state | render_timer_ref: timer_ref}
   end
 
   defp calculate_time_since_last_render(last_render_time, now) do
