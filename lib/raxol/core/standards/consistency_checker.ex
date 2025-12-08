@@ -94,7 +94,9 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   """
   @spec analyze_file(String.t(), String.t(), any()) :: any()
   def analyze_file(file_path, content, ast) do
-    lines = String.split(content, "\n")
+    # Normalize line endings (handle both Unix \n and Windows \r\n)
+    normalized_content = String.replace(content, "\r\n", "\n")
+    lines = String.split(normalized_content, "\n")
 
     []
     |> check_module_structure(file_path, ast)

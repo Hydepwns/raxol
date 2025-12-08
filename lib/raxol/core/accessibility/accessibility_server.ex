@@ -781,39 +781,49 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     announcement_text = create_focus_announcement(new_focus, metadata)
 
     Raxol.Core.Runtime.Log.debug(
-      "handle_focus_announcement: announcement_text=#{announcement_text}"
+      "handle_focus_announcement: announcement_text=#{inspect(announcement_text)}"
     )
 
-    # Create announcement object directly
-    announcement = %{
-      message: announcement_text,
-      priority: :high,
-      timestamp: DateTime.utc_now(),
-      opts: [priority: :high]
-    }
+    # Only announce if there's actual text to announce
+    case announcement_text do
+      nil ->
+        {:noreply, state}
 
-    # Add directly to queue and history
-    new_history = [announcement | state.announcements.history]
-    limited_history = Enum.take(new_history, state.announcements.max_history)
-    # Queue should be FIFO: append to end, take from front
-    new_queue = state.announcements.queue ++ [announcement]
+      text ->
+        # Create announcement object directly
+        announcement = %{
+          message: text,
+          priority: :high,
+          timestamp: DateTime.utc_now(),
+          opts: [priority: :high]
+        }
 
-    # Dispatch event for other systems
-    _ =
-      if Process.whereis(EventManager) do
-        EventManager.dispatch(:screen_reader_announcement, %{
-          text: announcement_text
-        })
-      end
+        # Add directly to queue and history
+        new_history = [announcement | state.announcements.history]
 
-    new_announcements = %{
-      state.announcements
-      | history: limited_history,
-        queue: new_queue
-    }
+        limited_history =
+          Enum.take(new_history, state.announcements.max_history)
 
-    new_state = %{state | announcements: new_announcements}
-    {:noreply, new_state}
+        # Queue should be FIFO: append to end, take from front
+        new_queue = state.announcements.queue ++ [announcement]
+
+        # Dispatch event for other systems
+        _ =
+          if Process.whereis(EventManager) do
+            EventManager.dispatch(:screen_reader_announcement, %{
+              text: text
+            })
+          end
+
+        new_announcements = %{
+          state.announcements
+          | history: limited_history,
+            queue: new_queue
+        }
+
+        new_state = %{state | announcements: new_announcements}
+        {:noreply, new_state}
+    end
   end
 
   @spec should_process_announcement?(map()) :: boolean()
@@ -1065,30 +1075,37 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     deliver_announcement(announcement, callback)
   end
 
-  @spec create_focus_announcement(String.t() | integer(), any()) :: any()
-  defp create_focus_announcement(component_id, metadata) do
-    label = Map.get(metadata, :label, component_id)
-    explicit_role = Map.get(metadata, :role)
-    description = Map.get(metadata, :description, "")
+  @spec create_focus_announcement(String.t() | integer(), any()) ::
+          String.t() | nil
+  defp create_focus_announcement(_component_id, metadata) do
+    # Return nil if there's no label in metadata
+    case Map.get(metadata, :label) do
+      nil ->
+        nil
 
-    # Start with just the label
-    parts = [label]
+      label ->
+        explicit_role = Map.get(metadata, :role)
+        description = Map.get(metadata, :description, "")
 
-    # Only add role if it was explicitly set (not default)
-    parts =
-      case explicit_role do
-        nil -> parts
-        role -> parts ++ [role]
-      end
+        # Start with just the label
+        parts = [label]
 
-    # Add description if present
-    parts =
-      case description != "" do
-        true -> parts ++ [description]
-        false -> parts
-      end
+        # Only add role if it was explicitly set (not default)
+        parts =
+          case explicit_role do
+            nil -> parts
+            role -> parts ++ [role]
+          end
 
-    Enum.join(parts, ", ")
+        # Add description if present
+        parts =
+          case description != "" do
+            true -> parts ++ [description]
+            false -> parts
+          end
+
+        Enum.join(parts, ", ")
+    end
   end
 
   # Event handler callbacks (called by EventManager)
