@@ -76,15 +76,8 @@ jobs:
         with:
           elixir-version: ${{ matrix.elixir }}
           otp-version: ${{ matrix.otp }}
-          install-hex: false
-          install-rebar: false
-
-      - name: Clear Hex archives before cache restore
-        run: |
-          # Clear any existing Hex archives to prevent OTP version conflicts
-          # This must run BEFORE cache restore to ensure clean state
-          rm -rf ~/.mix/archives/ || true
-          rm -rf ~/.hex/ || true
+          install-hex: true
+          install-rebar: true
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -96,15 +89,10 @@ jobs:
           key: ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
             ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-
-      
+
       - name: Install dependencies
         run: |
-          # Install Hex and Rebar for current OTP version
-          mix local.hex --force
-          mix local.rebar --force
-          # Verify Hex is installed correctly for this OTP version
-          mix hex.info || echo "Warning: Hex verification failed"
-          # Install project dependencies
+          # setup-beam has installed Hex/Rebar compatible with this OTP version
           mix deps.get
           mix deps.compile
 
@@ -140,13 +128,8 @@ jobs:
         with:
           elixir-version: "1.19.0"
           otp-version: "28.2"
-          install-hex: false
-          install-rebar: false
-
-      - name: Clear Hex archives before cache restore
-        run: |
-          rm -rf ~/.mix/archives/ || true
-          rm -rf ~/.hex/ || true
+          install-hex: true
+          install-rebar: true
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -158,8 +141,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          mix local.hex --force
-          mix local.rebar --force
           mix deps.get
           mix deps.compile
 
@@ -208,13 +189,8 @@ jobs:
         with:
           elixir-version: "1.19.0"
           otp-version: "28.2"
-          install-hex: false
-          install-rebar: false
-
-      - name: Clear Hex archives before cache restore
-        run: |
-          rm -rf ~/.mix/archives/ || true
-          rm -rf ~/.hex/ || true
+          install-hex: true
+          install-rebar: true
 
       - name: Cache dependencies and PLTs
         uses: actions/cache@v4
@@ -229,8 +205,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          mix local.hex --force
-          mix local.rebar --force
           mix deps.get
           mix deps.compile
       
@@ -282,13 +256,8 @@ jobs:
         with:
           elixir-version: "1.19.0"
           otp-version: "28.2"
-          install-hex: false
-          install-rebar: false
-
-      - name: Clear Hex archives before cache restore
-        run: |
-          rm -rf ~/.mix/archives/ || true
-          rm -rf ~/.hex/ || true
+          install-hex: true
+          install-rebar: true
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -300,8 +269,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          mix local.hex --force
-          mix local.rebar --force
           mix deps.get
           mix deps.compile
 
