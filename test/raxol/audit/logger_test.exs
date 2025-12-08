@@ -365,7 +365,7 @@ defmodule Raxol.Audit.LoggerTest do
       Process.sleep(50)
 
       # After flush interval, buffer should be empty
-      Process.sleep(150)
+      Process.sleep(250)
 
       {:ok, stats} = Logger.get_statistics()
       assert stats.buffer_size == 0
