@@ -242,7 +242,7 @@ defmodule Raxol.Search.Fuzzy do
     # - How close together the matched characters are (closer is better)
     # - Percentage of text matched
 
-    if length(positions) == 0 do
+    if positions == [] do
       0.0
     else
       first_pos = hd(positions)

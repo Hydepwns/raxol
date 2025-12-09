@@ -372,7 +372,7 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
   end
 
   defp calculate_average_access_count(contexts) do
-    if length(contexts) == 0 do
+    if contexts == [] do
       0
     else
       total_accesses =

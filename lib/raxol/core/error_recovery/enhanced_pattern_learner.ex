@@ -625,7 +625,7 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
   end
 
   defp calculate_success_rate_from_outcomes(outcomes) do
-    if length(outcomes) == 0 do
+    if outcomes == [] do
       0.5
     else
       success_count = Enum.count(outcomes, &(&1 == :success))

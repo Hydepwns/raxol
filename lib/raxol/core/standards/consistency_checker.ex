@@ -398,11 +398,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
           String.t(),
           String.t() | atom(),
           list()
-        ) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+        ) :: {any(), [issue()]}
   defp handle_missing_doc_check(ast, line, node, acc, file_path, name, args) do
     # has_preceding_doc?/2 currently always returns false (simplified implementation)
     false = has_preceding_doc?(ast, line)
@@ -427,11 +423,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
           String.t(),
           any(),
           any()
-        ) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+        ) :: {any(), [issue()]}
   defp handle_single_letter_variable(name_str, name, line, file_path, node, acc) do
     case should_flag_single_letter_variable?(name_str) do
       true ->
@@ -458,18 +450,12 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   end
 
   @spec handle_error_atom_check(any(), any(), String.t(), any(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+          {any(), [issue()]}
   defp handle_error_atom_check(nil, _meta, _file_path, node, acc),
     do: {node, acc}
 
   @spec handle_error_atom_check(any(), any(), String.t(), any(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+          {any(), [issue()]}
   defp handle_error_atom_check(_value, meta, file_path, node, acc) do
     line = Keyword.get(meta, :line, 0)
 
@@ -487,10 +473,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   end
 
   @spec handle_impl_attribute_check(any(), any(), String.t(), any(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+          {any(), [issue()]}
   defp handle_impl_attribute_check(_ast, line, file_path, node, acc) do
     # has_impl_attribute?/2 always returns false, so we only handle the false case
     {node,
@@ -507,10 +490,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   end
 
   @spec handle_only_option_check(any(), any(), String.t(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+          {any(), [issue()]}
   defp handle_only_option_check(node, line, file_path, acc) do
     case has_only_option?(node) do
       true ->
