@@ -112,7 +112,7 @@ defmodule Raxol.Style.Colors.HSL do
     # Ensure calculations are float, then fix rem args: use round/1
     new_h = rem(round(h + degrees + 360.0), 360)
     {r, g, b} = hsl_to_rgb(new_h, s, l)
-    %Color{color | r: r, g: g, b: b}
+    %{color | r: r, g: g, b: b}
   end
 
   @doc """
@@ -133,7 +133,7 @@ defmodule Raxol.Style.Colors.HSL do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_l = min(l + amount, 1.0)
     {r, g, b} = hsl_to_rgb(h, s, new_l)
-    %Color{color | r: r, g: g, b: b}
+    %{color | r: r, g: g, b: b}
   end
 
   @doc """
@@ -154,7 +154,7 @@ defmodule Raxol.Style.Colors.HSL do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_l = max(l - amount, 0.0)
     {r, g, b} = hsl_to_rgb(h, s, new_l)
-    %Color{color | r: r, g: g, b: b}
+    %{color | r: r, g: g, b: b}
   end
 
   @doc """
@@ -175,7 +175,7 @@ defmodule Raxol.Style.Colors.HSL do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_s = min(s + amount, 1.0)
     {r, g, b} = hsl_to_rgb(h, new_s, l)
-    %Color{color | r: r, g: g, b: b}
+    %{color | r: r, g: g, b: b}
   end
 
   @doc """
@@ -196,7 +196,7 @@ defmodule Raxol.Style.Colors.HSL do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_s = max(s - amount, 0.0)
     {r, g, b} = hsl_to_rgb(h, new_s, l)
-    %Color{color | r: r, g: g, b: b}
+    %{color | r: r, g: g, b: b}
   end
 
   defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 0.0 and h_prime < 1.0,

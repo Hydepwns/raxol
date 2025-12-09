@@ -36,7 +36,7 @@ defmodule Raxol.Style.Colors.Harmony do
       # Ensure positive
       new_h = if new_h < 0, do: new_h + 360.0, else: new_h
       {r, g, b} = HSL.hsl_to_rgb(new_h, s, l)
-      %Color{color | r: r, g: g, b: b}
+      %{color | r: r, g: g, b: b}
     end)
   end
 
