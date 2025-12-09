@@ -15,7 +15,8 @@ defmodule RaxolPlayground.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {RaxolPlayground.Application, []}
+      mod: {RaxolPlayground.Application, []},
+      included_applications: [:raxol]
     ]
   end
 
@@ -45,10 +46,6 @@ defmodule RaxolPlayground.MixProject do
     [
       raxol_playground: [
         include_executables_for: [:unix],
-        applications: [
-          runtime_tools: :permanent,
-          raxol: :load
-        ],
         steps: [:assemble, :tar]
       ]
     ]
