@@ -171,21 +171,19 @@ defmodule Raxol.MixProject do
   end
 
   defp modular_packages do
-    if Mix.env() == :prod or System.get_env("HEX_BUILD") do
-      # Use hex versions for publishing
-      [
-        {:raxol_core, "~> 2.0"},
-        {:raxol_plugin, "~> 2.0"},
-        {:raxol_liveview, "~> 2.0"}
-      ]
-    else
-      # Use path dependencies for local development
-      [
-        {:raxol_core, path: "apps/raxol_core", override: true},
-        {:raxol_plugin, path: "apps/raxol_plugin", override: true},
-        {:raxol_liveview, path: "apps/raxol_liveview", override: true}
-      ]
-    end
+    # Disabled: causes duplicate module definitions in production
+    # The apps/ subdirectories contain duplicate code from lib/
+    # For now, use only lib/ modules in all environments
+    []
+
+    # TODO: Properly implement monorepo structure or remove apps/ entirely
+    # if Mix.env() == :prod or System.get_env("HEX_BUILD") do
+    #   [{:raxol_core, "~> 2.0"}, {:raxol_plugin, "~> 2.0"}, {:raxol_liveview, "~> 2.0"}]
+    # else
+    #   [{:raxol_core, path: "apps/raxol_core", override: true},
+    #    {:raxol_plugin, path: "apps/raxol_plugin", override: true},
+    #    {:raxol_liveview, path: "apps/raxol_liveview", override: true}]
+    # end
   end
 
   defp core_deps do

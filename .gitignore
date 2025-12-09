@@ -157,8 +157,6 @@ erl_crash.dump
 bench/output/*.html
 bench/output/*.json
 
-# Package build artifacts (apps/ and packages/)
-apps/**/_build/
-apps/**/deps/
+# Package build artifacts
 packages/**/_build/
 packages/**/deps/

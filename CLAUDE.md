@@ -312,37 +312,44 @@ Note: The Muzak library (`{:muzak, "~> 1.1"}`) is installed as a dependency but 
 
 ### Production Infrastructure
 
-Raxol uses a multi-tier deployment strategy. See `docs/architecture/DEPLOYMENT.md` for complete details.
-
 **Primary Hosting: Fly.io** (Production)
-- URL: `https://raxol.fly.dev`
+- Production URL: `https://raxol.io`
 - Full Phoenix LiveView application with backend
 - 2 machines running, auto-scaling enabled
 - Deployment: `flyctl deploy` (uses `docker/Dockerfile.web`)
 - Configuration: `fly.toml`
 - Status: Active and production-ready
 
-**Secondary: Cloudflare Pages** (Optional CDN)
-- Static assets only (`web/priv/static`)
-- Automated via `.github/workflows/deploy-web.yml`
-- Purpose: CDN for static content, not for main playground
-- Limitation: No backend/Phoenix runtime, no WebSockets
-
-**Tertiary: GitHub Pages** (Metrics Dashboard)
+**Secondary: GitHub Pages** (Metrics Dashboard)
 - Performance benchmarks and metrics only
 - Via `.github/workflows/performance-tracking.yml`
 - Not for application hosting
 
-### Key Distinction
+### DNS Configuration
 
-**Fly.io is the primary hosting provider** because:
-1. Supports full Phoenix LiveView functionality
-2. Has WebSocket support for real-time features
-3. Runs complete Elixir/OTP backend
-4. Currently deployed and operational
-5. Your purchased domain `raxol.io` should point here
+To point your domain to Fly.io:
 
-Cloudflare Pages only serves static files and cannot run the Phoenix backend needed for the interactive playground.
+1. Get Fly.io IP addresses:
+   ```bash
+   flyctl ips list --app raxol
+   ```
+
+2. Configure DNS records (in your domain registrar):
+   - A record: `@` -> Fly.io IPv4 address
+   - AAAA record: `@` -> Fly.io IPv6 address (optional)
+
+3. Add SSL certificate:
+   ```bash
+   flyctl certs create raxol.io --app raxol
+   flyctl certs show raxol.io --app raxol
+   ```
+
+4. Verify deployment:
+   ```bash
+   curl -I https://raxol.io
+   ```
+
+DNS propagation can take 24-48 hours.
 
 ### Deployment Commands
 
