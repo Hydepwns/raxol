@@ -280,6 +280,7 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
   end
 
   describe "performance" do
+    @tag :skip_on_ci
     test "renders 80x24 buffer quickly" do
       buffer = Buffer.create_blank_buffer(80, 24)
 
