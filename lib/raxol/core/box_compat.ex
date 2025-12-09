@@ -5,14 +5,16 @@ defmodule Raxol.Core.Box do
   This module exists to maintain backwards compatibility with plugins
   that reference the old apps/raxol_core modules.
 
-  Maps to Raxol.UI.Components box drawing functions.
+  Returns buffer unchanged (stub implementation).
   """
 
-  @doc "Draw a box border on the buffer"
-  def draw_box(buffer, x, y, width, height, border_style \\ :single) do
-    # Simple box drawing - can be enhanced later
-    # For now, return buffer unchanged to prevent crashes
-    _ = {x, y, width, height, border_style}
+  @doc "Draw a box border on the buffer (stub)"
+  def draw_box(buffer, _x, _y, _width, _height, _border_style \\ :single) do
+    buffer
+  end
+
+  @doc "Fill area with character (stub)"
+  def fill_area(buffer, _x, _y, _width, _height, _char, _style) do
     buffer
   end
 end
