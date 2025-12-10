@@ -38,43 +38,39 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
     quote do
       cache_key = {unquote(name), unquote(opts[:key])}
 
-      case Raxol.UI.State.Management.StateManagementServer.get_cache(cache_key) do
-        :cache_miss ->
-          result = unquote(block)
+      # get_cache currently always returns :cache_miss (stub implementation)
+      :cache_miss =
+        Raxol.UI.State.Management.StateManagementServer.get_cache(cache_key)
 
-          Raxol.UI.State.Management.StateManagementServer.set_cache(
-            cache_key,
-            {result, System.monotonic_time(:millisecond)}
-          )
+      result = unquote(block)
 
-          result
+      Raxol.UI.State.Management.StateManagementServer.set_cache(
+        cache_key,
+        {result, System.monotonic_time(:millisecond)}
+      )
 
-        cached_result ->
-          cached_result
-      end
+      result
     end
   end
 
   defp generate_cache_code(_ttl, name, opts, block) do
     quote do
       cache_key = {unquote(name), unquote(opts[:key])}
-      ttl = unquote(opts[:ttl])
+      _ttl = unquote(opts[:ttl])
       current_time = System.monotonic_time(:millisecond)
 
-      case Raxol.UI.State.Management.StateManagementServer.get_cache(cache_key) do
-        :cache_miss ->
-          result = unquote(block)
+      # get_cache currently always returns :cache_miss (stub implementation)
+      :cache_miss =
+        Raxol.UI.State.Management.StateManagementServer.get_cache(cache_key)
 
-          Raxol.UI.State.Management.StateManagementServer.set_cache(
-            cache_key,
-            {result, current_time}
-          )
+      result = unquote(block)
 
-          result
+      Raxol.UI.State.Management.StateManagementServer.set_cache(
+        cache_key,
+        {result, current_time}
+      )
 
-        cached_result ->
-          cached_result
-      end
+      result
     end
   end
 
