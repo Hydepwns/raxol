@@ -156,11 +156,10 @@ defmodule Raxol.UI.Rendering.Layouter do
     end
   end
 
+  # These functions are always called with map nodes, no fallback needed
   defp get_children(node) when is_map(node), do: Map.get(node, :children, [])
-  defp get_children(_node), do: []
 
   defp get_node_type(node) when is_map(node), do: Map.get(node, :type, :unknown)
-  defp get_node_type(_node), do: :unknown
 
   defp update_node_children(node, processed_children) do
     update_children_if_present(
@@ -227,8 +226,8 @@ defmodule Raxol.UI.Rendering.Layouter do
   end
 
   defp process_keyed_child_op({:key_add, _key, new_child}, acc) do
-    # Add new child at the end (will be reordered by key_reorder op)
-    acc ++ [do_layout_node_and_children(new_child, {:replace, new_child})]
+    # Add new child (will be reordered by key_reorder op)
+    [do_layout_node_and_children(new_child, {:replace, new_child}) | acc]
   end
 
   defp process_keyed_child_op({:key_update, key, child_diff}, acc) do
@@ -264,8 +263,9 @@ defmodule Raxol.UI.Rendering.Layouter do
 
   defp path_to_access_path(path_indices) when is_list(path_indices) do
     Enum.reduce(path_indices, [], fn idx, acc ->
-      acc ++ [:children, idx]
+      [idx, :children | acc]
     end)
+    |> Enum.reverse()
   end
 
   defp dummy_layout_for_node(node_content) do
