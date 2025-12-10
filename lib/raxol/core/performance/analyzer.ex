@@ -106,7 +106,7 @@ defmodule Raxol.Core.Performance.Analyzer do
 
   # Private Helpers
 
-  @spec calculate_performance_score(any()) :: any()
+  @spec calculate_performance_score(map()) :: integer()
   defp calculate_performance_score(metrics) do
     # Base score starts at 100
     base_score = 100
@@ -132,37 +132,31 @@ defmodule Raxol.Core.Performance.Analyzer do
     max(0, base_score - Enum.sum(deductions))
   end
 
-  @spec fps_deduction_severe(any()) :: any()
+  @spec fps_deduction_severe(number()) :: integer()
   defp fps_deduction_severe(fps) when fps < 30, do: 20
-  @spec fps_deduction_severe(any()) :: any()
   defp fps_deduction_severe(_fps), do: 0
 
-  @spec fps_deduction_moderate(any()) :: any()
+  @spec fps_deduction_moderate(number()) :: integer()
   defp fps_deduction_moderate(fps) when fps < 45, do: 10
-  @spec fps_deduction_moderate(any()) :: any()
   defp fps_deduction_moderate(_fps), do: 0
 
-  @spec jank_deduction(any()) :: any()
+  @spec jank_deduction(non_neg_integer()) :: integer()
   defp jank_deduction(0), do: 0
-  @spec jank_deduction(non_neg_integer()) :: any()
   defp jank_deduction(count), do: count * 5
 
-  @spec memory_deduction_severe(any()) :: any()
+  @spec memory_deduction_severe(integer()) :: integer()
   defp memory_deduction_severe(usage) when usage > 1_000_000_000, do: 15
-  @spec memory_deduction_severe(any()) :: any()
   defp memory_deduction_severe(_usage), do: 0
 
-  @spec memory_deduction_moderate(any()) :: any()
+  @spec memory_deduction_moderate(integer()) :: integer()
   defp memory_deduction_moderate(usage) when usage > 500_000_000, do: 10
-  @spec memory_deduction_moderate(any()) :: any()
   defp memory_deduction_moderate(_usage), do: 0
 
-  @spec gc_deduction(non_neg_integer()) :: any()
+  @spec gc_deduction(non_neg_integer()) :: integer()
   defp gc_deduction(count) when count > 100, do: 10
-  @spec gc_deduction(any()) :: any()
   defp gc_deduction(_count), do: 0
 
-  @spec identify_issues(any()) :: any()
+  @spec identify_issues(map()) :: [String.t()]
   defp identify_issues(metrics) do
     []
     |> add_fps_issues(metrics.fps)
@@ -171,49 +165,48 @@ defmodule Raxol.Core.Performance.Analyzer do
     |> add_gc_issues(Map.get(metrics.gc_stats, :number_of_gcs, 0))
   end
 
-  @spec add_fps_issues(any(), any()) :: any()
+  @spec add_fps_issues([String.t()], number()) :: [String.t()]
   defp add_fps_issues(issues, fps) when fps < 30 do
     ["Critical: Low FPS (< 30)" | issues]
   end
 
-  @spec add_fps_issues(any(), any()) :: any()
+  @spec add_fps_issues([String.t()], number()) :: [String.t()]
   defp add_fps_issues(issues, fps) when fps < 45 do
     ["Warning: Suboptimal FPS (< 45)" | issues]
   end
 
-  @spec add_fps_issues(any(), any()) :: any()
+  @spec add_fps_issues([String.t()], number()) :: [String.t()]
   defp add_fps_issues(issues, _fps), do: issues
 
-  @spec add_jank_issues(any(), any()) :: any()
+  @spec add_jank_issues([String.t()], non_neg_integer()) :: [String.t()]
   defp add_jank_issues(issues, 0), do: issues
 
-  @spec add_jank_issues(any(), any()) :: any()
   defp add_jank_issues(issues, jank_count) do
     ["Warning: UI jank detected (#{jank_count} frames)" | issues]
   end
 
-  @spec add_memory_issues(any(), any()) :: any()
+  @spec add_memory_issues([String.t()], integer()) :: [String.t()]
   defp add_memory_issues(issues, usage) when usage > 1_000_000_000 do
     ["Critical: High memory usage (> 1GB)" | issues]
   end
 
-  @spec add_memory_issues(any(), any()) :: any()
+  @spec add_memory_issues([String.t()], integer()) :: [String.t()]
   defp add_memory_issues(issues, usage) when usage > 500_000_000 do
     ["Warning: Elevated memory usage (> 500MB)" | issues]
   end
 
-  @spec add_memory_issues(any(), any()) :: any()
+  @spec add_memory_issues([String.t()], integer()) :: [String.t()]
   defp add_memory_issues(issues, _usage), do: issues
 
-  @spec add_gc_issues(any(), non_neg_integer()) :: any()
+  @spec add_gc_issues([String.t()], non_neg_integer()) :: [String.t()]
   defp add_gc_issues(issues, count) when count > 100 do
     ["Warning: Frequent garbage collection" | issues]
   end
 
-  @spec add_gc_issues(any(), any()) :: any()
+  @spec add_gc_issues([String.t()], non_neg_integer()) :: [String.t()]
   defp add_gc_issues(issues, _count), do: issues
 
-  @spec generate_suggestions(any()) :: any()
+  @spec generate_suggestions(map()) :: [String.t()]
   defp generate_suggestions(metrics) do
     []
     |> add_fps_suggestions(metrics.fps)
@@ -221,7 +214,7 @@ defmodule Raxol.Core.Performance.Analyzer do
     |> add_gc_suggestions(Map.get(metrics.gc_stats, :number_of_gcs, 0))
   end
 
-  @spec add_fps_suggestions(any(), any()) :: any()
+  @spec add_fps_suggestions([String.t()], number()) :: [String.t()]
   defp add_fps_suggestions(suggestions, fps) when fps < 30 do
     [
       "Consider using virtual scrolling for large lists",
@@ -231,10 +224,10 @@ defmodule Raxol.Core.Performance.Analyzer do
     ]
   end
 
-  @spec add_fps_suggestions(any(), any()) :: any()
+  @spec add_fps_suggestions([String.t()], number()) :: [String.t()]
   defp add_fps_suggestions(suggestions, _fps), do: suggestions
 
-  @spec add_memory_suggestions(any(), any()) :: any()
+  @spec add_memory_suggestions([String.t()], integer()) :: [String.t()]
   defp add_memory_suggestions(suggestions, usage) when usage > 500_000_000 do
     [
       "Review memory usage patterns",
@@ -244,10 +237,10 @@ defmodule Raxol.Core.Performance.Analyzer do
     ]
   end
 
-  @spec add_memory_suggestions(any(), any()) :: any()
+  @spec add_memory_suggestions([String.t()], integer()) :: [String.t()]
   defp add_memory_suggestions(suggestions, _usage), do: suggestions
 
-  @spec add_gc_suggestions(any(), non_neg_integer()) :: any()
+  @spec add_gc_suggestions([String.t()], non_neg_integer()) :: [String.t()]
   defp add_gc_suggestions(suggestions, count) when count > 100 do
     [
       "Review object lifecycle management",
@@ -257,10 +250,10 @@ defmodule Raxol.Core.Performance.Analyzer do
     ]
   end
 
-  @spec add_gc_suggestions(any(), any()) :: any()
+  @spec add_gc_suggestions([String.t()], non_neg_integer()) :: [String.t()]
   defp add_gc_suggestions(suggestions, _count), do: suggestions
 
-  @spec identify_patterns(any()) :: any()
+  @spec identify_patterns(map()) :: map()
   defp identify_patterns(metrics) do
     %{
       fps_stability: analyze_fps_stability(metrics),
@@ -270,26 +263,26 @@ defmodule Raxol.Core.Performance.Analyzer do
     }
   end
 
-  @spec analyze_trends(any()) :: any()
+  @spec analyze_trends(map()) :: map()
   defp analyze_trends(_metrics) do
     %{fps_trend: "stable", memory_trend: "stable", jank_trend: "stable"}
   end
 
-  @spec analyze_fps_stability(any()) :: any()
+  @spec analyze_fps_stability(map()) :: String.t()
   defp analyze_fps_stability(metrics) do
     classify_fps_stability(metrics.fps)
   end
 
-  @spec classify_fps_stability(any()) :: any()
+  @spec classify_fps_stability(number()) :: String.t()
   defp classify_fps_stability(fps) when fps >= 55, do: "stable"
-  @spec classify_fps_stability(any()) :: any()
+  @spec classify_fps_stability(number()) :: String.t()
   defp classify_fps_stability(fps) when fps >= 45, do: "moderate"
-  @spec classify_fps_stability(any()) :: any()
+  @spec classify_fps_stability(number()) :: String.t()
   defp classify_fps_stability(fps) when fps >= 30, do: "unstable"
-  @spec classify_fps_stability(any()) :: any()
+  @spec classify_fps_stability(number()) :: String.t()
   defp classify_fps_stability(_fps), do: "critical"
 
-  @spec analyze_memory_growth(any()) :: any()
+  @spec analyze_memory_growth(map()) :: String.t()
   defp analyze_memory_growth(metrics) do
     case metrics.memory_usage do
       usage when usage > 1_000_000_000 -> "exponential"
@@ -298,31 +291,29 @@ defmodule Raxol.Core.Performance.Analyzer do
     end
   end
 
-  @spec analyze_gc_patterns(any()) :: any()
+  @spec analyze_gc_patterns(map()) :: String.t()
   defp analyze_gc_patterns(metrics) do
     gc_count = Map.get(metrics.gc_stats, :number_of_gcs, 0)
     classify_gc_pattern(gc_count)
   end
 
-  @spec classify_gc_pattern(non_neg_integer()) :: any()
+  @spec classify_gc_pattern(non_neg_integer()) :: String.t()
   defp classify_gc_pattern(count) when count > 100, do: "frequent"
-  @spec classify_gc_pattern(non_neg_integer()) :: any()
   defp classify_gc_pattern(count) when count > 50, do: "moderate"
-  @spec classify_gc_pattern(any()) :: any()
   defp classify_gc_pattern(_count), do: "stable"
 
-  @spec analyze_jank_patterns(any()) :: any()
+  @spec analyze_jank_patterns(map()) :: String.t()
   defp analyze_jank_patterns(metrics) do
     classify_jank_pattern(metrics.jank_count)
   end
 
-  @spec classify_jank_pattern(non_neg_integer()) :: any()
+  @spec classify_jank_pattern(non_neg_integer()) :: String.t()
   defp classify_jank_pattern(count) when count > 10, do: "severe"
-  @spec classify_jank_pattern(non_neg_integer()) :: any()
+  @spec classify_jank_pattern(non_neg_integer()) :: String.t()
   defp classify_jank_pattern(count) when count > 5, do: "moderate"
-  @spec classify_jank_pattern(non_neg_integer()) :: any()
+  @spec classify_jank_pattern(non_neg_integer()) :: String.t()
   defp classify_jank_pattern(count) when count > 0, do: "minor"
-  @spec classify_jank_pattern(any()) :: any()
+  @spec classify_jank_pattern(non_neg_integer()) :: String.t()
   defp classify_jank_pattern(_count), do: "none"
 
   defp get_environment_info do
