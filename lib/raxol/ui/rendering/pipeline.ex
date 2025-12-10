@@ -565,31 +565,14 @@ defmodule Raxol.UI.Rendering.Pipeline do
         case should_continue_ticker?(final_state) do
           true ->
             # Try unified timer manager first, fallback to direct timer
-            case Raxol.UI.Rendering.TimerServer.start_animation_timer(
-                   self(),
-                   @animation_tick_interval_ms
-                 ) do
-              :ok ->
-                %{final_state | animation_ticker_ref: :timer_server}
+            # TimerServer.start_animation_timer only returns :ok per spec
+            :ok =
+              Raxol.UI.Rendering.TimerServer.start_animation_timer(
+                self(),
+                @animation_tick_interval_ms
+              )
 
-              {:error, :not_started} ->
-                # Fallback to direct timer if TimerServer not available
-                timer_ref =
-                  Process.send_after(
-                    self(),
-                    :animation_tick,
-                    @animation_tick_interval_ms
-                  )
-
-                %{final_state | animation_ticker_ref: timer_ref}
-
-              error ->
-                Raxol.Core.Runtime.Log.error(
-                  "Failed to reschedule animation timer: #{inspect(error)}"
-                )
-
-                %{final_state | animation_ticker_ref: nil}
-            end
+            %{final_state | animation_ticker_ref: :timer_server}
 
           _ ->
             Raxol.Core.Runtime.Log.debug(
@@ -707,8 +690,8 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   defp schedule_deferred_render(
          state,
-         diff_result,
-         new_tree_for_reference,
+         _diff_result,
+         _new_tree_for_reference,
          time_since_last_render
        ) do
     delay = @animation_tick_interval_ms - time_since_last_render
@@ -720,32 +703,9 @@ defmodule Raxol.UI.Rendering.Pipeline do
     _ = cancel_timer_if_exists(state.render_timer_ref)
 
     # Try unified timer manager, fallback to Process.send_after
-    timer_ref =
-      case Raxol.UI.Rendering.TimerServer.start_debounce_timer(self(), delay) do
-        :ok ->
-          :unified_timer
-
-        {:error, :not_started} ->
-          # Fallback to direct timer if TimerServer not available (test mode)
-          # Process.send_after returns a timer_ref, but we use a marker for matching
-          _timer_ref =
-            Process.send_after(
-              self(),
-              {:deferred_render, diff_result, new_tree_for_reference,
-               :send_after_fallback},
-              delay
-            )
-
-          # Store a marker that we're using fallback timer
-          :send_after_fallback
-
-        error ->
-          Raxol.Core.Runtime.Log.error(
-            "Failed to start debounce timer: #{inspect(error)}"
-          )
-
-          nil
-      end
+    # TimerServer.start_debounce_timer only returns :ok per spec
+    :ok = Raxol.UI.Rendering.TimerServer.start_debounce_timer(self(), delay)
+    timer_ref = :unified_timer
 
     %{state | render_timer_ref: timer_ref}
   end
@@ -780,32 +740,14 @@ defmodule Raxol.UI.Rendering.Pipeline do
           "Pipeline: Animation ticker not running, starting it."
         )
 
-        # Use timer server instead of direct Process.send_after
-        case Raxol.UI.Rendering.TimerServer.start_animation_timer(
-               self(),
-               @animation_tick_interval_ms
-             ) do
-          :ok ->
-            %{state | animation_ticker_ref: :timer_server}
+        # TimerServer.start_animation_timer only returns :ok per spec
+        :ok =
+          Raxol.UI.Rendering.TimerServer.start_animation_timer(
+            self(),
+            @animation_tick_interval_ms
+          )
 
-          {:error, :not_started} ->
-            # Fallback to direct timer if TimerServer not available
-            timer_ref =
-              Process.send_after(
-                self(),
-                :animation_tick,
-                @animation_tick_interval_ms
-              )
-
-            %{state | animation_ticker_ref: timer_ref}
-
-          error ->
-            Raxol.Core.Runtime.Log.error(
-              "Failed to start animation timer: #{inspect(error)}"
-            )
-
-            %{state | animation_ticker_ref: nil}
-        end
+        %{state | animation_ticker_ref: :timer_server}
 
       _ticker_ref ->
         Raxol.Core.Runtime.Log.debug(
