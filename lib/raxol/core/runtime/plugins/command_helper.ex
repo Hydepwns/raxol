@@ -125,12 +125,6 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
   end
 
-  @spec process_commands(module(), term(), map()) :: map()
-  defp process_commands(plugin_module, _invalid, command_table) do
-    log_invalid_commands(plugin_module)
-    command_table
-  end
-
   @spec register_command(module(), {atom(), atom(), non_neg_integer()}, map()) ::
           map()
   defp register_command(plugin_module, {name, function, arity}, acc)
@@ -182,15 +176,6 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   defp log_invalid_command(plugin_module, name_str, function, arity) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Plugin #{inspect(plugin_module)} does not export #{function}/#{arity} for command #{inspect(name_str)}. Skipping registration.",
-      context: __MODULE__,
-      stacktrace: nil
-    )
-  end
-
-  @spec log_invalid_commands(module()) :: :ok
-  defp log_invalid_commands(plugin_module) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Plugin #{inspect(plugin_module)} get_commands/0 did not return a list.",
       context: __MODULE__,
       stacktrace: nil
     )
@@ -366,6 +351,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
           | {:error, term(), map()}
           | {:error, :timeout}
           | {:error, {:exit, term()}}
+          | {:error, {:exception, term()}}
   defp with_timeout(fun, timeout) do
     task =
       Task.async(fn ->

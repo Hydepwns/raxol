@@ -196,9 +196,6 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
 
       {:error, _type, _message, _context} = error ->
         {:reply, error, state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
     end
   end
 

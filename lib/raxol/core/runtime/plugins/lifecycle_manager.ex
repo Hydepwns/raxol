@@ -394,16 +394,6 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
         )
 
         {:error, reason}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "[#{__MODULE__}] Failed to reload plugin from disk: #{plugin_id}",
-          reason,
-          nil,
-          %{plugin_id: plugin_id, path: path, reason: reason}
-        )
-
-        {:error, reason}
     end
   end
 

@@ -86,7 +86,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
        }) do
     with {:ok, initial_state} <-
            StateManager.initialize_plugin_state(plugin_module, config),
-         {:ok, _} <-
+         :ok <-
            register_plugin_components(%{
              plugin_id: plugin_id,
              plugin_module: plugin_module,
@@ -99,18 +99,19 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
              load_order: load_order,
              plugin_config: plugin_config
            }) do
-      _build_updated_maps(%{
-        plugin_id: plugin_id,
-        plugin_module: plugin_module,
-        plugin_metadata: plugin_metadata,
-        initial_state: initial_state,
-        config: config,
-        plugins: plugins,
-        metadata: metadata,
-        plugin_states: plugin_states,
-        load_order: load_order,
-        plugin_config: plugin_config
-      })
+      {:ok,
+       _build_updated_maps(%{
+         plugin_id: plugin_id,
+         plugin_module: plugin_module,
+         plugin_metadata: plugin_metadata,
+         initial_state: initial_state,
+         config: config,
+         plugins: plugins,
+         metadata: metadata,
+         plugin_states: plugin_states,
+         load_order: load_order,
+         plugin_config: plugin_config
+       })}
     end
   end
 
@@ -127,13 +128,13 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
          load_order: _load_order,
          plugin_config: plugin_config
        }) do
-    with {:ok, _} <-
+    with :ok <-
            StateManager.update_plugin_state_legacy(
              plugin_id,
              initial_state,
              plugin_config
            ),
-         {:ok, _} <-
+         :ok <-
            PluginCommandManager.register_commands(
              plugin_module,
              initial_state,
