@@ -2,11 +2,12 @@
   # ================================================================================
   # DIALYZER SUPPRESSIONS - Incremental Fix In Progress
   # Last updated: 2025-12-10
-  # Starting errors: 1736, Current: 1087, Fixed: ~649
+  # Starting errors: 1736, Current: 913, Fixed: 823 (47% reduction)
   # Fixed categories:
   #   - invalid_contract (~187 fixed, 9 remaining)
   #   - call errors (~106 fixed, 35 remaining)
   #   - contract_supertype (~256 fixed, remaining suppressed)
+  #   - pattern_match (66 fixed, 10 remaining - 8 platform-specific, 2 to investigate)
   # Goal: Continue fixing errors by category
   # ================================================================================
 
@@ -53,9 +54,19 @@
   ~r":contract_supertype",
 
   # ================================================================================
-  # TO BE FIXED - Pattern Match Issues (99 total)
+  # TO BE FIXED - Pattern Match Issues (Started at 76, now 10)
+  # Dead code / unreachable patterns detected by Dialyzer
+  # Fixed 66 pattern_match errors (76 -> 10, 87% reduction)
   # ================================================================================
-  ~r":pattern_match",
+  # Remaining 10 errors:
+  #   - driver.ex (5 errors): Platform-specific @termbox2_available checks (intentional)
+  #   - terminal_utils.ex (3 errors): Platform-specific code (intentional)
+  #   - event_system_integration.ex (1 error): To investigate
+  #   - dcs_entry_state.ex (1 error): To investigate
+  ~r"driver\.ex:.*pattern_match.*type true",
+  ~r"terminal_utils\.ex:.*pattern_match.*type (true|false)",
+  ~r"event_system_integration\.ex:.*pattern_match.*type true",
+  ~r"dcs_entry_state\.ex:.*pattern_match.*type true",
 
   # ================================================================================
   # TO BE FIXED - No Return (187 total)

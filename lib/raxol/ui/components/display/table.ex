@@ -106,7 +106,7 @@ defmodule Raxol.UI.Components.Display.Table do
   # --- Component Implementation ---
 
   @doc "Initializes the Table component state from props."
-  @spec init(props()) :: state()
+  @spec init(props()) :: %__MODULE__{}
   @impl Raxol.UI.Components.Base.Component
   def init(attrs) do
     id = Map.get(attrs, :id) || Raxol.Core.ID.generate()
@@ -415,15 +415,10 @@ defmodule Raxol.UI.Components.Display.Table do
   defp get_row_style_for_index(_state, _index), do: []
 
   defp ensure_disabled_focused(element, state) do
-    case is_map(element) do
-      true ->
-        element
-        |> Map.put_new(:disabled, Map.get(state, :disabled, false))
-        |> Map.put_new(:focused, Map.get(state, :focused, false))
-
-      false ->
-        element
-    end
+    # element is always a map based on upstream type constraints
+    element
+    |> Map.put_new(:disabled, Map.get(state, :disabled, false))
+    |> Map.put_new(:focused, Map.get(state, :focused, false))
   end
 
   defp get_visible_height(context) do

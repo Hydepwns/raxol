@@ -476,9 +476,7 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
     misses = Process.get(:style_cache_misses, 0)
     total = hits + misses
     hit_rate = if total > 0, do: hits / total * 100, else: 0.0
-
-    hit_rate_display =
-      if is_float(hit_rate), do: Float.round(hit_rate, 1), else: hit_rate
+    hit_rate_display = Float.round(hit_rate, 1)
 
     %{
       cache_hits: hits,

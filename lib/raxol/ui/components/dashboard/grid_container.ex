@@ -354,61 +354,48 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
          cell_height,
          gap
        ) do
-    case validate_parent_bounds_structure(
-           parent_bounds,
-           container_width,
-           container_height
-         ) do
-      :ok ->
-        # Extract widget grid spec with defaults
-        grid_spec =
-          widget_config.grid_spec || %{col: 1, row: 1, width: 1, height: 1}
+    # Validation always succeeds based on upstream type constraints
+    :ok =
+      validate_parent_bounds_structure(
+        parent_bounds,
+        container_width,
+        container_height
+      )
 
-        # Calculate position and size including gaps
-        col_start = max(1, grid_spec.col)
-        row_start = max(1, grid_spec.row)
+    # Extract widget grid spec with defaults
+    grid_spec =
+      widget_config.grid_spec || %{col: 1, row: 1, width: 1, height: 1}
 
-        # Handle both width/height and col_span/row_span naming conventions
-        width_cells = get_width_cells(grid_spec)
-        height_cells = get_height_cells(grid_spec)
+    # Calculate position and size including gaps
+    col_start = max(1, grid_spec.col)
+    row_start = max(1, grid_spec.row)
 
-        # Validate cell dimensions
-        validate_cell_dimensions_and_calculate(
-          cell_width,
-          cell_height,
-          parent_bounds,
-          col_start,
-          row_start,
-          width_cells,
-          height_cells,
-          gap
-        )
+    # Handle both width/height and col_span/row_span naming conventions
+    width_cells = get_width_cells(grid_spec)
+    height_cells = get_height_cells(grid_spec)
 
-      {:error, bounds} ->
-        bounds
-    end
+    # Validate cell dimensions
+    validate_cell_dimensions_and_calculate(
+      cell_width,
+      cell_height,
+      parent_bounds,
+      col_start,
+      row_start,
+      width_cells,
+      height_cells,
+      gap
+    )
   end
 
   defp validate_parent_bounds_structure(
-         parent_bounds,
-         container_width,
-         container_height
+         _parent_bounds,
+         _container_width,
+         _container_height
        ) do
-    case is_map(parent_bounds) and
-           is_number(Map.get(parent_bounds, :x)) and
-           is_number(Map.get(parent_bounds, :y)) and
-           is_number(container_width) and
-           is_number(container_height) do
-      true ->
-        :ok
-
-      false ->
-        Raxol.Core.Runtime.Log.error(
-          "Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(container_width)}, container_height=#{inspect(container_height)}"
-        )
-
-        {:error, %{x: 0, y: 0, width: 10, height: 10}}
-    end
+    # All parameters are validated upstream and always valid based on type constraints
+    # parent_bounds is always a map with numeric x/y from get_cell_dimensions
+    # container_width and container_height are always numbers
+    :ok
   end
 
   defp validate_cell_dimensions_and_calculate(
@@ -421,34 +408,25 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
          height_cells,
          gap
        ) do
-    case is_number(cell_width) and is_number(cell_height) do
-      true ->
-        x_pos =
-          parent_bounds.x + (col_start - 1) * cell_width +
-            (col_start - 1) * gap
+    # cell_width and cell_height are always numbers from calculate_cell_width/height
+    x_pos =
+      parent_bounds.x + (col_start - 1) * cell_width +
+        (col_start - 1) * gap
 
-        y_pos =
-          parent_bounds.y + (row_start - 1) * cell_height +
-            (row_start - 1) * gap
+    y_pos =
+      parent_bounds.y + (row_start - 1) * cell_height +
+        (row_start - 1) * gap
 
-        width = width_cells * cell_width + (width_cells - 1) * gap
-        height = height_cells * cell_height + (height_cells - 1) * gap
+    width = width_cells * cell_width + (width_cells - 1) * gap
+    height = height_cells * cell_height + (height_cells - 1) * gap
 
-        # Return the final bounds with calculated dimensions
-        %{
-          x: x_pos,
-          y: y_pos,
-          width: width,
-          height: height
-        }
-
-      false ->
-        Raxol.Core.Runtime.Log.error(
-          "Invalid cell dimensions in calculate_widget_bounds: width=#{inspect(cell_width)}, height=#{inspect(cell_height)}"
-        )
-
-        %{x: 0, y: 0, width: 10, height: 10}
-    end
+    # Return the final bounds with calculated dimensions
+    %{
+      x: x_pos,
+      y: y_pos,
+      width: width,
+      height: height
+    }
   end
 
   defp sort_by_max_width({:infinity, _c, _r}), do: 1_000_000
