@@ -108,16 +108,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   @doc """
   Validates plugin security aspects.
   """
-  @spec validate_security(module(), map()) :: validation_result()
+  @spec validate_security(module(), map()) :: :ok
   def validate_security(plugin_module, options \\ %{}) do
-    with :ok <- validate_file_access(plugin_module, options),
-         :ok <- validate_network_access(plugin_module, options),
-         :ok <- validate_code_injection(plugin_module),
-         :ok <- validate_resource_limits(plugin_module) do
-      :ok
-    else
-      error -> error
-    end
+    :ok = validate_file_access(plugin_module, options)
+    :ok = validate_network_access(plugin_module, options)
+    :ok = validate_code_injection(plugin_module)
+    :ok = validate_resource_limits(plugin_module)
+    :ok
   end
 
   @doc """
@@ -287,7 +284,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec validate_file_access(module(), map()) :: validation_result()
+  @spec validate_file_access(module(), map()) :: :ok
   defp validate_file_access(plugin_module, options) do
     # Check if plugin attempts to access restricted files
     restricted_access = Map.get(options, :restrict_file_access, true)
@@ -295,7 +292,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     validate_file_access_restrictions(restricted_access, plugin_module)
   end
 
-  @spec validate_network_access(module(), map()) :: validation_result()
+  @spec validate_network_access(module(), map()) :: :ok
   defp validate_network_access(plugin_module, options) do
     # Check if plugin attempts network operations
     restricted_network = Map.get(options, :restrict_network_access, true)
@@ -303,13 +300,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     validate_network_access_restrictions(restricted_network, plugin_module)
   end
 
-  @spec validate_code_injection(module()) :: validation_result()
+  @spec validate_code_injection(module()) :: :ok
   defp validate_code_injection(plugin_module) do
     # Check for potential code injection vulnerabilities
     check_code_injection_safety(plugin_module)
   end
 
-  @spec validate_resource_limits(module()) :: validation_result()
+  @spec validate_resource_limits(module()) :: :ok
   defp validate_resource_limits(plugin_module) do
     # Validate that plugin doesn't exceed resource limits
     check_resource_usage(plugin_module)
@@ -334,13 +331,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     validate_otp_version_compatibility(current_version, min_version)
   end
 
-  @spec validate_platform_support(module()) :: validation_result()
+  @spec validate_platform_support(module()) :: :ok
   defp validate_platform_support(_plugin_module) do
     # Validate platform compatibility
     :ok
   end
 
-  @spec validate_memory_usage(module()) :: validation_result()
+  @spec validate_memory_usage(module()) :: :ok
   defp validate_memory_usage(_plugin_module) do
     # Check estimated memory usage
     :ok
@@ -436,7 +433,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
 
   # Security analysis helpers
 
-  @spec has_file_system_access?(module()) :: boolean()
+  @spec has_file_system_access?(module()) :: false
   defp has_file_system_access?(plugin_module) do
     # Analyze module for file system operations
     case safe_analyze_beam_chunks(plugin_module) do
@@ -445,7 +442,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec has_network_access?(module()) :: boolean()
+  @spec has_network_access?(module()) :: false
   defp has_network_access?(plugin_module) do
     # Analyze module for network operations
     case safe_analyze_beam_chunks(plugin_module) do
@@ -519,13 +516,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec has_code_injection_risk?(module()) :: boolean()
+  @spec has_code_injection_risk?(module()) :: false
   defp has_code_injection_risk?(_plugin_module) do
     # Analyze for potential code injection patterns
     false
   end
 
-  @spec check_resource_usage(module()) :: validation_result()
+  @spec check_resource_usage(module()) :: :ok
   defp check_resource_usage(_plugin_module) do
     # Check resource usage patterns
     :ok
@@ -552,13 +549,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec analyze_forms_for_file_access(term()) :: boolean()
+  @spec analyze_forms_for_file_access(term()) :: false
   defp analyze_forms_for_file_access(_forms) do
     # Simplified analysis - in practice would check for File.* calls
     false
   end
 
-  @spec analyze_forms_for_network_access(term()) :: boolean()
+  @spec analyze_forms_for_network_access(term()) :: false
   defp analyze_forms_for_network_access(_forms) do
     # Simplified analysis - in practice would check for HTTPoison.*, :gen_tcp, etc.
     false
@@ -632,8 +629,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec validate_file_access_restrictions(boolean(), module()) ::
-          validation_result()
+  @spec validate_file_access_restrictions(boolean(), module()) :: :ok
   defp validate_file_access_restrictions(true, plugin_module) do
     # has_file_system_access?/1 currently always returns false
     # (analyze_forms_for_file_access/1 is stubbed to return false)
@@ -641,12 +637,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     :ok
   end
 
-  @spec validate_file_access_restrictions(boolean(), module()) ::
-          validation_result()
+  @spec validate_file_access_restrictions(boolean(), module()) :: :ok
   defp validate_file_access_restrictions(false, _plugin_module), do: :ok
 
-  @spec validate_network_access_restrictions(boolean(), module()) ::
-          validation_result()
+  @spec validate_network_access_restrictions(boolean(), module()) :: :ok
   defp validate_network_access_restrictions(true, plugin_module) do
     # has_network_access?/1 currently always returns false
     # (analyze_forms_for_network_access/1 is stubbed to return false)
@@ -654,11 +648,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     :ok
   end
 
-  @spec validate_network_access_restrictions(boolean(), module()) ::
-          validation_result()
+  @spec validate_network_access_restrictions(boolean(), module()) :: :ok
   defp validate_network_access_restrictions(false, _plugin_module), do: :ok
 
-  @spec check_code_injection_safety(module()) :: validation_result()
+  @spec check_code_injection_safety(module()) :: :ok
   defp check_code_injection_safety(plugin_module) do
     # has_code_injection_risk?/1 currently always returns false
     false = has_code_injection_risk?(plugin_module)
