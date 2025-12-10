@@ -32,19 +32,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
 
       new_cells =
         List.update_at(buffer.cells, y, fn row ->
-          case {char_width, can_write_wide} do
-            {2, true} ->
-              # Write wide character + placeholder
-              placeholder = Cell.new_wide_placeholder(style)
-
-              row
-              |> List.replace_at(x, cell)
-              |> List.replace_at(x + 1, placeholder)
-
-            _ ->
-              # Write single-width character or wide char at edge
-              List.replace_at(row, x, cell)
-          end
+          write_cell_to_row(row, x, cell, char_width, can_write_wide, style)
         end)
 
       damage_width = if char_width == 2 and can_write_wide, do: 2, else: 1
@@ -207,12 +195,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
     if Core.within_bounds?(buffer, x, y) do
       new_cells =
         List.update_at(buffer.cells, y, fn row ->
-          {before, after_} = Enum.split(row, x)
-
-          case after_ do
-            [] -> before
-            [_ | rest] -> before ++ rest ++ [Cell.empty()]
-          end
+          delete_char_from_row(row, x)
         end)
 
       %{
@@ -327,19 +310,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
       buffer.cells
       |> Enum.with_index()
       |> Enum.map(fn {row, row_y} ->
-        if row_y >= y and row_y < y_end do
-          row
-          |> Enum.with_index()
-          |> Enum.map(fn {cell, col_x} ->
-            if col_x >= x and col_x < x_end do
-              Cell.empty()
-            else
-              cell
-            end
-          end)
-        else
-          row
-        end
+        clear_row_region(row, row_y, y, y_end, x, x_end)
       end)
 
     %{
@@ -452,20 +423,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
     region
     |> Enum.with_index()
     |> Enum.reduce(buffer, fn {row, dy}, acc ->
-      row
-      |> Enum.with_index()
-      |> Enum.reduce(acc, fn {cell, dx}, acc2 ->
-        if Core.within_bounds?(acc2, dest_x + dx, dest_y + dy) do
-          new_cells =
-            List.update_at(acc2.cells, dest_y + dy, fn row ->
-              List.replace_at(row, dest_x + dx, cell)
-            end)
-
-          %{acc2 | cells: new_cells}
-        else
-          acc2
-        end
-      end)
+      copy_row_to_dest(row, dy, acc, dest_x, dest_y)
     end)
     |> Map.update!(
       :damage_regions,
@@ -527,7 +485,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Clears a line (stub).
   """
-  @spec clear_line(Core.t(), non_neg_integer(), atom()) :: Core.t()
+  @spec clear_line(Core.t(), non_neg_integer(), any()) :: Core.t()
   def clear_line(buffer, _y, _mode), do: buffer
 
   @doc """
@@ -691,7 +649,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Inserts lines at position y with count.
   """
-  @spec insert_lines(Core.t(), integer(), integer(), non_neg_integer()) ::
+  @spec insert_lines(Core.t(), integer(), integer(), map()) ::
           Core.t()
   def insert_lines(buffer, y, count, style) do
     alias Raxol.Terminal.Buffer.LineOperations
@@ -775,23 +733,101 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
         new_cells =
           Enum.with_index(buffer.cells)
           |> Enum.map(fn {line, y} ->
-            cond do
-              y < top or y > bottom ->
-                line
-
-              y <= bottom - lines_to_shift ->
-                source_y = y + lines_to_shift
-                Enum.at(buffer.cells, source_y, line)
-
-              true ->
-                List.duplicate(%Cell{char: " "}, buffer.width)
-            end
+            shift_line_in_region(
+              line,
+              y,
+              top,
+              bottom,
+              lines_to_shift,
+              buffer.cells,
+              buffer.width
+            )
           end)
 
         %{buffer | cells: new_cells, scroll_position: target_line}
 
       true ->
         %{buffer | scroll_position: target_line}
+    end
+  end
+
+  defp write_cell_to_row(row, x, cell, char_width, can_write_wide, style) do
+    case {char_width, can_write_wide} do
+      {2, true} ->
+        # Write wide character + placeholder
+        placeholder = Cell.new_wide_placeholder(style)
+
+        row
+        |> List.replace_at(x, cell)
+        |> List.replace_at(x + 1, placeholder)
+
+      _ ->
+        # Write single-width character or wide char at edge
+        List.replace_at(row, x, cell)
+    end
+  end
+
+  defp delete_char_from_row(row, x) do
+    {before, after_} = Enum.split(row, x)
+
+    case after_ do
+      [] -> before
+      [_ | rest] -> before ++ rest ++ [Cell.empty()]
+    end
+  end
+
+  defp clear_row_region(row, row_y, y, y_end, x, x_end) do
+    if row_y >= y and row_y < y_end do
+      row
+      |> Enum.with_index()
+      |> Enum.map(fn {cell, col_x} ->
+        clear_cell_if_in_range(cell, col_x, x, x_end)
+      end)
+    else
+      row
+    end
+  end
+
+  defp clear_cell_if_in_range(cell, col_x, x, x_end) do
+    if col_x >= x and col_x < x_end do
+      Cell.empty()
+    else
+      cell
+    end
+  end
+
+  defp copy_row_to_dest(row, dy, acc, dest_x, dest_y) do
+    row
+    |> Enum.with_index()
+    |> Enum.reduce(acc, fn {cell, dx}, acc2 ->
+      copy_cell_to_dest(acc2, cell, dx, dy, dest_x, dest_y)
+    end)
+  end
+
+  defp copy_cell_to_dest(acc, cell, dx, dy, dest_x, dest_y) do
+    if Core.within_bounds?(acc, dest_x + dx, dest_y + dy) do
+      new_cells =
+        List.update_at(acc.cells, dest_y + dy, fn row ->
+          List.replace_at(row, dest_x + dx, cell)
+        end)
+
+      %{acc | cells: new_cells}
+    else
+      acc
+    end
+  end
+
+  defp shift_line_in_region(line, y, top, bottom, lines_to_shift, cells, width) do
+    cond do
+      y < top or y > bottom ->
+        line
+
+      y <= bottom - lines_to_shift ->
+        source_y = y + lines_to_shift
+        Enum.at(cells, source_y, line)
+
+      true ->
+        List.duplicate(%Cell{char: " "}, width)
     end
   end
 end
