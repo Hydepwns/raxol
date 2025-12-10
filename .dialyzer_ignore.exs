@@ -2,11 +2,12 @@
   # ================================================================================
   # DIALYZER SUPPRESSIONS - Incremental Fix In Progress
   # Last updated: 2025-12-10
-  # Starting errors: 1736, Current: 1153, Fixed: ~583
+  # Starting errors: 1736, Current: ~1127, Fixed: ~609
   # Fixed categories:
   #   - invalid_contract (~187 fixed, 9 remaining - complex struct types)
   #   - call errors (~106 fixed, 35 remaining)
-  #   - contract_supertype (~190 fixed, 494 remaining)
+  #   - contract_supertype (~216 fixed, 468 remaining)
+  # Recent fixes (Phase 2): dispatcher.ex (14), buffer/operations.ex (12)
   # Goal: Continue fixing errors by category
   # ================================================================================
 
