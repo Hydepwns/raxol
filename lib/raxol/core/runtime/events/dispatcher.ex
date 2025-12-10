@@ -101,8 +101,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     process_app_update(state, message, event)
   end
 
-  @spec process_app_update(State.t(), tuple(), Event.t()) ::
-          {:ok, State.t(), list()} | {:error, term()}
+  @spec process_app_update(map(), tuple(), Event.t()) ::
+          {:ok, map(), list()} | {:error, term()}
   defp process_app_update(state, message, event) do
     case Application.delegate_update(state.app_module, message, state.model) do
       {updated_model, commands}
@@ -117,8 +117,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     end
   end
 
-  @spec process_successful_update(State.t(), map(), list()) ::
-          {:ok, State.t(), list()}
+  @spec process_successful_update(map(), map(), list()) ::
+          {:ok, map(), list()}
   defp process_successful_update(state, updated_model, commands) do
     context = build_command_context(state)
     process_commands(commands, context, state.command_module)
@@ -128,7 +128,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:ok, updated_state, commands}
   end
 
-  @spec build_command_context(State.t()) :: map()
+  @spec build_command_context(map()) :: map()
   defp build_command_context(state) do
     %{
       pid: self(),
@@ -137,7 +137,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     }
   end
 
-  @spec handle_theme_update(State.t(), map()) :: State.t()
+  @spec handle_theme_update(map(), map()) :: map()
   defp handle_theme_update(state, updated_model) do
     new_theme_id =
       Map.get(updated_model, :current_theme_id, state.current_theme_id)
@@ -150,7 +150,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     )
   end
 
-  @spec log_update_error(State.t(), tuple(), Event.t(), term()) ::
+  @spec log_update_error(map(), tuple(), Event.t(), term()) ::
           {:error, term()}
   defp log_update_error(state, message, event, reason) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
@@ -169,7 +169,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:error, reason}
   end
 
-  @spec log_unexpected_return(State.t(), tuple(), Event.t(), term()) ::
+  @spec log_unexpected_return(map(), tuple(), Event.t(), term()) ::
           {:error, {:unexpected_return, term()}}
   defp log_unexpected_return(state, message, event, other) do
     Raxol.Core.Runtime.Log.warning_with_context(
@@ -200,20 +200,20 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     end
   end
 
-  @spec handle_resize_event(%{width: integer(), height: integer()}, State.t()) ::
-          {:ok, State.t(), list()}
+  @spec handle_resize_event(%{width: integer(), height: integer()}, map()) ::
+          {:ok, map(), list()}
   defp handle_resize_event(%{width: width, height: height}, state) do
     {:ok, %{state | width: width, height: height}, []}
   end
 
-  @spec handle_focus_event(%{focused: boolean()}, State.t()) ::
-          {:ok, State.t(), list()}
+  @spec handle_focus_event(%{focused: boolean()}, map()) ::
+          {:ok, map(), list()}
   defp handle_focus_event(%{focused: focused}, state) do
     {:ok, %{state | focused: focused}, []}
   end
 
-  @spec handle_error_event(%{error: term()}, State.t()) ::
-          {:error, term(), State.t()}
+  @spec handle_error_event(%{error: term()}, map()) ::
+          {:error, term(), map()}
   defp handle_error_event(%{error: error}, state) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "System error event",
@@ -356,8 +356,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:noreply, state}
   end
 
-  @spec process_command_result(State.t(), {:command_result, term()}) ::
-          {:noreply, State.t()}
+  @spec process_command_result(map(), {:command_result, term()}) ::
+          {:noreply, map()}
   defp process_command_result(state, message) do
     case Application.delegate_update(state.app_module, message, state.model) do
       {updated_model, commands}
@@ -372,8 +372,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     end
   end
 
-  @spec process_command_commands(State.t(), map(), list()) ::
-          {:noreply, State.t()}
+  @spec process_command_commands(map(), map(), list()) ::
+          {:noreply, map()}
   defp process_command_commands(state, updated_model, commands) do
     context = build_command_context(state)
 
@@ -387,8 +387,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:noreply, %{state | model: updated_model}}
   end
 
-  @spec log_command_error(State.t(), {:command_result, term()}, term()) ::
-          {:noreply, State.t()}
+  @spec log_command_error(map(), {:command_result, term()}, term()) ::
+          {:noreply, map()}
   defp log_command_error(state, message, reason) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "[Dispatcher] Error calling delegate_update in handle_info",
@@ -400,8 +400,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:noreply, state}
   end
 
-  @spec log_command_unexpected(State.t(), {:command_result, term()}, term()) ::
-          {:noreply, State.t()}
+  @spec log_command_unexpected(map(), {:command_result, term()}, term()) ::
+          {:noreply, map()}
   defp log_command_unexpected(state, message, other) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[Dispatcher] Unexpected return from delegate_update in handle_info",
@@ -470,7 +470,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp system_event?(_), do: false
 
-  @spec apply_plugin_filters(Event.t(), map()) :: Event.t() | nil
+  @spec apply_plugin_filters(Event.t(), State.t()) :: Event.t() | nil
   defp apply_plugin_filters(event, state) do
     manager_pid = state.plugin_manager
 
