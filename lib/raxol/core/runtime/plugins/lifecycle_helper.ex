@@ -37,7 +37,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     with {:ok, {plugin_id, plugin_module}} <-
            PluginValidator.resolve_plugin_identity(plugin_id_or_module),
          :ok <-
-           PluginValidator.validate_plugin(plugin_id, plugin_module, plugins),
+           PluginValidator.validate_plugin(
+             plugin_id,
+             plugin_module,
+             plugins,
+             %{}
+           ),
          {:ok, plugin_metadata} <- Loader.extract_metadata(plugin_module),
          {:ok, updated_maps} <-
            initialize_and_register_plugin(%{
@@ -60,13 +65,6 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
       {:error, :invalid_plugin} ->
         {:error,
          "Plugin #{plugin_id_or_module} does not implement required behaviour"}
-
-      {:error, :dependency_missing, missing} ->
-        {:error,
-         "Missing dependency #{missing} for plugin #{plugin_id_or_module}"}
-
-      {:error, :dependency_cycle, cycle} ->
-        {:error, "Dependency cycle detected: #{inspect(cycle)}"}
 
       {:error, reason} ->
         PluginErrorHandler.handle_load_error(reason, plugin_id_or_module)
@@ -379,10 +377,9 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   @impl true
   def init_lifecycle(plugin_id, opts) do
     # Initialize plugin with default metadata and config
-    case init_plugin(plugin_id, opts[:metadata] || %{}) do
-      {:ok, _} -> {:ok, plugin_id}
-      error -> error
-    end
+    # init_plugin always returns {:ok, _}, never errors
+    {:ok, _} = init_plugin(plugin_id, opts[:metadata] || %{})
+    {:ok, plugin_id}
   end
 
   @impl true

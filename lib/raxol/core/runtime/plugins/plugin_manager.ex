@@ -153,7 +153,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
            state
          ) do
       {:ok, new_state} -> {:reply, :ok, new_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
+      {:error, _type, _message, _context} = error -> {:reply, error, state}
     end
   end
 
@@ -194,11 +194,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
 
+      {:error, _type, _message, _context} = error ->
+        {:reply, error, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
-
-      {:error, type, message, _context} ->
-        {:reply, {:error, "#{type}: #{message}"}, state}
     end
   end
 
@@ -281,7 +281,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
            state
          ) do
       {:ok, new_state} -> {:noreply, new_state}
-      {:error, _reason} -> {:noreply, state}
+      {:error, _type, _message, _context} -> {:noreply, state}
     end
   end
 
@@ -317,7 +317,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
            state
          ) do
       {:ok, new_state} -> {:noreply, new_state}
-      {:error, _reason} -> {:noreply, state}
+      {:error, _type, _message, _context} -> {:noreply, state}
     end
   end
 

@@ -37,7 +37,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  @spec process_namespace(String.t() | atom()) :: any()
+  @spec process_namespace(String.t() | atom()) :: atom() | nil
   defp process_namespace(namespace) when is_binary(namespace) do
     # Functional approach to converting namespace string to atom
     case safe_string_to_existing_atom(namespace) do
@@ -53,12 +53,13 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  @spec process_namespace(String.t() | atom()) :: any()
+  @spec process_namespace(String.t() | atom()) :: atom() | nil
   defp process_namespace(namespace) when is_atom(namespace), do: namespace
-  @spec process_namespace(any()) :: any()
+  @spec process_namespace(term()) :: nil
   defp process_namespace(_), do: nil
 
-  @spec safe_string_to_existing_atom(any()) :: any()
+  @spec safe_string_to_existing_atom(String.t()) ::
+          {:ok, atom()} | {:error, :atom_not_found}
   defp safe_string_to_existing_atom(string) do
     # Safe conversion without try/catch
     case atom_exists?(string) do
@@ -70,7 +71,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  @spec atom_exists?(any()) :: boolean()
+  @spec atom_exists?(String.t()) :: boolean()
   defp atom_exists?(string) do
     # Check if the atom already exists in the atom table
     # This is a safe way to check without creating new atoms
@@ -103,27 +104,18 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  @spec safe_get_commands(module()) :: any()
+  @spec safe_get_commands(module()) :: {:ok, list()} | {:error, term()}
   defp safe_get_commands(plugin_module) do
     # Use Task to safely execute and handle any errors
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           task =
-             Task.async(fn ->
-               {:ok, plugin_module.get_commands()}
-             end)
-
-           case Task.yield(task, 5000) || Task.shutdown(task) do
-             {:ok, result} -> result
-             nil -> {:error, :timeout}
-             {:exit, reason} -> {:error, {:exit, reason}}
-           end
+           get_commands_with_timeout(plugin_module)
          end) do
       {:ok, result} -> result
       {:error, error} -> {:error, error}
     end
   end
 
-  @spec process_commands(module(), any(), any()) :: any()
+  @spec process_commands(module(), list(), map()) :: map()
   defp process_commands(plugin_module, commands, command_table)
        when is_list(commands) do
     Enum.reduce(
@@ -133,13 +125,14 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
   end
 
-  @spec process_commands(module(), String.t() | integer(), any()) :: any()
+  @spec process_commands(module(), term(), map()) :: map()
   defp process_commands(plugin_module, _invalid, command_table) do
     log_invalid_commands(plugin_module)
     command_table
   end
 
-  @spec register_command(module(), any(), any()) :: any()
+  @spec register_command(module(), {atom(), atom(), non_neg_integer()}, map()) ::
+          map()
   defp register_command(plugin_module, {name, function, arity}, acc)
        when is_atom(name) and is_atom(function) and is_integer(arity) and
               arity >= 0 do
@@ -156,42 +149,36 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  @spec register_command(module(), String.t() | integer(), any()) :: any()
+  @spec register_command(module(), term(), map()) :: map()
   defp register_command(_plugin_module, _invalid, acc), do: acc
 
-  @spec valid_command_name?(String.t() | atom()) :: boolean()
+  @spec valid_command_name?(String.t()) :: boolean()
   defp valid_command_name?(name_str) do
     not String.contains?(name_str, " ") and
       String.match?(name_str, ~r/^[a-zA-Z0-9_-]+$/)
   end
 
   @spec register_valid_command(
-          any(),
+          map(),
           module(),
-          String.t() | atom(),
+          String.t(),
           atom(),
-          any()
-        ) :: any()
+          non_neg_integer()
+        ) :: map()
   defp register_valid_command(acc, plugin_module, name_str, function, arity) do
-    result =
-      CommandRegistry.register_command(
-        acc,
-        plugin_module,
-        name_str,
-        plugin_module,
-        function,
-        arity
-      )
-
-    case result do
-      updated_table when is_map(updated_table) -> updated_table
-      {:error, :already_registered} -> acc
-      _ -> acc
-    end
+    # CommandRegistry.register_command always returns a map when given a map input
+    CommandRegistry.register_command(
+      acc,
+      plugin_module,
+      name_str,
+      plugin_module,
+      function,
+      arity
+    )
   end
 
-  @spec log_invalid_command(module(), String.t() | atom(), atom(), any()) ::
-          any()
+  @spec log_invalid_command(module(), String.t(), atom(), non_neg_integer()) ::
+          :ok
   defp log_invalid_command(plugin_module, name_str, function, arity) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Plugin #{inspect(plugin_module)} does not export #{function}/#{arity} for command #{inspect(name_str)}. Skipping registration.",
@@ -200,7 +187,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
   end
 
-  @spec log_invalid_commands(module()) :: any()
+  @spec log_invalid_commands(module()) :: :ok
   defp log_invalid_commands(plugin_module) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Plugin #{inspect(plugin_module)} get_commands/0 did not return a list.",
@@ -209,7 +196,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
   end
 
-  @spec log_command_error(module(), any()) :: any()
+  @spec log_command_error(module(), term()) :: :ok
   defp log_command_error(plugin_module, error) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "Error calling get_commands/0 on #{inspect(plugin_module)}: #{inspect(error)}",
@@ -255,13 +242,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
           Map.put(state.plugin_states, plugin_id, new_state)
 
         {:error, reason, updated_plugin_states}
-
-      {:error, reason} ->
-        {:error, reason}
     end
   end
 
-  @spec lookup_valid_command(any(), String.t() | atom(), list()) :: any()
+  @spec lookup_valid_command(map(), String.t(), list()) ::
+          {:ok, {module(), function(), non_neg_integer()}}
+          | {:error, :not_found | :invalid_args}
   defp lookup_valid_command(command_table, command_name_str, args) do
     case validate_command_args(args) do
       :ok ->
@@ -276,27 +262,19 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  @spec find_command_in_table(any(), String.t() | atom()) :: any()
+  @spec find_command_in_table(map(), String.t()) ::
+          {:ok, {module(), function(), non_neg_integer()}}
+          | {:error, :not_found}
   defp find_command_in_table(command_table, command_name_str) do
     # Search through all namespaces in the command table
     Enum.find_value(command_table, {:error, :not_found}, fn {_namespace,
                                                              commands} ->
-      case Enum.find(commands, fn {name, _, _} -> name == command_name_str end) do
-        nil ->
-          nil
-
-        {_name, {module, function, arity}, _metadata} ->
-          # Create a function that calls the module function
-          handler = fn args, state ->
-            apply(module, function, [args, state])
-          end
-
-          {:ok, {module, handler, arity}}
-      end
+      find_and_build_command(commands, command_name_str)
     end)
   end
 
-  @spec get_plugin_state(map(), module()) :: any() | nil
+  @spec get_plugin_state(map(), module()) ::
+          {:ok, String.t(), map()} | {:error, :missing_plugin_state}
   defp get_plugin_state(state, plugin_module) do
     case find_plugin_id_by_module(state.plugins, plugin_module) do
       nil ->
@@ -311,12 +289,13 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   end
 
   @spec execute_and_update_state(
-          any(),
+          function(),
           list(),
           map(),
-          String.t() | integer(),
+          String.t(),
           map()
-        ) :: any()
+        ) ::
+          {:ok, map(), term(), String.t()} | {:error, term(), map(), String.t()}
   defp execute_and_update_state(handler, args, plugin_state, plugin_id, _state) do
     case execute_command(handler, args, plugin_state) do
       {:ok, new_state, result} ->
@@ -330,7 +309,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  @spec execute_command(any(), list(), map()) :: any()
+  @spec execute_command(function(), list(), map()) ::
+          {:ok, map(), term()} | {:error, term(), map()}
   defp execute_command(handler, args, plugin_state) do
     case with_timeout(fn -> handler.(args, plugin_state) end, 5000) do
       {:ok, new_state, result} when is_map(new_state) ->
@@ -381,7 +361,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   end
 
   # Functional helper function to execute a function with a timeout using Task
-  @spec with_timeout(any(), timeout()) :: any()
+  @spec with_timeout(function(), timeout()) ::
+          {:ok, map(), term()}
+          | {:error, term(), map()}
+          | {:error, :timeout}
+          | {:error, {:exit, term()}}
   defp with_timeout(fun, timeout) do
     task =
       Task.async(fn ->
@@ -400,20 +384,61 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  @spec safe_execute(any()) :: any()
+  @spec safe_execute(function()) ::
+          {:ok, map(), term()}
+          | {:error, term(), map()}
+          | {:error, {:exception, term()}}
   defp safe_execute(fun) do
     # Execute the function safely and return structured result
-    case Raxol.Core.ErrorHandling.safe_call(fn ->
-           case fun.() do
-             {:ok, _state, _result} = success -> success
-             {:error, _reason, _state} = error -> error
-             {:error, _reason} = error -> error
-             other -> {:ok, other, nil}
-           end
-         end) do
+    case Raxol.Core.ErrorHandling.safe_call(fn -> normalize_result(fun.()) end) do
       {:ok, result} -> result
       {:error, %RuntimeError{} = error} -> {:error, {:exception, error}}
       {:error, error} -> {:error, {:exception, error}}
+    end
+  end
+
+  defp yield_task_with_timeout(task, timeout) do
+    case Task.yield(task, timeout) || Task.shutdown(task) do
+      {:ok, result} -> result
+      nil -> {:error, :timeout}
+      {:exit, reason} -> {:error, {:exit, reason}}
+    end
+  end
+
+  defp build_command_result(module, function, arity) do
+    # Create a function that calls the module function
+    handler = fn args, state ->
+      apply(module, function, [args, state])
+    end
+
+    {:ok, {module, handler, arity}}
+  end
+
+  defp normalize_result(result) do
+    case result do
+      {:ok, _state, _result} = success -> success
+      {:error, _reason, _state} = error -> error
+      {:error, _reason} = error -> error
+      other -> {:ok, other, nil}
+    end
+  end
+
+  defp get_commands_with_timeout(plugin_module) do
+    task =
+      Task.async(fn ->
+        {:ok, plugin_module.get_commands()}
+      end)
+
+    yield_task_with_timeout(task, 5000)
+  end
+
+  defp find_and_build_command(commands, command_name_str) do
+    case Enum.find(commands, fn {name, _, _} -> name == command_name_str end) do
+      nil ->
+        nil
+
+      {_name, {module, function, arity}, _metadata} ->
+        build_command_result(module, function, arity)
     end
   end
 end

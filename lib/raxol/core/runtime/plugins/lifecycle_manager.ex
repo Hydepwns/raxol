@@ -225,14 +225,14 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
       %{plugin_count: map_size(plugins)}
     )
 
-    case Raxol.Core.Runtime.Plugins.Discovery.initialize_plugins(
+    case Raxol.Core.Runtime.Plugins.PluginInitializer.initialize_plugins(
            plugins,
            metadata,
            plugin_config,
            plugin_states,
            load_order,
            command_registry_table,
-           config
+           config || []
          ) do
       {:ok, {updated_metadata, updated_states, updated_table}} ->
         Raxol.Core.Runtime.Log.info(
@@ -372,13 +372,28 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
            command_registry_table,
            plugin_config
          ) do
-      {:ok, {updated_metadata, updated_states, updated_table}} ->
+      {:ok,
+       %{
+         metadata: updated_metadata,
+         plugin_states: updated_states,
+         table: updated_table
+       }} ->
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Successfully reloaded plugin from disk: #{plugin_id}",
           %{plugin_id: plugin_id, path: path}
         )
 
         {:ok, {updated_metadata, updated_states, updated_table}}
+
+      {:error, reason, extra} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to reload plugin from disk: #{plugin_id}",
+          reason,
+          nil,
+          %{plugin_id: plugin_id, path: path, reason: reason, extra: extra}
+        )
+
+        {:error, reason}
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(

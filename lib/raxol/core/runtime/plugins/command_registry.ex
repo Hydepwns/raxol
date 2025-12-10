@@ -85,21 +85,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     case table_name do
       table when is_map(table) ->
         namespace_commands = Map.get(table, namespace, [])
-
-        case Enum.find(namespace_commands, fn {name, _, _} ->
-               name == command_name
-             end) do
-          nil ->
-            {:error, :not_found}
-
-          {_name, {module, function, arity}, _metadata} ->
-            # Create a function that calls the module function
-            handler = fn args, state ->
-              apply(module, function, [args, state])
-            end
-
-            {:ok, {module, handler, arity}}
-        end
+        find_and_create_handler(namespace_commands, command_name)
 
       _ ->
         {:error, :invalid_table}
@@ -172,7 +158,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end)
   end
 
-  @spec check_command_conflicts(any(), any()) :: any()
+  @spec check_command_conflicts(any(), any()) :: :ok | {:error, any()}
   defp check_command_conflicts(commands, command_table) do
     Enum.reduce_while(commands, :ok, fn {name, _, _}, :ok ->
       case command_exists?(name, command_table) do
@@ -315,7 +301,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @spec validate_commands(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_commands(any()) :: :ok | {:error, any()}
   defp validate_commands(commands) do
     Enum.reduce_while(commands, :ok, fn command, :ok ->
       case validate_command(command) do
@@ -325,7 +311,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end)
   end
 
-  @spec validate_command(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_command(any()) :: :ok | {:error, any()}
   defp validate_command(command) do
     with :ok <- validate_command_handler(command.handler),
          :ok <- validate_command_metadata(command.metadata) do
@@ -333,7 +319,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @spec validate_command_handler(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_command_handler(any()) ::
+          :ok | {:error, :invalid_command_handler}
   defp validate_command_handler(handler) do
     case is_function(handler, 2) do
       true -> :ok
@@ -341,7 +328,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @spec validate_command_metadata(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_command_metadata(any()) ::
+          :ok | {:error, :invalid_metadata_fields}
   defp validate_command_metadata(metadata) do
     with true <- is_map(metadata),
          true <- valid_metadata_fields?(metadata) do
@@ -407,4 +395,25 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   defp format_error_message({:timeout, _}), do: "Command execution timeout"
   @spec format_error_message(any()) :: String.t()
   defp format_error_message(reason), do: inspect(reason)
+
+  defp find_and_create_handler(namespace_commands, command_name) do
+    case Enum.find(namespace_commands, fn {name, _, _} ->
+           name == command_name
+         end) do
+      nil ->
+        {:error, :not_found}
+
+      found_command ->
+        create_command_handler(found_command)
+    end
+  end
+
+  defp create_command_handler({_name, {module, function, arity}, _metadata}) do
+    # Create a function that calls the module function
+    handler = fn args, state ->
+      apply(module, function, [args, state])
+    end
+
+    {:ok, {module, handler, arity}}
+  end
 end
