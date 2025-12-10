@@ -240,7 +240,7 @@ defmodule Raxol.Core.ErrorReporter do
 
   ## Private Implementation
 
-  @spec build_error_report(any(), any(), map(), map()) :: any()
+  @spec build_error_report(term(), map(), map(), map()) :: String.t()
   defp build_error_report(error, context, config, state) do
     base_report = %{
       session_id: state.current_session_id,
@@ -265,7 +265,7 @@ defmodule Raxol.Core.ErrorReporter do
     format_report(enhanced_report, config.format)
   end
 
-  @spec build_session_report(map(), map()) :: any()
+  @spec build_session_report(map(), map()) :: String.t()
   defp build_session_report(config, state) do
     session_data = %{
       session_id: state.current_session_id,
@@ -285,7 +285,7 @@ defmodule Raxol.Core.ErrorReporter do
     format_report(enhanced_data, config.format)
   end
 
-  @spec build_batch_report([String.t()], map(), map()) :: any()
+  @spec build_batch_report([map()], map(), map()) :: String.t()
   defp build_batch_report(queued_errors, config, state) do
     batch_data = %{
       session_id: state.current_session_id,
@@ -304,7 +304,7 @@ defmodule Raxol.Core.ErrorReporter do
     format_report(enhanced_data, config.format)
   end
 
-  @spec add_standard_data(any(), map(), any(), any()) :: any()
+  @spec add_standard_data(map(), map(), term(), map()) :: map()
   defp add_standard_data(base_report, config, error, context) do
     enhanced = base_report
 
@@ -337,7 +337,7 @@ defmodule Raxol.Core.ErrorReporter do
     end
   end
 
-  @spec add_comprehensive_data(any(), map(), any(), any()) :: any()
+  @spec add_comprehensive_data(map(), map(), term(), map()) :: map()
   defp add_comprehensive_data(base_report, config, error, context) do
     base_report
     |> add_standard_data(config, error, context)
@@ -351,12 +351,12 @@ defmodule Raxol.Core.ErrorReporter do
     |> Map.put(:learning_insights, get_learning_insights(error, context))
   end
 
-  @spec add_minimal_data(any(), map()) :: any()
+  @spec add_minimal_data(map(), map()) :: map()
   defp add_minimal_data(base_report, _config) do
     base_report
   end
 
-  @spec get_performance_data(any(), any()) :: any() | nil
+  @spec get_performance_data(term(), map()) :: map()
   defp get_performance_data(error, context) do
     %{
       phase3_targets: %{
@@ -369,7 +369,7 @@ defmodule Raxol.Core.ErrorReporter do
     }
   end
 
-  @spec get_pattern_analysis(any(), any()) :: any() | nil
+  @spec get_pattern_analysis(term(), map()) :: map()
   defp get_pattern_analysis(error, _context) do
     case ErrorPatternLearner.predict_errors(error) do
       {:ok, patterns} -> patterns
@@ -377,7 +377,7 @@ defmodule Raxol.Core.ErrorReporter do
     end
   end
 
-  @spec get_error_suggestions(any(), any()) :: any() | nil
+  @spec get_error_suggestions(term(), map()) :: map()
   defp get_error_suggestions(error, context) do
     template = ErrorTemplates.get_template(error, context)
 
@@ -388,7 +388,7 @@ defmodule Raxol.Core.ErrorReporter do
     }
   end
 
-  @spec get_phase3_analysis(any(), any()) :: any() | nil
+  @spec get_phase3_analysis(term(), map()) :: map()
   defp get_phase3_analysis(error, context) do
     %{
       optimization_impact: analyze_optimization_impact(error),
@@ -397,7 +397,7 @@ defmodule Raxol.Core.ErrorReporter do
     }
   end
 
-  @spec get_available_tools_analysis(any(), any()) :: any() | nil
+  @spec get_available_tools_analysis(term(), map()) :: map()
   defp get_available_tools_analysis(error, context) do
     %{
       recommended_tools: get_recommended_phase4_tools(error, context),
@@ -406,7 +406,7 @@ defmodule Raxol.Core.ErrorReporter do
     }
   end
 
-  @spec get_comprehensive_recovery_options(any(), any()) :: any() | nil
+  @spec get_comprehensive_recovery_options(term(), map()) :: map()
   defp get_comprehensive_recovery_options(error, context) do
     %{
       immediate_actions: get_immediate_recovery_actions(error, context),
@@ -415,7 +415,7 @@ defmodule Raxol.Core.ErrorReporter do
     }
   end
 
-  @spec format_report(any(), any()) :: String.t()
+  @spec format_report(map(), report_format()) :: String.t()
   defp format_report(report_data, format) do
     case format do
       :json -> Jason.encode!(report_data, pretty: true)
@@ -425,7 +425,7 @@ defmodule Raxol.Core.ErrorReporter do
     end
   end
 
-  @spec format_as_markdown(any()) :: String.t()
+  @spec format_as_markdown(map()) :: String.t()
   defp format_as_markdown(report_data) do
     """
     # Raxol Error Report
@@ -452,7 +452,7 @@ defmodule Raxol.Core.ErrorReporter do
     """
   end
 
-  @spec format_performance_section_md(any()) :: String.t()
+  @spec format_performance_section_md(map()) :: String.t()
   defp format_performance_section_md(perf_data) do
     """
     ## Performance Analysis
@@ -472,7 +472,7 @@ defmodule Raxol.Core.ErrorReporter do
     """
   end
 
-  @spec format_suggestions_section_md(any()) :: String.t()
+  @spec format_suggestions_section_md(map()) :: String.t()
   defp format_suggestions_section_md(suggestions) do
     """
     ## Suggested Fixes (Confidence: #{round(suggestions.confidence * 100)}%)
@@ -485,7 +485,7 @@ defmodule Raxol.Core.ErrorReporter do
     """
   end
 
-  @spec persist_report(any(), map()) :: any()
+  @spec persist_report(String.t(), map()) :: :ok
   defp persist_report(report, state) do
     timestamp = DateTime.utc_now() |> DateTime.to_iso8601(:basic)
     filename = "error_report_#{timestamp}.md"
@@ -505,17 +505,17 @@ defmodule Raxol.Core.ErrorReporter do
     :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
   end
 
-  @spec merge_config(map(), keyword()) :: any()
+  @spec merge_config(map(), keyword()) :: map()
   defp merge_config(base_config, opts) do
     Map.merge(base_config, Enum.into(opts, %{}))
   end
 
-  @spec classify_error_type(any()) :: any()
+  @spec classify_error_type(term()) :: atom()
   defp classify_error_type(error) do
     ErrorExperience.classify_error_type(error)
   end
 
-  @spec format_error_details(any()) :: String.t()
+  @spec format_error_details(term()) :: String.t()
   defp format_error_details(error) do
     case error do
       %{message: message} -> message
@@ -525,32 +525,32 @@ defmodule Raxol.Core.ErrorReporter do
   end
 
   # Placeholder implementations for comprehensive analysis functions
-  @spec get_current_performance_metrics(any(), any()) :: any() | nil
+  @spec get_current_performance_metrics(term(), map()) :: map()
   defp get_current_performance_metrics(_error, _context) do
     %{parser_time: "4.1μs/op", memory_usage: "2.3MB", render_queue_size: 12}
   end
 
-  @spec analyze_performance_impact(any(), any()) :: any()
+  @spec analyze_performance_impact(term(), map()) :: String.t()
   defp analyze_performance_impact(_error, _context) do
     "Error may cause 15% performance degradation in parser operations"
   end
 
-  @spec analyze_optimization_impact(any()) :: any()
+  @spec analyze_optimization_impact(term()) :: String.t()
   defp analyze_optimization_impact(_error) do
     "Phase 3 optimizations partially affected"
   end
 
-  @spec analyze_performance_correlation(any(), any()) :: any()
+  @spec analyze_performance_correlation(term(), map()) :: String.t()
   defp analyze_performance_correlation(_error, _context) do
     "Strong correlation with memory pressure events"
   end
 
-  @spec check_phase3_compliance(any(), any()) :: any()
+  @spec check_phase3_compliance(term(), map()) :: map()
   defp check_phase3_compliance(_error, _context) do
     %{compliant: false, violations: ["parser speed exceeded target"]}
   end
 
-  @spec get_recommended_phase4_tools(any(), any()) :: any() | nil
+  @spec get_recommended_phase4_tools(term(), map()) :: [String.t()]
   defp get_recommended_phase4_tools(_error, _context) do
     ["raxol.analyze", "raxol.debug", "raxol.profile"]
   end
@@ -559,12 +559,12 @@ defmodule Raxol.Core.ErrorReporter do
     %{available: ["raxol.analyze", "raxol.debug"], missing: []}
   end
 
-  @spec get_automated_fix_options(any(), any()) :: any() | nil
+  @spec get_automated_fix_options(term(), map()) :: [String.t()]
   defp get_automated_fix_options(_error, _context) do
     ["Enable buffer pooling", "Optimize parser state cache"]
   end
 
-  @spec get_immediate_recovery_actions(any(), any()) :: any() | nil
+  @spec get_immediate_recovery_actions(term(), map()) :: [String.t()]
   defp get_immediate_recovery_actions(_error, _context) do
     [
       "Restart affected components",
@@ -573,7 +573,7 @@ defmodule Raxol.Core.ErrorReporter do
     ]
   end
 
-  @spec get_preventive_measures(any(), any()) :: any() | nil
+  @spec get_preventive_measures(term(), map()) :: [String.t()]
   defp get_preventive_measures(_error, _context) do
     [
       "Add performance monitoring",
@@ -582,7 +582,7 @@ defmodule Raxol.Core.ErrorReporter do
     ]
   end
 
-  @spec get_long_term_improvements(any(), any()) :: any() | nil
+  @spec get_long_term_improvements(term(), map()) :: [String.t()]
   defp get_long_term_improvements(_error, _context) do
     [
       "Upgrade to Phase 3.1 optimizations",
@@ -599,7 +599,7 @@ defmodule Raxol.Core.ErrorReporter do
     }
   end
 
-  @spec get_learning_insights(any(), any()) :: any() | nil
+  @spec get_learning_insights(term(), map()) :: map()
   defp get_learning_insights(error, _context) do
     case ErrorPatternLearner.get_learning_stats() do
       {:ok, stats} ->
@@ -615,36 +615,36 @@ defmodule Raxol.Core.ErrorReporter do
   end
 
   # Additional helper functions for session and batch reports
-  @spec add_minimal_session_data(any()) :: any()
+  @spec add_minimal_session_data(map()) :: map()
   defp add_minimal_session_data(session_data), do: session_data
-  @spec add_standard_session_data(any(), map()) :: any()
+  @spec add_standard_session_data(map(), map()) :: map()
   defp add_standard_session_data(session_data, _config), do: session_data
-  @spec add_comprehensive_session_data(any(), map()) :: any()
+  @spec add_comprehensive_session_data(map(), map()) :: map()
   defp add_comprehensive_session_data(session_data, _config), do: session_data
 
-  @spec add_minimal_batch_data(any()) :: any()
+  @spec add_minimal_batch_data(map()) :: map()
   defp add_minimal_batch_data(batch_data), do: batch_data
-  @spec add_standard_batch_data(any(), map()) :: any()
+  @spec add_standard_batch_data(map(), map()) :: map()
   defp add_standard_batch_data(batch_data, _config), do: batch_data
-  @spec add_comprehensive_batch_data(any(), map()) :: any()
+  @spec add_comprehensive_batch_data(map(), map()) :: map()
   defp add_comprehensive_batch_data(batch_data, _config), do: batch_data
 
-  @spec persist_session_report(any(), map()) :: any()
+  @spec persist_session_report(String.t(), map()) :: :ok
   defp persist_session_report(_report, _state), do: :ok
-  @spec persist_batch_report(any(), map()) :: any()
+  @spec persist_batch_report(String.t(), map()) :: :ok
   defp persist_batch_report(_report, _state), do: :ok
 
-  @spec export_reports_to_formats(keyword(), map()) :: any()
+  @spec export_reports_to_formats(keyword(), map()) :: map()
   defp export_reports_to_formats(_export_opts, _state) do
     %{exported: [], format: "pending implementation"}
   end
 
-  @spec format_patterns_section_md(any()) :: String.t()
+  @spec format_patterns_section_md(term()) :: String.t()
   defp format_patterns_section_md(_patterns), do: ""
-  @spec format_phase3_section_md(any()) :: String.t()
+  @spec format_phase3_section_md(map()) :: String.t()
   defp format_phase3_section_md(_phase3_data), do: ""
-  @spec format_as_html(any()) :: String.t()
+  @spec format_as_html(map()) :: String.t()
   defp format_as_html(report_data), do: inspect(report_data)
-  @spec format_as_text(any()) :: String.t()
+  @spec format_as_text(map()) :: String.t()
   defp format_as_text(report_data), do: inspect(report_data)
 end

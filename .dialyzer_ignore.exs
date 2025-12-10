@@ -1,39 +1,35 @@
 [
   # ================================================================================
-  # MINIMAL DIALYZER SUPPRESSIONS
-  # Last updated: 2025-09-23
-  # Total warnings: 785 (down from 813)
-  # Goal: Only suppress what we cannot fix
+  # DIALYZER SUPPRESSIONS - Incremental Fix In Progress
+  # Last updated: 2025-12-10
+  # Starting errors: 1736, Current: 1153, Fixed: ~583
+  # Fixed categories:
+  #   - invalid_contract (~187 fixed, 9 remaining - complex struct types)
+  #   - call errors (~106 fixed, 35 remaining)
+  #   - contract_supertype (~190 fixed, 494 remaining)
+  # Goal: Continue fixing errors by category
   # ================================================================================
 
   # ================================================================================
-  # EXTERNAL DEPENDENCIES (Cannot fix)
+  # EXTERNAL DEPENDENCIES (Cannot fix - keep permanently)
   # ================================================================================
   ~r"^deps/",
   ~r"lib/termbox2_nif/",
 
   # ================================================================================
-  # TEST CODE (Acceptable for tests)
+  # TEST CODE (Acceptable for tests - keep permanently)
   # ================================================================================
   ~r"^test/",
 
   # ================================================================================
-  # BENCHMARKS - False positives for ScreenBuffer functions
-  # These functions exist and work at runtime but dialyzer can't see them
+  # DELIBERATE PATTERNS (Keep permanently)
   # ================================================================================
 
-  # ================================================================================
-  # DELIBERATE PATTERNS
-  # ================================================================================
-
-  # Animation/Physics mathematical operations
+  # Animation/Physics mathematical operations use pattern matching for coverage
   ~r"lib/raxol/animation/.*:pattern_match_cov.*can never match.*covered by previous",
 
-  # Architecture patterns - Event Sourcing uses dynamic dispatch
-  ~r"lib/raxol/architecture/event_sourcing/.*:pattern_match_cov",
-
   # ================================================================================
-  # KNOWN FALSE POSITIVES
+  # KNOWN FALSE POSITIVES (Keep permanently)
   # ================================================================================
 
   # Private functions starting with underscore are reported as unused
@@ -43,51 +39,55 @@
   ~r":callback_type_mismatch.*handle_",
 
   # ================================================================================
-  # TO BE FIXED (temporary suppressions)
+  # TO BE FIXED - Invalid Contracts (~9 remaining, was 196)
+  # These are type specs that don't match function implementations
+  # Remaining are complex struct type inference issues
   # ================================================================================
-
-  # Invalid contracts that need spec alignment
   ~r":invalid_contract",
 
-  # Overly broad type specs that should be more specific
-  ~r":contract_supertype",
+  # ================================================================================
+  # TO BE FIXED - Contract Supertypes (494 remaining, was 684)
+  # Type specs that are too broad (any() when more specific type exists)
+  # Fixed ~190 errors this session
+  # ================================================================================
+  # ~r":contract_supertype",  # DISABLED TO CONTINUE FIXING
 
-  # Pattern matches that may be unreachable
+  # ================================================================================
+  # TO BE FIXED - Pattern Match Issues (99 total)
+  # ================================================================================
   ~r":pattern_match",
 
-  # Functions incorrectly reported as having no return
+  # ================================================================================
+  # TO BE FIXED - No Return (187 total)
+  # Functions reported as having no return path
+  # ================================================================================
   ~r":no_return",
 
-  # Type mismatches between behaviour and implementation
+  # ================================================================================
+  # TO BE FIXED - Callback Issues (85 total across types)
+  # ================================================================================
   ~r":callback",
 
-  # Function calls that won't succeed
+  # ================================================================================
+  # TO BE FIXED - Call Errors (35 remaining, was 141)
+  # Function calls that dialyzer thinks won't succeed
+  # Fixed 106 call errors (141->35)
+  # ================================================================================
   ~r":call",
 
-  # Extra range warnings for impossible returns
+  # ================================================================================
+  # TO BE FIXED - Extra Range (102 total)
+  # Specs with more return types than function actually returns
+  # ================================================================================
   ~r":extra_range",
 
-  # Guard failures that need investigation
+  # ================================================================================
+  # TO BE FIXED - Other Categories
+  # ================================================================================
   ~r":guard_fail",
-
-  # Exact equality warnings
   ~r":exact_eq",
-
-  # Apply warnings for dynamic calls
-  ~r":apply",
-
-  # Map update warnings
   ~r":map_update",
-
-  # Overlapping contracts
-  ~r":overlapping_contract",
-
-  # Unused functions (often false positives)
   ~r":unused_fun",
-
-  # Other unmatched returns
   ~r":unmatched_return",
-
-  # Opaque type mismatches
   ~r":call_without_opaque"
 ]

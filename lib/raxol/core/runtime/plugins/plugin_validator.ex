@@ -48,7 +48,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   @doc """
   Validates that a plugin is not already loaded.
   """
-  @spec validate_not_loaded(String.t(), map()) :: validation_result()
+  @spec validate_not_loaded(String.t(), map()) ::
+          :ok | {:error, :already_loaded}
   def validate_not_loaded(plugin_id, plugins) do
     check_plugin_loaded_status(plugins, plugin_id)
   end
@@ -56,7 +57,12 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   @doc """
   Validates that a plugin module implements the required behaviour.
   """
-  @spec validate_behaviour(module()) :: validation_result()
+  @spec validate_behaviour(module()) ::
+          :ok
+          | {:error,
+             :module_not_found
+             | :invalid_plugin_behaviour
+             | {:missing_callbacks, [atom()]}}
   def validate_behaviour(plugin_module) do
     with :ok <- validate_module_exists(plugin_module),
          :ok <- validate_plugin_behaviour(plugin_module),
@@ -70,7 +76,15 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   @doc """
   Validates plugin metadata and configuration.
   """
-  @spec validate_metadata(module()) :: validation_result()
+  @spec validate_metadata(module()) ::
+          :ok
+          | {:error,
+             :missing_metadata
+             | :invalid_metadata
+             | {:missing_metadata_fields, [atom()]}
+             | :invalid_version_format
+             | {:unsupported_api_version, String.t()}
+             | :invalid_plugin_name}
   def validate_metadata(plugin_module) do
     case get_plugin_metadata(plugin_module) do
       {:ok, metadata} ->
@@ -109,7 +123,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   @doc """
   Validates plugin compatibility with the current system.
   """
-  @spec validate_compatibility(module()) :: validation_result()
+  @spec validate_compatibility(module()) ::
+          :ok
+          | {:error,
+             {:elixir_version_too_old, String.t(), String.t()}
+             | {:otp_version_too_old, String.t(), String.t()}}
   def validate_compatibility(plugin_module) do
     with :ok <- validate_elixir_version(plugin_module),
          :ok <- validate_otp_version(plugin_module),
@@ -123,7 +141,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   @doc """
   Validates plugin performance characteristics.
   """
-  @spec validate_performance(module()) :: validation_result()
+  @spec validate_performance(module()) ::
+          :ok
+          | {:error,
+             {:initialization_failed, term()}
+             | {:initialization_too_slow, non_neg_integer()}
+             | {:plugin_too_large, non_neg_integer(), non_neg_integer()}
+             | {:size_check_failed, term()}}
   def validate_performance(plugin_module) do
     with :ok <- validate_memory_usage(plugin_module),
          :ok <- validate_initialization_time(plugin_module),
@@ -175,17 +199,19 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
 
   # Private validation functions
 
-  @spec validate_module_exists(module()) :: {:ok, any()} | {:error, any()}
+  @spec validate_module_exists(module()) :: :ok | {:error, :module_not_found}
   defp validate_module_exists(plugin_module) do
     check_module_loaded(plugin_module)
   end
 
-  @spec validate_plugin_behaviour(module()) :: {:ok, any()} | {:error, any()}
+  @spec validate_plugin_behaviour(module()) ::
+          :ok | {:error, :invalid_plugin_behaviour}
   defp validate_plugin_behaviour(plugin_module) do
     check_plugin_behaviour_implementation(plugin_module)
   end
 
-  @spec validate_required_callbacks(module()) :: {:ok, any()} | {:error, any()}
+  @spec validate_required_callbacks(module()) ::
+          :ok | {:error, {:missing_callbacks, [atom()]}}
   defp validate_required_callbacks(plugin_module) do
     available_callbacks = plugin_module.__info__(:functions)
 
@@ -200,7 +226,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     validate_callbacks_present(missing_callbacks)
   end
 
-  @spec get_plugin_metadata(module()) :: any() | nil
+  @spec get_plugin_metadata(module()) :: {:ok, map()} | {:error, atom()}
   defp get_plugin_metadata(plugin_module) do
     with {:exported?, true} <-
            {:exported?, function_exported?(plugin_module, :metadata, 0)},
@@ -212,7 +238,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec safe_call_metadata(module()) :: any()
+  @spec safe_call_metadata(module()) :: {:ok, map()} | {:error, atom()}
   defp safe_call_metadata(plugin_module) do
     # Use Task for timeout and error isolation
     task = Task.async(fn -> plugin_module.metadata() end)
@@ -225,7 +251,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec validate_required_fields(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_required_fields(map()) ::
+          :ok | {:error, {:missing_metadata_fields, [atom()]}}
   defp validate_required_fields(metadata) do
     required_fields = [:name, :version, :author, :api_version]
 
@@ -236,7 +263,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     validate_metadata_fields_present(missing_fields)
   end
 
-  @spec validate_version_format(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_version_format(String.t()) ::
+          :ok | {:error, :invalid_version_format}
   defp validate_version_format(version) do
     case Regex.match?(~r/^\d+\.\d+(\.\d+)?(-\w+)?$/, version) do
       true -> :ok
@@ -244,13 +272,14 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec validate_api_version(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_api_version(String.t()) ::
+          :ok | {:error, {:unsupported_api_version, String.t()}}
   defp validate_api_version(api_version) do
     check_api_version_supported(api_version)
   end
 
   @spec validate_name_format(String.t() | atom()) ::
-          {:ok, any()} | {:error, any()}
+          :ok | {:error, :invalid_plugin_name}
   defp validate_name_format(name) do
     case Regex.match?(~r/^[a-zA-Z][a-zA-Z0-9_]*$/, name) do
       true -> :ok
@@ -258,7 +287,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec validate_file_access(module(), any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_file_access(module(), map()) :: validation_result()
   defp validate_file_access(plugin_module, options) do
     # Check if plugin attempts to access restricted files
     restricted_access = Map.get(options, :restrict_file_access, true)
@@ -266,8 +295,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     validate_file_access_restrictions(restricted_access, plugin_module)
   end
 
-  @spec validate_network_access(module(), any()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_network_access(module(), map()) :: validation_result()
   defp validate_network_access(plugin_module, options) do
     # Check if plugin attempts network operations
     restricted_network = Map.get(options, :restrict_network_access, true)
@@ -275,19 +303,19 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     validate_network_access_restrictions(restricted_network, plugin_module)
   end
 
-  @spec validate_code_injection(module()) :: {:ok, any()} | {:error, any()}
+  @spec validate_code_injection(module()) :: validation_result()
   defp validate_code_injection(plugin_module) do
     # Check for potential code injection vulnerabilities
     check_code_injection_safety(plugin_module)
   end
 
-  @spec validate_resource_limits(module()) :: {:ok, any()} | {:error, any()}
+  @spec validate_resource_limits(module()) :: validation_result()
   defp validate_resource_limits(plugin_module) do
     # Validate that plugin doesn't exceed resource limits
     check_resource_usage(plugin_module)
   end
 
-  @spec validate_elixir_version(module()) :: {:ok, any()} | {:error, any()}
+  @spec validate_elixir_version(module()) :: validation_result()
   defp validate_elixir_version(_plugin_module) do
     # Check minimum Elixir version requirements
     current_version = System.version()
@@ -296,7 +324,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     validate_version_compatibility(current_version, min_version, :elixir)
   end
 
-  @spec validate_otp_version(module()) :: {:ok, any()} | {:error, any()}
+  @spec validate_otp_version(module()) ::
+          :ok | {:error, {:otp_version_too_old, String.t(), String.t()}}
   defp validate_otp_version(_plugin_module) do
     # Check minimum OTP version requirements
     current_version = System.otp_release()
@@ -305,19 +334,23 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     validate_otp_version_compatibility(current_version, min_version)
   end
 
-  @spec validate_platform_support(module()) :: {:ok, any()} | {:error, any()}
+  @spec validate_platform_support(module()) :: validation_result()
   defp validate_platform_support(_plugin_module) do
     # Validate platform compatibility
     :ok
   end
 
-  @spec validate_memory_usage(module()) :: {:ok, any()} | {:error, any()}
+  @spec validate_memory_usage(module()) :: validation_result()
   defp validate_memory_usage(_plugin_module) do
     # Check estimated memory usage
     :ok
   end
 
-  @spec validate_initialization_time(module()) :: {:ok, any()} | {:error, any()}
+  @spec validate_initialization_time(module()) ::
+          :ok
+          | {:error,
+             {:initialization_failed, term()}
+             | {:initialization_too_slow, non_neg_integer()}}
   defp validate_initialization_time(plugin_module) do
     # Measure plugin initialization time using functional approach
     case safe_measure_init_time(plugin_module) do
@@ -332,7 +365,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec safe_measure_init_time(module()) :: any()
+  @spec safe_measure_init_time(module()) ::
+          {:ok, non_neg_integer()} | {:error, term()}
   defp safe_measure_init_time(plugin_module) do
     task =
       Task.async(fn ->
@@ -346,7 +380,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec validate_plugin_size(module()) :: {:ok, any()} | {:error, any()}
+  @spec validate_plugin_size(module()) ::
+          :ok
+          | {:error,
+             {:plugin_too_large, non_neg_integer(), non_neg_integer()}
+             | {:size_check_failed, term()}}
   defp validate_plugin_size(plugin_module) do
     # Check plugin file size
     case get_module_size(plugin_module) do
@@ -361,7 +399,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec get_plugin_dependencies(module()) :: any() | nil
+  @spec get_plugin_dependencies(module()) ::
+          {:ok, [String.t()]} | {:error, atom()}
   defp get_plugin_dependencies(plugin_module) do
     with {:exported?, true} <-
            {:exported?, function_exported?(plugin_module, :dependencies, 0)},
@@ -373,7 +412,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec safe_call_dependencies(module()) :: any()
+  @spec safe_call_dependencies(module()) ::
+          {:ok, [String.t()]} | {:error, atom()}
   defp safe_call_dependencies(plugin_module) do
     task = Task.async(fn -> plugin_module.dependencies() end)
 
@@ -385,7 +425,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec validate_dependency_list(any(), any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_dependency_list([String.t()], map()) :: validation_result()
   defp validate_dependency_list(dependencies, loaded_plugins) do
     missing_deps =
       dependencies
@@ -414,7 +454,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec safe_analyze_beam_chunks(module()) :: any()
+  @spec safe_analyze_beam_chunks(module()) ::
+          {:ok, list()} | {:error, :beam_analysis_failed}
   defp safe_analyze_beam_chunks(plugin_module) do
     with {:ok, compile_info} <- safe_get_compile_info(plugin_module),
          {:ok, source} <- extract_source_from_compile_info(compile_info),
@@ -425,7 +466,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec safe_get_compile_info(module()) :: any()
+  @spec safe_get_compile_info(module()) :: {:ok, keyword()} | {:error, atom()}
   defp safe_get_compile_info(plugin_module) do
     case safe_module_info(plugin_module, :compile) do
       {:ok, compile_info} -> {:ok, compile_info}
@@ -433,7 +474,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec safe_module_info(module(), any()) :: any()
+  @spec safe_module_info(module(), atom()) :: {:ok, term()} | {:error, atom()}
   defp safe_module_info(module, info_type) do
     task = Task.async(fn -> module.module_info(info_type) end)
 
@@ -443,7 +484,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec extract_source_from_compile_info(any()) :: any()
+  @spec extract_source_from_compile_info(keyword()) ::
+          {:ok, charlist()} | {:error, atom()}
   defp extract_source_from_compile_info(compile_info) do
     case Keyword.get(compile_info, :source) do
       nil -> {:error, :no_source}
@@ -451,7 +493,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec safe_beam_chunks(any()) :: any()
+  @spec safe_beam_chunks(charlist()) ::
+          {:ok, tuple()} | {:error, :beam_chunks_failed}
   defp safe_beam_chunks(source) do
     task =
       Task.async(fn ->
@@ -464,7 +507,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec extract_forms_from_chunks(module(), any()) :: any()
+  @spec extract_forms_from_chunks(module(), tuple()) ::
+          {:ok, list()} | {:error, :invalid_chunks}
   defp extract_forms_from_chunks(plugin_module, chunks) do
     case chunks do
       {:ok, {^plugin_module, [abstract_code: {:raw_abstract_v1, forms}]}} ->
@@ -481,13 +525,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     false
   end
 
-  @spec check_resource_usage(module()) :: any()
+  @spec check_resource_usage(module()) :: validation_result()
   defp check_resource_usage(_plugin_module) do
     # Check resource usage patterns
     :ok
   end
 
-  @spec get_module_size(module()) :: any() | nil
+  @spec get_module_size(module()) :: {:ok, non_neg_integer()} | {:error, term()}
   defp get_module_size(plugin_module) do
     with {:ok, path} <- safe_get_module_path(plugin_module),
          {:ok, stat} <- File.stat(path) do
@@ -497,7 +541,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec safe_get_module_path(module()) :: any()
+  @spec safe_get_module_path(module()) :: {:ok, charlist()} | {:error, atom()}
   defp safe_get_module_path(plugin_module) do
     task = Task.async(fn -> :code.which(plugin_module) end)
 
@@ -508,13 +552,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec analyze_forms_for_file_access(any()) :: any()
+  @spec analyze_forms_for_file_access(term()) :: boolean()
   defp analyze_forms_for_file_access(_forms) do
     # Simplified analysis - in practice would check for File.* calls
     false
   end
 
-  @spec analyze_forms_for_network_access(any()) :: any()
+  @spec analyze_forms_for_network_access(term()) :: boolean()
   defp analyze_forms_for_network_access(_forms) do
     # Simplified analysis - in practice would check for HTTPoison.*, :gen_tcp, etc.
     false
@@ -522,7 +566,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
 
   ## Pattern matching helper functions for if statement elimination
 
-  @spec check_plugin_loaded_status(any(), String.t() | integer()) :: any()
+  @spec check_plugin_loaded_status(map(), String.t()) ::
+          :ok | {:error, :already_loaded}
   defp check_plugin_loaded_status(plugins, plugin_id) do
     case Map.has_key?(plugins, plugin_id) do
       true -> {:error, :already_loaded}
@@ -530,7 +575,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec resolve_module_identity(module()) :: any()
+  @spec resolve_module_identity(module()) ::
+          {:ok, {String.t(), module()}} | {:error, atom()}
   defp resolve_module_identity(module) do
     case Code.ensure_loaded?(module) do
       true ->
@@ -542,7 +588,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec check_module_loaded(module()) :: any()
+  @spec check_module_loaded(module()) :: :ok | {:error, :module_not_found}
   defp check_module_loaded(plugin_module) do
     case Code.ensure_loaded?(plugin_module) do
       true -> :ok
@@ -550,7 +596,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec check_plugin_behaviour_implementation(module()) :: any()
+  @spec check_plugin_behaviour_implementation(module()) ::
+          :ok | {:error, :invalid_plugin_behaviour}
   defp check_plugin_behaviour_implementation(plugin_module) do
     case Loader.behaviour_implemented?(
            plugin_module,
@@ -561,25 +608,23 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec validate_callbacks_present(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_callbacks_present([atom()]) :: validation_result()
   defp validate_callbacks_present([]), do: :ok
 
-  @spec validate_callbacks_present(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_callbacks_present([atom()]) :: validation_result()
   defp validate_callbacks_present(missing_callbacks) do
     {:error, {:missing_callbacks, missing_callbacks}}
   end
 
-  @spec validate_metadata_fields_present(any()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_metadata_fields_present([atom()]) :: validation_result()
   defp validate_metadata_fields_present([]), do: :ok
 
-  @spec validate_metadata_fields_present(any()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_metadata_fields_present([atom()]) :: validation_result()
   defp validate_metadata_fields_present(missing_fields) do
     {:error, {:missing_metadata_fields, missing_fields}}
   end
 
-  @spec check_api_version_supported(any()) :: any()
+  @spec check_api_version_supported(String.t()) :: validation_result()
   defp check_api_version_supported(api_version) do
     case api_version in @supported_api_versions do
       true -> :ok
@@ -587,8 +632,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec validate_file_access_restrictions(any(), module()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_file_access_restrictions(boolean(), module()) ::
+          validation_result()
   defp validate_file_access_restrictions(true, plugin_module) do
     # has_file_system_access?/1 currently always returns false
     # (analyze_forms_for_file_access/1 is stubbed to return false)
@@ -596,12 +641,12 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     :ok
   end
 
-  @spec validate_file_access_restrictions(any(), module()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_file_access_restrictions(boolean(), module()) ::
+          validation_result()
   defp validate_file_access_restrictions(false, _plugin_module), do: :ok
 
-  @spec validate_network_access_restrictions(any(), module()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_network_access_restrictions(boolean(), module()) ::
+          validation_result()
   defp validate_network_access_restrictions(true, plugin_module) do
     # has_network_access?/1 currently always returns false
     # (analyze_forms_for_network_access/1 is stubbed to return false)
@@ -609,19 +654,19 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     :ok
   end
 
-  @spec validate_network_access_restrictions(any(), module()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_network_access_restrictions(boolean(), module()) ::
+          validation_result()
   defp validate_network_access_restrictions(false, _plugin_module), do: :ok
 
-  @spec check_code_injection_safety(module()) :: any()
+  @spec check_code_injection_safety(module()) :: validation_result()
   defp check_code_injection_safety(plugin_module) do
     # has_code_injection_risk?/1 currently always returns false
     false = has_code_injection_risk?(plugin_module)
     :ok
   end
 
-  @spec validate_version_compatibility(any(), any(), any()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_version_compatibility(String.t(), String.t(), :elixir) ::
+          :ok | {:error, {:elixir_version_too_old, String.t(), String.t()}}
   defp validate_version_compatibility(current_version, min_version, :elixir) do
     case Version.compare(current_version, min_version) in [:eq, :gt] do
       true -> :ok
@@ -629,8 +674,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec validate_otp_version_compatibility(any(), any()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_otp_version_compatibility(String.t(), String.t()) ::
+          :ok | {:error, {:otp_version_too_old, String.t(), String.t()}}
   defp validate_otp_version_compatibility(current_version, min_version) do
     case String.to_integer(current_version) >= String.to_integer(min_version) do
       true -> :ok
@@ -638,21 +683,21 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     end
   end
 
-  @spec validate_initialization_time_limit(any(), any()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_initialization_time_limit(non_neg_integer(), non_neg_integer()) ::
+          validation_result()
   defp validate_initialization_time_limit(time, max_init_time)
        when time > max_init_time do
     {:error, {:initialization_too_slow, time}}
   end
 
-  @spec validate_initialization_time_limit(any(), any()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_initialization_time_limit(non_neg_integer(), non_neg_integer()) ::
+          validation_result()
   defp validate_initialization_time_limit(_time, _max_init_time), do: :ok
 
-  @spec validate_dependencies_available(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_dependencies_available([String.t()]) :: validation_result()
   defp validate_dependencies_available([]), do: :ok
 
-  @spec validate_dependencies_available(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_dependencies_available([String.t()]) :: validation_result()
   defp validate_dependencies_available(missing_deps) do
     {:error, {:missing_dependencies, missing_deps}}
   end
