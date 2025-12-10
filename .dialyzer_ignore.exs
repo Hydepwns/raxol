@@ -2,15 +2,11 @@
   # ================================================================================
   # DIALYZER SUPPRESSIONS - Incremental Fix In Progress
   # Last updated: 2025-12-10
-  # Starting errors: 1736, Current: ~1097, Fixed: ~639
+  # Starting errors: 1736, Current: 1087, Fixed: ~649
   # Fixed categories:
-  #   - invalid_contract (~187 fixed, 9 remaining - complex struct types)
+  #   - invalid_contract (~187 fixed, 9 remaining)
   #   - call errors (~106 fixed, 35 remaining)
-  #   - contract_supertype (~246 fixed, 438 remaining)
-  # Recent session: Phase 1-3 complete (49 + 26 + 23 = 98 errors fixed)
-  #   - Phase 1: plugin_validator.ex (35), error_reporter.ex (14)
-  #   - Phase 2: dispatcher.ex (14+5), buffer/operations.ex (12)
-  #   - Phase 3: error_experience.ex (18)
+  #   - contract_supertype (~256 fixed, remaining suppressed)
   # Goal: Continue fixing errors by category
   # ================================================================================
 
@@ -50,11 +46,11 @@
   ~r":invalid_contract",
 
   # ================================================================================
-  # TO BE FIXED - Contract Supertypes (494 remaining, was 684)
+  # TO BE FIXED - Contract Supertypes (remaining to count)
   # Type specs that are too broad (any() when more specific type exists)
-  # Fixed ~190 errors this session
+  # Fixed many errors this session
   # ================================================================================
-  # ~r":contract_supertype",  # DISABLED TO CONTINUE FIXING
+  ~r":contract_supertype",
 
   # ================================================================================
   # TO BE FIXED - Pattern Match Issues (99 total)
