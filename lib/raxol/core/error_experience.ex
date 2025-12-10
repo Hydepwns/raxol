@@ -183,7 +183,7 @@ defmodule Raxol.Core.ErrorExperience do
 
   # Private implementation
 
-  @spec classify_error(any(), any()) :: any()
+  @spec classify_error(term(), map()) :: error_category()
   defp classify_error(error, context) do
     error_string = inspect(error) |> String.downcase()
 
@@ -217,7 +217,9 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
-  @spec generate_suggestions(any(), any(), any()) :: any()
+  @spec generate_suggestions(term(), error_category(), map()) :: [
+          fix_suggestion()
+        ]
   defp generate_suggestions(error, category, context) do
     # Pattern-based suggestions from Phase 3 experience
     pattern_suggestions = find_pattern_suggestions(error)
@@ -237,7 +239,7 @@ defmodule Raxol.Core.ErrorExperience do
     |> Enum.sort_by(& &1.confidence, :desc)
   end
 
-  @spec find_pattern_suggestions(any()) :: any()
+  @spec find_pattern_suggestions(term()) :: [fix_suggestion()]
   defp find_pattern_suggestions(error) do
     error_text = inspect(error) |> String.downcase()
 
@@ -254,7 +256,7 @@ defmodule Raxol.Core.ErrorExperience do
     end)
   end
 
-  @spec performance_suggestions(any(), any()) :: any()
+  @spec performance_suggestions(term(), map()) :: [fix_suggestion()]
   defp performance_suggestions(_error, context) do
     base_suggestions = [
       %{
@@ -292,7 +294,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
-  @spec rendering_suggestions(any(), any()) :: any()
+  @spec rendering_suggestions(term(), map()) :: [fix_suggestion()]
   defp rendering_suggestions(_error, _context) do
     [
       %{
@@ -317,7 +319,7 @@ defmodule Raxol.Core.ErrorExperience do
     ]
   end
 
-  @spec terminal_suggestions(any(), any()) :: any()
+  @spec terminal_suggestions(term(), map()) :: [fix_suggestion()]
   defp terminal_suggestions(_error, _context) do
     [
       %{
@@ -331,7 +333,7 @@ defmodule Raxol.Core.ErrorExperience do
     ]
   end
 
-  @spec optimization_suggestions(any(), any()) :: any()
+  @spec optimization_suggestions(term(), map()) :: [fix_suggestion()]
   defp optimization_suggestions(_error, _context) do
     [
       %{
@@ -345,7 +347,7 @@ defmodule Raxol.Core.ErrorExperience do
     ]
   end
 
-  @spec general_suggestions(any(), any()) :: any()
+  @spec general_suggestions(term(), map()) :: [fix_suggestion()]
   defp general_suggestions(_error, _context) do
     [
       %{
@@ -359,7 +361,8 @@ defmodule Raxol.Core.ErrorExperience do
     ]
   end
 
-  @spec assess_performance_impact(any(), any()) :: any()
+  @spec assess_performance_impact(term(), map()) ::
+          :none | :low | :medium | :high | :critical
   defp assess_performance_impact(error, context) do
     error_text = inspect(error) |> String.downcase()
 
@@ -373,7 +376,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
-  @spec find_related_optimizations(any(), any()) :: any()
+  @spec find_related_optimizations(term(), error_category()) :: [String.t()]
   defp find_related_optimizations(_error, category) do
     case category do
       :performance ->
@@ -393,7 +396,8 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
-  @spec determine_severity(any(), any()) :: any()
+  @spec determine_severity(term(), :none | :low | :medium | :high | :critical) ::
+          ErrorHandler.error_severity()
   defp determine_severity(error, performance_impact) do
     case {error, performance_impact} do
       {_, :critical} -> :critical
@@ -405,7 +409,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
-  @spec enrich_context(any(), any()) :: any()
+  @spec enrich_context(map(), error_category()) :: map()
   defp enrich_context(context, category) do
     base_context =
       Map.merge(context, %{
@@ -432,7 +436,10 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
-  @spec determine_recovery_options(any(), any()) :: any()
+  @spec determine_recovery_options(
+          error_category(),
+          :none | :low | :medium | :high | :critical
+        ) :: [atom()]
   defp determine_recovery_options(category, performance_impact) do
     base_options = [:retry, :ignore, :debug]
 
@@ -460,7 +467,7 @@ defmodule Raxol.Core.ErrorExperience do
     ]
   end
 
-  @spec display_error_summary(any()) :: any()
+  @spec display_error_summary(enhanced_error()) :: :ok
   defp display_error_summary(enhanced_error) do
     Log.info("\n" <> IO.ANSI.yellow() <> "Error Summary:" <> IO.ANSI.reset())
     Log.info("Category: #{enhanced_error.category}")
@@ -472,9 +479,11 @@ defmodule Raxol.Core.ErrorExperience do
         "Related Phase 3 Optimizations: #{Enum.join(enhanced_error.related_optimizations, ", ")}"
       )
     end
+
+    :ok
   end
 
-  @spec display_suggestions(any()) :: any()
+  @spec display_suggestions([fix_suggestion()]) :: :ok
   defp display_suggestions(suggestions) do
     Log.info("\n" <> IO.ANSI.green() <> "Fix Suggestions:" <> IO.ANSI.reset())
 
@@ -500,9 +509,11 @@ defmodule Raxol.Core.ErrorExperience do
 
       Log.info("")
     end)
+
+    :ok
   end
 
-  @spec display_performance_context(any()) :: any()
+  @spec display_performance_context(enhanced_error()) :: :ok
   defp display_performance_context(enhanced_error) do
     Log.info(
       "\n" <> IO.ANSI.magenta() <> "Performance Context:" <> IO.ANSI.reset()
@@ -518,13 +529,12 @@ defmodule Raxol.Core.ErrorExperience do
     Log.info(
       "Available Analysis Tools: #{inspect(enhanced_error.context[:analysis_tools] || [])}"
     )
+
+    :ok
   end
 
-  @spec handle_recovery_interaction(any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_recovery_interaction(enhanced_error()) ::
+          :ok | {binary(), integer()} | nil
   defp handle_recovery_interaction(enhanced_error) do
     Log.info("\n" <> IO.ANSI.blue() <> "Recovery Options:" <> IO.ANSI.reset())
 
@@ -544,7 +554,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
-  @spec format_recovery_option(any()) :: String.t()
+  @spec format_recovery_option(atom()) :: String.t()
   defp format_recovery_option(option) do
     case option do
       :retry -> "Retry operation"
@@ -561,7 +571,8 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
-  @spec execute_recovery_option(any(), any()) :: any()
+  @spec execute_recovery_option(atom(), enhanced_error()) ::
+          :ok | {binary(), integer()}
   defp execute_recovery_option(option, _enhanced_error) do
     case option do
       :analyze ->
@@ -586,7 +597,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
-  @spec log_enhanced_error(any()) :: any()
+  @spec log_enhanced_error(enhanced_error()) :: :ok
   defp log_enhanced_error(enhanced_error) do
     level =
       case enhanced_error.severity do
@@ -603,9 +614,11 @@ defmodule Raxol.Core.ErrorExperience do
       suggestions_count: length(enhanced_error.suggestions),
       phase3_context: enhanced_error.context[:phase3_targets]
     )
+
+    :ok
   end
 
-  @spec maybe_trigger_analysis_tools(any()) :: any()
+  @spec maybe_trigger_analysis_tools(enhanced_error()) :: :ok | {:ok, pid()}
   defp maybe_trigger_analysis_tools(enhanced_error) do
     # Auto-trigger tools for critical performance issues
     case enhanced_error.performance_impact do
@@ -626,7 +639,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
-  @spec extract_phase3_metrics(any()) :: any()
+  @spec extract_phase3_metrics(enhanced_error()) :: map()
   defp extract_phase3_metrics(enhanced_error) do
     %{
       targets_referenced: enhanced_error.context[:phase3_targets],
@@ -638,14 +651,14 @@ defmodule Raxol.Core.ErrorExperience do
     }
   end
 
-  @spec generate_error_id(any()) :: any()
+  @spec generate_error_id(enhanced_error()) :: String.t()
   defp generate_error_id(enhanced_error) do
     :crypto.hash(:md5, inspect(enhanced_error.original_error))
     |> Base.encode16(case: :lower)
     |> String.slice(0..7)
   end
 
-  @spec store_error_report(any()) :: any()
+  @spec store_error_report(map()) :: :ok
   defp store_error_report(report) do
     # Store in tmp for now - in production would use proper storage
     reports_dir = "/tmp/raxol_error_reports"
