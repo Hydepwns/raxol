@@ -631,7 +631,6 @@ defmodule Raxol.Core.Renderer.View do
 
   # Helper function for ensuring keyword lists (public for macro usage)
   def ensure_keyword_list(opts) when is_list(opts), do: opts
-  def ensure_keyword_list(opts) when is_map(opts), do: Map.to_list(opts)
   def ensure_keyword_list(_), do: []
 
   defmacro ensure_keyword(opts) do
@@ -639,9 +638,6 @@ defmodule Raxol.Core.Renderer.View do
       case unquote(opts) do
         opts when is_list(opts) and length(opts) > 0 ->
           Raxol.Core.Renderer.View.ensure_keyword_list(opts)
-
-        opts when is_map(opts) ->
-          Map.to_list(opts)
 
         _opts ->
           []

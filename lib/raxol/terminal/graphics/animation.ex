@@ -310,7 +310,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
         state.active_animations,
         fn {animation_id, animation_info}, acc ->
           case Framework.get_current_value(animation_info.name, animation_id) do
-            {:ok, values} when is_map(values) ->
+            {:ok, values} ->
               # Apply values to graphics element
               apply_graphics_properties(animation_info.graphics_id, values)
               acc
