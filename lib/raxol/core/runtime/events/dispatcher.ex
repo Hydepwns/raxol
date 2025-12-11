@@ -128,7 +128,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:ok, updated_state, commands}
   end
 
-  @spec build_command_context(map()) :: map()
   defp build_command_context(state) do
     %{
       pid: self(),
@@ -137,7 +136,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     }
   end
 
-  @spec handle_theme_update(map(), map()) :: map()
   defp handle_theme_update(state, updated_model) do
     new_theme_id =
       Map.get(updated_model, :current_theme_id, state.current_theme_id)
@@ -411,7 +409,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:noreply, state}
   end
 
-  @spec log_command_process_error(term()) :: :ok
   defp log_command_process_error(error) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "[Dispatcher] Error processing commands from command result",
@@ -463,14 +460,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     route_event_by_type(system_event?(event), event, state)
   end
 
-  @spec system_event?(term()) :: boolean()
   defp system_event?(%Event{type: type}) do
     type in [:resize, :quit, :focus, :error, :system]
   end
 
   defp system_event?(_), do: false
 
-  @spec apply_plugin_filters(Event.t(), map()) :: Event.t() | nil
   defp apply_plugin_filters(event, state) do
     manager_pid = state.plugin_manager
 
@@ -482,7 +477,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     end
   end
 
-  @spec default_event_to_message(Event.t()) :: tuple()
   defp default_event_to_message(%Event{
          type: :key,
          data: %{key: key, modifiers: mods}
@@ -509,13 +503,11 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # --- Helper Functions for Pattern Matching ---
 
-  @spec send_test_ready_message(atom()) :: {:dispatcher_ready, pid()} | :ok
   defp send_test_ready_message(:test),
     do: send(self(), {:dispatcher_ready, self()})
 
   defp send_test_ready_message(_env), do: :ok
 
-  @spec apply_theme_update(boolean(), map(), map(), atom()) :: map()
   defp apply_theme_update(true, state, updated_model, _new_theme_id) do
     %{state | model: updated_model}
   end
@@ -525,7 +517,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     %{state | model: updated_model, current_theme_id: new_theme_id}
   end
 
-  @spec broadcast_event_if_valid(term(), term()) :: :ok
   defp broadcast_event_if_valid(event_type, event_data)
        when is_atom(event_type) and is_map(event_data) do
     Raxol.Core.Runtime.Log.debug(
@@ -541,7 +532,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     )
   end
 
-  @spec log_debug_if_enabled(boolean(), term()) :: :ok
   defp log_debug_if_enabled(true, event) do
     Raxol.Core.Runtime.Log.debug("Dispatching event: #{inspect(event)}")
   end
@@ -571,7 +561,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # --- Command Processing ---
 
-  @spec process_commands(list(), map(), module()) :: :ok
   defp process_commands(commands, context, command_module)
        when is_list(commands) do
     Raxol.Core.Runtime.Log.debug(
