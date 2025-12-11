@@ -307,7 +307,7 @@ defmodule Raxol.Terminal.ModeManager do
   @doc """
   Checks if the given mode is set.
   """
-  @spec mode_set?(t(), atom()) :: boolean()
+  @spec mode_set?(t(), atom()) :: false
   def mode_set?(_state, _mode) do
     false
   end

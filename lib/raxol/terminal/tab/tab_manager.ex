@@ -59,8 +59,7 @@ defmodule Raxol.Terminal.Tab.Manager do
   `{:ok, tab_id, updated_manager}` on success
   `{:error, reason}` on failure
   """
-  @spec create_tab(t(), map()) ::
-          {:ok, tab_id(), t()} | {:error, term()}
+  @spec create_tab(t(), map()) :: {:ok, tab_id(), t()}
   def create_tab(manager, config \\ %{}) do
     tab_id = generate_tab_id(manager)
 

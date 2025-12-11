@@ -91,8 +91,7 @@ defmodule Raxol.Terminal.Commands.Registry do
     end
   end
 
-  @spec get_completions(t(), String.t()) ::
-          {:ok, t(), [String.t()]} | {:error, term()}
+  @spec get_completions(t(), String.t()) :: {:ok, t(), [String.t()]}
   def get_completions(registry, input) do
     suggestions =
       registry.commands

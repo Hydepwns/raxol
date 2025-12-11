@@ -259,7 +259,7 @@ defmodule Raxol.Terminal.Theme.Manager do
   @doc """
   Saves the current theme state for persistence.
   """
-  @spec save_theme_state(t()) :: {:ok, map()} | {:error, term()}
+  @spec save_theme_state(t()) :: {:ok, map()}
   def save_theme_state(manager) do
     state = %{
       current_theme: manager.current_theme.name,

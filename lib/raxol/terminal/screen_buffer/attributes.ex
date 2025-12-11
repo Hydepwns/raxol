@@ -494,7 +494,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   @doc """
   Checks if attribute is set (stub).
   """
-  @spec attribute_set?(map(), atom()) :: boolean()
+  @spec attribute_set?(map(), atom()) :: false
   def attribute_set?(_buffer, _attr), do: false
 
   @doc """
@@ -512,7 +512,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   @doc """
   Gets single shift state (stub).
   """
-  @spec get_single_shift(map()) :: integer() | nil
+  @spec get_single_shift(map()) :: nil
   def get_single_shift(_buffer), do: nil
 
   @doc """

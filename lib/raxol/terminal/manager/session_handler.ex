@@ -15,7 +15,8 @@ defmodule Raxol.Terminal.Manager.SessionHandler do
   @doc """
   Creates a new terminal session.
   """
-  @spec create_session(map(), map()) :: {:ok, binary(), map()} | {:error, term()}
+  @spec create_session(map(), map()) ::
+          {:ok, binary(), map()} | {:error, term()}
   def create_session(opts, state) do
     user_id = Map.get(opts, :user_id, "anonymous")
 
@@ -94,7 +95,7 @@ defmodule Raxol.Terminal.Manager.SessionHandler do
   @doc """
   Monitors a terminal session.
   """
-  @spec monitor_session(binary(), map()) :: :ok | {:error, term()}
+  @spec monitor_session(binary(), map()) :: :ok
   def monitor_session(_session_id, _state) do
     # Session monitoring is handled internally by the core session manager
     :ok
@@ -103,7 +104,7 @@ defmodule Raxol.Terminal.Manager.SessionHandler do
   @doc """
   Unmonitors a terminal session.
   """
-  @spec unmonitor_session(binary(), map()) :: :ok | {:error, term()}
+  @spec unmonitor_session(binary(), map()) :: :ok
   def unmonitor_session(_session_id, _state) do
     # Session monitoring is handled internally by the core session manager
     :ok

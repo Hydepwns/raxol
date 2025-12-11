@@ -69,7 +69,8 @@ defmodule Raxol.Terminal.Emulator.Input do
     {:ok, emulator, commands}
   end
 
-  def process_mouse_event(emulator, event) when is_map(emulator) and is_map(event) do
+  def process_mouse_event(emulator, event)
+      when is_map(emulator) and is_map(event) do
     # Fallback for non-struct emulator maps
     {:ok, emulator, []}
   end

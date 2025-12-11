@@ -9,7 +9,15 @@ defmodule Raxol.Core.Runtime.Plugins.PluginInitializer do
   @doc """
   Initializes all plugins in the given load order.
   """
-  @spec initialize_plugins(map(), map(), map() | nil, map(), list(), atom() | reference(), keyword() | map() | nil) ::
+  @spec initialize_plugins(
+          map(),
+          map(),
+          map() | nil,
+          map(),
+          list(),
+          atom() | reference(),
+          keyword() | map() | nil
+        ) ::
           {:ok, {map(), map(), atom() | reference()}} | {:error, term()}
   def initialize_plugins(
         plugins,
@@ -35,8 +43,14 @@ defmodule Raxol.Core.Runtime.Plugins.PluginInitializer do
   @doc """
   Initializes a single plugin.
   """
-  @spec initialize_plugin(atom() | String.t(), {:ok, {map(), map(), atom() | reference()}}, map(), map()) ::
-          {:cont, {:ok, {map(), map(), atom() | reference()}}} | {:halt, {:error, term()}}
+  @spec initialize_plugin(
+          atom() | String.t(),
+          {:ok, {map(), map(), atom() | reference()}},
+          map(),
+          map()
+        ) ::
+          {:cont, {:ok, {map(), map(), atom() | reference()}}}
+          | {:halt, {:error, term()}}
   def initialize_plugin(
         plugin_id,
         {:ok, {meta, sts, tbl}},
