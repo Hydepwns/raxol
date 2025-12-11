@@ -311,11 +311,11 @@ defmodule Raxol.Terminal.Integration.State do
   @spec cleanup(t()) :: :ok
   def cleanup(%__MODULE__{} = state) do
     # Clean up components only if they exist
-    cleanup_buffer_manager(state.buffer_manager)
-    cleanup_scroll_buffer(state.scroll_buffer)
-    cleanup_renderer(state.renderer)
-    cleanup_io(state.io)
-    cleanup_window_manager(state.window_manager)
+    _ = cleanup_buffer_manager(state.buffer_manager)
+    _ = cleanup_scroll_buffer(state.scroll_buffer)
+    _ = cleanup_renderer(state.renderer)
+    _ = cleanup_io(state.io)
+    _ = cleanup_window_manager(state.window_manager)
     :ok
   end
 

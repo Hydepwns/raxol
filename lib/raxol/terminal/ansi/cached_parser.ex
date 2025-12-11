@@ -188,8 +188,8 @@ defmodule Raxol.Terminal.ANSI.CachedParser do
   def benchmark_comparison(input, iterations \\ 10_000) do
     # Warmup
     Enum.each(1..100, fn _ ->
-      parse(input)
-      Raxol.Terminal.ANSI.Parser.parse(input)
+      _ = parse(input)
+      _ = Raxol.Terminal.ANSI.Parser.parse(input)
     end)
 
     # Benchmark cached parser

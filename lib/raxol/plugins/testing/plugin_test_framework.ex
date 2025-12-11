@@ -130,7 +130,7 @@ defmodule Raxol.Plugins.Testing.PluginTestFramework do
   """
   def send_keypresses(terminal, keys) when is_list(keys) do
     Enum.each(keys, fn key ->
-      send_keypress(terminal, key)
+      _ = send_keypress(terminal, key)
       # Small delay to simulate realistic typing
       Process.sleep(10)
     end)
@@ -361,7 +361,7 @@ defmodule Raxol.Plugins.Testing.FrameworkAssertions do
   def assert_keypress_handled(terminal, key) do
     # Send keypress and check if it was handled
     old_state = MockTerminal.get_state(terminal)
-    MockTerminal.send_keypress(terminal, key)
+    _ = MockTerminal.send_keypress(terminal, key)
     new_state = MockTerminal.get_state(terminal)
 
     refute old_state == new_state,

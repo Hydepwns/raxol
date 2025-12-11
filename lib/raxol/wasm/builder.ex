@@ -50,7 +50,7 @@ defmodule Raxol.WASM.Builder do
     Log.info("Starting WASM watch mode...")
 
     # Initial build
-    build(opts)
+    _ = build(opts)
 
     # Set up file watcher
     {:ok, pid} = FileSystem.start_link(dirs: ["lib/raxol"])
@@ -778,7 +778,7 @@ defmodule Raxol.WASM.Builder do
       {:file_event, _pid, {path, _events}} ->
         if String.ends_with?(path, ".ex") or String.ends_with?(path, ".exs") do
           Log.info("Detected change in #{path}, rebuilding...")
-          build(opts)
+          _ = build(opts)
         end
 
         watch_loop(opts)
