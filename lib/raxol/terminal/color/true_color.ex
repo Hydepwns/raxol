@@ -556,7 +556,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
 
   ## Private Helper Functions
 
-  @spec parse_hex_6(String.t()) :: {:ok, t()} | {:error, :invalid_hex}
+  @spec parse_hex_6(String.t()) :: t() | {:error, :invalid_hex}
   defp parse_hex_6(hex) do
     with {r, ""} <- Integer.parse(String.slice(hex, 0, 2), 16),
          {g, ""} <- Integer.parse(String.slice(hex, 2, 2), 16),
@@ -567,7 +567,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     end
   end
 
-  @spec parse_hex_8(String.t()) :: {:ok, t()} | {:error, :invalid_hex}
+  @spec parse_hex_8(String.t()) :: t() | {:error, :invalid_hex}
   defp parse_hex_8(hex) do
     with {r, ""} <- Integer.parse(String.slice(hex, 0, 2), 16),
          {g, ""} <- Integer.parse(String.slice(hex, 2, 2), 16),
@@ -579,7 +579,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     end
   end
 
-  @spec parse_hex_3(String.t()) :: {:ok, t()} | {:error, :invalid_hex}
+  @spec parse_hex_3(String.t()) :: t() | {:error, :invalid_hex}
   defp parse_hex_3(hex) do
     with {r, ""} <- Integer.parse(String.slice(hex, 0, 1), 16),
          {g, ""} <- Integer.parse(String.slice(hex, 1, 1), 16),
@@ -629,7 +629,8 @@ defmodule Raxol.Terminal.Color.TrueColor do
     {r_prime + m, g_prime + m, b_prime + m}
   end
 
-  @spec rgb_to_hsl(number(), number(), number()) :: {float(), float(), float()}
+  @spec rgb_to_hsl(number(), number(), number()) ::
+          {integer(), integer(), integer()}
   defp rgb_to_hsl(r, g, b) do
     max_val = max(max(r, g), b)
     min_val = min(min(r, g), b)
@@ -866,14 +867,14 @@ defmodule Raxol.Terminal.Color.TrueColor do
   defp check_16_color_support(term) when term in ["dumb", "unknown"], do: false
   defp check_16_color_support(_term), do: true
 
-  defp calculate_hsl_values(0, l, _max_val, _min_val, _r, _g, _b) do
-    {0, 0, round(l * 100)}
-  end
-
   defp calculate_hsl_values(delta, l, max_val, min_val, r, g, b) do
-    s = calculate_hsl_saturation(l, delta, max_val, min_val)
-    h = calculate_hue(max_val, delta, r, g, b)
-    {round(h * 60), round(s * 100), round(l * 100)}
+    if delta == 0.0 do
+      {0, 0, round(l * 100)}
+    else
+      s = calculate_hsl_saturation(l, delta, max_val, min_val)
+      h = calculate_hue(max_val, delta, r, g, b)
+      {round(h * 60), round(s * 100), round(l * 100)}
+    end
   end
 
   defp calculate_hsl_saturation(l, delta, max_val, min_val) when l > 0.5 do
@@ -884,16 +885,27 @@ defmodule Raxol.Terminal.Color.TrueColor do
     delta / (max_val + min_val)
   end
 
-  defp calculate_saturation(0, _delta), do: 0
-  defp calculate_saturation(max_val, delta), do: delta / max_val
-
-  defp calculate_hsv_hue(0, _max_val, _r, _g, _b), do: 0
+  defp calculate_saturation(max_val, delta) do
+    if max_val == 0.0, do: 0.0, else: delta / max_val
+  end
 
   defp calculate_hsv_hue(delta, max_val, r, g, b) do
-    case max_val do
-      ^r -> rem(trunc((g - b) / delta + adjust_for_negative_hue(g, b)), 6)
-      ^g -> (b - r) / delta + 2
-      ^b -> (r - g) / delta + 4
+    if delta == 0.0 do
+      0
+    else
+      cond do
+        max_val == r ->
+          rem(trunc((g - b) / delta + adjust_for_negative_hue(g, b)), 6)
+
+        max_val == g ->
+          (b - r) / delta + 2
+
+        max_val == b ->
+          (r - g) / delta + 4
+
+        true ->
+          0
+      end
     end
   end
 

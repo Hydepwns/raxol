@@ -43,13 +43,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   def check_directory(dir_path) do
     case find_elixir_files(dir_path) do
       {:ok, files} ->
-        issues =
-          Enum.flat_map(files, fn file ->
-            case check_file(file) do
-              {:ok, file_issues} -> file_issues
-              {:error, _} -> []
-            end
-          end)
+        issues = Enum.flat_map(files, &collect_file_issues/1)
 
         report = %{
           total_files: length(files),
@@ -92,7 +86,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   This function is useful for testing or when you already have the content
   and AST available and want to bypass file I/O.
   """
-  @spec analyze_file(String.t(), String.t(), any()) :: any()
+  @spec analyze_file(String.t(), String.t(), Macro.t()) :: [issue()]
   def analyze_file(file_path, content, ast) do
     # Normalize line endings (handle both Unix \n and Windows \r\n)
     normalized_content = String.replace(content, "\r\n", "\n")
@@ -109,7 +103,13 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   end
 
   # Helper to create issue maps
-  @spec create_issue(any(), any(), any(), String.t(), any()) :: any()
+  @spec create_issue(
+          atom(),
+          non_neg_integer(),
+          String.t(),
+          String.t(),
+          :error | :warning | :info
+        ) :: issue()
   defp create_issue(type, line, file, message, severity) do
     %{
       type: type,
@@ -120,7 +120,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     }
   end
 
-  @spec check_module_structure(any(), String.t(), any()) :: any()
+  @spec check_module_structure([issue()], String.t(), Macro.t()) :: [issue()]
   defp check_module_structure(issues, file_path, ast) do
     case ast do
       {:defmodule, _, [{:__aliases__, _, module_parts}, [do: body]]} ->
@@ -146,7 +146,9 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
 
   @dialyzer {:nowarn_function, check_documentation: 4}
   @compile {:no_warn_conditional, true}
-  @spec check_documentation(any(), String.t(), String.t(), any()) :: any()
+  @spec check_documentation([issue()], String.t(), String.t(), Macro.t()) :: [
+          issue()
+        ]
   defp check_documentation(issues, file_path, _content, ast) do
     # Walk AST to find public functions without docs
     {_, new_issues} =
@@ -165,7 +167,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     new_issues
   end
 
-  @spec check_naming_conventions(any(), String.t(), any()) :: any()
+  @spec check_naming_conventions([issue()], String.t(), Macro.t()) :: [issue()]
   defp check_naming_conventions(issues, file_path, ast) do
     {_, new_issues} =
       Macro.prewalk(ast, issues, fn
@@ -226,7 +228,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     new_issues
   end
 
-  @spec check_error_handling(any(), String.t(), any()) :: any()
+  @spec check_error_handling([issue()], String.t(), Macro.t()) :: [issue()]
   defp check_error_handling(issues, file_path, ast) do
     {_, new_issues} =
       Macro.prewalk(ast, issues, fn
@@ -251,7 +253,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
 
   @dialyzer {:nowarn_function, check_genserver_patterns: 3}
   @compile {:no_warn_conditional, true}
-  @spec check_genserver_patterns(any(), String.t(), any()) :: any()
+  @spec check_genserver_patterns([issue()], String.t(), Macro.t()) :: [issue()]
   defp check_genserver_patterns(issues, file_path, ast) do
     {_, new_issues} =
       Macro.prewalk(ast, issues, fn
@@ -270,7 +272,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     new_issues
   end
 
-  @spec check_formatting(any(), String.t(), any()) :: any()
+  @spec check_formatting([issue()], String.t(), [String.t()]) :: [issue()]
   defp check_formatting(issues, file_path, lines) do
     lines
     |> Enum.with_index(1)
@@ -318,7 +320,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end)
   end
 
-  @spec check_imports_and_aliases(any(), String.t(), any()) :: any()
+  @spec check_imports_and_aliases([issue()], String.t(), Macro.t()) :: [issue()]
   defp check_imports_and_aliases(issues, file_path, ast) do
     {_, new_issues} =
       Macro.prewalk(ast, issues, fn
@@ -352,7 +354,8 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
 
   # Helper functions
 
-  @spec check_module_name_match(any(), any(), String.t(), any()) :: any()
+  @spec check_module_name_match(String.t(), String.t(), String.t(), [issue()]) ::
+          [issue()]
   defp check_module_name_match(expected, actual, file_path, issues)
        when expected != actual do
     [
@@ -367,10 +370,11 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     ]
   end
 
-  @spec check_module_name_match(any(), any(), any(), any()) :: any()
+  @spec check_module_name_match(String.t(), String.t(), String.t(), [issue()]) ::
+          [issue()]
   defp check_module_name_match(_, _, _, issues), do: issues
 
-  @spec check_moduledoc_presence(any(), String.t(), any()) :: any()
+  @spec check_moduledoc_presence(Macro.t(), String.t(), [issue()]) :: [issue()]
   defp check_moduledoc_presence(body, file_path, issues) do
     case has_moduledoc?(body) do
       true ->
@@ -391,14 +395,14 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   end
 
   @spec handle_missing_doc_check(
-          any(),
-          any(),
-          any(),
-          any(),
+          Macro.t(),
+          non_neg_integer(),
+          Macro.t(),
+          [issue()],
           String.t(),
-          String.t() | atom(),
+          atom(),
           list()
-        ) :: {any(), [issue()]}
+        ) :: {Macro.t(), [issue()]}
   defp handle_missing_doc_check(ast, line, node, acc, file_path, name, args) do
     # has_preceding_doc?/2 currently always returns false (simplified implementation)
     false = has_preceding_doc?(ast, line)
@@ -417,13 +421,13 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   end
 
   @spec handle_single_letter_variable(
-          String.t() | atom(),
-          String.t() | atom(),
-          any(),
           String.t(),
-          any(),
-          any()
-        ) :: {any(), [issue()]}
+          atom(),
+          non_neg_integer(),
+          String.t(),
+          Macro.t(),
+          [issue()]
+        ) :: {Macro.t(), [issue()]}
   defp handle_single_letter_variable(name_str, name, line, file_path, node, acc) do
     case should_flag_single_letter_variable?(name_str) do
       true ->
@@ -444,18 +448,22 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end
   end
 
-  @spec should_flag_single_letter_variable?(String.t() | atom()) :: boolean()
+  @spec should_flag_single_letter_variable?(String.t()) :: boolean()
   defp should_flag_single_letter_variable?(name_str) do
     String.length(name_str) == 1 and name_str not in ["_", "x", "y", "z"]
   end
 
-  @spec handle_error_atom_check(any(), any(), String.t(), any(), any()) ::
-          {any(), [issue()]}
+  @spec handle_error_atom_check(term(), Keyword.t(), String.t(), Macro.t(), [
+          issue()
+        ]) ::
+          {Macro.t(), [issue()]}
   defp handle_error_atom_check(nil, _meta, _file_path, node, acc),
     do: {node, acc}
 
-  @spec handle_error_atom_check(any(), any(), String.t(), any(), any()) ::
-          {any(), [issue()]}
+  @spec handle_error_atom_check(term(), Keyword.t(), String.t(), Macro.t(), [
+          issue()
+        ]) ::
+          {Macro.t(), [issue()]}
   defp handle_error_atom_check(_value, meta, file_path, node, acc) do
     line = Keyword.get(meta, :line, 0)
 
@@ -472,8 +480,14 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
      ]}
   end
 
-  @spec handle_impl_attribute_check(any(), any(), String.t(), any(), any()) ::
-          {any(), [issue()]}
+  @spec handle_impl_attribute_check(
+          Macro.t(),
+          non_neg_integer(),
+          String.t(),
+          Macro.t(),
+          [issue()]
+        ) ::
+          {Macro.t(), [issue()]}
   defp handle_impl_attribute_check(_ast, line, file_path, node, acc) do
     # has_impl_attribute?/2 always returns false, so we only handle the false case
     {node,
@@ -489,8 +503,10 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
      ]}
   end
 
-  @spec handle_only_option_check(any(), any(), String.t(), any()) ::
-          {any(), [issue()]}
+  @spec handle_only_option_check(Macro.t(), non_neg_integer(), String.t(), [
+          issue()
+        ]) ::
+          {Macro.t(), [issue()]}
   defp handle_only_option_check(node, line, file_path, acc) do
     case has_only_option?(node) do
       true ->
@@ -511,7 +527,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end
   end
 
-  @spec add_moduledoc_recommendation(any(), any()) :: any()
+  @spec add_moduledoc_recommendation(map(), [String.t()]) :: [String.t()]
   defp add_moduledoc_recommendation(summary, recommendations) do
     case Map.get(summary, :missing_moduledoc, 0) do
       count when count > 0 ->
@@ -522,7 +538,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end
   end
 
-  @spec add_doc_recommendation(any(), any()) :: any()
+  @spec add_doc_recommendation(map(), [String.t()]) :: [String.t()]
   defp add_doc_recommendation(summary, recommendations) do
     case Map.get(summary, :missing_doc, 0) do
       count when count > 0 ->
@@ -533,7 +549,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end
   end
 
-  @spec add_error_handling_recommendation(any(), any()) :: any()
+  @spec add_error_handling_recommendation(map(), [String.t()]) :: [String.t()]
   defp add_error_handling_recommendation(summary, recommendations) do
     case Map.get(summary, :error_handling, 0) do
       count when count > 0 ->
@@ -547,7 +563,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end
   end
 
-  @spec add_formatting_recommendation(any(), any()) :: any()
+  @spec add_formatting_recommendation(map(), [String.t()]) :: [String.t()]
   defp add_formatting_recommendation(summary, recommendations) do
     case Map.get(summary, :formatting, 0) do
       count when count > 0 ->
@@ -558,19 +574,19 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end
   end
 
-  @spec format_final_recommendations(any()) :: String.t()
+  @spec format_final_recommendations([String.t()]) :: String.t()
   defp format_final_recommendations([]) do
     "No specific recommendations. Code follows standards well!"
   end
 
-  @spec format_final_recommendations(any()) :: String.t()
+  @spec format_final_recommendations([String.t()]) :: String.t()
   defp format_final_recommendations(recommendations) do
     recommendations
     |> Enum.with_index(1)
     |> Enum.map_join("\n", fn {rec, idx} -> "#{idx}. #{rec}" end)
   end
 
-  @spec find_elixir_files(String.t()) :: any()
+  @spec find_elixir_files(String.t()) :: {:ok, [String.t()]} | {:error, term()}
   defp find_elixir_files(dir_path) do
     case File.ls(dir_path) do
       {:ok, _} ->
@@ -583,7 +599,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end
   end
 
-  @spec path_to_module_name(String.t()) :: any()
+  @spec path_to_module_name(String.t()) :: String.t()
   defp path_to_module_name(file_path) do
     file_path
     |> Path.rootname()
@@ -593,7 +609,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     |> Enum.map_join(".", &Macro.camelize/1)
   end
 
-  @spec has_moduledoc?(any()) :: boolean()
+  @spec has_moduledoc?(Macro.t()) :: boolean()
   defp has_moduledoc?({:__block__, _, nodes}) do
     Enum.any?(nodes, fn
       {:@, _, [{:moduledoc, _, _}]} -> true
@@ -601,10 +617,10 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end)
   end
 
-  @spec has_moduledoc?(any()) :: boolean()
+  @spec has_moduledoc?(Macro.t()) :: boolean()
   defp has_moduledoc?(_), do: false
 
-  @spec has_preceding_doc?(any(), any()) :: boolean()
+  @spec has_preceding_doc?(Macro.t(), non_neg_integer()) :: false
   defp has_preceding_doc?(_ast, _line) do
     # Simplified implementation - in a real implementation,
     # we would walk the AST to check if there's a @doc attribute
@@ -612,15 +628,15 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     false
   end
 
-  @spec has_only_option?(any()) :: boolean()
+  @spec has_only_option?(Macro.t()) :: boolean()
   defp has_only_option?({:import, _, [_module, opts]}) when is_list(opts) do
     Keyword.has_key?(opts, :only)
   end
 
-  @spec has_only_option?(any()) :: boolean()
+  @spec has_only_option?(Macro.t()) :: boolean()
   defp has_only_option?(_), do: false
 
-  @spec summarize_issues(any()) :: any()
+  @spec summarize_issues([issue()]) :: map()
   defp summarize_issues(issues) do
     issues
     |> Enum.group_by(& &1.type)
@@ -628,7 +644,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     |> Map.new()
   end
 
-  @spec format_summary(any()) :: String.t()
+  @spec format_summary(map()) :: String.t()
   defp format_summary(summary) do
     summary
     |> Enum.sort_by(fn {_, count} -> -count end)
@@ -637,7 +653,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end)
   end
 
-  @spec format_issues(any()) :: String.t()
+  @spec format_issues([issue()]) :: String.t()
   defp format_issues(issues) do
     issues
     |> Enum.group_by(& &1.file)
@@ -649,7 +665,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end)
   end
 
-  @spec format_file_issues(any()) :: String.t()
+  @spec format_file_issues([issue()]) :: String.t()
   defp format_file_issues(issues) do
     issues
     |> Enum.sort_by(& &1.line)
@@ -661,7 +677,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     )
   end
 
-  @spec format_type(any()) :: String.t()
+  @spec format_type(atom()) :: String.t()
   defp format_type(type) do
     type
     |> to_string()
@@ -669,7 +685,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     |> String.capitalize()
   end
 
-  @spec generate_recommendations(any()) :: any()
+  @spec generate_recommendations(map()) :: String.t()
   defp generate_recommendations(summary) do
     recommendations = []
 
@@ -685,14 +701,14 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     format_final_recommendations(recommendations)
   end
 
-  @spec validate_function_name(String.t() | atom()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_function_name(String.t()) ::
+          :ok | {:error, :double_underscores | :uppercase}
   defp validate_function_name(name_str)
        when name_str in ["__MODULE__", "__DIR__", "__ENV__"],
        do: :ok
 
-  @spec validate_function_name(String.t() | atom()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_function_name(String.t()) ::
+          :ok | {:error, :double_underscores | :uppercase}
   defp validate_function_name(name_str) do
     case {String.contains?(name_str, "__"), String.match?(name_str, ~r/[A-Z]/)} do
       {true, _} -> {:error, :double_underscores}
@@ -701,7 +717,8 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end
   end
 
-  @spec check_line_formatting(any()) :: any()
+  @spec check_line_formatting(String.t()) ::
+          :ok | {:error, :line_too_long | :trailing_whitespace | :contains_tabs}
   defp check_line_formatting(line) do
     Enum.find_value(
       [
@@ -717,5 +734,12 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
         end
       end
     )
+  end
+
+  defp collect_file_issues(file) do
+    case check_file(file) do
+      {:ok, file_issues} -> file_issues
+      {:error, _} -> []
+    end
   end
 end

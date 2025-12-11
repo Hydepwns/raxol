@@ -212,12 +212,10 @@ defmodule Raxol.Terminal.Commands.Executor do
       "Executing OSC command: #{inspect(command_string)}"
     )
 
-    result = handle_osc_command(emulator, command_string)
-
-    case result do
+    # handle_osc_command returns {:ok, emulator} or {:error, reason, emulator}
+    case handle_osc_command(emulator, command_string) do
       {:ok, updated_emulator} -> updated_emulator
       {:error, _reason, updated_emulator} -> updated_emulator
-      %Raxol.Terminal.Emulator{} = updated_emulator -> updated_emulator
     end
   end
 
@@ -274,12 +272,7 @@ defmodule Raxol.Terminal.Commands.Executor do
     )
   end
 
-  @spec execute_dcs_command(
-          Emulator.t(),
-          String.t(),
-          String.t(),
-          String.t()
-        ) :: Emulator.t()
+  @spec execute_dcs_command(map(), binary(), binary(), binary()) :: map()
   def execute_dcs_command(
         emulator,
         params_buffer,
@@ -298,7 +291,7 @@ defmodule Raxol.Terminal.Commands.Executor do
     )
   end
 
-  @spec execute_dcs_command(Emulator.t(), integer(), list()) :: Emulator.t()
+  @spec execute_dcs_command(map(), integer(), list()) :: map()
   def execute_dcs_command(emulator, _command, params) do
     # Convert to string format for the existing handler
     params_buffer = Enum.join(params, ";")

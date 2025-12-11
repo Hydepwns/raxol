@@ -334,7 +334,8 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     put_in(state.metadata[plugin_id], metadata)
   end
 
-  @spec validate_all_operations(any(), any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_all_operations(any(), any()) ::
+          {:ok, any()} | {:error, atom(), String.t(), map()}
   defp validate_all_operations(_, operations) do
     errors =
       Enum.reduce(operations, [], fn op, acc ->
@@ -347,18 +348,12 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     handle_validation_errors(errors, operations)
   end
 
-  @spec handle_validation_errors(any(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_validation_errors(list(), any()) ::
+          {:ok, any()} | {:error, atom(), String.t(), map()}
   defp handle_validation_errors([], operations), do: {:ok, operations}
 
   @spec handle_validation_errors([String.t()], any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+          {:error, atom(), String.t(), map()}
   defp handle_validation_errors(errors, _operations) do
     error(:validation, "Invalid operations", %{errors: errors})
   end
