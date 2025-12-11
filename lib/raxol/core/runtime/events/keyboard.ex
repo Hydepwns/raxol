@@ -47,8 +47,6 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     end
   end
 
-  @spec handle_debug_toggle(map()) ::
-          {:system, {:set_debug_mode, boolean()}, map()}
   defp handle_debug_toggle(state) do
     new_debug_mode = not state.debug_mode
 

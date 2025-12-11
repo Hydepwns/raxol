@@ -624,8 +624,6 @@ defmodule Raxol.Terminal.Color.TrueColor do
     {r_prime + m, g_prime + m, b_prime + m}
   end
 
-  @spec rgb_to_hsl(number(), number(), number()) ::
-          {integer(), integer(), integer()}
   defp rgb_to_hsl(r, g, b) do
     max_val = max(max(r, g), b)
     min_val = min(min(r, g), b)

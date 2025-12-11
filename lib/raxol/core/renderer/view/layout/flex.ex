@@ -142,12 +142,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
   end
 
   # New: Implements wrapping for flex layout
-  @spec wrap_flex_layout(
-          [map()],
-          :row,
-          {non_neg_integer(), non_neg_integer()},
-          non_neg_integer()
-        ) :: [map()]
   defp wrap_flex_layout(children, :row, {width, _height}, gap) do
     children
     |> group_children_into_lines(width, gap)
@@ -155,12 +149,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     |> position_children_in_lines(gap)
   end
 
-  @spec wrap_flex_layout(
-          [map()],
-          :column,
-          {non_neg_integer(), non_neg_integer()},
-          non_neg_integer()
-        ) :: [map()]
   defp wrap_flex_layout(children, :column, {_width, height}, gap) do
     children
     |> group_children_into_columns(height, gap)
@@ -168,8 +156,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     |> position_children_in_columns(gap)
   end
 
-  @spec group_children_into_lines([map()], non_neg_integer(), non_neg_integer()) ::
-          [[map()]]
   defp group_children_into_lines(children, width, gap) do
     {lines, current_line, _} =
       Enum.reduce(children, {[], [], 0}, fn child, {lines, line, line_width} ->
@@ -191,11 +177,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     [current_line | lines]
   end
 
-  @spec group_children_into_columns(
-          [map()],
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: [[map()]]
   defp group_children_into_columns(children, height, gap) do
     {columns, current_column, _} =
       Enum.reduce(children, {[], [], 0}, fn child,
@@ -243,8 +224,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     end)
   end
 
-  @spec position_children_in_line([map()], non_neg_integer(), non_neg_integer()) ::
-          [map()]
   defp position_children_in_line(line, line_idx, gap) do
     Enum.reduce(line, {0, []}, fn child, {x, acc} ->
       {child_w, child_h} = Map.get(child, :measured_size)
@@ -260,11 +239,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     |> Enum.reverse()
   end
 
-  @spec position_children_in_column(
-          [map()],
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: [map()]
   defp position_children_in_column(column, col_idx, gap) do
     Enum.reduce(column, {0, []}, fn child, {y, acc} ->
       {child_w, child_h} = Map.get(child, :measured_size)
@@ -280,9 +254,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     |> Enum.reverse()
   end
 
-  @spec measure_children([map()], {non_neg_integer(), non_neg_integer()}) :: [
-          map()
-        ]
   defp measure_children(children, {width, height}) do
     Enum.map(children, fn child ->
       child_size = get_child_size(child, {width, height})
@@ -290,8 +261,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     end)
   end
 
-  @spec get_child_size(map(), {non_neg_integer(), non_neg_integer()}) ::
-          {non_neg_integer(), non_neg_integer()}
   defp get_child_size(child, {width, height}) do
     case Map.get(child, :size) do
       {child_width, child_height}
@@ -307,30 +276,20 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     end
   end
 
-  @spec calculate_width(non_neg_integer() | nil, non_neg_integer()) ::
-          non_neg_integer()
   defp calculate_width(nil, available_width), do: min(50, available_width)
 
-  @spec calculate_width(non_neg_integer(), non_neg_integer()) ::
-          non_neg_integer()
   defp calculate_width(width, available_width) when is_integer(width),
     do: min(width, available_width)
 
   defp calculate_width(_, available_width), do: min(50, available_width)
 
-  @spec calculate_height(non_neg_integer() | nil, non_neg_integer()) ::
-          non_neg_integer()
   defp calculate_height(nil, available_height), do: min(1, available_height)
 
-  @spec calculate_height(non_neg_integer(), non_neg_integer()) ::
-          non_neg_integer()
   defp calculate_height(height, available_height) when is_integer(height),
     do: min(height, available_height)
 
   defp calculate_height(_, available_height), do: min(1, available_height)
 
-  @spec get_axis_sizes(atom(), {non_neg_integer(), non_neg_integer()}) ::
-          {non_neg_integer(), non_neg_integer()}
   defp get_axis_sizes(direction, {width, height}) do
     case direction do
       # Main axis: width, Cross axis: height
@@ -353,9 +312,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     |> Kernel.+(total_gaps)
   end
 
-  @spec apply_justification([any()], any(), any(), number(), number()) :: [
-          any()
-        ]
   defp apply_justification(
          children,
          justify,
@@ -467,30 +423,11 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     raise ArgumentError, "Invalid flex direction: #{inspect(direction)}"
   end
 
-  @spec calculate_new_width(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: non_neg_integer()
   defp calculate_new_width(0, child_w, _gap), do: child_w
 
-  @spec calculate_new_width(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: non_neg_integer()
   defp calculate_new_width(line_width, child_w, gap),
     do: line_width + gap + child_w
 
-  @spec handle_line_wrapping(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          [[map()]],
-          [map()],
-          map(),
-          non_neg_integer()
-        ) :: {[[map()]], [map()], non_neg_integer()}
   defp handle_line_wrapping(
          new_width,
          width,
@@ -504,15 +441,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     {[line | lines], [child], child_w}
   end
 
-  @spec handle_line_wrapping(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          [[map()]],
-          [map()],
-          map(),
-          non_neg_integer()
-        ) :: {[[map()]], [map()], non_neg_integer()}
   defp handle_line_wrapping(
          new_width,
          _width,
@@ -525,30 +453,11 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     {lines, [child | line], new_width}
   end
 
-  @spec calculate_new_height(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: non_neg_integer()
   defp calculate_new_height(0, child_h, _gap), do: child_h
 
-  @spec calculate_new_height(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: non_neg_integer()
   defp calculate_new_height(column_height, child_h, gap),
     do: column_height + gap + child_h
 
-  @spec handle_column_wrapping(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          [[map()]],
-          [map()],
-          map(),
-          non_neg_integer()
-        ) :: {[[map()]], [map()], non_neg_integer()}
   defp handle_column_wrapping(
          new_height,
          height,
@@ -562,15 +471,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     {[column | columns], [child], child_h}
   end
 
-  @spec handle_column_wrapping(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          [[map()]],
-          [map()],
-          map(),
-          non_neg_integer()
-        ) :: {[[map()]], [map()], non_neg_integer()}
   defp handle_column_wrapping(
          new_height,
          _height,
@@ -583,33 +483,18 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     {columns, [child | column], new_height}
   end
 
-  @spec handle_line_positioning([map()], non_neg_integer(), non_neg_integer()) ::
-          [map()]
   defp handle_line_positioning([], _line_idx, _gap), do: []
 
-  @spec handle_line_positioning([map()], non_neg_integer(), non_neg_integer()) ::
-          [map()]
   defp handle_line_positioning(line, line_idx, gap) do
     position_children_in_line(line, line_idx, gap)
   end
 
-  @spec handle_column_positioning([map()], non_neg_integer(), non_neg_integer()) ::
-          [map()]
   defp handle_column_positioning([], _col_idx, _gap), do: []
 
-  @spec handle_column_positioning([map()], non_neg_integer(), non_neg_integer()) ::
-          [map()]
   defp handle_column_positioning(column, col_idx, gap) do
     position_children_in_column(column, col_idx, gap)
   end
 
-  @spec do_justify_space_between(
-          non_neg_integer(),
-          [map()],
-          number(),
-          number(),
-          number()
-        ) :: [map()]
   defp do_justify_space_between(
          total_items,
          children,
@@ -621,13 +506,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     justify_start(children, gap)
   end
 
-  @spec do_justify_space_between(
-          non_neg_integer(),
-          [map()],
-          number(),
-          number(),
-          number()
-        ) :: [map()]
   defp do_justify_space_between(
          total_items,
          children,
@@ -641,14 +519,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     justify_children(children, 0, space_between)
   end
 
-  @spec do_calculate_layout(
-          boolean(),
-          [map()],
-          atom(),
-          {non_neg_integer(), non_neg_integer()},
-          non_neg_integer(),
-          map()
-        ) :: [map()]
   defp do_calculate_layout(
          true,
          measured_children,
@@ -660,14 +530,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     wrap_flex_layout(measured_children, direction, dimensions, gap)
   end
 
-  @spec do_calculate_layout(
-          boolean(),
-          [map()],
-          atom(),
-          {non_neg_integer(), non_neg_integer()},
-          non_neg_integer(),
-          map()
-        ) :: [map()]
   defp do_calculate_layout(
          false,
          measured_children,

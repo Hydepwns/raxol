@@ -19,15 +19,17 @@ defmodule Raxol.UI.Components.Input.SelectList.Utils do
   @spec ensure_visible(SelectList.t()) :: SelectList.t()
   def ensure_visible(state) do
     visible_items = state.visible_items || 10
+    # Use focused_index since that's what Selection module updates
+    index = state.focused_index
 
     cond do
-      state.selected_index < state.scroll_offset ->
+      index < state.scroll_offset ->
         # Selected item is above visible area
-        %{state | scroll_offset: state.selected_index}
+        %{state | scroll_offset: index}
 
-      state.selected_index >= state.scroll_offset + visible_items ->
+      index >= state.scroll_offset + visible_items ->
         # Selected item is below visible area
-        %{state | scroll_offset: state.selected_index - visible_items + 1}
+        %{state | scroll_offset: index - visible_items + 1}
 
       true ->
         # Selected item is already visible

@@ -297,8 +297,6 @@ defmodule Raxol.Core.ConnectionPool do
     end
   end
 
-  @spec create_overflow_connection(map()) ::
-          {:ok, connection(), map()} | {:error, term(), map()}
   defp create_overflow_connection(state) do
     case state.connect_fn.() do
       {:ok, conn} ->

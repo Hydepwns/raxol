@@ -70,8 +70,25 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   Scrolls the buffer down by the specified number of lines.
   """
   def scroll_down(emulator, lines) do
-    updated_emulator = ScreenBuffer.scroll_down(emulator, lines)
-    %{updated_emulator | active_buffer: updated_emulator.active_buffer}
+    buffer = get_active_buffer(emulator)
+    updated_buffer = ScreenBuffer.scroll_down(buffer, lines)
+    update_active_buffer(emulator, updated_buffer)
+  end
+
+  defp get_active_buffer(emulator) do
+    case emulator.active_buffer_type do
+      :main -> emulator.main_screen_buffer
+      :alternate -> emulator.alternate_screen_buffer
+      _ -> emulator.main_screen_buffer
+    end
+  end
+
+  defp update_active_buffer(emulator, buffer) do
+    case emulator.active_buffer_type do
+      :main -> %{emulator | main_screen_buffer: buffer}
+      :alternate -> %{emulator | alternate_screen_buffer: buffer}
+      _ -> %{emulator | main_screen_buffer: buffer}
+    end
   end
 
   @doc """

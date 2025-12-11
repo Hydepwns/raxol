@@ -71,11 +71,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
 
   # Internal handler for :notify
   # Retrieves interaction_mod from state
-  @spec handle_notify(any(), any(), map()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
   defp handle_notify(interaction_mod, data, state) do
     message = Map.get(data, :message, "Notification")
     title = Map.get(data, :title, "Raxol Notification")
@@ -190,13 +185,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     end
   end
 
-  @spec execute_notification_command(
-          any(),
-          any(),
-          list(),
-          String.t() | atom(),
-          map()
-        ) :: any()
   defp execute_notification_command(
          interaction_mod,
          executable,
@@ -222,13 +210,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     end
   end
 
-  @spec run_notification_command(
-          any(),
-          any(),
-          list(),
-          String.t() | atom(),
-          map()
-        ) :: any()
   defp run_notification_command(
          interaction_mod,
          executable,
@@ -250,21 +231,11 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     )
   end
 
-  @spec handle_command_result(any(), String.t() | atom(), map()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
   defp handle_command_result({_output, 0}, os_name, state) do
     success_atom = get_success_atom_for_os(os_name)
     {:ok, state, success_atom}
   end
 
-  @spec handle_command_result(any(), String.t() | atom(), map()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
   defp handle_command_result({output, exit_code}, _os_name, state) do
     Raxol.Core.Runtime.Log.error(
       "Notification command failed. Exit Code: #{exit_code}, Output: #{output}"

@@ -708,13 +708,18 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
 
   defp handle_timer_effect(true, nil, set_start_time, interval) do
     set_start_time.(System.monotonic_time(:millisecond))
-    timer_ref = :timer.send_interval(interval, self(), :timer_tick)
-    fn -> :timer.cancel(timer_ref) end
+
+    case :timer.send_interval(interval, self(), :timer_tick) do
+      {:ok, timer_ref} -> fn -> :timer.cancel(timer_ref) end
+      {:error, _reason} -> nil
+    end
   end
 
   defp handle_timer_effect(true, _start_time, _set_start_time, interval) do
-    timer_ref = :timer.send_interval(interval, self(), :timer_tick)
-    fn -> :timer.cancel(timer_ref) end
+    case :timer.send_interval(interval, self(), :timer_tick) do
+      {:ok, timer_ref} -> fn -> :timer.cancel(timer_ref) end
+      {:error, _reason} -> nil
+    end
   end
 
   defp handle_timer_tick(nil, _set_elapsed, _duration, _set_is_running) do

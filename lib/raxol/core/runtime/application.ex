@@ -346,12 +346,6 @@ defmodule Raxol.Core.Runtime.Application do
     )
   end
 
-  @spec log_invalid_update_result(
-          module(),
-          String.t() | integer(),
-          String.t(),
-          any()
-        ) :: any()
   defp log_invalid_update_result(
          app_module,
          invalid_return,

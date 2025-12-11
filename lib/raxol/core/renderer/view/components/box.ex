@@ -62,8 +62,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end
   end
 
-  @spec calculate_content_size(map(), {integer(), integer()}) ::
-          {integer(), integer()}
   defp calculate_content_size(box, {width, height}) do
     {padding_left, padding_right, padding_top, padding_bottom} = box.padding
     border_width = if box.border == :none, do: 0, else: 2
@@ -165,8 +163,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end
   end
 
-  @spec apply_box_model(map(), list(map()), {integer(), integer()}) ::
-          list(map())
   defp apply_box_model(box, children_layout, {_width, _height}) do
     {margin_top, margin_right, margin_bottom, margin_left} = box.margin
     {padding_top, padding_right, padding_bottom, padding_left} = box.padding
@@ -192,8 +188,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end
   end
 
-  @spec apply_margins(list(map()), {integer(), integer(), integer(), integer()}) ::
-          list(map())
   defp apply_margins(layout, {top, _right, _bottom, left}) do
     # Apply margins by adjusting the overall box position
     # This affects the box's position relative to its parent
@@ -212,8 +206,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end)
   end
 
-  @spec apply_padding(list(map()), {integer(), integer(), integer(), integer()}) ::
-          list(map())
   defp apply_padding(layout, {top, right, bottom, left}) do
     # Apply padding by adjusting child positions
     Enum.map(layout, fn child ->
@@ -343,13 +335,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
   end
 
   # Helper function to normalize spacing values
-  @spec normalize_spacing(
-          integer()
-          | {integer()}
-          | {integer(), integer()}
-          | {integer(), integer(), integer(), integer()}
-          | term()
-        ) :: {integer(), integer(), integer(), integer()}
   defp normalize_spacing(n) when is_integer(n) and n >= 0, do: {n, n, n, n}
   defp normalize_spacing({n}) when is_integer(n) and n >= 0, do: {n, n, n, n}
 

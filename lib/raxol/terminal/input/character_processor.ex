@@ -445,13 +445,6 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     updated_emulator
   end
 
-  @spec handle_cursor_at_bottom(
-          boolean(),
-          Emulator.t(),
-          integer(),
-          Emulator.t(),
-          integer()
-        ) :: Emulator.t()
   defp handle_cursor_at_bottom(
          true,
          updated_emulator,
@@ -470,8 +463,6 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     handle_character_after_scroll(char_codepoint, scrolled_emulator, emulator)
   end
 
-  @spec handle_character_after_scroll(integer(), Emulator.t(), Emulator.t()) ::
-          Emulator.t()
   defp handle_character_after_scroll(10, scrolled_emulator, _emulator) do
     scrolled_emulator
   end
@@ -567,13 +558,6 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     )
   end
 
-  @spec handle_cursor_scroll_after_write(
-          boolean(),
-          Emulator.t(),
-          integer(),
-          Emulator.t(),
-          integer()
-        ) :: Emulator.t()
   defp handle_cursor_scroll_after_write(
          false,
          updated_emulator,
@@ -614,15 +598,6 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     end
   end
 
-  @spec write_character_if_in_bounds(
-          boolean(),
-          Emulator.t(),
-          integer(),
-          integer(),
-          binary(),
-          map(),
-          integer()
-        ) :: Emulator.t()
   defp write_character_if_in_bounds(
          true,
          emulator,

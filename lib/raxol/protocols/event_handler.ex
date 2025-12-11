@@ -37,10 +37,10 @@ defprotocol Raxol.Protocols.EventHandler do
   """
 
   @type event :: %{
-          type: atom(),
-          target: any(),
-          timestamp: integer(),
-          data: map()
+          :type => atom(),
+          optional(:target) => any(),
+          optional(:timestamp) => integer(),
+          optional(:data) => map()
         }
 
   @type handler_result ::

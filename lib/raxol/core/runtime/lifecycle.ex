@@ -94,11 +94,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
-  @spec initialize_components(module(), keyword()) ::
-          {:ok, atom(), pid(), map(), pid()}
-          | {:error, :registry_table_creation_failed, function()}
-          | {:error, {:plugin_manager_start_failed, term()}, function()}
-          | {:error, {:dispatcher_start_failed, term()}, function()}
   defp initialize_components(app_module, options) do
     with {:ok, registry_table} <- initialize_registry_table(app_module),
          {:ok, pm_pid} <- start_plugin_manager(options),
@@ -116,8 +111,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
-  @spec build_initial_state(module(), keyword(), pid(), atom(), pid(), map()) ::
-          map()
   defp build_initial_state(
          app_module,
          options,
@@ -150,8 +143,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     )
   end
 
-  @spec initialize_registry_table(module()) ::
-          {:ok, atom()} | {:error, :registry_table_creation_failed, function()}
   defp initialize_registry_table(app_module) do
     registry_table_name =
       Module.concat(CommandRegistryTable, Atom.to_string(app_module))
@@ -171,9 +162,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
-  @spec start_plugin_manager(keyword()) ::
-          {:ok, pid()}
-          | {:error, {:plugin_manager_start_failed, term()}, function()}
   defp start_plugin_manager(options) do
     plugin_manager_opts = Keyword.get(options, :plugin_manager_opts, [])
 
@@ -198,9 +186,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     }
   end
 
-  @spec start_dispatcher(module(), map(), keyword(), pid(), atom()) ::
-          {:ok, pid()}
-          | {:error, {:dispatcher_start_failed, term()}, function()}
   defp start_dispatcher(
          app_module,
          initialized_model,
@@ -239,8 +224,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     )
   end
 
-  @spec handle_app_model_initialization(boolean(), module(), map()) ::
-          {:ok, map()}
   defp handle_app_model_initialization(false, app_module, _initial_model_args) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] #{inspect(app_module)}.init/1 not exported. Using empty model."
@@ -529,8 +512,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
-  @spec find_app_by_id(list(), term()) ::
-          {:ok, term()} | {:error, :app_not_found}
   defp find_app_by_id(apps, app_id) do
     case Enum.find(apps, fn {id, _} -> id == app_id end) do
       nil -> {:error, :app_not_found}

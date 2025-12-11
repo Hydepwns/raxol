@@ -253,8 +253,6 @@ defmodule Raxol.Core.CircuitBreaker do
     end
   end
 
-  @spec handle_open_call(any(), map()) ::
-          {:reply, {:error, :circuit_open}, any()}
   defp handle_open_call(_fun, state) do
     # Check if we should transition to half-open
     if should_attempt_reset?(state) do

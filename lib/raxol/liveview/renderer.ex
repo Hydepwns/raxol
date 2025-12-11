@@ -326,8 +326,6 @@ defmodule Raxol.LiveView.Renderer do
     render_based_on_changes(buffer, current_lines, changed_lines, renderer)
   end
 
-  @spec render_based_on_changes(buffer(), list(), list(), t()) ::
-          {String.t(), t()}
   defp render_based_on_changes(buffer, current_lines, changed_lines, renderer)
        when length(changed_lines) > 0 and
               length(changed_lines) > div(length(current_lines), 3) do
@@ -375,8 +373,6 @@ defmodule Raxol.LiveView.Renderer do
   end
 
   # Optimized line rendering using caches
-  @spec line_to_html_optimized(map(), integer(), t()) ::
-          {iodata(), non_neg_integer(), non_neg_integer()}
   defp line_to_html_optimized(line, _line_idx, renderer) do
     cells = line.cells
 
@@ -410,8 +406,6 @@ defmodule Raxol.LiveView.Renderer do
     |> handle_cache_result(cell)
   end
 
-  @spec handle_cache_result({:ok, iodata()} | :error, map()) ::
-          {iodata(), boolean()}
   defp handle_cache_result({:ok, cached_html}, _cell), do: {cached_html, true}
   defp handle_cache_result(:error, cell), do: {generate_cell_html(cell), false}
 
@@ -558,13 +552,9 @@ defmodule Raxol.LiveView.Renderer do
     |> Enum.join(" ")
   end
 
-  @spec add_class_if(list(String.t()), boolean(), String.t()) ::
-          list(String.t())
   defp add_class_if(classes, true, class_name), do: [class_name | classes]
   defp add_class_if(classes, false, _class_name), do: classes
 
-  @spec add_color_class(list(String.t()), atom() | tuple() | nil, String.t()) ::
-          list(String.t())
   defp add_color_class(classes, nil, _prefix), do: classes
 
   defp add_color_class(classes, color, prefix),

@@ -355,7 +355,7 @@ defmodule Raxol.PreCommit.ErrorFormatter do
 
   defp color_text(text, _color, false), do: text
 
-  @type color :: :red | :yellow | :cyan | :green | :white
+  @type color :: :red | :yellow | :cyan | :green | :white | :blue
 
   @spec color_text(String.t(), color(), boolean()) :: String.t()
   defp color_text(text, color, true) do
@@ -364,6 +364,7 @@ defmodule Raxol.PreCommit.ErrorFormatter do
         :red -> "\e[31m"
         :green -> "\e[32m"
         :yellow -> "\e[33m"
+        :blue -> "\e[34m"
         :cyan -> "\e[36m"
         :white -> "\e[37m"
       end

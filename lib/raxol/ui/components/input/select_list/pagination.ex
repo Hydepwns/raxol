@@ -22,20 +22,20 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   """
   @spec update_page_state(SelectList.t(), non_neg_integer()) :: SelectList.t()
   def update_page_state(state, page_num) do
-    visible_items = state.visible_items || 10
+    page_size = state.page_size || 10
     effective_options = get_effective_options(state)
-    max_pages = calculate_max_pages(effective_options, visible_items)
+    max_pages = calculate_max_pages(effective_options, page_size)
 
     # Clamp page number to valid range
     page = min(max(page_num, 0), max_pages - 1)
 
-    # Update selected index to first item on the page
-    new_index = page * visible_items
+    # Update focused index to first item on the page
+    new_index = page * page_size
 
     %{
       state
       | current_page: page,
-        selected_index: new_index,
+        focused_index: new_index,
         scroll_offset: new_index
     }
   end
@@ -46,8 +46,8 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   @spec calculate_total_pages(SelectList.t()) :: non_neg_integer()
   def calculate_total_pages(state) do
     effective_options = get_effective_options(state)
-    visible_items = state.visible_items || 10
-    calculate_max_pages(effective_options, visible_items)
+    page_size = state.page_size || 10
+    calculate_max_pages(effective_options, page_size)
   end
 
   @doc """
@@ -55,8 +55,8 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   """
   @spec get_current_page(SelectList.t()) :: non_neg_integer()
   def get_current_page(state) do
-    visible_items = state.visible_items || 10
-    div(state.selected_index, visible_items)
+    page_size = state.page_size || 10
+    div(state.focused_index, page_size)
   end
 
   @doc """

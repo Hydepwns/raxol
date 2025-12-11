@@ -5,6 +5,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   """
 
   alias Raxol.Core.Runtime.Log
+
   defp validate_columns(columns) when is_integer(columns) and columns < 1 do
     raise ArgumentError, "Grid must have at least 1 column"
   end
@@ -86,9 +87,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     aligned_children
   end
 
-  @spec calculate_column_sizes(integer() | list(), number(), number()) :: [
-          number()
-        ]
   defp calculate_column_sizes(columns, total_width, gap) do
     case columns do
       n when is_integer(n) ->
@@ -113,9 +111,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end)
   end
 
-  @spec calculate_row_sizes(integer() | list(), number(), number()) :: [
-          number()
-        ]
   defp calculate_row_sizes(rows, total_height, gap) do
     case rows do
       n when is_integer(n) ->
@@ -140,12 +135,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end)
   end
 
-  @spec place_children(
-          list(map()),
-          [number()],
-          [number()],
-          {number(), number()}
-        ) :: [map()]
   defp place_children(children, column_sizes, row_sizes, {gap_x, gap_y}) do
     # Separate children with explicit positions from those needing auto-placement
     {positioned_children, auto_children} =
@@ -173,8 +162,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end)
   end
 
-  @spec calculate_cell_bounds([number()], [number()], {number(), number()}) ::
-          map()
   defp calculate_cell_bounds(column_sizes, row_sizes, {gap_x, gap_y}) do
     # Calculate cumulative positions for columns and rows
     column_positions = calculate_cumulative_positions(column_sizes, gap_x)
@@ -195,11 +182,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     |> Map.new()
   end
 
-  @spec calculate_simple_cell_bounds(
-          {number(), number(), number(), number()},
-          integer(),
-          integer()
-        ) :: map()
   defp calculate_simple_cell_bounds(bounds, columns, rows) do
     {x, y, width, height} = bounds
 
@@ -270,17 +252,12 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     |> Enum.filter(&(&1 != nil))
   end
 
-  @spec apply_alignment([map()], [number()], [number()], atom(), atom()) :: [
-          map()
-        ]
   defp apply_alignment(children, column_sizes, row_sizes, align, justify) do
     Enum.map(children, fn child ->
       align_child_in_cell(child, column_sizes, row_sizes, align, justify)
     end)
   end
 
-  @spec align_child_in_cell(map(), [number()], [number()], atom(), atom()) ::
-          map()
   defp align_child_in_cell(child, column_sizes, row_sizes, align, justify) do
     {col, row} = child.grid_position
 
@@ -302,8 +279,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     |> Map.put(:size, {child_width, child_height})
   end
 
-  @spec get_cell_bounds(integer(), integer(), [number()], [number()]) ::
-          {number(), number(), number(), number()}
   defp get_cell_bounds(col, row, column_sizes, row_sizes) do
     col_width = Enum.at(column_sizes, col, 0)
     row_height = Enum.at(row_sizes, row, 0)
@@ -323,8 +298,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end
   end
 
-  @spec calculate_horizontal_alignment(number(), number(), number(), atom()) ::
-          number()
   defp calculate_horizontal_alignment(cell_x, cell_width, child_width, justify) do
     case justify do
       :start -> cell_x
@@ -336,8 +309,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end
   end
 
-  @spec calculate_vertical_alignment(number(), number(), number(), atom()) ::
-          number()
   defp calculate_vertical_alignment(cell_y, cell_height, child_height, align) do
     case align do
       :start -> cell_y
@@ -487,8 +458,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end
   end
 
-  @spec calculate_grid_dimensions(list(), integer(), integer() | nil) ::
-          {integer(), integer()}
   defp calculate_grid_dimensions(children, columns, rows) do
     num_children = length(children)
 

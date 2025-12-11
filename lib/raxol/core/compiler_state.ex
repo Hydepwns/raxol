@@ -158,8 +158,6 @@ defmodule Raxol.Core.CompilerState do
     end
   end
 
-  @spec perform_safe_insert(atom() | :ets.tid(), term()) ::
-          :ok | {:error, term()}
   defp perform_safe_insert(table, data) do
     # Use Task to isolate potential ETS crashes
     task =
@@ -183,8 +181,6 @@ defmodule Raxol.Core.CompilerState do
     end
   end
 
-  @spec perform_safe_delete(atom() | :ets.tid(), term()) ::
-          :ok | {:error, term()}
   defp perform_safe_delete(table, key) do
     # Use Task to isolate potential ETS crashes
     task =

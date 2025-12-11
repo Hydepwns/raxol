@@ -325,8 +325,6 @@ defmodule Raxol.Core.Renderer.Views.Table do
     update_struct_map(table, fn map -> Map.pop(map, key) end)
   end
 
-  @spec update_struct_map(atom(), (term() -> {term(), map()})) ::
-          {term(), map()}
   defp update_struct_map(table, fun) do
     struct_keys = Map.keys(table.__struct__)
 

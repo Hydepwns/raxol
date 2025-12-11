@@ -139,8 +139,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # --- Private Helpers ---
 
   # Functional rendering pipeline replacing try/catch
-  @spec do_render_frame(any(), any(), map()) ::
-          {:ok, map()} | {:error, tuple(), map()}
   defp do_render_frame(model, theme, state) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine executing do_render_frame. Model=#{inspect(model)}, Theme=#{inspect(theme)}, State=#{inspect(state)}"
@@ -235,8 +233,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   # Safe plugin transforms using functional error handling
-  @spec safe_apply_plugin_transforms(any(), map()) ::
-          {:ok, any()} | {:error, tuple()}
   defp safe_apply_plugin_transforms(cells, state) do
     Raxol.Core.ErrorHandling.safe_call(fn ->
       processed_cells = apply_plugin_transforms(cells, state)
@@ -398,8 +394,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     15 => "brightWhite"
   }
 
-  @spec convert_color_to_vscode(Raxol.Terminal.Color.TrueColor.t()) ::
-          String.t()
   defp convert_color_to_vscode(color) when is_integer(color) do
     @terminal_color_map[color] || "default"
   end
@@ -409,8 +403,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     "rgb(#{r},#{g},#{b})"
   end
 
-  @spec convert_color_to_vscode(Raxol.Terminal.Color.TrueColor.t()) ::
-          String.t()
   defp convert_color_to_vscode(color) when is_binary(color), do: color
   defp convert_color_to_vscode(_), do: "default"
 
@@ -485,8 +477,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   # Functional wrapper for dispatcher plugin manager retrieval
-  @spec get_plugin_manager_from_dispatcher(pid()) ::
-          {:ok, any()} | {:error, atom()}
   defp get_plugin_manager_from_dispatcher(dispatcher_pid)
        when is_pid(dispatcher_pid) do
     with {:ok, response} <-
@@ -498,13 +488,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
-  @spec get_plugin_manager_from_dispatcher(any()) ::
-          {:ok, any()} | {:error, atom()}
   defp get_plugin_manager_from_dispatcher(_), do: {:error, :invalid_dispatcher}
 
   # Safe GenServer call wrapper using functional error handling
-  @spec safe_genserver_call(GenServer.server(), any(), timeout()) ::
-          {:ok, any()} | {:error, any()}
   defp safe_genserver_call(pid, message, timeout) do
     Raxol.Core.ErrorHandling.safe_call(fn ->
       GenServer.call(pid, message, timeout)
@@ -526,20 +512,14 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   # Validate plugin manager response
-  @spec validate_plugin_manager_response(any()) ::
-          {:ok, any()} | {:error, any()}
   defp validate_plugin_manager_response({:ok, plugin_manager}) do
     {:ok, plugin_manager}
   end
 
-  @spec validate_plugin_manager_response(any()) ::
-          {:ok, any()} | {:error, any()}
   defp validate_plugin_manager_response({:error, reason}) do
     {:error, reason}
   end
 
-  @spec validate_plugin_manager_response(any()) ::
-          {:ok, any()} | {:error, any()}
   defp validate_plugin_manager_response(_) do
     {:error, :unexpected_response}
   end
@@ -569,8 +549,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   defp execute_plugin_commands(_), do: :ok
 
   # Functional wrapper for dispatcher plugin manager updates
-  @spec update_plugin_manager_in_dispatcher(pid(), any()) ::
-          :ok | {:error, any()}
   defp update_plugin_manager_in_dispatcher(dispatcher_pid, updated_manager)
        when is_pid(dispatcher_pid) do
     case safe_genserver_cast(
@@ -592,14 +570,10 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
-  @spec update_plugin_manager_in_dispatcher(any(), any()) ::
-          :ok | {:error, atom()}
   defp update_plugin_manager_in_dispatcher(_, _),
     do: {:error, :invalid_dispatcher}
 
   # Safe GenServer cast wrapper using functional error handling
-  @spec safe_genserver_cast(pid() | atom(), any()) ::
-          {:ok, :ok} | {:error, any()}
   defp safe_genserver_cast(pid, message) do
     Raxol.Core.ErrorHandling.safe_call(fn ->
       GenServer.cast(pid, message)

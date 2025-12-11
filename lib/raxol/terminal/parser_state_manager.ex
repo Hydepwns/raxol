@@ -69,22 +69,22 @@ defmodule Raxol.Terminal.ParserStateManager do
   end
 
   @doc """
-  Gets the current parser mode.
+  Gets the current parser mode (state).
   Returns the current mode.
   """
   @spec get_mode(map()) :: atom()
   def get_mode(emulator) do
-    emulator.parser_state.mode
+    emulator.parser_state.state
   end
 
   @doc """
-  Sets the parser mode.
+  Sets the parser mode (state).
   Returns the updated emulator.
   """
   @spec set_mode(map(), atom()) :: map()
   def set_mode(emulator, mode) do
     state = get_parser_state(emulator)
-    new_state = %{state | mode: mode}
+    new_state = %{state | state: mode}
     update_parser_state(emulator, new_state)
   end
 
@@ -132,34 +132,34 @@ defmodule Raxol.Terminal.ParserStateManager do
   end
 
   @doc """
-  Gets the current intermediate characters.
-  Returns the list of intermediate characters.
+  Gets the current intermediate characters buffer.
+  Returns the intermediates buffer as a binary string.
   """
-  @spec get_intermediates(map()) :: [char()]
+  @spec get_intermediates(map()) :: binary()
   def get_intermediates(emulator) do
-    emulator.parser_state.intermediates
+    emulator.parser_state.intermediates_buffer
   end
 
   @doc """
-  Sets the intermediate characters.
+  Sets the intermediate characters buffer.
   Returns the updated emulator.
   """
-  @spec set_intermediates(map(), [char()]) :: map()
+  @spec set_intermediates(map(), binary()) :: map()
   def set_intermediates(emulator, intermediates) do
     state = get_parser_state(emulator)
-    new_state = %{state | intermediates: intermediates}
+    new_state = %{state | intermediates_buffer: intermediates}
     update_parser_state(emulator, new_state)
   end
 
   @doc """
-  Adds an intermediate character.
+  Adds an intermediate character to the buffer.
   Returns the updated emulator.
   """
   @spec add_intermediate(map(), char()) :: map()
   def add_intermediate(emulator, char) do
     state = get_parser_state(emulator)
-    new_intermediates = state.intermediates ++ [char]
-    new_state = %{state | intermediates: new_intermediates}
+    new_intermediates = state.intermediates_buffer <> <<char>>
+    new_state = %{state | intermediates_buffer: new_intermediates}
     update_parser_state(emulator, new_state)
   end
 
@@ -170,7 +170,7 @@ defmodule Raxol.Terminal.ParserStateManager do
   @spec clear_intermediates(map()) :: map()
   def clear_intermediates(emulator) do
     state = get_parser_state(emulator)
-    new_state = %{state | intermediates: []}
+    new_state = %{state | intermediates_buffer: ""}
     update_parser_state(emulator, new_state)
   end
 end

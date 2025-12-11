@@ -295,8 +295,6 @@ defmodule Raxol.Terminal.Emulator.Constructors do
 
   # Private functions
 
-  @spec get_pid({:ok, pid()} | {:error, {:already_started, pid()} | term()}) ::
-          pid() | no_return()
   defp get_pid({:ok, pid}), do: pid
   defp get_pid({:error, {:already_started, pid}}), do: pid
 

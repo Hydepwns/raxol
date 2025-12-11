@@ -127,8 +127,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
     Validation.validate_dimension(dimension, default)
   end
 
-  @spec create_empty_grid(non_neg_integer(), non_neg_integer()) ::
-          list(list(Cell.t()))
   defp create_empty_grid(width, height) when width > 0 and height > 0 do
     for _y <- 0..(height - 1) do
       for _x <- 0..(width - 1) do

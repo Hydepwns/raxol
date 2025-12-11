@@ -60,10 +60,12 @@ defmodule Raxol.Core.Utils.TimerManager do
 
       {:ok, cancelled} = TimerManager.cancel_timer(timer_ref)
   """
-  @spec cancel_timer(timer_ref()) :: {:ok, boolean() | :ok}
+  @spec cancel_timer(timer_ref() | {:ok, :timer.tref()}) ::
+          {:ok, boolean() | :ok}
   def cancel_timer(nil), do: {:ok, false}
 
-  def cancel_timer({:ok, ref}) when is_reference(ref) do
+  # Handle {:ok, tref()} from :timer.send_interval - tref is opaque, no guard
+  def cancel_timer({:ok, ref}) do
     case :timer.cancel(ref) do
       {:ok, _} -> {:ok, true}
       {:error, _} -> {:ok, false}
@@ -84,10 +86,11 @@ defmodule Raxol.Core.Utils.TimerManager do
 
       TimerManager.safe_cancel(timer_ref)
   """
-  @spec safe_cancel(timer_ref()) :: :ok
+  @spec safe_cancel(timer_ref() | {:ok, :timer.tref()}) :: :ok
   def safe_cancel(nil), do: :ok
 
-  def safe_cancel({:ok, ref}) when is_reference(ref) do
+  # Handle {:ok, tref()} from :timer.send_interval - tref is opaque, no guard
+  def safe_cancel({:ok, ref}) do
     _ = :timer.cancel(ref)
     :ok
   end
