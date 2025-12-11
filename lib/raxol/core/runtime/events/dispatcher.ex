@@ -66,7 +66,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
     send(runtime_pid, {:plugin_manager_ready, initial_state.plugin_manager})
 
-    send_test_ready_message(Mix.env())
+    _ = send_test_ready_message(Mix.env())
 
     {:ok, state}
   end

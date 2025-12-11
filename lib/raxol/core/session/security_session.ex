@@ -222,7 +222,7 @@ defmodule Raxol.Core.Session.SecuritySession do
         {:error, :invalid_token}
 
       true ->
-        invalidate_session_internal(session_id, sessions_state)
+        _ = invalidate_session_internal(session_id, sessions_state)
         {:error, :session_expired}
     end
   end

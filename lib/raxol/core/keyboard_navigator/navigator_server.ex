@@ -319,7 +319,7 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_cast({:handle_keyboard_event, event}, state) do
-    process_keyboard_event(event, state)
+    _ = process_keyboard_event(event, state)
     {:noreply, state}
   end
 

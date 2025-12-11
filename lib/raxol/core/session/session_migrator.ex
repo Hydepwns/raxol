@@ -172,7 +172,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
     }
 
     # Monitor cluster nodes
-    :net_kernel.monitor_nodes(true)
+    _ = :net_kernel.monitor_nodes(true)
 
     Log.info(
       "SessionMigrator started with failover_mode=#{state.failover_mode}"
@@ -293,10 +293,10 @@ defmodule Raxol.Core.Session.SessionMigrator do
 
     case state.failover_mode do
       :immediate ->
-        spawn(fn -> handle_node_failure(self(), node) end)
+        _ = spawn(fn -> handle_node_failure(self(), node) end)
 
       :graceful ->
-        Process.send_after(self(), {:delayed_failover, node}, 5000)
+        _ = Process.send_after(self(), {:delayed_failover, node}, 5000)
 
       :manual ->
         Log.info(
@@ -312,7 +312,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
   def handle_info({:delayed_failover, node}, state) do
     case Map.get(state.node_health, node) do
       :failed ->
-        spawn(fn -> handle_node_failure(self(), node) end)
+        _ = spawn(fn -> handle_node_failure(self(), node) end)
 
       _ ->
         # Node recovered, no failover needed

@@ -17,7 +17,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
     selected_text = get_selected_text(state)
 
     if selected_text != "" do
-      Clipboard.copy(selected_text)
+      _ = Clipboard.copy(selected_text)
     end
 
     state
@@ -34,7 +34,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
     selected_text = get_selected_text(state)
 
     if selected_text != "" do
-      Clipboard.copy(selected_text)
+      _ = Clipboard.copy(selected_text)
       delete_selection(state)
     else
       state

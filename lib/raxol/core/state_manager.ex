@@ -255,7 +255,7 @@ defmodule Raxol.Core.StateManager do
 
     case strategy do
       :ets ->
-        init_ets_if_needed(opts)
+        _ = init_ets_if_needed(opts)
 
         cond do
           key == nil ->
@@ -295,7 +295,7 @@ defmodule Raxol.Core.StateManager do
 
     case strategy do
       :ets ->
-        init_ets_if_needed(opts)
+        _ = init_ets_if_needed(opts)
         # Handle nested keys specially
         if is_list(key) do
           set_nested_state_ets(key, value, opts)
@@ -334,7 +334,7 @@ defmodule Raxol.Core.StateManager do
 
     case strategy do
       :ets ->
-        init_ets_if_needed(opts)
+        _ = init_ets_if_needed(opts)
         current = get_state(key, opts)
         new_value = update_fn.(current)
         set_state(key, new_value, opts)
@@ -364,7 +364,7 @@ defmodule Raxol.Core.StateManager do
 
     case strategy do
       :ets ->
-        init_ets_if_needed(opts)
+        _ = init_ets_if_needed(opts)
 
         if is_list(key) do
           delete_nested_key_from_ets(key, opts)
@@ -475,7 +475,7 @@ defmodule Raxol.Core.StateManager do
 
   defp start_managed_ets(state_id, initial_state, opts) do
     if ets_enabled?() do
-      init_ets_if_needed(opts)
+      _ = init_ets_if_needed(opts)
       set_state_ets(state_id, initial_state, opts)
       {:ok, state_id}
     else
@@ -751,7 +751,7 @@ defmodule Raxol.Core.StateManager do
   Gets the current version number.
   """
   def get_version(opts \\ []) do
-    init_ets_if_needed(opts)
+    _ = init_ets_if_needed(opts)
     table = table_name_from_opts(opts)
 
     case :ets.lookup(table, :__version__) do
@@ -769,7 +769,7 @@ defmodule Raxol.Core.StateManager do
   Increments the version number.
   """
   def increment_version(opts \\ []) do
-    init_ets_if_needed(opts)
+    _ = init_ets_if_needed(opts)
     table = table_name_from_opts(opts)
     :ets.update_counter(table, :__version__, 1, {:__version__, 0})
   end
@@ -779,7 +779,7 @@ defmodule Raxol.Core.StateManager do
   Gets memory usage statistics.
   """
   def get_memory_usage(opts \\ []) do
-    init_ets_if_needed(opts)
+    _ = init_ets_if_needed(opts)
     table = table_name_from_opts(opts)
 
     case :ets.info(table) do
