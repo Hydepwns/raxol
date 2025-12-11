@@ -257,30 +257,24 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
 
   # Private helpers
 
-  @spec ensure_monitored(String.t() | integer(), map()) :: any()
   defp ensure_monitored(pid, state) do
     ensure_monitoring(Map.has_key?(state.monitors, pid), pid, state)
   end
 
-  @spec ensure_monitoring(any(), String.t() | integer(), map()) :: any()
   defp ensure_monitoring(true, _pid, state), do: state
 
-  @spec ensure_monitoring(any(), String.t() | integer(), map()) :: any()
   defp ensure_monitoring(false, pid, state) do
     ref = Process.monitor(pid)
     %{state | monitors: Map.put(state.monitors, pid, ref)}
   end
 
-  @spec expired?(any(), any()) :: boolean()
   defp expired?(_timestamp, :infinity), do: false
 
-  @spec expired?(any(), any()) :: boolean()
   defp expired?(timestamp, ttl) do
     now = System.monotonic_time(:millisecond)
     now - timestamp > ttl
   end
 
-  @spec maybe_evict_entries(any(), String.t() | integer(), any()) :: any()
   defp maybe_evict_entries(cache, pid, max_entries) do
     # Count entries for this process
     process_entries =
@@ -340,15 +334,12 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
     {:reply, {:ok, value}, %{state | hits: state.hits + 1}}
   end
 
-  @spec calculate_hit_rate(any(), any(), any()) :: any()
   defp calculate_hit_rate(true, hits, misses) do
     hits / (hits + misses) * 100
   end
 
-  @spec calculate_hit_rate(any(), any(), any()) :: any()
   defp calculate_hit_rate(false, _hits, _misses), do: 0.0
 
-  @spec cleanup_expired_entries(any(), any(), any()) :: any()
   defp cleanup_expired_entries(true, cache, ttl) do
     cache
     |> Enum.reject(fn {_, {_, timestamp}} ->
@@ -357,7 +348,6 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
     |> Enum.into(%{})
   end
 
-  @spec cleanup_expired_entries(any(), any(), any()) :: any()
   defp cleanup_expired_entries(false, cache, _ttl), do: cache
 
   @spec handle_eviction(any(), any(), String.t() | integer(), any(), any()) ::

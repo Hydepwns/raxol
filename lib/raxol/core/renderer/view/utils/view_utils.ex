@@ -230,30 +230,24 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     |> apply_background(bg)
   end
 
-  @spec apply_foreground(any(), any()) :: any()
   defp apply_foreground(text, nil), do: text
 
-  @spec apply_foreground(any(), Raxol.Terminal.Color.TrueColor.t()) :: any()
   defp apply_foreground(text, color) when is_atom(color) do
     code = color_to_code(color)
     "\e[38;5;#{code}m#{text}\e[39m"
   end
 
-  @spec apply_foreground(any(), any()) :: any()
   defp apply_foreground(text, {r, g, b}) do
     "\e[38;2;#{r};#{g};#{b}m#{text}\e[39m"
   end
 
-  @spec apply_background(any(), any()) :: any()
   defp apply_background(text, nil), do: text
 
-  @spec apply_background(any(), Raxol.Terminal.Color.TrueColor.t()) :: any()
   defp apply_background(text, color) when is_atom(color) do
     code = color_to_code(color)
     "\e[48;5;#{code}m#{text}\e[49m"
   end
 
-  @spec apply_background(any(), any()) :: any()
   defp apply_background(text, {r, g, b}) do
     "\e[48;2;#{r};#{g};#{b}m#{text}\e[49m"
   end
@@ -299,19 +293,16 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     {width, height}
   end
 
-  @spec get_minimum_size(any()) :: any() | nil
   defp get_minimum_size(_view) do
     # Calculate minimum size based on content and constraints
     {0, 0}
   end
 
-  @spec get_maximum_size(any()) :: any() | nil
   defp get_maximum_size(_view) do
     # Calculate maximum size based on content and constraints
     {nil, nil}
   end
 
-  @spec calculate_dimension(any(), any(), any()) :: any()
   defp calculate_dimension(min, max, available) do
     case {min, max, available} do
       {min, _max, available} when not is_nil(min) and available < min -> min

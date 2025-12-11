@@ -58,7 +58,6 @@ defmodule Raxol.Core.Runtime.Events.Handler do
     execute_handlers_in_order(handlers, event, state)
   end
 
-  @spec get_relevant_handlers(any()) :: any() | nil
   defp get_relevant_handlers(event) do
     get_all_handlers()
     |> Enum.filter(fn handler ->
@@ -67,7 +66,6 @@ defmodule Raxol.Core.Runtime.Events.Handler do
     |> Enum.sort_by(fn handler -> handler.priority end)
   end
 
-  @spec execute_handlers_in_order(any(), any(), map()) :: any()
   defp execute_handlers_in_order(handlers, event, state) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            reduce_handlers_safely(handlers, event, state)
@@ -81,7 +79,6 @@ defmodule Raxol.Core.Runtime.Events.Handler do
     end
   end
 
-  @spec execute_single_handler(any(), any()) :: any()
   defp execute_single_handler(handler, {current_event, current_state}) do
     case handler.handler_fun.(current_event, current_state) do
       {:ok, new_event, new_state} ->
@@ -105,7 +102,6 @@ defmodule Raxol.Core.Runtime.Events.Handler do
     end
   end
 
-  @spec log_handler_error(any(), any(), map(), any()) :: any()
   defp log_handler_error(error, event, state, stacktrace) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            Raxol.Core.Runtime.Log.error_with_stacktrace(
@@ -126,7 +122,6 @@ defmodule Raxol.Core.Runtime.Events.Handler do
     end
   end
 
-  @spec put_handler(String.t() | integer(), any()) :: any()
   defp put_handler(id, handler) do
     # Create a simple module and function name for EventManager registration
     # Since EventManager expects (event_type, module, function), we'll register
@@ -195,7 +190,6 @@ defmodule Raxol.Core.Runtime.Events.Handler do
     |> Enum.map(fn {{_key, id}, handler} -> {id, handler} end)
   end
 
-  @spec get_handler(String.t() | integer()) :: any() | nil
   defp get_handler(id) do
     case ProcessStore.get({:handler_config, id}) do
       nil -> nil
@@ -203,7 +197,6 @@ defmodule Raxol.Core.Runtime.Events.Handler do
     end
   end
 
-  @spec remove_handler(String.t() | integer()) :: any()
   defp remove_handler(id) do
     case ProcessStore.get({:handler_config, id}) do
       nil ->

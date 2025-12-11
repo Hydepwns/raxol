@@ -123,7 +123,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
     }
   end
 
-  @spec validate_dimension(integer(), non_neg_integer()) :: non_neg_integer()
   defp validate_dimension(dimension, default) do
     Validation.validate_dimension(dimension, default)
   end

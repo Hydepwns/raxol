@@ -144,7 +144,6 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     {:ok, plugin_id}
   end
 
-  @spec validate_plugin_id(any()) :: {:ok, any()} | {:error, any()}
   defp validate_plugin_id(_) do
     {:error, "Plugin ID must be a string or atom"}
   end
@@ -161,12 +160,9 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     {:ok, plugin_id}
   end
 
-  @spec validate_config(map()) :: {:ok, any()} | {:error, any()}
   defp validate_config(config) when is_map(config), do: {:ok, config}
-  @spec validate_config(any()) :: {:ok, any()} | {:error, any()}
   defp validate_config(_), do: {:error, "Config must be a map"}
 
-  @spec check_plugin_not_loaded(String.t() | integer(), map()) :: any()
   defp check_plugin_not_loaded(plugin_id, state) do
     do_check_plugin_not_loaded(
       Map.has_key?(state.plugins, plugin_id),
@@ -174,17 +170,14 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     )
   end
 
-  @spec do_check_plugin_not_loaded(any(), String.t() | integer()) :: any()
   defp do_check_plugin_not_loaded(true, plugin_id) do
     {:error, "Plugin already loaded: #{plugin_id}"}
   end
 
-  @spec do_check_plugin_not_loaded(any(), String.t() | integer()) :: any()
   defp do_check_plugin_not_loaded(false, plugin_id) do
     {:ok, plugin_id}
   end
 
-  @spec do_load_plugin(String.t() | integer(), map(), map()) :: any()
   defp do_load_plugin(plugin_module, config, state)
        when is_atom(plugin_module) do
     # Call the plugin's init function safely
@@ -246,7 +239,6 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     end
   end
 
-  @spec load_plugin_module(String.t() | integer()) :: any()
   defp load_plugin_module(plugin_id) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            # Placeholder for actual module loading
@@ -257,22 +249,18 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     end
   end
 
-  @spec stop_plugin_processes(any(), map()) :: any()
   defp stop_plugin_processes(plugin, _state) do
     # Stop any running processes for the plugin
     stop_plugin_process_if_exists(Map.get(plugin, :pid))
     :ok
   end
 
-  @spec stop_plugin_process_if_exists(any()) :: any()
   defp stop_plugin_process_if_exists(nil), do: :ok
 
-  @spec stop_plugin_process_if_exists(String.t() | integer()) :: any()
   defp stop_plugin_process_if_exists(pid) do
     Process.exit(pid, :shutdown)
   end
 
-  @spec remove_plugin_from_state(String.t() | integer(), map()) :: any()
   defp remove_plugin_from_state(plugin_id, state) do
     %{
       state
@@ -281,14 +269,12 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     }
   end
 
-  @spec cleanup_plugin_resources(String.t() | integer()) :: any()
   defp cleanup_plugin_resources(plugin_id) do
     Log.info("Cleaning up resources for plugin: #{plugin_id}")
     # Clean up any resources (files, connections, etc.)
     :ok
   end
 
-  @spec backup_plugin_state(String.t() | integer(), map()) :: any()
   defp backup_plugin_state(plugin_id, state) do
     %{
       plugin: Map.get(state.plugins, plugin_id),
@@ -297,7 +283,6 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     }
   end
 
-  @spec restore_plugin_state(String.t() | integer(), any(), map()) :: any()
   defp restore_plugin_state(plugin_id, backup, state) do
     restored_state =
       state
@@ -308,10 +293,8 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     {:ok, restored_state}
   end
 
-  @spec maybe_restore_plugin(map(), String.t() | integer(), any()) :: any()
   defp maybe_restore_plugin(state, _plugin_id, nil), do: state
 
-  @spec maybe_restore_plugin(map(), String.t() | integer(), any()) :: any()
   defp maybe_restore_plugin(state, plugin_id, plugin) do
     put_in(state.plugins[plugin_id], plugin)
   end
@@ -326,10 +309,8 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     put_in(state.plugin_states[plugin_id], plugin_state)
   end
 
-  @spec maybe_restore_metadata(map(), String.t() | integer(), any()) :: any()
   defp maybe_restore_metadata(state, _plugin_id, nil), do: state
 
-  @spec maybe_restore_metadata(map(), String.t() | integer(), any()) :: any()
   defp maybe_restore_metadata(state, plugin_id, metadata) do
     put_in(state.metadata[plugin_id], metadata)
   end
@@ -358,19 +339,15 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     error(:validation, "Invalid operations", %{errors: errors})
   end
 
-  @spec validate_operation(any()) :: {:ok, any()} | {:error, any()}
   defp validate_operation({:load, plugin_id, _config})
        when is_binary(plugin_id),
        do: {:ok, :valid}
 
-  @spec validate_operation(any()) :: {:ok, any()} | {:error, any()}
   defp validate_operation({:unload, plugin_id}) when is_binary(plugin_id),
     do: {:ok, :valid}
 
-  @spec validate_operation(any()) :: {:ok, any()} | {:error, any()}
   defp validate_operation(_), do: {:error, "Invalid operation format"}
 
-  @spec execute_with_rollback(any(), any(), map()) :: any()
   defp execute_with_rollback(operations, _original_operations, initial_state) do
     {final_state, _executed} =
       Enum.reduce_while(operations, {initial_state, []}, fn op, {state, done} ->
@@ -393,17 +370,14 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     end
   end
 
-  @spec execute_operation(any(), map()) :: any()
   defp execute_operation({:load, plugin_id, config}, state) do
     safe_load_plugin(plugin_id, config, state)
   end
 
-  @spec execute_operation(any(), map()) :: any()
   defp execute_operation({:unload, plugin_id}, state) do
     safe_unload_plugin(plugin_id, state)
   end
 
-  @spec rollback_operations(any(), map()) :: any()
   defp rollback_operations(operations, initial_state) do
     Enum.reduce(operations, initial_state, fn op, state ->
       case rollback_operation(op, state) do
@@ -413,20 +387,17 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     end)
   end
 
-  @spec rollback_operation(any(), map()) :: any()
   defp rollback_operation({:load, plugin_id, _config}, state) do
     # Rollback load by unloading
     safe_unload_plugin(plugin_id, state)
   end
 
-  @spec rollback_operation(any(), map()) :: any()
   defp rollback_operation({:unload, _plugin_id}, state) do
     # Rollback unload by reloading (if we have the backup)
     # This is simplified - in reality we'd need the original config
     {:ok, state}
   end
 
-  @spec verify_state_consistency(map()) :: any()
   defp verify_state_consistency(state) do
     # Verify that the state is internally consistent
     inconsistencies =
@@ -441,15 +412,12 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     handle_consistency_check(inconsistencies, state)
   end
 
-  @spec check_plugin_consistency(String.t() | integer(), map(), any()) :: any()
   defp check_plugin_consistency(plugin_id, state, acc) do
     do_check_consistency(Map.has_key?(state.plugins, plugin_id), plugin_id, acc)
   end
 
-  @spec do_check_consistency(any(), String.t() | integer(), any()) :: any()
   defp do_check_consistency(true, _plugin_id, acc), do: acc
 
-  @spec do_check_consistency(any(), String.t() | integer(), any()) :: any()
   defp do_check_consistency(false, plugin_id, acc) do
     ["Plugin #{plugin_id} in load_order but not in plugins map" | acc]
   end

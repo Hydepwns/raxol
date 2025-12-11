@@ -235,7 +235,6 @@ defmodule Raxol.Core.Metrics.Aggregator do
     }
   end
 
-  @spec aggregate_metrics(any(), any()) :: any()
   defp aggregate_metrics(metrics, rule) do
     metrics
     |> group_metrics(rule.group_by)
@@ -254,12 +253,10 @@ defmodule Raxol.Core.Metrics.Aggregator do
     end)
   end
 
-  @spec group_metrics(any(), any()) :: any()
   defp group_metrics(metrics, []) do
     [{"all", metrics}]
   end
 
-  @spec group_metrics(any(), any()) :: any()
   defp group_metrics(metrics, group_by) do
     metrics
     |> Enum.group_by(fn metric ->
@@ -270,7 +267,6 @@ defmodule Raxol.Core.Metrics.Aggregator do
     end)
   end
 
-  @spec update_all_aggregations(map()) :: any()
   defp update_all_aggregations(state) do
     Enum.reduce(state.rules, state, fn {rule_id, rule}, acc_state ->
       metrics = MetricsCollector.get_metrics(rule.metric_name, rule.tags)

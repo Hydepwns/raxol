@@ -661,7 +661,6 @@ defmodule Raxol.Core.Session.SessionManager do
 
   ## Private Functions
 
-  @spec init_security_storage(map()) :: any()
   defp init_security_storage(config) do
     # Initialize ETS tables for security sessions (safe creation)
     _ =
@@ -685,7 +684,6 @@ defmodule Raxol.Core.Session.SessionManager do
     }
   end
 
-  @spec schedule_cleanup(any()) :: any()
   defp schedule_cleanup(interval) do
     Process.send_after(self(), :cleanup_timer, interval)
   end

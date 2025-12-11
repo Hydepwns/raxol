@@ -291,7 +291,6 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
     end
   end
 
-  @spec filter_and_map_entries(any(), any(), any()) :: any()
   defp filter_and_map_entries(entries, type, tags) do
     filtered =
       case tags do

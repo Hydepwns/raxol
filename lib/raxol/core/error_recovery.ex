@@ -258,7 +258,6 @@ defmodule Raxol.Core.ErrorRecovery do
 
   # Private functions
 
-  @spec check_circuit(String.t() | atom()) :: any()
   defp check_circuit(name) do
     GenServer.call(__MODULE__, {:check_circuit, name})
   end
@@ -291,7 +290,6 @@ defmodule Raxol.Core.ErrorRecovery do
     end
   end
 
-  @spec get_or_create_circuit(any(), String.t() | atom()) :: any() | nil
   defp get_or_create_circuit(circuits, name) do
     Map.get(circuits, name, %CircuitBreaker{
       name: name,
@@ -305,7 +303,6 @@ defmodule Raxol.Core.ErrorRecovery do
     })
   end
 
-  @spec record_circuit_success(any()) :: any()
   defp record_circuit_success(circuit) do
     case circuit.state do
       :half_open ->
@@ -322,7 +319,6 @@ defmodule Raxol.Core.ErrorRecovery do
     end
   end
 
-  @spec record_circuit_failure(any()) :: any()
   defp record_circuit_failure(circuit) do
     new_failure_count = circuit.failure_count + 1
 
@@ -340,14 +336,12 @@ defmodule Raxol.Core.ErrorRecovery do
     end
   end
 
-  @spec do_retry(any(), any(), any(), any(), any(), any()) :: any()
   defp do_retry(_fun, attempt, max_retries, _base_delay, _max_delay, _jitter)
        when attempt >= max_retries do
     {:error, :max_retries_exceeded, "Maximum retry attempts exceeded",
      %{attempts: attempt}}
   end
 
-  @spec do_retry(any(), any(), any(), any(), any(), any()) :: any()
   defp do_retry(fun, attempt, max_retries, base_delay, max_delay, jitter) do
     case safe_execute(fun) do
       {:ok, result} ->
@@ -360,19 +354,16 @@ defmodule Raxol.Core.ErrorRecovery do
     end
   end
 
-  @spec calculate_backoff_delay(any(), any(), any(), any()) :: any()
   defp calculate_backoff_delay(attempt, base_delay, max_delay, true) do
     delay = min(base_delay * :math.pow(2, attempt), max_delay) |> round()
     jitter_amount = round(delay * 0.1 * :rand.uniform())
     delay + jitter_amount
   end
 
-  @spec calculate_backoff_delay(any(), any(), any(), any()) :: any()
   defp calculate_backoff_delay(attempt, base_delay, max_delay, false) do
     min(base_delay * :math.pow(2, attempt), max_delay) |> round()
   end
 
-  @spec safe_execute(any()) :: any()
   defp safe_execute(fun) when is_function(fun, 0) do
     # Use Task.Supervisor to isolate crashes
     task_result =
@@ -417,7 +408,6 @@ defmodule Raxol.Core.ErrorRecovery do
     task_result
   end
 
-  @spec safe_execute_with_arg(any(), any()) :: any()
   defp safe_execute_with_arg(fun, arg) when is_function(fun, 1) do
     task_result =
       try do
@@ -460,7 +450,6 @@ defmodule Raxol.Core.ErrorRecovery do
     task_result
   end
 
-  @spec safe_cleanup(any(), any()) :: any()
   defp safe_cleanup(cleanup_fun, resource) do
     task_result =
       try do
@@ -512,21 +501,14 @@ defmodule Raxol.Core.ErrorRecovery do
     task_result
   end
 
-  @spec format_error(any()) :: String.t()
   defp format_error(reason) when is_binary(reason), do: reason
-  @spec format_error(any()) :: String.t()
   defp format_error(%{message: msg}), do: msg
-  @spec format_error(any()) :: String.t()
   defp format_error(reason), do: inspect(reason)
 
-  @spec checkout_from_pool(any(), timeout()) :: any()
   defp checkout_from_pool(nil, _timeout), do: {:error, :timeout}
-  @spec checkout_from_pool(String.t() | atom(), any()) :: any()
   defp checkout_from_pool(_pool_name, 0), do: {:error, :timeout}
-  @spec checkout_from_pool(String.t() | atom(), timeout()) :: any()
   defp checkout_from_pool(_pool_name, _timeout), do: {:ok, :mock_worker}
 
-  @spec checkin_to_pool(String.t() | atom(), any()) :: any()
   defp checkin_to_pool(_pool_name, _worker) do
     :ok
   end

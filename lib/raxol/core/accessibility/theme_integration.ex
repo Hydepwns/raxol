@@ -200,7 +200,6 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     :ok
   end
 
-  @spec pref_key(term()) :: String.t()
   defp pref_key(key), do: "accessibility.#{key}"
 
   @doc """
@@ -338,21 +337,15 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     end
   end
 
-  @spec determine_accessibility_mode(any()) :: any()
   defp determine_accessibility_mode(true), do: :high_contrast
-  @spec determine_accessibility_mode(any()) :: any()
   defp determine_accessibility_mode(false), do: :standard
 
-  @spec apply_theme_adjustments(any(), any(), any()) :: any()
   defp apply_theme_adjustments(true, theme, _mode) do
     Theme.adjust_for_high_contrast(theme)
   end
 
-  @spec apply_theme_adjustments(any(), any(), any()) :: any()
   defp apply_theme_adjustments(false, theme, _mode), do: theme
 
-  @spec get_text_scale_factor(any()) :: any() | nil
   defp get_text_scale_factor(true), do: 1.5
-  @spec get_text_scale_factor(any()) :: any() | nil
   defp get_text_scale_factor(false), do: 1.0
 end

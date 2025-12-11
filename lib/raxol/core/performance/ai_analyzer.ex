@@ -85,7 +85,6 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     }
   end
 
-  @spec generate_report_content(any(), any()) :: any()
   defp generate_report_content(analysis, options) do
     format = Map.get(options, :format, :text)
 
@@ -161,7 +160,6 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     end
   end
 
-  @spec format_recommendations(any()) :: String.t()
   defp format_recommendations(recommendations) do
     Enum.map_join(recommendations, "\n", fn rec ->
       """
@@ -173,7 +171,6 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     end)
   end
 
-  @spec format_recommendations_html(any()) :: String.t()
   defp format_recommendations_html(recommendations) do
     Enum.map_join(recommendations, "\n", fn rec ->
       """
@@ -187,7 +184,6 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     end)
   end
 
-  @spec format_risk_assessment(any()) :: String.t()
   defp format_risk_assessment(risk) do
     """
     Overall Risk: #{risk.overall_risk}
@@ -200,7 +196,6 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     """
   end
 
-  @spec format_risk_assessment_html(any()) :: String.t()
   defp format_risk_assessment_html(risk) do
     """
     <p><strong>Overall Risk:</strong> <span class="#{risk.overall_risk}">#{risk.overall_risk}</span></p>
@@ -217,12 +212,10 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     """
   end
 
-  @spec format_impact(any()) :: String.t()
   defp format_impact(impact) do
     Enum.map_join(impact, "\n", fn {area, value} -> "#{area}: #{value}" end)
   end
 
-  @spec format_impact_html(any()) :: String.t()
   defp format_impact_html(impact) do
     """
     <ul>

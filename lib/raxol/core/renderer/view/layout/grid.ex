@@ -5,12 +5,10 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   """
 
   alias Raxol.Core.Runtime.Log
-  @spec validate_columns(term()) :: :ok
   defp validate_columns(columns) when is_integer(columns) and columns < 1 do
     raise ArgumentError, "Grid must have at least 1 column"
   end
 
-  @spec validate_columns(term()) :: :ok
   defp validate_columns(_), do: :ok
 
   @doc """
@@ -101,13 +99,11 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end
   end
 
-  @spec calculate_equal_columns(integer(), number(), number()) :: [number()]
   defp calculate_equal_columns(n, total_width, gap) do
     column_width = (total_width - gap * (n - 1)) / n
     List.duplicate(column_width, n)
   end
 
-  @spec calculate_custom_columns([number()], number(), number()) :: [number()]
   defp calculate_custom_columns(sizes, total_width, gap) do
     total_units = Enum.sum(sizes)
     gap_space = gap * (length(sizes) - 1)
@@ -130,13 +126,11 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end
   end
 
-  @spec calculate_equal_rows(integer(), number(), number()) :: [number()]
   defp calculate_equal_rows(n, total_height, gap) do
     row_height = (total_height - gap * (n - 1)) / n
     List.duplicate(row_height, n)
   end
 
-  @spec calculate_custom_rows([number()], number(), number()) :: [number()]
   defp calculate_custom_rows(sizes, total_height, gap) do
     total_units = Enum.sum(sizes)
     gap_space = gap * (length(sizes) - 1)
@@ -173,7 +167,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     final_result
   end
 
-  @spec separate_children_by_position(list(map())) :: {[map()], [map()]}
   defp separate_children_by_position(children) do
     Enum.split_with(children, fn child ->
       Map.has_key?(child, :grid_position)
@@ -225,7 +218,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     |> Map.new()
   end
 
-  @spec calculate_cumulative_positions([number()], number()) :: [number()]
   defp calculate_cumulative_positions(sizes, gap) do
     Enum.reduce(sizes, {[], 0}, fn size, {acc, pos} ->
       {[pos | acc], pos + size + gap}
@@ -234,7 +226,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     |> Enum.reverse()
   end
 
-  @spec position_explicit_children([map()], map()) :: [map()]
   defp position_explicit_children(children, cell_bounds) do
     Enum.map(children, fn child ->
       {col, row} = child.grid_position
@@ -254,7 +245,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end)
   end
 
-  @spec auto_place_children([map()], map(), [map()]) :: [map()]
   defp auto_place_children(children, cell_bounds, existing_children) do
     # Get all available positions
     all_positions = Map.keys(cell_bounds)
@@ -274,7 +264,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end)
   end
 
-  @spec get_used_positions([map()]) :: [term()]
   defp get_used_positions(children) do
     children
     |> Enum.map(&Map.get(&1, :grid_position))
@@ -326,7 +315,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     {col_x, row_y, col_width, row_height}
   end
 
-  @spec get_child_size(map()) :: {number(), number()}
   defp get_child_size(child) do
     case Map.get(child, :size) do
       {width, height} -> {width, height}
@@ -441,7 +429,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end
   end
 
-  @spec validate_children_structure(term()) :: :ok | {:error, String.t()}
   defp validate_children_structure(children) when is_list(children) do
     invalid_children = Enum.filter(children, &(!valid_child_structure?(&1)))
 
@@ -454,15 +441,12 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end
   end
 
-  @spec validate_children_structure(term()) :: :ok | {:error, String.t()}
   defp validate_children_structure(_), do: {:error, "Children must be a list"}
 
-  @spec valid_child_structure?(term()) :: boolean()
   defp valid_child_structure?(child) do
     is_map(child) and Map.has_key?(child, :type)
   end
 
-  @spec validate_grid_positions([map()]) :: :ok | {:error, String.t()}
   defp validate_grid_positions(children) do
     invalid_positions =
       children
@@ -483,15 +467,12 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end
   end
 
-  @spec valid_position?(term(), term()) :: boolean()
   defp valid_position?(col, row) when is_integer(col) and is_integer(row) do
     col >= 0 and row >= 0
   end
 
-  @spec valid_position?(term(), term()) :: boolean()
   defp valid_position?(_, _), do: false
 
-  @spec validate_no_duplicate_positions([map()]) :: :ok | {:error, String.t()}
   defp validate_no_duplicate_positions(children) do
     positions =
       children

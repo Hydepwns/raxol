@@ -107,7 +107,6 @@ defmodule Raxol.Core.Renderer.View.Style.Border do
     List.duplicate(line, height)
   end
 
-  @spec build_bottom_border(any(), String.t() | integer()) :: any()
   defp build_bottom_border(chars, width) do
     chars.bottom_left <>
       String.duplicate(chars.horizontal, width - 2) <>

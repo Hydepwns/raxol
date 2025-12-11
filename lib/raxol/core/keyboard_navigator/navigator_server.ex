@@ -325,7 +325,6 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
 
   # Private Helper Functions
 
-  @spec process_keyboard_event(any(), map()) :: any()
   defp process_keyboard_event({:keyboard, key_data}, state)
        when is_map(key_data) do
     config = state.config
@@ -362,7 +361,6 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
-  @spec process_keyboard_event(any(), map()) :: any()
   defp process_keyboard_event(_event, _state), do: :ok
 
   @spec handle_next_navigation(map()) ::
@@ -418,9 +416,7 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
-  @spec focus_if_present(any()) :: any()
   defp focus_if_present(nil), do: :ok
-  @spec focus_if_present(String.t() | integer()) :: any()
   defp focus_if_present(component_id), do: FocusManager.set_focus(component_id)
 
   @spec handle_vim_navigation(any(), map()) ::
@@ -445,10 +441,8 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     dispatch_activation_if_focused(current_focus)
   end
 
-  @spec dispatch_activation_if_focused(any()) :: any()
   defp dispatch_activation_if_focused(nil), do: :ok
 
-  @spec dispatch_activation_if_focused(any()) :: any()
   defp dispatch_activation_if_focused(current_focus) do
     EventManager.dispatch({:activate, %{component_id: current_focus}})
   end
@@ -471,7 +465,6 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
-  @spec find_spatial_neighbor(String.t() | integer(), any(), map()) :: any()
   defp find_spatial_neighbor(current_id, direction, state) do
     # Check explicit navigation paths first
     case get_in(state.navigation_paths, [current_id, direction]) do
@@ -508,7 +501,6 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
-  @spec in_direction?(any(), any(), any()) :: boolean()
   defp in_direction?(from, to, direction) do
     case direction do
       :up -> to.center_y < from.center_y
@@ -518,7 +510,6 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
-  @spec distance(any(), any()) :: any()
   defp distance(pos1, pos2) do
     dx = pos1.center_x - pos2.center_x
     dy = pos1.center_y - pos2.center_y
@@ -527,7 +518,6 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
 
   # Helper functions for if statement elimination
 
-  @spec add_component_to_group(String.t() | integer(), any()) :: any()
   defp add_component_to_group(component_id, group_members) do
     case component_id in group_members do
       true -> group_members
@@ -535,12 +525,10 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
-  @spec update_group_members(any(), String.t() | atom(), any()) :: any()
   defp update_group_members(groups, group_name, []) do
     Map.delete(groups, group_name)
   end
 
-  @spec update_group_members(any(), String.t() | atom(), any()) :: any()
   defp update_group_members(groups, group_name, updated_members) do
     Map.put(groups, group_name, updated_members)
   end
@@ -571,7 +559,6 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
-  @spec handle_activation_key(any(), any()) :: :ok
   defp handle_activation_key(key, activate_keys) do
     case key in activate_keys do
       true -> handle_activation()

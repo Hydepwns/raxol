@@ -166,7 +166,6 @@ defmodule Raxol.Core.ErrorHandlingStandard do
     do_retry(fun, max_attempts, initial_delay, max_delay, jitter, 1)
   end
 
-  @spec do_retry(any(), any(), any(), any(), any(), any()) :: any()
   defp do_retry(fun, max_attempts, delay, max_delay, jitter, attempt) do
     case fun.() do
       {:ok, _} = success ->
@@ -190,13 +189,11 @@ defmodule Raxol.Core.ErrorHandlingStandard do
     end
   end
 
-  @spec calculate_delay(any(), any(), any()) :: any()
   defp calculate_delay(base_delay, max_delay, true) do
     jitter = :rand.uniform(div(base_delay, 2))
     min(base_delay + jitter, max_delay)
   end
 
-  @spec calculate_delay(any(), any(), any()) :: any()
   defp calculate_delay(base_delay, max_delay, false) do
     min(base_delay, max_delay)
   end

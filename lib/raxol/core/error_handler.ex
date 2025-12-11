@@ -90,7 +90,6 @@ defmodule Raxol.Core.ErrorHandler do
     )
   end
 
-  @spec do_execute(any(), any(), any(), any(), any(), any(), any()) :: any()
   defp do_execute(
          operation,
          fun,
@@ -366,7 +365,6 @@ defmodule Raxol.Core.ErrorHandler do
     end)
   end
 
-  @spec execute_step(String.t() | atom(), any(), any()) :: any()
   defp execute_step(name, fun, input) do
     with_error_handling(name) do
       fun.(input)
@@ -375,7 +373,6 @@ defmodule Raxol.Core.ErrorHandler do
 
   # Private helper functions
 
-  @spec format_error_message(any()) :: String.t()
   defp format_error_message(error) do
     case error do
       %{message: msg} -> msg
@@ -384,30 +381,23 @@ defmodule Raxol.Core.ErrorHandler do
     end
   end
 
-  @spec format_log_message(any(), any()) :: String.t()
   defp format_log_message(operation, error) do
     "[#{operation}] #{format_error_message(error)}"
   end
 
-  @spec classify_error(any()) :: any()
   defp classify_error(%ArgumentError{}), do: :validation
-  @spec classify_error(any()) :: any()
   defp classify_error(%RuntimeError{}), do: :runtime
-  @spec classify_error(any()) :: any()
   defp classify_error(%File.Error{}), do: :system
 
   # defp classify_error(%Jason.DecodeError{}), do: :validation  # Commented out due to missing module
-  @spec classify_error(any()) :: any()
   defp classify_error(_error), do: :unknown
 
-  @spec log_retry(any(), any(), any()) :: any()
   defp log_retry(operation, error, retries_left) do
     Log.info(
       "[#{operation}] Retrying after error: #{inspect(error)}. Retries left: #{retries_left}"
     )
   end
 
-  @spec emit_telemetry(any(), any(), any()) :: any()
   defp emit_telemetry(operation, event, metadata) do
     :telemetry.execute(
       [:raxol, :error_handler, event],

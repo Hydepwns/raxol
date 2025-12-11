@@ -277,7 +277,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   # Safe Helper Functions - Functional Error Handling
 
-  @spec validate_component_module(module()) :: {:ok, any()} | {:error, any()}
   defp validate_component_module(component_module) do
     with true <- is_atom(component_module),
          true <- Code.ensure_loaded?(component_module) do
@@ -287,13 +286,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
-  @spec generate_component_id(module()) :: any()
   defp generate_component_id(component_module) do
     component_id = inspect(component_module) <> "-" <> UUID.uuid4()
     {:ok, component_id}
   end
 
-  @spec safe_component_init(module(), any()) :: any()
   defp safe_component_init(component_module, props) do
     # Use Task for safe execution with timeout
     task =
@@ -323,7 +320,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
-  @spec safe_component_update(any(), String.t()) :: any()
   defp safe_component_update(component, message) do
     # Use Task for safe execution with timeout and exception handling
     task =
@@ -368,7 +364,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   # Private Helpers
 
-  @spec process_commands(any(), String.t() | integer(), map()) :: any()
   defp process_commands(commands, component_id, state) do
     Enum.reduce(commands, state, fn command, acc ->
       case command do
@@ -404,7 +399,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end)
   end
 
-  @spec broadcast_update(any(), String.t() | integer(), map()) :: any()
   defp broadcast_update(msg, source_component_id, state) do
     Enum.reduce(Map.keys(state.components), state, fn id, acc_state ->
       update_component_if_not_source(id, source_component_id, msg, acc_state)
@@ -475,7 +469,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     state
   end
 
-  @spec handle_subscription_command(any(), any(), map()) :: map()
   defp handle_subscription_command(events, component_id, state) do
     {:ok, sub_id} =
       Subscription.start(%Subscription{type: :events, data: events}, %{
@@ -485,7 +478,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     put_in(state.subscriptions[sub_id], component_id)
   end
 
-  @spec handle_unsubscribe_command(any(), map()) :: map()
   defp handle_unsubscribe_command(sub_id, state) do
     case Subscription.stop(sub_id) do
       :ok ->
@@ -501,7 +493,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
-  @spec cleanup_subscriptions(String.t() | integer(), map()) :: any()
   defp cleanup_subscriptions(component_id, state) do
     # Find and remove all subscriptions for this component
     {to_remove, remaining} =
@@ -656,7 +647,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     update_component_in_broadcast(id, msg, acc_state)
   end
 
-  @spec add_to_queue_if_not_present(any(), String.t() | integer()) :: any()
   defp add_to_queue_if_not_present(queue, component_id) do
     case component_id in queue do
       true -> queue

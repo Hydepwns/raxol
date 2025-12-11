@@ -616,7 +616,6 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @spec normalize_spacing(any()) :: any()
   defp normalize_spacing(view) do
     padding = Map.get(view, :padding, {0, 0, 0, 0})
     margin = Map.get(view, :margin, {0, 0, 0, 0})
@@ -679,7 +678,6 @@ defmodule Raxol.Core.Renderer.View do
     Components.shadow(opts)
   end
 
-  @spec process_layout_result(any(), any()) :: any()
   defp process_layout_result(result, _view), do: result
 
   # Helper functions for if statement elimination
@@ -694,7 +692,6 @@ defmodule Raxol.Core.Renderer.View do
           "#{function_name} expects a keyword list as the first argument, got: #{inspect(opts)}"
   end
 
-  @spec validate_keyword_list(maybe_improper_list(), any()) :: :ok
   defp validate_keyword_list(opts, _function_name) when is_list(opts) do
     case opts do
       [] -> :ok

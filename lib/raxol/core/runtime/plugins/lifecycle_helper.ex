@@ -71,7 +71,6 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     end
   end
 
-  @spec initialize_and_register_plugin(any()) :: any()
   defp initialize_and_register_plugin(%{
          plugin_id: plugin_id,
          plugin_module: plugin_module,
@@ -115,7 +114,6 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     end
   end
 
-  @spec register_plugin_components(any()) :: any()
   defp register_plugin_components(%{
          plugin_id: plugin_id,
          plugin_module: plugin_module,
@@ -147,7 +145,6 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     end
   end
 
-  @spec _build_updated_maps(any()) :: any()
   defp _build_updated_maps(%{
          plugin_id: plugin_id,
          plugin_module: plugin_module,
@@ -169,7 +166,6 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     }
   end
 
-  @spec _register_plugin(String.t() | integer(), any()) :: any()
   defp _register_plugin(plugin_id, plugin_metadata) do
     Raxol.Core.GlobalRegistry.register(:plugins, plugin_id, plugin_metadata)
   end

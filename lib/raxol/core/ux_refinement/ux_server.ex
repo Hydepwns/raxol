@@ -233,7 +233,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
 
   # Private Functions
 
-  @spec do_enable_feature(any(), keyword(), any(), map()) :: any()
   defp do_enable_feature(:focus_management, _opts, user_prefs, state) do
     ensure_feature_enabled(:events, user_prefs, state)
 
@@ -245,7 +244,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:ok, new_state}
   end
 
-  @spec do_enable_feature(any(), keyword(), any(), map()) :: any()
   defp do_enable_feature(:keyboard_navigation, _opts, user_prefs, state) do
     state = ensure_feature_enabled(:focus_management, user_prefs, state)
     Raxol.Core.KeyboardNavigator.init()
@@ -258,7 +256,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:ok, new_state}
   end
 
-  @spec do_enable_feature(any(), keyword(), any(), map()) :: any()
   defp do_enable_feature(:hints, _opts, _user_prefs, state) do
     hint_config = Raxol.UI.Components.HintDisplay.init(%{})
 
@@ -272,7 +269,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:ok, new_state}
   end
 
-  @spec do_enable_feature(any(), keyword(), any(), map()) :: any()
   defp do_enable_feature(:focus_ring, opts, user_prefs, state) do
     state = ensure_feature_enabled(:focus_management, user_prefs, state)
     is_empty_list = is_list(opts) and opts == []
@@ -288,7 +284,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:ok, new_state}
   end
 
-  @spec do_enable_feature(any(), keyword(), any(), map()) :: any()
   defp do_enable_feature(:accessibility, opts, user_prefs, state) do
     state = ensure_feature_enabled(:events, user_prefs, state)
     accessibility_module().enable(opts, user_prefs)
@@ -306,7 +301,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:ok, new_state}
   end
 
-  @spec do_enable_feature(any(), keyword(), any(), map()) :: any()
   defp do_enable_feature(:keyboard_shortcuts, _opts, user_prefs, state) do
     keyboard_shortcuts_module().init()
     state = ensure_feature_enabled(:events, user_prefs, state)
@@ -319,19 +313,16 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:ok, new_state}
   end
 
-  @spec do_enable_feature(any(), keyword(), any(), map()) :: any()
   defp do_enable_feature(:events, _opts, _user_prefs, state) do
     Raxol.Core.Events.EventManager.init()
     new_state = %{state | features: MapSet.put(state.features, :events)}
     {:ok, new_state}
   end
 
-  @spec do_enable_feature(any(), keyword(), any(), map()) :: any()
   defp do_enable_feature(unknown, _opts, _user_prefs, state) do
     {{:error, "Unknown feature: #{unknown}"}, state}
   end
 
-  @spec do_disable_feature(any(), map()) :: any()
   defp do_disable_feature(:hints, state) do
     new_state = %{
       state
@@ -343,7 +334,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:ok, new_state}
   end
 
-  @spec do_disable_feature(any(), map()) :: any()
   defp do_disable_feature(:focus_ring, state) do
     new_state = %{
       state
@@ -354,7 +344,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:ok, new_state}
   end
 
-  @spec do_disable_feature(any(), map()) :: any()
   defp do_disable_feature(:accessibility, state) do
     accessibility_module().disable(nil)
 
@@ -373,7 +362,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:ok, new_state}
   end
 
-  @spec do_disable_feature(any(), map()) :: any()
   defp do_disable_feature(:keyboard_shortcuts, state) do
     keyboard_shortcuts_module().cleanup()
 
@@ -385,7 +373,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:ok, new_state}
   end
 
-  @spec do_disable_feature(any(), map()) :: any()
   defp do_disable_feature(:events, state) do
     accessibility_enabled = MapSet.member?(state.features, :accessibility)
 
@@ -398,13 +385,11 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     handle_events_disable_request(can_disable_events, state)
   end
 
-  @spec do_disable_feature(any(), map()) :: any()
   defp do_disable_feature(feature, state) do
     new_state = %{state | features: MapSet.delete(state.features, feature)}
     {:ok, new_state}
   end
 
-  @spec ensure_feature_enabled(any(), any(), map()) :: any()
   defp ensure_feature_enabled(feature, user_prefs, state) do
     feature_enabled = MapSet.member?(state.features, feature)
 
@@ -416,7 +401,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     )
   end
 
-  @spec do_register_hint(any(), any(), map()) :: any()
   defp do_register_hint(component_id, hint, state) when is_binary(hint) do
     do_register_component_hint(component_id, %{basic: hint}, state)
   end
@@ -441,7 +425,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     %{state | hints: new_hints}
   end
 
-  @spec get_hint_from_state(any(), any(), map()) :: any() | nil
   defp get_hint_from_state(component_id, level, state) do
     case Map.get(state.hints, component_id) do
       nil -> nil
@@ -449,7 +432,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     end
   end
 
-  @spec get_shortcuts_from_state(any(), map()) :: any() | nil
   defp get_shortcuts_from_state(component_id, state) do
     case Map.get(state.hints, component_id) do
       nil -> []
@@ -457,7 +439,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     end
   end
 
-  @spec normalize_hint_info(any()) :: any()
   defp normalize_hint_info(hint_info) when is_map(hint_info) do
     Map.merge(
       %{basic: nil, detailed: nil, examples: nil, shortcuts: []},
@@ -465,7 +446,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     )
   end
 
-  @spec maybe_register_shortcuts(any(), any(), map()) :: any()
   defp maybe_register_shortcuts(component_id, %{shortcuts: shortcuts}, state)
        when is_list(shortcuts) do
     keyboard_shortcuts_enabled =
@@ -478,7 +458,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     )
   end
 
-  @spec maybe_register_shortcuts(any(), any(), map()) :: any()
   defp maybe_register_shortcuts(_component_id, _hint_info, _state), do: :ok
 
   @spec handle_accessibility_focus_change(any(), any(), any(), map()) ::
@@ -569,9 +548,7 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     nil
   end
 
-  @spec get_focus_ring_opts(any(), keyword()) :: any() | nil
   defp get_focus_ring_opts(true, _opts), do: %{}
-  @spec get_focus_ring_opts(any(), keyword()) :: any() | nil
   defp get_focus_ring_opts(false, opts), do: opts
 
   @spec handle_events_disable_request(any(), map()) ::
@@ -695,12 +672,10 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     :ok
   end
 
-  @spec create_focus_announcement(any(), any(), any(), map()) :: any()
   defp create_focus_announcement(nil, _new_focus, label, _state) do
     "Focus set to #{label}"
   end
 
-  @spec create_focus_announcement(any(), any(), any(), map()) :: any()
   defp create_focus_announcement(old_focus, _new_focus, label, state) do
     old_label =
       Map.get(state.metadata, old_focus, %{})

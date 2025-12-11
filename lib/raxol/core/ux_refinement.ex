@@ -205,7 +205,6 @@ defmodule Raxol.Core.UXRefinement do
     end
   end
 
-  @spec ensure_feature_enabled(any(), any()) :: any()
   defp ensure_feature_enabled(feature, context) do
     case feature_enabled?(feature) do
       false -> enable_feature(feature, [], context)

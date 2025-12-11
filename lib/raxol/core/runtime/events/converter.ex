@@ -106,7 +106,6 @@ defmodule Raxol.Core.Runtime.Events.Converter do
 
   # Private functions
 
-  @spec convert_termbox_key_event(integer(), integer(), integer()) :: Event.t()
   defp convert_termbox_key_event(mod, key, ch) do
     modifiers = extract_key_modifiers(mod)
 
@@ -161,32 +160,26 @@ defmodule Raxol.Core.Runtime.Events.Converter do
     })
   end
 
-  @spec convert_vscode_keydown_event(map()) :: Event.t()
   defp convert_vscode_keydown_event(%{key: key, modifiers: mods}) do
     convert_vscode_key_event(key, mods)
   end
 
-  @spec convert_vscode_resize_event(map()) :: Event.t()
   defp convert_vscode_resize_event(%{width: width, height: height}) do
     Event.new(:resize, %{width: width, height: height})
   end
 
-  @spec convert_vscode_mouse_event(map()) :: Event.t()
   defp convert_vscode_mouse_event(%{action: action, x: x, y: y, button: button}) do
     convert_vscode_mouse_event(action, x, y, button)
   end
 
-  @spec convert_vscode_text_event(map()) :: Event.t()
   defp convert_vscode_text_event(%{content: text}) do
     Event.new(:text, %{text: text})
   end
 
-  @spec convert_vscode_focus_event(map()) :: Event.t()
   defp convert_vscode_focus_event(%{focused: focused}) do
     Event.new(:focus, %{focused: focused})
   end
 
-  @spec convert_vscode_key_event(term(), term()) :: Event.t()
   defp convert_vscode_key_event(key, mods) do
     key_value = convert_vscode_key_to_value(key)
     modifiers = parse_vscode_modifiers(mods)
@@ -210,7 +203,6 @@ defmodule Raxol.Core.Runtime.Events.Converter do
     "ArrowDown" => :arrow_down
   }
 
-  @spec convert_vscode_key_to_value(term()) :: atom() | integer() | String.t()
   defp convert_vscode_key_to_value(key) do
     case key do
       k when is_binary(k) and byte_size(k) == 1 -> :binary.first(k)
@@ -250,7 +242,6 @@ defmodule Raxol.Core.Runtime.Events.Converter do
     })
   end
 
-  @spec extract_key_modifiers(integer()) :: keyword()
   defp extract_key_modifiers(mod) do
     [
       ctrl: (mod &&& 1) != 0,
@@ -259,7 +250,6 @@ defmodule Raxol.Core.Runtime.Events.Converter do
     ]
   end
 
-  @spec parse_vscode_modifiers(list() | term()) :: keyword()
   defp parse_vscode_modifiers(mods) when is_list(mods) do
     ctrl = "ctrl" in mods or "control" in mods
     alt = "alt" in mods or "option" in mods

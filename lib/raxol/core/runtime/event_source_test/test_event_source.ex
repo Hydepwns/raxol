@@ -51,7 +51,6 @@ defmodule Raxol.Core.Runtime.EventSourceTest.TestEventSource do
     {:noreply, %{state | subscribers: new_subscribers}}
   end
 
-  @spec notify_subscribers(any(), any()) :: any()
   defp notify_subscribers(event, subscribers) do
     Enum.each(subscribers, fn pid ->
       case Process.alive?(pid) do

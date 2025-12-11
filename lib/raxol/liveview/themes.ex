@@ -188,7 +188,6 @@ defmodule Raxol.LiveView.Themes do
     generate_fallback_css(selector)
   end
 
-  @spec generate_theme_css(theme(), String.t()) :: String.t()
   defp generate_theme_css(theme, selector) do
     """
     #{selector} {
@@ -244,7 +243,6 @@ defmodule Raxol.LiveView.Themes do
     """
   end
 
-  @spec generate_fallback_css(String.t()) :: String.t()
   defp generate_fallback_css(selector) do
     """
     #{selector} {

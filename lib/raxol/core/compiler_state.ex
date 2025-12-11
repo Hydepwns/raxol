@@ -94,12 +94,10 @@ defmodule Raxol.Core.CompilerState do
 
   # Private helper functions
 
-  @spec table_exists?(atom() | :ets.tid()) :: boolean()
   defp table_exists?(table) do
     :ets.info(table) != :undefined
   end
 
-  @spec safe_create_table(atom(), keyword()) :: :ok | {:error, term()}
   defp safe_create_table(name, opts) do
     # Use Task to isolate potential crashes and handle race conditions
     task =
@@ -210,7 +208,6 @@ defmodule Raxol.Core.CompilerState do
     end
   end
 
-  @spec perform_safe_delete_table(atom() | :ets.tid()) :: :ok | {:error, term()}
   defp perform_safe_delete_table(table) do
     # Use Task to isolate potential ETS crashes
     task =

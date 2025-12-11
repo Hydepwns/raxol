@@ -95,7 +95,6 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
 
   # Private Functions
 
-  @spec restore_cursor_state(map(), map()) :: map()
   defp restore_cursor_state(emulator, cursor_state) do
     emulator
     |> Cursor.set_position(cursor_state.position)
@@ -104,7 +103,6 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
     |> Cursor.set_blink(cursor_state.blink)
   end
 
-  @spec restore_screen_state(map(), map()) :: map()
   defp restore_screen_state(emulator, screen_state) do
     emulator
     |> ScreenBuffer.set_scroll_region(screen_state.scroll_region)
@@ -112,7 +110,6 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
     |> Map.put(:cursor_style, screen_state.cursor_style)
   end
 
-  @spec restore_mode_state(map(), map()) :: map()
   defp restore_mode_state(emulator, mode_state) do
     %Raxol.Terminal.ModeManager{} =
       mode_manager =

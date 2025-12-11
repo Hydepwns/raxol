@@ -575,7 +575,6 @@ defmodule Raxol.Terminal.ControlCodes do
     emulator
   end
 
-  @spec handle_ri_cursor_movement(boolean(), map(), map()) :: map()
   defp handle_ri_cursor_movement(true, emulator, _active_buffer) do
     Raxol.Terminal.Commands.Screen.scroll_down(emulator, 1)
   end

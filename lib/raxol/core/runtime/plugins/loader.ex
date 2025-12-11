@@ -170,7 +170,6 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
   # Private Functions
 
-  @spec do_load_plugin(String.t(), map()) :: any()
   defp do_load_plugin(plugin_path, state) do
     try do
       compiled_modules = Code.compile_file(plugin_path)
@@ -205,7 +204,6 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @spec do_unload_plugin(any(), map()) :: any()
   defp do_unload_plugin(plugin, state) do
     case Map.get(state.loaded_plugins, plugin) do
       nil ->
@@ -225,7 +223,6 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @spec do_reload_plugin(any(), map()) :: any()
   defp do_reload_plugin(plugin, state) do
     with {:ok, new_state} <- do_unload_plugin(plugin, state),
          {:ok, final_state} <- do_load_plugin(plugin, new_state) do

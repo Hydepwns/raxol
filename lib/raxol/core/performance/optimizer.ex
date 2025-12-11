@@ -379,9 +379,7 @@ defmodule Raxol.Core.Performance.Optimizer do
       tail_recursive_sum(list)
   """
   def tail_recursive_sum(list), do: do_sum(list, 0)
-  @spec do_sum(any(), any()) :: any()
   defp do_sum([], acc), do: acc
-  @spec do_sum(any(), any()) :: any()
   defp do_sum([h | t], acc), do: do_sum(t, acc + h)
 
   @doc """
@@ -438,7 +436,6 @@ defmodule Raxol.Core.Performance.Optimizer do
     Code.ensure_loaded?(:poolboy)
   end
 
-  @spec init_poolboy_pool(String.t() | atom(), keyword()) :: any()
   defp init_poolboy_pool(pool_name, opts) do
     pool_config = [
       name: {:local, pool_name},
@@ -456,7 +453,6 @@ defmodule Raxol.Core.Performance.Optimizer do
     end
   end
 
-  @spec init_simple_pool(String.t() | atom(), keyword()) :: any()
   defp init_simple_pool(pool_name, _opts) do
     # Simple connection tracking using Registry
     registry_name = :"#{pool_name}_connections"
@@ -474,7 +470,6 @@ defmodule Raxol.Core.Performance.Optimizer do
     end
   end
 
-  @spec get_or_create_connection(String.t() | atom()) :: any() | nil
   defp get_or_create_connection(pool_name) do
     registry_name = :"#{pool_name}_connections"
     connection_id = "conn_#{System.unique_integer([:positive])}"
@@ -492,14 +487,12 @@ defmodule Raxol.Core.Performance.Optimizer do
     end
   end
 
-  @spec return_connection(String.t() | atom(), any()) :: any()
   defp return_connection(pool_name, conn) do
     registry_name = :"#{pool_name}_connections"
     Registry.unregister(registry_name, conn.id)
     :ok
   end
 
-  @spec get_from_cache(any()) :: any() | nil
   defp get_from_cache(key) do
     case :persistent_term.get({:cache, key}, :not_found) do
       {:cached, value, expiry} ->
@@ -513,30 +506,23 @@ defmodule Raxol.Core.Performance.Optimizer do
     end
   end
 
-  @spec put_in_cache(any(), any(), any()) :: any()
   defp put_in_cache(key, value, ttl) do
     expiry = System.system_time(:millisecond) + ttl
     :persistent_term.put({:cache, key}, {:cached, value, expiry})
   end
 
-  @spec lookup_cache(String.t() | atom(), any()) :: any()
   defp lookup_cache(_cache_name, key) do
     get_from_cache(key)
   end
 
-  @spec store_cache(String.t() | atom(), any(), any(), any()) :: any()
   defp store_cache(_cache_name, key, value, ttl) do
     put_in_cache(key, value, ttl)
   end
 
-  @spec length_or_size(any()) :: any()
   defp length_or_size(data) when is_list(data), do: length(data)
-  @spec length_or_size(any()) :: any()
   defp length_or_size(data) when is_map(data), do: map_size(data)
-  @spec length_or_size(any()) :: any()
   defp length_or_size(_), do: 0
 
-  @spec calculate_improvement_potential(any()) :: any()
   defp calculate_improvement_potential(results) do
     times = Enum.map(results, fn {_, stats} -> stats.mean end)
     best = Enum.min(times)

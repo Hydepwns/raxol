@@ -83,7 +83,6 @@ defmodule Raxol.Core.Session.TerminalSession do
     |> Base.encode64()
   end
 
-  @spec sanitize_session(any()) :: any()
   defp sanitize_session(session) do
     %{
       id: session.id,

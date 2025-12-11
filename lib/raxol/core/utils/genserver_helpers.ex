@@ -115,7 +115,6 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
     state
   end
 
-  @spec calculate_uptime(map()) :: non_neg_integer()
   defp calculate_uptime(state) when is_map(state) do
     start_time =
       Map.get(state, :start_time, System.monotonic_time(:millisecond))

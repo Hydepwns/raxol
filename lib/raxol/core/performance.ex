@@ -29,7 +29,6 @@ defmodule Raxol.Core.Performance do
     end
   end
 
-  @spec safe_start_monitor(any()) :: any()
   defp safe_start_monitor(_options) do
     # Stub implementation - performance monitoring handled by dedicated modules
     # See Raxol.Performance.MonitoringCoordinator for actual implementation
@@ -42,7 +41,6 @@ defmodule Raxol.Core.Performance do
     :ok
   end
 
-  @spec initialize_jank_detector(any()) :: any()
   defp initialize_jank_detector(_options) do
     # Stub implementation - jank detection handled by dedicated modules
     # See Raxol.Core.Performance.JankDetector for actual implementation
@@ -87,7 +85,6 @@ defmodule Raxol.Core.Performance do
     extract_collector_metrics(collector)
   end
 
-  @spec extract_collector_metrics(any()) :: any()
   defp extract_collector_metrics(nil), do: {:ok, %{}}
 
   defp safe_get_collector do
@@ -96,7 +93,6 @@ defmodule Raxol.Core.Performance do
     {:ok, nil}
   end
 
-  @spec combine_stats(any(), any()) :: any()
   defp combine_stats(monitor_metrics, collector_metrics) do
     stats = Map.merge(monitor_metrics, collector_metrics)
 
@@ -140,7 +136,6 @@ defmodule Raxol.Core.Performance do
     end
   end
 
-  @spec record_to_collector(String.t() | atom(), any()) :: any()
   defp record_to_collector(name, _value)
        when name in ["render_time", "frame_time"] do
     # Stub implementation - no-op for render/frame time recording
@@ -148,10 +143,8 @@ defmodule Raxol.Core.Performance do
     :ok
   end
 
-  @spec record_to_collector(any(), any()) :: any()
   defp record_to_collector(_, _), do: :ok
 
-  @spec record_to_monitor(String.t() | atom(), any()) :: any()
   defp record_to_monitor(name, _value)
        when name in ["render_time", "frame_time"] do
     # Stub implementation - no-op for render/frame time recording
@@ -159,7 +152,6 @@ defmodule Raxol.Core.Performance do
     :ok
   end
 
-  @spec record_to_monitor(any(), any()) :: any()
   defp record_to_monitor(_, _), do: :ok
 
   @doc """
@@ -180,7 +172,6 @@ defmodule Raxol.Core.Performance do
     end
   end
 
-  @spec safe_analyze(any()) :: any()
   defp safe_analyze(_metrics) do
     # Stub implementation - returns not_implemented status
     # See Raxol.Core.Performance.Analyzer.analyze/1 for actual implementation

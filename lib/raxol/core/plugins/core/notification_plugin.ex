@@ -104,7 +104,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     end
   end
 
-  @spec lookup_notification_command(any(), any(), String.t()) :: any()
   defp lookup_notification_command(interaction_mod, title, message) do
     case interaction_mod.get_os_type() do
       {:unix, :linux} ->
@@ -121,7 +120,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     end
   end
 
-  @spec lookup_linux_notification(any(), any(), String.t()) :: any()
   defp lookup_linux_notification(interaction_mod, title, message) do
     case interaction_mod.find_executable("notify-send") do
       nil -> {:error, {:command_not_found, :notify_send}}
@@ -129,7 +127,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     end
   end
 
-  @spec lookup_darwin_notification(any(), any(), String.t()) :: any()
   defp lookup_darwin_notification(interaction_mod, title, message) do
     case interaction_mod.find_executable("osascript") do
       nil ->
@@ -146,7 +143,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     end
   end
 
-  @spec lookup_windows_notification(any(), String.t()) :: any()
   defp lookup_windows_notification(interaction_mod, message) do
     case interaction_mod.find_executable("powershell") do
       nil ->
@@ -161,7 +157,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   end
 
   # Helper to handle specific notification errors
-  @spec handle_notification_error(any(), map()) :: {:error, any(), map()}
   defp handle_notification_error(reason_tuple, state) do
     case reason_tuple do
       {:command_not_found, :notify_send} ->
@@ -249,7 +244,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     end)
   end
 
-  @spec log_command_execution(any(), list()) :: any()
   defp log_command_execution(executable, args) do
     Raxol.Core.Runtime.Log.debug(
       "Executing notification command: #{executable} with args: #{inspect(args)}"
@@ -279,14 +273,10 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     {:error, {:command_failed, exit_code, output}, state}
   end
 
-  @spec get_success_atom_for_os(any()) :: any() | nil
   defp get_success_atom_for_os(:linux), do: :notification_sent_linux
-  @spec get_success_atom_for_os(any()) :: any() | nil
   defp get_success_atom_for_os(:macos), do: :notification_sent_macos
-  @spec get_success_atom_for_os(any()) :: any() | nil
   defp get_success_atom_for_os(:windows), do: :notification_sent_windows
 
-  @spec handle_command_exception(any(), any(), map()) :: {:error, any(), map()}
   defp handle_command_exception(e, stacktrace, state) do
     Raxol.Core.Runtime.Log.error(
       "NotificationPlugin: Error executing notification command: #{inspect(e)}"
@@ -296,7 +286,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
      state}
   end
 
-  @spec handle_command_error(any(), map()) :: {:error, any(), map()}
   defp handle_command_error(reason, state) do
     Raxol.Core.Runtime.Log.error(
       "NotificationPlugin: Error executing notification command: #{inspect(reason)}"

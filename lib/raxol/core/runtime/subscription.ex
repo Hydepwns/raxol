@@ -172,21 +172,15 @@ defmodule Raxol.Core.Runtime.Subscription do
     stop_subscription(subscription_id)
   end
 
-  @spec stop_subscription(any()) :: any()
   defp stop_subscription({:interval, timer_ref}), do: stop_interval(timer_ref)
-  @spec stop_subscription(any()) :: any()
   defp stop_subscription({:events, actual_id}), do: stop_events(actual_id)
 
-  @spec stop_subscription(any()) :: any()
   defp stop_subscription({:file_watch, watcher_pid}),
     do: stop_file_watch(watcher_pid)
 
-  @spec stop_subscription(any()) :: any()
   defp stop_subscription({:custom, source_pid}), do: stop_custom(source_pid)
-  @spec stop_subscription(any()) :: any()
   defp stop_subscription(_), do: {:error, :invalid_subscription}
 
-  @spec stop_interval(any()) :: :ok | {:error, any()}
   defp stop_interval(timer_ref) do
     case :timer.cancel(timer_ref) do
       {:ok, :cancel} -> :ok
@@ -195,18 +189,15 @@ defmodule Raxol.Core.Runtime.Subscription do
     end
   end
 
-  @spec stop_events(String.t() | integer()) :: any()
   defp stop_events(actual_id)
        when is_integer(actual_id) or is_reference(actual_id) do
     Raxol.Core.Events.EventManager.unsubscribe(actual_id)
   end
 
-  @spec stop_events(String.t() | integer()) :: any()
   defp stop_events(_actual_id) do
     {:error, :invalid_subscription_id}
   end
 
-  @spec stop_file_watch(pid()) :: :ok | {:error, :subscription_not_found}
   defp stop_file_watch(watcher_pid) do
     case Process.alive?(watcher_pid) do
       true ->
@@ -218,7 +209,6 @@ defmodule Raxol.Core.Runtime.Subscription do
     end
   end
 
-  @spec stop_custom(pid()) :: :ok | {:error, :subscription_not_found}
   defp stop_custom(source_pid) do
     case Process.alive?(source_pid) do
       true ->
@@ -232,7 +222,6 @@ defmodule Raxol.Core.Runtime.Subscription do
 
   # Private helpers for starting different types of subscriptions
 
-  @spec start_interval(any(), any()) :: any()
   defp start_interval(data, context) do
     %{
       interval: interval,
@@ -267,7 +256,6 @@ defmodule Raxol.Core.Runtime.Subscription do
     end
   end
 
-  @spec start_event_subscription(any(), any()) :: any()
   defp start_event_subscription(event_types, _context) do
     case Raxol.Core.Events.EventManager.subscribe(event_types, []) do
       {:ok, subscription_id} ->
@@ -278,7 +266,6 @@ defmodule Raxol.Core.Runtime.Subscription do
     end
   end
 
-  @spec start_file_watch(any(), any()) :: any()
   defp start_file_watch(data, context) do
     %{path: path, events: events} = data
 
@@ -297,7 +284,6 @@ defmodule Raxol.Core.Runtime.Subscription do
     end
   end
 
-  @spec start_custom_subscription(any(), any()) :: any()
   defp start_custom_subscription(data, context) do
     %{module: module, args: args} = data
 
@@ -308,7 +294,6 @@ defmodule Raxol.Core.Runtime.Subscription do
   end
 
   # File watching helper
-  @spec watch_file(String.t(), any(), pid()) :: any()
   defp watch_file(path, events, target_pid) do
     case FileSystem.start_link(dirs: [path]) do
       {:ok, watcher_pid} ->

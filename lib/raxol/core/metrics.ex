@@ -29,7 +29,6 @@ defmodule Raxol.Core.Metrics do
     end
   end
 
-  @spec safe_start_unified_collector(any()) :: any()
   defp safe_start_unified_collector(options) do
     # Use Task to safely start the collector with timeout
     task =
@@ -45,7 +44,6 @@ defmodule Raxol.Core.Metrics do
     end
   end
 
-  @spec safe_init_aggregator(any()) :: any()
   defp safe_init_aggregator(options) do
     task =
       Task.async(fn ->
@@ -67,7 +65,6 @@ defmodule Raxol.Core.Metrics do
     end
   end
 
-  @spec safe_init_alert_manager(any()) :: any()
   defp safe_init_alert_manager(options) do
     task =
       Task.async(fn ->
@@ -120,7 +117,6 @@ defmodule Raxol.Core.Metrics do
     end
   end
 
-  @spec safe_record_to_collector(String.t() | atom(), any(), any()) :: any()
   defp safe_record_to_collector(name, value, tags) do
     task =
       Task.async(fn ->
@@ -140,7 +136,6 @@ defmodule Raxol.Core.Metrics do
     end
   end
 
-  @spec safe_record_to_aggregator(String.t() | atom(), any(), any()) :: any()
   defp safe_record_to_aggregator(name, value, tags) do
     task =
       Task.async(fn ->
@@ -188,7 +183,6 @@ defmodule Raxol.Core.Metrics do
     end
   end
 
-  @spec normalize_metrics(any()) :: any()
   defp normalize_metrics(data) when is_list(data) do
     # Convert list of metrics to map format
     Enum.reduce(data, %{}, fn
@@ -197,9 +191,7 @@ defmodule Raxol.Core.Metrics do
     end)
   end
 
-  @spec normalize_metrics(any()) :: any()
   defp normalize_metrics(data) when is_map(data), do: data
-  @spec normalize_metrics(any()) :: any()
   defp normalize_metrics(_), do: %{}
 
   @doc """

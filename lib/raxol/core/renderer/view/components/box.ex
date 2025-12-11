@@ -74,7 +74,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     {content_width, content_height}
   end
 
-  @spec layout_children(list(map()), {integer(), integer()}) :: list(map())
   defp layout_children(children, {width, height}) do
     # Get layout mode from box style or default to vertical
     layout_mode = get_layout_mode(children)
@@ -87,7 +86,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end
   end
 
-  @spec get_layout_mode(list(map())) :: atom()
   defp get_layout_mode(children) do
     # Check if any child has a layout mode specified
     Enum.find_value(children, :vertical, fn child ->
@@ -95,7 +93,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end)
   end
 
-  @spec layout_vertical(list(map()), {integer(), integer()}) :: list(map())
   defp layout_vertical(children, {width, height}) do
     children
     |> Enum.scan({0, 0}, fn child, {_prev_x, prev_y} ->
@@ -113,7 +110,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     |> Enum.map(fn {_pos, child} -> child end)
   end
 
-  @spec layout_horizontal(list(map()), {integer(), integer()}) :: list(map())
   defp layout_horizontal(children, {width, height}) do
     children
     |> Enum.scan({0, 0}, fn child, {prev_x, _prev_y} ->
@@ -131,7 +127,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     |> Enum.map(fn {_pos, child} -> child end)
   end
 
-  @spec layout_stack(list(map()), {integer(), integer()}) :: list(map())
   defp layout_stack(children, {width, height}) do
     # Stack all children at the same position, only the last one visible
     children
@@ -151,7 +146,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end)
   end
 
-  @spec get_child_width(map(), integer()) :: integer()
   defp get_child_width(child, available_width) do
     case Map.get(child, :width) do
       nil -> available_width
@@ -161,7 +155,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end
   end
 
-  @spec get_child_height(map(), integer()) :: integer()
   defp get_child_height(child, available_height) do
     case Map.get(child, :height) do
       # Default height for text-like content
@@ -242,7 +235,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end)
   end
 
-  @spec apply_border(list(map()), atom()) :: list(map())
   defp apply_border(layout, style) do
     # Get border characters for the style
     border_chars = get_border_characters(style)
@@ -274,7 +266,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end)
   end
 
-  @spec get_border_characters(atom()) :: map()
   defp get_border_characters(style) do
     case style do
       :single ->

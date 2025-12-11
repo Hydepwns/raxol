@@ -141,7 +141,6 @@ defmodule Raxol.Core.UserPreferences do
     {:reply, :ok, new_state}
   end
 
-  @spec schedule_save(any()) :: any()
   defp schedule_save(%State{save_timer: existing_timer} = state) do
     cancel_save_timer(existing_timer)
 
@@ -156,12 +155,10 @@ defmodule Raxol.Core.UserPreferences do
     %{state | save_timer: timer_id}
   end
 
-  @spec cancel_save_timer(String.t() | integer()) :: any()
   defp cancel_save_timer(timer_id) when is_integer(timer_id) do
     :ok
   end
 
-  @spec cancel_save_timer(any()) :: any()
   defp cancel_save_timer(_), do: :ok
 
   @impl true
@@ -181,19 +178,15 @@ defmodule Raxol.Core.UserPreferences do
     end
   end
 
-  @spec deep_merge(any(), any()) :: any()
   defp deep_merge(map1, map2) do
     Map.merge(map1, map2, fn _key, val1, val2 ->
       merge_values(is_map(val1) and is_map(val2), val1, val2)
     end)
   end
 
-  @spec normalize_path(String.t()) :: any()
   defp normalize_path(path) when is_atom(path), do: [path]
-  @spec normalize_path(String.t()) :: any()
   defp normalize_path(path) when is_list(path), do: path
 
-  @spec normalize_path(String.t()) :: any()
   defp normalize_path(path) when is_binary(path) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            String.split(path, ".")
@@ -216,7 +209,6 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   # Helper functions for if-statement elimination
-  @spec initialize_preferences(any()) :: any()
   defp initialize_preferences(true) do
     Raxol.Core.Runtime.Log.info(
       "UserPreferences starting in test mode, using defaults only."
@@ -225,7 +217,6 @@ defmodule Raxol.Core.UserPreferences do
     default_preferences()
   end
 
-  @spec initialize_preferences(any()) :: any()
   defp initialize_preferences(false) do
     case Persistence.load() do
       {:ok, loaded_prefs} ->
@@ -291,15 +282,12 @@ defmodule Raxol.Core.UserPreferences do
     {:reply, :ok, schedule_save(new_state)}
   end
 
-  @spec send_notification_if_test(any()) :: any()
   defp send_notification_if_test({caller_pid, _}) do
     execute_test_notification(Mix.env() == :test, caller_pid)
   end
 
-  @spec execute_test_notification(any(), String.t() | integer()) :: any()
   defp execute_test_notification(false, _caller_pid), do: :ok
 
-  @spec execute_test_notification(any(), String.t() | integer()) :: any()
   defp execute_test_notification(true, caller_pid) do
     send(
       caller_pid,
@@ -334,9 +322,7 @@ defmodule Raxol.Core.UserPreferences do
     {:noreply, %{state | save_timer: nil}}
   end
 
-  @spec merge_values(any(), any(), any()) :: any()
   defp merge_values(true, val1, val2), do: deep_merge(val1, val2)
-  @spec merge_values(any(), any(), any()) :: any()
   defp merge_values(false, _val1, val2), do: val2
 
   @doc """
@@ -347,12 +333,10 @@ defmodule Raxol.Core.UserPreferences do
     normalize_theme_id(theme)
   end
 
-  @spec normalize_theme_id(any()) :: any()
   defp normalize_theme_id(theme) when is_atom(theme) do
     theme
   end
 
-  @spec normalize_theme_id(any()) :: any()
   defp normalize_theme_id(theme) when is_binary(theme) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            String.to_existing_atom(theme)
@@ -364,7 +348,6 @@ defmodule Raxol.Core.UserPreferences do
     end
   end
 
-  @spec normalize_theme_id(any()) :: any()
   defp normalize_theme_id(_theme) do
     :default
   end

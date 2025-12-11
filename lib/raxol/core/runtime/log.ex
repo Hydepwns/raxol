@@ -85,7 +85,6 @@ defmodule Raxol.Core.Runtime.Log do
   def warning(msg, context), do: log(:warn, msg, context)
   def error(msg, context), do: log(:error, msg, context)
 
-  @spec log(any(), any(), any()) :: any()
   defp log(level, msg, context \\ nil) do
     message =
       case context do

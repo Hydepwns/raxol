@@ -38,7 +38,6 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     end
   end
 
-  @spec check_system_key_combinations(any(), any(), map()) :: any()
   defp check_system_key_combinations(key, modifiers, state) do
     case {quit_key?(key, modifiers, state.quit_keys),
           debug_toggle_key?(key, modifiers)} do
@@ -118,12 +117,10 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
   # Private functions
 
-  @spec quit_key?(any(), any(), any()) :: boolean()
   defp quit_key?(key, modifiers, quit_keys) do
     Enum.any?(quit_keys, &matches_quit_key(&1, key, modifiers))
   end
 
-  @spec matches_quit_key(any(), any(), any()) :: any()
   defp matches_quit_key(quit_key, key, modifiers) do
     case quit_key do
       key_val when is_atom(key_val) or is_integer(key_val) ->
@@ -146,7 +143,6 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     end
   end
 
-  @spec log_unknown_quit_key(any()) :: any()
   defp log_unknown_quit_key(other) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Unknown quit key format: #{inspect(other)}",
@@ -156,13 +152,11 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     false
   end
 
-  @spec debug_toggle_key?(any(), any()) :: boolean()
   defp debug_toggle_key?(key, modifiers) do
     # Default debug toggle is Ctrl+D
     key == ?d and Keyword.get(modifiers, :ctrl, false)
   end
 
-  @spec shortcut_match?(any(), any(), any()) :: boolean()
   defp shortcut_match?(key, modifiers, shortcut) do
     case shortcut do
       key_val when is_atom(key_val) or is_integer(key_val) ->
@@ -177,7 +171,6 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     end
   end
 
-  @spec modifiers_match?(any(), any()) :: boolean()
   defp modifiers_match?(actual_mods, expected_mods) do
     Enum.all?(expected_mods, fn expected_mod ->
       Keyword.get(actual_mods, expected_mod, false)
@@ -197,22 +190,18 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     127 => :backspace
   }
 
-  @spec get_key_name(any()) :: any() | nil
   defp get_key_name(key) when is_integer(key) and key >= 32 and key <= 126 do
     <<key::utf8>>
   end
 
-  @spec get_key_name(any()) :: any() | nil
   defp get_key_name(key) when is_atom(key) do
     key
   end
 
-  @spec get_key_name(any()) :: any() | nil
   defp get_key_name(key) do
     Map.get(@key_name_map, key, key)
   end
 
-  @spec format_modifiers(any()) :: [atom()]
   defp format_modifiers(modifiers) do
     modifiers
     |> Enum.filter(fn {_, active} -> active end)

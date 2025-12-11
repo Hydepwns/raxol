@@ -354,7 +354,6 @@ defmodule Raxol.Core.Events.EventManager do
 
   # Private Implementation
 
-  @spec dispatch_to_handlers(any(), any(), any()) :: any()
   defp dispatch_to_handlers(handlers_table, event_type, event_data) do
     handlers = :ets.lookup(handlers_table, event_type)
 
@@ -363,7 +362,6 @@ defmodule Raxol.Core.Events.EventManager do
     end)
   end
 
-  @spec dispatch_to_subscribers(any(), any(), any()) :: any()
   defp dispatch_to_subscribers(subscriptions_table, event_type, event_data) do
     subscribers = :ets.lookup(subscriptions_table, event_type)
 
@@ -374,7 +372,6 @@ defmodule Raxol.Core.Events.EventManager do
     end)
   end
 
-  @spec safe_call_handler(any(), any(), any(), any()) :: any()
   defp safe_call_handler(target, handler, event_type, event_data)
        when is_pid(target) do
     if Process.alive?(target) do
@@ -382,7 +379,6 @@ defmodule Raxol.Core.Events.EventManager do
     end
   end
 
-  @spec safe_call_handler(any(), any(), any(), any()) :: any()
   defp safe_call_handler(target, handler, event_type, event_data)
        when is_atom(target) do
     try do
@@ -404,29 +400,24 @@ defmodule Raxol.Core.Events.EventManager do
     end
   end
 
-  @spec safe_call_handler(any(), any(), any(), any()) :: any()
   defp safe_call_handler({module, function}, _handler, event_type, event_data) do
     safe_call_handler(module, function, event_type, event_data)
   end
 
-  @spec safe_send_event(pid(), any(), any()) :: any()
   defp safe_send_event(pid, event_type, event_data) do
     if Process.alive?(pid) do
       send(pid, {:event, event_type, event_data})
     end
   end
 
-  @spec event_matches_filter?(any(), any()) :: boolean()
   defp event_matches_filter?(_event_data, []), do: true
 
-  @spec event_matches_filter?(any(), any()) :: boolean()
   defp event_matches_filter?(event_data, filter) do
     Enum.all?(filter, fn {key, expected_value} ->
       Map.get(event_data, key) == expected_value
     end)
   end
 
-  @spec cleanup_dead_process(map(), String.t() | integer()) :: any()
   defp cleanup_dead_process(state, dead_pid) do
     # Remove handlers for dead process
     handler_match_spec = [

@@ -560,7 +560,6 @@ defmodule Raxol.Core do
     end
   end
 
-  @spec initialize_core_systems(any()) :: any()
   defp initialize_core_systems(options) do
     _ = Performance.init(Keyword.get(options, :performance, []))
     _ = Metrics.init(Keyword.get(options, :metrics, []))
@@ -570,7 +569,6 @@ defmodule Raxol.Core do
     :ok
   end
 
-  @spec start_runtime(module(), any()) :: any()
   defp start_runtime(app_module, options) do
     case Supervisor.start_link(%{
            app_module: app_module,

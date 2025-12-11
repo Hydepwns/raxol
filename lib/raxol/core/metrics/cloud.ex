@@ -134,7 +134,6 @@ defmodule Raxol.Core.Metrics.Cloud do
     {:noreply, state}
   end
 
-  @spec flush_metrics_to_cloud(map()) :: any()
   defp flush_metrics_to_cloud(state) do
     case state.metrics_buffer == [] do
       true ->
@@ -158,7 +157,6 @@ defmodule Raxol.Core.Metrics.Cloud do
     end
   end
 
-  @spec prepare_metrics_for_cloud(any()) :: any()
   defp prepare_metrics_for_cloud(metrics) do
     metrics
     |> Enum.group_by(&{&1.type, &1.name})
@@ -173,7 +171,6 @@ defmodule Raxol.Core.Metrics.Cloud do
     end)
   end
 
-  @spec send_metrics_to_cloud(any(), map()) :: any()
   defp send_metrics_to_cloud(metrics, state) do
     config = state.config
     recipient = state.test_pid || self()
@@ -214,7 +211,6 @@ defmodule Raxol.Core.Metrics.Cloud do
     :ok
   end
 
-  @spec format_for_datadog(list()) :: %{series: list()}
   defp format_for_datadog(metrics) do
     # Format metrics for Datadog API
     series =
@@ -232,7 +228,6 @@ defmodule Raxol.Core.Metrics.Cloud do
     %{series: series}
   end
 
-  @spec format_for_prometheus(any()) :: String.t()
   defp format_for_prometheus(metrics) do
     # Format metrics for Prometheus
     Enum.map_join(metrics, "\n", fn metric ->
@@ -242,7 +237,6 @@ defmodule Raxol.Core.Metrics.Cloud do
     end)
   end
 
-  @spec format_for_cloudwatch(list()) :: %{MetricData: list()}
   defp format_for_cloudwatch(metrics) do
     # Format metrics for CloudWatch
     metric_data =
@@ -264,7 +258,6 @@ defmodule Raxol.Core.Metrics.Cloud do
     %{MetricData: metric_data}
   end
 
-  @spec validate_cloud_config(map()) :: :ok | {:error, any()}
   defp validate_cloud_config(config) do
     # Merge with defaults to ensure all required fields are present
     config_with_defaults = Map.merge(@default_config, config)
@@ -280,42 +273,32 @@ defmodule Raxol.Core.Metrics.Cloud do
     end
   end
 
-  @spec validate_service(any()) :: {:ok, any()} | {:error, any()}
   defp validate_service(service)
        when service in [:datadog, :prometheus, :cloudwatch],
        do: :ok
 
-  @spec validate_service(any()) :: {:ok, any()} | {:error, any()}
   defp validate_service(_), do: {:error, :invalid_service}
 
-  @spec validate_endpoint(any()) :: {:ok, any()} | {:error, any()}
   defp validate_endpoint(endpoint) when is_binary(endpoint) and endpoint != "",
     do: :ok
 
-  @spec validate_endpoint(any()) :: {:ok, any()} | {:error, any()}
   defp validate_endpoint(_), do: {:error, :invalid_endpoint}
 
-  @spec validate_api_key(any()) :: {:ok, any()} | {:error, any()}
   defp validate_api_key(api_key) when is_binary(api_key) and api_key != "",
     do: :ok
 
-  @spec validate_api_key(any()) :: {:ok, any()} | {:error, any()}
   defp validate_api_key(_), do: {:error, :invalid_api_key}
 
-  @spec validate_batch_size(any()) :: {:ok, any()} | {:error, any()}
   defp validate_batch_size(batch_size)
        when is_integer(batch_size) and batch_size > 0,
        do: :ok
 
-  @spec validate_batch_size(any()) :: {:ok, any()} | {:error, any()}
   defp validate_batch_size(_), do: {:error, :invalid_batch_size}
 
-  @spec validate_flush_interval(any()) :: {:ok, any()} | {:error, any()}
   defp validate_flush_interval(flush_interval)
        when is_integer(flush_interval) and flush_interval > 0,
        do: :ok
 
-  @spec validate_flush_interval(any()) :: {:ok, any()} | {:error, any()}
   defp validate_flush_interval(_), do: {:error, :invalid_flush_interval}
 
   defp schedule_flush do

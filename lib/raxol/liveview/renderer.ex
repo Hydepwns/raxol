@@ -235,34 +235,29 @@ defmodule Raxol.LiveView.Renderer do
 
   def validate_buffer(_), do: {:error, :invalid_buffer_structure}
 
-  @spec valid_line?(any()) :: boolean()
   defp valid_line?(%{cells: cells}) when is_list(cells) do
     Enum.all?(cells, &valid_cell?/1)
   end
 
   defp valid_line?(_), do: false
 
-  @spec valid_cell?(any()) :: boolean()
   defp valid_cell?(%{char: char, style: style})
        when is_binary(char) and is_map(style),
        do: true
 
   defp valid_cell?(_), do: false
 
-  @spec render_fallback(t()) :: {String.t(), t()}
   defp render_fallback(renderer) do
     html = render_empty_terminal()
     {html, renderer}
   end
 
-  @spec render_empty_terminal() :: String.t()
   defp render_empty_terminal do
     ~s(<div class="raxol-terminal raxol-error" data-grid="true"><div class="raxol-line"><span class="raxol-cell">Terminal render error</span></div></div>)
   end
 
   # Private Implementation
 
-  @spec render_full_buffer(buffer(), t()) :: {String.t(), t()}
   defp render_full_buffer(buffer, renderer) do
     # Render all lines and collect cache stats
     {lines_html, total_hits, total_misses} =
@@ -318,13 +313,11 @@ defmodule Raxol.LiveView.Renderer do
     }
   end
 
-  @spec calculate_hit_ratio(non_neg_integer(), non_neg_integer()) :: float()
   defp calculate_hit_ratio(0, 0), do: 0.0
   defp calculate_hit_ratio(hits, misses), do: hits / (hits + misses)
 
   # Private Implementation
 
-  @spec render_with_smart_diff(buffer(), buffer(), t()) :: {String.t(), t()}
   defp render_with_smart_diff(buffer, prev_buffer, renderer) do
     current_lines = get_buffer_lines(buffer)
     prev_lines = get_buffer_lines(prev_buffer)
@@ -347,7 +340,6 @@ defmodule Raxol.LiveView.Renderer do
     patch_html_with_changes(current_lines, changed_lines, renderer)
   end
 
-  @spec find_changed_lines(list(), list()) :: list()
   defp find_changed_lines(current_lines, prev_lines) do
     current_lines
     |> Enum.with_index()
@@ -357,7 +349,6 @@ defmodule Raxol.LiveView.Renderer do
     end)
   end
 
-  @spec patch_html_with_changes(list(), list(), t()) :: {String.t(), t()}
   defp patch_html_with_changes(current_lines, _changed_lines, renderer) do
     # Always do full render (patch-based rendering would need client-side JS support)
     {lines_html, total_hits, total_misses} =
@@ -412,7 +403,6 @@ defmodule Raxol.LiveView.Renderer do
     {line_html, hits, misses}
   end
 
-  @spec cell_to_html_cached(map(), t()) :: {iodata(), boolean()}
   defp cell_to_html_cached(cell, renderer) do
     cache_key = {cell.char, cell.style}
 
@@ -425,7 +415,6 @@ defmodule Raxol.LiveView.Renderer do
   defp handle_cache_result({:ok, cached_html}, _cell), do: {cached_html, true}
   defp handle_cache_result(:error, cell), do: {generate_cell_html(cell), false}
 
-  @spec generate_cell_html(map()) :: iolist()
   defp generate_cell_html(%{char: char, style: style}) do
     classes = get_cached_style_classes(style)
     escaped_char = get_cached_escaped_char(char)
@@ -434,7 +423,6 @@ defmodule Raxol.LiveView.Renderer do
     [~s(<span class="raxol-cell ), classes, ~s(">), escaped_char, ~s(</span>)]
   end
 
-  @spec get_cached_style_classes(map()) :: String.t()
   defp get_cached_style_classes(style) do
     # Cache style combinations to avoid repeated string building
     case style do
@@ -457,7 +445,6 @@ defmodule Raxol.LiveView.Renderer do
     end
   end
 
-  @spec get_cached_escaped_char(String.t()) :: String.t()
   defp get_cached_escaped_char(char) do
     # Use pre-computed escape cache
     case char do
@@ -472,7 +459,6 @@ defmodule Raxol.LiveView.Renderer do
   end
 
   # Pre-build cache of common HTML characters
-  @spec build_char_cache() :: map()
   defp build_char_cache do
     common_chars = [
       " ",
@@ -537,7 +523,6 @@ defmodule Raxol.LiveView.Renderer do
   end
 
   # Utility functions
-  @spec lines_identical?(map() | nil, map() | nil) :: boolean()
   defp lines_identical?(line1, line2) do
     # Compare line cells efficiently, handling nil cases
     case {line1, line2} do
@@ -548,7 +533,6 @@ defmodule Raxol.LiveView.Renderer do
     end
   end
 
-  @spec get_buffer_lines(buffer() | list()) :: list()
   defp get_buffer_lines(buffer) do
     case buffer do
       lines when is_list(lines) -> lines
@@ -557,7 +541,6 @@ defmodule Raxol.LiveView.Renderer do
     end
   end
 
-  @spec style_to_css_classes(map()) :: String.t()
   defp style_to_css_classes(style) do
     []
     |> add_class_if(Map.get(style, :bold, false), "raxol-bold")
@@ -587,7 +570,6 @@ defmodule Raxol.LiveView.Renderer do
   defp add_color_class(classes, color, prefix),
     do: ["#{prefix}-#{color_name(color)}" | classes]
 
-  @spec color_name(atom() | tuple() | any()) :: String.t()
   defp color_name(color) when is_atom(color) do
     color |> Atom.to_string() |> String.replace("_", "-")
   end
@@ -601,7 +583,6 @@ defmodule Raxol.LiveView.Renderer do
 
   defp color_name(_), do: "default"
 
-  @spec wrap_in_grid_container(list()) :: String.t()
   defp wrap_in_grid_container(lines) do
     # Use iolist for efficiency
     [

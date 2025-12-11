@@ -65,7 +65,6 @@ defmodule Raxol.Core.Renderer.Buffer do
     update_back_buffer!(buffer, {x, y}, cell)
   end
 
-  @spec validate_position!({integer(), integer()}) :: {integer(), integer()}
   defp validate_position!(pos) do
     case pos do
       {x, y} when is_integer(x) and is_integer(y) ->
@@ -76,7 +75,6 @@ defmodule Raxol.Core.Renderer.Buffer do
     end
   end
 
-  @spec validate_char!(any()) :: {:ok, any()} | {:error, any()}
   defp validate_char!(char) when is_binary(char) do
     case String.length(char) do
       1 -> char
@@ -84,12 +82,10 @@ defmodule Raxol.Core.Renderer.Buffer do
     end
   end
 
-  @spec validate_char!(any()) :: {:ok, any()} | {:error, any()}
   defp validate_char!(_) do
     raise ArgumentError, "Cell content must be a string of length 1"
   end
 
-  @spec create_cell(any(), keyword()) :: any()
   defp create_cell(char, opts) do
     %{
       char: char,
@@ -207,13 +203,11 @@ defmodule Raxol.Core.Renderer.Buffer do
     }
   end
 
-  @spec create_resized_cells_map(any(), any(), any()) :: any()
   defp create_resized_cells_map(cells, old_size, new_size) do
     copy_cells(cells, old_size, new_size)
     |> grid_to_cell_map()
   end
 
-  @spec grid_to_cell_map([any()]) :: any()
   defp grid_to_cell_map(grid) do
     grid
     |> Enum.with_index()
@@ -226,7 +220,6 @@ defmodule Raxol.Core.Renderer.Buffer do
     end)
   end
 
-  @spec create_full_damage_set(String.t() | integer(), pos_integer()) :: any()
   defp create_full_damage_set(width, height) do
     for x <- 0..(width - 1),
         y <- 0..(height - 1),
@@ -240,7 +233,6 @@ defmodule Raxol.Core.Renderer.Buffer do
           {non_neg_integer(), non_neg_integer()},
           {non_neg_integer(), non_neg_integer()}
         ) :: [[Raxol.Terminal.Cell.t()]]
-  @spec copy_cells(any(), any(), any()) :: any()
   defp copy_cells(cells, {old_w, old_h}, {new_w, new_h}) do
     for y <- 0..(new_h - 1) do
       for x <- 0..(new_w - 1) do
