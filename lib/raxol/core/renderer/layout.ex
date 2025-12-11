@@ -118,81 +118,58 @@ defmodule Raxol.Core.Renderer.Layout do
     apply_layout_by_type(view_type, view_data, available_space)
   end
 
-  @spec apply_layout_by_type(any(), any(), any()) :: any()
   defp apply_layout_by_type(:flex, flex_view, available_space),
     do: Flex.calculate_layout(flex_view, available_space)
 
-  @spec apply_layout_by_type(any(), String.t() | integer(), any()) :: any()
   defp apply_layout_by_type(:grid, grid_view, available_space),
     do: Grid.calculate_layout(grid_view, available_space)
 
-  @spec apply_layout_by_type(any(), any(), any()) :: any()
   defp apply_layout_by_type(:box, box_view, available_space),
     do: layout_box(box_view, available_space)
 
-  @spec apply_layout_by_type(any(), any(), any()) :: any()
   defp apply_layout_by_type(:shadow_wrapper, shadow_view, available_space),
     do: layout_shadow_wrapper(shadow_view, available_space)
 
-  @spec apply_layout_by_type(any(), any(), any()) :: any()
   defp apply_layout_by_type(:scroll, scroll_view, available_space),
     do: layout_scroll(scroll_view, available_space)
 
-  @spec apply_layout_by_type(any(), any(), any()) :: any()
   defp apply_layout_by_type(:text, text_view, available_space),
     do: layout_text(text_view, available_space)
 
-  @spec apply_layout_by_type(any(), any(), any()) :: any()
   defp apply_layout_by_type(:label, label_view, available_space),
     do: layout_label(label_view, available_space)
 
-  @spec apply_layout_by_type(any(), any(), any()) :: any()
   defp apply_layout_by_type(:button, button_view, available_space),
     do: layout_button(button_view, available_space)
 
-  @spec apply_layout_by_type(any(), any(), any()) :: any()
   defp apply_layout_by_type(:checkbox, checkbox_view, available_space),
     do: layout_checkbox(checkbox_view, available_space)
 
-  @spec apply_layout_by_type(any(), any(), any()) :: any()
   defp apply_layout_by_type(:container, view, available_space),
     do: layout_container_children(view, available_space)
 
-  @spec apply_layout_by_type(any(), any(), any()) :: any()
   defp apply_layout_by_type(:unknown, view, _available_space), do: [view]
 
-  @spec get_view_type(any()) :: any() | nil
   defp get_view_type(%{type: :flex} = flex_view), do: {:flex, flex_view}
-  @spec get_view_type(any()) :: any() | nil
   defp get_view_type(%{type: :grid} = grid_view), do: {:grid, grid_view}
-  @spec get_view_type(any()) :: any() | nil
   defp get_view_type(%{type: :box} = box_view), do: {:box, box_view}
 
-  @spec get_view_type(any()) :: any() | nil
   defp get_view_type(%{type: :shadow_wrapper} = shadow_view),
     do: {:shadow_wrapper, shadow_view}
 
-  @spec get_view_type(any()) :: any() | nil
   defp get_view_type(%{type: :scroll} = scroll_view), do: {:scroll, scroll_view}
-  @spec get_view_type(any()) :: any() | nil
   defp get_view_type(%{type: :text} = text_view), do: {:text, text_view}
-  @spec get_view_type(any()) :: any() | nil
   defp get_view_type(%{type: :label} = label_view), do: {:label, label_view}
-  @spec get_view_type(any()) :: any() | nil
   defp get_view_type(%{type: :button} = button_view), do: {:button, button_view}
 
-  @spec get_view_type(any()) :: any() | nil
   defp get_view_type(%{type: :checkbox} = checkbox_view),
     do: {:checkbox, checkbox_view}
 
-  @spec get_view_type(any()) :: any() | nil
   defp get_view_type(%{children: children} = view) when is_list(children),
     do: {:container, view}
 
-  @spec get_view_type(any()) :: any() | nil
   defp get_view_type(view), do: {:unknown, view}
 
-  @spec layout_container_children(any(), any()) :: any()
   defp layout_container_children(view, available_space) do
     view.children
     |> Enum.flat_map(fn child ->
@@ -200,7 +177,6 @@ defmodule Raxol.Core.Renderer.Layout do
     end)
   end
 
-  @spec layout_shadow_wrapper(any(), any()) :: any()
   defp layout_shadow_wrapper(shadow_view, available_space) do
     children = shadow_view.children
 
@@ -215,7 +191,6 @@ defmodule Raxol.Core.Renderer.Layout do
     end)
   end
 
-  @spec layout_scroll(any(), any()) :: any()
   defp layout_scroll(scroll_view, available_space) do
     {offset_x, offset_y} = scroll_view.offset
 
@@ -273,7 +248,6 @@ defmodule Raxol.Core.Renderer.Layout do
     end
   end
 
-  @spec position_children(any(), any(), any()) :: any()
   defp position_children(
          children,
          {content_x, content_y},
@@ -362,41 +336,34 @@ defmodule Raxol.Core.Renderer.Layout do
     [positioned_checkbox]
   end
 
-  @spec calculate_box_size(any(), any()) :: any()
   defp calculate_box_size(box, {available_width, available_height}) do
     size = Map.get(box, :size, :auto)
     calculate_dimensions(size, available_width, available_height)
   end
 
-  @spec calculate_dimensions(any(), String.t() | integer(), any()) :: any()
   defp calculate_dimensions({w, h}, _available_width, _available_height)
        when is_integer(w) and is_integer(h) do
     {max(0, w), max(0, h)}
   end
 
-  @spec calculate_dimensions(any(), String.t() | integer(), any()) :: any()
   defp calculate_dimensions({w, :auto}, _available_width, available_height)
        when is_integer(w) do
     {max(0, w), max(0, available_height)}
   end
 
-  @spec calculate_dimensions(any(), String.t() | integer(), any()) :: any()
   defp calculate_dimensions({:auto, h}, available_width, _available_height)
        when is_integer(h) do
     {max(0, available_width), max(0, h)}
   end
 
-  @spec calculate_dimensions(any(), String.t() | integer(), any()) :: any()
   defp calculate_dimensions(:auto, available_width, available_height) do
     {max(0, available_width), max(0, available_height)}
   end
 
-  @spec calculate_dimensions(any(), String.t() | integer(), any()) :: any()
   defp calculate_dimensions(_, available_width, available_height) do
     {max(0, available_width), max(0, available_height)}
   end
 
-  @spec calculate_content_area(any(), any(), any(), any()) :: any()
   defp calculate_content_area(box_size, padding, margin, border) do
     {box_width, box_height} = box_size
     {padding_top, padding_right, padding_bottom, padding_left} = padding

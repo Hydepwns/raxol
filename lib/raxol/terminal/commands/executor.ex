@@ -272,7 +272,8 @@ defmodule Raxol.Terminal.Commands.Executor do
     )
   end
 
-  @spec execute_dcs_command(map(), binary(), binary(), binary()) :: map()
+  @spec execute_dcs_command(map(), binary(), binary(), binary()) ::
+          map() | {:ok, map()} | {:error, atom(), map()}
   def execute_dcs_command(
         emulator,
         params_buffer,
@@ -291,7 +292,8 @@ defmodule Raxol.Terminal.Commands.Executor do
     )
   end
 
-  @spec execute_dcs_command(map(), integer(), list()) :: map()
+  @spec execute_dcs_command(map(), integer(), list()) ::
+          map() | {:ok, map()} | {:error, atom(), map()}
   def execute_dcs_command(emulator, _command, params) do
     # Convert to string format for the existing handler
     params_buffer = Enum.join(params, ";")

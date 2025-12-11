@@ -345,8 +345,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   defp update_performance_stats(state, render_time) do
     # Update frame times queue (keep last 60 frames)
     frame_times =
-      state.performance_monitor.frame_times
-      |> :queue.in(render_time)
+      :queue.in(render_time, state.performance_monitor.frame_times)
       |> trim_queue(60)
 
     # Calculate average render time

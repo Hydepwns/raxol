@@ -165,8 +165,7 @@ defmodule Raxol.Terminal.Commands.Screen do
     end
   end
 
-  @spec scroll_up_screen_command(Emulator.t(), non_neg_integer()) ::
-          Emulator.t()
+  @spec scroll_up_screen_command(map(), non_neg_integer()) :: map()
   def scroll_up_screen_command(emulator, count)
       when is_integer(count) and count > 0 do
     Raxol.Core.Runtime.Log.debug(

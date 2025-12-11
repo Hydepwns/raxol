@@ -26,7 +26,8 @@ defmodule Raxol.Core.Utils.TimerManager do
       # Send {:check_status, :database} every 5 seconds
       {:ok, ref} = TimerManager.start_interval({:check_status, :database}, 5000)
   """
-  @spec start_interval(timer_msg(), non_neg_integer()) :: {:ok, reference()}
+  @spec start_interval(timer_msg(), pos_integer()) ::
+          {:ok, :timer.tref()} | {:error, term()}
   def start_interval(message, interval_ms)
       when is_integer(interval_ms) and interval_ms > 0 do
     case :timer.send_interval(interval_ms, message) do

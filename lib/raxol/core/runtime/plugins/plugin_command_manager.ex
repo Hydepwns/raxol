@@ -175,7 +175,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
   @doc """
   Initialize command table with initial plugins.
   """
-  @spec initialize_command_table(map(), list()) :: map()
+  @spec initialize_command_table(map(), map() | list()) :: map()
   def initialize_command_table(command_table, plugins) do
     Enum.reduce(plugins, command_table, fn plugin, table ->
       case plugin do

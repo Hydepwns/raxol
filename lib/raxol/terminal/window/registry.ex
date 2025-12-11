@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Window.Registry do
   @doc """
   Registers a new window.
   """
-  @spec register_window(Window.t()) :: {:ok, window_id()} | {:error, term()}
+  @spec register_window(map()) :: {:ok, window_id()} | {:error, term()}
   def register_window(%Window{} = window) do
     GenServer.call(__MODULE__, {:register_window, window})
   end

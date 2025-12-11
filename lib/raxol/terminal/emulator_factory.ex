@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.EmulatorFactory do
   @doc """
   Creates a new terminal emulator with the given options.
   """
-  @spec create(non_neg_integer(), non_neg_integer(), keyword()) :: Struct.t()
+  @spec create(non_neg_integer(), non_neg_integer(), keyword()) :: map()
   def create(width, height, opts) do
     opts = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
     scrollback_limit = ScreenManager.parse_scrollback_limit(opts)

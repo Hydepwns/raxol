@@ -218,7 +218,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     [current_column | columns]
   end
 
-  @spec process_lines([[map()]]) :: [[map()]]
   defp process_lines(lines) do
     lines
     |> Enum.reverse()
@@ -226,10 +225,8 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     |> Enum.reject(&(&1 == []))
   end
 
-  @spec process_columns([[map()]]) :: [[map()]]
   defp process_columns(columns), do: process_lines(columns)
 
-  @spec position_children_in_lines([[map()]], non_neg_integer()) :: [map()]
   defp position_children_in_lines(lines, gap) do
     lines
     |> Enum.with_index()
@@ -238,7 +235,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     end)
   end
 
-  @spec position_children_in_columns([[map()]], non_neg_integer()) :: [map()]
   defp position_children_in_columns(columns, gap) do
     columns
     |> Enum.with_index()
@@ -320,7 +316,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
   defp calculate_width(width, available_width) when is_integer(width),
     do: min(width, available_width)
 
-  @spec calculate_width(term(), non_neg_integer()) :: non_neg_integer()
   defp calculate_width(_, available_width), do: min(50, available_width)
 
   @spec calculate_height(non_neg_integer() | nil, non_neg_integer()) ::
@@ -332,7 +327,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
   defp calculate_height(height, available_height) when is_integer(height),
     do: min(height, available_height)
 
-  @spec calculate_height(term(), non_neg_integer()) :: non_neg_integer()
   defp calculate_height(_, available_height), do: min(1, available_height)
 
   @spec get_axis_sizes(atom(), {non_neg_integer(), non_neg_integer()}) ::
@@ -347,7 +341,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     end
   end
 
-  @spec calculate_total_content_size([map()], non_neg_integer()) :: number()
   defp calculate_total_content_size(children, gap) do
     total_items = length(children)
     total_gaps = max(0, total_items - 1) * gap
@@ -388,24 +381,20 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     end
   end
 
-  @spec justify_start([map()], number()) :: [map()]
   defp justify_start(children, gap) do
     justify_children(children, 0, gap)
   end
 
-  @spec justify_center([map()], number(), number(), number()) :: [map()]
   defp justify_center(children, main_axis_size, total_content_size, gap) do
     start_offset = (main_axis_size - total_content_size) / 2
     justify_children(children, start_offset, gap)
   end
 
-  @spec justify_end([map()], number(), number(), number()) :: [map()]
   defp justify_end(children, main_axis_size, total_content_size, gap) do
     start_offset = main_axis_size - total_content_size
     justify_children(children, start_offset, gap)
   end
 
-  @spec justify_space_between([map()], number(), number(), number()) :: [map()]
   defp justify_space_between(children, main_axis_size, total_content_size, gap) do
     total_items = length(children)
 
@@ -418,7 +407,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     )
   end
 
-  @spec justify_children([map()], number(), number()) :: [map()]
   defp justify_children(children, start_offset, gap) do
     children
     |> Enum.scan({start_offset, nil}, fn child, {pos, _prev_child} ->
@@ -429,7 +417,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     |> Enum.map(fn {_pos, child} -> child end)
   end
 
-  @spec apply_alignment([map()], atom(), number(), atom()) :: [map()]
   defp apply_alignment(children, align, cross_axis_size, _direction) do
     Enum.map(children, fn child ->
       {_child_width, child_height} = Map.get(child, :measured_size)
@@ -441,7 +428,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     end)
   end
 
-  @spec calculate_cross_axis_position(atom(), number(), number()) :: number()
   defp calculate_cross_axis_position(align, cross_axis_size, child_size) do
     case align do
       :start -> 0
@@ -451,7 +437,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     end
   end
 
-  @spec apply_gap_spacing([map()], number(), atom()) :: [map()]
   defp apply_gap_spacing(children, _gap, direction) do
     # Convert main_axis_position and cross_axis_position to actual x,y coordinates
     Enum.map(children, fn child ->
@@ -475,12 +460,9 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     end)
   end
 
-  @spec validate_flex_direction(:row | :column) :: :row | :column
   defp validate_flex_direction(:row), do: :row
-  @spec validate_flex_direction(:row | :column) :: :row | :column
   defp validate_flex_direction(:column), do: :column
 
-  @spec validate_flex_direction(term()) :: no_return()
   defp validate_flex_direction(direction) do
     raise ArgumentError, "Invalid flex direction: #{inspect(direction)}"
   end

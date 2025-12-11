@@ -10,15 +10,15 @@ defmodule Raxol.Core.Runtime.Plugins.PluginInitializer do
   Initializes all plugins in the given load order.
   """
   @spec initialize_plugins(
-          map(),
+          map() | list(),
           map(),
           map() | nil,
           map(),
           list(),
-          atom() | reference(),
+          map() | atom() | reference(),
           keyword() | map() | nil
         ) ::
-          {:ok, {map(), map(), atom() | reference()}} | {:error, term()}
+          {:ok, {map(), map(), map()}} | {:error, term()}
   def initialize_plugins(
         plugins,
         metadata,
@@ -45,11 +45,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginInitializer do
   """
   @spec initialize_plugin(
           atom() | String.t(),
-          {:ok, {map(), map(), atom() | reference()}},
+          {:ok, {map(), map(), map()}},
           map(),
           map()
         ) ::
-          {:cont, {:ok, {map(), map(), atom() | reference()}}}
+          {:cont, {:ok, {map(), map(), map()}}}
           | {:halt, {:error, term()}}
   def initialize_plugin(
         plugin_id,

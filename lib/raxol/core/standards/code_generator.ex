@@ -307,7 +307,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
 
   # Private helper functions
 
-  @spec format_state_docs(any()) :: String.t()
   defp format_state_docs(fields) do
     fields
     |> Enum.map_join("\n", fn field ->
@@ -315,7 +314,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     end)
   end
 
-  @spec format_state_types(any()) :: String.t()
   defp format_state_types(fields) do
     fields
     |> Enum.map_join(
@@ -326,13 +324,11 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     )
   end
 
-  @spec _format_option_docs(keyword()) :: any()
   defp _format_option_docs(_opts) do
     # Additional option documentation
     ""
   end
 
-  @spec _format_initial_state(any(), keyword()) :: any()
   defp _format_initial_state(fields, _opts) do
     fields
     |> Enum.map_join(
@@ -343,7 +339,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     )
   end
 
-  @spec _generate_public_api(module(), any()) :: any()
   defp _generate_public_api(_module_name, callbacks) do
     Enum.map_join(
       callbacks,
@@ -377,7 +372,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     )
   end
 
-  @spec _generate_callbacks(any()) :: any()
   defp _generate_callbacks(callbacks) do
     callback_impls =
       Enum.map_join(callbacks, "\n\n", fn
@@ -411,7 +405,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     Enum.join(callback_impls, "\n")
   end
 
-  @spec _generate_private_helpers(module(), any()) :: any()
   defp _generate_private_helpers(_module_name, _fields) do
     """
     defp validate_update(data) when is_map(data) do
@@ -424,23 +417,18 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     """
   end
 
-  @spec format_children_docs(any()) :: String.t()
   defp format_children_docs([]), do: "No children defined yet."
 
-  @spec format_children_docs(any()) :: String.t()
   defp format_children_docs(children) do
     Enum.map_join(children, "\n", fn child -> "  - #{child}" end)
   end
 
-  @spec format_children_specs(any()) :: String.t()
   defp format_children_specs([]), do: "# Add child specifications here"
 
-  @spec format_children_specs(any()) :: String.t()
   defp format_children_specs(children) do
     Enum.map_join(children, ",\n          ", fn child -> "{#{child}, []}" end)
   end
 
-  @spec context_name(String.t()) :: String.t()
   defp context_name(module_name) do
     module_name
     |> String.split(".")
@@ -448,7 +436,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     |> String.replace("Context", "")
   end
 
-  @spec generate_context_functions(list()) :: any()
   defp generate_context_functions(functions) do
     Enum.map_join(functions, "\n\n", fn {name, opts} ->
       """
@@ -466,7 +453,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     end)
   end
 
-  @spec generate_test_cases(module(), any()) :: any()
   defp generate_test_cases(_module_name, []) do
     """
     describe "basic functionality" do
@@ -477,7 +463,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     """
   end
 
-  @spec generate_test_cases(module(), any()) :: any()
   defp generate_test_cases(_module_name, test_cases) do
     Enum.map_join(
       test_cases,
@@ -492,7 +477,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     )
   end
 
-  @spec format_tests(atom(), any()) :: String.t()
   defp format_tests(_function, tests) do
     Enum.map_join(
       tests,
@@ -508,7 +492,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     )
   end
 
-  @spec liveview_name(String.t()) :: String.t()
   defp liveview_name(module_name) do
     module_name
     |> String.split(".")
@@ -516,7 +499,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     |> String.replace("Live", "")
   end
 
-  @spec module_class_name(String.t()) :: String.t()
   defp module_class_name(module_name) do
     module_name
     |> String.split(".")
@@ -525,7 +507,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     |> String.replace("_", "-")
   end
 
-  @spec generate_liveview_handlers(keyword()) :: any()
   defp generate_liveview_handlers(opts) do
     handlers = Keyword.get(opts, :handlers, [:form_change, :form_submit])
 
@@ -565,7 +546,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     )
   end
 
-  @spec format_migration_operations(any()) :: String.t()
   defp format_migration_operations([]) do
     """
     create table(:example) do
@@ -579,7 +559,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     """
   end
 
-  @spec format_migration_operations(any()) :: String.t()
   defp format_migration_operations(operations) do
     Enum.map_join(
       operations,
@@ -606,7 +585,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     )
   end
 
-  @spec format_table_fields(any()) :: String.t()
   defp format_table_fields(fields) do
     fields
     |> Enum.map_join("\n      ", fn {name, type, opts} ->
@@ -615,22 +593,18 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     end)
   end
 
-  @spec format_field_opts(any()) :: String.t()
   defp format_field_opts([]), do: ""
 
-  @spec format_field_opts(keyword()) :: String.t()
   defp format_field_opts(opts) do
     ", " <> Enum.map_join(opts, ", ", fn {k, v} -> "#{k}: #{inspect(v)}" end)
   end
 
-  @spec schema_name(String.t()) :: String.t()
   defp schema_name(module_name) do
     module_name
     |> String.split(".")
     |> List.last()
   end
 
-  @spec schema_var(String.t()) :: String.t()
   defp schema_var(module_name) do
     module_name
     |> String.split(".")
@@ -638,7 +612,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     |> Macro.underscore()
   end
 
-  @spec format_schema_types(any()) :: String.t()
   defp format_schema_types(fields) do
     fields
     |> Enum.map_join(",\n        ", fn {name, type, _opts} ->
@@ -646,7 +619,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     end)
   end
 
-  @spec format_schema_fields(any()) :: String.t()
   defp format_schema_fields(fields) do
     fields
     |> Enum.map_join("\n    ", fn {name, type, _opts} ->
@@ -654,14 +626,12 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     end)
   end
 
-  @spec format_cast_fields(any()) :: String.t()
   defp format_cast_fields(fields) do
     fields
     |> Enum.map_join(fn {name, _type, _opts} -> ":#{name}" end)
     |> inspect()
   end
 
-  @spec format_required_fields(any()) :: String.t()
   defp format_required_fields(fields) do
     fields
     |> Enum.filter(fn {_name, _type, opts} ->
@@ -671,7 +641,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     |> inspect()
   end
 
-  @spec format_validations(any()) :: String.t()
   defp format_validations(fields) do
     fields
     |> Enum.flat_map(fn {name, type, opts} ->
@@ -683,7 +652,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     |> Enum.join("\n    ")
   end
 
-  @spec add_min_length_validation(list(), atom(), keyword()) :: list()
   defp add_min_length_validation(validations, name, opts) do
     case Keyword.get(opts, :min_length) do
       nil -> validations
@@ -691,7 +659,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     end
   end
 
-  @spec add_max_length_validation(list(), atom(), keyword()) :: list()
   defp add_max_length_validation(validations, name, opts) do
     case Keyword.get(opts, :max_length) do
       nil -> validations
@@ -699,30 +666,19 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     end
   end
 
-  @spec add_email_validation(list(), atom(), any()) :: list()
   defp add_email_validation(validations, name, :email) do
     ["|> validate_format(:#{name}, ~r/@/)" | validations]
   end
 
-  @spec add_email_validation(list(), atom(), any()) :: list()
   defp add_email_validation(validations, _name, _type), do: validations
 
-  @spec elixir_type(any()) :: any()
   defp elixir_type(:string), do: "String.t()"
-  @spec elixir_type(any()) :: any()
   defp elixir_type(:integer), do: "integer()"
-  @spec elixir_type(any()) :: any()
   defp elixir_type(:boolean), do: "boolean()"
-  @spec elixir_type(any()) :: any()
   defp elixir_type(:datetime), do: "DateTime.t()"
-  @spec elixir_type(any()) :: any()
   defp elixir_type(:date), do: "Date.t()"
-  @spec elixir_type(any()) :: any()
   defp elixir_type(:decimal), do: "Decimal.t()"
-  @spec elixir_type(any()) :: any()
   defp elixir_type(:float), do: "float()"
-  @spec elixir_type(any()) :: any()
   defp elixir_type(:uuid), do: "String.t()"
-  @spec elixir_type(any()) :: any()
   defp elixir_type(_), do: "term()"
 end
