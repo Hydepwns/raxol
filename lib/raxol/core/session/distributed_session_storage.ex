@@ -103,7 +103,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     GenServer.call(pid, {:get_metadata, session_id})
   end
 
-  @spec update_access_time(pid(), binary()) :: :ok | {:error, term()}
+  @spec update_access_time(pid(), binary()) :: :ok
   def update_access_time(pid, session_id) do
     GenServer.cast(pid, {:update_access_time, session_id})
   end
@@ -440,17 +440,19 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     ram_copies = Map.get(state.storage_config, :ram_copies, [])
 
     # Create schema if needed
-    case :mnesia.create_schema(replication_nodes) do
-      :ok -> :ok
-      {:error, {_, {:already_exists, _}}} -> :ok
-      {:error, reason} -> {:error, {:schema_creation_failed, reason}}
-    end
+    _ =
+      case :mnesia.create_schema(replication_nodes) do
+        :ok -> :ok
+        {:error, {_, {:already_exists, _}}} -> :ok
+        {:error, reason} -> {:error, {:schema_creation_failed, reason}}
+      end
 
     # Start Mnesia
-    case :mnesia.start() do
-      :ok -> :ok
-      {:error, reason} -> {:error, {:mnesia_start_failed, reason}}
-    end
+    _ =
+      case :mnesia.start() do
+        :ok -> :ok
+        {:error, reason} -> {:error, {:mnesia_start_failed, reason}}
+      end
 
     # Create tables
     session_table_def = [
@@ -470,20 +472,28 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
       {:storage_properties, [{:ets, [{:read_concurrency, true}]}]}
     ]
 
-    case :mnesia.create_table(:distributed_sessions, session_table_def) do
-      {:atomic, :ok} -> :ok
-      {:aborted, {:already_exists, :distributed_sessions}} -> :ok
-      {:aborted, reason} -> {:error, {:session_table_creation_failed, reason}}
-    end
+    _ =
+      case :mnesia.create_table(:distributed_sessions, session_table_def) do
+        {:atomic, :ok} -> :ok
+        {:aborted, {:already_exists, :distributed_sessions}} -> :ok
+        {:aborted, reason} -> {:error, {:session_table_creation_failed, reason}}
+      end
 
-    case :mnesia.create_table(:session_metadata, metadata_table_def) do
-      {:atomic, :ok} -> :ok
-      {:aborted, {:already_exists, :session_metadata}} -> :ok
-      {:aborted, reason} -> {:error, {:metadata_table_creation_failed, reason}}
-    end
+    _ =
+      case :mnesia.create_table(:session_metadata, metadata_table_def) do
+        {:atomic, :ok} ->
+          :ok
+
+        {:aborted, {:already_exists, :session_metadata}} ->
+          :ok
+
+        {:aborted, reason} ->
+          {:error, {:metadata_table_creation_failed, reason}}
+      end
 
     # Wait for tables to be available
-    :mnesia.wait_for_tables([:distributed_sessions, :session_metadata], 5000)
+    _ =
+      :mnesia.wait_for_tables([:distributed_sessions, :session_metadata], 5000)
   end
 
   defp setup_dets_files(state) do
@@ -784,8 +794,8 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     shard_file = Map.get(state.storage_config.shard_files, shard_id)
     metadata_table = state.storage_config.metadata_table
 
-    :dets.delete(shard_file, session_id)
-    :dets.delete(metadata_table, session_id)
+    _ = :dets.delete(shard_file, session_id)
+    _ = :dets.delete(metadata_table, session_id)
 
     updated_stats = update_stats(state.stats, :delete, 0)
     {:ok, %{state | stats: updated_stats}}
@@ -847,28 +857,25 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
     }
   end
 
-  defp update_stats(stats, operation, size_delta) do
-    operations = Map.update(stats.operations, operation, 1, &(&1 + 1))
+  defp update_stats(stats, :store, size_delta) do
+    operations = Map.update(stats.operations, :store, 1, &(&1 + 1))
 
-    case operation do
-      :store ->
-        %{
-          stats
-          | total_sessions: stats.total_sessions + 1,
-            total_size_bytes: stats.total_size_bytes + size_delta,
-            operations: operations
-        }
+    %{
+      stats
+      | total_sessions: stats.total_sessions + 1,
+        total_size_bytes: stats.total_size_bytes + size_delta,
+        operations: operations
+    }
+  end
 
-      :delete ->
-        %{
-          stats
-          | total_sessions: max(0, stats.total_sessions - 1),
-            operations: operations
-        }
+  defp update_stats(stats, :delete, _size_delta) do
+    operations = Map.update(stats.operations, :delete, 1, &(&1 + 1))
 
-      :get ->
-        %{stats | operations: operations}
-    end
+    %{
+      stats
+      | total_sessions: max(0, stats.total_sessions - 1),
+        operations: operations
+    }
   end
 
   defp list_session_ids(_filters, _state) do

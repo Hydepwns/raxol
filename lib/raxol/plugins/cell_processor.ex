@@ -31,8 +31,6 @@ defmodule Raxol.Plugins.CellProcessor do
   """
   @spec process(Core.t(), list(map()), map()) ::
           {:ok, Core.t(), list(map()), list(binary())}
-          # In case of error during processing
-          | {:error, any()}
   def process(%Core{} = manager, cells, emulator_state) when is_list(cells) do
     Raxol.Core.Runtime.Log.debug(
       "[CellProcessor.process] Processing #{length(cells)} cells..."
