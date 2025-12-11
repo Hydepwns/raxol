@@ -126,11 +126,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     end
   end
 
-  @spec handle_missing_dir(any(), map()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_missing_dir(any(), map()) :: {:ok, any()}
   defp handle_missing_dir(dir, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[#{__MODULE__}] Plugin directory not found: #{dir}",
@@ -211,11 +207,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     }
   end
 
-  @spec handle_load_error(any(), String.t() | integer()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_load_error(any(), String.t() | integer()) :: {:error, any()}
   defp handle_load_error(reason, plugin_id) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "[#{__MODULE__}] Failed to load discovered plugin",
@@ -227,11 +219,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     {:error, reason}
   end
 
-  @spec handle_init_error(any(), String.t() | integer()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_init_error(any(), String.t() | integer()) :: {:error, any()}
   defp handle_init_error(reason, plugin_id) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "[#{__MODULE__}] Failed to initialize discovered plugin",

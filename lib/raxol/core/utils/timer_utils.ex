@@ -32,7 +32,7 @@ defmodule Raxol.Core.Utils.TimerUtils do
       # Performance monitoring every 5 seconds
       timer_ref = TimerUtils.start_periodic(self(), :monitor_performance, 5_000)
   """
-  @spec start_periodic(pid(), term(), pos_integer()) :: timer_ref()
+  @spec start_periodic(pid(), term(), pos_integer()) :: reference()
   def start_periodic(pid, message, interval)
       when is_pid(pid) and interval > 0 do
     Raxol.Core.Runtime.Log.debug(
@@ -54,7 +54,7 @@ defmodule Raxol.Core.Utils.TimerUtils do
       # Flush data after 1 second
       timer_ref = TimerUtils.start_delayed(self(), :flush, 1_000)
   """
-  @spec start_delayed(pid(), term(), pos_integer()) :: timer_ref()
+  @spec start_delayed(pid(), term(), pos_integer()) :: reference()
   def start_delayed(pid, message, delay) when is_pid(pid) and delay > 0 do
     Raxol.Core.Runtime.Log.debug(
       "Starting delayed timer",
@@ -105,7 +105,7 @@ defmodule Raxol.Core.Utils.TimerUtils do
       # Debounced file reload - cancel previous and start new
       timer_ref = TimerUtils.restart_timer(old_timer, self(), {:reload_file, path}, 1000)
   """
-  @spec restart_timer(timer_ref(), pid(), term(), pos_integer()) :: timer_ref()
+  @spec restart_timer(timer_ref(), pid(), term(), pos_integer()) :: reference()
   def restart_timer(old_timer, pid, message, delay) do
     cancel_timer(old_timer)
     start_delayed(pid, message, delay)
