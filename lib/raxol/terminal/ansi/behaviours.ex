@@ -9,14 +9,7 @@ defmodule Raxol.Terminal.ANSI.Behaviours do
     Behaviour for Sixel graphics support.
     """
 
-    @type t :: %{
-            width: non_neg_integer(),
-            height: non_neg_integer(),
-            data: binary(),
-            palette: map(),
-            scale: {non_neg_integer(), non_neg_integer()},
-            position: {non_neg_integer(), non_neg_integer()}
-          }
+    @type t :: map()
 
     @callback new() :: t()
     @callback new(pos_integer(), pos_integer()) :: t()
@@ -31,7 +24,7 @@ defmodule Raxol.Terminal.ANSI.Behaviours do
     @callback encode(t()) :: binary()
     @callback decode(binary()) :: t()
     @callback supported?() :: boolean()
-    @callback process_sequence(t(), binary()) :: t()
+    @callback process_sequence(t(), binary()) :: t() | {t(), :ok | {:error, term()}}
   end
 
   defmodule TerminalState do
@@ -80,26 +73,8 @@ defmodule Raxol.Terminal.ANSI.Behaviours do
             | {:index, non_neg_integer()}
             | nil
 
-    @type text_style :: %{
-            double_width: boolean(),
-            double_height: :none | :top | :bottom,
-            bold: boolean(),
-            faint: boolean(),
-            italic: boolean(),
-            underline: boolean(),
-            blink: boolean(),
-            reverse: boolean(),
-            conceal: boolean(),
-            strikethrough: boolean(),
-            fraktur: boolean(),
-            double_underline: boolean(),
-            framed: boolean(),
-            encircled: boolean(),
-            overlined: boolean(),
-            foreground: color(),
-            background: color(),
-            hyperlink: String.t() | nil
-          }
+    # text_style can be a struct or plain map with style attributes
+    @type text_style :: map()
 
     @callback new() :: text_style()
     @callback set_foreground(text_style(), color()) :: text_style()

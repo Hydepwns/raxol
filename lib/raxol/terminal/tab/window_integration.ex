@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.Tab.WindowIntegration do
   Switches to an existing tab and its window.
   """
   @spec switch_to_tab(t(), map(), String.t()) ::
-          {:ok, t(), map()} | {:error, term()}
+          {:ok, map(), map()} | {:error, :tab_not_found}
   def switch_to_tab(tab_manager, window_manager, tab_id) do
     case get_tab_config(tab_manager, tab_id) do
       {:ok, _tab_config} ->

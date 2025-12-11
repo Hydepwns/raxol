@@ -42,7 +42,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
             history_limit: 100,
             shape: {1, 1}
 
-  @type cursor_style :: :block | :underline | :bar
+  @type cursor_style :: :block | :underline | :bar | :custom
   @type color :: {non_neg_integer(), non_neg_integer(), non_neg_integer()} | nil
 
   @type t :: %__MODULE__{
@@ -64,7 +64,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
           state: atom(),
           position: {non_neg_integer(), non_neg_integer()},
           blink: boolean(),
-          custom_shape: atom() | nil,
+          custom_shape: atom() | String.t() | nil,
           custom_dimensions: {non_neg_integer(), non_neg_integer()} | nil,
           blink_rate: non_neg_integer(),
           saved_position: {non_neg_integer(), non_neg_integer()} | nil,

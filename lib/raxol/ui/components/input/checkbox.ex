@@ -89,7 +89,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   Updates the Checkbox component state in response to messages or prop changes.
   """
   @impl Raxol.UI.Components.Base.Component
-  @spec update(map(), t()) :: {:ok, t(), list()}
+  @spec update(map(), t()) :: {t(), list()}
   def update(props, state) when is_map(props) do
     # Merge new props into state, with style/theme merged as in other components
     merged_style = Map.merge(state.style || %{}, Map.get(props, :style, %{}))
@@ -101,14 +101,14 @@ defmodule Raxol.UI.Components.Input.Checkbox do
       |> Map.put(:style, merged_style)
       |> Map.put(:theme, merged_theme)
 
-    {:ok, new_state, []}
+    {new_state, []}
   end
 
   @impl Raxol.UI.Components.Base.Component
-  @spec update(term(), t()) :: {:ok, t(), list()}
+  @spec update(term(), t()) :: {t(), list()}
   def update(_msg, state) do
     # Ignore unknown messages for now
-    {:ok, state, []}
+    {state, []}
   end
 
   @impl Raxol.UI.Components.Base.Component

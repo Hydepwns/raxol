@@ -75,7 +75,7 @@ defmodule Raxol.UI.Components.Base.Component do
   or perform other setup tasks. Returns the potentially modified state
   and any commands to execute.
   """
-  @callback mount(state()) :: {state(), [command()]}
+  @callback mount(state()) :: state() | {state(), [command()]}
 
   @doc """
   Updates the component state in response to messages.

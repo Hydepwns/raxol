@@ -550,7 +550,7 @@ defmodule Raxol.Terminal.Input.MouseHandler do
 
   Detects terminal capabilities and returns the best supported mode.
   """
-  @spec detect_best_mode() :: mouse_mode()
+  @spec detect_best_mode() :: :urxvt | :sgr | :x11 | :x10
   def detect_best_mode do
     # Check terminal environment variables
     term = System.get_env("TERM", "")

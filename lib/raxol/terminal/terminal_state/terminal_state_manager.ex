@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Gets the current state stack.
   """
-  @spec get_state_stack(Raxol.Terminal.Emulator.t()) :: TerminalState.t()
+  @spec get_state_stack(map()) :: TerminalState.t()
   def get_state_stack(emulator) do
     emulator.state_stack
   end
@@ -25,8 +25,8 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Updates the state stack.
   """
-  @spec update_state_stack(Raxol.Terminal.Emulator.t(), TerminalState.t()) ::
-          Raxol.Terminal.Emulator.t()
+  @spec update_state_stack(map(), TerminalState.t()) ::
+          map()
   def update_state_stack(emulator, state_stack) do
     %{emulator | state_stack: state_stack}
   end
@@ -34,7 +34,7 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Saves the current state.
   """
-  @spec save_state(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  @spec save_state(map()) :: map()
   def save_state(emulator) do
     new_stack = TerminalState.save(emulator.state_stack)
     update_state_stack(emulator, new_stack)
@@ -43,8 +43,8 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Restores the last saved state.
   """
-  @spec restore_state(Raxol.Terminal.Emulator.t()) ::
-          Raxol.Terminal.Emulator.t()
+  @spec restore_state(map()) ::
+          map()
   def restore_state(emulator) do
     new_stack = TerminalState.restore(emulator.state_stack)
     update_state_stack(emulator, new_stack)
@@ -53,7 +53,7 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Checks if there are saved states.
   """
-  @spec has_saved_states?(Raxol.Terminal.Emulator.t()) :: boolean()
+  @spec has_saved_states?(map()) :: boolean()
   def has_saved_states?(emulator) do
     TerminalState.has_saved_states?(emulator.state_stack)
   end
@@ -61,7 +61,7 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Gets the number of saved states.
   """
-  @spec get_saved_states_count(Raxol.Terminal.Emulator.t()) :: non_neg_integer()
+  @spec get_saved_states_count(map()) :: non_neg_integer()
   def get_saved_states_count(emulator) do
     TerminalState.get_saved_states_count(emulator.state_stack)
   end
@@ -69,8 +69,8 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Clears all saved states.
   """
-  @spec clear_saved_states(Raxol.Terminal.Emulator.t()) ::
-          Raxol.Terminal.Emulator.t()
+  @spec clear_saved_states(map()) ::
+          map()
   def clear_saved_states(emulator) do
     new_stack = TerminalState.clear(emulator.state_stack)
     update_state_stack(emulator, new_stack)
@@ -79,7 +79,7 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Gets the current state.
   """
-  @spec get_current_state(Raxol.Terminal.Emulator.t()) :: map()
+  @spec get_current_state(map()) :: map()
   def get_current_state(emulator) do
     TerminalState.get_current_state(emulator.state_stack)
   end
@@ -87,8 +87,8 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Updates the current state.
   """
-  @spec update_current_state(Raxol.Terminal.Emulator.t(), map()) ::
-          Raxol.Terminal.Emulator.t()
+  @spec update_current_state(map(), map()) ::
+          map()
   def update_current_state(emulator, state) do
     new_stack = TerminalState.update_current_state(emulator.state_stack, state)
     update_state_stack(emulator, new_stack)

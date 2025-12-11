@@ -96,10 +96,10 @@ defmodule Raxol.UI.Components.Input.Button do
   @doc """
   Updates the Button component state in response to messages or prop changes.
   """
-  @spec update(t(), term()) :: {:noreply, t()}
+  @spec update(term(), t()) :: t()
   @impl true
-  def update(state, _message) do
-    {:noreply, state}
+  def update(_message, state) do
+    state
   end
 
   @spec render(t(), map()) :: map()

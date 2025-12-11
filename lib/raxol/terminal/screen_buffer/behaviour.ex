@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
               charset :: charset()
             ) :: t()
   @callback invoke_g_set(buffer :: t(), slot :: atom()) :: t()
-  @callback get_current_g_set(buffer :: t()) :: atom()
+  @callback get_current_g_set(buffer :: t()) :: atom() | integer()
   @callback get_designated_charset(buffer :: t(), slot :: atom()) :: charset()
   @callback reset_state(buffer :: t()) :: t()
   @callback apply_single_shift(buffer :: t(), slot :: atom()) :: t()

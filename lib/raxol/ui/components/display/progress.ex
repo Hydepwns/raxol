@@ -104,7 +104,7 @@ defmodule Raxol.UI.Components.Display.Progress do
     # Handle animation tick based on the potentially updated state
     final_state = maybe_update_animation(updated_state)
 
-    {:noreply, final_state, []}
+    {final_state, []}
   end
 
   # Handle the :tick message for animation

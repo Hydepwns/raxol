@@ -17,8 +17,8 @@ defmodule Raxol.Terminal.Cursor.Style do
               Raxol.Terminal.Cursor.Manager.t()
   @callback set_custom(
               cursor :: Raxol.Terminal.Cursor.Manager.t(),
-              shape :: atom(),
-              dimensions :: map()
+              shape :: term(),
+              dimensions :: term()
             ) :: Raxol.Terminal.Cursor.Manager.t()
   @callback show(cursor :: Raxol.Terminal.Cursor.Manager.t()) ::
               Raxol.Terminal.Cursor.Manager.t()

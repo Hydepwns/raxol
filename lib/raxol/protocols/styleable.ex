@@ -39,19 +39,8 @@ defprotocol Raxol.Protocols.Styleable do
       end
   """
 
-  @type style :: %{
-          optional(:foreground) =>
-            {non_neg_integer(), non_neg_integer(), non_neg_integer()} | atom(),
-          optional(:background) =>
-            {non_neg_integer(), non_neg_integer(), non_neg_integer()} | atom(),
-          optional(:bold) => boolean(),
-          optional(:italic) => boolean(),
-          optional(:underline) => boolean(),
-          optional(:blink) => boolean(),
-          optional(:reverse) => boolean(),
-          optional(:hidden) => boolean(),
-          optional(:strikethrough) => boolean()
-        }
+  # Style can contain standard attributes plus implementation-specific keys
+  @type style :: map()
 
   @doc """
   Applies a style to the data structure.

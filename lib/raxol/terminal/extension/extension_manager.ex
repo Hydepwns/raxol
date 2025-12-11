@@ -181,11 +181,12 @@ defmodule Raxol.Terminal.Extension.ExtensionManager do
   @doc """
   Emits an event to all registered handlers.
   """
-  @spec emit_event(t(), atom() | String.t()) :: {:error, any()}
+  @spec emit_event(t(), atom() | String.t()) ::
+          {:ok, list(), t()} | {:error, :event_not_found}
   def emit_event(manager, event_name), do: emit_event(manager, event_name, %{})
 
   @spec emit_event(t(), atom() | String.t(), any()) ::
-          {:ok, t(), list()} | {:error, any()}
+          {:ok, list(), t()} | {:error, :event_not_found}
   def emit_event(manager, event_name, data) do
     handlers = Map.get(manager.event_handlers, event_name, [])
 

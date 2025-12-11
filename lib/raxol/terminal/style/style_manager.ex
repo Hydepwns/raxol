@@ -172,7 +172,24 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Converts an ANSI color code to a color name.
   """
-  @spec ansi_code_to_color_name(integer()) :: color() | nil
+  @spec ansi_code_to_color_name(integer()) ::
+          :black
+          | :red
+          | :green
+          | :yellow
+          | :blue
+          | :magenta
+          | :cyan
+          | :white
+          | :bright_black
+          | :bright_red
+          | :bright_green
+          | :bright_yellow
+          | :bright_blue
+          | :bright_magenta
+          | :bright_cyan
+          | :bright_white
+          | nil
   def ansi_code_to_color_name(code) do
     TextFormatting.ansi_code_to_color_name(code)
   end

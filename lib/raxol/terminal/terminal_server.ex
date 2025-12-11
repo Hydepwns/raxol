@@ -78,13 +78,7 @@ defmodule Raxol.Terminal.TerminalServer do
   @type terminal_input :: String.t() | list(integer())
   @type terminal_output :: String.t()
 
-  @type session_config :: %{
-          width: pos_integer(),
-          height: pos_integer(),
-          scrollback_lines: pos_integer(),
-          color_mode: :ansi | :xterm | :truecolor,
-          features: list(atom())
-        }
+  @type session_config :: map()
 
   ## Public API
 
