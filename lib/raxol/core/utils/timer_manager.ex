@@ -26,8 +26,7 @@ defmodule Raxol.Core.Utils.TimerManager do
       # Send {:check_status, :database} every 5 seconds
       {:ok, ref} = TimerManager.start_interval({:check_status, :database}, 5000)
   """
-  @spec start_interval(timer_msg(), non_neg_integer()) ::
-          {:ok, timer_ref()} | {:error, term()}
+  @spec start_interval(timer_msg(), non_neg_integer()) :: {:ok, reference()}
   def start_interval(message, interval_ms)
       when is_integer(interval_ms) and interval_ms > 0 do
     case :timer.send_interval(interval_ms, message) do
@@ -47,7 +46,7 @@ defmodule Raxol.Core.Utils.TimerManager do
       # Send {:retry, attempt_num} after 1 second
       ref = TimerManager.send_after({:retry, 1}, 1000)
   """
-  @spec send_after(timer_msg(), non_neg_integer()) :: timer_ref()
+  @spec send_after(timer_msg(), non_neg_integer()) :: reference()
   def send_after(message, delay_ms)
       when is_integer(delay_ms) and delay_ms >= 0 do
     Process.send_after(self(), message, delay_ms)

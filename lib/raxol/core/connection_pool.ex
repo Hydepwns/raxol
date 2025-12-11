@@ -209,7 +209,7 @@ defmodule Raxol.Core.ConnectionPool do
 
   # Private Functions
 
-  @spec initialize_pool(map()) :: any()
+  @spec initialize_pool(map()) :: map()
   defp initialize_pool(state) do
     connections =
       Enum.reduce(1..state.pool_size, [], fn _, acc ->
@@ -229,7 +229,8 @@ defmodule Raxol.Core.ConnectionPool do
     put_in(state.connections.available, connections)
   end
 
-  @spec do_checkout(map(), timeout()) :: any()
+  @spec do_checkout(map(), timeout()) ::
+          {:ok, connection(), map()} | {:error, term(), map()}
   defp do_checkout(state, timeout) do
     %{connections: conns, metrics: metrics} = state
 
@@ -257,7 +258,7 @@ defmodule Raxol.Core.ConnectionPool do
     end
   end
 
-  @spec do_checkin(map(), any()) :: any()
+  @spec do_checkin(map(), any()) :: map()
   defp do_checkin(state, conn) do
     %{connections: conns, metrics: metrics} = state
 
@@ -298,7 +299,8 @@ defmodule Raxol.Core.ConnectionPool do
     end
   end
 
-  @spec create_overflow_connection(map()) :: any()
+  @spec create_overflow_connection(map()) ::
+          {:ok, connection(), map()} | {:error, term(), map()}
   defp create_overflow_connection(state) do
     case state.connect_fn.() do
       {:ok, conn} ->
@@ -316,14 +318,14 @@ defmodule Raxol.Core.ConnectionPool do
     end
   end
 
-  @spec add_to_waiting_queue(map(), timeout()) :: any()
+  @spec add_to_waiting_queue(map(), timeout()) :: {:error, :timeout, map()}
   defp add_to_waiting_queue(state, _timeout) do
     # This would need proper implementation with timeout handling
     new_metrics = Map.update(state.metrics, :timeouts, 1, &(&1 + 1))
     {:error, :timeout, %{state | metrics: new_metrics}}
   end
 
-  @spec perform_health_checks(map()) :: any()
+  @spec perform_health_checks(map()) :: map()
   defp perform_health_checks(state) do
     %{connections: conns} = state
 
@@ -342,11 +344,7 @@ defmodule Raxol.Core.ConnectionPool do
     }
   end
 
-  @spec handle_idle_timeout(map(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_idle_timeout(%{connections: any()}, any()) :: map()
   defp handle_idle_timeout(state, conn) do
     %{connections: conns} = state
 
@@ -360,7 +358,7 @@ defmodule Raxol.Core.ConnectionPool do
     end
   end
 
-  @spec schedule_health_check(any()) :: any()
+  @spec schedule_health_check(timeout()) :: reference()
   defp schedule_health_check(interval) do
     Process.send_after(self(), :health_check, interval)
   end
@@ -371,12 +369,12 @@ defmodule Raxol.Core.ConnectionPool do
     {:ok, make_ref()}
   end
 
-  @spec default_disconnect(any()) :: any()
+  @spec default_disconnect(any()) :: :ok
   defp default_disconnect(_conn) do
     :ok
   end
 
-  @spec default_health_check(any()) :: any()
+  @spec default_health_check(any()) :: true
   defp default_health_check(_conn) do
     true
   end
