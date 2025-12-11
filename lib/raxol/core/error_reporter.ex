@@ -240,7 +240,6 @@ defmodule Raxol.Core.ErrorReporter do
 
   ## Private Implementation
 
-  @spec build_error_report(term(), map(), report_config(), map()) :: String.t()
   defp build_error_report(error, context, config, state) do
     base_report = %{
       session_id: state.current_session_id,
@@ -265,7 +264,6 @@ defmodule Raxol.Core.ErrorReporter do
     format_report(enhanced_report, config.format)
   end
 
-  @spec build_session_report(report_config(), map()) :: String.t()
   defp build_session_report(config, state) do
     session_data = %{
       session_id: state.current_session_id,
@@ -285,7 +283,6 @@ defmodule Raxol.Core.ErrorReporter do
     format_report(enhanced_data, config.format)
   end
 
-  @spec build_batch_report([map()], report_config(), map()) :: String.t()
   defp build_batch_report(queued_errors, config, state) do
     batch_data = %{
       session_id: state.current_session_id,
@@ -304,7 +301,6 @@ defmodule Raxol.Core.ErrorReporter do
     format_report(enhanced_data, config.format)
   end
 
-  @spec add_standard_data(map(), report_config(), term(), map()) :: map()
   defp add_standard_data(base_report, config, error, context) do
     enhanced = base_report
 
@@ -442,7 +438,6 @@ defmodule Raxol.Core.ErrorReporter do
     """
   end
 
-  @spec format_performance_section_md(map()) :: String.t()
   defp format_performance_section_md(perf_data) do
     """
     ## Performance Analysis
@@ -462,7 +457,6 @@ defmodule Raxol.Core.ErrorReporter do
     """
   end
 
-  @spec format_suggestions_section_md(map()) :: String.t()
   defp format_suggestions_section_md(suggestions) do
     """
     ## Suggested Fixes (Confidence: #{round(suggestions.confidence * 100)}%)
@@ -475,7 +469,6 @@ defmodule Raxol.Core.ErrorReporter do
     """
   end
 
-  @spec persist_report(String.t(), map()) :: :ok
   defp persist_report(report, state) do
     timestamp = DateTime.utc_now() |> DateTime.to_iso8601(:basic)
     filename = "error_report_#{timestamp}.md"
