@@ -7,7 +7,7 @@ defmodule Raxol.UI.Layout.Responsive do
 
   ## Breakpoints
 
-  Default breakpoints based on terminal columns: `:xs` (0-39), `:sm` (40-79), 
+  Default breakpoints based on terminal columns: `:xs` (0-39), `:sm` (40-79),
   `:md` (80-119), `:lg` (120-159), `:xl` (160+).
 
   ## Usage

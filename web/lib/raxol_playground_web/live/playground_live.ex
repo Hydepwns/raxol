@@ -84,7 +84,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       <div class="sidebar w-80 bg-gray-100 border-r overflow-y-auto">
         <div class="p-4">
           <h2 class="text-xl font-bold mb-4">Components</h2>
-          
+
           <!-- Search -->
           <div class="mb-4">
             <input
@@ -96,7 +96,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
               class="w-full px-3 py-2 border rounded-md"
             />
           </div>
-          
+
           <!-- Component List -->
           <div class="space-y-2">
             <%= for component <- @filtered_components do %>
@@ -117,7 +117,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
           </div>
         </div>
       </div>
-      
+
       <!-- Main Content -->
       <div class="main-content flex-1 flex flex-col">
         <!-- Header -->
@@ -129,7 +129,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
                 <p class="text-gray-600 mt-1"><%= @selected_component.description %></p>
               <% end %>
             </div>
-            
+
             <div class="flex gap-2">
               <button
                 phx-click="run_component"
@@ -140,7 +140,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
             </div>
           </div>
         </div>
-        
+
         <!-- Code Editor & Preview -->
         <div class="content flex-1 flex">
           <!-- Code Editor -->
@@ -148,7 +148,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
             <div class="editor-header p-3 bg-gray-50 border-b">
               <h3 class="font-medium">Component Code</h3>
             </div>
-            
+
             <div class="editor flex-1 relative">
               <textarea
                 phx-update="ignore"
@@ -158,24 +158,24 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
                 phx-blur="update_code"
               ><%= @component_code %></textarea>
             </div>
-            
+
             <%= if @error_message do %>
               <div class="error-panel p-3 bg-red-50 border-t border-red-200">
                 <div class="text-red-800 text-sm font-mono"><%= @error_message %></div>
               </div>
             <% end %>
           </div>
-          
+
           <!-- Preview Panel -->
           <div class="preview-panel w-1/2 flex flex-col">
             <div class="preview-header p-3 bg-gray-50 border-b">
               <h3 class="font-medium">Live Preview</h3>
             </div>
-            
+
             <div class="preview flex-1 bg-black text-green-400 font-mono text-sm overflow-auto">
               <div class="terminal-output p-4 whitespace-pre-wrap"><%= @preview_output %></div>
             </div>
-            
+
             <!-- Component Info -->
             <%= if @selected_component do %>
               <div class="component-info p-3 bg-gray-50 border-t">

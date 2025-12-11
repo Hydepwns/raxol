@@ -25,14 +25,14 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
 
       # Initialize graphics GPU acceleration
       {:ok, context} = GraphicsGPUAccelerator.init()
-      
+
       # Accelerate image processing
       {:ok, processed} = GraphicsGPUAccelerator.process_image(context, image_data, %{
         scale: 0.5,
         rotation: 90,
         effects: [:blur, :glow]
       })
-      
+
       # Batch process multiple graphics
       {:ok, results} = GraphicsGPUAccelerator.batch_process(context, graphics_list)
   """
@@ -145,7 +145,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
         {image2_data, %{rotation: 90}},
         {image3_data, %{effects: [:blur]}}
       ]
-      
+
       {:ok, results} = GPUAccelerator.batch_process(context, graphics)
   """
   @spec batch_process(gpu_context(), [{binary(), map()}], map()) ::

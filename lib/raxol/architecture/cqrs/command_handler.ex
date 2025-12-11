@@ -18,11 +18,11 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
 
       defmodule MyApp.Handlers.CreateUserHandler do
         use Raxol.Architecture.CQRS.CommandHandler
-        
+
         alias MyApp.Commands.CreateUserCommand
         alias MyApp.Events.UserCreatedEvent
         alias MyApp.Repositories.UserRepository
-        
+
         @impl true
         def handle(%CreateUserCommand{} = command, context) do
           with {:ok, user} <- UserRepository.create(command),
@@ -36,7 +36,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
               {:error, {:user_creation_failed, reason}}
           end
         end
-        
+
         defp create_user_created_event(user, command) do
           event = %UserCreatedEvent{
             user_id: user.id,

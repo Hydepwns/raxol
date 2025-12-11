@@ -5,7 +5,7 @@ defmodule Raxol.Core.GlobalRegistry do
   This module provides a single interface for:
   - Terminal session registry
   - Plugin registry
-  - Component registry  
+  - Component registry
   - Theme/palette registry
   - Command registry
 
@@ -14,11 +14,11 @@ defmodule Raxol.Core.GlobalRegistry do
   ### Terminal Sessions
       UnifiedRegistry.register(:sessions, session_id, session_data)
       sessions = UnifiedRegistry.list(:sessions)
-      
+
   ### Plugins
       UnifiedRegistry.register(:plugins, plugin_id, plugin_metadata)
       plugins = UnifiedRegistry.list(:plugins)
-      
+
   ### Commands
       UnifiedRegistry.register(:commands, command_name, command_handler)
       commands = UnifiedRegistry.search(:commands, pattern)

@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.TerminalServer do
   UnifiedManager
   ├── Command Processing (CSIHandler)
   ├── Session Management (SessionManager)
-  ├── Buffer Management (AdvancedManager) 
+  ├── Buffer Management (AdvancedManager)
   ├── State Management (StateManager)
   ├── Event System (EventManager)
   ├── Plugin System (PluginManager)
@@ -40,16 +40,16 @@ defmodule Raxol.Terminal.TerminalServer do
 
       # Start the unified manager
       {:ok, manager} = UnifiedManager.start_link()
-      
+
       # Create a terminal session
       {:ok, session} = UnifiedManager.create_session(manager, user_id, config)
-      
+
       # Process terminal input
       {:ok, updated_session} = UnifiedManager.process_input(manager, session_id, input)
-      
+
       # Get terminal output
       {:ok, output} = UnifiedManager.get_output(manager, session_id)
-      
+
       # Handle terminal commands
       {:ok, session} = UnifiedManager.execute_command(manager, session_id, command)
   """

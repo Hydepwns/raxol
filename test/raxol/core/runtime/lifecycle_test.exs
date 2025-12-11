@@ -5,7 +5,7 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
   """
   use ExUnit.Case, async: false
   import ExUnit.CaptureLog
-  
+
   alias Raxol.Core.Runtime.Lifecycle
   alias Raxol.Core.Runtime.Application
 

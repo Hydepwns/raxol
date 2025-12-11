@@ -16,12 +16,12 @@ defmodule Raxol.Core.Performance.Profiler do
   ## Usage
 
       import Raxol.Core.Performance.Profiler
-      
+
       # Profile a function
       profile :my_operation do
         expensive_computation()
       end
-      
+
       # Get performance report
       Profiler.report()
   """

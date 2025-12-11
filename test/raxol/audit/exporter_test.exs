@@ -32,7 +32,7 @@ defmodule Raxol.Audit.ExporterTest do
           end
         nil -> :ok
       end
-      
+
       case Process.whereis(Storage) do
         pid when is_pid(pid) ->
           try do
@@ -42,7 +42,7 @@ defmodule Raxol.Audit.ExporterTest do
           end
         nil -> :ok
       end
-      
+
       File.rm_rf!("test/audit_export_test")
       File.rm_rf!("test/audit_exports")
     end)

@@ -92,7 +92,7 @@ defmodule ConcurrentBufferTestHelper do
 
   ## Parameters
 
-  - `pid` - Buffer server PID  
+  - `pid` - Buffer server PID
   - `reader_count` - Number of reader tasks to create
   - `iterations` - Number of read operations per reader (default: 100)
 

@@ -34,7 +34,7 @@ defmodule Raxol.Security.InputValidator do
         %{name: :email, rules: [{:type, :string}, {:format, ~r/^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$/}]},
         %{name: :age, rules: [{:type, :integer}, {:min, 18}, {:max, 120}]}
       ]
-      
+
       validate_inputs(%{username: "john", email: "john@example.com", age: 25}, schema)
   """
   def validate_inputs(inputs, schema) when is_map(inputs) and is_list(schema) do
@@ -66,9 +66,8 @@ defmodule Raxol.Security.InputValidator do
   def validate_field(value, field_spec) do
     with {:ok, value} <- check_required(value, field_spec),
          {:ok, value} <- check_type(value, field_spec),
-         {:ok, value} <- apply_rules(value, field_spec.rules),
-         {:ok, value} <- sanitize_if_needed(value, field_spec) do
-      {:ok, value}
+         {:ok, value} <- apply_rules(value, field_spec.rules) do
+      sanitize_if_needed(value, field_spec)
     end
   end
 
@@ -287,7 +286,7 @@ defmodule Raxol.Security.InputValidator do
         {:max_length, 20},
         {:format, ~r/^[a-zA-Z0-9_]+$/}
       ])
-      
+
       username_validator.("john_doe")
       # => {:ok, "john_doe"}
   """

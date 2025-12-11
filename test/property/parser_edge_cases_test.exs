@@ -1,9 +1,9 @@
 defmodule Raxol.Property.ParserEdgeCasesTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
-  
+
   alias Raxol.Terminal.ANSI.Utils.AnsiParser, as: Parser
-  
+
   describe "malformed sequences" do
     property "incomplete CSI sequences don't crash" do
       check all prefix <- string(:printable, min_length: 0, max_length: 10),
@@ -13,7 +13,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
         # Build incomplete CSI
         param_str = if params == [], do: "", else: Enum.join(params, ";")
         incomplete = prefix <> "\e[" <> param_str <> suffix
-        
+
         # Should not crash
         result = Parser.parse(incomplete)
         assert is_list(result)
@@ -28,7 +28,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
         # CSI without proper terminator, add space to separate from text
         sequence = "\e[" <> Enum.join(params, ";")
         full_input = sequence <> " " <> text
-        
+
         # Should handle gracefully
         result = Parser.parse(full_input)
         assert is_list(result)
@@ -54,7 +54,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
                 ),
                 max_runs: 500 do
         sequence = "\e[" <> Enum.join(invalid_params, ";") <> "m"
-        
+
         # Should not crash
         result = Parser.parse(sequence)
         assert is_list(result)
@@ -68,7 +68,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
                 cmd <- member_of(["A", "B", "C", "D", "H"]),
                 max_runs: 500 do
         sequence = "\e[#{param}#{cmd}"
-        
+
         # Should handle large parameters
         result = Parser.parse(sequence)
         assert is_list(result)
@@ -83,7 +83,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
         opening = Enum.map_join(1..depth, "", fn i -> "\e[#{rem(i, 7) + 30}m" end)
         closing = "\e[0m"
         sequence = opening <> "text" <> closing
-        
+
         # Should handle deep nesting
         result = Parser.parse(sequence)
         assert is_list(result)
@@ -96,7 +96,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
         # Generate many parameters
         params = Enum.map_join(1..param_count, ";", fn i -> Integer.to_string(rem(i, 108)) end)
         sequence = "\e[" <> params <> "m"
-        
+
         # Should handle long parameter lists
         result = Parser.parse(sequence)
         assert is_list(result)
@@ -113,7 +113,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
           prefix <> "\e[;;m" <> suffix,    # Multiple semicolons
           prefix <> "\e[0m" <> suffix      # Reset
         ]
-        
+
         Enum.each(sequences, fn seq ->
           result = Parser.parse(seq)
           assert is_list(result)
@@ -133,7 +133,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
           "\e[#{emoji}#{color}m",  # Invalid
           "#{emoji}\e[#{color}m#{emoji}"
         ]
-        
+
         Enum.each(sequences, fn seq ->
           result = Parser.parse(seq)
           assert is_list(result)
@@ -152,7 +152,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
           "#{base}#{combining}\e[#{color}m",
           "\e[#{color}m#{base}\e[0m#{combining}"
         ]
-        
+
         Enum.each(sequences, fn seq ->
           result = Parser.parse(seq)
           assert is_list(result)
@@ -169,9 +169,9 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
         with_zwj = String.graphemes(text)
                    |> Enum.intersperse(String.duplicate(zwj, zwj_count))
                    |> Enum.join()
-        
+
         sequence = "\e[31m" <> with_zwj <> "\e[0m"
-        
+
         result = Parser.parse(sequence)
         assert is_list(result)
       end
@@ -188,7 +188,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
           "\e[#{color}m#{hebrew}\e[0m",
           "#{arabic}\e[#{color}m#{hebrew}\e[0m"
         ]
-        
+
         Enum.each(sequences, fn seq ->
           result = Parser.parse(seq)
           assert is_list(result)
@@ -213,7 +213,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
                 max_runs: 500 do
         # Interleave mode changes with text
         sequence = Enum.intersperse(modes, text) |> Enum.join()
-        
+
         result = Parser.parse(sequence)
         assert is_list(result)
       end
@@ -225,7 +225,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
                 max_runs: 500 do
         # Nested escapes (second should override)
         sequence = String.slice(outer, 0..-2//1) <> inner
-        
+
         result = Parser.parse(sequence)
         assert is_list(result)
       end
@@ -237,7 +237,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
                 max_runs: 500 do
         # Control char in middle of sequence
         sequence = "\e[" <> Enum.join(params, ";") <> ctrl <> "m"
-        
+
         result = Parser.parse(sequence)
         assert is_list(result)
       end
@@ -256,9 +256,9 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
             "x"
           end
         end)
-        
+
         {time, result} = :timer.tc(fn -> Parser.parse(sequence) end)
-        
+
         assert is_list(result)
         # Should be fast even with many alternations
         assert time < count * 100  # Less than 100μs per item
@@ -279,9 +279,9 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
                 ),
                 max_runs: 20 do
         sequence = Enum.join(segments)
-        
+
         {time, result} = :timer.tc(fn -> Parser.parse(sequence) end)
-        
+
         assert is_list(result)
         # Performance should scale linearly
         byte_size = byte_size(sequence)
@@ -297,10 +297,10 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
         # Generate data larger than typical buffers
         data_size = size_kb * 1024
         sequence = String.duplicate("a", data_size)
-        
+
         # Add some escape sequences
         with_escapes = "\e[31m" <> sequence <> "\e[0m"
-        
+
         # Should handle without overflow
         result = Parser.parse(with_escapes)
         assert is_list(result)
@@ -314,14 +314,14 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
         many_small = Enum.map_join(1..count, "", fn i ->
           "\e[#{rem(i, 7) + 31}m#{i}"
         end)
-        
+
         # One large sequence with many parameters
         one_large = "\e[" <> Enum.join(1..count, ";") <> "m"
-        
+
         # Both should be handled
         result1 = Parser.parse(many_small)
         result2 = Parser.parse(one_large)
-        
+
         assert is_list(result1)
         assert is_list(result2)
       end
@@ -335,7 +335,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
                 max_runs: 500 do
         # OSC sequence with different terminators
         sequence = "\e]0;" <> title <> terminator
-        
+
         result = Parser.parse(sequence)
         assert is_list(result)
       end
@@ -346,7 +346,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
                 max_runs: 200 do
         # Device Control String
         sequence = "\eP" <> data <> "\e\\"
-        
+
         result = Parser.parse(sequence)
         assert is_list(result)
       end
@@ -359,7 +359,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
                 max_runs: 200 do
         # Mix different sequence types
         mixed = csi <> text <> osc <> text
-        
+
         result = Parser.parse(mixed)
         assert is_list(result)
       end
@@ -367,7 +367,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
   end
 
   # Generator helpers
-  
+
   defp csi_generator do
     gen all cmd <- member_of(["A", "B", "C", "D", "H", "J", "K", "m"]),
             params <- list_of(integer(0..100), max_length: 3) do

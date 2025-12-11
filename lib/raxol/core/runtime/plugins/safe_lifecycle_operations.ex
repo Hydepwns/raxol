@@ -84,9 +84,8 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     ErrorRecovery.with_fallback(
       fn ->
         # Try to reload
-        with {:ok, new_state} <- safe_unload_plugin(plugin_id, state),
-             {:ok, final_state} <- safe_load_plugin(plugin_id, %{}, new_state) do
-          {:ok, final_state}
+        with {:ok, new_state} <- safe_unload_plugin(plugin_id, state) do
+          safe_load_plugin(plugin_id, %{}, new_state)
         end
       end,
       fn ->

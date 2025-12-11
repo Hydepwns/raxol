@@ -81,13 +81,13 @@ defmodule Raxol.Terminal.Emulator.Core do
   end
 
   defp handle_cursor_adjustment(true, emulator) do
-    # DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is true, skipping cursor adjustment
+    # DEBUG: autowrap handled cursor, skipping adjustment
     # Remove the flag and return the emulator without further cursor adjustment
     %{emulator | cursor_handled_by_autowrap: false}
   end
 
   defp handle_cursor_adjustment(false, emulator) do
-    # DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is false, checking cursor position
+    # DEBUG: autowrap did not handle cursor, checking position
     active_buffer = get_screen_buffer(emulator)
     buffer_height = ScreenBuffer.get_height(active_buffer)
 
@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Emulator.Core do
           {0, 0}
       end
 
-    # DEBUG: ensure_cursor_in_visible_region - cursor_y: #{cursor_y}, buffer_height: #{buffer_height}
+    # DEBUG: cursor_y: #{cursor_y}, buffer_height: #{buffer_height}
     handle_cursor_position_check(cursor_y >= buffer_height, emulator)
   end
 
@@ -208,7 +208,7 @@ defmodule Raxol.Terminal.Emulator.Core do
     # Resize main screen buffer
     main_buffer = resize_main_buffer(emulator.main_screen_buffer, width, height)
 
-    # Resize alternate screen buffer  
+    # Resize alternate screen buffer
     alternate_buffer =
       resize_alternate_buffer(emulator.alternate_screen_buffer, width, height)
 

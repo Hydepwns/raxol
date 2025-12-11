@@ -643,7 +643,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   end
 
   def handle_scroll_down(emulator, _lines) do
-    # Map to actual scroll handling  
+    # Map to actual scroll handling
     # Simplified for now
     {:ok, emulator}
   end

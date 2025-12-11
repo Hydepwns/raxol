@@ -17,16 +17,16 @@ defmodule Raxol.Terminal.Color.TrueColor do
       red = TrueColor.rgb(255, 0, 0)
       blue = TrueColor.hex("#0066CC")
       green = TrueColor.hsl(120, 100, 50)
-      
+
       # Generate ANSI escape sequences
       TrueColor.to_ansi_fg(red)  # "\e[38;2;255;0;0m"
       TrueColor.to_ansi_bg(blue) # "\e[48;2;0;102;204m"
-      
+
       # Color manipulation
       darker = TrueColor.darken(red, 0.2)
       lighter = TrueColor.lighten(blue, 0.3)
       mixed = TrueColor.mix(red, blue, 0.5)
-      
+
       # Accessibility
       contrast = TrueColor.contrast_ratio(red, blue)
       accessible? = TrueColor.wcag_compliant?(red, blue, :aa)
@@ -92,7 +92,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
 
       iex> TrueColor.rgb(255, 0, 0)
       %TrueColor{r: 255, g: 0, b: 0, a: 255}
-      
+
       iex> TrueColor.rgb(128, 128, 128, 128)
       %TrueColor{r: 128, g: 128, b: 128, a: 128}
   """
@@ -109,10 +109,10 @@ defmodule Raxol.Terminal.Color.TrueColor do
 
       iex> TrueColor.hex("#FF0000")
       %TrueColor{r: 255, g: 0, b: 0, a: 255}
-      
+
       iex> TrueColor.hex("0066CC")
       %TrueColor{r: 0, g: 102, b: 204, a: 255}
-      
+
       iex> TrueColor.hex("#FF0000AA")
       %TrueColor{r: 255, g: 0, b: 0, a: 170}
   """
@@ -135,7 +135,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
 
       iex> TrueColor.hsl(0, 100, 50)    # Pure red
       %TrueColor{r: 255, g: 0, b: 0, a: 255}
-      
+
       iex> TrueColor.hsl(120, 100, 50)  # Pure green
       %TrueColor{r: 0, g: 255, b: 0, a: 255}
   """
@@ -180,7 +180,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
 
       iex> TrueColor.named(:red)
       %TrueColor{r: 255, g: 0, b: 0, a: 255}
-      
+
       iex> TrueColor.named("blue")
       %TrueColor{r: 0, g: 0, b: 255, a: 255}
   """
@@ -752,7 +752,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     select_red_ansi_code(brightness)
   end
 
-  # Green/Bright Green  
+  # Green/Bright Green
   defp map_to_ansi_color(r, g, b, brightness)
        when r < 128 and g > 128 and b < 128 do
     select_green_ansi_code(brightness)

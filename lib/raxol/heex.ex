@@ -9,14 +9,14 @@ defmodule Raxol.HEEx do
 
       defmodule MyHEExApp do
         use Raxol.HEEx
-        
+
         def render(assigns) do
           ~H\"\"\"
           <.terminal_box padding={2} border="single">
             <.terminal_text color="green" bold>
               Hello, <%= @name %>!
             </.terminal_text>
-            
+
             <.terminal_button phx-click="click_me" class="primary">
               Click me!
             </.terminal_button>
@@ -45,7 +45,7 @@ defmodule Raxol.HEEx do
   def compile_heex_for_terminal(template, assigns) do
     # Basic HEEx template compilation for terminal rendering
     # 1. Parse the HEEx template for basic variable interpolation
-    # 2. Convert HTML-like elements to terminal buffer operations  
+    # 2. Convert HTML-like elements to terminal buffer operations
     # 3. Handle terminal-specific attributes and styling
 
     processed_template = interpolate_assigns(template, assigns)

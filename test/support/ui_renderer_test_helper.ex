@@ -9,7 +9,7 @@ defmodule Raxol.UI.RendererTestHelper do
 
   ## Parameters
     * `x` - X position
-    * `y` - Y position  
+    * `y` - Y position
     * `text` - Text content
 
   ## Returns

@@ -12,7 +12,7 @@ defmodule Raxol.Core.I18n do
       children = [
         {Raxol.Core.I18n.I18nServer, name: Raxol.Core.I18n.I18nServer, config: config}
       ]
-      
+
   2. Replace `Raxol.Core.I18n` with `Raxol.Core.I18n` in your code
 
   3. All API calls remain the same
@@ -48,7 +48,7 @@ defmodule Raxol.Core.I18n do
 
       iex> I18n.t("welcome_message")
       "Welcome!"
-      
+
       iex> I18n.t("hello_name", %{name: "John"})
       "Hello, John!"
   """
@@ -64,7 +64,7 @@ defmodule Raxol.Core.I18n do
 
       iex> I18n.set_locale("fr")
       :ok
-      
+
       iex> I18n.set_locale("invalid")
       {:error, :locale_not_available}
   """
@@ -94,7 +94,7 @@ defmodule Raxol.Core.I18n do
       iex> I18n.set_locale("ar")
       iex> I18n.rtl?()
       true
-      
+
       iex> I18n.set_locale("en")
       iex> I18n.rtl?()
       false
@@ -111,7 +111,7 @@ defmodule Raxol.Core.I18n do
 
       iex> I18n.format_currency(1234.56, "USD")
       "$1,234.56"
-      
+
       iex> I18n.set_locale("fr")
       iex> I18n.format_currency(1234.56, "EUR")
       "1 234,56 €"

@@ -1,9 +1,9 @@
 defmodule RaxolPlaygroundWeb.ReplLive do
   use RaxolPlaygroundWeb, :live_view
-  
+
   @impl true
   def mount(_params, _session, socket) do
-    socket = 
+    socket =
       socket
       |> assign(:history, [])
       |> assign(:current_input, "")
@@ -11,14 +11,14 @@ defmodule RaxolPlaygroundWeb.ReplLive do
       |> assign(:command_history, [])
       |> assign(:history_index, 0)
       |> assign(:session_id, generate_session_id())
-    
+
     {:ok, socket}
   end
-  
+
   @impl true
   def handle_event("execute_code", %{"code" => code}, socket) do
     result = evaluate_elixir_code(code)
-    
+
     history_entry = %{
       input: code,
       output: result.output,
@@ -26,61 +26,61 @@ defmodule RaxolPlaygroundWeb.ReplLive do
       status: result.status,
       execution_time: result.execution_time
     }
-    
+
     updated_history = [history_entry | socket.assigns.history]
     updated_command_history = [code | socket.assigns.command_history]
-    
-    socket = 
+
+    socket =
       socket
       |> assign(:history, updated_history)
       |> assign(:command_history, updated_command_history)
       |> assign(:current_input, "")
       |> assign(:history_index, 0)
-    
+
     {:noreply, socket}
   end
-  
+
   def handle_event("update_input", %{"input" => input}, socket) do
     {:noreply, assign(socket, :current_input, input)}
   end
-  
+
   def handle_event("navigate_history", %{"direction" => direction}, socket) do
     command_history = socket.assigns.command_history
     current_index = socket.assigns.history_index
-    
+
     {new_index, new_input} = case direction do
       "up" when current_index < length(command_history) ->
         index = current_index + 1
         input = Enum.at(command_history, index - 1, "")
         {index, input}
-      
+
       "down" when current_index > 0 ->
         index = current_index - 1
         input = if index == 0, do: "", else: Enum.at(command_history, index - 1, "")
         {index, input}
-      
+
       _ ->
         {current_index, socket.assigns.current_input}
     end
-    
-    socket = 
+
+    socket =
       socket
       |> assign(:history_index, new_index)
       |> assign(:current_input, new_input)
-    
+
     {:noreply, socket}
   end
-  
+
   def handle_event("clear_repl", _params, socket) do
-    socket = 
+    socket =
       socket
       |> assign(:history, [])
       |> assign(:current_input, "")
       |> assign(:history_index, 0)
-    
+
     {:noreply, socket}
   end
-  
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -94,7 +94,7 @@ defmodule RaxolPlaygroundWeb.ReplLive do
               Interactive Elixir environment with Raxol components
             </p>
           </div>
-          
+
           <div class="flex gap-2">
             <button
               phx-click="clear_repl"
@@ -102,14 +102,14 @@ defmodule RaxolPlaygroundWeb.ReplLive do
             >
               Clear
             </button>
-            
+
             <div class="text-sm text-gray-400 px-3 py-1">
               Session: <%= String.slice(@session_id, 0..7) %>
             </div>
           </div>
         </div>
       </div>
-      
+
       <!-- REPL History -->
       <div class="repl-history flex-1 overflow-y-auto p-4 font-mono text-sm">
         <!-- Welcome Message -->
@@ -126,7 +126,7 @@ defmodule RaxolPlaygroundWeb.ReplLive do
             <div class="mt-4 text-xs">Use ↑/↓ arrows to navigate command history</div>
           </div>
         <% end %>
-        
+
         <!-- History Entries -->
         <%= for {entry, index} <- Enum.with_index(Enum.reverse(@history)) do %>
           <div class="repl-entry mb-4">
@@ -137,13 +137,13 @@ defmodule RaxolPlaygroundWeb.ReplLive do
               </div>
               <div class="input-text text-white flex-1 whitespace-pre-wrap"><%= entry.input %></div>
             </div>
-            
+
             <!-- Output -->
             <div class="repl-output mt-1 ml-12">
               <div class={output_class(entry.status)}>
                 <pre class="whitespace-pre-wrap"><%= entry.output %></pre>
               </div>
-              
+
               <!-- Metadata -->
               <div class="metadata text-xs text-gray-500 mt-1 flex items-center gap-4">
                 <span>
@@ -160,14 +160,14 @@ defmodule RaxolPlaygroundWeb.ReplLive do
           </div>
         <% end %>
       </div>
-      
+
       <!-- Input Area -->
       <div class="repl-input-area bg-gray-800 border-t border-gray-700 p-4">
         <div class="flex items-start">
           <div class="prompt text-yellow-400 mr-2 flex-shrink-0 font-mono">
             iex(<%= length(@history) + 1 %>)>
           </div>
-          
+
           <div class="input-container flex-1">
             <textarea
               phx-hook="ReplInput"
@@ -184,7 +184,7 @@ defmodule RaxolPlaygroundWeb.ReplLive do
               phx-key-navigate_history
               class="w-full bg-transparent text-white font-mono resize-none border-none outline-none"
             ><%= @current_input %></textarea>
-            
+
             <!-- Input Suggestions -->
             <%= if String.length(@current_input) > 2 do %>
               <div class="suggestions mt-2 p-2 bg-gray-700 rounded text-xs">
@@ -199,7 +199,7 @@ defmodule RaxolPlaygroundWeb.ReplLive do
             <% end %>
           </div>
         </div>
-        
+
         <!-- Help Text -->
         <div class="help-text text-xs text-gray-500 mt-2 flex items-center gap-4">
           <span>Press <kbd class="kbd">Enter</kbd> to execute</span>
@@ -210,28 +210,28 @@ defmodule RaxolPlaygroundWeb.ReplLive do
     </div>
     """
   end
-  
+
   # Helper functions
-  
+
   defp generate_session_id do
     :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
   end
-  
+
   defp evaluate_elixir_code(code) do
     start_time = System.monotonic_time(:microsecond)
-    
+
     try do
       # Simulate code evaluation
       result = case String.trim(code) do
         "IO.puts(\"Hello Raxol!\")" ->
           "Hello Raxol!\n:ok"
-        
+
         "Enum.map([1, 2, 3], &(&1 * 2))" ->
           "[2, 4, 6]"
-        
+
         "use Raxol.UI, framework: :react" ->
           ":ok"
-        
+
         ":observer.start()" ->
           ":ok\n# Observer GUI started"
 
@@ -259,9 +259,9 @@ defmodule RaxolPlaygroundWeb.ReplLive do
               end
           end
       end
-      
+
       execution_time = System.monotonic_time(:microsecond) - start_time
-      
+
       %{
         output: result,
         status: :success,
@@ -270,7 +270,7 @@ defmodule RaxolPlaygroundWeb.ReplLive do
     rescue
       error ->
         execution_time = System.monotonic_time(:microsecond) - start_time
-        
+
         %{
           output: "** (#{error.__struct__}) #{Exception.message(error)}",
           status: :error,
@@ -278,14 +278,14 @@ defmodule RaxolPlaygroundWeb.ReplLive do
         }
     end
   end
-  
+
   defp extract_module_name(code) do
     case Regex.run(~r/defmodule\s+([A-Za-z0-9_.]+)/, code) do
       [_, module_name] -> module_name
       _ -> "UnknownModule"
     end
   end
-  
+
   defp output_class(status) do
     case status do
       :success -> "text-green-400"
@@ -294,7 +294,7 @@ defmodule RaxolPlaygroundWeb.ReplLive do
       _ -> "text-gray-300"
     end
   end
-  
+
   defp status_class(status) do
     case status do
       :success -> "text-green-500"
@@ -303,14 +303,14 @@ defmodule RaxolPlaygroundWeb.ReplLive do
       _ -> "text-gray-500"
     end
   end
-  
+
   defp format_timestamp(timestamp) do
     timestamp
     |> DateTime.to_time()
     |> Time.to_string()
     |> String.slice(0..7)
   end
-  
+
   defp get_input_suggestions(input) do
     suggestions = [
       %{code: "IO.puts/1", description: "Print to stdout"},
@@ -323,9 +323,9 @@ defmodule RaxolPlaygroundWeb.ReplLive do
       %{code: ":observer.start()", description: "Start Erlang Observer"},
       %{code: "Mix.env()", description: "Get current Mix environment"}
     ]
-    
+
     input_lower = String.downcase(input)
-    
+
     suggestions
     |> Enum.filter(fn suggestion ->
       String.contains?(String.downcase(suggestion.code), input_lower) ||

@@ -10,10 +10,10 @@ defmodule Raxol.Property.CoreTest do
       check all sequence <- csi_sequence_generator(),
                 max_runs: 500 do
         result = Parser.parse(sequence)
-        
+
         # Should return a list of sequences
         assert is_list(result)
-        
+
         # If parsed, should have valid structure
         Enum.each(result, fn item ->
           assert is_map(item) or is_binary(item)
@@ -35,7 +35,7 @@ defmodule Raxol.Property.CoreTest do
                 max_runs: 500 do
         # Pure text should be preserved
         parsed = Parser.parse(text)
-        
+
         # Extract text from parsed result
         extracted = extract_text(parsed)
         assert String.contains?(extracted, text) or extracted == text
@@ -48,7 +48,7 @@ defmodule Raxol.Property.CoreTest do
         # Parsing twice should give same result
         parsed1 = Parser.parse(sequence)
         parsed2 = Parser.parse(sequence)
-        
+
         assert parsed1 == parsed2
       end
     end
@@ -60,13 +60,13 @@ defmodule Raxol.Property.CoreTest do
                 max_runs: 100 do
         # Generate input of specific size
         input = String.duplicate("a", size)
-        
+
         # Measure parsing time
         {time, result} = :timer.tc(fn -> Parser.parse(input) end)
-        
+
         # Should complete and return a list
         assert is_list(result)
-        
+
         # Time should scale roughly linearly (with some tolerance)
         # Adjusted expectation based on current parser performance characteristics and system variance
         expected_max = size * 800  # 800 microseconds per char as upper bound (allowing for test environment overhead)
@@ -81,7 +81,7 @@ defmodule Raxol.Property.CoreTest do
                 height <- integer(10..100),
                 max_runs: 200 do
         buffer = Buffer.new({width, height})
-        
+
         assert buffer.width == width
         assert buffer.height == height
         assert is_list(buffer.cells)
@@ -93,7 +93,7 @@ defmodule Raxol.Property.CoreTest do
                 max_runs: 500 do
         buffer = Buffer.new({80, 24})
         updated = Buffer.write(buffer, text)
-        
+
         # Buffer should still be valid
         assert updated.width == 80
         assert updated.height == 24
@@ -108,7 +108,7 @@ defmodule Raxol.Property.CoreTest do
                 height <- integer(10..200),
                 max_runs: 200 do
         terminal = %{width: width, height: height}
-        
+
         assert terminal.width > 0
         assert terminal.height > 0
         assert terminal.width <= 500
@@ -122,7 +122,7 @@ defmodule Raxol.Property.CoreTest do
                 b <- integer(0..255),
                 max_runs: 500 do
         color = %{r: r, g: g, b: b}
-        
+
         assert color.r in 0..255
         assert color.g in 0..255
         assert color.b in 0..255
@@ -139,7 +139,7 @@ defmodule Raxol.Property.CoreTest do
             %{state | modes: MapSet.delete(state.modes, mode)}
           end
         end)
-        
+
         # Modes should be a valid set
         assert is_struct(terminal_state.modes, MapSet)
         assert Enum.all?(terminal_state.modes, &is_atom/1)

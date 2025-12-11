@@ -67,9 +67,8 @@ defmodule Raxol.Terminal.Config.Persistence do
     current_version = get_config_version(config)
 
     # Apply migrations if needed
-    with :ok <- validate_version(current_version),
-         {:ok, migrated_config} <- apply_migrations(config, current_version) do
-      {:ok, migrated_config}
+    with :ok <- validate_version(current_version) do
+      apply_migrations(config, current_version)
     end
   end
 

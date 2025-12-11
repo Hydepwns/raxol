@@ -15,7 +15,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   Returns:
 
     * `:no_change` if trees are identical
-    * `{:replace, new_tree}` if the root node differs significantly  
+    * `{:replace, new_tree}` if the root node differs significantly
     * `{:update, path, changes}` for subtree updates. `path` is a list of indices
       to the parent node, and `changes` describes the modifications to its children
       (either as indexed diffs or keyed operations).
@@ -147,11 +147,11 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
     # `path` here is path_to_parent.
     # `diffs` contains tuples `{original_child_idx, diff_for_child_at_idx}`.
     # `diff_for_child_at_idx` could be {:replace, new_content_for_child} or
-    # {:update, child_path_segment, grandchild_changes} if the child itself had children that changed.
+    # {:update, child_path_segment, grandchild_changes} if child had changed.
     # The `child_path_segment` in such an internal update would be relative to the child,
     # so if child was at path `P` and its own child at index `C` changed, the path in that
     # internal diff would be `[C]`.
-    # The path stored in the diff entry `{idx, diff}` should reflect the *full path to the changed node*
+    # The path stored in `{idx, diff}` should reflect the *full path to changed*
     # if the diff is an :update.
     # However, `do_diff_trees` already returns paths like `path ++ [idx]` if it's an update.
     # So `diff_for_child_at_idx` will contain the correct full path if it's an update.

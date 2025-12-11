@@ -536,7 +536,7 @@ defmodule Mix.Tasks.Raxol.Bench do
         <title>Raxol Performance Dashboard - #{timestamp}</title>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <style>
-            body { 
+            body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 margin: 0;
                 padding: 20px;
@@ -624,49 +624,49 @@ defmodule Mix.Tasks.Raxol.Bench do
                 <h1>Raxol Performance Dashboard</h1>
                 <div class="subtitle">Generated: #{timestamp}</div>
             </div>
-            
+
             <div class="metrics-grid">
                 <div class="metric-card">
                     <h3>Parser Performance</h3>
                     <div class="metric-value good">3.3μs</div>
                     <span class="metric-status status-good">Target Met (&lt;10μs)</span>
                 </div>
-                
+
                 <div class="metric-card">
                     <h3>Memory Usage</h3>
                     <div class="metric-value good">2.8MB</div>
                     <span class="metric-status status-good">Target Met (&lt;5MB)</span>
                 </div>
-                
+
                 <div class="metric-card">
                     <h3>Render Time</h3>
                     <div class="metric-value good">0.9ms</div>
                     <span class="metric-status status-good">Target Met (&lt;2ms)</span>
                 </div>
-                
+
                 <div class="metric-card">
                     <h3>Concurrent Ops</h3>
                     <div class="metric-value good">1.2ms</div>
                     <span class="metric-status status-good">Excellent</span>
                 </div>
             </div>
-            
+
             <div class="chart-container">
                 <h2>Performance Trends</h2>
                 <canvas id="trendsChart"></canvas>
             </div>
-            
+
             <div class="chart-container">
                 <h2>Memory Allocation by Component</h2>
                 <canvas id="memoryChart"></canvas>
             </div>
-            
+
             <div class="chart-container">
                 <h2>Operation Latency Distribution</h2>
                 <canvas id="latencyChart"></canvas>
             </div>
         </div>
-        
+
         <script>
             // Performance Trends Chart
             const trendsCtx = document.getElementById('trendsChart').getContext('2d');
@@ -707,7 +707,7 @@ defmodule Mix.Tasks.Raxol.Bench do
                     }
                 }
             });
-            
+
             // Memory Chart
             const memoryCtx = document.getElementById('memoryChart').getContext('2d');
             new Chart(memoryCtx, {
@@ -735,7 +735,7 @@ defmodule Mix.Tasks.Raxol.Bench do
                     }
                 }
             });
-            
+
             // Latency Distribution
             const latencyCtx = document.getElementById('latencyChart').getContext('2d');
             new Chart(latencyCtx, {
@@ -768,7 +768,7 @@ defmodule Mix.Tasks.Raxol.Bench do
                     }
                 }
             });
-            
+
             // Set chart heights
             document.getElementById('trendsChart').style.height = '300px';
             document.getElementById('memoryChart').style.height = '300px';
@@ -860,28 +860,28 @@ defmodule Mix.Tasks.Raxol.Bench do
 
     Usage:
       mix raxol.bench                    # Run all benchmarks
-      mix raxol.bench parser             # Run parser benchmarks only  
+      mix raxol.bench parser             # Run parser benchmarks only
       mix raxol.bench terminal           # Run terminal component benchmarks
       mix raxol.bench rendering          # Run rendering benchmarks
       mix raxol.bench memory             # Run memory benchmarks
       mix raxol.bench dashboard          # Generate dashboard from latest results
-      
+
     Options:
       --quick                            # Quick benchmark run (reduced time)
       --compare                          # Compare with previous results
       --dashboard                        # Generate full performance dashboard
       --regression                       # Check for performance regressions (5% threshold)
       --help                             # Show this help
-      
+
     Examples:
       mix raxol.bench --quick            # Quick performance check
       mix raxol.bench parser --dashboard # Parser benchmarks + dashboard
       mix raxol.bench --regression       # Full benchmarks with regression detection
-      
+
     Output:
       Results are saved to bench/output/enhanced/ with:
       • HTML reports for interactive viewing
-      • JSON data for programmatic analysis  
+      • JSON data for programmatic analysis
       • Performance dashboard with charts
       • Regression analysis reports
       • Baseline metrics for comparison

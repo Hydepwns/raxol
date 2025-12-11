@@ -608,7 +608,7 @@ defmodule Raxol.Benchmark.Config do
     \e[3;1H\e[1mSystem Monitoring Dashboard\e[0m
     \e[5;1H\e[33mCPU Usage:\e[0m
     \e[6;3H\e[32m██████████████\e[37m░░░░░░░░░░░░░░░░\e[0m 47%
-    \e[8;1H\e[33mMemory Usage:\e[0m  
+    \e[8;1H\e[33mMemory Usage:\e[0m
     \e[9;3H\e[31m████████████████████\e[37m░░░░░░░░░░\e[0m 67%
     \e[11;1H\e[33mDisk I/O:\e[0m
     \e[12;3H\e[36mRead:  ████\e[37m░░░░░░░░░░░░░░░░░░░░░░░░░░\e[0m 15%

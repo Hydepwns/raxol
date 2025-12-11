@@ -17,7 +17,7 @@ defmodule Raxol.Architecture.EventSourcing.Event do
 
       defmodule TerminalCreatedEvent do
         use Raxol.Architecture.EventSourcing.Event
-        
+
         defstruct [
           :terminal_id,
           :user_id,
@@ -26,7 +26,7 @@ defmodule Raxol.Architecture.EventSourcing.Event do
           :created_at,
           :metadata
         ]
-        
+
         @type t :: %__MODULE__{
           terminal_id: String.t(),
           user_id: String.t(),

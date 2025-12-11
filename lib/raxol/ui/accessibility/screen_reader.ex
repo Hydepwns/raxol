@@ -38,7 +38,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         speech_rate: 200,
         enable_braille: true
       )
-      
+
       # Register UI component for accessibility
       ScreenReader.register_component(sr, "main-terminal", %{
         role: "application",
@@ -46,11 +46,11 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         description: "Interactive terminal interface",
         landmarks: ["main", "navigation"]
       })
-      
+
       # Announce dynamic content changes
       ScreenReader.announce(sr, "Command completed successfully", :polite)
       ScreenReader.announce(sr, "Error: File not found", :assertive)
-      
+
       # Set focus and update accessible state
       ScreenReader.set_focus(sr, "command-input")
       ScreenReader.update_property(sr, "status-bar", %{

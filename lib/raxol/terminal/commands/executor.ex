@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Commands.Executor do
         final_byte
       ) do
     # Raxol.Core.Runtime.Log.debug(
-    #   "[Executor.execute_csi_command] BEFORE: scroll_region=#{inspect(emulator.scroll_region)}, final_byte=#{inspect(final_byte)}"
+    #   "[Executor] BEFORE: scroll=#{inspect(emulator.scroll_region)}"
     # )
 
     params = Parser.parse_params(params_buffer)
@@ -273,7 +273,7 @@ defmodule Raxol.Terminal.Commands.Executor do
   end
 
   @spec execute_dcs_command(map(), binary(), binary(), binary()) ::
-          map() | {:ok, map()} | {:error, atom(), map()}
+          {:ok, map()} | {:error, atom(), map()}
   def execute_dcs_command(
         emulator,
         params_buffer,
@@ -293,7 +293,7 @@ defmodule Raxol.Terminal.Commands.Executor do
   end
 
   @spec execute_dcs_command(map(), integer(), list()) ::
-          map() | {:ok, map()} | {:error, atom(), map()}
+          {:ok, map()} | {:error, atom(), map()}
   def execute_dcs_command(emulator, _command, params) do
     # Convert to string format for the existing handler
     params_buffer = Enum.join(params, ";")

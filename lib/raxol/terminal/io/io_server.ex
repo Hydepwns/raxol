@@ -499,10 +499,7 @@ defmodule Raxol.Terminal.IO.IOServer do
     end
   end
 
-  defp update_io_config(state, config) do
-    # Ensure we have a valid config
-    config = if config == nil, do: get_default_config(), else: config
-
+  defp update_io_config(state, config) when is_map(config) do
     # Initialize or update components
     {buffer_manager, scroll_buffer, renderer, command_history} =
       initialize_or_update_components(state, config)

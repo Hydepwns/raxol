@@ -6,7 +6,7 @@ defmodule Mix.Tasks.Raxol.Mutation do
   @moduledoc """
   Custom mutation testing for Raxol using simplified approach.
 
-  This task provides basic mutation testing capabilities when full 
+  This task provides basic mutation testing capabilities when full
   mutation testing tools have compatibility issues.
 
   ## Usage

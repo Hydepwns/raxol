@@ -37,12 +37,12 @@ defmodule Raxol.Core.Session.SessionManager do
   ## Usage
 
       # Security session
-      {:ok, session} = UnifiedSessionManager.create_security_session("user123", 
+      {:ok, session} = UnifiedSessionManager.create_security_session("user123",
         ip_address: "192.168.1.1",
         user_agent: "Browser/1.0"
       )
 
-      # Web session  
+      # Web session
       {:ok, session} = UnifiedSessionManager.create_web_session("user123", %{
         preferences: %{theme: "dark"}
       })

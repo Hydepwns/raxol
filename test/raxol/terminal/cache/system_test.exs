@@ -145,7 +145,7 @@ defmodule Raxol.Terminal.Cache.SystemTest do
     end
 
     test ~c"LFU eviction - not implemented" do
-      # Cache system uses LRU policy by default. 
+      # Cache system uses LRU policy by default.
       # LFU and FIFO eviction policies are not currently implemented
       # but the system works correctly with LRU.
       # Test that the system is stable without these features

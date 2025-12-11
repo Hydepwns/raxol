@@ -128,7 +128,7 @@ defmodule Raxol.UI.State.Store do
 
       # Get entire state
       state = Store.get_state()
-      
+
       # Get value at path
       counter = Store.get_state([:counter])
       user = Store.get_state([:user, :current])
@@ -160,12 +160,12 @@ defmodule Raxol.UI.State.Store do
       unsubscribe = Store.subscribe([:counter], fn new_value ->
         Log.info("Counter: \#{new_value}")
       end)
-      
+
       # Subscribe with options
       unsubscribe = Store.subscribe([:user], fn user ->
         update_ui(user)
       end, debounce: 100)
-      
+
       # Unsubscribe
       unsubscribe.()
   """
@@ -207,10 +207,10 @@ defmodule Raxol.UI.State.Store do
       Store.register_reducer(fn
         {:counter, :increment}, state ->
           update_in(state, [:counter], &((&1 || 0) + 1))
-        
+
         {:counter, :decrement}, state ->
           update_in(state, [:counter], &((&1 || 0) - 1))
-        
+
         _action, state ->
           state
       end)
@@ -231,7 +231,7 @@ defmodule Raxol.UI.State.Store do
       # Direct value update
       Store.update(store, :counter, 42)
       Store.update(store, [:user, :name], "John")
-      
+
       # Function update
       Store.update(store, :counter, fn count -> count + 1 end)
       Store.update(store, [:items], fn items -> [new_item | items] end)

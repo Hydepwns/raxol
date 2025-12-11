@@ -383,8 +383,9 @@ defmodule Raxol.Core.ErrorPatternLearner do
     # Extract significant terms for pattern matching
     error_text
     |> String.split()
-    |> Enum.filter(&(String.length(&1) > 3))
-    |> Enum.filter(&String.match?(&1, ~r/^[a-zA-Z_]+$/))
+    |> Enum.filter(
+      &(String.length(&1) > 3 and String.match?(&1, ~r/^[a-zA-Z_]+$/))
+    )
     |> Enum.take(3)
     |> Enum.join("_")
   end

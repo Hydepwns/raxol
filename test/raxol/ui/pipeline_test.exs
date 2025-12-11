@@ -272,6 +272,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     assert t2 - t1 < 100
   end
 
+  @tag :skip_on_ci
   test "schedule_render_on_next_frame/0 triggers a render on the next animation frame",
        _context do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())

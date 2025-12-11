@@ -9,10 +9,10 @@ defmodule Raxol.Property.ParserTest do
       check all sequence <- csi_sequence_generator(),
                 max_runs: 500 do
         result = Parser.parse(sequence)
-        
+
         # Should return a list of sequences
         assert is_list(result)
-        
+
         # If parsed, should have valid structure
         Enum.each(result, fn item ->
           assert is_map(item) or is_binary(item)
@@ -34,7 +34,7 @@ defmodule Raxol.Property.ParserTest do
                 max_runs: 500 do
         # Pure text should be preserved
         parsed = Parser.parse(text)
-        
+
         # Extract text from parsed result
         extracted = extract_text(parsed)
         assert String.contains?(extracted, text) or extracted == text
@@ -47,7 +47,7 @@ defmodule Raxol.Property.ParserTest do
         # Parsing twice should give same result
         parsed1 = Parser.parse(sequence)
         parsed2 = Parser.parse(sequence)
-        
+
         assert parsed1 == parsed2
       end
     end
@@ -58,7 +58,7 @@ defmodule Raxol.Property.ParserTest do
                 max_runs: 500 do
         sequence = "\e[#{row};#{col}H"
         parsed = Parser.parse(sequence)
-        
+
         # Should parse as cursor position command
         assert length(parsed) > 0
         assert Enum.any?(parsed, &is_map/1)
@@ -73,7 +73,7 @@ defmodule Raxol.Property.ParserTest do
         # 24-bit color sequence
         sequence = "\e[38;2;#{r};#{g};#{b}m"
         parsed = Parser.parse(sequence)
-        
+
         # Should parse the color sequence
         assert is_list(parsed)
         assert length(parsed) > 0
@@ -84,10 +84,10 @@ defmodule Raxol.Property.ParserTest do
       check all segments <- list_of(mixed_content_generator(), min_length: 1, max_length: 10),
                 max_runs: 500 do
         input = Enum.join(segments)
-        
+
         # Should parse without error
         parsed = Parser.parse(input)
-        
+
         # Result should be a list
         assert is_list(parsed)
       end
@@ -98,7 +98,7 @@ defmodule Raxol.Property.ParserTest do
                 max_runs: 500 do
         sequence = "\e[" <> Enum.join(params, ";") <> "m"
         parsed = Parser.parse(sequence)
-        
+
         # Should parse the SGR sequence
         assert is_list(parsed)
         assert length(parsed) > 0
@@ -110,7 +110,7 @@ defmodule Raxol.Property.ParserTest do
                 max_runs: 500 do
         # Add escape to make it look like sequence
         input = "\e" <> garbage
-        
+
         # Should not crash
         result = Parser.parse(input)
         assert is_list(result)
@@ -122,13 +122,13 @@ defmodule Raxol.Property.ParserTest do
                 max_runs: 100 do
         # Generate input of specific size
         input = String.duplicate("a", size)
-        
+
         # Measure parsing time
         {time, result} = :timer.tc(fn -> Parser.parse(input) end)
-        
+
         # Should complete and return a list
         assert is_list(result)
-        
+
         # Time should scale roughly linearly (with some tolerance)
         # Expect ~3.3 microseconds per character based on benchmarks
         # Increase tolerance for CI/loaded systems

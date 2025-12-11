@@ -18,9 +18,9 @@ defmodule Raxol.Architecture.CQRS.Command do
 
       defmodule MyApp.Commands.CreateUserCommand do
         use Raxol.Architecture.CQRS.Command
-        
+
         defstruct [:user_id, :name, :email, :created_by, :metadata]
-        
+
         @type t :: %__MODULE__{
           user_id: String.t(),
           name: String.t(),
@@ -28,7 +28,7 @@ defmodule Raxol.Architecture.CQRS.Command do
           created_by: String.t(),
           metadata: map()
         }
-        
+
         def new(attrs) do
           %__MODULE__{
             user_id: attrs[:user_id] || UUID.uuid4(),
@@ -39,7 +39,7 @@ defmodule Raxol.Architecture.CQRS.Command do
           }
           |> validate()
         end
-        
+
         defp validate(%__MODULE__{} = command) do
           with :ok <- validate_required(command, [:name, :email, :created_by]),
                :ok <- validate_email(command.email) do

@@ -4,7 +4,7 @@ defmodule Raxol.UI do
 
   Provides a consistent interface across different UI paradigms:
   - React-style components
-  - Svelte-style reactive components  
+  - Svelte-style reactive components
   - Phoenix LiveView components
   - HEEx templates
   - Raw terminal buffer operations
@@ -17,7 +17,7 @@ defmodule Raxol.UI do
       use Raxol.UI, framework: :liveview
       use Raxol.UI, framework: :heex
       use Raxol.UI, framework: :raw
-      
+
   ## Universal Features
 
   Regardless of framework choice, you get:

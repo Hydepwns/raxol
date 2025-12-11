@@ -61,7 +61,7 @@ defmodule Raxol.UI.StyleProcessor do
     parent_style_map =
       case parent_style do
         %{style: style_map} when is_map(style_map) ->
-          # If parent_style is an element with a :style key, extract and merge with top-level properties
+          # If parent_style is element with :style key, merge with top-level
           style_map
           |> Map.merge(
             Map.take(parent_style, [:foreground, :background, :fg, :bg])

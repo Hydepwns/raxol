@@ -7,7 +7,7 @@ defmodule Raxol.UI.State.Hooks do
   - Comprehensive error handling and Result types from HooksRefactored
   - Complete context management from the base Hooks module
 
-  Provides React-like hooks functionality using pure functional patterns 
+  Provides React-like hooks functionality using pure functional patterns
   with robust error handling and timeout controls.
 
   ## Features

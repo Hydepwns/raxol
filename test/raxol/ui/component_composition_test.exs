@@ -132,7 +132,7 @@ defmodule Raxol.UI.ComponentCompositionTest do
     parent = Helper.create_test_panel(0, 0, 10, 10, [child])
     cells = Renderer.render_to_cells(parent)
 
-    # Should find the text "P" from "Padded" at position (0, 0) 
+    # Should find the text "P" from "Padded" at position (0, 0)
     cell = Helper.get_cell_at(cells, 0, 0)
     assert cell != nil
     {0, 0, char, _, _, _} = cell

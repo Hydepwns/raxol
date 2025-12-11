@@ -565,10 +565,8 @@ defmodule Raxol.Config.Schema do
   # Validation implementation
 
   defp do_validate(value, %{type: type} = schema, path) do
-    with :ok <- validate_type(value, type, path),
-         :ok <-
-           validate_constraints(value, Map.get(schema, :constraints, []), path) do
-      :ok
+    with :ok <- validate_type(value, type, path) do
+      validate_constraints(value, Map.get(schema, :constraints, []), path)
     end
   end
 
@@ -772,9 +770,9 @@ defmodule Raxol.Config.Schema do
     """
     ### #{path_str}
 
-    **Type:** `#{type_str}`  
-    **Default:** `#{default_str}`  
-    **Required:** #{field_schema.required}  
+    **Type:** `#{type_str}`
+    **Default:** `#{default_str}`
+    **Required:** #{field_schema.required}
 
     #{field_schema.description}
 

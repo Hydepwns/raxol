@@ -9,25 +9,25 @@ defmodule Raxol.Component do
 
       defmodule Counter do
         use Raxol.Component
-        
+
         @impl true
         def init(props), do: %{count: props[:initial] || 0}
-        
+
         @impl true
         def render(state, _props) do
           "Count: \#{state.count}\n[+] Increment  [-] Decrement"
         end
-        
+
         @impl true
         def handle_event(:key_press, "+", state) do
           {:ok, %{state | count: state.count + 1}}
         end
-        
+
         @impl true
         def handle_event(:key_press, "-", state) do
           {:ok, %{state | count: state.count - 1}}
         end
-        
+
         @impl true
         def handle_event(_, _, state), do: {:ok, state}
       end

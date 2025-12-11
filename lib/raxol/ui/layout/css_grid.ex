@@ -900,7 +900,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
         grid_props.gap.column
       )
 
-    # Calculate row positions  
+    # Calculate row positions
     row_positions =
       calculate_track_positions(row_tracks, content_space.y, grid_props.gap.row)
 

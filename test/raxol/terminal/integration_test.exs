@@ -99,7 +99,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       {state, _output} =
         Emulator.process_input(state, "Line1\nLine2\nLine3\nLine4")
 
-      # Note: Current implementation doesn't populate scrollback 
+      # Note: Current implementation doesn't populate scrollback
       # The terminal is 5 chars wide, 3 lines tall
       # With newlines and wrapping, the actual behavior shows some character overlap
       # Accept the current behavior as it shows all 3 visible lines have content

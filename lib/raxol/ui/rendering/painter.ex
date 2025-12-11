@@ -22,7 +22,7 @@ defmodule Raxol.UI.Rendering.Painter do
         previous_composed_tree,
         previous_painted_output
       ) do
-    # If the composed_data is identical to the previous composed tree, reuse the previous painted output
+    # If composed_data is identical to previous, reuse the previous output
     handle_paint_reuse(
       composed_data === previous_composed_tree &&
         previous_painted_output != nil,

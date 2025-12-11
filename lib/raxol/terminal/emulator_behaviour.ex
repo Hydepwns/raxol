@@ -6,12 +6,7 @@ defmodule Raxol.Terminal.EmulatorBehaviour do
   processing input, and handling resizing.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cursor.Manager
-  alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.ANSI.CharacterSets
-  alias Raxol.Terminal.ModeManager
-  alias Raxol.Plugins.Manager.Core
+  # Aliases removed - behaviour module only defines callbacks, doesn't use these types directly
 
   # Emulator state type - accepts any map-based struct implementing emulator state
   @type t :: map()

@@ -16,9 +16,8 @@ defmodule Raxol.Terminal.Config.ConfigValidator do
          :ok <- validate_colors(updates),
          :ok <- validate_styles(updates),
          :ok <- validate_input(updates),
-         :ok <- validate_performance(updates),
-         :ok <- validate_mode(updates) do
-      :ok
+         :ok <- validate_performance(updates) do
+      validate_mode(updates)
     end
   end
 
@@ -32,9 +31,8 @@ defmodule Raxol.Terminal.Config.ConfigValidator do
          :ok <- validate_colors(config.colors),
          :ok <- validate_styles(config.styles),
          :ok <- validate_input(config.input),
-         :ok <- validate_performance(config.performance),
-         :ok <- validate_mode(config.mode) do
-      :ok
+         :ok <- validate_performance(config.performance) do
+      validate_mode(config.mode)
     end
   end
 

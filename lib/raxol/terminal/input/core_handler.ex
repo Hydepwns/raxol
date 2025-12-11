@@ -6,7 +6,6 @@ defmodule Raxol.Terminal.Input.CoreHandler do
 
   alias Raxol.Terminal.ModeManager
   alias Raxol.Terminal.TerminalParser, as: Parser
-  alias Raxol.Terminal.Emulator
 
   @type t :: %__MODULE__{
           buffer: String.t(),

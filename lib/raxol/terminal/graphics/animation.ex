@@ -310,20 +310,18 @@ defmodule Raxol.Terminal.Graphics.Animation do
         state.active_animations,
         fn {animation_id, animation_info}, acc ->
           case Framework.get_current_value(animation_info.name, animation_id) do
-            {:ok, values} ->
+            {values, _completed} when is_map(values) ->
               # Apply values to graphics element
               apply_graphics_properties(animation_info.graphics_id, values)
+              acc
+
+            {_value, _completed} ->
+              # Single value, not a map of properties
               acc
 
             :not_found ->
               # Remove completed animation
               Map.delete(acc, animation_id)
-
-            {:error, _reason} ->
-              acc
-
-            _ ->
-              acc
           end
         end
       )
@@ -355,8 +353,6 @@ defmodule Raxol.Terminal.Graphics.Animation do
         )
     end
   end
-
-  defp apply_graphics_properties(_graphics_id, _properties), do: :ok
 
   defp generate_animation_id(name, graphics_id) do
     "#{name}_#{graphics_id}_#{:rand.uniform(9999)}"

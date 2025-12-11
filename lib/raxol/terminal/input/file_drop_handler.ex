@@ -147,7 +147,7 @@ defmodule Raxol.Terminal.Input.FileDropHandler do
 
       iex> FileDropHandler.parse_file_uri("file:///home/user/test%20file.txt")
       {:ok, "/home/user/test file.txt"}
-      
+
       iex> FileDropHandler.parse_file_uri("http://example.com/file.txt")
       {:error, :unsupported_scheme}
   """
@@ -235,9 +235,8 @@ defmodule Raxol.Terminal.Input.FileDropHandler do
     with :ok <- validate_file_count(files, config),
          :ok <- validate_file_sizes(files, config),
          :ok <- validate_mime_types(files, config),
-         :ok <- validate_extensions(files, config),
-         :ok <- validate_directories(files, config) do
-      :ok
+         :ok <- validate_extensions(files, config) do
+      validate_directories(files, config)
     end
   end
 

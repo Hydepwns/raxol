@@ -511,11 +511,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
             gpu_renderer
           )
 
-        Map.put(
-          gpu_renderer,
-          :output_data,
-          if(output_data == nil, do: [], else: output_data)
-        )
+        Map.put(gpu_renderer, :output_data, output_data)
 
       _ ->
         # No output stage available, pass through unchanged, but ensure :output_data exists

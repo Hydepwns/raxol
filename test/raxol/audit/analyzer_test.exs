@@ -20,7 +20,7 @@ defmodule Raxol.Audit.AnalyzerTest do
           catch
             :exit, _ -> :ok
           end
-        nil -> 
+        nil ->
           :ok
       end
     end)

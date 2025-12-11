@@ -1,6 +1,6 @@
 defmodule Raxol.UI.Components.Input.MultiLineInputTest do
   use ExUnit.Case, async: true
-  
+
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.TextWrapping
 

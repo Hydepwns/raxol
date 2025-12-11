@@ -264,7 +264,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       buffer = ScreenBuffer.start_selection(buffer, 1, 1)
       buffer = ScreenBuffer.update_selection(buffer, 3, 2)
 
-      assert ScreenBuffer.get_selection_boundaries(buffer) == {1, 1, 3, 2}
+      assert ScreenBuffer.get_selection_boundaries(buffer) == {{1, 1}, {3, 2}}
     end
   end
 

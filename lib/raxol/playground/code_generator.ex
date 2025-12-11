@@ -37,7 +37,7 @@ defmodule Raxol.Playground.CodeGenerator do
     init_function = generate_init_function(map_size(state) > 0, state)
 
     render_function = """
-      
+
       @impl true
       def render(state, props) do
         #{generate_render_call(component, props)}
@@ -92,7 +92,7 @@ defmodule Raxol.Playground.CodeGenerator do
 
   defp generate_init_function(true, state) do
     """
-      
+
       @impl true
       def init(_props) do
         {:ok, #{format_map(state, 4)}}
@@ -204,7 +204,7 @@ defmodule Raxol.Playground.CodeGenerator do
         test "handles #{handler.event} event" do
           {:ok, initial_state} = #{generate_module_name(component)}.init(%{})
           {:ok, new_state} = #{generate_module_name(component)}.handle_event(#{handler.event}, initial_state)
-          
+
           # Add assertions based on expected behavior
           assert new_state != initial_state
         end
@@ -440,19 +440,19 @@ defmodule Raxol.Playground.CodeGenerator do
     """
     defmodule ExampleApp do
       use Raxol.Application
-      
+
       alias #{component.module}
-      
+
       @impl true
       def init(_args) do
         {:ok, #{format_map(state, 4)}}
       end
-      
+
       @impl true
       def render(state) do
         #{generate_render_call(component, props)}
       end
-      
+
       #{generate_event_handlers(component, state)}
     end
 
@@ -470,22 +470,22 @@ defmodule Raxol.Playground.CodeGenerator do
     """
     defmodule #{module_name}Test do
       use ExUnit.Case, async: true
-      
+
       alias #{module_name}
-      
+
       describe "#{String.downcase(component.name)}" do
         test "renders without crashing" do
           assert {:ok, _state} = #{module_name}.init(%{})
         end
-        
+
         test "renders with props" do
           {:ok, state} = #{module_name}.init(%{})
           props = #{format_map(props, 6)}
-          
+
           result = #{module_name}.render(state, props)
           assert is_binary(result) or is_list(result)
         end
-        
+
         #{generate_event_tests(component, state)}
       end
     end

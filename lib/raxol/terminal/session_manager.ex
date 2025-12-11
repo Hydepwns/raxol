@@ -37,14 +37,14 @@ defmodule Raxol.Terminal.SessionManager do
   ## Usage
 
       # Create a new session
-      {:ok, session} = SessionManager.create_session("dev-session", 
-        windows: 3, 
+      {:ok, session} = SessionManager.create_session("dev-session",
+        windows: 3,
         layout: :main_vertical
       )
-      
+
       # Attach to an existing session
       {:ok, client} = SessionManager.attach_session("dev-session")
-      
+
       # Create window with panes
       {:ok, window} = SessionManager.create_window(session, "editor",
         panes: [
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.SessionManager do
           %{command: "bash", directory: "/home/user/project"}
         ]
       )
-      
+
       # Detach and session continues running
       SessionManager.detach_client(client)
   """
@@ -249,7 +249,7 @@ defmodule Raxol.Terminal.SessionManager do
 
   ## Examples
 
-      {:ok, session} = SessionManager.create_session("dev", 
+      {:ok, session} = SessionManager.create_session("dev",
         windows: 2,
         layout: :main_vertical,
         working_directory: "/home/user/project"

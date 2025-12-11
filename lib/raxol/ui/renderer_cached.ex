@@ -7,7 +7,7 @@ defmodule Raxol.UI.RendererCached do
 
   ## Performance Benefits
   - 50-70% reduction in rendering time for static components
-  - Automatic cache invalidation on prop/state changes  
+  - Automatic cache invalidation on prop/state changes
   - Batch rendering optimizations
   - Reduced CPU usage during animations and updates
   """

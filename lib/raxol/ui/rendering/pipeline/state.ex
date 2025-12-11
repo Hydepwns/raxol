@@ -15,7 +15,8 @@ defmodule Raxol.UI.Rendering.Pipeline.State do
     :previous_composed_tree,
     :previous_painted_output,
     :animation_ticker_ref,
-    :render_scheduled_for_next_frame
+    :render_scheduled_for_next_frame,
+    :deferred_render_data
   ]
 
   @type t :: %__MODULE__{
@@ -30,7 +31,8 @@ defmodule Raxol.UI.Rendering.Pipeline.State do
           previous_composed_tree: term() | nil,
           previous_painted_output: term() | nil,
           animation_ticker_ref: reference() | nil,
-          render_scheduled_for_next_frame: boolean()
+          render_scheduled_for_next_frame: boolean(),
+          deferred_render_data: tuple() | nil
         }
 
   @doc """

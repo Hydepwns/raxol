@@ -20,16 +20,16 @@ if Code.ensure_loaded?(:ssh) do
     ## Usage
 
         # Basic connection
-        {:ok, client} = SSHClient.connect("example.com", 22, 
+        {:ok, client} = SSHClient.connect("example.com", 22,
           username: "user", password: "pass")
-        
+
         # Key-based authentication
         {:ok, client} = SSHClient.connect("example.com", 22,
           username: "user", private_key_path: "/path/to/key")
-        
+
         # Execute commands
         {:ok, output} = SSHClient.exec(client, "ls -la")
-        
+
         # Start interactive shell
         {:ok, session} = SSHClient.start_shell(client)
     """
@@ -192,7 +192,7 @@ if Code.ensure_loaded?(:ssh) do
 
     ## Parameters
 
-    - `client` - SSH client process  
+    - `client` - SSH client process
     - `remote_port` - Remote port to bind
     - `local_host` - Local host to forward to
     - `local_port` - Local port to forward to

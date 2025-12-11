@@ -171,9 +171,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
     # Validate extension type
     valid_types = [:theme, :plugin, :script, :tool, :custom]
 
-    unless type in valid_types do
-      {:reply, {:error, {:module_load_failed, :invalid_extension_type}}, state}
-    else
+    if type in valid_types do
       extension_id = generate_extension_id()
 
       # Convert metadata to map if it's a keyword list
@@ -223,6 +221,8 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
               {:reply, {:error, reason}, state}
           end
       end
+    else
+      {:reply, {:error, {:module_load_failed, :invalid_extension_type}}, state}
     end
   end
 

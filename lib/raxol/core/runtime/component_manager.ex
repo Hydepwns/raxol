@@ -2,7 +2,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   @moduledoc """
   Refactored component manager with functional error handling patterns.
 
-  This module eliminates all try/rescue blocks and uses pure functional 
+  This module eliminates all try/rescue blocks and uses pure functional
   error handling with `with` statements and safe wrapper functions.
 
   Key improvements:

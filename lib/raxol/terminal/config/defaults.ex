@@ -94,7 +94,7 @@ defmodule Raxol.Terminal.Config.Defaults do
       font_rendering: :normal,
       # Added from configuration.ex
       batch_size: 100
-      # Removed: fps, double_buffer, redraw_mode, optimize_empty_cells, smooth_resize, cell_width, cell_height (less common top-level defaults)
+      # Removed: fps, double_buffer, redraw_mode (less common defaults)
     }
   end
 
@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.Config.Defaults do
       accessibility_mode: false,
       # Added from configuration.ex
       virtual_scroll: false
-      # Removed: history_file, exit_on_close, confirm_exit, bell_style, silence_bell, word_separators, auto_wrap, scroll_on_output, scroll_on_keystroke (less common or potentially profile-specific)
+      # Removed: history_file, exit_on_close, etc. (profile-specific)
     }
   end
 

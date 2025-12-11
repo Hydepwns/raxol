@@ -197,9 +197,9 @@ defmodule Raxol.I18nTestHelpers do
       Enum.each(label_types, fn label_type ->
         label = Map.get(metadata, label_type)
 
+        # Component should have accessibility label for locale
         refute is_nil(label),
-               # {component_id}" is missing "#{label_type}" accessibility label in locale "#{locale}""
-               "Component "
+               "Missing accessibility label"
 
         default_locale = RaxolWeb.Gettext.get_locale()
 
@@ -280,9 +280,9 @@ defmodule Raxol.I18nTestHelpers do
          _component_id,
          _label_type
        ) do
+    # Component label should be translated from default locale
     refute label == default_label,
-           # {component_id}" "#{label_type}" label ("#{label}") was not translated from default locale ("#{default_label}")"
-           "Component "
+           "Label was not translated from default locale"
   end
 
   defp validate_shortcut_data(
@@ -309,12 +309,10 @@ defmodule Raxol.I18nTestHelpers do
     actual_description = shortcut_data.description
 
     assert actual_key == expected_key,
-           # {shortcut_id}" to be "#{expected_key}" in locale "#{locale}", but got "#{actual_key}""
-           "Expected shortcut key for "
+           "Expected shortcut key to match"
 
     assert actual_description == expected_description,
-           # {shortcut_id}" to be "#{expected_description}" in locale "#{locale}", but got "#{actual_description}""
-           "Expected shortcut description for "
+           "Expected shortcut description to match"
   end
 
   # Mock implementation for tests

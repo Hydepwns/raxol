@@ -115,17 +115,9 @@ defmodule Raxol.Terminal.Buffer do
 
     screen_buffer = to_screen_buffer(buffer)
 
-    case ScreenBuffer.get_cell(screen_buffer, x, y) do
-      nil ->
-        Cell.new()
-
-      %{} = cell ->
-        # Convert plain map to Cell struct if needed
-        struct(Cell, cell)
-
-      cell ->
-        cell
-    end
+    cell_map = ScreenBuffer.get_cell(screen_buffer, x, y)
+    # get_cell always returns a map, convert to Cell struct
+    struct(Cell, cell_map)
   end
 
   @doc """

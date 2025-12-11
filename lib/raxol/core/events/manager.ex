@@ -2,7 +2,7 @@ defmodule Raxol.Core.Events.Manager do
   @moduledoc """
   Alias module for Raxol.Core.Events.EventManager.
 
-  This provides backward compatibility for code that references 
+  This provides backward compatibility for code that references
   Raxol.Core.Events.Manager instead of Raxol.Core.Events.EventManager.
   """
 

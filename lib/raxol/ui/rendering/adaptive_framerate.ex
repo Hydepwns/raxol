@@ -4,7 +4,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
 
   ## Frame Rate Targets
   - High complexity: 30fps (33ms) - Complex layouts, many elements
-  - Medium complexity: 45fps (22ms) - Moderate layouts  
+  - Medium complexity: 45fps (22ms) - Moderate layouts
   - Low complexity: 60fps (16ms) - Simple layouts, minimal changes
   - Static content: 10fps (100ms) - No active animations
 
@@ -251,7 +251,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
       avg_render_time_us > 25_000 ->
         30
 
-      # If CPU usage is high, reduce FPS  
+      # If CPU usage is high, reduce FPS
       avg_cpu_usage > @high_cpu_threshold ->
         30
 

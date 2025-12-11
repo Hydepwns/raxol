@@ -260,7 +260,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       assert Enum.empty?(scrollback_lines),
              "No scrollback expected with height=1"
 
-      # Check cursor position and flag  
+      # Check cursor position and flag
       # Debug output shows cursor at {1, 0} which means it wrapped to next line
       # But with height=1, this is effectively out of bounds
       cursor_pos = Emulator.get_cursor_position(emulator_after_wrap)

@@ -32,7 +32,7 @@ defmodule Raxol.Animation.AnimationProcessor do
     # Fetch active animations before re-adaptation
     active_animations_before = StateManager.get_active_animations()
 
-    # Re-adapt existing animations if settings have changed, and get any that were completed due to being disabled
+    # Re-adapt animations if settings changed; get any completed due to disable
     completed_due_to_disable =
       Adaptation.re_adapt_animations_if_needed(
         user_preferences_pid,

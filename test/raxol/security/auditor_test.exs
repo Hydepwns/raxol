@@ -94,7 +94,7 @@ defmodule Raxol.Security.AuditorTest do
         "short",
         # No uppercase
         "alllowercase",
-        # No lowercase  
+        # No lowercase
         "ALLUPPERCASE",
         # No digits
         "NoNumbers",

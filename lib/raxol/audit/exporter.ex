@@ -270,7 +270,7 @@ defmodule Raxol.Audit.Exporter do
   defp escape_xml(other), do: to_string(other)
 
   defp format_cef_message(event) do
-    # CEF:Version|Device Vendor|Device Product|Device Version|Device Event Class ID|Name|Severity|Extension
+    # CEF format: Version|Vendor|Product|DevVer|ClassID|Name|Severity|Ext
     timestamp = format_timestamp(event.timestamp)
     severity = map_severity_to_cef(Map.get(event, :severity, :info))
 

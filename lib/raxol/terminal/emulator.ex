@@ -13,13 +13,13 @@ defmodule Raxol.Terminal.Emulator do
 
       # Process input with colors
       {emulator, output} = Raxol.Terminal.Emulator.process_input(
-        emulator, 
+        emulator,
         "\\e[1;31mRed Bold\\e[0m Normal text"
       )
 
   ## Performance Modes
 
-  * `new/2` - Full features (2.8MB, ~95ms startup)  
+  * `new/2` - Full features (2.8MB, ~95ms startup)
   * `new_lite/3` - Most features (1.2MB, ~30ms startup)
   * `new_minimal/2` - Basic only (8.8KB, <10ms startup)
   """
@@ -713,6 +713,10 @@ defmodule Raxol.Terminal.Emulator do
         {updated_emulator, output} when is_list(output) ->
           # Convert list output to string for backward compatibility
           {updated_emulator, IO.iodata_to_binary(output)}
+
+        {updated_emulator, output} when is_binary(output) ->
+          # Already a string, pass through
+          {updated_emulator, output}
       end
 
     # Track command history if enabled

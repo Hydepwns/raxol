@@ -260,7 +260,7 @@ defmodule Raxol.UI.Components.Display.Table do
         _header_style: state.header_style
       )
 
-    # At the end of render, ensure :disabled and :focused are present in the returned map if possible
+    # Ensure :disabled and :focused are present in the returned map
     ensure_disabled_focused(table_element, state)
   end
 

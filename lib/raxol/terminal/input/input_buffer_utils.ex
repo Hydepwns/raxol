@@ -195,8 +195,8 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
         original_pos_in_line
       )
 
-    # If reduce_while finished without halting (e.g., original_pos_in_line was > total length of sequence)
-    # default to the end of the last relevant wrapped line.
+    # If reduce_while finished without halting (e.g., original_pos_in_line
+    # was > total length of sequence), default to end of last wrapped line.
     final_cursor_offset_within_logical_line =
       resolve_cursor_offset(
         is_integer(final_cursor_offset_within_logical_line),
@@ -294,8 +294,8 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
          pos_within_target_sequence,
          _line_len
        ) do
-    # Cursor position falls within this wrapped line.
-    # The offset is the original position minus the length of preceding lines *within this sequence*.
+    # Cursor position falls within this wrapped line. The offset is the
+    # original position minus the length of preceding lines within sequence.
     {:halt, original_pos_in_line - pos_within_target_sequence}
   end
 
@@ -305,7 +305,8 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
          pos_within_target_sequence,
          line_len
        ) do
-    # Cursor is beyond this wrapped line, continue checking the next one from the same logical origin.
+    # Cursor is beyond this wrapped line, continue checking the next one
+    # from the same logical origin.
     {:cont, pos_within_target_sequence + line_len}
   end
 end

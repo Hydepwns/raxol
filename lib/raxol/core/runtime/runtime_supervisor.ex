@@ -82,7 +82,7 @@ defmodule Raxol.Core.Runtime.Supervisor do
       shutdown: 5000
     }
 
-    # Note: Terminal.Driver is not directly supervised here, assumed started elsewhere or implicitly by runtime components
+    # Note: Terminal.Driver is started elsewhere by runtime components
 
     children = [
       # Task supervisor for isolated task execution

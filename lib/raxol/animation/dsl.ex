@@ -9,19 +9,19 @@ defmodule Raxol.Animation.DSL do
 
       # Simple animation sequence
       import Raxol.Animation.DSL
-      
+
       sequence()
       |> fade_in(duration: 300)
       |> slide_up(distance: 20, duration: 400)
       |> scale_bounce(scale: 1.2, duration: 200)
       |> execute(element_id)
-      
+
       # Parallel animations
       parallel()
       |> with_animation(fade_in(duration: 500))
       |> with_animation(rotate(degrees: 360, duration: 1000))
       |> execute(element_id)
-      
+
       # Conditional animations
       sequence()
       |> fade_in(duration: 300)
@@ -30,7 +30,7 @@ defmodule Raxol.Animation.DSL do
       |> end_condition()
       |> slide_out(direction: :right, duration: 400)
       |> execute(element_id)
-      
+
       # Complex choreographed animation
       choreography()
       |> stage("entrance",

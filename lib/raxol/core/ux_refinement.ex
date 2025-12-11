@@ -15,7 +15,7 @@ defmodule Raxol.Core.UXRefinement do
       children = [
         {Raxol.Core.UXRefinement.UxServer, name: Raxol.Core.UXRefinement.UxServer}
       ]
-      
+
       Supervisor.start_link(children, strategy: :one_for_one)
   """
 

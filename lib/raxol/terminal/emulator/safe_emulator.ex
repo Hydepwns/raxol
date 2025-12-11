@@ -451,10 +451,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp update_state_safely(state, new_emulator_state) do
-    with {:ok, updated} <-
-           safe_state_update(state, :emulator_state, new_emulator_state) do
-      {:ok, updated}
-    end
+    safe_state_update(state, :emulator_state, new_emulator_state)
   end
 
   defp safe_state_update(state, key, value) do
@@ -636,9 +633,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp process_input_internal(input, state) do
-    with {:ok, chunks} <- perform_input_chunking(input),
-         {:ok, new_state} <- process_chunks_safely(chunks, state.emulator_state) do
-      {:ok, new_state}
+    with {:ok, chunks} <- perform_input_chunking(input) do
+      process_chunks_safely(chunks, state.emulator_state)
     end
   end
 end

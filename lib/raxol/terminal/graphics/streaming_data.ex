@@ -182,7 +182,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
 
       # Connect stream to real-time line chart
       :ok = StreamingData.connect_to_visualization(stream_id, chart_id)
-      
+
       # Multiple visualizations can connect to the same stream
       :ok = StreamingData.connect_to_visualization(stream_id, histogram_id)
   """
@@ -274,7 +274,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
       # Get last 10 minutes of aggregated data
       end_time = System.system_time(:millisecond)
       start_time = end_time - 600_000  # 10 minutes ago
-      
+
       {:ok, windows} = StreamingData.get_windowed_data(stream_id, %{
         time_range: {start_time, end_time},
         aggregations: [:avg, :max],

@@ -526,7 +526,7 @@ defmodule Raxol.Audit.Integration do
       timestamp: DateTime.utc_now()
     )
 
-    # Note: Account lockout logic is handled automatically in Raxol.Auth.authenticate_user_password/2
+    # Note: Account lockout is handled in Raxol.Auth.authenticate_user_password/2
     # which updates failed_login_attempts and sets locked_until when attempts >= 5
     :ok
   end

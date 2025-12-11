@@ -400,11 +400,9 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     {:ok, buffer}
   end
 
-  defp handle_combining_character(_char, buffer) do
-    # Combining characters modify the previous character
-    # For now, we'll just ignore them
-    {:ok, buffer}
-  end
+  # Note: handle_combining_character/2 removed - combining characters (U+0300-U+036F)
+  # require multi-byte handling that :binary.first doesn't support. When proper
+  # combining character support is needed, implement detection via String.to_charlist/1.
 
   defp handle_printable_character(char, buffer) do
     # Add the character to the current cursor position

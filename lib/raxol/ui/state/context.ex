@@ -10,7 +10,7 @@ defmodule Raxol.UI.State.Context do
 
       # Create a context
       theme_context = Context.create_context(%{theme: :light, colors: %{}})
-      
+
       # Provide context to component tree
       %{
         type: :context_provider,
@@ -22,14 +22,14 @@ defmodule Raxol.UI.State.Context do
           %{type: :themed_button, attrs: %{label: "Click me"}}
         ]
       }
-      
+
       # Consume context in a component
       defmodule ThemedButton do
         use Raxol.UI.Components.Base.Component
-        
+
         def render(state, context) do
           theme = Context.use_context(context, :theme_context)
-          
+
           button(
             label: state.label,
             style: %{

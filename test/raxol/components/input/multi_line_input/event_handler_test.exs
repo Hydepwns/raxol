@@ -1,6 +1,6 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
   use ExUnit.Case, async: true
-  
+
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.MultiLineInput.EventHandler
   alias Raxol.Core.Events.Event

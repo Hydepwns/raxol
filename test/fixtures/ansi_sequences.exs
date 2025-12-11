@@ -1,7 +1,7 @@
 defmodule Raxol.Test.Fixtures.ANSISequences do
   @moduledoc """
   Comprehensive collection of ANSI escape sequences for testing.
-  
+
   These fixtures include:
   - Real-world sequences from popular terminal applications
   - Edge cases and malformed sequences
@@ -39,15 +39,15 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
       red_fg: "\e[31m",
       green_bg: "\e[42m",
       bright_blue: "\e[94m",
-      
+
       # 256 colors
       color_256_fg: "\e[38;5;196m",
       color_256_bg: "\e[48;5;27m",
-      
+
       # 24-bit true color
       rgb_fg: "\e[38;2;255;128;0m",
       rgb_bg: "\e[48;2;0;128;255m",
-      
+
       # Text attributes
       bold: "\e[1m",
       italic: "\e[3m",
@@ -55,10 +55,10 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
       blink: "\e[5m",
       reverse: "\e[7m",
       strikethrough: "\e[9m",
-      
+
       # Combined attributes
       bold_red_underline: "\e[1;31;4m",
-      
+
       # Reset
       reset: "\e[0m",
       reset_alt: "\e[m"
@@ -90,17 +90,17 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
     %{
       # Vim status line
       status_line: "\e[?25l\e[23;1H\e[K\e[24;1H\e[K\e[23;1H-- INSERT --\e[24;80H1,1           All\e[1;1H\e[?25h",
-      
+
       # Vim syntax highlighting
       syntax_highlight: "\e[1;34mdef\e[0m \e[1;33mfunction\e[0m(\e[1;31marg\e[0m)",
-      
+
       # Vim cursor shape changes
       insert_mode_cursor: "\e[6 q",
       normal_mode_cursor: "\e[2 q",
-      
+
       # Vim window split
       vertical_split: "\e[1;40r\e[?25l\e[1;1H\e[K│\e[2;1H\e[K│",
-      
+
       # Vim search highlighting
       search_highlight: "\e[43m\e[30msearch_term\e[0m"
     }
@@ -127,7 +127,7 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
     %{
       # Status bar
       status_bar: "\e[1;1H\e[K\e[7m[0] 0:bash* \e[27m",
-      
+
       # Pane borders (box drawing)
       vertical_border: "│",
       horizontal_border: "─",
@@ -135,10 +135,10 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
       corner_tr: "┐",
       corner_bl: "└",
       corner_br: "┘",
-      
+
       # Window title
       set_window_title: "\e]0;tmux\a",
-      
+
       # Alternative screen
       enter_alt_screen: "\e[?1049h",
       exit_alt_screen: "\e[?1049l"
@@ -168,19 +168,19 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
       # Application keypad
       app_keypad_on: "\e[?1h",
       app_keypad_off: "\e[?1l",
-      
+
       # Cursor visibility
       cursor_visible: "\e[?25h",
       cursor_invisible: "\e[?25l",
-      
+
       # Mouse tracking
       mouse_tracking_on: "\e[?1000h",
       mouse_tracking_off: "\e[?1000l",
-      
+
       # Bracketed paste
       bracketed_paste_on: "\e[?2004h",
       bracketed_paste_off: "\e[?2004l",
-      
+
       # Line wrap
       autowrap_on: "\e[?7h",
       autowrap_off: "\e[?7l"
@@ -194,16 +194,16 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
     %{
       # Save state, move, write, restore
       save_write_restore: "\e[s\e[10;20H\e[31mHello\e[0m\e[u",
-      
+
       # Clear screen, set colors, draw box
       colored_box: "\e[2J\e[1;1H\e[34m┌──────┐\n│      │\n└──────┘\e[0m",
-      
+
       # Progress bar animation
       progress_bar: "\e[1G[\e[32m████████          \e[0m] 40%\e[K",
-      
+
       # Table with colors
       colored_table: "\e[1m Name    \e[0m│\e[1m Status \e[0m\n\e[32m[OK]\e[0m Test 1 │ \e[32mPASS\e[0m",
-      
+
       # Nested attributes
       nested_attrs: "\e[1m\e[4m\e[31mBold Underline Red\e[21m Still Underline Red\e[0m"
     }
@@ -218,25 +218,25 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
       incomplete_csi: "\e[",
       incomplete_osc: "\e]0;",
       no_terminator: "\e[31",
-      
+
       # Invalid parameters
       negative_param: "\e[-1A",
       huge_param: "\e[999999B",
       non_numeric: "\e[abcH",
-      
+
       # Empty parameters
       empty_params: "\e[;m",
       multiple_semicolons: "\e[;;1;;m",
-      
+
       # Mixed valid/invalid
       partial_valid: "Hello\e[31mRed\e[invalid",
-      
+
       # Extremely long sequences
       long_params: "\e[" <> Enum.join(1..100, ";") <> "m",
-      
+
       # Null bytes
       with_null: "Hello\0World",
-      
+
       # Control characters
       with_controls: "Text\x01\x02\x03\x1fMore"
     }
@@ -249,19 +249,19 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
     %{
       # Emoji with colors
       colored_emoji: "\e[31m❤️\e[32m💚\e[34m💙\e[0m",
-      
+
       # Combining characters
       combining_with_color: "\e[33ma\u0301\u0308\e[0m",
-      
+
       # Right-to-left text
       rtl_with_ansi: "\e[35mمرحبا\e[0m \e[36mשלום\e[0m",
-      
+
       # Zero-width characters
       zero_width: "Hello\u200bWorld",
-      
+
       # Full-width characters
       fullwidth: "\e[1m全角文字\e[0m",
-      
+
       # Box drawing with attributes
       styled_box: "\e[1;34m╔═══╗\n║   ║\n╚═══╝\e[0m"
     }
@@ -274,18 +274,18 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
     %{
       # Rapid color changes
       color_spam: Enum.map_join(1..1000, "", fn i -> "\e[#{rem(i, 7) + 31}m█" end),
-      
+
       # Many cursor movements
       cursor_dance: Enum.map_join(1..100, "", fn i -> "\e[#{i};#{i}H*" end),
-      
+
       # Nested attributes
-      deep_nesting: Enum.reduce(1..20, "", fn i, acc -> 
+      deep_nesting: Enum.reduce(1..20, "", fn i, acc ->
         acc <> "\e[#{rem(i, 7) + 1}m"
       end) <> "Text" <> "\e[0m",
-      
+
       # Clear and redraw
       flicker_test: Enum.map_join(1..50, "", fn _ -> "\e[2J\e[1;1HFlash\e[2J" end),
-      
+
       # Large data with escapes
       large_formatted: Enum.map_join(1..10_000, "", fn i ->
         color = rem(i, 7) + 31
@@ -301,16 +301,16 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
     %{
       # Device status report
       dsr_ok: "\e[0n",
-      
+
       # Cursor position report
       cpr: "\e[12;40R",
-      
+
       # Terminal identification
       device_attributes: "\e[?1;2c",
-      
+
       # Screen size
       screen_size: "\e[8;24;80t",
-      
+
       # Color palette report
       color_report: "\e]4;1;rgb:ff/00/00\e\\"
     }

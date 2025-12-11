@@ -30,7 +30,7 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
           end
         }
       }
-      
+
       # Mouse tracker with render prop
       %{
         type: :mouse_tracker,

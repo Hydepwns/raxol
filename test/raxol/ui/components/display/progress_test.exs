@@ -203,7 +203,7 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
       state =
         init_component(%{style: %{fg: :red}, theme: %{progress: %{bg: :blue}}})
 
-      {:noreply, updated_state, _cmds} =
+      {updated_state, _cmds} =
         Progress.update(
           {:update_props,
            %{style: %{bold: true}, theme: %{progress: %{fg: :green}}}},

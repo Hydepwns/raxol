@@ -18,12 +18,12 @@ defmodule Raxol.Core.ErrorHandler do
   ## Usage
 
       import Raxol.Core.ErrorHandler
-      
+
       # Handle errors with automatic logging
       with_error_handling :file_operation do
         File.read!("/path/to/file")
       end
-      
+
       # Custom error recovery
       handle_error {:error, :not_found}, default: "default_value"
   """
@@ -389,7 +389,7 @@ defmodule Raxol.Core.ErrorHandler do
   defp classify_error(%RuntimeError{}), do: :runtime
   defp classify_error(%File.Error{}), do: :system
 
-  # defp classify_error(%Jason.DecodeError{}), do: :validation  # Commented out due to missing module
+  # defp classify_error(%Jason.DecodeError{}), do: :validation  # Missing module
   defp classify_error(_error), do: :unknown
 
   defp log_retry(operation, error, retries_left) do

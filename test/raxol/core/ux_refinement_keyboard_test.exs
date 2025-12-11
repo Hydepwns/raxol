@@ -74,7 +74,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
             end
           end
       end
-      
+
       # Stop UX refinement server
       case Process.whereis(Raxol.Core.UXRefinement.UxServer) do
         nil -> :ok
@@ -255,12 +255,12 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
       # Override config to use real implementations for this test
       original_ks_config = Application.get_env(:raxol, :keyboard_shortcuts_module)
       original_fm_config = Application.get_env(:raxol, :focus_manager_module)
-      
+
       Application.put_env(:raxol, :keyboard_shortcuts_module, Raxol.Core.KeyboardShortcuts)
       Application.put_env(:raxol, :keyboard_shortcuts_impl, Raxol.Core.KeyboardShortcuts)
       Application.put_env(:raxol, :focus_manager_module, Raxol.Core.FocusManager)
       Application.put_env(:raxol, :focus_manager_impl, Raxol.Core.FocusManager)
-      
+
       on_exit(fn ->
         if original_ks_config do
           Application.put_env(:raxol, :keyboard_shortcuts_module, original_ks_config)
@@ -269,7 +269,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
           Application.delete_env(:raxol, :keyboard_shortcuts_module)
           Application.delete_env(:raxol, :keyboard_shortcuts_impl)
         end
-        
+
         if original_fm_config do
           Application.put_env(:raxol, :focus_manager_module, original_fm_config)
           Application.put_env(:raxol, :focus_manager_impl, original_fm_config)
@@ -278,7 +278,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
           Application.delete_env(:raxol, :focus_manager_impl)
         end
       end)
-      
+
       # Use real implementations
       alias Raxol.Core.KeyboardShortcuts
       alias Raxol.Core.FocusManager
@@ -308,28 +308,28 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
 
       # Register the component as focusable first - use string ID as FocusManager expects
       FocusManager.register_focusable(component_id, 1)
-      
+
       # Get initial focus state
       initial_focus = FocusManager.get_current_focus()
-      
+
       # Register component hint which should create the shortcut
       UXRefinement.register_component_hint(component_id, %{
         shortcuts: [{"Alt+F", "Focus This Component"}]
       })
-      
+
       # Get component-specific shortcuts (shortcuts are registered in the component's context)
       component_shortcuts = KeyboardShortcuts.get_shortcuts_for_context(component_id)
-      
+
       # Find the shortcut we registered (should be in component-specific shortcuts as "alt_f")
       our_shortcut = Map.get(component_shortcuts, "alt_f")
-      
+
       assert our_shortcut != nil, "Shortcut alt_f should have been registered in component context"
-      
+
       callback = our_shortcut.callback
-      
+
       # Execute the shortcut callback
       callback.()
-      
+
       # Verify that focus was set to our component
       current_focus = FocusManager.get_current_focus()
       assert current_focus == component_id, "Focus should have been set to #{component_id}, but was #{inspect(current_focus)}"

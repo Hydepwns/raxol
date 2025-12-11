@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
 
   This module handles:
   * Automatic graphics protocol detection (Kitty, iTerm2, Sixel)
-  * Protocol-agnostic image display interface  
+  * Protocol-agnostic image display interface
   * Graceful fallback between supported protocols
   * Graphics state management and context switching
   * Performance optimization and caching
@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
   ## Supported Protocols
 
   * **Kitty Graphics Protocol** - High-performance, supports animations and transparency
-  * **iTerm2 Inline Images** - Good compatibility, limited animation support  
+  * **iTerm2 Inline Images** - Good compatibility, limited animation support
   * **Sixel Graphics** - Wide terminal support, basic image display
   * **Fallback Mode** - ASCII art conversion for unsupported terminals
 
@@ -25,10 +25,10 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
         height: 200,
         format: :png
       })
-      
+
       # Query available protocols
       graphics_info = GraphicsServer.get_graphics_info()
-      
+
   """
 
   use Raxol.Core.Behaviours.BaseManager
@@ -175,7 +175,7 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
         height: 200,
         format: :png
       })
-      
+
       # Display with specific protocol preference
       {:ok, id} = GraphicsServer.display_image(image_data, %{
         width: 400,

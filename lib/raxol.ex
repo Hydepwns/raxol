@@ -107,9 +107,9 @@ defmodule Raxol do
 
       defmodule MyApp do
         use Raxol.Component
-        
+
         def init(_), do: %{items: []}
-        
+
         def render(state, _) do
           Raxol.UI.Layout.flexbox([
             {:box, %{}, "Header"},
@@ -319,7 +319,7 @@ defmodule Raxol do
   ```elixir
   settings = Raxol.accessibility_settings()
   case settings.high_contrast do
-    true -> 
+    true ->
       # Do something for high contrast mode
     false -> :ok
   end

@@ -177,7 +177,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
         %{timestamp: t2, value: 20, series: "cpu"},
         %{timestamp: t3, value: 15, series: "memory"}
       ]
-      
+
       DataVisualization.add_data_points(chart_id, points)
   """
   @spec add_data_points(chart_id(), [data_point()]) :: :ok
@@ -197,7 +197,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
 
       # Create temperature heatmap
       data = generate_2d_temperature_data(24, 60)  # 24 hours x 60 minutes
-      
+
       {:ok, heatmap_id} = DataVisualization.create_heatmap(data, %{
         title: "Temperature Over Time",
         x_labels: hour_labels,
@@ -223,7 +223,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
         %{x: 10, y: 20, size: 5, color: :blue, cluster: 1},
         %{x: 15, y: 25, size: 8, color: :red, cluster: 2}
       ]
-      
+
       {:ok, scatter_id} = DataVisualization.create_scatter_plot(points, %{
         title: "Data Clustering",
         show_clusters: true,
@@ -243,7 +243,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   ## Examples
 
       values = [1.2, 1.5, 1.8, 2.1, 2.3, 2.8, 3.1, 3.5]
-      
+
       {:ok, hist_id} = DataVisualization.create_histogram(values, %{
         title: "Value Distribution",
         bins: 10,
@@ -284,10 +284,10 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
 
       # Export as ASCII art
       {:ok, ascii_data} = DataVisualization.export_chart(chart_id, :ascii)
-      
+
       # Export as JSON data
       {:ok, json_data} = DataVisualization.export_chart(chart_id, :json)
-      
+
       # Export as SVG (if supported)
       {:ok, svg_data} = DataVisualization.export_chart(chart_id, :svg)
   """
@@ -462,7 +462,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   end
 
   # All helper functions have been moved to specialized modules:
-  # - ChartRenderers: Chart-specific rendering functions  
+  # - ChartRenderers: Chart-specific rendering functions
   # - VisualizationHelpers: Chart utilities and configuration
   # - ChartOperations: Chart updates and streaming operations
   # - ChartExport: Data export and ASCII generation

@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.AdvancedFeatures do
         {"GitHub", "https://github.com"},
         {"GitLab", "https://gitlab.com"}
       ]
-      
+
       AdvancedFeatures.create_hyperlinks(links, %{tooltip: "Git repository"})
   """
   @spec create_hyperlinks([{String.t(), url()}], hyperlink_params()) :: [

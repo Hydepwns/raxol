@@ -3,7 +3,7 @@ defmodule Raxol.Examples.ButtonTest do
   use Raxol.Test.Unit
   use Raxol.Test.Integration
   use Raxol.Test.Visual
-  
+
   alias Raxol.UI.Components.Input.Button
   import Raxol.Test.Visual.Assertions
 

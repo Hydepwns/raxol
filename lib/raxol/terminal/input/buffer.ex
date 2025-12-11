@@ -153,7 +153,7 @@ defmodule Raxol.Terminal.Input.Buffer do
         {Enum.reverse(acc), "\e[" <> rest}
 
       :invalid ->
-        # Invalid sequence, don't process - return what we have so far  
+        # Invalid sequence, don't process - return what we have so far
         {Enum.reverse(acc), "\e[" <> rest}
     end
   end
@@ -260,7 +260,7 @@ defmodule Raxol.Terminal.Input.Buffer do
     case final_char do
       # Up arrow
       ?A -> create_key_event_from_csi(params, "A")
-      # Down arrow  
+      # Down arrow
       ?B -> create_key_event_from_csi(params, "B")
       # Right arrow
       ?C -> create_key_event_from_csi(params, "C")

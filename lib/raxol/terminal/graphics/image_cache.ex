@@ -24,13 +24,13 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
         max_entries: 1000,
         ttl: 3600  # 1 hour
       })
-      
+
       # Cache processed image
       :ok = ImageCache.put("image_key_300x200", processed_image_data)
-      
+
       # Retrieve cached image
       {:ok, data} = ImageCache.get("image_key_300x200")
-      
+
       # Generate cache key
       key = ImageCache.generate_key(image_data, processing_options)
   """

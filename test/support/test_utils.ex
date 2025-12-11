@@ -172,6 +172,12 @@ defmodule Raxol.Test.TestUtils do
   Sets up a test environment with renderer and pipeline processes.
   """
   def setup_rendering_test do
+    # Start the TimerServer first (required by Pipeline for animation)
+    {:ok, timer_server_pid} =
+      start_supervised(
+        {Raxol.UI.Rendering.TimerServer, name: Raxol.UI.Rendering.TimerServer}
+      )
+
     # Start the Renderer GenServer with module name registration
     {:ok, renderer_pid} =
       start_supervised(
@@ -187,7 +193,11 @@ defmodule Raxol.Test.TestUtils do
     # Set test notification for renderer using the actual PID
     GenServer.cast(renderer_pid, {:set_test_pid, self()})
 
-    %{renderer_pid: renderer_pid, pipeline_pid: pipeline_pid}
+    %{
+      renderer_pid: renderer_pid,
+      pipeline_pid: pipeline_pid,
+      timer_server_pid: timer_server_pid
+    }
   end
 
   @doc """

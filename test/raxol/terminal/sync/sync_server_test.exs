@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Sync.SyncServerTest do
   setup do
     # Use unique name for each test to avoid conflicts with async tests
     unique_name = :"unified_sync_#{System.unique_integer([:positive])}"
-    
+
     {:ok, pid} =
       SyncServer.start_link(
         consistency: :strong,

@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.TerminalParser do
   Handles escape sequences (CSI, OSC, DCS, etc.) and plain text.
   """
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.States.GroundState
   alias Raxol.Terminal.Parser.States.EscapeState
   alias Raxol.Terminal.Parser.States.DesignateCharsetState

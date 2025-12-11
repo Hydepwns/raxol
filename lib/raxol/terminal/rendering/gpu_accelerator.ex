@@ -34,14 +34,14 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
       # Initialize GPU acceleration
       {:ok, context} = GPUAccelerator.init(backend: :metal)
-      
+
       # Create rendering surface
       surface = GPUAccelerator.create_surface(context, width: 1920, height: 1080)
-      
+
       # Render terminal content
       terminal_buffer = get_terminal_buffer()
       GPUAccelerator.render(context, surface, terminal_buffer)
-      
+
       # Enable effects
       GPUAccelerator.enable_effect(context, :blur, intensity: 0.5)
       GPUAccelerator.enable_effect(context, :glow, color: {0, 255, 128})
@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
 
-  # @behaviour Raxol.Terminal.Rendering.Backend  # Commented out due to init/1 conflict with GenServer
+  # @behaviour Raxol.Terminal.Rendering.Backend  # init/1 conflict w/ GenServer
 
   defstruct [
     :backend,

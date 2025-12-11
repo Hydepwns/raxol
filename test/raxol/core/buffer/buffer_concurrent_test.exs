@@ -13,7 +13,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
 
   setup do
     {:ok, context} = setup_unique_buffer("BufferConcurrentServer")
-    
+
     on_exit(fn ->
       teardown_buffer(context.buffer_pid)
     end)

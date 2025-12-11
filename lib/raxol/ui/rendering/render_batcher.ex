@@ -5,7 +5,7 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
 
   ## Features
   - Frame-based batching (16ms default)
-  - Priority-based processing  
+  - Priority-based processing
   - Damage accumulation
   - Adaptive batching based on complexity
   """

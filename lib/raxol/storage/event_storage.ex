@@ -267,8 +267,9 @@ defmodule Raxol.Storage.EventStorage.Memory do
       ) do
     events =
       state.events
-      |> Enum.filter(fn event -> event.stream_name == stream_name end)
-      |> Enum.filter(fn event -> event.position >= start_position end)
+      |> Enum.filter(fn event ->
+        event.stream_name == stream_name and event.position >= start_position
+      end)
       |> Enum.sort_by(& &1.position)
       |> Enum.take(count)
 

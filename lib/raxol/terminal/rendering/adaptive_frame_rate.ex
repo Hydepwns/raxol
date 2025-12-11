@@ -36,16 +36,16 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
         max_fps: 120,
         strategy: :adaptive
       )
-      
+
       # Register content change
       AdaptiveFrameRate.content_changed(afr, change_type: :text_update)
-      
+
       # Register user interaction
       AdaptiveFrameRate.user_interaction(afr, interaction_type: :keystroke)
-      
+
       # Get current optimal frame rate
       fps = AdaptiveFrameRate.get_current_fps(afr)
-      
+
       # Enable battery optimization
       AdaptiveFrameRate.set_power_mode(afr, :battery)
   """

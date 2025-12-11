@@ -19,16 +19,16 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
       # Create a HOC that adds loading state
       with_loading = HigherOrder.with_loading_state()
-      
+
       # Enhance a component
       enhanced_user_list = with_loading.(UserList)
-      
+
       # Use the enhanced component
       %{
         type: enhanced_user_list,
         attrs: %{users: users, loading: loading}
       }
-      
+
       # Chain multiple HOCs
       super_enhanced = HigherOrder.chain([
         HigherOrder.with_loading_state(),
@@ -51,7 +51,7 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
       with_loading = HigherOrder.with_loading_state()
       LoadingUserList = with_loading.(UserList)
-      
+
       # The enhanced component will have access to loading state
   """
   def with_loading_state(options \\ []) do
@@ -242,7 +242,7 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
       with_data = HigherOrder.with_data_fetching(fn props ->
         fetch_users(props.organization_id)
       end)
-      
+
       DataDrivenComponent = with_data.(UserList)
   """
   def with_data_fetching(fetch_fn, options \\ [])
@@ -566,7 +566,7 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
         HigherOrder.with_authentication(required_permissions: [:admin]),
         HigherOrder.with_analytics("admin_panel")
       ])
-      
+
       SuperAdminPanel = super_hoc.(AdminPanel)
   """
   def chain(hocs) when is_list(hocs) do

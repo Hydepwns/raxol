@@ -1,6 +1,6 @@
 defmodule Raxol.Test.Platform.PlatformDetectionTest do
   use ExUnit.Case, async: true
-  
+
   alias Raxol.System.Platform
   require Raxol.Core.Runtime.Log
 

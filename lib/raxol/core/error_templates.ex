@@ -161,7 +161,7 @@ defmodule Raxol.Core.ErrorTemplates do
     }
   }
 
-  # Terminal I/O error templates  
+  # Terminal I/O error templates
   @terminal_templates %{
     :ansi_parse_error => %{
       title: "ANSI Sequence Parse Error",

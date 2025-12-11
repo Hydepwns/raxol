@@ -20,14 +20,14 @@ defmodule Raxol.Core.ErrorHandling do
 
       # Instead of try/catch
       result = safe_call(fn -> risky_operation() end)
-      
+
       # Chain operations safely
       with {:ok, data} <- fetch_data(),
            {:ok, processed} <- process_data(data),
            {:ok, result} <- save_result(processed) do
         {:ok, result}
       end
-      
+
       # Safe binary operations
       safe_deserialize(binary_data)
   """
@@ -45,7 +45,7 @@ defmodule Raxol.Core.ErrorHandling do
 
       iex> safe_call(fn -> 1 + 1 end)
       {:ok, 2}
-      
+
       iex> safe_call(fn -> raise "oops" end)
       {:error, %RuntimeError{message: "oops"}}
   """
@@ -73,7 +73,7 @@ defmodule Raxol.Core.ErrorHandling do
 
       iex> safe_call_with_info(fn -> 42 end)
       {:ok, 42}
-      
+
       iex> safe_call_with_info(fn -> raise "oops" end)
       {:error, {:error, %RuntimeError{message: "oops"}, [...]}}
   """
@@ -134,7 +134,7 @@ defmodule Raxol.Core.ErrorHandling do
       iex> binary = :erlang.term_to_binary({:ok, "data"})
       iex> safe_deserialize(binary)
       {:ok, {:ok, "data"}}
-      
+
       iex> safe_deserialize("invalid")
       {:error, :invalid_binary}
   """
@@ -173,9 +173,8 @@ defmodule Raxol.Core.ErrorHandling do
   """
   @spec safe_read_term(Path.t()) :: {:ok, term()} | {:error, atom()}
   def safe_read_term(path) do
-    with {:ok, binary} <- File.read(path),
-         {:ok, term} <- safe_deserialize(binary) do
-      {:ok, term}
+    with {:ok, binary} <- File.read(path) do
+      safe_deserialize(binary)
     end
   end
 

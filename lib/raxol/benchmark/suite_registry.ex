@@ -400,11 +400,9 @@ defmodule Raxol.Benchmark.SuiteRegistry do
     |> Enum.filter(fn module ->
       module_str = Atom.to_string(module)
 
-      String.contains?(module_str, "Benchmark") or
-        String.contains?(module_str, "Bench")
-    end)
-    |> Enum.filter(fn module ->
-      Code.ensure_loaded?(module) and
+      (String.contains?(module_str, "Benchmark") or
+         String.contains?(module_str, "Bench")) and
+        Code.ensure_loaded?(module) and
         function_exported?(module, :list_suites, 0)
     end)
   end

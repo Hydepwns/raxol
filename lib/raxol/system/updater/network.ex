@@ -119,7 +119,7 @@ defmodule Raxol.System.Updater.Network do
 
     case platform do
       "windows" ->
-        # On Windows, we need to use a different approach since we can't replace a running executable
+        # On Windows, use a batch file since we can't replace a running exe
         # Create a batch file that will replace the exe after we exit
         updater_bat = System.tmp_dir!() |> Path.join("raxol_updater.bat")
 

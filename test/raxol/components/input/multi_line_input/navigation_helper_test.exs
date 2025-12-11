@@ -1,6 +1,6 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
   use ExUnit.Case, async: true
-  
+
   alias Raxol.UI.Components.Input.MultiLineInput, as: State
   alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
 

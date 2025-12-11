@@ -5,7 +5,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
   """
   # Must be false due to process monitoring and subscriptions
   use ExUnit.Case, async: false
-  
+
   # Test implementation of Application behavior
   defmodule TestApp do
     use Raxol.Core.Runtime.Application

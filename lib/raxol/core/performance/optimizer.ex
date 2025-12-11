@@ -303,14 +303,14 @@ defmodule Raxol.Core.Performance.Optimizer do
   ## Options
 
   - `:size` - Pool size (default: 5)
-  - `:max_overflow` - Maximum overflow connections (default: 10) 
+  - `:max_overflow` - Maximum overflow connections (default: 10)
   - `:worker` - Worker module for connections
   - `:worker_args` - Arguments for worker initialization
 
   ## Examples
 
-      init_connection_pool(:database, 
-        size: 5, 
+      init_connection_pool(:database,
+        size: 5,
         max_overflow: 10,
         worker: MyConnectionWorker,
         worker_args: [host: "localhost", port: 5432]

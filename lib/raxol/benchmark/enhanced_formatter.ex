@@ -318,7 +318,7 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
     ## Metadata
 
     - **Elixir Version:** #{analysis.benchmark_metadata.elixir_version}
-    - **OTP Version:** #{analysis.benchmark_metadata.otp_version}  
+    - **OTP Version:** #{analysis.benchmark_metadata.otp_version}
     - **Architecture:** #{analysis.benchmark_metadata.system_architecture}
     - **Benchmark Time:** #{analysis.benchmark_metadata.benchmark_config.time}s
     - **Warmup Time:** #{analysis.benchmark_metadata.benchmark_config.warmup}s
@@ -434,17 +434,17 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
 
   defp enhanced_css do
     """
-    body { 
+    body {
         font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
         margin: 0; padding: 0; background: #f8fafc; color: #334155;
     }
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .header { 
+    .header {
         background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
         color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px;
         text-align: center;
     }
-    .card { 
+    .card {
         background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }

@@ -144,9 +144,8 @@ defmodule Raxol.Terminal.Integration.Config do
   @spec validate_config(map()) :: :ok | {:error, atom()}
   def validate_config(config) do
     with :ok <- validate_behavior(config.behavior),
-         :ok <- validate_memory_limit(config.memory_limit),
-         :ok <- validate_rendering(config.rendering) do
-      :ok
+         :ok <- validate_memory_limit(config.memory_limit) do
+      validate_rendering(config.rendering)
     end
   end
 
@@ -170,9 +169,8 @@ defmodule Raxol.Terminal.Integration.Config do
 
   defp validate_behavior(behavior) do
     with :ok <- validate_behavior_map(behavior),
-         :ok <- validate_scrollback_limit(behavior),
-         :ok <- validate_command_history_setting(behavior) do
-      :ok
+         :ok <- validate_scrollback_limit(behavior) do
+      validate_command_history_setting(behavior)
     end
   end
 
@@ -207,9 +205,8 @@ defmodule Raxol.Terminal.Integration.Config do
   defp validate_rendering(rendering) do
     with :ok <- validate_rendering_map(rendering),
          :ok <- validate_fps(rendering),
-         :ok <- validate_theme(rendering),
-         :ok <- validate_font_settings(rendering) do
-      :ok
+         :ok <- validate_theme(rendering) do
+      validate_font_settings(rendering)
     end
   end
 

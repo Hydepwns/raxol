@@ -117,7 +117,7 @@ defmodule Raxol.Test.DockerHelper do
           # Use real PostgreSQL in Docker
           run_in_docker_postgres("SELECT 1")
         end
-        
+
         assert result == [1]
       end
   """

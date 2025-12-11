@@ -2,7 +2,7 @@ defmodule Raxol.UI.Components.ModalTest do
   # use ExUnit.Case, async: true
   # Run synchronously
   use ExUnit.Case
-  
+
   alias Raxol.UI.Components.Modal
   # For checking rendered elements
   # import Raxol.View.Elements

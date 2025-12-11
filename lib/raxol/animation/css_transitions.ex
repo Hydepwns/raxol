@@ -11,12 +11,12 @@ defmodule Raxol.Animation.CSSTransitions do
       %{
         transition: "opacity 300ms ease-out, transform 500ms ease-in-out"
       }
-      
-      # CSS-like animation syntax  
+
+      # CSS-like animation syntax
       %{
         animation: "slideIn 1s ease-out forwards"
       }
-      
+
       # Keyframe animations
       %{
         animation: "bounce 2s infinite",
@@ -44,7 +44,7 @@ defmodule Raxol.Animation.CSSTransitions do
         easing: :ease_out,
         delay: 0
       }
-      
+
       iex> CSSTransitions.parse_transition("all 500ms ease-in-out 100ms")
       %{
         property: :all,
@@ -153,7 +153,7 @@ defmodule Raxol.Animation.CSSTransitions do
         transform: "translateY(\#{state.offset}px)",
         transition: "opacity 300ms ease-out, transform 500ms ease-in-out"
       }
-      
+
       CSSTransitions.apply_transitions(style, element_id, previous_style)
   """
   def apply_transitions(new_style, element_id, previous_style \\ %{}) do

@@ -341,9 +341,8 @@ defmodule Raxol.Security.Encryption.Config do
 
   defp validate_policy(policy) do
     with :ok <- validate_key_length(policy.min_key_length),
-         :ok <- validate_rotation_period(policy.key_rotation_days),
-         :ok <- validate_algorithm(policy.algorithm) do
-      :ok
+         :ok <- validate_rotation_period(policy.key_rotation_days) do
+      validate_algorithm(policy.algorithm)
     end
   end
 
@@ -499,7 +498,7 @@ defmodule Raxol.Security.Encryption.Config do
         violations
       )
 
-    # Check audit requirement  
+    # Check audit requirement
     violations =
       check_audit_violation(
         requirements[:require_audit] && !params[:audit_enabled],

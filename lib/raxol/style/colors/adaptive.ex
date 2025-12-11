@@ -11,7 +11,7 @@ defmodule Raxol.Style.Colors.Adaptive do
   ```elixir
   # Check if the terminal supports true color
   case Raxol.Style.Colors.Adaptive.supports_true_color?() do
-    true -> 
+    true ->
       # Use true color features
     false ->
       # Fall back to 256 colors or 16 colors

@@ -98,7 +98,7 @@ end
 # --- All test code below ---
 defmodule Raxol.RuntimeTest do
   use ExUnit.Case, async: false
-  
+
   # Mox is used with module prefix, no import needed
 
   alias Raxol.Core.Runtime.Supervisor, as: RuntimeSupervisor

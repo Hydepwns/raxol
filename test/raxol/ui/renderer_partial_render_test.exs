@@ -15,7 +15,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
       try do
         case Process.whereis(Raxol.UI.Rendering.Renderer) do
           nil -> :ok
-          pid when is_pid(pid) -> 
+          pid when is_pid(pid) ->
             if Process.alive?(pid) do
               GenServer.stop(pid, :normal, 1000)
             end

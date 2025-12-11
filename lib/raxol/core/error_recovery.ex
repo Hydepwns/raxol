@@ -123,7 +123,7 @@ defmodule Raxol.Core.ErrorRecovery do
 
   ## Examples
 
-      degrade_gracefully(:advanced_search, 
+      degrade_gracefully(:advanced_search,
         fn -> AdvancedSearch.execute(query) end,
         fn -> BasicSearch.execute(query) end
       )

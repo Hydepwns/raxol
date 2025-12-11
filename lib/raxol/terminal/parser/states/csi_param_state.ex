@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
 
   defp handle_digit(emulator, parser_state, digit, rest) do
     # Log.debug(
-    #   "CSIParamState.handle_digit: digit=#{inspect(<<digit>>)}, current_params=#{inspect(parser_state.params_buffer)}"
+    #   "CSIParam.digit: #{inspect(<<digit>>)}, params=#{inspect(parser_state.params_buffer)}"
     # )
 
     next_parser_state = %{
@@ -121,7 +121,7 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
 
   defp handle_final_byte(emulator, parser_state, final_byte, rest) do
     # Log.debug(
-    #   "CSIParamState.handle_final_byte: final_byte=#{inspect(<<final_byte>>)}, params_buffer=#{inspect(parser_state.params_buffer)}, intermediates_buffer=#{inspect(parser_state.intermediates_buffer)}"
+    #   "CSIParam.final: byte=#{inspect(<<final_byte>>)}, params=#{inspect(parser_state.params_buffer)}"
     # )
 
     final_emulator =

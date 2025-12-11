@@ -27,7 +27,7 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       content = """
       defmodule TestModule do
         @moduledoc "Test module"
-        
+
         def public_function(arg) do
           arg
         end
@@ -50,7 +50,7 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       content = """
       defmodule TestModule do
         @moduledoc "Test module"
-        
+
         @doc "Test function"
         def myFunction do
           :ok
@@ -73,7 +73,7 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       content = """
       defmodule TestModule do
         @moduledoc "Test module"
-        
+
         @doc "Returns bare atom"
         def bad_error_handling do
           :error

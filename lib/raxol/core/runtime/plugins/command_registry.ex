@@ -303,9 +303,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   end
 
   defp validate_command(command) do
-    with :ok <- validate_command_handler(command.handler),
-         :ok <- validate_command_metadata(command.metadata) do
-      :ok
+    with :ok <- validate_command_handler(command.handler) do
+      validate_command_metadata(command.metadata)
     end
   end
 

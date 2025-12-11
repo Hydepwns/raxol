@@ -272,10 +272,10 @@ defmodule Raxol.Benchmark.MemoryDSL do
     regression_detected = analysis.regression_detected
 
     result =
-      if not regression_detected do
-        {:ok, "No memory regression detected compared to baseline #{baseline}"}
-      else
+      if regression_detected do
         {:error, "Memory regression detected compared to baseline #{baseline}"}
+      else
+        {:ok, "No memory regression detected compared to baseline #{baseline}"}
       end
 
     {{:no_regression, :all}, result}

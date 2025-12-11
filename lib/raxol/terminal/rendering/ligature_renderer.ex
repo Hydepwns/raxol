@@ -36,11 +36,11 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
         enabled_sets: [:arrows, :programming, :math],
         disabled_ligatures: ["->"]  # Disable specific ligatures
       )
-      
+
       # Render text with ligatures
       text = "const arrow = (x) => x + 1; // Lambda function"
       rendered = LigatureRenderer.render(text, config)
-      
+
       # Check if text contains ligatures
       has_ligatures? = LigatureRenderer.contains_ligatures?(text, config)
   """
@@ -264,7 +264,7 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
       config = LigatureRenderer.config()
       LigatureRenderer.contains_ligatures?("hello -> world", config)
       # true
-      
+
       LigatureRenderer.contains_ligatures?("hello world", config)
       # false
   """
@@ -318,13 +318,12 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
 
     rendered_text
     |> String.to_charlist()
-    |> Enum.map(fn char ->
+    |> Enum.map_join("", fn char ->
       case Map.get(reverse_map, char) do
         nil -> <<char::utf8>>
         text -> text
       end
     end)
-    |> Enum.join("")
   end
 
   @doc """
@@ -598,7 +597,7 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
   @doc """
   Converts text to a ligature-aware representation for processing.
 
-  This creates a structure that maintains both original text and 
+  This creates a structure that maintains both original text and
   ligature information for complex text operations.
   """
   def to_ligature_structure(text, config \\ nil) do

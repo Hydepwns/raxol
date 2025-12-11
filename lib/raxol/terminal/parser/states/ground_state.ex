@@ -76,7 +76,7 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
   defp handle_input(data, emulator, parser_state) do
     # Disabled for performance
     # Raxol.Core.Runtime.Log.debug(
-    #   "GroundState handling input: #{inspect(data)}, current parser state: #{inspect(parser_state)}"
+    #   "GroundState input: #{inspect(data)}, state: #{inspect(parser_state)}"
     # )
 
     dispatch_input(data, emulator, parser_state)

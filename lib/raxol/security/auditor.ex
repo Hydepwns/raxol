@@ -30,9 +30,8 @@ defmodule Raxol.Security.Auditor do
   def validate_input(input, type, opts \\ []) do
     with {:ok, input} <- check_length(input, opts),
          {:ok, input} <- check_encoding(input),
-         {:ok, input} <- check_patterns(input, type),
-         {:ok, input} <- sanitize_input(input, type, opts) do
-      {:ok, input}
+         {:ok, input} <- check_patterns(input, type) do
+      sanitize_input(input, type, opts)
     end
   end
 

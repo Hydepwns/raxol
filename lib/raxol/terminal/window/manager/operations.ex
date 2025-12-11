@@ -137,13 +137,7 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
   def get_child_windows(parent_id) do
     case get_window_by_id(parent_id) do
       {:ok, parent_window} ->
-        children =
-          fetch_child_windows(
-            if parent_window.children == nil,
-              do: [],
-              else: parent_window.children
-          )
-
+        children = fetch_child_windows(parent_window.children)
         {:ok, children}
 
       {:error, :not_found} ->
@@ -179,7 +173,7 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
       {:ok, updated_child} ->
         # Update parent with child reference
         case Registry.update_window(parent_window.id, %{
-               children: [child_window.id | parent_window.children || []]
+               children: [child_window.id | parent_window.children]
              }) do
           {:ok, _updated_parent} -> {:ok, updated_child}
           {:error, _} -> {:error, :update_failed}

@@ -11,13 +11,13 @@ defmodule Raxol.Core.Supervisor do
 
       defmodule MyApp.Application do
         use Application
-        
+
         def start(_type, _args) do
           children = [
             # Other children...
             {Raxol.Core.Supervisor, []}
           ]
-          
+
           opts = [strategy: :one_for_one, name: MyApp.Supervisor]
           Supervisor.start_link(children, opts)
         end
@@ -63,7 +63,7 @@ defmodule Raxol.Core.Supervisor do
       {Raxol.Core.FocusManager.FocusServer,
        name: Raxol.Core.FocusManager.FocusServer},
 
-      # Animation State Server - handles animation state management  
+      # Animation State Server - handles animation state management
       {Raxol.Animation.StateServer, name: Raxol.Animation.StateServer},
 
       # Events Manager Server - handles event management with PubSub pattern

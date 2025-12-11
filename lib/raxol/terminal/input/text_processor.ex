@@ -60,7 +60,7 @@ defmodule Raxol.Terminal.Input.TextProcessor do
 
     codepoints
     |> Enum.reduce(emulator, fn codepoint, emu ->
-      # DEBUG: TextProcessor - Processing codepoint: #{inspect(codepoint)} (#{List.to_string([codepoint])})
+      # DEBUG: TextProcessor - Processing codepoint: #{inspect(codepoint)}
 
       Raxol.Terminal.Input.CharacterProcessor.process_character(emu, codepoint)
     end)

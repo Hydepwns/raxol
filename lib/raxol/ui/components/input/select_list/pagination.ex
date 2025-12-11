@@ -46,8 +46,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   @spec calculate_total_pages(SelectList.t()) :: non_neg_integer()
   def calculate_total_pages(state) do
     effective_options = get_effective_options(state)
-    page_size = state.page_size || 10
-    calculate_max_pages(effective_options, page_size)
+    calculate_max_pages(effective_options, state.page_size)
   end
 
   @doc """
@@ -55,8 +54,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   """
   @spec get_current_page(SelectList.t()) :: non_neg_integer()
   def get_current_page(state) do
-    page_size = state.page_size || 10
-    div(state.focused_index, page_size)
+    div(state.focused_index, state.page_size)
   end
 
   @doc """
@@ -109,12 +107,10 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   @spec get_page_options(SelectList.t()) :: list()
   def get_page_options(state) do
     effective_options = get_effective_options(state)
-    visible_items = state.visible_items || 10
     page = get_current_page(state)
+    start_index = page * state.visible_items
 
-    start_index = page * visible_items
-
-    Enum.slice(effective_options, start_index, visible_items)
+    Enum.slice(effective_options, start_index, state.visible_items)
   end
 
   # Private functions

@@ -72,9 +72,8 @@ defmodule Raxol.Terminal.Emulator.Coordinator do
   Coordinates screen clearing with cursor repositioning.
   """
   def clear_screen_and_home(emulator) do
-    with {:ok, emulator} <- clear_screen_content(emulator),
-         {:ok, emulator} <- move_cursor(emulator, 0, 0) do
-      {:ok, emulator}
+    with {:ok, emulator} <- clear_screen_content(emulator) do
+      move_cursor(emulator, 0, 0)
     end
   end
 

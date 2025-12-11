@@ -89,7 +89,7 @@ defmodule Raxol.Terminal.Escape.Parsers.SCSParser do
   # Norwegian/Danish (alternate)
   defp get_charset(?6), do: :norwegian_danish
 
-  # defp get_charset(?%5), do: :portuguese      # Portuguese - special case, needs different handling
+  # defp get_charset(?%5), do: :portuguese  # Portuguese - special case
   # Spanish
   defp get_charset(?Z), do: :spanish
   # Swedish

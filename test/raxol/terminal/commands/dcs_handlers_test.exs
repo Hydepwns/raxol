@@ -361,7 +361,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlerTest do
         end)
 
       # In test mode with error-level logging, warning messages may not be captured
-      # This is acceptable as long as the functionality works correctly  
+      # This is acceptable as long as the functionality works correctly
       if log != "" do
         assert log =~ "DECDLD"
         assert log =~ "not yet implemented"

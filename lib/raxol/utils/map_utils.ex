@@ -13,7 +13,7 @@ defmodule Raxol.Utils.MapUtils do
 
       iex> Raxol.Utils.MapUtils.stringify_keys(%{foo: "bar", nested: %{key: "value"}})
       %{"foo" => "bar", "nested" => %{"key" => "value"}}
-      
+
       iex> Raxol.Utils.MapUtils.stringify_keys(%{:atom => [%{inner: "value"}]})
       %{"atom" => [%{"inner" => "value"}]}
   """
@@ -42,7 +42,7 @@ defmodule Raxol.Utils.MapUtils do
 
       iex> Raxol.Utils.MapUtils.atomize_keys(%{"foo" => "bar", "nested" => %{"key" => "value"}})
       %{foo: "bar", nested: %{key: "value"}}
-      
+
       iex> Raxol.Utils.MapUtils.atomize_keys(%{"atom" => [%{"inner" => "value"}]})
       %{atom: [%{inner: "value"}]}
   """
@@ -77,7 +77,7 @@ defmodule Raxol.Utils.MapUtils do
 
       iex> Raxol.Utils.MapUtils.safe_atomize_keys(%{"foo" => "bar"})
       %{"foo" => "bar"}  # "foo" atom doesn't exist
-      
+
       iex> _ = :existing_atom
       iex> Raxol.Utils.MapUtils.safe_atomize_keys(%{"existing_atom" => "value"})
       %{existing_atom: "value"}

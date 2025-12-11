@@ -17,7 +17,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
 
   ### Contrast Modes
   - High Contrast Black (white text on black background)
-  - High Contrast White (black text on white background)  
+  - High Contrast White (black text on white background)
   - High Contrast Custom (user-defined color schemes)
   - Inverted Colors mode
   - Grayscale mode with enhanced contrast
@@ -39,10 +39,10 @@ defmodule Raxol.UI.Accessibility.HighContrast do
         auto_detect_system: true,
         color_blind_support: true
       )
-      
+
       # Apply high contrast theme
       HighContrast.apply_theme(hc, :high_contrast_white)
-      
+
       # Create custom theme with WCAG compliance
       custom_theme = %{
         name: "custom_blue",
@@ -52,7 +52,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
         compliance_level: :wcag_aaa
       }
       HighContrast.register_theme(hc, custom_theme)
-      
+
       # Enable color blindness accommodation
       HighContrast.configure_color_blindness(hc, :deuteranopia, %{
         strength: 0.8,
@@ -694,7 +694,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     darker_bg = darken_color(background, improvement_factor)
     darker_bg_ratio = calculate_contrast_ratio(foreground, darker_bg)
 
-    # Suggest lighter foreground  
+    # Suggest lighter foreground
     lighter_fg = lighten_color(foreground, improvement_factor)
     lighter_fg_ratio = calculate_contrast_ratio(lighter_fg, background)
 

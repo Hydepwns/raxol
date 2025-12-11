@@ -44,13 +44,13 @@ config :raxol_playground,
   playground: [
     # Enable live code evaluation
     live_eval: true,
-    
+
     # Code execution timeout (ms)
     eval_timeout: 5000,
-    
+
     # Maximum code length
     max_code_length: 10_000,
-    
+
     # Allowed modules for evaluation
     allowed_modules: [
       IO,
@@ -61,17 +61,17 @@ config :raxol_playground,
       Agent,
       Task
     ],
-    
+
     # Component categories
     component_categories: [
       "Input",
-      "Display", 
+      "Display",
       "Navigation",
       "Feedback",
       "Overlay",
       "Layout"
     ],
-    
+
     # Example configurations
     examples: [
       terminal_editor: %{
@@ -83,7 +83,7 @@ config :raxol_playground,
       file_browser: %{
         name: "File Browser",
         description: "Navigate and preview files",
-        complexity: "Intermediate", 
+        complexity: "Intermediate",
         estimated_time: "1-2 hours"
       },
       dashboard: %{

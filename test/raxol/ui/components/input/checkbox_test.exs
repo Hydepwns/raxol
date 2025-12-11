@@ -157,12 +157,12 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       {:ok, initial_state} = Checkbox.init(id: :cb_update)
       assert initial_state.checked == false
 
-      {:ok, updated_state, _cmds} =
+      {updated_state, _cmds} =
         Checkbox.update(%{checked: true}, initial_state)
 
       assert updated_state.checked == true
 
-      {:ok, final_state, _cmds} =
+      {final_state, _cmds} =
         Checkbox.update(%{checked: false}, updated_state)
 
       assert final_state.checked == false
@@ -172,7 +172,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       {:ok, initial_state} = Checkbox.init(id: :cb_update, label: "Initial")
       assert initial_state.label == "Initial"
 
-      {:ok, updated_state, _cmds} =
+      {updated_state, _cmds} =
         Checkbox.update(%{label: "Updated"}, initial_state)
 
       assert updated_state.label == "Updated"
@@ -184,7 +184,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert Map.has_key?(initial_state, :disabled)
       assert initial_state.disabled == false
 
-      {:ok, updated_state, _cmds} =
+      {updated_state, _cmds} =
         Checkbox.update(%{disabled: true}, initial_state)
 
       assert is_map(updated_state)
@@ -198,7 +198,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       {:ok, initial_state} = Checkbox.init(id: :cb_update, on_toggle: cb_func_1)
       assert initial_state.on_toggle == cb_func_1
 
-      {:ok, updated_state, _cmds} =
+      {updated_state, _cmds} =
         Checkbox.update(%{on_toggle: cb_func_2}, initial_state)
 
       assert updated_state.on_toggle == cb_func_2
@@ -208,7 +208,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       {:ok, initial_state} =
         Checkbox.init(id: :cb_update, style: %{fg: :red}, theme: %{bg: :blue})
 
-      {:ok, updated_state, _cmds} =
+      {updated_state, _cmds} =
         Checkbox.update(
           %{style: %{bold: true}, theme: %{fg: :green}},
           initial_state

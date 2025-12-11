@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
     test ~c"clears from cursor to end of screen (mode 0)" do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
-      
+
       # Fill buffer with test data first
       filled_buffer =
         Enum.reduce(0..4, initial_emulator.main_screen_buffer, fn y, acc ->
@@ -42,7 +42,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
         end)
 
       emulator = %{initial_emulator | main_screen_buffer: filled_buffer}
-      
+
       # Move cursor to (2, 2) zero-indexed
       {emulator, _output} = Emulator.process_input(emulator, "\e[3;3H")
       # Cursor movement via escape sequence doesn't work, so set directly

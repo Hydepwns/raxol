@@ -278,7 +278,7 @@ defmodule Raxol.Terminal.ANSI.SequenceHandler do
     # Match all before final byte, then final byte, then rest
     case Regex.run(~r|^([^A-Za-z]*)([A-Za-z])(.*)|, remaining) do
       [_, before_final, final_byte, rest] ->
-        # Reverse, take all digits/;/: from the end as params, rest as intermediates, then reverse both
+        # Reverse, take digits/;/: from end as params, rest as intermediates
         rev = String.reverse(before_final)
 
         {rev_params, rev_intermediates} =

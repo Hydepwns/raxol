@@ -208,7 +208,7 @@ defmodule Raxol.Style.Colors.HotReload do
     # Log.info(
     #   "[HotReload DEBUG] Comparing times - current: #{inspect(current_times)}"
     # )
-    # 
+    #
     # Log.info(
     #   "[HotReload DEBUG] Comparing times - last: #{inspect(last_modified)}"
     # )
@@ -224,7 +224,7 @@ defmodule Raxol.Style.Colors.HotReload do
             changed = old_time != mtime
 
             # Log.info(
-            #   "[HotReload DEBUG] File #{path}: old=#{inspect(old_time)}, new=#{inspect(mtime)}, changed=#{changed}"
+            #   "[HotReload] File #{path}: changed=#{changed}"
             # )
 
             changed
@@ -237,7 +237,7 @@ defmodule Raxol.Style.Colors.HotReload do
 
   defp handle_theme_change({path, _mtime}, subscribers) do
     # Log.info(
-    #   "[HotReload DEBUG] handle_theme_change: path=#{inspect(path)} subscribers=#{inspect(subscribers)}"
+    #   "[HotReload] theme_change: #{inspect(path)}"
     # )
 
     theme_name = Path.basename(path, ".json") |> String.to_atom()

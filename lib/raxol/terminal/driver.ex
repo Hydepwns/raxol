@@ -399,24 +399,24 @@ defmodule Raxol.Terminal.Driver do
   #   Raxol.Core.Runtime.Log.info(
   #     "[Driver] Test environment detected, sending driver_ready event"
   #   )
-  # 
+  #
   #   case dispatcher_pid do
   #     nil ->
   #       Raxol.Core.Runtime.Log.warning_with_context(
   #         "[Driver] No dispatcher_pid provided, skipping driver_ready and initial resize event",
   #         %{}
   #       )
-  # 
+  #
   #     pid ->
   #       send(pid, {:driver_ready, self()})
   #       # Send initial resize event for test environment
   #       Raxol.Core.Runtime.Log.info(
   #         "[Driver] Sending initial resize event to dispatcher_pid: #{inspect(pid)}"
   #       )
-  # 
+  #
   #       send_initial_resize_event(pid)
   #   end
-  # 
+  #
   #   # In test mode, set termbox_state to :initialized so we can handle test events
   #   state = %{state | termbox_state: :initialized}
   #   {:ok, state}
@@ -428,16 +428,16 @@ defmodule Raxol.Terminal.Driver do
   #       Raxol.Core.Runtime.Log.debug(
   #         "[TerminalDriver] TTY detected, calling Termbox2Nif.tb_init()..."
   #       )
-  # 
+  #
   #       _ = call_termbox_init()
-  # 
+  #
   #     false ->
   #       Raxol.Core.Runtime.Log.warning_with_context(
-  #         "Not attached to a TTY. Skipping Termbox2Nif.tb_init(). Terminal features will be disabled.",
+  #         "Not attached to TTY. Terminal features disabled.",
   #         %{}
   #       )
   #   end
-  # 
+  #
   #   {:ok, state}
   # end
 

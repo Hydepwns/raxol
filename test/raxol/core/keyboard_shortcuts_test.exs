@@ -35,7 +35,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       catch
         :exit, _ -> :ok
       end
-      
+
       try do
         if Process.whereis(EventManager) do
           EventManager.cleanup()
@@ -405,7 +405,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
 
       # Wait a bit for async processing
       Process.sleep(50)
-      
+
       # Check callback was called
       assert_received :save_triggered
     end
@@ -432,7 +432,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
 
       # Wait a bit for async processing
       Process.sleep(50)
-      
+
       # Check callback was called
       assert_received :file_menu_triggered
     end
@@ -451,7 +451,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
 
       # Wait a bit for async processing
       Process.sleep(50)
-      
+
       # Check callback was called
       assert_received :cut_triggered
     end
@@ -483,7 +483,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
 
       # Wait a bit for async processing
       Process.sleep(50)
-      
+
       # Should trigger context version
       assert_received :context_save_triggered
       refute_received :global_save_triggered
@@ -522,7 +522,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
 
       # Wait a bit for async processing
       Process.sleep(50)
-      
+
       # Should trigger high priority first
       assert_received :print_high_triggered
     end

@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Tooltip do
     - `text` - The text to display in the tooltip
 
   ## Examples
-      
+
       Raxol.Terminal.Tooltip.show("Click to submit")
   """
   @spec show(String.t()) :: :ok
@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Tooltip do
   Hides the currently displayed tooltip.
 
   ## Examples
-      
+
       Raxol.Terminal.Tooltip.hide()
   """
   @spec hide() :: :ok

@@ -9,12 +9,12 @@ defmodule Raxol.Terminal.Window.ManagerTest do
       nil -> :ok
       pid -> GenServer.stop(pid, :normal, 5000)
     end
-    
+
     case Process.whereis(Raxol.Terminal.Window.Manager.WindowManagerServer) do
       nil -> :ok
       pid -> GenServer.stop(pid, :normal, 5000)
     end
-    
+
     start_supervised!(Window.Registry)
     start_supervised!({Raxol.Terminal.Window.Manager.WindowManagerServer, [name: Raxol.Terminal.Window.Manager.WindowManagerServer]})
     :ok
