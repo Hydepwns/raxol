@@ -483,7 +483,6 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     case get_power_source() do
       :battery -> @battery_max_fps
       :ac -> @text_editing_fps
-      _ -> @battery_max_fps
     end
   end
 

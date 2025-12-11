@@ -357,12 +357,13 @@ defmodule Raxol.Performance.MonitoringCoordinator do
     results = [monitor_result | results]
 
     # Stop AdaptiveOptimizer (if running)
+    # GenServer.stop returns :ok on success or raises if process doesn't exist
     optimizer_result =
-      case GenServer.stop(AdaptiveOptimizer, :normal, 5000) do
-        :ok -> :ok
-        # Already stopped
-        {:error, :noproc} -> :ok
-        error -> error
+      try do
+        GenServer.stop(AdaptiveOptimizer, :normal, 5000)
+        :ok
+      catch
+        :exit, {:noproc, _} -> :ok
       end
 
     results = [optimizer_result | results]

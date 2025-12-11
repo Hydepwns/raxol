@@ -239,7 +239,7 @@ defmodule Raxol.Benchmark.Runner do
         end,
         "Buffer read" => fn ->
           buffer = create_test_buffer_with_data()
-          Raxol.Terminal.Buffer.SafeManager.read(buffer, lines: 100)
+          Raxol.Terminal.Buffer.SafeManager.read(buffer, 100)
         end,
         "Buffer scroll" => fn ->
           buffer = create_test_buffer_with_data()

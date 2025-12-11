@@ -112,16 +112,12 @@ defmodule Raxol.Terminal.Event.Handler do
       {{:value, {event_type, event_data}}, remaining_queue} ->
         # Process this event and continue with remaining queue
         updated_emulator =
-          case Map.get(event_struct.handlers, event_type) do
-            nil ->
-              emulator
-
-            handler ->
-              case handler.(emulator, event_data) do
-                {:ok, result} -> result
-                result -> result
-              end
-          end
+          invoke_event_handler(
+            event_struct.handlers,
+            event_type,
+            emulator,
+            event_data
+          )
 
         # Update the queue and continue processing
         updated_event_struct = %{event_struct | queue: remaining_queue}
@@ -152,16 +148,12 @@ defmodule Raxol.Terminal.Event.Handler do
 
       %Event{} = event_struct ->
         # Direct struct mode for testing
-        case Map.get(event_struct.handlers, event_type) do
-          nil ->
-            {:ok, emulator}
-
-          handler ->
-            case handler.(emulator, event_data) do
-              {:ok, result} -> {:ok, result}
-              result -> {:ok, result}
-            end
-        end
+        invoke_and_wrap_result(
+          event_struct.handlers,
+          event_type,
+          emulator,
+          event_data
+        )
 
       event_pid ->
         GenServer.call(
@@ -256,25 +248,69 @@ defmodule Raxol.Terminal.Event.Handler do
           handler ->
             # Call the handler with a minimal emulator structure
             # Note: In queue processing, we don't have the full emulator context
-            case handler.(%{event: self()}, event_data) do
-              {:ok, _result} ->
-                # Event processed successfully, continue with remaining events
-                process_queued_events_recursive(
-                  %{state | queue: remaining_queue},
-                  [{event_type, event_data} | processed_events]
-                )
-
-              _ ->
-                # Event processing failed, skip it
-                process_queued_events_recursive(
-                  %{state | queue: remaining_queue},
-                  processed_events
-                )
-            end
+            handle_queued_event(
+              handler,
+              event_type,
+              event_data,
+              state,
+              remaining_queue,
+              processed_events
+            )
         end
 
       {:empty, _} ->
         {Enum.reverse(processed_events), state}
+    end
+  end
+
+  defp invoke_event_handler(handlers, event_type, emulator, event_data) do
+    case Map.get(handlers, event_type) do
+      nil ->
+        emulator
+
+      handler ->
+        case handler.(emulator, event_data) do
+          {:ok, result} -> result
+          result -> result
+        end
+    end
+  end
+
+  defp invoke_and_wrap_result(handlers, event_type, emulator, event_data) do
+    case Map.get(handlers, event_type) do
+      nil ->
+        {:ok, emulator}
+
+      handler ->
+        case handler.(emulator, event_data) do
+          {:ok, result} -> {:ok, result}
+          result -> {:ok, result}
+        end
+    end
+  end
+
+  defp handle_queued_event(
+         handler,
+         event_type,
+         event_data,
+         state,
+         remaining_queue,
+         processed_events
+       ) do
+    case handler.(%{event: self()}, event_data) do
+      {:ok, _result} ->
+        # Event processed successfully, continue with remaining events
+        process_queued_events_recursive(
+          %{state | queue: remaining_queue},
+          [{event_type, event_data} | processed_events]
+        )
+
+      _ ->
+        # Event processing failed, skip it
+        process_queued_events_recursive(
+          %{state | queue: remaining_queue},
+          processed_events
+        )
     end
   end
 end

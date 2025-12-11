@@ -51,7 +51,10 @@ defmodule Raxol.Terminal.Cell do
       iex> Cell.get_style(cell)
       %{foreground: :red}
   """
-  @spec new(String.t() | nil, TextFormatting.text_style() | nil) :: t()
+  @spec new(
+          String.t() | nil,
+          TextFormatting.t() | TextFormatting.text_style() | nil
+        ) :: t()
   def new(char \\ " ", style \\ TextFormatting.new()) do
     %__MODULE__{
       char: char || " ",

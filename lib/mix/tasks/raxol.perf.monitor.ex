@@ -134,15 +134,7 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
 
         print_current_metrics(status.current_metrics)
         print_threshold_status(status.current_metrics, status.thresholds)
-
-        if length(status.recommendations) > 0 do
-          Log.console("")
-          Log.console("=== Optimization Recommendations ===")
-
-          Enum.each(status.recommendations, fn rec ->
-            Log.console("• #{rec}")
-          end)
-        end
+        print_recommendations(status.recommendations)
     end
   end
 
@@ -499,5 +491,20 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
         # Check for performance regressions
         mix raxol.perf.monitor regression-check
     """)
+  end
+
+  defp print_recommendations(recommendations) do
+    case length(recommendations) > 0 do
+      true ->
+        Log.console("")
+        Log.console("=== Optimization Recommendations ===")
+
+        Enum.each(recommendations, fn rec ->
+          Log.console("• #{rec}")
+        end)
+
+      false ->
+        :ok
+    end
   end
 end

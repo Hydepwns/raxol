@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   @doc """
   Creates a new terminal emulator instance with default dimensions.
   """
-  @spec new() :: Raxol.Terminal.Emulator.t()
+  @spec new() :: map()
   def new do
     new(80, 24)
   end
@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   @doc """
   Creates a new terminal emulator instance with given width and height.
   """
-  @spec new(non_neg_integer(), non_neg_integer()) :: Raxol.Terminal.Emulator.t()
+  @spec new(non_neg_integer(), non_neg_integer()) :: map()
   def new(width, height) do
     # Initialize all required managers and processes
     state_pid =
@@ -135,8 +135,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   @doc """
   Creates a new terminal emulator instance with given width, height, and options.
   """
-  @spec new(non_neg_integer(), non_neg_integer(), keyword()) ::
-          Raxol.Terminal.Emulator.t()
+  @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: map()
   def new(width, height, opts) do
     state_pid =
       get_pid(Raxol.Terminal.State.TerminalStateManager.start_link(opts))
@@ -261,9 +260,9 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   """
   @spec new(%{
           required(:width) => non_neg_integer(),
-          required(:height) => non_neg_integer(),
-          optional(atom()) => term()
-        }) :: Raxol.Terminal.Emulator.t()
+          required(:height) => non_neg_integer()
+        }) ::
+          map()
   def new(%{width: width, height: height} = opts) do
     plugin_manager = Map.get(opts, :plugin_manager)
     emulator = new(width, height, [])
@@ -277,8 +276,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   @doc """
   Creates a new emulator with width, height, and optional configuration.
   """
-  @spec new(non_neg_integer(), non_neg_integer(), map(), map()) ::
-          Raxol.Terminal.Emulator.t()
+  @spec new(non_neg_integer(), non_neg_integer(), map(), map()) :: map()
   def new(width, height, config, options) do
     # Merge config and options
     merged_opts = Map.merge(config, options)

@@ -200,7 +200,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     :ok
   end
 
-  @spec pref_key(any()) :: any()
+  @spec pref_key(term()) :: String.t()
   defp pref_key(key), do: "accessibility.#{key}"
 
   @doc """

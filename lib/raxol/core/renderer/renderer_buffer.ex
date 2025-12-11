@@ -65,7 +65,7 @@ defmodule Raxol.Core.Renderer.Buffer do
     update_back_buffer!(buffer, {x, y}, cell)
   end
 
-  @spec validate_position!(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_position!({integer(), integer()}) :: {integer(), integer()}
   defp validate_position!(pos) do
     case pos do
       {x, y} when is_integer(x) and is_integer(y) ->
@@ -213,7 +213,7 @@ defmodule Raxol.Core.Renderer.Buffer do
     |> grid_to_cell_map()
   end
 
-  @spec grid_to_cell_map(String.t() | integer()) :: any()
+  @spec grid_to_cell_map([any()]) :: any()
   defp grid_to_cell_map(grid) do
     grid
     |> Enum.with_index()

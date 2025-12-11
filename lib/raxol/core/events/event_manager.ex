@@ -409,7 +409,7 @@ defmodule Raxol.Core.Events.EventManager do
     safe_call_handler(module, function, event_type, event_data)
   end
 
-  @spec safe_send_event(String.t() | integer(), any(), any()) :: any()
+  @spec safe_send_event(pid(), any(), any()) :: any()
   defp safe_send_event(pid, event_type, event_data) do
     if Process.alive?(pid) do
       send(pid, {:event, event_type, event_data})

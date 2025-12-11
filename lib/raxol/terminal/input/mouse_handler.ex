@@ -302,7 +302,6 @@ defmodule Raxol.Terminal.Input.MouseHandler do
         1 -> :middle
         2 -> :right
         3 -> :release
-        _ -> :unknown
       end
 
     # Check for wheel events (different encoding)
@@ -338,7 +337,6 @@ defmodule Raxol.Terminal.Input.MouseHandler do
           1 -> :middle
           2 -> :right
           3 -> :release
-          _ -> :unknown
         end
       end
 

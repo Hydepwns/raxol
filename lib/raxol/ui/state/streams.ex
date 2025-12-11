@@ -20,6 +20,12 @@ defmodule Raxol.UI.State.Streams do
   alias Raxol.UI.State.Store
   # Observable definition
   defmodule Observable do
+    @moduledoc """
+    Reactive stream that emits values over time.
+
+    Wraps a subscription function that defines how values are emitted to observers.
+    Supports metadata and operator chaining for stream transformations.
+    """
     @enforce_keys [:subscribe_fn]
     defstruct [:subscribe_fn, :metadata, :operators]
 
@@ -34,6 +40,11 @@ defmodule Raxol.UI.State.Streams do
 
   # Observer functions
   defmodule Observer do
+    @moduledoc """
+    Observer that receives values from an observable stream.
+
+    Contains callback functions for handling next values, errors, and completion events.
+    """
     defstruct [:next, :error, :complete]
 
     def new(next_fn, error_fn \\ nil, complete_fn \\ nil) do
@@ -47,6 +58,12 @@ defmodule Raxol.UI.State.Streams do
 
   # Subscription handle
   defmodule Subscription do
+    @moduledoc """
+    Handle for an active subscription to an observable stream.
+
+    Contains the subscription ID, unsubscribe function, reference to the observable,
+    and active status flag.
+    """
     defstruct [:id, :unsubscribe_fn, :observable, :active]
 
     def new(id, unsubscribe_fn, observable) do
@@ -61,6 +78,12 @@ defmodule Raxol.UI.State.Streams do
 
   # Subject for hot observables
   defmodule Subject do
+    @moduledoc """
+    Hot observable subject that broadcasts values to multiple observers.
+
+    Manages a list of observers and notifies them when new values are emitted,
+    completed, or an error occurs.
+    """
     use Raxol.Core.Behaviours.BaseManager
 
     defstruct [:observers, :completed, :error]
@@ -118,17 +141,19 @@ defmodule Raxol.UI.State.Streams do
 
     @impl true
     def handle_manager_call({:error, error}, _from, state) do
-      with false <- state.completed do
-        # Notify all observers of error
-        state.observers
-        |> Map.values()
-        |> Enum.each(fn observer ->
-          _ = safe_call_observer(observer.error, error)
-        end)
+      case state.completed do
+        false ->
+          # Notify all observers of error
+          state.observers
+          |> Map.values()
+          |> Enum.each(fn observer ->
+            _ = safe_call_observer(observer.error, error)
+          end)
 
-        {:reply, :ok, %{state | error: error, completed: true}}
-      else
-        _ -> {:reply, {:error, :already_completed}, state}
+          {:reply, :ok, %{state | error: error, completed: true}}
+
+        _ ->
+          {:reply, {:error, :already_completed}, state}
       end
     end
 
@@ -151,17 +176,18 @@ defmodule Raxol.UI.State.Streams do
 
     @impl true
     def handle_manager_call({:subscribe, observer}, _from, state) do
-      with false <- state.completed do
-        observer_id = System.unique_integer([:positive, :monotonic])
-        new_observers = Map.put(state.observers, observer_id, observer)
+      case state.completed do
+        false ->
+          observer_id = System.unique_integer([:positive, :monotonic])
+          new_observers = Map.put(state.observers, observer_id, observer)
 
-        # Return unsubscribe function
-        unsubscribe_fn = fn ->
-          GenServer.call(self(), {:unsubscribe, observer_id})
-        end
+          # Return unsubscribe function
+          unsubscribe_fn = fn ->
+            GenServer.call(self(), {:unsubscribe, observer_id})
+          end
 
-        {:reply, {:ok, unsubscribe_fn}, %{state | observers: new_observers}}
-      else
+          {:reply, {:ok, unsubscribe_fn}, %{state | observers: new_observers}}
+
         true when state.error != nil ->
           # If already errored, notify immediately
           _ = safe_call_observer(observer.error, state.error)
@@ -182,9 +208,10 @@ defmodule Raxol.UI.State.Streams do
 
     # Safe observer calling helper
     defp safe_call_observer(observer_fn, value \\ nil) do
-      with {:ok, _} <- Raxol.UI.State.Streams.safe_apply(observer_fn, value) do
-        :ok
-      else
+      case Raxol.UI.State.Streams.safe_apply(observer_fn, value) do
+        {:ok, _} ->
+          :ok
+
         {:error, reason} ->
           Raxol.Core.Runtime.Log.warning(
             "Observer function failed: #{inspect(reason)}"
@@ -280,37 +307,61 @@ defmodule Raxol.UI.State.Streams do
     Observable.new(fn observer ->
       {:ok, pid} =
         {:ok, _pid} =
-        Task.start(fn ->
-          :timer.sleep(milliseconds)
-
-          with {:ok, _} <- safe_apply(observer.next, value) do
-            safe_apply(observer.complete)
-          else
-            {:error, reason} ->
-              safe_apply(observer.error, {:error, reason})
-          end
-        end)
+        Task.start(make_timer_task_fn(milliseconds, value, observer))
 
       fn -> Process.exit(pid, :normal) end
     end)
+  end
+
+  defp make_timer_task_fn(milliseconds, value, observer) do
+    fn ->
+      :timer.sleep(milliseconds)
+
+      case safe_apply(observer.next, value) do
+        {:ok, _} ->
+          safe_apply(observer.complete)
+
+        {:error, reason} ->
+          safe_apply(observer.error, {:error, reason})
+      end
+    end
   end
 
   @doc """
   Creates an observable from Store state changes.
   """
   def from_store_path(path, store \\ Store) do
-    Observable.new(fn observer ->
+    Observable.new(make_store_observer_fn(path, store))
+  end
+
+  defp make_store_observer_fn(path, store) do
+    fn observer ->
       # Emit current value immediately
-      with {:ok, current_value} <- safe_get_store_state(path, store),
-           {:ok, _} <- safe_apply(observer.next, current_value) do
-        # Subscribe to changes
-        subscribe_to_store_safely(path, observer, store)
-      else
+      case safe_get_store_state(path, store) do
+        {:ok, current_value} ->
+          handle_store_value_emission(current_value, path, observer, store)
+
         {:error, reason} ->
           safe_apply(observer.error, {:error, reason})
-          fn -> :ok end
+          make_no_op_unsubscribe_fn()
       end
-    end)
+    end
+  end
+
+  defp make_no_op_unsubscribe_fn do
+    fn -> :ok end
+  end
+
+  defp handle_store_value_emission(current_value, path, observer, store) do
+    case safe_apply(observer.next, current_value) do
+      {:ok, _} ->
+        # Subscribe to changes
+        subscribe_to_store_safely(path, observer, store)
+
+      {:error, reason} ->
+        safe_apply(observer.error, {:error, reason})
+        make_no_op_unsubscribe_fn()
+    end
   end
 
   defp safe_get_store_state(path, store) do
@@ -378,21 +429,35 @@ defmodule Raxol.UI.State.Streams do
     Observable.new(fn observer ->
       new_observer =
         Observer.new(
-          fn value ->
-            with {:ok, mapped_value} <- safe_apply(mapper_fn, value),
-                 {:ok, _} <- safe_apply(observer.next, mapped_value) do
-              :ok
-            else
-              {:error, reason} ->
-                safe_apply(observer.error, {:error, reason})
-            end
-          end,
+          make_map_next_fn(mapper_fn, observer),
           observer.error,
           observer.complete
         )
 
       observable.subscribe_fn.(new_observer)
     end)
+  end
+
+  defp make_map_next_fn(mapper_fn, observer) do
+    fn value ->
+      case safe_apply(mapper_fn, value) do
+        {:ok, mapped_value} ->
+          emit_mapped_value(observer, mapped_value)
+
+        {:error, reason} ->
+          safe_apply(observer.error, {:error, reason})
+      end
+    end
+  end
+
+  defp emit_mapped_value(observer, mapped_value) do
+    case safe_apply(observer.next, mapped_value) do
+      {:ok, _} ->
+        :ok
+
+      {:error, reason} ->
+        safe_apply(observer.error, {:error, reason})
+    end
   end
 
   @doc """
@@ -403,21 +468,26 @@ defmodule Raxol.UI.State.Streams do
     Observable.new(fn observer ->
       new_observer =
         Observer.new(
-          fn value ->
-            with {:ok, should_emit} <- safe_apply(predicate_fn, value) do
-              emit_if_predicate_matches(should_emit, observer, value)
-              :ok
-            else
-              {:error, reason} ->
-                safe_apply(observer.error, {:error, reason})
-            end
-          end,
+          make_filter_next_fn(predicate_fn, observer),
           observer.error,
           observer.complete
         )
 
       observable.subscribe_fn.(new_observer)
     end)
+  end
+
+  defp make_filter_next_fn(predicate_fn, observer) do
+    fn value ->
+      case safe_apply(predicate_fn, value) do
+        {:ok, should_emit} ->
+          emit_if_predicate_matches(should_emit, observer, value)
+          :ok
+
+        {:error, reason} ->
+          safe_apply(observer.error, {:error, reason})
+      end
+    end
   end
 
   @doc """
@@ -500,6 +570,12 @@ defmodule Raxol.UI.State.Streams do
 
   # Debouncer GenServer for managing debounced emissions
   defmodule DebouncerServer do
+    @moduledoc """
+    GenServer for managing debounced emissions from observables.
+
+    Delays emissions until a specified quiet period has passed without new values,
+    preventing excessive updates from rapid value changes.
+    """
     use Raxol.Core.Behaviours.BaseManager
 
     #     def start_link(observer, delay) do
@@ -556,28 +632,37 @@ defmodule Raxol.UI.State.Streams do
 
       new_observer =
         Observer.new(
-          fn value ->
-            current_acc = ProcessStore.get({:stream_accumulator, acc_ref})
-
-            with {:ok, new_acc} <- safe_apply_2(reducer_fn, current_acc, value) do
-              _ = ProcessStore.put({:stream_accumulator, acc_ref}, new_acc)
-              :ok
-            else
-              {:error, reason} ->
-                safe_apply(observer.error, {:error, reason})
-            end
-          end,
+          make_reduce_next_fn(reducer_fn, acc_ref, observer),
           observer.error,
-          fn ->
-            final_value = ProcessStore.get({:stream_accumulator, acc_ref})
-            _ = ProcessStore.delete({:stream_accumulator, acc_ref})
-            safe_apply(observer.next, final_value)
-            safe_apply(observer.complete)
-          end
+          make_reduce_complete_fn(acc_ref, observer)
         )
 
       observable.subscribe_fn.(new_observer)
     end)
+  end
+
+  defp make_reduce_next_fn(reducer_fn, acc_ref, observer) do
+    fn value ->
+      current_acc = ProcessStore.get({:stream_accumulator, acc_ref})
+
+      case safe_apply_2(reducer_fn, current_acc, value) do
+        {:ok, new_acc} ->
+          _ = ProcessStore.put({:stream_accumulator, acc_ref}, new_acc)
+          :ok
+
+        {:error, reason} ->
+          safe_apply(observer.error, {:error, reason})
+      end
+    end
+  end
+
+  defp make_reduce_complete_fn(acc_ref, observer) do
+    fn ->
+      final_value = ProcessStore.get({:stream_accumulator, acc_ref})
+      _ = ProcessStore.delete({:stream_accumulator, acc_ref})
+      safe_apply(observer.next, final_value)
+      safe_apply(observer.complete)
+    end
   end
 
   @doc """
@@ -598,19 +683,9 @@ defmodule Raxol.UI.State.Streams do
         |> Enum.map(fn {obs, index} ->
           obs.subscribe_fn.(
             Observer.new(
-              fn value ->
-                Raxol.UI.State.Streams.CombinerServer.update(
-                  combiner,
-                  index,
-                  value
-                )
-              end,
-              fn error ->
-                Raxol.UI.State.Streams.CombinerServer.error(combiner, error)
-              end,
-              fn ->
-                Raxol.UI.State.Streams.CombinerServer.complete(combiner, index)
-              end
+              make_combiner_next_fn(combiner, index),
+              make_combiner_error_fn(combiner),
+              make_combiner_complete_fn(combiner, index)
             )
           )
         end)
@@ -623,8 +698,36 @@ defmodule Raxol.UI.State.Streams do
     end)
   end
 
+  defp make_combiner_next_fn(combiner, index) do
+    fn value ->
+      Raxol.UI.State.Streams.CombinerServer.update(
+        combiner,
+        index,
+        value
+      )
+    end
+  end
+
+  defp make_combiner_error_fn(combiner) do
+    fn error ->
+      Raxol.UI.State.Streams.CombinerServer.error(combiner, error)
+    end
+  end
+
+  defp make_combiner_complete_fn(combiner, index) do
+    fn ->
+      Raxol.UI.State.Streams.CombinerServer.complete(combiner, index)
+    end
+  end
+
   # Combiner GenServer for managing combined streams
   defmodule CombinerServer do
+    @moduledoc """
+    GenServer for combining multiple observable streams.
+
+    Collects values from multiple source observables and emits combined tuples
+    when all sources have emitted at least one value.
+    """
     use Raxol.Core.Behaviours.BaseManager
 
     #     def start_link(observables, observer) do

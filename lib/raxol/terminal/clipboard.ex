@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.Clipboard do
       iex> Clipboard.paste()
       {:error, :empty_clipboard}
   """
-  @spec paste(String.t()) :: {:ok, String.t()} | {:error, :empty_clipboard}
+  @spec paste(String.t()) :: String.t()
   def paste(format \\ "text") do
     Manager.paste(format)
   end

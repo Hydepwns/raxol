@@ -218,7 +218,13 @@ defmodule Raxol.Core.Metrics.Aggregator do
     {:noreply, new_state}
   end
 
-  @spec validate_rule(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_rule(map()) :: %{
+          type: atom(),
+          window: atom(),
+          metric_name: any(),
+          tags: map(),
+          group_by: list()
+        }
   defp validate_rule(rule) do
     %{
       type: Map.get(rule, :type, :mean),

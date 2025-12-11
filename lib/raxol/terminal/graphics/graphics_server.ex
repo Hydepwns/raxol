@@ -434,11 +434,7 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
       graphics: %{},
       active_graphics: nil,
       next_id: 1,
-      config:
-        Map.merge(
-          default_config(),
-          if(is_list(opts), do: Enum.into(opts, %{}), else: opts)
-        ),
+      config: Map.merge(default_config(), Enum.into(opts, %{})),
       graphics_support: graphics_support,
       preferred_protocol: determine_preferred_protocol(graphics_support),
       fallback_enabled: Keyword.get(opts, :fallback_enabled, true),
@@ -545,30 +541,39 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
     # Create terminal capability profiles based on current system
     terminal_profiles = create_terminal_profiles(state.graphics_support)
 
-    with {:ok, optimized_variants} <-
-           ImageProcessor.optimize_for_terminals(
-             image_data,
-             terminal_profiles,
-             options
-           ) do
-      # Select the best variant for current terminal
-      best_variant =
-        select_best_variant(optimized_variants, state.graphics_support)
+    case ImageProcessor.optimize_for_terminals(
+           image_data,
+           terminal_profiles,
+           options
+         ) do
+      {:ok, optimized_variants} ->
+        # Select the best variant for current terminal
+        best_variant =
+          select_best_variant(optimized_variants, state.graphics_support)
 
-      # Display the optimized variant
-      case handle_call({:display_image, best_variant.data, options}, nil, state) do
-        {:reply, {:ok, graphics_id}, new_state} ->
-          # Store optimization info
-          updated_state =
-            store_optimization_info(graphics_id, optimized_variants, new_state)
+        # Display the optimized variant
+        case handle_call(
+               {:display_image, best_variant.data, options},
+               nil,
+               state
+             ) do
+          {:reply, {:ok, graphics_id}, new_state} ->
+            # Store optimization info
+            updated_state =
+              store_optimization_info(
+                graphics_id,
+                optimized_variants,
+                new_state
+              )
 
-          {:reply, {:ok, graphics_id}, updated_state}
+            {:reply, {:ok, graphics_id}, updated_state}
 
-        {:reply, error, new_state} ->
-          {:reply, error, new_state}
-      end
-    else
-      {:error, reason} -> {:reply, {:error, reason}, state}
+          {:reply, error, new_state} ->
+            {:reply, error, new_state}
+        end
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
     end
   end
 

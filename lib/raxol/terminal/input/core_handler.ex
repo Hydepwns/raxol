@@ -55,8 +55,8 @@ defmodule Raxol.Terminal.Input.CoreHandler do
   Processes a raw input string for the terminal, parsing control sequences and printable characters.
   This function drives the terminal command parser.
   """
-  @spec process_terminal_input(Emulator.t(), String.t()) ::
-          {Emulator.t(), String.t()}
+  @spec process_terminal_input(map(), binary()) ::
+          {map(), list()}
   def process_terminal_input(emulator, input) when is_binary(input) do
     current_parser_state = emulator.parser_state
 

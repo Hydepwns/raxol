@@ -291,12 +291,7 @@ defmodule Raxol.Benchmark.Storage do
   defp load_result_file(path) do
     case File.read(path) do
       {:ok, content} ->
-        case Raxol.Core.ErrorHandling.safe_call(fn ->
-               :erlang.binary_to_term(content)
-             end) do
-          {:ok, result} -> result
-          {:error, _} -> nil
-        end
+        parse_binary_term(content)
 
       _ ->
         nil
@@ -385,5 +380,14 @@ defmodule Raxol.Benchmark.Storage do
       end)
 
     headers <> Enum.join(rows, "\n")
+  end
+
+  defp parse_binary_term(content) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           :erlang.binary_to_term(content)
+         end) do
+      {:ok, result} -> result
+      {:error, _} -> nil
+    end
   end
 end

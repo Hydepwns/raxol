@@ -140,18 +140,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
 
   defp detect_width(adapter_module) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           case adapter_module.get_env("COLUMNS") do
-             nil ->
-               # Try to get from tput if available
-               case adapter_module.cmd("tput", ["cols"], stderr_to_stdout: true) do
-                 {cols, 0} -> String.to_integer(String.trim(cols))
-                 # Default fallback
-                 _ -> 80
-               end
-
-             cols ->
-               String.to_integer(cols)
-           end
+           detect_width_value(adapter_module)
          end) do
       {:ok, width} -> width
       # Default fallback on any error
@@ -161,20 +150,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
 
   defp detect_height(adapter_module) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           case adapter_module.get_env("LINES") do
-             nil ->
-               # Try to get from tput if available
-               case adapter_module.cmd("tput", ["lines"],
-                      stderr_to_stdout: true
-                    ) do
-                 {lines, 0} -> String.to_integer(String.trim(lines))
-                 # Default fallback
-                 _ -> 24
-               end
-
-             lines ->
-               String.to_integer(lines)
-           end
+           detect_height_value(adapter_module)
          end) do
       {:ok, height} -> height
       # Default fallback on any error
@@ -215,18 +191,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
 
   defp fallback_tput_colors(adapter_module) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           # Try to get from tput if available
-           case adapter_module.cmd("tput", ["colors"], stderr_to_stdout: true) do
-             {colors, 0} ->
-               case String.trim(colors) do
-                 "-1" -> 0
-                 num -> String.to_integer(num)
-               end
-
-             # Default fallback
-             _ ->
-               8
-           end
+           detect_colors_from_tput(adapter_module)
          end) do
       {:ok, colors} -> colors
       # Default fallback on any error
@@ -339,5 +304,61 @@ defmodule Raxol.Terminal.Config.Capabilities do
       end
 
     Map.put(config, :rendering, updated_rendering)
+  end
+
+  defp detect_width_value(adapter_module) do
+    case adapter_module.get_env("COLUMNS") do
+      nil ->
+        # Try to get from tput if available
+        get_width_from_tput(adapter_module)
+
+      cols ->
+        String.to_integer(cols)
+    end
+  end
+
+  defp detect_height_value(adapter_module) do
+    case adapter_module.get_env("LINES") do
+      nil ->
+        # Try to get from tput if available
+        get_height_from_tput(adapter_module)
+
+      lines ->
+        String.to_integer(lines)
+    end
+  end
+
+  defp detect_colors_from_tput(adapter_module) do
+    case adapter_module.cmd("tput", ["colors"], stderr_to_stdout: true) do
+      {colors, 0} ->
+        parse_tput_color_value(colors)
+
+      # Default fallback
+      _ ->
+        8
+    end
+  end
+
+  defp get_width_from_tput(adapter_module) do
+    case adapter_module.cmd("tput", ["cols"], stderr_to_stdout: true) do
+      {cols, 0} -> String.to_integer(String.trim(cols))
+      # Default fallback
+      _ -> 80
+    end
+  end
+
+  defp get_height_from_tput(adapter_module) do
+    case adapter_module.cmd("tput", ["lines"], stderr_to_stdout: true) do
+      {lines, 0} -> String.to_integer(String.trim(lines))
+      # Default fallback
+      _ -> 24
+    end
+  end
+
+  defp parse_tput_color_value(colors) do
+    case String.trim(colors) do
+      "-1" -> 0
+      num -> String.to_integer(num)
+    end
   end
 end

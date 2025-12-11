@@ -261,19 +261,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   """
   def behaviour_implemented?(module, behaviour) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           # Check if the module has the behaviour attribute
-           module_info = module.module_info(:attributes)
-           behaviours = Keyword.get_values(module_info, :behaviour)
-
-           case behaviour in behaviours do
-             true ->
-               true
-
-             false ->
-               # Fallback: check if the module has the required callbacks
-               # This is a simplified check - in a real implementation you'd check all callbacks
-               function_exported?(module, :plugin_info, 0)
-           end
+           check_behaviour_implementation(module, behaviour)
          end) do
       {:ok, result} -> result
       {:error, _} -> false
@@ -296,21 +284,45 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
       false ->
         # Assume it's a module name
-        case Raxol.Core.ErrorHandling.safe_call(fn ->
-               module = String.to_existing_atom(id)
-
-               case Code.ensure_loaded(module) do
-                 {:module, ^module} -> {:ok, module}
-                 _ -> {:error, :module_not_found}
-               end
-             end) do
-          {:ok, result} -> result
-          {:error, _} -> {:error, :module_not_found}
-        end
+        load_module_by_name(id)
     end
   end
 
   def load_code(_id) do
     {:error, :invalid_id}
+  end
+
+  defp check_behaviour_implementation(module, behaviour) do
+    # Check if the module has the behaviour attribute
+    module_info = module.module_info(:attributes)
+    behaviours = Keyword.get_values(module_info, :behaviour)
+
+    case behaviour in behaviours do
+      true ->
+        true
+
+      false ->
+        # Fallback: check if the module has the required callbacks
+        # This is a simplified check - in a real implementation you'd check all callbacks
+        function_exported?(module, :plugin_info, 0)
+    end
+  end
+
+  defp load_module_by_name(id) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           ensure_module_loaded(id)
+         end) do
+      {:ok, result} -> result
+      {:error, _} -> {:error, :module_not_found}
+    end
+  end
+
+  defp ensure_module_loaded(id) do
+    module = String.to_existing_atom(id)
+
+    case Code.ensure_loaded(module) do
+      {:module, ^module} -> {:ok, module}
+      _ -> {:error, :module_not_found}
+    end
   end
 end

@@ -128,9 +128,9 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
       false ->
         # Start monitoring timers
-        :timer.send_interval(@metrics_collection_interval, :collect_metrics)
-        :timer.send_interval(@health_check_interval, :health_check)
-        :timer.send_interval(@regression_check_interval, :regression_check)
+        _ = :timer.send_interval(@metrics_collection_interval, :collect_metrics)
+        _ = :timer.send_interval(@health_check_interval, :health_check)
+        _ = :timer.send_interval(@regression_check_interval, :regression_check)
 
         # Collect initial baseline
         baseline = collect_baseline_metrics()
@@ -318,7 +318,7 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
   defp collect_baseline_metrics do
     # Initialize ETS table for telemetry storage if needed
-    :ets.new(:performance_telemetry, [:named_table, :public, :bag])
+    _ = :ets.new(:performance_telemetry, [:named_table, :public, :bag])
 
     # Give system time to collect some data
     :timer.sleep(5000)

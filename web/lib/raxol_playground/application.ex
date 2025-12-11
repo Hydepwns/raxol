@@ -1,4 +1,10 @@
 defmodule RaxolPlayground.Application do
+  @moduledoc """
+  OTP Application for the Raxol Playground web interface.
+
+  Starts and supervises the Phoenix endpoint, PubSub, telemetry, and other
+  web-related services for the Raxol interactive playground.
+  """
   use Application
 
   @impl true

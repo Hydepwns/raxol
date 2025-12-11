@@ -151,10 +151,11 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
 
   def terminate(_reason, state) do
     # Cancel timer
-    case state.timer_ref do
-      nil -> :ok
-      ref -> Process.cancel_timer(ref)
-    end
+    _ =
+      case state.timer_ref do
+        nil -> :ok
+        ref -> Process.cancel_timer(ref)
+      end
 
     :ok
   end
@@ -301,9 +302,9 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
   end
 
   defp format_section(components, theme, _position) do
-    components
-    |> Enum.map(fn {type, text} -> apply_style(text, theme[type] || %{}) end)
-    |> Enum.join(theme.separator || " │ ")
+    Enum.map_join(components, theme.separator || " │ ", fn {type, text} ->
+      apply_style(text, theme[type] || %{})
+    end)
   end
 
   # Component Formatters

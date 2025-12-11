@@ -210,17 +210,13 @@ defmodule Raxol.Effects.CursorTrail do
       style = create_style(color, opacity)
 
       # Get existing cell to preserve content if needed
-      case Buffer.get_cell(buffer, x, y) do
-        nil ->
-          Buffer.set_cell(buffer, x, y, char, style)
+      existing_cell = Buffer.get_cell(buffer, x, y)
 
-        existing_cell ->
-          # Only apply if cell is empty or trail should override
-          if existing_cell.char == " " or String.trim(existing_cell.char) == "" do
-            Buffer.set_cell(buffer, x, y, char, style)
-          else
-            buffer
-          end
+      # Only apply if cell is empty or trail should override
+      if existing_cell.char == " " or String.trim(existing_cell.char) == "" do
+        Buffer.set_cell(buffer, x, y, char, style)
+      else
+        buffer
       end
     else
       buffer
@@ -393,15 +389,9 @@ defmodule Raxol.Effects.CursorTrail do
   defp apply_glow_point(buffer, {x, y}, color, opacity) do
     if x >= 0 and x < buffer.width and y >= 0 and y < buffer.height do
       style = create_style(color, opacity)
-
-      case Buffer.get_cell(buffer, x, y) do
-        nil ->
-          Buffer.set_cell(buffer, x, y, " ", style)
-
-        existing_cell ->
-          merged_style = Map.merge(existing_cell.style, style)
-          Buffer.set_cell(buffer, x, y, existing_cell.char, merged_style)
-      end
+      existing_cell = Buffer.get_cell(buffer, x, y)
+      merged_style = Map.merge(existing_cell.style, style)
+      Buffer.set_cell(buffer, x, y, existing_cell.char, merged_style)
     else
       buffer
     end

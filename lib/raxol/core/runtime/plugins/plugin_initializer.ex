@@ -9,6 +9,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginInitializer do
   @doc """
   Initializes all plugins in the given load order.
   """
+  @spec initialize_plugins(map(), map(), map() | nil, map(), list(), atom() | reference(), keyword() | map() | nil) ::
+          {:ok, {map(), map(), atom() | reference()}} | {:error, term()}
   def initialize_plugins(
         plugins,
         metadata,
@@ -24,13 +26,17 @@ defmodule Raxol.Core.Runtime.Plugins.PluginInitializer do
     Enum.reduce_while(
       load_order,
       {:ok, {metadata, states, table}},
-      &initialize_plugin(&1, &2, plugins, config)
+      fn plugin_id, acc ->
+        initialize_plugin(plugin_id, acc, plugins, config || %{})
+      end
     )
   end
 
   @doc """
   Initializes a single plugin.
   """
+  @spec initialize_plugin(atom() | String.t(), {:ok, {map(), map(), atom() | reference()}}, map(), map()) ::
+          {:cont, {:ok, {map(), map(), atom() | reference()}}} | {:halt, {:error, term()}}
   def initialize_plugin(
         plugin_id,
         {:ok, {meta, sts, tbl}},
@@ -53,7 +59,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginInitializer do
     case plugin.init(Map.get(plugin_config, plugin_id, %{})) do
       {:ok, new_states} ->
         new_meta = Map.put(meta, plugin_id, %{status: :active})
-        new_tbl = PluginCommandManager.update_command_table(tbl, plugin)
+        plugin_map = if is_map(plugin), do: plugin, else: %{commands: []}
+        new_tbl = PluginCommandManager.update_command_table(tbl, plugin_map)
         {:cont, {:ok, {new_meta, Map.merge(sts, new_states), new_tbl}}}
 
       {:error, reason} ->

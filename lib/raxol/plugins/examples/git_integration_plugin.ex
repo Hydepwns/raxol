@@ -238,15 +238,17 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   @impl GenServer
   def terminate(_reason, state) do
     # Cleanup timers and watchers using pattern matching
-    case state.refresh_timer do
-      nil -> :ok
-      timer -> :timer.cancel(timer)
-    end
+    _ =
+      case state.refresh_timer do
+        nil -> :ok
+        timer -> :timer.cancel(timer)
+      end
 
-    case state.watcher_pid do
-      nil -> :ok
-      pid -> GenServer.stop(pid)
-    end
+    _ =
+      case state.watcher_pid do
+        nil -> :ok
+        pid -> GenServer.stop(pid)
+      end
 
     :ok
   end

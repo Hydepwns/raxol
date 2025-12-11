@@ -214,7 +214,7 @@ defmodule Raxol.Core.Metrics.Cloud do
     :ok
   end
 
-  @spec format_for_datadog(any()) :: String.t()
+  @spec format_for_datadog(list()) :: %{series: list()}
   defp format_for_datadog(metrics) do
     # Format metrics for Datadog API
     series =
@@ -242,7 +242,7 @@ defmodule Raxol.Core.Metrics.Cloud do
     end)
   end
 
-  @spec format_for_cloudwatch(any()) :: String.t()
+  @spec format_for_cloudwatch(list()) :: %{MetricData: list()}
   defp format_for_cloudwatch(metrics) do
     # Format metrics for CloudWatch
     metric_data =
@@ -264,7 +264,7 @@ defmodule Raxol.Core.Metrics.Cloud do
     %{MetricData: metric_data}
   end
 
-  @spec validate_cloud_config(map()) :: {:ok, any()} | {:error, any()}
+  @spec validate_cloud_config(map()) :: :ok | {:error, any()}
   defp validate_cloud_config(config) do
     # Merge with defaults to ensure all required fields are present
     config_with_defaults = Map.merge(@default_config, config)

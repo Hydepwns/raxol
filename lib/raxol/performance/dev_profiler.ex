@@ -249,7 +249,7 @@ defmodule Raxol.Performance.DevProfiler do
       System.tmp_dir!() <> "/raxol_fprof_#{:os.system_time()}.analysis"
 
     try do
-      _ = :fprof.analyse(dest: temp_file)
+      _ = :fprof.analyse(dest: String.to_charlist(temp_file))
       File.read!(temp_file)
     catch
       _, _ -> "fprof analysis failed"

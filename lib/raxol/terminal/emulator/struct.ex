@@ -153,7 +153,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   @doc """
   Creates a new terminal emulator with the given options.
   """
-  @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: t()
+  @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: map()
   def new(width, height, opts \\ []) do
     active_buffer = ScreenBuffer.new(width, height)
     scrollback_buffer = []
@@ -261,7 +261,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   @doc """
   Updates the active buffer in the emulator.
   """
-  @spec update_active_buffer(t(), ScreenBuffer.t()) :: t()
+  @spec update_active_buffer(t(), map()) :: t()
   def update_active_buffer(emulator, new_buffer) do
     case emulator.active_buffer_type do
       :main ->

@@ -227,9 +227,12 @@ defmodule Raxol.UI.Rendering.SafePipeline do
     start_time = System.monotonic_time(:microsecond)
 
     # Check circuit breaker
-    case ErrorRecovery.with_circuit_breaker(state.error_handler, :render, fn ->
-           perform_render(scene, state)
-         end) do
+    result =
+      ErrorRecovery.with_circuit_breaker(:render, fn ->
+        perform_render(scene, state)
+      end)
+
+    case result do
       {:ok, result} ->
         end_time = System.monotonic_time(:microsecond)
         # Convert to ms

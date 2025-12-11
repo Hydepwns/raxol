@@ -131,7 +131,7 @@ defmodule Raxol.Animation.Lifecycle do
 
       instance ->
         # Call on_complete callback if provided
-        call_on_complete_callback(instance)
+        _ = call_on_complete_callback(instance)
 
         # Remove from active animations
         StateManager.remove_active_animation(element_id, animation_name)
@@ -159,7 +159,7 @@ defmodule Raxol.Animation.Lifecycle do
         user_preferences_pid
       ) do
     # Call on_complete callback if provided
-    call_on_complete_callback(instance)
+    _ = call_on_complete_callback(instance)
 
     # Send completion message to notify_pid
     send_completion_message(instance, element_id, animation_name)

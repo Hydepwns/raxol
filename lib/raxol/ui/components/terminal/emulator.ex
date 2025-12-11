@@ -16,7 +16,7 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   Initializes a new terminal emulator component state.
   Accepts an optional map of options, currently supporting `:width` and `:height`.
   """
-  @spec init(map()) :: emulator_state()
+  @spec init(map()) :: map()
   def init(opts \\ %{}) do
     width = Map.get(opts, :width)
     height = Map.get(opts, :height)

@@ -1,4 +1,7 @@
 defmodule Raxol.Core.Renderer.Views.PerformanceTest.TestHostComponent do
+  @moduledoc """
+  Test component for performance testing the rendering pipeline.
+  """
   # @behaviour Raxol.UI.Components.Base.Component # If a specific behaviour is defined and required
 
   # Make sure View macros are available

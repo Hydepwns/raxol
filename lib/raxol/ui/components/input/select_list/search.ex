@@ -3,12 +3,10 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
   Search/filter functionality for SelectList component.
   """
 
-  alias Raxol.UI.Components.Input.SelectList
-
   @doc """
   Updates the search state with a new query.
   """
-  @spec update_search_state(SelectList.t(), String.t()) :: SelectList.t()
+  @spec update_search_state(map(), String.t()) :: map()
   def update_search_state(state, query) do
     is_filtering = query != ""
 
@@ -32,7 +30,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
   @doc """
   Clears the current search.
   """
-  @spec clear_search(SelectList.t()) :: SelectList.t()
+  @spec clear_search(map()) :: map()
   def clear_search(state) do
     %{
       state
@@ -46,7 +44,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
   @doc """
   Checks if search is active.
   """
-  @spec search_active?(SelectList.t()) :: boolean()
+  @spec search_active?(map()) :: boolean()
   def search_active?(state) do
     state.search_query != "" and state.search_query != nil
   end
@@ -54,7 +52,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
   @doc """
   Gets the current search results count.
   """
-  @spec get_results_count(SelectList.t()) :: non_neg_integer()
+  @spec get_results_count(map()) :: non_neg_integer()
   def get_results_count(state) do
     case state.filtered_options do
       nil -> length(state.options)
@@ -65,7 +63,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
   @doc """
   Appends a character to the search query.
   """
-  @spec append_to_search(SelectList.t(), String.t()) :: SelectList.t()
+  @spec append_to_search(map(), String.t()) :: map()
   def append_to_search(state, char) do
     new_query = (state.search_query || "") <> char
     update_search_state(state, new_query)
@@ -74,7 +72,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
   @doc """
   Removes the last character from the search query.
   """
-  @spec backspace_search(SelectList.t()) :: SelectList.t()
+  @spec backspace_search(map()) :: map()
   def backspace_search(state) do
     query = state.search_query || ""
 

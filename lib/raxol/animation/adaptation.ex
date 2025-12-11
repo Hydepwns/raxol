@@ -65,59 +65,78 @@ defmodule Raxol.Animation.Adaptation do
     completed_due_to_disable =
       Enum.flat_map(active_animations, fn {element_id, element_animations} ->
         Enum.flat_map(element_animations, fn {animation_name, instance} ->
-          animation = instance.animation
-
-          # Re-adapt the animation
-          adapted_animation =
-            AnimAccessibility.adapt_animation(
-              animation,
-              reduce_motion?,
-              cognitive_accessibility?
-            )
-
-          # Update the instance with the adapted animation
-          updated_instance = Map.put(instance, :animation, adapted_animation)
-
-          # Handle disabled animations properly
-          case AnimAccessibility.disabled?(adapted_animation) do
-            true ->
-              # For disabled animations, mark as pending completion and ensure they complete quickly
-              updated_instance =
-                Map.put(updated_instance, :pending_completion, true)
-
-              # Immediately send completion message for disabled animations
-              Lifecycle.handle_animation_completion(
-                adapted_animation,
-                element_id,
-                animation_name,
-                updated_instance,
-                user_preferences_pid
-              )
-
-              # Return as completed due to disable
-              [{element_id, animation_name, updated_instance}]
-
-            false ->
-              # For enabled animations, remove pending_completion flag if it was set
-              _updated_instance =
-                Map.delete(updated_instance, :pending_completion)
-
-              # Not completed
-              []
-          end
-
-          # Update the instance in the state manager
-          StateManager.put_active_animation(
+          process_animation_adaptation(
             element_id,
             animation_name,
-            updated_instance
+            instance,
+            reduce_motion?,
+            cognitive_accessibility?,
+            user_preferences_pid
           )
-
-          []
         end)
       end)
 
     completed_due_to_disable
+  end
+
+  defp process_animation_adaptation(
+         element_id,
+         animation_name,
+         instance,
+         reduce_motion?,
+         cognitive_accessibility?,
+         user_preferences_pid
+       ) do
+    animation = instance.animation
+
+    # Re-adapt the animation
+    adapted_animation =
+      AnimAccessibility.adapt_animation(
+        animation,
+        reduce_motion?,
+        cognitive_accessibility?
+      )
+
+    # Update the instance with the adapted animation
+    updated_instance = Map.put(instance, :animation, adapted_animation)
+
+    # Handle disabled animations properly
+    result =
+      case AnimAccessibility.disabled?(adapted_animation) do
+        true ->
+          # For disabled animations, mark as pending completion and ensure they complete quickly
+          updated_instance =
+            Map.put(updated_instance, :pending_completion, true)
+
+          # Immediately send completion message for disabled animations
+          Lifecycle.handle_animation_completion(
+            adapted_animation,
+            element_id,
+            animation_name,
+            updated_instance,
+            user_preferences_pid
+          )
+
+          # Return as completed due to disable
+          [{element_id, animation_name, updated_instance}]
+
+        false ->
+          # For enabled animations, remove pending_completion flag if it was set
+          _updated_instance =
+            Map.delete(updated_instance, :pending_completion)
+
+          # Not completed
+          []
+      end
+
+    # Update the instance in the state manager
+    StateManager.put_active_animation(
+      element_id,
+      animation_name,
+      updated_instance
+    )
+
+    result
   end
 
   @doc """

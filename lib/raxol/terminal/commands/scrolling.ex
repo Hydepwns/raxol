@@ -9,11 +9,11 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   require Raxol.Core.Runtime.Log
 
   @spec scroll_up(
-          ScreenBuffer.t(),
+          map(),
           non_neg_integer(),
           {integer(), integer()} | nil,
-          Raxol.Terminal.ANSI.TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
+          any()
+        ) :: map()
 
   def scroll_up(buffer, _count, {region_top, region_bottom}, _blank_style)
       when is_integer(region_top) and is_integer(region_bottom) and
@@ -69,11 +69,11 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     do: buffer
 
   @spec scroll_down(
-          ScreenBuffer.t(),
+          map(),
           non_neg_integer(),
           {integer(), integer()} | nil,
-          Raxol.Terminal.ANSI.TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
+          any()
+        ) :: map()
 
   def scroll_down(buffer, _count, {region_top, region_bottom}, _blank_style)
       when is_integer(region_top) and is_integer(region_bottom) and

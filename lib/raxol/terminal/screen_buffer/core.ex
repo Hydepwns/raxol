@@ -103,25 +103,25 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Gets the buffer dimensions.
   """
-  @spec get_dimensions(t()) :: {non_neg_integer(), non_neg_integer()}
+  @spec get_dimensions(map()) :: {non_neg_integer(), non_neg_integer()}
   def get_dimensions(%{width: width, height: height}), do: {width, height}
 
   @doc """
   Gets the buffer width.
   """
-  @spec get_width(t()) :: non_neg_integer()
+  @spec get_width(map()) :: non_neg_integer()
   def get_width(%{width: width}), do: width
 
   @doc """
   Gets the buffer height.
   """
-  @spec get_height(t()) :: non_neg_integer()
+  @spec get_height(map()) :: non_neg_integer()
   def get_height(%{height: height}), do: height
 
   @doc """
   Checks if coordinates are within buffer bounds.
   """
-  @spec within_bounds?(t(), integer(), integer()) :: boolean()
+  @spec within_bounds?(map(), integer(), integer()) :: boolean()
   def within_bounds?(%{width: width, height: height}, x, y) do
     x >= 0 and x < width and y >= 0 and y < height
   end
@@ -129,7 +129,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Gets a cell at the specified coordinates.
   """
-  @spec get_cell(t(), non_neg_integer(), non_neg_integer()) :: Cell.t() | nil
+  @spec get_cell(map(), non_neg_integer(), non_neg_integer()) :: Cell.t() | nil
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
     if within_bounds?(buffer, x, y) do
       buffer.cells
@@ -143,7 +143,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Gets the character at the specified coordinates.
   """
-  @spec get_char(t(), non_neg_integer(), non_neg_integer()) :: String.t()
+  @spec get_char(map(), non_neg_integer(), non_neg_integer()) :: String.t()
   def get_char(buffer, x, y) do
     case get_cell(buffer, x, y) do
       %Cell{char: char} -> char || " "
@@ -154,7 +154,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Gets a line of cells.
   """
-  @spec get_line(t(), non_neg_integer()) :: list(Cell.t())
+  @spec get_line(map(), non_neg_integer()) :: list(Cell.t())
   def get_line(buffer, y) when y >= 0 and y < buffer.height do
     Enum.at(buffer.cells, y, [])
   end
@@ -164,7 +164,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Clears the entire buffer.
   """
-  @spec clear(t()) :: t()
+  @spec clear(map()) :: map()
   def clear(buffer) do
     %{
       buffer

@@ -50,7 +50,8 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
           optional(:name) => String.t(),
           optional(:preserve_aspect_ratio) => boolean(),
           optional(:inline) => boolean(),
-          optional(:format) => image_format()
+          optional(:format) => image_format() | nil,
+          optional(:size) => non_neg_integer()
         }
 
   # iTerm2 OSC sequence constants
@@ -248,8 +249,8 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
 
   defp encode_image_data(data) do
     try do
-      # No line breaks
-      encoded = Base.encode64(data, line_length: 0)
+      # No padding
+      encoded = Base.encode64(data)
       {:ok, encoded}
     rescue
       error ->

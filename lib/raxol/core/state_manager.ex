@@ -259,40 +259,10 @@ defmodule Raxol.Core.StateManager do
 
         cond do
           key == nil ->
-            # Return entire state as a map, including :table and :version keys for tests
-            table = table_name_from_opts(opts)
-            version = get_version(opts)
-
-            state_map =
-              :ets.tab2list(table)
-              |> Enum.reject(fn {k, _v} -> k == :__version__ end)
-              |> Enum.into(%{})
-
-            # Add table and version references for tests
-            state_map
-            |> Map.put(:table, table)
-            |> Map.put(:version, version)
+            get_entire_state_as_map(opts)
 
           is_list(key) ->
-            # Handle list keys for nested access
-            table = table_name_from_opts(opts)
-            # Try to get the nested key directly first
-            case :ets.lookup(table, List.to_tuple(key)) do
-              [{_key, value}] ->
-                value
-
-              [] ->
-                # Try to get from parent key's nested structure
-                parent_key = List.first(key)
-
-                case :ets.lookup(table, parent_key) do
-                  [{_key, map}] when is_map(map) ->
-                    get_nested_value(map, tl(key))
-
-                  _ ->
-                    nil
-                end
-            end
+            get_nested_key_from_ets(key, opts)
 
           true ->
             get_state_ets(key, nil, opts)
@@ -370,44 +340,13 @@ defmodule Raxol.Core.StateManager do
         set_state(key, new_value, opts)
 
       :process ->
-        # For process-based, update the managed state
-        case is_list(key) do
-          true ->
-            state_key = List.first(key, :default)
-
-            with {:ok, state} <- get_managed_process_state(state_key, opts) do
-              new_state = update_nested(state, key, update_fn)
-              set_managed_process_state(state_key, new_state, opts)
-            end
-
-          false ->
-            # Simple key update
-            with {:ok, current} <- get_managed_process_state(key, opts) do
-              new_value = update_fn.(current)
-              set_managed_process_state(key, new_value, opts)
-            end
-        end
+        # Process-based state management not yet implemented
+        {:error, :not_implemented}
 
       _ ->
         {:error, :strategy_not_supported}
     end
   end
-
-  # Helper to update nested keys in a state
-  defp update_nested(state, [], update_fn) when is_map(state),
-    do: update_fn.(state)
-
-  defp update_nested(state, [key], update_fn) when is_map(state) do
-    Map.update(state, key, update_fn.(nil), update_fn)
-  end
-
-  defp update_nested(state, [head | tail], update_fn) when is_map(state) do
-    Map.update(state, head, %{}, fn nested ->
-      update_nested(nested, tail, update_fn)
-    end)
-  end
-
-  defp update_nested(state, _, _), do: state
 
   @doc """
   Deletes a state value.
@@ -428,70 +367,19 @@ defmodule Raxol.Core.StateManager do
         init_ets_if_needed(opts)
 
         if is_list(key) do
-          # Delete nested key
-          table = table_name_from_opts(opts)
-          # Remove the direct tuple key
-          :ets.delete(table, List.to_tuple(key))
-
-          # Also remove from parent's nested structure
-          if length(key) > 1 do
-            parent_key = List.first(key)
-
-            case :ets.lookup(table, parent_key) do
-              [{_key, map}] when is_map(map) ->
-                updated = delete_from_nested_map(map, tl(key))
-
-                if updated == %{} do
-                  :ets.delete(table, parent_key)
-                else
-                  :ets.insert(table, {parent_key, updated})
-                end
-
-              _ ->
-                :ok
-            end
-          end
-
-          increment_version(opts)
-          :ok
+          delete_nested_key_from_ets(key, opts)
         else
           delete_state_ets(key, opts)
         end
 
       :process ->
-        # For process-based, we need to handle it differently
-        # Use the existing delete on the managed state
-        if is_list(key) do
-          state_key = List.first(key, :default)
-
-          with {:ok, state} <- get_managed_process_state(state_key, opts) do
-            new_state = delete_nested(state, key)
-            set_managed_process_state(state_key, new_state, opts)
-          end
-        else
-          # Simple key deletion - just set to nil
-          set_managed_process_state(key, nil, opts)
-        end
+        # Process-based state management not yet implemented
+        {:error, :not_implemented}
 
       _ ->
         {:error, :strategy_not_supported}
     end
   end
-
-  # Helper to delete nested keys from a state
-  defp delete_nested(state, []), do: state
-
-  defp delete_nested(state, [key]) when is_map(state),
-    do: Map.delete(state, key)
-
-  defp delete_nested(state, [head | tail]) when is_map(state) do
-    case Map.get(state, head) do
-      nil -> state
-      nested -> Map.put(state, head, delete_nested(nested, tail))
-    end
-  end
-
-  defp delete_nested(state, _), do: state
 
   # Domain-Specific State Management
 
@@ -803,8 +691,6 @@ defmodule Raxol.Core.StateManager do
     end
   end
 
-  defp get_nested_value(_map, _keys), do: nil
-
   # Helper to delete from nested map
   defp delete_from_nested_map(map, [key]) when is_map(map) do
     Map.delete(map, key)
@@ -948,4 +834,79 @@ defmodule Raxol.Core.StateManager do
   end
 
   def cleanup(_state), do: :ok
+
+  defp get_entire_state_as_map(opts) do
+    # Return entire state as a map, including :table and :version keys for tests
+    table = table_name_from_opts(opts)
+    version = get_version(opts)
+
+    state_map =
+      :ets.tab2list(table)
+      |> Enum.reject(fn {k, _v} -> k == :__version__ end)
+      |> Enum.into(%{})
+
+    # Add table and version references for tests
+    state_map
+    |> Map.put(:table, table)
+    |> Map.put(:version, version)
+  end
+
+  defp get_nested_key_from_ets(key, opts) do
+    # Handle list keys for nested access
+    table = table_name_from_opts(opts)
+    # Try to get the nested key directly first
+    case :ets.lookup(table, List.to_tuple(key)) do
+      [{_key, value}] ->
+        value
+
+      [] ->
+        # Try to get from parent key's nested structure
+        get_from_parent_nested_structure(table, key)
+    end
+  end
+
+  defp delete_nested_key_from_ets(key, opts) do
+    # Delete nested key
+    table = table_name_from_opts(opts)
+    # Remove the direct tuple key
+    :ets.delete(table, List.to_tuple(key))
+
+    # Also remove from parent's nested structure
+    if length(key) > 1 do
+      remove_from_parent_nested_structure(table, key)
+    end
+
+    increment_version(opts)
+    :ok
+  end
+
+  defp get_from_parent_nested_structure(table, key) do
+    parent_key = List.first(key)
+
+    case :ets.lookup(table, parent_key) do
+      [{_key, map}] when is_map(map) ->
+        get_nested_value(map, tl(key))
+
+      _ ->
+        nil
+    end
+  end
+
+  defp remove_from_parent_nested_structure(table, key) do
+    parent_key = List.first(key)
+
+    case :ets.lookup(table, parent_key) do
+      [{_key, map}] when is_map(map) ->
+        updated = delete_from_nested_map(map, tl(key))
+
+        if updated == %{} do
+          :ets.delete(table, parent_key)
+        else
+          :ets.insert(table, {parent_key, updated})
+        end
+
+      _ ->
+        :ok
+    end
+  end
 end

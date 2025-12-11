@@ -16,8 +16,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Starts a new selection at the specified position.
   """
-  @spec start_selection(Core.t(), non_neg_integer(), non_neg_integer()) ::
-          Core.t()
+  @spec start_selection(map(), non_neg_integer(), non_neg_integer()) ::
+          map()
   def start_selection(buffer, x, y) do
     %{buffer | selection: {x, y, x, y}}
   end
@@ -25,8 +25,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Extends the selection to the specified position.
   """
-  @spec extend_selection(Core.t(), non_neg_integer(), non_neg_integer()) ::
-          Core.t()
+  @spec extend_selection(map(), non_neg_integer(), non_neg_integer()) ::
+          map()
   def extend_selection(buffer, x, y) do
     case buffer.selection do
       {start_x, start_y, _, _} ->
@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Clears the current selection.
   """
-  @spec clear_selection(Core.t()) :: Core.t()
+  @spec clear_selection(map()) :: map()
   def clear_selection(buffer) do
     %{buffer | selection: nil}
   end
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Gets the current selection boundaries, normalized so start <= end.
   """
-  @spec get_selection(Core.t()) :: selection()
+  @spec get_selection(map()) :: selection()
   def get_selection(buffer) do
     case buffer.selection do
       nil -> nil
@@ -59,7 +59,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Checks if there is an active selection.
   """
-  @spec has_selection(Core.t()) :: boolean()
+  @spec has_selection(map()) :: boolean()
   def has_selection(buffer) do
     buffer.selection != nil
   end
@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Checks if the specified position is within the current selection.
   """
-  @spec selected?(Core.t(), non_neg_integer(), non_neg_integer()) :: boolean()
+  @spec selected?(map(), non_neg_integer(), non_neg_integer()) :: boolean()
   def selected?(buffer, x, y) do
     case get_selection(buffer) do
       nil ->
@@ -88,7 +88,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Checks if a position is within the current selection.
   """
-  @spec position_in_selection?(Core.t(), non_neg_integer(), non_neg_integer()) ::
+  @spec position_in_selection?(map(), non_neg_integer(), non_neg_integer()) ::
           boolean()
   def position_in_selection?(buffer, x, y) do
     case get_selection(buffer) do
@@ -103,14 +103,14 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
 
           # Multi-line selection
           true ->
-            cond do
-              y < start_y -> false
-              y > end_y -> false
-              y == start_y -> x >= start_x
-              y == end_y -> x <= end_x
-              # Middle lines are fully selected
-              true -> true
-            end
+            position_in_multiline_selection?(
+              x,
+              y,
+              start_x,
+              start_y,
+              end_x,
+              end_y
+            )
         end
     end
   end
@@ -118,7 +118,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Gets the selected text as a string.
   """
-  @spec get_selected_text(Core.t()) :: String.t()
+  @spec get_selected_text(map()) :: String.t()
   def get_selected_text(buffer) do
     case get_selection(buffer) do
       nil ->
@@ -132,7 +132,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Gets the selected text as lines.
   """
-  @spec get_selected_lines(Core.t()) :: list(String.t())
+  @spec get_selected_lines(map()) :: list(String.t())
   def get_selected_lines(buffer) do
     case get_selection(buffer) do
       nil ->
@@ -146,7 +146,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Selects an entire line.
   """
-  @spec select_line(Core.t(), non_neg_integer()) :: Core.t()
+  @spec select_line(map(), non_neg_integer()) :: map()
   def select_line(buffer, y) when y >= 0 and y < buffer.height do
     %{buffer | selection: {0, y, buffer.width - 1, y}}
   end
@@ -156,7 +156,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Selects multiple lines.
   """
-  @spec select_lines(Core.t(), non_neg_integer(), non_neg_integer()) :: Core.t()
+  @spec select_lines(map(), non_neg_integer(), non_neg_integer()) :: map()
   def select_lines(buffer, start_y, end_y) do
     start_y = max(0, min(start_y, buffer.height - 1))
     end_y = max(0, min(end_y, buffer.height - 1))
@@ -166,7 +166,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Selects all content in the buffer.
   """
-  @spec select_all(Core.t()) :: Core.t()
+  @spec select_all(map()) :: map()
   def select_all(buffer) do
     %{buffer | selection: {0, 0, buffer.width - 1, buffer.height - 1}}
   end
@@ -174,7 +174,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Selects a word at the given position.
   """
-  @spec select_word(Core.t(), non_neg_integer(), non_neg_integer()) :: Core.t()
+  @spec select_word(map(), non_neg_integer(), non_neg_integer()) :: map()
   def select_word(buffer, x, y) when x >= 0 and y >= 0 and y < buffer.height do
     line = Core.get_line(buffer, y)
 
@@ -189,7 +189,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Expands selection to word boundaries.
   """
-  @spec expand_selection_to_word(Core.t()) :: Core.t()
+  @spec expand_selection_to_word(map()) :: map()
   def expand_selection_to_word(buffer) do
     case buffer.selection do
       {x1, y1, x2, y2} ->
@@ -222,8 +222,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
         text =
           line
           |> Enum.slice(start_x..end_x)
-          |> Enum.map(&cell_to_char/1)
-          |> Enum.join()
+          |> Enum.map_join("", &cell_to_char/1)
 
         [text]
 
@@ -241,8 +240,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
 
           line
           |> Enum.slice(from..to)
-          |> Enum.map(&cell_to_char/1)
-          |> Enum.join()
+          |> Enum.map_join("", &cell_to_char/1)
           |> String.trim_trailing()
         end
     end
@@ -274,13 +272,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
 
   defp find_word_start(line, x) do
     Enum.reduce_while((x - 1)..0, x, fn i, _acc ->
-      case Enum.at(line, i) do
-        %Cell{char: c} when is_binary(c) ->
-          if word_char?(c), do: {:cont, i}, else: {:halt, i + 1}
-
-        _ ->
-          {:halt, i + 1}
-      end
+      check_word_start_char(Enum.at(line, i), i)
     end)
   end
 
@@ -288,17 +280,42 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
     max_x = length(line) - 1
 
     Enum.reduce_while((x + 1)..max_x, x, fn i, _acc ->
-      case Enum.at(line, i) do
-        %Cell{char: c} when is_binary(c) ->
-          if word_char?(c), do: {:cont, i}, else: {:halt, i - 1}
-
-        _ ->
-          {:halt, i - 1}
-      end
+      check_word_end_char(Enum.at(line, i), i)
     end)
   end
 
   defp word_char?(char) do
     String.match?(char, ~r/[a-zA-Z0-9_]/)
+  end
+
+  defp position_in_multiline_selection?(x, y, start_x, start_y, end_x, end_y) do
+    cond do
+      y < start_y -> false
+      y > end_y -> false
+      y == start_y -> x >= start_x
+      y == end_y -> x <= end_x
+      # Middle lines are fully selected
+      true -> true
+    end
+  end
+
+  defp check_word_start_char(cell, i) do
+    case cell do
+      %Cell{char: c} when is_binary(c) ->
+        if word_char?(c), do: {:cont, i}, else: {:halt, i + 1}
+
+      _ ->
+        {:halt, i + 1}
+    end
+  end
+
+  defp check_word_end_char(cell, i) do
+    case cell do
+      %Cell{char: c} when is_binary(c) ->
+        if word_char?(c), do: {:cont, i}, else: {:halt, i - 1}
+
+      _ ->
+        {:halt, i - 1}
+    end
   end
 end

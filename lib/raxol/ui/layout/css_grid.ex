@@ -22,6 +22,11 @@ defmodule Raxol.UI.Layout.CSSGrid do
 
   # Grid track definition
   defmodule Track do
+    @moduledoc """
+    Grid track (row or column) definition.
+
+    Defines a track's type (fr, px, percent, minmax, auto), value, and optional name.
+    """
     defstruct [:type, :value, :name]
 
     def new(type, value, name \\ nil) do
@@ -31,6 +36,11 @@ defmodule Raxol.UI.Layout.CSSGrid do
 
   # Grid cell definition
   defmodule Cell do
+    @moduledoc """
+    Grid cell definition specifying position and span.
+
+    Defines a cell's row, column, row span, column span, and optional named area.
+    """
     defstruct [:row, :column, :row_span, :column_span, :area]
 
     def new(row, column, row_span \\ 1, column_span \\ 1, area \\ nil) do
@@ -46,6 +56,12 @@ defmodule Raxol.UI.Layout.CSSGrid do
 
   # Grid item placement
   defmodule Item do
+    @moduledoc """
+    Grid item with placement information.
+
+    Associates a child element with its cell position, dimensions, and
+    auto-placement status.
+    """
     defstruct [:child, :cell, :dimensions, :auto_placed]
 
     def new(child, cell, dimensions, auto_placed \\ false) do
@@ -323,24 +339,27 @@ defmodule Raxol.UI.Layout.CSSGrid do
   defp parse_track_by_type(_track_str, _available_size), do: Track.new(:auto, 0)
 
   defp parse_track_by_suffix(track_str, available_size) do
-    with {:ok, result} <- try_parse_fr_track(track_str) do
-      result
-    else
+    case try_parse_fr_track(track_str) do
+      {:ok, result} ->
+        result
+
       :error ->
-        with {:ok, result} <- try_parse_px_track(track_str) do
-          result
-        else
+        case try_parse_px_track(track_str) do
+          {:ok, result} ->
+            result
+
           :error ->
-            with {:ok, result} <-
-                   try_parse_percent_track(track_str, available_size) do
-              result
-            else
+            case try_parse_percent_track(track_str, available_size) do
+              {:ok, result} ->
+                result
+
               :error ->
-                with {:ok, result} <-
-                       try_parse_minmax_track(track_str, available_size) do
-                  result
-                else
-                  :error -> parse_fallback_track(track_str)
+                case try_parse_minmax_track(track_str, available_size) do
+                  {:ok, result} ->
+                    result
+
+                  :error ->
+                    parse_fallback_track(track_str)
                 end
             end
         end
@@ -1016,12 +1035,12 @@ defmodule Raxol.UI.Layout.CSSGrid do
   defp calculate_track_positions(tracks, start_pos, gap) do
     {positions, _} =
       Enum.reduce(tracks, {[], start_pos}, fn track, {acc, current_pos} ->
-        new_acc = acc ++ [current_pos]
+        new_acc = [current_pos | acc]
         next_pos = current_pos + track.value + gap
         {new_acc, next_pos}
       end)
 
-    positions
+    Enum.reverse(positions)
   end
 
   ## Helper functions for refactored code

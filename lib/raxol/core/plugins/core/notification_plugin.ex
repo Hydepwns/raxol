@@ -161,11 +161,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   end
 
   # Helper to handle specific notification errors
-  @spec handle_notification_error(any(), map()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_notification_error(any(), map()) :: {:error, any(), map()}
   defp handle_notification_error(reason_tuple, state) do
     case reason_tuple do
       {:command_not_found, :notify_send} ->
@@ -290,11 +286,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   @spec get_success_atom_for_os(any()) :: any() | nil
   defp get_success_atom_for_os(:windows), do: :notification_sent_windows
 
-  @spec handle_command_exception(any(), any(), map()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_command_exception(any(), any(), map()) :: {:error, any(), map()}
   defp handle_command_exception(e, stacktrace, state) do
     Raxol.Core.Runtime.Log.error(
       "NotificationPlugin: Error executing notification command: #{inspect(e)}"
@@ -304,11 +296,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
      state}
   end
 
-  @spec handle_command_error(any(), map()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_command_error(any(), map()) :: {:error, any(), map()}
   defp handle_command_error(reason, state) do
     Raxol.Core.Runtime.Log.error(
       "NotificationPlugin: Error executing notification command: #{inspect(reason)}"

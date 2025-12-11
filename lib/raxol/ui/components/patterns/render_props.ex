@@ -377,10 +377,7 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
       fn ->
         keydown_listener = fn event ->
           key = event.key
-
-          set_pressed_keys.(fn keys ->
-            add_key_if_not_present(key, keys)
-          end)
+          set_pressed_keys.(make_add_key_fn(key))
 
           # Check for key combinations
           new_combinations =
@@ -394,10 +391,7 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
 
         keyup_listener = fn event ->
           key = event.key
-
-          set_pressed_keys.(fn keys ->
-            List.delete(keys, key)
-          end)
+          set_pressed_keys.(make_delete_key_fn(key))
         end
 
         # Register listeners (placeholder)
@@ -506,13 +500,7 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
       Hooks.use_callback(
         fn field, value ->
           field_rules = Map.get(validation_schema, field, [])
-
-          Enum.reduce_while(field_rules, nil, fn {rule, message}, _acc ->
-            case validate_rule(rule, value, values) do
-              true -> {:cont, nil}
-              false -> {:halt, message}
-            end
-          end)
+          check_field_rules(field_rules, value, values)
         end,
         [validation_schema, values]
       )
@@ -522,16 +510,11 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
       Hooks.use_callback(
         fn field ->
           fn value ->
-            set_values.(fn current_values ->
-              Map.put(current_values, field, value)
-            end)
+            set_values.(make_update_field_fn(field, value))
 
             # Validate field
             error = validate_field.(field, value)
-
-            set_errors.(fn current_errors ->
-              handle_field_error(error, field, current_errors)
-            end)
+            set_errors.(make_handle_field_error_fn(error, field))
           end
         end,
         [set_values, set_errors, validate_field]
@@ -542,14 +525,7 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
       Hooks.use_callback(
         fn ->
           # Validate all fields
-          all_errors =
-            Enum.reduce(values, %{}, fn {field, value}, acc ->
-              case validate_field.(field, value) do
-                nil -> acc
-                error -> Map.put(acc, field, error)
-              end
-            end)
-
+          all_errors = validate_all_fields(values, validate_field)
           set_errors.(all_errors)
 
           submit_if_valid(
@@ -705,24 +681,12 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
 
     _ =
       Task.start(fn ->
-        case Raxol.Core.ErrorHandling.safe_call(fn -> on_submit.(values) end) do
-          {:ok, _} ->
-            set_is_submitting.(false)
-
-          {:error, {kind, reason}} ->
-            set_errors.(%{
-              _form: "Submit failed: #{inspect({kind, reason})}"
-            })
-
-            set_is_submitting.(false)
-
-          {:error, reason} ->
-            set_errors.(%{
-              _form: "Submit failed: #{inspect(reason)}"
-            })
-
-            set_is_submitting.(false)
-        end
+        handle_form_submission_task(
+          on_submit,
+          values,
+          set_is_submitting,
+          set_errors
+        )
       end)
   end
 
@@ -878,4 +842,64 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
        do: :left
 
   defp determine_scroll_direction(_new_x, _new_y, _scroll_pos), do: :none
+
+  defp make_delete_key_fn(key) do
+    fn keys -> List.delete(keys, key) end
+  end
+
+  defp validate_all_fields(values, validate_field) do
+    Enum.reduce(values, %{}, fn {field, value}, acc ->
+      case validate_field.(field, value) do
+        nil -> acc
+        error -> Map.put(acc, field, error)
+      end
+    end)
+  end
+
+  defp handle_form_submission_task(
+         on_submit,
+         values,
+         set_is_submitting,
+         set_errors
+       ) do
+    case Raxol.Core.ErrorHandling.safe_call(fn -> on_submit.(values) end) do
+      {:ok, _} ->
+        set_is_submitting.(false)
+
+      {:error, {kind, reason}} ->
+        set_errors.(%{
+          _form: "Submit failed: #{inspect({kind, reason})}"
+        })
+
+        set_is_submitting.(false)
+
+      {:error, reason} ->
+        set_errors.(%{
+          _form: "Submit failed: #{inspect(reason)}"
+        })
+
+        set_is_submitting.(false)
+    end
+  end
+
+  defp make_add_key_fn(key) do
+    fn keys -> add_key_if_not_present(key, keys) end
+  end
+
+  defp make_handle_field_error_fn(error, field) do
+    fn current_errors -> handle_field_error(error, field, current_errors) end
+  end
+
+  defp make_update_field_fn(field, value) do
+    fn current_values -> Map.put(current_values, field, value) end
+  end
+
+  defp check_field_rules(field_rules, value, values) do
+    Enum.reduce_while(field_rules, nil, fn {rule, message}, _acc ->
+      case validate_rule(rule, value, values) do
+        true -> {:cont, nil}
+        false -> {:halt, message}
+      end
+    end)
+  end
 end

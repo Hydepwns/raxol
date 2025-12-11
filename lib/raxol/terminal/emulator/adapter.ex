@@ -144,9 +144,6 @@ defmodule Raxol.Terminal.Emulator.Adapter do
   def lite?(%Emulator{state: nil, event: nil, buffer: nil}), do: true
   def lite?(_), do: false
 
-  @deprecated "Use lite?/1 instead"
-  def is_lite?(emulator), do: lite?(emulator)
-
   @doc """
   Ensures we have an Emulator struct, converting from EmulatorLite if needed.
 

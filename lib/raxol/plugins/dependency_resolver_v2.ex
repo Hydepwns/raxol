@@ -141,41 +141,13 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
 
         {:halt, {:error, {:circular_dependency, dep_id}}}
       else
-        case find_compatible_version(
-               dep_id,
-               requirement,
-               resolver.available_plugins
-             ) do
-          {:ok, version} ->
-            new_visited = MapSet.put(visited, dep_id)
-            dep_spec = {dep_id, version}
-
-            # Recursively resolve transitive dependencies
-            case get_plugin_manifest(
-                   dep_id,
-                   version,
-                   resolver.available_plugins
-                 ) do
-              {:ok, dep_manifest} ->
-                case collect_all_dependencies(
-                       dep_manifest.dependencies || [],
-                       resolver,
-                       new_visited
-                     ) do
-                  {:ok, transitive_deps} ->
-                    {:cont, {:ok, [dep_spec | transitive_deps ++ acc]}}
-
-                  error ->
-                    {:halt, error}
-                end
-
-              {:error, :not_found} ->
-                {:halt, {:error, {:dependency_not_found, dep_id, requirement}}}
-            end
-
-          {:error, :no_compatible_version} ->
-            {:halt, {:error, {:no_compatible_version, dep_id, requirement}}}
-        end
+        resolve_dependency_with_version(
+          dep_id,
+          requirement,
+          resolver,
+          visited,
+          acc
+        )
       end
     end)
   end
@@ -331,20 +303,8 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
     dependents = Map.get(graph, node, [])
 
     {new_queue, new_in_degree} =
-      Enum.reduce(dependents, {queue, in_degree}, fn dependent,
-                                                     {acc_queue, acc_degrees} ->
-        new_degree = Map.get(acc_degrees, dependent, 0) - 1
-        updated_degrees = Map.put(acc_degrees, dependent, new_degree)
-
-        if new_degree == 0 do
-          # Find the version for this dependent
-          case Enum.find(dependencies, fn {dep_id, _} -> dep_id == dependent end) do
-            nil -> {acc_queue, updated_degrees}
-            dep_spec -> {[dep_spec | acc_queue], updated_degrees}
-          end
-        else
-          {acc_queue, updated_degrees}
-        end
+      Enum.reduce(dependents, {queue, in_degree}, fn dependent, acc ->
+        update_dependent_degree(dependent, dependencies, acc)
       end)
 
     topological_sort_impl(
@@ -380,20 +340,14 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
 
         dependencies = Map.get(graph, node, [])
 
-        Enum.reduce_while(dependencies, {:ok, visited}, fn dep,
-                                                           {:ok, acc_visited} ->
-          case detect_cycle(dep, graph, acc_visited, new_visiting, new_path) do
-            {:cycle, cycle_path} -> {:halt, {:cycle, cycle_path}}
-            {:ok, new_visited} -> {:cont, {:ok, new_visited}}
-          end
-        end)
-        |> case do
-          {:cycle, cycle_path} ->
-            {:cycle, cycle_path}
-
-          {:ok, final_visited} ->
-            {:ok, MapSet.put(final_visited, node)}
-        end
+        check_dependencies_for_cycles(
+          dependencies,
+          graph,
+          visited,
+          new_visiting,
+          new_path,
+          node
+        )
     end
   end
 
@@ -426,5 +380,130 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
       api_conflict: :fail,
       capability_conflict: :merge
     }
+  end
+
+  defp resolve_transitive_dependencies(
+         dep_id,
+         version,
+         dep_spec,
+         resolver,
+         new_visited,
+         acc,
+         requirement
+       ) do
+    case get_plugin_manifest(dep_id, version, resolver.available_plugins) do
+      {:ok, dep_manifest} ->
+        case collect_all_dependencies(
+               dep_manifest.dependencies || [],
+               resolver,
+               new_visited
+             ) do
+          {:ok, transitive_deps} ->
+            {:cont, {:ok, [dep_spec | transitive_deps ++ acc]}}
+
+          error ->
+            {:halt, error}
+        end
+
+      {:error, :not_found} ->
+        {:halt, {:error, {:dependency_not_found, dep_id, requirement}}}
+    end
+  end
+
+  defp update_dependent_degree(
+         dependent,
+         dependencies,
+         {acc_queue, acc_degrees}
+       ) do
+    new_degree = Map.get(acc_degrees, dependent, 0) - 1
+    updated_degrees = Map.put(acc_degrees, dependent, new_degree)
+
+    maybe_add_to_queue(
+      new_degree,
+      dependent,
+      dependencies,
+      acc_queue,
+      updated_degrees
+    )
+  end
+
+  defp maybe_add_to_queue(
+         0,
+         dependent,
+         dependencies,
+         acc_queue,
+         updated_degrees
+       ) do
+    # Find the version for this dependent
+    case Enum.find(dependencies, fn {dep_id, _} -> dep_id == dependent end) do
+      nil -> {acc_queue, updated_degrees}
+      dep_spec -> {[dep_spec | acc_queue], updated_degrees}
+    end
+  end
+
+  defp maybe_add_to_queue(
+         _,
+         _dependent,
+         _dependencies,
+         acc_queue,
+         updated_degrees
+       ) do
+    {acc_queue, updated_degrees}
+  end
+
+  defp check_dependencies_for_cycles(
+         dependencies,
+         graph,
+         visited,
+         new_visiting,
+         new_path,
+         node
+       ) do
+    Enum.reduce_while(dependencies, {:ok, visited}, fn dep,
+                                                       {:ok, acc_visited} ->
+      case detect_cycle(dep, graph, acc_visited, new_visiting, new_path) do
+        {:cycle, cycle_path} -> {:halt, {:cycle, cycle_path}}
+        {:ok, new_visited} -> {:cont, {:ok, new_visited}}
+      end
+    end)
+    |> case do
+      {:cycle, cycle_path} ->
+        {:cycle, cycle_path}
+
+      {:ok, final_visited} ->
+        {:ok, MapSet.put(final_visited, node)}
+    end
+  end
+
+  defp resolve_dependency_with_version(
+         dep_id,
+         requirement,
+         resolver,
+         visited,
+         acc
+       ) do
+    case find_compatible_version(
+           dep_id,
+           requirement,
+           resolver.available_plugins
+         ) do
+      {:ok, version} ->
+        new_visited = MapSet.put(visited, dep_id)
+        dep_spec = {dep_id, version}
+
+        # Recursively resolve transitive dependencies
+        resolve_transitive_dependencies(
+          dep_id,
+          version,
+          dep_spec,
+          resolver,
+          new_visited,
+          acc,
+          requirement
+        )
+
+      {:error, :no_compatible_version} ->
+        {:halt, {:error, {:no_compatible_version, dep_id, requirement}}}
+    end
   end
 end

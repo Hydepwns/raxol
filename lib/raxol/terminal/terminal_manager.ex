@@ -315,18 +315,16 @@ defmodule Raxol.Terminal.Manager do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:monitor_session, session_id}, _from, state) do
-    case SessionHandler.monitor_session(session_id, state) do
-      :ok -> {:reply, :ok, state}
-      error -> {:reply, error, state}
-    end
+    # SessionHandler.monitor_session always returns :ok
+    :ok = SessionHandler.monitor_session(session_id, state)
+    {:reply, :ok, state}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:unmonitor_session, session_id}, _from, state) do
-    case SessionHandler.unmonitor_session(session_id, state) do
-      :ok -> {:reply, :ok, state}
-      error -> {:reply, error, state}
-    end
+    # SessionHandler.unmonitor_session always returns :ok
+    :ok = SessionHandler.unmonitor_session(session_id, state)
+    {:reply, :ok, state}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager

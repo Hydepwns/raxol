@@ -163,6 +163,9 @@ defmodule Raxol.Test.MockPlugins do
 
   # --- Mock Plugin for Command Testing ---
   defmodule MockCommandPlugin do
+    @moduledoc """
+    Mock plugin for testing command handling functionality.
+    """
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
 
     def init(_config) do
@@ -196,6 +199,9 @@ defmodule Raxol.Test.MockPlugins do
 
   # --- Mock Plugin for Crash Testing ---
   defmodule MockCrashyPlugin do
+    @moduledoc """
+    Mock plugin for testing crash and error recovery scenarios.
+    """
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
 
     def init(_config) do

@@ -517,41 +517,13 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
             "EventManager calling #{module}.#{function} with event: #{inspect(event)}"
           )
 
-          case Raxol.Core.ErrorHandling.safe_apply(module, function, [event]) do
-            {:ok, _result} ->
-              Raxol.Core.Runtime.Log.debug(
-                "Successfully called handler: #{inspect(module)}.#{inspect(function)}"
-              )
-
-            {:error, reason} ->
-              Log.error(
-                "Event handler #{module}.#{function} failed: #{inspect(reason)}"
-              )
-          end
+          execute_module_function_handler(event, module, function)
 
         # Handler struct (from Handlers module)
         {handler_id, handler_struct, _priority}
         when is_atom(handler_id) and is_map(handler_struct) ->
           # Check if event passes filter and execute handler
-          case apply_filter?(event, handler_struct.filter) do
-            true ->
-              case Raxol.Core.ErrorHandling.safe_call(fn ->
-                     handler_struct.handler_fun.(event, %{})
-                   end) do
-                {:ok, _result} ->
-                  Raxol.Core.Runtime.Log.debug(
-                    "Successfully called handler: #{inspect(handler_id)}.#{inspect(:handle_focus_change_event)}"
-                  )
-
-                {:error, reason} ->
-                  Log.error(
-                    "Event handler #{handler_id} failed: #{inspect(reason)}"
-                  )
-              end
-
-            false ->
-              :ok
-          end
+          execute_handler_struct(event, handler_id, handler_struct)
 
         _ ->
           Log.warning("Unknown handler format: #{inspect(handler)}")
@@ -617,6 +589,44 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
       nil -> true
       fun when is_function(fun, 1) -> fun.(event)
       _ -> true
+    end
+  end
+
+  defp execute_module_function_handler(event, module, function) do
+    case Raxol.Core.ErrorHandling.safe_apply(module, function, [event]) do
+      {:ok, _result} ->
+        Raxol.Core.Runtime.Log.debug(
+          "Successfully called handler: #{inspect(module)}.#{inspect(function)}"
+        )
+
+      {:error, reason} ->
+        Log.error(
+          "Event handler #{module}.#{function} failed: #{inspect(reason)}"
+        )
+    end
+  end
+
+  defp execute_handler_struct(event, handler_id, handler_struct) do
+    case apply_filter?(event, handler_struct.filter) do
+      true ->
+        execute_filtered_handler(event, handler_id, handler_struct)
+
+      false ->
+        :ok
+    end
+  end
+
+  defp execute_filtered_handler(event, handler_id, handler_struct) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           handler_struct.handler_fun.(event, %{})
+         end) do
+      {:ok, _result} ->
+        Raxol.Core.Runtime.Log.debug(
+          "Successfully called handler: #{inspect(handler_id)}.#{inspect(:handle_focus_change_event)}"
+        )
+
+      {:error, reason} ->
+        Log.error("Event handler #{handler_id} failed: #{inspect(reason)}")
     end
   end
 end

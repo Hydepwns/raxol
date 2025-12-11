@@ -43,9 +43,10 @@ defmodule Raxol.Metrics do
       Raxol.Metrics.gauge("raxol.chart_render_time", 42.5)
   """
   def gauge(name, value) when is_binary(name) do
-    with {:ok, _} <- safe_genserver_cast({:gauge, name, value}) do
-      :ok
-    else
+    case safe_genserver_cast({:gauge, name, value}) do
+      {:ok, _} ->
+        :ok
+
       {:error, :not_available} ->
         log_service_unavailable("gauge", "#{name}=#{value}")
         :ok
@@ -64,9 +65,10 @@ defmodule Raxol.Metrics do
       Raxol.Metrics.increment("raxol.chart_cache_hits")
   """
   def increment(name) when is_binary(name) do
-    with {:ok, _} <- safe_genserver_cast({:increment, name}) do
-      :ok
-    else
+    case safe_genserver_cast({:increment, name}) do
+      {:ok, _} ->
+        :ok
+
       {:error, :not_available} ->
         log_service_unavailable("increment", name)
         :ok
@@ -79,10 +81,12 @@ defmodule Raxol.Metrics do
   Returns a map containing the current system metrics.
   """
   def get_current_metrics do
-    with {:ok, metrics} <- safe_genserver_call(:get_metrics) do
-      metrics
-    else
-      {:error, :not_available} -> %{}
+    case safe_genserver_call(:get_metrics) do
+      {:ok, metrics} ->
+        metrics
+
+      {:error, :not_available} ->
+        %{}
     end
   end
 

@@ -161,19 +161,20 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     # Determine recovery strategy
     recovery_action = determine_recovery_action(restart_info, state)
 
-    case recovery_action do
-      {:restart, strategy} ->
-        execute_enhanced_restart(child_id, strategy, state)
+    _ =
+      case recovery_action do
+        {:restart, strategy} ->
+          execute_enhanced_restart(child_id, strategy, state)
 
-      {:circuit_break, duration} ->
-        execute_circuit_break(child_id, duration, state)
+        {:circuit_break, duration} ->
+          execute_circuit_break(child_id, duration, state)
 
-      {:graceful_degradation, fallback} ->
-        execute_graceful_degradation(child_id, fallback, state)
+        {:graceful_degradation, fallback} ->
+          execute_graceful_degradation(child_id, fallback, state)
 
-      :escalate ->
-        escalate_to_parent(child_id, reason, state)
-    end
+        :escalate ->
+          escalate_to_parent(child_id, reason, state)
+      end
 
     # Update restart history
     updated_history =
@@ -218,7 +219,6 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   end
 
   defp extract_child_id({module, _args}), do: module
-  defp extract_child_id(spec), do: spec
 
   defp adapt_supervisor_strategy(
          :adaptive_one_for_one,
@@ -406,7 +406,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     Log.info("Immediately restarting child: #{child_id}")
 
     # Standard supervisor restart
-    Supervisor.restart_child(__MODULE__, child_id)
+    _ = Supervisor.restart_child(__MODULE__, child_id)
 
     # Restore context
     if context do
@@ -526,16 +526,13 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   end
 
   defp child_running?(child_id) do
-    case Supervisor.which_children(__MODULE__) do
-      children when is_list(children) ->
-        Enum.any?(children, fn
-          {^child_id, _pid, _type, _modules} -> true
-          _ -> false
-        end)
+    # Supervisor.which_children always returns a list
+    children = Supervisor.which_children(__MODULE__)
 
-      _ ->
-        false
-    end
+    Enum.any?(children, fn
+      {^child_id, _pid, _type, _modules} -> true
+      _ -> false
+    end)
   end
 
   defp start_fallback_child(child_id, fallback_module) do

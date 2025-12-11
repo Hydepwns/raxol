@@ -196,11 +196,13 @@ defmodule Raxol.Terminal.Plugin.PluginServer do
         {:error, :plugin_not_found}
 
       plugin_state ->
-        with :ok <- cleanup_plugin(plugin_state) do
-          new_plugins = Map.delete(state.plugins, plugin_id)
-          {:ok, %{state | plugins: new_plugins}}
-        else
-          {:error, reason} -> {:error, reason}
+        case cleanup_plugin(plugin_state) do
+          :ok ->
+            new_plugins = Map.delete(state.plugins, plugin_id)
+            {:ok, %{state | plugins: new_plugins}}
+
+          {:error, reason} ->
+            {:error, reason}
         end
     end
   end
@@ -211,12 +213,14 @@ defmodule Raxol.Terminal.Plugin.PluginServer do
         {:error, :plugin_not_found}
 
       plugin_state ->
-        with :ok <- validate_plugin_config(config) do
-          updated_plugin = %{plugin_state | config: config}
-          new_plugins = Map.put(state.plugins, plugin_id, updated_plugin)
-          {:ok, %{state | plugins: new_plugins}}
-        else
-          {:error, reason} -> {:error, reason}
+        case validate_plugin_config(config) do
+          :ok ->
+            updated_plugin = %{plugin_state | config: config}
+            new_plugins = Map.put(state.plugins, plugin_id, updated_plugin)
+            {:ok, %{state | plugins: new_plugins}}
+
+          {:error, reason} ->
+            {:error, reason}
         end
     end
   end

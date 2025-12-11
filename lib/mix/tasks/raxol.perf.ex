@@ -124,28 +124,23 @@ defmodule Mix.Tasks.Raxol.Perf do
   defp handle_command(["hints"], _opts) do
     Mix.shell().info("[TIP] Current Performance Hints:")
 
-    if Raxol.Performance.DevHints.enabled?() do
-      stats = Raxol.Performance.DevHints.stats()
+    case Raxol.Performance.DevHints.enabled?() do
+      true ->
+        stats = Raxol.Performance.DevHints.stats()
 
-      Mix.shell().info(
-        "Hints system: Enabled (#{stats.total_hints} hints shown)"
-      )
+        Mix.shell().info(
+          "Hints system: Enabled (#{stats.total_hints} hints shown)"
+        )
 
-      Mix.shell().info("Uptime: #{Float.round(stats.uptime_ms / 1000, 1)}s")
+        Mix.shell().info("Uptime: #{Float.round(stats.uptime_ms / 1000, 1)}s")
+        display_hint_categories(stats.hint_categories)
 
-      if map_size(stats.hint_categories) > 0 do
-        Mix.shell().info("\nHint categories:")
+      false ->
+        Mix.shell().info("Performance hints are not enabled")
 
-        Enum.each(stats.hint_categories, fn {category, count} ->
-          Mix.shell().info("  #{category}: #{count}")
-        end)
-      end
-    else
-      Mix.shell().info("Performance hints are not enabled")
-
-      Mix.shell().info(
-        "Enable with: config :raxol, Raxol.Performance.DevHints, enabled: true"
-      )
+        Mix.shell().info(
+          "Enable with: config :raxol, Raxol.Performance.DevHints, enabled: true"
+        )
     end
   end
 
@@ -289,8 +284,8 @@ defmodule Mix.Tasks.Raxol.Perf do
       _ =
         if Code.ensure_loaded?(Raxol.Terminal.ScreenBuffer) do
           alias Raxol.Terminal.ScreenBuffer
-          %ScreenBuffer{} = buffer = ScreenBuffer.new(80, 24)
-          _ = ScreenBuffer.write_string(buffer, 0, 0, "Test content")
+          buffer = ScreenBuffer.new(80, 24)
+          _ = ScreenBuffer.write_string(buffer, 0, 0, "Test content", nil)
           :ok
         end
     catch
@@ -343,5 +338,19 @@ defmodule Mix.Tasks.Raxol.Perf do
         # Memory profiling for 30 seconds
         mix raxol.perf memory --duration 30
     """)
+  end
+
+  defp display_hint_categories(hint_categories) do
+    case map_size(hint_categories) > 0 do
+      true ->
+        Mix.shell().info("\nHint categories:")
+
+        Enum.each(hint_categories, fn {category, count} ->
+          Mix.shell().info("  #{category}: #{count}")
+        end)
+
+      false ->
+        :ok
+    end
   end
 end

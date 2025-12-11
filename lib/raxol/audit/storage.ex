@@ -643,15 +643,7 @@ defmodule Raxol.Audit.Storage do
 
     new_index =
       Enum.reduce(all_events, %{}, fn event, acc ->
-        case Map.get(event, field) do
-          nil ->
-            acc
-
-          value ->
-            Map.update(acc, value, MapSet.new([event.event_id]), fn existing ->
-              MapSet.put(existing, event.event_id)
-            end)
-        end
+        add_event_to_index(event, field, acc)
       end)
 
     put_in(state.indexes[field], new_index)
@@ -786,5 +778,17 @@ defmodule Raxol.Audit.Storage do
 
   defp find_newest_event(events) do
     Enum.max_by(events, & &1.timestamp)
+  end
+
+  defp add_event_to_index(event, field, acc) do
+    case Map.get(event, field) do
+      nil ->
+        acc
+
+      value ->
+        Map.update(acc, value, MapSet.new([event.event_id]), fn existing ->
+          MapSet.put(existing, event.event_id)
+        end)
+    end
   end
 end

@@ -7,8 +7,7 @@ defmodule Raxol.Core.Renderer.View.Borders do
   alias Raxol.Core.Renderer.View.Style.Border
 
   # Helper function for validating opts
-  @spec validate_keyword_opts!(keyword(), atom()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_keyword_opts!(any(), binary()) :: nil
   defp validate_keyword_opts!(opts, function_name) do
     unless Keyword.keyword?(opts) do
       raise ArgumentError,

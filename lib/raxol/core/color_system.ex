@@ -459,11 +459,7 @@ defmodule Raxol.Core.ColorSystem do
   @spec do_safe_map_get(any(), any(), any(), any()) :: any()
   defp do_safe_map_get(false, _data, _key, default), do: default
 
-  @spec lookup_color_in_palettes(
-          Raxol.Terminal.Color.TrueColor.t(),
-          any(),
-          any()
-        ) :: any()
+  @spec lookup_color_in_palettes(atom(), map() | nil | false, map()) :: any()
   defp lookup_color_in_palettes(color_name, variant_palette, base_palette) do
     case {variant_palette && Map.has_key?(variant_palette, color_name),
           Map.has_key?(base_palette, color_name)} do

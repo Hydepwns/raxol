@@ -46,6 +46,7 @@ defmodule Raxol.Terminal.Emulator.Output do
   Processes the output buffer and updates the emulator state.
   """
   def process_buffer(%EmulatorStruct{} = emulator) do
+    # Parser.parse_chunk expects (Emulator.t(), ParserState.t(), String.t())
     case Parser.parse_chunk(
            emulator,
            emulator.parser_state,

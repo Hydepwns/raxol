@@ -67,22 +67,7 @@ defmodule Mix.Tasks.Raxol.Convert.BaseManager do
     case File.read(file_path) do
       {:ok, content} ->
         converted = convert_content(content)
-
-        case Keyword.get(opts, :dry_run) do
-          true ->
-            Log.info("Would convert: #{file_path}")
-            Log.info("Changes:")
-            show_diff(content, converted)
-
-          _ ->
-            File.write!(file_path, converted)
-            Log.info("Converted: #{file_path}")
-
-            case Keyword.get(opts, :validate) do
-              true -> validate_conversion(file_path)
-              _ -> :ok
-            end
-        end
+        handle_conversion_output(file_path, content, converted, opts)
 
       {:error, reason} ->
         Log.info("Error reading #{file_path}: #{reason}")
@@ -200,6 +185,28 @@ defmodule Mix.Tasks.Raxol.Convert.BaseManager do
         Log.info("✗ Compilation failed:")
         Log.info(output)
         :error
+    end
+  end
+
+  defp handle_conversion_output(file_path, content, converted, opts) do
+    case Keyword.get(opts, :dry_run) do
+      true ->
+        Log.info("Would convert: #{file_path}")
+        Log.info("Changes:")
+        show_diff(content, converted)
+
+      _ ->
+        write_and_validate_conversion(file_path, converted, opts)
+    end
+  end
+
+  defp write_and_validate_conversion(file_path, converted, opts) do
+    File.write!(file_path, converted)
+    Log.info("Converted: #{file_path}")
+
+    case Keyword.get(opts, :validate) do
+      true -> validate_conversion(file_path)
+      _ -> :ok
     end
   end
 end

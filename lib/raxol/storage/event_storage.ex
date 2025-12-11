@@ -354,15 +354,7 @@ defmodule Raxol.Storage.EventStorage.Memory do
       _ ->
         # Process all events in batch - Memory.do_append_event/3 never returns errors
         Raxol.Core.ErrorHandling.safe_call(fn ->
-          {event_ids, final_state} =
-            Enum.reduce(events, {[], state}, fn event, {acc_ids, acc_state} ->
-              {:ok, event_id, new_state} =
-                do_append_event(event, stream_name, acc_state)
-
-              {[event_id | acc_ids], new_state}
-            end)
-
-          {:ok, Enum.reverse(event_ids), final_state}
+          process_event_batch(events, stream_name, state)
         end)
         |> case do
           {:ok, result} -> result
@@ -380,6 +372,20 @@ defmodule Raxol.Storage.EventStorage.Memory do
       last_event_at: nil,
       metadata: %{}
     })
+  end
+
+  defp append_event_to_accumulator(event, stream_name, {acc_ids, acc_state}) do
+    {:ok, event_id, new_state} = do_append_event(event, stream_name, acc_state)
+    {[event_id | acc_ids], new_state}
+  end
+
+  defp process_event_batch(events, stream_name, state) do
+    {event_ids, final_state} =
+      Enum.reduce(events, {[], state}, fn event, acc ->
+        append_event_to_accumulator(event, stream_name, acc)
+      end)
+
+    {:ok, Enum.reverse(event_ids), final_state}
   end
 end
 
@@ -629,18 +635,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
       _ ->
         # Process all events in batch using functional error handling
         Raxol.Core.ErrorHandling.safe_call(fn ->
-          {event_ids, final_state} =
-            Enum.reduce(events, {[], state}, fn event, {acc_ids, acc_state} ->
-              case do_append_event(event, stream_name, acc_state) do
-                {:ok, event_id, new_state} ->
-                  {[event_id | acc_ids], new_state}
-
-                {:error, reason} ->
-                  throw({:error, reason})
-              end
-            end)
-
-          {:ok, Enum.reverse(event_ids), final_state}
+          process_event_batch_with_errors(events, stream_name, state)
         end)
         |> case do
           {:ok, result} -> result
@@ -678,12 +673,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
               |> Enum.map(&parse_event_json/1)
               |> Enum.filter(&filter_ok/1)
               |> Enum.map(&elem(&1, 1))
-              |> Enum.filter(fn event ->
-                stream_position =
-                  get_in(event.metadata, [:stream_position]) || 0
-
-                stream_position >= start_position
-              end)
+              |> Enum.filter(&filter_by_position(&1, start_position))
               |> Enum.take(count)
 
             {:ok, events}
@@ -813,4 +803,28 @@ defmodule Raxol.Storage.EventStorage.Disk do
 
   defp filter_ok({:ok, _}), do: true
   defp filter_ok(_), do: false
+
+  defp append_event_with_error_check(event, stream_name, {acc_ids, acc_state}) do
+    case do_append_event(event, stream_name, acc_state) do
+      {:ok, event_id, new_state} ->
+        {[event_id | acc_ids], new_state}
+
+      {:error, reason} ->
+        throw({:error, reason})
+    end
+  end
+
+  defp filter_by_position(event, start_position) do
+    stream_position = get_in(event.metadata, [:stream_position]) || 0
+    stream_position >= start_position
+  end
+
+  defp process_event_batch_with_errors(events, stream_name, state) do
+    {event_ids, final_state} =
+      Enum.reduce(events, {[], state}, fn event, acc ->
+        append_event_with_error_check(event, stream_name, acc)
+      end)
+
+    {:ok, Enum.reverse(event_ids), final_state}
+  end
 end

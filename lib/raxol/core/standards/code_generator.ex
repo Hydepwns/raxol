@@ -440,7 +440,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     Enum.map_join(children, ",\n          ", fn child -> "{#{child}, []}" end)
   end
 
-  @spec context_name(module()) :: any()
+  @spec context_name(String.t()) :: String.t()
   defp context_name(module_name) do
     module_name
     |> String.split(".")
@@ -448,7 +448,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     |> String.replace("Context", "")
   end
 
-  @spec generate_context_functions(atom()) :: any()
+  @spec generate_context_functions(list()) :: any()
   defp generate_context_functions(functions) do
     Enum.map_join(functions, "\n\n", fn {name, opts} ->
       """
@@ -508,7 +508,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     )
   end
 
-  @spec liveview_name(module()) :: any()
+  @spec liveview_name(String.t()) :: String.t()
   defp liveview_name(module_name) do
     module_name
     |> String.split(".")
@@ -516,7 +516,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     |> String.replace("Live", "")
   end
 
-  @spec module_class_name(module()) :: any()
+  @spec module_class_name(String.t()) :: String.t()
   defp module_class_name(module_name) do
     module_name
     |> String.split(".")
@@ -623,14 +623,14 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     ", " <> Enum.map_join(opts, ", ", fn {k, v} -> "#{k}: #{inspect(v)}" end)
   end
 
-  @spec schema_name(module()) :: any()
+  @spec schema_name(String.t()) :: String.t()
   defp schema_name(module_name) do
     module_name
     |> String.split(".")
     |> List.last()
   end
 
-  @spec schema_var(module()) :: any()
+  @spec schema_var(String.t()) :: String.t()
   defp schema_var(module_name) do
     module_name
     |> String.split(".")
@@ -683,11 +683,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     |> Enum.join("\n    ")
   end
 
-  @spec add_min_length_validation(
-          String.t() | integer(),
-          String.t() | atom(),
-          keyword()
-        ) :: any()
+  @spec add_min_length_validation(list(), atom(), keyword()) :: list()
   defp add_min_length_validation(validations, name, opts) do
     case Keyword.get(opts, :min_length) do
       nil -> validations
@@ -695,11 +691,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     end
   end
 
-  @spec add_max_length_validation(
-          String.t() | integer(),
-          String.t() | atom(),
-          keyword()
-        ) :: any()
+  @spec add_max_length_validation(list(), atom(), keyword()) :: list()
   defp add_max_length_validation(validations, name, opts) do
     case Keyword.get(opts, :max_length) do
       nil -> validations
@@ -707,14 +699,12 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     end
   end
 
-  @spec add_email_validation(String.t() | integer(), String.t() | atom(), any()) ::
-          any()
+  @spec add_email_validation(list(), atom(), any()) :: list()
   defp add_email_validation(validations, name, :email) do
     ["|> validate_format(:#{name}, ~r/@/)" | validations]
   end
 
-  @spec add_email_validation(String.t() | integer(), String.t() | atom(), any()) ::
-          any()
+  @spec add_email_validation(list(), atom(), any()) :: list()
   defp add_email_validation(validations, _name, _type), do: validations
 
   @spec elixir_type(any()) :: any()

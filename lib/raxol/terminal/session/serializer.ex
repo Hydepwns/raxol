@@ -165,14 +165,14 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp safe_serialize_renderer(renderer) when is_map(renderer) do
-    with {:ok, buffer} <-
-           safe_serialize_screen_buffer(Map.get(renderer, :screen_buffer)) do
-      {:ok,
-       %{
-         screen_buffer: buffer,
-         theme: Map.get(renderer, :theme)
-       }}
-    else
+    case safe_serialize_screen_buffer(Map.get(renderer, :screen_buffer)) do
+      {:ok, buffer} ->
+        {:ok,
+         %{
+           screen_buffer: buffer,
+           theme: Map.get(renderer, :theme)
+         }}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "Renderer serialization failed: #{inspect(reason)}"
@@ -195,15 +195,16 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp safe_serialize_screen_buffer(%ScreenBuffer{} = buffer) do
-    with {:ok, cells} <- safe_serialize_cells(buffer.cells) do
-      {:ok,
-       %{
-         width: buffer.width,
-         height: buffer.height,
-         cells: cells,
-         cursor_position: buffer.cursor_position
-       }}
-    else
+    case safe_serialize_cells(buffer.cells) do
+      {:ok, cells} ->
+        {:ok,
+         %{
+           width: buffer.width,
+           height: buffer.height,
+           cells: cells,
+           cursor_position: buffer.cursor_position
+         }}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "ScreenBuffer serialization failed: #{inspect(reason)}"
@@ -214,15 +215,16 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp safe_serialize_screen_buffer(%ConsolidatedBuffer{} = buffer) do
-    with {:ok, cells} <- safe_serialize_cells(buffer.cells) do
-      {:ok,
-       %{
-         width: buffer.width,
-         height: buffer.height,
-         cells: cells,
-         cursor_position: buffer.cursor_position
-       }}
-    else
+    case safe_serialize_cells(buffer.cells) do
+      {:ok, cells} ->
+        {:ok,
+         %{
+           width: buffer.width,
+           height: buffer.height,
+           cells: cells,
+           cursor_position: buffer.cursor_position
+         }}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "ConsolidatedBuffer serialization failed: #{inspect(reason)}"
@@ -311,15 +313,16 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp safe_serialize_cell(%Raxol.Terminal.Cell{} = cell) do
-    with {:ok, style} <- safe_serialize_style(cell.style) do
-      {:ok,
-       %{
-         char: cell.char,
-         style: style,
-         dirty: cell.dirty,
-         wide_placeholder: cell.wide_placeholder
-       }}
-    else
+    case safe_serialize_style(cell.style) do
+      {:ok, style} ->
+        {:ok,
+         %{
+           char: cell.char,
+           style: style,
+           dirty: cell.dirty,
+           wide_placeholder: cell.wide_placeholder
+         }}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "Cell serialization failed: #{inspect(reason)}, cell: #{inspect(cell)}"
@@ -483,14 +486,15 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp deserialize_renderer(%{screen_buffer: buffer_data, theme: theme}) do
-    with {:ok, screen_buffer} <- deserialize_screen_buffer(buffer_data) do
-      renderer = %{
-        screen_buffer: screen_buffer,
-        theme: theme
-      }
+    case deserialize_screen_buffer(buffer_data) do
+      {:ok, screen_buffer} ->
+        renderer = %{
+          screen_buffer: screen_buffer,
+          theme: theme
+        }
 
-      {:ok, renderer}
-    else
+        {:ok, renderer}
+
       {:error, reason} ->
         {:error, {:renderer_deserialization_failed, reason}}
     end
@@ -510,26 +514,23 @@ defmodule Raxol.Terminal.Session.Serializer do
          cells: cells,
          cursor_position: cursor_position
        }) do
-    with {:ok, deserialized_cells} <- safe_deserialize_cells(cells) do
-      screen_buffer = %ScreenBuffer{
-        width: width,
-        height: height,
-        cells: deserialized_cells,
-        cursor_position: cursor_position,
-        scrollback: [],
-        scrollback_limit: 1000,
-        selection: nil,
-        scroll_region: nil,
-        scroll_position: 0,
-        damage_regions: [],
-        default_style: Raxol.Terminal.ANSI.TextFormatting.Core.new()
-      }
+    {:ok, deserialized_cells} = safe_deserialize_cells(cells)
 
-      {:ok, screen_buffer}
-    else
-      {:error, reason} ->
-        {:error, {:buffer_deserialization_failed, reason}}
-    end
+    screen_buffer = %ScreenBuffer{
+      width: width,
+      height: height,
+      cells: deserialized_cells,
+      cursor_position: cursor_position,
+      scrollback: [],
+      scrollback_limit: 1000,
+      selection: nil,
+      scroll_region: nil,
+      scroll_position: 0,
+      damage_regions: [],
+      default_style: Raxol.Terminal.ANSI.TextFormatting.Core.new()
+    }
+
+    {:ok, screen_buffer}
   end
 
   defp deserialize_screen_buffer([]) do
@@ -615,15 +616,16 @@ defmodule Raxol.Terminal.Session.Serializer do
          dirty: dirty,
          wide_placeholder: wide_placeholder
        }) do
-    with {:ok, style} <- safe_deserialize_style(style_data) do
-      {:ok,
-       %Raxol.Terminal.Cell{
-         char: char,
-         style: style,
-         dirty: dirty,
-         wide_placeholder: wide_placeholder
-       }}
-    else
+    case safe_deserialize_style(style_data) do
+      {:ok, style} ->
+        {:ok,
+         %Raxol.Terminal.Cell{
+           char: char,
+           style: style,
+           dirty: dirty,
+           wide_placeholder: wide_placeholder
+         }}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning(
           "Cell deserialization failed: #{inspect(reason)}, using default"

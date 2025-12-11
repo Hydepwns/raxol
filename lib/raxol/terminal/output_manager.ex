@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.OutputManager do
   This module is responsible for handling all output-related operations in the terminal.
   """
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.OutputBuffer
   require Raxol.Core.Runtime.Log
 
@@ -48,7 +47,7 @@ defmodule Raxol.Terminal.OutputManager do
   Gets the output buffer instance.
   Returns the output buffer.
   """
-  @spec get_buffer(Emulator.t()) :: OutputBuffer.t()
+  @spec get_buffer(map()) :: map()
   def get_buffer(emulator) do
     emulator.output_buffer
   end
@@ -57,7 +56,7 @@ defmodule Raxol.Terminal.OutputManager do
   Updates the output buffer instance.
   Returns the updated emulator.
   """
-  @spec update_buffer(Emulator.t(), OutputBuffer.t()) :: Emulator.t()
+  @spec update_buffer(map(), map()) :: map()
   def update_buffer(emulator, buffer) do
     %{emulator | output_buffer: buffer}
   end
@@ -66,7 +65,7 @@ defmodule Raxol.Terminal.OutputManager do
   Writes a string to the output buffer.
   Returns the updated emulator.
   """
-  @spec write(Emulator.t(), String.t()) :: Emulator.t()
+  @spec write(map(), String.t()) :: map()
   def write(emulator, string) do
     buffer = OutputBuffer.write(emulator.output_buffer, string)
     %{emulator | output_buffer: buffer}
@@ -76,7 +75,7 @@ defmodule Raxol.Terminal.OutputManager do
   Writes a string to the output buffer with a newline.
   Returns the updated emulator.
   """
-  @spec writeln(Emulator.t(), String.t()) :: Emulator.t()
+  @spec writeln(map(), String.t()) :: map()
   def writeln(emulator, string) do
     buffer = OutputBuffer.writeln(emulator.output_buffer, string)
     %{emulator | output_buffer: buffer}
@@ -86,7 +85,7 @@ defmodule Raxol.Terminal.OutputManager do
   Flushes the output buffer.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec flush(Emulator.t()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec flush(map()) :: {:ok, map()} | {:error, String.t()}
   def flush(emulator) do
     {:ok, new_buffer} = OutputBuffer.flush(emulator.output_buffer)
     {:ok, %{emulator | output_buffer: new_buffer}}
@@ -96,7 +95,7 @@ defmodule Raxol.Terminal.OutputManager do
   Clears the output buffer.
   Returns the updated emulator.
   """
-  @spec clear(Emulator.t()) :: Emulator.t()
+  @spec clear(map()) :: map()
   def clear(emulator) do
     buffer = OutputBuffer.clear(emulator.output_buffer)
     %{emulator | output_buffer: buffer}
@@ -106,7 +105,7 @@ defmodule Raxol.Terminal.OutputManager do
   Gets the current output buffer content.
   Returns the buffer content as a string.
   """
-  @spec get_content(Emulator.t()) :: String.t()
+  @spec get_content(map()) :: String.t()
   def get_content(emulator) do
     OutputBuffer.get_content(emulator.output_buffer)
   end
@@ -115,7 +114,7 @@ defmodule Raxol.Terminal.OutputManager do
   Sets the output buffer content.
   Returns the updated emulator.
   """
-  @spec set_content(Emulator.t(), String.t()) :: Emulator.t()
+  @spec set_content(map(), String.t()) :: map()
   def set_content(emulator, content) do
     buffer = OutputBuffer.set_content(emulator.output_buffer, content)
     %{emulator | output_buffer: buffer}
@@ -125,7 +124,7 @@ defmodule Raxol.Terminal.OutputManager do
   Gets the output buffer size.
   Returns the number of bytes in the buffer.
   """
-  @spec get_size(Emulator.t()) :: non_neg_integer()
+  @spec get_size(map()) :: non_neg_integer()
   def get_size(emulator) do
     OutputBuffer.get_size(emulator.output_buffer)
   end
@@ -134,7 +133,7 @@ defmodule Raxol.Terminal.OutputManager do
   Checks if the output buffer is empty.
   Returns true if the buffer is empty, false otherwise.
   """
-  @spec empty?(Emulator.t()) :: boolean()
+  @spec empty?(map()) :: boolean()
   def empty?(emulator) do
     OutputBuffer.empty?(emulator.output_buffer)
   end
@@ -143,7 +142,7 @@ defmodule Raxol.Terminal.OutputManager do
   Sets the output buffer mode.
   Returns the updated emulator.
   """
-  @spec set_mode(Emulator.t(), atom()) :: Emulator.t()
+  @spec set_mode(map(), atom()) :: map()
   def set_mode(emulator, mode) do
     # OutputBuffer doesn't have set_mode, so store mode in emulator metadata
     %{emulator | mode: mode}
@@ -153,7 +152,7 @@ defmodule Raxol.Terminal.OutputManager do
   Gets the current output buffer mode.
   Returns the current mode.
   """
-  @spec get_mode(Emulator.t()) :: atom()
+  @spec get_mode(map()) :: atom()
   def get_mode(emulator) do
     OutputBuffer.get_mode(emulator.output_buffer)
   end
@@ -162,7 +161,7 @@ defmodule Raxol.Terminal.OutputManager do
   Sets the output buffer encoding.
   Returns the updated emulator.
   """
-  @spec set_encoding(Emulator.t(), String.t()) :: Emulator.t()
+  @spec set_encoding(map(), String.t()) :: map()
   def set_encoding(emulator, encoding) do
     # OutputBuffer doesn't have set_encoding, so store encoding in emulator metadata
     %{emulator | encoding: encoding}
@@ -172,7 +171,7 @@ defmodule Raxol.Terminal.OutputManager do
   Gets the current output buffer encoding.
   Returns the current encoding.
   """
-  @spec get_encoding(Emulator.t()) :: String.t()
+  @spec get_encoding(map()) :: String.t()
   def get_encoding(emulator) do
     OutputBuffer.get_encoding(emulator.output_buffer)
   end

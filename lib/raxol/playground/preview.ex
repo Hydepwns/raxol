@@ -177,7 +177,8 @@ defmodule Raxol.Playground.Preview do
         "│ #{trimmed}#{padding} │"
       end)
 
-    Enum.join([top_border] ++ content_lines ++ [bottom_border], "\n")
+    [top_border | content_lines ++ [bottom_border]]
+    |> Enum.join("\n")
   end
 
   defp render_select(props, state) do
@@ -298,7 +299,7 @@ defmodule Raxol.Playground.Preview do
     bottom_border =
       "#{bottom_left}#{String.duplicate(horizontal, content_width)}#{bottom_right}"
 
-    ([top_border] ++ content_lines ++ [bottom_border])
+    [top_border | content_lines ++ [bottom_border]]
     |> Enum.join("\n")
   end
 
@@ -373,11 +374,12 @@ defmodule Raxol.Playground.Preview do
         header_line = create_table_row(headers, col_widths)
         row_lines = Enum.map(rows, &create_table_row(&1, col_widths))
 
-        Enum.join(
-          [top_border, header_line, header_separator] ++
-            row_lines ++ [bottom_border],
-          "\n"
-        )
+        [
+          top_border,
+          header_line,
+          header_separator | row_lines ++ [bottom_border]
+        ]
+        |> Enum.join("\n")
     end
   end
 
@@ -463,8 +465,7 @@ defmodule Raxol.Playground.Preview do
         bottom_border = "╚" <> String.duplicate("═", width) <> "╝"
 
         modal_lines =
-          [top_border, title_line, separator] ++
-            content_lines ++ [bottom_border]
+          [top_border, title_line, separator | content_lines ++ [bottom_border]]
 
         # Add shadow effect
         modal_with_shadow =
@@ -475,7 +476,9 @@ defmodule Raxol.Playground.Preview do
         shadow_line =
           "#{IO.ANSI.light_black()}#{String.duplicate("▓", width + 2)}#{IO.ANSI.reset()}"
 
-        Enum.join(modal_with_shadow ++ [shadow_line], "\n")
+        [shadow_line | Enum.reverse(modal_with_shadow)]
+        |> Enum.reverse()
+        |> Enum.join("\n")
     end
   end
 

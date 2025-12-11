@@ -176,11 +176,9 @@ defmodule Raxol.Terminal.EventHandler do
     # Generate appropriate command based on event type
     command = generate_mouse_command(type, button, term_x, term_y)
 
-    # Process the command
-    case Emulator.process_input(emulator, command) do
-      {updated_emulator, _} -> {:ok, updated_emulator}
-      error -> error
-    end
+    # Process the command - Emulator.process_input always returns {emulator, output}
+    {updated_emulator, _} = Emulator.process_input(emulator, command)
+    {:ok, updated_emulator}
   end
 
   defp process_mouse_any_event(emulator, type, button, x, y) do
@@ -188,20 +186,16 @@ defmodule Raxol.Terminal.EventHandler do
     {term_x, term_y} = convert_to_terminal_coordinates(emulator, x, y)
     command = generate_mouse_any_command(type, button, term_x, term_y)
 
-    case Emulator.process_input(emulator, command) do
-      {updated_emulator, _} -> {:ok, updated_emulator}
-      error -> error
-    end
+    {updated_emulator, _} = Emulator.process_input(emulator, command)
+    {:ok, updated_emulator}
   end
 
   defp process_mouse_move_event(emulator, x, y) do
     {term_x, term_y} = convert_to_terminal_coordinates(emulator, x, y)
     command = generate_mouse_move_command(term_x, term_y)
 
-    case Emulator.process_input(emulator, command) do
-      {updated_emulator, _} -> {:ok, updated_emulator}
-      error -> error
-    end
+    {updated_emulator, _} = Emulator.process_input(emulator, command)
+    {:ok, updated_emulator}
   end
 
   # Keyboard Event Processing
@@ -209,19 +203,15 @@ defmodule Raxol.Terminal.EventHandler do
   defp process_normal_key_press(emulator, key, modifiers) do
     command = generate_normal_key_command(key, modifiers)
 
-    case Emulator.process_input(emulator, command) do
-      {updated_emulator, _} -> {:ok, updated_emulator}
-      error -> error
-    end
+    {updated_emulator, _} = Emulator.process_input(emulator, command)
+    {:ok, updated_emulator}
   end
 
   defp process_application_key_press(emulator, key, modifiers) do
     command = generate_application_key_command(key, modifiers)
 
-    case Emulator.process_input(emulator, command) do
-      {updated_emulator, _} -> {:ok, updated_emulator}
-      error -> error
-    end
+    {updated_emulator, _} = Emulator.process_input(emulator, command)
+    {:ok, updated_emulator}
   end
 
   defp process_normal_key_release(emulator, _key, _modifiers) do
@@ -260,22 +250,13 @@ defmodule Raxol.Terminal.EventHandler do
     <<27, "[M", 32, x + 32, y + 32>>
   end
 
-  # Mouse button encoding for standard format
-  defp encode_mouse_button(button, type) do
-    base_code =
-      case button do
-        :left -> 0
-        :middle -> 1
-        :right -> 2
-        _ -> 0
-      end
-
-    # Add press/release flag (release = base + 3)
-    case type do
-      :press -> base_code
-      # Standard release code
-      :release -> 3
-      _ -> base_code
+  # Mouse button encoding for standard format (X10 mode only reports press events)
+  defp encode_mouse_button(button, :press) do
+    case button do
+      :left -> 0
+      :middle -> 1
+      :right -> 2
+      _ -> 0
     end
   end
 

@@ -12,8 +12,7 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   @doc """
   Handles a CSI (Control Sequence Introducer) sequence.
   """
-  @spec handle_csi_sequence(Emulator.t(), String.t(), list(String.t())) ::
-          Emulator.t()
+  @spec handle_csi_sequence(map(), String.t(), list(String.t())) :: map()
   def handle_csi_sequence(emulator, command, params) do
     CSIHandler.handle_csi_sequence(emulator, command, params)
   end
@@ -21,8 +20,8 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   @doc """
   Handles an OSC (Operating System Command) sequence.
   """
-  @spec handle_osc_sequence(Emulator.t(), String.t(), String.t()) ::
-          Emulator.t()
+  @spec handle_osc_sequence(map(), non_neg_integer(), binary()) ::
+          {:ok, map()} | {:error, term(), map()}
   def handle_osc_sequence(emulator, command, data) do
     OSCHandler.handle_osc_sequence(emulator, command, data)
   end
@@ -30,8 +29,7 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   @doc """
   Handles a DCS (Device Control String) sequence.
   """
-  @spec handle_dcs_sequence(Emulator.t(), String.t(), String.t()) ::
-          Emulator.t()
+  @spec handle_dcs_sequence(map(), String.t(), String.t()) :: map()
   def handle_dcs_sequence(emulator, command, data) do
     case command do
       # Sixel graphics
@@ -55,7 +53,7 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   @doc """
   Handles a PM (Privacy Message) sequence.
   """
-  @spec handle_pm_sequence(Emulator.t(), String.t(), String.t()) :: Emulator.t()
+  @spec handle_pm_sequence(map(), String.t(), String.t()) :: map()
   def handle_pm_sequence(emulator, command, data) do
     # PM sequences are typically ignored by terminals
     Raxol.Core.Runtime.Log.debug(
@@ -68,8 +66,7 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   @doc """
   Handles an APC (Application Program Command) sequence.
   """
-  @spec handle_apc_sequence(Emulator.t(), String.t(), String.t()) ::
-          Emulator.t()
+  @spec handle_apc_sequence(map(), String.t(), String.t()) :: map()
   def handle_apc_sequence(emulator, command, data) do
     # APC sequences are typically ignored by terminals
     Raxol.Core.Runtime.Log.debug(

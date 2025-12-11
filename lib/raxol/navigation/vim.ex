@@ -373,9 +373,7 @@ defmodule Raxol.Navigation.Vim do
     line = Enum.at(buffer.lines, y)
 
     if line do
-      line.cells
-      |> Enum.map(& &1.char)
-      |> Enum.join()
+      Enum.map_join(line.cells, "", & &1.char)
     else
       ""
     end
@@ -449,9 +447,7 @@ defmodule Raxol.Navigation.Vim do
   end
 
   defp get_line_cells_text(%{cells: cells}) do
-    cells
-    |> Enum.map(& &1.char)
-    |> Enum.join()
+    Enum.map_join(cells, "", & &1.char)
   end
 
   defp find_in_line(text, pattern) do

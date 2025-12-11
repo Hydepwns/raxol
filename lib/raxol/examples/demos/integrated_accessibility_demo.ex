@@ -112,7 +112,7 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
   @doc """
   Renders the current view.
   """
-  @spec view(t()) :: iolist()
+  @spec view(t()) :: String.t()
   def view(state) do
     case state.mode do
       :menu -> render_menu(state)

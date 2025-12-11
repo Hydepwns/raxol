@@ -292,13 +292,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
     fn command, context ->
       Enum.reduce_while(steps, {:ok, command, context}, fn step,
                                                            {_status, cmd, ctx} ->
-        case step.(cmd, ctx) do
-          {:ok, updated_cmd, updated_ctx} ->
-            {:cont, {:ok, updated_cmd, updated_ctx}}
-
-          {:error, reason} ->
-            {:halt, {:error, reason}}
-        end
+        process_pipeline_step(step, cmd, ctx)
       end)
     end
   end
@@ -421,5 +415,15 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
   defp handle_precondition_validation(false, failed_preconditions) do
     failed_names = Enum.map(failed_preconditions, &elem(&1, 0))
     {:error, {:precondition_failed, failed_names}}
+  end
+
+  defp process_pipeline_step(step, cmd, ctx) do
+    case step.(cmd, ctx) do
+      {:ok, updated_cmd, updated_ctx} ->
+        {:cont, {:ok, updated_cmd, updated_ctx}}
+
+      {:error, reason} ->
+        {:halt, {:error, reason}}
+    end
   end
 end

@@ -129,7 +129,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
     parts =
       if sel_start > 0 do
         before_sel = String.slice(line_content, 0, sel_start)
-        parts ++ [{:text, before_sel, text_style}]
+        [{:text, before_sel, text_style} | parts]
       else
         parts
       end
@@ -140,7 +140,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
         selected_text =
           String.slice(line_content, sel_start, sel_end - sel_start)
 
-        parts ++ [{:text, selected_text, selection_style}]
+        [{:text, selected_text, selection_style} | parts]
       else
         parts
       end
@@ -149,7 +149,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
     parts =
       if sel_end < line_length do
         after_sel = String.slice(line_content, sel_end, line_length - sel_end)
-        parts ++ [{:text, after_sel, text_style}]
+        [{:text, after_sel, text_style} | parts]
       else
         parts
       end
@@ -157,24 +157,27 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
     # Add cursor if on this line
     parts =
       if has_cursor do
-        add_cursor_to_parts(parts, cursor_col, cursor_style)
+        add_cursor_to_parts_reversed(parts, cursor_col, cursor_style)
       else
         parts
       end
 
-    if parts == [] do
+    parts_final = Enum.reverse(parts)
+
+    if parts_final == [] do
       # Empty line placeholder
       [{:text, " ", text_style}]
     else
-      parts
+      parts_final
     end
   end
 
-  defp add_cursor_to_parts(parts, _cursor_col, cursor_style) do
+  defp add_cursor_to_parts_reversed(parts, _cursor_col, cursor_style) do
     # This is a simplified implementation
     # In a full implementation, you'd need to carefully insert the cursor
     # at the correct position within the styled parts
-    parts ++ [{:text, " ", cursor_style}]
+    # Note: parts is in reverse order here
+    [{:text, " ", cursor_style} | parts]
   end
 
   defp normalize_selection(state) do

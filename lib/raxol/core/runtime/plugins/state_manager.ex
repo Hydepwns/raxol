@@ -45,7 +45,7 @@ defmodule StateManager do
 
       # Store in unified state manager
       state_key = [:plugins, :states, plugin_id]
-      StateManager.set_state(state_key, initial_state)
+      _ = StateManager.set_state(state_key, initial_state)
 
       # Track plugin metadata
       metadata_key = [:plugins, :metadata, plugin_id]
@@ -57,7 +57,7 @@ defmodule StateManager do
         status: :initialized
       }
 
-      StateManager.set_state(metadata_key, metadata)
+      _ = StateManager.set_state(metadata_key, metadata)
 
       Log.info("Initialized state for plugin #{plugin_id} (#{plugin_module})")
 
@@ -99,24 +99,25 @@ defmodule StateManager do
             state
         end
 
-      StateManager.set_state(state_key, updated_state)
+      _ = StateManager.set_state(state_key, updated_state)
 
       # Update metadata
       metadata_key = [:plugins, :metadata, plugin_id]
 
-      StateManager.update_state(metadata_key, fn metadata ->
-        case metadata do
-          nil ->
-            %{updated_at: :os.system_time(:millisecond), config: config}
+      _ =
+        StateManager.update_state(metadata_key, fn metadata ->
+          case metadata do
+            nil ->
+              %{updated_at: :os.system_time(:millisecond), config: config}
 
-          existing ->
-            Map.merge(existing, %{
-              updated_at: :os.system_time(:millisecond),
-              config: config,
-              status: :updated
-            })
-        end
-      end)
+            existing ->
+              Map.merge(existing, %{
+                updated_at: :os.system_time(:millisecond),
+                config: config,
+                status: :updated
+              })
+          end
+        end)
 
       Log.debug("Updated legacy state for plugin #{plugin_id}")
       {:ok, updated_state}
@@ -162,22 +163,24 @@ defmodule StateManager do
     state_key = [:plugins, :states, plugin_id]
 
     try do
-      StateManager.update_state(state_key, fn current_state ->
-        update_fn.(current_state || %{})
-      end)
+      _ =
+        StateManager.update_state(state_key, fn current_state ->
+          update_fn.(current_state || %{})
+        end)
 
       # Update metadata timestamp
       metadata_key = [:plugins, :metadata, plugin_id]
 
-      StateManager.update_state(metadata_key, fn metadata ->
-        case metadata do
-          nil ->
-            %{updated_at: :os.system_time(:millisecond)}
+      _ =
+        StateManager.update_state(metadata_key, fn metadata ->
+          case metadata do
+            nil ->
+              %{updated_at: :os.system_time(:millisecond)}
 
-          existing ->
-            Map.put(existing, :updated_at, :os.system_time(:millisecond))
-        end
-      end)
+            existing ->
+              Map.put(existing, :updated_at, :os.system_time(:millisecond))
+          end
+        end)
 
       {:ok, StateManager.get_state(state_key)}
     rescue
@@ -220,8 +223,8 @@ defmodule StateManager do
   """
   @spec remove_plugin(plugin_id()) :: :ok
   def remove_plugin(plugin_id) do
-    StateManager.delete_state([:plugins, :states, plugin_id])
-    StateManager.delete_state([:plugins, :metadata, plugin_id])
+    _ = StateManager.delete_state([:plugins, :states, plugin_id])
+    _ = StateManager.delete_state([:plugins, :metadata, plugin_id])
     Log.info("Removed state for plugin #{plugin_id}")
     :ok
   end
@@ -232,11 +235,12 @@ defmodule StateManager do
   @spec initialize(term()) :: {:ok, term()}
   def initialize(state) do
     # Ensure plugins namespace exists in unified state
-    StateManager.set_state([:plugins], %{
-      states: %{},
-      metadata: %{},
-      initialized_at: :os.system_time(:millisecond)
-    })
+    _ =
+      StateManager.set_state([:plugins], %{
+        states: %{},
+        metadata: %{},
+        initialized_at: :os.system_time(:millisecond)
+      })
 
     Log.info("Plugin state manager initialized")
     {:ok, state}
@@ -247,7 +251,7 @@ defmodule StateManager do
   """
   @spec cleanup() :: :ok
   def cleanup do
-    StateManager.delete_state([:plugins])
+    _ = StateManager.delete_state([:plugins])
     Log.info("Plugin state manager cleaned up")
     :ok
   end

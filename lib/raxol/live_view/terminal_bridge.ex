@@ -113,7 +113,7 @@ defmodule Raxol.LiveView.TerminalBridge do
     lines_html =
       buffer.lines
       |> Enum.with_index()
-      |> Enum.map(fn {line, y} ->
+      |> Enum.map_join("\n", fn {line, y} ->
         render_line(line, y, %{
           css_prefix: css_prefix,
           use_inline: use_inline,
@@ -122,7 +122,6 @@ defmodule Raxol.LiveView.TerminalBridge do
           cursor_style: cursor_style
         })
       end)
-      |> Enum.join("\n")
 
     """
     <pre class="#{terminal_class}#{theme_class}" role="log" aria-live="polite" aria-atomic="false">#{lines_html}</pre>
@@ -150,10 +149,9 @@ defmodule Raxol.LiveView.TerminalBridge do
       old_buffer.lines
       |> Enum.zip(new_buffer.lines)
       |> Enum.with_index()
-      |> Enum.map(fn {{old_line, new_line}, y} ->
+      |> Enum.map_join("\n", fn {{old_line, new_line}, y} ->
         render_line_with_diff(old_line, new_line, y, css_prefix)
       end)
-      |> Enum.join("\n")
 
     """
     <pre class="#{css_prefix}-terminal #{css_prefix}-diff">#{lines_html}</pre>
@@ -173,11 +171,10 @@ defmodule Raxol.LiveView.TerminalBridge do
     cells_html =
       line.cells
       |> Enum.with_index()
-      |> Enum.map(fn {cell, x} ->
+      |> Enum.map_join("", fn {cell, x} ->
         is_cursor = show_cursor && cursor_pos == {x, y}
         render_cell(cell, is_cursor, cursor_style, css_prefix, use_inline)
       end)
-      |> Enum.join("")
 
     ~s(<span class="#{css_prefix}-line" data-line="#{y}">#{cells_html}</span>)
   end
@@ -194,13 +191,12 @@ defmodule Raxol.LiveView.TerminalBridge do
       old_line.cells
       |> Enum.zip(new_line.cells)
       |> Enum.with_index()
-      |> Enum.map(fn {{old_cell, new_cell}, _x} ->
+      |> Enum.map_join("", fn {{old_cell, new_cell}, _x} ->
         changed = old_cell != new_cell
         diff_class = if changed, do: " #{css_prefix}-diff-changed", else: ""
         cell_html = render_cell(new_cell, false, :block, css_prefix, false)
         String.replace(cell_html, "class=\"", "class=\"#{diff_class}")
       end)
-      |> Enum.join("")
 
     ~s(<span class="#{css_prefix}-line" data-line="#{y}">#{cells_html}</span>)
   end
@@ -247,34 +243,34 @@ defmodule Raxol.LiveView.TerminalBridge do
     # Text attributes
     classes =
       if Map.get(style, :bold),
-        do: classes ++ ["#{css_prefix}-bold"],
+        do: ["#{css_prefix}-bold" | classes],
         else: classes
 
     classes =
       if Map.get(style, :italic),
-        do: classes ++ ["#{css_prefix}-italic"],
+        do: ["#{css_prefix}-italic" | classes],
         else: classes
 
     classes =
       if Map.get(style, :underline),
-        do: classes ++ ["#{css_prefix}-underline"],
+        do: ["#{css_prefix}-underline" | classes],
         else: classes
 
     classes =
       if Map.get(style, :reverse),
-        do: classes ++ ["#{css_prefix}-reverse"],
+        do: ["#{css_prefix}-reverse" | classes],
         else: classes
 
     classes =
       if Map.get(style, :strikethrough),
-        do: classes ++ ["#{css_prefix}-strikethrough"],
+        do: ["#{css_prefix}-strikethrough" | classes],
         else: classes
 
     # Foreground color
     classes =
       case Map.get(style, :fg_color) do
         nil -> classes
-        color when is_atom(color) -> classes ++ ["#{css_prefix}-fg-#{color}"]
+        color when is_atom(color) -> ["#{css_prefix}-fg-#{color}" | classes]
         _ -> classes
       end
 
@@ -282,11 +278,13 @@ defmodule Raxol.LiveView.TerminalBridge do
     classes =
       case Map.get(style, :bg_color) do
         nil -> classes
-        color when is_atom(color) -> classes ++ ["#{css_prefix}-bg-#{color}"]
+        color when is_atom(color) -> ["#{css_prefix}-bg-#{color}" | classes]
         _ -> classes
       end
 
-    Enum.join(classes, " ")
+    classes
+    |> Enum.reverse()
+    |> Enum.join(" ")
   end
 
   @doc """
@@ -306,22 +304,22 @@ defmodule Raxol.LiveView.TerminalBridge do
     # Text attributes
     styles =
       if Map.get(style, :bold),
-        do: styles ++ ["font-weight: bold"],
+        do: ["font-weight: bold" | styles],
         else: styles
 
     styles =
       if Map.get(style, :italic),
-        do: styles ++ ["font-style: italic"],
+        do: ["font-style: italic" | styles],
         else: styles
 
     styles =
       if Map.get(style, :underline),
-        do: styles ++ ["text-decoration: underline"],
+        do: ["text-decoration: underline" | styles],
         else: styles
 
     styles =
       if Map.get(style, :strikethrough),
-        do: styles ++ ["text-decoration: line-through"],
+        do: ["text-decoration: line-through" | styles],
         else: styles
 
     # Foreground color
@@ -331,17 +329,19 @@ defmodule Raxol.LiveView.TerminalBridge do
           styles
 
         {r, g, b} ->
-          styles ++ ["color: rgb(#{r}, #{g}, #{b})"]
+          ["color: rgb(#{r}, #{g}, #{b})" | styles]
 
         n when is_integer(n) ->
           rgb = color_256_to_rgb(n)
 
-          styles ++
-            ["color: rgb(#{elem(rgb, 0)}, #{elem(rgb, 1)}, #{elem(rgb, 2)})"]
+          [
+            "color: rgb(#{elem(rgb, 0)}, #{elem(rgb, 1)}, #{elem(rgb, 2)})"
+            | styles
+          ]
 
         color when is_atom(color) ->
           hex = named_color_to_hex(color)
-          styles ++ ["color: #{hex}"]
+          ["color: #{hex}" | styles]
       end
 
     # Background color
@@ -351,22 +351,24 @@ defmodule Raxol.LiveView.TerminalBridge do
           styles
 
         {r, g, b} ->
-          styles ++ ["background-color: rgb(#{r}, #{g}, #{b})"]
+          ["background-color: rgb(#{r}, #{g}, #{b})" | styles]
 
         n when is_integer(n) ->
           rgb = color_256_to_rgb(n)
 
-          styles ++
-            [
-              "background-color: rgb(#{elem(rgb, 0)}, #{elem(rgb, 1)}, #{elem(rgb, 2)})"
-            ]
+          [
+            "background-color: rgb(#{elem(rgb, 0)}, #{elem(rgb, 1)}, #{elem(rgb, 2)})"
+            | styles
+          ]
 
         color when is_atom(color) ->
           hex = named_color_to_hex(color)
-          styles ++ ["background-color: #{hex}"]
+          ["background-color: #{hex}" | styles]
       end
 
-    Enum.join(styles, "; ")
+    styles
+    |> Enum.reverse()
+    |> Enum.join("; ")
   end
 
   # HTML escaping

@@ -214,7 +214,7 @@ defmodule Raxol.Themes do
         case Jason.decode(content) do
           {:ok, theme_data} ->
             theme = convert_theme_data(theme_data)
-            validate_theme(theme)
+            _ = validate_theme(theme)
             {:ok, theme}
 
           {:error, reason} ->

@@ -8,7 +8,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   @doc """
   Moves the cursor in the specified direction within the multi-line input.
   """
-  @spec move_cursor(MultiLineInput.t(), :left | :right | :up | :down) ::
+  @spec move_cursor(
+          MultiLineInput.t(),
+          :left | :right | :up | :down | :word_left | :word_right
+        ) ::
           MultiLineInput.t()
   def move_cursor(state, direction) do
     {row, col} = state.cursor_pos
@@ -18,6 +21,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
       :right -> move_cursor_right(state, row, col)
       :up -> move_cursor_up(state, row, col)
       :down -> move_cursor_down(state, row, col)
+      :word_left -> move_cursor_word_left(state, row, col)
+      :word_right -> move_cursor_word_right(state, row, col)
     end
   end
 
@@ -75,6 +80,56 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     else
       state
     end
+  end
+
+  defp move_cursor_word_left(state, row, col) do
+    current_line = Enum.at(state.lines, row, "")
+    before_cursor = String.slice(current_line, 0, col)
+
+    case find_word_boundary_left(before_cursor) do
+      0 when row > 0 ->
+        # Move to end of previous line
+        prev_line = Enum.at(state.lines, row - 1, "")
+        %{state | cursor_pos: {row - 1, String.length(prev_line)}}
+
+      new_col ->
+        %{state | cursor_pos: {row, new_col}}
+    end
+  end
+
+  defp move_cursor_word_right(state, row, col) do
+    current_line = Enum.at(state.lines, row, "")
+    line_length = String.length(current_line)
+    after_cursor = String.slice(current_line, col, line_length - col)
+
+    case find_word_boundary_right(after_cursor) do
+      offset
+      when col + offset >= line_length and row < length(state.lines) - 1 ->
+        # Move to start of next line
+        %{state | cursor_pos: {row + 1, 0}}
+
+      offset ->
+        %{state | cursor_pos: {row, col + offset}}
+    end
+  end
+
+  defp find_word_boundary_left(text) do
+    # Find start of previous word
+    text
+    |> String.reverse()
+    |> String.replace(~r/^\s*/, "")
+    |> String.replace(~r/^\S*/, "")
+    |> String.length()
+    |> then(&(String.length(text) - &1))
+  end
+
+  defp find_word_boundary_right(text) do
+    # Find end of current word or start of next word
+    text
+    |> String.replace(~r/^\S*/, "")
+    |> String.replace(~r/^\s*/, "")
+    |> String.length()
+    |> then(&(String.length(text) - &1))
   end
 
   @doc """

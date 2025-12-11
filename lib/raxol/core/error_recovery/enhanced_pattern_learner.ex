@@ -143,12 +143,13 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
   @impl true
   def init_manager(_opts) do
     # Create ETS table for fast pattern lookups
-    :ets.new(@table_name, [
-      :named_table,
-      :public,
-      :set,
-      {:read_concurrency, true}
-    ])
+    _ =
+      :ets.new(@table_name, [
+        :named_table,
+        :public,
+        :set,
+        {:read_concurrency, true}
+      ])
 
     # Ensure storage directory exists
     File.mkdir_p!(@learning_storage)
@@ -225,7 +226,7 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
     }
 
     # Persist periodically
-    maybe_persist_learning_data(new_state)
+    _ = maybe_persist_learning_data(new_state)
 
     {:noreply, new_state}
   end
@@ -516,10 +517,7 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
           acc
 
         strategy_outcomes ->
-          strategy_scores =
-            calculate_strategy_scores_from_outcomes(strategy_outcomes)
-
-          Map.merge(acc, strategy_scores, fn _k, v1, v2 -> (v1 + v2) / 2 end)
+          merge_strategy_scores(acc, strategy_outcomes)
       end
     end)
   end
@@ -820,5 +818,12 @@ defmodule Raxol.Core.ErrorRecovery.EnhancedPatternLearner do
       {:error, reason} ->
         Log.error("Failed to persist recovery learning data: #{reason}")
     end
+  end
+
+  defp merge_strategy_scores(acc, strategy_outcomes) do
+    strategy_scores =
+      calculate_strategy_scores_from_outcomes(strategy_outcomes)
+
+    Map.merge(acc, strategy_scores, fn _k, v1, v2 -> (v1 + v2) / 2 end)
   end
 end

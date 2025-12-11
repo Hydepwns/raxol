@@ -111,6 +111,11 @@ defmodule Raxol.Terminal.Integration do
     updated_buffer_manager =
       case state.buffer_manager do
         buffer_manager when is_pid(buffer_manager) ->
+          # For PID-based managers, just return it as-is
+          # The clearing would need to be done via GenServer.call
+          buffer_manager
+
+        %Raxol.Terminal.ScreenBuffer.Manager{} = buffer_manager ->
           Raxol.Terminal.ScreenBuffer.Manager.clear(buffer_manager)
 
         buffer_manager when is_map(buffer_manager) ->

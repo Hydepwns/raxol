@@ -180,9 +180,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
     Enum.reduce(plugins, command_table, fn plugin, table ->
       case plugin do
         %{commands: commands} when is_list(commands) ->
-          Enum.reduce(commands, table, fn cmd, tbl ->
-            Map.put(tbl, cmd.name, cmd)
-          end)
+          add_plugin_commands_to_table(commands, table)
 
         _ ->
           table
@@ -204,5 +202,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
       _ ->
         table
     end
+  end
+
+  defp add_plugin_commands_to_table(commands, table) do
+    Enum.reduce(commands, table, fn cmd, tbl ->
+      Map.put(tbl, cmd.name, cmd)
+    end)
   end
 end

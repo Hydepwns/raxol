@@ -148,55 +148,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
       component ->
         case safe_component_update(component, message) do
           {:ok, result} ->
-            case result do
-              {new_state, commands} when is_map(new_state) ->
-                # Store updated state
-                state = put_in(state.components[component_id].state, new_state)
-
-                # Process any commands from update
-                state = process_commands(commands, component_id, state)
-
-                # Queue re-render if state changed
-                state =
-                  queue_render_if_changed(
-                    state,
-                    component_id,
-                    new_state,
-                    component.state
-                  )
-
-                # Send component_updated message if runtime_pid is set
-                send_component_updated_if_runtime_pid(
-                  state.runtime_pid,
-                  component_id
-                )
-
-                {:reply, {:ok, new_state}, state}
-
-              new_state when is_map(new_state) ->
-                # Handle case where update returns just state (no commands)
-                state = put_in(state.components[component_id].state, new_state)
-
-                # Queue re-render if state changed
-                state =
-                  queue_render_if_changed(
-                    state,
-                    component_id,
-                    new_state,
-                    component.state
-                  )
-
-                # Send component_updated message if runtime_pid is set
-                send_component_updated_if_runtime_pid(
-                  state.runtime_pid,
-                  component_id
-                )
-
-                {:reply, {:ok, new_state}, state}
-
-              _ ->
-                {:reply, {:error, :invalid_component_return}, state}
-            end
+            process_update_result(result, component_id, component, state)
 
           {:error, reason} ->
             Raxol.Core.Runtime.Log.warning_with_context(
@@ -273,32 +225,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         # Use safe update logic
         case safe_component_update(component, message) do
           {:ok, result} ->
-            case result do
-              {new_state, _commands} when is_map(new_state) ->
-                # Update component state and queue re-render
-                state =
-                  update_component_state_and_queue_render(
-                    state,
-                    component_id,
-                    new_state
-                  )
-
-                {:noreply, state}
-
-              new_state when is_map(new_state) ->
-                # Handle case where update returns just state (no commands)
-                state =
-                  update_component_state_and_queue_render(
-                    state,
-                    component_id,
-                    new_state
-                  )
-
-                {:noreply, state}
-
-              _ ->
-                {:noreply, state}
-            end
+            process_scheduled_update_result(result, component_id, state)
 
           {:error, reason} ->
             Raxol.Core.Runtime.Log.warning_with_context(
@@ -548,11 +475,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     state
   end
 
-  @spec handle_subscription_command(any(), String.t() | integer(), map()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_subscription_command(any(), any(), map()) :: map()
   defp handle_subscription_command(events, component_id, state) do
     {:ok, sub_id} =
       Subscription.start(%Subscription{type: :events, data: events}, %{
@@ -562,11 +485,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     put_in(state.subscriptions[sub_id], component_id)
   end
 
-  @spec handle_unsubscribe_command(String.t() | integer(), map()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_unsubscribe_command(any(), map()) :: map()
   defp handle_unsubscribe_command(sub_id, state) do
     case Subscription.stop(sub_id) do
       :ok ->
@@ -755,5 +674,86 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         ) :: any()
   defp send_component_queued_if_runtime_pid(runtime_pid, component_id) do
     send(runtime_pid, {:component_queued_for_render, component_id})
+  end
+
+  defp process_update_result(result, component_id, component, state) do
+    case result do
+      {new_state, commands} when is_map(new_state) ->
+        # Store updated state
+        state = put_in(state.components[component_id].state, new_state)
+
+        # Process any commands from update
+        state = process_commands(commands, component_id, state)
+
+        # Queue re-render if state changed
+        state =
+          queue_render_if_changed(
+            state,
+            component_id,
+            new_state,
+            component.state
+          )
+
+        # Send component_updated message if runtime_pid is set
+        send_component_updated_if_runtime_pid(
+          state.runtime_pid,
+          component_id
+        )
+
+        {:reply, {:ok, new_state}, state}
+
+      new_state when is_map(new_state) ->
+        # Handle case where update returns just state (no commands)
+        state = put_in(state.components[component_id].state, new_state)
+
+        # Queue re-render if state changed
+        state =
+          queue_render_if_changed(
+            state,
+            component_id,
+            new_state,
+            component.state
+          )
+
+        # Send component_updated message if runtime_pid is set
+        send_component_updated_if_runtime_pid(
+          state.runtime_pid,
+          component_id
+        )
+
+        {:reply, {:ok, new_state}, state}
+
+      _ ->
+        {:reply, {:error, :invalid_component_return}, state}
+    end
+  end
+
+  defp process_scheduled_update_result(result, component_id, state) do
+    case result do
+      {new_state, _commands} when is_map(new_state) ->
+        # Update component state and queue re-render
+        state =
+          update_component_state_and_queue_render(
+            state,
+            component_id,
+            new_state
+          )
+
+        {:noreply, state}
+
+      new_state when is_map(new_state) ->
+        # Handle case where update returns just state (no commands)
+        state =
+          update_component_state_and_queue_render(
+            state,
+            component_id,
+            new_state
+          )
+
+        {:noreply, state}
+
+      _ ->
+        {:noreply, state}
+    end
   end
 end

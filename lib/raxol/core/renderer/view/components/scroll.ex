@@ -130,7 +130,7 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     0
   end
 
-  @spec apply_viewport(any(), String.t(), any(), any()) :: any()
+  @spec apply_viewport(any(), any(), {any(), any()}, {any(), any()}) :: any()
   defp apply_viewport(
          children,
          _content_size,

@@ -29,7 +29,7 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
   @doc """
   Records a metric value.
   """
-  @spec record_metric(atom(), atom(), number(), keyword()) :: :ok
+  @spec record_metric(atom(), atom(), number() | map(), keyword()) :: :ok
   def record_metric(name, type, value, opts \\ []) do
     GenServer.cast(__MODULE__, {:record_metric, name, type, value, opts})
   end
@@ -104,7 +104,7 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
   @doc """
   Records a resource metric.
   """
-  @spec record_resource(atom(), number()) :: :ok
+  @spec record_resource(atom(), number() | map()) :: :ok
   def record_resource(name, value) do
     record_metric(name, :resource, value)
   end
@@ -112,7 +112,7 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
   @doc """
   Records a resource metric with tags.
   """
-  @spec record_resource(atom(), number(), keyword()) :: :ok
+  @spec record_resource(atom(), number() | map(), keyword()) :: :ok
   def record_resource(name, value, opts) do
     record_metric(name, :resource, value, opts)
   end

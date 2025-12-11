@@ -274,15 +274,7 @@ defmodule Raxol.Core.Performance.Optimizer do
           # Fallback to simple connection management
           case get_or_create_connection(pool_name) do
             {:ok, conn} ->
-              case Raxol.Core.ErrorHandling.safe_call(fn -> fun.(conn) end) do
-                {:ok, result} ->
-                  return_connection(pool_name, conn)
-                  result
-
-                {:error, reason} ->
-                  return_connection(pool_name, conn)
-                  {:error, reason}
-              end
+              execute_with_connection(pool_name, conn, fun)
 
             {:error, reason} ->
               Log.warning(
@@ -554,5 +546,17 @@ defmodule Raxol.Core.Performance.Optimizer do
       absolute: worst - best,
       percentage: (worst - best) / worst * 100
     }
+  end
+
+  defp execute_with_connection(pool_name, conn, fun) do
+    case Raxol.Core.ErrorHandling.safe_call(fn -> fun.(conn) end) do
+      {:ok, result} ->
+        return_connection(pool_name, conn)
+        result
+
+      {:error, reason} ->
+        return_connection(pool_name, conn)
+        {:error, reason}
+    end
   end
 end

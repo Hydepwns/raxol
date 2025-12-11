@@ -133,7 +133,7 @@ defmodule Raxol.Terminal.Screen do
       iex> get_in(buffer.content, [0])
       %{}
   """
-  @spec clear_line(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec clear_line(map(), non_neg_integer()) :: map()
   def clear_line(buffer, line) do
     ScreenBuffer.clear_line(buffer, line, TextFormatting.new())
   end
@@ -157,7 +157,7 @@ defmodule Raxol.Terminal.Screen do
       iex> buffer.scroll_region
       {0, 23}
   """
-  @spec insert_lines(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec insert_lines(map(), non_neg_integer()) :: map()
   def insert_lines(buffer, count) do
     ScreenBuffer.insert_lines(buffer, count)
   end
@@ -181,7 +181,7 @@ defmodule Raxol.Terminal.Screen do
       iex> buffer.scroll_region
       {0, 23}
   """
-  @spec delete_lines(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec delete_lines(map(), non_neg_integer()) :: map()
   def delete_lines(buffer, count) do
     ScreenBuffer.delete_lines(buffer, count)
   end
@@ -205,7 +205,7 @@ defmodule Raxol.Terminal.Screen do
       iex> buffer.cursor
       {5, 0}
   """
-  @spec insert_chars(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec insert_chars(map(), non_neg_integer()) :: map()
   def insert_chars(buffer, count) do
     ScreenBuffer.insert_chars(buffer, count)
   end
@@ -213,7 +213,7 @@ defmodule Raxol.Terminal.Screen do
   @doc """
   Deletes characters at the current cursor position.
   """
-  @spec delete_chars(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec delete_chars(map(), non_neg_integer()) :: map()
   def delete_chars(buffer, count) do
     ScreenBuffer.delete_chars(buffer, count)
   end
@@ -221,7 +221,7 @@ defmodule Raxol.Terminal.Screen do
   @doc """
   Erases characters at the current cursor position.
   """
-  @spec erase_chars(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec erase_chars(map(), non_neg_integer()) :: map()
   def erase_chars(buffer, count) do
     ScreenBuffer.erase_chars(buffer, count)
   end

@@ -87,7 +87,7 @@ defmodule Raxol.Core.Renderer.View.Validation do
 
   # Private validation functions
 
-  @spec validate_size_option(keyword()) :: {:ok, any()} | {:error, any()}
+  @spec validate_size_option(keyword()) :: :ok
   defp validate_size_option(opts) do
     handle_size_validation(Keyword.has_key?(opts, :size), opts)
   end
@@ -117,7 +117,7 @@ defmodule Raxol.Core.Renderer.View.Validation do
     raise ArgumentError, "Size must be a tuple of two positive integers"
   end
 
-  @spec validate_position_option(keyword()) :: {:ok, any()} | {:error, any()}
+  @spec validate_position_option(keyword()) :: :ok
   defp validate_position_option(opts) do
     handle_position_validation(Keyword.has_key?(opts, :position), opts)
   end
@@ -147,8 +147,7 @@ defmodule Raxol.Core.Renderer.View.Validation do
     raise ArgumentError, "Position must be a tuple of two integers"
   end
 
-  @spec validate_container_dimensions(keyword()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_container_dimensions(keyword()) :: :ok
   defp validate_container_dimensions(opts) do
     has_dimensions =
       Keyword.has_key?(opts, :width) or Keyword.has_key?(opts, :height)

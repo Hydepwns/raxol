@@ -118,27 +118,22 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   @impl true
   def init_manager(opts) do
-    case {create_initial_emulator_state(opts), build_config(opts)} do
-      {{:ok, initial_state}, {:ok, config}} ->
-        state = %__MODULE__{
-          emulator_state: initial_state,
-          error_stats: init_error_stats(),
-          recovery_state: :healthy,
-          input_buffer: <<>>,
-          last_checkpoint: initial_state,
-          config: config
-        }
+    {:ok, initial_state} = create_initial_emulator_state(opts)
+    {:ok, config} = build_config(opts)
 
-        # Schedule periodic health checks
-        schedule_health_check()
+    state = %__MODULE__{
+      emulator_state: initial_state,
+      error_stats: init_error_stats(),
+      recovery_state: :healthy,
+      input_buffer: <<>>,
+      last_checkpoint: initial_state,
+      config: config
+    }
 
-        {:ok, state}
+    # Schedule periodic health checks
+    schedule_health_check()
 
-      {_, _} ->
-        Log.error("Failed to initialize safe emulator")
-        # Start with minimal fallback state
-        {:ok, build_fallback_state()}
-    end
+    {:ok, state}
   end
 
   @impl true
@@ -235,19 +230,20 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   @impl true
   def handle_manager_call({:restore, checkpoint}, _from, state) do
-    with {:ok, restored_state} <- perform_restore(checkpoint) do
-      new_state = %{
-        state
-        | emulator_state: restored_state,
-          recovery_state: :restored
-      }
+    case perform_restore(checkpoint) do
+      {:ok, restored_state} ->
+        new_state = %{
+          state
+          | emulator_state: restored_state,
+            recovery_state: :restored
+        }
 
-      Telemetry.record_checkpoint_restored(%{
-        checkpoint_size: map_size(checkpoint)
-      })
+        Telemetry.record_checkpoint_restored(%{
+          checkpoint_size: map_size(checkpoint)
+        })
 
-      {:reply, {:ok, :restored}, new_state}
-    else
+        {:reply, {:ok, :restored}, new_state}
+
       {:error, reason} ->
         Telemetry.record_error(:restore_error, reason)
         {:reply, {:error, reason}, state}
@@ -281,13 +277,14 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   def handle_manager_info({:retry_processing, input}, state) do
-    with {:ok, _result} <- process_with_retry(input, state) do
-      Log.info("Retry successful for buffered input")
-      new_state = %{state | input_buffer: <<>>, recovery_state: :healthy}
-      {:noreply, new_state}
-    else
-      {:error, reason} ->
-        Log.error("Retry failed, discarding input: #{inspect(reason)}")
+    case process_with_retry(input, state) do
+      {:ok, _result} ->
+        Log.info("Retry successful for buffered input")
+        new_state = %{state | input_buffer: <<>>, recovery_state: :healthy}
+        {:noreply, new_state}
+
+      {:error, _type, message, _context} ->
+        Log.error("Retry failed, discarding input: #{inspect(message)}")
         new_state = %{state | input_buffer: <<>>, recovery_state: :degraded}
         {:noreply, new_state}
     end
@@ -358,17 +355,21 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp safe_call_with_timeout(pid, message) do
-    with true <- Process.alive?(pid) do
-      task =
-        Task.async(fn -> GenServer.call(pid, message, @processing_timeout) end)
+    case Process.alive?(pid) do
+      true ->
+        task =
+          Task.async(fn ->
+            GenServer.call(pid, message, @processing_timeout)
+          end)
 
-      case Task.yield(task, @processing_timeout) || Task.shutdown(task) do
-        {:ok, result} -> {:ok, result}
-        nil -> {:error, :timeout}
-        {:exit, reason} -> {:error, {:exit, reason}}
-      end
-    else
-      false -> {:error, :process_dead}
+        case Task.yield(task, @processing_timeout) || Task.shutdown(task) do
+          {:ok, result} -> {:ok, result}
+          nil -> {:error, :timeout}
+          {:exit, reason} -> {:error, {:exit, reason}}
+        end
+
+      false ->
+        {:error, :process_dead}
     end
   end
 
@@ -383,17 +384,19 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   defp validate_resize_dimensions(_width, _height), do: {:ok, :valid}
 
   defp safe_genserver_call(pid, message) do
-    with true <- Process.alive?(pid) do
-      Raxol.Core.ErrorHandling.safe_call(fn ->
-        GenServer.call(pid, message)
-      end)
-      |> case do
-        {:ok, result} -> {:ok, result}
-        {:error, {:exit, reason}} -> {:error, {:genserver_exit, reason}}
-        {:error, reason} -> {:error, {:call_exception, reason}}
-      end
-    else
-      false -> {:error, :process_dead}
+    case Process.alive?(pid) do
+      true ->
+        Raxol.Core.ErrorHandling.safe_call(fn ->
+          GenServer.call(pid, message)
+        end)
+        |> case do
+          {:ok, result} -> {:ok, result}
+          {:error, {:exit, reason}} -> {:error, {:genserver_exit, reason}}
+          {:error, reason} -> {:error, {:call_exception, reason}}
+        end
+
+      false ->
+        {:error, :process_dead}
     end
   end
 
@@ -527,17 +530,6 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
       errors_by_type: %{},
       last_error: nil,
       recovery_attempts: 0
-    }
-  end
-
-  defp build_fallback_state do
-    %__MODULE__{
-      emulator_state: %{width: 80, height: 24, buffer: []},
-      error_stats: init_error_stats(),
-      recovery_state: :fallback,
-      input_buffer: <<>>,
-      last_checkpoint: nil,
-      config: %{}
     }
   end
 

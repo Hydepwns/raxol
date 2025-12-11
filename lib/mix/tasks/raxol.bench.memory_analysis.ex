@@ -337,21 +337,13 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
   end
 
   defp update_cell(buffer, row, col, char) when is_list(buffer) do
-    if row <= length(buffer) do
-      buffer_row = Enum.at(buffer, row - 1)
+    case row <= length(buffer) do
+      true ->
+        buffer_row = Enum.at(buffer, row - 1)
+        update_cell_in_row(buffer, buffer_row, row, col, char)
 
-      if col <= length(buffer_row) do
-        updated_row =
-          List.update_at(buffer_row, col - 1, fn cell ->
-            %{cell | char: char}
-          end)
-
-        List.update_at(buffer, row - 1, fn _ -> updated_row end)
-      else
+      false ->
         buffer
-      end
-    else
-      buffer
     end
   end
 
@@ -391,17 +383,7 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
     highlighted =
       Enum.map(file_content, fn line ->
         tokens = String.split(line, " ")
-
-        Enum.map(tokens, fn token ->
-          color =
-            case token do
-              "def" -> :blue
-              "do:" -> :green
-              _ -> :white
-            end
-
-          %{text: token, color: color}
-        end)
+        Enum.map(tokens, &colorize_token/1)
       end)
 
     # Simulate editing operations
@@ -525,5 +507,31 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
 
   defp format_bytes(bytes) do
     "#{bytes} B"
+  end
+
+  defp update_cell_in_row(buffer, buffer_row, row, col, char) do
+    case col <= length(buffer_row) do
+      true ->
+        updated_row =
+          List.update_at(buffer_row, col - 1, fn cell ->
+            %{cell | char: char}
+          end)
+
+        List.update_at(buffer, row - 1, fn _ -> updated_row end)
+
+      false ->
+        buffer
+    end
+  end
+
+  defp colorize_token(token) do
+    color =
+      case token do
+        "def" -> :blue
+        "do:" -> :green
+        _ -> :white
+      end
+
+    %{text: token, color: color}
   end
 end

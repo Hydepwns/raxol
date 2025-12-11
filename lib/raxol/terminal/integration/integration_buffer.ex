@@ -9,6 +9,8 @@ defmodule Raxol.Terminal.Integration.Buffer do
     Integration.State
   }
 
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+
   @doc """
   Writes text to the terminal buffer.
   """
@@ -16,14 +18,27 @@ defmodule Raxol.Terminal.Integration.Buffer do
     # Update the buffer manager with the new text
     {:ok, buffer_manager} = Manager.write(state.buffer_manager, text)
 
-    # Update the cursor position
-    cursor_manager = Manager.update_position(state.cursor_manager, text)
+    # Update the cursor position - handle different cursor_manager types
+    cursor_manager =
+      case state.cursor_manager do
+        nil ->
+          nil
+
+        cursor when is_map(cursor) ->
+          # If it's a Cursor.Manager struct, use its update function
+          {x, y} = CursorManager.get_position(cursor)
+          CursorManager.set_position(cursor, {x + String.length(text), y})
+
+        cursor ->
+          # For other types, return as-is
+          cursor
+      end
 
     # Update the state
-    State.update(state, %{
+    State.update(state,
       buffer_manager: buffer_manager,
       cursor_manager: cursor_manager
-    })
+    )
   end
 
   @doc """
@@ -33,14 +48,24 @@ defmodule Raxol.Terminal.Integration.Buffer do
     # Clear the buffer manager
     buffer_manager = Manager.clear(state.buffer_manager)
 
-    # Reset the cursor position
-    cursor_manager = Manager.reset_position(state.cursor_manager)
+    # Reset the cursor position - handle different cursor_manager types
+    cursor_manager =
+      case state.cursor_manager do
+        nil ->
+          nil
+
+        cursor when is_map(cursor) ->
+          CursorManager.set_position(cursor, {0, 0})
+
+        cursor ->
+          cursor
+      end
 
     # Update the state
-    State.update(state, %{
+    State.update(state,
       buffer_manager: buffer_manager,
       cursor_manager: cursor_manager
-    })
+    )
   end
 
   @doc """
@@ -50,26 +75,39 @@ defmodule Raxol.Terminal.Integration.Buffer do
     # Update the scroll buffer
     scroll_buffer = Scroll.scroll(state.scroll_buffer, direction, amount)
 
-    # Update the buffer manager's visible region
+    # Update the buffer manager's visible region (expects non_neg_integer, not region)
+    # Scroll.get_visible_region always returns {offset, height}
+    {scroll_offset, _height} = Scroll.get_visible_region(scroll_buffer)
+
     buffer_manager =
       Manager.update_visible_region(
         state.buffer_manager,
-        Scroll.get_visible_region(scroll_buffer)
+        scroll_offset
       )
 
     # Update the state
-    State.update(state, %{
+    State.update(state,
       buffer_manager: buffer_manager,
       scroll_buffer: scroll_buffer
-    })
+    )
   end
 
   @doc """
   Moves the cursor to a specific position.
   """
   def move_cursor(%State{} = state, x, y) do
-    # Update the cursor position
-    cursor_manager = Manager.move_to(state.cursor_manager, x, y)
+    # Update the cursor position - handle different cursor_manager types
+    cursor_manager =
+      case state.cursor_manager do
+        nil ->
+          nil
+
+        cursor when is_map(cursor) ->
+          CursorManager.set_position(cursor, {x, y})
+
+        cursor ->
+          cursor
+      end
 
     # Update the state
     State.update(state, cursor_manager: cursor_manager)
@@ -79,7 +117,16 @@ defmodule Raxol.Terminal.Integration.Buffer do
   Gets the current cursor position.
   """
   def get_cursor_position(%State{} = state) do
-    Manager.get_position(state.cursor_manager)
+    case state.cursor_manager do
+      nil ->
+        {0, 0}
+
+      cursor when is_map(cursor) ->
+        CursorManager.get_position(cursor)
+
+      _cursor ->
+        {0, 0}
+    end
   end
 
   @doc """
@@ -120,19 +167,28 @@ defmodule Raxol.Terminal.Integration.Buffer do
     # Update the scroll buffer
     scroll_buffer = Scroll.resize(state.scroll_buffer, height)
 
-    # Update the cursor position if needed
+    # Constrain cursor position to new dimensions
     cursor_manager =
-      Manager.constrain_position(
-        state.cursor_manager,
-        width,
-        height
-      )
+      case state.cursor_manager do
+        nil ->
+          nil
+
+        cursor when is_map(cursor) ->
+          {x, y} = CursorManager.get_position(cursor)
+          # Constrain to new bounds
+          new_x = max(0, min(x, width - 1))
+          new_y = max(0, min(y, height - 1))
+          CursorManager.set_position(cursor, {new_x, new_y})
+
+        cursor ->
+          cursor
+      end
 
     # Update the state
-    State.update(state, %{
+    State.update(state,
       buffer_manager: buffer_manager,
       scroll_buffer: scroll_buffer,
       cursor_manager: cursor_manager
-    })
+    )
   end
 end

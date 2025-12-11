@@ -122,7 +122,7 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
     # Test memory manager with heavy allocations
     {:ok, manager} = Raxol.Terminal.MemoryManager.start_link()
 
-    allocate_memory_chunks(100, 10_000)
+    _ = allocate_memory_chunks(100, 10_000)
 
     GenServer.stop(manager)
     :ok

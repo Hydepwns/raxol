@@ -11,10 +11,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   Sets the scroll region.
   """
   @spec set_scroll_region(
-          Core.t(),
+          map(),
           non_neg_integer() | nil,
           non_neg_integer() | nil
-        ) :: Core.t()
+        ) :: map()
   def set_scroll_region(buffer, nil, nil) do
     %{buffer | scroll_region: nil}
   end
@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Gets the effective scroll region.
   """
-  @spec get_scroll_region(Core.t()) :: {non_neg_integer(), non_neg_integer()}
+  @spec get_scroll_region(map()) :: {non_neg_integer(), non_neg_integer()}
   def get_scroll_region(buffer) do
     case buffer.scroll_region do
       nil -> {0, buffer.height - 1}
@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Scrolls the buffer or scroll region up by n lines.
   """
-  @spec scroll_up(Core.t(), non_neg_integer()) :: Core.t()
+  @spec scroll_up(map(), non_neg_integer()) :: map()
   def scroll_up(buffer, n \\ 1) when n > 0 do
     {top, bottom} = get_scroll_region(buffer)
     scroll_region_up(buffer, top, bottom, n)
@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Scrolls the buffer or scroll region down by n lines.
   """
-  @spec scroll_down(Core.t(), non_neg_integer()) :: Core.t()
+  @spec scroll_down(map(), non_neg_integer()) :: map()
   def scroll_down(buffer, n \\ 1) when n > 0 do
     {top, bottom} = get_scroll_region(buffer)
     scroll_region_down(buffer, top, bottom, n)
@@ -59,11 +59,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   Scrolls the specified region up by n lines.
   """
   @spec scroll_up(
-          Core.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer()
-        ) :: Core.t()
+        ) :: map()
   def scroll_up(buffer, top, bottom, lines) do
     scroll_region_up(buffer, top, bottom, lines)
   end
@@ -72,11 +72,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   Scrolls the specified region down by n lines.
   """
   @spec scroll_down(
-          Core.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer()
-        ) :: Core.t()
+        ) :: map()
   def scroll_down(buffer, top, bottom, lines) do
     scroll_region_down(buffer, top, bottom, lines)
   end
@@ -85,11 +85,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   Scrolls up within a specific region.
   """
   @spec scroll_region_up(
-          Core.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer()
-        ) :: Core.t()
+        ) :: map()
   def scroll_region_up(buffer, top, bottom, n) when n > 0 do
     n = min(n, bottom - top + 1)
 
@@ -121,11 +121,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   Scrolls down within a specific region.
   """
   @spec scroll_region_down(
-          Core.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer()
-        ) :: Core.t()
+        ) :: map()
   def scroll_region_down(buffer, top, bottom, n) when n > 0 do
     n = min(n, bottom - top + 1)
 
@@ -150,7 +150,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Saves lines to scrollback buffer.
   """
-  @spec save_to_scrollback(Core.t(), list(list(Cell.t()))) :: Core.t()
+  @spec save_to_scrollback(map(), list(list(Cell.t()))) :: map()
   def save_to_scrollback(buffer, lines) do
     new_scrollback = lines ++ buffer.scrollback
     trimmed_scrollback = Enum.take(new_scrollback, buffer.scrollback_limit)
@@ -160,7 +160,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Clears the scrollback buffer.
   """
-  @spec clear_scrollback(Core.t()) :: Core.t()
+  @spec clear_scrollback(map()) :: map()
   def clear_scrollback(buffer) do
     %{buffer | scrollback: []}
   end
@@ -168,7 +168,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Gets scrollback lines.
   """
-  @spec get_scrollback(Core.t(), non_neg_integer() | nil) ::
+  @spec get_scrollback(map(), non_neg_integer() | nil) ::
           list(list(Cell.t()))
   def get_scrollback(buffer, limit \\ nil) do
     case limit do
@@ -180,7 +180,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Adds a line to the scrollback buffer (alias for save_to_scrollback).
   """
-  @spec add_to_scrollback(Core.t(), list(Cell.t())) :: Core.t()
+  @spec add_to_scrollback(map(), list(Cell.t())) :: map()
   def add_to_scrollback(buffer, line) do
     save_to_scrollback(buffer, [line])
   end
@@ -188,7 +188,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Gets a specific line from the scrollback buffer.
   """
-  @spec get_scrollback_line(Core.t(), non_neg_integer()) :: list(Cell.t()) | nil
+  @spec get_scrollback_line(map(), non_neg_integer()) :: list(Cell.t()) | nil
   def get_scrollback_line(buffer, index) do
     Enum.at(buffer.scrollback, index)
   end
@@ -196,7 +196,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Clears the scroll region (sets it to nil).
   """
-  @spec clear_scroll_region(Core.t()) :: Core.t()
+  @spec clear_scroll_region(map()) :: map()
   def clear_scroll_region(buffer) do
     %{buffer | scroll_region: nil}
   end
@@ -204,7 +204,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Sets the scroll position for viewing scrollback.
   """
-  @spec set_scroll_position(Core.t(), non_neg_integer()) :: Core.t()
+  @spec set_scroll_position(map(), non_neg_integer()) :: map()
   def set_scroll_position(buffer, position) do
     max_position = length(buffer.scrollback)
     position = max(0, min(position, max_position))
@@ -214,7 +214,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Gets the current scroll position.
   """
-  @spec get_scroll_position(Core.t()) :: non_neg_integer()
+  @spec get_scroll_position(map()) :: non_neg_integer()
   def get_scroll_position(buffer) do
     buffer.scroll_position
   end
@@ -222,7 +222,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Scrolls to the bottom (most recent content).
   """
-  @spec scroll_to_bottom(Core.t()) :: Core.t()
+  @spec scroll_to_bottom(map()) :: map()
   def scroll_to_bottom(buffer) do
     %{buffer | scroll_position: 0}
   end
@@ -230,7 +230,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Scrolls to the top (oldest scrollback).
   """
-  @spec scroll_to_top(Core.t()) :: Core.t()
+  @spec scroll_to_top(map()) :: map()
   def scroll_to_top(buffer) do
     %{buffer | scroll_position: length(buffer.scrollback)}
   end
@@ -238,7 +238,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Gets visible lines including scrollback based on scroll position.
   """
-  @spec get_visible_lines(Core.t()) :: list(list(Cell.t()))
+  @spec get_visible_lines(map()) :: list(list(Cell.t()))
   def get_visible_lines(buffer) do
     if buffer.scroll_position == 0 do
       # Normal view - just the current screen
@@ -261,7 +261,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Performs a reverse index (scroll down if at top of scroll region).
   """
-  @spec reverse_index(Core.t()) :: Core.t()
+  @spec reverse_index(map()) :: map()
   def reverse_index(buffer) do
     {_x, y} = buffer.cursor_position
     {top, _bottom} = get_scroll_region(buffer)
@@ -276,7 +276,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @doc """
   Performs an index (scroll up if at bottom of scroll region).
   """
-  @spec index(Core.t()) :: Core.t()
+  @spec index(map()) :: map()
   def index(buffer) do
     {_x, y} = buffer.cursor_position
     {_top, bottom} = get_scroll_region(buffer)

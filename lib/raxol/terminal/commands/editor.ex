@@ -51,12 +51,13 @@ defmodule Raxol.Terminal.Commands.Editor do
   end
 
   @spec erase_chars(
-          ScreenBuffer.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer(),
-          TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
+          any()
+        ) ::
+          map()
   def erase_chars(buffer, row, col, count, default_style) do
     # Erase 'count' characters starting at {col, row} by replacing them with spaces.
     # Ensure coordinates and count are within bounds.
@@ -111,11 +112,11 @@ defmodule Raxol.Terminal.Commands.Editor do
   end
 
   @spec clear_line(
-          Emulator.t(),
+          map(),
           integer(),
           {non_neg_integer(), non_neg_integer()},
-          map()
-        ) :: Emulator.t()
+          any()
+        ) :: map()
   def clear_line(emulator, mode, cursor_pos, default_style) do
     buffer = Emulator.get_screen_buffer(emulator)
     {cursor_x, cursor_y} = cursor_pos

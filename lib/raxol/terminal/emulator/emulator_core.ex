@@ -258,6 +258,7 @@ defmodule Raxol.Terminal.Emulator.Core do
         string,
         style \\ %{}
       ) do
+    # translate_string expects (string, charset_state) where charset_state is a map
     translated =
       Raxol.Terminal.ANSI.CharacterSets.translate_string(
         string,

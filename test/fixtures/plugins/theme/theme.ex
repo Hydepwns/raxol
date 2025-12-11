@@ -1,4 +1,7 @@
 defmodule Raxol.Terminal.Plugin.Theme do
+  @moduledoc """
+  Test fixture plugin for theme configuration testing.
+  """
   def apply_theme(config) do
     %{
       colors: Map.get(config, :colors, %{}),

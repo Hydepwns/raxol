@@ -45,10 +45,9 @@ defmodule Raxol.Plugins.Spotify.API do
         config
       end
 
-    case Auth.start_auth(config) do
-      {:ok, url} -> url
-      error -> error
-    end
+    # Auth.start_auth always returns {:ok, url}
+    {:ok, url} = Auth.start_auth(config)
+    url
   end
 
   # User & Profile
@@ -112,7 +111,7 @@ defmodule Raxol.Plugins.Spotify.API do
   # Search
   def search(query, types \\ [:track], opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
-    type_str = types |> Enum.map(&Atom.to_string/1) |> Enum.join(",")
+    type_str = Enum.map_join(types, ",", &Atom.to_string/1)
     encoded_query = URI.encode(query)
 
     make_request(

@@ -123,8 +123,6 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
     System.monotonic_time(:millisecond) - start_time
   end
 
-  defp calculate_uptime(_state), do: 0
-
   @doc """
   Initialize default state with common fields.
   """

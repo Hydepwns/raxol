@@ -36,10 +36,7 @@ defmodule Raxol.Plugins.Lifecycle.ErrorHandling do
   def format_missing_dependencies_error(missing, chain, module) do
     chain_str = Enum.join(chain, " -> ")
 
-    missing_str =
-      missing
-      |> Enum.map(&format_dependency/1)
-      |> Enum.join(", ")
+    missing_str = Enum.map_join(missing, ", ", &format_dependency/1)
 
     "Plugin #{module} has missing dependencies: #{missing_str}. Dependency chain: #{chain_str}"
   end

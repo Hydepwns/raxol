@@ -30,17 +30,7 @@ defmodule Raxol.Terminal.Config.Persistence do
 
     case File.read(storage_path) do
       {:ok, binary} ->
-        case Raxol.Core.ErrorHandling.safe_call(fn ->
-               :erlang.binary_to_term(binary)
-             end) do
-          {:ok, config} ->
-            with :ok <- Validator.validate_config(config) do
-              {:ok, config}
-            end
-
-          {:error, _reason} ->
-            {:error, :invalid_config_data}
-        end
+        parse_and_validate_config(binary)
 
       {:error, reason} ->
         {:error, reason}
@@ -114,10 +104,7 @@ defmodule Raxol.Terminal.Config.Persistence do
           current_version..(latest_version - 1),
           {:ok, config},
           fn version, {:ok, current_config} ->
-            case apply_migration(current_config, version) do
-              {:ok, migrated_config} -> {:cont, {:ok, migrated_config}}
-              error -> {:halt, error}
-            end
+            handle_migration_step(current_config, version)
           end
         )
 
@@ -156,5 +143,26 @@ defmodule Raxol.Terminal.Config.Persistence do
     }
 
     {:ok, migrated_config}
+  end
+
+  defp parse_and_validate_config(binary) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           :erlang.binary_to_term(binary)
+         end) do
+      {:ok, config} ->
+        with :ok <- Validator.validate_config(config) do
+          {:ok, config}
+        end
+
+      {:error, _reason} ->
+        {:error, :invalid_config_data}
+    end
+  end
+
+  defp handle_migration_step(current_config, version) do
+    case apply_migration(current_config, version) do
+      {:ok, migrated_config} -> {:cont, {:ok, migrated_config}}
+      error -> {:halt, error}
+    end
   end
 end

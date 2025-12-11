@@ -176,9 +176,7 @@ defmodule Raxol.Search.Fuzzy do
   end
 
   defp get_line_text(%{cells: cells}) do
-    cells
-    |> Enum.map(& &1.char)
-    |> Enum.join()
+    Enum.map_join(cells, "", & &1.char)
   end
 
   # Fuzzy matching
@@ -344,13 +342,8 @@ defmodule Raxol.Search.Fuzzy do
        ) do
     Enum.reduce(positions, buffer, fn pos, buf ->
       cell = Buffer.get_cell(buf, pos, y)
-
-      if cell do
-        new_style = Map.merge(cell.style, style)
-        Buffer.set_cell(buf, pos, y, cell.char, new_style)
-      else
-        buf
-      end
+      new_style = Map.merge(cell.style, style)
+      Buffer.set_cell(buf, pos, y, cell.char, new_style)
     end)
   end
 

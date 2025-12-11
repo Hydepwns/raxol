@@ -16,6 +16,12 @@ defmodule Raxol.UI.State.Store do
 
   # Store state structure (for compatibility)
   defmodule State do
+    @moduledoc """
+    Internal state structure for the Store.
+
+    Manages the data, subscribers, middleware, reducers, and history/time-travel
+    functionality for the state store.
+    """
     defstruct [
       :data,
       :subscribers,
@@ -43,6 +49,11 @@ defmodule Raxol.UI.State.Store do
 
   # Subscription structure
   defmodule Subscription do
+    @moduledoc """
+    Subscription to state changes in the Store.
+
+    Tracks a callback that should be invoked when the state at a specific path changes.
+    """
     defstruct [:id, :path, :callback, :options]
 
     def new(id, path, callback, options \\ []) do
@@ -57,6 +68,12 @@ defmodule Raxol.UI.State.Store do
 
   # Action structure for history/debugging
   defmodule Action do
+    @moduledoc """
+    Action structure for state changes.
+
+    Records state change actions with type, payload, timestamp, and metadata
+    for history tracking and debugging purposes.
+    """
     defstruct [:type, :payload, :timestamp, :meta]
 
     def new(type, payload \\ nil, meta \\ %{}) do

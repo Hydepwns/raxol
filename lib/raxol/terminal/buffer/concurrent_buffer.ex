@@ -249,25 +249,21 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
     Enum.reduce(operations, buffer, fn operation, acc_buffer ->
       case operation do
         {:set_cell, x, y, cell} ->
-          if validate_coords(x, y, state) == :ok do
-            Buffer.set_cell(acc_buffer, x, y, cell)
-          else
-            acc_buffer
-          end
+          apply_set_cell_operation(acc_buffer, x, y, cell, state)
 
         {:write_string, x, y, text} ->
-          if validate_coords(x, y, state) == :ok do
-            write_text(acc_buffer, x, y, text, %{})
-          else
-            acc_buffer
-          end
+          apply_write_string_operation(acc_buffer, x, y, text, state)
 
         {:fill_region, x, y, width, height, cell} ->
-          if validate_region(x, y, width, height, state) == :ok do
-            fill_buffer_region_with_cell(acc_buffer, x, y, width, height, cell)
-          else
-            acc_buffer
-          end
+          apply_fill_region_operation(
+            acc_buffer,
+            x,
+            y,
+            width,
+            height,
+            cell,
+            state
+          )
 
         _ ->
           acc_buffer
@@ -328,13 +324,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   defp fill_buffer_region(buffer, x, y, width, height, char, style) do
     Enum.reduce(y..(y + height - 1), buffer, fn row, acc_buffer ->
       Enum.reduce(x..(x + width - 1), acc_buffer, fn col, inner_acc ->
-        cell =
-          if map_size(style) > 0 do
-            Cell.new(char, style)
-          else
-            Cell.new(char: char)
-          end
-
+        cell = create_cell_with_style(char, style)
         Buffer.set_cell(inner_acc, col, row, cell)
       end)
     end)
@@ -353,4 +343,32 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   end
 
   defp perform_scroll(buffer, _lines, _height), do: buffer
+
+  defp apply_set_cell_operation(buffer, x, y, cell, state) do
+    case validate_coords(x, y, state) do
+      :ok -> Buffer.set_cell(buffer, x, y, cell)
+      {:error, _} -> buffer
+    end
+  end
+
+  defp apply_write_string_operation(buffer, x, y, text, state) do
+    case validate_coords(x, y, state) do
+      :ok -> write_text(buffer, x, y, text, %{})
+      {:error, _} -> buffer
+    end
+  end
+
+  defp apply_fill_region_operation(buffer, x, y, width, height, cell, state) do
+    case validate_region(x, y, width, height, state) do
+      :ok -> fill_buffer_region_with_cell(buffer, x, y, width, height, cell)
+      {:error, _} -> buffer
+    end
+  end
+
+  defp create_cell_with_style(char, style) do
+    case map_size(style) > 0 do
+      true -> Cell.new(char, style)
+      false -> Cell.new(char: char)
+    end
+  end
 end

@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
   """
   @spec handle(Emulator.t(), State.t(), binary()) ::
           {:continue, Emulator.t(), State.t(), binary()}
-          | {:handled, Emulator.t()}
+          | {:incomplete, Emulator.t(), State.t()}
   def handle(emulator, _parser_state, <<"[", rest::binary>>) do
     # Log.debug("EscapeState.handle: Detected CSI, rest=#{inspect(rest)}")
 

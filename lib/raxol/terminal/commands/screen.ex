@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.Commands.Screen do
 
   require Raxol.Core.Runtime.Log
 
-  @spec clear_screen(Emulator.t(), integer()) :: Emulator.t()
+  @spec clear_screen(map(), 0 | 1 | 2 | 3) :: map()
   def clear_screen(emulator, mode) do
     buffer = Emulator.get_screen_buffer(emulator)
     {y, x} = Emulator.get_cursor_position(emulator)
@@ -43,7 +43,7 @@ defmodule Raxol.Terminal.Commands.Screen do
     end
   end
 
-  @spec clear_line(Emulator.t(), integer()) :: Emulator.t()
+  @spec clear_line(map(), integer()) :: map()
   def clear_line(emulator, mode) do
     buffer = Emulator.get_screen_buffer(emulator)
 
@@ -188,7 +188,7 @@ defmodule Raxol.Terminal.Commands.Screen do
     emulator
   end
 
-  @spec scroll_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  @spec scroll_down(map(), pos_integer()) :: map()
   def scroll_down(emulator, count) when is_integer(count) and count > 0 do
     Raxol.Core.Runtime.Log.debug(
       "[Screen.scroll_down] CALLED with count: #{count}"
@@ -202,7 +202,7 @@ defmodule Raxol.Terminal.Commands.Screen do
     Emulator.update_active_buffer(emulator, new_buffer)
   end
 
-  @spec scroll_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  @spec scroll_up(map(), pos_integer()) :: map()
   def scroll_up(emulator, lines) when is_integer(lines) and lines > 0 do
     Raxol.Core.Runtime.Log.debug(
       "[Screen.scroll_up] CALLED with lines: #{lines}"

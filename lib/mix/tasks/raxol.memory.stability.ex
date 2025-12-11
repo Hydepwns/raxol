@@ -187,14 +187,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
     |> Stream.scan({buffer, operations_count}, fn operation,
                                                   {current_buffer, count} ->
       if System.monotonic_time(:millisecond) - start_time < duration * 1000 do
-        updated_buffer = operation.(current_buffer)
-
-        # Periodic garbage collection
-        if rem(count, 100) == 0 do
-          :erlang.garbage_collect()
-        end
-
-        {updated_buffer, count + 1}
+        execute_vim_operation(operation, current_buffer, count)
       else
         {current_buffer, count}
       end
@@ -227,23 +220,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
     Stream.iterate(0, &(&1 + 1))
     |> Stream.map(fn line_num ->
       if System.monotonic_time(:millisecond) - start_time < duration * 1000 do
-        level = Enum.random(log_levels)
-        color = Enum.random(color_codes)
-        timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
-
-        log_line =
-          "\e[#{color}m[#{timestamp}] #{level}: Log entry #{line_num}\e[0m"
-
-        # Process ANSI sequences
-        _parsed = AnsiParser.parse(log_line)
-
-        # Write to buffer (simulate scrolling)
-        _row = rem(line_num, 50)
-
-        case Raxol.Terminal.ScreenBuffer.write(buffer, log_line) do
-          {:ok, updated_buffer} -> {updated_buffer, line_num + 1}
-          _ -> {buffer, line_num + 1}
-        end
+        process_log_line(buffer, line_num, log_levels, color_codes)
       else
         {buffer, line_num}
       end
@@ -282,30 +259,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
     Stream.iterate(0, &(&1 + 1))
     |> Stream.map(fn cmd_num ->
       if System.monotonic_time(:millisecond) - start_time < duration * 1000 do
-        command = Enum.random(shell_commands)
-
-        # Simulate command prompt
-        prompt = "$ #{command}"
-
-        # Simulate command output
-        output_lines = generate_command_output(command, cmd_num)
-
-        # Write to buffer
-        updated_buffer =
-          Enum.reduce([prompt | output_lines], buffer, fn line, acc_buffer ->
-            # Each command takes ~3 lines
-            _row = rem(cmd_num * 3, 24)
-
-            case Raxol.Terminal.ScreenBuffer.write(acc_buffer, line) do
-              {:ok, new_buffer} -> new_buffer
-              _ -> acc_buffer
-            end
-          end)
-
-        # Simulate typing delay
-        Process.sleep(100)
-
-        {updated_buffer, cmd_num + 1}
+        execute_shell_command(buffer, cmd_num, shell_commands)
       else
         {buffer, cmd_num}
       end
@@ -571,5 +525,66 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
 
   defp print_help do
     Mix.shell().info(@moduledoc)
+  end
+
+  defp execute_vim_operation(operation, current_buffer, count) do
+    updated_buffer = operation.(current_buffer)
+
+    # Periodic garbage collection
+    if rem(count, 100) == 0 do
+      :erlang.garbage_collect()
+    end
+
+    {updated_buffer, count + 1}
+  end
+
+  defp process_log_line(buffer, line_num, log_levels, color_codes) do
+    level = Enum.random(log_levels)
+    color = Enum.random(color_codes)
+    timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
+
+    log_line = "\e[#{color}m[#{timestamp}] #{level}: Log entry #{line_num}\e[0m"
+
+    # Process ANSI sequences
+    _parsed = AnsiParser.parse(log_line)
+
+    # Write to buffer (simulate scrolling)
+    _row = rem(line_num, 50)
+
+    case Raxol.Terminal.ScreenBuffer.write(buffer, log_line) do
+      {:ok, updated_buffer} -> {updated_buffer, line_num + 1}
+      _ -> {buffer, line_num + 1}
+    end
+  end
+
+  defp execute_shell_command(buffer, cmd_num, shell_commands) do
+    command = Enum.random(shell_commands)
+
+    # Simulate command prompt
+    prompt = "$ #{command}"
+
+    # Simulate command output
+    output_lines = generate_command_output(command, cmd_num)
+
+    # Write to buffer
+    updated_buffer =
+      write_lines_to_buffer([prompt | output_lines], buffer, cmd_num)
+
+    # Simulate typing delay
+    Process.sleep(100)
+
+    {updated_buffer, cmd_num + 1}
+  end
+
+  defp write_lines_to_buffer(lines, buffer, cmd_num) do
+    Enum.reduce(lines, buffer, fn line, acc_buffer ->
+      # Each command takes ~3 lines
+      _row = rem(cmd_num * 3, 24)
+
+      case Raxol.Terminal.ScreenBuffer.write(acc_buffer, line) do
+        {:ok, new_buffer} -> new_buffer
+        _ -> acc_buffer
+      end
+    end)
   end
 end

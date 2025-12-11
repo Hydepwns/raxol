@@ -167,11 +167,7 @@ defmodule Raxol.Core.ErrorHandler do
           any(),
           any(),
           any()
-        ) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+        ) :: {:ok, any()} | {:error, any()}
   defp handle_rescued_error(
          operation,
          error,
@@ -259,19 +255,11 @@ defmodule Raxol.Core.ErrorHandler do
   end
 
   @spec handle_fallback(any(), any(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+          {:ok, any()} | {:error, atom(), String.t(), map()}
   defp handle_fallback(nil, error, context) do
     {:error, :runtime, format_error_message(error), context}
   end
 
-  @spec handle_fallback(any(), any(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
   defp handle_fallback(fallback, _error, _context) do
     {:ok, fallback}
   end

@@ -292,7 +292,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
     pid
   end
 
-  def set_style(style), do: set_style(__MODULE__, style)
+  def set_style(style) when is_atom(style),
+    do: GenServer.call(__MODULE__, {:set_style, style})
 
   def get_color(%__MODULE__{} = state) do
     state.color
@@ -306,8 +307,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
     %{state | color: nil}
   end
 
-  def set_custom_shape(shape, params),
-    do: set_custom_shape(__MODULE__, shape, params)
+  def set_custom_shape(shape, params) when is_atom(shape),
+    do: GenServer.call(__MODULE__, {:set_custom_shape, shape, params})
 
   def update_position(pid \\ __MODULE__, position)
 
@@ -324,7 +325,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
     GenServer.call(pid, :reset_position)
   end
 
-  def update_blink(), do: update_blink(__MODULE__)
+  def update_blink(), do: GenServer.call(__MODULE__, :update_blink)
 
   @doc """
   Updates the cursor position after a resize operation.
@@ -346,8 +347,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Updates the scroll region after a resize operation.
   Returns the updated emulator.
   """
-  @spec update_scroll_region_for_resize(Emulator.t(), non_neg_integer()) ::
-          Emulator.t()
+  @spec update_scroll_region_for_resize(map(), non_neg_integer()) :: map()
   def update_scroll_region_for_resize(emulator, new_height) do
     scroll_region = emulator.scroll_region
     top = min(scroll_region.top, new_height - 1)

@@ -108,10 +108,13 @@ defmodule Raxol.Terminal.Commands.CSIHandler.Screen do
   end
 
   defp handle_erase_characters(emulator, params) do
-    _count = get_param(params, 0, 1)
-    # Simple implementation - erase characters at cursor position
-    # TODO: Implement actual character erasure in buffer
-    {:ok, emulator}
+    count = get_param(params, 0, 1)
+    # ECH - Erase Characters at cursor position
+    # Delegates to ScreenOperations for actual buffer manipulation
+    updated_emulator =
+      Raxol.Terminal.Operations.ScreenOperations.erase_chars(emulator, count)
+
+    {:ok, updated_emulator}
   end
 
   defp get_param(params, index, default) do

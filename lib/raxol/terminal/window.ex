@@ -93,7 +93,7 @@ defmodule Raxol.Terminal.Window do
       iex> window.size
       {80, 24}
   """
-  @spec new(Config.t()) :: t()
+  @spec new(Config.t()) :: map()
   def new(config) do
     {width, height} = Config.get_dimensions(config)
     emulator = EmulatorStruct.new(width, height)
@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.Window do
       iex> window.size
       {100, 50}
   """
-  @spec new(integer(), integer()) :: t()
+  @spec new(integer(), integer()) :: map()
   def new(width, height)
       when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
     config = Config.new(width, height)

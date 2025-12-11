@@ -145,7 +145,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
           {:ok, %{emulator | output_buffer: response}}
 
         {:query, :selection} ->
-          content = Clipboard.get_selection(emulator.clipboard)
+          {:ok, content} = Clipboard.get_selection(emulator.clipboard)
           response = format_clipboard_response(52, content)
           {:ok, %{emulator | output_buffer: response}}
 
@@ -398,26 +398,30 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     defp parse_palette_command(data) do
       case String.split(data, ";", parts: 2) do
         [index_str, "?"] ->
-          with {index, ""} <- Integer.parse(index_str) do
-            {:query, index}
-          else
-            _ -> {:error, :invalid_index}
+          case Integer.parse(index_str) do
+            {index, ""} ->
+              {:query, index}
+
+            _ ->
+              {:error, :invalid_index}
           end
 
         [index_str, color_spec] ->
-          with {index, ""} <- Integer.parse(index_str) do
-            if color_spec == "" do
-              {:reset, index}
-            else
-              case Raxol.Terminal.Commands.OSCHandler.ColorParser.parse(
-                     color_spec
-                   ) do
-                {:ok, color} -> {:set, index, color}
-                error -> error
+          case Integer.parse(index_str) do
+            {index, ""} ->
+              if color_spec == "" do
+                {:reset, index}
+              else
+                case Raxol.Terminal.Commands.OSCHandler.ColorParser.parse(
+                       color_spec
+                     ) do
+                  {:ok, color} -> {:set, index, color}
+                  error -> error
+                end
               end
-            end
-          else
-            _ -> {:error, :invalid_index}
+
+            _ ->
+              {:error, :invalid_index}
           end
 
         _ ->
@@ -520,8 +524,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
       {:ok, %{emulator | window_title: data}}
     end
 
-    @spec handle_7(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    @spec handle_7(map(), binary()) :: {:ok, map()} | {:error, term(), map()}
     def handle_7(emulator, data) do
       # Set current directory (for terminal tabs)
       {:ok, %{emulator | current_directory: data}}

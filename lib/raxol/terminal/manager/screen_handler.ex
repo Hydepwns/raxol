@@ -45,11 +45,15 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
     end
   end
 
+  @spec handle_terminal_update(map(), map()) :: {:ok, map()} | {:error, term()}
   defp handle_terminal_update(update, state) do
     case state.terminal do
       %EmulatorStruct{} = emulator ->
         _result =
-          ScreenUpdater.update_screen(emulator, update)
+          ScreenUpdater.update_screen(
+            emulator.active_buffer || emulator,
+            update
+          )
 
         new_emulator = emulator
 
@@ -70,11 +74,23 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
     end
   end
 
+  @spec handle_terminal_batch_update([map()], map()) ::
+          {:ok, map()} | {:error, term()}
   defp handle_terminal_batch_update(updates, state) do
     case state.terminal do
       %EmulatorStruct{} = emulator ->
+        # Get the buffers for batch update
+        buffers =
+          case emulator.active_buffer do
+            nil -> []
+            buffer -> [buffer]
+          end
+
         _result =
-          ScreenUpdater.batch_update_screen(emulator, updates)
+          case buffers do
+            [] -> :ok
+            _ -> ScreenUpdater.batch_update_screen(buffers, %{})
+          end
 
         new_emulator = emulator
 

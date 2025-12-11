@@ -295,7 +295,7 @@ defmodule Raxol.Core.Renderer.Color do
     raise ArgumentError, "Invalid hex color format"
   end
 
-  @spec parse_6_digit_hex(String.t()) :: {:ok, any()} | {:error, any()}
+  @spec parse_6_digit_hex(binary()) :: {byte(), byte(), byte()}
   defp parse_6_digit_hex(hex) when is_binary(hex) do
     case parse_hex_components(hex, 2) do
       {:ok, {r, g, b}} -> {r, g, b}
@@ -303,7 +303,7 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
-  @spec parse_3_digit_hex(String.t()) :: {:ok, any()} | {:error, any()}
+  @spec parse_3_digit_hex(binary()) :: {byte(), byte(), byte()}
   defp parse_3_digit_hex(hex) when is_binary(hex) do
     case parse_hex_components(hex, 1) do
       {:ok, {r, g, b}} -> {r, g, b}
@@ -315,24 +315,7 @@ defmodule Raxol.Core.Renderer.Color do
           {:ok, any()} | {:error, any()}
   defp parse_hex_components(hex, size) when is_binary(hex) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           case size do
-             2 ->
-               <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
-
-               {:ok,
-                {String.to_integer(r, 16), String.to_integer(g, 16),
-                 String.to_integer(b, 16)}}
-
-             1 ->
-               <<r::binary-size(1), g::binary-size(1), b::binary-size(1)>> = hex
-
-               {:ok,
-                {
-                  String.to_integer(r <> r, 16),
-                  String.to_integer(g <> g, 16),
-                  String.to_integer(b <> b, 16)
-                }}
-           end
+           parse_hex_by_size(hex, size)
          end) do
       {:ok, result} -> result
       {:error, _} -> {:error, :invalid_hex}
@@ -389,12 +372,33 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
-  @spec parse_colorfgbg(any()) :: {:ok, any()} | {:error, any()}
+  @spec parse_colorfgbg(binary()) :: :black | :white | :default
   defp parse_colorfgbg(value) do
     case String.split(value, ";") do
       [_, "0"] -> :black
       [_, "15"] -> :white
       _ -> :default
+    end
+  end
+
+  defp parse_hex_by_size(hex, size) do
+    case size do
+      2 ->
+        <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
+
+        {:ok,
+         {String.to_integer(r, 16), String.to_integer(g, 16),
+          String.to_integer(b, 16)}}
+
+      1 ->
+        <<r::binary-size(1), g::binary-size(1), b::binary-size(1)>> = hex
+
+        {:ok,
+         {
+           String.to_integer(r <> r, 16),
+           String.to_integer(g <> g, 16),
+           String.to_integer(b <> b, 16)
+         }}
     end
   end
 end

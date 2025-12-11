@@ -34,7 +34,7 @@ defmodule Raxol.Terminal.IOTerminal do
   """
   def shutdown do
     # Restore terminal settings
-    :io.setopts([:list, {:echo, true}])
+    _ = :io.setopts([:list, {:echo, true}])
     :ok
   end
 
@@ -174,7 +174,7 @@ defmodule Raxol.Terminal.IOTerminal do
   defp configure_terminal do
     # Configure terminal for binary mode with no echo
     # OTP 28+ supports raw mode for reading individual keypresses
-    :io.setopts([:binary, {:echo, false}])
+    _ = :io.setopts([:binary, {:echo, false}])
     :ok
   rescue
     _ ->

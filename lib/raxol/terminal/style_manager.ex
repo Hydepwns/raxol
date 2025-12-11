@@ -5,14 +5,13 @@ defmodule Raxol.Terminal.StyleManager do
   """
 
   alias Raxol.Terminal.StyleBuffer
-  alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
   @doc """
   Gets the style buffer instance.
   Returns the style buffer.
   """
-  @spec get_buffer(Emulator.t()) :: StyleBuffer.t()
+  @spec get_buffer(map()) :: StyleBuffer.t()
   def get_buffer(emulator) do
     emulator.style_buffer
   end
@@ -21,7 +20,7 @@ defmodule Raxol.Terminal.StyleManager do
   Updates the style buffer instance.
   Returns the updated emulator.
   """
-  @spec update_buffer(Emulator.t(), StyleBuffer.t()) :: Emulator.t()
+  @spec update_buffer(map(), StyleBuffer.t()) :: map()
   def update_buffer(emulator, buffer) do
     %{emulator | style_buffer: buffer}
   end
@@ -30,7 +29,7 @@ defmodule Raxol.Terminal.StyleManager do
   Sets the foreground color.
   Returns the updated emulator.
   """
-  @spec set_foreground(Emulator.t(), binary()) :: Emulator.t()
+  @spec set_foreground(map(), binary()) :: map()
   def set_foreground(emulator, color) do
     buffer = StyleBuffer.set_foreground(emulator.style_buffer, color)
     update_buffer(emulator, buffer)
@@ -40,7 +39,7 @@ defmodule Raxol.Terminal.StyleManager do
   Sets the background color.
   Returns the updated emulator.
   """
-  @spec set_background(Emulator.t(), binary()) :: Emulator.t()
+  @spec set_background(map(), binary()) :: map()
   def set_background(emulator, color) do
     buffer = StyleBuffer.set_background(emulator.style_buffer, color)
     update_buffer(emulator, buffer)
@@ -50,7 +49,7 @@ defmodule Raxol.Terminal.StyleManager do
   Sets text attributes.
   Returns the updated emulator.
   """
-  @spec set_attributes(Emulator.t(), [atom()]) :: Emulator.t()
+  @spec set_attributes(map(), [atom()]) :: map()
   def set_attributes(emulator, attributes) do
     buffer = StyleBuffer.set_attributes(emulator.style_buffer, attributes)
     update_buffer(emulator, buffer)
@@ -60,7 +59,7 @@ defmodule Raxol.Terminal.StyleManager do
   Gets the current style.
   Returns the current style map.
   """
-  @spec get_style(Emulator.t()) :: StyleBuffer.style()
+  @spec get_style(map()) :: StyleBuffer.style()
   def get_style(emulator) do
     StyleBuffer.get_style(emulator.style_buffer)
   end
@@ -69,7 +68,7 @@ defmodule Raxol.Terminal.StyleManager do
   Resets the style to default.
   Returns the updated emulator.
   """
-  @spec reset_style(Emulator.t()) :: Emulator.t()
+  @spec reset_style(map()) :: map()
   def reset_style(emulator) do
     buffer = StyleBuffer.reset_style(emulator.style_buffer)
     update_buffer(emulator, buffer)
@@ -80,11 +79,11 @@ defmodule Raxol.Terminal.StyleManager do
   Returns the updated emulator.
   """
   @spec apply_style_to_region(
-          Emulator.t(),
+          map(),
           {non_neg_integer(), non_neg_integer()},
           {non_neg_integer(), non_neg_integer()},
           StyleBuffer.style()
-        ) :: Emulator.t()
+        ) :: map()
   def apply_style_to_region(emulator, start, end_, style) do
     buffer =
       StyleBuffer.apply_style_to_region(
@@ -101,7 +100,7 @@ defmodule Raxol.Terminal.StyleManager do
   Gets the style at a specific position.
   Returns the style map at that position.
   """
-  @spec get_style_at(Emulator.t(), integer(), integer()) :: StyleBuffer.style()
+  @spec get_style_at(map(), integer(), integer()) :: StyleBuffer.style()
   def get_style_at(emulator, x, y) do
     StyleBuffer.get_style_at(emulator.style_buffer, x, y)
   end
@@ -110,7 +109,7 @@ defmodule Raxol.Terminal.StyleManager do
   Sets the default style.
   Returns the updated emulator.
   """
-  @spec set_default_style(Emulator.t(), StyleBuffer.style()) :: Emulator.t()
+  @spec set_default_style(map(), StyleBuffer.style()) :: map()
   def set_default_style(emulator, style) do
     buffer = StyleBuffer.set_default_style(emulator.style_buffer, style)
     update_buffer(emulator, buffer)
@@ -120,7 +119,7 @@ defmodule Raxol.Terminal.StyleManager do
   Gets the default style.
   Returns the default style map.
   """
-  @spec get_default_style(Emulator.t()) :: StyleBuffer.style()
+  @spec get_default_style(map()) :: StyleBuffer.style()
   def get_default_style(emulator) do
     StyleBuffer.get_default_style(emulator.style_buffer)
   end

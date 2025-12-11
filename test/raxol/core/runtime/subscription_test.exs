@@ -5,7 +5,7 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
   """
   # Must be false due to process monitoring and timers
   use ExUnit.Case, async: false
-    alias Raxol.Core.Runtime.Subscription
+  alias Raxol.Core.Runtime.Subscription
 
   describe "new/2" do
     test ~c"creates a new subscription with given type and data" do
@@ -137,25 +137,7 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
 
   describe "start/2" do
     setup do
-      # Start EventManager for event subscriptions
-      case Raxol.Core.Events.EventManager.start_link(
-             name: Raxol.Core.Events.EventManager
-           ) do
-        {:ok, _pid} -> :ok
-        {:error, {:already_started, _pid}} -> :ok
-      end
-
-      context = %{pid: self()}
-
-      on_exit(fn ->
-        # Only cleanup if EventManager is still running
-        case Process.whereis(Raxol.Core.Events.EventManager) do
-          nil -> :ok
-          _pid -> Raxol.Core.Events.EventManager.cleanup()
-        end
-      end)
-
-      {:ok, context: context}
+      setup_event_manager()
     end
 
     @tag :skip_on_ci
@@ -223,25 +205,7 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
 
   describe "stop/1" do
     setup do
-      # Start EventManager for event subscriptions
-      case Raxol.Core.Events.EventManager.start_link(
-             name: Raxol.Core.Events.EventManager
-           ) do
-        {:ok, _pid} -> :ok
-        {:error, {:already_started, _pid}} -> :ok
-      end
-
-      context = %{pid: self()}
-
-      on_exit(fn ->
-        # Only cleanup if EventManager is still running
-        case Process.whereis(Raxol.Core.Events.EventManager) do
-          nil -> :ok
-          _pid -> Raxol.Core.Events.EventManager.cleanup()
-        end
-      end)
-
-      {:ok, context: context}
+      setup_event_manager()
     end
 
     test "stops an interval subscription", %{context: context} do
@@ -285,5 +249,28 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
       # The Erlang timer module returns :ok for already cancelled timers
       assert :ok = Subscription.stop(sub_id)
     end
+  end
+
+  # Private helper to set up EventManager for subscription tests
+  defp setup_event_manager do
+    # Start EventManager for event subscriptions
+    case Raxol.Core.Events.EventManager.start_link(
+           name: Raxol.Core.Events.EventManager
+         ) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
+    context = %{pid: self()}
+
+    on_exit(fn ->
+      # Only cleanup if EventManager is still running
+      case Process.whereis(Raxol.Core.Events.EventManager) do
+        nil -> :ok
+        _pid -> Raxol.Core.Events.EventManager.cleanup()
+      end
+    end)
+
+    {:ok, context: context}
   end
 end

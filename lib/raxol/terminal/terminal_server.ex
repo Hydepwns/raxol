@@ -636,13 +636,17 @@ defmodule Raxol.Terminal.TerminalServer do
     System.monotonic_time() - System.monotonic_time(:second)
   end
 
-  defp get_buffer_manager_stats(buffer_manager) do
+  defp get_buffer_manager_stats(buffer_manager) when is_pid(buffer_manager) do
     case Process.alive?(buffer_manager) do
       true -> GenServer.call(buffer_manager, :get_stats)
       false -> %{status: :not_running}
     end
   rescue
     _ -> %{status: :error}
+  end
+
+  defp get_buffer_manager_stats(_buffer_manager) do
+    %{status: :functional_module}
   end
 
   defp get_state_manager_stats(state_manager) do

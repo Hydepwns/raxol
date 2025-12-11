@@ -296,15 +296,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
       {primary_node, replica_nodes} =
         case Keyword.get(opts, :node) do
           nil ->
-            case determine_session_placement(
-                   session_id,
-                   affinity,
-                   replicas,
-                   state
-                 ) do
-              {:ok, pn, rn} -> {pn, rn}
-              {:error, _} -> {state.node_id, []}
-            end
+            get_placement_or_default(session_id, affinity, replicas, state)
 
           node when node == :invalid_node ->
             {:reply, {:error, :invalid_node}, state}
@@ -316,30 +308,15 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
       if primary_node == :invalid_node do
         {:reply, {:error, :invalid_node}, state}
       else
-        meta = create_session_meta(session_id, affinity, replicas)
-
-        case register_session_on_nodes(
-               session_id,
-               session_data,
-               meta,
-               primary_node,
-               replica_nodes,
-               state
-             ) do
-          :ok ->
-            updated_sessions =
-              Map.put(state.sessions, session_id, %{
-                primary_node: primary_node,
-                replica_nodes: replica_nodes,
-                meta: meta
-              })
-
-            new_state = %{state | sessions: updated_sessions}
-            {:reply, :ok, new_state}
-
-          {:error, reason} ->
-            {:reply, {:error, reason}, state}
-        end
+        handle_session_registration(
+          session_id,
+          session_data,
+          affinity,
+          replicas,
+          primary_node,
+          replica_nodes,
+          state
+        )
       end
     end
   end
@@ -665,22 +642,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
       results =
         Enum.map(all_nodes, fn node ->
-          if node == state.node_id do
-            # Local registration
-            DistributedSessionStorage.store(
-              state.storage,
-              session_id,
-              session_data,
-              meta
-            )
-          else
-            # Remote registration
-            call_remote_node(node, :register_session, [
-              session_id,
-              session_data,
-              meta
-            ])
-          end
+          register_on_node(node, session_id, session_data, meta, state)
         end)
 
       case Enum.all?(results, &match?(:ok, &1)) do
@@ -745,20 +707,7 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
 
         results =
           Enum.map(all_nodes, fn node ->
-            if node == state.node_id do
-              DistributedSessionStorage.store(
-                state.storage,
-                session_id,
-                session_data,
-                updated_meta
-              )
-            else
-              call_remote_node(node, :update_session, [
-                session_id,
-                session_data,
-                updated_meta
-              ])
-            end
+            update_on_node(node, session_id, session_data, updated_meta, state)
           end)
 
         case Enum.count(results, &match?(:ok, &1)) do
@@ -969,5 +918,83 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
     total = Keyword.get(memory_data, :total_memory, 1)
     available = Keyword.get(memory_data, :available_memory, total)
     (total - available) / total
+  end
+
+  defp handle_session_registration(
+         session_id,
+         session_data,
+         affinity,
+         replicas,
+         primary_node,
+         replica_nodes,
+         state
+       ) do
+    meta = create_session_meta(session_id, affinity, replicas)
+
+    case register_session_on_nodes(
+           session_id,
+           session_data,
+           meta,
+           primary_node,
+           replica_nodes,
+           state
+         ) do
+      :ok ->
+        updated_sessions =
+          Map.put(state.sessions, session_id, %{
+            primary_node: primary_node,
+            replica_nodes: replica_nodes,
+            meta: meta
+          })
+
+        new_state = %{state | sessions: updated_sessions}
+        {:reply, :ok, new_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  defp register_on_node(node, session_id, session_data, meta, state) do
+    if node == state.node_id do
+      # Local registration
+      DistributedSessionStorage.store(
+        state.storage,
+        session_id,
+        session_data,
+        meta
+      )
+    else
+      # Remote registration
+      call_remote_node(node, :register_session, [
+        session_id,
+        session_data,
+        meta
+      ])
+    end
+  end
+
+  defp update_on_node(node, session_id, session_data, updated_meta, state) do
+    if node == state.node_id do
+      DistributedSessionStorage.store(
+        state.storage,
+        session_id,
+        session_data,
+        updated_meta
+      )
+    else
+      call_remote_node(node, :update_session, [
+        session_id,
+        session_data,
+        updated_meta
+      ])
+    end
+  end
+
+  defp get_placement_or_default(session_id, affinity, replicas, state) do
+    case determine_session_placement(session_id, affinity, replicas, state) do
+      {:ok, pn, rn} -> {pn, rn}
+      {:error, _} -> {state.node_id, []}
+    end
   end
 end

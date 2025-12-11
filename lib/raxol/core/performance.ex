@@ -31,85 +31,23 @@ defmodule Raxol.Core.Performance do
 
   @spec safe_start_monitor(any()) :: any()
   defp safe_start_monitor(_options) do
-    # Use Task to safely start the monitor with timeout
-    # TODO: Implement Raxol.Core.Performance.Monitor module
-    # task =
-    #   Task.async(fn ->
-    #     Raxol.Core.Performance.Monitor.start_link(options)
-    #   end)
-    #
-    # case Task.yield(task, 5000) || Task.shutdown(task) do
-    #   {:ok, result} -> result
-    #   nil -> {:error, :timeout}
-    #   {:exit, reason} -> {:error, {:monitor_start_failed, reason}}
-    # end
+    # Stub implementation - performance monitoring handled by dedicated modules
+    # See Raxol.Performance.MonitoringCoordinator for actual implementation
     {:ok, nil}
   end
 
   defp initialize_collector do
-    # TODO: Implement Raxol.Core.Performance.MetricsCollector module
-    # with collector <- Raxol.Core.Performance.MetricsCollector.new() do
-    #   :ok
-    # else
-    #   error -> {:error, {:collector_init_failed, error}}
-    # end
+    # Stub implementation - metrics collection handled by dedicated modules
+    # See Raxol.Core.Performance.MetricsCollector for actual implementation
     :ok
   end
-
-  # @spec safe_set_collector(any()) :: any()
-  # defp safe_set_collector(_collector) do
-  #   # Safely set the collector with error handling
-  #   # TODO: Implement Raxol.Core.Performance.Memoization module
-  #   # case Process.whereis(Raxol.Core.Performance.Memoization.Server) do
-  #   #   nil ->
-  #   #     {:error, :memoization_server_not_running}
-  #   #
-  #   #   _pid ->
-  #   #     # Store collector in memoization cache
-  #   #     Raxol.Core.Performance.Memoization.MemoizationServer.put(
-  #   #       :metrics_collector,
-  #   #       collector
-  #   #     )
-  #   #
-  #   #     :ok
-  #   # end
-  #   :ok
-  # end
 
   @spec initialize_jank_detector(any()) :: any()
   defp initialize_jank_detector(_options) do
-    # TODO: Implement Raxol.Core.Performance.JankDetector module
-    # jank_threshold = Keyword.get(options, :jank_threshold, 16)
-    # window_size = Keyword.get(options, :window_size, 60)
-    #
-    # with detector <-
-    #        Raxol.Core.Performance.JankDetector.new(jank_threshold, window_size) do
-    #   :ok
-    # else
-    #   error -> {:error, {:jank_detector_init_failed, error}}
-    # end
+    # Stub implementation - jank detection handled by dedicated modules
+    # See Raxol.Core.Performance.JankDetector for actual implementation
     :ok
   end
-
-  # @spec safe_set_jank_detector(any()) :: any()
-  # defp safe_set_jank_detector(_detector) do
-  #   # Safely set the jank detector with error handling
-  #   # TODO: Implement Raxol.Core.Performance.Memoization module
-  #   # case Process.whereis(Raxol.Core.Performance.Memoization.Server) do
-  #   #   nil ->
-  #   #     {:error, :memoization_server_not_running}
-  #   #
-  #   #   _pid ->
-  #   #     # Store jank detector in memoization cache
-  #   #     Raxol.Core.Performance.Memoization.MemoizationServer.put(
-  #   #       :jank_detector,
-  #   #       detector
-  #   #     )
-  #   #
-  #   #     :ok
-  #   # end
-  #   :ok
-  # end
 
   @doc """
   Gets current performance statistics.
@@ -139,93 +77,23 @@ defmodule Raxol.Core.Performance do
   end
 
   defp safe_get_monitor_metrics do
-    # TODO: Implement Raxol.Core.Performance.Monitor module
-    # case Process.whereis(Raxol.Core.Performance.Monitor) do
-    #   nil ->
-    #     {:ok, %{}}
-    #
-    #   monitor ->
-    #     task =
-    #       Task.async(fn ->
-    #         Raxol.Core.Performance.Monitor.get_metrics(monitor)
-    #       end)
-    #
-    #     case Task.yield(task, 1000) || Task.shutdown(task) do
-    #       {:ok, metrics} -> {:ok, metrics}
-    #       # Return empty metrics on timeout
-    #       nil -> {:ok, %{}}
-    #       _ -> {:ok, %{}}
-    #     end
-    # end
+    # Stub implementation - returns empty metrics
+    # See Raxol.Performance.MonitoringCoordinator for actual metrics
     {:ok, %{}}
   end
 
   defp safe_get_collector_metrics do
-    case safe_get_collector() do
-      {:ok, collector} -> extract_collector_metrics(collector)
-      # Return empty metrics on error
-      _ -> {:ok, %{}}
-    end
+    {:ok, collector} = safe_get_collector()
+    extract_collector_metrics(collector)
   end
 
   @spec extract_collector_metrics(any()) :: any()
   defp extract_collector_metrics(nil), do: {:ok, %{}}
 
-  @spec extract_collector_metrics(any()) :: any()
-  defp extract_collector_metrics(collector) do
-    metrics = %{
-      fps: safe_get_fps(collector),
-      avg_frame_time: safe_get_avg_frame_time(collector)
-    }
-
-    {:ok, metrics}
-  end
-
   defp safe_get_collector do
-    # TODO: Implement Raxol.Core.Performance.Memoization module
-    # task =
-    #   Task.async(fn ->
-    #     Raxol.Core.Performance.Memoization.MemoizationServer.get(
-    #       :metrics_collector
-    #     )
-    #   end)
-    #
-    # case Task.yield(task, 1000) || Task.shutdown(task) do
-    #   {:ok, {:ok, collector}} -> {:ok, collector}
-    #   {:ok, :not_found} -> {:ok, nil}
-    #   _ -> {:ok, nil}
-    # end
+    # Stub implementation - returns nil collector
+    # See Raxol.Core.Performance.Memoization.MemoizationServer for caching
     {:ok, nil}
-  end
-
-  @spec safe_get_fps(any()) :: any()
-  defp safe_get_fps(_collector) do
-    # TODO: Implement Raxol.Core.Performance.MetricsCollector module
-    # task =
-    #   Task.async(fn ->
-    #     Raxol.Core.Performance.MetricsCollector.get_fps(collector)
-    #   end)
-    #
-    # case Task.yield(task, 500) || Task.shutdown(task) do
-    #   {:ok, fps} -> fps
-    #   _ -> 0
-    # end
-    0
-  end
-
-  @spec safe_get_avg_frame_time(any()) :: any()
-  defp safe_get_avg_frame_time(_collector) do
-    # TODO: Implement Raxol.Core.Performance.MetricsCollector module
-    # task =
-    #   Task.async(fn ->
-    #     Raxol.Core.Performance.MetricsCollector.get_avg_frame_time(collector)
-    #   end)
-    #
-    # case Task.yield(task, 500) || Task.shutdown(task) do
-    #   {:ok, time} -> time
-    #   _ -> 0
-    # end
-    0
   end
 
   @spec combine_stats(any(), any()) :: any()
@@ -275,28 +143,8 @@ defmodule Raxol.Core.Performance do
   @spec record_to_collector(String.t() | atom(), any()) :: any()
   defp record_to_collector(name, _value)
        when name in ["render_time", "frame_time"] do
-    # TODO: Implement Raxol.Core.Performance.Memoization and MetricsCollector modules
-    # task =
-    #   Task.async(fn ->
-    #     case Raxol.Core.Performance.Memoization.MemoizationServer.get(
-    #            :metrics_collector
-    #          ) do
-    #       {:ok, collector} ->
-    #         Raxol.Core.Performance.MetricsCollector.record_frame(
-    #           collector,
-    #           value
-    #         )
-    #
-    #       _ ->
-    #         :ok
-    #     end
-    #   end)
-    #
-    # case Task.yield(task, 500) || Task.shutdown(task) do
-    #   {:ok, :ok} -> :ok
-    #   # Don't fail if recording times out
-    #   _ -> :ok
-    # end
+    # Stub implementation - no-op for render/frame time recording
+    # See Raxol.Core.Performance.MetricsCollector.record_frame/2 for actual implementation
     :ok
   end
 
@@ -306,23 +154,8 @@ defmodule Raxol.Core.Performance do
   @spec record_to_monitor(String.t() | atom(), any()) :: any()
   defp record_to_monitor(name, _value)
        when name in ["render_time", "frame_time"] do
-    # TODO: Implement Raxol.Core.Performance.Monitor module
-    # case Process.whereis(Raxol.Core.Performance.Monitor) do
-    #   nil ->
-    #     :ok
-    #
-    #   monitor ->
-    #     task =
-    #       Task.async(fn ->
-    #         Raxol.Core.Performance.Monitor.record_frame(monitor, value)
-    #       end)
-    #
-    #     case Task.yield(task, 500) || Task.shutdown(task) do
-    #       {:ok, _} -> :ok
-    #       # Don't fail if recording times out
-    #       _ -> :ok
-    #     end
-    # end
+    # Stub implementation - no-op for render/frame time recording
+    # See Raxol.Performance.MonitoringCoordinator for actual implementation
     :ok
   end
 
@@ -349,17 +182,8 @@ defmodule Raxol.Core.Performance do
 
   @spec safe_analyze(any()) :: any()
   defp safe_analyze(_metrics) do
-    # TODO: Implement Raxol.Core.Performance.Analyzer module
-    # task =
-    #   Task.async(fn ->
-    #     Raxol.Core.Performance.Analyzer.analyze(metrics)
-    #   end)
-    #
-    # case Task.yield(task, 2000) || Task.shutdown(task) do
-    #   {:ok, analysis} -> {:ok, analysis}
-    #   nil -> {:error, :analysis_timeout}
-    #   {:exit, reason} -> {:error, {:analysis_failed, reason}}
-    # end
+    # Stub implementation - returns not_implemented status
+    # See Raxol.Core.Performance.Analyzer.analyze/1 for actual implementation
     {:ok, %{status: :not_implemented}}
   end
 

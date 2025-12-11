@@ -23,7 +23,7 @@ defmodule Raxol.UI.Components.Input.TextWrappingCached do
   """
   def wrap_line_by_visual_width(text, width)
       when is_binary(text) and is_integer(width) and width > 0 do
-    ensure_cache()
+    _ = ensure_cache()
 
     cache_key = {:visual_width_wrap, text, width}
 
@@ -46,7 +46,7 @@ defmodule Raxol.UI.Components.Input.TextWrappingCached do
   """
   def wrap_line_by_word(text, width)
       when is_binary(text) and is_integer(width) and width > 0 do
-    ensure_cache()
+    _ = ensure_cache()
 
     cache_key = {:word_wrap, text, width}
 
@@ -67,7 +67,7 @@ defmodule Raxol.UI.Components.Input.TextWrappingCached do
   Gets the visual width of text with caching.
   """
   def get_visual_width(text) when is_binary(text) do
-    ensure_cache()
+    _ = ensure_cache()
 
     cache_key = {:visual_width, text}
 
@@ -86,7 +86,7 @@ defmodule Raxol.UI.Components.Input.TextWrappingCached do
   Warms up the cache with common strings.
   """
   def warmup_cache(strings) when is_list(strings) do
-    ensure_cache()
+    _ = ensure_cache()
 
     Enum.each(strings, fn string ->
       # Pre-calculate and cache visual width
@@ -106,7 +106,7 @@ defmodule Raxol.UI.Components.Input.TextWrappingCached do
   Wraps text based on pixel width and font metrics.
   """
   def wrap_to_pixel_width(text, pixel_width, font_manager) do
-    ensure_cache()
+    _ = ensure_cache()
 
     cache_key = {:pixel_wrap, text, pixel_width, font_manager}
 

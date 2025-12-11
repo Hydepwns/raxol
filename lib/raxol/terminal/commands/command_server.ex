@@ -97,7 +97,7 @@ defmodule Raxol.Terminal.Commands.CommandServer do
   @doc """
   Handles OSC (Operating System Command) sequences.
   """
-  @spec handle_osc(Emulator.t(), String.t(), String.t()) :: command_result()
+  @spec handle_osc(map(), binary(), integer()) :: command_result()
   def handle_osc(emulator, command, data) do
     cmd_params = %{
       type: :osc,

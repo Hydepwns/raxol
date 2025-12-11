@@ -45,6 +45,12 @@ defmodule Raxol.UI.State.Context do
 
   # Context definition structure
   defmodule ContextDef do
+    @moduledoc """
+    Definition structure for a context.
+
+    Defines a named context with a default value and optional display name,
+    tracking all providers that supply values for this context.
+    """
     @enforce_keys [:name, :default_value]
     defstruct [:name, :default_value, :display_name, :providers]
 
@@ -60,6 +66,12 @@ defmodule Raxol.UI.State.Context do
 
   # Context provider state
   defmodule Provider do
+    @moduledoc """
+    Context provider that supplies values to descendant components.
+
+    Associates a context definition with a specific value and tracks
+    child components that consume this context.
+    """
     defstruct [:context, :value, :children, :id]
 
     def new(context, value, children) do

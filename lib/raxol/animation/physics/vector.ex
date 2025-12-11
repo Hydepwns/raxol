@@ -130,9 +130,11 @@ defmodule Raxol.Animation.Physics.Vector do
     dot_product = dot(v1, v2)
     magnitudes = magnitude(v1) * magnitude(v2)
 
-    case magnitudes do
-      0 -> 0
-      _ -> :math.acos(min(1, max(-1, dot_product / magnitudes)))
+    # magnitudes is a float, use float comparison
+    if magnitudes == 0.0 do
+      0.0
+    else
+      :math.acos(min(1, max(-1, dot_product / magnitudes)))
     end
   end
 

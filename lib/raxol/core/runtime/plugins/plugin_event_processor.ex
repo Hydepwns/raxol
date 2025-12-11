@@ -52,7 +52,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
   end
 
   @spec handle_plugin_processing(
-          String.t() | integer(),
+          any(),
           any(),
           any(),
           any(),
@@ -60,10 +60,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
           any(),
           map()
         ) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+          {:cont, {:ok, any()}} | {:halt, {:error, any()}}
   defp handle_plugin_processing(
          plugin_id,
          event,

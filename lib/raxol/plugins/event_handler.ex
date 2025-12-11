@@ -17,7 +17,7 @@ defmodule Raxol.Plugins.EventHandler do
   @doc """
   Handles output events.
   """
-  @spec handle_output(term(), term()) :: {:ok, term()}
+  @spec handle_output(term(), term()) :: term()
   def handle_output(manager, output) do
     # Delegate to output events handler for proper implementation
     OutputEvents.handle_output(manager, output)

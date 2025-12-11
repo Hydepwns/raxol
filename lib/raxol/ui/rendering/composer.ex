@@ -152,9 +152,8 @@ defmodule Raxol.UI.Rendering.Composer do
     build_new_composed_node(current_layout_node, previous_composed_node)
   end
 
+  # node is always a map in our call sites
   defp extract_node_type(node) when is_map(node) do
     node[:type] || node[:composed_type] || :unknown
   end
-
-  defp extract_node_type(_node), do: :primitive
 end

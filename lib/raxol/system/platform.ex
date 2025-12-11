@@ -267,16 +267,16 @@ defmodule Raxol.System.Platform do
   # Platform version detection
 
   defp get_macos_version do
-    case Raxol.Core.ErrorHandling.safe_call(fn ->
-           case System.cmd("sw_vers", ["-productVersion"],
-                  stderr_to_stdout: true
-                ) do
-             {version, 0} -> String.trim(version)
-             _ -> "unknown"
-           end
-         end) do
+    case Raxol.Core.ErrorHandling.safe_call(&run_sw_vers/0) do
       {:ok, result} -> result
       {:error, _} -> "unknown"
+    end
+  end
+
+  defp run_sw_vers do
+    case System.cmd("sw_vers", ["-productVersion"], stderr_to_stdout: true) do
+      {version, 0} -> String.trim(version)
+      _ -> "unknown"
     end
   end
 
@@ -300,21 +300,23 @@ defmodule Raxol.System.Platform do
   end
 
   defp get_windows_version do
-    case Raxol.Core.ErrorHandling.safe_call(fn ->
-           case System.cmd("cmd", ["/c", "ver"], stderr_to_stdout: true) do
-             {output, 0} ->
-               output
-               |> String.trim()
-               |> String.split("[")
-               |> List.last()
-               |> String.trim_trailing("]")
-
-             _ ->
-               "unknown"
-           end
-         end) do
+    case Raxol.Core.ErrorHandling.safe_call(&run_windows_ver/0) do
       {:ok, result} -> result
       {:error, _} -> "unknown"
+    end
+  end
+
+  defp run_windows_ver do
+    case System.cmd("cmd", ["/c", "ver"], stderr_to_stdout: true) do
+      {output, 0} ->
+        output
+        |> String.trim()
+        |> String.split("[")
+        |> List.last()
+        |> String.trim_trailing("]")
+
+      _ ->
+        "unknown"
     end
   end
 
@@ -523,16 +525,20 @@ defmodule Raxol.System.Platform do
         false
 
       version ->
-        case String.split(version, ".") do
-          [major | _] when is_binary(major) ->
-            case Integer.parse(major) do
-              {maj_num, _} -> maj_num >= 3
-              _ -> false
-            end
+        check_version_major_gte(version, 3)
+    end
+  end
 
-          _ ->
-            false
+  defp check_version_major_gte(version, min_major) do
+    case String.split(version, ".") do
+      [major | _] when is_binary(major) ->
+        case Integer.parse(major) do
+          {maj_num, _} -> maj_num >= min_major
+          _ -> false
         end
+
+      _ ->
+        false
     end
   end
 
@@ -576,20 +582,26 @@ defmodule Raxol.System.Platform do
   # Platform-specific detection helpers
 
   defp apple_silicon? do
-    case Raxol.Core.ErrorHandling.safe_call(fn ->
-           case :os.type() do
-             {:unix, :darwin} ->
-               case System.cmd("uname", ["-m"], stderr_to_stdout: true) do
-                 {"arm64\n", 0} -> true
-                 _ -> false
-               end
-
-             _ ->
-               false
-           end
-         end) do
+    case Raxol.Core.ErrorHandling.safe_call(&check_apple_silicon_arch/0) do
       {:ok, result} -> result
       {:error, _} -> false
+    end
+  end
+
+  defp check_apple_silicon_arch do
+    case :os.type() do
+      {:unix, :darwin} ->
+        check_arm64_architecture()
+
+      _ ->
+        false
+    end
+  end
+
+  defp check_arm64_architecture do
+    case System.cmd("uname", ["-m"], stderr_to_stdout: true) do
+      {"arm64\n", 0} -> true
+      _ -> false
     end
   end
 
@@ -671,20 +683,26 @@ defmodule Raxol.System.Platform do
   defp determine_by_psmodule(_psmodule), do: "PowerShell"
 
   defp detect_linux_clipboard_support do
-    case Raxol.Core.ErrorHandling.safe_call(fn ->
-           case System.cmd("which", ["xclip"], stderr_to_stdout: true) do
-             {_, 0} ->
-               true
-
-             _ ->
-               case System.cmd("which", ["wl-copy"], stderr_to_stdout: true) do
-                 {_, 0} -> true
-                 _ -> false
-               end
-           end
-         end) do
+    case Raxol.Core.ErrorHandling.safe_call(&check_linux_clipboard_tools/0) do
       {:ok, result} -> result
       {:error, _} -> false
+    end
+  end
+
+  defp check_linux_clipboard_tools do
+    case System.cmd("which", ["xclip"], stderr_to_stdout: true) do
+      {_, 0} ->
+        true
+
+      _ ->
+        check_wayland_clipboard_tool()
+    end
+  end
+
+  defp check_wayland_clipboard_tool do
+    case System.cmd("which", ["wl-copy"], stderr_to_stdout: true) do
+      {_, 0} -> true
+      _ -> false
     end
   end
 
@@ -701,10 +719,10 @@ defmodule Raxol.System.Platform do
     # Windows Terminal and WSL have even better unicode support
     windows_terminal?() || wsl?() ||
       System.get_env("TERM") == "xterm-256color" ||
-      is_windows_10_or_later()
+      windows_10_or_later?()
   end
 
-  defp is_windows_10_or_later do
+  defp windows_10_or_later? do
     case get_windows_version() do
       "unknown" ->
         # Assume Windows 10+ if version detection fails
@@ -712,16 +730,20 @@ defmodule Raxol.System.Platform do
 
       version ->
         # Parse version string like "10.0.19045.2006"
-        case String.split(version, ".") do
-          [major | _] when is_binary(major) ->
-            case Integer.parse(major) do
-              {maj_num, _} -> maj_num >= 10
-              _ -> true
-            end
+        check_windows_version_major(version, 10)
+    end
+  end
 
-          _ ->
-            true
+  defp check_windows_version_major(version, min_major) do
+    case String.split(version, ".") do
+      [major | _] when is_binary(major) ->
+        case Integer.parse(major) do
+          {maj_num, _} -> maj_num >= min_major
+          _ -> true
         end
+
+      _ ->
+        true
     end
   end
 end

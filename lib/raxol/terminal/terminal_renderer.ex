@@ -578,8 +578,7 @@ defmodule Raxol.Terminal.Renderer do
     content =
       buffer
       |> Raxol.Terminal.ScreenBuffer.get_lines()
-      |> Enum.map(&Enum.join/1)
-      |> Enum.join("\n")
+      |> Enum.map_join("\n", &Enum.join/1)
       |> maybe_add_cursor(buffer.cursor_position, include_cursor)
 
     {:ok, content}

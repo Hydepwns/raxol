@@ -157,16 +157,7 @@ defmodule Raxol.Core.Supervisor do
 
     results =
       Enum.map(servers, fn server ->
-        case Process.whereis(server) do
-          nil ->
-            {:error, {server, :not_started}}
-
-          pid when is_pid(pid) ->
-            case Process.alive?(pid) do
-              true -> {:ok, server}
-              false -> {:error, {server, :not_alive}}
-            end
-        end
+        check_server_health(server)
       end)
 
     errors =
@@ -206,18 +197,7 @@ defmodule Raxol.Core.Supervisor do
     ]
 
     Enum.map(servers, fn {server, name} ->
-      status =
-        case Process.whereis(server) do
-          nil ->
-            :not_started
-
-          pid when is_pid(pid) ->
-            case Process.alive?(pid) do
-              true -> :running
-              false -> :dead
-            end
-        end
-
+      status = get_server_status(server)
       {name, status}
     end)
   end
@@ -233,6 +213,40 @@ defmodule Raxol.Core.Supervisor do
       _pid ->
         _ = Supervisor.terminate_child(__MODULE__, server_name)
         Supervisor.restart_child(__MODULE__, server_name)
+    end
+  end
+
+  defp check_server_health(server) do
+    case Process.whereis(server) do
+      nil ->
+        {:error, {server, :not_started}}
+
+      pid when is_pid(pid) ->
+        check_pid_alive(server, pid)
+    end
+  end
+
+  defp check_pid_alive(server, pid) do
+    case Process.alive?(pid) do
+      true -> {:ok, server}
+      false -> {:error, {server, :not_alive}}
+    end
+  end
+
+  defp get_server_status(server) do
+    case Process.whereis(server) do
+      nil ->
+        :not_started
+
+      pid when is_pid(pid) ->
+        get_pid_status(pid)
+    end
+  end
+
+  defp get_pid_status(pid) do
+    case Process.alive?(pid) do
+      true -> :running
+      false -> :dead
     end
   end
 end

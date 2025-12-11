@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.Manager.SessionHandler do
   @doc """
   Creates a new terminal session.
   """
-  @spec create_session(map(), map()) :: {:ok, binary()} | {:error, term()}
+  @spec create_session(map(), map()) :: {:ok, binary(), map()} | {:error, term()}
   def create_session(opts, state) do
     user_id = Map.get(opts, :user_id, "anonymous")
 
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Manager.SessionHandler do
   @doc """
   Destroys a terminal session.
   """
-  @spec destroy_session(binary(), map()) :: :ok | {:error, term()}
+  @spec destroy_session(binary(), map()) :: {:ok, map()} | {:error, term()}
   def destroy_session(session_id, state) do
     case SessionManager.cleanup_terminal_session(session_id) do
       :ok ->

@@ -41,6 +41,11 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
 
   # State structures
   defmodule Pane do
+    @moduledoc """
+    Terminal pane within a multiplexer window.
+
+    Represents an individual pane with its process, buffer, cursor, and dimensions.
+    """
     defstruct [
       :id,
       :pid,
@@ -56,6 +61,11 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   end
 
   defmodule Window do
+    @moduledoc """
+    Window containing multiple panes.
+
+    Manages a collection of panes with layout information and active pane tracking.
+    """
     defstruct [
       :id,
       :name,
@@ -67,6 +77,11 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   end
 
   defmodule Session do
+    @moduledoc """
+    Multiplexer session containing multiple windows.
+
+    Top-level session structure managing windows, configuration, and keybindings.
+    """
     defstruct [
       :id,
       :name,
@@ -629,7 +644,7 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
     windows_info =
       session.windows
       |> Enum.with_index()
-      |> Enum.map(fn {w, i} ->
+      |> Enum.map_join(" ", fn {w, i} ->
         prefix =
           case w.id == window.id do
             true -> "*"
@@ -638,7 +653,6 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
 
         "#{prefix}#{i}:#{w.name}"
       end)
-      |> Enum.join(" ")
 
     "[#{session.name}] #{windows_info}"
   end

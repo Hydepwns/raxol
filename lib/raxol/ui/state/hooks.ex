@@ -40,6 +40,9 @@ defmodule Raxol.UI.State.Hooks do
   alias Raxol.Core.Runtime.Log
   # Result type for safe operations (from HooksRefactored)
   defmodule Result do
+    @moduledoc """
+    Result type for safe hook operations.
+    """
     @type t(ok, error) :: {:ok, ok} | {:error, error}
   end
 

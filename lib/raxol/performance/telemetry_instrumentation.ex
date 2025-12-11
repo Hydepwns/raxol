@@ -60,7 +60,7 @@ defmodule Raxol.Performance.TelemetryInstrumentation do
     span_ref = make_ref()
 
     :telemetry.execute(
-      [:raxol | event_to_path(event_name)] ++ [:start],
+      List.flatten([[:raxol], event_to_path(event_name), [:start]]),
       %{system_time: System.system_time()},
       Map.merge(metadata, %{span_ref: span_ref})
     )
@@ -72,7 +72,7 @@ defmodule Raxol.Performance.TelemetryInstrumentation do
     duration = System.monotonic_time(:microsecond) - start_time
 
     :telemetry.execute(
-      [:raxol | event_to_path(event_name)] ++ [:stop],
+      List.flatten([[:raxol], event_to_path(event_name), [:stop]]),
       %{duration: duration, system_time: System.system_time()},
       Map.merge(metadata, %{span_ref: span_ref})
     )

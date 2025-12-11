@@ -225,13 +225,7 @@ defmodule Raxol.Commands.FileSystem do
           {:error, "Directory not empty: #{target_path}"}
 
         {:ok, _entry} ->
-          case remove_entry(fs, target_path) do
-            {:ok, new_root} ->
-              {:ok, %{fs | root: new_root}}
-
-            {:error, reason} ->
-              {:error, reason}
-          end
+          perform_entry_removal(fs, target_path)
 
         {:error, reason} ->
           {:error, reason}
@@ -449,59 +443,28 @@ defmodule Raxol.Commands.FileSystem do
       %{type: :directory, entries: entries} = dir ->
         child = Map.get(entries, segment)
 
-        if child do
-          case update_at_path(child, rest, new_entry, operation) do
-            {:ok, updated_child} ->
-              now = DateTime.utc_now()
-              new_entries = Map.put(entries, segment, updated_child)
+        case child do
+          nil ->
+            # Need to create intermediate directory
+            handle_missing_child(
+              operation,
+              entries,
+              segment,
+              rest,
+              new_entry,
+              dir
+            )
 
-              updated_dir = %{
-                dir
-                | entries: new_entries,
-                  metadata: Map.put(dir.metadata, :modified, now)
-              }
-
-              {:ok, updated_dir}
-
-            {:error, reason} ->
-              {:error, reason}
-          end
-        else
-          # Need to create intermediate directory
-          case operation do
-            :create ->
-              now = DateTime.utc_now()
-
-              intermediate = %{
-                type: :directory,
-                entries: %{},
-                metadata: %{
-                  type: :directory,
-                  created: now,
-                  modified: now,
-                  size: 0
-                }
-              }
-
-              case update_at_path(intermediate, rest, new_entry, operation) do
-                {:ok, updated_child} ->
-                  new_entries = Map.put(entries, segment, updated_child)
-
-                  updated_dir = %{
-                    dir
-                    | entries: new_entries,
-                      metadata: Map.put(dir.metadata, :modified, now)
-                  }
-
-                  {:ok, updated_dir}
-
-                {:error, reason} ->
-                  {:error, reason}
-              end
-
-            :delete ->
-              {:error, "Path not found"}
-          end
+          child ->
+            handle_existing_child(
+              child,
+              rest,
+              new_entry,
+              operation,
+              entries,
+              segment,
+              dir
+            )
         end
 
       _ ->
@@ -579,5 +542,97 @@ defmodule Raxol.Commands.FileSystem do
       |> Enum.sort()
 
     {name, :directory, children}
+  end
+
+  defp perform_entry_removal(fs, target_path) do
+    case remove_entry(fs, target_path) do
+      {:ok, new_root} ->
+        {:ok, %{fs | root: new_root}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp create_intermediate_directory(
+         entries,
+         segment,
+         rest,
+         new_entry,
+         operation,
+         dir
+       ) do
+    now = DateTime.utc_now()
+
+    intermediate = %{
+      type: :directory,
+      entries: %{},
+      metadata: %{
+        type: :directory,
+        created: now,
+        modified: now,
+        size: 0
+      }
+    }
+
+    case update_at_path(intermediate, rest, new_entry, operation) do
+      {:ok, updated_child} ->
+        new_entries = Map.put(entries, segment, updated_child)
+
+        updated_dir = %{
+          dir
+          | entries: new_entries,
+            metadata: Map.put(dir.metadata, :modified, now)
+        }
+
+        {:ok, updated_dir}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp handle_missing_child(operation, entries, segment, rest, new_entry, dir) do
+    case operation do
+      :create ->
+        create_intermediate_directory(
+          entries,
+          segment,
+          rest,
+          new_entry,
+          operation,
+          dir
+        )
+
+      :delete ->
+        {:error, "Path not found"}
+    end
+  end
+
+  defp handle_existing_child(
+         child,
+         rest,
+         new_entry,
+         operation,
+         entries,
+         segment,
+         dir
+       ) do
+    case update_at_path(child, rest, new_entry, operation) do
+      {:ok, updated_child} ->
+        now = DateTime.utc_now()
+        new_entries = Map.put(entries, segment, updated_child)
+
+        updated_dir = %{
+          dir
+          | entries: new_entries,
+            metadata: Map.put(dir.metadata, :modified, now)
+        }
+
+        {:ok, updated_dir}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 end

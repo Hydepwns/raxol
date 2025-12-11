@@ -286,9 +286,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
 
     {new_row, new_col} =
       Raxol.UI.Components.Input.MultiLineInput.TextHelper.calculate_new_position(
-        start_row,
-        start_col,
-        content
+        state,
+        content,
+        {start_row, start_col}
       )
 
     new_state = %{
@@ -413,8 +413,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   defp trigger_on_change({:noreply, new_state, existing_cmd}, old_state) do
     trigger_change_if_value_changed(new_state, old_state, existing_cmd)
   end
-
-  defp trigger_on_change(other, _old_state), do: other
 
   def handle_selection_move(state, direction) do
     original_cursor_pos = state.cursor_pos
@@ -705,22 +703,16 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   defp do_trigger_change(false, new_state, existing_cmd),
     do: {:noreply, new_state, existing_cmd}
 
-  defp do_trigger_change(true, new_state, existing_cmd) do
+  # existing_cmd is always nil in current call sites
+  defp do_trigger_change(true, new_state, _existing_cmd) do
     change_event_cmd =
       {:component_event, new_state.id, {:change, new_state.value}}
-
-    new_cmd =
-      case existing_cmd do
-        nil -> [change_event_cmd]
-        cmd when is_list(cmd) -> [change_event_cmd | cmd]
-        single_cmd -> [change_event_cmd, single_cmd]
-      end
 
     Raxol.Core.Runtime.Log.debug(
       "Value changed for #{new_state.id}, queueing :change event."
     )
 
-    {:noreply, new_state, new_cmd}
+    {:noreply, new_state, [change_event_cmd]}
   end
 
   defp choose_children_content(

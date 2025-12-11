@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.ScreenBufferAdapter do
   }
 
   # Re-export the Core struct as ScreenBuffer.t()
-  @type t :: Core.t()
+  @type t :: map()
 
   # Creation and basic operations (from Core)
   defdelegate new(width, height), to: Core

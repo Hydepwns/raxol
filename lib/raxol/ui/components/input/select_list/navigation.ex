@@ -77,7 +77,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   @doc """
   Handles search/filter navigation.
   """
-  @spec handle_search(SelectList.t(), String.t()) :: SelectList.t()
+  @spec handle_search(map(), String.t()) :: map()
   def handle_search(state, query) do
     filtered_options = filter_options(state.options, query)
 
@@ -93,7 +93,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   @doc """
   Clears the current search filter.
   """
-  @spec clear_search(SelectList.t()) :: SelectList.t()
+  @spec clear_search(map()) :: map()
   def clear_search(state) do
     %{
       state

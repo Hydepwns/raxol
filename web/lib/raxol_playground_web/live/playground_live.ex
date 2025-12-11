@@ -1,11 +1,13 @@
 defmodule RaxolPlaygroundWeb.PlaygroundLive do
   use RaxolPlaygroundWeb, :live_view
-  
+
+  alias RaxolPlaygroundWeb.Live.ComponentHelpers
+
   @impl true
   def mount(_params, _session, socket) do
     components = list_available_components()
-    
-    socket = 
+
+    socket =
       socket
       |> assign(:components, components)
       |> assign(:selected_component, List.first(components))
@@ -14,64 +16,66 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       |> assign(:error_message, nil)
       |> assign(:search_query, "")
       |> assign(:filtered_components, components)
-    
+
     {:ok, socket}
   end
-  
+
   @impl true
   def handle_event("select_component", %{"component" => component_name}, socket) do
-    component = Enum.find(socket.assigns.components, &(&1.name == component_name))
+    component =
+      Enum.find(socket.assigns.components, &(&1.name == component_name))
+
     code = get_component_code(component)
-    
-    socket = 
+
+    socket =
       socket
       |> assign(:selected_component, component)
       |> assign(:component_code, code)
       |> assign(:error_message, nil)
-    
+
     {:noreply, socket}
   end
-  
+
   def handle_event("update_code", %{"code" => code}, socket) do
-    socket = 
+    socket =
       socket
       |> assign(:component_code, code)
       |> assign(:error_message, nil)
-    
+
     {:noreply, socket}
   end
-  
+
   def handle_event("run_component", _params, socket) do
     case execute_component_code(socket.assigns.component_code) do
       {:ok, output} ->
-        socket = 
+        socket =
           socket
           |> assign(:preview_output, output)
           |> assign(:error_message, nil)
-        
+
         {:noreply, socket}
-      
+
       {:error, error} ->
-        socket = 
+        socket =
           socket
           |> assign(:error_message, error)
           |> assign(:preview_output, "")
-        
+
         {:noreply, socket}
     end
   end
-  
+
   def handle_event("search_components", %{"query" => query}, socket) do
     filtered = filter_components(socket.assigns.components, query)
-    
-    socket = 
+
+    socket =
       socket
       |> assign(:search_query, query)
       |> assign(:filtered_components, filtered)
-    
+
     {:noreply, socket}
   end
-  
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -195,14 +199,15 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     </div>
     """
   end
-  
+
   # Helper functions
-  
+
   defp list_available_components do
     [
       %{
         name: "Button",
-        description: "Interactive button component with various styles and states",
+        description:
+          "Interactive button component with various styles and states",
         framework: "Universal",
         complexity: "Basic",
         tags: ["input", "interactive", "basic"],
@@ -211,7 +216,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       %{
         name: "TextInput",
         description: "Single-line text input with validation and formatting",
-        framework: "Universal", 
+        framework: "Universal",
         complexity: "Intermediate",
         tags: ["input", "form", "validation"],
         category: "Input"
@@ -234,7 +239,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       },
       %{
         name: "Modal",
-        description: "Modal dialog with backdrop and focus management", 
+        description: "Modal dialog with backdrop and focus management",
         framework: "React",
         complexity: "Intermediate",
         tags: ["overlay", "dialog", "focus"],
@@ -244,18 +249,19 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
         name: "Menu",
         description: "Dropdown menu with keyboard navigation",
         framework: "Universal",
-        complexity: "Advanced", 
+        complexity: "Advanced",
         tags: ["navigation", "keyboard", "dropdown"],
         category: "Navigation"
       }
     ]
   end
-  
+
   defp get_component_code(component) do
     case component.name do
-      "Button" -> """
+      "Button" ->
+        """
         use Raxol.UI, framework: :universal
-        
+
         def render(assigns) do
           ~H\"\"\"
           <button class={@class} onclick={@onclick}>
@@ -263,7 +269,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
           </button>
           \"\"\"
         end
-        
+
         # Example usage:
         Button.render(%{
           text: "Click Me",
@@ -271,10 +277,11 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
           onclick: fn -> IO.puts("Button clicked!") end
         })
         """
-      
-      "TextInput" -> """
+
+      "TextInput" ->
+        """
         use Raxol.UI, framework: :universal
-        
+
         def render(assigns) do
           ~H\"\"\"
           <input
@@ -286,7 +293,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
           />
           \"\"\"
         end
-        
+
         # Example usage:
         TextInput.render(%{
           value: "",
@@ -295,10 +302,11 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
           oninput: fn value -> send(self(), {:input_changed, value}) end
         })
         """
-        
-      "Table" -> """
+
+      "Table" ->
+        """
         use Raxol.UI, framework: :universal
-        
+
         def render(assigns) do
           ~H\"\"\"
           <table class="table">
@@ -321,7 +329,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
           </table>
           \"\"\"
         end
-        
+
         # Example usage:
         Table.render(%{
           columns: [
@@ -335,10 +343,11 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
           ]
         })
         """
-        
-      _ -> """
+
+      _ ->
+        """
         use Raxol.UI, framework: :universal
-        
+
         def render(assigns) do
           ~H\"\"\"
           <div>
@@ -349,7 +358,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
         """
     end
   end
-  
+
   defp execute_component_code(code) do
     try do
       # Simulate component execution
@@ -366,23 +375,15 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       │                                                         │
       └─────────────────────────────────────────────────────────┘
       """
-      
+
       {:ok, output}
     rescue
       error ->
         {:error, "Error: #{inspect(error)}"}
     end
   end
-  
-  defp filter_components(components, ""), do: components
-  
+
   defp filter_components(components, query) do
-    query = String.downcase(query)
-    
-    Enum.filter(components, fn component ->
-      String.contains?(String.downcase(component.name), query) ||
-      String.contains?(String.downcase(component.description), query) ||
-      Enum.any?(component.tags, &String.contains?(String.downcase(&1), query))
-    end)
+    ComponentHelpers.filter_by_search(components, query)
   end
 end

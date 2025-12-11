@@ -317,15 +317,7 @@ defmodule Raxol.Animation.StateServer do
             Map.put(acc, element_id, updated_element_animations)
 
           {:remove, element_id, animation_name} ->
-            element_animations = Map.get(acc, element_id, %{})
-
-            updated_element_animations =
-              Map.delete(element_animations, animation_name)
-
-            case map_size(updated_element_animations) do
-              0 -> Map.delete(acc, element_id)
-              _ -> Map.put(acc, element_id, updated_element_animations)
-            end
+            remove_animation_from_active(acc, element_id, animation_name)
 
           _ ->
             Log.warning("Unknown batch update operation: #{inspect(update)}")
@@ -335,5 +327,21 @@ defmodule Raxol.Animation.StateServer do
       end)
 
     %{state | active_animations: updated_active_animations}
+  end
+
+  defp remove_animation_from_active(
+         active_animations,
+         element_id,
+         animation_name
+       ) do
+    element_animations = Map.get(active_animations, element_id, %{})
+
+    updated_element_animations =
+      Map.delete(element_animations, animation_name)
+
+    case map_size(updated_element_animations) do
+      0 -> Map.delete(active_animations, element_id)
+      _ -> Map.put(active_animations, element_id, updated_element_animations)
+    end
   end
 end

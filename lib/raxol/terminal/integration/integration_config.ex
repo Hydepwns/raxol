@@ -141,10 +141,12 @@ defmodule Raxol.Terminal.Integration.Config do
   @doc """
   Validates the configuration.
   """
+  @spec validate_config(map()) :: :ok | {:error, atom()}
   def validate_config(config) do
     with :ok <- validate_behavior(config.behavior),
          :ok <- validate_memory_limit(config.memory_limit),
          :ok <- validate_rendering(config.rendering) do
+      :ok
     end
   end
 

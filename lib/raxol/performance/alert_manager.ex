@@ -92,7 +92,7 @@ defmodule Raxol.Performance.AlertManager do
     }
 
     # Start cleanup timer
-    :timer.send_interval(60_000, :cleanup_alerts)
+    _ = :timer.send_interval(60_000, :cleanup_alerts)
 
     Log.info("Performance AlertManager initialized", %{
       channels: Map.keys(state.alert_channels),
@@ -308,7 +308,7 @@ defmodule Raxol.Performance.AlertManager do
 
     # Send update notification if occurrence count hits certain thresholds
     if should_send_update_notification?(updated_alert) do
-      send_alert_update(updated_alert, new_state)
+      _ = send_alert_update(updated_alert, new_state)
     end
 
     {:ok, alert_id, new_state}

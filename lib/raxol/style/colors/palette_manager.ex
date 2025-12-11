@@ -61,14 +61,14 @@ defmodule Raxol.Style.Colors.PaletteManager do
     handle_delta_calculation(delta, r, g, b, max_val, min_val, l)
   end
 
-  defp handle_delta_calculation(0, _r, _g, _b, _max_val, _min_val, _l) do
-    {0, 0}
-  end
-
   defp handle_delta_calculation(delta, r, g, b, max_val, min_val, l) do
-    s = calculate_saturation(delta, max_val, min_val, l)
-    h = calculate_hue(r, g, b, max_val, delta)
-    {h, s}
+    if delta == 0.0 do
+      {0, 0}
+    else
+      s = calculate_saturation(delta, max_val, min_val, l)
+      h = calculate_hue(r, g, b, max_val, delta)
+      {h, s}
+    end
   end
 
   defp calculate_saturation(delta, max_val, min_val, l) do

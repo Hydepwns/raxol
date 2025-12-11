@@ -434,17 +434,10 @@ defmodule Raxol.Core.FocusManager.FocusServer do
             state.tab_order
             |> Enum.drop(index + 1)
             |> Enum.find(&MapSet.member?(state.enabled_components, &1))
-            |> case do
-              nil ->
-                # Wrap around to first
-                Enum.find(
-                  state.tab_order,
-                  &MapSet.member?(state.enabled_components, &1)
-                )
-
-              component ->
-                component
-            end
+            |> find_next_or_wrap_to_first(
+              state.tab_order,
+              state.enabled_components
+            )
         end
     end
   end
@@ -498,5 +491,20 @@ defmodule Raxol.Core.FocusManager.FocusServer do
           Log.warning("Focus change handler error: #{inspect(error)}")
       end
     end)
+  end
+
+  defp find_next_or_wrap_to_first(
+         found_component,
+         tab_order,
+         enabled_components
+       ) do
+    case found_component do
+      nil ->
+        # Wrap around to first
+        Enum.find(tab_order, &MapSet.member?(enabled_components, &1))
+
+      component ->
+        component
+    end
   end
 end

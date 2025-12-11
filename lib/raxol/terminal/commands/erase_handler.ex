@@ -51,9 +51,12 @@ defmodule Raxol.Terminal.Commands.EraseHandler do
     {:ok, updated_emulator}
   end
 
-  defp handle_erase_characters(emulator, _count, _position) do
-    # Simple implementation - erase characters at cursor position
-    # TODO: Implement actual character erasure in buffer
-    {:ok, emulator}
+  defp handle_erase_characters(emulator, count, _position) do
+    # ECH - Erase Characters at cursor position
+    # Delegates to ScreenOperations for actual buffer manipulation
+    updated_emulator =
+      Raxol.Terminal.Operations.ScreenOperations.erase_chars(emulator, count)
+
+    {:ok, updated_emulator}
   end
 end

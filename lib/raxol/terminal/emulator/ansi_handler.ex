@@ -200,7 +200,6 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
 
     case result do
       {:ok, updated_emulator} -> {updated_emulator, remaining}
-      updated_emulator -> {updated_emulator, remaining}
     end
   end
 

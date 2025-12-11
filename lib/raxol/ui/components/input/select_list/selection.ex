@@ -34,8 +34,13 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
         |> ensure_visible()
       else
         # Single selection: update selected_index
-        %{state | selected_index: new_index, focused_index: new_index}
-        |> ensure_visible()
+        updated_state = %{
+          state
+          | selected_index: new_index,
+            focused_index: new_index
+        }
+
+        ensure_visible(updated_state)
       end
 
     # Generate callback commands if applicable
@@ -96,9 +101,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
       state.selected_index == index
     end
   end
-
-  @deprecated "Use selected?/2 instead"
-  def is_selected?(state, index), do: selected?(state, index)
 
   @doc """
   Moves selection up by one.

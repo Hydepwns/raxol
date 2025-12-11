@@ -218,10 +218,10 @@ defmodule Raxol.UI.Layout.Table do
                                                                {auto_idx, acc} ->
         case config do
           {:fixed, width} ->
-            {auto_idx, acc ++ [width]}
+            {auto_idx, [width | acc]}
 
           {:percent, pct} ->
-            {auto_idx, acc ++ [div(available_width * pct, 100)]}
+            {auto_idx, [div(available_width * pct, 100) | acc]}
 
           :auto ->
             content_width =
@@ -232,11 +232,11 @@ defmodule Raxol.UI.Layout.Table do
                 width -> width
               end
 
-            {auto_idx + 1, acc ++ [content_width]}
+            {auto_idx + 1, [content_width | acc]}
         end
       end)
 
-    result
+    Enum.reverse(result)
   end
 
   defp calculate_content_widths(columns, rows) do
@@ -361,10 +361,10 @@ defmodule Raxol.UI.Layout.Table do
   defp calculate_x_positions(column_widths, border_offset) do
     {positions, _} =
       Enum.reduce(column_widths, {[], border_offset}, fn width, {acc, offset} ->
-        {acc ++ [offset], offset + width + border_offset}
+        {[offset | acc], offset + width + border_offset}
       end)
 
-    positions
+    Enum.reverse(positions)
   end
 
   defp calculate_y_positions(row_heights, header_offset, border_offset) do
@@ -372,10 +372,10 @@ defmodule Raxol.UI.Layout.Table do
       Enum.reduce(row_heights, {[], header_offset + border_offset}, fn height,
                                                                        {acc,
                                                                         offset} ->
-        {acc ++ [offset], offset + height + border_offset}
+        {[offset | acc], offset + height + border_offset}
       end)
 
-    positions
+    Enum.reverse(positions)
   end
 
   defp build_positioned_elements(

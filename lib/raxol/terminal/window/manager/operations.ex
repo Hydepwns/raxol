@@ -58,10 +58,8 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
   """
   @spec list_all_windows() :: {:ok, [Window.t()]}
   def list_all_windows do
-    case Registry.list_windows() do
-      {:ok, windows} -> {:ok, windows}
-      windows when is_list(windows) -> {:ok, windows}
-    end
+    # Registry.list_windows always returns {:ok, windows}
+    Registry.list_windows()
   end
 
   @doc """
@@ -174,7 +172,7 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
   # Private helper functions
 
   @spec setup_parent_child_relationship(Window.t(), Window.t()) ::
-          {:ok, Window.t()}
+          {:ok, Window.t()} | {:error, :update_failed}
   defp setup_parent_child_relationship(parent_window, child_window) do
     # Update child with parent reference
     case Registry.update_window(child_window.id, %{parent: parent_window.id}) do

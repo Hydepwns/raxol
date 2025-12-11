@@ -258,9 +258,6 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
       {:error, _reason} ->
         # Unknown command - return original emulator unchanged
         emulator
-
-      updated_emulator ->
-        updated_emulator
     end
   end
 
@@ -327,7 +324,11 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     case final_byte do
       ?c ->
         # Device Attributes (DA)
-        handle_device_attributes(emulator, params, intermediates)
+        Raxol.Terminal.Emulator.CommandHandler.handle_device_attributes(
+          params,
+          emulator,
+          intermediates
+        )
 
       ?n ->
         # Device Status Report (DSR)
@@ -343,34 +344,6 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
       _ ->
         # Other device commands not yet implemented
-        emulator
-    end
-  end
-
-  defp handle_device_attributes(emulator, params, intermediates) do
-    case {intermediates, params} do
-      {">", []} ->
-        # CSI > c or CSI > 0 c (Secondary DA)
-        response = "\e[>0;0;0c"
-        %{emulator | output_buffer: emulator.output_buffer <> response}
-
-      {">", [0]} ->
-        # CSI > 0 c (Secondary DA)
-        response = "\e[>0;0;0c"
-        %{emulator | output_buffer: emulator.output_buffer <> response}
-
-      {"", []} ->
-        # CSI c (Primary DA)
-        response = "\e[?6c"
-        %{emulator | output_buffer: emulator.output_buffer <> response}
-
-      {"", [0]} ->
-        # CSI 0 c (Primary DA)
-        response = "\e[?6c"
-        %{emulator | output_buffer: emulator.output_buffer <> response}
-
-      _ ->
-        # Ignore all other params
         emulator
     end
   end
@@ -472,17 +445,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
       # Call ModeManager with the emulator and a list of modes
       updated_emulator =
-        if is_set do
-          case ModeManager.set_mode(emulator, [mode_name], category) do
-            {:ok, emu} -> emu
-            _ -> emulator
-          end
-        else
-          case ModeManager.reset_mode(emulator, [mode_name], category) do
-            {:ok, emu} -> emu
-            _ -> emulator
-          end
-        end
+        apply_mode_change(emulator, mode_name, category, is_set)
 
       # Handle special cases for screen buffer switching
       case {mode_name, is_set} do
@@ -530,17 +493,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
     if mode_name do
       # Call ModeManager with the emulator and a list of modes
-      if is_set do
-        case ModeManager.set_mode(emulator, [mode_name], :standard) do
-          {:ok, emu} -> emu
-          _ -> emulator
-        end
-      else
-        case ModeManager.reset_mode(emulator, [mode_name], :standard) do
-          {:ok, emu} -> emu
-          _ -> emulator
-        end
-      end
+      apply_mode_change(emulator, mode_name, :standard, is_set)
     else
       emulator
     end
@@ -568,34 +521,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
       # Debug log for testing
       Log.debug("handle_scs params_buffer: #{inspect(params_buffer)}")
 
-      char_code =
-        case params_buffer do
-          "0" ->
-            ?0
-
-          "1" ->
-            Log.debug("Matched '1' string, returning ?A (#{?A})")
-            # Test compatibility - "1" maps to UK ASCII (character 'A')
-            ?A
-
-          # Test compatibility - "16" maps to character '0'
-          "16" ->
-            ?0
-
-          <<char>> ->
-            char
-
-          str when is_binary(str) ->
-            # For other strings, try to get the first character
-            # But the special cases above should handle "1" and "16"
-            case String.to_charlist(str) do
-              [char | _] -> char
-              _ -> nil
-            end
-
-          _ ->
-            nil
-        end
+      char_code = parse_charset_char_code(params_buffer)
 
       charset =
         case char_code do
@@ -978,6 +904,50 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
       _ ->
         emulator
+    end
+  end
+
+  defp apply_mode_change(emulator, mode_name, category, is_set) do
+    if is_set do
+      case ModeManager.set_mode(emulator, [mode_name], category) do
+        {:ok, emu} -> emu
+        _ -> emulator
+      end
+    else
+      case ModeManager.reset_mode(emulator, [mode_name], category) do
+        {:ok, emu} -> emu
+        _ -> emulator
+      end
+    end
+  end
+
+  defp parse_charset_char_code(params_buffer) do
+    case params_buffer do
+      "0" ->
+        ?0
+
+      "1" ->
+        Log.debug("Matched '1' string, returning ?A (#{?A})")
+        # Test compatibility - "1" maps to UK ASCII (character 'A')
+        ?A
+
+      # Test compatibility - "16" maps to character '0'
+      "16" ->
+        ?0
+
+      <<char>> ->
+        char
+
+      str when is_binary(str) ->
+        # For other strings, try to get the first character
+        # But the special cases above should handle "1" and "16"
+        case String.to_charlist(str) do
+          [char | _] -> char
+          _ -> nil
+        end
+
+      _ ->
+        nil
     end
   end
 end

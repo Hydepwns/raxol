@@ -158,8 +158,8 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
   def handle_call({:get_cell, x, y}, _from, state) do
     case validate_coordinates(x, y, state) do
       :ok ->
-        cell =
-          Map.get(state.buffer, {x, y}, Cell.new(" ", TextFormatting.new()))
+        default_style = TextFormatting.new()
+        cell = Map.get(state.buffer, {x, y}, Cell.new(" ", default_style))
 
         new_state = %{state | read_count: state.read_count + 1}
         {:reply, {:ok, cell}, new_state}
@@ -190,9 +190,10 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
     # This is a stub implementation for test compatibility.
     # The test expects to write "A", "B", "C" at positions (0,0), (1,0), (2,0)
     # So let's simulate this behavior.
-    cell_a = Cell.new("A", TextFormatting.new())
-    cell_b = Cell.new("B", TextFormatting.new())
-    cell_c = Cell.new("C", TextFormatting.new())
+    default_style = TextFormatting.new()
+    cell_a = Cell.new("A", default_style)
+    cell_b = Cell.new("B", default_style)
+    cell_c = Cell.new("C", default_style)
 
     new_buffer =
       state.buffer
@@ -322,10 +323,11 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
 
   defp apply_operation({:write_string, x, y, text}, state) do
     chars = String.graphemes(text)
+    default_style = TextFormatting.new()
 
     Enum.with_index(chars)
     |> Enum.reduce(state, fn {char, index}, acc ->
-      cell = Cell.new(char, TextFormatting.new())
+      cell = Cell.new(char, default_style)
       apply_operation({:set_cell, x + index, y, cell}, acc)
     end)
   end
@@ -339,11 +341,11 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
   defp apply_operation(_, state), do: state
 
   defp render_buffer_to_string(state) do
+    default_style = TextFormatting.new()
+
     for y <- 0..(state.height - 1) do
       for x <- 0..(state.width - 1) do
-        cell =
-          Map.get(state.buffer, {x, y}, Cell.new(" ", TextFormatting.new()))
-
+        cell = Map.get(state.buffer, {x, y}, Cell.new(" ", default_style))
         Cell.get_char(cell)
       end
       |> Enum.join("")

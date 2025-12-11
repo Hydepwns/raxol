@@ -450,6 +450,4 @@ defmodule Raxol.UI.Layout.Responsive do
 
   defp scale_font_size(:large, scale) when scale < 0.9, do: :medium
   defp scale_font_size(:large, _scale), do: :large
-
-  defp scale_font_size(other, _scale), do: other
 end

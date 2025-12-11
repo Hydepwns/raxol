@@ -240,7 +240,7 @@ defmodule Raxol.Core.ErrorReporter do
 
   ## Private Implementation
 
-  @spec build_error_report(term(), map(), map(), map()) :: String.t()
+  @spec build_error_report(term(), map(), report_config(), map()) :: String.t()
   defp build_error_report(error, context, config, state) do
     base_report = %{
       session_id: state.current_session_id,
@@ -265,7 +265,7 @@ defmodule Raxol.Core.ErrorReporter do
     format_report(enhanced_report, config.format)
   end
 
-  @spec build_session_report(map(), map()) :: String.t()
+  @spec build_session_report(report_config(), map()) :: String.t()
   defp build_session_report(config, state) do
     session_data = %{
       session_id: state.current_session_id,
@@ -285,7 +285,7 @@ defmodule Raxol.Core.ErrorReporter do
     format_report(enhanced_data, config.format)
   end
 
-  @spec build_batch_report([map()], map(), map()) :: String.t()
+  @spec build_batch_report([map()], report_config(), map()) :: String.t()
   defp build_batch_report(queued_errors, config, state) do
     batch_data = %{
       session_id: state.current_session_id,
@@ -304,7 +304,7 @@ defmodule Raxol.Core.ErrorReporter do
     format_report(enhanced_data, config.format)
   end
 
-  @spec add_standard_data(map(), map(), term(), map()) :: map()
+  @spec add_standard_data(map(), report_config(), term(), map()) :: map()
   defp add_standard_data(base_report, config, error, context) do
     enhanced = base_report
 
@@ -337,7 +337,7 @@ defmodule Raxol.Core.ErrorReporter do
     end
   end
 
-  @spec add_comprehensive_data(map(), map(), term(), map()) :: map()
+  @spec add_comprehensive_data(map(), report_config(), term(), map()) :: map()
   defp add_comprehensive_data(base_report, config, error, context) do
     base_report
     |> add_standard_data(config, error, context)
@@ -351,7 +351,7 @@ defmodule Raxol.Core.ErrorReporter do
     |> Map.put(:learning_insights, get_learning_insights(error, context))
   end
 
-  @spec add_minimal_data(map(), map()) :: map()
+  @spec add_minimal_data(map(), report_config()) :: map()
   defp add_minimal_data(base_report, _config) do
     base_report
   end
@@ -495,22 +495,24 @@ defmodule Raxol.Core.ErrorReporter do
     Log.info("Error report saved to: #{filepath}")
   end
 
+  @spec ensure_reports_directory() :: String.t()
   defp ensure_reports_directory do
     reports_dir = Path.join(File.cwd!(), "reports/errors")
     File.mkdir_p!(reports_dir)
     reports_dir
   end
 
+  @spec generate_session_id() :: String.t()
   defp generate_session_id do
     :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
   end
 
-  @spec merge_config(map(), keyword()) :: map()
+  @spec merge_config(map(), keyword()) :: report_config()
   defp merge_config(base_config, opts) do
     Map.merge(base_config, Enum.into(opts, %{}))
   end
 
-  @spec classify_error_type(term()) :: atom()
+  @spec classify_error_type(term()) :: ErrorExperience.error_category()
   defp classify_error_type(error) do
     ErrorExperience.classify_error_type(error)
   end
@@ -555,6 +557,7 @@ defmodule Raxol.Core.ErrorReporter do
     ["raxol.analyze", "raxol.debug", "raxol.profile"]
   end
 
+  @spec check_tool_availability() :: map()
   defp check_tool_availability do
     %{available: ["raxol.analyze", "raxol.debug"], missing: []}
   end
@@ -591,6 +594,7 @@ defmodule Raxol.Core.ErrorReporter do
     ]
   end
 
+  @spec get_system_state_snapshot() :: map()
   defp get_system_state_snapshot do
     %{
       memory_usage: :erlang.memory(:total),
@@ -617,16 +621,16 @@ defmodule Raxol.Core.ErrorReporter do
   # Additional helper functions for session and batch reports
   @spec add_minimal_session_data(map()) :: map()
   defp add_minimal_session_data(session_data), do: session_data
-  @spec add_standard_session_data(map(), map()) :: map()
+  @spec add_standard_session_data(map(), report_config()) :: map()
   defp add_standard_session_data(session_data, _config), do: session_data
-  @spec add_comprehensive_session_data(map(), map()) :: map()
+  @spec add_comprehensive_session_data(map(), report_config()) :: map()
   defp add_comprehensive_session_data(session_data, _config), do: session_data
 
   @spec add_minimal_batch_data(map()) :: map()
   defp add_minimal_batch_data(batch_data), do: batch_data
-  @spec add_standard_batch_data(map(), map()) :: map()
+  @spec add_standard_batch_data(map(), report_config()) :: map()
   defp add_standard_batch_data(batch_data, _config), do: batch_data
-  @spec add_comprehensive_batch_data(map(), map()) :: map()
+  @spec add_comprehensive_batch_data(map(), report_config()) :: map()
   defp add_comprehensive_batch_data(batch_data, _config), do: batch_data
 
   @spec persist_session_report(String.t(), map()) :: :ok
@@ -634,7 +638,7 @@ defmodule Raxol.Core.ErrorReporter do
   @spec persist_batch_report(String.t(), map()) :: :ok
   defp persist_batch_report(_report, _state), do: :ok
 
-  @spec export_reports_to_formats(keyword(), map()) :: map()
+  @spec export_reports_to_formats(map(), map()) :: map()
   defp export_reports_to_formats(_export_opts, _state) do
     %{exported: [], format: "pending implementation"}
   end

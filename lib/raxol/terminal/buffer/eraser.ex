@@ -4,12 +4,13 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   Forwards calls to Raxol.Terminal.ScreenBuffer.Operations.
   """
 
+  alias Raxol.Terminal.ScreenBuffer.Core
   alias Raxol.Terminal.ScreenBuffer.Operations, as: ConsolidatedOps
 
   @doc """
   Clears the entire buffer.
   """
-  @spec clear(term()) :: term()
+  @spec clear(map()) :: map()
   def clear(buffer) do
     # Clear all cells in the buffer
     height = buffer.height || 24
@@ -20,7 +21,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Erases from start of line to cursor.
   """
-  @spec erase_from_start_of_line_to_cursor(term()) :: term()
+  @spec erase_from_start_of_line_to_cursor(map()) :: map()
   def erase_from_start_of_line_to_cursor(buffer) do
     ConsolidatedOps.clear_to_beginning_of_line(buffer)
   end
@@ -28,7 +29,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Erases from start of line to cursor.
   """
-  @spec erase_from_start_to_cursor(term()) :: term()
+  @spec erase_from_start_to_cursor(map()) :: map()
   def erase_from_start_to_cursor(buffer) do
     ConsolidatedOps.clear_to_beginning_of_line(buffer)
   end
@@ -36,7 +37,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Erases a line.
   """
-  @spec erase_line(term(), non_neg_integer()) :: term()
+  @spec erase_line(map(), non_neg_integer()) :: map()
   def erase_line(buffer, y) do
     ConsolidatedOps.clear_line(buffer, y)
   end
@@ -44,13 +45,13 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Clears all buffer content (alias for clear).
   """
-  @spec clear_all(term()) :: term()
+  @spec clear_all(map()) :: map()
   def clear_all(buffer), do: clear(buffer)
 
   @doc """
   Erases characters at cursor position.
   """
-  @spec erase_chars(term(), non_neg_integer()) :: term()
+  @spec erase_chars(map(), non_neg_integer()) :: map()
   def erase_chars(buffer, count) do
     ConsolidatedOps.erase_chars(buffer, count)
   end
@@ -58,7 +59,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Erases from cursor to end of line.
   """
-  @spec erase_from_cursor_to_end(term()) :: term()
+  @spec erase_from_cursor_to_end(map()) :: map()
   def erase_from_cursor_to_end(buffer) do
     ConsolidatedOps.clear_to_end_of_line(buffer)
   end
@@ -66,7 +67,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Erases in display with mode.
   """
-  @spec erase_in_display(term(), atom()) :: term()
+  @spec erase_in_display(map(), atom()) :: map()
   def erase_in_display(buffer, mode) do
     ConsolidatedOps.erase_display(buffer, mode)
   end
@@ -74,7 +75,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Erases in line with mode at position.
   """
-  @spec erase_in_line(term(), non_neg_integer(), atom()) :: term()
+  @spec erase_in_line(map(), non_neg_integer(), atom()) :: map()
   def erase_in_line(buffer, y, mode) do
     ConsolidatedOps.erase_line(buffer, y, mode)
   end
@@ -82,8 +83,8 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Erases a line segment.
   """
-  @spec erase_line_segment(term(), non_neg_integer(), non_neg_integer()) ::
-          term()
+  @spec erase_line_segment(map(), non_neg_integer(), non_neg_integer()) ::
+          map()
   def erase_line_segment(buffer, x, y) do
     # Erase from x to end of line at row y
     width = buffer.width || 80
@@ -93,7 +94,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Clears the screen with a style.
   """
-  @spec clear_screen(term(), map() | nil) :: term()
+  @spec clear_screen(map(), map() | nil) :: map()
   def clear_screen(buffer, _style \\ nil) do
     clear(buffer)
   end
@@ -102,11 +103,11 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   Clears screen from a position.
   """
   @spec clear_screen_from(
-          term(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           map() | nil
-        ) :: term()
+        ) :: map()
   def clear_screen_from(buffer, row, col, _style \\ nil) do
     # Clear from position to end of screen
     {x, y} = buffer.cursor_position || {col, row}
@@ -121,11 +122,11 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   Clears screen to a position.
   """
   @spec clear_screen_to(
-          term(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           map() | nil
-        ) :: term()
+        ) :: map()
   def clear_screen_to(buffer, row, col, _style \\ nil) do
     # Clear from start of screen to position
     {x, y} = buffer.cursor_position || {0, 0}
@@ -139,7 +140,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Clears scrollback buffer.
   """
-  @spec clear_scrollback(term()) :: term()
+  @spec clear_scrollback(map()) :: map()
   def clear_scrollback(buffer) do
     # Clear scrollback history
     %{buffer | scrollback: []}
@@ -149,11 +150,11 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   Clears a line from a position.
   """
   @spec clear_line_from(
-          term(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           map() | nil
-        ) :: term()
+        ) :: map()
   def clear_line_from(buffer, row, col, _style \\ nil) do
     # Clear from col to end of line at row
     width = buffer.width || 80
@@ -163,8 +164,13 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Clears a line to a position.
   """
-  @spec clear_line_to(term(), non_neg_integer(), non_neg_integer(), map() | nil) ::
-          term()
+  @spec clear_line_to(
+          map(),
+          non_neg_integer(),
+          non_neg_integer(),
+          map() | nil
+        ) ::
+          map()
   def clear_line_to(buffer, row, col, _style \\ nil) do
     # Clear from start of line to col at row
     ConsolidatedOps.clear_region(buffer, 0, row, col + 1, 1)
@@ -174,11 +180,11 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   Erases a number of characters at a position.
   """
   @spec erase_chars(
-          term(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer()
-        ) :: term()
+        ) :: map()
   def erase_chars(buffer, row, col, count) do
     ConsolidatedOps.clear_region(buffer, col, row, count, 1)
   end
@@ -186,7 +192,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Clears an entire line.
   """
-  @spec clear_line(term(), non_neg_integer(), term()) :: term()
+  @spec clear_line(map(), non_neg_integer(), map() | nil) :: map()
   def clear_line(buffer, row, _style \\ nil) do
     ConsolidatedOps.clear_line(buffer, row)
   end
@@ -195,13 +201,13 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   Clears a rectangular region.
   """
   @spec clear_region(
-          term(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer(),
-          term()
-        ) :: term()
+          map() | nil
+        ) :: map()
   def clear_region(buffer, x, y, width, height, _style \\ nil) do
     ConsolidatedOps.clear_region(buffer, x, y, width, height)
   end

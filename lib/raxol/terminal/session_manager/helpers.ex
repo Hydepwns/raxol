@@ -104,14 +104,12 @@ defmodule Raxol.Terminal.SessionManager.Helpers do
        when is_integer(w) and w > 0 and is_integer(h) and h > 0,
        do: :ok
 
-  # Dimensions are optional
+  # Dimensions are optional - matches any map
   defp validate_dimensions(%{}), do: :ok
-  defp validate_dimensions(_), do: {:error, :invalid_dimensions}
 
   defp validate_timeout(%{timeout: t}) when is_integer(t) and t > 0, do: :ok
-  # Timeout is optional
+  # Timeout is optional - matches any map
   defp validate_timeout(%{}), do: :ok
-  defp validate_timeout(_), do: {:error, :invalid_timeout}
 
   @doc """
   Merges session options with defaults.

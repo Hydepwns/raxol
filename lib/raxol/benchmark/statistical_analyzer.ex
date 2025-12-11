@@ -275,11 +275,7 @@ defmodule Raxol.Benchmark.StatisticalAnalyzer do
 
         count =
           Enum.count(data, fn x ->
-            if i == bins - 1 do
-              x >= lower and x <= upper
-            else
-              x >= lower and x < upper
-            end
+            in_bin_range?(x, lower, upper, i, bins)
           end)
 
         %{
@@ -522,5 +518,12 @@ defmodule Raxol.Benchmark.StatisticalAnalyzer do
       is_normal: jb_statistic < critical_value,
       p_value: if(jb_statistic < critical_value, do: ">0.05", else: "<0.05")
     }
+  end
+
+  defp in_bin_range?(x, lower, upper, i, bins) do
+    case i == bins - 1 do
+      true -> x >= lower and x <= upper
+      false -> x >= lower and x < upper
+    end
   end
 end

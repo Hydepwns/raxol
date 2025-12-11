@@ -30,11 +30,11 @@ defmodule Raxol.Terminal.TerminalParser do
   Returns `{final_emulator_state, final_parser_state}`.
   """
   @spec parse_chunk(
-          Emulator.t(),
-          Raxol.Terminal.Parser.ParserState.t(),
+          map(),
+          Raxol.Terminal.Parser.ParserState.t() | nil,
           String.t()
         ) ::
-          {Emulator.t(), Raxol.Terminal.Parser.ParserState.t(), String.t()}
+          {map(), Raxol.Terminal.Parser.ParserState.t(), String.t()}
   def parse_chunk(emulator, nil, data) do
     parse_chunk(
       emulator,
@@ -121,6 +121,7 @@ defmodule Raxol.Terminal.TerminalParser do
        ) do
     # Escape state processing
 
+    # EscapeState.handle returns {:continue, ...} or {:incomplete, ...}
     case EscapeState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)

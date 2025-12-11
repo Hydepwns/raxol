@@ -22,6 +22,7 @@ defmodule Raxol.Terminal.Emulator.TextOperations do
           map()
         ) :: emulator()
   def write_string(%Emulator{} = emulator, x, y, string, style \\ %{}) do
+    # translate_string expects (string, charset_state) where charset_state is a map
     translated =
       Raxol.Terminal.ANSI.CharacterSets.translate_string(
         string,

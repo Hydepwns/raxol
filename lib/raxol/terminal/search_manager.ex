@@ -5,14 +5,13 @@ defmodule Raxol.Terminal.SearchManager do
   """
 
   alias Raxol.Terminal.SearchBuffer
-  alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
   @doc """
   Gets the search buffer instance.
   Returns the search buffer.
   """
-  @spec get_buffer(Emulator.t()) :: SearchBuffer.t()
+  @spec get_buffer(map()) :: map()
   def get_buffer(emulator) do
     emulator.search_buffer
   end
@@ -21,7 +20,7 @@ defmodule Raxol.Terminal.SearchManager do
   Updates the search buffer instance.
   Returns the updated emulator.
   """
-  @spec update_buffer(Emulator.t(), SearchBuffer.t()) :: Emulator.t()
+  @spec update_buffer(map(), map()) :: map()
   def update_buffer(emulator, buffer) do
     %{emulator | search_buffer: buffer}
   end
@@ -30,8 +29,7 @@ defmodule Raxol.Terminal.SearchManager do
   Starts a new search with the given pattern.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec start_search(Emulator.t(), String.t()) ::
-          {:ok, Emulator.t()} | {:error, String.t()}
+  @spec start_search(map(), String.t()) :: {:ok, map()} | {:error, String.t()}
   def start_search(emulator, pattern) do
     case SearchBuffer.start_search(emulator.search_buffer, pattern) do
       {:ok, new_buffer} ->
@@ -46,8 +44,7 @@ defmodule Raxol.Terminal.SearchManager do
   Finds the next match in the search.
   Returns {:ok, updated_emulator, match} or {:error, reason}.
   """
-  @spec find_next(Emulator.t()) ::
-          {:ok, Emulator.t(), SearchBuffer.match()} | {:error, String.t()}
+  @spec find_next(map()) :: {:ok, map(), map()} | {:error, String.t()}
   def find_next(emulator) do
     case SearchBuffer.find_next(emulator.search_buffer) do
       {:ok, new_buffer, match} ->
@@ -62,8 +59,7 @@ defmodule Raxol.Terminal.SearchManager do
   Finds the previous match in the search.
   Returns {:ok, updated_emulator, match} or {:error, reason}.
   """
-  @spec find_previous(Emulator.t()) ::
-          {:ok, Emulator.t(), SearchBuffer.match()} | {:error, String.t()}
+  @spec find_previous(map()) :: {:ok, map(), map()} | {:error, String.t()}
   def find_previous(emulator) do
     case SearchBuffer.find_previous(emulator.search_buffer) do
       {:ok, new_buffer, match} ->
@@ -78,7 +74,7 @@ defmodule Raxol.Terminal.SearchManager do
   Gets the current search pattern.
   Returns the current pattern.
   """
-  @spec get_pattern(Emulator.t()) :: String.t() | nil
+  @spec get_pattern(map()) :: String.t() | nil
   def get_pattern(emulator) do
     SearchBuffer.get_pattern(emulator.search_buffer)
   end
@@ -87,7 +83,7 @@ defmodule Raxol.Terminal.SearchManager do
   Sets the search options.
   Returns the updated emulator.
   """
-  @spec set_options(Emulator.t(), SearchBuffer.options()) :: Emulator.t()
+  @spec set_options(map(), map()) :: map()
   def set_options(emulator, options) do
     buffer = SearchBuffer.set_options(emulator.search_buffer, options)
     update_buffer(emulator, buffer)
@@ -97,7 +93,7 @@ defmodule Raxol.Terminal.SearchManager do
   Gets the current search options.
   Returns the current options.
   """
-  @spec get_options(Emulator.t()) :: SearchBuffer.options()
+  @spec get_options(map()) :: map()
   def get_options(emulator) do
     SearchBuffer.get_options(emulator.search_buffer)
   end
@@ -106,7 +102,7 @@ defmodule Raxol.Terminal.SearchManager do
   Gets all matches in the current search.
   Returns the list of matches.
   """
-  @spec get_all_matches(Emulator.t()) :: [SearchBuffer.match()]
+  @spec get_all_matches(map()) :: [map()]
   def get_all_matches(emulator) do
     SearchBuffer.get_all_matches(emulator.search_buffer)
   end
@@ -115,7 +111,7 @@ defmodule Raxol.Terminal.SearchManager do
   Gets the current match index.
   Returns the current index.
   """
-  @spec get_current_index(Emulator.t()) :: integer()
+  @spec get_current_index(map()) :: integer()
   def get_current_index(emulator) do
     SearchBuffer.get_current_index(emulator.search_buffer)
   end
@@ -124,7 +120,7 @@ defmodule Raxol.Terminal.SearchManager do
   Gets the total number of matches.
   Returns the number of matches.
   """
-  @spec get_match_count(Emulator.t()) :: non_neg_integer()
+  @spec get_match_count(map()) :: non_neg_integer()
   def get_match_count(emulator) do
     SearchBuffer.get_match_count(emulator.search_buffer)
   end
@@ -133,7 +129,7 @@ defmodule Raxol.Terminal.SearchManager do
   Highlights all matches in the current view.
   Returns the updated emulator.
   """
-  @spec highlight_matches(Emulator.t()) :: Emulator.t()
+  @spec highlight_matches(map()) :: map()
   def highlight_matches(emulator) do
     buffer = SearchBuffer.highlight_matches(emulator.search_buffer)
     update_buffer(emulator, buffer)
@@ -143,7 +139,7 @@ defmodule Raxol.Terminal.SearchManager do
   Clears the current search.
   Returns the updated emulator.
   """
-  @spec clear_search(Emulator.t()) :: Emulator.t()
+  @spec clear_search(map()) :: map()
   def clear_search(emulator) do
     buffer = SearchBuffer.clear(emulator.search_buffer)
     update_buffer(emulator, buffer)
@@ -153,7 +149,7 @@ defmodule Raxol.Terminal.SearchManager do
   Gets the search history.
   Returns the list of recent search patterns.
   """
-  @spec get_search_history(Emulator.t()) :: [String.t()]
+  @spec get_search_history(map()) :: [String.t()]
   def get_search_history(emulator) do
     SearchBuffer.get_search_history(emulator.search_buffer)
   end
@@ -162,7 +158,7 @@ defmodule Raxol.Terminal.SearchManager do
   Adds a pattern to the search history.
   Returns the updated emulator.
   """
-  @spec add_to_history(Emulator.t(), String.t()) :: Emulator.t()
+  @spec add_to_history(map(), String.t()) :: map()
   def add_to_history(emulator, pattern) do
     buffer = SearchBuffer.add_to_history(emulator.search_buffer, pattern)
     update_buffer(emulator, buffer)
@@ -172,7 +168,7 @@ defmodule Raxol.Terminal.SearchManager do
   Clears the search history.
   Returns the updated emulator.
   """
-  @spec clear_history(Emulator.t()) :: Emulator.t()
+  @spec clear_history(map()) :: map()
   def clear_history(emulator) do
     buffer = SearchBuffer.clear_history(emulator.search_buffer)
     update_buffer(emulator, buffer)

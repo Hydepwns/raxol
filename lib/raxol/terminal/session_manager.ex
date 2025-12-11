@@ -61,6 +61,12 @@ defmodule Raxol.Terminal.SessionManager do
   alias Raxol.Core.Runtime.Log
 
   defmodule Session do
+    @moduledoc """
+    Terminal session structure.
+
+    Represents a terminal multiplexing session with multiple windows, clients,
+    and lifecycle management.
+    """
     @enforce_keys [:id, :name, :created_at]
     defstruct [
       :id,
@@ -94,6 +100,12 @@ defmodule Raxol.Terminal.SessionManager do
   end
 
   defmodule Window do
+    @moduledoc """
+    Terminal window within a session.
+
+    Represents an individual window/pane within a terminal session,
+    containing an emulator and associated metadata.
+    """
     @enforce_keys [:id, :session_id, :name]
     defstruct [
       :id,
@@ -127,6 +139,12 @@ defmodule Raxol.Terminal.SessionManager do
   end
 
   defmodule Pane do
+    @moduledoc """
+    Terminal pane within a window.
+
+    Represents an individual pane/split within a window, containing
+    a terminal process and configuration.
+    """
     @enforce_keys [:id, :window_id, :terminal]
     defstruct [
       :id,
@@ -156,6 +174,12 @@ defmodule Raxol.Terminal.SessionManager do
   end
 
   defmodule Client do
+    @moduledoc """
+    Client connection to a session.
+
+    Represents a client connected to a terminal session, tracking connection
+    type, activity, terminal size, and capabilities.
+    """
     @enforce_keys [:id, :session_id]
     defstruct [
       :id,
@@ -834,11 +858,11 @@ defmodule Raxol.Terminal.SessionManager do
   defp start_terminal_process(command, working_dir, environment) do
     # This would start an actual terminal emulator process
     # For now, we simulate with a simple GenServer
-    terminal_config = %{
+    terminal_config = [
       command: command,
       working_directory: working_dir,
       environment: environment
-    }
+    ]
 
     Raxol.Terminal.Emulator.start_link(terminal_config)
   end

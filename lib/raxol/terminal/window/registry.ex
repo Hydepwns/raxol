@@ -75,7 +75,7 @@ defmodule Raxol.Terminal.Window.Registry do
   @doc """
   Updates a window's properties.
   """
-  @spec update_window(String.t(), map()) :: :ok | {:error, term()}
+  @spec update_window(String.t(), map()) :: {:ok, Window.t()} | {:error, term()}
   def update_window(window_id, properties) do
     GenServer.call(__MODULE__, {:update_window, window_id, properties})
   end

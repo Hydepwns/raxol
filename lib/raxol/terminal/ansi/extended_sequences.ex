@@ -51,9 +51,10 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   @spec process_extended_sgr(list(String.t()), ScreenBuffer.t()) ::
           ScreenBuffer.t()
   def process_extended_sgr(params, buffer) do
-    with {:ok, result} <- safe_process_sgr_params(params, buffer) do
-      result
-    else
+    case safe_process_sgr_params(params, buffer) do
+      {:ok, result} ->
+        result
+
       {:error, error} ->
         Monitor.record_error("", "Extended SGR error: #{inspect(error)}", %{
           params: params
@@ -88,9 +89,10 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   """
   @spec process_unicode(String.t(), ScreenBuffer.t()) :: ScreenBuffer.t()
   def process_unicode(char, buffer) do
-    with {:ok, processed_buffer} <- safe_process_unicode_char(char, buffer) do
-      processed_buffer
-    else
+    case safe_process_unicode_char(char, buffer) do
+      {:ok, processed_buffer} ->
+        processed_buffer
+
       {:error, error} ->
         Monitor.record_error(
           "",
@@ -110,10 +112,10 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   @spec process_extended_cursor(String.t(), list(String.t()), ScreenBuffer.t()) ::
           ScreenBuffer.t()
   def process_extended_cursor(command, params, buffer) do
-    with {:ok, processed_buffer} <-
-           safe_process_cursor_command(command, params, buffer) do
-      processed_buffer
-    else
+    case safe_process_cursor_command(command, params, buffer) do
+      {:ok, processed_buffer} ->
+        processed_buffer
+
       {:error, error} ->
         Monitor.record_error("", "Extended cursor error: #{inspect(error)}", %{
           command: command,
@@ -179,11 +181,10 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
             codepoint < 32 or codepoint == 127 ->
               handle_control_character(char, buffer)
 
-            # Basic check for combining characters (this is simplified)
-            codepoint >= 0x0300 and codepoint <= 0x036F ->
-              handle_combining_character(char, buffer)
-
             true ->
+              # Note: combining characters (U+0300-U+036F) require multi-byte
+              # handling via String.to_charlist/1 since :binary.first only
+              # returns first byte (0-255)
               handle_printable_character(char, buffer)
           end
 

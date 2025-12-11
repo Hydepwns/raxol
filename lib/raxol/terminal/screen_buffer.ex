@@ -99,7 +99,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Validates and normalizes the input dimensions to ensure they are valid.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec new(integer(), integer()) :: t()
+  @spec new(integer(), integer(), integer()) :: map()
   def new(width, height, scrollback_limit \\ 1000) do
     width = validate_dimension(width, 80)
     height = validate_dimension(height, 24)
@@ -246,7 +246,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
-          TextFormatting.text_style() | nil
+          map() | nil
         ) :: t()
   def write_string(buffer, x, y, string, style) when x >= 0 and y >= 0 do
     case {x < buffer.width, y < buffer.height} do
@@ -280,7 +280,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Gets a specific cell from the buffer.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec get_cell(t(), non_neg_integer(), non_neg_integer()) :: map()
+  @spec get_cell(map(), non_neg_integer(), non_neg_integer()) :: map()
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
     cell =
       if x < buffer.width and y < buffer.height do
@@ -306,7 +306,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Gets the content of the buffer as a string representation.
   """
-  @spec get_content(t()) :: String.t()
+  @spec get_content(map()) :: String.t()
   def get_content(buffer) do
     # Convert cells to string representation for compatibility with tests
     case buffer.cells do
@@ -317,7 +317,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
         cells
         |> Enum.map(fn line when is_list(line) ->
           line
-          |> Enum.map(fn
+          |> Enum.map_join("", fn
             %Cell{char: char} ->
               char
 
@@ -327,7 +327,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
                 char -> char
               end
           end)
-          |> Enum.join("")
           |> String.trim_trailing()
         end)
         |> Enum.reverse()
@@ -385,7 +384,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Returns {buffer, scrolled_lines} where scrolled_lines are the lines that were scrolled out.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec scroll_up(t(), non_neg_integer()) :: {t(), list(list(Cell.t()))}
+  @spec scroll_up(map(), non_neg_integer()) :: {map(), list(list(Cell.t()))}
   def scroll_up(buffer, lines) when lines > 0 do
     {top, bottom} = get_effective_scroll_region(buffer)
 
@@ -919,10 +918,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
   @spec erase_screen(t()) :: t()
   def erase_screen(buffer) do
-    case EraseOperations.erase_all(buffer) do
-      %__MODULE__{} = updated -> updated
-      _ -> buffer
-    end
+    # EraseOperations.erase_all always returns %__MODULE__{}
+    EraseOperations.erase_all(buffer)
   end
 
   def erase_line(buffer, mode, cursor, _min_col, _max_col) do
@@ -1040,15 +1037,13 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def scroll_down(buffer, lines, count)
       when is_integer(lines) and is_integer(count) do
     try do
-      case Raxol.Terminal.Commands.Scrolling.scroll_down(
-             buffer,
-             lines,
-             buffer.scroll_region,
-             %{}
-           ) do
-        {updated_buffer, _} -> updated_buffer
-        updated_buffer -> updated_buffer
-      end
+      # scroll_down returns a map directly, not a tuple
+      Raxol.Terminal.Commands.Scrolling.scroll_down(
+        buffer,
+        lines,
+        buffer.scroll_region,
+        %{}
+      )
     rescue
       _ -> buffer
     end

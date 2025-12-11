@@ -63,10 +63,6 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
     Map.get(attrs, key, default)
   end
 
-  defp get_dimension(_attrs, _key, _tuple_index, default) do
-    default
-  end
-
   defp create_dcs_start(pan, pad, ph, pv) do
     <<"\eP", Integer.to_string(pan)::binary, ";",
       Integer.to_string(pad)::binary, ";", Integer.to_string(ph)::binary, ";",
@@ -200,7 +196,7 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
         output_commands = format_output_commands(repeat_count, last_char)
         current_commands = format_current_commands(column_pixels)
 
-        {acc_commands ++ output_commands ++ current_commands, current_color,
+        {[acc_commands, output_commands, current_commands], current_color,
          current_char, 1}
     end
   end
@@ -229,16 +225,16 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
       end)
 
     case map_size(column_pixels) > 1 do
-      true -> commands ++ ["-"]
+      true -> [commands, "-"]
       false -> commands
     end
   end
 
   defp format_band_output(nil, _, commands), do: commands
-  defp format_band_output(char, 1, commands), do: commands ++ [char]
+  defp format_band_output(char, 1, commands), do: [commands, char]
 
   defp format_band_output(char, count, commands),
-    do: commands ++ [<<"!", Integer.to_string(count)::binary>>, char]
+    do: [commands, <<"!", Integer.to_string(count)::binary>>, char]
 
   defp remove_trailing_dollar(sixel_bands) do
     case List.last(sixel_bands) do

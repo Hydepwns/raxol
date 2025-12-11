@@ -33,25 +33,18 @@ defmodule Raxol.Terminal.Buffer.Paste do
     end)
   end
 
-  defp paste_multiple_lines(buffer, lines) do
-    # Paste first line at cursor, then create new lines for remaining text
-    case lines do
-      [first_line | rest] ->
-        # Paste first line at current position
-        buffer_after_first = paste_single_line(buffer, first_line)
+  defp paste_multiple_lines(buffer, [first_line | rest]) do
+    # Paste first line at current position
+    buffer_after_first = paste_single_line(buffer, first_line)
 
-        # Add remaining lines as new lines
-        Enum.reduce(rest, buffer_after_first, fn line, acc ->
-          {x, y} = acc.cursor_position
+    # Add remaining lines as new lines
+    Enum.reduce(rest, buffer_after_first, fn line, acc ->
+      {x, y} = acc.cursor_position
 
-          acc
-          # Move to new line
-          |> ScreenBuffer.write_char(x, y, "\n")
-          |> paste_single_line(line)
-        end)
-
-      [] ->
-        buffer
-    end
+      acc
+      # Move to new line
+      |> ScreenBuffer.write_char(x, y, "\n")
+      |> paste_single_line(line)
+    end)
   end
 end

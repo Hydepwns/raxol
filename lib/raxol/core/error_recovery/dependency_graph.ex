@@ -106,6 +106,7 @@ defmodule Raxol.Core.ErrorRecovery.DependencyGraph do
   """
   def get_restart_order(graph, node_id) do
     calculate_restart_order(graph, node_id, [])
+    |> Enum.reverse()
   end
 
   @doc """
@@ -366,8 +367,8 @@ defmodule Raxol.Core.ErrorRecovery.DependencyGraph do
         end)
         |> Enum.uniq()
 
-      # Add current node after its dependencies
-      dependency_orders ++ [node_id]
+      # Add current node after its dependencies (prepend for efficiency)
+      [node_id | dependency_orders]
     end
   end
 

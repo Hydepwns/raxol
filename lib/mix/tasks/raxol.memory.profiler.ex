@@ -189,13 +189,7 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
           dashboard_loop(new_state, monitoring_pid)
 
         :timeout ->
-          # Update dashboard
-          if state.paused do
-            dashboard_loop(state, monitoring_pid)
-          else
-            updated_state = update_dashboard_data(state)
-            dashboard_loop(updated_state, monitoring_pid)
-          end
+          handle_dashboard_timeout(state, monitoring_pid)
       end
     end
   end
@@ -450,33 +444,25 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
       current_time = System.monotonic_time(:millisecond)
       elapsed = (current_time - start_time) / 1000
 
-      if elapsed < config.duration do
-        memory_info = get_current_memory_info()
+      case elapsed < config.duration do
+        true ->
+          memory_info = get_current_memory_info()
 
-        report = %{
-          timestamp: current_time,
-          elapsed: elapsed,
-          iteration: iteration,
-          memory: memory_info
-        }
-
-        json_output = Jason.encode!(report, pretty: true)
-        Log.info(json_output)
-
-        Process.sleep(config.interval * 1000)
-        loop_fn.(loop_fn, iteration + 1, [report | acc_reports])
-      else
-        # Save final report if output file specified
-        if config.output do
-          final_report = %{
-            config: config,
-            start_time: start_time,
-            reports: Enum.reverse(acc_reports)
+          report = %{
+            timestamp: current_time,
+            elapsed: elapsed,
+            iteration: iteration,
+            memory: memory_info
           }
 
-          File.write!(config.output, Jason.encode!(final_report, pretty: true))
-          Mix.shell().info("Results saved to: #{config.output}")
-        end
+          json_output = Jason.encode!(report, pretty: true)
+          Log.info(json_output)
+
+          Process.sleep(config.interval * 1000)
+          loop_fn.(loop_fn, iteration + 1, [report | acc_reports])
+
+        false ->
+          save_profiler_final_report(config, start_time, acc_reports)
       end
     end
 
@@ -681,5 +667,33 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
 
   defp print_help do
     Mix.shell().info(@moduledoc)
+  end
+
+  defp handle_dashboard_timeout(state, monitoring_pid) do
+    case state.paused do
+      true ->
+        dashboard_loop(state, monitoring_pid)
+
+      false ->
+        updated_state = update_dashboard_data(state)
+        dashboard_loop(updated_state, monitoring_pid)
+    end
+  end
+
+  defp save_profiler_final_report(config, start_time, acc_reports) do
+    case config.output do
+      nil ->
+        :ok
+
+      output_file ->
+        final_report = %{
+          config: config,
+          start_time: start_time,
+          reports: Enum.reverse(acc_reports)
+        }
+
+        File.write!(output_file, Jason.encode!(final_report, pretty: true))
+        Mix.shell().info("Results saved to: #{output_file}")
+    end
   end
 end

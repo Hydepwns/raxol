@@ -158,16 +158,13 @@ defmodule Raxol.Terminal.Graphics.Animation do
         # Create the animation definition with the existing framework
         animation_def = build_animation_definition(params)
 
-        case Framework.create_animation(name, animation_def) do
-          :ok ->
-            graphics_animations =
-              Map.put(state.graphics_animations, name, params)
+        # create_animation returns the animation map on success
+        _animation = Framework.create_animation(name, animation_def)
 
-            {:reply, :ok, %{state | graphics_animations: graphics_animations}}
+        graphics_animations =
+          Map.put(state.graphics_animations, name, params)
 
-          error ->
-            {:reply, error, state}
-        end
+        {:reply, :ok, %{state | graphics_animations: graphics_animations}}
 
       error ->
         {:reply, error, state}
@@ -215,16 +212,13 @@ defmodule Raxol.Terminal.Graphics.Animation do
         _from,
         state
       ) do
-    case create_frame_based_animation(name, frames, options) do
-      {:ok, animation_def} ->
-        graphics_animations =
-          Map.put(state.graphics_animations, name, animation_def)
+    # create_frame_based_animation always returns {:ok, animation_def}
+    {:ok, animation_def} = create_frame_based_animation(name, frames, options)
 
-        {:reply, :ok, %{state | graphics_animations: graphics_animations}}
+    graphics_animations =
+      Map.put(state.graphics_animations, name, animation_def)
 
-      error ->
-        {:reply, error, state}
-    end
+    {:reply, :ok, %{state | graphics_animations: graphics_animations}}
   end
 
   @impl true
@@ -316,7 +310,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
         state.active_animations,
         fn {animation_id, animation_info}, acc ->
           case Framework.get_current_value(animation_info.name, animation_id) do
-            {:ok, values} ->
+            {:ok, values} when is_map(values) ->
               # Apply values to graphics element
               apply_graphics_properties(animation_info.graphics_id, values)
               acc
@@ -326,6 +320,9 @@ defmodule Raxol.Terminal.Graphics.Animation do
               Map.delete(acc, animation_id)
 
             {:error, _reason} ->
+              acc
+
+            _ ->
               acc
           end
         end
@@ -344,7 +341,8 @@ defmodule Raxol.Terminal.Graphics.Animation do
     }
   end
 
-  defp apply_graphics_properties(graphics_id, properties) do
+  defp apply_graphics_properties(graphics_id, properties)
+       when is_map(properties) do
     # Apply animated properties to the graphics element
     # This would integrate with the unified graphics system
     case GraphicsServer.update_graphics_properties(graphics_id, properties) do
@@ -357,6 +355,8 @@ defmodule Raxol.Terminal.Graphics.Animation do
         )
     end
   end
+
+  defp apply_graphics_properties(_graphics_id, _properties), do: :ok
 
   defp generate_animation_id(name, graphics_id) do
     "#{name}_#{graphics_id}_#{:rand.uniform(9999)}"

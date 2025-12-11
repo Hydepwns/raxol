@@ -97,11 +97,8 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
     {updated_emulator, output} =
       CoreHandler.process_terminal_input(emulator, input)
 
-    final_emulator =
-      apply_cursor_check(
-        needs_cursor_check?(updated_emulator),
-        updated_emulator
-      )
+    # Always apply cursor check - the emulator struct doesn't track last_operation
+    final_emulator = ensure_cursor_visible_optimized(updated_emulator)
 
     {final_emulator, output}
   end
@@ -123,15 +120,12 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
   end
 
   defp unfold_cursor_check(emu) do
-    case cursor_needs_scroll?(emu) do
-      true -> handle_cursor_scroll(true, emu)
-      false -> handle_cursor_scroll(false, emu)
+    if cursor_needs_scroll?(emu) do
+      handle_cursor_scroll(true, emu)
+    else
+      handle_cursor_scroll(false, emu)
     end
   end
-
-  defp needs_cursor_check?(%{last_operation: :scroll}), do: false
-  defp needs_cursor_check?(%{last_operation: :cursor_move}), do: true
-  defp needs_cursor_check?(_), do: true
 
   defp cursor_needs_scroll?(emulator) do
     # Memoize cursor position within the same operation
@@ -266,12 +260,6 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
     {final_emulator, remaining_output} = process_input(emulator, rest)
     {final_emulator, iolist_to_binary([output | remaining_output])}
   end
-
-  defp apply_cursor_check(true, emulator) do
-    ensure_cursor_visible_optimized(emulator)
-  end
-
-  defp apply_cursor_check(false, emulator), do: emulator
 
   defp handle_cursor_scroll(true, emu) do
     scrolled_emu = scroll_once(emu)

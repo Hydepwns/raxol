@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.ParserStateManager do
   Resets the parser state to its initial state.
   Returns the updated emulator.
   """
-  @spec reset_parser_state(Emulator.t()) :: Emulator.t()
+  @spec reset_parser_state(map()) :: map()
   def reset_parser_state(emulator) do
     %{emulator | parser_state: ParserState.new()}
   end
@@ -61,7 +61,7 @@ defmodule Raxol.Terminal.ParserStateManager do
   Processes a character in the current parser state.
   Returns the updated emulator and any output.
   """
-  @spec process_char(Emulator.t(), char()) :: {Emulator.t(), any()}
+  @spec process_char(map(), char()) :: {map(), any()}
   def process_char(emulator, char) do
     state = get_parser_state(emulator)
     output = ParserState.process_char(state, char)

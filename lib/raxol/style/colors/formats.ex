@@ -52,6 +52,7 @@ defmodule Raxol.Style.Colors.Formats do
   @spec from_hex(String.t()) ::
           {integer(), integer(), integer()}
           | {integer(), integer(), integer(), integer()}
+          | {:error, :invalid_hex}
   def from_hex(hex_string) when is_binary(hex_string) do
     hex_string = String.trim_leading(hex_string, "#")
 

@@ -69,8 +69,8 @@ defmodule Raxol.Terminal.ModeManager do
   Sets one or more modes. Dispatches to specific handlers.
   Returns potentially updated Emulator state if side effects occurred.
   """
-  @spec set_mode(Emulator.t(), [mode()], atom() | nil) ::
-          {:ok, Emulator.t()} | {:error, term()}
+  @spec set_mode(map(), [mode()], atom() | nil) ::
+          {:ok, map()} | {:error, term()}
   def set_mode(emulator, modes, category \\ nil) when is_list(modes) do
     Log.debug(
       "ModeManager.set_mode/2 called with modes=#{inspect(modes)}, category=#{inspect(category)}"
@@ -106,8 +106,8 @@ defmodule Raxol.Terminal.ModeManager do
   @doc """
   Sets a mode with a value and options.
   """
-  @spec set_mode(Emulator.t(), atom(), any(), keyword()) ::
-          {:ok, Emulator.t()} | {:error, term()}
+  @spec set_mode(map(), atom(), any(), keyword()) ::
+          {:ok, map()} | {:error, term()}
   def set_mode(emulator, mode_name, _value, options) do
     category = Keyword.get(options, :category, nil)
 
@@ -121,8 +121,8 @@ defmodule Raxol.Terminal.ModeManager do
   Resets one or more modes. Dispatches to specific handlers.
   Returns potentially updated Emulator state if side effects occurred.
   """
-  @spec reset_mode(Emulator.t(), [mode()], atom() | nil) ::
-          {:ok, Emulator.t()} | {:error, term()}
+  @spec reset_mode(map(), [mode()], atom() | nil) ::
+          {:ok, map()} | {:error, term()}
   def reset_mode(emulator, modes, category \\ nil) when is_list(modes) do
     Enum.reduce_while(modes, {:ok, emulator}, fn mode, {:ok, emu} ->
       case do_reset_mode(mode, emu, category) do
@@ -158,7 +158,7 @@ defmodule Raxol.Terminal.ModeManager do
   @doc """
   Saves the current terminal state.
   """
-  @spec save_state(Emulator.t()) :: Emulator.t()
+  @spec save_state(map()) :: map()
   def save_state(emulator) do
     SavedState.save_state(emulator)
   end

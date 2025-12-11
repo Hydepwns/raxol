@@ -109,18 +109,13 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
         clear_error =
           Hooks.use_callback(
-            fn ->
-              set_error.(nil)
-            end,
+            make_clear_error_fn(set_error),
             [set_error]
           )
 
         report_error =
           Hooks.use_callback(
-            fn error_info ->
-              set_error.(error_info)
-              handle_error_callback(on_error_callback, error_info)
-            end,
+            make_report_error_fn(set_error, on_error_callback),
             [set_error, on_error_callback]
           )
 
@@ -141,6 +136,19 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
           report_error
         )
       end
+    end
+  end
+
+  defp make_clear_error_fn(set_error) do
+    fn ->
+      set_error.(nil)
+    end
+  end
+
+  defp make_report_error_fn(set_error, on_error_callback) do
+    fn error_info ->
+      set_error.(error_info)
+      handle_error_callback(on_error_callback, error_info)
     end
   end
 
@@ -175,20 +183,11 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
       fn props, context ->
         # Get user context
         user_context_raw = Hooks.use_context(:user_context)
-
-        user_context =
-          case user_context_raw do
-            nil -> %{authenticated: false}
-            map when is_map(map) -> Map.put_new(map, :authenticated, false)
-            _ -> %{authenticated: false}
-          end
+        user_context = normalize_user_context(user_context_raw)
 
         has_permission =
           Hooks.use_callback(
-            fn permission ->
-              user_permissions = Map.get(user_context, :permissions, [])
-              Enum.member?(user_permissions, permission)
-            end,
+            make_has_permission_fn(user_context),
             [user_context]
           )
 
@@ -211,6 +210,21 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
           unauthorized_component
         )
       end
+    end
+  end
+
+  defp normalize_user_context(user_context_raw) do
+    case user_context_raw do
+      nil -> %{authenticated: false}
+      map when is_map(map) -> Map.put_new(map, :authenticated, false)
+      _ -> %{authenticated: false}
+    end
+  end
+
+  defp make_has_permission_fn(user_context) do
+    fn permission ->
+      user_permissions = Map.get(user_context, :permissions, [])
+      Enum.member?(user_permissions, permission)
     end
   end
 
@@ -249,9 +263,7 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
         # Use async hook for data fetching
         {data, loading, error, refetch} =
           Hooks.use_async(
-            fn ->
-              fetch_fn.(props)
-            end,
+            make_fetch_wrapper_fn(fetch_fn, props),
             deps
           )
 
@@ -273,6 +285,12 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
           error_component
         )
       end
+    end
+  end
+
+  defp make_fetch_wrapper_fn(fetch_fn, props) do
+    fn ->
+      fetch_fn.(props)
     end
   end
 
@@ -298,9 +316,7 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
         set_theme =
           Hooks.use_callback(
-            fn new_theme ->
-              Context.update_context_value(theme_context_name, new_theme)
-            end,
+            make_set_theme_fn(theme_context_name),
             []
           )
 
@@ -316,6 +332,12 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
         component_module.render(enhanced_props, context)
       end
+    end
+  end
+
+  defp make_set_theme_fn(theme_context_name) do
+    fn new_theme ->
+      Context.update_context_value(theme_context_name, new_theme)
     end
   end
 
@@ -343,39 +365,17 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
         track_event =
           Hooks.use_callback(
-            fn event_name, event_data ->
-              final_event_data =
-                case event_data do
-                  nil ->
-                    %{
-                      component: component_name,
-                      component_id: component_id,
-                      timestamp: System.monotonic_time(:millisecond)
-                    }
-
-                  data when is_map(data) ->
-                    Map.merge(data, %{
-                      component: component_name,
-                      component_id: component_id,
-                      timestamp: System.monotonic_time(:millisecond)
-                    })
-                end
-
-              analytics_provider.(event_name, final_event_data)
-            end,
+            make_track_event_fn(
+              component_name,
+              component_id,
+              analytics_provider
+            ),
             [component_id]
           )
 
         # Auto-track component mount
         Hooks.use_effect(
-          fn ->
-            track_mount_if_enabled(auto_track_mount, track_event)
-
-            # Track unmount
-            fn ->
-              track_event.("component_unmount")
-            end
-          end,
+          make_analytics_effect_fn(auto_track_mount, track_event),
           []
         )
 
@@ -386,6 +386,40 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
           })
 
         component_module.render(enhanced_props, context)
+      end
+    end
+  end
+
+  defp make_track_event_fn(component_name, component_id, analytics_provider) do
+    fn event_name, event_data ->
+      final_event_data =
+        case event_data do
+          nil ->
+            %{
+              component: component_name,
+              component_id: component_id,
+              timestamp: System.monotonic_time(:millisecond)
+            }
+
+          data when is_map(data) ->
+            Map.merge(data, %{
+              component: component_name,
+              component_id: component_id,
+              timestamp: System.monotonic_time(:millisecond)
+            })
+        end
+
+      analytics_provider.(event_name, final_event_data)
+    end
+  end
+
+  defp make_analytics_effect_fn(auto_track_mount, track_event) do
+    fn ->
+      track_mount_if_enabled(auto_track_mount, track_event)
+
+      # Track unmount
+      fn ->
+        track_event.("component_unmount")
       end
     end
   end
@@ -418,26 +452,13 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
         start_timer =
           Hooks.use_callback(
-            fn timer_name ->
-              start_time = System.monotonic_time(:microsecond)
-              Map.put(props, :"#{timer_name}_start_time", start_time)
-            end,
+            make_start_timer_fn(props),
             []
           )
 
         end_timer =
           Hooks.use_callback(
-            fn timer_name ->
-              end_time = System.monotonic_time(:microsecond)
-              start_time = Map.get(props, :"#{timer_name}_start_time")
-
-              calculate_timing_if_available(
-                start_time,
-                end_time,
-                set_performance_data,
-                report_threshold_ms
-              )
-            end,
+            make_end_timer_fn(props, set_performance_data, report_threshold_ms),
             [set_performance_data, report_threshold_ms]
           )
 
@@ -458,16 +479,51 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
         # Update render time (async to avoid affecting current render)
         _ =
-          Task.start(fn ->
-            log_slow_render_if_needed(
+          Task.start(
+            make_log_render_task_fn(
               render_time_ms,
               report_threshold_ms,
               component_module
             )
-          end)
+          )
 
         result
       end
+    end
+  end
+
+  defp make_start_timer_fn(props) do
+    fn timer_name ->
+      start_time = System.monotonic_time(:microsecond)
+      Map.put(props, :"#{timer_name}_start_time", start_time)
+    end
+  end
+
+  defp make_end_timer_fn(props, set_performance_data, report_threshold_ms) do
+    fn timer_name ->
+      end_time = System.monotonic_time(:microsecond)
+      start_time = Map.get(props, :"#{timer_name}_start_time")
+
+      calculate_timing_if_available(
+        start_time,
+        end_time,
+        set_performance_data,
+        report_threshold_ms
+      )
+    end
+  end
+
+  defp make_log_render_task_fn(
+         render_time_ms,
+         report_threshold_ms,
+         component_module
+       ) do
+    fn ->
+      log_slow_render_if_needed(
+        render_time_ms,
+        report_threshold_ms,
+        component_module
+      )
     end
   end
 
@@ -486,12 +542,16 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
         # Memoize the render result
         Hooks.use_memo(
-          fn ->
-            component_module.render(props, context)
-          end,
+          make_memoized_render_fn(component_module, props, context),
           deps
         )
       end
+    end
+  end
+
+  defp make_memoized_render_fn(component_module, props, context) do
+    fn ->
+      component_module.render(props, context)
     end
   end
 

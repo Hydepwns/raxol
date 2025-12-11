@@ -335,7 +335,7 @@ defmodule Raxol.Core.ErrorTemplates do
 
   # Private implementation
 
-  @spec find_template_by_type(any()) :: any()
+  @spec find_template_by_type(atom()) :: error_template() | nil
   defp find_template_by_type(error_type) do
     all_templates()[error_type]
   end
@@ -346,7 +346,7 @@ defmodule Raxol.Core.ErrorTemplates do
     |> Map.merge(@tool_templates)
   end
 
-  @spec classify_error_type(any()) :: any()
+  @spec classify_error_type(term()) :: atom()
   defp classify_error_type(error) do
     error_text = inspect(error) |> String.downcase()
 
@@ -380,7 +380,7 @@ defmodule Raxol.Core.ErrorTemplates do
     end
   end
 
-  @spec enhance_template(any(), any()) :: any()
+  @spec enhance_template(error_template(), map()) :: error_template()
   defp enhance_template(template, context) do
     enhanced_actions = enhance_actions(template.suggested_actions, context)
     enhanced_steps = enhance_steps(template.recovery_steps, context)
@@ -393,10 +393,10 @@ defmodule Raxol.Core.ErrorTemplates do
     }
   end
 
-  @spec enhance_actions(any(), any()) :: any()
+  @spec enhance_actions([String.t()], map()) :: [String.t()]
   defp enhance_actions(actions, context) do
     actions
-    |> Enum.map_join(fn action ->
+    |> Enum.map(fn action ->
       action
       |> String.replace(
         "YourComponent",
@@ -409,7 +409,7 @@ defmodule Raxol.Core.ErrorTemplates do
     end)
   end
 
-  @spec enhance_steps(any(), any()) :: any()
+  @spec enhance_steps([String.t()], map()) :: [String.t()]
   defp enhance_steps(steps, context) do
     steps
     |> Enum.map(fn step ->
@@ -421,7 +421,7 @@ defmodule Raxol.Core.ErrorTemplates do
     end)
   end
 
-  @spec adjust_confidence(String.t() | integer(), any()) :: any()
+  @spec adjust_confidence(float(), map()) :: float()
   defp adjust_confidence(base_confidence, context) do
     adjustments = [
       if(Map.has_key?(context, :performance_metrics), do: 0.1, else: 0),
@@ -433,7 +433,7 @@ defmodule Raxol.Core.ErrorTemplates do
     min(1.0, adjusted)
   end
 
-  @spec get_generic_template(any(), any()) :: any() | nil
+  @spec get_generic_template(atom(), map()) :: error_template()
   defp get_generic_template(error_type, _context) do
     %{
       title: "Raxol Application Error",
@@ -462,7 +462,7 @@ defmodule Raxol.Core.ErrorTemplates do
     }
   end
 
-  @spec extract_keywords(any()) :: any()
+  @spec extract_keywords(error_template()) :: [String.t()]
   defp extract_keywords(template) do
     [
       String.downcase(template.title),
@@ -473,7 +473,7 @@ defmodule Raxol.Core.ErrorTemplates do
     |> Enum.filter(&(String.length(&1) > 3))
   end
 
-  @spec format_action_list(any()) :: String.t()
+  @spec format_action_list([String.t()]) :: String.t()
   defp format_action_list(actions) do
     actions
     |> Enum.with_index(1)
@@ -482,7 +482,7 @@ defmodule Raxol.Core.ErrorTemplates do
     end)
   end
 
-  @spec format_step_list(any()) :: String.t()
+  @spec format_step_list([String.t()]) :: String.t()
   defp format_step_list(steps) do
     steps
     |> Enum.map_join("\n", fn step ->
@@ -490,7 +490,7 @@ defmodule Raxol.Core.ErrorTemplates do
     end)
   end
 
-  @spec format_tool_list(any()) :: String.t()
+  @spec format_tool_list([atom()]) :: String.t()
   defp format_tool_list(tools) do
     tools
     |> Enum.map_join("\n", fn tool ->
@@ -498,7 +498,7 @@ defmodule Raxol.Core.ErrorTemplates do
     end)
   end
 
-  @spec format_confidence(String.t() | integer()) :: String.t()
+  @spec format_confidence(float()) :: String.t()
   defp format_confidence(confidence) do
     bar_length = 10
     filled_length = round(confidence * bar_length)

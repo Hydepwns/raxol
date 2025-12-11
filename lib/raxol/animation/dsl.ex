@@ -643,7 +643,7 @@ defmodule Raxol.Animation.DSL do
     compiled_animations = compile_sequence(sequence)
 
     Enum.each(compiled_animations, fn {animation_name, animation_config} ->
-      Framework.create_animation(animation_name, animation_config)
+      _ = Framework.create_animation(animation_name, animation_config)
       Framework.start_animation(animation_name, element_id, options)
     end)
 

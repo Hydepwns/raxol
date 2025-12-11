@@ -514,15 +514,7 @@ defmodule Raxol.Audit.Logger do
              ) do
           {:ok, _event_ids} ->
             # Also store in specialized audit storage
-            case Storage.store_batch(state.storage, events_to_flush) do
-              :ok ->
-                # Clear buffer
-                {:ok, %{state | buffer: []}}
-
-              {:error, reason} ->
-                Log.error("Failed to store audit batch: #{inspect(reason)}")
-                {:error, reason}
-            end
+            store_audit_batch_and_clear_buffer(state, events_to_flush)
 
           {:error, reason} ->
             Log.error("Failed to flush audit buffer: #{inspect(reason)}")
@@ -736,5 +728,17 @@ defmodule Raxol.Audit.Logger do
 
   defp generate_iv do
     :crypto.strong_rand_bytes(16)
+  end
+
+  defp store_audit_batch_and_clear_buffer(state, events_to_flush) do
+    case Storage.store_batch(state.storage, events_to_flush) do
+      :ok ->
+        # Clear buffer
+        {:ok, %{state | buffer: []}}
+
+      {:error, reason} ->
+        Log.error("Failed to store audit batch: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
 end

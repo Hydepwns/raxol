@@ -14,12 +14,12 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   Writes a character at the specified position.
   """
   @spec write_char(
-          Core.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
           map() | nil
-        ) :: Core.t()
+        ) :: map()
   def write_char(buffer, x, y, char, style \\ nil) do
     if Core.within_bounds?(buffer, x, y) do
       style = style || buffer.default_style
@@ -52,12 +52,12 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   Writes a sixel graphics character at the specified position with the sixel flag set.
   """
   @spec write_sixel_char(
-          Core.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
           map() | nil
-        ) :: Core.t()
+        ) :: map()
   def write_sixel_char(buffer, x, y, char, style \\ nil) do
     if Core.within_bounds?(buffer, x, y) do
       style = style || buffer.default_style
@@ -82,12 +82,12 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   Writes a string starting at the specified position.
   """
   @spec write_text(
-          Core.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
           map() | nil
-        ) :: Core.t()
+        ) :: map()
   def write_text(buffer, x, y, text, style \\ nil) do
     style = style || buffer.default_style
 
@@ -111,7 +111,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Inserts a character at the cursor position, shifting content right.
   """
-  @spec insert_char(Core.t(), String.t(), map() | nil) :: Core.t()
+  @spec insert_char(map(), String.t(), map() | nil) :: map()
   def insert_char(buffer, char, style \\ nil) do
     {x, y} = buffer.cursor_position
 
@@ -133,8 +133,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Inserts a character at the specified position.
   """
-  @spec insert_char(Core.t(), non_neg_integer(), non_neg_integer(), String.t()) ::
-          Core.t()
+  @spec insert_char(map(), non_neg_integer(), non_neg_integer(), String.t()) ::
+          map()
   def insert_char(buffer, x, y, char) do
     insert_char(buffer, x, y, char, nil)
   end
@@ -143,12 +143,12 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   Inserts a character at the specified position with style.
   """
   @spec insert_char(
-          Core.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
           map() | nil
-        ) :: Core.t()
+        ) :: map()
   def insert_char(buffer, x, y, char, style) do
     updated_buffer =
       SharedOperations.insert_char_core_logic(buffer, x, y, char, style)
@@ -168,27 +168,27 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Writes a string starting at the specified position (alias for write_text).
   """
-  @spec write_string(Core.t(), non_neg_integer(), non_neg_integer(), String.t()) ::
-          Core.t()
+  @spec write_string(map(), non_neg_integer(), non_neg_integer(), String.t()) ::
+          map()
   def write_string(buffer, x, y, string), do: write_text(buffer, x, y, string)
 
   @doc """
   Writes a string starting at the specified position with style.
   """
   @spec write_string(
-          Core.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
           map()
-        ) :: Core.t()
+        ) :: map()
   def write_string(buffer, x, y, string, style),
     do: write_text(buffer, x, y, string, style)
 
   @doc """
   Deletes a character at the cursor position, shifting content left.
   """
-  @spec delete_char(Core.t()) :: Core.t()
+  @spec delete_char(map()) :: map()
   def delete_char(buffer) do
     {x, y} = buffer.cursor_position
 
@@ -212,7 +212,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Clears a line.
   """
-  @spec clear_line(Core.t(), non_neg_integer()) :: Core.t()
+  @spec clear_line(map(), non_neg_integer()) :: map()
   def clear_line(buffer, y) when y >= 0 and y < buffer.height do
     new_cells = List.replace_at(buffer.cells, y, create_empty_row(buffer.width))
 
@@ -229,7 +229,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Clears from cursor to end of line.
   """
-  @spec clear_to_end_of_line(Core.t()) :: Core.t()
+  @spec clear_to_end_of_line(map()) :: map()
   def clear_to_end_of_line(buffer) do
     {x, y} = buffer.cursor_position
     require Raxol.Core.Runtime.Log
@@ -250,7 +250,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Clears from cursor to beginning of line.
   """
-  @spec clear_to_beginning_of_line(Core.t()) :: Core.t()
+  @spec clear_to_beginning_of_line(map()) :: map()
   def clear_to_beginning_of_line(buffer) do
     {x, y} = buffer.cursor_position
     clear_region(buffer, 0, y, x + 1, 1)
@@ -259,7 +259,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Clears from cursor to end of screen.
   """
-  @spec clear_to_end_of_screen(Core.t()) :: Core.t()
+  @spec clear_to_end_of_screen(map()) :: map()
   def clear_to_end_of_screen(buffer) do
     {_x, y} = buffer.cursor_position
 
@@ -275,7 +275,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Clears from cursor to beginning of screen.
   """
-  @spec clear_to_beginning_of_screen(Core.t()) :: Core.t()
+  @spec clear_to_beginning_of_screen(map()) :: map()
   def clear_to_beginning_of_screen(buffer) do
     {_x, y} = buffer.cursor_position
 
@@ -296,12 +296,12 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   Clears a rectangular region.
   """
   @spec clear_region(
-          Core.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer()
-        ) :: Core.t()
+        ) :: map()
   def clear_region(buffer, x, y, width, height) do
     x_end = min(x + width, buffer.width)
     y_end = min(y + height, buffer.height)
@@ -324,7 +324,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Inserts a blank line at the specified position.
   """
-  @spec insert_line(Core.t(), non_neg_integer()) :: Core.t()
+  @spec insert_line(map(), non_neg_integer()) :: map()
   def insert_line(buffer, y) when y >= 0 and y < buffer.height do
     empty_line = create_empty_row(buffer.width)
 
@@ -352,7 +352,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Deletes a line at the specified position.
   """
-  @spec delete_line(Core.t(), non_neg_integer()) :: Core.t()
+  @spec delete_line(map(), non_neg_integer()) :: map()
   def delete_line(buffer, y) when y >= 0 and y < buffer.height do
     {before, after_} = Enum.split(buffer.cells, y)
 
@@ -382,14 +382,14 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   Fills a region with a character.
   """
   @spec fill_region(
-          Core.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
           map() | nil
-        ) :: Core.t()
+        ) :: map()
   def fill_region(buffer, x, y, width, height, char, style \\ nil) do
     Enum.reduce(y..(y + height - 1), buffer, fn row_y, acc ->
       Enum.reduce(x..(x + width - 1), acc, fn col_x, acc2 ->
@@ -402,14 +402,14 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   Copies a region to another location.
   """
   @spec copy_region(
-          Core.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer()
-        ) :: Core.t()
+        ) :: map()
   def copy_region(buffer, src_x, src_y, width, height, dest_x, dest_y) do
     # Extract the region
     region =
@@ -452,7 +452,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   Puts a line of cells at the specified y position.
   Used by scrolling operations and for backward compatibility.
   """
-  @spec put_line(Core.t(), non_neg_integer(), list(Cell.t())) :: Core.t()
+  @spec put_line(map(), non_neg_integer(), list(Cell.t())) :: map()
   def put_line(buffer, y, line) when y >= 0 and y < buffer.height do
     # Ensure line is correct width
     line =
@@ -485,13 +485,13 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Clears a line (stub).
   """
-  @spec clear_line(Core.t(), non_neg_integer(), any()) :: Core.t()
+  @spec clear_line(map(), non_neg_integer(), any()) :: map()
   def clear_line(buffer, _y, _mode), do: buffer
 
   @doc """
   Deletes characters at cursor position.
   """
-  @spec delete_chars(Core.t(), non_neg_integer()) :: Core.t()
+  @spec delete_chars(map(), non_neg_integer()) :: map()
   def delete_chars(buffer, count) do
     alias Raxol.Terminal.Buffer.LineOperations
     LineOperations.delete_chars(buffer, count)
@@ -500,20 +500,20 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Deletes lines (stub with 2 args).
   """
-  @spec delete_lines(Core.t(), non_neg_integer()) :: Core.t()
+  @spec delete_lines(map(), non_neg_integer()) :: map()
   def delete_lines(buffer, _count), do: buffer
 
   @doc """
   Deletes lines at position y with count, within a region.
   """
   @spec delete_lines(
-          Core.t(),
+          map(),
           integer(),
           integer(),
           map(),
           {integer(), integer()}
         ) ::
-          Core.t()
+          map()
   def delete_lines(buffer, y, count, style, {top, bottom}) do
     alias Raxol.Terminal.Buffer.LineOperations
     # LineOperations expects: (buffer, y, count, top, bottom, style)
@@ -523,7 +523,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Erases characters (stub with 2 args).
   """
-  @spec erase_chars(Core.t(), non_neg_integer()) :: Core.t()
+  @spec erase_chars(map(), non_neg_integer()) :: map()
   def erase_chars(buffer, count) do
     {x, y} = buffer.cursor_position
 
@@ -557,32 +557,32 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Erases characters at position (stub with 4 args).
   """
-  @spec erase_chars(Core.t(), integer(), integer(), non_neg_integer()) ::
-          Core.t()
+  @spec erase_chars(map(), integer(), integer(), non_neg_integer()) ::
+          map()
   def erase_chars(buffer, _x, _y, _count), do: buffer
 
   @doc """
   Erases display (stub).
   """
-  @spec erase_display(Core.t(), atom()) :: Core.t()
+  @spec erase_display(map(), atom()) :: map()
   def erase_display(buffer, _mode), do: buffer
 
   @doc """
   Erases line (stub with 2 args).
   """
-  @spec erase_line(Core.t(), atom()) :: Core.t()
+  @spec erase_line(map(), atom()) :: map()
   def erase_line(buffer, _mode), do: buffer
 
   @doc """
   Erases line at position (stub with 3 args).
   """
-  @spec erase_line(Core.t(), non_neg_integer(), atom()) :: Core.t()
+  @spec erase_line(map(), non_neg_integer(), atom()) :: map()
   def erase_line(buffer, _y, _mode), do: buffer
 
   @doc """
   Gets scroll region (stub).
   """
-  @spec get_region(Core.t()) :: {integer(), integer()} | nil
+  @spec get_region(map()) :: {integer(), integer()} | nil
   def get_region(%{scroll_region: region}), do: region
   def get_region(_buffer), do: nil
 
@@ -590,7 +590,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   Inserts spaces at cursor position, shifting content to the right.
   Cursor remains at its original position after the operation.
   """
-  @spec insert_chars(Core.t(), non_neg_integer()) :: Core.t()
+  @spec insert_chars(map(), non_neg_integer()) :: map()
   def insert_chars(buffer, count) when count > 0 do
     {x, y} = buffer.cursor_position
 
@@ -643,14 +643,14 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Inserts lines at cursor position (stub with 2 args).
   """
-  @spec insert_lines(Core.t(), non_neg_integer()) :: Core.t()
+  @spec insert_lines(map(), non_neg_integer()) :: map()
   def insert_lines(buffer, _count), do: buffer
 
   @doc """
   Inserts lines at position y with count.
   """
-  @spec insert_lines(Core.t(), integer(), integer(), map()) ::
-          Core.t()
+  @spec insert_lines(map(), integer(), integer(), map()) ::
+          map()
   def insert_lines(buffer, y, count, style) do
     alias Raxol.Terminal.Buffer.LineOperations
     LineOperations.insert_lines(buffer, y, count, style)
@@ -660,13 +660,13 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   Inserts lines at position y with count, within a scroll region.
   """
   @spec insert_lines(
-          Core.t(),
+          map(),
           integer(),
           integer(),
           map(),
           {integer(), integer()}
         ) ::
-          Core.t()
+          map()
   def insert_lines(buffer, y, count, style, {top, bottom}) do
     alias Raxol.Terminal.Buffer.LineOperations
     # LineOperations expects: (buffer, y, count, top, bottom, style)
@@ -676,13 +676,13 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Prepends lines to buffer.
   """
-  @spec prepend_lines(Core.t(), integer()) :: Core.t()
+  @spec prepend_lines(map(), integer()) :: map()
   def prepend_lines(buffer, count) when is_integer(count) do
     alias Raxol.Terminal.Buffer.LineOperations
     LineOperations.prepend_lines(buffer, count)
   end
 
-  @spec prepend_lines(Core.t(), list()) :: Core.t()
+  @spec prepend_lines(map(), list()) :: map()
   def prepend_lines(buffer, lines) when is_list(lines) do
     alias Raxol.Terminal.Buffer.LineOperations
     LineOperations.prepend_lines(buffer, lines)
@@ -691,25 +691,25 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Scrolls content down (stub).
   """
-  @spec scroll_down(Core.t(), non_neg_integer()) :: Core.t()
+  @spec scroll_down(map(), non_neg_integer()) :: map()
   def scroll_down(buffer, _count), do: buffer
 
   @doc """
   Scrolls content up (stub).
   """
-  @spec scroll_up(Core.t(), non_neg_integer()) :: Core.t()
+  @spec scroll_up(map(), non_neg_integer()) :: map()
   def scroll_up(buffer, _count), do: buffer
 
   @doc """
   Scrolls to position (stub).
   """
-  @spec scroll_to(Core.t(), integer(), integer(), map()) :: Core.t()
+  @spec scroll_to(map(), integer(), integer(), map()) :: map()
   def scroll_to(buffer, _x, _y, _opts), do: buffer
 
   @doc """
   Sets scroll region (stub).
   """
-  @spec set_region(Core.t(), integer(), integer()) :: Core.t()
+  @spec set_region(map(), integer(), integer()) :: map()
   def set_region(buffer, top, bottom) do
     %{buffer | scroll_region: {top, bottom}}
   end
@@ -717,8 +717,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Shifts region content so that target_line appears at the top of the region.
   """
-  @spec shift_region_to_line(Core.t(), {integer(), integer()}, integer()) ::
-          Core.t()
+  @spec shift_region_to_line(map(), {integer(), integer()}, integer()) ::
+          map()
   def shift_region_to_line(buffer, {top, bottom}, target_line) do
     shift_amount = target_line - top
 

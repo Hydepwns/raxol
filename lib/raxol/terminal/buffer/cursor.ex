@@ -87,10 +87,11 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.get_position(buffer)
       {0, 0}
   """
-  @spec get_position(ScreenBuffer.t()) :: {non_neg_integer(), non_neg_integer()}
-  def get_position(buffer) do
-    buffer.cursor.position
-  end
+  @spec get_position(ScreenBuffer.t() | map()) ::
+          {non_neg_integer(), non_neg_integer()}
+  def get_position(%{cursor: %{position: position}}), do: position
+  def get_position(%{cursor_position: position}), do: position
+  def get_position(_buffer), do: {0, 0}
 
   @doc """
   Sets the cursor visibility.

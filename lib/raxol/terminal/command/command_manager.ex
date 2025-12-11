@@ -427,5 +427,8 @@ defmodule Raxol.Terminal.Command.Manager do
 end
 
 defmodule Command.Manager do
+  @moduledoc """
+  Stub module for backward compatibility.
+  """
   def new, do: :ok
 end

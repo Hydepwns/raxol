@@ -63,33 +63,40 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
         {:error, :plugin_not_found}
 
       plugin_module ->
-        case Raxol.Core.ErrorHandling.safe_call(fn ->
-               # Call the plugin's filter_event callback if it exists
-               case function_exported?(plugin_module, :filter_event, 2) do
-                 true ->
-                   plugin_module.filter_event(
-                     event,
-                     Map.get(state.plugin_states, plugin_id)
-                   )
+        call_plugin_filter_safely(plugin_module, plugin_id, event, state)
+    end
+  end
 
-                 false ->
-                   # Plugin doesn't implement filtering, pass event through unchanged
-                   {:ok, event}
-               end
-             end) do
-          {:ok, result} ->
-            result
+  defp call_plugin_filter_safely(plugin_module, plugin_id, event, state) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           call_plugin_filter(plugin_module, plugin_id, event, state)
+         end) do
+      {:ok, result} ->
+        result
 
-          {:error, e} ->
-            Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] Plugin #{plugin_id} filter crashed",
-              e,
-              nil,
-              %{plugin_id: plugin_id, event: event, module: __MODULE__}
-            )
+      {:error, e} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Plugin #{plugin_id} filter crashed",
+          e,
+          nil,
+          %{plugin_id: plugin_id, event: event, module: __MODULE__}
+        )
 
-            {:error, :filter_crashed}
-        end
+        {:error, :filter_crashed}
+    end
+  end
+
+  defp call_plugin_filter(plugin_module, plugin_id, event, state) do
+    case function_exported?(plugin_module, :filter_event, 2) do
+      true ->
+        plugin_module.filter_event(
+          event,
+          Map.get(state.plugin_states, plugin_id)
+        )
+
+      false ->
+        # Plugin doesn't implement filtering, pass event through unchanged
+        {:ok, event}
     end
   end
 end

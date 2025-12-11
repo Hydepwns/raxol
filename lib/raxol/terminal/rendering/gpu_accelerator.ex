@@ -196,29 +196,22 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   @impl Raxol.Core.Behaviours.BaseManager
   def init_manager(config) do
     backend = determine_backend(config.backend)
+    # initialize_backend always succeeds (falls back to :software)
+    {:ok, state} = initialize_backend(backend, config)
+    Log.info("GPU acceleration initialized with #{backend} backend")
 
-    case initialize_backend(backend, config) do
-      {:ok, state} ->
-        Log.info("GPU acceleration initialized with #{backend} backend")
-
-        {:ok,
-         %__MODULE__{
-           backend: backend,
-           device: state.device,
-           queue: state.queue,
-           pipeline: state.pipeline,
-           font_atlas: nil,
-           surface_cache: %{},
-           shader_cache: %{},
-           render_stats: init_stats(),
-           config: config
-         }}
-
-      {:error, reason} ->
-        Log.error("Failed to initialize GPU acceleration: #{inspect(reason)}")
-
-        {:error, reason}
-    end
+    {:ok,
+     %__MODULE__{
+       backend: backend,
+       device: state.device,
+       queue: state.queue,
+       pipeline: state.pipeline,
+       font_atlas: nil,
+       surface_cache: %{},
+       shader_cache: %{},
+       render_stats: init_stats(),
+       config: config
+     }}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
@@ -300,28 +293,23 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     merged_config = Map.merge(state.config, new_config)
 
     # Reinitialize if backend changed
-    case merged_config.backend == state.config.backend do
-      false ->
-        case initialize_backend(merged_config.backend, merged_config) do
-          {:ok, new_backend_state} ->
-            updated_state = %{
-              state
-              | config: merged_config,
-                backend: merged_config.backend,
-                device: new_backend_state.device,
-                queue: new_backend_state.queue,
-                pipeline: new_backend_state.pipeline
-            }
+    if merged_config.backend == state.config.backend do
+      updated_state = %{state | config: merged_config}
+      {:reply, :ok, updated_state}
+    else
+      # initialize_backend always succeeds (falls back to :software)
+      {:ok, new_backend_state} = initialize_backend(merged_config.backend, merged_config)
 
-            {:reply, :ok, updated_state}
+      updated_state = %{
+        state
+        | config: merged_config,
+          backend: merged_config.backend,
+          device: new_backend_state.device,
+          queue: new_backend_state.queue,
+          pipeline: new_backend_state.pipeline
+      }
 
-          {:error, reason} ->
-            {:reply, {:error, reason}, state}
-        end
-
-      true ->
-        updated_state = %{state | config: merged_config}
-        {:reply, :ok, updated_state}
+      {:reply, :ok, updated_state}
     end
   end
 

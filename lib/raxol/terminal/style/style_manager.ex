@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Gets the current style.
   """
-  @spec get_current_style(text_style()) :: text_style()
+  @spec get_current_style(TextFormatting.t()) :: TextFormatting.t()
   def get_current_style(style) do
     style
   end
@@ -59,7 +59,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Sets the style to a new value.
   """
-  @spec set_style(text_style(), text_style()) :: text_style()
+  @spec set_style(TextFormatting.t(), TextFormatting.t()) :: TextFormatting.t()
   def set_style(_current_style, new_style) do
     new_style
   end
@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Applies a text attribute to the style.
   """
-  @spec apply_style(text_style(), atom()) :: text_style()
+  @spec apply_style(TextFormatting.t(), atom()) :: TextFormatting.t()
   def apply_style(style, attribute) do
     TextFormatting.apply_attribute(style, attribute)
   end
@@ -75,7 +75,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Resets all text formatting attributes to their default values.
   """
-  @spec reset_style(text_style()) :: TextFormatting.t()
+  @spec reset_style(TextFormatting.t()) :: TextFormatting.t()
   def reset_style(_style) do
     new()
   end
@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Sets the foreground color.
   """
-  @spec set_foreground(text_style(), color()) :: text_style()
+  @spec set_foreground(TextFormatting.t(), color()) :: TextFormatting.t()
   def set_foreground(style, color) do
     TextFormatting.set_foreground(style, color)
   end
@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Sets the background color.
   """
-  @spec set_background(text_style(), color()) :: text_style()
+  @spec set_background(TextFormatting.t(), color()) :: TextFormatting.t()
   def set_background(style, color) do
     TextFormatting.set_background(style, color)
   end
@@ -99,7 +99,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Gets the foreground color.
   """
-  @spec get_foreground(text_style()) :: color()
+  @spec get_foreground(TextFormatting.t()) :: color()
   def get_foreground(style) do
     TextFormatting.get_foreground(style)
   end
@@ -107,7 +107,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Gets the background color.
   """
-  @spec get_background(text_style()) :: color()
+  @spec get_background(TextFormatting.t()) :: color()
   def get_background(style) do
     TextFormatting.get_background(style)
   end
@@ -115,7 +115,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Sets double-width mode for the current line.
   """
-  @spec set_double_width(text_style()) :: TextFormatting.t()
+  @spec set_double_width(TextFormatting.t()) :: TextFormatting.t()
   def set_double_width(style) do
     TextFormatting.set_double_width(style)
   end
@@ -123,7 +123,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Sets double-height top half mode for the current line.
   """
-  @spec set_double_height_top(text_style()) :: TextFormatting.t()
+  @spec set_double_height_top(TextFormatting.t()) :: TextFormatting.t()
   def set_double_height_top(style) do
     TextFormatting.set_double_height_top(style)
   end
@@ -131,7 +131,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Sets double-height bottom half mode for the current line.
   """
-  @spec set_double_height_bottom(text_style()) :: TextFormatting.t()
+  @spec set_double_height_bottom(TextFormatting.t()) :: TextFormatting.t()
   def set_double_height_bottom(style) do
     TextFormatting.set_double_height_bottom(style)
   end
@@ -139,7 +139,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Resets to single-width, single-height mode.
   """
-  @spec reset_size(text_style()) :: TextFormatting.t()
+  @spec reset_size(TextFormatting.t()) :: TextFormatting.t()
   def reset_size(style) do
     TextFormatting.reset_size(style)
   end
@@ -147,7 +147,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Calculates the effective width of a character based on the current style.
   """
-  @spec effective_width(text_style(), String.t()) :: non_neg_integer()
+  @spec effective_width(TextFormatting.t(), String.t()) :: non_neg_integer()
   def effective_width(style, char) do
     TextFormatting.effective_width(style, char)
   end
@@ -155,7 +155,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Gets the hyperlink URI.
   """
-  @spec get_hyperlink(text_style()) :: String.t() | nil
+  @spec get_hyperlink(TextFormatting.t()) :: String.t() | nil
   def get_hyperlink(style) do
     TextFormatting.get_hyperlink(style)
   end
@@ -163,7 +163,8 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Sets a hyperlink URI.
   """
-  @spec set_hyperlink(text_style(), String.t() | nil) :: text_style()
+  @spec set_hyperlink(TextFormatting.t(), String.t() | nil) ::
+          TextFormatting.t()
   def set_hyperlink(style, url) do
     TextFormatting.set_hyperlink(style, url)
   end
@@ -179,7 +180,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Formats SGR parameters for DECRQSS responses.
   """
-  @spec format_sgr_params(text_style()) :: String.t()
+  @spec format_sgr_params(TextFormatting.t()) :: String.t()
   def format_sgr_params(style) do
     TextFormatting.format_sgr_params(style)
   end

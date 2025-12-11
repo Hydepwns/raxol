@@ -23,7 +23,6 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
   @fps_60 16
   @fps_45 22
   @fps_30 33
-  @fps_10 100
 
   @high_cpu_threshold 80.0
   @complex_tree_threshold 100
@@ -118,15 +117,6 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
 
           %FramerateState{
             adaptation_timer_ref: timer_ref
-          }
-
-        error ->
-          Raxol.Core.Runtime.Log.warning(
-            "AdaptiveFramerate: Failed to start timer - #{inspect(error)}"
-          )
-
-          %FramerateState{
-            adaptation_timer_ref: nil
           }
       end
 
@@ -304,11 +294,10 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
     round(1000 / interval_ms)
   end
 
+  # determine_optimal_fps only returns 30, 45, or 60
   defp interval_from_fps(60), do: @fps_60
   defp interval_from_fps(45), do: @fps_45
   defp interval_from_fps(30), do: @fps_30
-  defp interval_from_fps(10), do: @fps_10
-  defp interval_from_fps(fps) when fps > 0, do: round(1000 / fps)
 
   defp log_adaptation(
          old_fps,

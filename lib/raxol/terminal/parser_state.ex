@@ -77,7 +77,7 @@ defmodule Raxol.Terminal.ParserState do
             do: 0,
             else: String.to_integer(state.params_buffer)
 
-        {%{state | params: state.params ++ [param], params_buffer: ""}, []}
+        {%{state | params: [param | state.params], params_buffer: ""}, []}
 
       char >= 0x40 and char <= 0x7E ->
         # Final byte - execute CSI sequence
@@ -92,12 +92,13 @@ defmodule Raxol.Terminal.ParserState do
   end
 
   defp finalize_params(state) do
-    params = state.params
+    params =
+      if state.params_buffer != "" do
+        [String.to_integer(state.params_buffer) | state.params]
+      else
+        state.params
+      end
 
-    if state.params_buffer != "" do
-      params ++ [String.to_integer(state.params_buffer)]
-    else
-      params
-    end
+    Enum.reverse(params)
   end
 end

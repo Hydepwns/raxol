@@ -404,7 +404,12 @@ defmodule Raxol.Terminal.Commands.WindowHandler do
     %FontManager{
       family: "monospace",
       size: @default_font_size,
-      line_height: @default_line_height
+      weight: :normal,
+      style: :normal,
+      line_height: @default_line_height,
+      letter_spacing: 0,
+      fallback_fonts: [],
+      custom_fonts: %{}
     }
   end
 

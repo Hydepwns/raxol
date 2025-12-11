@@ -186,7 +186,7 @@ defmodule Raxol.Core.Runtime.Subscription do
   @spec stop_subscription(any()) :: any()
   defp stop_subscription(_), do: {:error, :invalid_subscription}
 
-  @spec stop_interval(reference()) :: any()
+  @spec stop_interval(any()) :: :ok | {:error, any()}
   defp stop_interval(timer_ref) do
     case :timer.cancel(timer_ref) do
       {:ok, :cancel} -> :ok
@@ -206,7 +206,7 @@ defmodule Raxol.Core.Runtime.Subscription do
     {:error, :invalid_subscription_id}
   end
 
-  @spec stop_file_watch(String.t() | integer()) :: any()
+  @spec stop_file_watch(pid()) :: :ok | {:error, :subscription_not_found}
   defp stop_file_watch(watcher_pid) do
     case Process.alive?(watcher_pid) do
       true ->
@@ -218,7 +218,7 @@ defmodule Raxol.Core.Runtime.Subscription do
     end
   end
 
-  @spec stop_custom(String.t() | integer()) :: any()
+  @spec stop_custom(pid()) :: :ok | {:error, :subscription_not_found}
   defp stop_custom(source_pid) do
     case Process.alive?(source_pid) do
       true ->
@@ -308,7 +308,7 @@ defmodule Raxol.Core.Runtime.Subscription do
   end
 
   # File watching helper
-  @spec watch_file(String.t(), any(), String.t() | integer()) :: any()
+  @spec watch_file(String.t(), any(), pid()) :: any()
   defp watch_file(path, events, target_pid) do
     case FileSystem.start_link(dirs: [path]) do
       {:ok, watcher_pid} ->

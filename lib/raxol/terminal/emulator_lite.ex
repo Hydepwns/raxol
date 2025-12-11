@@ -99,7 +99,7 @@ defmodule Raxol.Terminal.EmulatorLite do
     - :scrollback_limit - Number of scrollback lines (default: 1000)
     - :alternate_buffer - Create alternate screen buffer (default: false)
   """
-  @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: t()
+  @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: map()
   def new(width \\ 80, height \\ 24, opts \\ []) do
     enable_history = Keyword.get(opts, :enable_history, false)
     scrollback_limit = Keyword.get(opts, :scrollback_limit, 1000)
@@ -157,7 +157,7 @@ defmodule Raxol.Terminal.EmulatorLite do
   Creates a minimal emulator for fastest possible parsing.
   No history, no alternate buffer, minimal features.
   """
-  @spec new_minimal(non_neg_integer(), non_neg_integer()) :: t()
+  @spec new_minimal(non_neg_integer(), non_neg_integer()) :: map()
   def new_minimal(width \\ 80, height \\ 24) do
     new(width, height,
       enable_history: false,
@@ -222,7 +222,7 @@ defmodule Raxol.Terminal.EmulatorLite do
   @doc """
   Resets the emulator to initial state.
   """
-  @spec reset(t()) :: t()
+  @spec reset(map()) :: map()
   def reset(%__MODULE__{width: width, height: height} = emulator) do
     %{
       emulator

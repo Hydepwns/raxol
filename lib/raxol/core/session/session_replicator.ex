@@ -581,20 +581,7 @@ defmodule Raxol.Core.Session.SessionReplicator do
                                                       acc_state ->
       # Only sync if replication is older than sync interval
       age = :erlang.monotonic_time() - timestamp
-
-      if age > state.sync_interval do
-        case sync_session_replicas(session_id, acc_state) do
-          {:ok, _merged_data, updated_state} ->
-            # Remove from pending
-            pending = Map.delete(updated_state.pending_replications, session_id)
-            %{updated_state | pending_replications: pending}
-
-          {:error, _reason} ->
-            acc_state
-        end
-      else
-        acc_state
-      end
+      sync_if_stale(age, state.sync_interval, session_id, acc_state)
     end)
   end
 
@@ -628,6 +615,24 @@ defmodule Raxol.Core.Session.SessionReplicator do
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  defp sync_if_stale(age, sync_interval, session_id, acc_state) do
+    case age > sync_interval do
+      true ->
+        case sync_session_replicas(session_id, acc_state) do
+          {:ok, _merged_data, updated_state} ->
+            # Remove from pending
+            pending = Map.delete(updated_state.pending_replications, session_id)
+            %{updated_state | pending_replications: pending}
+
+          {:error, _reason} ->
+            acc_state
+        end
+
+      false ->
+        acc_state
     end
   end
 end

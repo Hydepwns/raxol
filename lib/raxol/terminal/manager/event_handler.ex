@@ -91,6 +91,7 @@ defmodule Raxol.Terminal.Manager.EventHandler do
 
   # Private helper functions
 
+  @spec handle_key_press(any(), any(), any()) :: {:ok, any()}
   defp handle_key_press(emulator, key, modifiers) do
     {:ok, updated_emulator, _commands} =
       Emulator.Input.process_key_press(emulator, key, modifiers)
@@ -98,6 +99,7 @@ defmodule Raxol.Terminal.Manager.EventHandler do
     {:ok, updated_emulator}
   end
 
+  @spec handle_key_release(any(), any(), any()) :: {:ok, any()}
   defp handle_key_release(emulator, key, modifiers) do
     {:ok, updated_emulator, _commands} =
       Emulator.Input.process_key_release(emulator, key, modifiers)
@@ -105,6 +107,7 @@ defmodule Raxol.Terminal.Manager.EventHandler do
     {:ok, updated_emulator}
   end
 
+  @spec handle_mouse_click(any(), any(), any(), any()) :: {:ok, any()}
   defp handle_mouse_click(emulator, button, x, y) do
     {:ok, updated_emulator, _commands} =
       Emulator.Input.process_mouse_event(emulator, %{
@@ -117,6 +120,7 @@ defmodule Raxol.Terminal.Manager.EventHandler do
     {:ok, updated_emulator}
   end
 
+  @spec handle_mouse_drag(any(), any(), any(), any()) :: {:ok, any()}
   defp handle_mouse_drag(emulator, button, x, y) do
     {:ok, updated_emulator, _commands} =
       Emulator.Input.process_mouse_event(emulator, %{
@@ -129,6 +133,7 @@ defmodule Raxol.Terminal.Manager.EventHandler do
     {:ok, updated_emulator}
   end
 
+  @spec handle_mouse_release(any(), any(), any(), any()) :: {:ok, any()}
   defp handle_mouse_release(emulator, button, x, y) do
     {:ok, updated_emulator, _commands} =
       Emulator.Input.process_mouse_event(emulator, %{

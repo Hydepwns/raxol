@@ -48,7 +48,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     View.box(style: options.style, children: content)
   end
 
-  @spec parse_chart_options(keyword()) :: {:ok, any()} | {:error, any()}
+  @spec parse_chart_options(keyword()) :: map()
   defp parse_chart_options(opts) do
     %{
       type: Keyword.get(opts, :type, :bar),
@@ -65,7 +65,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     }
   end
 
-  @spec build_chart_content(any()) :: any()
+  @spec build_chart_content(map()) :: list()
   defp build_chart_content(options) do
     {min, max} = calculate_range(options.series, options.min, options.max)
 
@@ -87,14 +87,14 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   @spec build_chart_main_content(
-          any(),
-          any(),
-          any(),
-          any(),
-          String.t() | integer(),
+          chart_type(),
+          [series()],
+          number(),
+          number(),
+          non_neg_integer(),
           pos_integer(),
-          any()
-        ) :: any()
+          orientation()
+        ) :: term()
   defp build_chart_main_content(
          :bar,
          series,
@@ -107,14 +107,14 @@ defmodule Raxol.Core.Renderer.Views.Chart do
        do: create_bar_chart(series, min, max, width, height, orientation)
 
   @spec build_chart_main_content(
-          any(),
-          any(),
-          any(),
-          any(),
-          String.t() | integer(),
+          chart_type(),
+          [series()],
+          number(),
+          number(),
+          non_neg_integer(),
           pos_integer(),
-          any()
-        ) :: any()
+          orientation()
+        ) :: term()
   defp build_chart_main_content(
          :line,
          series,
@@ -127,14 +127,14 @@ defmodule Raxol.Core.Renderer.Views.Chart do
        do: create_line_chart(series, min, max, width, height)
 
   @spec build_chart_main_content(
-          any(),
-          any(),
-          any(),
-          any(),
-          String.t() | integer(),
-          any(),
-          any()
-        ) :: any()
+          chart_type(),
+          [series()],
+          number(),
+          number(),
+          non_neg_integer(),
+          pos_integer(),
+          orientation()
+        ) :: term()
   defp build_chart_main_content(
          :sparkline,
          series,
@@ -146,7 +146,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
        ),
        do: create_sparkline(series, min, max, width)
 
-  @spec maybe_add_axes(String.t(), any(), any(), any()) :: any()
+  @spec maybe_add_axes(term(), map(), number(), number()) :: term()
   defp maybe_add_axes(
          content,
          %{
@@ -161,10 +161,10 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     add_axes(content, min, max, width, height, orientation)
   end
 
-  @spec maybe_add_axes(String.t(), any(), any(), any()) :: any()
+  @spec maybe_add_axes(term(), map(), number(), number()) :: term()
   defp maybe_add_axes(content, _options, _min, _max), do: content
 
-  @spec maybe_add_labels(String.t(), any()) :: any()
+  @spec maybe_add_labels(term(), map()) :: term()
   defp maybe_add_labels(content, %{
          show_labels: true,
          series: series,
@@ -174,40 +174,45 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     add_labels(content, series, width, height)
   end
 
-  @spec maybe_add_labels(String.t(), any()) :: any()
+  @spec maybe_add_labels(term(), map()) :: term()
   defp maybe_add_labels(content, _options), do: content
 
-  @spec maybe_add_legend(String.t(), any()) :: any()
+  @spec maybe_add_legend(term(), map()) :: term()
   defp maybe_add_legend(content, %{show_legend: true, series: series}) do
     add_legend(content, series)
   end
 
-  @spec maybe_add_legend(String.t(), any()) :: any()
+  @spec maybe_add_legend(term(), map()) :: term()
   defp maybe_add_legend(content, _options), do: content
 
   # Private Helpers
 
-  @spec calculate_range(any(), any(), any()) :: any()
+  @spec calculate_range([series()], number() | nil, number() | nil) ::
+          {number(), number()}
   defp calculate_range(series, min, max) do
     data = Enum.flat_map(series, & &1.data)
     handle_range_calculation(Enum.empty?(data), data, min, max)
   end
 
-  @spec handle_range_calculation(any(), any(), any(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_range_calculation(
+          boolean(),
+          [number()],
+          number() | nil,
+          number() | nil
+        ) ::
+          {number(), number()}
   defp handle_range_calculation(true, _data, min, max) do
     # Handle empty data case: return default range
     {min || 0, max || 1}
   end
 
-  @spec handle_range_calculation(any(), any(), any(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_range_calculation(
+          boolean(),
+          [number()],
+          number() | nil,
+          number() | nil
+        ) ::
+          {number(), number()}
   defp handle_range_calculation(false, data, min, max) do
     # Proceed as before if data is not empty
     {
@@ -217,13 +222,13 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   @spec create_bar_chart(
-          any(),
-          any(),
-          any(),
-          String.t() | integer(),
+          [series()],
+          number(),
+          number(),
+          non_neg_integer(),
           pos_integer(),
-          any()
-        ) :: any()
+          orientation()
+        ) :: term()
   defp create_bar_chart(series, min, max, width, height, orientation) do
     case orientation do
       :vertical -> create_bars(series, min, max, width, height, :vertical)
@@ -232,13 +237,13 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   @spec create_bars(
-          any(),
-          any(),
-          any(),
-          String.t() | integer(),
+          [series()],
+          number(),
+          number(),
+          non_neg_integer(),
           pos_integer(),
-          any()
-        ) :: any()
+          orientation()
+        ) :: term()
   defp create_bars(series, min, max, width, height, orientation) do
     total_points = Enum.sum(Enum.map(series, &length(&1.data)))
 
@@ -255,15 +260,15 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   @spec create_bars_with_points(
-          any(),
-          any(),
-          any(),
-          any(),
-          String.t() | integer(),
-          any(),
-          any(),
-          any()
-        ) :: any()
+          boolean(),
+          [series()],
+          number(),
+          number(),
+          non_neg_integer(),
+          pos_integer(),
+          orientation(),
+          non_neg_integer()
+        ) :: term()
   defp create_bars_with_points(
          true,
          _series,
@@ -278,15 +283,15 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   @spec create_bars_with_points(
-          any(),
-          any(),
-          any(),
-          any(),
-          String.t() | integer(),
+          boolean(),
+          [series()],
+          number(),
+          number(),
+          non_neg_integer(),
           pos_integer(),
-          any(),
-          any()
-        ) :: any()
+          orientation(),
+          non_neg_integer()
+        ) :: term()
   defp create_bars_with_points(
          false,
          series,
@@ -305,21 +310,21 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     end
   end
 
-  @spec empty_bars_flex(any()) :: any()
+  @spec empty_bars_flex(orientation()) :: term()
   defp empty_bars_flex(:vertical) do
     View.flex direction: :row do
       []
     end
   end
 
-  @spec empty_bars_flex(any()) :: any()
+  @spec empty_bars_flex(orientation()) :: term()
   defp empty_bars_flex(:horizontal) do
     View.flex direction: :column do
       []
     end
   end
 
-  @spec create_bars_for_series(any(), map()) :: any()
+  @spec create_bars_for_series([series()], map()) :: [term()]
   defp create_bars_for_series(series, config) do
     Enum.flat_map(series, fn %{data: data, color: color} ->
       Enum.map(data, fn value ->
@@ -335,13 +340,13 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   @spec bar_config(
-          any(),
-          any(),
-          any(),
-          String.t() | integer(),
+          orientation(),
+          number(),
+          number(),
+          non_neg_integer(),
           pos_integer(),
-          any()
-        ) :: any()
+          non_neg_integer()
+        ) :: map()
   defp bar_config(:vertical, min, max, width, height, total_points) do
     %{
       bar_primary: width,
@@ -355,13 +360,13 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   @spec bar_config(
-          any(),
-          any(),
-          any(),
-          String.t() | integer(),
+          orientation(),
+          number(),
+          number(),
+          non_neg_integer(),
           pos_integer(),
-          any()
-        ) :: any()
+          non_neg_integer()
+        ) :: map()
   defp bar_config(:horizontal, min, max, width, height, total_points) do
     %{
       bar_primary: height,
@@ -375,12 +380,12 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   @spec create_line_chart(
-          any(),
-          any(),
-          any(),
-          String.t() | integer(),
+          [series()],
+          number(),
+          number(),
+          non_neg_integer(),
           pos_integer()
-        ) :: any()
+        ) :: term()
   defp create_line_chart(series, min, max, width, height) do
     lines =
       series
@@ -393,12 +398,12 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   @spec generate_line_points(
-          any(),
-          any(),
-          any(),
-          String.t() | integer(),
+          [number()],
+          number(),
+          number(),
+          non_neg_integer(),
           pos_integer()
-        ) :: any()
+        ) :: [{integer(), integer()}]
   defp generate_line_points(data, min, max, width, height) do
     len = length(data)
 
@@ -410,41 +415,48 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     end)
   end
 
-  @spec calc_line_x(String.t() | integer(), any(), String.t() | integer()) ::
-          any()
+  @spec calc_line_x(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          integer()
   defp calc_line_x(x_idx, len, width) when len > 1 do
     Float.floor(x_idx / (len - 1) * (width - 1)) |> trunc()
   end
 
   # single point case
-  @spec calc_line_x(String.t() | integer(), any(), String.t() | integer()) ::
-          any()
+  @spec calc_line_x(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          integer()
   defp calc_line_x(_x_idx, _len, _width), do: 0
 
-  @spec calc_line_y(any(), any(), any(), pos_integer()) :: any()
+  @spec calc_line_y(number(), number(), number(), pos_integer()) :: integer()
   defp calc_line_y(value, min, max, height) do
     Float.floor(scale_value(value, min, max, 0, height - 1)) |> trunc()
   end
 
   @spec render_line_canvas(
-          any(),
-          String.t() | integer(),
+          [{integer(), integer()}],
+          non_neg_integer(),
           pos_integer(),
-          Raxol.Terminal.Color.TrueColor.t()
-        ) :: any()
+          View.Types.color()
+        ) :: [term()]
   defp render_line_canvas(points, width, height, color) do
     points
     |> build_line_canvas(width, height)
     |> canvas_to_view_cells(color)
   end
 
-  @spec build_line_canvas(any(), String.t() | integer(), pos_integer()) :: any()
+  @spec build_line_canvas(
+          [{integer(), integer()}],
+          non_neg_integer(),
+          pos_integer()
+        ) ::
+          [[String.t()]]
   defp build_line_canvas(points, width, height) do
     canvas = blank_canvas(width, height)
     draw_lines_on_canvas(canvas, points)
   end
 
-  @spec draw_lines_on_canvas(any(), any()) :: any()
+  @spec draw_lines_on_canvas([[String.t()]], [{integer(), integer()}]) :: [
+          [String.t()]
+        ]
   defp draw_lines_on_canvas(canvas, points) do
     Enum.chunk_every(points, 2, 1, :discard)
     |> Enum.reduce(canvas, fn [start_point, end_point], acc ->
@@ -452,7 +464,12 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     end)
   end
 
-  @spec mark_line_points(any(), any(), any()) :: any()
+  @spec mark_line_points(
+          [[String.t()]],
+          {integer(), integer()},
+          {integer(), integer()}
+        ) ::
+          [[String.t()]]
   defp mark_line_points(canvas, {x1, y1}, {x2, y2}) do
     # Bresenham's line algorithm
     dx = abs(x2 - x1)
@@ -488,17 +505,17 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     |> draw_bresenham()
   end
 
-  @spec draw_bresenham(any()) :: any()
+  @spec draw_bresenham(map()) :: [[String.t()]]
   defp draw_bresenham(params) do
     draw_bresenham_with_params(params)
   end
 
-  @spec draw_bresenham_with_params(any()) :: any()
+  @spec draw_bresenham_with_params(map()) :: [[String.t()]]
   defp draw_bresenham_with_params(%{canvas: canvas, depth: depth} = _params)
        when depth > 10_000,
        do: canvas
 
-  @spec draw_bresenham_with_params(any()) :: any()
+  @spec draw_bresenham_with_params(map()) :: [[String.t()]]
   defp draw_bresenham_with_params(%{canvas: canvas} = params) do
     case {out_of_bounds?(canvas, params), reached_end?(params)} do
       {true, _} -> canvas
@@ -507,23 +524,23 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     end
   end
 
-  @spec out_of_bounds?(any(), any()) :: boolean()
+  @spec out_of_bounds?([[String.t()]], map()) :: boolean()
   defp out_of_bounds?(canvas, %{x: x, y: y}) do
     x < 0 or y < 0 or is_nil(Enum.at(canvas, y)) or
       is_nil(Enum.at(Enum.at(canvas, y), x))
   end
 
-  @spec reached_end?(any()) :: boolean()
+  @spec reached_end?(map()) :: boolean()
   defp reached_end?(%{x: x, y: y, x2: x2, y2: y2}) do
     x == x2 and y == y2
   end
 
-  @spec mark_point(any(), any()) :: any()
+  @spec mark_point([[String.t()]], map()) :: [[String.t()]]
   defp mark_point(canvas, %{x: x, y: y}) do
     put_in(canvas, [Access.at(y), Access.at(x)], "•")
   end
 
-  @spec draw_bresenham_step(any()) :: any()
+  @spec draw_bresenham_step(map()) :: [[String.t()]]
   defp draw_bresenham_step(%{
          canvas: canvas,
          x: x,
@@ -561,32 +578,38 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   @spec calculate_next_position(
-          non_neg_integer(),
-          non_neg_integer(),
-          any(),
-          any(),
-          any(),
-          any(),
-          any(),
-          any()
-        ) :: any()
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer()
+        ) :: {integer(), integer(), integer()}
   defp calculate_next_position(x, y, sx, sy, err, dx, dy, e2) do
     {next_x, _next_err_x} = calculate_next_x(e2 >= dy, x, sx, err, dy)
     {next_y, next_err_y} = calculate_next_y(e2 <= dx, y, sy, err, dx)
     {next_x, next_y, next_err_y}
   end
 
-  @spec calculate_next_x(any(), non_neg_integer(), any(), any(), any()) :: any()
+  @spec calculate_next_x(boolean(), integer(), integer(), integer(), integer()) ::
+          {integer(), integer()}
   defp calculate_next_x(true, x, sx, err, dy), do: {x + sx, err + dy}
-  @spec calculate_next_x(any(), non_neg_integer(), any(), any(), any()) :: any()
+
+  @spec calculate_next_x(boolean(), integer(), integer(), integer(), integer()) ::
+          {integer(), integer()}
   defp calculate_next_x(false, x, _sx, err, _dy), do: {x, err}
 
-  @spec calculate_next_y(any(), non_neg_integer(), any(), any(), any()) :: any()
+  @spec calculate_next_y(boolean(), integer(), integer(), integer(), integer()) ::
+          {integer(), integer()}
   defp calculate_next_y(true, y, sy, err, dx), do: {y + sy, err + dx}
-  @spec calculate_next_y(any(), non_neg_integer(), any(), any(), any()) :: any()
+
+  @spec calculate_next_y(boolean(), integer(), integer(), integer(), integer()) ::
+          {integer(), integer()}
   defp calculate_next_y(false, y, _sy, err, _dx), do: {y, err}
 
-  @spec canvas_to_view_cells(any(), Raxol.Terminal.Color.TrueColor.t()) :: any()
+  @spec canvas_to_view_cells([[String.t()]], View.Types.color()) :: [term()]
   defp canvas_to_view_cells(canvas, color) do
     for {row, y} <- Enum.with_index(canvas),
         {cell, x} <- Enum.with_index(row),
@@ -595,7 +618,8 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     end
   end
 
-  @spec create_sparkline(any(), any(), any(), String.t() | integer()) :: any()
+  @spec create_sparkline([series()], number(), number(), non_neg_integer()) ::
+          term()
   defp create_sparkline([series], min, max, width) do
     %{data: data, color: color} = series
     chars = sparkline_chars(data, min, max)
@@ -607,24 +631,24 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     )
   end
 
-  @spec sparkline_chars(any(), any(), any()) :: any()
+  @spec sparkline_chars([number()], number(), number()) :: [String.t()]
   defp sparkline_chars(data, min, max) do
     data
     |> Enum.map(&scale_sparkline_value(&1, min, max))
     |> Enum.map(&sparkline_char/1)
   end
 
-  @spec scale_sparkline_value(any(), any(), any()) :: any()
+  @spec scale_sparkline_value(number(), number(), number()) :: float()
   defp scale_sparkline_value(value, min, max) do
     scale_value(value, min, max, 0, 7)
   end
 
-  @spec sparkline_char(any()) :: any()
+  @spec sparkline_char(float()) :: String.t()
   defp sparkline_char(scaled_value) do
     Enum.at(@bar_chars, floor(scaled_value))
   end
 
-  @spec fit_sparkline_chars(any(), String.t() | integer()) :: any()
+  @spec fit_sparkline_chars([String.t()], non_neg_integer()) :: [String.t()]
   defp fit_sparkline_chars(chars, width) do
     char_count = length(chars)
 
@@ -643,20 +667,19 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     end
   end
 
-  @spec create_vertical_bar(any(), any()) :: any()
+  @spec create_vertical_bar(integer(), integer()) :: String.t()
   defp create_vertical_bar(bar_height, total_height)
        when is_integer(bar_height) and is_integer(total_height) do
     build_bar_string(bar_height, total_height, :vertical)
   end
 
-  @spec create_horizontal_bar(String.t() | integer(), String.t() | integer()) ::
-          any()
+  @spec create_horizontal_bar(integer(), integer()) :: String.t()
   defp create_horizontal_bar(bar_width, total_width)
        when is_integer(bar_width) and is_integer(total_width) do
     build_bar_string(bar_width, total_width, :horizontal)
   end
 
-  @spec build_bar_string(any(), any(), any()) :: any()
+  @spec build_bar_string(integer(), integer(), orientation()) :: String.t()
   defp build_bar_string(bar_length, total_length, direction) do
     clamped = clamp_bar_length(bar_length, total_length)
     {full_blocks, partial_block} = bar_blocks(clamped)
@@ -664,26 +687,28 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     bar_blocks_string(direction, padding, partial_block, full_blocks)
   end
 
-  @spec bar_padding(any(), any(), any()) :: any()
+  @spec bar_padding(integer(), integer(), String.t()) :: String.t()
   defp bar_padding(total_length, full_blocks, partial_block) do
     padding_size = total_length - full_blocks - String.length(partial_block)
     String.duplicate(" ", :erlang.max(0, padding_size))
   end
 
-  @spec bar_blocks_string(any(), any(), any(), any()) :: any()
+  @spec bar_blocks_string(orientation(), String.t(), String.t(), integer()) ::
+          String.t()
   defp bar_blocks_string(:vertical, padding, partial_block, full_blocks),
     do: padding <> partial_block <> String.duplicate("█", full_blocks)
 
-  @spec bar_blocks_string(any(), any(), any(), any()) :: any()
+  @spec bar_blocks_string(orientation(), String.t(), String.t(), integer()) ::
+          String.t()
   defp bar_blocks_string(:horizontal, padding, partial_block, full_blocks),
     do: String.duplicate("█", full_blocks) <> partial_block <> padding
 
-  @spec clamp_bar_length(any(), any()) :: any()
+  @spec clamp_bar_length(integer(), integer()) :: integer()
   defp clamp_bar_length(bar_length, total_length) do
     :erlang.max(0, :erlang.min(bar_length, total_length))
   end
 
-  @spec bar_blocks(any()) :: any()
+  @spec bar_blocks(integer()) :: {integer(), String.t()}
   defp bar_blocks(clamped_length) do
     full_blocks = div(clamped_length, 8)
     remainder = rem(clamped_length, 8)
@@ -691,36 +716,51 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     {full_blocks, partial_block}
   end
 
-  @spec get_partial_block(any(), any()) :: any() | nil
+  @spec get_partial_block(boolean(), integer()) :: String.t()
   defp get_partial_block(true, remainder), do: Enum.at(@bar_chars, remainder)
-  @spec get_partial_block(any(), any()) :: any() | nil
+  @spec get_partial_block(boolean(), integer()) :: String.t()
   defp get_partial_block(false, _remainder), do: ""
 
-  @spec scale_value(any(), any(), any(), any(), any()) :: any()
+  @spec scale_value(number(), number(), number(), number(), number()) :: float()
   defp scale_value(value, min, max, new_min, new_max) do
     # Avoid division by zero if min == max
     scale_value_with_range(max == min, value, min, max, new_min, new_max)
   end
 
-  @spec scale_value_with_range(any(), any(), any(), any(), any(), any()) ::
-          any()
+  @spec scale_value_with_range(
+          boolean(),
+          number(),
+          number(),
+          number(),
+          number(),
+          number()
+        ) ::
+          float()
   defp scale_value_with_range(true, _value, _min, _max, new_min, _new_max),
     do: new_min
 
-  @spec scale_value_with_range(any(), any(), any(), any(), any(), any()) ::
-          any()
+  @spec scale_value_with_range(
+          boolean(),
+          number(),
+          number(),
+          number(),
+          number(),
+          number()
+        ) ::
+          float()
   defp scale_value_with_range(false, value, min, max, new_min, new_max) do
     (value - min) / (max - min) * (new_max - new_min) + new_min
   end
 
   @spec add_axes(
-          String.t(),
-          any(),
-          any(),
-          String.t() | integer(),
+          term(),
+          number(),
+          number(),
+          non_neg_integer(),
           pos_integer(),
-          any()
-        ) :: any()
+          orientation()
+        ) ::
+          list()
   defp add_axes(content, _min, _max, width, height, _orientation) do
     axis_y = View.text("|", position: {0, 0}, fg: :bright_black)
 
@@ -733,15 +773,15 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     [axis_y, axis_x | List.wrap(content)]
   end
 
-  @spec add_labels(String.t(), any(), String.t() | integer(), pos_integer()) ::
-          any()
+  @spec add_labels(term(), [series()], non_neg_integer(), pos_integer()) ::
+          list()
   defp add_labels(content, _series, _width, height) do
     min_label = View.text("min", position: {0, height - 1}, fg: :bright_black)
     max_label = View.text("max", position: {0, 0}, fg: :bright_black)
     [min_label, max_label | List.wrap(content)]
   end
 
-  @spec add_legend(String.t(), any()) :: any()
+  @spec add_legend(term(), [series()]) :: list()
   defp add_legend(content, series) do
     legend =
       series
@@ -755,7 +795,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     legend ++ List.wrap(content)
   end
 
-  @spec blank_canvas(String.t() | integer(), pos_integer()) :: any()
+  @spec blank_canvas(non_neg_integer(), pos_integer()) :: [[String.t()]]
   defp blank_canvas(width, height) do
     for _y <- 0..(height - 1) do
       for _x <- 0..(width - 1) do

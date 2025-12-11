@@ -99,23 +99,14 @@ defmodule Raxol.Terminal.Emulator.Helpers do
     case is_pid(cursor) do
       true ->
         cursor_struct = get_cursor_struct(emulator)
-
-        case cursor_struct do
-          # Already in {row, col} format
-          %{position: {row, col}} -> {row, col}
-          # Use row/col fields directly
-          %{row: row, col: col} -> {row, col}
-          _ -> {0, 0}
-        end
+        # Cursor struct always has :position field
+        %{position: {row, col}} = cursor_struct
+        {row, col}
 
       false ->
-        case cursor do
-          # Already in {row, col} format
-          %{position: {row, col}} -> {row, col}
-          # Use row/col fields directly
-          %{row: row, col: col} -> {row, col}
-          _ -> {0, 0}
-        end
+        # Cursor struct always has :position field
+        %{position: {row, col}} = cursor
+        {row, col}
     end
   end
 end

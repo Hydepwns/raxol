@@ -158,19 +158,10 @@ defmodule Raxol.Terminal.TerminalProcess do
 
   @impl true
   def handle_manager_info(:initialize_terminal, state) do
-    case initialize_terminal_components(state) do
-      {:ok, new_state} ->
-        Log.info("Terminal #{state.terminal_id} initialized successfully")
-
-        {:noreply, %{new_state | state: :active}}
-
-      {:error, reason} ->
-        Log.error(
-          "Failed to initialize terminal #{state.terminal_id}: #{inspect(reason)}"
-        )
-
-        {:stop, {:initialization_failed, reason}, state}
-    end
+    # initialize_terminal_components always succeeds with current implementation
+    {:ok, new_state} = initialize_terminal_components(state)
+    Log.info("Terminal #{state.terminal_id} initialized successfully")
+    {:noreply, %{new_state | state: :active}}
   end
 
   @impl true
@@ -196,20 +187,19 @@ defmodule Raxol.Terminal.TerminalProcess do
   ## Private Implementation
 
   defp initialize_terminal_components(state) do
-    with {:ok, emulator} <- initialize_emulator(state.config),
-         {:ok, session} <- initialize_session(state.config),
-         {:ok, buffer} <- initialize_buffer(state.config) do
-      new_state = %{
-        state
-        | emulator: emulator,
-          session: session,
-          buffer: buffer
-      }
+    # All initialize_* functions always return {:ok, ...}
+    {:ok, emulator} = initialize_emulator(state.config)
+    {:ok, session} = initialize_session(state.config)
+    {:ok, buffer} = initialize_buffer(state.config)
 
-      {:ok, new_state}
-    else
-      {:error, reason} -> {:error, reason}
-    end
+    new_state = %{
+      state
+      | emulator: emulator,
+        session: session,
+        buffer: buffer
+    }
+
+    {:ok, new_state}
   end
 
   defp initialize_emulator(config) do

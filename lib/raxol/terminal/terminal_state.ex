@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.State do
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer()
-        ) :: t()
+        ) :: map()
   def new(width, height, scrollback_limit, memory_limit) do
     %{
       width: width,

@@ -202,14 +202,15 @@ defmodule Raxol.Debug do
   """
   @spec debug_breakpoint(atom(), binary()) :: :ok
   def debug_breakpoint(component, reason \\ "Debug breakpoint") do
-    with true <- debug_enabled?(component),
-         true <- interactive_mode?() do
-      Log.console("Debug breakpoint hit: #{reason}")
-      Log.console("Component: #{component}")
-      Log.console("Process: #{inspect(self())}")
-      Log.console("Press Enter to continue...")
-      IO.read(:line)
-    end
+    _ =
+      with true <- debug_enabled?(component),
+           true <- interactive_mode?() do
+        Log.console("Debug breakpoint hit: #{reason}")
+        Log.console("Component: #{component}")
+        Log.console("Process: #{inspect(self())}")
+        Log.console("Press Enter to continue...")
+        IO.read(:line)
+      end
 
     :ok
   end

@@ -47,13 +47,13 @@ defmodule Raxol.System.Updater.Core do
     url =
       "https://github.com/#{@github_repo}/releases/download/v#{version}/raxol-#{version}-#{platform}.#{ext}"
 
-    case Network.download_file(
-           url,
-           Path.join(settings.download_path, "update.#{ext}")
-         ) do
-      :ok -> {:ok, version}
-      {:error, reason} -> {:error, reason}
-    end
+    :ok =
+      Network.download_file(
+        url,
+        Path.join(settings.download_path, "update.#{ext}")
+      )
+
+    {:ok, version}
   end
 
   def install_update(context, version) do
@@ -150,7 +150,7 @@ defmodule Raxol.System.Updater.Core do
 
   def notify_if_update_available do
     case check_for_updates() do
-      {:update_available, _version} ->
+      {:ok, _version} ->
         # Use bright green on black for the update notification
         fg = {0, 255, 0}
         bg = {0, 0, 0}
@@ -178,7 +178,10 @@ defmodule Raxol.System.Updater.Core do
 
         :ok
 
-      _ ->
+      {:no_update, _} ->
+        :ok
+
+      {:error, _} ->
         :ok
     end
   end
@@ -406,11 +409,11 @@ defmodule Raxol.System.Updater.Core do
            version,
            delta_info.delta_url
          ) do
-      :ok ->
+      {:ok, _} ->
         :ok
 
       {:error, reason} ->
-        Log.error("Delta update failed: #{reason}")
+        Log.error("Delta update failed: #{inspect(reason)}")
         Log.warning("Falling back to full update...")
         do_self_update(version)
     end

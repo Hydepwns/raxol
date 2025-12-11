@@ -76,25 +76,33 @@ defmodule Raxol.Core.Runtime.ProcessStore do
     Agent.get_and_update(__MODULE__, fn state ->
       case Map.fetch(state, key) do
         {:ok, value} ->
-          case fun.(value) do
-            {get_value, new_value} ->
-              {get_value, Map.put(state, key, new_value)}
-
-            :pop ->
-              {value, Map.delete(state, key)}
-          end
+          apply_update_with_value(state, key, value, fun)
 
         :error ->
-          case fun.(nil) do
-            {get_value, new_value} ->
-              {get_value, Map.put(state, key, new_value)}
-
-            :pop ->
-              {nil, state}
-          end
+          apply_update_without_value(state, key, fun)
       end
     end)
   catch
     :exit, _ -> nil
+  end
+
+  defp apply_update_with_value(state, key, value, fun) do
+    case fun.(value) do
+      {get_value, new_value} ->
+        {get_value, Map.put(state, key, new_value)}
+
+      :pop ->
+        {value, Map.delete(state, key)}
+    end
+  end
+
+  defp apply_update_without_value(state, key, fun) do
+    case fun.(nil) do
+      {get_value, new_value} ->
+        {get_value, Map.put(state, key, new_value)}
+
+      :pop ->
+        {nil, state}
+    end
   end
 end

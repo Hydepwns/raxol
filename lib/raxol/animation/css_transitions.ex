@@ -538,15 +538,16 @@ defmodule Raxol.Animation.CSSTransitions do
        ) do
     animation_name = :"#{element_id}_#{property}_transition"
 
-    Framework.create_animation(animation_name, %{
-      type: :property_transition,
-      target_path: [property],
-      from: old_value,
-      to: new_value,
-      duration: transition.duration,
-      easing: transition.easing,
-      delay: transition.delay
-    })
+    _ =
+      Framework.create_animation(animation_name, %{
+        type: :property_transition,
+        target_path: [property],
+        from: old_value,
+        to: new_value,
+        duration: transition.duration,
+        easing: transition.easing,
+        delay: transition.delay
+      })
 
     # Start the animation after delay
     schedule_or_start_animation(transition.delay, animation_name, element_id)

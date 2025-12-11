@@ -15,12 +15,12 @@ defmodule Raxol.Terminal.Buffer.Writer do
   """
   @dialyzer {:nowarn_function, write_char: 5}
   @spec write_char(
-          ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.Core.t(),
+          ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.map(),
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
           TextFormatting.text_style() | nil
-        ) :: ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.Core.t()
+        ) :: ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.map()
   def write_char(buffer, x, y, char, style \\ nil)
       when x >= 0 and y >= 0 and is_map(buffer) do
     case within_bounds?(y, x, buffer.height, buffer.width) do
@@ -133,7 +133,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
       [%Cell{char: "A", style: %{fg: :red}}, ...]
   """
   @spec update_cells(
-          ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.Core.t(),
+          ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.map(),
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
@@ -199,12 +199,12 @@ defmodule Raxol.Terminal.Buffer.Writer do
   Handles wide characters and bidirectional text.
   """
   @spec write_string(
-          ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.Core.t(),
+          ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.map(),
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
           TextFormatting.text_style() | nil
-        ) :: ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.Core.t()
+        ) :: ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.map()
   def write_string(buffer, x, y, string, style \\ nil)
       when x >= 0 and y >= 0 and is_map(buffer) do
     case within_bounds?(y, x, buffer.height, buffer.width) do
@@ -247,13 +247,13 @@ defmodule Raxol.Terminal.Buffer.Writer do
       5
   """
   @spec write_segment(
-          ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.Core.t(),
+          ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.map(),
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
           TextFormatting.text_style() | nil
         ) ::
-          {ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.Core.t(),
+          {ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.map(),
            non_neg_integer()}
   def write_segment(buffer, x, y, segment, style \\ nil) do
     Enum.reduce(String.graphemes(segment), {buffer, x}, fn char,

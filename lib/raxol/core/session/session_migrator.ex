@@ -801,14 +801,7 @@ defmodule Raxol.Core.Session.SessionMigrator do
         session_distribution =
           distribute_sessions_round_robin(session_ids, target_nodes)
 
-        migration_count =
-          Enum.reduce(session_distribution, 0, fn {target_node, sessions},
-                                                  acc ->
-            case migrate_sessions_bulk(self(), sessions, target_node, :warm) do
-              {:ok, _migration_infos} -> acc + length(sessions)
-              {:error, _reason} -> acc
-            end
-          end)
+        migration_count = count_migrated_sessions(session_distribution, self())
 
         {:ok, migration_count, state}
 
@@ -950,14 +943,9 @@ defmodule Raxol.Core.Session.SessionMigrator do
   end
 
   defp update_migration_stats(stats, result, migration_info) do
+    # completed_at is always set by the time this function is called
     migration_time =
-      case migration_info.completed_at do
-        nil ->
-          0
-
-        completed_at ->
-          DateTime.diff(completed_at, migration_info.started_at, :millisecond)
-      end
+      DateTime.diff(migration_info.completed_at, migration_info.started_at, :millisecond)
 
     case result do
       :success ->
@@ -982,5 +970,14 @@ defmodule Raxol.Core.Session.SessionMigrator do
             failed_migrations: stats.failed_migrations + 1
         }
     end
+  end
+
+  defp count_migrated_sessions(session_distribution, migrator_pid) do
+    Enum.reduce(session_distribution, 0, fn {target_node, sessions}, acc ->
+      case migrate_sessions_bulk(migrator_pid, sessions, target_node, :warm) do
+        {:ok, _migration_infos} -> acc + length(sessions)
+        {:error, _reason} -> acc
+      end
+    end)
   end
 end

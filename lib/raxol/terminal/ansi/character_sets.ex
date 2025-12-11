@@ -967,14 +967,23 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
 
   # Module constants for character sets
   defmodule ASCII do
+    @moduledoc """
+    US ASCII character set identifier.
+    """
     def name, do: :us_ascii
   end
 
   defmodule DEC do
+    @moduledoc """
+    DEC Special Graphics character set identifier.
+    """
     def name, do: :dec_special_graphics
   end
 
   defmodule UK do
+    @moduledoc """
+    UK character set identifier.
+    """
     def name, do: :uk
   end
 

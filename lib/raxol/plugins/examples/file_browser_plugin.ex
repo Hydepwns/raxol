@@ -56,6 +56,12 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
 
   # File Entry Structure
   defmodule Entry do
+    @moduledoc """
+    File system entry structure for the file browser.
+
+    Represents a file or directory with name, path, type, size, modification time,
+    permissions, and optional children for directories.
+    """
     defstruct [
       :name,
       :path,

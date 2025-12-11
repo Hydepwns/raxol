@@ -6,10 +6,7 @@ defmodule Raxol.Terminal.Emulator.EmulatorState do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.{
-    ANSI.CharacterSets,
-    ANSI.TerminalState
-  }
+  alias Raxol.Terminal.ANSI.CharacterSets
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
@@ -21,7 +18,8 @@ defmodule Raxol.Terminal.Emulator.EmulatorState do
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def set_mode(%EmulatorStruct{} = emulator, mode, value)
       when is_atom(mode) and is_boolean(value) do
-    case Raxol.Terminal.ModeManager.set_mode(emulator, mode, value, false) do
+    # ModeManager.set_mode expects (emulator, mode, value, keyword_opts)
+    case Raxol.Terminal.ModeManager.set_mode(emulator, mode, value, []) do
       {:ok, updated_emulator} ->
         {:ok, updated_emulator}
 
@@ -80,8 +78,7 @@ defmodule Raxol.Terminal.Emulator.EmulatorState do
   Pushes a new state onto the state stack.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec push_state(EmulatorStruct.t()) ::
-          {:ok, EmulatorStruct.t()} | {:error, String.t()}
+  @spec push_state(map()) :: {:ok, map()}
   def push_state(%EmulatorStruct{} = emulator) do
     updated_state = Raxol.Terminal.ANSI.TerminalState.push(emulator.state)
     {:ok, %{emulator | state: updated_state}}
@@ -91,8 +88,7 @@ defmodule Raxol.Terminal.Emulator.EmulatorState do
   Pops a state from the state stack.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec pop_state(EmulatorStruct.t()) ::
-          {:ok, EmulatorStruct.t()} | {:error, String.t()}
+  @spec pop_state(map()) :: {:ok, map()} | {:error, any()}
   def pop_state(%EmulatorStruct{} = emulator) do
     case Raxol.Terminal.ANSI.TerminalState.pop(emulator.state) do
       {:ok, updated_state} ->
@@ -107,7 +103,7 @@ defmodule Raxol.Terminal.Emulator.EmulatorState do
   Gets the current state from the state stack.
   Returns the current state or nil if stack is empty.
   """
-  @spec get_current_state(EmulatorStruct.t()) :: TerminalState.t() | nil
+  @spec get_current_state(map()) :: any()
   def get_current_state(%EmulatorStruct{} = emulator) do
     Raxol.Terminal.ANSI.TerminalState.current(emulator.state)
   end
@@ -164,8 +160,7 @@ defmodule Raxol.Terminal.Emulator.EmulatorState do
   Sets the tab stops for the terminal.
   Returns {:ok, updated_emulator}.
   """
-  @spec set_tab_stops(EmulatorStruct.t(), MapSet.t()) ::
-          {:ok, EmulatorStruct.t()}
+  @spec set_tab_stops(map(), map()) :: {:ok, map()} | {:error, binary()}
   def set_tab_stops(%EmulatorStruct{} = emulator, tab_stops)
       when is_map(tab_stops) do
     {:ok, %{emulator | tab_stops: tab_stops}}

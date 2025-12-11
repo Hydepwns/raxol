@@ -698,8 +698,7 @@ defmodule Raxol.Core.Renderer.View do
           "#{function_name} expects a keyword list as the first argument, got: #{inspect(opts)}"
   end
 
-  @spec validate_keyword_list(keyword(), atom()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_keyword_list(maybe_improper_list(), any()) :: :ok
   defp validate_keyword_list(opts, _function_name) when is_list(opts) do
     case opts do
       [] -> :ok

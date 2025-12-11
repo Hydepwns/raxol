@@ -140,7 +140,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
     "Hint for #{component_id} at level #{hint_level}"
   end
 
-  @spec safe_map_get(any(), any(), any()) :: any()
+  @spec safe_map_get(term(), term(), term()) :: term()
   defp safe_map_get(data, key, default \\ nil) do
     case is_map(data) do
       true -> Map.get(data, key, default)

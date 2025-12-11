@@ -453,10 +453,10 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     :ok
   end
 
-  @spec do_dispatch_event(Event.t(), State.t()) ::
-          {:ok, State.t(), list()}
-          | {:quit, State.t()}
-          | {:error, term(), State.t()}
+  @spec do_dispatch_event(Event.t(), map()) ::
+          {:ok, map(), list()}
+          | {:quit, map()}
+          | {:error, term(), map()}
           | {:error, term()}
   defp do_dispatch_event(event, state) do
     log_debug_if_enabled(state.debug_mode, event)
@@ -470,7 +470,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp system_event?(_), do: false
 
-  @spec apply_plugin_filters(Event.t(), State.t()) :: Event.t() | nil
+  @spec apply_plugin_filters(Event.t(), map()) :: Event.t() | nil
   defp apply_plugin_filters(event, state) do
     manager_pid = state.plugin_manager
 
@@ -515,7 +515,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp send_test_ready_message(_env), do: :ok
 
-  @spec apply_theme_update(boolean(), State.t(), map(), atom()) :: State.t()
+  @spec apply_theme_update(boolean(), map(), map(), atom()) :: map()
   defp apply_theme_update(true, state, updated_model, _new_theme_id) do
     %{state | model: updated_model}
   end
@@ -548,10 +548,10 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp log_debug_if_enabled(false, _event), do: :ok
 
-  @spec route_event_by_type(boolean(), Event.t(), State.t()) ::
-          {:ok, State.t(), list()}
-          | {:quit, State.t()}
-          | {:error, term(), State.t()}
+  @spec route_event_by_type(boolean(), Event.t(), map()) ::
+          {:ok, map(), list()}
+          | {:quit, map()}
+          | {:error, term(), map()}
           | {:error, term()}
   defp route_event_by_type(true, event, state) do
     process_system_event(event, state)
@@ -562,8 +562,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     handle_filtered_event(filtered_event, state)
   end
 
-  @spec handle_filtered_event(Event.t() | nil, State.t()) ::
-          {:ok, State.t(), list()} | {:error, term()}
+  @spec handle_filtered_event(Event.t() | nil, map()) ::
+          {:ok, map(), list()} | {:error, term()}
   defp handle_filtered_event(nil, state), do: {:ok, state, []}
 
   defp handle_filtered_event(filtered_event, state),

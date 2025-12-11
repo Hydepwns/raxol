@@ -118,7 +118,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   @spec build_initial_state(module(), keyword(), pid(), atom(), pid(), map()) ::
-          State.t()
+          map()
   defp build_initial_state(
          app_module,
          options,
@@ -324,7 +324,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, state}
   end
 
-  @spec maybe_process_initial_commands(State.t()) :: State.t()
+  @spec maybe_process_initial_commands(map()) :: map()
   defp maybe_process_initial_commands(%State{} = state) do
     ready_to_process =
       state.dispatcher_ready && state.plugin_manager_ready &&
@@ -333,18 +333,18 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     handle_initial_commands_processing(ready_to_process, state)
   end
 
-  @spec handle_initial_commands_processing(boolean(), State.t()) :: State.t()
+  @spec handle_initial_commands_processing(boolean(), map()) :: map()
   defp handle_initial_commands_processing(true, state) do
     process_initial_commands(state)
   end
 
-  @spec handle_initial_commands_processing(boolean(), State.t()) :: State.t()
+  @spec handle_initial_commands_processing(boolean(), map()) :: map()
   defp handle_initial_commands_processing(false, state) do
     log_waiting_status(state)
     state
   end
 
-  @spec process_initial_commands(State.t()) :: State.t()
+  @spec process_initial_commands(map()) :: map()
   defp process_initial_commands(state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "Dispatcher and PluginManager ready. Dispatching initial commands: #{inspect(state.initial_commands)}"
@@ -378,16 +378,16 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     )
   end
 
-  @spec log_waiting_status(State.t()) :: :ok
+  @spec log_waiting_status(map()) :: :ok
   defp log_waiting_status(state) do
     has_initial_commands = Enum.any?(state.initial_commands)
     log_if_has_commands(has_initial_commands, state)
   end
 
-  @spec log_if_has_commands(boolean(), State.t()) :: :ok
+  @spec log_if_has_commands(boolean(), map()) :: :ok
   defp log_if_has_commands(false, _state), do: :ok
 
-  @spec log_if_has_commands(boolean(), State.t()) :: :ok
+  @spec log_if_has_commands(boolean(), map()) :: :ok
   defp log_if_has_commands(true, state) do
     case {state.dispatcher_ready, state.plugin_manager_ready} do
       {false, false} ->
@@ -608,10 +608,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   ## Helper Functions for Pattern Matching
 
-  @spec handle_plugin_manager_cleanup(boolean(), State.t()) :: :ok
+  @spec handle_plugin_manager_cleanup(boolean(), map()) :: :ok
   defp handle_plugin_manager_cleanup(false, _state), do: :ok
 
-  @spec handle_plugin_manager_cleanup(boolean(), State.t()) :: :ok
+  @spec handle_plugin_manager_cleanup(boolean(), map()) :: :ok
   defp handle_plugin_manager_cleanup(true, state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] Terminate: Ensuring PluginManager PID #{inspect(state.plugin_manager)} is stopped."
@@ -633,10 +633,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
-  @spec handle_registry_table_cleanup(boolean(), State.t()) :: :ok
+  @spec handle_registry_table_cleanup(boolean(), map()) :: :ok
   defp handle_registry_table_cleanup(false, _state), do: :ok
 
-  @spec handle_registry_table_cleanup(boolean(), State.t()) :: :ok
+  @spec handle_registry_table_cleanup(boolean(), map()) :: :ok
   defp handle_registry_table_cleanup(true, state) do
     case CompilerState.safe_delete_table(state.command_registry_table) do
       :ok ->

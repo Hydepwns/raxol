@@ -126,8 +126,8 @@ defmodule Raxol.Terminal.Scroll.Optimizer do
     current_batch_size
   end
 
-  defp calculate_average_lines([]), do: 0
-
+  # history is always non-empty when called from calculate_batch_size
+  # (optimize/3 prepends an event before calling)
   defp calculate_average_lines(history) do
     Enum.sum(Enum.map(history, & &1.lines)) / length(history)
   end

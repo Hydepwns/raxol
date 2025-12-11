@@ -116,15 +116,7 @@ defmodule Raxol.Terminal.Driver do
           if @termbox2_available do
             {apply(:termbox2_nif, :tb_init, []), nil}
           else
-            # Use pure Elixir IOTerminal when NIF not available
-            Raxol.Core.Runtime.Log.info(
-              "[TerminalDriver] Using pure Elixir IOTerminal (NIF not available)"
-            )
-
-            case IOTerminal.init() do
-              {:ok, io_state} -> {0, io_state}
-              {:error, _reason} -> {-1, nil}
-            end
+            init_io_terminal()
           end
 
         state = %{state | io_terminal_state: io_terminal_state}
@@ -585,35 +577,7 @@ defmodule Raxol.Terminal.Driver do
   # --- Event translation from rrex_termbox v2.0.1 NIF ---
   defp translate_termbox_event(event_map) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           # Handle event structure from rrex_termbox v2.0.1 NIF
-           case event_map do
-             %{type: :key, key: key_code, char: char_code, mod: mod_code} ->
-               # Translate key_code, char_code, mod_code to Raxol's key event format
-               translated_key = translate_key(key_code, char_code, mod_code)
-               event = %Event{type: :key, data: translated_key}
-               {:ok, event}
-
-             %{type: :resize, width: w, height: h} ->
-               event = %Event{type: :resize, data: %{width: w, height: h}}
-               {:ok, event}
-
-             %{type: :mouse, x: x, y: y, button: btn_code} ->
-               # Translate rrex_termbox mouse button codes and potentially event types
-               translated_button = translate_mouse_button(btn_code)
-               # Add button info to the data
-               event = %Event{
-                 type: :mouse,
-                 data: %{x: x, y: y, button: translated_button}
-               }
-
-               {:ok, event}
-
-             # Add cases for other event types rrex_termbox might send
-
-             _other ->
-               # Raxol.Core.Runtime.Log.debug("Ignoring unknown termbox event type: #{inspect(event_map)}")
-               :ignore
-           end
+           translate_event_map(event_map)
          end) do
       {:ok, result} -> result
       {:error, reason} -> {:error, reason}
@@ -771,6 +735,50 @@ defmodule Raxol.Terminal.Driver do
 
         # Return a generic event or handle error as appropriate
         %Event{type: :unknown_test_input, data: %{raw: input_data}}
+    end
+  end
+
+  defp init_io_terminal do
+    # Use pure Elixir IOTerminal when NIF not available
+    Raxol.Core.Runtime.Log.info(
+      "[TerminalDriver] Using pure Elixir IOTerminal (NIF not available)"
+    )
+
+    case IOTerminal.init() do
+      {:ok, io_state} -> {0, io_state}
+      {:error, _reason} -> {-1, nil}
+    end
+  end
+
+  defp translate_event_map(event_map) do
+    # Handle event structure from rrex_termbox v2.0.1 NIF
+    case event_map do
+      %{type: :key, key: key_code, char: char_code, mod: mod_code} ->
+        # Translate key_code, char_code, mod_code to Raxol's key event format
+        translated_key = translate_key(key_code, char_code, mod_code)
+        event = %Event{type: :key, data: translated_key}
+        {:ok, event}
+
+      %{type: :resize, width: w, height: h} ->
+        event = %Event{type: :resize, data: %{width: w, height: h}}
+        {:ok, event}
+
+      %{type: :mouse, x: x, y: y, button: btn_code} ->
+        # Translate rrex_termbox mouse button codes and potentially event types
+        translated_button = translate_mouse_button(btn_code)
+        # Add button info to the data
+        event = %Event{
+          type: :mouse,
+          data: %{x: x, y: y, button: translated_button}
+        }
+
+        {:ok, event}
+
+      # Add cases for other event types rrex_termbox might send
+
+      _other ->
+        # Raxol.Core.Runtime.Log.debug("Ignoring unknown termbox event type: #{inspect(event_map)}")
+        :ignore
     end
   end
 end

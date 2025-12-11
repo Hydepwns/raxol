@@ -64,11 +64,25 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   defdelegate pop_top_lines(buffer, count), to: Management
   defdelegate get_line(buffer, line_index), to: Management
   defdelegate update_line(buffer, line_index, new_line), to: Management
-  defdelegate clear_line(buffer, line_index, style \\ nil), to: Management
   defdelegate set_line(buffer, position, new_line), to: Management
   defdelegate create_empty_lines(width, count), to: Management
   defdelegate create_empty_lines(width, count, style), to: Management
-  defdelegate create_empty_line(width, style \\ nil), to: Management
+
+  @doc """
+  Clear a line in the buffer.
+  """
+  @spec clear_line(map(), integer(), map() | nil) :: map()
+  def clear_line(buffer, line_index, style \\ %{}) do
+    Management.clear_line(buffer, line_index, style || %{})
+  end
+
+  @doc """
+  Create an empty line with the given width and optional style.
+  """
+  @spec create_empty_line(integer(), map() | nil) :: list()
+  def create_empty_line(width, style \\ %{}) do
+    Management.create_empty_line(width, style || %{})
+  end
 
   # Delegate character operations
   defdelegate erase_chars(buffer, row, col, count), to: CharOperations

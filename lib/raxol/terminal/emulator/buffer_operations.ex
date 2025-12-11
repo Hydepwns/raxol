@@ -7,12 +7,12 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
 
-  @type emulator :: Emulator.t()
+  @type emulator :: Emulator.Struct.t()
 
   @doc """
   Gets the active buffer from the emulator based on active_buffer_type.
   """
-  @spec get_screen_buffer(emulator()) :: ScreenBuffer.t()
+  @spec get_screen_buffer(map()) :: map()
   def get_screen_buffer(%Emulator{active_buffer_type: :main} = emulator) do
     emulator.main_screen_buffer
   end
@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   @doc """
   Updates the active buffer with new buffer data.
   """
-  @spec update_active_buffer(emulator(), ScreenBuffer.t()) :: emulator()
+  @spec update_active_buffer(emulator(), map()) :: emulator()
   def update_active_buffer(emulator, new_buffer) do
     case emulator.active_buffer_type do
       :main ->

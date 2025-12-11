@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.Emulator.Reset do
   @doc """
   Cleans up the emulator state.
   """
-  @spec cleanup(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  @spec cleanup(map()) :: map()
   def cleanup(emulator) do
     # Stop all GenServer processes gracefully
     emulator = stop_gen_servers(emulator)
@@ -75,7 +75,7 @@ defmodule Raxol.Terminal.Emulator.Reset do
   @doc """
   Stops the emulator.
   """
-  @spec stop(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  @spec stop(map()) :: map()
   def stop(emulator) do
     # Perform cleanup first
     emulator = cleanup(emulator)

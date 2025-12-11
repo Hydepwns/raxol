@@ -53,6 +53,11 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
 
   # Plugin state
   defmodule State do
+    @moduledoc """
+    Internal state for the rainbow theme plugin.
+
+    Tracks configuration, animation index, timer, color palette, and active status.
+    """
     defstruct [
       :config,
       :current_index,
@@ -101,8 +106,8 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
 
   @impl true
   def cleanup(state) do
-    stop_animation(state)
-    unregister_commands()
+    _ = stop_animation(state)
+    _ = unregister_commands()
     :ok
   end
 
@@ -364,7 +369,7 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
 
   defp stop_animation(state) do
     if state.animation_timer do
-      Process.cancel_timer(state.animation_timer)
+      _ = Process.cancel_timer(state.animation_timer)
     end
 
     %{state | animation_timer: nil}

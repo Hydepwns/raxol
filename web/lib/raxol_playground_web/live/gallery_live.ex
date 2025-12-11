@@ -1,6 +1,8 @@
 defmodule RaxolPlaygroundWeb.GalleryLive do
   use RaxolPlaygroundWeb, :live_view
 
+  alias RaxolPlaygroundWeb.Live.ComponentHelpers
+
   @impl true
   def mount(_params, _session, socket) do
     categories = get_component_categories()
@@ -10,7 +12,8 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
       |> assign(:categories, categories)
       |> assign(:active_category, "all")
       |> assign(:search_query, "")
-      |> assign(:view_mode, "grid") # grid or list
+      # grid or list
+      |> assign(:view_mode, "grid")
       |> assign(:difficulty_filter, "all")
 
     {:ok, socket}
@@ -237,12 +240,13 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
   end
 
   defp difficulty_badge(assigns) do
-    class = case assigns.level do
-      "Basic" -> "bg-green-100 text-green-800"
-      "Intermediate" -> "bg-yellow-100 text-yellow-800"
-      "Advanced" -> "bg-red-100 text-red-800"
-      _ -> "bg-gray-100 text-gray-800"
-    end
+    class =
+      case assigns.level do
+        "Basic" -> "bg-green-100 text-green-800"
+        "Intermediate" -> "bg-yellow-100 text-yellow-800"
+        "Advanced" -> "bg-red-100 text-red-800"
+        _ -> "bg-gray-100 text-gray-800"
+      end
 
     assigns = assign(assigns, :class, class)
 
@@ -255,13 +259,26 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
 
   defp component_preview(assigns) do
     case assigns.component.name do
-      "Button" -> ~H"[████████] Click Me"
-      "TextInput" -> ~H"┌─────────────────┐\n│ Enter text...   │\n└─────────────────┘"
-      "Table" -> ~H"┌─────┬─────┬─────┐\n│ A   │ B   │ C   │\n├─────┼─────┼─────┤\n│ 1   │ 2   │ 3   │\n└─────┴─────┴─────┘"
-      "Progress" -> ~H"Progress: ████████░░ 80%"
-      "Modal" -> ~H"┌─ Dialog ──────────┐\n│ Modal content... │\n│ [OK] [Cancel]    │\n└──────────────────┘"
-      "Menu" -> ~H"File ▼\n├ New\n├ Open\n├ Save\n└ Exit"
-      _ -> ~H"Preview\nLoading..."
+      "Button" ->
+        ~H"[████████] Click Me"
+
+      "TextInput" ->
+        ~H"┌─────────────────┐\n│ Enter text...   │\n└─────────────────┘"
+
+      "Table" ->
+        ~H"┌─────┬─────┬─────┐\n│ A   │ B   │ C   │\n├─────┼─────┼─────┤\n│ 1   │ 2   │ 3   │\n└─────┴─────┴─────┘"
+
+      "Progress" ->
+        ~H"Progress: ████████░░ 80%"
+
+      "Modal" ->
+        ~H"┌─ Dialog ──────────┐\n│ Modal content... │\n│ [OK] [Cancel]    │\n└──────────────────┘"
+
+      "Menu" ->
+        ~H"File ▼\n├ New\n├ Open\n├ Save\n└ Exit"
+
+      _ ->
+        ~H"Preview\nLoading..."
     end
   end
 
@@ -278,13 +295,19 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
     ]
   end
 
-  defp get_filtered_components(categories, active_category, search_query, difficulty_filter) do
+  defp get_filtered_components(
+         categories,
+         active_category,
+         search_query,
+         difficulty_filter
+       ) do
     # This would typically fetch from your component registry
     # For now, returning the example components
     base_components = [
       %{
         name: "Button",
-        description: "Interactive button component with various styles and states",
+        description:
+          "Interactive button component with various styles and states",
         framework: "Universal",
         complexity: "Basic",
         tags: ["input", "interactive", "basic"],
@@ -339,21 +362,17 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
   end
 
   defp filter_by_category(components, "all"), do: components
+
   defp filter_by_category(components, category) do
     Enum.filter(components, &(&1.category == category))
   end
 
-  defp filter_by_search(components, ""), do: components
   defp filter_by_search(components, query) do
-    query = String.downcase(query)
-    Enum.filter(components, fn component ->
-      String.contains?(String.downcase(component.name), query) ||
-      String.contains?(String.downcase(component.description), query) ||
-      Enum.any?(component.tags, &String.contains?(String.downcase(&1), query))
-    end)
+    ComponentHelpers.filter_by_search(components, query)
   end
 
   defp filter_by_difficulty(components, "all"), do: components
+
   defp filter_by_difficulty(components, level) do
     target_level = String.capitalize(level)
     Enum.filter(components, &(&1.complexity == target_level))

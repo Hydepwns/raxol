@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Input.Manager do
   terminal actions.
   """
 
-  alias Raxol.Terminal.{Emulator, ParserStateManager}
+  alias Raxol.Terminal.ParserStateManager
   require Raxol.Core.Runtime.Log
 
   @type t :: %__MODULE__{
@@ -103,17 +103,16 @@ defmodule Raxol.Terminal.Input.Manager do
   Processes a single character input.
   Returns the updated emulator and any output.
   """
-  @spec process_input(Emulator.t(), char()) :: {Emulator.t(), any()}
+  @spec process_input(map(), char()) :: {map(), any()}
   def process_input(emulator, char) do
-    {emulator, output} = ParserStateManager.process_char(emulator, char)
-    handle_input_result(emulator, output)
+    ParserStateManager.process_char(emulator, char)
   end
 
   @doc """
   Processes a sequence of character inputs.
   Returns the updated emulator and any output.
   """
-  @spec process_input_sequence(Emulator.t(), [char()]) :: {Emulator.t(), any()}
+  @spec process_input_sequence(map(), [char()]) :: {map(), any()}
   def process_input_sequence(emulator, chars) do
     Enum.reduce(chars, {emulator, nil}, fn char, {emu, _} ->
       process_input(emu, char)
@@ -124,7 +123,7 @@ defmodule Raxol.Terminal.Input.Manager do
   Handles a key event.
   Returns the updated emulator and any output.
   """
-  @spec handle_key_event(Emulator.t(), atom(), map()) :: {Emulator.t(), any()}
+  @spec handle_key_event(map(), atom(), map()) :: {map(), any()}
   def handle_key_event(emulator, :key_press, event) do
     case event do
       %{key: :enter} ->
@@ -158,7 +157,7 @@ defmodule Raxol.Terminal.Input.Manager do
   Gets the current input mode.
   Returns the input mode.
   """
-  @spec get_input_mode(Emulator.t()) :: atom()
+  @spec get_input_mode(map()) :: atom()
   def get_input_mode(emulator) do
     emulator.input_mode
   end
@@ -167,34 +166,12 @@ defmodule Raxol.Terminal.Input.Manager do
   Sets the input mode.
   Returns the updated emulator.
   """
-  @spec set_input_mode(Emulator.t(), atom()) :: Emulator.t()
+  @spec set_input_mode(map(), atom()) :: map()
   def set_input_mode(emulator, mode) do
     %{emulator | input_mode: mode}
   end
 
   # Private helper functions
-
-  defp handle_input_result(emulator, nil), do: {emulator, nil}
-
-  defp handle_input_result(emulator, {:command, command}) do
-    handle_command(emulator, command)
-  end
-
-  defp handle_command(emulator, command) do
-    case command do
-      {:clear_screen, _} ->
-        {emulator, nil}
-
-      {:move_cursor, _x, _y} ->
-        {emulator, nil}
-
-      {:set_style, _style} ->
-        {emulator, nil}
-
-      _ ->
-        {emulator, nil}
-    end
-  end
 
   defp handle_enter(emulator) do
     {emulator, "\r\n"}

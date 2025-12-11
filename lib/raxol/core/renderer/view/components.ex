@@ -135,12 +135,11 @@ defmodule Raxol.Core.Renderer.View.Components do
   defp parse_offset({x, y}) when is_number(x) and is_number(y),
     do: {trunc(x), trunc(y)}
 
-  @spec parse_offset(String.t()) :: {:ok, any()} | {:error, any()}
+  @spec parse_offset(any()) :: {integer(), integer()}
   defp parse_offset(str) when is_binary(str), do: parse_offset_string(str)
-  @spec parse_offset(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_offset(_), do: {1, 1}
 
-  @spec parse_offset_string(String.t()) :: {:ok, any()} | {:error, any()}
+  @spec parse_offset_string(binary()) :: {integer(), integer()}
   defp parse_offset_string(str) do
     case String.split(str, ~r/\s+/) do
       [x_str, y_str] -> {parse_offset_value(x_str), parse_offset_value(y_str)}
@@ -148,7 +147,7 @@ defmodule Raxol.Core.Renderer.View.Components do
     end
   end
 
-  @spec parse_offset_value(String.t()) :: {:ok, any()} | {:error, any()}
+  @spec parse_offset_value(binary()) :: integer()
   defp parse_offset_value(str) do
     str
     |> String.replace("px", "")
@@ -156,10 +155,9 @@ defmodule Raxol.Core.Renderer.View.Components do
     |> parse_integer_or_default()
   end
 
-  @spec parse_integer_or_default(String.t()) :: {:ok, any()} | {:error, any()}
+  @spec parse_integer_or_default(binary()) :: integer()
   defp parse_integer_or_default(""), do: 1
 
-  @spec parse_integer_or_default(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_integer_or_default(val) do
     case Integer.parse(val) do
       {int, _} -> int

@@ -14,13 +14,13 @@ defmodule Raxol.Terminal.EmulatorFactory do
   def create(width, height, opts) do
     opts = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
     scrollback_limit = ScreenManager.parse_scrollback_limit(opts)
-    {main_buffer, alt_buffer} = ScreenManager.initialize_buffers(width, height)
+    buffer_manager = ScreenManager.initialize_buffers(width, height)
 
     %Struct{
       width: width,
       height: height,
-      main_screen_buffer: main_buffer,
-      alternate_screen_buffer: alt_buffer,
+      main_screen_buffer: buffer_manager.main_buffer,
+      alternate_screen_buffer: buffer_manager.alternate_buffer,
       active_buffer_type: :main,
       scrollback_limit: scrollback_limit,
       memory_limit: opts[:memorylimit] || 1_000_000,

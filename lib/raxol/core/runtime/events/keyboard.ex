@@ -49,10 +49,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
   end
 
   @spec handle_debug_toggle(map()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+          {:system, {:set_debug_mode, boolean()}, map()}
   defp handle_debug_toggle(state) do
     new_debug_mode = not state.debug_mode
 
@@ -215,7 +212,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     Map.get(@key_name_map, key, key)
   end
 
-  @spec format_modifiers(any()) :: String.t()
+  @spec format_modifiers(any()) :: [atom()]
   defp format_modifiers(modifiers) do
     modifiers
     |> Enum.filter(fn {_, active} -> active end)

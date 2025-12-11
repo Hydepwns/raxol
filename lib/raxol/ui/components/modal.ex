@@ -192,7 +192,7 @@ defmodule Raxol.UI.Components.Modal do
 
   # Simplified
   @doc "Creates props for an alert modal."
-  @spec alert(any(), any(), any(), Keyword.t()) :: map()
+  @spec alert(any(), any(), any(), Keyword.t()) :: Keyword.t()
   def alert(id, title, content, opts \\ []) do
     props =
       Keyword.merge(
@@ -213,7 +213,7 @@ defmodule Raxol.UI.Components.Modal do
 
   # Simplified
   @doc "Creates props for a confirmation modal."
-  @spec confirm(any(), any(), any(), any(), any(), Keyword.t()) :: map()
+  @spec confirm(any(), any(), any(), any(), any(), Keyword.t()) :: Keyword.t()
   def confirm(
         id,
         title,
@@ -239,7 +239,7 @@ defmodule Raxol.UI.Components.Modal do
 
   # Simplified
   @doc "Creates props for a prompt modal."
-  @spec prompt(any(), any(), any(), any(), any(), Keyword.t()) :: map()
+  @spec prompt(any(), any(), any(), any(), any(), Keyword.t()) :: Keyword.t()
   def prompt(
         id,
         title,
@@ -277,7 +277,7 @@ defmodule Raxol.UI.Components.Modal do
   `%{id: :atom, type: :text_input | :checkbox | :dropdown, label: "string", value: initial_value, props: keyword_list, options: list, validate: regex | function}`
   (options only for dropdown)
   """
-  @spec form(any(), any(), list(), any(), any(), Keyword.t()) :: map()
+  @spec form(any(), any(), list(), any(), any(), Keyword.t()) :: Keyword.t()
   def form(
         id,
         title,

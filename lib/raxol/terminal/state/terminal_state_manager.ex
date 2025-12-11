@@ -109,7 +109,7 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   @doc """
   Creates a new state manager.
   """
-  @spec new() :: State.t()
+  @spec new() :: map()
   def new do
     %{
       modes: %{},

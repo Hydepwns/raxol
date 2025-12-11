@@ -38,7 +38,7 @@ defmodule Raxol.UI.Components.Input.Button do
           role: :primary | :secondary | :danger | :success | nil
         }
 
-  @spec new(map()) :: t()
+  @spec new(map()) :: %__MODULE__{}
   @doc """
   Creates a new Button state map, applying defaults.
   Expects opts to be a Map.
@@ -66,7 +66,7 @@ defmodule Raxol.UI.Components.Input.Button do
   @doc """
   Initializes the Button component state from the given props.
   """
-  @spec init(map()) :: {:ok, t()}
+  @spec init(map()) :: {:ok, %__MODULE__{}}
   @impl true
   def init(state) do
     # Use Button.new to ensure defaults are applied from props

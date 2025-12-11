@@ -94,35 +94,36 @@ defmodule Raxol.LiveView.Renderer do
     # First render - generate full HTML
     start_time = System.monotonic_time()
 
-    with :ok <- validate_buffer(buffer) do
-      {html, updated_renderer} = render_full_buffer(buffer, renderer)
+    case validate_buffer(buffer) do
+      :ok ->
+        {html, updated_renderer} = render_full_buffer(buffer, renderer)
 
-      duration = System.monotonic_time() - start_time
+        duration = System.monotonic_time() - start_time
 
-      buffer_size =
-        case Map.get(buffer, :lines) do
-          lines when is_list(lines) -> length(lines)
-          _ -> 0
-        end
+        buffer_size =
+          case Map.get(buffer, :lines) do
+            lines when is_list(lines) -> length(lines)
+            _ -> 0
+          end
 
-      :telemetry.execute(
-        [:raxol, :liveview, :render, :full],
-        %{duration: duration, buffer_size: buffer_size},
-        %{
-          width: Map.get(buffer, :width, 0),
-          height: Map.get(buffer, :height, 0)
+        :telemetry.execute(
+          [:raxol, :liveview, :render, :full],
+          %{duration: duration, buffer_size: buffer_size},
+          %{
+            width: Map.get(buffer, :width, 0),
+            height: Map.get(buffer, :height, 0)
+          }
+        )
+
+        new_renderer = %{
+          updated_renderer
+          | previous_buffer: buffer,
+            previous_html: html,
+            render_count: updated_renderer.render_count + 1
         }
-      )
 
-      new_renderer = %{
-        updated_renderer
-        | previous_buffer: buffer,
-          previous_html: html,
-          render_count: updated_renderer.render_count + 1
-      }
+        {html, new_renderer}
 
-      {html, new_renderer}
-    else
       {:error, reason} ->
         Log.warning("Buffer validation failed: #{inspect(reason)}",
           module: __MODULE__,
@@ -159,41 +160,42 @@ defmodule Raxol.LiveView.Renderer do
     # Changes detected - use smart diffing
     start_time = System.monotonic_time()
 
-    with :ok <- validate_buffer(buffer) do
-      {html, updated_renderer} =
-        render_with_smart_diff(buffer, prev_buffer, renderer)
+    case validate_buffer(buffer) do
+      :ok ->
+        {html, updated_renderer} =
+          render_with_smart_diff(buffer, prev_buffer, renderer)
 
-      duration = System.monotonic_time() - start_time
+        duration = System.monotonic_time() - start_time
 
-      buffer_size =
-        case Map.get(buffer, :lines) do
-          lines when is_list(lines) -> length(lines)
-          _ -> 0
-        end
+        buffer_size =
+          case Map.get(buffer, :lines) do
+            lines when is_list(lines) -> length(lines)
+            _ -> 0
+          end
 
-      :telemetry.execute(
-        [:raxol, :liveview, :render, :diff],
-        %{duration: duration, buffer_size: buffer_size},
-        %{
-          width: Map.get(buffer, :width, 0),
-          height: Map.get(buffer, :height, 0),
-          cache_hit_ratio:
-            calculate_hit_ratio(
-              updated_renderer.cache_hits,
-              updated_renderer.cache_misses
-            )
+        :telemetry.execute(
+          [:raxol, :liveview, :render, :diff],
+          %{duration: duration, buffer_size: buffer_size},
+          %{
+            width: Map.get(buffer, :width, 0),
+            height: Map.get(buffer, :height, 0),
+            cache_hit_ratio:
+              calculate_hit_ratio(
+                updated_renderer.cache_hits,
+                updated_renderer.cache_misses
+              )
+          }
+        )
+
+        final_renderer = %{
+          updated_renderer
+          | previous_buffer: buffer,
+            previous_html: html,
+            render_count: updated_renderer.render_count + 1
         }
-      )
 
-      final_renderer = %{
-        updated_renderer
-        | previous_buffer: buffer,
-          previous_html: html,
-          render_count: updated_renderer.render_count + 1
-      }
+        {html, final_renderer}
 
-      {html, final_renderer}
-    else
       {:error, reason} ->
         Log.warning(
           "Buffer validation failed during re-render: #{inspect(reason)}",

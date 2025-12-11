@@ -309,20 +309,8 @@ defmodule Raxol.Benchmark.Config do
     |> Enum.reverse()
     |> List.first()
     |> case do
-      nil ->
-        nil
-
-      file ->
-        case File.read(file) do
-          {:ok, content} ->
-            case Jason.decode(content) do
-              {:ok, data} -> data
-              _ -> nil
-            end
-
-          _ ->
-            nil
-        end
+      nil -> nil
+      file -> read_and_parse_baseline_file(file)
     end
   end
 
@@ -633,5 +621,18 @@ defmodule Raxol.Benchmark.Config do
     \e[22;1H\e[7m F1:Help F2:Config F5:Refresh F10:Exit \e[0m
     \e[?25h
     """
+  end
+
+  defp read_and_parse_baseline_file(file) do
+    case File.read(file) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} -> data
+          _ -> nil
+        end
+
+      _ ->
+        nil
+    end
   end
 end

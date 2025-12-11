@@ -546,7 +546,7 @@ defmodule Raxol.Core do
   # Private Functions
   # ============================================================================
 
-  @spec validate_application_module(module()) :: {:ok, any()} | {:error, any()}
+  @spec validate_application_module(module()) :: :ok | {:error, :invalid_application_module}
   defp validate_application_module(app_module) do
     case {function_exported?(app_module, :init, 1),
           function_exported?(app_module, :update, 2),

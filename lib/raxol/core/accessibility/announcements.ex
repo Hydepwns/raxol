@@ -47,7 +47,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
       iex> Announcements.announce("Error occurred", priority: :high, interrupt: true)
       :ok
   """
-  def announce(message, opts \\ [], user_preferences_pid_or_name)
+  def announce(message, opts \\ [], user_preferences_pid_or_name \\ nil)
       when is_binary(message) do
     validate_user_preferences(user_preferences_pid_or_name)
 
@@ -61,25 +61,20 @@ defmodule Raxol.Core.Accessibility.Announcements do
     :ok
   end
 
-  @spec validate_user_preferences(any()) :: {:ok, any()} | {:error, any()}
+  @spec validate_user_preferences(nil) :: no_return()
   defp validate_user_preferences(nil) do
     raise "Accessibility.Announcements.announce/3 must be called with a user_preferences_pid_or_name."
   end
 
-  @spec validate_user_preferences(String.t() | integer()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_user_preferences(term()) :: :ok
   defp validate_user_preferences(_user_preferences_pid_or_name), do: :ok
 
   @spec handle_announcement(
-          any(),
+          boolean(),
           String.t(),
           keyword(),
-          String.t() | integer()
-        ) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+          term()
+        ) :: :ok
   defp handle_announcement(
          false,
          _message,
@@ -88,21 +83,11 @@ defmodule Raxol.Core.Accessibility.Announcements do
        ),
        do: :ok
 
-  @spec handle_announcement(
-          any(),
-          String.t(),
-          keyword(),
-          String.t() | integer()
-        ) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
   defp handle_announcement(true, message, opts, user_preferences_pid_or_name) do
     process_announcement(message, opts, user_preferences_pid_or_name)
   end
 
-  @spec should_announce?(String.t() | integer()) :: boolean()
+  @spec should_announce?(term()) :: boolean()
   defp should_announce?(user_preferences_pid_or_name) do
     # Delegate to the GenServer for state checking
     alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
@@ -110,7 +95,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
   end
 
   @spec process_announcement(String.t(), keyword(), String.t() | integer()) ::
-          any()
+          :ok
   defp process_announcement(message, opts, user_preferences_pid_or_name) do
     # Delegate to the GenServer for announcement processing
     alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
@@ -182,7 +167,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
 
   # --- Private Functions ---
 
-  @spec send_announcement_to_subscribers(String.t()) :: any()
+  @spec send_announcement_to_subscribers(String.t()) :: :ok
   defp send_announcement_to_subscribers(message) do
     subscriptions = get_subscriptions()
 

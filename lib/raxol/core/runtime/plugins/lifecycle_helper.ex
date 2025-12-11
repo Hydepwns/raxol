@@ -86,7 +86,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
        }) do
     with {:ok, initial_state} <-
            StateManager.initialize_plugin_state(plugin_module, config),
-         :ok <-
+         {:ok, _} <-
            register_plugin_components(%{
              plugin_id: plugin_id,
              plugin_module: plugin_module,
@@ -128,7 +128,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
          load_order: _load_order,
          plugin_config: plugin_config
        }) do
-    with :ok <-
+    with {:ok, _} <-
            StateManager.update_plugin_state_legacy(
              plugin_id,
              initial_state,

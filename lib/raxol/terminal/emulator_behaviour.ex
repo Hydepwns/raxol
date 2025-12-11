@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.EmulatorBehaviour do
           memory_limit: non_neg_integer(),
           charset_state: CharacterSets.StateManager.charset_state(),
           mode_manager: ModeManager.t(),
-          plugin_manager: Core.t(),
+          plugin_manager: map(),
           options: map(),
           current_hyperlink_url: String.t() | nil,
           window_title: String.t() | nil,

@@ -506,19 +506,9 @@ defmodule Mix.Tasks.Raxol.Bench do
   defp load_baseline_metrics do
     baseline_file = "bench/output/enhanced/baseline.json"
 
-    if File.exists?(baseline_file) do
-      case File.read(baseline_file) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, data} -> data
-            _ -> nil
-          end
-
-        _ ->
-          nil
-      end
-    else
-      nil
+    case File.exists?(baseline_file) do
+      true -> load_and_parse_json_file(baseline_file)
+      false -> nil
     end
   end
 
@@ -819,19 +809,9 @@ defmodule Mix.Tasks.Raxol.Bench do
       |> Enum.sort()
       |> List.last()
 
-    if latest_file do
-      case File.read(latest_file) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, data} -> data
-            _ -> nil
-          end
-
-        _ ->
-          nil
-      end
-    else
-      nil
+    case latest_file do
+      nil -> nil
+      file -> load_and_parse_json_file(file)
     end
   end
 
@@ -1011,7 +991,7 @@ defmodule Mix.Tasks.Raxol.Bench do
       end,
       "buffer_scroll_up" => fn ->
         buffer = ScreenBuffer.new(80, 24)
-        {_, _} = ScreenBuffer.scroll_up(buffer, 1)
+        _ = ScreenBuffer.scroll_up(buffer, 1)
       end,
       "buffer_scroll_down" => fn ->
         buffer = ScreenBuffer.new(80, 24)
@@ -1020,7 +1000,7 @@ defmodule Mix.Tasks.Raxol.Bench do
       "buffer_erase_line" => fn ->
         buffer = ScreenBuffer.new(80, 24)
         cursor = {0, 5}
-        ScreenBuffer.erase_line(buffer, :to_end, cursor, 0, 79)
+        ScreenBuffer.erase_line(buffer, 0, cursor, 0, 79)
       end,
       "buffer_erase_screen" => fn ->
         buffer = ScreenBuffer.new(80, 24)
@@ -1050,17 +1030,29 @@ defmodule Mix.Tasks.Raxol.Bench do
   end
 
   defp terminal_sgr_jobs do
-    alias Raxol.Terminal.ANSI.SGR.Processor, as: SGRProcessor
+    alias Raxol.Terminal.ANSI.SGRProcessor
 
     %{
       "sgr_process_simple" => fn ->
-        style = nil
-        SGRProcessor.handle_sgr("31", style)
+        SGRProcessor.handle_sgr("31", nil)
       end,
       "sgr_process_complex" => fn ->
-        style = nil
-        SGRProcessor.handle_sgr("1;4;31;48;5;196", style)
+        SGRProcessor.handle_sgr("1;4;31;48;5;196", nil)
       end
     }
+  end
+
+  defp load_and_parse_json_file(file_path) do
+    case File.read(file_path) do
+      {:ok, content} -> parse_json_content(content)
+      _ -> nil
+    end
+  end
+
+  defp parse_json_content(content) do
+    case Jason.decode(content) do
+      {:ok, data} -> data
+      _ -> nil
+    end
   end
 end

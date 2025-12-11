@@ -434,7 +434,7 @@ defmodule Raxol.Plugins.PluginSandbox do
 
     case Task.yield(task, :infinity) do
       {:ok, result} -> {:ok, result}
-      {:error, reason} -> {:error, reason}
+      {:exit, reason} -> {:error, {:exit, reason}}
       nil -> {:error, :execution_timeout}
     end
   rescue

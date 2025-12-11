@@ -512,13 +512,13 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
       state.stats
       | allocated: state.stats.allocated - freed_memory,
         allocation_count:
-          state.stats.allocation_count - length(collected_allocations)
+          state.stats.allocation_count - map_size(collected_allocations)
     }
 
     new_state = %{state | allocations: remaining_allocations, stats: new_stats}
 
     Log.info(
-      "GC collected #{length(collected_allocations)} allocations, freed #{freed_memory} bytes"
+      "GC collected #{map_size(collected_allocations)} allocations, freed #{freed_memory} bytes"
     )
 
     {:ok, new_state, new_stats}
@@ -539,10 +539,16 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
     end)
   end
 
-  defp collect_unused_allocations(candidates, allocations) do
-    Enum.split_with(allocations, fn {id, _info} ->
-      not Enum.any?(candidates, fn {cand_id, _} -> cand_id == id end)
-    end)
+  defp collect_unused_allocations(candidates, allocations)
+       when is_map(allocations) do
+    candidate_ids = MapSet.new(candidates, fn {id, _info} -> id end)
+
+    {remaining, collected} =
+      Enum.split_with(allocations, fn {id, _info} ->
+        not MapSet.member?(candidate_ids, id)
+      end)
+
+    {Map.new(collected), Map.new(remaining)}
   end
 
   # Helper functions for memory operations

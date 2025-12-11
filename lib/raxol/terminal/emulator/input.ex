@@ -61,12 +61,17 @@ defmodule Raxol.Terminal.Emulator.Input do
   Processes a mouse event.
   Returns {:ok, updated_emulator, commands} or {:error, reason}.
   """
-  @spec process_mouse_event(EmulatorStruct.t(), map()) ::
-          {:ok, EmulatorStruct.t(), list()} | {:error, String.t()}
+  @spec process_mouse_event(map(), map()) ::
+          {:ok, map(), list()} | {:error, String.t()}
   def process_mouse_event(%EmulatorStruct{} = emulator, event) do
     # Generate appropriate commands based on the mouse event
     commands = generate_mouse_commands(emulator, event)
     {:ok, emulator, commands}
+  end
+
+  def process_mouse_event(emulator, event) when is_map(emulator) and is_map(event) do
+    # Fallback for non-struct emulator maps
+    {:ok, emulator, []}
   end
 
   @doc """

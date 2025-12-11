@@ -610,8 +610,8 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
   end
 
   defp get_charlist(string) do
+    # :unicode.characters_to_list returns a list on success, not {:ok, list, _}
     case :unicode.characters_to_list(string, :utf8) do
-      {:ok, charlist, _} -> charlist
       {:error, _, _} -> :binary.bin_to_list(string)
       {:incomplete, _, _} -> :binary.bin_to_list(string)
       charlist when is_list(charlist) -> charlist

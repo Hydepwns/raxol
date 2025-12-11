@@ -6,7 +6,12 @@ defmodule Raxol.UI.Components.Modal.Events do
   require Raxol.Core.Runtime.Log
 
   @doc "Handles visible events with keyboard navigation."
-  @spec handle_visible_event(any(), map()) :: {map(), list()}
+  @spec handle_visible_event(any(), map()) ::
+          {:button_click, any()}
+          | :focus_next_field
+          | :focus_prev_field
+          | {:input_changed, any()}
+          | nil
   def handle_visible_event(event, state) do
     type = Map.get(event, :type)
     data = Map.get(event, :data)
@@ -25,7 +30,12 @@ defmodule Raxol.UI.Components.Modal.Events do
   end
 
   @doc "Handles visible event dispatch for different event types."
-  @spec handle_visible_event_dispatch(any(), map()) :: {map(), list()}
+  @spec handle_visible_event_dispatch(any(), map()) ::
+          {:button_click, any()}
+          | :focus_next_field
+          | :focus_prev_field
+          | {:input_changed, any()}
+          | nil
   def handle_visible_event_dispatch(
         %{type: :key, data: %{key: "Escape"}},
         state

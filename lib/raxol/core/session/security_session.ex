@@ -155,7 +155,7 @@ defmodule Raxol.Core.Session.SecuritySession do
 
   ## Private Functions
 
-  @spec create_new_session(String.t() | integer(), keyword(), map()) :: any()
+  @spec create_new_session(String.t(), keyword(), map()) :: t()
   defp create_new_session(user_id, opts, config) do
     now = DateTime.utc_now()
 
@@ -176,19 +176,19 @@ defmodule Raxol.Core.Session.SecuritySession do
     Base.url_encode64(:crypto.strong_rand_bytes(16), padding: false)
   end
 
-  @spec generate_secure_token(any()) :: any()
+  @spec generate_secure_token(integer()) :: String.t()
   defp generate_secure_token(token_bytes) do
     Base.url_encode64(:crypto.strong_rand_bytes(token_bytes), padding: false)
   end
 
-  @spec store_session(any(), map()) :: any()
+  @spec store_session(t(), map()) :: map()
   defp store_session(session, sessions_state) do
     :ets.insert(:unified_security_sessions, {session.id, session})
     :ets.insert(:unified_user_security_sessions, {session.user_id, session.id})
     sessions_state
   end
 
-  @spec lookup_session(String.t() | integer(), map()) :: any()
+  @spec lookup_session(String.t(), map()) :: t() | nil
   defp lookup_session(session_id, _sessions_state) do
     case Raxol.Core.CompilerState.safe_lookup(
            :unified_security_sessions,
@@ -200,8 +200,8 @@ defmodule Raxol.Core.Session.SecuritySession do
     end
   end
 
-  @spec validate_token_and_expiry(any(), any(), String.t() | integer(), map()) ::
-          {:ok, any()} | {:error, any()}
+  @spec validate_token_and_expiry(t(), binary(), String.t(), map()) ::
+          {:ok, map(), map()} | {:error, atom()}
   defp validate_token_and_expiry(session, token, session_id, sessions_state) do
     with true <- secure_token_compare(session.token, token),
          false <- expired?(session) do
@@ -227,7 +227,7 @@ defmodule Raxol.Core.Session.SecuritySession do
     end
   end
 
-  @spec invalidate_session_internal(String.t() | integer(), map()) :: any()
+  @spec invalidate_session_internal(String.t(), map()) :: map()
   defp invalidate_session_internal(session_id, sessions_state) do
     case lookup_session(session_id, sessions_state) do
       nil ->
@@ -246,8 +246,8 @@ defmodule Raxol.Core.Session.SecuritySession do
     end
   end
 
-  @spec get_user_sessions_internal(String.t() | integer(), map()) :: any() | nil
-  defp get_user_sessions_internal(user_id, _sessions_state) do
+  @spec get_user_sessions_internal(String.t(), map()) :: [t()]
+  defp get_user_sessions_internal(user_id, sessions_state) do
     case Raxol.Core.CompilerState.safe_lookup(
            :unified_user_security_sessions,
            user_id
@@ -255,12 +255,15 @@ defmodule Raxol.Core.Session.SecuritySession do
       {:ok, sessions} -> sessions
       {:error, :table_not_found} -> []
     end
-    |> Enum.map(fn {_, session_id} -> lookup_session(session_id, nil) end)
+    |> Enum.map(fn {_, session_id} ->
+      lookup_session(session_id, sessions_state)
+    end)
     |> Enum.filter(& &1)
     |> Enum.reject(&expired?/1)
   end
 
-  @spec check_session_limit(String.t() | integer(), any(), map()) :: any()
+  @spec check_session_limit(String.t(), integer(), map()) ::
+          :ok | {:error, :limit_exceeded}
   defp check_session_limit(user_id, max_concurrent, sessions_state) do
     active_count = length(get_user_sessions_internal(user_id, sessions_state))
 
@@ -270,12 +273,12 @@ defmodule Raxol.Core.Session.SecuritySession do
     end
   end
 
-  @spec expired?(any()) :: boolean()
+  @spec expired?(t()) :: boolean()
   defp expired?(session) do
     DateTime.compare(DateTime.utc_now(), session.expires_at) == :gt
   end
 
-  @spec secure_token_compare(any(), any()) :: any()
+  @spec secure_token_compare(binary(), binary()) :: boolean()
   defp secure_token_compare(token1, token2) do
     case byte_size(token1) == byte_size(token2) do
       true -> :crypto.hash_equals(token1, token2)
@@ -283,7 +286,7 @@ defmodule Raxol.Core.Session.SecuritySession do
     end
   end
 
-  @spec sanitize_session_info(any()) :: any()
+  @spec sanitize_session_info(t()) :: map()
   defp sanitize_session_info(session) do
     %{
       id: session.id,
@@ -314,7 +317,7 @@ defmodule Raxol.Core.Session.SecuritySession do
     end
   end
 
-  @spec count_active_sessions(any()) :: any()
+  @spec count_active_sessions(list()) :: non_neg_integer()
   defp count_active_sessions(sessions) do
     Enum.count(sessions, fn {_, session} -> not expired?(session) end)
   end

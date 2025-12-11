@@ -70,18 +70,7 @@ defmodule Raxol.Core.Runtime.Events.Handler do
   @spec execute_handlers_in_order(any(), any(), map()) :: any()
   defp execute_handlers_in_order(handlers, event, state) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           Enum.reduce_while(
-             handlers,
-             {event, state},
-             &execute_single_handler/2
-           )
-           |> case do
-             {updated_event, updated_state} ->
-               {:ok, updated_event, updated_state}
-
-             {:error, reason, error_state} ->
-               {:error, reason, error_state}
-           end
+           reduce_handlers_safely(handlers, event, state)
          end) do
       {:ok, result} ->
         result
@@ -245,5 +234,20 @@ defmodule Raxol.Core.Runtime.Events.Handler do
   defp get_all_handlers do
     get_all_stored_handlers()
     |> Enum.map(fn {_id, handler} -> handler end)
+  end
+
+  defp reduce_handlers_safely(handlers, event, state) do
+    Enum.reduce_while(
+      handlers,
+      {event, state},
+      &execute_single_handler/2
+    )
+    |> case do
+      {updated_event, updated_state} ->
+        {:ok, updated_event, updated_state}
+
+      {:error, reason, error_state} ->
+        {:error, reason, error_state}
+    end
   end
 end

@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor up by the specified number of lines.
   """
-  @spec move_up(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec move_up(map(), non_neg_integer()) :: map()
   def move_up(emulator, lines) do
     {x, y} = emulator.cursor.position
     new_y = max(0, y - lines)
@@ -42,7 +42,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor down by the specified number of lines.
   """
-  @spec move_down(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec move_down(map(), non_neg_integer()) :: map()
   def move_down(emulator, lines) do
     {x, y} = emulator.cursor.position
     new_y = min(emulator.height - 1, y + lines)
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor right by the specified number of columns.
   """
-  @spec move_right(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec move_right(map(), non_neg_integer()) :: map()
   def move_right(emulator, cols) do
     {x, y} = emulator.cursor.position
     new_x = min(emulator.width - 1, x + cols)
@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor left by the specified number of columns.
   """
-  @spec move_left(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec move_left(map(), non_neg_integer()) :: map()
   def move_left(emulator, cols) do
     {x, y} = emulator.cursor.position
     new_x = max(0, x - cols)
@@ -72,8 +72,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor down and to the beginning of the line.
   """
-  @spec move_down_and_home(EmulatorStruct.t(), non_neg_integer()) ::
-          EmulatorStruct.t()
+  @spec move_down_and_home(map(), non_neg_integer()) ::
+          map()
   def move_down_and_home(emulator, lines) do
     emulator
     |> move_down(lines)
@@ -83,8 +83,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor up and to the beginning of the line.
   """
-  @spec move_up_and_home(EmulatorStruct.t(), non_neg_integer()) ::
-          EmulatorStruct.t()
+  @spec move_up_and_home(map(), non_neg_integer()) ::
+          map()
   def move_up_and_home(emulator, lines) do
     emulator
     |> move_up(lines)
@@ -94,8 +94,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor to the specified column.
   """
-  @spec move_to_column(EmulatorStruct.t(), non_neg_integer()) ::
-          EmulatorStruct.t()
+  @spec move_to_column(map(), non_neg_integer()) ::
+          map()
   def move_to_column(emulator, col) do
     {_, y} = emulator.cursor.position
     new_x = max(0, min(emulator.width - 1, col))
@@ -105,8 +105,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor to the specified position.
   """
-  @spec move_to(EmulatorStruct.t(), {non_neg_integer(), non_neg_integer()}) ::
-          EmulatorStruct.t()
+  @spec move_to(map(), {non_neg_integer(), non_neg_integer()}) :: map()
   def move_to(%{cursor: nil} = emulator, {row, col}) do
     new_x = max(0, min(emulator.width - 1, col))
     new_y = max(0, min(emulator.height - 1, row))
@@ -122,7 +121,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor visibility.
   """
-  @spec set_visible(EmulatorStruct.t(), boolean()) :: EmulatorStruct.t()
+  @spec set_visible(map(), boolean()) :: map()
   def set_visible(emulator, visible) do
     %{emulator | cursor: %{emulator.cursor | visible: visible}}
   end
@@ -130,8 +129,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor forward by the specified number of columns.
   """
-  @spec move_forward(EmulatorStruct.t(), non_neg_integer()) ::
-          EmulatorStruct.t()
+  @spec move_forward(map(), non_neg_integer()) :: map()
   def move_forward(emulator, cols) do
     move_right(emulator, cols)
   end
@@ -139,8 +137,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor backward by the specified number of columns.
   """
-  @spec move_backward(EmulatorStruct.t(), non_neg_integer()) ::
-          EmulatorStruct.t()
+  @spec move_backward(map(), non_neg_integer()) :: map()
   def move_backward(emulator, cols) do
     move_left(emulator, cols)
   end
@@ -148,10 +145,14 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor to the specified row and column.
   """
-  @spec move_to(EmulatorStruct.t(), non_neg_integer(), non_neg_integer()) ::
-          EmulatorStruct.t()
+  @spec move_to(map(), non_neg_integer(), non_neg_integer()) ::
+          map()
   def move_to(%{cursor: nil} = emulator, row, col) do
     move_to(emulator, {row, col})
+  end
+
+  def move_to(%__MODULE__{} = cursor, row, col) do
+    move_to(cursor, {row, col}, 999_999, 999_999)
   end
 
   def move_to(emulator, row, col) do
@@ -161,8 +162,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Gets the current cursor position.
   """
-  @spec get_position(EmulatorStruct.t()) ::
-          {non_neg_integer(), non_neg_integer()}
+  @spec get_position(map()) :: {non_neg_integer(), non_neg_integer()}
   def get_position(emulator) do
     emulator.cursor.position
   end
@@ -170,7 +170,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor shape.
   """
-  @spec set_shape(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec set_shape(map(), non_neg_integer()) :: map()
   def set_shape(emulator, shape) do
     %{emulator | cursor: %{emulator.cursor | shape: shape}}
   end
@@ -195,7 +195,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Checks if the cursor is visible.
   """
-  @spec visible?(EmulatorStruct.t()) :: boolean()
+  @spec visible?(map()) :: boolean()
   def visible?(emulator) do
     emulator.cursor.visible
   end
@@ -203,7 +203,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor visibility.
   """
-  @spec set_visibility(EmulatorStruct.t(), boolean()) :: EmulatorStruct.t()
+  @spec set_visibility(map(), boolean()) :: map()
   def set_visibility(emulator, visible) do
     set_visible(emulator, visible)
   end
@@ -211,7 +211,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor style.
   """
-  @spec set_style(EmulatorStruct.t(), map()) :: EmulatorStruct.t()
+  @spec set_style(map(), map()) :: map()
   def set_style(emulator, style) do
     %{emulator | cursor: %{emulator.cursor | style: style}}
   end
@@ -219,8 +219,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor position.
   """
-  @spec set_position(EmulatorStruct.t(), {non_neg_integer(), non_neg_integer()}) ::
-          EmulatorStruct.t()
+  @spec set_position(map(), {non_neg_integer(), non_neg_integer()}) ::
+          map()
   def set_position(%{cursor: nil} = emulator, {col, row}) do
     # Create a cursor if it doesn't exist
     new_x = max(0, min(emulator.width - 1, col))
@@ -235,7 +235,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor color.
   """
-  @spec set_color(EmulatorStruct.t(), map()) :: EmulatorStruct.t()
+  @spec set_color(map(), any()) :: map()
   def set_color(emulator, color) do
     %{emulator | cursor: %{emulator.cursor | color: color}}
   end
@@ -243,7 +243,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor blink state.
   """
-  @spec set_blink(EmulatorStruct.t(), boolean()) :: EmulatorStruct.t()
+  @spec set_blink(map(), boolean()) :: map()
   def set_blink(emulator, blink) do
     %{emulator | cursor: %{emulator.cursor | blink: blink}}
   end
@@ -251,7 +251,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Resets the cursor color to default.
   """
-  @spec reset_color(EmulatorStruct.t()) :: EmulatorStruct.t()
+  @spec reset_color(map()) :: map()
   def reset_color(emulator) do
     %{emulator | cursor: %{emulator.cursor | color: nil}}
   end
@@ -259,7 +259,7 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Gets the cursor style.
   """
-  @spec get_style(EmulatorStruct.t()) :: map()
+  @spec get_style(map()) :: map()
   def get_style(emulator) do
     emulator.cursor.style || %{}
   end

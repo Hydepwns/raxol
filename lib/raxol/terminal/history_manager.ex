@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.HistoryManager do
   Adds a command to the history.
   Returns the updated emulator.
   """
-  @spec add_command(Emulator.t(), String.t()) :: Emulator.t()
+  @spec add_command(map(), String.t()) :: map()
   def add_command(emulator, command) do
     current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
     buffer = HistoryBuffer.add_command(current_buffer, command)

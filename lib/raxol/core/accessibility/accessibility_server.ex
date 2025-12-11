@@ -741,11 +741,7 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   @spec get_limited_history(any(), any()) :: any() | nil
   defp get_limited_history(history, limit), do: Enum.take(history, limit)
 
-  @spec handle_focus_change_with_state(map(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_focus_change_with_state(map(), any()) :: {:noreply, any()}
   defp handle_focus_change_with_state(state, new_focus) do
     should_announce = state.enabled && state.preferences.screen_reader
 
@@ -756,19 +752,11 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     handle_focus_announcement(should_announce, state, new_focus)
   end
 
-  @spec handle_focus_announcement(any(), map(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_focus_announcement(any(), map(), any()) :: {:noreply, any()}
   defp handle_focus_announcement(false, state, _new_focus),
     do: {:noreply, state}
 
-  @spec handle_focus_announcement(any(), map(), any()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_focus_announcement(any(), map(), any()) :: {:noreply, any()}
   defp handle_focus_announcement(true, state, new_focus) do
     # Get metadata for the new focus
     metadata = Map.get(state.metadata, new_focus, %{})
@@ -903,7 +891,7 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   @spec call_callback_if_present(any(), String.t()) :: any()
   defp call_callback_if_present(callback, message), do: callback.(message)
 
-  @spec merge_preferences(any(), any()) :: any()
+  @spec merge_preferences(map(), keyword()) :: map()
   defp merge_preferences(current, options) do
     options_map = Enum.into(options, %{})
     Map.merge(current, options_map)
@@ -1035,7 +1023,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     end
   end
 
-  @spec deliver_announcement(any(), any()) :: any()
+  @spec deliver_announcement(map(), (String.t() -> term()) | nil) ::
+          :ok | term()
   defp deliver_announcement(announcement, callback) do
     Raxol.Core.Runtime.Log.debug(
       "deliver_announcement: #{announcement.message}"
@@ -1056,7 +1045,7 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     )
   end
 
-  @spec insert_by_priority(any(), any()) :: any()
+  @spec insert_by_priority(list(map()), map()) :: list(map())
   defp insert_by_priority(queue, announcement) do
     Enum.sort_by([announcement | queue], fn a ->
       case a.priority do
@@ -1221,10 +1210,7 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   end
 
   # Helper function to sync accessibility preferences to UserPreferences
-  @spec sync_preferences_to_user_preferences(
-          reference(),
-          String.t() | integer()
-        ) :: any()
+  @spec sync_preferences_to_user_preferences(map(), any()) :: :ok
   defp sync_preferences_to_user_preferences(preferences, user_preferences_pid) do
     # Define the accessibility preference keys that should be synced
     preference_keys = [

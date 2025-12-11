@@ -194,8 +194,7 @@ defmodule Raxol.Terminal.ScreenUpdater do
       IO.write("\e[#{y + 1};1H")
 
       row
-      |> Enum.map(fn cell -> Map.get(cell, :char, " ") end)
-      |> Enum.join()
+      |> Enum.map_join("", fn cell -> Map.get(cell, :char, " ") end)
       |> IO.write()
     end)
   end
@@ -207,8 +206,7 @@ defmodule Raxol.Terminal.ScreenUpdater do
       IO.write("\e[#{y + row_idx + 1};#{x + 1}H")
 
       row
-      |> Enum.map(fn cell -> Map.get(cell, :char, " ") end)
-      |> Enum.join()
+      |> Enum.map_join("", fn cell -> Map.get(cell, :char, " ") end)
       |> IO.write()
     end)
   end

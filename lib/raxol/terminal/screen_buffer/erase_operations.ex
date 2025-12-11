@@ -13,12 +13,12 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   Erases from cursor to end of display.
   """
   @spec erase_from_cursor_to_end(
-          ScreenBuffer.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer()
-        ) :: ScreenBuffer.t()
+        ) :: map()
   def erase_from_cursor_to_end(buffer, x, y, _top, bottom) do
     # Log.info("[DEBUG] erase_from_cursor_to_end called with x=#{x}, y=#{y}, bottom=#{bottom}")
 
@@ -56,12 +56,12 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   Erases from start to cursor position.
   """
   @spec erase_from_start_to_cursor(
-          ScreenBuffer.t(),
+          map(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer()
-        ) :: ScreenBuffer.t()
+        ) :: map()
   def erase_from_start_to_cursor(buffer, x, y, top, _bottom) do
     empty_cell = Cell.new()
 

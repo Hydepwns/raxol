@@ -465,11 +465,8 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   end
 
   defp get_memory_usage do
-    # Get current memory usage in bytes
-    case :erlang.memory(:total) do
-      memory when is_integer(memory) -> memory
-      _ -> 0
-    end
+    # Get current memory usage in bytes - :erlang.memory(:total) always returns integer
+    :erlang.memory(:total)
   end
 
   defp get_gpu_usage do

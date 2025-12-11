@@ -24,12 +24,8 @@ defmodule Raxol.Terminal.Operations.TextOperations do
   def get_line(emulator, line) do
     buffer = ScreenManager.get_screen_buffer(emulator)
     # Get the line directly from the buffer cells
-    # Defensive check: ensure buffer has height field
-    height =
-      case buffer do
-        %{height: h} when is_integer(h) -> h
-        _ -> 0
-      end
+    # Buffer always has height field
+    %{height: height} = buffer
 
     case line >= 0 and line < height do
       true ->

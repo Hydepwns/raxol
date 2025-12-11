@@ -7,12 +7,11 @@ defmodule Raxol.Terminal.ScreenManager do
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ScreenBuffer.Manager
-  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @doc """
   Gets the currently active screen buffer.
   """
-  @spec get_screen_buffer(EmulatorStruct.t()) :: ScreenBuffer.t()
+  @spec get_screen_buffer(map()) :: ScreenBuffer.t()
   def get_screen_buffer(%{active_buffer_type: :main} = emulator) do
     emulator.main_screen_buffer
   end
@@ -24,8 +23,7 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Updates the currently active screen buffer.
   """
-  @spec update_active_buffer(EmulatorStruct.t(), ScreenBuffer.t()) ::
-          EmulatorStruct.t()
+  @spec update_active_buffer(map(), ScreenBuffer.t()) :: map()
   def update_active_buffer(%{active_buffer_type: :main} = emulator, new_buffer) do
     %{emulator | main_screen_buffer: new_buffer}
   end
@@ -40,7 +38,7 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Switches between main and alternate screen buffers.
   """
-  @spec switch_buffer(EmulatorStruct.t()) :: EmulatorStruct.t()
+  @spec switch_buffer(map()) :: map()
   def switch_buffer(emulator) do
     new_type =
       case emulator.active_buffer_type do
@@ -59,7 +57,7 @@ defmodule Raxol.Terminal.ScreenManager do
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer()
-        ) :: {ScreenBuffer.t(), ScreenBuffer.t()}
+        ) :: Manager.t()
   def initialize_buffers(width, height, scrollback_limit) do
     Manager.initialize_buffers(width, height, scrollback_limit)
   end
@@ -67,8 +65,7 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Initializes both main and alternate screen buffers with default scrollback limit.
   """
-  @spec initialize_buffers(non_neg_integer(), non_neg_integer()) ::
-          {ScreenBuffer.t(), ScreenBuffer.t()}
+  @spec initialize_buffers(non_neg_integer(), non_neg_integer()) :: Manager.t()
   def initialize_buffers(width, height) do
     initialize_buffers(width, height, 1000)
   end
@@ -76,8 +73,7 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Resizes both screen buffers.
   """
-  @spec resize_buffers(EmulatorStruct.t(), non_neg_integer(), non_neg_integer()) ::
-          EmulatorStruct.t()
+  @spec resize_buffers(map(), non_neg_integer(), non_neg_integer()) :: map()
   def resize_buffers(emulator, new_width, new_height) do
     new_main_buffer =
       ScreenBuffer.resize(emulator.main_screen_buffer, new_width, new_height)
@@ -101,7 +97,7 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Gets the current buffer type (main or alternate).
   """
-  @spec get_buffer_type(EmulatorStruct.t()) :: :main | :alternate
+  @spec get_buffer_type(map()) :: :main | :alternate
   def get_buffer_type(emulator) do
     emulator.active_buffer_type
   end
@@ -109,8 +105,7 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Sets the buffer type.
   """
-  @spec set_buffer_type(EmulatorStruct.t(), :main | :alternate) ::
-          EmulatorStruct.t()
+  @spec set_buffer_type(map(), :main | :alternate) :: map()
   def set_buffer_type(emulator, type) when type in [:main, :alternate] do
     %{emulator | active_buffer_type: type}
   end
@@ -118,8 +113,8 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Gets the scroll region from the active buffer.
   """
-  @spec get_scroll_region(ScreenBuffer.t()) ::
-          {non_neg_integer(), non_neg_integer()}
+  @spec get_scroll_region(map()) ::
+          {integer(), integer()} | nil
   def get_scroll_region(buffer) do
     ScreenBuffer.get_scroll_region(buffer)
   end
@@ -128,10 +123,9 @@ defmodule Raxol.Terminal.ScreenManager do
   Sets the scroll region on the buffer.
   """
   @spec set_scroll_region(
-          ScreenBuffer.t(),
+          map(),
           {non_neg_integer(), non_neg_integer()}
-        ) ::
-          ScreenBuffer.t()
+        ) :: map()
   def set_scroll_region(buffer, {top, bottom}) do
     ScreenBuffer.set_scroll_region(buffer, {top, bottom})
   end
@@ -165,7 +159,7 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Gets the selected text from the buffer.
   """
-  @spec get_selected_text(ScreenBuffer.t()) :: String.t()
+  @spec get_selected_text(map()) :: String.t() | nil
   def get_selected_text(buffer) do
     ScreenBuffer.get_selected_text(buffer)
   end
@@ -202,8 +196,8 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Starts a selection at the specified position.
   """
-  @spec start_selection(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
-          ScreenBuffer.t()
+  @spec start_selection(map(), non_neg_integer(), non_neg_integer()) ::
+          map()
   def start_selection(buffer, x, y) do
     ScreenBuffer.start_selection(buffer, x, y)
   end
@@ -220,7 +214,7 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Clears the current selection.
   """
-  @spec clear_selection(ScreenBuffer.t()) :: ScreenBuffer.t()
+  @spec clear_selection(map()) :: map()
   def clear_selection(buffer) do
     ScreenBuffer.clear_selection(buffer)
   end
@@ -236,7 +230,7 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Checks if a position is within the current selection.
   """
-  @spec in_selection?(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+  @spec in_selection?(map(), non_neg_integer(), non_neg_integer()) ::
           boolean()
   def in_selection?(buffer, x, y) do
     ScreenBuffer.in_selection?(buffer, x, y)
@@ -246,12 +240,12 @@ defmodule Raxol.Terminal.ScreenManager do
   Writes a string to the buffer at the given position with the given style.
   """
   @spec write_string(
-          Raxol.Terminal.ScreenBuffer.t(),
+          ScreenBuffer.t(),
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
           map()
-        ) :: Raxol.Terminal.ScreenBuffer.t()
+        ) :: ScreenBuffer.t()
   def write_string(buffer, x, y, string, style) do
     Raxol.Terminal.ScreenBuffer.write_string(buffer, x, y, string, style)
   end

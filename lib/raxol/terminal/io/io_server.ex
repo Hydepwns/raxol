@@ -85,9 +85,9 @@ defmodule Raxol.Terminal.IO.IOServer do
           output_processing: boolean(),
 
           # Component references
-          buffer_manager: UnifiedManager.t(),
+          buffer_manager: pid() | nil,
           scroll_buffer: Raxol.Terminal.Buffer.Scroll.t(),
-          renderer: RenderServer.t(),
+          renderer: pid() | nil,
           command_history: term(),
 
           # Configuration

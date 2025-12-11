@@ -147,19 +147,6 @@ defmodule Raxol.Terminal.Commands.DCSHandler do
         Log.warning("Sixel processing failed: #{inspect(reason)}")
         # Return the original sixel_state (or new one if it was nil)
         {:ok, %{emulator | sixel_state: sixel_state}}
-
-      {updated_sixel_state, _} ->
-        Log.debug(
-          "DCSHandlers: sixel processing returned other result, updated_state: #{inspect(updated_sixel_state)}"
-        )
-
-        # Any other response, use the updated state
-        emulator_with_sixel = %{emulator | sixel_state: updated_sixel_state}
-
-        emulator_with_blit =
-          blit_sixel_to_buffer(emulator_with_sixel, updated_sixel_state)
-
-        {:ok, emulator_with_blit}
     end
   end
 

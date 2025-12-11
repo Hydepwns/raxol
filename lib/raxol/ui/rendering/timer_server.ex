@@ -81,7 +81,7 @@ defmodule Raxol.UI.Rendering.TimerServer do
   @doc """
   Starts an adaptive frame rate timer for dynamic performance adjustment.
   """
-  @spec start_adaptive_timer(pid(), non_neg_integer()) :: :ok
+  @spec start_adaptive_timer(pid(), non_neg_integer()) :: :ok | {:error, :not_started}
   def start_adaptive_timer(
         target_pid,
         interval_ms \\ @default_adaptive_interval
@@ -145,10 +145,12 @@ defmodule Raxol.UI.Rendering.TimerServer do
   """
   @spec get_timer_stats() :: map()
   def get_timer_stats do
-    with {:ok, manager_pid} <- get_manager_pid() do
-      GenServer.call(manager_pid, :get_timer_stats)
-    else
-      _ -> %{active_timers: 0, total_messages: 0}
+    case get_manager_pid() do
+      {:ok, manager_pid} ->
+        GenServer.call(manager_pid, :get_timer_stats)
+
+      _ ->
+        %{active_timers: 0, total_messages: 0}
     end
   end
 

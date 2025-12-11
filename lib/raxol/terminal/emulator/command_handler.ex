@@ -297,6 +297,8 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
   end
 
   # parse_params/1 - Helper to parse parameter string into list of integers
+  defp parse_params(params) when is_list(params), do: params
+
   defp parse_params(params) when is_binary(params) do
     params
     |> String.split(";")

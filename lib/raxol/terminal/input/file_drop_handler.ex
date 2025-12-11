@@ -151,7 +151,10 @@ defmodule Raxol.Terminal.Input.FileDropHandler do
       iex> FileDropHandler.parse_file_uri("http://example.com/file.txt")
       {:error, :unsupported_scheme}
   """
-  @spec parse_file_uri(String.t()) :: {:ok, String.t()} | {:error, term()}
+  @spec parse_file_uri(String.t()) ::
+          {:ok, String.t()}
+          | {:ok, {:data, binary(), String.t()}}
+          | {:error, term()}
   def parse_file_uri(uri) when is_binary(uri) do
     case URI.parse(uri) do
       %URI{scheme: "file", path: path} when is_binary(path) ->
@@ -353,9 +356,16 @@ defmodule Raxol.Terminal.Input.FileDropHandler do
   defp process_file_uris(file_uris, config) do
     results =
       Enum.map(file_uris, fn uri ->
-        with {:ok, path} <- parse_file_uri(uri),
-             {:ok, file_info} <- get_file_info(path, config) do
-          {:ok, file_info}
+        case parse_file_uri(uri) do
+          {:ok, {:data, _decoded_data, _header} = data_info} ->
+            # Data URIs don't need file info lookup
+            {:ok, %{path: nil, name: "embedded_data", data: data_info}}
+
+          {:ok, path} when is_binary(path) ->
+            get_file_info(path, config)
+
+          {:error, _} = error ->
+            error
         end
       end)
 
@@ -364,8 +374,8 @@ defmodule Raxol.Terminal.Input.FileDropHandler do
         file_infos = Enum.map(results, fn {:ok, info} -> info end)
         {:ok, file_infos}
 
-      {:error, reason} ->
-        {:error, reason}
+      {:error, _} = error ->
+        error
     end
   end
 

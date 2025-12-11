@@ -82,17 +82,15 @@ defmodule Raxol.Protocols.BufferImplementations do
       }
     end
 
-    defp render_cell(nil, _colors), do: " "
     defp render_cell(%{char: char} = _cell, false), do: char || " "
 
     defp render_cell(%{char: char, style: style} = _cell, true)
          when is_map(style) do
       ansi_codes = build_ansi_codes(style)
 
-      if ansi_codes == "" do
-        char || " "
-      else
-        "#{ansi_codes}#{char || " "}\e[0m"
+      case ansi_codes do
+        "" -> char || " "
+        codes -> "#{codes}#{char || " "}\e[0m"
       end
     end
 
@@ -164,8 +162,6 @@ defmodule Raxol.Protocols.BufferImplementations do
         end
       end
     end
-
-    defp serialize_cell(nil), do: %{char: " ", style: nil}
 
     defp serialize_cell(%{char: char, style: style}),
       do: %{char: char || " ", style: style}

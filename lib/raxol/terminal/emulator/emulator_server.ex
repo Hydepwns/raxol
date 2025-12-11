@@ -61,13 +61,9 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
         _from,
         %{emulator: emulator} = state
       ) do
-    case Emulator.resize(emulator, width, height) do
-      {:ok, new_emulator} ->
-        {:reply, :ok, %{state | emulator: new_emulator}}
-
-      error ->
-        {:reply, error, state}
-    end
+    # Emulator.resize returns the updated emulator directly
+    new_emulator = Emulator.resize(emulator, width, height)
+    {:reply, :ok, %{state | emulator: new_emulator}}
   end
 
   def handle_manager_call(:get_state, _from, %{emulator: emulator} = state) do
@@ -107,13 +103,8 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
         _from,
         %{emulator: emulator} = state
       ) do
-    case Emulator.process_input(emulator, input) do
-      {new_emulator, _output} ->
-        {:reply, :ok, %{state | emulator: new_emulator}}
-
-      error ->
-        {:reply, error, state}
-    end
+    {new_emulator, _output} = Emulator.process_input(emulator, input)
+    {:reply, :ok, %{state | emulator: new_emulator}}
   end
 
   # Catch-all is handled by BaseManager's default implementation

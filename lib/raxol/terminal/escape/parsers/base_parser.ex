@@ -103,9 +103,6 @@ defmodule Raxol.Terminal.Escape.Parsers.BaseParser do
     char >= 0x20 and char <= 0x2F
   end
 
-  @deprecated "Use intermediate?/1 instead"
-  def is_intermediate?(char), do: intermediate?(char)
-
   @doc """
   Checks if a character is a valid CSI parameter character.
 
@@ -122,9 +119,6 @@ defmodule Raxol.Terminal.Escape.Parsers.BaseParser do
     char >= 0x30 and char <= 0x3F
   end
 
-  @deprecated "Use parameter?/1 instead"
-  def is_parameter?(char), do: parameter?(char)
-
   @doc """
   Checks if a character is a valid CSI final character.
 
@@ -140,7 +134,4 @@ defmodule Raxol.Terminal.Escape.Parsers.BaseParser do
   def final?(char) when is_integer(char) do
     char >= 0x40 and char <= 0x7E
   end
-
-  @deprecated "Use final?/1 instead"
-  def is_final?(char), do: final?(char)
 end

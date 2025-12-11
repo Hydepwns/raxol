@@ -60,7 +60,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
     {opts, commands, _} = OptionParser.parse(args, switches: @switches)
 
     handle_help_option(opts)
-    setup_benchmark_environment()
+    _ = setup_benchmark_environment()
     execute_command(commands, opts)
   end
 
@@ -467,9 +467,8 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
           |> List.last()
 
         if latest_file do
-          # TODO: Implement proper benchee result loading
-          # Benchee doesn't have a direct load function for saved files
-          # Need to use custom deserialization
+          # Returns path to latest benchee result file
+          # Note: Benchee result deserialization would require custom implementation
           {:ok, Path.join("bench/results", latest_file)}
         end
 
@@ -483,9 +482,8 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
     baseline_file = "bench/baselines/#{version}.benchee"
 
     if File.exists?(baseline_file) do
-      # TODO: Implement proper benchee result loading
-      # Benchee doesn't have a direct load function for saved files
-      # Need to use custom deserialization
+      # Returns path to baseline benchee result file
+      # Note: Benchee result deserialization would require custom implementation
       {:ok, baseline_file}
     else
       nil

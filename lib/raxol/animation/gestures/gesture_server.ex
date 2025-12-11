@@ -295,11 +295,12 @@ defmodule Raxol.Animation.Gestures.GestureServer do
             gesture_data = build_gesture_data(gesture_state, position, time)
 
             # Call handlers asynchronously
-            call_handlers_async(
-              final_gesture_type,
-              gesture_data,
-              gesture_state.handlers
-            )
+            _ =
+              call_handlers_async(
+                final_gesture_type,
+                gesture_data,
+                gesture_state.handlers
+              )
 
             # Create animation if applicable
             animations =
@@ -480,17 +481,7 @@ defmodule Raxol.Animation.Gestures.GestureServer do
 
       _ ->
         Task.start(fn ->
-          Enum.each(handler_list, fn handler ->
-            case Raxol.Core.ErrorHandling.safe_call(fn ->
-                   handler.(gesture_data)
-                 end) do
-              {:ok, _result} ->
-                :ok
-
-              {:error, reason} ->
-                Log.warning("Gesture handler failed: #{inspect(reason)}")
-            end
-          end)
+          execute_handlers_in_task(handler_list, gesture_data)
         end)
     end
   end
@@ -597,5 +588,23 @@ defmodule Raxol.Animation.Gestures.GestureServer do
         }
       end)
     end)
+  end
+
+  defp execute_handlers_in_task(handler_list, gesture_data) do
+    Enum.each(handler_list, fn handler ->
+      execute_gesture_handler(handler, gesture_data)
+    end)
+  end
+
+  defp execute_gesture_handler(handler, gesture_data) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           handler.(gesture_data)
+         end) do
+      {:ok, _result} ->
+        :ok
+
+      {:error, reason} ->
+        Log.warning("Gesture handler failed: #{inspect(reason)}")
+    end
   end
 end

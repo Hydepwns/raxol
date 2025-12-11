@@ -21,11 +21,11 @@ defmodule Raxol.Core.Accessibility.Preferences do
   def default_prefs_name, do: @default_prefs_name
 
   # Helper function to get preference key as a path list
-  @spec pref_key(any()) :: any()
+  @spec pref_key(term()) :: list(atom())
   defp pref_key(key), do: [:accessibility, key]
 
   # Helper to get preference using pid_or_name or default
-  @spec get_pref(any(), any(), String.t() | integer()) :: any() | nil
+  @spec get_pref(any(), any(), GenServer.server() | nil) :: any()
   defp get_pref(key, default, pid_or_name) do
     target_pid_or_name = pid_or_name || @default_prefs_name
     # Pass the list path directly
@@ -48,7 +48,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
   end
 
   # Helper to set preference using pid_or_name or default
-  @spec set_pref(any(), any(), String.t() | integer()) :: any()
+  @spec set_pref(atom(), any(), GenServer.server() | nil) :: :ok
   defp set_pref(key, value, pid_or_name) do
     target_pid_or_name = pid_or_name || @default_prefs_name
     :ok = UserPreferences.set(pref_key(key), value, target_pid_or_name)
@@ -79,7 +79,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
     end
   end
 
-  @spec get_option_test(any(), String.t() | integer(), any()) :: any() | nil
+  @spec get_option_test(any(), GenServer.server() | nil, any()) :: any()
   defp get_option_test(key, user_preferences_pid_or_name, default) do
     target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
 

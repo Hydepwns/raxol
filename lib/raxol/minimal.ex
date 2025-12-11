@@ -471,22 +471,7 @@ defmodule Raxol.Minimal do
             {buf, new_x, cur_y}
 
           _ ->
-            cond do
-              cur_x < state.width and cur_y < state.height ->
-                # Write character directly to buffer
-                cell = Cell.new(char, state.char_attrs)
-                new_buf = Buffer.set_cell(buf, cur_x, cur_y, cell)
-                {new_buf, cur_x + 1, cur_y}
-
-              cur_x >= state.width and cur_y < state.height - 1 ->
-                # Wrap to next line if at end of line
-                cell = Cell.new(char, state.char_attrs)
-                new_buf = Buffer.set_cell(buf, 0, cur_y + 1, cell)
-                {new_buf, 1, cur_y + 1}
-
-              true ->
-                {buf, cur_x, cur_y}
-            end
+            handle_printable_char(char, buf, cur_x, cur_y, state)
         end
       end)
 
@@ -500,8 +485,8 @@ defmodule Raxol.Minimal do
 
     new_buffer =
       case mode do
-        0 -> Operations.Erasing.erase_in_display(buffer, 0, {y, x})
-        1 -> Operations.Erasing.erase_in_display(buffer, 1, {y, x})
+        0 -> Operations.Erasing.erase_in_display(buffer, 0, %{x: x, y: y})
+        1 -> Operations.Erasing.erase_in_display(buffer, 1, %{x: x, y: y})
         2 -> Buffer.clear(buffer)
         # Clear with scrollback not directly available
         3 -> Buffer.clear(buffer)
@@ -517,9 +502,9 @@ defmodule Raxol.Minimal do
 
     new_buffer =
       case mode do
-        0 -> Operations.Erasing.erase_in_line(buffer, 0, {y, x})
-        1 -> Operations.Erasing.erase_in_line(buffer, 1, {y, x})
-        2 -> Operations.Erasing.erase_in_line(buffer, 2, {y, x})
+        0 -> Operations.Erasing.erase_in_line(buffer, 0, %{x: x, y: y})
+        1 -> Operations.Erasing.erase_in_line(buffer, 1, %{x: x, y: y})
+        2 -> Operations.Erasing.erase_in_line(buffer, 2, %{x: x, y: y})
         _ -> buffer
       end
 
@@ -672,5 +657,24 @@ defmodule Raxol.Minimal do
       charset: state.charset,
       telemetry: state.telemetry_enabled
     ]
+  end
+
+  defp handle_printable_char(char, buf, cur_x, cur_y, state) do
+    cond do
+      cur_x < state.width and cur_y < state.height ->
+        # Write character directly to buffer
+        cell = Cell.new(char, state.char_attrs)
+        new_buf = Buffer.set_cell(buf, cur_x, cur_y, cell)
+        {new_buf, cur_x + 1, cur_y}
+
+      cur_x >= state.width and cur_y < state.height - 1 ->
+        # Wrap to next line if at end of line
+        cell = Cell.new(char, state.char_attrs)
+        new_buf = Buffer.set_cell(buf, 0, cur_y + 1, cell)
+        {new_buf, 1, cur_y + 1}
+
+      true ->
+        {buf, cur_x, cur_y}
+    end
   end
 end

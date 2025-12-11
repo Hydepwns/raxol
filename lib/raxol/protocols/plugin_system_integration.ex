@@ -14,6 +14,12 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
   based on plugin capabilities.
   """
   defmodule ProtocolPlugin do
+    @moduledoc """
+    Protocol-aware plugin structure.
+
+    Wraps a plugin module with its configuration, capabilities, state,
+    and metadata for protocol-based plugin system integration.
+    """
     defstruct [
       :id,
       :name,
@@ -311,6 +317,12 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
 
   # Plugin registry that maintains protocol-aware plugins.
   defmodule PluginRegistry do
+    @moduledoc """
+    Registry for managing plugins and their capabilities.
+
+    Maintains a registry of available plugins and an index of their capabilities
+    for efficient lookup and plugin discovery.
+    """
     use Raxol.Core.Behaviours.BaseManager
 
     defstruct plugins: %{}, capabilities_index: %{}
