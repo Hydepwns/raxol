@@ -185,11 +185,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
           any(),
           map(),
           any()
-        ) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+        ) :: {:ok, {any(), map(), any()}}
   defp handle_plugin_event_call(
          plugin_module,
          plugin_id,

@@ -571,8 +571,7 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
-  @spec handle_activation_key(any(), any()) ::
-          :ok | {:ok, any()} | {:error, any()}
+  @spec handle_activation_key(any(), any()) :: :ok
   defp handle_activation_key(key, activate_keys) do
     case key in activate_keys do
       true -> handle_activation()

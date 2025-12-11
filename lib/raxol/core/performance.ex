@@ -18,7 +18,7 @@ defmodule Raxol.Core.Performance do
   * `:ok` - Performance system initialized successfully
   * `{:error, reason}` - Failed to initialize performance system
   """
-  @spec init(keyword()) :: :ok | {:error, term()}
+  @spec init(keyword()) :: :ok
   def init(options \\ []) do
     with {:ok, _monitor} <- safe_start_monitor(options),
          :ok <- initialize_collector(),
@@ -170,7 +170,7 @@ defmodule Raxol.Core.Performance do
   * `{:ok, analysis}` - Performance analysis results
   * `{:error, reason}` - Failed to get analysis
   """
-  @spec get_analysis() :: {:ok, map()} | {:error, term()}
+  @spec get_analysis() :: {:ok, map()}
   def get_analysis do
     with {:ok, metrics} <- get_stats(),
          {:ok, analysis} <- safe_analyze(metrics) do

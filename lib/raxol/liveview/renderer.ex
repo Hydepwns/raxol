@@ -425,7 +425,7 @@ defmodule Raxol.LiveView.Renderer do
   defp handle_cache_result({:ok, cached_html}, _cell), do: {cached_html, true}
   defp handle_cache_result(:error, cell), do: {generate_cell_html(cell), false}
 
-  @spec generate_cell_html(map()) :: iodata()
+  @spec generate_cell_html(map()) :: iolist()
   defp generate_cell_html(%{char: char, style: style}) do
     classes = get_cached_style_classes(style)
     escaped_char = get_cached_escaped_char(char)

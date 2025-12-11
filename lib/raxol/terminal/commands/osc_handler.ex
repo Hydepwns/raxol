@@ -524,7 +524,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
       {:ok, %{emulator | window_title: data}}
     end
 
-    @spec handle_7(map(), binary()) :: {:ok, map()} | {:error, term(), map()}
+    @spec handle_7(map(), binary()) :: {:ok, map()}
     def handle_7(emulator, data) do
       # Set current directory (for terminal tabs)
       {:ok, %{emulator | current_directory: data}}
