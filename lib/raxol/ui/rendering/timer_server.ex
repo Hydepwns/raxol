@@ -81,7 +81,8 @@ defmodule Raxol.UI.Rendering.TimerServer do
   @doc """
   Starts an adaptive frame rate timer for dynamic performance adjustment.
   """
-  @spec start_adaptive_timer(pid(), non_neg_integer()) :: :ok | {:error, :not_started}
+  @spec start_adaptive_timer(pid(), non_neg_integer()) ::
+          :ok | {:error, :not_started}
   def start_adaptive_timer(
         target_pid,
         interval_ms \\ @default_adaptive_interval

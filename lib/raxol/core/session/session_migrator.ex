@@ -945,7 +945,11 @@ defmodule Raxol.Core.Session.SessionMigrator do
   defp update_migration_stats(stats, result, migration_info) do
     # completed_at is always set by the time this function is called
     migration_time =
-      DateTime.diff(migration_info.completed_at, migration_info.started_at, :millisecond)
+      DateTime.diff(
+        migration_info.completed_at,
+        migration_info.started_at,
+        :millisecond
+      )
 
     case result do
       :success ->

@@ -51,8 +51,7 @@ defmodule Raxol.UI.Components.Progress.Component do
   @doc """
   Handles component events.
   """
-  @spec handle_event(term(), props(), state()) ::
-          {:ok, state()} | {:update, state()}
+  @spec handle_event(term(), props(), state()) :: {:ok, state()}
   def handle_event({:click, _}, _props, state) do
     {:ok, state}
   end

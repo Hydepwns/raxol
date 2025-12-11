@@ -124,8 +124,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   @doc """
   Returns the current cursor position, if available.
   """
-  @spec cursor_position ::
-          {:ok, {pos_integer(), pos_integer()}} | {:error, term()}
+  @spec cursor_position :: {:error, :not_implemented}
   def cursor_position do
     {:error, :not_implemented}
   end

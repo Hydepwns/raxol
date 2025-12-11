@@ -298,7 +298,8 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
       {:reply, :ok, updated_state}
     else
       # initialize_backend always succeeds (falls back to :software)
-      {:ok, new_backend_state} = initialize_backend(merged_config.backend, merged_config)
+      {:ok, new_backend_state} =
+        initialize_backend(merged_config.backend, merged_config)
 
       updated_state = %{
         state

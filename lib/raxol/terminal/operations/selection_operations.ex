@@ -28,6 +28,7 @@ defmodule Raxol.Terminal.Operations.SelectionOperations do
 
   def get_selection_boundaries(emulator) do
     buffer = ScreenManager.get_screen_buffer(emulator)
+
     # Return selection boundaries as-is (already in {{x, y}, {x, y}} format or nil)
     ScreenManager.get_selection_boundaries(buffer)
   end

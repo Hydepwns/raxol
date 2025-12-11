@@ -162,7 +162,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
         metadata: %{core: 0, temperature: 65}
       })
   """
-  @spec add_data_point(chart_id(), data_point()) :: :ok | {:error, term()}
+  @spec add_data_point(chart_id(), data_point()) :: :ok
   def add_data_point(chart_id, data_point) do
     GenServer.cast(__MODULE__, {:add_data_point, chart_id, data_point})
   end
@@ -180,7 +180,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
       
       DataVisualization.add_data_points(chart_id, points)
   """
-  @spec add_data_points(chart_id(), [data_point()]) :: :ok | {:error, term()}
+  @spec add_data_points(chart_id(), [data_point()]) :: :ok
   def add_data_points(chart_id, data_points) do
     GenServer.cast(__MODULE__, {:add_data_points, chart_id, data_points})
   end
