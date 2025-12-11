@@ -302,7 +302,7 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
   end
 
   defp format_section(components, theme, _position) do
-    Enum.map_join(components, theme.separator || " │ ", fn {type, text} ->
+    Enum.map_join(components, theme.separator, fn {type, text} ->
       apply_style(text, theme[type] || %{})
     end)
   end

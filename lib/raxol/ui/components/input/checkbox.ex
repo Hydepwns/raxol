@@ -42,7 +42,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   Initializes the Checkbox component state from the given props.
   """
   @impl Raxol.UI.Components.Base.Component
-  @spec init(keyword()) :: {:ok, t()}
+  @spec init(map() | keyword()) :: {:ok, t()}
   def init(props) do
     id =
       Keyword.get(props, :id, "checkbox-#{:erlang.unique_integer([:positive])}")

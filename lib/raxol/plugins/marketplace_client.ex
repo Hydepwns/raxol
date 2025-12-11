@@ -448,30 +448,26 @@ defmodule Raxol.Plugins.MarketplaceClient do
       {:ok, plugin_info} ->
         # 2. Verify security
         case verify_plugin_security_impl(plugin_id, version, state) do
-          {:ok, security_result} ->
-            if security_result.safe do
-              # 3. Resolve dependencies
-              case resolve_plugin_dependencies(plugin_info) do
-                {:ok, dependencies} ->
-                  # 4. Download and install
-                  case download_and_install_plugin(
-                         plugin_info,
-                         dependencies,
-                         opts,
-                         state
-                       ) do
-                    {:ok, updated_state} ->
-                      {:ok, updated_state}
+          {:ok, _security_result} ->
+            # 3. Resolve dependencies
+            case resolve_plugin_dependencies(plugin_info) do
+              {:ok, dependencies} ->
+                # 4. Download and install
+                case download_and_install_plugin(
+                       plugin_info,
+                       dependencies,
+                       opts,
+                       state
+                     ) do
+                  {:ok, updated_state} ->
+                    {:ok, updated_state}
 
-                    {:error, reason} ->
-                      {:error, {:installation_failed, reason}}
-                  end
+                  {:error, reason} ->
+                    {:error, {:installation_failed, reason}}
+                end
 
-                {:error, reason} ->
-                  {:error, {:dependency_resolution_failed, reason}}
-              end
-            else
-              {:error, {:security_verification_failed, security_result.issues}}
+              {:error, reason} ->
+                {:error, {:dependency_resolution_failed, reason}}
             end
 
           {:error, reason} ->

@@ -593,7 +593,7 @@ defmodule Raxol.Handlers.ApplyThemeHandler do
   defp merge_accessibility_options(base_options, nil, false), do: base_options
 
   defp merge_accessibility_options(base_options, overrides, high_contrast) do
-    merged = Map.merge(base_options || %{}, overrides || %{})
+    merged = Map.merge(base_options, overrides || %{})
 
     case high_contrast do
       true -> Map.put(merged, :high_contrast_mode, true)

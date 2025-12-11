@@ -51,7 +51,7 @@ defmodule Raxol.UI.Components.Base.Component do
   """
 
   @type t :: map()
-  @type props :: map()
+  @type props :: map() | keyword()
   @type state :: map()
   @type message :: term()
   @type command :: term()
@@ -83,7 +83,8 @@ defmodule Raxol.UI.Components.Base.Component do
   Similar to the application update function, this handles messages sent to
   the component and returns the new state.
   """
-  @callback update(message(), state()) :: state() | {:ok, state()} | {state(), [command()]}
+  @callback update(message(), state()) ::
+              state() | {:ok, state()} | {state(), [command()]}
 
   @doc """
   Renders the component based on its current state.

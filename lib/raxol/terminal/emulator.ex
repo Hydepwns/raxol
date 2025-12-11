@@ -710,9 +710,6 @@ defmodule Raxol.Terminal.Emulator do
 
     {updated_emulator, output} =
       case result do
-        {updated_emulator, output} when is_binary(output) ->
-          {updated_emulator, output}
-
         {updated_emulator, output} when is_list(output) ->
           # Convert list output to string for backward compatibility
           {updated_emulator, IO.iodata_to_binary(output)}

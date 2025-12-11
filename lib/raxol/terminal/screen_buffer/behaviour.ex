@@ -46,15 +46,16 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
 
   @callback designate_charset(
               buffer :: t(),
-              slot :: atom(),
+              slot :: atom() | integer(),
               charset :: charset()
             ) :: t()
-  @callback invoke_g_set(buffer :: t(), slot :: atom()) :: t()
+  @callback invoke_g_set(buffer :: t(), slot :: atom() | integer()) :: t()
   @callback get_current_g_set(buffer :: t()) :: atom() | integer()
-  @callback get_designated_charset(buffer :: t(), slot :: atom()) :: charset()
+  @callback get_designated_charset(buffer :: t(), slot :: atom() | integer()) ::
+              charset()
   @callback reset_state(buffer :: t()) :: t()
-  @callback apply_single_shift(buffer :: t(), slot :: atom()) :: t()
-  @callback get_single_shift(buffer :: t()) :: atom()
+  @callback apply_single_shift(buffer :: t(), slot :: atom() | integer()) :: t()
+  @callback get_single_shift(buffer :: t()) :: atom() | integer()
 
   @callback get_style(buffer :: t()) :: style()
   @callback update_style(buffer :: t(), style :: style()) :: t()

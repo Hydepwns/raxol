@@ -394,7 +394,7 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
     case get_plugin_manifest(dep_id, version, resolver.available_plugins) do
       {:ok, dep_manifest} ->
         case collect_all_dependencies(
-               dep_manifest.dependencies || [],
+               dep_manifest.dependencies,
                resolver,
                new_visited
              ) do

@@ -24,7 +24,8 @@ defmodule Raxol.Terminal.ANSI.Behaviours do
     @callback encode(t()) :: binary()
     @callback decode(binary()) :: t()
     @callback supported?() :: boolean()
-    @callback process_sequence(t(), binary()) :: t() | {t(), :ok | {:error, term()}}
+    @callback process_sequence(t(), binary()) ::
+                t() | {t(), :ok | {:error, term()}}
   end
 
   defmodule TerminalState do

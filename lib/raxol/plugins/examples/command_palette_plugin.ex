@@ -127,7 +127,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
   end
 
   def handle_event({:keyboard, "backspace"}, %{is_open: true} = state) do
-    query = String.slice(state.search_query, 0..-2//1) || ""
+    query = String.slice(state.search_query, 0..-2//1)
     update_search(state, query)
   end
 

@@ -181,7 +181,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Manager do
   @spec get_damage_regions(t()) :: list(tuple())
   def get_damage_regions(manager) do
     buffer = get_active_buffer(manager)
-    buffer.damage_regions || []
+    buffer.damage_regions
   end
 
   @doc """

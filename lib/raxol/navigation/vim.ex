@@ -237,13 +237,7 @@ defmodule Raxol.Navigation.Vim do
     separators = config.word_separators
 
     new_x = find_word_end(line, x, separators)
-
-    new_state =
-      if new_x do
-        %{state | cursor: {new_x, y}}
-      else
-        state
-      end
+    new_state = %{state | cursor: {new_x, y}}
 
     {:ok, new_state}
   end

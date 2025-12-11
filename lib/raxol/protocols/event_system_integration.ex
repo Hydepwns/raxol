@@ -251,10 +251,7 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   defp fallback_dispatch(target, event, state) do
     # Try to use the existing event system
     # EventManager.dispatch expects atom or tuple, not a map
-    event_type =
-      if is_map(event) and Map.has_key?(event, :type),
-        do: event.type,
-        else: :unknown_event
+    event_type = event.type
 
     :ok = EventManager.dispatch(event_type)
     {:ok, target, state}
