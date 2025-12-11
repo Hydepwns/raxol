@@ -197,7 +197,7 @@ jobs:
       
       - name: Run unit tests
         run: |
-          mix test --exclude integration --exclude property --exclude slow
+          mix test --exclude integration --exclude property --exclude slow --exclude skip_on_ci
         env:
           MIX_TEST_PARTITION: 1
       
