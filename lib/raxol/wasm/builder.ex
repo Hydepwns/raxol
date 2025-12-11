@@ -776,10 +776,11 @@ defmodule Raxol.WASM.Builder do
   defp watch_loop(opts) do
     receive do
       {:file_event, _pid, {path, _events}} ->
-        if String.ends_with?(path, ".ex") or String.ends_with?(path, ".exs") do
-          Log.info("Detected change in #{path}, rebuilding...")
-          _ = build(opts)
-        end
+        _ =
+          if String.ends_with?(path, ".ex") or String.ends_with?(path, ".exs") do
+            Log.info("Detected change in #{path}, rebuilding...")
+            build(opts)
+          end
 
         watch_loop(opts)
 

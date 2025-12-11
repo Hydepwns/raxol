@@ -307,9 +307,10 @@ defmodule Raxol.Performance.AlertManager do
     new_state = %{state | active_alerts: new_active_alerts}
 
     # Send update notification if occurrence count hits certain thresholds
-    if should_send_update_notification?(updated_alert) do
-      _ = send_alert_update(updated_alert, new_state)
-    end
+    _ =
+      if should_send_update_notification?(updated_alert) do
+        send_alert_update(updated_alert, new_state)
+      end
 
     {:ok, alert_id, new_state}
   end

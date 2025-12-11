@@ -291,18 +291,19 @@ defmodule Raxol.Core.Session.SessionMigrator do
   def handle_info({:nodedown, node}, state) do
     Log.warning("Node #{node} left cluster, initiating failover")
 
-    case state.failover_mode do
-      :immediate ->
-        _ = spawn(fn -> handle_node_failure(self(), node) end)
+    _ =
+      case state.failover_mode do
+        :immediate ->
+          spawn(fn -> handle_node_failure(self(), node) end)
 
-      :graceful ->
-        _ = Process.send_after(self(), {:delayed_failover, node}, 5000)
+        :graceful ->
+          Process.send_after(self(), {:delayed_failover, node}, 5000)
 
-      :manual ->
-        Log.info(
-          "Manual failover mode - administrator intervention required for node #{node}"
-        )
-    end
+        :manual ->
+          Log.info(
+            "Manual failover mode - administrator intervention required for node #{node}"
+          )
+      end
 
     updated_health = Map.put(state.node_health, node, :failed)
     {:noreply, %{state | node_health: updated_health}}
@@ -310,14 +311,15 @@ defmodule Raxol.Core.Session.SessionMigrator do
 
   @impl true
   def handle_info({:delayed_failover, node}, state) do
-    case Map.get(state.node_health, node) do
-      :failed ->
-        _ = spawn(fn -> handle_node_failure(self(), node) end)
+    _ =
+      case Map.get(state.node_health, node) do
+        :failed ->
+          spawn(fn -> handle_node_failure(self(), node) end)
 
-      _ ->
-        # Node recovered, no failover needed
-        :ok
-    end
+        _ ->
+          # Node recovered, no failover needed
+          :ok
+      end
 
     {:noreply, state}
   end

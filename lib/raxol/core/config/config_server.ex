@@ -140,9 +140,10 @@ defmodule Raxol.Core.Config.ConfigServer do
         {:error, _reason} -> config
       end
 
-    if final_config.persistence.auto_save do
-      _ = schedule_auto_save(final_config.persistence.save_interval)
-    end
+    _ =
+      if final_config.persistence.auto_save do
+        schedule_auto_save(final_config.persistence.save_interval)
+      end
 
     {:ok, final_config}
   end

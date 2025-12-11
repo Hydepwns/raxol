@@ -368,9 +368,10 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
   end
 
   defp stop_animation(state) do
-    if state.animation_timer do
-      _ = Process.cancel_timer(state.animation_timer)
-    end
+    _ =
+      if state.animation_timer do
+        Process.cancel_timer(state.animation_timer)
+      end
 
     %{state | animation_timer: nil}
   end
