@@ -32,7 +32,6 @@ defmodule Raxol.Core.Utils.TimerUtils do
       # Performance monitoring every 5 seconds
       timer_ref = TimerUtils.start_periodic(self(), :monitor_performance, 5_000)
   """
-  @spec start_periodic(pid(), term(), pos_integer()) :: reference()
   def start_periodic(pid, message, interval)
       when is_pid(pid) and interval > 0 do
     Raxol.Core.Runtime.Log.debug(
@@ -54,7 +53,6 @@ defmodule Raxol.Core.Utils.TimerUtils do
       # Flush data after 1 second
       timer_ref = TimerUtils.start_delayed(self(), :flush, 1_000)
   """
-  @spec start_delayed(pid(), term(), pos_integer()) :: reference()
   def start_delayed(pid, message, delay) when is_pid(pid) and delay > 0 do
     Raxol.Core.Runtime.Log.debug(
       "Starting delayed timer",
@@ -72,7 +70,6 @@ defmodule Raxol.Core.Utils.TimerUtils do
       timer_ref = TimerUtils.start_delayed(self(), :cleanup, 5000)
       :ok = TimerUtils.cancel_timer(timer_ref)
   """
-  @spec cancel_timer(timer_ref()) :: :ok
   def cancel_timer(nil), do: :ok
 
   def cancel_timer(timer_ref) when is_reference(timer_ref) do
@@ -105,7 +102,6 @@ defmodule Raxol.Core.Utils.TimerUtils do
       # Debounced file reload - cancel previous and start new
       timer_ref = TimerUtils.restart_timer(old_timer, self(), {:reload_file, path}, 1000)
   """
-  @spec restart_timer(timer_ref(), pid(), term(), pos_integer()) :: reference()
   def restart_timer(old_timer, pid, message, delay) do
     cancel_timer(old_timer)
     start_delayed(pid, message, delay)
@@ -128,7 +124,6 @@ defmodule Raxol.Core.Utils.TimerUtils do
         1000
       )
   """
-  @spec debounce_timer(map(), term(), pid(), term(), pos_integer()) :: map()
   def debounce_timer(state, key, pid, message, delay) do
     timers = Map.get(state, :timers, %{})
 
@@ -153,7 +148,6 @@ defmodule Raxol.Core.Utils.TimerUtils do
       # In terminate/2 callback
       TimerUtils.cancel_all_timers(state)
   """
-  @spec cancel_all_timers(map()) :: :ok
   def cancel_all_timers(%{timers: timers}) when is_map(timers) do
     timers
     |> Map.values()
@@ -201,7 +195,6 @@ defmodule Raxol.Core.Utils.TimerUtils do
       interval = TimerUtils.get_interval(:health_check)  # 30_000
       timer_ref = TimerUtils.start_periodic(self(), :health_check, interval)
   """
-  @spec get_interval(atom()) :: pos_integer()
   def get_interval(name) do
     intervals()
     # Default to 5 seconds
@@ -222,7 +215,6 @@ defmodule Raxol.Core.Utils.TimerUtils do
         :health_check
       )
   """
-  @spec start_periodic_with_state(map(), term(), pid(), term(), atom()) :: map()
   def start_periodic_with_state(state, timer_key, pid, message, interval_name) do
     interval = get_interval(interval_name)
     timer_ref = start_periodic(pid, message, interval)

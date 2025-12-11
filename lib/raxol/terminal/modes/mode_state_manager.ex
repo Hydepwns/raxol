@@ -21,7 +21,6 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
   @doc """
   Creates a new mode state with default values.
   """
-  @spec new() :: t()
   def new do
     %__MODULE__{
       modes: initialize_default_modes()
@@ -31,8 +30,6 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
   @doc """
   Sets a mode to a specific value.
   """
-  @spec set_mode(t(), atom(), ModeTypes.mode_value()) ::
-          {:ok, t()} | {:error, term()}
   def set_mode(state, mode_name, value) do
     with {:ok, mode_def} <- validate_mode(mode_name),
          :ok <- validate_dependencies(state, mode_def),
@@ -45,7 +42,6 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
   @doc """
   Resets a mode to its default value.
   """
-  @spec reset_mode(t(), atom()) :: {:ok, t()} | {:error, term()}
   def reset_mode(state, mode_name) do
     with {:ok, mode_def} <- validate_mode(mode_name) do
       new_state = put_in(state.modes[mode_name], mode_def.default_value)
@@ -56,7 +52,6 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
   @doc """
   Checks if a mode is enabled.
   """
-  @spec mode_enabled?(t(), atom()) :: boolean()
   def mode_enabled?(state, mode_name) do
     case Map.get(state.modes, mode_name) do
       nil -> false

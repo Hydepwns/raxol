@@ -54,7 +54,6 @@ defmodule Raxol.UI.Components.Input.TextField do
   @doc """
   Initializes the TextField component state from the given props.
   """
-  @spec init(map()) :: map()
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
     id = props[:id] || Raxol.Core.ID.generate()
@@ -66,14 +65,12 @@ defmodule Raxol.UI.Components.Input.TextField do
   @doc """
   Mounts the TextField component. Performs any setup needed after initialization.
   """
-  @spec mount(map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component
   def mount(state), do: {state, []}
 
   @doc """
   Updates the TextField component state in response to messages or prop changes.
   """
-  @spec update(term(), map()) :: map()
   @impl Raxol.UI.Components.Base.Component
   def update({:update_props, new_props}, state) do
     updated_state = Map.merge(state, Map.new(new_props))
@@ -135,7 +132,6 @@ defmodule Raxol.UI.Components.Input.TextField do
   @doc """
   Handles events for the TextField component, such as keypresses, focus, and blur.
   """
-  @spec handle_event(term(), map(), map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(
         {:keypress, _key, _modifiers},
@@ -305,7 +301,6 @@ defmodule Raxol.UI.Components.Input.TextField do
   @doc """
   Renders the TextField component using the current state and context.
   """
-  @spec render(map(), map()) :: any()
   @impl Raxol.UI.Components.Base.Component
   def render(state, _context) do
     merged_style = get_merged_style(state)

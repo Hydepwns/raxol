@@ -10,16 +10,16 @@ defmodule Raxol.Terminal.ParserStateManager do
   ## Usage
   For simple emulator operations:
       emulator = ParserStateManager.reset_parser_state(emulator)
-      
+
   For comprehensive parser operations:
       manager = ParserStateManager.create_parser_manager()
       manager = ParserStateManager.process_char(manager, ?A)
-      
+
   ## Migration from Parser.State.Manager
   Use `create_parser_manager/0` instead of `Parser.State.Manager.new/0`
   """
 
-  alias Raxol.Terminal.{Emulator, ParserState}
+  alias Raxol.Terminal.ParserState
   alias Raxol.Terminal.Parser.State.Manager, as: DetailedManager
   require Raxol.Core.Runtime.Log
 
@@ -34,7 +34,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Gets the current parser state.
   Returns the parser state.
   """
-  @spec get_parser_state(map()) :: ParserState.t()
   def get_parser_state(emulator) do
     emulator.parser_state
   end
@@ -43,7 +42,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Updates the parser state.
   Returns the updated emulator.
   """
-  @spec update_parser_state(map(), ParserState.t()) :: map()
   def update_parser_state(emulator, new_state) do
     %{emulator | parser_state: new_state}
   end
@@ -52,7 +50,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Resets the parser state to its initial state.
   Returns the updated emulator.
   """
-  @spec reset_parser_state(map()) :: map()
   def reset_parser_state(emulator) do
     %{emulator | parser_state: ParserState.new()}
   end
@@ -61,7 +58,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Processes a character in the current parser state.
   Returns the updated emulator and any output.
   """
-  @spec process_char(map(), char()) :: {map(), any()}
   def process_char(emulator, char) do
     state = get_parser_state(emulator)
     output = ParserState.process_char(state, char)
@@ -72,7 +68,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Gets the current parser mode (state).
   Returns the current mode.
   """
-  @spec get_mode(map()) :: atom()
   def get_mode(emulator) do
     emulator.parser_state.state
   end
@@ -81,7 +76,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Sets the parser mode (state).
   Returns the updated emulator.
   """
-  @spec set_mode(map(), atom()) :: map()
   def set_mode(emulator, mode) do
     state = get_parser_state(emulator)
     new_state = %{state | state: mode}
@@ -92,7 +86,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Gets the current parser parameters.
   Returns the list of parameters.
   """
-  @spec get_params(map()) :: [String.t()]
   def get_params(emulator) do
     emulator.parser_state.params
   end
@@ -101,7 +94,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Sets the parser parameters.
   Returns the updated emulator.
   """
-  @spec set_params(map(), [String.t()]) :: map()
   def set_params(emulator, params) do
     state = get_parser_state(emulator)
     new_state = %{state | params: params}
@@ -112,7 +104,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Adds a parameter to the current parser state.
   Returns the updated emulator.
   """
-  @spec add_param(map(), String.t()) :: map()
   def add_param(emulator, param) do
     state = get_parser_state(emulator)
     new_params = state.params ++ [param]
@@ -124,7 +115,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Clears all parser parameters.
   Returns the updated emulator.
   """
-  @spec clear_params(map()) :: map()
   def clear_params(emulator) do
     state = get_parser_state(emulator)
     new_state = %{state | params: []}
@@ -135,7 +125,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Gets the current intermediate characters buffer.
   Returns the intermediates buffer as a binary string.
   """
-  @spec get_intermediates(map()) :: binary()
   def get_intermediates(emulator) do
     emulator.parser_state.intermediates_buffer
   end
@@ -144,7 +133,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Sets the intermediate characters buffer.
   Returns the updated emulator.
   """
-  @spec set_intermediates(map(), binary()) :: map()
   def set_intermediates(emulator, intermediates) do
     state = get_parser_state(emulator)
     new_state = %{state | intermediates_buffer: intermediates}
@@ -155,7 +143,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Adds an intermediate character to the buffer.
   Returns the updated emulator.
   """
-  @spec add_intermediate(map(), char()) :: map()
   def add_intermediate(emulator, char) do
     state = get_parser_state(emulator)
     new_intermediates = state.intermediates_buffer <> <<char>>
@@ -167,7 +154,6 @@ defmodule Raxol.Terminal.ParserStateManager do
   Clears all intermediate characters.
   Returns the updated emulator.
   """
-  @spec clear_intermediates(map()) :: map()
   def clear_intermediates(emulator) do
     state = get_parser_state(emulator)
     new_state = %{state | intermediates_buffer: ""}

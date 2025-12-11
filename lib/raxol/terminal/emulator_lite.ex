@@ -99,7 +99,6 @@ defmodule Raxol.Terminal.EmulatorLite do
     - :scrollback_limit - Number of scrollback lines (default: 1000)
     - :alternate_buffer - Create alternate screen buffer (default: false)
   """
-  @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: map()
   def new(width \\ 80, height \\ 24, opts \\ []) do
     enable_history = Keyword.get(opts, :enable_history, false)
     scrollback_limit = Keyword.get(opts, :scrollback_limit, 1000)
@@ -157,7 +156,6 @@ defmodule Raxol.Terminal.EmulatorLite do
   Creates a minimal emulator for fastest possible parsing.
   No history, no alternate buffer, minimal features.
   """
-  @spec new_minimal(non_neg_integer(), non_neg_integer()) :: map()
   def new_minimal(width \\ 80, height \\ 24) do
     new(width, height,
       enable_history: false,
@@ -169,7 +167,6 @@ defmodule Raxol.Terminal.EmulatorLite do
   @doc """
   Gets the active screen buffer.
   """
-  @spec get_active_buffer(t()) :: ScreenBuffer.t()
   def get_active_buffer(%__MODULE__{
         active_buffer_type: :alternate,
         alternate_screen_buffer: buffer
@@ -182,7 +179,6 @@ defmodule Raxol.Terminal.EmulatorLite do
   @doc """
   Updates the active screen buffer.
   """
-  @spec update_active_buffer(t(), (ScreenBuffer.t() -> ScreenBuffer.t())) :: t()
   def update_active_buffer(
         %__MODULE__{active_buffer_type: :alternate} = emulator,
         fun
@@ -201,7 +197,6 @@ defmodule Raxol.Terminal.EmulatorLite do
   @doc """
   Switches between main and alternate screen buffers.
   """
-  @spec switch_buffer(t(), :main | :alternate) :: t()
   def switch_buffer(%__MODULE__{} = emulator, :alternate) do
     # Create alternate buffer if it doesn't exist
     alternate =
@@ -222,7 +217,6 @@ defmodule Raxol.Terminal.EmulatorLite do
   @doc """
   Resets the emulator to initial state.
   """
-  @spec reset(map()) :: map()
   def reset(%__MODULE__{width: width, height: height} = emulator) do
     %{
       emulator
@@ -257,7 +251,6 @@ defmodule Raxol.Terminal.EmulatorLite do
   @doc """
   Resizes the emulator to new dimensions.
   """
-  @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
   def resize(%__MODULE__{} = emulator, new_width, new_height) do
     %{
       emulator
@@ -288,7 +281,6 @@ defmodule Raxol.Terminal.EmulatorLite do
   @doc """
   Moves the cursor to a specific position.
   """
-  @spec move_cursor(t(), non_neg_integer(), non_neg_integer()) :: t()
   def move_cursor(%__MODULE__{} = emulator, x, y) do
     new_x = max(0, min(x, emulator.width - 1))
     new_y = max(0, min(y, emulator.height - 1))
@@ -299,7 +291,6 @@ defmodule Raxol.Terminal.EmulatorLite do
   @doc """
   Updates the cursor position relatively.
   """
-  @spec move_cursor_relative(t(), integer(), integer()) :: t()
   def move_cursor_relative(%__MODULE__{cursor: cursor} = emulator, dx, dy) do
     {x, y} = cursor.position
     move_cursor(emulator, x + dx, y + dy)

@@ -3,27 +3,20 @@ defmodule Raxol.Terminal.Commands.WindowHandler do
   Handles window-related commands and operations for the terminal.
   """
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
 
-  @spec default_char_width_px() :: non_neg_integer()
   def default_char_width_px, do: 8
 
-  @spec default_char_height_px() :: non_neg_integer()
   def default_char_height_px, do: 16
 
-  @spec calculate_width_chars(non_neg_integer()) :: non_neg_integer()
   def calculate_width_chars(pixel_width) do
     div(pixel_width, default_char_width_px())
   end
 
-  @spec calculate_height_chars(non_neg_integer()) :: non_neg_integer()
   def calculate_height_chars(pixel_height) do
     div(pixel_height, default_char_height_px())
   end
 
-  @spec handle_t(Emulator.t(), list()) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_t(emulator, params) do
     op = Enum.at(params, 0, 0)
     handler = get_handler(op)
@@ -127,7 +120,6 @@ defmodule Raxol.Terminal.Commands.WindowHandler do
   Resizes the window with the given parameters.
   Parameters can be a list of integers representing width and/or height.
   """
-  @spec resize(Emulator.t(), list()) :: Emulator.t()
   def resize(emulator, params) do
     case handle_resize(emulator, params) do
       {:ok, updated_emulator} -> updated_emulator

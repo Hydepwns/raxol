@@ -20,7 +20,6 @@ defmodule Raxol.Terminal.Scroll.Predictor do
   @doc """
   Creates a new predictor instance.
   """
-  @spec new() :: t()
   def new do
     %__MODULE__{
       window_size: 10,
@@ -31,7 +30,6 @@ defmodule Raxol.Terminal.Scroll.Predictor do
   @doc """
   Adds a scroll event to the history and keeps only the window size worth of history.
   """
-  @spec predict(t(), :up | :down, non_neg_integer()) :: t()
   def predict(predictor, direction, lines) do
     event = %{
       direction: direction,
@@ -46,10 +44,6 @@ defmodule Raxol.Terminal.Scroll.Predictor do
   @doc """
   Analyzes recent scroll patterns: returns average scroll size and alternation ratio.
   """
-  @spec analyze_patterns(t()) :: %{
-          avg_lines: float(),
-          alternation_ratio: float()
-        }
   def analyze_patterns(%__MODULE__{history: history}) do
     Raxol.Terminal.Scroll.PatternAnalyzer.analyze_patterns(history)
   end

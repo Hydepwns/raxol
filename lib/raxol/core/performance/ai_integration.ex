@@ -37,7 +37,6 @@ defmodule Raxol.Core.Performance.AIIntegration do
       - :ai_confidence - AI's confidence in the analysis
       - :code_suggestions - Specific code optimization examples
   """
-  @spec analyze_performance(map(), map()) :: map() | {:error, String.t()}
   def analyze_performance(metrics, options \\ %{}) do
     # Prepare data for AI analysis
     analysis_data = Analyzer.analyze(metrics)
@@ -83,7 +82,6 @@ defmodule Raxol.Core.Performance.AIIntegration do
   ## Returns
     - Map containing the formatted report and additional data
   """
-  @spec generate_report(map(), map()) :: map() | {:error, term()}
   def generate_report(metrics, options \\ %{}) do
     analysis = analyze_performance(metrics, options)
 
@@ -115,7 +113,6 @@ defmodule Raxol.Core.Performance.AIIntegration do
   ## Returns
     - List of optimization suggestions with priority and impact
   """
-  @spec get_optimization_suggestions(String.t(), map(), map()) :: {:ok, [map()]}
   def get_optimization_suggestions(component_name, _context, _options \\ %{}) do
     # AI module removed - returning basic suggestions
     # Previously: PerformanceOptimization.analyze_performance()
@@ -151,7 +148,6 @@ defmodule Raxol.Core.Performance.AIIntegration do
   ## Returns
     - Generated help content with explanations and solutions
   """
-  @spec generate_performance_help(atom(), map()) :: {:ok, String.t()}
   def generate_performance_help(issue_type, context \\ %{}) do
     # AI features disabled - ContentGeneration module removed
     _prompt = build_help_prompt(issue_type, context)
@@ -171,7 +167,6 @@ defmodule Raxol.Core.Performance.AIIntegration do
   ## Returns
     - Map containing predicted issues and confidence levels
   """
-  @spec predict_performance_issues(map(), list(), map()) :: {:ok, map()}
   def predict_performance_issues(
         metrics,
         historical_data \\ [],

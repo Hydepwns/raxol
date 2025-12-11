@@ -28,7 +28,6 @@ defmodule Raxol.Terminal.Style.StyleProcessor do
   @doc """
   Updates the emulator style with the given style attributes.
   """
-  @spec update_style(any(), map()) :: any()
   def update_style(emulator, style_attrs) when is_map(style_attrs) do
     current_style = emulator.style || Raxol.Terminal.ANSI.TextFormatting.new()
 
@@ -48,10 +47,6 @@ defmodule Raxol.Terminal.Style.StyleProcessor do
   @doc """
   Applies a single style attribute to the current style.
   """
-  @spec apply_style_attribute(
-          {atom(), any()},
-          Raxol.Terminal.ANSI.TextFormatting.t()
-        ) :: Raxol.Terminal.ANSI.TextFormatting.t()
   def apply_style_attribute({attr, value}, style) do
     case attr do
       :foreground ->
@@ -71,7 +66,6 @@ defmodule Raxol.Terminal.Style.StyleProcessor do
   @doc """
   Gets the style update function for a given attribute and value.
   """
-  @spec get_style_update_function(atom(), any()) :: {:ok, function()} | :error
   def get_style_update_function(attr, value) do
     case Map.fetch(get_style_updates(), {attr, value}) do
       {:ok, update_fn} -> {:ok, update_fn}
@@ -82,7 +76,6 @@ defmodule Raxol.Terminal.Style.StyleProcessor do
   @doc """
   Returns the mapping of style attributes to their corresponding update functions.
   """
-  @spec get_style_updates() :: map()
   def get_style_updates do
     @style_updates |> Enum.into(%{})
   end

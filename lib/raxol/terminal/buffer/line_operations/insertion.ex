@@ -7,29 +7,23 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   @doc """
   Insert empty lines at the current cursor position.
   """
-  @spec insert_lines(map(), integer()) :: map()
   def insert_lines(buffer, count) do
     {_x, y} = buffer.cursor_position
     insert_lines(buffer, y, count)
   end
 
-  @spec insert_lines(map(), integer(), integer()) :: map()
   def insert_lines(buffer, y, count) do
     do_insert_lines(buffer, y, count, %{})
   end
 
-  @spec insert_lines(map(), integer(), integer(), map()) :: map()
   def insert_lines(buffer, y, count, style) do
     do_insert_lines(buffer, y, count, style)
   end
 
-  @spec insert_lines(map(), integer(), integer(), integer(), integer()) :: map()
   def insert_lines(buffer, y, count, scroll_top, scroll_bottom) do
     do_insert_lines_with_style(buffer, y, count, scroll_top, scroll_bottom)
   end
 
-  @spec insert_lines(map(), integer(), integer(), integer(), integer(), map()) ::
-          map()
   def insert_lines(buffer, y, count, scroll_top, scroll_bottom, _style) do
     # do_insert_lines_in_region already creates blank lines with style
     do_insert_lines_in_region(buffer, y, count, scroll_top, scroll_bottom)
@@ -38,7 +32,6 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   @doc """
   Internal insertion with default style.
   """
-  @spec do_insert_lines(map(), integer(), integer(), map()) :: map()
   def do_insert_lines(buffer, y, count, style) do
     alias Raxol.Terminal.ScreenBuffer.DataAdapter
 
@@ -64,13 +57,6 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   @doc """
   Insert lines with style in a scroll region.
   """
-  @spec do_insert_lines_with_style(
-          map(),
-          integer(),
-          integer(),
-          integer(),
-          integer()
-        ) :: map()
   def do_insert_lines_with_style(buffer, y, count, scroll_top, scroll_bottom) do
     do_insert_lines_in_region(buffer, y, count, scroll_top, scroll_bottom)
   end

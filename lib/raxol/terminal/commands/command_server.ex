@@ -62,7 +62,6 @@ defmodule Raxol.Terminal.Commands.CommandServer do
 
   This is the main entry point for all command processing.
   """
-  @spec handle_command(Emulator.t(), command_params()) :: command_result()
   def handle_command(emulator, %{type: type, command: command} = cmd_params) do
     Raxol.Core.Runtime.Log.debug("Processing #{type} command: #{command}")
 
@@ -80,8 +79,6 @@ defmodule Raxol.Terminal.Commands.CommandServer do
   @doc """
   Handles CSI (Control Sequence Introducer) commands.
   """
-  @spec handle_csi(Emulator.t(), String.t(), list(integer()), String.t()) ::
-          command_result()
   def handle_csi(emulator, command, params \\ [], intermediates \\ "") do
     cmd_params = %{
       type: :csi,
@@ -97,7 +94,6 @@ defmodule Raxol.Terminal.Commands.CommandServer do
   @doc """
   Handles OSC (Operating System Command) sequences.
   """
-  @spec handle_osc(map(), binary(), integer()) :: command_result()
   def handle_osc(emulator, command, data) do
     cmd_params = %{
       type: :osc,

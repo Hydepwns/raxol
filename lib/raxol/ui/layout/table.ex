@@ -24,7 +24,6 @@ defmodule Raxol.UI.Layout.Table do
   - Headers and borders
   - Available space constraints
   """
-  @spec measure(map(), map()) :: map()
   def measure(attrs_map, available_space) do
     columns = Map.get(attrs_map, :columns, [])
     # Support both 'rows' and 'data' attributes
@@ -62,7 +61,6 @@ defmodule Raxol.UI.Layout.Table do
   - Border and separator positioning
   - Scrollable area configuration
   """
-  @spec measure_and_position(map(), map(), map() | list()) :: map() | list()
   def measure_and_position(table_element, space, acc) do
     # Track if we started with an empty list
     return_list = acc == []

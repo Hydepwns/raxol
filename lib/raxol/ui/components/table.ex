@@ -109,7 +109,6 @@ defmodule Raxol.UI.Components.Table do
 
   @behaviour Raxol.UI.Components.Base.Component
 
-  @spec init(map()) :: {:ok, map()}
   @doc """
   Initializes the table component with the given props.
   """
@@ -149,13 +148,11 @@ defmodule Raxol.UI.Components.Table do
     {:ok, state}
   end
 
-  @spec mount(map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component
   def mount(state) do
     {state, []}
   end
 
-  @spec update(term(), map()) :: {:ok, map()}
   @doc """
   Updates the table state based on the given message.
   """
@@ -186,7 +183,6 @@ defmodule Raxol.UI.Components.Table do
     {:ok, new_state}
   end
 
-  @spec render(map(), map()) :: any()
   @doc """
   Renders the table component.
   """
@@ -261,7 +257,6 @@ defmodule Raxol.UI.Components.Table do
     %{box | style: Enum.into(box.style, %{})}
   end
 
-  @spec handle_event(term(), map(), map()) :: {:ok, map()}
   @doc """
   Handles events for the table component.
   """
@@ -463,7 +458,6 @@ defmodule Raxol.UI.Components.Table do
     {:ok, state}
   end
 
-  @spec unmount(map()) :: map()
   @impl Raxol.UI.Components.Base.Component
   def unmount(state) do
     state

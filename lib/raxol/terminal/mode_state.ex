@@ -89,7 +89,6 @@ defmodule Raxol.Terminal.ModeState do
   @doc """
   Creates a new mode state with default values.
   """
-  @spec new() :: t()
   def new do
     %__MODULE__{}
   end
@@ -97,7 +96,6 @@ defmodule Raxol.Terminal.ModeState do
   @doc """
   Looks up a DEC private mode code and returns the corresponding mode atom.
   """
-  @spec lookup_private(integer()) :: atom() | nil
   def lookup_private(code) when is_integer(code) do
     Map.get(@dec_private_modes, code)
   end
@@ -105,7 +103,6 @@ defmodule Raxol.Terminal.ModeState do
   @doc """
   Looks up a standard mode code and returns the corresponding mode atom.
   """
-  @spec lookup_standard(integer()) :: atom() | nil
   def lookup_standard(code) when is_integer(code) do
     Map.get(@standard_modes, code)
   end
@@ -120,7 +117,6 @@ defmodule Raxol.Terminal.ModeState do
   ## Returns
     * `boolean()` - Whether the mode is enabled
   """
-  @spec mode_enabled?(t(), atom()) :: boolean()
   def mode_enabled?(state, mode) do
     case categorize_mode(mode) do
       :basic -> check_basic_mode(state, mode)
@@ -247,7 +243,6 @@ defmodule Raxol.Terminal.ModeState do
   ## Returns
     * `t()` - The updated mode state
   """
-  @spec set_mode(t(), atom()) :: t()
   def set_mode(state, mode) do
     case categorize_mode(mode) do
       :basic -> set_basic_mode(state, mode)
@@ -305,7 +300,6 @@ defmodule Raxol.Terminal.ModeState do
   ## Returns
     * `t()` - The updated mode state
   """
-  @spec reset_mode(t(), atom()) :: t()
   def reset_mode(state, mode) do
     case categorize_mode(mode) do
       :basic -> reset_basic_mode(state, mode)
@@ -352,7 +346,6 @@ defmodule Raxol.Terminal.ModeState do
   ## Returns
     * `t()` - The updated mode state
   """
-  @spec set_alternate_buffer_mode(t(), atom()) :: t()
   def set_alternate_buffer_mode(state, type) do
     %{state | alternate_buffer_active: true, alt_screen_mode: type}
   end
@@ -366,7 +359,6 @@ defmodule Raxol.Terminal.ModeState do
   ## Returns
     * `t()` - The updated mode state
   """
-  @spec reset_alternate_buffer_mode(t()) :: t()
   def reset_alternate_buffer_mode(state) do
     %{state | alternate_buffer_active: false, alt_screen_mode: nil}
   end

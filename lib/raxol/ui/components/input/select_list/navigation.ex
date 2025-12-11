@@ -4,13 +4,11 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   Handles arrow key navigation, home/end, and page up/down.
   """
 
-  alias Raxol.UI.Components.Input.SelectList
   alias Raxol.UI.Components.Input.SelectList.Utils
 
   @doc """
   Handles arrow down navigation.
   """
-  @spec handle_arrow_down(SelectList.t()) :: SelectList.t()
   def handle_arrow_down(state) do
     max_index = length(state.options) - 1
     new_index = min(state.focused_index + 1, max_index)
@@ -22,7 +20,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   @doc """
   Handles arrow up navigation.
   """
-  @spec handle_arrow_up(SelectList.t()) :: SelectList.t()
   def handle_arrow_up(state) do
     new_index = max(state.focused_index - 1, 0)
 
@@ -33,7 +30,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   @doc """
   Handles home key navigation (go to first item).
   """
-  @spec handle_home(SelectList.t()) :: SelectList.t()
   def handle_home(state) do
     %{state | focused_index: 0, scroll_offset: 0}
   end
@@ -41,7 +37,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   @doc """
   Handles end key navigation (go to last item).
   """
-  @spec handle_end(SelectList.t()) :: SelectList.t()
   def handle_end(state) do
     max_index = length(state.options) - 1
 
@@ -52,7 +47,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   @doc """
   Handles page up navigation.
   """
-  @spec handle_page_up(SelectList.t()) :: SelectList.t()
   def handle_page_up(state) do
     page_size = state.visible_items || 10
     new_index = max(state.focused_index - page_size, 0)
@@ -64,7 +58,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   @doc """
   Handles page down navigation.
   """
-  @spec handle_page_down(SelectList.t()) :: SelectList.t()
   def handle_page_down(state) do
     page_size = state.visible_items || 10
     max_index = length(state.options) - 1
@@ -77,7 +70,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   @doc """
   Handles search/filter navigation.
   """
-  @spec handle_search(map(), String.t()) :: map()
   def handle_search(state, query) do
     filtered_options = filter_options(state.options, query)
 
@@ -93,7 +85,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   @doc """
   Clears the current search filter.
   """
-  @spec clear_search(map()) :: map()
   def clear_search(state) do
     %{
       state
@@ -107,7 +98,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   @doc """
   Updates the scroll position to ensure selected item is visible.
   """
-  @spec update_scroll_position(SelectList.t()) :: SelectList.t()
   def update_scroll_position(state) do
     ensure_visible(state)
   end

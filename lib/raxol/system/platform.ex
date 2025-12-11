@@ -20,7 +20,6 @@ defmodule Raxol.System.Platform do
       iex> Platform.get_current_platform()
       :macos
   """
-  @spec get_current_platform() :: :linux | :macos | :windows
   def get_current_platform do
     case :os.type() do
       {:unix, :darwin} -> :macos
@@ -43,7 +42,6 @@ defmodule Raxol.System.Platform do
       iex> Platform.get_platform_name()
       "macos"
   """
-  @spec get_platform_name() :: String.t()
   def get_platform_name do
     case get_current_platform() do
       :macos -> "macos"
@@ -65,7 +63,6 @@ defmodule Raxol.System.Platform do
       iex> Platform.get_platform_extension()
       "tar.gz"
   """
-  @spec get_platform_extension() :: String.t()
   def get_platform_extension do
     case get_current_platform() do
       :windows -> "zip"
@@ -86,7 +83,6 @@ defmodule Raxol.System.Platform do
       iex> Platform.get_executable_name()
       "raxol"
   """
-  @spec get_executable_name() :: String.t()
   def get_executable_name do
     case get_current_platform() do
       :windows -> "raxol.exe"
@@ -116,19 +112,6 @@ defmodule Raxol.System.Platform do
         terminal: "iTerm.app"
       }
   """
-  @spec get_platform_info() :: %{
-          :name => :linux | :macos | :windows,
-          :version => String.t() | nil,
-          :architecture => String.t(),
-          :terminal => String.t(),
-          optional(:console_type) => String.t(),
-          optional(:distribution) => String.t(),
-          optional(:apple_silicon) => boolean(),
-          optional(:wayland) => boolean(),
-          optional(:windows_terminal) => boolean(),
-          optional(:wsl) => boolean(),
-          optional(:terminal_app) => String.t()
-        }
   def get_platform_info do
     platform = get_current_platform()
 
@@ -168,7 +151,6 @@ defmodule Raxol.System.Platform do
       iex> Platform.supports_feature?(:kitty_graphics)
       false
   """
-  @spec supports_feature?(atom()) :: boolean()
   def supports_feature?(feature) do
     case feature do
       # Features fully supported across all platforms
@@ -344,20 +326,6 @@ defmodule Raxol.System.Platform do
         capabilities: %{max_image_size: 100_000_000}
       }
   """
-  @spec detect_graphics_support() :: %{
-          :kitty_graphics => boolean(),
-          :sixel_graphics => boolean(),
-          :iterm2_graphics => boolean(),
-          :terminal_type => atom(),
-          :capabilities => %{
-            :max_image_size => non_neg_integer(),
-            :supports_animation => boolean(),
-            :supports_transparency => boolean(),
-            :supports_chunked_transmission => boolean(),
-            :max_image_width => non_neg_integer(),
-            :max_image_height => non_neg_integer()
-          }
-        }
   def detect_graphics_support do
     terminal_type = detect_terminal_type()
 

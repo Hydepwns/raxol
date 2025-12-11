@@ -26,8 +26,6 @@ defmodule Raxol.Core.Utils.TimerManager do
       # Send {:check_status, :database} every 5 seconds
       {:ok, ref} = TimerManager.start_interval({:check_status, :database}, 5000)
   """
-  @spec start_interval(timer_msg(), pos_integer()) ::
-          {:ok, :timer.tref()} | {:error, term()}
   def start_interval(message, interval_ms)
       when is_integer(interval_ms) and interval_ms > 0 do
     case :timer.send_interval(interval_ms, message) do
@@ -47,7 +45,6 @@ defmodule Raxol.Core.Utils.TimerManager do
       # Send {:retry, attempt_num} after 1 second
       ref = TimerManager.send_after({:retry, 1}, 1000)
   """
-  @spec send_after(timer_msg(), non_neg_integer()) :: reference()
   def send_after(message, delay_ms)
       when is_integer(delay_ms) and delay_ms >= 0 do
     Process.send_after(self(), message, delay_ms)
@@ -60,8 +57,6 @@ defmodule Raxol.Core.Utils.TimerManager do
 
       {:ok, cancelled} = TimerManager.cancel_timer(timer_ref)
   """
-  @spec cancel_timer(timer_ref() | {:ok, :timer.tref()}) ::
-          {:ok, boolean() | :ok}
   def cancel_timer(nil), do: {:ok, false}
 
   # Handle {:ok, tref()} from :timer.send_interval - tref is opaque, no guard
@@ -86,7 +81,6 @@ defmodule Raxol.Core.Utils.TimerManager do
 
       TimerManager.safe_cancel(timer_ref)
   """
-  @spec safe_cancel(timer_ref() | {:ok, :timer.tref()}) :: :ok
   def safe_cancel(nil), do: :ok
 
   # Handle {:ok, tref()} from :timer.send_interval - tref is opaque, no guard
@@ -113,7 +107,6 @@ defmodule Raxol.Core.Utils.TimerManager do
       # Cancel and remove a timer
       timers = TimerManager.remove_timer(state.timers, :heartbeat)
   """
-  @spec add_timer(map(), atom(), timer_type(), non_neg_integer()) :: map()
   def add_timer(timers, name, :interval, interval_ms) do
     # Cancel existing timer if present
     timers = remove_timer(timers, name)
@@ -132,7 +125,6 @@ defmodule Raxol.Core.Utils.TimerManager do
     Map.put(timers, name, ref)
   end
 
-  @spec remove_timer(map(), atom()) :: map()
   def remove_timer(timers, name) do
     case Map.get(timers, name) do
       nil ->
@@ -151,7 +143,6 @@ defmodule Raxol.Core.Utils.TimerManager do
 
       TimerManager.cancel_all_timers(state.timers)
   """
-  @spec cancel_all_timers(map()) :: :ok
   def cancel_all_timers(timers) when is_map(timers) do
     Enum.each(timers, fn {_name, ref} -> safe_cancel(ref) end)
     :ok
@@ -183,11 +174,6 @@ defmodule Raxol.Core.Utils.TimerManager do
       # First retry after 1 second, then 2, 4, 8, up to max 30 seconds
       delay = TimerManager.exponential_backoff(attempt, 1000, 30_000)
   """
-  @spec exponential_backoff(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: non_neg_integer()
   def exponential_backoff(attempt, base_ms, max_ms) do
     delay = (base_ms * :math.pow(2, attempt)) |> round()
     min(delay, max_ms)
@@ -201,7 +187,6 @@ defmodule Raxol.Core.Utils.TimerManager do
       # Add +/- 10% jitter to 5 second interval
       interval = TimerManager.add_jitter(5000, 0.1)
   """
-  @spec add_jitter(non_neg_integer(), float()) :: non_neg_integer()
   def add_jitter(interval_ms, jitter_factor \\ 0.1)
       when jitter_factor >= 0 and jitter_factor <= 1 do
     jitter = interval_ms * jitter_factor * (2 * :rand.uniform() - 1)

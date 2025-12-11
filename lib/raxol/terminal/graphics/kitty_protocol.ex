@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
   ## Supported Formats
 
   - PNG (with transparency)
-  - JPEG 
+  - JPEG
   - WebP
   - GIF (animation support)
   - Raw RGB/RGBA data
@@ -83,7 +83,6 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
   """
   defstruct next_image_id: 1, images: %{}
 
-  @spec new() :: %__MODULE__{}
   def new do
     %__MODULE__{}
   end
@@ -106,8 +105,6 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
       iex> KittyProtocol.transmit_image(png_data, %{format: :png, width: 100, height: 100})
       {:ok, "\\033_Ga=T,f=100,s=100,v=100,C=1,i=1;base64_data\\033\\\\"}
   """
-  @spec transmit_image(binary() | String.t(), map()) ::
-          {:ok, binary()} | {:error, term()}
   def transmit_image(image_data, options \\ %{}) do
     with {:ok, validated_options} <- validate_transmission_options(options),
          {:ok, processed_data} <-
@@ -136,7 +133,6 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
   - `{:ok, escape_sequence}` - Success with display command
   - `{:error, reason}` - Error with reason
   """
-  @spec display_image(image_id(), display_options()) :: {:ok, binary()}
   def display_image(image_id, options \\ %{}) do
     with {:ok, validated_options} <- validate_display_options(options) do
       control_data = build_display_control_data(image_id, validated_options)
@@ -157,7 +153,6 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
   - `{:ok, escape_sequence}` - Success with delete command
   - `{:error, reason}` - Error with reason
   """
-  @spec delete_image(image_id() | :all) :: {:ok, binary()} | {:error, term()}
   def delete_image(:all) do
     control_data = "a=d,d=A"
     escape_sequence = build_escape_sequence("d", control_data, "")
@@ -181,7 +176,6 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
   - `{:ok, escape_sequence}` - Query command to send to terminal
   - `{:error, reason}` - Error with reason
   """
-  @spec query_capabilities() :: {:ok, binary()}
   def query_capabilities do
     # Query graphics support and maximum transmission size
     control_data = "a=q,s=1,v=1,f=24,t=d,o=z"
@@ -202,8 +196,6 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
   - `{:ok, commands}` - List of commands to create animation
   - `{:error, reason}` - Error with reason
   """
-  @spec create_animation([binary()], map()) ::
-          {:ok, [binary()]} | {:error, term()}
   def create_animation(frames, options \\ %{}) when is_list(frames) do
     # milliseconds
     frame_delay = Map.get(options, :frame_delay, 100)
@@ -230,10 +222,9 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
   ## Returns
 
   - `{:ok, :supported}` - Terminal supports Kitty protocol
-  - `{:ok, :unsupported}` - Terminal does not support Kitty protocol  
+  - `{:ok, :unsupported}` - Terminal does not support Kitty protocol
   - `{:error, :unknown}` - Cannot determine terminal capabilities
   """
-  @spec detect_support() :: {:ok, :supported | :unsupported}
   def detect_support do
     case detect_terminal_type() do
       :kitty -> {:ok, :supported}

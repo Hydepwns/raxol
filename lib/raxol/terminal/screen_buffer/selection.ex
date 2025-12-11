@@ -16,8 +16,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Starts a new selection at the specified position.
   """
-  @spec start_selection(map(), non_neg_integer(), non_neg_integer()) ::
-          map()
   def start_selection(buffer, x, y) do
     %{buffer | selection: {x, y, x, y}}
   end
@@ -25,8 +23,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Extends the selection to the specified position.
   """
-  @spec extend_selection(map(), non_neg_integer(), non_neg_integer()) ::
-          map()
   def extend_selection(buffer, x, y) do
     case buffer.selection do
       {start_x, start_y, _, _} ->
@@ -40,7 +36,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Clears the current selection.
   """
-  @spec clear_selection(map()) :: map()
   def clear_selection(buffer) do
     %{buffer | selection: nil}
   end
@@ -48,7 +43,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Gets the current selection boundaries, normalized so start <= end.
   """
-  @spec get_selection(map()) :: selection()
   def get_selection(buffer) do
     case buffer.selection do
       nil -> nil
@@ -59,7 +53,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Checks if there is an active selection.
   """
-  @spec has_selection(map()) :: boolean()
   def has_selection(buffer) do
     buffer.selection != nil
   end
@@ -67,7 +60,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Checks if the specified position is within the current selection.
   """
-  @spec selected?(map(), non_neg_integer(), non_neg_integer()) :: boolean()
   def selected?(buffer, x, y) do
     case get_selection(buffer) do
       nil ->
@@ -88,8 +80,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Checks if a position is within the current selection.
   """
-  @spec position_in_selection?(map(), non_neg_integer(), non_neg_integer()) ::
-          boolean()
   def position_in_selection?(buffer, x, y) do
     case get_selection(buffer) do
       nil ->
@@ -118,7 +108,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Gets the selected text as a string.
   """
-  @spec get_selected_text(map()) :: String.t()
   def get_selected_text(buffer) do
     case get_selection(buffer) do
       nil ->
@@ -132,7 +121,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Gets the selected text as lines.
   """
-  @spec get_selected_lines(map()) :: list(String.t())
   def get_selected_lines(buffer) do
     case get_selection(buffer) do
       nil ->
@@ -146,7 +134,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Selects an entire line.
   """
-  @spec select_line(map(), non_neg_integer()) :: map()
   def select_line(buffer, y) when y >= 0 and y < buffer.height do
     %{buffer | selection: {0, y, buffer.width - 1, y}}
   end
@@ -156,7 +143,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Selects multiple lines.
   """
-  @spec select_lines(map(), non_neg_integer(), non_neg_integer()) :: map()
   def select_lines(buffer, start_y, end_y) do
     start_y = max(0, min(start_y, buffer.height - 1))
     end_y = max(0, min(end_y, buffer.height - 1))
@@ -166,7 +152,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Selects all content in the buffer.
   """
-  @spec select_all(map()) :: map()
   def select_all(buffer) do
     %{buffer | selection: {0, 0, buffer.width - 1, buffer.height - 1}}
   end
@@ -174,7 +159,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Selects a word at the given position.
   """
-  @spec select_word(map(), non_neg_integer(), non_neg_integer()) :: map()
   def select_word(buffer, x, y) when x >= 0 and y >= 0 and y < buffer.height do
     line = Core.get_line(buffer, y)
 
@@ -189,7 +173,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Expands selection to word boundaries.
   """
-  @spec expand_selection_to_word(map()) :: map()
   def expand_selection_to_word(buffer) do
     case buffer.selection do
       {x1, y1, x2, y2} ->

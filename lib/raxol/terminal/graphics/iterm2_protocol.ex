@@ -22,11 +22,11 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
 
       # Display an image from file
       ITerm2Protocol.display_image_file("/path/to/image.png")
-      
+
       # Display image with options
-      ITerm2Protocol.display_image_data(image_data, format: :png, 
+      ITerm2Protocol.display_image_data(image_data, format: :png,
                                         width: 200, height: 100)
-      
+
       # Check if terminal supports iTerm2 protocol
       ITerm2Protocol.supported?()
 
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
 
   Where arguments can include:
   - name: filename
-  - size: file size in bytes  
+  - size: file size in bytes
   - width: display width
   - height: display height
   - preserveAspectRatio: 0 or 1
@@ -71,7 +71,6 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
   - `true` if iTerm2 protocol is supported
   - `false` if not supported or unknown
   """
-  @spec supported?() :: boolean()
   def supported? do
     detect_iterm2_support() == :supported
   end
@@ -94,8 +93,6 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
       iex> ITerm2Protocol.display_image_file("/tmp/image.png")
       {:ok, "\\e]1337;File=name=aW1hZ2UucG5n;size=1024:base64data...\\a"}
   """
-  @spec display_image_file(String.t(), display_options()) ::
-          {:ok, binary()} | {:error, term()}
   def display_image_file(file_path, options \\ %{}) when is_binary(file_path) do
     case File.read(file_path) do
       {:ok, data} ->
@@ -140,8 +137,6 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
       iex> ITerm2Protocol.display_image_data(png_data, format: :png, width: 300)
       {:ok, "\\e]1337;File=width=300;inline=1:base64data...\\a"}
   """
-  @spec display_image_data(binary(), display_options()) ::
-          {:ok, binary()} | {:error, term()}
   def display_image_data(data, options \\ %{}) when is_binary(data) do
     cond do
       byte_size(data) == 0 ->
@@ -180,8 +175,6 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
 
   - `binary()` - Progress display sequence
   """
-  @spec create_progress_indicator(non_neg_integer(), pos_integer(), map()) ::
-          binary()
   def create_progress_indicator(bytes_sent, total_bytes, options \\ %{}) do
     percentage =
       if total_bytes > 0, do: round(bytes_sent / total_bytes * 100), else: 0
@@ -212,8 +205,6 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
   - `{:ok, sequence}` - Placeholder sequence
   - `{:error, reason}` - Error if invalid parameters
   """
-  @spec create_placeholder(String.t(), display_options()) ::
-          {:ok, binary()} | {:error, term()}
   def create_placeholder(identifier, options \\ %{})
       when is_binary(identifier) do
     if String.length(identifier) == 0 do
@@ -405,7 +396,6 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
 
   - `pos_integer()` - Maximum image size in bytes
   """
-  @spec get_max_image_size() :: pos_integer()
   def get_max_image_size do
     case detect_iterm2_support() do
       :supported -> @max_image_size
@@ -426,7 +416,6 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
 
   - `binary()` - Sequence to clear images
   """
-  @spec clear_images() :: binary()
   def clear_images do
     # iTerm2 doesn't have a direct "clear all images" command
     # This sends a form feed to clear the screen
@@ -448,7 +437,6 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
   - `:ok` - Image data is valid
   - `{:error, reason}` - Image data has issues
   """
-  @spec validate_image_data(binary(), map()) :: :ok | {:error, term()}
   def validate_image_data(data, _options \\ %{}) do
     cond do
       byte_size(data) == 0 ->

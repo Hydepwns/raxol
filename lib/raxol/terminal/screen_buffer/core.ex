@@ -47,8 +47,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Creates a new screen buffer with the specified dimensions.
   """
-  @spec new(non_neg_integer(), non_neg_integer()) :: t()
-  @spec new(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: t()
   def new(width, height, scrollback_limit \\ 1000) do
     width = validate_dimension(width, 80)
     height = validate_dimension(height, 24)
@@ -76,7 +74,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Resizes the buffer to new dimensions.
   """
-  @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
   def resize(buffer, new_width, new_height) do
     new_width = validate_dimension(new_width, buffer.width)
     new_height = validate_dimension(new_height, buffer.height)
@@ -103,25 +100,21 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Gets the buffer dimensions.
   """
-  @spec get_dimensions(map()) :: {non_neg_integer(), non_neg_integer()}
   def get_dimensions(%{width: width, height: height}), do: {width, height}
 
   @doc """
   Gets the buffer width.
   """
-  @spec get_width(map()) :: non_neg_integer()
   def get_width(%{width: width}), do: width
 
   @doc """
   Gets the buffer height.
   """
-  @spec get_height(map()) :: non_neg_integer()
   def get_height(%{height: height}), do: height
 
   @doc """
   Checks if coordinates are within buffer bounds.
   """
-  @spec within_bounds?(map(), integer(), integer()) :: boolean()
   def within_bounds?(%{width: width, height: height}, x, y) do
     x >= 0 and x < width and y >= 0 and y < height
   end
@@ -129,7 +122,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Gets a cell at the specified coordinates.
   """
-  @spec get_cell(map(), non_neg_integer(), non_neg_integer()) :: Cell.t() | nil
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
     if within_bounds?(buffer, x, y) do
       buffer.cells
@@ -143,7 +135,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Gets the character at the specified coordinates.
   """
-  @spec get_char(map(), non_neg_integer(), non_neg_integer()) :: String.t()
   def get_char(buffer, x, y) do
     case get_cell(buffer, x, y) do
       %Cell{char: char} -> char || " "
@@ -154,7 +145,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Gets a line of cells.
   """
-  @spec get_line(map(), non_neg_integer()) :: list(Cell.t())
   def get_line(buffer, y) when y >= 0 and y < buffer.height do
     Enum.at(buffer.cells, y, [])
   end
@@ -164,7 +154,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Clears the entire buffer.
   """
-  @spec clear(map()) :: map()
   def clear(buffer) do
     %{
       buffer
@@ -221,7 +210,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Converts buffer to legacy cell grid format for backward compatibility.
   """
-  @spec to_cell_grid(t()) :: list(list(Cell.t()))
   def to_cell_grid(buffer) do
     buffer.cells
   end

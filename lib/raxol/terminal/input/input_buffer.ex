@@ -20,7 +20,6 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Creates a new input buffer with default values.
   """
-  @spec new() :: t()
   def new do
     %__MODULE__{}
   end
@@ -28,7 +27,6 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Creates a new input buffer with custom max_size and overflow_mode.
   """
-  @spec new(non_neg_integer(), overflow_mode()) :: t()
   def new(max_size, overflow_mode) do
     %__MODULE__{
       max_size: max_size,
@@ -39,26 +37,22 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Gets the current contents of the buffer.
   """
-  @spec get_contents(t()) :: binary()
   def get_contents(%__MODULE__{contents: contents}), do: contents
 
   @doc """
   Gets the maximum size of the buffer.
   """
-  @spec max_size(t()) :: non_neg_integer()
   def max_size(%__MODULE__{max_size: max_size}), do: max_size
 
   @doc """
   Gets the overflow mode of the buffer.
   """
-  @spec overflow_mode(t()) :: overflow_mode()
   def overflow_mode(%__MODULE__{overflow_mode: overflow_mode}),
     do: overflow_mode
 
   @doc """
   Sets the contents of the buffer, handling overflow according to the buffer's mode.
   """
-  @spec set_contents(t(), binary()) :: t()
   def set_contents(%__MODULE__{} = buffer, new_contents) do
     processed_contents = handle_overflow(buffer, new_contents)
     %{buffer | contents: processed_contents}
@@ -67,7 +61,6 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Prepends data to the buffer.
   """
-  @spec prepend(t(), binary()) :: t()
   def prepend(
         %__MODULE__{
           contents: current_contents,
@@ -99,7 +92,6 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Appends data to the buffer.
   """
-  @spec append(t(), binary()) :: t()
   def append(%__MODULE__{contents: current_contents} = buffer, new_data) do
     combined_contents = current_contents <> new_data
     processed_contents = handle_overflow(buffer, combined_contents)
@@ -109,7 +101,6 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Clears the buffer contents.
   """
-  @spec clear(t()) :: t()
   def clear(%__MODULE__{} = buffer) do
     %{buffer | contents: ""}
   end
@@ -117,20 +108,17 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Gets the current size (byte count) of the buffer contents.
   """
-  @spec size(t()) :: non_neg_integer()
   def size(%__MODULE__{contents: contents}), do: byte_size(contents)
 
   @doc """
   Checks if the buffer is empty.
   """
-  @spec empty?(t()) :: boolean()
   def empty?(%__MODULE__{contents: ""}), do: true
   def empty?(%__MODULE__{}), do: false
 
   @doc """
   Sets the maximum size of the buffer.
   """
-  @spec set_max_size(t(), non_neg_integer()) :: t()
   def set_max_size(%__MODULE__{} = buffer, new_max_size) do
     updated_buffer = %{buffer | max_size: new_max_size}
     processed_contents = handle_overflow(updated_buffer, buffer.contents)
@@ -140,7 +128,6 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Sets the overflow mode of the buffer.
   """
-  @spec set_overflow_mode(t(), overflow_mode()) :: t()
   def set_overflow_mode(%__MODULE__{} = buffer, new_overflow_mode) do
     %{buffer | overflow_mode: new_overflow_mode}
   end
@@ -148,7 +135,6 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Removes the last character from the buffer (backspace).
   """
-  @spec backspace(t()) :: t()
   def backspace(%__MODULE__{contents: ""} = buffer), do: buffer
 
   def backspace(%__MODULE__{contents: contents} = buffer) do
@@ -160,7 +146,6 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Removes the first character from the buffer.
   """
-  @spec delete_first(t()) :: t()
   def delete_first(%__MODULE__{contents: ""} = buffer), do: buffer
 
   def delete_first(%__MODULE__{contents: contents} = buffer) do
@@ -172,7 +157,6 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Inserts a character at the specified position.
   """
-  @spec insert_at(t(), non_neg_integer(), binary()) :: t()
   def insert_at(%__MODULE__{contents: contents} = buffer, position, char) do
     graphemes = String.graphemes(contents)
     length = length(graphemes)
@@ -190,7 +174,6 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Replaces a character at the specified position.
   """
-  @spec replace_at(t(), non_neg_integer(), binary()) :: t()
   def replace_at(%__MODULE__{contents: contents} = buffer, position, char) do
     graphemes = String.graphemes(contents)
     length = length(graphemes)

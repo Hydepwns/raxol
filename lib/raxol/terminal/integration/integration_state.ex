@@ -44,7 +44,6 @@ defmodule Raxol.Terminal.Integration.State do
   @doc """
   Creates a new integration state with the given options.
   """
-  @spec new(any()) :: t()
   def new(opts \\ [])
 
   def new(%{buffer_manager: bm, cursor_manager: cm, renderer: r} = params) do
@@ -100,7 +99,6 @@ defmodule Raxol.Terminal.Integration.State do
   @doc """
   Creates a new integration state with specified width, height, and config.
   """
-  @spec new(integer(), integer(), map()) :: t()
   def new(width, height, config)
       when is_integer(width) and is_integer(height) and is_map(config) do
     # Create a new integration state with specific dimensions
@@ -120,7 +118,6 @@ defmodule Raxol.Terminal.Integration.State do
   @doc """
   Updates the integration state with new content.
   """
-  @spec update(t(), String.t()) :: t()
   def update(%__MODULE__{} = state, content) when is_binary(content) do
     # Process content through IO system
     try do
@@ -147,12 +144,10 @@ defmodule Raxol.Terminal.Integration.State do
     end
   end
 
-  @spec update(t(), nil) :: t()
   def update(%__MODULE__{} = state, nil) do
     state
   end
 
-  @spec update(t(), keyword()) :: t()
   def update(%__MODULE__{} = state, kw) when is_list(kw) do
     Enum.reduce(kw, state, fn {k, v}, acc -> Map.put(acc, k, v) end)
   end
@@ -160,7 +155,6 @@ defmodule Raxol.Terminal.Integration.State do
   @doc """
   Gets the visible content from the current window.
   """
-  @spec get_visible_content(t()) :: list()
   def get_visible_content(%__MODULE__{} = state) do
     case get_window_buffer_id() do
       {:ok, buffer_id} ->
@@ -202,7 +196,6 @@ defmodule Raxol.Terminal.Integration.State do
   @doc """
   Gets the current scroll position.
   """
-  @spec get_scroll_position(t()) :: integer()
   def get_scroll_position(%__MODULE__{} = state) do
     Raxol.Terminal.Buffer.Scroll.get_position(state.scroll_buffer)
   end
@@ -210,7 +203,6 @@ defmodule Raxol.Terminal.Integration.State do
   @doc """
   Gets the current memory usage.
   """
-  @spec get_memory_usage(t()) :: integer()
   def get_memory_usage(%__MODULE__{} = state) do
     # Return the stored memory usage from the buffer manager
     case state.buffer_manager do
@@ -222,7 +214,6 @@ defmodule Raxol.Terminal.Integration.State do
   @doc """
   Renders the current state.
   """
-  @spec render(t()) :: t()
   def render(%__MODULE__{} = state) do
     case get_active_window_renderer_id() do
       {:ok, renderer_id} ->
@@ -266,7 +257,6 @@ defmodule Raxol.Terminal.Integration.State do
   @doc """
   Updates the renderer configuration.
   """
-  @spec update_renderer_config(t(), map()) :: t()
   def update_renderer_config(%__MODULE__{} = state, config) do
     RenderServer.update_config(state.renderer, config)
     state
@@ -275,7 +265,6 @@ defmodule Raxol.Terminal.Integration.State do
   @doc """
   Resizes the terminal.
   """
-  @spec resize(t(), integer(), integer()) :: t()
   def resize(%__MODULE__{} = state, width, height) do
     # Ensure minimum dimensions
     safe_width = max(width, 1)
@@ -308,7 +297,6 @@ defmodule Raxol.Terminal.Integration.State do
   @doc """
   Cleans up resources.
   """
-  @spec cleanup(t()) :: :ok
   def cleanup(%__MODULE__{} = state) do
     # Clean up components only if they exist
     _ = cleanup_buffer_manager(state.buffer_manager)

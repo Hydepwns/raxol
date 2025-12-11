@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
   Combines all OSC handler functionality including window, clipboard, color, and selection operations.
   """
 
-  alias Raxol.Terminal.{Emulator, Clipboard, Colors}
+  alias Raxol.Terminal.{Clipboard, Colors}
   require Raxol.Core.Runtime.Log
 
   # Alias for backward compatibility
@@ -12,8 +12,6 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     handle(emulator, command, data)
   end
 
-  @spec handle(Emulator.t(), non_neg_integer(), String.t()) ::
-          {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle(emulator, command, data) do
     case get_command_group(command) do
       {:window, cmd} ->
@@ -115,11 +113,9 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     Handles clipboard-related OSC commands.
     """
 
-    alias Raxol.Terminal.{Emulator, Clipboard}
+    alias Raxol.Terminal.Clipboard
     require Raxol.Core.Runtime.Log
 
-    @spec handle_9(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_9(emulator, data) do
       case data do
         "?" ->
@@ -135,8 +131,6 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
       end
     end
 
-    @spec handle_52(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_52(emulator, data) do
       case parse_52_command(data) do
         {:query, :clipboard} ->
@@ -195,11 +189,9 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     Handles color-related OSC commands.
     """
 
-    alias Raxol.Terminal.{Emulator, Colors}
+    alias Raxol.Terminal.Colors
     require Raxol.Core.Runtime.Log
 
-    @spec handle_10(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_10(emulator, data) do
       case data do
         "?" -> handle_color_query(emulator, 10, &Colors.get_foreground/1)
@@ -207,8 +199,6 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
       end
     end
 
-    @spec handle_11(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_11(emulator, data) do
       case data do
         "?" -> handle_color_query(emulator, 11, &Colors.get_background/1)
@@ -216,8 +206,6 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
       end
     end
 
-    @spec handle_17(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_17(emulator, data) do
       case data do
         "?" ->
@@ -228,8 +216,6 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
       end
     end
 
-    @spec handle_19(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_19(emulator, data) do
       case data do
         "?" ->
@@ -272,8 +258,6 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     Parses color specifications from OSC commands.
     """
 
-    @spec parse(String.t()) ::
-            {:ok, {integer(), integer(), integer()}} | {:error, atom()}
     def parse(color_spec) do
       cond do
         String.starts_with?(color_spec, "rgb:") ->
@@ -374,11 +358,8 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     Handles color palette OSC commands.
     """
 
-    alias Raxol.Terminal.Emulator
     require Raxol.Core.Runtime.Log
 
-    @spec handle_4(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_4(emulator, data) do
       case parse_palette_command(data) do
         {:set, index, color} ->
@@ -499,39 +480,29 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     Handles window-related OSC commands.
     """
 
-    alias Raxol.Terminal.Emulator
     require Raxol.Core.Runtime.Log
 
-    @spec handle_0(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_0(emulator, data) do
       # Set icon name and window title
       emulator = %{emulator | icon_name: data, window_title: data}
       {:ok, emulator}
     end
 
-    @spec handle_1(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_1(emulator, data) do
       # Set icon name
       {:ok, %{emulator | icon_name: data}}
     end
 
-    @spec handle_2(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_2(emulator, data) do
       # Set window title
       {:ok, %{emulator | window_title: data}}
     end
 
-    @spec handle_7(map(), binary()) :: {:ok, map()}
     def handle_7(emulator, data) do
       # Set current directory (for terminal tabs)
       {:ok, %{emulator | current_directory: data}}
     end
 
-    @spec handle_8(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_8(emulator, data) do
       # Set hyperlink
       case parse_hyperlink(data) do
@@ -544,8 +515,6 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
       end
     end
 
-    @spec handle_1337(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_1337(emulator, data) do
       # iTerm2 proprietary escape sequences
       handle_iterm2_command(emulator, data)
@@ -579,11 +548,8 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     Handles selection-related OSC commands.
     """
 
-    alias Raxol.Terminal.Emulator
     require Raxol.Core.Runtime.Log
 
-    @spec handle_51(Emulator.t(), String.t()) ::
-            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
     def handle_51(emulator, data) do
       case data do
         "?" ->
@@ -610,7 +576,6 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     Parses font specifications from OSC commands.
     """
 
-    @spec parse(String.t()) :: {:ok, map()} | {:error, atom()}
     def parse(font_spec) do
       case parse_font_components(font_spec) do
         {:ok, components} -> build_font_map(components)
@@ -676,7 +641,6 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     Parses hyperlink specifications from OSC 8 commands.
     """
 
-    @spec parse(String.t()) :: {:ok, String.t(), map()} | {:error, atom()}
     def parse(data) do
       case String.split(data, ";", parts: 2) do
         [params, url] ->
@@ -710,7 +674,6 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     Parses selection specifications from OSC commands.
     """
 
-    @spec parse(String.t()) :: {:ok, map()} | {:error, atom()}
     def parse(data) do
       case String.split(data, ";") do
         ["start", x1, y1, "end", x2, y2] ->

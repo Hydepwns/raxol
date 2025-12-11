@@ -25,7 +25,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Creates a new input handler with default values.
   """
-  @spec new() :: t()
   def new do
     %__MODULE__{}
   end
@@ -33,7 +32,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Processes regular keyboard input.
   """
-  @spec process_keyboard(t(), String.t()) :: t()
   def process_keyboard(%__MODULE__{} = handler, key) when is_binary(key) do
     %{handler | buffer: handler.buffer <> key}
   end
@@ -41,7 +39,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Processes special keys like arrow keys, function keys, etc.
   """
-  @spec process_special_key(t(), atom()) :: t()
   def process_special_key(%__MODULE__{} = handler, key) do
     sequence = Raxol.Terminal.Input.SpecialKeys.atom_to_escape_sequence(key)
     %{handler | buffer: sequence}
@@ -50,7 +47,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Updates modifier key state.
   """
-  @spec update_modifier(t(), String.t(), boolean()) :: t()
   def update_modifier(%__MODULE__{} = handler, modifier, state) do
     modifier_key =
       case modifier do
@@ -68,7 +64,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Processes key with current modifier state.
   """
-  @spec process_key_with_modifiers(t(), String.t()) :: t()
   def process_key_with_modifiers(%__MODULE__{} = handler, key) do
     sequence =
       Raxol.Terminal.Input.SpecialKeys.key_with_modifiers_to_escape_sequence(
@@ -82,7 +77,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Processes mouse events.
   """
-  @spec process_mouse(t(), tuple()) :: t()
   def process_mouse(%__MODULE__{} = handler, {action, button, x, y}) do
     handle_mouse_event(handler.mouse_enabled, handler, action, button, x, y)
   end
@@ -118,7 +112,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Sets mouse enabled state.
   """
-  @spec set_mouse_enabled(t(), boolean()) :: t()
   def set_mouse_enabled(%__MODULE__{} = handler, enabled) do
     %{handler | mouse_enabled: enabled}
   end
@@ -126,7 +119,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Sets input mode.
   """
-  @spec set_mode(t(), atom()) :: t()
   def set_mode(%__MODULE__{} = handler, mode) do
     %{handler | mode: mode}
   end
@@ -134,7 +126,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Gets current input mode.
   """
-  @spec get_mode(t()) :: atom()
   def get_mode(%__MODULE__{} = handler) do
     handler.mode
   end
@@ -142,7 +133,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Adds current buffer to history if not empty.
   """
-  @spec add_to_history(t()) :: t()
   def add_to_history(%__MODULE__{} = handler) do
     add_buffer_to_history(handler.buffer, handler)
   end
@@ -157,7 +147,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Gets history entry at specified index.
   """
-  @spec get_history_entry(t(), integer()) :: t()
   def get_history_entry(%__MODULE__{} = handler, index) do
     history_length = length(handler.input_history)
 
@@ -178,7 +167,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Moves to next (newer) history entry.
   """
-  @spec next_history_entry(t()) :: {t(), String.t()}
   def next_history_entry(%__MODULE__{} = handler) do
     handle_next_history(handler.history_index, handler.input_history, handler)
   end
@@ -198,7 +186,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Moves to previous (older) history entry.
   """
-  @spec previous_history_entry(t()) :: {t(), String.t()}
   def previous_history_entry(%__MODULE__{} = handler) do
     history_length = length(handler.input_history)
     handle_previous_history(handler.history_index, history_length, handler)
@@ -228,7 +215,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Clears the input buffer.
   """
-  @spec clear_buffer(t()) :: t()
   def clear_buffer(%__MODULE__{} = handler) do
     %{handler | buffer: ""}
   end
@@ -236,7 +222,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Checks if buffer is empty.
   """
-  @spec buffer_empty?(t()) :: boolean()
   def buffer_empty?(%__MODULE__{} = handler) do
     handler.buffer == ""
   end
@@ -244,7 +229,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Gets buffer contents.
   """
-  @spec get_buffer_contents(t()) :: String.t()
   def get_buffer_contents(%__MODULE__{} = handler) do
     handler.buffer
   end
@@ -252,8 +236,6 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Handles printable character input for the terminal emulator.
   """
-  @spec handle_printable_character(any(), integer(), map(), atom() | nil) ::
-          {any(), any()}
   def handle_printable_character(
         emulator,
         char_codepoint,

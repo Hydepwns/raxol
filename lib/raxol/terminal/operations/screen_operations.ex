@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.Buffer.Eraser
   alias Raxol.Terminal.Buffer.LineOperations
-  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
+  @type emulator :: map()
 
   def clear_screen(emulator) do
     buffer = ScreenManager.get_screen_buffer(emulator)
@@ -176,7 +176,6 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
   @doc """
   Erases the entire display (1-arity version).
   """
-  @spec erase_display(EmulatorStruct.t()) :: EmulatorStruct.t()
   def erase_display(emulator) do
     erase_display(emulator, 0)
   end
@@ -184,7 +183,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
   @doc """
   Erases the display based on the specified mode.
   """
-  @spec erase_display(EmulatorStruct.t(), integer()) :: EmulatorStruct.t()
+  @spec erase_display(emulator(), integer()) :: emulator()
   def erase_display(emulator, mode) do
     buffer = ScreenManager.get_screen_buffer(emulator)
 
@@ -211,15 +210,14 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
   @doc """
   Erases from cursor to end of line (1-arity version).
   """
-  @spec erase_in_line(EmulatorStruct.t()) :: EmulatorStruct.t()
   def erase_in_line(emulator) do
     erase_in_line(emulator, %{})
   end
 
   @doc """
-  Erases the display based on the specified mode.
+  Erases in display based on the specified mode.
   """
-  @spec erase_in_display(EmulatorStruct.t(), integer()) :: EmulatorStruct.t()
+  @spec erase_in_display(emulator(), integer()) :: emulator()
   def erase_in_display(emulator, mode) do
     buffer = ScreenManager.get_screen_buffer(emulator)
     {x, y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
@@ -255,7 +253,6 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
   @doc """
   Erases from cursor to end of display (1-arity version).
   """
-  @spec erase_in_display(EmulatorStruct.t()) :: EmulatorStruct.t()
   def erase_in_display(emulator) do
     erase_in_display(emulator, 0)
   end

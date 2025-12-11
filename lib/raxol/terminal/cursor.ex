@@ -5,8 +5,6 @@ defmodule Raxol.Terminal.Cursor do
   and managing cursor state.
   """
 
-  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-
   defstruct [:position, :shape, :visible, :saved_position]
 
   @type t :: %__MODULE__{
@@ -19,7 +17,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Creates a new cursor with default settings.
   """
-  @spec new() :: t()
   def new do
     %__MODULE__{
       position: {0, 0},
@@ -32,7 +29,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor up by the specified number of lines.
   """
-  @spec move_up(map(), non_neg_integer()) :: map()
   def move_up(emulator, lines) do
     {x, y} = emulator.cursor.position
     new_y = max(0, y - lines)
@@ -42,7 +38,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor down by the specified number of lines.
   """
-  @spec move_down(map(), non_neg_integer()) :: map()
   def move_down(emulator, lines) do
     {x, y} = emulator.cursor.position
     new_y = min(emulator.height - 1, y + lines)
@@ -52,7 +47,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor right by the specified number of columns.
   """
-  @spec move_right(map(), non_neg_integer()) :: map()
   def move_right(emulator, cols) do
     {x, y} = emulator.cursor.position
     new_x = min(emulator.width - 1, x + cols)
@@ -62,7 +56,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor left by the specified number of columns.
   """
-  @spec move_left(map(), non_neg_integer()) :: map()
   def move_left(emulator, cols) do
     {x, y} = emulator.cursor.position
     new_x = max(0, x - cols)
@@ -72,8 +65,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor down and to the beginning of the line.
   """
-  @spec move_down_and_home(map(), non_neg_integer()) ::
-          map()
   def move_down_and_home(emulator, lines) do
     emulator
     |> move_down(lines)
@@ -83,8 +74,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor up and to the beginning of the line.
   """
-  @spec move_up_and_home(map(), non_neg_integer()) ::
-          map()
   def move_up_and_home(emulator, lines) do
     emulator
     |> move_up(lines)
@@ -94,8 +83,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor to the specified column.
   """
-  @spec move_to_column(map(), non_neg_integer()) ::
-          map()
   def move_to_column(emulator, col) do
     {_, y} = emulator.cursor.position
     new_x = max(0, min(emulator.width - 1, col))
@@ -105,7 +92,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor to the specified position.
   """
-  @spec move_to(map(), {non_neg_integer(), non_neg_integer()}) :: map()
   def move_to(%{cursor: nil} = emulator, {row, col}) do
     new_x = max(0, min(emulator.width - 1, col))
     new_y = max(0, min(emulator.height - 1, row))
@@ -121,7 +107,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor visibility.
   """
-  @spec set_visible(map(), boolean()) :: map()
   def set_visible(emulator, visible) do
     %{emulator | cursor: %{emulator.cursor | visible: visible}}
   end
@@ -129,7 +114,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor forward by the specified number of columns.
   """
-  @spec move_forward(map(), non_neg_integer()) :: map()
   def move_forward(emulator, cols) do
     move_right(emulator, cols)
   end
@@ -137,7 +121,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor backward by the specified number of columns.
   """
-  @spec move_backward(map(), non_neg_integer()) :: map()
   def move_backward(emulator, cols) do
     move_left(emulator, cols)
   end
@@ -145,8 +128,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor to the specified row and column.
   """
-  @spec move_to(map(), non_neg_integer(), non_neg_integer()) ::
-          map()
   def move_to(%{cursor: nil} = emulator, row, col) do
     move_to(emulator, {row, col})
   end
@@ -162,7 +143,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Gets the current cursor position.
   """
-  @spec get_position(map()) :: {non_neg_integer(), non_neg_integer()}
   def get_position(emulator) do
     emulator.cursor.position
   end
@@ -170,7 +150,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor shape.
   """
-  @spec set_shape(map(), non_neg_integer()) :: map()
   def set_shape(emulator, shape) do
     %{emulator | cursor: %{emulator.cursor | shape: shape}}
   end
@@ -178,12 +157,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor to the specified position, taking into account the screen width and height.
   """
-  @spec move_to(
-          t(),
-          {non_neg_integer(), non_neg_integer()},
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: t()
   def move_to(cursor, {x, y}, width, height) do
     x = max(0, min(x, width - 1))
     y = max(0, min(y, height - 1))
@@ -195,7 +168,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Checks if the cursor is visible.
   """
-  @spec visible?(map()) :: boolean()
   def visible?(emulator) do
     emulator.cursor.visible
   end
@@ -203,7 +175,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor visibility.
   """
-  @spec set_visibility(map(), boolean()) :: map()
   def set_visibility(emulator, visible) do
     set_visible(emulator, visible)
   end
@@ -211,7 +182,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor style.
   """
-  @spec set_style(map(), map()) :: map()
   def set_style(emulator, style) do
     %{emulator | cursor: %{emulator.cursor | style: style}}
   end
@@ -219,8 +189,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor position.
   """
-  @spec set_position(map(), {non_neg_integer(), non_neg_integer()}) ::
-          map()
   def set_position(%{cursor: nil} = emulator, {col, row}) do
     # Create a cursor if it doesn't exist
     new_x = max(0, min(emulator.width - 1, col))
@@ -235,7 +203,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor color.
   """
-  @spec set_color(map(), any()) :: map()
   def set_color(emulator, color) do
     %{emulator | cursor: %{emulator.cursor | color: color}}
   end
@@ -243,7 +210,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor blink state.
   """
-  @spec set_blink(map(), boolean()) :: map()
   def set_blink(emulator, blink) do
     %{emulator | cursor: %{emulator.cursor | blink: blink}}
   end
@@ -251,7 +217,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Resets the cursor color to default.
   """
-  @spec reset_color(map()) :: map()
   def reset_color(emulator) do
     %{emulator | cursor: %{emulator.cursor | color: nil}}
   end
@@ -259,7 +224,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Gets the cursor style.
   """
-  @spec get_style(map()) :: map()
   def get_style(emulator) do
     emulator.cursor.style || %{}
   end
@@ -267,7 +231,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor relative to its current position.
   """
-  @spec move_relative(t(), integer(), integer()) :: t()
   def move_relative(%__MODULE__{position: {x, y}} = cursor, dx, dy) do
     new_x = max(0, x + dx)
     new_y = max(0, y + dy)
@@ -277,7 +240,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Saves the current cursor position.
   """
-  @spec save(t()) :: t()
   def save(%__MODULE__{position: position} = cursor) do
     %{cursor | saved_position: position}
   end
@@ -285,7 +247,6 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Restores the cursor to a previously saved position.
   """
-  @spec restore(t(), t()) :: t()
   def restore(cursor, saved_cursor) do
     case saved_cursor.saved_position do
       nil -> cursor

@@ -112,7 +112,6 @@ defmodule Raxol.UI.Components.Input.SelectList do
   @doc """
   Initializes the SelectList component state from the given props.
   """
-  @spec init(map()) :: map()
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
     validate_props!(props)
@@ -158,7 +157,6 @@ defmodule Raxol.UI.Components.Input.SelectList do
   @doc """
   Updates the SelectList component state in response to messages or prop changes.
   """
-  @spec update(term(), map()) :: {map(), any()} | {map(), nil}
   @impl Raxol.UI.Components.Base.Component
   def update({:update_props, new_props}, state) do
     validate_props!(new_props)
@@ -280,7 +278,6 @@ defmodule Raxol.UI.Components.Input.SelectList do
   @doc """
   Handles events for the SelectList component, such as keypresses, mouse events, and context changes.
   """
-  @spec handle_event(map(), term(), map()) :: {map(), any()} | {map(), nil}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(%{__struct__: _} = event, context, state) do
     handle_event(Map.from_struct(event), context, state)
@@ -351,7 +348,6 @@ defmodule Raxol.UI.Components.Input.SelectList do
   @doc """
   Renders the SelectList component using the current state and context.
   """
-  @spec render(map(), map()) :: any()
   @impl Raxol.UI.Components.Base.Component
   def render(state, context) do
     Renderer.render(state, context)

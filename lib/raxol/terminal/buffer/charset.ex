@@ -4,8 +4,6 @@ defmodule Raxol.Terminal.Buffer.Charset do
   This module handles character set designations, G-sets, and single shifts.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
-
   @type charset_type ::
           :us_ascii | :dec_graphics | :uk | :ibm_pc | :dec_alternate
   @type designator :: :g0 | :g1 | :g2 | :g3
@@ -33,7 +31,6 @@ defmodule Raxol.Terminal.Buffer.Charset do
   @doc """
   Initializes a new charset state with default values.
   """
-  @spec init() :: t()
   def init do
     %__MODULE__{
       g0: :us_ascii,
@@ -66,7 +63,6 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> Charset.get_designated(buffer, :g0)
       :us_ascii
   """
-  @spec designate(ScreenBuffer.t(), atom(), atom()) :: ScreenBuffer.t()
   def designate(buffer, slot, charset) when slot in [:g0, :g1, :g2, :g3] do
     # This function is deprecated - use Raxol.Terminal.ScreenBuffer.Attributes instead
     _ = {slot, charset}
@@ -91,7 +87,6 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> Charset.get_designated(buffer, :g0)
       :us_ascii
   """
-  @spec get_designated(ScreenBuffer.t(), atom()) :: atom()
   def get_designated(buffer, slot) when slot in [:g0, :g1, :g2, :g3] do
     Map.get(buffer.charset_state, slot)
   end
@@ -115,7 +110,6 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> Charset.get_current_g_set(buffer)
       :g1
   """
-  @spec invoke_g_set(ScreenBuffer.t(), atom()) :: ScreenBuffer.t()
   def invoke_g_set(buffer, slot) when slot in [:g0, :g1, :g2, :g3] do
     # This function is deprecated - use Raxol.Terminal.ScreenBuffer.Attributes instead
     _ = slot
@@ -139,7 +133,6 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> Charset.get_current_g_set(buffer)
       :g0
   """
-  @spec get_current_g_set(ScreenBuffer.t()) :: atom()
   def get_current_g_set(buffer) do
     buffer.charset_state.gl
   end
@@ -163,7 +156,6 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> Charset.get_single_shift(buffer)
       :g1
   """
-  @spec apply_single_shift(ScreenBuffer.t(), atom()) :: ScreenBuffer.t()
   def apply_single_shift(buffer, slot) when slot in [:g0, :g1, :g2, :g3] do
     # This function is deprecated - use Raxol.Terminal.ScreenBuffer.Attributes instead
     _ = slot
@@ -187,7 +179,6 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> Charset.get_single_shift(buffer)
       nil
   """
-  @spec get_single_shift(ScreenBuffer.t()) :: atom() | nil
   def get_single_shift(buffer) do
     buffer.charset_state.single_shift
   end
@@ -210,7 +201,6 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> Charset.get_current_g_set(buffer)
       :g0
   """
-  @spec reset(ScreenBuffer.t()) :: ScreenBuffer.t()
   def reset(buffer) do
     # This function is deprecated - use Raxol.Terminal.ScreenBuffer.Attributes instead
     buffer
@@ -234,7 +224,6 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> Charset.translate_char(buffer, "A")
       "A"
   """
-  @spec translate_char(ScreenBuffer.t(), String.t()) :: String.t()
   def translate_char(buffer, char) do
     charset = get_active_charset(buffer)
     apply_charset_translation(charset, char)

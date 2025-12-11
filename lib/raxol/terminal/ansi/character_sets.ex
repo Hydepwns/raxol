@@ -181,7 +181,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @doc """
     Creates a new character set state with default values.
     """
-    @spec new() :: charset_state()
     def new do
       %{
         active: :us_ascii,
@@ -198,7 +197,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @doc """
     Sets the G0 character set.
     """
-    @spec set_g0(charset_state(), charset()) :: charset_state()
     def set_g0(state, charset) do
       %{state | g0: charset}
       |> update_active()
@@ -207,7 +205,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @doc """
     Sets the G1 character set.
     """
-    @spec set_g1(charset_state(), charset()) :: charset_state()
     def set_g1(state, charset) do
       %{state | g1: charset}
       |> update_active()
@@ -216,7 +213,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @doc """
     Sets the G2 character set.
     """
-    @spec set_g2(charset_state(), charset()) :: charset_state()
     def set_g2(state, charset) do
       %{state | g2: charset}
       |> update_active()
@@ -225,7 +221,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @doc """
     Sets the G3 character set.
     """
-    @spec set_g3(charset_state(), charset()) :: charset_state()
     def set_g3(state, charset) do
       %{state | g3: charset}
       |> update_active()
@@ -234,7 +229,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @doc """
     Sets the GL (graphics left) designation.
     """
-    @spec set_gl(charset_state(), :g0 | :g1 | :g2 | :g3) :: charset_state()
     def set_gl(state, gset) do
       %{state | gl: gset}
       |> update_active()
@@ -243,7 +237,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @doc """
     Sets the GR (graphics right) designation.
     """
-    @spec set_gr(charset_state(), :g0 | :g1 | :g2 | :g3) :: charset_state()
     def set_gr(state, gset) do
       %{state | gr: gset}
       |> update_active()
@@ -252,8 +245,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @doc """
     Sets a single shift to the specified G-set.
     """
-    @spec set_single_shift(charset_state(), :g0 | :g1 | :g2 | :g3 | charset()) ::
-            charset_state()
     def set_single_shift(state, gset_or_charset) do
       # Handle both gset references and direct charset names
       charset =
@@ -274,7 +265,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @doc """
     Clears the single shift.
     """
-    @spec clear_single_shift(charset_state()) :: charset_state()
     def clear_single_shift(state) do
       %{state | single_shift: nil}
       |> update_active()
@@ -283,7 +273,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @doc """
     Gets the current active character set.
     """
-    @spec get_active(charset_state()) :: charset()
     def get_active(%{active: active}), do: active
     def get_active(_), do: :us_ascii
 
@@ -301,7 +290,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @doc """
     Gets the single shift character set if any.
     """
-    @spec get_single_shift(charset_state()) :: charset() | nil
     def get_single_shift(%{single_shift: single_shift}), do: single_shift
 
     @doc """

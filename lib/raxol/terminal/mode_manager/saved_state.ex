@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
   This includes saving and restoring cursor positions, screen states, and other terminal modes.
   """
 
-  alias Raxol.Terminal.{Emulator, Cursor, ScreenBuffer}
+  alias Raxol.Terminal.{Cursor, ScreenBuffer}
   alias Raxol.Terminal.ANSI.TerminalState
 
   @doc """
@@ -14,7 +14,6 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
   - Screen state (main/alternate)
   - Current modes
   """
-  @spec save_state(map()) :: map()
   def save_state(emulator) do
     # Save cursor state
     cursor_state = %{
@@ -71,7 +70,6 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
   @doc """
   Restores the previously saved terminal state.
   """
-  @spec restore_state(Emulator.t()) :: Emulator.t()
   def restore_state(emulator) do
     case TerminalState.restore(emulator.terminal_state) do
       %{current_state: nil} ->

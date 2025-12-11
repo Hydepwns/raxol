@@ -19,7 +19,6 @@ defmodule Raxol.UI.Components.Progress.Component do
   @doc """
   Initializes the progress component state.
   """
-  @spec init(props()) :: state()
   def init(props) do
     %{
       value: Map.get(props, :value, 0),
@@ -33,7 +32,6 @@ defmodule Raxol.UI.Components.Progress.Component do
   @doc """
   Updates the component state.
   """
-  @spec update(term(), state()) :: state()
   def update({:set_value, value}, state) do
     %{state | value: min(value, state.max)}
   end
@@ -51,7 +49,6 @@ defmodule Raxol.UI.Components.Progress.Component do
   @doc """
   Handles component events.
   """
-  @spec handle_event(term(), props(), state()) :: {:ok, state()}
   def handle_event({:click, _}, _props, state) do
     {:ok, state}
   end
@@ -65,7 +62,6 @@ defmodule Raxol.UI.Components.Progress.Component do
   @doc """
   Renders the progress component.
   """
-  @spec render(state(), props()) :: binary()
   def render(%{type: :bar} = state, props) do
     render_bar(state, props)
   end
@@ -85,7 +81,6 @@ defmodule Raxol.UI.Components.Progress.Component do
   @doc """
   Returns available spinner types.
   """
-  @spec spinner_types() :: list(atom())
   def spinner_types do
     [:dots, :line, :circle, :square, :arrow, :bounce, :pulse]
   end

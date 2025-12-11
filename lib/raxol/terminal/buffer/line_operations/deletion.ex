@@ -7,13 +7,11 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
   @doc """
   Delete lines from a buffer.
   """
-  @spec delete_lines(map(), integer()) :: map()
   def delete_lines(buffer, count) do
     {_x, y} = buffer.cursor_position
     delete_lines(buffer, y, count)
   end
 
-  @spec delete_lines(map(), integer(), integer()) :: map()
   def delete_lines(buffer, start_y, count) do
     alias Raxol.Terminal.ScreenBuffer.DataAdapter
 
@@ -34,13 +32,10 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
     end)
   end
 
-  @spec delete_lines(map(), integer(), integer(), integer(), integer()) :: map()
   def delete_lines(buffer, start_y, count, scroll_top, scroll_bottom) do
     delete_lines_in_region(buffer, start_y, count, scroll_top, scroll_bottom)
   end
 
-  @spec delete_lines(map(), integer(), integer(), integer(), integer(), map()) ::
-          map()
   def delete_lines(buffer, start_y, count, scroll_top, scroll_bottom, _style) do
     # delete_lines_in_region already fills with empty lines
     delete_lines_in_region(buffer, start_y, count, scroll_top, scroll_bottom)
@@ -49,13 +44,6 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
   @doc """
   Delete lines within a scroll region.
   """
-  @spec delete_lines_in_region(
-          map(),
-          integer(),
-          integer(),
-          integer(),
-          integer()
-        ) :: map()
   def delete_lines_in_region(buffer, start_y, count, top, bottom) do
     alias Raxol.Terminal.ScreenBuffer.DataAdapter
 

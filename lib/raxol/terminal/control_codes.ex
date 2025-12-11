@@ -269,7 +269,7 @@ defmodule Raxol.Terminal.ControlCodes do
     emulator
   end
 
-  @spec handle_ris(Emulator.t()) :: %Emulator{}
+  @spec handle_ris(Emulator.t()) :: Emulator.t()
   # ESC c - Reset to Initial State
   def handle_ris(emulator) do
     Raxol.Core.Runtime.Log.info("RIS (Reset to Initial State) received")
@@ -304,7 +304,7 @@ defmodule Raxol.Terminal.ControlCodes do
     |> handle_cr()
   end
 
-  @spec handle_hts(%Emulator{}) :: %Emulator{}
+  @spec handle_hts(Emulator.t()) :: Emulator.t()
   # ESC H - Horizontal Tabulation Set
   def handle_hts(emulator) do
     # Set a tab stop at the current cursor column.

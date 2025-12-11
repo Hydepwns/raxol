@@ -5,9 +5,9 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   """
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.ScreenBuffer
 
-  @type emulator :: Emulator.Struct.t()
+  # Use map() to accept any emulator-like struct
+  @type emulator :: map()
 
   @doc """
   Gets the active buffer from the emulator based on active_buffer_type.
@@ -41,7 +41,6 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   @doc """
   Switches to the main screen buffer.
   """
-  @spec switch_to_main_buffer(emulator()) :: emulator()
   def switch_to_main_buffer(emulator) do
     %{emulator | active_buffer_type: :main}
   end
@@ -49,7 +48,6 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   @doc """
   Switches to the alternate screen buffer.
   """
-  @spec switch_to_alternate_buffer(emulator()) :: emulator()
   def switch_to_alternate_buffer(emulator) do
     %{emulator | active_buffer_type: :alternate}
   end
@@ -57,7 +55,6 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   @doc """
   Clears the entire screen and scrollback buffer.
   """
-  @spec clear_entire_screen_and_scrollback(emulator()) :: emulator()
   def clear_entire_screen_and_scrollback(emulator) do
     emulator = Raxol.Terminal.Operations.ScreenOperations.clear_screen(emulator)
     %{emulator | scrollback_buffer: []}
@@ -66,7 +63,6 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   @doc """
   Writes data to the output buffer.
   """
-  @spec write_to_output(emulator(), binary()) :: emulator()
   def write_to_output(emulator, data) do
     Raxol.Terminal.OutputManager.write(emulator, data)
   end
@@ -74,7 +70,6 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   @doc """
   Clears the scrollback buffer.
   """
-  @spec clear_scrollback(emulator()) :: emulator()
   def clear_scrollback(emulator) do
     %{emulator | scrollback_buffer: []}
   end
@@ -82,7 +77,6 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   @doc """
   Switches to the alternate screen buffer.
   """
-  @spec switch_to_alternate_screen(emulator()) :: emulator()
   def switch_to_alternate_screen(emulator) do
     switch_to_alternate_buffer(emulator)
   end
@@ -90,7 +84,6 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   @doc """
   Switches to the normal (main) screen buffer.
   """
-  @spec switch_to_normal_screen(emulator()) :: emulator()
   def switch_to_normal_screen(emulator) do
     switch_to_main_buffer(emulator)
   end

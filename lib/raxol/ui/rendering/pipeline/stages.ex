@@ -9,7 +9,6 @@ defmodule Raxol.UI.Rendering.Pipeline.Stages do
   This function processes the render operation through various stages
   to produce the final rendered output.
   """
-  @spec execute_render_stages(tuple(), any(), module(), any(), any()) :: any()
   def execute_render_stages(operation, tree, renderer_module, context, options) do
     # Process through the pipeline stages
     tree
@@ -151,7 +150,6 @@ defmodule Raxol.UI.Rendering.Pipeline.Stages do
   @doc """
   Executes a simplified render for performance-critical paths.
   """
-  @spec fast_render(any(), module()) :: any()
   def fast_render(tree, renderer_module) do
     tree
     |> validate_tree()
@@ -161,7 +159,6 @@ defmodule Raxol.UI.Rendering.Pipeline.Stages do
   @doc """
   Executes only the layout stage.
   """
-  @spec layout_only(any()) :: any()
   def layout_only(tree) do
     tree
     |> validate_tree()
@@ -171,7 +168,6 @@ defmodule Raxol.UI.Rendering.Pipeline.Stages do
   @doc """
   Executes only the style application stage.
   """
-  @spec style_only(any()) :: any()
   def style_only(tree) do
     tree
     |> validate_tree()

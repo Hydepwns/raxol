@@ -45,7 +45,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   alias Raxol.Terminal.ScreenBuffer.{
     EraseOperations,
-    MemoryUtils,
     RegionOperations,
     BehaviourImpl,
     Operations,
@@ -99,7 +98,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Validates and normalizes the input dimensions to ensure they are valid.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec new(integer(), integer(), integer()) :: map()
   def new(width, height, scrollback_limit \\ 1000) do
     width = validate_dimension(width, 80)
     height = validate_dimension(height, 24)
@@ -196,13 +194,11 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Gets all lines from the buffer as a list of lines.
   """
-  @spec get_lines(t()) :: list(list(Cell.t()))
   def get_lines(%__MODULE__{cells: cells}), do: cells
   def get_lines(_), do: []
 
   # === Content Operations ===
 
-  @spec write_char(t(), non_neg_integer(), non_neg_integer(), String.t()) :: t()
   def write_char(buffer, x, y, char) do
     write_char(buffer, x, y, char, buffer.default_style)
   end
@@ -211,13 +207,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Writes a character at the specified position with optional styling.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec write_char(
-          t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          String.t(),
-          TextFormatting.text_style() | nil
-        ) :: t()
   def write_char(buffer, x, y, char, style) when x >= 0 and y >= 0 do
     case {x < buffer.width, y < buffer.height} do
       {true, true} ->
@@ -229,8 +218,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
     end
   end
 
-  @spec write_string(t(), non_neg_integer(), non_neg_integer(), String.t()) ::
-          t()
   def write_string(buffer, x, y, string),
     do: write_string(buffer, x, y, string, nil)
 
@@ -238,13 +225,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Writes a string starting at the specified position.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec write_string(
-          t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          String.t(),
-          map() | nil
-        ) :: t()
   def write_string(buffer, x, y, string, style) when x >= 0 and y >= 0 do
     case {x < buffer.width, y < buffer.height} do
       {true, true} ->
@@ -277,7 +257,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Gets a specific cell from the buffer.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec get_cell(map(), non_neg_integer(), non_neg_integer()) :: map()
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
     cell =
       if x < buffer.width and y < buffer.height do
@@ -303,7 +282,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Gets the content of the buffer as a string representation.
   """
-  @spec get_content(map()) :: String.t()
   def get_content(buffer) do
     # Convert cells to string representation for compatibility with tests
     case buffer.cells do
@@ -342,7 +320,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Puts a line of cells at the specified y position.
   """
-  @spec put_line(t(), non_neg_integer(), list(Cell.t())) :: t()
   def put_line(buffer, y, line) when y >= 0 and y < buffer.height do
     new_cells = List.replace_at(buffer.cells || [], y, line)
     %{buffer | cells: new_cells}
@@ -381,7 +358,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Returns {buffer, scrolled_lines} where scrolled_lines are the lines that were scrolled out.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec scroll_up(map(), non_neg_integer()) :: {map(), list(list(Cell.t()))}
   def scroll_up(buffer, lines) when lines > 0 do
     {top, bottom} = get_effective_scroll_region(buffer)
 
@@ -419,7 +395,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Scrolls the buffer content down by the specified number of lines.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec scroll_down(t(), non_neg_integer()) :: t()
   def scroll_down(buffer, lines) when lines > 0 do
     {top, bottom} = get_effective_scroll_region(buffer)
 
@@ -552,7 +527,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Gets the top boundary of the scroll region.
   """
-  @spec get_scroll_top(t()) :: non_neg_integer()
   def get_scroll_top(buffer) do
     case buffer.scroll_region do
       nil -> 0
@@ -563,7 +537,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Gets the bottom boundary of the scroll region.
   """
-  @spec get_scroll_bottom(t()) :: non_neg_integer()
   def get_scroll_bottom(buffer) do
     case buffer.scroll_region do
       nil -> buffer.height - 1
@@ -590,7 +563,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Gets the dimensions of the buffer.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec get_dimensions(t()) :: {non_neg_integer(), non_neg_integer()}
   def get_dimensions(buffer) do
     {buffer.width, buffer.height}
   end
@@ -599,7 +571,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Gets the width of the buffer.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec get_width(t()) :: non_neg_integer()
   def get_width(buffer) do
     buffer.width
   end
@@ -608,7 +579,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Gets the height of the buffer.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec get_height(t()) :: non_neg_integer()
   def get_height(buffer) do
     buffer.height
   end
@@ -689,7 +659,12 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   def in_selection?(buffer, x, y), do: Selection.selected?(buffer, x, y)
 
-  def get_selection_boundaries(buffer), do: buffer.selection
+  def get_selection_boundaries(buffer) do
+    case buffer.selection do
+      {sx, sy, ex, ey} -> {{sx, sy}, {ex, ey}}
+      nil -> nil
+    end
+  end
 
   defdelegate get_text_in_region(buffer, start_x, start_y, end_x, end_y),
     to: Attributes
@@ -717,7 +692,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Clears the scroll region, resetting to full screen.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec clear_scroll_region(t()) :: t()
   def clear_scroll_region(buffer) do
     %{buffer | scroll_region: nil}
   end
@@ -727,8 +701,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Returns {0, height-1} if no region is set.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec get_scroll_region_boundaries(t()) ::
-          {non_neg_integer(), non_neg_integer()}
   def get_scroll_region_boundaries(buffer) do
     case buffer.scroll_region do
       nil -> {0, buffer.height - 1}
@@ -741,7 +713,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Gets a specific line from the buffer.
   """
-  @spec get_line(t(), non_neg_integer()) :: list(Cell.t())
   def get_line(buffer, y) when y >= 0 and y < buffer.height do
     case buffer.cells do
       nil -> []
@@ -754,7 +725,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Gets the cell at the specified position in the buffer.
   """
-  @spec get_cell_at(t(), non_neg_integer(), non_neg_integer()) :: map()
   def get_cell_at(buffer, x, y) do
     get_cell(buffer, x, y)
   end
@@ -763,7 +733,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Checks if the buffer is empty.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec empty?(t()) :: boolean()
   def empty?(buffer) do
     case buffer.cells do
       nil ->
@@ -782,7 +751,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Gets the current scroll position within the scrollback.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec get_scroll_position(t()) :: non_neg_integer()
   def get_scroll_position(buffer) do
     buffer.scroll_position || 0
   end
@@ -913,7 +881,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Erases the entire screen.
   """
-  @spec erase_screen(t()) :: t()
   def erase_screen(buffer) do
     # EraseOperations.erase_all always returns %__MODULE__{}
     EraseOperations.erase_all(buffer)
@@ -995,9 +962,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Gets the estimated memory usage of the screen buffer.
   """
-  @spec get_memory_usage(t()) :: non_neg_integer()
-  defdelegate get_memory_usage(buffer), to: MemoryUtils
-
   def erase_in_line(buffer, position, type) do
     try do
       EraseOperations.erase_in_line(buffer, position, type)

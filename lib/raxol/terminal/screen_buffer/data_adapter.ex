@@ -19,7 +19,6 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   Transforms `buffer.cells` (list of lists) into a `:lines` map
   where keys are row indices and values are cell lists.
   """
-  @spec cells_to_lines(map()) :: map()
   def cells_to_lines(buffer) when is_map(buffer) do
     case Map.get(buffer, :cells) do
       nil ->
@@ -45,7 +44,6 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
 
   Transforms `:lines` map back into `buffer.cells` (list of lists).
   """
-  @spec lines_to_cells(map(), map()) :: map()
   def lines_to_cells(buffer, lines_map)
       when is_map(buffer) and is_map(lines_map) do
     height = Map.get(buffer, :height, 24)
@@ -72,7 +70,6 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   - A modified buffer map
   - A tuple where the second element is the modified buffer map
   """
-  @spec with_lines_format(map(), (map() -> map() | tuple())) :: map() | tuple()
   def with_lines_format(buffer, operation_fn)
       when is_map(buffer) and is_function(operation_fn, 1) do
     # Convert to lines format
@@ -114,7 +111,6 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   @doc """
   Check if buffer uses cells format (list of lists).
   """
-  @spec has_cells_format?(map()) :: boolean()
   def has_cells_format?(buffer) when is_map(buffer) do
     case Map.get(buffer, :cells) do
       cells when is_list(cells) -> true
@@ -125,7 +121,6 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   @doc """
   Check if buffer uses lines format (map).
   """
-  @spec has_lines_format?(map()) :: boolean()
   def has_lines_format?(buffer) when is_map(buffer) do
     case Map.get(buffer, :lines) do
       lines when is_map(lines) -> true
@@ -136,7 +131,6 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   @doc """
   Get a line from buffer regardless of format.
   """
-  @spec get_line(map(), integer(), list()) :: list()
   def get_line(buffer, y, default) when is_map(buffer) and is_integer(y) do
     cond do
       has_lines_format?(buffer) ->
@@ -157,7 +151,6 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   @doc """
   Set a line in buffer regardless of format.
   """
-  @spec set_line(map(), integer(), list()) :: map()
   def set_line(buffer, y, line)
       when is_map(buffer) and is_integer(y) and is_list(line) do
     cond do
@@ -196,7 +189,6 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   @doc """
   Create empty cells structure for initialization.
   """
-  @spec create_empty_cells(integer(), integer(), map()) :: list(list())
   def create_empty_cells(width, height, default_style) do
     empty_line = create_empty_line(width, default_style)
     List.duplicate(empty_line, height)
@@ -205,7 +197,6 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   @doc """
   Create an empty line with the specified width and style.
   """
-  @spec create_empty_line(integer(), map()) :: list()
   def create_empty_line(width, default_style) do
     blank_cell = %Cell{
       char: " ",

@@ -59,20 +59,19 @@ defmodule Raxol.UI.Components.Modal do
             # input_value: nil, # Removed: Merged into form_state for prompt
             form_state: %{fields: [], focus_index: 0}
 
-  # Example field: %{id: :my_input, type: :text_input, label: "Name:", value: "", props: %{}, validate: ~r/.+/, error: nil}
+  # Example field: %{id: :my_input, type: :text_input, label: "Name:",
+  #   value: "", props: %{}, validate: ~r/.+/, error: nil}
 
   # --- Component Behaviour Callbacks ---
 
   @doc "Initializes the Modal component state from props."
   @impl Raxol.UI.Components.Base.Component
-  @spec init(map()) :: map()
   def init(props) do
     Core.init(props)
   end
 
   @doc "Updates the Modal component state in response to messages. Handles show/hide, button clicks, and form updates."
   @impl Raxol.UI.Components.Base.Component
-  @spec update(term(), map()) :: {map(), list()}
   def update(msg, state) do
     Raxol.Core.Runtime.Log.debug(
       "Modal #{Map.get(state, :id, nil)} received message: #{inspect(msg)}"
@@ -147,7 +146,6 @@ defmodule Raxol.UI.Components.Modal do
   end
 
   @impl Raxol.UI.Components.Base.Component
-  @spec handle_event(term(), map(), map()) :: {map(), list()}
   def handle_event(event, %{} = _props, state) do
     Raxol.Core.Runtime.Log.debug(
       "Modal #{Map.get(state, :id, nil)} received event: #{inspect(event)} with state.type: #{inspect(state.type)}"
@@ -180,7 +178,6 @@ defmodule Raxol.UI.Components.Modal do
   # --- Render Logic ---
 
   @impl Raxol.UI.Components.Base.Component
-  @spec render(map(), map()) :: any()
   def render(state, %{} = _props) do
     case state.visible do
       true -> Rendering.render_modal_content(state)
@@ -192,7 +189,6 @@ defmodule Raxol.UI.Components.Modal do
 
   # Simplified
   @doc "Creates props for an alert modal."
-  @spec alert(any(), any(), any(), Keyword.t()) :: Keyword.t()
   def alert(id, title, content, opts \\ []) do
     props =
       Keyword.merge(
@@ -213,7 +209,6 @@ defmodule Raxol.UI.Components.Modal do
 
   # Simplified
   @doc "Creates props for a confirmation modal."
-  @spec confirm(any(), any(), any(), any(), any(), Keyword.t()) :: Keyword.t()
   def confirm(
         id,
         title,
@@ -239,7 +234,6 @@ defmodule Raxol.UI.Components.Modal do
 
   # Simplified
   @doc "Creates props for a prompt modal."
-  @spec prompt(any(), any(), any(), any(), any(), Keyword.t()) :: Keyword.t()
   def prompt(
         id,
         title,
@@ -277,7 +271,6 @@ defmodule Raxol.UI.Components.Modal do
   `%{id: :atom, type: :text_input | :checkbox | :dropdown, label: "string", value: initial_value, props: keyword_list, options: list, validate: regex | function}`
   (options only for dropdown)
   """
-  @spec form(any(), any(), list(), any(), any(), Keyword.t()) :: Keyword.t()
   def form(
         id,
         title,
@@ -306,7 +299,6 @@ defmodule Raxol.UI.Components.Modal do
   No special setup needed for Modal.
   """
   @impl true
-  @spec mount(map()) :: {map(), list()}
   def mount(state), do: {state, []}
 
   @doc """
@@ -314,6 +306,5 @@ defmodule Raxol.UI.Components.Modal do
   No cleanup needed for Modal.
   """
   @impl true
-  @spec unmount(map()) :: map()
   def unmount(state), do: state
 end

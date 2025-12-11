@@ -28,7 +28,6 @@ defmodule Raxol.UI.Layout.LayoutUtils do
       iex> LayoutUtils.apply_padding(space, padding)
       %{x: 20, y: 15, width: 80, height: 40}
   """
-  @spec apply_padding(map(), map()) :: map()
   def apply_padding(space, padding) do
     %{
       x: space.x + padding.left,
@@ -58,14 +57,13 @@ defmodule Raxol.UI.Layout.LayoutUtils do
 
       iex> LayoutUtils.parse_padding(10)
       %{top: 10, right: 10, bottom: 10, left: 10}
-      
+
       iex> LayoutUtils.parse_padding({5, 10})
       %{top: 5, right: 10, bottom: 5, left: 10}
-      
+
       iex> LayoutUtils.parse_padding({1, 2, 3, 4})
       %{top: 1, right: 2, bottom: 3, left: 4}
   """
-  @spec parse_padding(number() | tuple() | String.t() | any()) :: map()
   def parse_padding(padding) when is_number(padding) do
     %{top: padding, right: padding, bottom: padding, left: padding}
   end
@@ -128,7 +126,6 @@ defmodule Raxol.UI.Layout.LayoutUtils do
 
   Clamped value within the specified bounds.
   """
-  @spec clamp(number(), number(), number()) :: number()
   def clamp(value, min, _max) when value < min, do: min
   def clamp(value, _min, max) when value > max, do: max
   def clamp(value, _min, _max), do: value
@@ -145,7 +142,6 @@ defmodule Raxol.UI.Layout.LayoutUtils do
 
   Remaining available space (minimum 0).
   """
-  @spec available_space(number(), number()) :: number()
   def available_space(total, used) when is_number(total) and is_number(used) do
     max(0, total - used)
   end

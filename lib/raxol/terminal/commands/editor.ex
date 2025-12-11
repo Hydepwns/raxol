@@ -3,61 +3,25 @@ defmodule Raxol.Terminal.Commands.Editor do
   Handles editor-related terminal commands.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.{LineEditor, CharEditor, Eraser}
-  alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Emulator
 
-  @spec insert_lines(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
   def insert_lines(buffer, row, count, default_style) do
     LineEditor.insert_lines(buffer, row, count, default_style)
   end
 
-  @spec delete_lines(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
   def delete_lines(buffer, row, count, default_style) do
     LineEditor.delete_lines(buffer, row, count, default_style)
   end
 
-  @spec insert_chars(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
   def insert_chars(buffer, row, col, count, default_style) do
     CharEditor.insert_characters(buffer, row, col, count, default_style)
   end
 
-  @spec delete_chars(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
   def delete_chars(buffer, row, col, count, default_style) do
     CharEditor.delete_characters(buffer, row, col, count, default_style)
   end
 
-  @spec erase_chars(
-          map(),
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          any()
-        ) ::
-          map()
   def erase_chars(buffer, row, col, count, default_style) do
     # Erase 'count' characters starting at {col, row} by replacing them with spaces.
     # Ensure coordinates and count are within bounds.
@@ -68,12 +32,6 @@ defmodule Raxol.Terminal.Commands.Editor do
     Eraser.clear_region(buffer, col, row, count, 1, default_style)
   end
 
-  @spec clear_screen(
-          Emulator.t(),
-          integer(),
-          {non_neg_integer(), non_neg_integer()},
-          map()
-        ) :: Emulator.t()
   def clear_screen(emulator, mode, cursor_pos, default_style) do
     buffer = Emulator.get_screen_buffer(emulator)
     {cursor_x, cursor_y} = cursor_pos
@@ -111,12 +69,6 @@ defmodule Raxol.Terminal.Commands.Editor do
     end
   end
 
-  @spec clear_line(
-          map(),
-          integer(),
-          {non_neg_integer(), non_neg_integer()},
-          any()
-        ) :: map()
   def clear_line(emulator, mode, cursor_pos, default_style) do
     buffer = Emulator.get_screen_buffer(emulator)
     {cursor_x, cursor_y} = cursor_pos

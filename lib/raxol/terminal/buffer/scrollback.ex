@@ -5,13 +5,11 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   including adding, retrieving, and clearing scrollback content.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
+  # ScreenBuffer and Cell aliases removed - not currently used
 
   @doc """
   Adds a line to the scrollback buffer.
   """
-  @spec add_line(ScreenBuffer.t(), list(Cell.t())) :: ScreenBuffer.t()
   def add_line(buffer, line) when is_list(line) do
     scrollback = [line | buffer.scrollback]
     scrollback = trim_scrollback(scrollback, buffer.scrollback_limit)
@@ -23,7 +21,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Adds multiple lines to the scrollback buffer.
   """
-  @spec add_lines(ScreenBuffer.t(), list(list(Cell.t()))) :: ScreenBuffer.t()
   def add_lines(buffer, lines) when is_list(lines) do
     scrollback = lines ++ buffer.scrollback
     scrollback = trim_scrollback(scrollback, buffer.scrollback_limit)
@@ -35,7 +32,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Gets a specific line from the scrollback buffer.
   """
-  @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t()) | nil
   def get_line(buffer, index) when index >= 0 do
     buffer.scrollback
     |> Enum.reverse()
@@ -47,8 +43,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Gets lines from the scrollback buffer.
   """
-  @spec get_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
-          list(list(Cell.t()))
   def get_lines(buffer, start, count) when start >= 0 and count > 0 do
     buffer.scrollback
     |> Enum.reverse()
@@ -60,7 +54,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Gets the total number of lines in the scrollback buffer.
   """
-  @spec size(ScreenBuffer.t()) :: non_neg_integer()
   def size(buffer) do
     length(buffer.scrollback)
   end
@@ -68,7 +61,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Clears the scrollback buffer.
   """
-  @spec clear(ScreenBuffer.t()) :: ScreenBuffer.t()
   def clear(buffer) do
     %{buffer | scrollback: []}
   end
@@ -76,7 +68,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Sets the scrollback limit.
   """
-  @spec set_limit(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def set_limit(buffer, limit) when limit >= 0 do
     scrollback = trim_scrollback(buffer.scrollback, limit)
     %{buffer | scrollback: scrollback, scrollback_limit: limit}
@@ -87,7 +78,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Gets the current scrollback limit.
   """
-  @spec get_limit(ScreenBuffer.t()) :: non_neg_integer()
   def get_limit(buffer) do
     buffer.scrollback_limit
   end
@@ -95,7 +85,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Checks if the scrollback buffer is full.
   """
-  @spec full?(ScreenBuffer.t()) :: boolean()
   def full?(buffer) do
     length(buffer.scrollback) >= buffer.scrollback_limit
   end
@@ -103,7 +92,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Gets the oldest line in the scrollback buffer.
   """
-  @spec get_oldest_line(ScreenBuffer.t()) :: list(Cell.t()) | nil
   def get_oldest_line(buffer) do
     List.last(buffer.scrollback)
   end
@@ -111,7 +99,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Gets the newest line in the scrollback buffer.
   """
-  @spec get_newest_line(ScreenBuffer.t()) :: list(Cell.t()) | nil
   def get_newest_line(buffer) do
     List.first(buffer.scrollback)
   end
@@ -139,7 +126,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Returns a new scrollback buffer with default settings.
   """
-  @spec new() :: t()
   def new do
     %__MODULE__{}
   end
@@ -147,7 +133,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Gets the memory usage of the scrollback buffer.
   """
-  @spec get_memory_usage(t()) :: non_neg_integer()
   def get_memory_usage(%__MODULE__{} = scrollback) do
     # Estimate memory usage based on number of lines and average line length
     total_cells =
@@ -162,7 +147,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Cleans up the scrollback buffer.
   """
-  @spec cleanup(t()) :: t()
   def cleanup(%__MODULE__{} = scrollback) do
     %{scrollback | lines: []}
   end

@@ -46,7 +46,6 @@ defmodule Raxol.UI.Components.Button do
   )
   ```
   """
-  @spec new(String.t(), Keyword.t()) :: map()
   def new(label, opts \\ []) do
     # Extract options with defaults
     on_click = Keyword.get(opts, :on_click)
@@ -78,7 +77,6 @@ defmodule Raxol.UI.Components.Button do
 
   This is typically called by the renderer, not directly by users.
   """
-  @spec render(map()) :: any()
   def render(button) do
     %Raxol.Core.Renderer.Element{
       tag: :button,
@@ -198,7 +196,6 @@ defmodule Raxol.UI.Components.Button do
 
   Executes the on_click callback if the button is not disabled.
   """
-  @spec handle_click(map()) :: :ok | {:error, :disabled}
   def handle_click(%{disabled: true}), do: {:error, :disabled}
 
   def handle_click(%{on_click: nil}), do: :ok

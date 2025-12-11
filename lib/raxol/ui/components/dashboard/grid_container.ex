@@ -12,13 +12,10 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   @default_rows 12
   @default_gap 1
 
-  @spec default_cols() :: integer()
   def default_cols, do: @default_cols
 
-  @spec default_rows() :: integer()
   def default_rows, do: @default_rows
 
-  @spec default_gap() :: integer()
   def default_gap, do: @default_gap
 
   @doc """
@@ -68,12 +65,6 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     )
   end
 
-  @spec calculate_widget_bounds(map(), any()) :: %{
-          x: integer(),
-          y: integer(),
-          width: integer(),
-          height: integer()
-        }
   @doc """
   Calculates the absolute bounds for a widget within a grid layout.
 
@@ -179,7 +170,6 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     %{x: 0, y: 0, width: 10, height: 10}
   end
 
-  @spec get_cell_dimensions(any()) :: {integer(), integer()}
   @doc """
   Calculates the dimensions of a single cell in the grid.
 

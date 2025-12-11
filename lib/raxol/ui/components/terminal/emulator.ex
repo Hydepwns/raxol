@@ -16,7 +16,6 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   Initializes a new terminal emulator component state.
   Accepts an optional map of options, currently supporting `:width` and `:height`.
   """
-  @spec init(map()) :: map()
   def init(opts \\ %{}) do
     width = Map.get(opts, :width)
     height = Map.get(opts, :height)
@@ -38,7 +37,6 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   Processes input and updates terminal state by delegating to IOServer.
   Returns a tuple `{updated_state, output_string}`.
   """
-  @spec process_input(term(), emulator_state()) :: {emulator_state(), term()}
   def process_input(input, %{state: current_state} = state) do
     # Wrap input in the expected event format
     event = %{type: :key, key: input}
@@ -58,8 +56,6 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   This ensures that the terminal's internal buffers and state are correctly
   adjusted while preserving existing content and history where possible.
   """
-  @spec handle_resize({integer(), integer()}, emulator_state()) ::
-          emulator_state()
   def handle_resize({width, height}, %{state: current_state} = state) do
     # Delegate resize to State
     updated_state = State.resize(current_state, width, height)
@@ -69,7 +65,6 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   @doc """
   Renders the current terminal state.
   """
-  @spec render(emulator_state()) :: emulator_state()
   def render(%{state: current_state} = state) do
     # Delegate rendering to State
     updated_state = State.render(current_state)
@@ -79,7 +74,6 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   @doc """
   Cleans up resources when the component is destroyed.
   """
-  @spec cleanup(emulator_state()) :: :ok
   def cleanup(%{state: current_state}) do
     State.cleanup(current_state)
   end

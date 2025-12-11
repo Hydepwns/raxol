@@ -25,7 +25,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
   @doc """
   Initializes a new cursor state with default values.
   """
-  @spec init() :: t()
   def init do
     %__MODULE__{
       position: {0, 0},
@@ -55,7 +54,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.get_position(buffer)
       {10, 5}
   """
-  @spec set_position(map(), non_neg_integer(), non_neg_integer()) :: map()
   def set_position(buffer, x, y) do
     case buffer do
       %{cursor: cursor} ->
@@ -87,8 +85,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.get_position(buffer)
       {0, 0}
   """
-  @spec get_position(ScreenBuffer.t() | map()) ::
-          {non_neg_integer(), non_neg_integer()}
   def get_position(%{cursor: %{position: position}}), do: position
   def get_position(%{cursor_position: position}), do: position
   def get_position(_buffer), do: {0, 0}
@@ -112,7 +108,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.visible?(buffer)
       false
   """
-  @spec set_visibility(ScreenBuffer.t(), boolean()) :: ScreenBuffer.t()
   def set_visibility(buffer, visible) do
     %{buffer | cursor_visible: visible}
   end
@@ -134,7 +129,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.visible?(buffer)
       true
   """
-  @spec visible?(ScreenBuffer.t() | t()) :: boolean()
   def visible?(%ScreenBuffer{} = buffer) do
     buffer.cursor_visible
   end
@@ -162,7 +156,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.get_style(buffer)
       :underline
   """
-  @spec set_style(ScreenBuffer.t(), atom()) :: ScreenBuffer.t()
   def set_style(buffer, style) do
     Map.put(buffer, :cursor_style, style)
   end
@@ -184,7 +177,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.get_style(buffer)
       :block
   """
-  @spec get_style(ScreenBuffer.t()) :: atom()
   def get_style(buffer) do
     buffer.cursor.style
   end
@@ -208,7 +200,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.blinking?(buffer)
       false
   """
-  @spec set_blink(ScreenBuffer.t(), boolean()) :: ScreenBuffer.t()
   def set_blink(buffer, blink) do
     Map.put(buffer, :cursor_blink, blink)
   end
@@ -230,7 +221,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.blinking?(buffer)
       true
   """
-  @spec blinking?(ScreenBuffer.t() | t()) :: boolean()
   def blinking?(%ScreenBuffer{} = _buffer) do
     # ScreenBuffer doesn't have cursor blink state, default to false
     false
@@ -259,7 +249,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.get_position(buffer)
       {0, 0}  # Cursor stays at top
   """
-  @spec move_up(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def move_up(buffer, lines) do
     {x, y} = buffer.cursor.position
     new_y = max(0, y - lines)
@@ -285,7 +274,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.get_position(buffer)
       {0, 2}
   """
-  @spec move_down(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def move_down(buffer, lines) do
     {x, y} = buffer.cursor.position
     new_y = min(buffer.height - 1, y + lines)
@@ -311,7 +299,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.get_position(buffer)
       {2, 0}
   """
-  @spec move_forward(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def move_forward(buffer, columns) do
     {x, y} = buffer.cursor.position
     new_x = min(buffer.width - 1, x + columns)
@@ -337,7 +324,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.get_position(buffer)
       {0, 0}  # Cursor stays at left edge
   """
-  @spec move_backward(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def move_backward(buffer, columns) do
     {x, y} = buffer.cursor.position
     new_x = max(0, x - columns)
@@ -363,8 +349,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.get_position(buffer)
       {10, 5}
   """
-  @spec move_to(ScreenBuffer.t(), {non_neg_integer(), non_neg_integer()}) ::
-          ScreenBuffer.t()
   def move_to(buffer, {x, y}) do
     x = max(0, min(buffer.width - 1, x))
     y = max(0, min(buffer.height - 1, y))
@@ -374,11 +358,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
   @doc """
   Sets the cursor position on the ScreenBuffer struct.
   """
-  @spec set_cursor_position(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: ScreenBuffer.t()
   def set_cursor_position(buffer, x, y) do
     %{buffer | cursor_position: {x, y}}
   end
@@ -386,8 +365,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
   @doc """
   Gets the cursor position from the ScreenBuffer struct.
   """
-  @spec get_cursor_position(ScreenBuffer.t()) ::
-          {non_neg_integer(), non_neg_integer()} | nil
   def get_cursor_position(buffer) do
     buffer.cursor_position
   end

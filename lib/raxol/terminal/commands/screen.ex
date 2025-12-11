@@ -12,7 +12,9 @@ defmodule Raxol.Terminal.Commands.Screen do
 
   require Raxol.Core.Runtime.Log
 
-  @spec clear_screen(map(), 0 | 1 | 2 | 3) :: map()
+  # Use map() to accept any emulator-like struct
+  @type emulator :: map()
+
   def clear_screen(emulator, mode) do
     buffer = Emulator.get_screen_buffer(emulator)
     {y, x} = Emulator.get_cursor_position(emulator)
@@ -43,7 +45,6 @@ defmodule Raxol.Terminal.Commands.Screen do
     end
   end
 
-  @spec clear_line(map(), integer()) :: map()
   def clear_line(emulator, mode) do
     buffer = Emulator.get_screen_buffer(emulator)
 
@@ -99,7 +100,6 @@ defmodule Raxol.Terminal.Commands.Screen do
     Emulator.update_active_buffer(emulator, new_buffer)
   end
 
-  @spec insert_lines(Emulator.t(), integer()) :: Emulator.t()
   def insert_lines(emulator, count) do
     {cursor_y, _} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
     buffer = Emulator.get_screen_buffer(emulator)
@@ -132,7 +132,6 @@ defmodule Raxol.Terminal.Commands.Screen do
     end
   end
 
-  @spec delete_lines(Emulator.t(), integer()) :: Emulator.t()
   def delete_lines(emulator, count) do
     {cursor_y, _} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
     buffer = Emulator.get_screen_buffer(emulator)
@@ -165,7 +164,6 @@ defmodule Raxol.Terminal.Commands.Screen do
     end
   end
 
-  @spec scroll_up_screen_command(map(), non_neg_integer()) :: map()
   def scroll_up_screen_command(emulator, count)
       when is_integer(count) and count > 0 do
     Raxol.Core.Runtime.Log.debug(
@@ -187,7 +185,6 @@ defmodule Raxol.Terminal.Commands.Screen do
     emulator
   end
 
-  @spec scroll_down(map(), pos_integer()) :: map()
   def scroll_down(emulator, count) when is_integer(count) and count > 0 do
     Raxol.Core.Runtime.Log.debug(
       "[Screen.scroll_down] CALLED with count: #{count}"
@@ -201,7 +198,6 @@ defmodule Raxol.Terminal.Commands.Screen do
     Emulator.update_active_buffer(emulator, new_buffer)
   end
 
-  @spec scroll_up(map(), pos_integer()) :: map()
   def scroll_up(emulator, lines) when is_integer(lines) and lines > 0 do
     Raxol.Core.Runtime.Log.debug(
       "[Screen.scroll_up] CALLED with lines: #{lines}"

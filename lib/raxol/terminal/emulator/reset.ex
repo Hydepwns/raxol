@@ -7,7 +7,6 @@ defmodule Raxol.Terminal.Emulator.Reset do
   @doc """
   Resets the terminal emulator to its initial state.
   """
-  @spec reset(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def reset(emulator) do
     emulator
     |> reset_state()
@@ -21,7 +20,6 @@ defmodule Raxol.Terminal.Emulator.Reset do
   @doc """
   Cleans up the emulator state.
   """
-  @spec cleanup(map()) :: map()
   def cleanup(emulator) do
     # Stop all GenServer processes gracefully
     emulator = stop_gen_servers(emulator)
@@ -75,7 +73,6 @@ defmodule Raxol.Terminal.Emulator.Reset do
   @doc """
   Stops the emulator.
   """
-  @spec stop(map()) :: map()
   def stop(emulator) do
     # Perform cleanup first
     emulator = cleanup(emulator)
@@ -87,8 +84,6 @@ defmodule Raxol.Terminal.Emulator.Reset do
   @doc """
   Clears the scrollback buffer.
   """
-  @spec clear_scrollback(Raxol.Terminal.Emulator.t()) ::
-          Raxol.Terminal.Emulator.t()
   def clear_scrollback(emulator) do
     %{emulator | scrollback_buffer: []}
   end
@@ -96,8 +91,6 @@ defmodule Raxol.Terminal.Emulator.Reset do
   @doc """
   Resets the charset state.
   """
-  @spec reset_charset_state(Raxol.Terminal.Emulator.t()) ::
-          Raxol.Terminal.Emulator.t()
   def reset_charset_state(emulator) do
     %{
       emulator

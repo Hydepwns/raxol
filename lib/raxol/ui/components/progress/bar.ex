@@ -8,7 +8,6 @@ defmodule Raxol.UI.Components.Progress.Bar do
   @doc """
   Creates a progress bar.
   """
-  @spec bar(number(), keyword()) :: binary()
   def bar(value, opts \\ []) when is_number(value) do
     max = Keyword.get(opts, :max, 100)
     width = Keyword.get(opts, :width, 20)
@@ -34,7 +33,6 @@ defmodule Raxol.UI.Components.Progress.Bar do
   @doc """
   Creates a progress bar with a label.
   """
-  @spec bar_with_label(number(), binary(), keyword()) :: binary()
   def bar_with_label(value, label, opts \\ []) do
     bar_string = bar(value, Keyword.put(opts, :show_percentage, false))
     percentage = round(min(100, value / Keyword.get(opts, :max, 100) * 100))

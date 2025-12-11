@@ -8,7 +8,6 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
   @doc """
   Standard handler for getting state information.
   """
-  @spec handle_get_state(any()) :: {:reply, any(), any()}
   def handle_get_state(state) do
     {:reply, state, state}
   end
@@ -16,7 +15,6 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
   @doc """
   Standard handler for getting specific state fields.
   """
-  @spec handle_get_field(atom(), map()) :: {:reply, any(), map()}
   def handle_get_field(field, state) when is_map(state) do
     {:reply, Map.get(state, field), state}
   end
@@ -28,7 +26,6 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
   @doc """
   Standard handler for getting metrics from state.
   """
-  @spec handle_get_metrics(map()) :: {:reply, map(), map()}
   def handle_get_metrics(state) when is_map(state) do
     metrics = Map.get(state, :metrics, %{})
     {:reply, metrics, state}
@@ -41,7 +38,6 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
   @doc """
   Standard handler for getting status information.
   """
-  @spec handle_get_status(map()) :: {:reply, map(), map()}
   def handle_get_status(state) when is_map(state) do
     status = %{
       status: Map.get(state, :status, :running),
@@ -59,8 +55,6 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
   @doc """
   Standard handler for updating configuration.
   """
-  @spec handle_update_config(map(), map()) ::
-          {:reply, :ok | {:error, any()}, map()}
   def handle_update_config(new_config, state)
       when is_map(state) and is_map(new_config) do
     updated_config = Map.merge(Map.get(state, :config, %{}), new_config)
@@ -75,7 +69,6 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
   @doc """
   Standard handler for resetting metrics.
   """
-  @spec handle_reset_metrics(map()) :: {:reply, :ok, map()}
   def handle_reset_metrics(state) when is_map(state) do
     new_state = Map.put(state, :metrics, %{})
     {:reply, :ok, new_state}
@@ -88,7 +81,6 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
   @doc """
   Utility to increment a metric counter.
   """
-  @spec increment_metric(map(), atom(), non_neg_integer()) :: map()
   def increment_metric(state, metric_name, amount \\ 1)
 
   def increment_metric(state, metric_name, amount) when is_map(state) do
@@ -104,7 +96,6 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
   @doc """
   Utility to update a metric value.
   """
-  @spec update_metric(map(), atom(), any()) :: map()
   def update_metric(state, metric_name, value) when is_map(state) do
     metrics = Map.get(state, :metrics, %{})
     updated_metrics = Map.put(metrics, metric_name, value)
@@ -125,7 +116,6 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
   @doc """
   Initialize default state with common fields.
   """
-  @spec init_default_state(map()) :: map()
   def init_default_state(custom_state \\ %{}) do
     default_state = %{
       status: :running,

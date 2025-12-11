@@ -22,10 +22,10 @@ defmodule Raxol.Terminal.Input.MouseHandler do
       # Parse a mouse event sequence
       MouseHandler.parse_mouse_event("\e[<0;10;20M")
       {:ok, %{type: :press, button: :left, x: 10, y: 20}}
-      
+
       # Enable mouse tracking
       MouseHandler.enable_mouse_tracking(:sgr)
-      
+
       # Handle mouse event
       MouseHandler.handle_event(state, event)
   """
@@ -94,7 +94,6 @@ defmodule Raxol.Terminal.Input.MouseHandler do
   @doc """
   Creates a new mouse handler state.
   """
-  @spec new(Keyword.t()) :: state()
   def new(opts \\ []) do
     %{
       mode: Keyword.get(opts, :mode, :off),
@@ -112,7 +111,6 @@ defmodule Raxol.Terminal.Input.MouseHandler do
 
   Returns the escape sequence to send to the terminal.
   """
-  @spec enable_mouse_tracking(mouse_mode()) :: binary()
   def enable_mouse_tracking(mode) do
     case mode do
       # X10 compatibility mode
@@ -135,7 +133,6 @@ defmodule Raxol.Terminal.Input.MouseHandler do
   @doc """
   Disables all mouse tracking modes.
   """
-  @spec disable_mouse_tracking() :: binary()
   def disable_mouse_tracking do
     # Disable all possible modes
     "\e[?9l\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l"
@@ -146,7 +143,6 @@ defmodule Raxol.Terminal.Input.MouseHandler do
 
   Automatically detects the protocol used and returns a parsed event.
   """
-  @spec parse_mouse_event(binary()) :: {:ok, mouse_event()} | {:error, term()}
   def parse_mouse_event(sequence) when is_binary(sequence) do
     cond do
       String.match?(sequence, @sgr_pattern) ->
@@ -368,16 +364,12 @@ defmodule Raxol.Terminal.Input.MouseHandler do
   end
 
   # Enhance event with additional type information
+  # Note: This is only called from parse_sgr_event where type is :press or :release
   defp enhance_event_with_type(event) do
-    cond do
-      event.button in [:wheel_up, :wheel_down] ->
-        %{event | type: :scroll}
-
-      event.type == :move && event.button != nil ->
-        %{event | type: :drag}
-
-      true ->
-        event
+    if event.button in [:wheel_up, :wheel_down] do
+      %{event | type: :scroll}
+    else
+      event
     end
   end
 
@@ -386,7 +378,6 @@ defmodule Raxol.Terminal.Input.MouseHandler do
 
   Tracks button states, detects drag operations, and counts clicks.
   """
-  @spec handle_event(state(), mouse_event()) :: {state(), list()}
   def handle_event(state, event) do
     new_state =
       state
@@ -514,7 +505,6 @@ defmodule Raxol.Terminal.Input.MouseHandler do
   @doc """
   Generates control sequences to set mouse reporting modes.
   """
-  @spec set_mouse_mode(mouse_mode(), boolean()) :: binary()
   def set_mouse_mode(mode, enable \\ true) do
     sequences =
       case mode do
@@ -522,7 +512,7 @@ defmodule Raxol.Terminal.Input.MouseHandler do
         :click_only -> [9]
         # Normal tracking
         :click_drag -> [1000]
-        # Button event tracking  
+        # Button event tracking
         :button_events -> [1002]
         # Any event tracking
         :all_events -> [1003]
@@ -550,7 +540,6 @@ defmodule Raxol.Terminal.Input.MouseHandler do
 
   Detects terminal capabilities and returns the best supported mode.
   """
-  @spec detect_best_mode() :: :urxvt | :sgr | :x11 | :x10
   def detect_best_mode do
     # Check terminal environment variables
     term = System.get_env("TERM", "")

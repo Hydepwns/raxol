@@ -40,7 +40,6 @@ defmodule Raxol.UI.Components.Terminal do
   # --- Component Behaviour Callbacks ---
 
   @doc "Initializes the Terminal component state from props."
-  @spec init(map()) :: map()
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
     # Convert keyword list to map if needed
@@ -59,7 +58,6 @@ defmodule Raxol.UI.Components.Terminal do
   end
 
   @doc "Updates the Terminal component state in response to messages. Handles writing, clearing, etc."
-  @spec update(term(), map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle messages to write to terminal, clear, etc.
@@ -72,7 +70,6 @@ defmodule Raxol.UI.Components.Terminal do
   end
 
   @doc "Handles key events for the Terminal component."
-  @spec handle_event(map(), map(), map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component
   # Use map matching
   def handle_event(%{type: :key} = event, %{} = _props, state) do
@@ -88,7 +85,6 @@ defmodule Raxol.UI.Components.Terminal do
   end
 
   # Catch-all handle_event
-  @spec handle_event(map(), map(), map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
     Raxol.Core.Runtime.Log.debug(
@@ -101,7 +97,6 @@ defmodule Raxol.UI.Components.Terminal do
   # --- Render Logic ---
 
   @doc "Renders the Terminal component, displaying the buffer as lines."
-  @spec render(map(), map()) :: map()
   @impl Raxol.UI.Components.Base.Component
   def render(state, %{} = _props) do
     # Generate label elements
@@ -143,7 +138,6 @@ defmodule Raxol.UI.Components.Terminal do
   No special setup needed for Terminal.
   """
   @impl true
-  @spec mount(map()) :: {map(), list()}
   def mount(state), do: {state, []}
 
   @doc """
@@ -151,6 +145,5 @@ defmodule Raxol.UI.Components.Terminal do
   No cleanup needed for Terminal.
   """
   @impl true
-  @spec unmount(map()) :: map()
   def unmount(state), do: state
 end

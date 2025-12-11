@@ -14,7 +14,6 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   Processes a single character codepoint.
   Delegates to C0 handlers or printable character handlers.
   """
-  @spec process_character(Emulator.t(), integer()) :: Emulator.t()
   def process_character(emulator, char_codepoint)
       when (char_codepoint >= 0 and char_codepoint <= 31) or
              char_codepoint == 127 do
@@ -24,8 +23,6 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   def process_character(emulator, char_codepoint) do
     process_printable_character(emulator, char_codepoint)
   end
-
-  @spec process_printable_character(Emulator.t(), integer()) :: Emulator.t()
 
   def process_printable_character(emulator, char_codepoint) do
     buffer_width = get_buffer_width(emulator)

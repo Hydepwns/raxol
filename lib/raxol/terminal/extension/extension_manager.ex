@@ -41,12 +41,10 @@ defmodule Raxol.Terminal.Extension.ExtensionManager do
   @doc """
   Creates a new extension manager.
   """
-  @spec new() :: t()
   def new() do
     %__MODULE__{}
   end
 
-  @spec new(keyword() | map()) :: t()
   def new(opts) when is_list(opts) do
     %__MODULE__{
       config: Enum.into(opts, %{})
@@ -62,7 +60,6 @@ defmodule Raxol.Terminal.Extension.ExtensionManager do
   @doc """
   Loads an extension into the manager.
   """
-  @spec load_extension(t(), map()) :: {:ok, t()} | {:error, any()}
   def load_extension(manager, extension) when is_map(extension) do
     # Use name as the identifier
     ext_name = Map.get(extension, :name) || Map.get(extension, "name")
@@ -122,7 +119,6 @@ defmodule Raxol.Terminal.Extension.ExtensionManager do
   @doc """
   Unloads an extension from the manager.
   """
-  @spec unload_extension(t(), String.t()) :: {:ok, t()} | {:error, any()}
   def unload_extension(manager, extension_id) do
     if Map.has_key?(manager.extensions, extension_id) do
       # Remove extension
@@ -165,7 +161,6 @@ defmodule Raxol.Terminal.Extension.ExtensionManager do
   @doc """
   Gets an extension by ID.
   """
-  @spec get_extension(t(), String.t()) :: extension() | nil
   def get_extension(manager, extension_id) do
     Map.get(manager.extensions, extension_id)
   end
@@ -173,7 +168,6 @@ defmodule Raxol.Terminal.Extension.ExtensionManager do
   @doc """
   Lists all loaded extensions.
   """
-  @spec list_extensions(t()) :: [extension()]
   def list_extensions(manager) do
     Map.values(manager.extensions)
   end
@@ -181,12 +175,8 @@ defmodule Raxol.Terminal.Extension.ExtensionManager do
   @doc """
   Emits an event to all registered handlers.
   """
-  @spec emit_event(t(), atom() | String.t()) ::
-          {:ok, list(), t()} | {:error, :event_not_found}
   def emit_event(manager, event_name), do: emit_event(manager, event_name, %{})
 
-  @spec emit_event(t(), atom() | String.t(), any()) ::
-          {:ok, list(), t()} | {:error, :event_not_found}
   def emit_event(manager, event_name, data) do
     handlers = Map.get(manager.event_handlers, event_name, [])
 
@@ -214,12 +204,9 @@ defmodule Raxol.Terminal.Extension.ExtensionManager do
   @doc """
   Executes a command from an extension.
   """
-  @spec execute_command(t(), String.t()) :: {:error, any()}
   def execute_command(manager, command_name),
     do: execute_command(manager, command_name, %{})
 
-  @spec execute_command(t(), String.t(), map()) ::
-          {:ok, t(), any()} | {:error, any()}
   def execute_command(manager, command_name, params) do
     case Map.get(manager.command_registry, command_name) do
       nil ->
@@ -246,8 +233,6 @@ defmodule Raxol.Terminal.Extension.ExtensionManager do
   @doc """
   Updates configuration for an extension.
   """
-  @spec update_extension_config(t(), String.t(), map()) ::
-          {:ok, t()} | {:error, any()}
   def update_extension_config(manager, extension_id, config) do
     case Map.get(manager.extensions, extension_id) do
       nil ->
@@ -270,7 +255,6 @@ defmodule Raxol.Terminal.Extension.ExtensionManager do
   @doc """
   Gets current metrics.
   """
-  @spec get_metrics(t()) :: map()
   def get_metrics(manager) do
     manager.metrics
   end

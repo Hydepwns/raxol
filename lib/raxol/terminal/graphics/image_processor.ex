@@ -29,10 +29,10 @@ defmodule Raxol.Terminal.Graphics.ImageProcessor do
         format: :auto,
         quality: 90
       })
-      
+
       # Batch processing
       {:ok, results} = ImageProcessor.process_batch(images, processing_options)
-      
+
       # Format conversion
       {:ok, converted} = ImageProcessor.convert_format(image_data, :png, :webp)
   """
@@ -86,7 +86,7 @@ defmodule Raxol.Terminal.Graphics.ImageProcessor do
       String.starts_with?(data, <<137, 80, 78, 71, 13, 10, 26, 10>>) ->
         {:ok, :png}
 
-      # JPEG signatures  
+      # JPEG signatures
       String.starts_with?(data, <<255, 216, 255>>) ->
         {:ok, :jpeg}
 
@@ -144,7 +144,7 @@ defmodule Raxol.Terminal.Graphics.ImageProcessor do
         format: :png,
         optimize_for_terminal: true
       })
-      
+
       # Auto-detect format and optimize
       {:ok, processed} = ImageProcessor.process_image(image_data, %{
         width: 200,
@@ -154,8 +154,6 @@ defmodule Raxol.Terminal.Graphics.ImageProcessor do
         max_colors: 64
       })
   """
-  @spec process_image(binary() | String.t(), processing_options()) ::
-          {:ok, processed_image()} | {:error, term()}
   def process_image(image_data, options \\ %{}) do
     merged_options = Map.merge(@default_options, options)
 
@@ -191,11 +189,6 @@ defmodule Raxol.Terminal.Graphics.ImageProcessor do
   * `{:ok, [processed_image]}` - List of successfully processed images
   * `{:error, reason}` - Batch processing error
   """
-  @spec process_batch(
-          [binary() | String.t() | {binary(), processing_options()}],
-          processing_options()
-        ) ::
-          {:ok, [processed_image()]} | {:error, term()}
   def process_batch(images, shared_options \\ %{}) do
     results =
       Enum.map(images, fn
@@ -232,8 +225,6 @@ defmodule Raxol.Terminal.Graphics.ImageProcessor do
   * `{:ok, format}` - Detected image format
   * `{:error, reason}` - Detection failed
   """
-  @spec detect_format(binary() | String.t()) ::
-          {:ok, image_format()} | {:error, term()}
   def detect_format(image_data) when is_binary(image_data) do
     case detect_format_by_signature(image_data) do
       {:ok, format} -> {:ok, format}
@@ -269,13 +260,6 @@ defmodule Raxol.Terminal.Graphics.ImageProcessor do
   * `{:ok, converted_data}` - Successfully converted image
   * `{:error, reason}` - Conversion failed
   """
-  @spec convert_format(
-          binary(),
-          image_format(),
-          image_format(),
-          processing_options()
-        ) ::
-          {:ok, binary()} | {:error, term()}
   def convert_format(image_data, source_format, target_format, options \\ %{})
 
   def convert_format(image_data, :auto, target_format, options) do
@@ -327,8 +311,6 @@ defmodule Raxol.Terminal.Graphics.ImageProcessor do
   * `{:ok, %{profile_name => processed_image}}` - Map of optimized variants
   * `{:error, reason}` - Optimization failed
   """
-  @spec optimize_for_terminals(binary(), [map()], processing_options()) ::
-          {:ok, %{atom() => processed_image()}} | {:error, term()}
   def optimize_for_terminals(image_data, terminal_profiles, base_options \\ %{}) do
     results =
       Enum.reduce(terminal_profiles, %{}, fn profile, acc ->
@@ -362,8 +344,6 @@ defmodule Raxol.Terminal.Graphics.ImageProcessor do
   * `{:ok, metadata}` - Image metadata map
   * `{:error, reason}` - Analysis failed
   """
-  @spec get_image_metadata(binary() | String.t()) ::
-          {:ok, map()} | {:error, term()}
   def get_image_metadata(image_data) do
     with {:ok, {data, format}} <- load_and_detect_format(image_data),
          {:ok, mogrify_image} <- create_mogrify_image(data, format) do

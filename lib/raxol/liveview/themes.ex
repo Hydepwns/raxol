@@ -59,7 +59,6 @@ defmodule Raxol.LiveView.Themes do
 
   For a version that returns `{:ok, theme} | {:error, reason}`, use `get_theme/1`.
   """
-  @spec get(atom()) :: theme() | nil
   def get(name) when is_atom(name) do
     case get_theme(name) do
       {:ok, theme} -> theme
@@ -74,7 +73,6 @@ defmodule Raxol.LiveView.Themes do
 
   Returns `{:ok, theme}` on success or `{:error, :theme_not_found}` if the theme doesn't exist.
   """
-  @spec get_theme(atom()) :: {:ok, theme()} | {:error, :theme_not_found}
   def get_theme(:synthwave84), do: {:ok, synthwave84()}
   def get_theme(:nord), do: {:ok, nord()}
   def get_theme(:dracula), do: {:ok, dracula()}
@@ -98,7 +96,6 @@ defmodule Raxol.LiveView.Themes do
   @doc """
   Lists all available theme names.
   """
-  @spec list() :: [atom()]
   def list do
     [
       :synthwave84,
@@ -116,7 +113,6 @@ defmodule Raxol.LiveView.Themes do
 
   Returns `:ok` if valid, or `{:error, reason}` if invalid.
   """
-  @spec validate_theme(any()) :: :ok | {:error, atom()}
   def validate_theme(%{
         name: _,
         background: _,
@@ -161,7 +157,6 @@ defmodule Raxol.LiveView.Themes do
   Returns CSS as a string that can be injected into a page or style tag.
   If the theme is invalid, returns minimal fallback CSS and logs a warning.
   """
-  @spec to_css(theme(), String.t()) :: String.t()
   def to_css(theme, selector \\ ".raxol-terminal")
 
   def to_css(theme, selector) when is_map(theme) do

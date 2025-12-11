@@ -30,7 +30,6 @@ defmodule Raxol.Terminal.Graphics.Manager do
   @doc """
   Creates a new graphics manager with default state.
   """
-  @spec new() :: t()
   def new do
     %__MODULE__{
       images: %{},
@@ -54,7 +53,6 @@ defmodule Raxol.Terminal.Graphics.Manager do
   @doc """
   Renders an image to sixel format with the given options.
   """
-  @spec render_image(t(), map(), map()) :: {:ok, map(), t()} | {:error, term()}
   def render_image(manager, image, opts) do
     with :ok <- validate_image(image),
          :ok <- validate_opts(opts) do
@@ -94,7 +92,6 @@ defmodule Raxol.Terminal.Graphics.Manager do
   @doc """
   Processes sixel data into an image.
   """
-  @spec process_sixel(t(), map()) :: {:ok, map(), t()} | {:error, term()}
   def process_sixel(manager, sixel_data) do
     case validate_sixel_data(sixel_data) do
       :ok ->
@@ -121,7 +118,6 @@ defmodule Raxol.Terminal.Graphics.Manager do
   @doc """
   Optimizes the graphics pipeline.
   """
-  @spec optimize_pipeline(t()) :: {:ok, t()}
   def optimize_pipeline(manager) do
     # For now, just increment the optimization counter
     updated_manager = %{
@@ -135,7 +131,6 @@ defmodule Raxol.Terminal.Graphics.Manager do
   @doc """
   Gets the current metrics.
   """
-  @spec get_metrics(t()) :: map()
   def get_metrics(manager) do
     manager.metrics
   end

@@ -43,7 +43,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Creates a new input manager with default configuration.
   """
-  @spec new() :: t()
   def new do
     new([])
   end
@@ -51,7 +50,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Creates a new input manager with custom options.
   """
-  @spec new(keyword()) :: t()
   def new(opts) do
     buffer_size = Keyword.get(opts, :buffer_size, 1024)
 
@@ -103,7 +101,6 @@ defmodule Raxol.Terminal.Input.Manager do
   Processes a single character input.
   Returns the updated emulator and any output.
   """
-  @spec process_input(map(), char()) :: {map(), any()}
   def process_input(emulator, char) do
     ParserStateManager.process_char(emulator, char)
   end
@@ -112,7 +109,6 @@ defmodule Raxol.Terminal.Input.Manager do
   Processes a sequence of character inputs.
   Returns the updated emulator and any output.
   """
-  @spec process_input_sequence(map(), [char()]) :: {map(), any()}
   def process_input_sequence(emulator, chars) do
     Enum.reduce(chars, {emulator, nil}, fn char, {emu, _} ->
       process_input(emu, char)
@@ -123,7 +119,6 @@ defmodule Raxol.Terminal.Input.Manager do
   Handles a key event.
   Returns the updated emulator and any output.
   """
-  @spec handle_key_event(map(), atom(), map()) :: {map(), any()}
   def handle_key_event(emulator, :key_press, event) do
     case event do
       %{key: :enter} ->
@@ -157,7 +152,6 @@ defmodule Raxol.Terminal.Input.Manager do
   Gets the current input mode.
   Returns the input mode.
   """
-  @spec get_input_mode(map()) :: atom()
   def get_input_mode(emulator) do
     emulator.input_mode
   end
@@ -166,7 +160,6 @@ defmodule Raxol.Terminal.Input.Manager do
   Sets the input mode.
   Returns the updated emulator.
   """
-  @spec set_input_mode(map(), atom()) :: map()
   def set_input_mode(emulator, mode) do
     %{emulator | input_mode: mode}
   end
@@ -213,8 +206,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Processes a key event.
   """
-  @spec process_key_event(t(), map()) ::
-          {:ok, t()} | {:error, :validation_failed}
   def process_key_event(manager, event) do
     case validate_event(manager, event) do
       :ok ->
@@ -245,7 +236,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Adds a custom key mapping.
   """
-  @spec add_key_mapping(t(), String.t(), String.t()) :: t()
   def add_key_mapping(manager, from_key, to_key) do
     updated_mappings = Map.put(manager.key_mappings, from_key, to_key)
 
@@ -262,7 +252,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Adds a custom validation rule.
   """
-  @spec add_validation_rule(t(), function()) :: t()
   def add_validation_rule(manager, rule) do
     %{manager | validation_rules: [rule | manager.validation_rules]}
   end
@@ -270,7 +259,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Gets the current metrics.
   """
-  @spec get_metrics(t()) :: map()
   def get_metrics(manager) do
     manager.metrics
   end
@@ -278,7 +266,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Flushes the input buffer.
   """
-  @spec flush_buffer(t()) :: t()
   def flush_buffer(manager) do
     %{manager | buffer: %{manager.buffer | events: []}}
   end
@@ -297,7 +284,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Gets the buffer contents.
   """
-  @spec get_buffer_contents(t()) :: String.t()
   def get_buffer_contents(manager) do
     case manager.buffer do
       %{events: events} ->
@@ -316,7 +302,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Gets the current mode.
   """
-  @spec get_mode(t()) :: atom()
   def get_mode(manager) do
     manager.mode
   end
@@ -324,7 +309,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Processes a key with modifiers.
   """
-  @spec process_key_with_modifiers(t(), String.t()) :: t()
   def process_key_with_modifiers(manager, key) do
     process_key_with_ctrl_modifier(manager.modifier_state.ctrl, manager, key)
   end
@@ -366,7 +350,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Sets mouse enabled state.
   """
-  @spec set_mouse_enabled(t(), boolean()) :: t()
   def set_mouse_enabled(manager, enabled) do
     %{manager | mouse_enabled: enabled}
   end
@@ -374,7 +357,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Processes keyboard input.
   """
-  @spec process_keyboard(t(), String.t()) :: t()
   def process_keyboard(manager, key) do
     case key do
       "\r" ->
@@ -479,7 +461,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Processes special keys.
   """
-  @spec process_special_key(t(), atom()) :: t()
   def process_special_key(manager, key) do
     key_map = %{
       up: "\e[A",
@@ -509,7 +490,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Processes mouse events.
   """
-  @spec process_mouse(t(), {atom(), integer(), integer(), integer()}) :: t()
   def process_mouse(manager, {action, button, x, y}) do
     process_mouse_if_enabled(
       manager.mouse_enabled,
@@ -571,7 +551,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Sets the mode.
   """
-  @spec set_mode(t(), atom()) :: t()
   def set_mode(manager, mode) do
     %{manager | mode: mode}
   end
@@ -579,7 +558,6 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Updates modifier state.
   """
-  @spec update_modifier(t(), String.t(), boolean()) :: t()
   def update_modifier(manager, modifier, value) do
     modifier_key =
       case modifier do

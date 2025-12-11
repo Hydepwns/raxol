@@ -17,12 +17,11 @@ defmodule Raxol.Terminal.Events do
     - `handler` - A function that takes a click position and handles the event
 
   ## Examples
-      
+
       Raxol.Terminal.Events.register_global_click(fn {x, y} ->
         Log.info("Clicked at \#{x}, \#{y}")
       end)
   """
-  @spec register_global_click(function()) :: {:ok, reference()}
   def register_global_click(handler) when is_function(handler, 1) do
     ref = make_ref()
     GenServer.call(__MODULE__, {:register_click_handler, ref, handler})
@@ -35,7 +34,6 @@ defmodule Raxol.Terminal.Events do
   ## Parameters
     - `ref` - The reference returned from register_global_click
   """
-  @spec unregister_global_click(reference()) :: :ok
   def unregister_global_click(ref) when is_reference(ref) do
     GenServer.cast(__MODULE__, {:unregister_click_handler, ref})
   end
@@ -45,7 +43,6 @@ defmodule Raxol.Terminal.Events do
 
   This will call all registered click handlers.
   """
-  @spec trigger_click({integer(), integer()}) :: :ok
   def trigger_click({x, y} = position) when is_integer(x) and is_integer(y) do
     GenServer.cast(__MODULE__, {:trigger_click, position})
   end

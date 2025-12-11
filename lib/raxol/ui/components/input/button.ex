@@ -38,7 +38,6 @@ defmodule Raxol.UI.Components.Input.Button do
           role: :primary | :secondary | :danger | :success | nil
         }
 
-  @spec new(map()) :: %__MODULE__{}
   @doc """
   Creates a new Button state map, applying defaults.
   Expects opts to be a Map.
@@ -66,7 +65,6 @@ defmodule Raxol.UI.Components.Input.Button do
   @doc """
   Initializes the Button component state from the given props.
   """
-  @spec init(map()) :: {:ok, %__MODULE__{}}
   @impl true
   def init(state) do
     # Use Button.new to ensure defaults are applied from props
@@ -82,27 +80,23 @@ defmodule Raxol.UI.Components.Input.Button do
   @doc """
   Mounts the Button component. Performs any setup needed after initialization.
   """
-  @spec mount(t()) :: t()
   @impl true
   def mount(state), do: state
 
   @doc """
   Unmounts the Button component, performing any necessary cleanup.
   """
-  @spec unmount(t()) :: t()
   @impl true
   def unmount(state), do: state
 
   @doc """
   Updates the Button component state in response to messages or prop changes.
   """
-  @spec update(term(), t()) :: t()
   @impl true
   def update(_message, state) do
     state
   end
 
-  @spec render(t(), map()) :: map()
   @doc """
   Renders the button component based on its current state.
 
@@ -153,8 +147,6 @@ defmodule Raxol.UI.Components.Input.Button do
     }
   end
 
-  @spec handle_event(t(), any(), map()) ::
-          {:update, t(), list()} | {:handled, t()} | :passthrough
   @doc """
   Handles input events for the button component.
 

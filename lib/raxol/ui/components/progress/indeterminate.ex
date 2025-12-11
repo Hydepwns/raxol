@@ -8,7 +8,6 @@ defmodule Raxol.UI.Components.Progress.Indeterminate do
   @doc """
   Creates an indeterminate progress indicator.
   """
-  @spec indeterminate(integer(), keyword()) :: binary()
   def indeterminate(frame, opts \\ []) when is_integer(frame) do
     style = Keyword.get(opts, :style, :wave)
     width = Keyword.get(opts, :width, 20)

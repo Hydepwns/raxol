@@ -46,7 +46,6 @@ defmodule Raxol.LiveView.Renderer do
   @doc """
   Creates a new renderer with empty caches.
   """
-  @spec new() :: t()
   def new do
     %__MODULE__{
       html_char_cache: build_char_cache(),
@@ -73,7 +72,6 @@ defmodule Raxol.LiveView.Renderer do
       # With invalid buffer - returns empty terminal, logs error
       {html, renderer} = Renderer.render(renderer, nil)
   """
-  @spec render(t(), buffer() | nil) :: {String.t(), t()}
   def render(renderer, nil) do
     Log.error("Renderer received nil buffer, returning empty terminal",
       module: __MODULE__,
@@ -219,7 +217,6 @@ defmodule Raxol.LiveView.Renderer do
 
   Returns `:ok` if valid, or `{:error, reason}` if invalid.
   """
-  @spec validate_buffer(any()) :: :ok | {:error, atom()}
   def validate_buffer(%{lines: lines}) when is_list(lines) do
     cond do
       Enum.empty?(lines) ->
@@ -287,7 +284,6 @@ defmodule Raxol.LiveView.Renderer do
   @doc """
   Invalidates all caches, forcing a full re-render on next call.
   """
-  @spec invalidate_cache(t()) :: t()
   def invalidate_cache(renderer) do
     %{
       renderer
@@ -301,7 +297,6 @@ defmodule Raxol.LiveView.Renderer do
   @doc """
   Returns statistics about cache performance.
   """
-  @spec stats(t()) :: map()
   def stats(renderer) do
     hit_ratio = calculate_hit_ratio(renderer.cache_hits, renderer.cache_misses)
 

@@ -43,8 +43,6 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
   @doc """
   Handles clipboard paste operation.
   """
-  @spec handle_paste(CoreHandler.t()) ::
-          {:ok, CoreHandler.t()} | {:error, any()}
   def handle_paste(%CoreHandler{} = handler) do
     case Clipboard.paste() do
       {:ok, text} ->
@@ -63,7 +61,6 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
   Handles clipboard copy operation.
   (Currently copies the entire buffer)
   """
-  @spec handle_copy(CoreHandler.t()) :: {:ok, CoreHandler.t()} | {:error, any()}
   def handle_copy(%CoreHandler{} = handler) do
     case Clipboard.copy(handler.buffer) do
       :ok ->
@@ -78,7 +75,6 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
   Handles clipboard cut operation.
   (Currently cuts the entire buffer)
   """
-  @spec handle_cut(CoreHandler.t()) :: {:ok, CoreHandler.t()} | {:error, any()}
   def handle_cut(%CoreHandler{} = handler) do
     case Clipboard.copy(handler.buffer) do
       :ok ->
@@ -116,12 +112,10 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
 
       iex> ClipboardHandler.generate_osc52_copy("Hello, World!")
       {:ok, "\e]52;c;SGVsbG8sIFdvcmxkIQ==\e\\"}
-      
+
       iex> ClipboardHandler.generate_osc52_copy("test", target: :primary)
       {:ok, "\e]52;p;dGVzdA==\e\\"}
   """
-  @spec generate_osc52_copy(String.t(), map()) ::
-          {:ok, binary()} | {:error, term()}
   def generate_osc52_copy(text, options \\ %{}) when is_binary(text) do
     target = Map.get(options, :target, :clipboard)
     max_length = Map.get(options, :max_length, @max_osc_52_length)
@@ -160,11 +154,10 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
 
       iex> ClipboardHandler.generate_osc52_query()
       {:ok, "\e]52;c;?\e\\"}
-      
+
       iex> ClipboardHandler.generate_osc52_query(:primary)
       {:ok, "\e]52;p;?\e\\"}
   """
-  @spec generate_osc52_query(atom()) :: {:ok, binary()} | {:error, term()}
   def generate_osc52_query(target \\ :clipboard) do
     case Map.get(@clipboard_targets, target) do
       nil ->
@@ -196,8 +189,6 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
       iex> ClipboardHandler.parse_osc52_response("\e]52;c;SGVsbG8=\e\\")
       {:ok, {:clipboard, "Hello"}}
   """
-  @spec parse_osc52_response(binary()) ::
-          {:ok, {atom(), String.t()}} | {:error, term()}
   def parse_osc52_response(response) when is_binary(response) do
     with true <- String.starts_with?(response, @osc_52_prefix),
          true <- String.ends_with?(response, @osc_52_suffix),
@@ -229,7 +220,6 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
 
   - `binary()` - Escape sequence to enable bracketed paste mode
   """
-  @spec enable_bracketed_paste() :: binary()
   def enable_bracketed_paste do
     "\e[?2004h"
   end
@@ -241,7 +231,6 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
 
   - `binary()` - Escape sequence to disable bracketed paste mode
   """
-  @spec disable_bracketed_paste() :: binary()
   def disable_bracketed_paste do
     "\e[?2004l"
   end
@@ -255,7 +244,6 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
   - `:unsupported` - Terminal likely does not support OSC 52
   - `:unknown` - Cannot determine terminal capabilities
   """
-  @spec detect_osc52_support() :: :supported | :unsupported | :unknown
   def detect_osc52_support do
     term = System.get_env("TERM", "")
     term_program = System.get_env("TERM_PROGRAM", "")
@@ -292,8 +280,6 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
   - For copy: `{:ok, output}` where output is either `:ok` or an OSC 52 sequence
   - For paste: `{:ok, text}` or `{:error, :paste_not_supported_osc52}`
   """
-  @spec handle_clipboard_with_fallback(atom(), String.t() | nil, map()) ::
-          {:ok, term()} | {:error, term()}
   def handle_clipboard_with_fallback(operation, text \\ nil, options \\ %{})
 
   def handle_clipboard_with_fallback(:copy, text, options)

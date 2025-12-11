@@ -52,8 +52,6 @@ defmodule Raxol.Terminal.Screen do
       iex> {new_buffer.width, new_buffer.height}
       {100, 30}
   """
-  @spec resize(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
-          ScreenBuffer.t()
   def resize(buffer, width, height) do
     ScreenBuffer.resize(buffer, width, height)
   end
@@ -80,13 +78,6 @@ defmodule Raxol.Terminal.Screen do
       iex> buffer.damage_regions
       [{0, 0, 10, 5}]
   """
-  @spec mark_damaged(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: ScreenBuffer.t()
   def mark_damaged(buffer, x, y, width, height) do
     ScreenBuffer.mark_damaged(buffer, x, y, width, height, nil)
   end
@@ -109,7 +100,6 @@ defmodule Raxol.Terminal.Screen do
       iex> buffer.content
       %{}
   """
-  @spec clear_screen(ScreenBuffer.t()) :: ScreenBuffer.t()
   def clear_screen(buffer) do
     ScreenBuffer.clear(buffer, TextFormatting.new())
   end
@@ -133,7 +123,6 @@ defmodule Raxol.Terminal.Screen do
       iex> get_in(buffer.content, [0])
       %{}
   """
-  @spec clear_line(map(), non_neg_integer()) :: map()
   def clear_line(buffer, line) do
     ScreenBuffer.clear_line(buffer, line, TextFormatting.new())
   end
@@ -157,7 +146,6 @@ defmodule Raxol.Terminal.Screen do
       iex> buffer.scroll_region
       {0, 23}
   """
-  @spec insert_lines(map(), non_neg_integer()) :: map()
   def insert_lines(buffer, count) do
     ScreenBuffer.insert_lines(buffer, count)
   end
@@ -181,7 +169,6 @@ defmodule Raxol.Terminal.Screen do
       iex> buffer.scroll_region
       {0, 23}
   """
-  @spec delete_lines(map(), non_neg_integer()) :: map()
   def delete_lines(buffer, count) do
     ScreenBuffer.delete_lines(buffer, count)
   end
@@ -205,7 +192,6 @@ defmodule Raxol.Terminal.Screen do
       iex> buffer.cursor
       {5, 0}
   """
-  @spec insert_chars(map(), non_neg_integer()) :: map()
   def insert_chars(buffer, count) do
     ScreenBuffer.insert_chars(buffer, count)
   end
@@ -213,7 +199,6 @@ defmodule Raxol.Terminal.Screen do
   @doc """
   Deletes characters at the current cursor position.
   """
-  @spec delete_chars(map(), non_neg_integer()) :: map()
   def delete_chars(buffer, count) do
     ScreenBuffer.delete_chars(buffer, count)
   end
@@ -221,7 +206,6 @@ defmodule Raxol.Terminal.Screen do
   @doc """
   Erases characters at the current cursor position.
   """
-  @spec erase_chars(map(), non_neg_integer()) :: map()
   def erase_chars(buffer, count) do
     ScreenBuffer.erase_chars(buffer, count)
   end
@@ -229,8 +213,6 @@ defmodule Raxol.Terminal.Screen do
   @doc """
   Scrolls the screen up by the specified number of lines.
   """
-  @spec scroll_up_screen(ScreenBuffer.t(), non_neg_integer()) ::
-          ScreenBuffer.t()
   def scroll_up_screen(buffer, lines) do
     {new_buffer, _scrolled_lines} = ScreenBuffer.scroll_up(buffer, lines)
     new_buffer
@@ -239,7 +221,6 @@ defmodule Raxol.Terminal.Screen do
   @doc """
   Scrolls the screen down by the specified number of lines.
   """
-  @spec scroll_down(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def scroll_down(buffer, lines) do
     ScreenBuffer.scroll_down(buffer, lines)
   end
@@ -253,7 +234,6 @@ defmodule Raxol.Terminal.Screen do
   * 2 - Erase entire screen
   * 3 - Erase entire screen and scrollback buffer
   """
-  @spec erase_display(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def erase_display(buffer, mode) do
     {x, y} = ScreenBuffer.get_cursor_position(buffer)
     {_width, height} = ScreenBuffer.get_dimensions(buffer)

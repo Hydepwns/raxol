@@ -21,7 +21,6 @@ defmodule Raxol.Terminal.Commands.History do
     :current_input
   ]
 
-  @spec new(non_neg_integer()) :: t()
   def new(max_size) when is_integer(max_size) and max_size > 0 do
     %__MODULE__{
       commands: [],
@@ -31,7 +30,6 @@ defmodule Raxol.Terminal.Commands.History do
     }
   end
 
-  @spec add(t(), String.t()) :: t()
   def add(%__MODULE__{} = history, command) when is_binary(command) do
     commands = [command | history.commands]
     commands = Enum.take(commands, history.max_size)
@@ -39,7 +37,6 @@ defmodule Raxol.Terminal.Commands.History do
     %{history | commands: commands, current_index: -1, current_input: ""}
   end
 
-  @spec previous(t()) :: {String.t() | nil, t()}
   def previous(%__MODULE__{} = history) do
     case history.current_index + 1 < length(history.commands) do
       true ->
@@ -64,7 +61,6 @@ defmodule Raxol.Terminal.Commands.History do
       iex> History.next(history)
       {"ls -la", %History{...}}
   """
-  @spec next(t()) :: {String.t() | nil, t()}
   def next(%__MODULE__{} = history) do
     case history.current_index - 1 >= -1 do
       true ->
@@ -93,7 +89,6 @@ defmodule Raxol.Terminal.Commands.History do
       iex> history.current_input
       "ls -l"
   """
-  @spec save_input(t(), String.t()) :: t()
   def save_input(%__MODULE__{} = history, input) when is_binary(input) do
     %{history | current_input: input}
   end
@@ -109,7 +104,6 @@ defmodule Raxol.Terminal.Commands.History do
       iex> history.commands
       []
   """
-  @spec clear(t()) :: t()
   def clear(%__MODULE__{} = history) do
     %{history | commands: [], current_index: -1, current_input: ""}
   end
@@ -125,7 +119,6 @@ defmodule Raxol.Terminal.Commands.History do
       iex> History.list(history)
       ["cd /tmp", "ls -la"]
   """
-  @spec list(t()) :: command_history()
   def list(%__MODULE__{} = history) do
     history.commands
   end
@@ -135,8 +128,6 @@ defmodule Raxol.Terminal.Commands.History do
   or appends to the current command buffer if it's a printable character.
   Returns the updated emulator struct.
   """
-  @spec maybe_add_to_history(Raxol.Terminal.Emulator.t(), integer()) ::
-          Raxol.Terminal.Emulator.t()
   def maybe_add_to_history(emulator, 10) do
     # On newline, add the current buffer to history if not empty, then clear buffer
     cmd = String.trim(emulator.current_command_buffer)
@@ -158,8 +149,6 @@ defmodule Raxol.Terminal.Commands.History do
     end
   end
 
-  @spec maybe_add_to_history(Raxol.Terminal.Emulator.t(), integer()) ::
-          Raxol.Terminal.Emulator.t()
   def maybe_add_to_history(emulator, char)
       when is_integer(char) and char >= 32 and char <= 0x10FFFF do
     # Skip history if disabled (current_command_buffer is nil)
@@ -173,14 +162,11 @@ defmodule Raxol.Terminal.Commands.History do
     end
   end
 
-  @spec maybe_add_to_history(Raxol.Terminal.Emulator.t(), any()) ::
-          Raxol.Terminal.Emulator.t()
   def maybe_add_to_history(emulator, _), do: emulator
 
   @doc """
   Updates the maximum size of the command history. Truncates the history if needed.
   """
-  @spec update_size(t(), non_neg_integer()) :: t()
   def update_size(%__MODULE__{} = history, new_size)
       when is_integer(new_size) and new_size > 0 do
     commands = Enum.take(history.commands, new_size)

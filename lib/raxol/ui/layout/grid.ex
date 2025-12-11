@@ -214,7 +214,6 @@ defmodule Raxol.UI.Layout.Grid do
   - `:width` - grid width
   - `:height` - grid height
   """
-  @spec new(keyword()) :: map()
   def new(opts \\ []) do
     gap = Keyword.get(opts, :gap, 0)
 
@@ -236,7 +235,6 @@ defmodule Raxol.UI.Layout.Grid do
 
   Returns the layout with calculated positions for all children.
   """
-  @spec render(map()) :: {:ok, map()}
   def render(grid) do
     # Simple rendering that returns the structure
     {:ok,
@@ -252,7 +250,6 @@ defmodule Raxol.UI.Layout.Grid do
 
   Returns a map with calculated spacing values.
   """
-  @spec calculate_spacing(map()) :: {:ok, map()}
   def calculate_spacing(grid) do
     # Use gap_x and gap_y, which are set from gap if not specified
     gap_x = Map.get(grid, :gap_x, grid.gap)

@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
 
   use Raxol.Core.Behaviours.BaseManager
 
-  alias Raxol.Terminal.{Emulator, State}
+  # Emulator and State aliases removed - not currently used
   require Raxol.Core.Runtime.Log
 
   # Client API
@@ -109,7 +109,6 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   @doc """
   Creates a new state manager.
   """
-  @spec new() :: map()
   def new do
     %{
       modes: %{},
@@ -122,7 +121,6 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   Gets a mode value.
   Returns the mode value or nil.
   """
-  @spec get_mode(Emulator.t(), atom()) :: any()
   def get_mode(emulator, mode) do
     case emulator do
       %{state: state} when is_map(state) ->
@@ -143,7 +141,6 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   Sets a mode value.
   Returns the updated emulator.
   """
-  @spec set_mode(Emulator.t(), atom(), any()) :: Emulator.t()
   def set_mode(emulator, mode, value) do
     case emulator do
       %{state: state} when is_map(state) ->
@@ -166,7 +163,6 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   Gets an attribute value.
   Returns the attribute value or nil.
   """
-  @spec get_attribute(Emulator.t(), atom()) :: any()
   def get_attribute(emulator, attribute) do
     case emulator do
       %{state: state} when is_map(state) ->
@@ -187,7 +183,6 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   Sets an attribute value.
   Returns the updated emulator.
   """
-  @spec set_attribute(Emulator.t(), atom(), any()) :: Emulator.t()
   def set_attribute(emulator, attribute, value) do
     case emulator do
       %{state: state} when is_map(state) ->
@@ -210,7 +205,6 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   Pushes the current state onto the stack.
   Returns the updated emulator.
   """
-  @spec push_state(Emulator.t()) :: Emulator.t()
   def push_state(emulator) do
     case emulator do
       %{state: state} when is_map(state) ->
@@ -233,7 +227,6 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   Pops a state from the stack.
   Returns {emulator, state} or {emulator, nil} if stack is empty.
   """
-  @spec pop_state(Emulator.t()) :: {Emulator.t(), State.t() | nil}
   def pop_state(emulator) do
     case emulator do
       %{state: state} when is_map(state) ->
@@ -266,7 +259,6 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   Gets the current state stack.
   Returns the list of states.
   """
-  @spec get_state_stack(Emulator.t()) :: [State.t()]
   def get_state_stack(emulator) do
     case emulator do
       %{state: state} when is_map(state) ->
@@ -287,7 +279,6 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   Clears the state stack.
   Returns the updated emulator.
   """
-  @spec clear_state_stack(Emulator.t()) :: Emulator.t()
   def clear_state_stack(emulator) do
     case emulator do
       %{state: state} when is_map(state) ->
@@ -309,7 +300,6 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   Resets the state to its initial values.
   Returns the updated emulator.
   """
-  @spec reset_state(Emulator.t()) :: Emulator.t()
   def reset_state(emulator) do
     case emulator do
       %{state: state} when is_map(state) ->

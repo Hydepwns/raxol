@@ -187,8 +187,6 @@ defmodule Raxol.Core.Runtime.Application do
     - `{model, commands}` tuple when successful
     - `{:error, reason}` tuple when initialization fails
   """
-  @spec delegate_init(module(), context()) ::
-          {model(), list(Raxol.Core.Runtime.Command.t())} | {:error, term()}
   def delegate_init(app_module, context) when is_atom(app_module) do
     alias Raxol.Core.Runtime.Log
     require Logger
@@ -266,8 +264,6 @@ defmodule Raxol.Core.Runtime.Application do
     end
   end
 
-  @spec delegate_update(module(), message(), model()) ::
-          {model(), list(Raxol.Core.Runtime.Command.t())} | {:error, term()}
   def delegate_update(app_module, message, current_model)
       when is_atom(app_module) do
     with true <- function_exported?(app_module, :update, 2),
@@ -369,7 +365,6 @@ defmodule Raxol.Core.Runtime.Application do
   @doc """
   Gets environment configuration for the application.
   """
-  @spec get_env(atom(), atom(), any()) :: any()
   def get_env(app, key, default \\ nil) do
     Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] get_env called for: #{app}.#{key}"
