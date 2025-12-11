@@ -380,7 +380,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Manager do
   @doc """
   Reads data from the active buffer (stub for test compatibility).
   """
-  @spec read(t(), keyword()) :: binary() | list()
+  @spec read(t(), keyword()) :: binary()
   def read(_manager, _opts \\ []) do
     # Return empty content for now
     # In a real implementation, this would read from the buffer

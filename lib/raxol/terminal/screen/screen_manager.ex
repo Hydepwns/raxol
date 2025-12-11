@@ -159,7 +159,7 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Gets the selected text from the buffer.
   """
-  @spec get_selected_text(map()) :: String.t() | nil
+  @spec get_selected_text(map()) :: String.t()
   def get_selected_text(buffer) do
     ScreenBuffer.get_selected_text(buffer)
   end

@@ -136,8 +136,7 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
   - `{:ok, escape_sequence}` - Success with display command
   - `{:error, reason}` - Error with reason
   """
-  @spec display_image(image_id(), display_options()) ::
-          {:ok, binary()} | {:error, term()}
+  @spec display_image(image_id(), display_options()) :: {:ok, binary()}
   def display_image(image_id, options \\ %{}) do
     with {:ok, validated_options} <- validate_display_options(options) do
       control_data = build_display_control_data(image_id, validated_options)
@@ -182,7 +181,7 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
   - `{:ok, escape_sequence}` - Query command to send to terminal
   - `{:error, reason}` - Error with reason
   """
-  @spec query_capabilities() :: {:ok, binary()} | {:error, term()}
+  @spec query_capabilities() :: {:ok, binary()}
   def query_capabilities do
     # Query graphics support and maximum transmission size
     control_data = "a=q,s=1,v=1,f=24,t=d,o=z"
@@ -234,8 +233,7 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
   - `{:ok, :unsupported}` - Terminal does not support Kitty protocol  
   - `{:error, :unknown}` - Cannot determine terminal capabilities
   """
-  @spec detect_support() ::
-          {:ok, :supported | :unsupported} | {:error, :unknown}
+  @spec detect_support() :: {:ok, :supported | :unsupported}
   def detect_support do
     case detect_terminal_type() do
       :kitty -> {:ok, :supported}

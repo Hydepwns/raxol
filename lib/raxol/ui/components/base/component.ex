@@ -66,7 +66,7 @@ defmodule Raxol.UI.Components.Base.Component do
   Called when the component is created. Should merge default values with
   the provided props to create the initial state.
   """
-  @callback init(props()) :: state()
+  @callback init(props()) :: state() | {:ok, state()}
 
   @doc """
   Called when the component is mounted in the UI.
@@ -83,7 +83,7 @@ defmodule Raxol.UI.Components.Base.Component do
   Similar to the application update function, this handles messages sent to
   the component and returns the new state.
   """
-  @callback update(message(), state()) :: state()
+  @callback update(message(), state()) :: state() | {:ok, state()} | {state(), [command()]}
 
   @doc """
   Renders the component based on its current state.
