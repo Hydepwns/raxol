@@ -35,6 +35,8 @@ defmodule RaxolWeb.TerminalLive do
   import Phoenix.HTML, only: [raw: 1]
 
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.LiveView.TerminalBridge
   alias Raxol.Web.SessionBridge
   alias Raxol.Core.Runtime.Log
   alias RaxolWeb.Presence
@@ -42,6 +44,8 @@ defmodule RaxolWeb.TerminalLive do
   @default_width 80
   @default_height 24
   @default_theme "synthwave84"
+  @default_font_width 8
+  @default_font_height 16
 
   # ============================================================================
   # LiveView Callbacks
@@ -64,6 +68,11 @@ defmodule RaxolWeb.TerminalLive do
       |> assign(:buffer_html, "")
       |> assign(:cursors, %{})
       |> assign(:connected_users, [])
+      |> assign(:font_width, @default_font_width)
+      |> assign(:font_height, @default_font_height)
+      |> assign(:container_offset, {0, 0})
+      |> assign(:previous_buffer, nil)
+      |> assign(:show_cursor, true)
 
     socket =
       if connected?(socket) do
@@ -233,6 +242,36 @@ defmodule RaxolWeb.TerminalLive do
     {:noreply, socket}
   end
 
+  @impl true
+  def handle_event(
+        "font_metrics",
+        %{"width" => width, "height" => height},
+        socket
+      ) do
+    # Update font metrics from client-side measurement
+    socket =
+      socket
+      |> assign(:font_width, width)
+      |> assign(:font_height, height)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event(
+        "container_offset",
+        %{"x" => x, "y" => y},
+        socket
+      ) do
+    # Update container offset for mouse coordinate translation
+    {:noreply, assign(socket, :container_offset, {x, y})}
+  end
+
+  @impl true
+  def handle_event("toggle_cursor", _params, socket) do
+    {:noreply, assign(socket, :show_cursor, !socket.assigns.show_cursor)}
+  end
+
   # ============================================================================
   # PubSub Handlers
   # ============================================================================
@@ -306,81 +345,128 @@ defmodule RaxolWeb.TerminalLive do
 
   defp render_buffer(socket) do
     emulator = socket.assigns.emulator
+    screen_buffer = Emulator.get_screen_buffer(emulator)
 
-    html =
-      emulator
-      |> Emulator.get_screen_buffer()
-      |> buffer_to_html()
+    # Convert ScreenBuffer to format expected by TerminalBridge
+    buffer = screen_buffer_to_bridge_buffer(screen_buffer)
 
-    assign(socket, :buffer_html, html)
+    # Get cursor position for display
+    cursor_pos = Emulator.get_cursor_position(emulator)
+    cursor_visible = get_cursor_visible(screen_buffer)
+
+    # Build rendering options
+    opts = [
+      theme: String.to_atom(socket.assigns.theme),
+      show_cursor: socket.assigns.show_cursor && cursor_visible,
+      cursor_position: cursor_pos,
+      cursor_style: get_cursor_style(screen_buffer),
+      css_prefix: "terminal"
+    ]
+
+    html = TerminalBridge.buffer_to_html(buffer, opts)
+
+    socket
+    |> assign(:buffer_html, html)
+    |> assign(:previous_buffer, buffer)
   end
 
-  defp buffer_to_html(buffer) do
-    # Convert buffer to HTML with ANSI styling
-    # This is a simplified version - the full implementation
-    # would use TerminalBridge for efficient rendering
-    buffer
-    |> Enum.with_index()
-    |> Enum.map(fn {line, y} ->
-      line_html =
-        line
-        |> Enum.map(&cell_to_html/1)
-        |> Enum.join("")
+  # Convert ScreenBuffer.t() to the Buffer.t() format expected by TerminalBridge
+  defp screen_buffer_to_bridge_buffer(%ScreenBuffer{} = screen_buffer) do
+    lines =
+      screen_buffer.cells
+      |> Enum.map(fn row ->
+        cells =
+          row
+          |> Enum.map(fn cell ->
+            %{
+              char: cell.char || " ",
+              style: cell_style_to_map(cell.style)
+            }
+          end)
 
-      ~s(<div class="terminal-line" data-line="#{y}">#{line_html}</div>)
-    end)
-    |> Enum.join("\n")
+        %{cells: cells}
+      end)
+
+    %{
+      width: screen_buffer.width,
+      height: screen_buffer.height,
+      lines: lines
+    }
   end
 
-  defp cell_to_html(cell) do
-    char = Map.get(cell, :char, " ")
-    style = Map.get(cell, :style, %{})
+  # Handle case where screen_buffer might be a raw map (test scenarios)
+  defp screen_buffer_to_bridge_buffer(%{
+         cells: cells,
+         width: width,
+         height: height
+       }) do
+    lines =
+      cells
+      |> Enum.map(fn row ->
+        row_cells =
+          row
+          |> Enum.map(fn cell ->
+            %{
+              char: Map.get(cell, :char, " "),
+              style: cell_style_to_map(Map.get(cell, :style, %{}))
+            }
+          end)
 
-    classes = build_style_classes(style)
-    inline_style = build_inline_style(style)
+        %{cells: row_cells}
+      end)
 
-    ~s(<span class="#{classes}" style="#{inline_style}">#{escape_html(char)}</span>)
+    %{
+      width: width,
+      height: height,
+      lines: lines
+    }
   end
 
-  defp build_style_classes(style) do
-    []
-    |> add_class_if(Map.get(style, :bold), "bold")
-    |> add_class_if(Map.get(style, :italic), "italic")
-    |> add_class_if(Map.get(style, :underline), "underline")
-    |> add_class_if(Map.get(style, :blink), "blink")
-    |> add_class_if(Map.get(style, :reverse), "reverse")
-    |> Enum.join(" ")
+  # Fallback for any other buffer format
+  defp screen_buffer_to_bridge_buffer(buffer) when is_list(buffer) do
+    lines =
+      buffer
+      |> Enum.map(fn row ->
+        cells =
+          row
+          |> Enum.map(fn cell ->
+            %{
+              char: Map.get(cell, :char, " "),
+              style: cell_style_to_map(Map.get(cell, :style, %{}))
+            }
+          end)
+
+        %{cells: cells}
+      end)
+
+    %{
+      width: length(List.first(buffer) || []),
+      height: length(buffer),
+      lines: lines
+    }
   end
 
-  defp add_class_if(classes, true, class), do: [class | classes]
-  defp add_class_if(classes, _, _), do: classes
+  defp cell_style_to_map(nil), do: %{}
 
-  defp build_inline_style(style) do
-    []
-    |> add_color_style(Map.get(style, :fg), "color")
-    |> add_color_style(Map.get(style, :bg), "background-color")
-    |> Enum.join("; ")
+  defp cell_style_to_map(style) when is_map(style) do
+    %{
+      bold: Map.get(style, :bold, false),
+      italic: Map.get(style, :italic, false),
+      underline: Map.get(style, :underline, false),
+      strikethrough: Map.get(style, :strikethrough, false),
+      reverse: Map.get(style, :reverse, false),
+      fg_color: Map.get(style, :fg_color) || Map.get(style, :fg),
+      bg_color: Map.get(style, :bg_color) || Map.get(style, :bg)
+    }
   end
 
-  defp add_color_style(styles, nil, _property), do: styles
+  defp get_cursor_visible(%ScreenBuffer{cursor_visible: visible}), do: visible
+  defp get_cursor_visible(%{cursor_visible: visible}), do: visible
+  defp get_cursor_visible(_), do: true
 
-  defp add_color_style(styles, {r, g, b}, property) do
-    ["#{property}: rgb(#{r}, #{g}, #{b})" | styles]
-  end
-
-  defp add_color_style(styles, color, property) when is_atom(color) do
-    ["#{property}: var(--term-#{color})" | styles]
-  end
-
-  defp add_color_style(styles, _, _), do: styles
-
-  defp escape_html(text) do
-    text
-    |> String.replace("&", "&amp;")
-    |> String.replace("<", "&lt;")
-    |> String.replace(">", "&gt;")
-    |> String.replace(" ", "&nbsp;")
-  end
+  defp get_cursor_style(%ScreenBuffer{cursor_style: style}), do: style
+  defp get_cursor_style(%{cursor_style: style}), do: style
+  defp get_cursor_style(_), do: :block
 
   defp translate_key_event(key, params) do
     ctrl = Map.get(params, "ctrlKey", false)
@@ -484,11 +570,26 @@ defmodule RaxolWeb.TerminalLive do
     end
   end
 
-  defp screen_to_terminal(x, y, _socket) do
-    # Convert screen coordinates to terminal cell position
-    # This is simplified - full implementation would account for
-    # font metrics and container positioning
-    {trunc(x), trunc(y)}
+  defp screen_to_terminal(x, y, socket) do
+    # Convert screen pixel coordinates to terminal cell position
+    # accounting for font metrics and container offset
+    font_width = socket.assigns.font_width
+    font_height = socket.assigns.font_height
+    {offset_x, offset_y} = socket.assigns.container_offset
+
+    # Adjust for container offset
+    adjusted_x = max(0, x - offset_x)
+    adjusted_y = max(0, y - offset_y)
+
+    # Convert to cell coordinates
+    cell_x = trunc(adjusted_x / font_width)
+    cell_y = trunc(adjusted_y / font_height)
+
+    # Clamp to terminal bounds
+    max_x = socket.assigns.width - 1
+    max_y = socket.assigns.height - 1
+
+    {min(cell_x, max_x), min(cell_y, max_y)}
   end
 
   defp broadcast_cursor_update(socket) do
