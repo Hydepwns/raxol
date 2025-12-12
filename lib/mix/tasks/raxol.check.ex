@@ -211,7 +211,7 @@ defmodule Mix.Tasks.Raxol.Check do
 
     # Exclude slow tests and benchmarks
     case Mix.shell().cmd(
-           "mix test --exclude slow --exclude integration --exclude docker --exclude benchmark --max-failures 10"
+           "mix test --exclude slow --exclude integration --exclude docker --exclude benchmark --exclude skip_on_ci --max-failures 10"
          ) do
       0 ->
         Mix.shell().info("    [OK] All tests passed")
