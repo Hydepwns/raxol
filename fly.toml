@@ -10,12 +10,13 @@ kill_signal = 'SIGTERM'
 [build]
   dockerfile = "docker/Dockerfile.web"
 
-[deploy]
-  release_command = '/app/bin/migrate'
+# [deploy]
+#   release_command = '/app/bin/migrate'
 
 [env]
   PHX_HOST = 'raxol.io'
   PORT = '8080'
+  RAXOL_MODE = 'minimal'
 
 [http_service]
   internal_port = 8080
