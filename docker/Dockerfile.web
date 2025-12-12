@@ -50,7 +50,7 @@ RUN if [ -d "/app/web/assets" ] && [ -f "/app/web/assets/package.json" ]; then \
     fi
 
 # Build the release
-RUN mix release
+RUN mix release --overwrite
 
 # Start a new build stage for the runtime
 FROM ${RUNNER_IMAGE} AS runner
