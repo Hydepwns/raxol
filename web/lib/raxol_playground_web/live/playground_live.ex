@@ -806,23 +806,29 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     end
     """
 
-    case Code.compile_string(full_code) do
-      [{^module_name, _bytecode}] ->
-        render_component(module_name, component)
+    try do
+      case Code.compile_string(full_code) do
+        [{^module_name, _bytecode}] ->
+          result = render_component(module_name, component)
+          cleanup_module(module_name)
+          result
 
-      [] ->
-        {:error, "Failed to compile module"}
+        [] ->
+          {:error, "Failed to compile module"}
 
-      _other ->
-        {:error, "Unexpected compilation result"}
+        _other ->
+          {:error, "Unexpected compilation result"}
+      end
+    rescue
+      e in CompileError ->
+        {:error, {:compile_error, e.description}}
+
+      e ->
+        {:error, {:exception, Exception.message(e)}}
     end
-  rescue
-    e in CompileError ->
-      {:error, {:compile_error, e.description}}
+  end
 
-    e ->
-      {:error, {:exception, Exception.message(e)}}
-  after
+  defp cleanup_module(module_name) do
     if Code.ensure_loaded?(module_name) do
       :code.delete(module_name)
       :code.purge(module_name)
