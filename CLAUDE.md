@@ -3,25 +3,29 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Status
-**Current Version**: v1.6.0 (Production Ready)
+**Current Version**: v2.0.1 (Production Ready)
 **Compilation Status**: Zero warnings achieved (fully clean with `--warnings-as-errors`)
 **Test Coverage**: 100% for core modules (UnifiedStateManager: 30/30, ComponentManager: 16/16)
 **Performance**: Parser 0.17-1.25μs | Render 265-283μs | Memory <2.8MB
 
-## New in v1.6.0
+## New in v2.0
 
-### Production Ready Release
+### Modular Package Architecture
+- Published to Hex.pm: `raxol`, `raxol_core`, `raxol_liveview`, `raxol_plugin`
+- Zero-dependency core package for lightweight usage
+- Incremental adoption path from core to full framework
+
+### Production Ready
 - Core functionality test failures completely resolved
 - UnifiedStateManager module implemented with full ETS backing
 - ComponentManager async error handling verified and stable
 - Zero compilation warnings maintained across critical modules
 - Enhanced BaseManager pattern adoption continues
 
-### Code Quality Achievements
+### Code Quality
 - All originally failing test modules now pass 100%
 - Functional programming patterns maintained throughout
 - Clean compilation with strict error checking
-- Comprehensive state management and component lifecycle support
 
 ### Previous Features (v1.4.1)
 
@@ -169,7 +173,7 @@ mix phx.server
 
 ## Architecture Overview
 
-Raxol is a high-performance terminal application framework that supports multiple UI paradigms (React, Svelte, LiveView, HEEx). The codebase is organized into several key layers:
+Raxol is a high-performance terminal application framework that supports multiple UI paradigms (React, LiveView, HEEx, Raw). The codebase is organized into several key layers:
 
 ### Core Structure
 ```

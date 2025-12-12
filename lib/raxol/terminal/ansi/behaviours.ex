@@ -55,6 +55,48 @@ defmodule Raxol.Terminal.ANSI.Behaviours do
               ) :: Emulator.t()
   end
 
+  defmodule KittyGraphics do
+    @moduledoc """
+    Behaviour for Kitty graphics protocol support.
+
+    The Kitty Graphics Protocol enables pixel-level graphics rendering
+    with superior features to Sixel including native animation support,
+    better compression, and more flexible placement.
+    """
+
+    @type t :: map()
+
+    @type action :: :transmit | :display | :delete | :query
+    @type format :: :rgb | :rgba | :png
+    @type compression :: :none | :zlib
+
+    @callback new() :: t()
+    @callback new(pos_integer(), pos_integer()) :: t()
+    @callback set_data(t(), binary()) :: t()
+    @callback get_data(t()) :: binary()
+    @callback encode(t()) :: binary()
+    @callback decode(binary()) :: t()
+    @callback supported?() :: boolean()
+    @callback process_sequence(t(), binary()) ::
+                {t(), :ok | {:error, term()}}
+
+    # Kitty-specific callbacks
+    @callback transmit_image(t(), map()) :: t()
+    @callback place_image(t(), map()) :: t()
+    @callback delete_image(t(), non_neg_integer()) :: t()
+    @callback query_image(t(), non_neg_integer()) ::
+                {:ok, map()} | {:error, term()}
+    @callback add_animation_frame(t(), binary()) :: t()
+
+    @optional_callbacks [
+      transmit_image: 2,
+      place_image: 2,
+      delete_image: 2,
+      query_image: 2,
+      add_animation_frame: 2
+    ]
+  end
+
   defmodule TextFormatting do
     @moduledoc """
     Defines the behaviour for text formatting in the terminal.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Raxol v1.4.1 introduces a comprehensive debug mode system with four levels of verbosity, performance monitoring, and detailed logging capabilities. Enhanced in v1.5.4 with BaseManager integration and improved timer management. The `Raxol.Debug` module provides runtime debugging tools for development and troubleshooting.
+Raxol v1.4.1 introduces a comprehensive debug mode system with four levels of verbosity, performance monitoring, and detailed logging capabilities. Enhanced in v2.0 with BaseManager integration and improved timer management. The `Raxol.Debug` module provides runtime debugging tools for development and troubleshooting.
 
 ## Debug Levels
 

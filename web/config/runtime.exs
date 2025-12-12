@@ -26,9 +26,8 @@ if config_env() == :prod do
   config :raxol_playground, RaxolPlaygroundWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
-      # Enable IPv6 and bind on all interfaces.
-      # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
-      ip: {0, 0, 0, 0, 0, 0, 0, 0},
+      # Bind on all IPv4 interfaces for fly.io compatibility
+      ip: {0, 0, 0, 0},
       port: port
     ],
     secret_key_base: secret_key_base

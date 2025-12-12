@@ -2,7 +2,18 @@ defmodule Raxol.Web.Supervisor do
   @moduledoc """
   Web supervisor for Raxol web interface components.
 
-  This supervisor manages web-related processes including the WebManager.
+  This supervisor manages web-related processes including:
+  - WebManager: Core web interface management
+  - SessionBridge: Terminal-web session transitions
+  - PersistentStore: Multi-tier storage for session data
+
+  ## Child Process Strategy
+
+  Uses `:one_for_one` strategy where each child is restarted independently
+  if it crashes. This is appropriate because:
+  - WebManager is independent of other processes
+  - SessionBridge can recover state from PersistentStore
+  - PersistentStore uses ETS/DETS which survives process crashes
   """
 
   use Supervisor
@@ -14,6 +25,11 @@ defmodule Raxol.Web.Supervisor do
   @impl true
   def init(_opts) do
     children = [
+      # PersistentStore should start first as other services may depend on it
+      {Raxol.Web.PersistentStore, []},
+      # SessionBridge manages terminal-web transitions
+      {Raxol.Web.SessionBridge, []},
+      # WebManager handles high-level web interface coordination
       {Raxol.Web.WebManager, []}
     ]
 

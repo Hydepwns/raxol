@@ -1,20 +1,20 @@
 # Raxol
 
-[![CI](https://github.com/Hydepwns/raxol/workflows/CI/badge.svg)](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-793%20(100%25%20pass)-brightgreen.svg)](https://github.com/Hydepwns/raxol/actions)
+[![CI](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml/badge.svg?branch=master)](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml)
+[![Security](https://github.com/Hydepwns/raxol/actions/workflows/security.yml/badge.svg?branch=master)](https://github.com/Hydepwns/raxol/actions/workflows/security.yml)
 [![Coverage](https://img.shields.io/badge/coverage-98.7%25-brightgreen.svg)](https://codecov.io/gh/Hydepwns/raxol)
-[![Performance](https://img.shields.io/badge/parser-3.2μs%2Fseq-brightgreen.svg)](bench/README.md)
+[![Performance](https://img.shields.io/badge/parser-3.3μs%2Fseq-brightgreen.svg)](bench/README.md)
 [![Hex.pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
 [![Documentation](https://img.shields.io/badge/docs-hexdocs-purple.svg)](https://hexdocs.pm/raxol)
 
 ## Terminal Application Framework
 
-Terminal framework supporting React, Svelte, LiveView, and HEEx UI patterns.
+Terminal framework supporting React, LiveView, HEEx, and Raw UI patterns.
 
 ### Features
 
 - Sub-microsecond parser operations
-- Multi-framework UI support (React, Svelte, LiveView, HEEx)
+- Multi-framework UI support (React, LiveView, HEEx, Raw)
 - Enterprise features: audit logging, encryption, SAML/OIDC
 - Graphics: Sixel support, session continuity
 - **NEW**: VIM navigation, command parser, fuzzy search, virtual filesystem, cursor effects
@@ -49,7 +49,6 @@ See [Installation Guide](docs/_includes/installation.md) and [Quickstart Tutoria
 
 ```elixir
 use Raxol.UI, framework: :react      # Familiar React patterns
-use Raxol.UI, framework: :svelte     # Reactive with compile-time optimization
 use Raxol.UI, framework: :liveview   # Phoenix LiveView patterns
 use Raxol.UI, framework: :heex       # Phoenix templates
 use Raxol.UI, framework: :raw        # Direct terminal control
@@ -90,7 +89,7 @@ emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
 When importing Raxol with `runtime: false`, you get access to:
 
 ### UI Components
-- All framework adapters (React, Svelte, LiveView, HEEx)
+- All framework adapters (React, LiveView, HEEx, Raw)
 - Complete component library (Button, Input, Table, Modal, etc.)
 - State management and context systems
 - Animation and transition engines
@@ -183,6 +182,18 @@ Features: syntax highlighting, IntelliSense, component snippets, live preview
 ## Use Cases
 
 Use cases: terminal IDEs, DevOps tools, system monitoring, database clients, chat applications, games.
+
+## Roadmap
+
+### Planned Features
+
+- **Svelte Framework Support** - Reactive component patterns with compile-time optimization
+- **Enhanced Graphics** - WebGL-style rendering in terminal
+- **Multi-session Collaboration** - Real-time shared terminal sessions
+- **Plugin Marketplace** - Community plugins and themes
+- **Mobile Terminal** - iOS/Android terminal clients
+
+See [ROADMAP.md](ROADMAP.md) for detailed timeline and feature specifications.
 
 ## License
 

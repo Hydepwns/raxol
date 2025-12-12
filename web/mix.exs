@@ -8,7 +8,8 @@ defmodule RaxolPlayground.MixProject do
       elixir: "~> 1.16 or ~> 1.17",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      releases: releases()
+      releases: releases(),
+      aliases: aliases()
     ]
   end
 
@@ -46,7 +47,17 @@ defmodule RaxolPlayground.MixProject do
     [
       raxol_playground: [
         include_executables_for: [:unix],
-        steps: [:assemble, :tar]
+        steps: [:assemble]
+      ]
+    ]
+  end
+
+  defp aliases do
+    [
+      "assets.deploy": [
+        "esbuild default --minify",
+        "tailwind default --minify",
+        "phx.digest"
       ]
     ]
   end

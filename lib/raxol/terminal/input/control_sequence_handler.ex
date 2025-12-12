@@ -2,9 +2,19 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   @moduledoc """
   Handles various control sequences for the terminal emulator.
   Includes CSI, OSC, DCS, PM, and APC sequence handling.
+
+  ## APC Sequences
+
+  APC (Application Program Command) sequences are used by the Kitty graphics
+  protocol for transmitting images. The format is:
+
+      ESC _ G <control-data> ; <payload> ESC \\
+
+  Where `G` indicates Kitty graphics and control-data contains key=value pairs.
   """
 
   alias Raxol.Terminal.Commands.{CSIHandler, OSCHandler}
+  alias Raxol.Terminal.ANSI.KittyGraphics
 
   require Raxol.Core.Runtime.Log
 
@@ -59,14 +69,27 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
 
   @doc """
   Handles an APC (Application Program Command) sequence.
+
+  APC sequences are used by the Kitty graphics protocol. The command
+  indicates the type of APC sequence:
+
+  * `G` - Kitty graphics protocol
+  * Other commands are logged and ignored
   """
   def handle_apc_sequence(emulator, command, data) do
-    # APC sequences are typically ignored by terminals
-    Raxol.Core.Runtime.Log.debug(
-      "Ignoring APC sequence: #{command} with data: #{inspect(data)}"
-    )
+    case command do
+      # Kitty graphics protocol
+      "G" ->
+        handle_kitty_graphics(emulator, data)
 
-    emulator
+      # Unknown APC command
+      _ ->
+        Raxol.Core.Runtime.Log.debug(
+          "Unhandled APC sequence: #{command} with data: #{inspect(truncate_data(data))}"
+        )
+
+        emulator
+    end
   end
 
   # Private helper functions for DCS handlers
@@ -99,4 +122,34 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
         emulator
     end
   end
+
+  # Private helper functions for APC handlers
+
+  defp handle_kitty_graphics(emulator, data) do
+    # Get or initialize Kitty graphics state from emulator
+    kitty_state = Map.get(emulator, :kitty_graphics, KittyGraphics.new())
+
+    case KittyGraphics.process_sequence(kitty_state, data) do
+      {updated_kitty_state, :ok} ->
+        Raxol.Core.Runtime.Log.debug(
+          "[ControlSequenceHandler] Kitty graphics processed successfully"
+        )
+
+        Map.put(emulator, :kitty_graphics, updated_kitty_state)
+
+      {_kitty_state, {:error, reason}} ->
+        Raxol.Core.Runtime.Log.warning(
+          "[ControlSequenceHandler] Kitty graphics error: #{inspect(reason)}"
+        )
+
+        emulator
+    end
+  end
+
+  defp truncate_data(data) when is_binary(data) and byte_size(data) > 100 do
+    <<prefix::binary-size(100), _rest::binary>> = data
+    prefix <> "...(#{byte_size(data)} bytes total)"
+  end
+
+  defp truncate_data(data), do: data
 end

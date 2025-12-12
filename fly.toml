@@ -9,6 +9,7 @@ kill_signal = 'SIGTERM'
 
 [build]
   dockerfile = "docker/Dockerfile.web"
+  ignorefile = ".dockerignore"
 
 # [deploy]
 #   release_command = '/app/bin/migrate'
@@ -30,6 +31,13 @@ kill_signal = 'SIGTERM'
     type = 'connections'
     hard_limit = 1000
     soft_limit = 1000
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/"
 
 [[vm]]
   memory = '1gb'

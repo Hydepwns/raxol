@@ -6,6 +6,7 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ANSI.KittyGraphics
   alias Raxol.Plugins.Visualization.DrawingUtils
 
   @doc """
@@ -187,11 +188,17 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
 
   defp convert_to_kitty(image_data, bounds) do
     with {:ok, image} <- decode_image(image_data),
-         resized_image <- resize_image(image, bounds) do
-      # Convert to base64 and create kitty escape sequence
-      base64_data = Base.encode64(resized_image.path)
+         resized_image <- resize_image(image, bounds),
+         {:ok, raw_data} <- File.read(resized_image.path) do
+      # Create KittyGraphics state with image data
+      state =
+        KittyGraphics.new(bounds.width, bounds.height)
+        |> KittyGraphics.set_data(raw_data)
+        |> KittyGraphics.set_format(:png)
+        |> KittyGraphics.transmit_image(%{})
 
-      "\x1b_Ga=T,f=100,s=#{bounds.width},v=#{bounds.height},m=1;#{base64_data}\x1b\\"
+      # Encode to Kitty escape sequence
+      KittyGraphics.encode(state)
     else
       _ -> "Failed to convert image to kitty format"
     end
@@ -270,10 +277,106 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
     List.duplicate(List.duplicate(Cell.new(" "), width), height)
   end
 
-  defp create_kitty_cells(_kitty_data, %{width: width, height: height}) do
-    # Kitty graphics protocol support for UI component integration.
-    # Future enhancement: implement Kitty protocol cell creation
+  defp create_kitty_cells(kitty_data, %{width: width, height: height}) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           create_kitty_cells_from_sequence(kitty_data, width, height)
+         end) do
+      {:ok, cells} ->
+        cells
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error(
+          "[ImageRenderer] Error creating Kitty cells: #{inspect(reason)}"
+        )
+
+        empty_cell_grid(width, height)
+    end
+  end
+
+  @doc false
+  defp create_kitty_cells_from_sequence(kitty_data, width, height) do
+    # If kitty_data is an encoded escape sequence, process it
+    state = KittyGraphics.new()
+
+    case KittyGraphics.process_sequence(state, kitty_data) do
+      {updated_state, :ok} ->
+        # Convert kitty graphics state to cell grid
+        kitty_state_to_cells(updated_state, width, height)
+
+      {_state, {:error, reason}} ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[ImageRenderer] Kitty processing failed: #{inspect(reason)}",
+          %{}
+        )
+
+        empty_cell_grid(width, height)
+    end
+  end
+
+  @doc false
+  defp kitty_state_to_cells(
+         %KittyGraphics{pixel_buffer: buffer} = state,
+         width,
+         height
+       )
+       when byte_size(buffer) > 0 do
+    # Get format to determine bytes per pixel
+    bytes_per_pixel =
+      case state.format do
+        :rgba -> 4
+        :rgb -> 3
+        _ -> 4
+      end
+
+    stride = state.width * bytes_per_pixel
+
+    for y <- 0..(height - 1) do
+      for x <- 0..(width - 1) do
+        build_kitty_cell(
+          buffer,
+          x,
+          y,
+          stride,
+          bytes_per_pixel,
+          state.width,
+          state.height
+        )
+      end
+    end
+  end
+
+  defp kitty_state_to_cells(_state, width, height) do
     empty_cell_grid(width, height)
+  end
+
+  @doc false
+  defp build_kitty_cell(
+         buffer,
+         x,
+         y,
+         stride,
+         bytes_per_pixel,
+         img_width,
+         img_height
+       )
+       when x < img_width and y < img_height do
+    offset = y * stride + x * bytes_per_pixel
+
+    case buffer do
+      <<_::binary-size(offset), r, g, b, _::binary>>
+      when bytes_per_pixel >= 3 ->
+        Cell.new_sixel(
+          " ",
+          %Raxol.Terminal.ANSI.TextFormatting{background: {:rgb, r, g, b}}
+        )
+
+      _ ->
+        Cell.new(" ")
+    end
+  end
+
+  defp build_kitty_cell(_buffer, _x, _y, _stride, _bpp, _img_w, _img_h) do
+    Cell.new(" ")
   end
 
   # --- Private Image Drawing Logic ---

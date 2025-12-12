@@ -34,20 +34,17 @@ WORKDIR /app/web
 
 # Get and compile dependencies
 RUN mix deps.get --only $MIX_ENV
+
+# Remove dev-only files from raxol dependency before compiling
+RUN rm -rf /app/lib/raxol/credo
+
 RUN mix deps.compile
 
 # Compile the application
 RUN mix compile
 
-# Install and build assets (if they exist)
-RUN if [ -d "/app/web/assets" ] && [ -f "/app/web/assets/package.json" ]; then \
-      cd /app/web/assets && \
-      npm install && \
-      cd /app/web && \
-      mix phx.digest; \
-    else \
-      echo "No assets directory or package.json found, skipping asset compilation"; \
-    fi
+# Compile assets (esbuild and tailwind)
+RUN mix assets.deploy
 
 # Build the release
 RUN mix release --overwrite

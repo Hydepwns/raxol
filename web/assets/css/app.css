@@ -47,34 +47,88 @@ html, body {
 /* Code Editor Styles */
 .editor {
   position: relative;
+  background: #1e1e1e;
 }
 
 .editor textarea {
-  font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
+  font-family: 'Fira Code', 'Monaco', 'Menlo', 'Courier New', monospace;
   line-height: 1.6;
   tab-size: 2;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  caret-color: #fff;
+  padding: 16px;
+  resize: none;
+}
+
+.editor textarea:focus {
+  outline: none;
+  background: #1e1e1e;
+}
+
+.editor textarea::selection {
+  background: #264f78;
+}
+
+/* Syntax highlighting via basic patterns - we'll handle this in JS */
+.code-editor-container {
+  position: relative;
+  height: 100%;
+  background: #1e1e1e;
+}
+
+.code-editor-wrapper {
+  position: relative;
+  height: 100%;
+  display: flex;
+  overflow: auto;
+}
+
+.code-line-numbers {
+  background: #1e1e1e;
+  color: #858585;
+  padding: 16px 8px;
+  text-align: right;
+  user-select: none;
+  font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  min-width: 50px;
+  border-right: 1px solid #2d2d2d;
+}
+
+.code-line-numbers div {
+  height: 20.8px;
 }
 
 .editor-header {
   font-weight: 600;
   color: var(--raxol-gray-800);
+  background: #252526;
+  border-bottom: 1px solid #2d2d2d;
 }
 
 .error-panel {
   font-family: 'Fira Code', monospace;
+  background: #1e1e1e;
+  border-top: 1px solid #f48771;
 }
 
 /* Terminal/Preview Styles */
 .preview {
+  background: #0d1117;
   background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
 }
 
 .terminal-output {
-  font-family: 'Fira Code', 'Monaco', monospace;
-  font-size: 13px;
-  line-height: 1.4;
-  white-space: pre-wrap;
-  word-break: break-word;
+  font-family: 'Fira Code', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre;
+  word-break: normal;
+  color: #00ff00;
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+  overflow-x: auto;
 }
 
 /* REPL Styles */
@@ -307,6 +361,157 @@ html, body {
   .playground-container {
     display: none;
   }
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  text-align: center;
+}
+
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.hero-subtitle {
+  font-size: 1.125rem;
+  opacity: 0.9;
+}
+
+/* Framework Selector */
+.framework-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.framework-tab {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.framework-tab:hover {
+  background: white;
+}
+
+.framework-tab.active {
+  background: white;
+  border-color: var(--raxol-primary);
+  color: var(--raxol-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Keyboard Shortcuts Display */
+.shortcuts-hint {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-family: monospace;
+  z-index: 10;
+  animation: fadeIn 0.3s;
+}
+
+.shortcut-combo {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.shortcut-key {
+  background: #374151;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  border: 1px solid #4b5563;
+}
+
+/* Run Button Enhanced */
+.btn-run {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn-run:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-run:active {
+  transform: translateY(0);
+}
+
+/* Copy Button */
+.btn-copy {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.btn-copy:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Component Categories */
+.category-header {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  padding: 0 0.25rem;
+}
+
+/* Auto-run Indicator */
+.auto-run-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.auto-run-indicator.active {
+  color: var(--raxol-success);
+}
+
+.auto-run-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* Dark Mode Support */

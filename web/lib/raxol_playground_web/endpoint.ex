@@ -1,10 +1,10 @@
 defmodule RaxolPlaygroundWeb.Endpoint do
-  use Phoenix.Endpoint, otp_app: :raxol_dev
+  use Phoenix.Endpoint, otp_app: :raxol_playground
 
   @session_options [
     store: :cookie,
-    key: "_raxol_dev_key",
-    signing_salt: "raxol_dev",
+    key: "_raxol_playground_key",
+    signing_salt: "raxol_playground",
     same_site: "Lax"
   ]
 
@@ -20,7 +20,7 @@ defmodule RaxolPlaygroundWeb.Endpoint do
 
   plug Plug.Static,
     at: "/",
-    from: :raxol_dev,
+    from: :raxol_playground,
     gzip: false,
     only: RaxolPlaygroundWeb.static_paths()
 
@@ -28,7 +28,7 @@ defmodule RaxolPlaygroundWeb.Endpoint do
     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
-    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :raxol_dev
+    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :raxol_playground
   end
 
   plug Plug.RequestId
