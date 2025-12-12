@@ -130,12 +130,10 @@ defmodule Raxol.Application do
   end
 
   defp get_children_for_mode(:minimal) do
-    # Ultra-minimal for quick startup
+    # Ultra-minimal for quick startup - no terminal drivers for headless environments
     [
       # Core error recovery only
       {Raxol.Core.ErrorRecovery, [mode: :minimal]},
-      # Minimal terminal supervisor
-      {Raxol.Terminal.Supervisor, [mode: :minimal]},
       # Basic telemetry if enabled
       maybe_add_telemetry(:minimal)
     ]
