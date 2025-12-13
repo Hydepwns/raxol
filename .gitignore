@@ -50,6 +50,7 @@ raxol-*.tar
 # Temporary files, for example, from tests.
 .tmp/
 !/tmp/.gitkeep
+test/fixtures/scripts/exported.ex.json
 
 # Environment files
 .env
@@ -73,6 +74,7 @@ priv/data/events/
 # Database files
 *.sqlite3
 *.sqlite3-journal
+*.dets
 docker/postgres-data/
 .postgres/
 
