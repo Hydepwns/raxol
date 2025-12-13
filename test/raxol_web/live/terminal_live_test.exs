@@ -26,6 +26,9 @@ defmodule RaxolWeb.TerminalLiveTest do
     end
 
     test "uses Phoenix.LiveView" do
+      # Ensure module is fully loaded before checking exports
+      Code.ensure_loaded!(RaxolWeb.TerminalLive)
+
       # Check that required LiveView callbacks are defined
       assert function_exported?(RaxolWeb.TerminalLive, :mount, 3)
       assert function_exported?(RaxolWeb.TerminalLive, :render, 1)

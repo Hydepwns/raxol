@@ -13,26 +13,32 @@ defmodule RaxolWeb.PresenceTest do
     end
 
     test "defines track_user/3" do
+      Code.ensure_loaded!(RaxolWeb.Presence)
       assert function_exported?(RaxolWeb.Presence, :track_user, 3)
     end
 
     test "defines update_cursor/2" do
+      Code.ensure_loaded!(RaxolWeb.Presence)
       assert function_exported?(RaxolWeb.Presence, :update_cursor, 2)
     end
 
     test "defines list_users/1" do
+      Code.ensure_loaded!(RaxolWeb.Presence)
       assert function_exported?(RaxolWeb.Presence, :list_users, 1)
     end
 
     test "defines user_count/1" do
+      Code.ensure_loaded!(RaxolWeb.Presence)
       assert function_exported?(RaxolWeb.Presence, :user_count, 1)
     end
 
     test "defines get_cursors/1" do
+      Code.ensure_loaded!(RaxolWeb.Presence)
       assert function_exported?(RaxolWeb.Presence, :get_cursors, 1)
     end
 
     test "defines format_diff/1" do
+      Code.ensure_loaded!(RaxolWeb.Presence)
       assert function_exported?(RaxolWeb.Presence, :format_diff, 1)
     end
   end

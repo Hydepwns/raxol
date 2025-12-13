@@ -401,16 +401,11 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
 
   defp reload_all_plugins do
     Log.info("Reloading all plugins")
-    # Trigger hot-reload for all plugins using available method
-    case Raxol.Plugins.Manager.list_plugins() do
-      {:ok, plugins} ->
-        Enum.each(plugins, fn plugin_id ->
-          Raxol.Plugins.HotReloadManager.reload_plugin(plugin_id)
-        end)
-
-      _ ->
-        Log.warning("Could not list plugins for reload")
-    end
+    # Note: Hot reload functionality not yet implemented
+    # This would require:
+    # 1. Access to the manager instance
+    # 2. Implementation of HotReloadManager module
+    Log.warning("Hot reload not yet implemented")
   end
 
   defp open_documentation do

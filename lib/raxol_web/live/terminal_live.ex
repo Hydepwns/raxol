@@ -34,11 +34,11 @@ defmodule RaxolWeb.TerminalLive do
 
   import Phoenix.HTML, only: [raw: 1]
 
+  alias Raxol.Core.Runtime.Log
+  alias Raxol.LiveView.TerminalBridge
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.LiveView.TerminalBridge
   alias Raxol.Web.SessionBridge
-  alias Raxol.Core.Runtime.Log
   alias RaxolWeb.Presence
 
   @default_width 80
@@ -80,13 +80,14 @@ defmodule RaxolWeb.TerminalLive do
         emulator = initialize_emulator(socket, bridge_token)
 
         # Subscribe to session updates
-        Phoenix.PubSub.subscribe(Raxol.PubSub, "terminal:#{session_id}")
+        _ = Phoenix.PubSub.subscribe(Raxol.PubSub, "terminal:#{session_id}")
 
         # Track presence
-        Presence.track_user(socket, user_id, %{
-          name: "User #{String.slice(user_id, 0..4)}",
-          cursor: Emulator.get_cursor_position(emulator)
-        })
+        _ =
+          Presence.track_user(socket, user_id, %{
+            name: "User #{String.slice(user_id, 0..4)}",
+            cursor: Emulator.get_cursor_position(emulator)
+          })
 
         # Register session with bridge
         SessionBridge.register_session(session_id, %{emulator: emulator})
@@ -172,7 +173,7 @@ defmodule RaxolWeb.TerminalLive do
         {:noreply, socket}
 
       data ->
-        new_emulator = Emulator.process_input(emulator, data)
+        {new_emulator, _output} = Emulator.process_input(emulator, data)
 
         socket =
           socket
@@ -199,7 +200,7 @@ defmodule RaxolWeb.TerminalLive do
 
     # Generate mouse click escape sequence if mouse reporting is enabled
     mouse_sequence = "\e[M" <> <<32, term_x + 33, term_y + 33>>
-    new_emulator = Emulator.process_input(emulator, mouse_sequence)
+    {new_emulator, _output} = Emulator.process_input(emulator, mouse_sequence)
 
     socket =
       socket
@@ -232,7 +233,7 @@ defmodule RaxolWeb.TerminalLive do
   @impl true
   def handle_event("paste", %{"text" => text}, socket) do
     emulator = socket.assigns.emulator
-    new_emulator = Emulator.process_input(emulator, text)
+    {new_emulator, _output} = Emulator.process_input(emulator, text)
 
     socket =
       socket
@@ -281,7 +282,7 @@ defmodule RaxolWeb.TerminalLive do
     emulator = socket.assigns.emulator
     # Process output data through the emulator's input handler
     # This handles ANSI sequences and updates the terminal state
-    new_emulator = Emulator.process_input(emulator, data)
+    {new_emulator, _output} = Emulator.process_input(emulator, data)
 
     socket =
       socket
@@ -372,25 +373,11 @@ defmodule RaxolWeb.TerminalLive do
 
   # Convert ScreenBuffer.t() to the Buffer.t() format expected by TerminalBridge
   defp screen_buffer_to_bridge_buffer(%ScreenBuffer{} = screen_buffer) do
-    lines =
-      screen_buffer.cells
-      |> Enum.map(fn row ->
-        cells =
-          row
-          |> Enum.map(fn cell ->
-            %{
-              char: cell.char || " ",
-              style: cell_style_to_map(cell.style)
-            }
-          end)
-
-        %{cells: cells}
-      end)
-
     %{
       width: screen_buffer.width,
       height: screen_buffer.height,
-      lines: lines
+      lines: Enum.map(screen_buffer.cells, &convert_row_to_line/1),
+      cells: []
     }
   end
 
@@ -400,49 +387,72 @@ defmodule RaxolWeb.TerminalLive do
          width: width,
          height: height
        }) do
-    lines =
-      cells
-      |> Enum.map(fn row ->
-        row_cells =
-          row
-          |> Enum.map(fn cell ->
-            %{
-              char: Map.get(cell, :char, " "),
-              style: cell_style_to_map(Map.get(cell, :style, %{}))
-            }
-          end)
-
-        %{cells: row_cells}
-      end)
-
     %{
       width: width,
       height: height,
-      lines: lines
+      lines: Enum.map(cells, &convert_map_row_to_line/1),
+      cells: []
     }
   end
 
   # Fallback for any other buffer format
   defp screen_buffer_to_bridge_buffer(buffer) when is_list(buffer) do
-    lines =
-      buffer
-      |> Enum.map(fn row ->
-        cells =
-          row
-          |> Enum.map(fn cell ->
-            %{
-              char: Map.get(cell, :char, " "),
-              style: cell_style_to_map(Map.get(cell, :style, %{}))
-            }
-          end)
-
-        %{cells: cells}
-      end)
-
     %{
       width: length(List.first(buffer) || []),
       height: length(buffer),
-      lines: lines
+      lines: Enum.map(buffer, &convert_map_row_to_line/1),
+      cells: []
+    }
+  end
+
+  # Convert a row of cells to a line structure
+  @spec convert_row_to_line(list()) :: %{
+          cells: list(%{char: String.t(), style: map()})
+        }
+  defp convert_row_to_line(row) do
+    %{cells: Enum.map(row, &convert_cell_to_buffer_cell/1)}
+  end
+
+  # Convert a cell to Buffer.cell() format
+  @spec convert_cell_to_buffer_cell(term()) :: %{char: String.t(), style: map()}
+  defp convert_cell_to_buffer_cell(cell) do
+    char =
+      case cell.char do
+        nil -> " "
+        c when is_binary(c) -> c
+        c -> to_string(c)
+      end
+
+    %{
+      char: char,
+      style: cell_style_to_map(cell.style)
+    }
+  end
+
+  # Convert a map-based row to a line structure
+  @spec convert_map_row_to_line(list()) :: %{
+          cells: list(%{char: String.t(), style: map()})
+        }
+  defp convert_map_row_to_line(row) do
+    %{cells: Enum.map(row, &convert_map_cell_to_buffer_cell/1)}
+  end
+
+  # Convert a map-based cell to Buffer.cell() format
+  @spec convert_map_cell_to_buffer_cell(map()) :: %{
+          char: String.t(),
+          style: map()
+        }
+  defp convert_map_cell_to_buffer_cell(cell) do
+    char =
+      case Map.get(cell, :char) do
+        nil -> " "
+        c when is_binary(c) -> c
+        c -> to_string(c)
+      end
+
+    %{
+      char: char,
+      style: cell_style_to_map(Map.get(cell, :style, %{}))
     }
   end
 
@@ -596,21 +606,28 @@ defmodule RaxolWeb.TerminalLive do
     emulator = socket.assigns.emulator
     position = Emulator.get_cursor_position(emulator)
 
-    Phoenix.PubSub.broadcast(
-      Raxol.PubSub,
-      socket.assigns.presence_topic,
-      {:cursor_update, socket.assigns.user_id, position}
-    )
+    _ =
+      Phoenix.PubSub.broadcast(
+        Raxol.PubSub,
+        socket.assigns.presence_topic,
+        {:cursor_update, socket.assigns.user_id, position}
+      )
 
-    Presence.update_cursor(socket, position)
+    _ = Presence.update_cursor(socket, position)
     socket
   end
 
   defp switch_session(socket, new_session_id) do
     # Save current session state
-    SessionBridge.restore_state(socket.assigns.session_id, %{
-      emulator: socket.assigns.emulator
-    })
+    case SessionBridge.restore_state(socket.assigns.session_id, %{
+           emulator: socket.assigns.emulator
+         }) do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        Log.warning("Failed to restore session state: #{inspect(reason)}")
+    end
 
     # Load new session
     emulator =

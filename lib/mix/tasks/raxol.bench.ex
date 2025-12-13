@@ -195,9 +195,9 @@ defmodule Mix.Tasks.Raxol.Bench do
 
   defp run_parser_benchmarks(config, opts \\ []) do
     # Proper aliases for Raxol modules
-    alias Raxol.Terminal.Emulator
-    alias Raxol.Terminal.ANSI.Utils.AnsiParser
     alias Raxol.Terminal.ANSI.StateMachine
+    alias Raxol.Terminal.ANSI.Utils.AnsiParser
+    alias Raxol.Terminal.Emulator
 
     _emulator = Emulator.new(80, 24)
 
@@ -257,11 +257,11 @@ defmodule Mix.Tasks.Raxol.Bench do
   end
 
   defp run_memory_benchmarks(config) do
+    alias Raxol.Terminal.ANSI.StateMachine
+    alias Raxol.Terminal.ANSI.Utils.AnsiParser
+    alias Raxol.Terminal.Cursor
     alias Raxol.Terminal.Emulator
     alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
-    alias Raxol.Terminal.Cursor
-    alias Raxol.Terminal.ANSI.Utils.AnsiParser
-    alias Raxol.Terminal.ANSI.StateMachine
 
     jobs = %{
       "memory_emulator_80x24" => fn ->
@@ -298,13 +298,10 @@ defmodule Mix.Tasks.Raxol.Bench do
       end,
       "memory_plugin_system" => fn ->
         alias Raxol.Plugins.Manager
-        # Handle already_started case in CI/test environments
-        case Manager.start_link() do
-          {:ok, _pid} -> :ok
-          {:error, {:already_started, _pid}} -> :ok
-        end
+        # Create a new manager instance
+        {:ok, manager} = Manager.new()
 
-        Manager.list_plugins()
+        Manager.list_plugins(manager)
       end
     }
 
@@ -358,17 +355,14 @@ defmodule Mix.Tasks.Raxol.Bench do
 
   defp bench_plugin_operations do
     alias Raxol.Plugins.Manager
-    # Handle already_started case in CI/test environments
-    case Manager.start_link() do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-    end
+    # Create a new manager instance
+    {:ok, manager} = Manager.new()
 
     1..5
     |> Enum.map(fn _ ->
       Task.async(fn ->
-        Manager.list_plugins()
-        Manager.get_plugin_state(:test_plugin)
+        Manager.list_plugins(manager)
+        Manager.get_plugin_state(manager, :test_plugin)
       end)
     end)
     |> Task.await_many()
@@ -945,9 +939,9 @@ defmodule Mix.Tasks.Raxol.Bench do
   end
 
   defp terminal_quick_jobs do
-    alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
     alias Raxol.Terminal.Cursor
     alias Raxol.Terminal.Emulator
+    alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
 
     %{
       "emulator_creation" => fn -> Emulator.new(80, 24) end,

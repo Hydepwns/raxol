@@ -32,9 +32,9 @@ defmodule RaxolWeb.TerminalChannel do
 
   use Phoenix.Channel
 
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Emulator
   alias Raxol.Web.SessionBridge
-  alias Raxol.Core.Runtime.Log
   alias RaxolWeb.Presence
 
   @max_messages_per_second 100
@@ -121,8 +121,6 @@ defmodule RaxolWeb.TerminalChannel do
   - `"get_buffer"` - Screen buffer request
   """
   @impl true
-  def handle_in(event, payload, socket)
-
   def handle_in("input", %{"data" => data}, socket) do
     with :ok <- check_rate_limit(socket),
          :ok <- validate_input(data),
@@ -199,8 +197,15 @@ defmodule RaxolWeb.TerminalChannel do
 
     if session_id && emulator do
       # Save session state on disconnect
-      SessionBridge.restore_state(session_id, %{emulator: emulator})
-      Log.debug("[TerminalChannel] Saved session state for #{session_id}")
+      case SessionBridge.restore_state(session_id, %{emulator: emulator}) do
+        :ok ->
+          Log.debug("[TerminalChannel] Saved session state for #{session_id}")
+
+        {:error, reason} ->
+          Log.warning(
+            "[TerminalChannel] Failed to save session: #{inspect(reason)}"
+          )
+      end
     end
 
     :ok
@@ -319,10 +324,7 @@ defmodule RaxolWeb.TerminalChannel do
 
   defp process_input(socket, data) do
     emulator = socket.assigns.emulator
-    new_emulator = Emulator.process_input(emulator, data)
-
-    # Get output and send to client
-    output = Emulator.get_output(new_emulator)
+    {new_emulator, output} = Emulator.process_input(emulator, data)
 
     if byte_size(output) > 0 do
       push(socket, "output", %{data: output})

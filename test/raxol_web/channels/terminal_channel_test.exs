@@ -4,28 +4,37 @@ defmodule RaxolWeb.TerminalChannelTest do
   # Note: This is a unit test file for the TerminalChannel module.
   # For full integration tests, use Phoenix.ChannelTest with proper endpoint setup.
 
-  alias RaxolWeb.TerminalChannel
   alias Raxol.Web.SessionBridge
   alias Raxol.Web.PersistentStore
 
   setup do
-    # Ensure SessionBridge is running
-    case GenServer.whereis(SessionBridge) do
+    # Use unique names to avoid conflicts between tests
+    test_id = :erlang.unique_integer([:positive])
+
+    # Start SessionBridge with unique name - ExUnit will clean up
+    session_bridge_name = :"SessionBridge_#{test_id}"
+
+    case Process.whereis(SessionBridge) do
       nil ->
-        {:ok, _pid} = SessionBridge.start_link([])
+        start_supervised!({SessionBridge, name: session_bridge_name})
 
       _pid ->
         :ok
     end
 
-    # Ensure PersistentStore is running (used by some channel operations)
-    case GenServer.whereis(PersistentStore) do
+    # Start PersistentStore with unique name - ExUnit will clean up
+    persistent_store_name = :"PersistentStore_#{test_id}"
+
+    case Process.whereis(PersistentStore) do
       nil ->
-        {:ok, _pid} = PersistentStore.start_link([])
+        start_supervised!({PersistentStore, name: persistent_store_name})
 
       _pid ->
         :ok
     end
+
+    # Ensure module is loaded before any tests run
+    Code.ensure_loaded!(RaxolWeb.TerminalChannel)
 
     :ok
   end
@@ -36,18 +45,22 @@ defmodule RaxolWeb.TerminalChannelTest do
     end
 
     test "defines join/3 callback" do
+      Code.ensure_loaded!(RaxolWeb.TerminalChannel)
       assert function_exported?(RaxolWeb.TerminalChannel, :join, 3)
     end
 
     test "defines handle_in/3 callback" do
+      Code.ensure_loaded!(RaxolWeb.TerminalChannel)
       assert function_exported?(RaxolWeb.TerminalChannel, :handle_in, 3)
     end
 
     test "defines handle_info/2 callback" do
+      Code.ensure_loaded!(RaxolWeb.TerminalChannel)
       assert function_exported?(RaxolWeb.TerminalChannel, :handle_info, 2)
     end
 
     test "defines terminate/2 callback" do
+      Code.ensure_loaded!(RaxolWeb.TerminalChannel)
       assert function_exported?(RaxolWeb.TerminalChannel, :terminate, 2)
     end
   end

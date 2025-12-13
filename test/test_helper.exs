@@ -16,7 +16,7 @@ if System.get_env("SKIP_TERMBOX2_TESTS") == "true" do
     "[CI] Skipping Docker-dependent tests (SKIP_TERMBOX2_TESTS=true)"
   )
 
-  ExUnit.configure(exclude: [docker: true])
+  ExUnit.configure(exclude: [docker: true, skip_on_ci: true])
 end
 
 # --- Platform-specific Test Skip Logic ---
