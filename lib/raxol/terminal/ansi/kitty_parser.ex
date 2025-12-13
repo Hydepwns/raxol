@@ -99,8 +99,8 @@ defmodule Raxol.Terminal.ANSI.KittyParser do
     Reset the parser state for a new image while preserving accumulated data.
     """
     @spec reset(t()) :: t()
-    def reset(state) do
-      %__MODULE__{
+    def reset(%__MODULE__{} = state) do
+      %{
         state
         | action: :transmit,
           format: :rgba,
