@@ -29,7 +29,9 @@ defmodule Raxol.Query do
   """
   @type query :: %{sql: String.t(), params: list()}
 
-  @spec parameterized(String.t(), list()) :: {:ok, query()}
+  @spec parameterized(String.t(), list()) ::
+          {:ok, query()}
+          | {:error, {:param_mismatch, non_neg_integer(), non_neg_integer()}}
   def parameterized(template, params)
       when is_binary(template) and is_list(params) do
     # Count placeholders

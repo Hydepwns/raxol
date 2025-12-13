@@ -114,7 +114,7 @@ defmodule RaxolWeb.PresenceTest do
       formatted = Presence.format_diff(diff)
 
       assert length(formatted.joins) == 3
-      assert length(formatted.leaves) == 0
+      assert Enum.empty?(formatted.leaves)
     end
   end
 

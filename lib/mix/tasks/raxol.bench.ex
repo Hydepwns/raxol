@@ -361,8 +361,8 @@ defmodule Mix.Tasks.Raxol.Bench do
     1..5
     |> Enum.map(fn _ ->
       Task.async(fn ->
-        Manager.list_plugins(manager)
-        Manager.get_plugin_state(manager, :test_plugin)
+        _plugins = Manager.list_plugins(manager)
+        Manager.get_plugin_state(manager, "test_plugin")
       end)
     end)
     |> Task.await_many()
