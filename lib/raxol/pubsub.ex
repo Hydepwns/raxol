@@ -41,7 +41,7 @@ defmodule Raxol.PubSub do
 
       {Phoenix.PubSub, name: Raxol.PubSub.server_name()}
   """
-  @spec server_name() :: atom()
+  @spec server_name() :: Raxol.PubSub
   def server_name, do: __MODULE__
 
   @doc """
@@ -53,7 +53,7 @@ defmodule Raxol.PubSub do
 
       Raxol.PubSub.subscribe("terminal:events")
   """
-  @spec subscribe(String.t()) :: :ok | {:error, term()}
+  @spec subscribe(String.t()) :: :ok
   def subscribe(topic) when is_binary(topic) do
     Phoenix.PubSub.subscribe(__MODULE__, topic)
   end
@@ -69,7 +69,7 @@ defmodule Raxol.PubSub do
 
       Raxol.PubSub.subscribe("terminal:events", metadata: %{user_id: 123})
   """
-  @spec subscribe(String.t(), keyword()) :: :ok | {:error, term()}
+  @spec subscribe(String.t(), keyword()) :: :ok
   def subscribe(topic, opts) when is_binary(topic) and is_list(opts) do
     Phoenix.PubSub.subscribe(__MODULE__, topic, opts)
   end
@@ -81,7 +81,7 @@ defmodule Raxol.PubSub do
 
       Raxol.PubSub.unsubscribe("terminal:events")
   """
-  @spec unsubscribe(String.t()) :: :ok | {:error, term()}
+  @spec unsubscribe(String.t()) :: :ok
   def unsubscribe(topic) when is_binary(topic) do
     Phoenix.PubSub.unsubscribe(__MODULE__, topic)
   end
@@ -93,7 +93,7 @@ defmodule Raxol.PubSub do
 
       Raxol.PubSub.broadcast("terminal:events", {:key_press, :enter})
   """
-  @spec broadcast(String.t(), term()) :: :ok | {:error, term()}
+  @spec broadcast(String.t(), term()) :: :ok
   def broadcast(topic, message) when is_binary(topic) do
     Phoenix.PubSub.broadcast(__MODULE__, topic, message)
   end
@@ -105,7 +105,7 @@ defmodule Raxol.PubSub do
 
       Raxol.PubSub.broadcast_from(self(), "terminal:events", {:output, "Hello"})
   """
-  @spec broadcast_from(pid(), String.t(), term()) :: :ok | {:error, term()}
+  @spec broadcast_from(pid(), String.t(), term()) :: :ok
   def broadcast_from(from_pid, topic, message)
       when is_pid(from_pid) and is_binary(topic) do
     Phoenix.PubSub.broadcast_from(__MODULE__, from_pid, topic, message)
@@ -118,7 +118,7 @@ defmodule Raxol.PubSub do
 
       Raxol.PubSub.local_broadcast("terminal:events", {:local_event, data})
   """
-  @spec local_broadcast(String.t(), term()) :: :ok | {:error, term()}
+  @spec local_broadcast(String.t(), term()) :: :ok
   def local_broadcast(topic, message) when is_binary(topic) do
     Phoenix.PubSub.local_broadcast(__MODULE__, topic, message)
   end
@@ -130,8 +130,7 @@ defmodule Raxol.PubSub do
 
       Raxol.PubSub.local_broadcast_from(self(), "terminal:events", {:output, "data"})
   """
-  @spec local_broadcast_from(pid(), String.t(), term()) ::
-          :ok | {:error, term()}
+  @spec local_broadcast_from(pid(), String.t(), term()) :: :ok
   def local_broadcast_from(from_pid, topic, message)
       when is_pid(from_pid) and is_binary(topic) do
     Phoenix.PubSub.local_broadcast_from(__MODULE__, from_pid, topic, message)

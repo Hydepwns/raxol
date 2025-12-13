@@ -21,6 +21,7 @@ defmodule Raxol.Auth do
           token: String.t(),
           user_id: String.t(),
           expires_at: DateTime.t(),
+          renewable: boolean(),
           metadata: map()
         }
 
@@ -41,7 +42,7 @@ defmodule Raxol.Auth do
         renewable: true
       )
   """
-  @spec create_session(map(), keyword()) :: {:ok, session()} | {:error, term()}
+  @spec create_session(map(), keyword()) :: {:ok, session()}
   def create_session(user, opts \\ []) do
     expires_in = Keyword.get(opts, :expires_in, :timer.hours(24))
     renewable = Keyword.get(opts, :renewable, true)
@@ -103,7 +104,7 @@ defmodule Raxol.Auth do
 
       {:ok, secret} = Raxol.Auth.enable_mfa(user, :totp)
   """
-  @spec enable_mfa(map(), :totp | :webauthn) :: {:ok, map()} | {:error, term()}
+  @spec enable_mfa(map(), :totp | :webauthn) :: {:ok, map()}
   def enable_mfa(user, :totp) do
     secret = :crypto.strong_rand_bytes(20) |> Base.encode32()
 
@@ -144,7 +145,7 @@ defmodule Raxol.Auth do
 
       {:ok, credential} = Raxol.Auth.register_webauthn(user)
   """
-  @spec register_webauthn(map()) :: {:ok, map()} | {:error, term()}
+  @spec register_webauthn(map()) :: {:ok, map()}
   def register_webauthn(user) do
     {:ok,
      %{

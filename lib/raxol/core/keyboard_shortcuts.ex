@@ -21,8 +21,8 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
   # Removed non-existent @behaviour reference
 
-  alias Raxol.Core.KeyboardShortcuts.ShortcutsServer, as: Server
   alias Raxol.Core.Events.EventManager, as: EventManager
+  alias Raxol.Core.KeyboardShortcuts.ShortcutsServer, as: Server
   alias Raxol.Core.Runtime.Log
 
   @doc """

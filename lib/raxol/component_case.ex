@@ -89,7 +89,6 @@ defmodule Raxol.ComponentCase do
   def simulate_event(component, event) do
     case apply_event(component, event) do
       {:ok, updated} -> updated
-      _ -> component
     end
   end
 

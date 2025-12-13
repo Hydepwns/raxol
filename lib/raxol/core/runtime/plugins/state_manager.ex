@@ -7,8 +7,8 @@ defmodule StateManager do
   for consistency and performance.
   """
 
-  alias Raxol.Core.StateManager
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.StateManager
   @type plugin_id :: String.t()
   @type plugin_module :: module()
   @type plugin_config :: map()

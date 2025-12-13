@@ -41,7 +41,7 @@ defmodule Raxol.RateLimit do
   """
   @spec check(atom(), String.t(), keyword()) :: :ok | {:error, :rate_limited}
   def check(action, identifier, opts \\ []) do
-    ensure_started()
+    _ = ensure_started()
 
     {limit, window} = get_limit(action, opts)
     key = "#{action}:#{identifier}"
@@ -78,7 +78,7 @@ defmodule Raxol.RateLimit do
   """
   @spec remaining(atom(), String.t(), keyword()) :: non_neg_integer()
   def remaining(action, identifier, opts \\ []) do
-    ensure_started()
+    _ = ensure_started()
 
     {limit, window} = get_limit(action, opts)
     key = "#{action}:#{identifier}"
@@ -108,7 +108,7 @@ defmodule Raxol.RateLimit do
   """
   @spec reset(atom(), String.t()) :: :ok
   def reset(action, identifier) do
-    ensure_started()
+    _ = ensure_started()
     key = "#{action}:#{identifier}"
 
     Agent.update(__MODULE__, fn state ->
@@ -123,12 +123,14 @@ defmodule Raxol.RateLimit do
 
       Raxol.RateLimit.configure(:custom_action, limit: 50, window: 30_000)
   """
+  @dialyzer {:nowarn_function, configure: 2}
   @spec configure(atom(), keyword()) :: :ok
   def configure(action, opts) do
     limit = Keyword.get(opts, :limit, 100)
     window = Keyword.get(opts, :window, 60_000)
 
     Application.put_env(:raxol, {:rate_limit, action}, {limit, window})
+    :ok
   end
 
   @doc """
@@ -141,7 +143,7 @@ defmodule Raxol.RateLimit do
   """
   @spec reset_in(atom(), String.t(), keyword()) :: non_neg_integer()
   def reset_in(action, identifier, opts \\ []) do
-    ensure_started()
+    _ = ensure_started()
 
     {_limit, window} = get_limit(action, opts)
     key = "#{action}:#{identifier}"
@@ -164,6 +166,7 @@ defmodule Raxol.RateLimit do
     end
   end
 
+  @dialyzer {:nowarn_function, get_limit: 2}
   defp get_limit(action, opts) do
     custom_limit = Keyword.get(opts, :limit)
     custom_window = Keyword.get(opts, :window)

@@ -280,8 +280,9 @@ defmodule Raxol.Security.AuditorTest do
   end
 
   describe "validate_file_upload/2" do
+    @tag :skip
     test "placeholder for file upload tests" do
-      # TODO: Implement actual file upload tests
+      # File upload tests not yet implemented
       assert true
     end
   end

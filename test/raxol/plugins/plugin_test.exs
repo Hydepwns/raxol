@@ -14,13 +14,13 @@ defmodule Raxol.Plugins.PluginTest do
 
   describe "plugin manager" do
     test "creates a new plugin manager" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
       assert manager.plugins == %{}
       assert %Raxol.Plugins.PluginConfig{} = manager.config
     end
 
     test "loads a plugin" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
 
       {:ok, updated_manager} =
         PluginManager.load_plugin(manager, HyperlinkPlugin)
@@ -30,14 +30,14 @@ defmodule Raxol.Plugins.PluginTest do
     end
 
     test "unloads a plugin" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
       {:ok, updated_manager} = PluginManager.unload_plugin(manager, "hyperlink")
       assert updated_manager.plugins == %{}
     end
 
     test "enables and disables a plugin" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
 
       # Debug: Check if plugin was loaded correctly
@@ -54,13 +54,13 @@ defmodule Raxol.Plugins.PluginTest do
     end
 
     test "processes input through plugins" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
       {:ok, _manager} = PluginManager.process_input(manager, "test input")
     end
 
     test "processes output through plugins" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
 
       {:ok, _manager, _transformed_output} =
@@ -68,7 +68,7 @@ defmodule Raxol.Plugins.PluginTest do
     end
 
     test "processes mouse events through plugins" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
 
       event = %{
@@ -114,14 +114,14 @@ defmodule Raxol.Plugins.PluginTest do
   describe "plugin dependencies" do
     test "loads plugin with satisfied dependencies" do
       # Simulate loading TestPlugin first, then DependentPlugin
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, TestPlugin)
       {:ok, manager} = PluginManager.load_plugin(manager, DependentPlugin)
       assert Map.has_key?(manager.plugins, "dependent_plugin")
     end
 
     test "fails to load plugin with missing dependencies" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
       # DependentPlugin requires TestPlugin
       assert {:error, error_msg} =
                PluginManager.load_plugin(manager, DependentPlugin)
@@ -132,7 +132,7 @@ defmodule Raxol.Plugins.PluginTest do
     end
 
     test "detects dependency cycles" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
       # CircularDependencyPlugin depends on itself
       assert {:error, error_msg} =
                PluginManager.load_plugin(manager, CircularDependencyPlugin)
@@ -182,7 +182,7 @@ defmodule Raxol.Plugins.PluginTest do
 
   describe "plugin configuration persistence" do
     test "plugin config is persisted and loaded" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
       config = %{foo: "bar"}
       {:ok, manager} = PluginManager.load_plugin(manager, TestPlugin, config)
 

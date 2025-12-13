@@ -7,13 +7,13 @@ defmodule Raxol.Plugins.Manager.Events do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Plugins.EventHandler
-  alias Raxol.Plugins.Manager.Core
+  alias Raxol.Plugins.Manager
 
   @doc """
   Processes input through all enabled plugins.
   Delegates to `Raxol.Plugins.EventHandler.handle_input/2`.
   """
-  def process_input(%Core{} = manager, input) when is_binary(input) do
+  def process_input(%Manager{} = manager, input) when is_binary(input) do
     EventHandler.handle_input(manager, input)
   end
 
@@ -23,7 +23,7 @@ defmodule Raxol.Plugins.Manager.Events do
   or {:ok, manager} if no transformation is needed.
   Delegates to `Raxol.Plugins.EventHandler.handle_output/2`.
   """
-  def process_output(%Core{} = manager, output) when is_binary(output) do
+  def process_output(%Manager{} = manager, output) when is_binary(output) do
     EventHandler.handle_output(manager, output)
   end
 
@@ -31,7 +31,7 @@ defmodule Raxol.Plugins.Manager.Events do
   Notifies all enabled plugins of a terminal resize event.
   Delegates to `Raxol.Plugins.EventHandler.handle_resize/3`.
   """
-  def handle_resize(%Core{} = manager, width, height)
+  def handle_resize(%Manager{} = manager, width, height)
       when is_integer(width) and is_integer(height) do
     EventHandler.handle_resize(manager, width, height)
   end
@@ -42,7 +42,7 @@ defmodule Raxol.Plugins.Manager.Events do
   Returns {:ok, updated_manager, :propagate | :halt} or {:error, reason}.
   Delegates to `Raxol.Plugins.EventHandler.handle_mouse_event/3`.
   """
-  def handle_mouse_event(%Core{} = manager, event, rendered_cells)
+  def handle_mouse_event(%Manager{} = manager, event, rendered_cells)
       when is_map(event) do
     case EventHandler.handle_mouse_event(manager, event, rendered_cells) do
       {:ok, updated_manager} -> {:ok, updated_manager, :propagate}
@@ -53,7 +53,7 @@ defmodule Raxol.Plugins.Manager.Events do
   Broadcasts an event to all enabled plugins.
   Returns {:ok, updated_manager} or {:error, reason}.
   """
-  def broadcast_event(%Core{} = manager, event) do
+  def broadcast_event(%Manager{} = manager, event) do
     Enum.reduce_while(
       manager.plugins,
       {:ok, manager},
@@ -83,7 +83,7 @@ defmodule Raxol.Plugins.Manager.Events do
     case module.handle_event(plugin, event) do
       {:ok, updated_plugin} ->
         updated_manager =
-          Core.update_plugins(
+          Manager.update_plugins(
             acc_manager,
             Map.put(acc_manager.plugins, plugin.name, updated_plugin)
           )
@@ -96,16 +96,16 @@ defmodule Raxol.Plugins.Manager.Events do
   end
 
   @doc """
-  Loads a plugin module and initializes it. Delegates to `Raxol.Plugins.Manager.Core.load_plugin/2` or `/3`.
+  Loads a plugin module and initializes it. Delegates to `Raxol.Plugins.Lifecycle.load_plugin/2` or `/3`.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
   """
-  def load_plugin(%Core{} = manager, module) when is_atom(module) do
-    Core.load_plugin(manager, module)
+  def load_plugin(%Manager{} = manager, module) when is_atom(module) do
+    Raxol.Plugins.Lifecycle.load_plugin(manager, module)
   end
 
-  def load_plugin(%Core{} = manager, module, config)
+  def load_plugin(%Manager{} = manager, module, config)
       when is_atom(module) and is_map(config) do
-    Core.load_plugin(manager, module, config)
+    Raxol.Plugins.Lifecycle.load_plugin(manager, module, config)
   end
 
   def new do
@@ -116,17 +116,17 @@ defmodule Raxol.Plugins.Manager.Events do
   Unloads a plugin from the manager.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
   """
-  def unload_plugin(%Core{} = manager, plugin_name)
+  def unload_plugin(%Manager{} = manager, plugin_name)
       when is_binary(plugin_name) do
     _plugin_key = normalize_plugin_key(plugin_name)
-    Core.unload_plugin(manager, plugin_name)
+    Raxol.Plugins.Lifecycle.unload_plugin(manager, plugin_name)
   end
 
   @doc """
   Enables a plugin in the manager.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
   """
-  def enable_plugin(%Core{} = manager, plugin_name)
+  def enable_plugin(%Manager{} = manager, plugin_name)
       when is_binary(plugin_name) do
     case get_plugin(manager, plugin_name) do
       {:ok, plugin} ->
@@ -134,7 +134,7 @@ defmodule Raxol.Plugins.Manager.Events do
         plugin_key = normalize_plugin_key(plugin_name)
 
         updated_manager =
-          Core.update_plugins(
+          Manager.update_plugins(
             manager,
             Map.put(manager.plugins, plugin_key, updated_plugin)
           )
@@ -150,7 +150,7 @@ defmodule Raxol.Plugins.Manager.Events do
   Disables a plugin in the manager.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
   """
-  def disable_plugin(%Core{} = manager, plugin_name)
+  def disable_plugin(%Manager{} = manager, plugin_name)
       when is_binary(plugin_name) do
     case get_plugin(manager, plugin_name) do
       {:ok, plugin} ->
@@ -158,7 +158,7 @@ defmodule Raxol.Plugins.Manager.Events do
         plugin_key = normalize_plugin_key(plugin_name)
 
         updated_manager =
-          Core.update_plugins(
+          Manager.update_plugins(
             manager,
             Map.put(manager.plugins, plugin_key, updated_plugin)
           )
@@ -174,7 +174,8 @@ defmodule Raxol.Plugins.Manager.Events do
   Gets a plugin by name from the manager.
   Returns `{:ok, plugin}` or `{:error, :not_found}`.
   """
-  def get_plugin(%Core{} = manager, plugin_name) when is_binary(plugin_name) do
+  def get_plugin(%Manager{} = manager, plugin_name)
+      when is_binary(plugin_name) do
     plugin_key = normalize_plugin_key(plugin_name)
 
     case Map.get(manager.plugins, plugin_key) do

@@ -8,8 +8,8 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   - Managing update settings
   """
 
-  alias Raxol.System.Updater
   alias Raxol.Core.Runtime.Log
+  alias Raxol.System.Updater
 
   @doc """
   Executes the update command with the provided options and arguments.

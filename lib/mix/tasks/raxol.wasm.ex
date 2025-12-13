@@ -77,8 +77,8 @@ defmodule Mix.Tasks.Raxol.Wasm do
   """
 
   use Mix.Task
-  alias Raxol.WASM.Builder
   alias Raxol.Core.Runtime.Log
+  alias Raxol.WASM.Builder
 
   @switches [
     watch: :boolean,

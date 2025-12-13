@@ -189,7 +189,7 @@ defmodule Raxol.Security do
       end
   """
   @spec check_rate_limit(String.t(), atom(), keyword()) ::
-          {:ok, non_neg_integer()} | {:error, :rate_limited}
+          {:ok, :allowed} | {:error, :medium, String.t()}
   def check_rate_limit(identifier, action, opts \\ []) do
     Auditor.check_rate_limit(identifier, action, opts)
   end

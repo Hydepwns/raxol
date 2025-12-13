@@ -13,9 +13,9 @@ defmodule Raxol.Core.ColorSystem do
   - Accessibility checks and adjustments
   """
 
-  alias Raxol.UI.Theming.Theme
-  alias Raxol.UI.Theming.Colors
   alias Raxol.Style.Colors.{Color, Utilities}
+  alias Raxol.UI.Theming.Colors
+  alias Raxol.UI.Theming.Theme
   require Raxol.Core.Runtime.Log
 
   @doc """

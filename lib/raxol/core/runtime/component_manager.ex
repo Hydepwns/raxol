@@ -18,8 +18,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   require Raxol.Core.Runtime.Log
 
-  alias UUID
   alias Raxol.Core.Runtime.Subscription
+  alias UUID
 
   # Client API
 

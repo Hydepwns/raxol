@@ -3,8 +3,8 @@ defmodule Raxol.Plugins.Lifecycle.ManagerUpdate do
   Handles manager state updates, config persistence, and plugin state management for plugin lifecycle management.
   """
 
-  alias Raxol.Plugins.PluginConfig
   alias Raxol.Plugins.Lifecycle.Dependencies
+  alias Raxol.Plugins.PluginConfig
 
   def update_manager_with_plugin(manager, plugin, plugin_name, merged_config) do
     case save_plugin_config(manager.config, plugin_name, merged_config) do

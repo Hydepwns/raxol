@@ -3,18 +3,18 @@ defmodule Raxol.Core.Renderer.View do
   Provides view-related functionality for rendering UI components.
   """
 
-  alias Raxol.Core.Renderer.View.Types
+  alias Raxol.Core.Renderer.Layout, as: LayoutEngine
+  alias Raxol.Core.Renderer.View.Components.{Box, Scroll, Text}
   alias Raxol.Core.Renderer.View.Layout.Flex
   alias Raxol.Core.Renderer.View.Style.Border
-  alias Raxol.Core.Renderer.View.Components.{Text, Box, Scroll}
+  alias Raxol.Core.Renderer.View.Types
   alias Raxol.Core.Renderer.View.Utils.ViewUtils
-  alias Raxol.Core.Renderer.Layout, as: LayoutEngine
 
   alias Raxol.Core.Renderer.View.{
-    Components,
     Borders,
-    Validation,
-    LayoutHelpers
+    Components,
+    LayoutHelpers,
+    Validation
   }
 
   @typedoc """

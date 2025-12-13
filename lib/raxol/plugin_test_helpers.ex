@@ -24,6 +24,15 @@ defmodule Raxol.PluginTestHelpers do
       end
   """
 
+  @type test_plugin :: %{
+          module: atom(),
+          state: term(),
+          config: map(),
+          hooks: list(),
+          events: list(),
+          call_log: list()
+        }
+
   @doc """
   Create a test instance of a plugin.
 
@@ -36,7 +45,7 @@ defmodule Raxol.PluginTestHelpers do
 
       plugin = create_test_plugin(MyPlugin, config: %{enabled: true})
   """
-  @spec create_test_plugin(module(), keyword()) :: map()
+  @spec create_test_plugin(module(), keyword()) :: test_plugin()
   def create_test_plugin(plugin_module, opts \\ []) do
     config = Keyword.get(opts, :config, %{})
     initial_state = Keyword.get(opts, :state)
@@ -81,7 +90,7 @@ defmodule Raxol.PluginTestHelpers do
 
       {plugin, result} = call_hook(plugin, :on_key, %{key: :enter})
   """
-  @spec call_hook(map(), atom(), term()) :: {map(), term()}
+  @spec call_hook(test_plugin(), atom(), term()) :: {test_plugin(), term()}
   def call_hook(plugin, hook_name, args) do
     module = plugin.module
     state = plugin.state
@@ -232,7 +241,7 @@ defmodule Raxol.PluginTestHelpers do
 
       plugin = clear_call_log(plugin)
   """
-  @spec clear_call_log(map()) :: map()
+  @spec clear_call_log(test_plugin()) :: test_plugin()
   def clear_call_log(plugin) do
     %{plugin | call_log: []}
   end
@@ -244,7 +253,7 @@ defmodule Raxol.PluginTestHelpers do
 
       plugin = update_config(plugin, %{enabled: false})
   """
-  @spec update_config(map(), map()) :: map()
+  @spec update_config(test_plugin(), map()) :: test_plugin()
   def update_config(plugin, new_config) do
     module = plugin.module
     merged_config = Map.merge(plugin.config, new_config)

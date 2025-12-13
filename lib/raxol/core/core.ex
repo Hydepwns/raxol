@@ -46,11 +46,11 @@ defmodule Raxol.Core do
   }
 
   alias Raxol.Core.{
-    ColorSystem,
     Accessibility,
-    UserPreferences,
+    ColorSystem,
+    Metrics,
     Performance,
-    Metrics
+    UserPreferences
   }
 
   require Raxol.Core.Runtime.Log

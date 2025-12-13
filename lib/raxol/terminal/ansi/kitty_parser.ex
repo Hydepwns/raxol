@@ -140,9 +140,6 @@ defmodule Raxol.Terminal.ANSI.KittyParser do
         case parse_control_data(control_data, state) do
           {:ok, parsed_state} ->
             handle_payload(payload, parsed_state)
-
-          {:error, reason, error_state} ->
-            {:error, reason, error_state}
         end
 
       :error ->

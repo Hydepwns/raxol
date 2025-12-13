@@ -14,8 +14,8 @@ defmodule Raxol.Performance.AutomatedMonitor do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Performance.AdaptiveOptimizer
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Performance.AdaptiveOptimizer
 
   # Monitoring intervals
   # 30 seconds

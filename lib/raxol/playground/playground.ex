@@ -19,10 +19,10 @@ defmodule Raxol.Playground do
 
   alias Raxol.Playground.{
     Catalog,
-    Preview,
-    PropertyEditor,
     CodeGenerator,
     Examples,
+    Preview,
+    PropertyEditor,
     State
   }
 

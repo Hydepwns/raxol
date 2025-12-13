@@ -2,10 +2,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   @moduledoc "Manages the application lifecycle, including startup, shutdown, and terminal interaction."
 
   use GenServer
-  alias Raxol.Core.Runtime.Log
-  alias Raxol.Core.Runtime.Events.Dispatcher
-  alias Raxol.Core.Runtime.Plugins.PluginManager, as: Manager
   alias Raxol.Core.CompilerState
+  alias Raxol.Core.Runtime.Events.Dispatcher
+  alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Plugins.PluginManager, as: Manager
 
   defmodule State do
     @moduledoc false

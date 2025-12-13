@@ -4,7 +4,6 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
   """
 
   # Simplified dependency checking - complex DependencyManager removed
-  alias Raxol.Plugins.Manager.Core
 
   def validate_plugin_dependencies(plugin, manager) do
     case check_for_circular_dependency(plugin, manager) do
@@ -18,7 +17,7 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
 
   def check_dependencies(plugin, manager) do
     loaded_plugins_map =
-      Core.list_plugins(manager)
+      Raxol.Plugins.Manager.list_plugins(manager)
       |> Enum.map(fn plugin -> {plugin.name, plugin} end)
       |> Enum.into(%{})
 

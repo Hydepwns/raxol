@@ -252,7 +252,8 @@ defmodule Raxol.Web.PersistentStore do
     dets_file = Keyword.get(opts, :dets_file, @dets_file)
 
     # Create ETS table for hot storage
-    :ets.new(ets_table, [:named_table, :set, :public, read_concurrency: true])
+    _table =
+      :ets.new(ets_table, [:named_table, :set, :public, read_concurrency: true])
 
     # Ensure directory exists for DETS
     dets_dir = Path.dirname(to_string(dets_file))
@@ -298,10 +299,11 @@ defmodule Raxol.Web.PersistentStore do
         entry
       end
 
-    case tier do
-      :hot -> :ets.insert(state.ets_table, {key, entry_with_ttl})
-      :warm -> :dets.insert(state.dets_file, {key, entry_with_ttl})
-    end
+    _result =
+      case tier do
+        :hot -> :ets.insert(state.ets_table, {key, entry_with_ttl})
+        :warm -> :dets.insert(state.dets_file, {key, entry_with_ttl})
+      end
 
     {:reply, :ok, state}
   end
@@ -327,8 +329,8 @@ defmodule Raxol.Web.PersistentStore do
                   tier: :hot
               }
 
-              :ets.insert(state.ets_table, {key, updated})
-              :dets.delete(state.dets_file, key)
+              true = :ets.insert(state.ets_table, {key, updated})
+              :ok = :dets.delete(state.dets_file, key)
               {:ok, entry.value}
 
             [] ->
@@ -341,8 +343,8 @@ defmodule Raxol.Web.PersistentStore do
 
   @impl true
   def handle_call({:delete, key}, _from, state) do
-    :ets.delete(state.ets_table, key)
-    :dets.delete(state.dets_file, key)
+    true = :ets.delete(state.ets_table, key)
+    :ok = :dets.delete(state.dets_file, key)
     {:reply, :ok, state}
   end
 
@@ -374,8 +376,8 @@ defmodule Raxol.Web.PersistentStore do
               accessed_at: System.system_time(:second)
           }
 
-          :ets.insert(state.ets_table, {key, updated})
-          :dets.delete(state.dets_file, key)
+          true = :ets.insert(state.ets_table, {key, updated})
+          :ok = :dets.delete(state.dets_file, key)
           :ok
 
         [] ->
@@ -394,8 +396,8 @@ defmodule Raxol.Web.PersistentStore do
       case :ets.lookup(state.ets_table, key) do
         [{^key, entry}] ->
           updated = %{entry | tier: :warm}
-          :dets.insert(state.dets_file, {key, updated})
-          :ets.delete(state.ets_table, key)
+          :ok = :dets.insert(state.dets_file, {key, updated})
+          true = :ets.delete(state.ets_table, key)
           :ok
 
         [] ->
@@ -468,8 +470,8 @@ defmodule Raxol.Web.PersistentStore do
 
   @impl true
   def handle_call(:clear, _from, state) do
-    :ets.delete_all_objects(state.ets_table)
-    :dets.delete_all_objects(state.dets_file)
+    true = :ets.delete_all_objects(state.ets_table)
+    :ok = :dets.delete_all_objects(state.dets_file)
     {:reply, :ok, state}
   end
 
@@ -479,7 +481,7 @@ defmodule Raxol.Web.PersistentStore do
       case :ets.lookup(state.ets_table, key) do
         [{^key, entry}] ->
           updated = %{entry | accessed_at: System.system_time(:second)}
-          :ets.insert(state.ets_table, {key, updated})
+          true = :ets.insert(state.ets_table, {key, updated})
           entry.value
 
         [] ->
@@ -491,8 +493,8 @@ defmodule Raxol.Web.PersistentStore do
                   tier: :hot
               }
 
-              :ets.insert(state.ets_table, {key, updated})
-              :dets.delete(state.dets_file, key)
+              true = :ets.insert(state.ets_table, {key, updated})
+              :ok = :dets.delete(state.dets_file, key)
               entry.value
 
             [] ->
@@ -507,7 +509,7 @@ defmodule Raxol.Web.PersistentStore do
                 tier: :hot
               }
 
-              :ets.insert(state.ets_table, {key, entry})
+              true = :ets.insert(state.ets_table, {key, entry})
               value
           end
       end
@@ -543,8 +545,8 @@ defmodule Raxol.Web.PersistentStore do
                   tier: :hot
               }
 
-              :ets.insert(state.ets_table, {key, updated})
-              :dets.delete(state.dets_file, key)
+              true = :ets.insert(state.ets_table, {key, updated})
+              :ok = :dets.delete(state.dets_file, key)
               :ok
 
             [] ->
@@ -582,7 +584,7 @@ defmodule Raxol.Web.PersistentStore do
 
   @impl true
   def terminate(_reason, state) do
-    :dets.close(state.dets_file)
+    :ok = :dets.close(state.dets_file)
     :ok
   end
 
@@ -644,8 +646,8 @@ defmodule Raxol.Web.PersistentStore do
 
     Enum.each(to_demote, fn {key, entry} ->
       demoted = %{entry | tier: :warm}
-      :dets.insert(state.dets_file, {key, demoted})
-      :ets.delete(state.ets_table, key)
+      :ok = :dets.insert(state.dets_file, {key, demoted})
+      true = :ets.delete(state.ets_table, key)
     end)
 
     length(to_demote)

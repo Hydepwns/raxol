@@ -26,6 +26,15 @@ defmodule Raxol.UI.ComponentTest do
 
   alias Raxol.Core.Buffer
 
+  @type render_result :: %{
+          buffer: term(),
+          state: term(),
+          component: module(),
+          props: keyword(),
+          width: non_neg_integer(),
+          height: non_neg_integer()
+        }
+
   @doc """
   Render a component to a buffer for testing.
 
@@ -39,7 +48,7 @@ defmodule Raxol.UI.ComponentTest do
 
       result = render_component(MyButton, label: "Click", width: 20, height: 3)
   """
-  @spec render_component(module(), keyword()) :: map()
+  @spec render_component(module(), keyword()) :: render_result()
   def render_component(component, opts \\ []) do
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
@@ -81,7 +90,7 @@ defmodule Raxol.UI.ComponentTest do
 
       {result, events} = render_with_events(MyButton, label: "Click")
   """
-  @spec render_with_events(module(), keyword()) :: {map(), pid()}
+  @spec render_with_events(module(), keyword()) :: {render_result(), pid()}
   def render_with_events(component, opts \\ []) do
     {:ok, events} = Agent.start_link(fn -> [] end)
 
@@ -117,7 +126,7 @@ defmodule Raxol.UI.ComponentTest do
       result = simulate_key(result, :enter)
       result = simulate_key(result, "a")
   """
-  @spec simulate_key(map(), atom() | String.t()) :: map()
+  @spec simulate_key(render_result(), atom() | String.t()) :: render_result()
   def simulate_key(result, key) do
     key_data =
       case key do

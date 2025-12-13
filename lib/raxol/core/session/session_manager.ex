@@ -61,10 +61,10 @@ defmodule Raxol.Core.Session.SessionManager do
   alias Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Session.{
+    MultiplexerSession,
     SecuritySession,
-    WebSession,
     TerminalSession,
-    MultiplexerSession
+    WebSession
   }
 
   defstruct [

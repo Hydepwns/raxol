@@ -5,17 +5,17 @@ defmodule Raxol.Plugins.EventHandler.InputEvents do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Plugins.Manager.Core
   alias Raxol.Plugins.EventHandler.Common
+  alias Raxol.Plugins.Manager
 
   @type event :: map()
-  @type manager :: Core.t()
+  @type manager :: Manager.t()
   @type result :: {:ok, manager()} | {:error, term()}
 
   @doc """
   Dispatches an "input" event to all enabled plugins implementing `handle_input/2`.
   """
-  @spec handle_input(Core.t(), binary()) :: result()
+  @spec handle_input(Manager.t(), binary()) :: result()
   def handle_input(manager, input) do
     initial_acc = %{manager: manager, input: input}
 
@@ -40,8 +40,8 @@ defmodule Raxol.Plugins.EventHandler.InputEvents do
   @doc """
   Dispatches a "key_event" to all enabled plugins implementing `handle_key_event/2`.
   """
-  @spec handle_key_event(Core.t(), map()) :: result()
-  def handle_key_event(%Core{} = manager, key_event) do
+  @spec handle_key_event(Manager.t(), map()) :: result()
+  def handle_key_event(%Manager{} = manager, key_event) do
     initial_acc = %{manager: manager, key_event: key_event, commands: []}
 
     result =

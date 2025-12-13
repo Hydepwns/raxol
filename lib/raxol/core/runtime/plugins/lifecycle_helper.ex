@@ -7,14 +7,14 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
 
   alias Raxol.Core.Runtime.Plugins.{
     Loader,
-    PluginValidator,
     PluginCommandManager,
+    PluginErrorHandler,
     PluginEventProcessor,
-    PluginReloader,
-    PluginUnloader,
     PluginInitializer,
     PluginLifecycleCallbacks,
-    PluginErrorHandler
+    PluginReloader,
+    PluginUnloader,
+    PluginValidator
   }
 
   require Raxol.Core.Runtime.Log

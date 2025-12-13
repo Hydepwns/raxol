@@ -27,7 +27,7 @@ defmodule Raxol.Privacy do
 
       :ok = Raxol.Privacy.anonymize_user(user_id)
   """
-  @spec anonymize_user(String.t()) :: :ok | {:error, term()}
+  @spec anonymize_user(String.t()) :: :ok
   def anonymize_user(user_id) when is_binary(user_id) do
     # In a real implementation, this would:
     # 1. Find all user data across systems
@@ -51,8 +51,14 @@ defmodule Raxol.Privacy do
 
       {:ok, data} = Raxol.Privacy.export_user_data(user_id)
   """
-  @spec export_user_data(String.t(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @type user_export :: %{
+          user_id: String.t(),
+          exported_at: DateTime.t(),
+          format: atom(),
+          data: map()
+        }
+
+  @spec export_user_data(String.t(), keyword()) :: {:ok, user_export()}
   def export_user_data(user_id, opts \\ []) when is_binary(user_id) do
     format = Keyword.get(opts, :format, :json)
 
@@ -85,7 +91,7 @@ defmodule Raxol.Privacy do
 
       :ok = Raxol.Privacy.delete_user_data(user_id)
   """
-  @spec delete_user_data(String.t(), keyword()) :: :ok | {:error, term()}
+  @spec delete_user_data(String.t(), keyword()) :: :ok
   def delete_user_data(user_id, _opts \\ []) when is_binary(user_id) do
     # In a real implementation, this would:
     # 1. Identify all user data across systems
@@ -104,7 +110,7 @@ defmodule Raxol.Privacy do
         {:ok, false} -> skip_analytics()
       end
   """
-  @spec check_consent(String.t(), atom()) :: {:ok, boolean()} | {:error, term()}
+  @spec check_consent(String.t(), atom()) :: {:ok, boolean()}
   def check_consent(_user_id, _consent_type) do
     # In a real implementation, this would check stored consent records
     {:ok, false}
@@ -117,7 +123,7 @@ defmodule Raxol.Privacy do
 
       :ok = Raxol.Privacy.record_consent(user_id, :analytics, true)
   """
-  @spec record_consent(String.t(), atom(), boolean()) :: :ok | {:error, term()}
+  @spec record_consent(String.t(), atom(), boolean()) :: :ok
   def record_consent(_user_id, _consent_type, _granted) do
     # In a real implementation, this would store consent with timestamp
     :ok

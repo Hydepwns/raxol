@@ -60,6 +60,6 @@ defmodule Raxol.Sandbox do
   @doc """
   Check if sandbox mode is available.
   """
-  @spec available?() :: boolean()
+  @spec available?() :: true
   def available?, do: true
 end

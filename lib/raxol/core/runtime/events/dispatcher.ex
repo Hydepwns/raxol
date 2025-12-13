@@ -11,9 +11,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   require Raxol.Core.Runtime.Command
   require Raxol.Core.UserPreferences
 
+  alias Raxol.Core.Events.Event
   alias Raxol.Core.Runtime.Application
   alias Raxol.Core.Runtime.Command
-  alias Raxol.Core.Events.Event
   alias Raxol.Core.UserPreferences
 
   @registry_name :raxol_event_subscriptions

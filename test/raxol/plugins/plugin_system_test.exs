@@ -19,7 +19,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
 
   describe "Plugin Manager" do
     test "creates a new plugin manager" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
       assert manager.plugins == %{}
 
       assert manager.config == %Raxol.Plugins.PluginConfig{
@@ -31,17 +31,17 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
 
     # test 'loads a plugin' do
-    #   {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new(%{plugins: [TestPlugin]}) # Incorrect usage
+    #   {:ok, manager_struct} = Raxol.Plugins.Manager.new(%{plugins: [TestPlugin]}) # Incorrect usage
     #
     #   {:ok, updated_manager} =
-    #     Raxol.Plugins.Manager.Core.load_plugin(manager_struct, HyperlinkPlugin)
+    #     Raxol.Plugins.Manager.load_plugin(manager_struct, HyperlinkPlugin)
     #
     #   assert Map.has_key?(updated_manager.plugins, "hyperlink")
     #   assert updated_manager.plugins["hyperlink"].enabled == true
     # end
 
     test "loads plugin with dependencies" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
 
       # Create a test plugin that depends on HyperlinkPlugin
       defmodule TestDependentPlugin do
@@ -88,7 +88,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
 
     test "loads plugin with specific config" do
-      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager} = Raxol.Plugins.Manager.new()
 
       # Create a test plugin that accepts config
       defmodule TestConfigPlugin do
@@ -141,10 +141,10 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
 
     test "unloads a plugin" do
-      {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager_struct} = Raxol.Plugins.Manager.new()
 
       {:ok, manager_with_plugin} =
-        Raxol.Plugins.Manager.Core.load_plugin(manager_struct, HyperlinkPlugin)
+        Raxol.Plugins.Manager.load_plugin(manager_struct, HyperlinkPlugin)
 
       {:ok, updated_manager} =
         Lifecycle.unload_plugin(
@@ -156,10 +156,10 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
 
     test "enables a plugin" do
-      {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager_struct} = Raxol.Plugins.Manager.new()
 
       {:ok, manager_with_plugin} =
-        Raxol.Plugins.Manager.Core.load_plugin(manager_struct, HyperlinkPlugin)
+        Raxol.Plugins.Manager.load_plugin(manager_struct, HyperlinkPlugin)
 
       {:ok, manager_after_disable} =
         Lifecycle.disable_plugin(
@@ -176,10 +176,10 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
 
     test "disables a plugin" do
-      {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager_struct} = Raxol.Plugins.Manager.new()
 
       {:ok, manager_with_plugin} =
-        Raxol.Plugins.Manager.Core.load_plugin(manager_struct, HyperlinkPlugin)
+        Raxol.Plugins.Manager.load_plugin(manager_struct, HyperlinkPlugin)
 
       assert manager_with_plugin.plugins["hyperlink"].enabled == true
 
@@ -193,10 +193,10 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
 
     test "processes output through plugins" do
-      {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager_struct} = Raxol.Plugins.Manager.new()
 
       {:ok, manager_with_plugin} =
-        Raxol.Plugins.Manager.Core.load_plugin(manager_struct, HyperlinkPlugin)
+        Raxol.Plugins.Manager.load_plugin(manager_struct, HyperlinkPlugin)
 
       {:ok, manager_after_url_processing, transformed_output} =
         EventHandler.handle_output(
@@ -226,10 +226,10 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
 
     test "processes input through plugins" do
-      {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager_struct} = Raxol.Plugins.Manager.new()
 
       {:ok, manager_with_plugin} =
-        Raxol.Plugins.Manager.Core.load_plugin(manager_struct, SearchPlugin)
+        Raxol.Plugins.Manager.load_plugin(manager_struct, SearchPlugin)
 
       {:ok, updated_manager} =
         EventHandler.handle_input(
@@ -241,11 +241,11 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
 
     test "processes mouse events through plugins" do
-      {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager_struct} = Raxol.Plugins.Manager.new()
       _emulator = Raxol.Terminal.Emulator.new(100, 24)
 
       {:ok, manager_with_plugin} =
-        Raxol.Plugins.Manager.Core.load_plugin(manager_struct, HyperlinkPlugin)
+        Raxol.Plugins.Manager.load_plugin(manager_struct, HyperlinkPlugin)
 
       {:ok, updated_manager, propagation} =
         MouseEvents.handle_mouse_event(
@@ -285,17 +285,17 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
 
     test "Hyperlink Plugin processes output via PluginManager" do
-      {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
+      {:ok, manager_struct} = Raxol.Plugins.Manager.new()
 
       {:ok, manager_after_load} =
-        Raxol.Plugins.Manager.Core.load_plugin(manager_struct, HyperlinkPlugin)
+        Raxol.Plugins.Manager.load_plugin(manager_struct, HyperlinkPlugin)
 
       input_text = "Check this link: https://example.com and continue."
 
       result = OutputEvents.handle_output(manager_after_load, input_text)
 
       assert match?(
-               {:ok, %Raxol.Plugins.Manager.Core{}, _transformed_output},
+               {:ok, %Raxol.Plugins.Manager{}, _transformed_output},
                result
              )
 
@@ -450,7 +450,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
 
   describe "Emulator with Plugins" do
     test "loads and uses plugins" do
-      {:ok, initial_plugin_manager} = Raxol.Plugins.Manager.Core.new()
+      {:ok, initial_plugin_manager} = Raxol.Plugins.Manager.new()
 
       emulator =
         Raxol.Terminal.Emulator.new(80, 24,
@@ -472,7 +472,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       emulator_updated = %{emulator | plugin_manager: final_plugin_manager}
 
       plugins =
-        Raxol.Plugins.Manager.Core.list_plugins(emulator_updated.plugin_manager)
+        Raxol.Plugins.Manager.list_plugins(emulator_updated.plugin_manager)
 
       assert length(plugins) == 4
     end
@@ -486,7 +486,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       }
 
       {:ok, plugin_manager_struct} =
-        Raxol.Plugins.Manager.Core.new(plugin_config)
+        Raxol.Plugins.Manager.new(plugin_config)
 
       {:ok, loaded_manager} =
         Lifecycle.load_plugin(
@@ -501,13 +501,13 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert pm == loaded_manager
 
       assert Map.has_key?(
-               Raxol.Plugins.Manager.Core.loaded_plugins(pm),
+               Raxol.Plugins.Manager.loaded_plugins(pm),
                "hyperlink"
              )
     end
 
     test "processes output through plugins" do
-      {:ok, plugin_manager_struct} = Raxol.Plugins.Manager.Core.new()
+      {:ok, plugin_manager_struct} = Raxol.Plugins.Manager.new()
 
       {:ok, loaded_manager} =
         Lifecycle.load_plugin(
@@ -532,7 +532,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
 
     test "disabled plugin does not process output" do
-      {:ok, plugin_manager_struct} = Raxol.Plugins.Manager.Core.new()
+      {:ok, plugin_manager_struct} = Raxol.Plugins.Manager.new()
 
       {:ok, loaded_manager} =
         Lifecycle.load_plugin(
@@ -556,7 +556,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
 
     test "processes input through plugins" do
-      {:ok, plugin_manager_struct} = Raxol.Plugins.Manager.Core.new()
+      {:ok, plugin_manager_struct} = Raxol.Plugins.Manager.new()
 
       {:ok, loaded_manager} =
         Lifecycle.load_plugin(plugin_manager_struct, Raxol.Plugins.SearchPlugin)
@@ -576,13 +576,13 @@ defmodule Raxol.Plugins.PluginSystemTest do
       final_plugin_manager = updated_emulator.plugin_manager
 
       search_plugin_state =
-        Raxol.Plugins.Manager.Core.get_plugin(final_plugin_manager, "search")
+        Raxol.Plugins.Manager.get_plugin(final_plugin_manager, "search")
 
       assert search_plugin_state.search_term == "test query"
     end
 
     test "Emulator with Plugins loads and uses plugins" do
-      {:ok, initial_plugin_manager_struct} = Raxol.Plugins.Manager.Core.new()
+      {:ok, initial_plugin_manager_struct} = Raxol.Plugins.Manager.new()
 
       {:ok, manager_after_hyperlink} =
         Lifecycle.load_plugin(
@@ -604,7 +604,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
 
       assert %Emulator{plugin_manager: pm} = emulator
 
-      loaded = Raxol.Plugins.Manager.Core.loaded_plugins(pm)
+      loaded = Raxol.Plugins.Manager.loaded_plugins(pm)
       assert Map.has_key?(loaded, "hyperlink")
       assert Map.has_key?(loaded, "search")
       assert Map.has_key?(loaded, "image")

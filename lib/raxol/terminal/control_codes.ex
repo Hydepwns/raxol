@@ -269,6 +269,7 @@ defmodule Raxol.Terminal.ControlCodes do
     emulator
   end
 
+  @dialyzer {:nowarn_function, handle_ris: 1}
   @spec handle_ris(Emulator.t()) :: Emulator.t()
   # ESC c - Reset to Initial State
   def handle_ris(emulator) do
@@ -304,6 +305,7 @@ defmodule Raxol.Terminal.ControlCodes do
     |> handle_cr()
   end
 
+  @dialyzer {:nowarn_function, handle_hts: 1}
   @spec handle_hts(Emulator.t()) :: Emulator.t()
   # ESC H - Horizontal Tabulation Set
   def handle_hts(emulator) do

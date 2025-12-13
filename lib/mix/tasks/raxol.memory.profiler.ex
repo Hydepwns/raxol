@@ -61,8 +61,8 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
 
   use Mix.Task
 
-  alias Raxol.Utils.MemoryFormatter
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Utils.MemoryFormatter
 
   @shortdoc "Interactive memory profiler for real-time analysis"
 

@@ -21,8 +21,6 @@ defmodule Raxol.System.Updater.State do
 
   alias Raxol.System.Updater.State.UpdaterServer, as: Server
 
-  @deprecated "Use Raxol.System.Updater.State instead of Raxol.System.Updater.State"
-
   # @update_settings_file "~/.raxol/update_settings.json"
 
   # Ensure server is started

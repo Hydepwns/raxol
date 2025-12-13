@@ -8,13 +8,13 @@ defmodule Raxol.Plugins.Lifecycle do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Plugins.{PluginConfig, Manager.Core}
+  alias Raxol.Plugins.{Manager, PluginConfig}
 
   alias Raxol.Plugins.Lifecycle.{
-    Initialization,
     Dependencies,
-    ManagerUpdate,
-    ErrorHandling
+    ErrorHandling,
+    Initialization,
+    ManagerUpdate
   }
 
   @doc """
@@ -24,9 +24,9 @@ defmodule Raxol.Plugins.Lifecycle do
   and saving the updated configuration.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
   """
-  @spec load_plugin(Core.t(), atom(), map()) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def load_plugin(%Core{} = manager, module, config \\ %{})
+  @spec load_plugin(Manager.t(), atom(), map()) ::
+          {:ok, Manager.t()} | {:error, String.t()}
+  def load_plugin(%Manager{} = manager, module, config \\ %{})
       when is_atom(module) do
     plugin_name = Initialization.get_plugin_id_from_metadata(module)
 
@@ -78,9 +78,9 @@ defmodule Raxol.Plugins.Lifecycle do
   one by one using `load_plugin/3`.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
   """
-  @spec load_plugins(Core.t(), list(atom())) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def load_plugins(%Core{} = manager, modules) when is_list(modules) do
+  @spec load_plugins(Manager.t(), list(atom())) ::
+          {:ok, Manager.t()} | {:error, String.t()}
+  def load_plugins(%Manager{} = manager, modules) when is_list(modules) do
     module_configs = prepare_module_configs(modules)
 
     with {:ok, initialized_plugins} <-
@@ -147,9 +147,9 @@ defmodule Raxol.Plugins.Lifecycle do
   the plugin, saves the configuration, and removes the plugin from the manager state.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
   """
-  @spec unload_plugin(Core.t(), String.t()) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def unload_plugin(%Core{} = manager, name) when is_binary(name) do
+  @spec unload_plugin(Manager.t(), String.t()) ::
+          {:ok, Manager.t()} | {:error, String.t()}
+  def unload_plugin(%Manager{} = manager, name) when is_binary(name) do
     plugin_key = Dependencies.normalize_plugin_key(name)
 
     case Map.get(manager.plugins, plugin_key) do
@@ -235,9 +235,9 @@ defmodule Raxol.Plugins.Lifecycle do
   saves the configuration, and updates the plugin state in the manager.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
   """
-  @spec enable_plugin(Core.t(), String.t()) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def enable_plugin(%Core{} = manager, name) when is_binary(name) do
+  @spec enable_plugin(Manager.t(), String.t()) ::
+          {:ok, Manager.t()} | {:error, String.t()}
+  def enable_plugin(%Manager{} = manager, name) when is_binary(name) do
     with {:ok, plugin} <- get_plugin(manager, name),
          :ok <- check_plugin_dependencies(plugin, manager),
          {:ok, updated_config} <-
@@ -274,9 +274,9 @@ defmodule Raxol.Plugins.Lifecycle do
   and updates the plugin state in the manager.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
   """
-  @spec disable_plugin(Core.t(), String.t()) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def disable_plugin(%Core{} = manager, name) when is_binary(name) do
+  @spec disable_plugin(Manager.t(), String.t()) ::
+          {:ok, Manager.t()} | {:error, String.t()}
+  def disable_plugin(%Manager{} = manager, name) when is_binary(name) do
     case get_plugin(manager, name) do
       {:ok, plugin} ->
         {:ok, updated_config} =

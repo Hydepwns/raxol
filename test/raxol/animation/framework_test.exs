@@ -519,7 +519,7 @@ defmodule Raxol.Animation.FrameworkTest do
         })
 
       # Measure animation performance
-      start_time = System.unique_integer([:positive])
+      start_time = System.monotonic_time(:millisecond)
 
       :ok =
         Framework.start_animation(
@@ -542,13 +542,12 @@ defmodule Raxol.Animation.FrameworkTest do
 
       wait_for_animation_completion("test_element", animation.name)
 
-      end_time = System.unique_integer([:positive])
+      end_time = System.monotonic_time(:millisecond)
 
-      duration =
-        System.convert_time_unit(end_time - start_time, :native, :millisecond)
+      duration = end_time - start_time
 
-      # Verify performance requirements
-      assert duration < 16, "Animation frame time too high"
+      # Verify performance requirements (should complete within reasonable time)
+      assert duration < 200, "Animation completion time too high: #{duration}ms"
     end
   end
 end

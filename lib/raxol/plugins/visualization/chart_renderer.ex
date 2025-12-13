@@ -4,9 +4,9 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Terminal.Cell
   alias Raxol.Plugins.Visualization.DrawingUtils
   alias Raxol.Style
+  alias Raxol.Terminal.Cell
 
   # Define module attributes for thresholds previously in the plugin
   @max_chart_data_points 100

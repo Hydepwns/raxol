@@ -35,7 +35,7 @@ defmodule Raxol.RBAC do
   @spec define_role(atom(), list(atom())) :: :ok
   def define_role(role, permissions)
       when is_atom(role) and is_list(permissions) do
-    ensure_started()
+    _ = ensure_started()
 
     Agent.update(__MODULE__, fn state ->
       put_in(state, [:roles, role], MapSet.new(permissions))
@@ -51,7 +51,7 @@ defmodule Raxol.RBAC do
   """
   @spec assign_role(map() | String.t(), atom()) :: :ok
   def assign_role(user, role) when is_atom(role) do
-    ensure_started()
+    _ = ensure_started()
     user_id = get_user_id(user)
 
     Agent.update(__MODULE__, fn state ->
@@ -71,7 +71,7 @@ defmodule Raxol.RBAC do
   """
   @spec can?(map() | String.t(), atom()) :: boolean()
   def can?(user, permission) when is_atom(permission) do
-    ensure_started()
+    _ = ensure_started()
     user_id = get_user_id(user)
 
     Agent.get(__MODULE__, fn state ->
@@ -93,7 +93,7 @@ defmodule Raxol.RBAC do
   """
   @spec get_permissions(map() | String.t()) :: list(atom())
   def get_permissions(user) do
-    ensure_started()
+    _ = ensure_started()
     user_id = get_user_id(user)
 
     Agent.get(__MODULE__, fn state ->
@@ -118,7 +118,7 @@ defmodule Raxol.RBAC do
   """
   @spec get_roles(map() | String.t()) :: list(atom())
   def get_roles(user) do
-    ensure_started()
+    _ = ensure_started()
     user_id = get_user_id(user)
 
     Agent.get(__MODULE__, fn state ->
@@ -137,7 +137,7 @@ defmodule Raxol.RBAC do
   """
   @spec remove_role(map() | String.t(), atom()) :: :ok
   def remove_role(user, role) when is_atom(role) do
-    ensure_started()
+    _ = ensure_started()
     user_id = get_user_id(user)
 
     Agent.update(__MODULE__, fn state ->

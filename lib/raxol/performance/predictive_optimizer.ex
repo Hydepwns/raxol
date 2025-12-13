@@ -16,8 +16,8 @@ defmodule Raxol.Performance.PredictiveOptimizer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Performance.ETSCacheManager
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Performance.ETSCacheManager
 
   # milliseconds (used for prediction calculations)
   # @prediction_window 1000

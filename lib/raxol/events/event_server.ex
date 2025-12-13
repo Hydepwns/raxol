@@ -26,10 +26,10 @@ defmodule Raxol.Events.EventServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+  alias Raxol.Core.Accessibility.EventHandler, as: AccessibilityEventHandler
   alias Raxol.Core.Runtime.Events.EventsHandler
   alias Raxol.Plugins.EventHandler, as: PluginsEventHandler
   alias Raxol.Terminal.EventHandler, as: TerminalEventHandler
-  alias Raxol.Core.Accessibility.EventHandler, as: AccessibilityEventHandler
 
   @type event_type :: :terminal | :plugin | :ui | :accessibility | :system
   @type event_data :: map()

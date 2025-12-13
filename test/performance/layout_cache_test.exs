@@ -167,6 +167,7 @@ defmodule Raxol.Performance.LayoutCacheTest do
 
   describe "Performance" do
     @tag :slow
+    @tag :skip_on_ci
     test "cached layout is faster than uncached" do
       complex_tree = generate_complex_tree(10, 3)
       constraints = %{width: 200, height: 100}

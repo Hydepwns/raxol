@@ -33,8 +33,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   @behaviour Raxol.Terminal.ScreenBufferBehaviour
 
-  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Cell
 
   alias Raxol.Terminal.Buffer.{
     CharEditor,
@@ -44,11 +44,11 @@ defmodule Raxol.Terminal.ScreenBuffer do
   alias Raxol.Core.Utils.Validation
 
   alias Raxol.Terminal.ScreenBuffer.{
-    EraseOperations,
-    RegionOperations,
-    BehaviourImpl,
-    Operations,
     Attributes,
+    BehaviourImpl,
+    EraseOperations,
+    Operations,
+    RegionOperations,
     Selection
   }
 

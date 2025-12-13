@@ -6,14 +6,14 @@ defmodule Raxol.Plugins.Manager.Hooks do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Plugins.Manager.Core
+  alias Raxol.Plugins.Manager
 
   @doc """
   Runs render-related hooks for all enabled plugins.
   Collects any direct output commands (e.g., escape sequences) returned by plugins.
   Returns {:ok, updated_manager, list_of_output_commands}
   """
-  def run_render_hooks(%Core{} = manager) do
+  def run_render_hooks(%Manager{} = manager) do
     Enum.reduce(manager.plugins, {:ok, manager, []}, &run_plugin_render_hook/2)
   end
 
@@ -68,7 +68,7 @@ defmodule Raxol.Plugins.Manager.Hooks do
     case module.handle_render(plugin) do
       {:ok, updated_plugin, command} when not is_nil(command) ->
         updated_manager =
-          Core.update_plugins(
+          Manager.update_plugins(
             acc_manager,
             Map.put(acc_manager.plugins, plugin.name, updated_plugin)
           )
@@ -77,7 +77,7 @@ defmodule Raxol.Plugins.Manager.Hooks do
 
       {:ok, updated_plugin} ->
         updated_manager =
-          Core.update_plugins(
+          Manager.update_plugins(
             acc_manager,
             Map.put(acc_manager.plugins, plugin.name, updated_plugin)
           )
@@ -96,7 +96,7 @@ defmodule Raxol.Plugins.Manager.Hooks do
   Runs a specific hook on all enabled plugins.
   Returns {:ok, updated_manager, results} where results is a list of hook results.
   """
-  def run_hook(%Core{} = manager, hook_name, args \\ []) do
+  def run_hook(%Manager{} = manager, hook_name, args \\ []) do
     Enum.reduce(manager.plugins, {:ok, manager, []}, fn {name, plugin}, acc ->
       run_plugin_hook({name, plugin}, acc, hook_name, args)
     end)
@@ -192,7 +192,7 @@ defmodule Raxol.Plugins.Manager.Hooks do
     case apply(module, hook_name, [plugin | args]) do
       {:ok, updated_plugin, result} ->
         updated_manager =
-          Core.update_plugins(
+          Manager.update_plugins(
             acc_manager,
             Map.put(acc_manager.plugins, plugin.name, updated_plugin)
           )
@@ -201,7 +201,7 @@ defmodule Raxol.Plugins.Manager.Hooks do
 
       {:ok, updated_plugin} ->
         updated_manager =
-          Core.update_plugins(
+          Manager.update_plugins(
             acc_manager,
             Map.put(acc_manager.plugins, plugin.name, updated_plugin)
           )

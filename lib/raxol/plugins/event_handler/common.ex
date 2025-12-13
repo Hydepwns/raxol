@@ -5,11 +5,11 @@ defmodule Raxol.Plugins.EventHandler.Common do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Plugins.Manager.Core
+  alias Raxol.Plugins.Manager
 
   @type event :: map()
   @type plugin :: map()
-  @type manager :: Core.t()
+  @type manager :: Manager.t()
   @type accumulator :: map()
   @type callback_name :: atom()
   @type result_handler_fun :: fun()
@@ -18,7 +18,7 @@ defmodule Raxol.Plugins.EventHandler.Common do
   Generic dispatcher that reduces over plugins and calls a specific handler function.
   """
   @spec dispatch_event(
-          Core.t(),
+          map(),
           callback_name(),
           list(),
           non_neg_integer(),
@@ -81,7 +81,7 @@ defmodule Raxol.Plugins.EventHandler.Common do
   @doc """
   Updates the manager state with a new plugin state.
   """
-  @spec update_manager_state(Core.t(), plugin(), map()) :: Core.t()
+  @spec update_manager_state(map(), plugin(), map()) :: map()
   def update_manager_state(manager, plugin, new_plugin_state) do
     plugin_name = normalize_plugin_key(plugin.name)
 
@@ -95,7 +95,7 @@ defmodule Raxol.Plugins.EventHandler.Common do
   @doc """
   Updates a plugin instance in the manager.
   """
-  @spec update_manager_plugin(Core.t(), plugin(), plugin()) :: Core.t()
+  @spec update_manager_plugin(map(), plugin(), plugin()) :: map()
   def update_manager_plugin(manager, _old_plugin, updated_plugin) do
     plugin_name = normalize_plugin_key(updated_plugin.name)
 
@@ -142,7 +142,7 @@ defmodule Raxol.Plugins.EventHandler.Common do
   defp execute_plugin_callback(plugin, callback_name, args, acc, result_handler) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            # Get the plugin from the manager
-           plugin_instance = Core.get_plugin(acc.manager, plugin.name)
+           plugin_instance = Manager.get_plugin(acc.manager, plugin.name)
            # Prepend the plugin instance to the args
            full_args = [plugin_instance | args]
            result = apply(plugin.module, callback_name, full_args)

@@ -718,14 +718,6 @@ defmodule Raxol.UI.Rendering.Pipeline do
              ) do
           :ok ->
             %{state | animation_ticker_ref: :timer_server}
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.warning(
-              "Pipeline: Failed to start animation timer: #{inspect(reason)}"
-            )
-
-            # Return state unchanged - animation ticker not started
-            state
         end
 
       _ticker_ref ->

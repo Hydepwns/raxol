@@ -5,18 +5,18 @@ defmodule Raxol.Plugins.EventHandler.OutputEvents do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Plugins.Manager.Core
   alias Raxol.Plugins.EventHandler.Common
+  alias Raxol.Plugins.Manager
 
-  @type manager :: Core.t()
+  @type manager :: Manager.t()
   @type result :: {:ok, manager(), binary()} | {:error, term()}
 
   @doc """
   Dispatches an "output" event to all enabled plugins implementing `handle_output/2`.
   """
-  @spec handle_output(Core.t(), binary()) ::
-          {:ok, Core.t(), binary()} | {:error, term()}
-  def handle_output(manager, output) do
+  @spec handle_output(Manager.t(), binary()) ::
+          {:ok, Manager.t(), binary()} | {:error, term()}
+  def handle_output(%Manager{} = manager, output) do
     initial_acc = %{
       manager: manager,
       output: output,

@@ -15,10 +15,9 @@ defmodule Raxol.Metrics do
   """
 
   alias Raxol.Core.Runtime.Log
-  use Raxol.Core.Behaviours.BaseManager
-
-  alias Raxol.Repo
   alias Raxol.Core.Utils.TimerManager
+  alias Raxol.Repo
+  use Raxol.Core.Behaviours.BaseManager
   require Raxol.Core.Runtime.Log
 
   # 5 seconds

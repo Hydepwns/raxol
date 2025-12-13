@@ -4,8 +4,8 @@ defmodule Raxol.Benchmark.Analyzer do
   Delegates to the new modular benchmark analysis system.
   """
 
-  alias Raxol.Benchmark.StatisticalAnalyzer
   alias Raxol.Benchmark.RegressionDetector
+  alias Raxol.Benchmark.StatisticalAnalyzer
   alias Raxol.Core.Runtime.Log
 
   @doc """

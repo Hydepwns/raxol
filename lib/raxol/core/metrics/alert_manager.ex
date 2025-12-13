@@ -10,10 +10,9 @@ defmodule Raxol.Core.Metrics.AlertManager do
   - Alert history
   """
 
+  alias Raxol.Core.Metrics.{Aggregator, MetricsCollector}
   alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
-
-  alias Raxol.Core.Metrics.{MetricsCollector, Aggregator}
 
   @type alert_condition :: :above | :below | :equals | :not_equals
   @type alert_severity :: :info | :warning | :error | :critical

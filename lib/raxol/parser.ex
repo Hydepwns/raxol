@@ -41,7 +41,14 @@ defmodule Raxol.Parser do
       iex> Raxol.Parser.parse!("\e[31mRed\e[0m")
       [{:csi, "31", "m"}, {:text, "Red"}, {:csi, "0", "m"}]
   """
-  @spec parse!(binary()) :: list()
+  @type token ::
+          {:text, binary()}
+          | {:escape, binary()}
+          | {:csi, binary(), binary()}
+          | {:osc, binary()}
+          | {:dcs, binary()}
+
+  @spec parse!(binary()) :: [token()]
   def parse!(input) when is_binary(input) do
     ANSIParser.parse(input)
   end

@@ -27,7 +27,9 @@ defmodule Raxol.Query do
 
       # query => %{sql: "SELECT * FROM users WHERE id = $1 AND active = $2", params: [user_id, true]}
   """
-  @spec parameterized(String.t(), list()) :: {:ok, map()} | {:error, term()}
+  @type query :: %{sql: String.t(), params: list()}
+
+  @spec parameterized(String.t(), list()) :: {:ok, query()}
   def parameterized(template, params)
       when is_binary(template) and is_list(params) do
     # Count placeholders
@@ -51,7 +53,7 @@ defmodule Raxol.Query do
 
   In a real implementation, this would execute against a database.
   """
-  @spec execute(map()) :: {:ok, list()} | {:error, term()}
+  @spec execute(query()) :: {:ok, []}
   def execute(%{sql: _sql, params: _params}) do
     # This is a stub - actual implementation would use a database adapter
     {:ok, []}

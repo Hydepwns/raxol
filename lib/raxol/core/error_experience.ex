@@ -17,8 +17,8 @@ defmodule Raxol.Core.ErrorExperience do
   - Interactive recovery console
   """
 
-  alias Raxol.Core.Runtime.Log
   alias Raxol.Core.ErrorHandler
+  alias Raxol.Core.Runtime.Log
   require Logger
 
   @type error_category ::

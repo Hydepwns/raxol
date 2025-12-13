@@ -3,9 +3,9 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
   Handles plugin initialization, config merging, struct creation, and compatibility checks for plugin lifecycle management.
   """
 
+  alias Raxol.Plugins.Lifecycle.Validation
   alias Raxol.Plugins.PluginConfig
   alias Raxol.Plugins.PluginDependency
-  alias Raxol.Plugins.Lifecycle.Validation
 
   # --- Plugin Initialization ---
 

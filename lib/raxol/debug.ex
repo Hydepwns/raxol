@@ -11,8 +11,8 @@ defmodule Raxol.Debug do
   """
   use Raxol.Core.Behaviours.BaseManager
 
-  alias Raxol.Core.Utils.TimerManager
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Utils.TimerManager
 
   @debug_levels [:off, :basic, :detailed, :verbose]
   # Sample every 100ms in debug mode

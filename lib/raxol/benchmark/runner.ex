@@ -5,7 +5,7 @@ defmodule Raxol.Benchmark.Runner do
   Provides infrastructure for running, analyzing, and reporting performance benchmarks
   across all major components of the system.
   """
-  alias Raxol.Benchmark.{Reporter, Analyzer, Storage}
+  alias Raxol.Benchmark.{Analyzer, Reporter, Storage}
   alias Raxol.Core.Runtime.Log
 
   @default_options %{

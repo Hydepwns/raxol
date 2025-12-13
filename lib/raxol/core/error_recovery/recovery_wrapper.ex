@@ -24,8 +24,8 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
   """
 
   use GenServer
-  alias Raxol.Core.ErrorRecovery.ContextManager
   alias Raxol.Core.ErrorPatternLearner
+  alias Raxol.Core.ErrorRecovery.ContextManager
   alias Raxol.Core.Runtime.Log
 
   defstruct [

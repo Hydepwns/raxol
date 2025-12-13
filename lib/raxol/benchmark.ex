@@ -4,8 +4,8 @@ defmodule Raxol.Benchmark do
   """
 
   alias Raxol.Core.Runtime.Log
-  alias Raxol.SequenceExecutor
   alias Raxol.Sequence
+  alias Raxol.SequenceExecutor
 
   @doc """
   Run a benchmark with the given configuration.

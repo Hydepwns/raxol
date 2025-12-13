@@ -10,6 +10,31 @@ defmodule Raxol.Compliance do
       report = Raxol.Compliance.generate_soc2_report(period: :last_quarter)
   """
 
+  @type soc2_report :: %{
+          report_type: :soc2,
+          period: atom(),
+          generated_at: DateTime.t(),
+          format: atom(),
+          controls: map(),
+          summary: map()
+        }
+
+  @type pci_report :: %{
+          report_type: :pci_dss,
+          period: atom(),
+          generated_at: DateTime.t(),
+          requirements: map(),
+          summary: map()
+        }
+
+  @type hipaa_report :: %{
+          report_type: :hipaa,
+          period: atom(),
+          generated_at: DateTime.t(),
+          safeguards: map(),
+          summary: map()
+        }
+
   @doc """
   Generate a SOC2 compliance report.
 
@@ -23,7 +48,7 @@ defmodule Raxol.Compliance do
 
       report = Raxol.Compliance.generate_soc2_report(period: :last_quarter)
   """
-  @spec generate_soc2_report(keyword()) :: {:ok, map()} | {:error, term()}
+  @spec generate_soc2_report(keyword()) :: {:ok, soc2_report()}
   def generate_soc2_report(opts \\ []) do
     period = Keyword.get(opts, :period, :last_quarter)
     format = Keyword.get(opts, :format, :json)
@@ -63,7 +88,7 @@ defmodule Raxol.Compliance do
 
       report = Raxol.Compliance.generate_pci_report(period: :last_month)
   """
-  @spec generate_pci_report(keyword()) :: {:ok, map()} | {:error, term()}
+  @spec generate_pci_report(keyword()) :: {:ok, pci_report()}
   def generate_pci_report(opts \\ []) do
     period = Keyword.get(opts, :period, :last_month)
 
@@ -98,7 +123,7 @@ defmodule Raxol.Compliance do
 
       report = Raxol.Compliance.generate_hipaa_report(period: :last_year)
   """
-  @spec generate_hipaa_report(keyword()) :: {:ok, map()} | {:error, term()}
+  @spec generate_hipaa_report(keyword()) :: {:ok, hipaa_report()}
   def generate_hipaa_report(opts \\ []) do
     period = Keyword.get(opts, :period, :last_year)
 

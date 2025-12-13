@@ -139,7 +139,7 @@ defmodule Raxol.Web.StateSynchronizer do
 
       {:ok, sync} = StateSynchronizer.new("session123")
   """
-  @spec new(String.t(), keyword()) :: {:ok, t()} | {:error, term()}
+  @spec new(String.t(), keyword()) :: {:ok, t()}
   def new(session_id, opts \\ []) do
     node_id = Keyword.get(opts, :node_id, generate_node_id())
     initial_state = Keyword.get(opts, :initial_state, %{})
@@ -166,7 +166,7 @@ defmodule Raxol.Web.StateSynchronizer do
 
       {:ok, sync} = StateSynchronizer.apply_local(sync, {:set, "cursor", {10, 5}})
   """
-  @spec apply_local(t(), term()) :: {:ok, t()} | {:error, term()}
+  @spec apply_local(t(), term()) :: {:ok, t()}
   def apply_local(%__MODULE__{} = sync, operation_data) do
     # Increment vector clock
     new_vc = VectorClock.increment(sync.vector_clock, sync.node_id)
@@ -207,7 +207,7 @@ defmodule Raxol.Web.StateSynchronizer do
 
       {:ok, sync} = StateSynchronizer.apply_remote(sync, remote_op)
   """
-  @spec apply_remote(t(), Operation.t()) :: {:ok, t()} | {:error, term()}
+  @spec apply_remote(t(), Operation.t()) :: {:ok, t()}
   def apply_remote(%__MODULE__{} = sync, %Operation{} = op) do
     # Check if we've already seen this operation
     if operation_seen?(sync, op) do

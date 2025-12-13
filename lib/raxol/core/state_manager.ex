@@ -407,43 +407,6 @@ defmodule Raxol.Core.StateManager do
     Map.keys(@state_domains)
   end
 
-  # Legacy Support (for backward compatibility)
-
-  @doc """
-  Starts a new state agent with the given initial state.
-
-  @deprecated "Use start_managed/3 for supervised state or functional operations for simple transformations"
-  """
-  def start_link_agent(initial_state \\ %{}, opts \\ []) do
-    Agent.start_link(fn -> initial_state end, opts)
-  end
-
-  @doc """
-  Agent-based get and update operation.
-  """
-  def get_and_update(agent, fun) do
-    Agent.get_and_update(agent, fun)
-  end
-
-  @doc """
-  Legacy support for existing code using Process dictionary.
-
-  @deprecated "Use start_managed/3 and update_managed/3 instead"
-  """
-  def with_state(state_key, fun) do
-    state = get_legacy_state(state_key) || %{}
-
-    case fun.(state) do
-      {new_state, result} ->
-        set_legacy_state(state_key, new_state)
-        result
-
-      new_state ->
-        set_legacy_state(state_key, new_state)
-        nil
-    end
-  end
-
   # Child Spec for Supervision
 
   @doc """
@@ -614,32 +577,6 @@ defmodule Raxol.Core.StateManager do
   @impl GenServer
   def handle_call(:get, _from, %{state: state} = manager_state) do
     {:reply, {:ok, state}, manager_state}
-  end
-
-  # Helper functions for backwards compatibility
-
-  defp get_legacy_state(state_key) do
-    case Agent.start_link(fn -> %{} end,
-           name: {:global, {:state_manager, state_key}}
-         ) do
-      {:ok, _pid} ->
-        %{}
-
-      {:error, {:already_started, _pid}} ->
-        Agent.get({:global, {:state_manager, state_key}}, & &1)
-    end
-  end
-
-  defp set_legacy_state(state_key, state) do
-    case Agent.start_link(fn -> state end,
-           name: {:global, {:state_manager, state_key}}
-         ) do
-      {:ok, _pid} ->
-        :ok
-
-      {:error, {:already_started, _pid}} ->
-        Agent.update({:global, {:state_manager, state_key}}, fn _ -> state end)
-    end
   end
 
   # Helper functions

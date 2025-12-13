@@ -42,9 +42,9 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Session.{DistributedSessionStorage, SessionReplicator}
   alias Raxol.Core.ErrorRecovery.ContextManager
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Session.{DistributedSessionStorage, SessionReplicator}
 
   @default_replication_factor 3
   @heartbeat_interval 5_000

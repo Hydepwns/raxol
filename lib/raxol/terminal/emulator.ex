@@ -557,7 +557,7 @@ defmodule Raxol.Terminal.Emulator do
       # Minimal for benchmarking (no history, no alternate buffer)
       emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
   """
-  def new() do
+  def new do
     new(80, 24, [])
   end
 
@@ -714,8 +714,8 @@ defmodule Raxol.Terminal.Emulator do
           # Convert list output to string for backward compatibility
           {updated_emulator, IO.iodata_to_binary(output)}
 
-        {updated_emulator, output} when is_binary(output) ->
-          # Already a string, pass through
+        {updated_emulator, output} ->
+          # Already a string or other type, pass through
           {updated_emulator, output}
       end
 
@@ -917,9 +917,9 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   defp create_basic_emulator(width, height, opts) do
+    alias Raxol.Terminal.Cursor.Manager, as: CursorManager
     alias Raxol.Terminal.ScreenBuffer
     alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
-    alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
     # Extract options with defaults
     enable_history = Keyword.get(opts, :enable_history, true)

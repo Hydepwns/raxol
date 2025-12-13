@@ -14,10 +14,10 @@ defmodule Raxol.Performance.MonitoringCoordinator do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Performance.AutomatedMonitor
-  alias Raxol.Performance.AlertManager
-  alias Raxol.Performance.AdaptiveOptimizer
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Performance.AdaptiveOptimizer
+  alias Raxol.Performance.AlertManager
+  alias Raxol.Performance.AutomatedMonitor
 
   defstruct [
     :monitoring_config,

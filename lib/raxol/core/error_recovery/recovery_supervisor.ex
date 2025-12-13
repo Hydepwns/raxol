@@ -33,9 +33,9 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
   """
 
   use Supervisor
-  alias Raxol.Core.Runtime.Log
-  alias Raxol.Core.ErrorRecovery.{ContextManager, DependencyGraph}
   alias Raxol.Core.ErrorPatternLearner
+  alias Raxol.Core.ErrorRecovery.{ContextManager, DependencyGraph}
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Performance.AutomatedMonitor
 
   defstruct [

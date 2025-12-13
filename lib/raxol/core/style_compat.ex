@@ -12,6 +12,19 @@ defmodule Raxol.Core.Style do
       # => "\e[1;34m"
   """
 
+  @type color ::
+          atom()
+          | non_neg_integer()
+          | {non_neg_integer(), non_neg_integer(), non_neg_integer()}
+
+  @type t :: %{
+          bold: boolean(),
+          italic: boolean(),
+          underline: boolean(),
+          fg_color: color() | nil,
+          bg_color: color() | nil
+        }
+
   @valid_colors [:black, :red, :green, :yellow, :blue, :magenta, :cyan, :white]
 
   @color_codes %{
@@ -41,7 +54,7 @@ defmodule Raxol.Core.Style do
       Raxol.Core.Style.new(bold: true, fg_color: :blue)
       # => %{bold: true, italic: false, underline: false, fg_color: :blue, bg_color: nil}
   """
-  @spec new(keyword()) :: map()
+  @spec new(keyword()) :: t()
   def new(opts \\ []) do
     %{
       bold: Keyword.get(opts, :bold, false),
@@ -62,7 +75,7 @@ defmodule Raxol.Core.Style do
       Raxol.Core.Style.merge(base, override)
       # => %{bold: true, ..., fg_color: :blue, ...}
   """
-  @spec merge(map(), map()) :: map()
+  @spec merge(t(), t()) :: t()
   def merge(base, override) when is_map(base) and is_map(override) do
     Map.merge(base, override, fn _key, _base_val, override_val ->
       override_val
@@ -77,8 +90,7 @@ defmodule Raxol.Core.Style do
       Raxol.Core.Style.rgb(255, 100, 50)
       # => {255, 100, 50}
   """
-  @spec rgb(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
-          {non_neg_integer(), non_neg_integer(), non_neg_integer()}
+  @spec rgb(0..255, 0..255, 0..255) :: {0..255, 0..255, 0..255}
   def rgb(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
     {r, g, b}
   end
@@ -91,7 +103,7 @@ defmodule Raxol.Core.Style do
       Raxol.Core.Style.color_256(196)
       # => 196
   """
-  @spec color_256(non_neg_integer()) :: non_neg_integer()
+  @spec color_256(0..255) :: 0..255
   def color_256(index) when index in 0..255 do
     index
   end
@@ -106,7 +118,17 @@ defmodule Raxol.Core.Style do
       Raxol.Core.Style.named_color(:blue)
       # => :blue
   """
-  @spec named_color(atom()) :: atom()
+  @spec named_color(
+          :black
+          | :red
+          | :green
+          | :yellow
+          | :blue
+          | :magenta
+          | :cyan
+          | :white
+        ) ::
+          :black | :red | :green | :yellow | :blue | :magenta | :cyan | :white
   def named_color(color) when color in @valid_colors do
     color
   end

@@ -21,9 +21,9 @@ defmodule Raxol.Audit do
       )
   """
 
+  alias Raxol.Audit.Exporter
   alias Raxol.Audit.Logger
   alias Raxol.Audit.Storage
-  alias Raxol.Audit.Exporter
 
   @doc """
   Log an audit event.

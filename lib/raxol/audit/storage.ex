@@ -8,8 +8,8 @@ defmodule Raxol.Audit.Storage do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Utils.TimerManager
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Utils.TimerManager
 
   defstruct [
     :config,

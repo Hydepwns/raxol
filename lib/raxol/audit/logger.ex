@@ -18,9 +18,9 @@ defmodule Raxol.Audit.Logger do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Architecture.EventSourcing.EventStore
-  alias Raxol.Audit.{Events, Storage, Analyzer, Exporter}
-  alias Raxol.Core.Utils.TimerManager
+  alias Raxol.Audit.{Analyzer, Events, Exporter, Storage}
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Utils.TimerManager
 
   alias Raxol.Audit.Events.{
     AuthorizationEvent,

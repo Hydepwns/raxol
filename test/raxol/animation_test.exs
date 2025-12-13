@@ -323,8 +323,8 @@ defmodule Raxol.AnimationTest do
         wait_for_animation_start("test_element", animation.name)
         wait_for_animation_completion("test_element", animation.name)
 
-        # TODO: Verify that non-important animations don't generate announcements
-        # Need to implement screen reader announcement testing helpers
+        # Note: Non-important animations should not generate announcements
+        # Screen reader announcement testing helpers need implementation:
         # refute Framework.screen_reader_announced?("Animation started")
         # refute Framework.screen_reader_announced?("Animation completed")
       end)

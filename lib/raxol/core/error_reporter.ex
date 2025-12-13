@@ -10,7 +10,7 @@ defmodule Raxol.Core.ErrorReporter do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.{ErrorPatternLearner, ErrorTemplates, ErrorExperience}
+  alias Raxol.Core.{ErrorExperience, ErrorPatternLearner, ErrorTemplates}
   alias Raxol.Core.Runtime.Log
 
   @type report_level :: :minimal | :standard | :comprehensive

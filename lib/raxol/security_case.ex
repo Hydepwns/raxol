@@ -166,12 +166,12 @@ defmodule Raxol.SecurityCase do
 
     # Exhaust the rate limit
     for _ <- 1..limit do
-      Security.check_rate_limit(identifier, action, opts)
+      _ = Security.check_rate_limit(identifier, action, opts)
     end
 
     # Next call should be limited
     case Security.check_rate_limit(identifier, action, opts) do
-      {:error, :rate_limited} ->
+      {:error, :medium, _message} ->
         :ok
 
       {:ok, _} ->

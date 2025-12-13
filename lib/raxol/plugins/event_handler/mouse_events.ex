@@ -5,10 +5,10 @@ defmodule Raxol.Plugins.EventHandler.MouseEvents do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Plugins.Manager.Core
   alias Raxol.Plugins.EventHandler.Common
+  alias Raxol.Plugins.Manager
 
-  @type manager :: Core.t()
+  @type manager :: Manager.t()
   @type mouse_event :: map()
   @type result ::
           {:ok, manager()}
@@ -18,9 +18,9 @@ defmodule Raxol.Plugins.EventHandler.MouseEvents do
   @doc """
   Dispatches a "mouse_event" to all enabled plugins implementing `handle_mouse_event/3`.
   """
-  @spec handle_mouse_event(Core.t(), mouse_event(), map()) ::
+  @spec handle_mouse_event(Manager.t(), mouse_event(), map()) ::
           {:ok, manager(), :propagate | :halt} | {:error, term()}
-  def handle_mouse_event(%Core{} = manager, event, rendered_cells) do
+  def handle_mouse_event(%Manager{} = manager, event, rendered_cells) do
     initial_acc = %{
       manager: manager,
       event: event,
@@ -52,9 +52,9 @@ defmodule Raxol.Plugins.EventHandler.MouseEvents do
   @doc """
   Dispatches a "resize" event to all enabled plugins implementing `handle_resize/3`.
   """
-  @spec handle_resize(Core.t(), non_neg_integer(), non_neg_integer()) ::
+  @spec handle_resize(Manager.t(), non_neg_integer(), non_neg_integer()) ::
           result()
-  def handle_resize(%Core{} = manager, width, height) do
+  def handle_resize(%Manager{} = manager, width, height) do
     initial_acc = %{manager: manager, width: width, height: height}
 
     result =

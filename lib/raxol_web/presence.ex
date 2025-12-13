@@ -79,7 +79,7 @@ defmodule RaxolWeb.Presence do
 
     full_metadata = Map.merge(default_metadata, metadata)
 
-    case track(socket, topic, user_id, full_metadata) do
+    case track(self(), topic, user_id, full_metadata) do
       {:ok, _} = result ->
         Log.debug("[Presence] Tracked user #{user_id} in #{topic}")
         result
@@ -112,7 +112,7 @@ defmodule RaxolWeb.Presence do
     topic = get_topic(socket)
     user_id = get_user_id(socket)
 
-    update(socket, topic, user_id, fn meta ->
+    update(self(), topic, user_id, fn meta ->
       Map.put(meta, :cursor, position)
     end)
   end
@@ -133,7 +133,7 @@ defmodule RaxolWeb.Presence do
     topic = get_topic(socket)
     user_id = get_user_id(socket)
 
-    update(socket, topic, user_id, fn meta ->
+    update(self(), topic, user_id, fn meta ->
       Map.merge(meta, new_metadata)
     end)
   end
@@ -203,7 +203,7 @@ defmodule RaxolWeb.Presence do
     topic = get_topic(socket)
     user_id = get_user_id(socket)
 
-    untrack(socket, topic, user_id)
+    untrack(self(), topic, user_id)
     Log.debug("[Presence] Untracked user #{user_id} from #{topic}")
     :ok
   end
@@ -246,7 +246,7 @@ defmodule RaxolWeb.Presence do
 
       RaxolWeb.Presence.subscribe("terminal:session123")
   """
-  @spec subscribe(String.t()) :: :ok | {:error, term()}
+  @spec subscribe(String.t()) :: :ok | {:error, {:already_registered, pid()}}
   def subscribe(topic) when is_binary(topic) do
     Phoenix.PubSub.subscribe(Raxol.PubSub, topic)
   end
@@ -261,7 +261,10 @@ defmodule RaxolWeb.Presence do
       formatted = RaxolWeb.Presence.format_diff(diff)
       # => %{joins: [%{user_id: "user1", ...}], leaves: [%{user_id: "user2", ...}]}
   """
-  @spec format_diff(map()) :: map()
+  @spec format_diff(%{joins: term(), leaves: term()}) :: %{
+          joins: list(),
+          leaves: list()
+        }
   def format_diff(%{joins: joins, leaves: leaves}) do
     %{
       joins: format_presence_list(joins),
