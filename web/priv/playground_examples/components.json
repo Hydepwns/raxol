@@ -1,0 +1,52 @@
+{
+  "components": [
+    {
+      "name": "Button",
+      "description": "Interactive button component with various styles and states",
+      "framework": "Universal",
+      "complexity": "Basic",
+      "tags": ["input", "interactive", "basic"],
+      "category": "Input"
+    },
+    {
+      "name": "TextInput",
+      "description": "Single-line text input with validation and formatting",
+      "framework": "Universal",
+      "complexity": "Intermediate",
+      "tags": ["input", "form", "validation"],
+      "category": "Input"
+    },
+    {
+      "name": "Table",
+      "description": "Data table with sorting, filtering, and pagination",
+      "framework": "Universal",
+      "complexity": "Advanced",
+      "tags": ["data", "display", "sorting"],
+      "category": "Display"
+    },
+    {
+      "name": "Progress",
+      "description": "Progress indicator with customizable appearance",
+      "framework": "Universal",
+      "complexity": "Basic",
+      "tags": ["feedback", "loading", "progress"],
+      "category": "Feedback"
+    },
+    {
+      "name": "Modal",
+      "description": "Modal dialog with backdrop and focus management",
+      "framework": "React",
+      "complexity": "Intermediate",
+      "tags": ["overlay", "dialog", "focus"],
+      "category": "Overlay"
+    },
+    {
+      "name": "Menu",
+      "description": "Dropdown menu with keyboard navigation",
+      "framework": "Universal",
+      "complexity": "Advanced",
+      "tags": ["navigation", "keyboard", "dropdown"],
+      "category": "Navigation"
+    }
+  ]
+}
