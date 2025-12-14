@@ -447,8 +447,7 @@ defmodule Raxol.Audit.Integration do
 
   defp classify_content(content) when is_binary(content) do
     case {String.contains?(content, "password"),
-          String.contains?(content, "token"),
-          String.contains?(content, "key")} do
+          String.contains?(content, "token"), String.contains?(content, "key")} do
       {true, _, _} -> :restricted
       {false, true, _} -> :restricted
       {false, false, true} -> :confidential
