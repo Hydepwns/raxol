@@ -547,7 +547,8 @@ defmodule Raxol.Animation.FrameworkTest do
       duration = end_time - start_time
 
       # Verify performance requirements (should complete within reasonable time)
-      assert duration < 200, "Animation completion time too high: #{duration}ms"
+      # Allow 500ms for CI variability (test has 150ms sleep + 100ms animation = 250ms minimum)
+      assert duration < 500, "Animation completion time too high: #{duration}ms"
     end
   end
 end
