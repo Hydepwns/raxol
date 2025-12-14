@@ -59,14 +59,17 @@ defmodule Raxol.LiveView.ThemesTest do
   describe "list/0" do
     test "returns all available theme names" do
       themes = Themes.list()
-      assert length(themes) == 7
+      assert length(themes) == 10
       assert :synthwave84 in themes
       assert :nord in themes
       assert :dracula in themes
       assert :monokai in themes
       assert :gruvbox in themes
       assert :solarized_dark in themes
+      assert :solarized_light in themes
       assert :tokyo_night in themes
+      assert :one_dark in themes
+      assert :catppuccin in themes
     end
   end
 

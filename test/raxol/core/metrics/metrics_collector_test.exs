@@ -121,16 +121,16 @@ defmodule Raxol.Core.Metrics.MetricsCollectorTest do
       # Get custom metrics
       custom_metrics = MetricsCollector.get_metrics_by_type(:custom)
 
-      # Verify metrics were recorded
-      assert Map.has_key?(custom_metrics, "user.login_time")
-      assert Map.has_key?(custom_metrics, "api.request_time")
+      # Verify metrics were recorded (string names get "custom_" prefix and become atoms)
+      assert Map.has_key?(custom_metrics, :"custom_user.login_time")
+      assert Map.has_key?(custom_metrics, :"custom_api.request_time")
 
       # Verify values
-      login_time = hd(custom_metrics["user.login_time"])
+      login_time = hd(custom_metrics[:"custom_user.login_time"])
       assert login_time.value == 150
       assert is_struct(login_time.timestamp, DateTime)
 
-      request_time = hd(custom_metrics["api.request_time"])
+      request_time = hd(custom_metrics[:"custom_api.request_time"])
       assert request_time.value == 200
       assert is_struct(request_time.timestamp, DateTime)
     end

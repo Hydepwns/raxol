@@ -1,11 +1,13 @@
 defmodule Raxol.Core.Runtime.Plugins.PluginManagerTest do
   @moduledoc """
-  Tests for the plugin manager, including initialization, event handling,
-  command processing, and metadata retrieval.
+  Tests for the plugin manager facade, including initialization, plugin loading,
+  and metadata retrieval.
   """
   use ExUnit.Case, async: false
   import Mox
   import Raxol.Test.TestUtils
+
+  alias Raxol.Core.Runtime.Plugins.PluginManager
 
   setup :verify_on_exit!
 
@@ -13,194 +15,58 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerTest do
     {:ok, context} = setup_test_env()
     setup_common_mocks()
 
-    # Temporarily remove all mocks to isolate the issue
-    # expect(FileWatcherMock, :setup_file_watching, fn state ->
-    #   {:ok, Map.put(state, :file_watcher_pid, self())}
-    # end)
-
-    # expect(LoaderMock, :load_plugin_module, fn module ->
-    #   {:ok, module}
-    # end)
-
-    # expect(LoaderMock, :initialize_plugin, fn _module, config ->
-    #   {:ok, config}
-    # end)
-
-    # expect(LoaderMock, :behaviour_implemented?, fn _module, _behaviour ->
-    #   true
-    # end)
-
-    # expect(LoaderMock, :load_plugin_metadata, fn _module ->
-    #   {:ok, %{name: "test_plugin", version: "1.0.0"}}
-    # end)
-
     plugin = create_test_plugin("test_plugin")
 
     {:ok, Map.put(context, :plugin, plugin)}
   end
 
-  describe "init/1" do
-    test "initializes with default state", %{plugin: plugin} do
-      assert {:ok, state} =
-               Raxol.Core.Runtime.Plugins.PluginManager.init(%{
-                 plugin: plugin
-                 # file_watcher_module: FileWatcherMock,
-                 # loader_module: LoaderMock
-               })
-
-      assert state.plugin == plugin
-      # Note: initialized will be false initially due to async initialization
-      # The test should check the state after the async initialization completes
-      # The file_watcher_pid field should be present in the state
-      assert Map.has_key?(state, :file_watcher_pid)
-      # Initially nil until set by {:init, config}
-      assert state.file_watcher_pid == nil
-    end
-
-    test "handles initialization errors", %{plugin: _plugin} do
-      # expect(LoaderMock, :initialize_plugin, fn _module, _config ->
-      #   {:error, :initialization_failed}
-      # end)
-
-      # assert {:error, :initialization_failed} =
-      #          Raxol.Core.Runtime.Plugins.PluginManager.init(%{
-      #            plugin: plugin,
-      #            file_watcher_module: FileWatcherMock,
-      #            loader_module: LoaderMock
-      #          })
+  describe "initialize/0" do
+    test "initializes the plugin registry" do
+      assert :ok = PluginManager.initialize()
     end
   end
 
-  describe "handle_event/2" do
-    test "processes events successfully", %{plugin: plugin} do
-      # expect(LoaderMock, :handle_event, fn _event, state ->
-      #   {:ok, Map.put(state, :event_processed, true)}
-      # end)
-
-      {:ok, _state} =
-        Raxol.Core.Runtime.Plugins.PluginManager.init(%{
-          plugin: plugin
-          # file_watcher_module: FileWatcherMock,
-          # loader_module: LoaderMock
-        })
-
-      # assert {:ok, new_state} =
-      #          Raxol.Core.Runtime.Plugins.PluginManager.handle_event(
-      #            :test_event,
-      #            state
-      #          )
-
-      # assert new_state.event_processed == true
-    end
-
-    test "handles event processing errors", %{plugin: plugin} do
-      # expect(LoaderMock, :handle_event, fn _event, _state ->
-      #   {:error, :event_processing_failed}
-      # end)
-
-      {:ok, _state} =
-        Raxol.Core.Runtime.Plugins.PluginManager.init(%{
-          plugin: plugin
-          # file_watcher_module: FileWatcherMock,
-          # loader_module: LoaderMock
-        })
-
-      # assert {:error, :event_processing_failed} =
-      #          Raxol.Core.Runtime.Plugins.PluginManager.handle_event(
-      #            :test_event,
-      #            state
-      #          )
+  describe "initialize_with_config/1" do
+    test "initializes with configuration" do
+      assert :ok = PluginManager.initialize_with_config(%{debug: true})
     end
   end
 
-  describe "handle_command/3" do
-    test "processes commands successfully", %{plugin: plugin} do
-      # expect(LoaderMock, :handle_command, fn _command, _args, state ->
-      #   {:ok, Map.put(state, :command_processed, true)}
-      # end)
-
-      {:ok, _state} =
-        Raxol.Core.Runtime.Plugins.PluginManager.init(%{
-          plugin: plugin
-          # file_watcher_module: FileWatcherMock,
-          # loader_module: LoaderMock
-        })
-
-      # assert {:ok, new_state} =
-      #          Raxol.Core.Runtime.Plugins.PluginManager.handle_command(
-      #            :test_command,
-      #            [],
-      #            state
-      #          )
-
-      # assert new_state.command_processed == true
+  describe "list_plugins/0" do
+    test "returns a list" do
+      PluginManager.initialize()
+      plugins = PluginManager.list_plugins()
+      assert is_list(plugins)
     end
+  end
 
-    test "handles command processing errors", %{plugin: plugin} do
-      # expect(LoaderMock, :handle_command, fn _command, _args, _state ->
-      #   {:error, :command_processing_failed}
-      # end)
+  describe "get_plugin/1" do
+    test "returns nil for unknown plugin" do
+      PluginManager.initialize()
+      # get_plugin returns nil for unknown plugins
+      result = PluginManager.get_plugin(:unknown_plugin)
+      assert result == nil or match?({:error, _}, result)
+    end
+  end
 
-      {:ok, _state} =
-        Raxol.Core.Runtime.Plugins.PluginManager.init(%{
-          plugin: plugin
-          # file_watcher_module: FileWatcherMock,
-          # loader_module: LoaderMock
-        })
-
-      # assert {:error, :command_processing_failed} =
-      #          Raxol.Core.Runtime.Plugins.PluginManager.handle_command(
-      #            :test_command,
-      #            [],
-      #            state
-      #          )
+  describe "plugin_loaded?/1" do
+    test "returns false for unloaded plugin" do
+      PluginManager.initialize()
+      refute PluginManager.plugin_loaded?(:unknown_plugin)
     end
   end
 
   describe "get_commands/1" do
-    test "returns plugin commands", %{plugin: plugin} do
-      # expect(LoaderMock, :get_commands, fn ->
-      #   [:test_command1, :test_command2]
-      # end)
-
-      {:ok, _state} =
-        Raxol.Core.Runtime.Plugins.PluginManager.init(%{
-          plugin: plugin
-          # file_watcher_module: FileWatcherMock,
-          # loader_module: LoaderMock
-        })
-
-      # assert [:test_command1, :test_command2] =
-      #          Raxol.Core.Runtime.Plugins.PluginManager.get_commands(state)
+    test "returns empty map for state" do
+      result = PluginManager.get_commands(%{})
+      assert result == %{}
     end
   end
 
   describe "get_metadata/1" do
-    test "returns plugin metadata", %{plugin: plugin} do
-      # expect(LoaderMock, :get_metadata, fn ->
-      #   %{
-      #     name: "test_plugin",
-      #     version: "1.0.0",
-      #     description: "Test plugin",
-      #     author: "Test Author",
-      #     dependencies: []
-      #   }
-      # end)
-
-      {:ok, _state} =
-        Raxol.Core.Runtime.Plugins.PluginManager.init(%{
-          plugin: plugin
-          # file_watcher_module: FileWatcherMock,
-          # loader_module: LoaderMock
-        })
-
-      # assert %{
-      #          name: "test_plugin",
-      #          version: "1.0.0",
-      #          description: "Test plugin",
-      #          author: "Test Author",
-      #          dependencies: []
-      #        } = Raxol.Core.Runtime.Plugins.PluginManager.get_metadata(state)
+    test "returns empty map for state" do
+      result = PluginManager.get_metadata(%{})
+      assert result == %{}
     end
   end
 end

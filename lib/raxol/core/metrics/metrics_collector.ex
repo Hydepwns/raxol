@@ -1,88 +1,84 @@
 defmodule Raxol.Core.Metrics.MetricsCollector do
   @moduledoc """
-  Manages unified metrics collection across the application.
+  ETS-backed metrics collection for high-throughput metric recording.
+
+  Uses ETS tables for concurrent write access, avoiding GenServer mailbox
+  serialization that bottlenecks write-heavy metric workloads.
+
+  ## Design
+
+  - **Writes**: Direct ETS inserts from any process (no serialization)
+  - **Reads**: Direct ETS lookups (no blocking)
+  - **GenServer**: Only for lifecycle management and periodic tasks
+
+  ## Usage
+
+      # Record metrics (can be called from any process)
+      MetricsCollector.record_metric(:request_time, :performance, 45.2)
+      MetricsCollector.record_performance(:parse_time, 3.3)
+      MetricsCollector.record_resource(:memory_mb, 128.5)
+
+      # Read metrics
+      MetricsCollector.get_metric(:request_time, :performance)
+      MetricsCollector.get_all_metrics()
+
+  ## ETS Tables
+
+  - `raxol_metrics` - Main metrics storage (ordered_set for time-ordered queries)
+  - `raxol_metrics_meta` - Metadata and aggregates
   """
 
-  use Raxol.Core.Behaviours.BaseManager
+  use GenServer
 
-  defstruct [
-    :metrics,
-    :start_time,
-    :last_update,
-    :collectors
-  ]
-
-  @type t :: %__MODULE__{
-          metrics: map(),
-          start_time: integer(),
-          last_update: integer(),
-          collectors: map()
-        }
-
+  @metrics_table :raxol_metrics
+  @meta_table :raxol_metrics_meta
   @history_limit 1000
 
-  # --- Public API ---
-
-  # BaseManager provides start_link/1 which handles GenServer initialization
-  # Usage: Raxol.Core.Metrics.MetricsCollector.start_link(name: __MODULE__, opts...)
+  # ============================================================================
+  # Public API - Direct ETS Access (No GenServer call needed)
+  # ============================================================================
 
   @doc """
-  Records a metric value.
+  Records a metric value. Can be called from any process.
+
+  ## Parameters
+
+    * `name` - Metric name (atom)
+    * `type` - Metric type (:performance, :resource, :operation, :custom)
+    * `value` - Metric value (number or map)
+    * `opts` - Options including `:tags`
+
+  ## Examples
+
+      MetricsCollector.record_metric(:request_time, :performance, 45.2)
+      MetricsCollector.record_metric(:cache_hits, :operation, 1, tags: [:api])
   """
   @spec record_metric(atom(), atom(), number() | map(), keyword()) :: :ok
   def record_metric(name, type, value, opts \\ []) do
-    GenServer.cast(__MODULE__, {:record_metric, name, type, value, opts})
-  end
+    ensure_tables_exist()
 
-  @doc """
-  Gets a metric value.
-  """
-  def get_metric(name, type, opts \\ []) do
-    GenServer.call(__MODULE__, {:get_metric, name, type, opts})
-  end
+    tags = Keyword.get(opts, :tags, [])
+    timestamp = System.monotonic_time(:microsecond)
 
-  @doc """
-  Gets all metrics grouped by type.
-  """
-  def get_metrics do
-    GenServer.call(__MODULE__, :get_all_metrics)
-  end
+    # Key format: {type, name, timestamp} for ordered access
+    key = {type, name, timestamp}
 
-  @doc """
-  Gets all metrics (alias for get_metrics/0).
-  """
-  def get_all_metrics do
-    GenServer.call(__MODULE__, :get_all_metrics)
-  end
+    entry = %{
+      value: value,
+      timestamp: DateTime.utc_now(),
+      monotonic_time: timestamp,
+      tags: tags
+    }
 
-  @doc """
-  Clears all metrics.
-  """
-  def clear_metrics do
-    GenServer.cast(__MODULE__, :clear_metrics)
-  end
+    :ets.insert(@metrics_table, {key, entry})
 
-  @doc """
-  Clears all metrics (with optional parameter for compatibility).
-  """
-  def clear_metrics(_collector) do
-    clear_metrics()
-  end
+    # Update metadata counters
+    update_meta_counter(type, name)
 
-  @doc """
-  Gets metrics for a specific metric name and tags.
-  """
-  @spec get_metrics(String.t(), map()) :: {:ok, list(map())} | {:error, term()}
-  def get_metrics(metric_name, tags) do
-    GenServer.call(__MODULE__, {:get_metrics, metric_name, tags})
-  end
+    # Trim old entries periodically (every 100 inserts)
+    maybe_trim_history(type, name)
 
-  @doc """
-  Gets metrics by type.
-  """
-  @spec get_metrics_by_type(atom()) :: map()
-  def get_metrics_by_type(type) do
-    GenServer.call(__MODULE__, {:get_metrics_by_type, type})
+    :ok
   end
 
   @doc """
@@ -93,9 +89,6 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
     record_metric(name, :performance, value)
   end
 
-  @doc """
-  Records a performance metric with tags.
-  """
   @spec record_performance(atom(), number(), keyword()) :: :ok
   def record_performance(name, value, opts) do
     record_metric(name, :performance, value, opts)
@@ -109,9 +102,6 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
     record_metric(name, :resource, value)
   end
 
-  @doc """
-  Records a resource metric with tags.
-  """
   @spec record_resource(atom(), number() | map(), keyword()) :: :ok
   def record_resource(name, value, opts) do
     record_metric(name, :resource, value, opts)
@@ -130,8 +120,7 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
   """
   @spec record_custom(String.t() | atom(), number()) :: :ok
   def record_custom(name, value) when is_binary(name) do
-    # Store custom metrics with string keys to preserve original key format
-    GenServer.cast(__MODULE__, {:record_custom_string, name, value})
+    record_metric(String.to_atom("custom_" <> name), :custom, value)
   end
 
   def record_custom(name, value) when is_atom(name) do
@@ -139,192 +128,319 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
   end
 
   @doc """
-  Stops the unified collector.
+  Gets metric entries for a name and type.
+
+  ## Examples
+
+      MetricsCollector.get_metric(:request_time, :performance)
+      # => [%{value: 45.2, timestamp: ~U[...], tags: []}, ...]
+  """
+  @spec get_metric(atom(), atom(), keyword()) :: list(map())
+  def get_metric(name, type, opts \\ []) do
+    ensure_tables_exist()
+
+    tags = Keyword.get(opts, :tags, [])
+    limit = Keyword.get(opts, :limit, @history_limit)
+
+    # Match pattern for {type, name, _timestamp}
+    pattern = {{type, name, :_}, :_}
+
+    entries =
+      :ets.match_object(@metrics_table, pattern)
+      |> Enum.map(fn {_key, entry} -> entry end)
+      |> Enum.sort_by(& &1.monotonic_time, :desc)
+      |> Enum.take(limit)
+
+    # Filter by tags if specified
+    filter_tags = normalize_tags(tags)
+
+    case filter_tags do
+      empty when empty == %{} or empty == [] ->
+        entries
+
+      _ ->
+        Enum.filter(entries, fn entry ->
+          normalize_tags(entry.tags) == filter_tags
+        end)
+    end
+  end
+
+  # Normalize tags to a consistent map format for comparison
+  defp normalize_tags(tags) when is_map(tags), do: tags
+
+  defp normalize_tags(tags) when is_list(tags) do
+    # Handle both keyword lists [{:key, value}] and plain atom lists [:tag1, :tag2]
+    cond do
+      tags == [] ->
+        %{}
+
+      Keyword.keyword?(tags) ->
+        Map.new(tags)
+
+      true ->
+        # Convert list of atoms to map with true values
+        Map.new(tags, fn tag -> {tag, true} end)
+    end
+  end
+
+  defp normalize_tags(_), do: %{}
+
+  @doc """
+  Gets all metrics grouped by type.
+
+  ## Examples
+
+      MetricsCollector.get_all_metrics()
+      # => %{
+      #   performance: %{request_time: [...], parse_time: [...]},
+      #   resource: %{memory_mb: [...]}
+      # }
+  """
+  @spec get_all_metrics() :: map()
+  def get_all_metrics do
+    ensure_tables_exist()
+
+    :ets.tab2list(@metrics_table)
+    |> Enum.reduce(%{}, fn {{type, name, _ts}, entry}, acc ->
+      type_metrics = Map.get(acc, type, %{})
+      name_entries = Map.get(type_metrics, name, [])
+      updated_name_entries = [entry | name_entries]
+      updated_type_metrics = Map.put(type_metrics, name, updated_name_entries)
+      Map.put(acc, type, updated_type_metrics)
+    end)
+  end
+
+  @doc """
+  Alias for get_all_metrics/0.
+  """
+  def get_metrics, do: get_all_metrics()
+
+  @doc """
+  Gets metrics by type.
+  """
+  @spec get_metrics_by_type(atom()) :: map()
+  def get_metrics_by_type(type) do
+    ensure_tables_exist()
+
+    # Match all entries for this type
+    pattern = {{type, :_, :_}, :_}
+
+    :ets.match_object(@metrics_table, pattern)
+    |> Enum.reduce(%{}, fn {{_type, name, _ts}, entry}, acc ->
+      entries = Map.get(acc, name, [])
+      Map.put(acc, name, [entry | entries])
+    end)
+  end
+
+  @doc """
+  Gets metrics for a specific metric name and tags.
+  """
+  @spec get_metrics(String.t() | atom(), map()) ::
+          {:ok, list(map())} | {:error, term()}
+  def get_metrics(metric_name, tags) when is_map(tags) do
+    ensure_tables_exist()
+
+    # Search across all types
+    results =
+      [:performance, :resource, :operation, :custom]
+      |> Enum.flat_map(fn type ->
+        get_metric(metric_name, type, tags: tags)
+        |> Enum.map(&Map.put(&1, :type, type))
+      end)
+
+    {:ok, results}
+  end
+
+  @doc """
+  Clears all metrics.
+  """
+  @spec clear_metrics() :: :ok
+  def clear_metrics do
+    ensure_tables_exist()
+    :ets.delete_all_objects(@metrics_table)
+    :ets.delete_all_objects(@meta_table)
+    :ok
+  end
+
+  @doc """
+  Clears all metrics (with optional parameter for compatibility).
+  """
+  def clear_metrics(_collector), do: clear_metrics()
+
+  @doc """
+  Gets metric statistics (count, latest value, etc.)
+  """
+  @spec get_metric_stats(atom(), atom()) :: map()
+  def get_metric_stats(name, type) do
+    entries = get_metric(name, type)
+
+    case entries do
+      [] ->
+        %{count: 0, latest: nil, min: nil, max: nil, avg: nil}
+
+      entries ->
+        values =
+          entries
+          |> Enum.map(& &1.value)
+          |> Enum.filter(&is_number/1)
+
+        %{
+          count: length(entries),
+          latest: hd(entries).value,
+          min: Enum.min(values, fn -> nil end),
+          max: Enum.max(values, fn -> nil end),
+          avg:
+            if(values != [], do: Enum.sum(values) / length(values), else: nil)
+        }
+    end
+  end
+
+  # ============================================================================
+  # GenServer - Lifecycle and Periodic Tasks Only
+  # ============================================================================
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @doc """
+  Stops the metrics collector.
   """
   def stop(pid \\ __MODULE__) do
     GenServer.stop(pid)
   end
 
-  # --- GenServer Callbacks ---
+  @impl GenServer
+  def init(opts) do
+    # Create ETS tables if they don't exist
+    create_tables()
 
-  @impl Raxol.Core.Behaviours.BaseManager
-  def init_manager(opts) do
-    state = %__MODULE__{
-      metrics: %{},
+    # Start periodic system metrics collection if enabled
+    auto_collect = Keyword.get(opts, :auto_collect_system_metrics, true)
+
+    if auto_collect do
+      schedule_system_metrics_collection()
+    end
+
+    state = %{
       start_time: System.monotonic_time(),
-      last_update: System.monotonic_time(),
-      collectors: Keyword.get(opts, :collectors, %{})
+      auto_collect: auto_collect
     }
-
-    # Start periodic system metrics collection
-    _ =
-      case Keyword.get(opts, :auto_collect_system_metrics, true) do
-        true -> schedule_system_metrics_collection()
-        false -> :ok
-      end
 
     {:ok, state}
   end
 
-  @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_cast({:record_metric, name, type, value, opts}, state) do
-    tags = Keyword.get(opts, :tags, [])
-    timestamp = DateTime.utc_now()
+  @impl GenServer
+  def handle_info(:collect_system_metrics, state) do
+    collect_system_metrics()
 
-    metric_entry = %{
-      value: value,
-      timestamp: timestamp,
-      tags: tags
-    }
-
-    # Update metrics by type
-    updated_metrics =
-      Map.update(
-        state.metrics,
-        type,
-        %{name => [metric_entry]},
-        fn type_metrics ->
-          Map.update(type_metrics, name, [metric_entry], fn existing_entries ->
-            # Add new entry and limit history
-            [metric_entry | existing_entries] |> Enum.take(@history_limit)
-          end)
-        end
-      )
-
-    {:noreply,
-     %{state | metrics: updated_metrics, last_update: System.monotonic_time()}}
-  end
-
-  @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_cast(:clear_metrics, state) do
-    {:noreply, %{state | metrics: %{}, last_update: System.monotonic_time()}}
-  end
-
-  @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_cast({:record_custom_string, name, value}, state)
-      when is_binary(name) do
-    timestamp = DateTime.utc_now()
-
-    metric_entry = %{
-      value: value,
-      timestamp: timestamp,
-      tags: []
-    }
-
-    # Update custom metrics with string keys preserved
-    updated_metrics =
-      Map.update(
-        state.metrics,
-        :custom,
-        %{name => [metric_entry]},
-        fn type_metrics ->
-          Map.update(type_metrics, name, [metric_entry], fn existing_entries ->
-            # Add new entry and limit history
-            [metric_entry | existing_entries] |> Enum.take(@history_limit)
-          end)
-        end
-      )
-
-    {:noreply,
-     %{state | metrics: updated_metrics, last_update: System.monotonic_time()}}
-  end
-
-  @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:get_metric, name, type, opts}, _from, state) do
-    tags = Keyword.get(opts, :tags, [])
-    type_metrics = Map.get(state.metrics, type, %{})
-    metric_entries = Map.get(type_metrics, name, [])
-
-    # Filter by tags if specified
-    filtered_entries =
-      case tags do
-        [] -> metric_entries
-        _ -> Enum.filter(metric_entries, fn entry -> entry.tags == tags end)
-      end
-
-    {:reply, filtered_entries, state}
-  end
-
-  @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call(:get_all_metrics, _from, state) do
-    {:reply, state.metrics, state}
-  end
-
-  @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:get_metrics, metric_name, tags}, _from, state) do
-    # Return all metrics matching the name and tags across all types
-    result =
-      state.metrics
-      |> Enum.flat_map(fn {type, type_metrics} ->
-        get_metrics_for_name_and_type(type_metrics, metric_name, type, tags)
-      end)
-
-    {:reply, {:ok, result}, state}
-  end
-
-  @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:get_metrics_by_type, type}, _from, state) do
-    # Return all metrics for the specified type
-    type_metrics = Map.get(state.metrics, type, %{})
-    {:reply, type_metrics, state}
-  end
-
-  @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_info(:collect_system_metrics, state) do
-    # Collect system metrics
-    :ok = collect_system_metrics()
-
-    # Schedule next collection
-    _ref = schedule_system_metrics_collection()
+    if state.auto_collect do
+      schedule_system_metrics_collection()
+    end
 
     {:noreply, state}
   end
 
-  # Private helper functions
+  def handle_info(_msg, state) do
+    {:noreply, state}
+  end
 
-  @spec get_metrics_for_name_and_type(any(), String.t() | atom(), any(), any()) ::
-          any() | nil
-  defp get_metrics_for_name_and_type(type_metrics, metric_name, type, tags) do
-    case Map.get(type_metrics, metric_name) do
-      nil -> []
-      entries -> filter_and_map_entries(entries, type, tags)
+  @impl GenServer
+  def terminate(_reason, _state) do
+    # Tables persist across GenServer restarts due to :named_table
+    :ok
+  end
+
+  # ============================================================================
+  # Private Functions
+  # ============================================================================
+
+  defp create_tables do
+    # Main metrics table - ordered_set for time-ordered queries
+    if :ets.whereis(@metrics_table) == :undefined do
+      :ets.new(@metrics_table, [
+        :ordered_set,
+        :public,
+        :named_table,
+        read_concurrency: true,
+        write_concurrency: true
+      ])
+    end
+
+    # Metadata table for counters and aggregates
+    if :ets.whereis(@meta_table) == :undefined do
+      :ets.new(@meta_table, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true,
+        write_concurrency: true
+      ])
+    end
+
+    :ok
+  end
+
+  defp ensure_tables_exist do
+    if :ets.whereis(@metrics_table) == :undefined do
+      create_tables()
     end
   end
 
-  defp filter_and_map_entries(entries, type, tags) do
-    filtered =
-      case tags do
-        %{} -> entries
-        _ -> Enum.filter(entries, &(&1.tags == tags))
-      end
+  defp update_meta_counter(type, name) do
+    key = {:counter, type, name}
+    :ets.update_counter(@meta_table, key, {2, 1}, {key, 0})
+  end
 
-    Enum.map(filtered, &Map.put(&1, :type, type))
+  defp maybe_trim_history(type, name) do
+    # Only trim every 100 inserts to reduce overhead
+    key = {:counter, type, name}
+
+    case :ets.lookup(@meta_table, key) do
+      [{^key, count}] when rem(count, 100) == 0 ->
+        trim_old_entries(type, name)
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp trim_old_entries(type, name) do
+    pattern = {{type, name, :_}, :_}
+
+    entries =
+      :ets.match_object(@metrics_table, pattern)
+      |> Enum.sort_by(fn {{_, _, ts}, _} -> ts end, :desc)
+
+    # Keep only the most recent entries
+    entries_to_delete = Enum.drop(entries, @history_limit)
+
+    Enum.each(entries_to_delete, fn {key, _} ->
+      :ets.delete(@metrics_table, key)
+    end)
   end
 
   defp schedule_system_metrics_collection do
-    Process.send_after(self(), :collect_system_metrics, 100)
+    Process.send_after(self(), :collect_system_metrics, 10_000)
   end
 
   defp collect_system_metrics do
     # Process count
-    process_count = Process.list() |> length()
-    :ok = record_resource(:process_count, process_count)
+    process_count = length(Process.list())
+    record_resource(:process_count, process_count)
 
-    # Runtime ratio (simplified)
+    # Memory usage
+    memory_total = :erlang.memory(:total)
+    record_resource(:memory_total, memory_total)
+
+    # Runtime ratio
     {_, runtime} = :erlang.statistics(:runtime)
-    runtime_ratio = runtime / 1000.0
-    :ok = record_resource(:runtime_ratio, runtime_ratio)
+    record_resource(:runtime_ms, runtime)
 
-    # GC stats (simplified)
+    # GC stats
     {gc_count, words_reclaimed, _} = :erlang.statistics(:garbage_collection)
-    :ok = record_resource(:gc_count, gc_count)
-    :ok = record_resource(:gc_words_reclaimed, words_reclaimed)
-
-    :ok =
-      record_resource(:gc_stats, %{
-        count: gc_count,
-        words_reclaimed: words_reclaimed
-      })
+    record_resource(:gc_count, gc_count)
+    record_resource(:gc_words_reclaimed, words_reclaimed)
 
     :ok
   end
