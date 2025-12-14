@@ -1,16 +1,17 @@
 defmodule Raxol.LiveView.Themes do
   @moduledoc """
-  Built-in theme system for Raxol web terminals.
+  Theme system for Raxol web terminals.
 
-  Provides curated terminal color schemes optimized for readability
-  and aesthetics in web browsers.
+  Provides terminal color schemes optimized for readability
+  and aesthetics in web browsers. All themes are sourced from
+  the unified `Raxol.Core.Theming.ThemeRegistry`.
 
   ## Usage
 
       # Get a built-in theme
       {:ok, theme} = Raxol.LiveView.Themes.get_theme(:synthwave84)
 
-      # Or use the unsafe version (returns theme or default)
+      # Or use the unsafe version (returns theme or nil)
       theme = Raxol.LiveView.Themes.get(:synthwave84)
 
       # Validate a custom theme
@@ -27,6 +28,7 @@ defmodule Raxol.LiveView.Themes do
   """
 
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Theming.ThemeRegistry
 
   @type theme :: %{
           name: atom(),
@@ -60,10 +62,7 @@ defmodule Raxol.LiveView.Themes do
   For a version that returns `{:ok, theme} | {:error, reason}`, use `get_theme/1`.
   """
   def get(name) when is_atom(name) do
-    case get_theme(name) do
-      {:ok, theme} -> theme
-      {:error, _} -> nil
-    end
+    ThemeRegistry.to_liveview_format(name)
   end
 
   def get(_), do: nil
@@ -73,22 +72,20 @@ defmodule Raxol.LiveView.Themes do
 
   Returns `{:ok, theme}` on success or `{:error, :theme_not_found}` if the theme doesn't exist.
   """
-  def get_theme(:synthwave84), do: {:ok, synthwave84()}
-  def get_theme(:nord), do: {:ok, nord()}
-  def get_theme(:dracula), do: {:ok, dracula()}
-  def get_theme(:monokai), do: {:ok, monokai()}
-  def get_theme(:gruvbox), do: {:ok, gruvbox()}
-  def get_theme(:solarized_dark), do: {:ok, solarized_dark()}
-  def get_theme(:tokyo_night), do: {:ok, tokyo_night()}
-
   def get_theme(name) when is_atom(name) do
-    Log.warning("Unknown theme requested: #{inspect(name)}",
-      module: __MODULE__,
-      function: :get_theme,
-      available_themes: list()
-    )
+    case ThemeRegistry.to_liveview_format(name) do
+      nil ->
+        Log.warning("Unknown theme requested: #{inspect(name)}",
+          module: __MODULE__,
+          function: :get_theme,
+          available_themes: list()
+        )
 
-    {:error, :theme_not_found}
+        {:error, :theme_not_found}
+
+      theme ->
+        {:ok, theme}
+    end
   end
 
   def get_theme(_), do: {:error, :theme_not_found}
@@ -97,15 +94,14 @@ defmodule Raxol.LiveView.Themes do
   Lists all available theme names.
   """
   def list do
-    [
-      :synthwave84,
-      :nord,
-      :dracula,
-      :monokai,
-      :gruvbox,
-      :solarized_dark,
-      :tokyo_night
-    ]
+    ThemeRegistry.list()
+  end
+
+  @doc """
+  Lists all themes with display names.
+  """
+  def list_with_names do
+    ThemeRegistry.list_with_names()
   end
 
   @doc """
@@ -183,6 +179,42 @@ defmodule Raxol.LiveView.Themes do
     generate_fallback_css(selector)
   end
 
+  @doc """
+  Generates CSS variables for a theme (modern CSS approach).
+  """
+  def to_css_variables(theme_name) when is_atom(theme_name) do
+    case ThemeRegistry.get(theme_name) do
+      {:ok, theme} ->
+        """
+        :root {
+          --raxol-bg: #{theme.ui.background};
+          --raxol-fg: #{theme.ui.foreground};
+          --raxol-cursor: #{theme.ui.cursor};
+          --raxol-selection: #{theme.ui.selection};
+          --raxol-black: #{theme.colors.black};
+          --raxol-red: #{theme.colors.red};
+          --raxol-green: #{theme.colors.green};
+          --raxol-yellow: #{theme.colors.yellow};
+          --raxol-blue: #{theme.colors.blue};
+          --raxol-magenta: #{theme.colors.magenta};
+          --raxol-cyan: #{theme.colors.cyan};
+          --raxol-white: #{theme.colors.white};
+          --raxol-bright-black: #{theme.colors.bright_black};
+          --raxol-bright-red: #{theme.colors.bright_red};
+          --raxol-bright-green: #{theme.colors.bright_green};
+          --raxol-bright-yellow: #{theme.colors.bright_yellow};
+          --raxol-bright-blue: #{theme.colors.bright_blue};
+          --raxol-bright-magenta: #{theme.colors.bright_magenta};
+          --raxol-bright-cyan: #{theme.colors.bright_cyan};
+          --raxol-bright-white: #{theme.colors.bright_white};
+        }
+        """
+
+      {:error, _} ->
+        ""
+    end
+  end
+
   defp generate_theme_css(theme, selector) do
     """
     #{selector} {
@@ -248,203 +280,5 @@ defmodule Raxol.LiveView.Themes do
       color: #ffffff;
     }
     """
-  end
-
-  # Theme Definitions
-
-  defp synthwave84 do
-    %{
-      name: :synthwave84,
-      background: "#2b213a",
-      foreground: "#f0eff1",
-      cursor: "#f890e7",
-      selection: "#495495",
-      colors: %{
-        black: "#2b213a",
-        red: "#fe4450",
-        green: "#72f1b8",
-        yellow: "#fede5d",
-        blue: "#03edf9",
-        magenta: "#ff7edb",
-        cyan: "#03edf9",
-        white: "#f0eff1",
-        bright_black: "#534267",
-        bright_red: "#fe4450",
-        bright_green: "#72f1b8",
-        bright_yellow: "#fede5d",
-        bright_blue: "#03edf9",
-        bright_magenta: "#f890e7",
-        bright_cyan: "#03edf9",
-        bright_white: "#ffffff"
-      }
-    }
-  end
-
-  defp nord do
-    %{
-      name: :nord,
-      background: "#2e3440",
-      foreground: "#d8dee9",
-      cursor: "#88c0d0",
-      selection: "#434c5e",
-      colors: %{
-        black: "#3b4252",
-        red: "#bf616a",
-        green: "#a3be8c",
-        yellow: "#ebcb8b",
-        blue: "#81a1c1",
-        magenta: "#b48ead",
-        cyan: "#88c0d0",
-        white: "#e5e9f0",
-        bright_black: "#4c566a",
-        bright_red: "#bf616a",
-        bright_green: "#a3be8c",
-        bright_yellow: "#ebcb8b",
-        bright_blue: "#81a1c1",
-        bright_magenta: "#b48ead",
-        bright_cyan: "#8fbcbb",
-        bright_white: "#eceff4"
-      }
-    }
-  end
-
-  defp dracula do
-    %{
-      name: :dracula,
-      background: "#282a36",
-      foreground: "#f8f8f2",
-      cursor: "#ff79c6",
-      selection: "#44475a",
-      colors: %{
-        black: "#21222c",
-        red: "#ff5555",
-        green: "#50fa7b",
-        yellow: "#f1fa8c",
-        blue: "#bd93f9",
-        magenta: "#ff79c6",
-        cyan: "#8be9fd",
-        white: "#f8f8f2",
-        bright_black: "#6272a4",
-        bright_red: "#ff6e6e",
-        bright_green: "#69ff94",
-        bright_yellow: "#ffffa5",
-        bright_blue: "#d6acff",
-        bright_magenta: "#ff92df",
-        bright_cyan: "#a4ffff",
-        bright_white: "#ffffff"
-      }
-    }
-  end
-
-  defp monokai do
-    %{
-      name: :monokai,
-      background: "#272822",
-      foreground: "#f8f8f2",
-      cursor: "#f8f8f0",
-      selection: "#49483e",
-      colors: %{
-        black: "#272822",
-        red: "#f92672",
-        green: "#a6e22e",
-        yellow: "#f4bf75",
-        blue: "#66d9ef",
-        magenta: "#ae81ff",
-        cyan: "#a1efe4",
-        white: "#f8f8f2",
-        bright_black: "#75715e",
-        bright_red: "#f92672",
-        bright_green: "#a6e22e",
-        bright_yellow: "#f4bf75",
-        bright_blue: "#66d9ef",
-        bright_magenta: "#ae81ff",
-        bright_cyan: "#a1efe4",
-        bright_white: "#f9f8f5"
-      }
-    }
-  end
-
-  defp gruvbox do
-    %{
-      name: :gruvbox,
-      background: "#282828",
-      foreground: "#ebdbb2",
-      cursor: "#fe8019",
-      selection: "#504945",
-      colors: %{
-        black: "#282828",
-        red: "#cc241d",
-        green: "#98971a",
-        yellow: "#d79921",
-        blue: "#458588",
-        magenta: "#b16286",
-        cyan: "#689d6a",
-        white: "#a89984",
-        bright_black: "#928374",
-        bright_red: "#fb4934",
-        bright_green: "#b8bb26",
-        bright_yellow: "#fabd2f",
-        bright_blue: "#83a598",
-        bright_magenta: "#d3869b",
-        bright_cyan: "#8ec07c",
-        bright_white: "#ebdbb2"
-      }
-    }
-  end
-
-  defp solarized_dark do
-    %{
-      name: :solarized_dark,
-      background: "#002b36",
-      foreground: "#839496",
-      cursor: "#93a1a1",
-      selection: "#073642",
-      colors: %{
-        black: "#073642",
-        red: "#dc322f",
-        green: "#859900",
-        yellow: "#b58900",
-        blue: "#268bd2",
-        magenta: "#d33682",
-        cyan: "#2aa198",
-        white: "#eee8d5",
-        bright_black: "#002b36",
-        bright_red: "#cb4b16",
-        bright_green: "#586e75",
-        bright_yellow: "#657b83",
-        bright_blue: "#839496",
-        bright_magenta: "#6c71c4",
-        bright_cyan: "#93a1a1",
-        bright_white: "#fdf6e3"
-      }
-    }
-  end
-
-  defp tokyo_night do
-    %{
-      name: :tokyo_night,
-      background: "#1a1b26",
-      foreground: "#c0caf5",
-      cursor: "#c0caf5",
-      selection: "#33467c",
-      colors: %{
-        black: "#15161e",
-        red: "#f7768e",
-        green: "#9ece6a",
-        yellow: "#e0af68",
-        blue: "#7aa2f7",
-        magenta: "#bb9af7",
-        cyan: "#7dcfff",
-        white: "#a9b1d6",
-        bright_black: "#414868",
-        bright_red: "#f7768e",
-        bright_green: "#9ece6a",
-        bright_yellow: "#e0af68",
-        bright_blue: "#7aa2f7",
-        bright_magenta: "#bb9af7",
-        bright_cyan: "#7dcfff",
-        bright_white: "#c0caf5"
-      }
-    }
   end
 end

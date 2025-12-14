@@ -31,39 +31,46 @@ defmodule Raxol.UI do
   defmacro __using__(opts) do
     framework = Keyword.get(opts, :framework, :react)
 
-    quote do
-      # Import the chosen framework
-      case unquote(framework) do
+    # Evaluate framework selection at macro expansion time,
+    # not runtime, to avoid importing non-existent modules
+    framework_code =
+      case framework do
         :react ->
-          use Raxol.Component
+          quote(do: use(Raxol.Component))
 
         :svelte ->
-          # Svelte framework removed - use :react or :raw instead
-          raise "Svelte framework has been removed. Please use :react, :liveview, :heex, or :raw instead"
+          raise "Svelte framework has been removed. Please use :react, :liveview, :heex, :universal, or :raw instead"
 
         :liveview ->
-          use Raxol.LiveView
+          quote(do: use(Raxol.LiveView))
 
         :heex ->
-          use Raxol.HEEx
+          quote(do: use(Raxol.HEEx))
+
+        :universal ->
+          quote(do: use(Raxol.HEEx))
 
         :raw ->
-          # Direct terminal buffer access
-          import Raxol.Terminal.Buffer
-          import Raxol.Terminal.Commands
+          quote do
+            import Raxol.Terminal.Buffer
+            import Raxol.Terminal.Commands
+          end
 
         _ ->
           raise ArgumentError, """
-          Invalid framework: #{inspect(unquote(framework))}
+          Invalid framework: #{inspect(framework)}
 
           Supported frameworks:
           - :react (React-style components)
-          - :svelte (Svelte-style reactive components)
           - :liveview (Phoenix LiveView style)
           - :heex (Phoenix HEEx templates)
+          - :universal (Universal HEEx templates)
           - :raw (Direct terminal buffer access)
           """
       end
+
+    quote do
+      unquote(framework_code)
 
       # Universal features available to all frameworks
       import Raxol.UI.Universal

@@ -18,11 +18,14 @@ defmodule Raxol.Playground do
   alias Raxol.Core.Runtime.Log
 
   alias Raxol.Playground.{
+    Builder,
     Catalog,
     CodeGenerator,
+    Errors,
     Examples,
     Preview,
     PropertyEditor,
+    Scenarios,
     State
   }
 
@@ -225,32 +228,112 @@ defmodule Raxol.Playground do
   # Private Functions
 
   defp run_playground do
+    # Show instant demo on launch
+    display_instant_demo()
+
     Log.console("""
+    #{IO.ANSI.cyan()}+--[ Raxol Playground ]------------------------------------------+#{IO.ANSI.reset()}
 
-    #{IO.ANSI.cyan()}╔════════════════════════════════════════════════════╗
-    ║        Raxol Component Playground [STYLE]               ║
-    ╚════════════════════════════════════════════════════╝#{IO.ANSI.reset()}
+    #{IO.ANSI.bright()}Quick Start:#{IO.ANSI.reset()}
+      #{IO.ANSI.green()}n#{IO.ANSI.reset()}/#{IO.ANSI.green()}p#{IO.ANSI.reset()}  Next/Previous component   #{IO.ANSI.green()}s#{IO.ANSI.reset()}  Scenarios (guided builds)
+      #{IO.ANSI.green()}e#{IO.ANSI.reset()}    Edit props                  #{IO.ANSI.green()}t#{IO.ANSI.reset()}  Switch theme
+      #{IO.ANSI.green()}x#{IO.ANSI.reset()}    Export code                  #{IO.ANSI.green()}?#{IO.ANSI.reset()}  Full help
 
-    Welcome to the interactive component showcase!
+    #{IO.ANSI.bright()}Pipeable API (IEx):#{IO.ANSI.reset()}
+      #{IO.ANSI.cyan()}Builder.demo(:button, label: "Click")#{IO.ANSI.reset()}
+      #{IO.ANSI.cyan()}Builder.new() |> Builder.component(:table) |> Builder.preview()#{IO.ANSI.reset()}
 
-    Commands:
-      #{IO.ANSI.green()}list [category]#{IO.ANSI.reset()}     - List components (optionally by category)
-      #{IO.ANSI.green()}select <id>#{IO.ANSI.reset()}         - Select a component to preview
-      #{IO.ANSI.green()}props#{IO.ANSI.reset()}               - Show current props editor
-      #{IO.ANSI.green()}set <prop> <value>#{IO.ANSI.reset()}  - Update a property
-      #{IO.ANSI.green()}theme <name>#{IO.ANSI.reset()}        - Switch theme (dark, light, default)
-      #{IO.ANSI.green()}export#{IO.ANSI.reset()}              - Export component code
-      #{IO.ANSI.green()}preview#{IO.ANSI.reset()}             - Show current preview
-      #{IO.ANSI.green()}refresh#{IO.ANSI.reset()}             - Refresh preview
-      #{IO.ANSI.green()}examples#{IO.ANSI.reset()}            - List interactive examples
-      #{IO.ANSI.green()}run <example_id>#{IO.ANSI.reset()}    - Run an interactive example
-      #{IO.ANSI.green()}help#{IO.ANSI.reset()}                - Show help
-      #{IO.ANSI.green()}exit#{IO.ANSI.reset()}                - Exit playground
-
-    Type 'list' to see available components.
+    #{IO.ANSI.cyan()}+----------------------------------------------------------------+#{IO.ANSI.reset()}
     """)
 
     playground_loop()
+  end
+
+  defp display_instant_demo do
+    # Select first component for instant gratification
+    catalog = Catalog.load_components()
+
+    featured =
+      Enum.find(catalog, fn c -> c.id == "button" end) ||
+        List.first(catalog)
+
+    case featured do
+      nil ->
+        Log.console(render_welcome_ascii())
+
+      component ->
+        GenServer.call(__MODULE__, {:select_component, component.id})
+
+        Log.console("""
+
+        #{IO.ANSI.bright()}#{IO.ANSI.cyan()}Raxol#{IO.ANSI.reset()} #{IO.ANSI.bright()}Component Playground#{IO.ANSI.reset()}
+        #{IO.ANSI.light_black()}Build terminal UIs with style#{IO.ANSI.reset()}
+
+        #{render_featured_demo(component)}
+        """)
+    end
+  end
+
+  defp render_featured_demo(component) do
+    # Render a beautiful ASCII preview of the featured component
+    case component.id do
+      "button" ->
+        """
+        +--[ Button Demo ]---------------------+
+        |                                      |
+        |   [ Click Me ]     Clicks: 0         |
+        |                                      |
+        |   Variants:                          |
+        |   [ Primary ] [ Success ] [ Danger ] |
+        |                                      |
+        +--------------------------------------+
+        """
+
+      "table" ->
+        """
+        +--[ Table Demo ]----------------------------------+
+        | Name           | Email              | Role       |
+        +----------------+--------------------+------------+
+        | Alice Johnson  | alice@example.com  | Admin      |
+        | Bob Smith      | bob@example.com    | User       |
+        +----------------+--------------------+------------+
+        """
+
+      "progress_bar" ->
+        """
+        +--[ Progress Demo ]------------------+
+        |                                     |
+        |  Loading:  [========>         ] 42% |
+        |  Complete: [====================] ! |
+        |                                     |
+        +-------------------------------------+
+        """
+
+      _ ->
+        preview =
+          Preview.generate(component, component.default_props || %{}, %{})
+
+        preview
+    end
+  end
+
+  defp render_welcome_ascii do
+    """
+
+    #{IO.ANSI.cyan()}
+    +--------------------------------------------------+
+    |                                                  |
+    |   ____                  _                        |
+    |  |  _ \\ __ ___  _____  | |                       |
+    |  | |_) / _` \\ \\/ / _ \\ | |                       |
+    |  |  _ < (_| |>  < (_) || |___                    |
+    |  |_| \\_\\__,_/_/\\_\\___/ |_____|                   |
+    |                                                  |
+    |        Terminal UI Framework                     |
+    |                                                  |
+    +--------------------------------------------------+
+    #{IO.ANSI.reset()}
+    """
   end
 
   defp playground_loop do
@@ -274,6 +357,35 @@ defmodule Raxol.Playground do
 
   defp parse_command("exit"), do: {:exit}
   defp parse_command("quit"), do: {:exit}
+  defp parse_command("q"), do: {:exit}
+
+  # Navigation mode - single key commands
+  defp parse_command("n"), do: navigate_next()
+  defp parse_command("p"), do: navigate_prev()
+  defp parse_command("e"), do: parse_command("props")
+  defp parse_command("t"), do: show_theme_menu()
+  defp parse_command("x"), do: parse_command("export")
+  defp parse_command("?"), do: parse_command("help")
+  defp parse_command("s"), do: show_scenarios_menu()
+
+  # Scenario commands
+  defp parse_command("scenarios"), do: show_scenarios_menu()
+
+  defp parse_command("scenario " <> scenario_id) do
+    run_scenario(String.to_atom(scenario_id))
+  end
+
+  # Builder shorthand commands
+  defp parse_command("demo " <> component) do
+    case Builder.demo(String.to_atom(component)) do
+      {:ok, preview} ->
+        display_preview(preview)
+        :ok
+
+      {:error, reason} ->
+        {:error, Errors.format_error({:error, reason})}
+    end
+  end
 
   defp parse_command("list") do
     catalog = get_catalog()
@@ -622,6 +734,247 @@ defmodule Raxol.Playground do
       {:error, reason} ->
         help = PropertyEditor.get_property_help(component, prop)
         {:error, "Invalid value for #{prop}: #{reason}\nExpected: #{help}"}
+    end
+  end
+
+  # ============================================================================
+  # Navigation Mode Helpers
+  # ============================================================================
+
+  defp navigate_next do
+    state = GenServer.call(__MODULE__, :get_state)
+    catalog = state.catalog
+    current_id = state.selected_component && state.selected_component.id
+
+    next_component = find_next_component(catalog, current_id)
+
+    case next_component do
+      nil ->
+        {:error, "No more components"}
+
+      component ->
+        case select_component(component.id) do
+          {:ok, preview} ->
+            Log.console(
+              "\n#{IO.ANSI.bright()}Component: #{component.id}#{IO.ANSI.reset()} (#{component.category})"
+            )
+
+            display_preview(preview)
+            :ok
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+    end
+  end
+
+  defp navigate_prev do
+    state = GenServer.call(__MODULE__, :get_state)
+    catalog = state.catalog
+    current_id = state.selected_component && state.selected_component.id
+
+    prev_component = find_prev_component(catalog, current_id)
+
+    case prev_component do
+      nil ->
+        {:error, "No previous components"}
+
+      component ->
+        case select_component(component.id) do
+          {:ok, preview} ->
+            Log.console(
+              "\n#{IO.ANSI.bright()}Component: #{component.id}#{IO.ANSI.reset()} (#{component.category})"
+            )
+
+            display_preview(preview)
+            :ok
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+    end
+  end
+
+  defp find_next_component(catalog, nil), do: List.first(catalog)
+
+  defp find_next_component(catalog, current_id) do
+    idx = Enum.find_index(catalog, &(&1.id == current_id))
+
+    case idx do
+      nil -> List.first(catalog)
+      i -> Enum.at(catalog, rem(i + 1, length(catalog)))
+    end
+  end
+
+  defp find_prev_component(catalog, nil), do: List.last(catalog)
+
+  defp find_prev_component(catalog, current_id) do
+    idx = Enum.find_index(catalog, &(&1.id == current_id))
+    len = length(catalog)
+
+    case idx do
+      nil -> List.last(catalog)
+      0 -> Enum.at(catalog, len - 1)
+      i -> Enum.at(catalog, i - 1)
+    end
+  end
+
+  defp show_theme_menu do
+    themes = [
+      :default,
+      :dark,
+      :light,
+      :dracula,
+      :nord,
+      :monokai,
+      :synthwave84,
+      :gruvbox_dark,
+      :one_dark,
+      :tokyo_night,
+      :catppuccin
+    ]
+
+    Log.console("""
+
+    #{IO.ANSI.bright()}Available Themes:#{IO.ANSI.reset()}
+    #{themes |> Enum.with_index(1) |> Enum.map_join("\n", fn {t, i} -> "  #{IO.ANSI.green()}#{i}#{IO.ANSI.reset()}. #{t}" end)}
+
+    Enter theme name or number:
+    """)
+
+    input = IO.gets("") |> String.trim()
+
+    theme =
+      case Integer.parse(input) do
+        {n, ""} when n > 0 and n <= length(themes) ->
+          Enum.at(themes, n - 1)
+
+        _ ->
+          String.to_atom(input)
+      end
+
+    case switch_theme(theme) do
+      {:ok, preview} ->
+        Log.console(
+          "#{IO.ANSI.green()}[OK] Theme switched to: #{theme}#{IO.ANSI.reset()}"
+        )
+
+        display_preview(preview)
+        :ok
+
+      {:error, :no_component_selected} ->
+        Log.console(
+          "#{IO.ANSI.green()}[OK] Theme set to: #{theme}#{IO.ANSI.reset()}"
+        )
+
+        :ok
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp show_scenarios_menu do
+    scenarios = Scenarios.summary()
+
+    Log.console("""
+
+    #{IO.ANSI.bright()}Real-World Scenarios:#{IO.ANSI.reset()}
+    #{IO.ANSI.light_black()}Build complete UIs step by step#{IO.ANSI.reset()}
+
+    #{scenarios |> Enum.with_index(1) |> Enum.map_join("\n", fn {s, i} -> "  #{IO.ANSI.green()}#{i}#{IO.ANSI.reset()}. #{IO.ANSI.bright()}#{s.title}#{IO.ANSI.reset()} - #{s.tagline}\n     #{IO.ANSI.light_black()}#{s.description}#{IO.ANSI.reset()}" end)}
+
+    Enter scenario number to preview, or 'run <number>' to build:
+    """)
+
+    input = IO.gets("") |> String.trim()
+
+    case parse_scenario_input(input, scenarios) do
+      {:preview, scenario} ->
+        case Scenarios.preview(scenario.id) do
+          {:ok, preview} ->
+            Log.console(
+              "\n#{IO.ANSI.bright()}Preview: #{scenario.title}#{IO.ANSI.reset()}\n"
+            )
+
+            Log.console(preview)
+            :ok
+
+          {:error, reason} ->
+            {:error, "#{reason}"}
+        end
+
+      {:run, scenario} ->
+        run_scenario(scenario.id)
+
+      :cancel ->
+        :ok
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp parse_scenario_input("", _scenarios), do: :cancel
+
+  defp parse_scenario_input("run " <> rest, scenarios) do
+    case Integer.parse(String.trim(rest)) do
+      {n, ""} when n > 0 and n <= length(scenarios) ->
+        {:run, Enum.at(scenarios, n - 1)}
+
+      _ ->
+        {:error, "Invalid scenario number"}
+    end
+  end
+
+  defp parse_scenario_input(input, scenarios) do
+    case Integer.parse(input) do
+      {n, ""} when n > 0 and n <= length(scenarios) ->
+        {:preview, Enum.at(scenarios, n - 1)}
+
+      _ ->
+        {:error, "Invalid input. Enter a number or 'run <number>'"}
+    end
+  end
+
+  defp run_scenario(scenario_id) do
+    case Scenarios.get(scenario_id) do
+      nil ->
+        available = Scenarios.list() |> Enum.join(", ")
+        {:error, "Scenario '#{scenario_id}' not found. Available: #{available}"}
+
+      scenario ->
+        Log.console("""
+
+        #{IO.ANSI.bright()}#{IO.ANSI.cyan()}Building: #{scenario.title}#{IO.ANSI.reset()}
+        #{IO.ANSI.light_black()}#{scenario.tagline}#{IO.ANSI.reset()}
+
+        """)
+
+        case Scenarios.run(scenario_id) do
+          {:ok, components} ->
+            Log.console(
+              "#{IO.ANSI.green()}[OK] Built #{length(components)} components#{IO.ANSI.reset()}\n"
+            )
+
+            # Show the result preview
+            case Scenarios.preview(scenario_id) do
+              {:ok, preview} ->
+                Log.console(preview)
+
+              _ ->
+                :ok
+            end
+
+            Log.console(
+              "\n#{IO.ANSI.light_black()}Use 'export' to generate code for this scenario#{IO.ANSI.reset()}"
+            )
+
+            :ok
+
+          {:error, reason} ->
+            {:error, "Failed to run scenario: #{reason}"}
+        end
     end
   end
 end

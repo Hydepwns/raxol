@@ -5,7 +5,25 @@ defmodule Raxol.Terminal.Theme.Manager do
   - Theme customization and modification
   - Dynamic theme switching
   - Theme persistence and state management
+
+  ## Unified Theme System
+
+  Themes are sourced from `Raxol.Core.Theming.ThemeRegistry`, which
+  provides a single source of truth for all Raxol themes. Use
+  `load_from_registry/2` to load any registered theme.
+
+  ## Usage
+
+      manager = Raxol.Terminal.Theme.Manager.new()
+
+      # Load a theme from the unified registry
+      {:ok, manager} = Raxol.Terminal.Theme.Manager.load_from_registry(manager, :dracula)
+
+      # Get a style
+      {:ok, style, manager} = Raxol.Terminal.Theme.Manager.get_style(manager, :normal)
   """
+
+  alias Raxol.Core.Theming.ThemeRegistry
 
   @type color :: %{
           r: integer(),
@@ -187,6 +205,46 @@ defmodule Raxol.Terminal.Theme.Manager do
 
         {:ok, updated_manager}
     end
+  end
+
+  @doc """
+  Loads a theme from the unified theme registry.
+
+  This is the preferred way to load themes as it uses the single
+  source of truth for all Raxol theme definitions.
+
+  ## Examples
+
+      {:ok, manager} = Manager.load_from_registry(manager, :dracula)
+      {:ok, manager} = Manager.load_from_registry(manager, :synthwave84)
+  """
+  @spec load_from_registry(t(), atom()) :: {:ok, t()} | {:error, term()}
+  def load_from_registry(manager, theme_name) when is_atom(theme_name) do
+    case ThemeRegistry.to_terminal_format(theme_name) do
+      nil ->
+        {:error, :theme_not_found}
+
+      theme ->
+        # Add to available themes and set as current
+        updated_themes = Map.put(manager.themes, theme.name, theme)
+
+        updated_manager = %{
+          manager
+          | current_theme: theme,
+            themes: updated_themes,
+            metrics: update_metrics(manager.metrics, :theme_switches)
+        }
+
+        {:ok, updated_manager}
+    end
+  end
+
+  @doc """
+  Lists all themes available in the unified registry.
+  """
+  @spec list_registry_themes() :: [atom()]
+  def list_registry_themes do
+    ThemeRegistry.list()
   end
 
   @doc """

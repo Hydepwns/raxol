@@ -2,16 +2,48 @@ defmodule Mix.Tasks.Raxol.Bench do
   @moduledoc """
   Enhanced benchmarking task for Raxol terminal emulator.
 
-  Usage:
-    mix raxol.bench                    # Run all benchmarks
-    mix raxol.bench parser             # Run parser benchmarks only
-    mix raxol.bench terminal           # Run terminal benchmarks only
-    mix raxol.bench rendering          # Run rendering benchmarks only
-    mix raxol.bench memory             # Run memory benchmarks only
-    mix raxol.bench --quick            # Quick benchmark run
-    mix raxol.bench --compare          # Compare with previous results
-    mix raxol.bench --dashboard        # Generate full dashboard
-    mix raxol.bench --regression       # Check for performance regressions
+  Provides comprehensive performance benchmarking with multiple
+  output formats, regression detection, and dashboard generation.
+
+  ## Usage
+
+      mix raxol.bench                    # Run all benchmarks
+      mix raxol.bench parser             # Run parser benchmarks only
+      mix raxol.bench terminal           # Run terminal component benchmarks
+      mix raxol.bench rendering          # Run rendering benchmarks only
+      mix raxol.bench memory             # Run memory benchmarks only
+      mix raxol.bench dashboard          # Generate dashboard from latest results
+
+  ## Options
+
+    * `--quick`       - Quick benchmark run with reduced time
+    * `--compare`     - Compare with previous benchmark results
+    * `--dashboard`   - Generate full performance dashboard with charts
+    * `--regression`  - Check for performance regressions (5% threshold)
+    * `--help`        - Show detailed help
+
+  ## Examples
+
+      # Quick performance check
+      mix raxol.bench --quick
+
+      # Full benchmarks with regression detection
+      mix raxol.bench --regression
+
+      # Parser benchmarks with dashboard generation
+      mix raxol.bench parser --dashboard
+
+      # Compare current run with previous results
+      mix raxol.bench --compare
+
+  ## Output
+
+  Results are saved to `bench/output/enhanced/` with:
+    - HTML reports for interactive viewing
+    - JSON data for programmatic analysis
+    - Performance dashboard with charts
+    - Regression analysis reports
+    - Baseline metrics for future comparison
   """
 
   use Mix.Task

@@ -1,432 +1,432 @@
 defmodule Raxol.Core.Runtime.Plugins.PluginManager do
   @moduledoc """
-  Manages the loading, initialization, and lifecycle of plugins in the Raxol runtime.
+  Facade for plugin management operations.
 
-  This module has been refactored to delegate operations to specialized modules:
-  - Lifecycle operations (load, enable, disable, reload)
-  - State management (get/set plugin states and configs)
-  - Event handling (GenServer callbacks)
-  - Utility functions (error handling, cleanup)
+  This module provides a unified API that delegates to specialized modules:
+  - `PluginRegistry` - Fast ETS-backed lookups (no process serialization)
+  - `PluginLifecycle` - GenServer for coordination (load, enable, state)
+
+  ## Architecture
+
+  Following Rich Hickey's principle of separating data from coordination:
+
+  ```
+  PluginManager (Facade)
+       |
+       +-- PluginRegistry (Pure + ETS)
+       |   - Plugin registration
+       |   - Metadata storage
+       |   - Command lookups
+       |   - Fast concurrent reads
+       |
+       +-- PluginLifecycle (GenServer)
+           - Load/unload coordination
+           - Enable/disable state
+           - Runtime plugin state
+           - File watching/hot reload
+  ```
+
+  ## Migration Note
+
+  This module maintains backward compatibility with the old API.
+  New code should use:
+  - `PluginRegistry` for lookups (faster, no process call)
+  - `PluginLifecycle` for lifecycle operations
+
+  ## Usage
+
+      # Load a plugin
+      PluginManager.load_plugin_by_module(MyPlugin, %{config: "value"})
+
+      # List plugins (fast ETS lookup)
+      PluginManager.list_plugins()
+
+      # Enable/disable
+      PluginManager.enable_plugin(:my_plugin)
+      PluginManager.disable_plugin(:my_plugin)
   """
 
+  alias Raxol.Core.Runtime.Plugins.PluginRegistry
+  alias Raxol.Core.Runtime.Plugins.PluginLifecycle
   alias Raxol.Core.Runtime.Log
 
-  @type t :: %{
-          plugins: map(),
-          state: term(),
-          config: map()
-        }
-  @type plugin_id :: String.t()
+  @type plugin_id :: atom() | String.t()
   @type plugin_metadata :: map()
   @type plugin_state :: map()
 
-  use Raxol.Core.Behaviours.BaseManager
+  # ============================================================================
+  # Startup
+  # ============================================================================
 
-  require Raxol.Core.Runtime.Log
-  alias Raxol.Core.Utils.TimerUtils
+  @doc """
+  Starts the plugin management system.
 
-  @impl true
-  def init_manager(arg) do
-    state =
-      case arg do
-        opts when is_list(opts) ->
-          opts_map = Enum.into(opts, %{})
+  Initializes both the registry and lifecycle manager.
+  """
+  def start_link(opts \\ []) do
+    # Ensure registry is initialized
+    PluginRegistry.init()
 
-          %{
-            plugins: %{},
-            metadata: %{},
-            plugin_states: %{},
-            plugin_config: Map.get(opts_map, :plugin_config, %{}),
-            load_order: [],
-            command_registry_table:
-              Map.get(opts_map, :command_registry_table, :command_registry),
-            runtime_pid: Map.get(opts_map, :runtime_pid),
-            file_watching_enabled?:
-              Map.get(opts_map, :enable_plugin_reloading, false),
-            initialized: false,
-            tick_timer: nil,
-            file_event_timer: nil,
-            file_watcher_pid: nil,
-            plugin_dirs: Map.get(opts_map, :plugin_dirs, []),
-            plugins_dir: Map.get(opts_map, :plugins_dir, nil)
-          }
-
-        state when is_map(state) ->
-          Map.merge(
-            %{
-              plugins: %{},
-              metadata: %{},
-              plugin_states: %{},
-              plugin_config: %{},
-              load_order: [],
-              command_registry_table: :command_registry,
-              runtime_pid: nil,
-              file_watching_enabled?: false,
-              initialized: false,
-              tick_timer: nil,
-              file_event_timer: nil,
-              file_watcher_pid: nil,
-              plugin_dirs: [],
-              plugins_dir: nil
-            },
-            state
-          )
-
-        _ ->
-          %{
-            plugins: %{},
-            metadata: %{},
-            plugin_states: %{},
-            plugin_config: %{},
-            load_order: [],
-            command_registry_table: :command_registry,
-            runtime_pid: nil,
-            file_watching_enabled?: false,
-            initialized: false,
-            tick_timer: nil,
-            file_event_timer: nil,
-            file_watcher_pid: nil,
-            plugin_dirs: [],
-            plugins_dir: nil
-          }
-      end
-
-    TimerUtils.start_delayed(self(), :__internal_initialize__, 100)
-    {:ok, state}
+    # Start lifecycle manager
+    PluginLifecycle.start_link(opts)
   end
 
-  def initialize do
-    GenServer.call(__MODULE__, :initialize)
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker,
+      restart: :permanent
+    }
   end
 
-  def initialize_with_config(config) do
-    GenServer.call(__MODULE__, {:initialize_with_config, config})
-  end
+  # ============================================================================
+  # Plugin Loading (Delegates to Lifecycle)
+  # ============================================================================
 
-  def list_plugins do
-    GenServer.call(__MODULE__, :list_plugins)
-  end
-
-  def get_plugin(plugin_id) do
-    GenServer.call(__MODULE__, {:get_plugin, plugin_id})
-  end
-
-  def enable_plugin(plugin_id) do
-    GenServer.cast(__MODULE__, {:enable_plugin, plugin_id})
-  end
-
-  def disable_plugin(plugin_id) do
-    GenServer.cast(__MODULE__, {:disable_plugin, plugin_id})
-  end
-
-  def reload_plugin(plugin_id) do
-    GenServer.cast(__MODULE__, {:reload_plugin, plugin_id})
-  end
-
+  @doc """
+  Loads a plugin by module with optional configuration.
+  """
   def load_plugin_by_module(module, config \\ %{}) do
-    GenServer.call(__MODULE__, {:load_plugin_by_module, module, config})
+    plugin_id = module_to_id(module)
+    PluginLifecycle.load(plugin_id, module, config)
   end
 
+  @doc """
+  Loads a plugin by ID.
+  """
   def load_plugin(plugin_id) do
-    GenServer.call(__MODULE__, {:load_plugin, plugin_id})
+    # For backward compatibility - tries to load if module exists
+    module = id_to_module(plugin_id)
+
+    if Code.ensure_loaded?(module) do
+      PluginLifecycle.load(plugin_id, module, %{})
+    else
+      {:error, :module_not_found}
+    end
   end
 
+  @doc """
+  Loads a plugin with config (legacy signature).
+  """
+  def load_plugin(plugin_id, config) do
+    module = id_to_module(plugin_id)
+
+    if Code.ensure_loaded?(module) do
+      PluginLifecycle.load(plugin_id, module, config)
+    else
+      {:error, :module_not_found}
+    end
+  end
+
+  @doc """
+  Unloads a plugin.
+  """
   def unload_plugin(plugin_id) do
-    GenServer.cast(__MODULE__, {:unload_plugin, plugin_id})
+    PluginLifecycle.unload(plugin_id)
   end
 
-  @impl true
-  def handle_manager_call({:load_plugin, plugin_module}, _from, state) do
-    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_load_plugin(
-           plugin_module,
-           %{},
-           state
-         ) do
-      {:ok, new_state} -> {:reply, :ok, new_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
+  @doc """
+  Unloads a plugin (legacy signature with pid).
+  """
+  def unload_plugin(_pid, plugin_id) do
+    unload_plugin(plugin_id)
+  end
+
+  @doc """
+  Reloads a plugin.
+  """
+  def reload_plugin(plugin_id) do
+    PluginLifecycle.reload(plugin_id)
+  end
+
+  # ============================================================================
+  # Enable/Disable (Delegates to Lifecycle)
+  # ============================================================================
+
+  @doc """
+  Enables a plugin.
+  """
+  def enable_plugin(plugin_id) do
+    PluginLifecycle.enable(plugin_id)
+  end
+
+  @doc """
+  Disables a plugin.
+  """
+  def disable_plugin(plugin_id) do
+    PluginLifecycle.disable(plugin_id)
+  end
+
+  # ============================================================================
+  # Lookups (Delegates to Registry - Fast ETS reads)
+  # ============================================================================
+
+  @doc """
+  Lists all registered plugins.
+
+  This is a fast ETS lookup - no GenServer call required.
+  """
+  def list_plugins do
+    PluginRegistry.list()
+    |> Enum.map(&plugin_entry_to_legacy/1)
+  end
+
+  @doc """
+  Gets a plugin by ID.
+
+  Fast ETS lookup.
+  """
+  def get_plugin(plugin_id) do
+    case PluginRegistry.get(plugin_id) do
+      {:ok, entry} -> plugin_entry_to_legacy(entry)
+      :error -> nil
     end
   end
 
-  def handle_manager_call({:unload_plugin, plugin_name}, _from, state) do
-    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_unload_plugin(
-           plugin_name,
-           state
-         ) do
-      {:ok, new_state} -> {:reply, :ok, new_state}
-      {:error, _type, _message, _context} = error -> {:reply, error, state}
-    end
+  @doc """
+  Checks if a plugin is loaded.
+  """
+  def plugin_loaded?(plugin_id) do
+    PluginRegistry.registered?(plugin_id)
   end
 
-  def handle_manager_call({:get_plugin, plugin_name}, _from, state) do
-    plugin = Map.get(state.plugins, plugin_name)
-    {:reply, plugin, state}
+  @doc """
+  Checks if a plugin is loaded (legacy signature with pid).
+  """
+  def plugin_loaded?(_pid, plugin_id) do
+    plugin_loaded?(plugin_id)
   end
 
-  def handle_manager_call(:initialize, _from, state) do
-    new_state = Map.put(state, :initialized, true)
-    {:reply, :ok, new_state}
+  @doc """
+  Gets list of loaded plugin IDs.
+  """
+  def get_loaded_plugins do
+    PluginRegistry.list(ids_only: true)
   end
 
-  def handle_manager_call({:initialize_with_config, config}, _from, state) do
-    new_state =
-      state
-      |> Map.put(:initialized, true)
-      |> Map.put(:plugin_config, config)
-
-    {:reply, :ok, new_state}
+  @doc """
+  Gets list of loaded plugin IDs (legacy signature with pid).
+  """
+  def get_loaded_plugins(_pid) do
+    get_loaded_plugins()
   end
 
-  def handle_manager_call(:list_plugins, _from, state) do
-    plugins = Map.values(state.plugins)
-    {:reply, plugins, state}
-  end
+  # ============================================================================
+  # State Management (Delegates to Lifecycle)
+  # ============================================================================
 
-  def handle_manager_call(
-        {:load_plugin_by_module, module, config},
-        _from,
-        state
-      ) do
-    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_load_plugin(
-           module,
-           config,
-           state
-         ) do
-      {:ok, new_state} ->
-        {:reply, :ok, new_state}
-
-      {:error, _reason} = error ->
-        {:reply, error, state}
-    end
-  end
-
-  def handle_manager_call({:get_plugin_state, plugin_id}, _from, state) do
-    plugin_state = Map.get(state.plugin_states, plugin_id)
-    {:reply, plugin_state, state}
-  end
-
-  def handle_manager_call({:update_plugin, plugin_id, update_fun}, _from, state) do
-    case Map.get(state.plugins, plugin_id) do
-      nil ->
-        {:reply, {:error, :plugin_not_found}, state}
-
-      plugin ->
-        updated_plugin = update_fun.(plugin)
-        new_plugins = Map.put(state.plugins, plugin_id, updated_plugin)
-        new_state = Map.put(state, :plugins, new_plugins)
-        {:reply, :ok, new_state}
-    end
-  end
-
-  def handle_manager_call(
-        {:initialize_plugin, plugin_name, config},
-        _from,
-        state
-      ) do
-    case Map.get(state.plugins, plugin_name) do
-      nil ->
-        {:reply, {:error, :plugin_not_found}, state}
-
-      _plugin ->
-        new_plugin_states =
-          Map.put(state.plugin_states, plugin_name, :initialized)
-
-        new_plugin_config = Map.put(state.plugin_config, plugin_name, config)
-
-        new_state =
-          state
-          |> Map.put(:plugin_states, new_plugin_states)
-          |> Map.put(:plugin_config, new_plugin_config)
-
-        {:reply, :ok, new_state}
-    end
-  end
-
-  def handle_manager_call({:plugin_loaded?, plugin_name}, _from, state) do
-    loaded = Map.has_key?(state.plugins, plugin_name)
-    {:reply, loaded, state}
-  end
-
-  def handle_manager_call({:get_loaded_plugins}, _from, state) do
-    plugin_names = Map.keys(state.plugins)
-    {:reply, plugin_names, state}
-  end
-
-  def handle_manager_call(
-        {:call_hook, plugin_name, _hook_name, args},
-        _from,
-        state
-      ) do
-    case Map.get(state.plugins, plugin_name) do
-      nil ->
-        {:reply, {:error, :plugin_not_found}, state}
-
-      _plugin ->
-        # Basic hook call implementation - just return success for now
-        {:reply, {:ok, args}, state}
-    end
-  end
-
-  def handle_manager_call({:get_plugin_config, plugin_name}, _from, state) do
-    config = Map.get(state.plugin_config, plugin_name, %{})
-    {:reply, config, state}
-  end
-
-  @impl true
-  def handle_manager_cast({:reload_plugin, plugin_name}, state) do
-    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_reload_plugin(
-           plugin_name,
-           state
-         ) do
-      {:ok, new_state} -> {:noreply, new_state}
-      {:error, _type, _message, _context} -> {:noreply, state}
-    end
-  end
-
-  def handle_manager_cast({:enable_plugin, plugin_id}, state) do
-    case Map.get(state.plugins, plugin_id) do
-      nil ->
-        {:noreply, state}
-
-      plugin ->
-        updated_plugin = Map.put(plugin, :enabled, true)
-        new_plugins = Map.put(state.plugins, plugin_id, updated_plugin)
-        new_state = Map.put(state, :plugins, new_plugins)
-        {:noreply, new_state}
-    end
-  end
-
-  def handle_manager_cast({:disable_plugin, plugin_id}, state) do
-    case Map.get(state.plugins, plugin_id) do
-      nil ->
-        {:noreply, state}
-
-      plugin ->
-        updated_plugin = Map.put(plugin, :enabled, false)
-        new_plugins = Map.put(state.plugins, plugin_id, updated_plugin)
-        new_state = Map.put(state, :plugins, new_plugins)
-        {:noreply, new_state}
-    end
-  end
-
-  def handle_manager_cast({:unload_plugin, plugin_name}, state) do
-    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_unload_plugin(
-           plugin_name,
-           state
-         ) do
-      {:ok, new_state} -> {:noreply, new_state}
-      {:error, _type, _message, _context} -> {:noreply, state}
-    end
-  end
-
-  def handle_manager_cast(
-        {:set_plugin_state, plugin_id, new_plugin_state},
-        state
-      ) do
-    new_plugin_states =
-      Map.put(state.plugin_states, plugin_id, new_plugin_state)
-
-    new_state = Map.put(state, :plugin_states, new_plugin_states)
-    {:noreply, new_state}
-  end
-
-  def handle_manager_cast({:update_plugin_config, plugin_name, config}, state) do
-    new_plugin_config = Map.put(state.plugin_config, plugin_name, config)
-    new_state = Map.put(state, :plugin_config, new_plugin_config)
-    {:noreply, new_state}
-  end
-
-  @impl true
-  def handle_manager_info({:plugin_event, event}, state) do
-    # Process plugin events
-    new_state = process_plugin_event(event, state)
-    {:noreply, new_state}
-  end
-
-  def handle_manager_info(_message, state) do
-    {:noreply, state}
-  end
-
-  defp process_plugin_event(_event, state), do: state
-
-  def stop(pid \\ __MODULE__) do
-    GenServer.stop(pid)
-  end
-
-  def update_plugin(plugin_id, update_fun) when is_function(update_fun, 1) do
-    GenServer.call(__MODULE__, {:update_plugin, plugin_id, update_fun})
-  end
-
-  def set_plugin_state(plugin_id, new_state) do
-    GenServer.cast(__MODULE__, {:set_plugin_state, plugin_id, new_state})
-  end
-
+  @doc """
+  Gets the runtime state of a plugin.
+  """
   def get_plugin_state(plugin_id) do
-    GenServer.call(__MODULE__, {:get_plugin_state, plugin_id})
-  end
-
-  def initialize_plugin(manager_pid, plugin_name, config) do
-    GenServer.call(manager_pid, {:initialize_plugin, plugin_name, config})
-  end
-
-  def plugin_loaded?(manager_pid, plugin_name) do
-    GenServer.call(manager_pid, {:plugin_loaded?, plugin_name})
-  end
-
-  def get_loaded_plugins(manager_pid) do
-    GenServer.call(manager_pid, {:get_loaded_plugins})
-  end
-
-  def unload_plugin(manager_pid, plugin_name) do
-    GenServer.cast(manager_pid, {:unload_plugin, plugin_name})
-  end
-
-  def call_hook(manager_pid, plugin_name, hook_name, args) do
-    GenServer.call(manager_pid, {:call_hook, plugin_name, hook_name, args})
-  end
-
-  def get_plugin_config(manager_pid, plugin_name) do
-    GenServer.call(manager_pid, {:get_plugin_config, plugin_name})
-  end
-
-  def update_plugin_config(manager_pid, plugin_name, config) do
-    GenServer.cast(manager_pid, {:update_plugin_config, plugin_name, config})
-  end
-
-  def validate_plugin_config(_plugin_name, config) do
-    # Basic validation - ensure config is a map
-    case is_map(config) do
-      true -> {:ok, config}
-      false -> {:error, :invalid_config}
+    case PluginLifecycle.get_state(plugin_id) do
+      {:ok, state} -> state
+      {:error, _} -> nil
     end
   end
 
-  # Legacy compatibility functions (stubs)
-  def handle_error(error, context) do
-    Raxol.Core.Runtime.Log.error("Plugin error", error: error, context: context)
-    {:error, error}
+  @doc """
+  Sets the runtime state of a plugin.
+  """
+  def set_plugin_state(plugin_id, state) do
+    PluginLifecycle.set_state(plugin_id, state)
   end
 
-  def handle_cleanup(_context) do
+  @doc """
+  Gets plugin configuration.
+  """
+  def get_plugin_config(plugin_id) do
+    PluginLifecycle.get_config(plugin_id)
+  end
+
+  @doc """
+  Gets plugin configuration (legacy signature with pid).
+  """
+  def get_plugin_config(_pid, plugin_id) do
+    get_plugin_config(plugin_id)
+  end
+
+  @doc """
+  Updates plugin configuration.
+  """
+  def update_plugin_config(plugin_id, config) do
+    PluginLifecycle.update_config(plugin_id, config)
+  end
+
+  @doc """
+  Updates plugin configuration (legacy signature with pid).
+  """
+  def update_plugin_config(_pid, plugin_id, config) do
+    update_plugin_config(plugin_id, config)
+  end
+
+  # ============================================================================
+  # Initialization (Backward Compatibility)
+  # ============================================================================
+
+  @doc """
+  Initializes the plugin manager.
+  """
+  def initialize do
+    PluginRegistry.init()
     :ok
   end
 
-  def load_plugin(name, _config) do
-    load_plugin(name)
+  @doc """
+  Initializes with configuration.
+  """
+  def initialize_with_config(_config) do
+    PluginRegistry.init()
+    :ok
   end
 
-  def handle_event(state, _event) do
-    state
+  @doc """
+  Initializes a specific plugin.
+  """
+  def initialize_plugin(plugin_id, config) do
+    PluginLifecycle.update_config(plugin_id, config)
   end
 
-  def get_commands(_state) do
-    %{}
+  @doc """
+  Initializes a specific plugin (legacy signature with pid).
+  """
+  def initialize_plugin(_pid, plugin_id, config) do
+    initialize_plugin(plugin_id, config)
   end
 
-  def get_metadata(_state) do
-    %{}
+  # ============================================================================
+  # Plugin Updates
+  # ============================================================================
+
+  @doc """
+  Updates a plugin entry using a function.
+  """
+  def update_plugin(plugin_id, update_fun) when is_function(update_fun, 1) do
+    case PluginRegistry.get(plugin_id) do
+      {:ok, entry} ->
+        updated = update_fun.(plugin_entry_to_legacy(entry))
+        PluginRegistry.update_metadata(plugin_id, updated)
+
+      :error ->
+        {:error, :plugin_not_found}
+    end
   end
 
-  def handle_command(_state, _command, _args) do
-    {:error, :not_implemented}
+  # ============================================================================
+  # Hook Calling
+  # ============================================================================
+
+  @doc """
+  Calls a hook on a plugin.
+  """
+  def call_hook(plugin_id, hook_name, args) do
+    case PluginRegistry.get_module(plugin_id) do
+      nil ->
+        {:error, :plugin_not_found}
+
+      module ->
+        if function_exported?(module, hook_name, length(args)) do
+          try do
+            result = apply(module, hook_name, args)
+            {:ok, result}
+          rescue
+            e -> {:error, e}
+          end
+        else
+          {:error, :hook_not_found}
+        end
+    end
+  end
+
+  @doc """
+  Calls a hook on a plugin (legacy signature with pid).
+  """
+  def call_hook(_pid, plugin_id, hook_name, args) do
+    call_hook(plugin_id, hook_name, args)
+  end
+
+  # ============================================================================
+  # Validation
+  # ============================================================================
+
+  @doc """
+  Validates plugin configuration.
+  """
+  def validate_plugin_config(_plugin_id, config) do
+    if is_map(config) do
+      {:ok, config}
+    else
+      {:error, :invalid_config}
+    end
+  end
+
+  # ============================================================================
+  # Legacy Compatibility
+  # ============================================================================
+
+  @doc false
+  def stop(pid \\ __MODULE__) do
+    GenServer.stop(pid)
+  catch
+    :exit, _ -> :ok
+  end
+
+  @doc false
+  def handle_error(error, context) do
+    Log.error("Plugin error", error: error, context: context)
+    {:error, error}
+  end
+
+  @doc false
+  def handle_cleanup(_context), do: :ok
+
+  @doc false
+  def handle_event(state, _event), do: state
+
+  @doc false
+  def get_commands(_state), do: %{}
+
+  @doc false
+  def get_metadata(_state), do: %{}
+
+  @doc false
+  def handle_command(_state, _command, _args), do: {:error, :not_implemented}
+
+  # ============================================================================
+  # Private Functions
+  # ============================================================================
+
+  defp module_to_id(module) when is_atom(module) do
+    module
+    |> Module.split()
+    |> List.last()
+    |> Macro.underscore()
+    |> String.to_atom()
+  end
+
+  defp id_to_module(plugin_id) when is_atom(plugin_id) do
+    # Try to find module by convention
+    name =
+      plugin_id
+      |> Atom.to_string()
+      |> Macro.camelize()
+
+    Module.concat([Raxol, Plugins, name])
+  end
+
+  defp id_to_module(plugin_id) when is_binary(plugin_id) do
+    plugin_id
+    |> String.to_atom()
+    |> id_to_module()
+  end
+
+  defp plugin_entry_to_legacy(entry) do
+    %{
+      id: entry.id,
+      module: entry.module,
+      metadata: entry.metadata,
+      enabled: PluginLifecycle.get_status(entry.id) == :enabled
+    }
   end
 end

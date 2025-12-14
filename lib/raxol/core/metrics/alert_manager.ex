@@ -217,11 +217,8 @@ defmodule Raxol.Core.Metrics.AlertManager do
           MetricsCollector.get_metrics(rule.metric_name, %{})
       end
 
-    metrics =
-      case metrics_result do
-        {:ok, data} -> data
-        {:error, _} -> []
-      end
+    # MetricsCollector.get_metrics/2 always returns {:ok, data}
+    {:ok, metrics} = metrics_result
 
     case rule.group_by do
       [] ->

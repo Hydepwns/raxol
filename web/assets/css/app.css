@@ -523,3 +523,327 @@ html, body {
     --raxol-gray-900: #ffffff;
   }
 }
+
+/* =============================================================================
+   Raxol Terminal Theme Styles
+   ============================================================================= */
+
+/* Base Terminal Styles */
+.raxol-terminal {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Fira Code', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  background: #282a36;
+  color: #f8f8f2;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.raxol-terminal pre {
+  margin: 0;
+  font-family: inherit;
+}
+
+/* Raxol Terminal Color Classes - Dracula Theme */
+.raxol-fg-black { color: #21222c; }
+.raxol-fg-red { color: #ff5555; }
+.raxol-fg-green { color: #50fa7b; }
+.raxol-fg-yellow { color: #f1fa8c; }
+.raxol-fg-blue { color: #6272a4; }
+.raxol-fg-magenta { color: #ff79c6; }
+.raxol-fg-cyan { color: #8be9fd; }
+.raxol-fg-white { color: #f8f8f2; }
+
+/* Bright colors */
+.raxol-fg-bright-black { color: #6272a4; }
+.raxol-fg-bright-red { color: #ff6e6e; }
+.raxol-fg-bright-green { color: #69ff94; }
+.raxol-fg-bright-yellow { color: #ffffa5; }
+.raxol-fg-bright-blue { color: #d6acff; }
+.raxol-fg-bright-magenta { color: #ff92df; }
+.raxol-fg-bright-cyan { color: #a4ffff; }
+.raxol-fg-bright-white { color: #ffffff; }
+
+/* Background colors */
+.raxol-bg-black { background-color: #21222c; }
+.raxol-bg-red { background-color: #ff5555; }
+.raxol-bg-green { background-color: #50fa7b; }
+.raxol-bg-yellow { background-color: #f1fa8c; }
+.raxol-bg-blue { background-color: #6272a4; }
+.raxol-bg-magenta { background-color: #ff79c6; }
+.raxol-bg-cyan { background-color: #8be9fd; }
+.raxol-bg-white { background-color: #f8f8f2; }
+
+/* Text attributes */
+.raxol-bold { font-weight: bold; }
+.raxol-italic { font-style: italic; }
+.raxol-underline { text-decoration: underline; }
+.raxol-strikethrough { text-decoration: line-through; }
+.raxol-reverse { filter: invert(1); }
+
+/* Terminal cell */
+.raxol-cell {
+  display: inline;
+}
+
+/* Terminal line */
+.raxol-line {
+  display: block;
+  white-space: pre;
+}
+
+/* Cursor styles */
+.raxol-cursor {
+  position: relative;
+}
+
+.raxol-cursor-block::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(248, 248, 242, 0.5);
+  animation: blink 1s step-end infinite;
+}
+
+.raxol-cursor-underline::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #f8f8f2;
+  animation: blink 1s step-end infinite;
+}
+
+.raxol-cursor-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+  background: #f8f8f2;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* =============================================================================
+   Demo Container Styles
+   ============================================================================= */
+
+.demo-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.demo-section {
+  margin-bottom: 1.5rem;
+}
+
+.demo-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Terminal Box Component Styles */
+[data-terminal-component="box"] {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 8px;
+  background: white;
+}
+
+[data-terminal-component="box"][data-style*="single"] {
+  border-style: solid;
+}
+
+[data-terminal-component="box"][data-style*="double"] {
+  border-width: 3px;
+  border-style: double;
+}
+
+[data-terminal-component="box"][data-style*="rounded"] {
+  border-radius: 8px;
+}
+
+/* Terminal Button Component Styles */
+[data-terminal-component="button"] {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+[data-terminal-component="button"][data-role="primary"] {
+  background: #3b82f6;
+  color: white;
+}
+
+[data-terminal-component="button"][data-role="primary"]:hover {
+  background: #2563eb;
+}
+
+[data-terminal-component="button"][data-role="secondary"] {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+[data-terminal-component="button"][data-role="secondary"]:hover {
+  background: #d1d5db;
+}
+
+[data-terminal-component="button"][data-role="danger"] {
+  background: #ef4444;
+  color: white;
+}
+
+[data-terminal-component="button"][data-role="danger"]:hover {
+  background: #dc2626;
+}
+
+[data-terminal-component="button"][data-role="success"] {
+  background: #10b981;
+  color: white;
+}
+
+[data-terminal-component="button"][data-role="success"]:hover {
+  background: #059669;
+}
+
+[data-terminal-component="button"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Terminal Input Component Styles */
+[data-terminal-component="input"] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-family: 'Fira Code', monospace;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+[data-terminal-component="input"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Terminal Progress Component Styles */
+[data-terminal-component="progress"] {
+  font-family: 'Fira Code', monospace;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Terminal Row and Column */
+[data-terminal-component="row"] {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+[data-terminal-component="row"][data-gap="1"] { gap: 4px; }
+[data-terminal-component="row"][data-gap="2"] { gap: 8px; }
+[data-terminal-component="row"][data-gap="3"] { gap: 12px; }
+[data-terminal-component="row"][data-gap="4"] { gap: 16px; }
+
+[data-terminal-component="column"] {
+  display: flex;
+  flex-direction: column;
+}
+
+[data-terminal-component="column"][data-gap="1"] { gap: 4px; }
+[data-terminal-component="column"][data-gap="2"] { gap: 8px; }
+[data-terminal-component="column"][data-gap="3"] { gap: 12px; }
+[data-terminal-component="column"][data-gap="4"] { gap: 16px; }
+
+/* Terminal Text Component */
+[data-terminal-component="text"] {
+  display: inline;
+}
+
+/* Terminal Divider */
+[data-terminal-component="divider"] {
+  font-family: 'Fira Code', monospace;
+  color: #9ca3af;
+}
+
+/* =============================================================================
+   Interactive Preview Styles
+   ============================================================================= */
+
+.interactive-preview {
+  background: #fafafa;
+}
+
+.terminal-preview {
+  background: #1a1b26;
+}
+
+/* Slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  background: #2563eb;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+/* Demo area layout */
+.demo-area {
+  display: flex;
+}
+
+@media (max-width: 1024px) {
+  .demo-area {
+    flex-direction: column;
+  }
+
+  .interactive-preview,
+  .terminal-preview {
+    width: 100%;
+    min-height: 300px;
+  }
+}

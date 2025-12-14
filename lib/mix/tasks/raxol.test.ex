@@ -42,6 +42,8 @@ defmodule Mix.Tasks.Raxol.Test do
   use Mix.Task
   require Logger
 
+  alias Raxol.CLI.Colors
+
   @shortdoc "Enhanced test runner with additional features"
 
   @impl Mix.Task
@@ -85,26 +87,37 @@ defmodule Mix.Tasks.Raxol.Test do
   end
 
   defp run_standard_tests(opts, files) do
-    Mix.shell().info("Running Raxol test suite...")
+    Mix.shell().info(Colors.section_header("Running Raxol test suite"))
 
     test_args = build_test_args(opts, files)
 
     case Mix.shell().cmd("mix test #{Enum.join(test_args, " ")}") do
       0 ->
-        Mix.shell().info("[OK] All tests passed")
+        Mix.shell().info("")
+        Mix.shell().info("  " <> Colors.success("[OK]") <> " All tests passed")
 
       _ ->
-        Mix.shell().error("[FAIL] Some tests failed")
+        Mix.shell().info("")
+        Mix.shell().error("  " <> Colors.error("[!!]") <> " Some tests failed")
+
+        Mix.shell().info(
+          "  " <>
+            Colors.muted("Run") <>
+            " " <>
+            Colors.info("mix test --failed") <>
+            " " <> Colors.muted("to re-run failed tests")
+        )
+
         Mix.raise("Test suite failed")
     end
   end
 
   defp run_parallel_tests(opts, files) do
-    Mix.shell().info("Running tests in parallel...")
-
-    # Get number of cores
     cores = System.schedulers_online()
-    Mix.shell().info("Using #{cores} parallel processes")
+
+    Mix.shell().info(Colors.section_header("Running tests in parallel"))
+    Mix.shell().info(Colors.muted("Using #{cores} parallel processes"))
+    Mix.shell().info("")
 
     test_args = build_test_args(opts, files)
 
@@ -113,34 +126,49 @@ defmodule Mix.Tasks.Raxol.Test do
 
     case Mix.shell().cmd("mix test #{Enum.join(test_args, " ")}") do
       0 ->
-        Mix.shell().info("[OK] All tests passed")
+        Mix.shell().info("")
+        Mix.shell().info("  " <> Colors.success("[OK]") <> " All tests passed")
 
       _ ->
-        Mix.shell().error("[FAIL] Some tests failed")
+        Mix.shell().info("")
+        Mix.shell().error("  " <> Colors.error("[!!]") <> " Some tests failed")
+
+        Mix.shell().info(
+          "  " <>
+            Colors.muted("Run") <>
+            " " <>
+            Colors.info("mix test --failed") <>
+            " " <> Colors.muted("to re-run failed tests")
+        )
+
         Mix.raise("Test suite failed")
     end
   end
 
   defp run_with_coverage(opts, files) do
-    Mix.shell().info("Running tests with coverage...")
+    Mix.shell().info(Colors.section_header("Running tests with coverage"))
+    Mix.shell().info("")
 
     test_args = build_test_args(opts, files)
     test_args = ["--cover" | test_args]
 
     case Mix.shell().cmd("mix test #{Enum.join(test_args, " ")}") do
       0 ->
-        Mix.shell().info("[OK] All tests passed")
+        Mix.shell().info("")
+        Mix.shell().info("  " <> Colors.success("[OK]") <> " All tests passed")
         show_coverage_summary()
 
       _ ->
-        Mix.shell().error("[FAIL] Some tests failed")
+        Mix.shell().info("")
+        Mix.shell().error("  " <> Colors.error("[!!]") <> " Some tests failed")
         show_coverage_summary()
         Mix.raise("Test suite failed")
     end
   end
 
   defp run_with_profiling(opts, files) do
-    Mix.shell().info("Running tests with profiling...")
+    Mix.shell().info(Colors.section_header("Running tests with profiling"))
+    Mix.shell().info("")
 
     start_time = System.monotonic_time(:millisecond)
 
@@ -153,14 +181,17 @@ defmodule Mix.Tasks.Raxol.Test do
     duration = end_time - start_time
 
     Mix.shell().info("")
-    Mix.shell().info("Test execution time: #{duration}ms")
+
+    Mix.shell().info(
+      Colors.muted("Execution time: ") <> Colors.info("#{duration}ms")
+    )
 
     case result do
       0 ->
-        Mix.shell().info("[OK] All tests passed")
+        Mix.shell().info("  " <> Colors.success("[OK]") <> " All tests passed")
 
       _ ->
-        Mix.shell().error("[FAIL] Some tests failed")
+        Mix.shell().error("  " <> Colors.error("[!!]") <> " Some tests failed")
         Mix.raise("Test suite failed")
     end
   end

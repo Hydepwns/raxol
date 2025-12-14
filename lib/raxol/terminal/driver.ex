@@ -48,6 +48,22 @@ defmodule Raxol.Terminal.Driver do
 
   # --- Public API ---
 
+  @doc """
+  Returns the current terminal backend being used.
+
+  ## Examples
+
+      iex> Raxol.Terminal.Driver.backend()
+      :termbox2_nif
+
+      iex> Raxol.Terminal.Driver.backend()
+      :io_terminal
+  """
+  @spec backend() :: :termbox2_nif | :io_terminal
+  def backend do
+    if @termbox2_available, do: :termbox2_nif, else: :io_terminal
+  end
+
   # BaseManager provides start_link/1 and start_link/2 automatically
   # We can override if needed but the dispatcher_pid is passed as init argument
 

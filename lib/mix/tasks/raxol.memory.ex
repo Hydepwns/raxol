@@ -13,9 +13,17 @@ defmodule Mix.Tasks.Raxol.Memory do
 
   ## Common Options
 
-    * `--format` - Output format (text, json, dashboard)
+    * `--format` - Output format: text, json, dashboard (default: text)
     * `--output` - Output file or directory
-    * `--duration` - Duration in seconds
+    * `--duration` - Duration in seconds for profiling
+    * `--mode` - Profiling mode: snapshot, live, comparative
+    * `--scenario` - Specific test scenario to run
+    * `--target` - Target module or component to analyze
+    * `--interval` - Sampling interval in milliseconds
+    * `--threshold` - Memory threshold in MB for alerts
+    * `--strict` - Enable strict mode (fail on warnings)
+    * `--baseline` - Path to baseline file for comparison
+    * `--with-profiling` - Include detailed profiling data
     * `--help` - Show help for specific commands
 
   ## Examples

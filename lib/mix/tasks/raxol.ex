@@ -64,9 +64,50 @@ defmodule Mix.Tasks.Raxol do
         run_clean_tasks(rest)
 
       [unknown | _] ->
-        Mix.shell().error("Unknown command: #{unknown}")
-        show_help()
+        handle_unknown_command(unknown)
     end
+  end
+
+  @commands ~w(check test dev docs setup clean help)
+  @check_subcommands ~w(format compile credo)
+  @dev_subcommands ~w(analyze profile debug)
+
+  defp handle_unknown_command(unknown) do
+    case find_similar_command(unknown) do
+      {similar, score} when score > 0.7 ->
+        Mix.shell().error("Unknown command: '#{unknown}'")
+        Mix.shell().info("\nDid you mean: mix raxol #{similar}?")
+        Mix.shell().info("\nRun 'mix raxol help' for available commands.")
+
+      _ ->
+        Mix.shell().error("Unknown command: '#{unknown}'")
+        Mix.shell().info("\nAvailable commands: #{Enum.join(@commands, ", ")}")
+        Mix.shell().info("\nRun 'mix raxol help' for details.")
+    end
+  end
+
+  defp find_similar_command(input) do
+    @commands
+    |> Enum.map(fn cmd -> {cmd, String.jaro_distance(input, cmd)} end)
+    |> Enum.max_by(fn {_cmd, score} -> score end)
+  end
+
+  defp handle_unknown_subcommand(parent, unknown, valid_subcommands) do
+    case find_similar(unknown, valid_subcommands) do
+      {similar, score} when score > 0.6 ->
+        Mix.shell().error("Unknown #{parent} command: '#{unknown}'")
+        Mix.shell().info("\nDid you mean: mix raxol #{parent} #{similar}?")
+
+      _ ->
+        Mix.shell().error("Unknown #{parent} command: '#{unknown}'")
+        Mix.shell().info("\nAvailable: #{Enum.join(valid_subcommands, ", ")}")
+    end
+  end
+
+  defp find_similar(input, candidates) do
+    candidates
+    |> Enum.map(fn cmd -> {cmd, String.jaro_distance(input, cmd)} end)
+    |> Enum.max_by(fn {_cmd, score} -> score end)
   end
 
   defp show_help do
@@ -113,7 +154,7 @@ defmodule Mix.Tasks.Raxol do
   end
 
   defp run_check_tasks([unknown | _]) do
-    Mix.shell().error("Unknown check command: #{unknown}")
+    handle_unknown_subcommand("check", unknown, @check_subcommands)
   end
 
   defp run_test_tasks([]) do
@@ -153,7 +194,7 @@ defmodule Mix.Tasks.Raxol do
         Mix.shell().info("(debug task not yet enabled)")
 
       _ ->
-        Mix.shell().error("Unknown dev command: #{cmd}")
+        handle_unknown_subcommand("dev", cmd, @dev_subcommands)
     end
   end
 

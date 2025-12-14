@@ -8,6 +8,11 @@ defmodule RaxolPlaygroundWeb.Endpoint do
     same_site: "Lax"
   ]
 
+  # Redirect www to non-www in production
+  if Mix.env() == :prod do
+    plug RaxolPlaygroundWeb.Plugs.WwwRedirect
+  end
+
   socket "/live", Phoenix.LiveView.Socket,
     websocket: [connect_info: [session: @session_options]],
     longpoll: [connect_info: [session: @session_options]]

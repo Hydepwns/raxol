@@ -13,6 +13,7 @@ defmodule RaxolPlayground.Application do
       RaxolPlaygroundWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:raxol_playground, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: RaxolPlayground.PubSub},
+      RaxolPlaygroundWeb.Presence,
       RaxolPlaygroundWeb.Endpoint
     ]
 

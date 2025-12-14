@@ -13,19 +13,40 @@ defmodule Mix.Tasks.Raxol.Perf do
       mix raxol.perf memory            # Memory usage analysis
       mix raxol.perf report            # Generate performance report
 
+  ## Related Commands
+
+      mix raxol.flamegraph <module>    # Generate flame graph SVG
+      mix raxol.bench.advanced         # Advanced benchmarking suite
+
+  ## Options
+
+    * `--format, -f`    - Output format: text, html, json (default: text)
+    * `--interval, -i`  - Monitoring interval in seconds (default: 30)
+    * `--duration, -d`  - Profiling duration in seconds (default: 10)
+    * `--memory, -m`    - Include memory profiling in output
+    * `--processes, -p` - Include process analysis in output
+    * `--call-graph`    - Generate call graph visualization (expensive)
+    * `--help, -h`      - Show detailed help
+
   ## Examples
 
-      # Quick performance check
+      # Quick performance analysis
       mix raxol.perf analyze
 
       # Profile terminal operations
       mix raxol.perf profile Raxol.Terminal.Buffer
 
-      # Start continuous monitoring
-      mix raxol.perf monitor --interval 30
+      # Profile with memory analysis
+      mix raxol.perf profile Raxol.Terminal.Buffer --memory
 
-      # Generate detailed report
-      mix raxol.perf report --format html
+      # Start continuous monitoring every 60 seconds
+      mix raxol.perf monitor --interval 60
+
+      # Generate HTML report for 30 seconds
+      mix raxol.perf report --format html --duration 30
+
+      # Memory profiling for 30 seconds
+      mix raxol.perf memory --duration 30
   """
 
   use Mix.Task

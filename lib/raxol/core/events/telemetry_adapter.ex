@@ -4,18 +4,37 @@ defmodule Raxol.Core.Events.TelemetryAdapter do
 
   This module provides a compatibility layer to gradually migrate the event system
   from the custom EventManager to the standard :telemetry library.
+
+  ## Trace Context
+
+  All events automatically include trace context (trace_id, span_id) when available.
+  Use `Raxol.Core.Telemetry.TraceContext` to start traces and spans.
+
+  ## Example
+
+      alias Raxol.Core.Telemetry.TraceContext
+
+      # Start a trace for a request
+      TraceContext.start_trace()
+
+      # All events will now include trace_id
+      TelemetryAdapter.dispatch(:my_event, %{value: 42})
+      # => Emits event with metadata: %{trace_id: "abc123", span_id: "def456", ...}
   """
+
+  alias Raxol.Core.Telemetry.TraceContext
 
   @doc """
   Dispatches an event using telemetry.
 
   Converts EventManager dispatch calls to telemetry execute calls.
+  Automatically includes trace context when available.
   """
   def dispatch(event_name, data \\ %{})
       when is_atom(event_name) or is_tuple(event_name) do
     telemetry_event = normalize_event_name(event_name)
     measurements = extract_measurements(data)
-    metadata = extract_metadata(data)
+    metadata = extract_metadata(data) |> add_trace_context()
 
     :telemetry.execute(telemetry_event, measurements, metadata)
     :ok
@@ -105,4 +124,24 @@ defmodule Raxol.Core.Events.TelemetryAdapter do
 
   @spec pattern_to_telemetry_events(any()) :: any()
   defp pattern_to_telemetry_events(pattern), do: [[:raxol, :events, pattern]]
+
+  @spec add_trace_context(map()) :: map()
+  defp add_trace_context(metadata) when is_map(metadata) do
+    case TraceContext.current() do
+      %{trace_id: nil} ->
+        metadata
+
+      %{trace_id: trace_id, span_id: span_id, parent_span_id: parent_span_id} ->
+        metadata
+        |> Map.put(:trace_id, trace_id)
+        |> Map.put(:span_id, span_id)
+        |> maybe_put_parent_span(parent_span_id)
+    end
+  end
+
+  @spec maybe_put_parent_span(map(), term()) :: map()
+  defp maybe_put_parent_span(metadata, nil), do: metadata
+
+  defp maybe_put_parent_span(metadata, parent),
+    do: Map.put(metadata, :parent_span_id, parent)
 end

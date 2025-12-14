@@ -3,6 +3,9 @@ defmodule Raxol.Core.UserPreferences do
   Manages user preferences for the terminal emulator.
 
   Acts as a GenServer holding the preferences state and handles persistence.
+
+  Uses `Raxol.Core.Utils.Debounce` for debounced save operations, avoiding
+  redundant disk writes when multiple preference changes occur in quick succession.
   """
 
   alias Raxol.Core.Runtime.Log
@@ -11,19 +14,20 @@ defmodule Raxol.Core.UserPreferences do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Preferences.Persistence
+  alias Raxol.Core.Utils.Debounce
 
   @save_delay_ms 1000
 
   defmodule State do
     @moduledoc "Internal state for the UserPreferences GenServer."
     defstruct preferences: %{},
-              save_timer: nil
+              debounce: nil
   end
 
   @impl true
   def init_manager(opts) do
     preferences = initialize_preferences(Keyword.get(opts, :test_mode?, false))
-    {:ok, %State{preferences: preferences}}
+    {:ok, %State{preferences: preferences, debounce: Debounce.new()}}
   end
 
   def get(key_or_path, pid_or_name \\ __MODULE__) do
@@ -108,19 +112,19 @@ defmodule Raxol.Core.UserPreferences do
 
   @impl true
   def handle_manager_call(:save_now, _from, state) do
-    cancel_save_timer(state.save_timer)
+    state = cancel_pending_save(state)
 
     case Persistence.save(state.preferences) do
       :ok ->
         Raxol.Core.Runtime.Log.debug("User preferences saved immediately.")
-        {:reply, :ok, %{state | save_timer: nil}}
+        {:reply, :ok, state}
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "Failed to save preferences immediately: #{inspect(reason)}"
         )
 
-        {:reply, {:error, reason}, %{state | save_timer: nil}}
+        {:reply, {:error, reason}, state}
     end
   end
 
@@ -131,45 +135,53 @@ defmodule Raxol.Core.UserPreferences do
     )
 
     new_preferences = default_preferences()
+    state = cancel_pending_save(state)
 
-    new_state = %{
-      state
-      | preferences: new_preferences,
-        save_timer: cancel_save_timer(state.save_timer)
-    }
+    new_state = %{state | preferences: new_preferences}
 
     {:reply, :ok, new_state}
   end
 
-  defp schedule_save(%State{save_timer: existing_timer} = state) do
-    cancel_save_timer(existing_timer)
-
-    timer_id = System.unique_integer([:positive])
-
-    Process.send_after(
-      self(),
-      {:perform_delayed_save, timer_id},
-      @save_delay_ms
-    )
-
-    %{state | save_timer: timer_id}
+  defp schedule_save(%State{debounce: debounce} = state) do
+    {new_debounce, _ref} = Debounce.schedule(debounce, :save, @save_delay_ms)
+    %{state | debounce: new_debounce}
   end
 
-  defp cancel_save_timer(timer_id) when is_integer(timer_id) do
-    :ok
+  defp cancel_pending_save(%State{debounce: debounce} = state) do
+    %{state | debounce: Debounce.cancel(debounce, :save)}
   end
-
-  defp cancel_save_timer(_), do: :ok
 
   @impl true
-  def handle_manager_info({:perform_delayed_save, timer_id}, state) do
-    handle_delayed_save(timer_id == state.save_timer, timer_id, state)
+  def handle_manager_info({:debounce, :save, debounce_id}, state) do
+    if Debounce.valid?(state.debounce, :save, debounce_id) do
+      case Persistence.save(state.preferences) do
+        :ok ->
+          Raxol.Core.Runtime.Log.debug(
+            "User preferences saved after debounce delay."
+          )
+
+        {:error, reason} ->
+          Raxol.Core.Runtime.Log.error(
+            "Failed to save preferences after delay: #{inspect(reason)}"
+          )
+      end
+
+      new_debounce = Debounce.clear(state.debounce, :save)
+      {:noreply, %{state | debounce: new_debounce}}
+    else
+      # Stale debounce message, ignore
+      {:noreply, state}
+    end
   end
 
   @impl true
   def handle_manager_info(msg, state) do
     case msg do
       {:preferences_applied, _pid} ->
+        {:noreply, state}
+
+      # Legacy message format - ignore
+      {:perform_delayed_save, _timer_id} ->
         {:noreply, state}
 
       _ ->
@@ -294,32 +306,6 @@ defmodule Raxol.Core.UserPreferences do
       {:preferences_applied,
        Process.info(self(), :registered_name) |> elem(1) || self()}
     )
-  end
-
-  @spec handle_delayed_save(any(), String.t() | integer(), map()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
-  defp handle_delayed_save(false, _timer_id, state), do: {:noreply, state}
-
-  @spec handle_delayed_save(any(), String.t() | integer(), map()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
-  defp handle_delayed_save(true, _timer_id, state) do
-    case Persistence.save(state.preferences) do
-      :ok ->
-        Raxol.Core.Runtime.Log.debug("User preferences saved after delay.")
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error(
-          "Failed to save preferences after delay: #{inspect(reason)}"
-        )
-    end
-
-    {:noreply, %{state | save_timer: nil}}
   end
 
   defp merge_values(true, val1, val2), do: deep_merge(val1, val2)

@@ -1,11 +1,15 @@
 defmodule Raxol.Terminal.Emulator.Telemetry do
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Telemetry.Context
 
   @moduledoc """
   Telemetry instrumentation for the terminal emulator.
 
   Provides comprehensive error tracking and performance monitoring
   for terminal emulation operations.
+
+  All events include trace_id and span_id for request correlation.
+  Use `Raxol.Core.Telemetry.Context` to manage trace context.
   """
   @emulator_events [
     [:raxol, :emulator, :input, :start],
@@ -59,57 +63,19 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
 
   @doc """
   Executes a function with telemetry instrumentation.
+
+  Automatically includes trace_id and span_id for request correlation.
   """
   def span(event_prefix, metadata, fun) do
-    start_metadata = Map.put(metadata, :start_time, System.monotonic_time())
-
-    :telemetry.execute(
-      event_prefix ++ [:start],
-      %{system_time: System.system_time()},
-      start_metadata
-    )
-
-    case Raxol.Core.ErrorHandling.safe_call(fn ->
-           fun.()
-         end) do
-      {:ok, result} ->
-        stop_metadata =
-          Map.merge(start_metadata, %{
-            duration: System.monotonic_time() - start_metadata.start_time,
-            result: :ok
-          })
-
-        :telemetry.execute(
-          event_prefix ++ [:stop],
-          %{duration: stop_metadata.duration},
-          stop_metadata
-        )
-
-        result
-
-      {:error, {exception, stacktrace}} ->
-        exception_metadata =
-          Map.merge(start_metadata, %{
-            duration: System.monotonic_time() - start_metadata.start_time,
-            exception: exception,
-            stacktrace: stacktrace
-          })
-
-        :telemetry.execute(
-          event_prefix ++ [:exception],
-          %{duration: exception_metadata.duration},
-          exception_metadata
-        )
-
-        reraise exception, stacktrace
-    end
+    # Use Context.span for automatic trace context injection
+    Context.span(event_prefix, metadata, fun)
   end
 
   @doc """
-  Records an error event.
+  Records an error event with trace context.
   """
   def record_error(error_type, reason, metadata \\ %{}) do
-    :telemetry.execute(
+    Context.execute(
       [:raxol, :emulator, :error, :recorded],
       %{count: 1},
       Map.merge(metadata, %{
@@ -121,10 +87,10 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   end
 
   @doc """
-  Records a recovery attempt.
+  Records a recovery attempt with trace context.
   """
   def record_recovery_attempt(metadata \\ %{}) do
-    :telemetry.execute(
+    Context.execute(
       [:raxol, :emulator, :recovery, :attempted],
       %{count: 1},
       Map.put(metadata, :timestamp, DateTime.utc_now())
@@ -132,10 +98,10 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   end
 
   @doc """
-  Records a successful recovery.
+  Records a successful recovery with trace context.
   """
   def record_recovery_success(metadata \\ %{}) do
-    :telemetry.execute(
+    Context.execute(
       [:raxol, :emulator, :recovery, :succeeded],
       %{count: 1},
       Map.put(metadata, :timestamp, DateTime.utc_now())
@@ -143,10 +109,10 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   end
 
   @doc """
-  Records a failed recovery.
+  Records a failed recovery with trace context.
   """
   def record_recovery_failure(reason, metadata \\ %{}) do
-    :telemetry.execute(
+    Context.execute(
       [:raxol, :emulator, :recovery, :failed],
       %{count: 1},
       Map.merge(metadata, %{
@@ -157,10 +123,10 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   end
 
   @doc """
-  Records a health check.
+  Records a health check with trace context.
   """
   def record_health_check(status, metadata \\ %{}) do
-    :telemetry.execute(
+    Context.execute(
       [:raxol, :emulator, :health, :check],
       %{status: status_to_number(status)},
       Map.merge(metadata, %{
@@ -171,10 +137,10 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   end
 
   @doc """
-  Records checkpoint creation.
+  Records checkpoint creation with trace context.
   """
   def record_checkpoint_created(metadata \\ %{}) do
-    :telemetry.execute(
+    Context.execute(
       [:raxol, :emulator, :checkpoint, :created],
       %{count: 1},
       Map.put(metadata, :timestamp, DateTime.utc_now())
@@ -182,10 +148,10 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   end
 
   @doc """
-  Records checkpoint restoration.
+  Records checkpoint restoration with trace context.
   """
   def record_checkpoint_restored(metadata \\ %{}) do
-    :telemetry.execute(
+    Context.execute(
       [:raxol, :emulator, :checkpoint, :restored],
       %{count: 1},
       Map.put(metadata, :timestamp, DateTime.utc_now())
@@ -197,15 +163,17 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   defp handle_input_exception(_event, measurements, metadata, _config) do
     Log.error("""
     Emulator input processing exception:
+      Trace: #{format_trace(metadata)}
       Duration: #{format_duration(measurements[:duration])}
       Exception: #{inspect(metadata[:exception])}
-      Metadata: #{inspect(Map.drop(metadata, [:exception, :stacktrace]))}
+      Metadata: #{inspect(Map.drop(metadata, [:exception, :stacktrace, :trace_id, :span_id, :parent_span_id]))}
     """)
   end
 
   defp handle_sequence_exception(_event, measurements, metadata, _config) do
     Log.error("""
     Emulator sequence handling exception:
+      Trace: #{format_trace(metadata)}
       Duration: #{format_duration(measurements[:duration])}
       Exception: #{inspect(metadata[:exception])}
       Sequence: #{inspect(metadata[:sequence])}
@@ -215,6 +183,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   defp handle_resize_exception(_event, measurements, metadata, _config) do
     Log.error("""
     Emulator resize exception:
+      Trace: #{format_trace(metadata)}
       Duration: #{format_duration(measurements[:duration])}
       Exception: #{inspect(metadata[:exception])}
       Dimensions: #{metadata[:width]}x#{metadata[:height]}
@@ -224,6 +193,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   defp handle_error_recorded(_event, _measurements, metadata, _config) do
     Log.warning("""
     Emulator error recorded:
+      Trace: #{format_trace(metadata)}
       Type: #{metadata[:error_type]}
       Reason: #{inspect(metadata[:reason])}
       Timestamp: #{metadata[:timestamp]}
@@ -233,6 +203,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   defp handle_recovery_failed(_event, _measurements, metadata, _config) do
     Log.error("""
     Emulator recovery failed:
+      Trace: #{format_trace(metadata)}
       Reason: #{inspect(metadata[:reason])}
       Timestamp: #{metadata[:timestamp]}
     """)
@@ -245,7 +216,13 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   defp format_duration(nil), do: "N/A"
 
   defp format_duration(duration) when is_integer(duration) do
-    "#{System.convert_time_unit(duration, :native, :microsecond)} μs"
+    "#{System.convert_time_unit(duration, :native, :microsecond)} us"
+  end
+
+  defp format_trace(metadata) do
+    trace_id = Map.get(metadata, :trace_id, "none")
+    span_id = Map.get(metadata, :span_id, "none")
+    "#{trace_id}/#{span_id}"
   end
 
   defp status_to_number(:healthy), do: 0
