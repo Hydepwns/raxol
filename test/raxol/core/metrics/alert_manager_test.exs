@@ -3,14 +3,16 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
   Tests for the alert manager, including rule management, alert evaluation,
   acknowledgment, grouped metrics, and error handling.
   """
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Raxol.Core.Metrics.AlertManager
 
   setup do
     # Start MetricsCollector for metrics dependency if not already started
     # MetricsCollector uses BaseManager and requires a name parameter
     uc_pid =
-      case Raxol.Core.Metrics.MetricsCollector.start_link(name: Raxol.Core.Metrics.MetricsCollector) do
+      case Raxol.Core.Metrics.MetricsCollector.start_link(
+             name: Raxol.Core.Metrics.MetricsCollector
+           ) do
         {:ok, pid} ->
           pid
 
@@ -20,6 +22,9 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         {:error, reason} ->
           raise "Failed to start MetricsCollector: #{inspect(reason)}"
       end
+
+    # Clear any persisted ETS data from previous runs
+    Raxol.Core.Metrics.MetricsCollector.clear_metrics()
 
     # Use a unique name for each test to avoid conflicts
     test_name = String.to_atom("alert_manager_test_#{:rand.uniform(1_000_000)}")
@@ -31,8 +36,10 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
           GenServer.stop(pid, :normal, 1000)
         end
       catch
-        :exit, {:noproc, _} -> :ok  # Process already dead
-        :exit, {:timeout, _} -> :ok  # Timeout is acceptable in cleanup
+        # Process already dead
+        :exit, {:noproc, _} -> :ok
+        # Timeout is acceptable in cleanup
+        :exit, {:timeout, _} -> :ok
       end
 
       # Also stop MetricsCollector if we started it
@@ -41,8 +48,10 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
           GenServer.stop(uc_pid, :normal, 1000)
         end
       catch
-        :exit, {:noproc, _} -> :ok  # Process already dead
-        :exit, {:timeout, _} -> :ok  # Timeout is acceptable in cleanup
+        # Process already dead
+        :exit, {:noproc, _} -> :ok
+        # Timeout is acceptable in cleanup
+        :exit, {:timeout, _} -> :ok
       end
     end)
 

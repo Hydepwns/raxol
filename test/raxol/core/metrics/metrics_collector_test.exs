@@ -15,6 +15,9 @@ defmodule Raxol.Core.Metrics.MetricsCollectorTest do
 
     {:ok, pid} = MetricsCollector.start_link(name: MetricsCollector)
 
+    # Clear any persisted ETS data from previous runs
+    MetricsCollector.clear_metrics()
+
     on_exit(fn ->
       if Process.alive?(pid) do
         GenServer.stop(pid)
