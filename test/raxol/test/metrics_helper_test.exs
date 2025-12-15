@@ -1,5 +1,5 @@
 defmodule Raxol.Test.MetricsHelperTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
   alias Raxol.Test.MetricsHelper
 
   setup context do
