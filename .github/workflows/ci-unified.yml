@@ -202,7 +202,7 @@ jobs:
           MIX_TEST_PARTITION: 1
       
       - name: Upload coverage
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v4.4.3
         with:
           name: coverage-unit
           path: cover/unit.coverdata
@@ -259,7 +259,7 @@ jobs:
           MIX_TEST_PARTITION: 2
       
       - name: Upload coverage
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v4.4.3
         with:
           name: coverage-integration
           path: cover/integration.coverdata
@@ -297,7 +297,7 @@ jobs:
           MIX_TEST_PARTITION: 3
       
       - name: Upload coverage
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v4.4.3
         with:
           name: coverage-property
           path: cover/property.coverdata
