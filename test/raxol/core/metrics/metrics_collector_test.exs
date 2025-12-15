@@ -52,16 +52,19 @@ defmodule Raxol.Core.Metrics.MetricsCollectorTest do
     end
 
     test "maintains metric history limit" do
+      # Use unique metric name to avoid interference from other tests
+      metric_name = :"test_metric_#{System.unique_integer([:positive])}"
+
       # Record more metrics than the history limit
       Enum.each(1..1100, fn i ->
-        MetricsCollector.record_performance(:test_metric, i)
+        MetricsCollector.record_performance(metric_name, i)
       end)
 
       # Get metrics
       metrics = MetricsCollector.get_metrics()
-      test_metrics = metrics.performance.test_metric
+      test_metrics = metrics.performance[metric_name]
 
-      # Verify history limit is maintained
+      # Verify history limit is maintained (should be exactly 1000 for this metric)
       assert length(test_metrics) == 1000
       assert hd(test_metrics).value == 1100
     end

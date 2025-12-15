@@ -8,6 +8,8 @@ defmodule Raxol.Test.MetricsHelperTest do
       :ok
     else
       context = MetricsHelper.setup_metrics_test()
+      # Clear any stale ETS data from previous runs
+      Raxol.Core.Metrics.MetricsCollector.clear_metrics()
       on_exit(fn -> MetricsHelper.cleanup_metrics_test(context) end)
       {:ok, context}
     end
@@ -141,18 +143,21 @@ defmodule Raxol.Test.MetricsHelperTest do
     end
 
     test ~c"waits for metric with tags" do
-      spawn(fn ->
-        Process.sleep(100)
+      # Use unique metric name to avoid interference from other tests
+      metric_name = :"frame_time_#{System.unique_integer([:positive])}"
 
-        MetricsHelper.record_test_metric(:performance, :frame_time, 16,
+      spawn(fn ->
+        Process.sleep(50)
+
+        MetricsHelper.record_test_metric(:performance, metric_name, 16,
           tags: [:test]
         )
       end)
 
       assert :ok ==
-               MetricsHelper.wait_for_metric(:performance, :frame_time, 16,
+               MetricsHelper.wait_for_metric(:performance, metric_name, 16,
                  tags: [:test],
-                 timeout: 200
+                 timeout: 500
                )
     end
 
