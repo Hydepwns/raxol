@@ -26,7 +26,7 @@ jobs:
           submodules: recursive
 
       - name: Cache Mix dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             deps
