@@ -281,13 +281,21 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       # Force alert check only if process is alive
       if Process.alive?(pid) do
         Process.send(test_name, {:check_alerts, 1}, [])
-        Process.sleep(100)
       end
 
-      assert {:ok, alert_state} =
-               AlertManager.get_alert_state(rule_id, test_name)
+      # Wait for alert to become active with retries (CI runners can be slow)
+      alert_active =
+        Enum.reduce_while(1..20, false, fn _, _acc ->
+          Process.sleep(50)
 
-      assert alert_state.active == true
+          case AlertManager.get_alert_state(rule_id, test_name) do
+            {:ok, %{active: true}} -> {:halt, true}
+            _ -> {:cont, false}
+          end
+        end)
+
+      assert alert_active,
+             "Expected alert to become active within 1 second"
     end
   end
 
