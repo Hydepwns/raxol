@@ -25,11 +25,21 @@ defmodule Raxol.Core.UXRefinementTest do
         Process.sleep(10)
     end
 
+    # Ensure EventManager is stopped and started fresh
+    Raxol.Core.Events.EventManager.cleanup()
+    {:ok, _em_pid} = Raxol.Core.Events.EventManager.start_link(name: Raxol.Core.Events.EventManager)
+
     # Start fresh server for each test
     {:ok, pid} = Server.start_link(name: Server)
 
     on_exit(fn ->
-      if Process.alive?(pid), do: GenServer.stop(pid)
+      try do
+        if Process.alive?(pid), do: GenServer.stop(pid)
+      catch
+        :exit, _ -> :ok
+      end
+
+      Raxol.Core.Events.EventManager.cleanup()
     end)
 
     {:ok, server: pid}
