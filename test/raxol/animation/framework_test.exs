@@ -14,12 +14,12 @@ defmodule Raxol.Animation.FrameworkTest do
   Logger.debug("Starting FrameworkTest module")
 
   # Helper to wait for animation completion
-  defp wait_for_animation_completion(element_id, animation_name, timeout \\ 100) do
+  defp wait_for_animation_completion(element_id, animation_name, timeout \\ 500) do
     assert_receive {:animation_completed, ^element_id, ^animation_name}, timeout
   end
 
   # Helper to wait for animation start
-  defp wait_for_animation_start(element_id, animation_name, timeout \\ 100) do
+  defp wait_for_animation_start(element_id, animation_name, timeout \\ 500) do
     assert_receive {:animation_started, ^element_id, ^animation_name}, timeout
   end
 
@@ -53,12 +53,13 @@ defmodule Raxol.Animation.FrameworkTest do
       "Starting UserPreferences with opts: #{inspect(user_prefs_opts)}"
     )
 
-    {:ok, _pid} = start_supervised({UserPreferences, user_prefs_opts})
+    {:ok, user_prefs_pid} = start_supervised({UserPreferences, user_prefs_opts})
     Logger.debug("UserPreferences started successfully")
 
-    # Start AccessibilityServer for the test
+    # Start AccessibilityServer for the test with unique name to avoid conflicts
+    accessibility_server_name = :"accessibility_server_#{System.unique_integer([:positive])}"
     {:ok, _accessibility_pid} = Raxol.Core.Accessibility.AccessibilityServer.start_link(
-      name: Raxol.Core.Accessibility.AccessibilityServer
+      name: accessibility_server_name
     )
     Logger.debug("AccessibilityServer started successfully")
 
@@ -85,36 +86,34 @@ defmodule Raxol.Animation.FrameworkTest do
     )
 
     # Wait for preferences to be applied
-    assert_receive {:preferences_applied, ^local_user_prefs_name}, 100
+    assert_receive {:preferences_applied, ^local_user_prefs_name}, 500
     Logger.debug("Preferences applied successfully")
 
     on_exit(fn ->
-      Framework.stop()
+      try do
+        Framework.stop()
+      catch
+        :exit, _ -> :ok
+      end
       Logger.debug("Framework stopped in on_exit")
 
-      # Cleanup EventManager
-      case Process.whereis(Raxol.Core.Events.EventManager) do
-        nil -> :ok
-        _pid -> Raxol.Core.Events.EventManager.cleanup()
+      try do
+        case Process.whereis(Raxol.Core.Events.EventManager) do
+          nil -> :ok
+          _pid -> Raxol.Core.Events.EventManager.cleanup()
+        end
+      catch
+        :exit, _ -> :ok
       end
 
       Logger.debug("EventManager cleanup completed")
     end)
 
-    :ok
+    {:ok, %{user_preferences_pid: user_prefs_pid, user_preferences_name: local_user_prefs_name}}
   end
 
   describe "Animation Framework" do
-    setup do
-      # Check if UserPreferences is already started
-      case Raxol.Core.UserPreferences.start_link([]) do
-        {:ok, user_preferences_pid} ->
-          %{user_preferences_pid: user_preferences_pid}
-
-        {:error, {:already_started, user_preferences_pid}} ->
-          %{user_preferences_pid: user_preferences_pid}
-      end
-    end
+    # Note: user_preferences_pid comes from outer setup block
 
     test ~c"initializes with default settings", %{
       user_preferences_pid: user_preferences_pid

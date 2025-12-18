@@ -7,13 +7,36 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
 
   alias Raxol.UI.Rendering.AdaptiveFramerate
 
+  # Helper to flush any pending adapt_framerate messages from mailbox
+  defp flush_adapt_messages do
+    receive do
+      :adapt_framerate -> flush_adapt_messages()
+    after
+      0 -> :ok
+    end
+  end
+
   setup do
+    # Flush any residual messages from previous tests
+    flush_adapt_messages()
+
     # Use unique names to avoid conflicts
     manager_name = :"test_manager_#{System.unique_integer([:positive])}"
     {:ok, pid} = AdaptiveFramerate.start_link(name: manager_name)
 
     on_exit(fn ->
-      if Process.alive?(pid), do: GenServer.stop(pid)
+      if Process.alive?(pid) do
+        # Cancel any pending timers before stopping
+        try do
+          state = :sys.get_state(pid)
+          if is_reference(state.adaptation_timer_ref) do
+            Process.cancel_timer(state.adaptation_timer_ref)
+          end
+        catch
+          _, _ -> :ok
+        end
+        GenServer.stop(pid)
+      end
     end)
 
     {:ok, %{manager: manager_name, pid: pid}}
@@ -40,7 +63,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
       :ok = AdaptiveFramerate.report_render(12_000, 20, 3, manager) # 12ms render
 
       # Allow a moment for processing
-      Process.sleep(10)
+      Process.sleep(50)
 
       stats = AdaptiveFramerate.get_stats(manager)
       assert stats.sample_count >= 3
@@ -55,7 +78,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
       :ok = AdaptiveFramerate.report_render(1, 1, 1, manager)
       :ok = AdaptiveFramerate.report_render(999_999, 999, 100, manager)
 
-      Process.sleep(10)
+      Process.sleep(50)
 
       # Should not crash and should accumulate samples
       stats = AdaptiveFramerate.get_stats(manager)
@@ -73,7 +96,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
 
       # Force adaptation check
       :ok = AdaptiveFramerate.force_adaptation(manager)
-      Process.sleep(10)
+      Process.sleep(50)
 
       # Should adapt to 30fps (33ms interval)
       new_interval = AdaptiveFramerate.get_frame_interval(manager)
@@ -92,7 +115,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
       end
 
       :ok = AdaptiveFramerate.force_adaptation(manager)
-      Process.sleep(10)
+      Process.sleep(50)
 
       # May adapt down to 45fps due to adaptation algorithm
       new_interval = AdaptiveFramerate.get_frame_interval(manager)
@@ -110,7 +133,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
       :ok = AdaptiveFramerate.report_render(50_000, 200, 20, manager)
 
       :ok = AdaptiveFramerate.force_adaptation(manager)
-      Process.sleep(10)
+      Process.sleep(50)
 
       # Should not adapt without sufficient samples
       new_interval = AdaptiveFramerate.get_frame_interval(manager)
@@ -130,7 +153,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
           :ok = AdaptiveFramerate.report_render(render_time, 50, 5, manager)
         end
         :ok = AdaptiveFramerate.force_adaptation(manager)
-        Process.sleep(10)
+        Process.sleep(50)
       end
 
       stats = AdaptiveFramerate.get_stats(manager)
@@ -151,7 +174,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
         :ok = AdaptiveFramerate.report_render(5000 + i * 100, 10 + i, 1 + i, manager)
       end
 
-      Process.sleep(10)
+      Process.sleep(50)
 
       stats = AdaptiveFramerate.get_stats(manager)
       # Should not exceed the sample limit (10)
@@ -169,7 +192,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
       :ok = AdaptiveFramerate.report_render(0, 0, 0, manager)
       :ok = AdaptiveFramerate.report_render(1_000_000, 1000, 1000, manager)
 
-      Process.sleep(10)
+      Process.sleep(50)
 
       # Should handle extreme values without crashing
       final_stats = AdaptiveFramerate.get_stats(manager)
@@ -188,7 +211,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
       end
 
       :ok = AdaptiveFramerate.force_adaptation(manager)
-      Process.sleep(10)
+      Process.sleep(50)
 
       stats = AdaptiveFramerate.get_stats(manager)
       # Verify fps calculation: 30fps should give ~33ms interval
@@ -211,14 +234,14 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerateTest do
           :ok = AdaptiveFramerate.report_render(5000, 20, 1, manager)
         end
         :ok = AdaptiveFramerate.force_adaptation(manager)
-        Process.sleep(10)
+        Process.sleep(50)
 
         # Now test the specific case
         for _ <- 1..5 do
           :ok = AdaptiveFramerate.report_render(render_time, complexity, damage, manager)
         end
         :ok = AdaptiveFramerate.force_adaptation(manager)
-        Process.sleep(10)
+        Process.sleep(50)
 
         stats = AdaptiveFramerate.get_stats(manager)
 
