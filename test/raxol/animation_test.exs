@@ -75,11 +75,12 @@ defmodule Raxol.AnimationTest do
       {:error, {:already_started, _pid}} -> :ok
     end
 
-    # Start AccessibilityServer first with the expected name
+    # Start AccessibilityServer with unique name to avoid conflicts with other tests
+    accessibility_server_name = :"accessibility_server_animation_#{System.unique_integer([:positive])}"
     {:ok, _accessibility_pid} =
       start_supervised(
         {Raxol.Core.Accessibility.AccessibilityServer,
-         [name: Raxol.Core.Accessibility.AccessibilityServer]}
+         [name: accessibility_server_name]}
       )
 
     # Start UserPreferences with a test-specific name

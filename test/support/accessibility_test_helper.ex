@@ -54,10 +54,10 @@ defmodule Raxol.Core.AccessibilityTestHelper do
       pid
     )
 
-    on_exit(fn ->
-      # Only clean up EventManager
-      Raxol.Core.Events.EventManager.cleanup()
-    end)
+    # Note: No on_exit cleanup needed here because:
+    # 1. UserPreferences is started via start_supervised! so ExUnit handles cleanup
+    # 2. EventManager is started globally by test_helper.exs and should not be
+    #    stopped by individual tests (doing so causes flaky test failures)
 
     {:ok, prefs_name: prefs_name, pref_pid: pid}
   end
@@ -82,11 +82,14 @@ defmodule Raxol.Core.AccessibilityTestHelper do
     # Check if UserPreferences is already running
     pid_of_prefs = get_or_start_preferences()
 
-    # Ensure AccessibilityServer is started and supervised
+    # Ensure AccessibilityServer is started and supervised with unique name
+    accessibility_server_name =
+      :"accessibility_server_helper_#{System.unique_integer([:positive])}"
+
     accessibility_pid =
       start_supervised!(
         {Raxol.Core.Accessibility.AccessibilityServer,
-         [name: Raxol.Core.Accessibility.AccessibilityServer]}
+         [name: accessibility_server_name]}
       )
 
     # Wait a bit to ensure servers are ready

@@ -33,6 +33,16 @@ defmodule Raxol.ColorSystemTest do
         :ok
     end
 
+    # Start AccessibilityServer with unique name to avoid conflicts with other tests
+    accessibility_server_name =
+      :"accessibility_server_color_#{System.unique_integer([:positive])}"
+
+    {:ok, _} =
+      start_supervised(
+        {Raxol.Core.Accessibility.AccessibilityServer,
+         [name: accessibility_server_name, user_preferences_pid: local_user_prefs_name]}
+      )
+
     # Initialize ColorSystem
     ColorSystem.init()
 
@@ -100,22 +110,22 @@ defmodule Raxol.ColorSystemTest do
     Raxol.UI.Theming.Theme.register(high_contrast_theme)
 
     # Reset relevant prefs before each test
+    # Set preferences directly on UserPreferences to avoid using the global
+    # AccessibilityServer which may have stale references from other tests
     UserPreferences.set(
-      "accessibility.high_contrast",
+      [:accessibility, :high_contrast],
       false,
       local_user_prefs_name
     )
 
-    Accessibility.set_high_contrast(false, local_user_prefs_name)
-
     UserPreferences.set(
-      "accessibility.screen_reader",
+      [:accessibility, :screen_reader],
       true,
       local_user_prefs_name
     )
 
     UserPreferences.set(
-      "accessibility.silence_announcements",
+      [:accessibility, :silence_announcements],
       false,
       local_user_prefs_name
     )

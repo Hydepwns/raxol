@@ -1,5 +1,5 @@
 defmodule Raxol.UI.ComponentCompositionTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
   alias Raxol.UI.Renderer
   alias Raxol.Test.RendererTestHelper, as: Helper
 
@@ -11,9 +11,10 @@ defmodule Raxol.UI.ComponentCompositionTest do
     # Initialize theme system
     Raxol.UI.Theming.Theme.init()
 
-    # Start AccessibilityServer under supervision for this test with proper name
+    # Start AccessibilityServer with unique name to avoid conflicts with other tests
+    accessibility_server_name = :"accessibility_server_composition_#{System.unique_integer([:positive])}"
     {:ok, _pid} = start_supervised({Raxol.Core.Accessibility.AccessibilityServer,
-      [name: Raxol.Core.Accessibility.AccessibilityServer]})
+      [name: accessibility_server_name]})
 
     # Initialize accessibility system with default settings
     Raxol.Core.Accessibility.init()
