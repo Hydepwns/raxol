@@ -294,7 +294,8 @@ defmodule Raxol.Application do
 
   defp get_terminal_driver_children do
     case {IO.ANSI.enabled?(), System.get_env("FLY_APP_NAME"),
-          System.get_env("RAXOL_MODE"), System.get_env("RAXOL_FORCE_TERMINAL")} do
+          System.get_env("RAXOL_MODE"),
+          System.get_env("RAXOL_FORCE_TERMINAL")} do
       # Skip terminal driver in minimal mode
       {_, _, "minimal", _} ->
         Log.info("[Raxol.Application] Minimal mode - terminal driver disabled")

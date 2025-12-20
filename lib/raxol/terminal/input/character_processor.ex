@@ -139,7 +139,8 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     # Check if autowrap would cause an out-of-bounds write
     # If so, adjust the positions to stay within bounds
     {adjusted_write_col, adjusted_write_row, adjusted_next_cursor_col,
-     adjusted_next_cursor_row, adjusted_next_last_col_exceeded} =
+     adjusted_next_cursor_row,
+     adjusted_next_last_col_exceeded} =
       adjust_positions_for_autowrap(
         write_row >= buffer_height and auto_wrap_mode and
           emulator.last_col_exceeded,
