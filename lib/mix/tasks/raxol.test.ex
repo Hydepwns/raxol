@@ -90,26 +90,7 @@ defmodule Mix.Tasks.Raxol.Test do
     Mix.shell().info(Colors.section_header("Running Raxol test suite"))
 
     test_args = build_test_args(opts, files)
-
-    case Mix.shell().cmd("mix test #{Enum.join(test_args, " ")}") do
-      0 ->
-        Mix.shell().info("")
-        Mix.shell().info("  " <> Colors.success("[OK]") <> " All tests passed")
-
-      _ ->
-        Mix.shell().info("")
-        Mix.shell().error("  " <> Colors.error("[!!]") <> " Some tests failed")
-
-        Mix.shell().info(
-          "  " <>
-            Colors.muted("Run") <>
-            " " <>
-            Colors.info("mix test --failed") <>
-            " " <> Colors.muted("to re-run failed tests")
-        )
-
-        Mix.raise("Test suite failed")
-    end
+    handle_test_result(Mix.shell().cmd("mix test #{Enum.join(test_args, " ")}"))
   end
 
   defp run_parallel_tests(opts, files) do
@@ -123,26 +104,27 @@ defmodule Mix.Tasks.Raxol.Test do
 
     # Add partitions for parallel execution
     test_args = test_args ++ ["--partitions", "#{cores}"]
+    handle_test_result(Mix.shell().cmd("mix test #{Enum.join(test_args, " ")}"))
+  end
 
-    case Mix.shell().cmd("mix test #{Enum.join(test_args, " ")}") do
-      0 ->
-        Mix.shell().info("")
-        Mix.shell().info("  " <> Colors.success("[OK]") <> " All tests passed")
+  defp handle_test_result(0) do
+    Mix.shell().info("")
+    Mix.shell().info("  " <> Colors.success("[OK]") <> " All tests passed")
+  end
 
-      _ ->
-        Mix.shell().info("")
-        Mix.shell().error("  " <> Colors.error("[!!]") <> " Some tests failed")
+  defp handle_test_result(_) do
+    Mix.shell().info("")
+    Mix.shell().error("  " <> Colors.error("[!!]") <> " Some tests failed")
 
-        Mix.shell().info(
-          "  " <>
-            Colors.muted("Run") <>
-            " " <>
-            Colors.info("mix test --failed") <>
-            " " <> Colors.muted("to re-run failed tests")
-        )
+    Mix.shell().info(
+      "  " <>
+        Colors.muted("Run") <>
+        " " <>
+        Colors.info("mix test --failed") <>
+        " " <> Colors.muted("to re-run failed tests")
+    )
 
-        Mix.raise("Test suite failed")
-    end
+    Mix.raise("Test suite failed")
   end
 
   defp run_with_coverage(opts, files) do

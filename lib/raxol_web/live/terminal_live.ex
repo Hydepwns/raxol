@@ -478,7 +478,8 @@ defmodule RaxolWeb.TerminalLive do
   defp get_cursor_style(%{cursor_style: style}), do: style
   defp get_cursor_style(_), do: :block
 
-  defp translate_key_event(key, params) do
+  @doc false
+  def translate_key_event(key, params) do
     ctrl = Map.get(params, "ctrlKey", false)
     _alt = Map.get(params, "altKey", false)
     _shift = Map.get(params, "shiftKey", false)

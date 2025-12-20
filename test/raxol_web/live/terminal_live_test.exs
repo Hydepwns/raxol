@@ -200,54 +200,9 @@ defmodule RaxolWeb.TerminalLiveTest do
     end
   end
 
-  # Helper functions that mirror the private functions in TerminalLive
-
+  # Helper function that delegates to the public function in TerminalLive
   defp translate_key(key, params) do
-    ctrl = Map.get(params, "ctrlKey", false)
-
-    case key do
-      "Enter" -> "\r"
-      "Backspace" -> "\x7f"
-      "Tab" -> "\t"
-      "Escape" -> "\e"
-      "ArrowUp" -> "\e[A"
-      "ArrowDown" -> "\e[B"
-      "ArrowRight" -> "\e[C"
-      "ArrowLeft" -> "\e[D"
-      "Home" -> "\e[H"
-      "End" -> "\e[F"
-      "PageUp" -> "\e[5~"
-      "PageDown" -> "\e[6~"
-      "Delete" -> "\e[3~"
-      "Insert" -> "\e[2~"
-      "F1" -> "\eOP"
-      "F2" -> "\eOQ"
-      "F3" -> "\eOR"
-      "F4" -> "\eOS"
-      "F5" -> "\e[15~"
-      "F6" -> "\e[17~"
-      "F7" -> "\e[18~"
-      "F8" -> "\e[19~"
-      "F9" -> "\e[20~"
-      "F10" -> "\e[21~"
-      "F11" -> "\e[23~"
-      "F12" -> "\e[24~"
-
-      char when byte_size(char) == 1 and ctrl ->
-        <<code>> = String.downcase(char)
-
-        if code >= ?a and code <= ?z do
-          <<code - ?a + 1>>
-        else
-          nil
-        end
-
-      char when byte_size(char) == 1 ->
-        char
-
-      _ ->
-        nil
-    end
+    RaxolWeb.TerminalLive.translate_key_event(key, params)
   end
 
   defp escape_html(text) do

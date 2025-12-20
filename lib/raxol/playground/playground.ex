@@ -746,25 +746,7 @@ defmodule Raxol.Playground do
     current_id = state.selected_component && state.selected_component.id
 
     next_component = find_next_component(catalog, current_id)
-
-    case next_component do
-      nil ->
-        {:error, "No more components"}
-
-      component ->
-        case select_component(component.id) do
-          {:ok, preview} ->
-            Log.console(
-              "\n#{IO.ANSI.bright()}Component: #{component.id}#{IO.ANSI.reset()} (#{component.category})"
-            )
-
-            display_preview(preview)
-            :ok
-
-          {:error, reason} ->
-            {:error, reason}
-        end
-    end
+    navigate_to_component(next_component, "No more components")
   end
 
   defp navigate_prev do
@@ -773,24 +755,24 @@ defmodule Raxol.Playground do
     current_id = state.selected_component && state.selected_component.id
 
     prev_component = find_prev_component(catalog, current_id)
+    navigate_to_component(prev_component, "No previous components")
+  end
 
-    case prev_component do
-      nil ->
-        {:error, "No previous components"}
+  defp navigate_to_component(nil, error_message), do: {:error, error_message}
 
-      component ->
-        case select_component(component.id) do
-          {:ok, preview} ->
-            Log.console(
-              "\n#{IO.ANSI.bright()}Component: #{component.id}#{IO.ANSI.reset()} (#{component.category})"
-            )
+  defp navigate_to_component(component, _error_message) do
+    case select_component(component.id) do
+      {:ok, preview} ->
+        Log.console(
+          "\n#{IO.ANSI.bright()}Component: #{component.id}#{IO.ANSI.reset()} " <>
+            "(#{component.category})"
+        )
 
-            display_preview(preview)
-            :ok
+        display_preview(preview)
+        :ok
 
-          {:error, reason} ->
-            {:error, reason}
-        end
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
