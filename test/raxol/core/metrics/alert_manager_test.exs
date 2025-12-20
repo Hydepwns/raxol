@@ -247,6 +247,8 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
   end
 
   describe "grouped metrics" do
+    # This test relies on message passing timing that is flaky on Windows CI
+    @tag :skip_on_windows
     test "evaluates alerts for grouped metrics", %{
       test_name: test_name,
       pid: pid

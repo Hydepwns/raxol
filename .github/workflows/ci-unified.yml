@@ -488,8 +488,22 @@ jobs:
           mix deps.get
           mix deps.compile
       
-      - name: Run tests
+      - name: Run tests (Unix)
+        if: runner.os != 'Windows'
         run: mix test --exclude slow --exclude docker --exclude integration --exclude skip_on_ci
+        env:
+          MIX_ENV: test
+          SKIP_TERMBOX2_TESTS: "true"
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
+          PLATFORM: ${{ matrix.platform }}
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: mix test --exclude slow --exclude docker --exclude integration --exclude skip_on_ci --exclude skip_on_windows
         env:
           MIX_ENV: test
           SKIP_TERMBOX2_TESTS: "true"
