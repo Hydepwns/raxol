@@ -41,7 +41,8 @@ defmodule Raxol.Animation.InterpolateTest do
       # Diff = 300 - 0 = 300. abs(diff) > 180. diff > 180.
       # Formula: h_interp = h1 + (diff - 360) * t = 0 + (300-360)*t = -60t
       # Midpoint t=0.5, expected Hue = -30. Normalized: 330.
-      # Expected HSL(330, 1.0, 0.5) -> Raxol.Style.Colors.HSL.hsl_to_rgb(330, 1.0, 0.5) -> {255,0,128}
+      # Expected HSL(330, 1.0, 0.5) ->
+      # Raxol.Style.Colors.HSL.hsl_to_rgb(330, 1.0, 0.5) -> {255,0,128}
       expected_mid_color = Color.from_rgb(255, 0, 128)
 
       result = Interpolate.value(color_from, color_to, 0.5)
@@ -51,8 +52,10 @@ defmodule Raxol.Animation.InterpolateTest do
     end
 
     test ~c"interpolates hue correctly (crossing 360/0 boundary, e.g., H:350 to H:10)" do
-      # From H:350 (Pinkish-Red) S:1, L:0.5 -> Raxol.Style.Colors.HSL.hsl_to_rgb(350,1.0,0.5) -> {255,0,42} ??? No, (255, 0, 43) if rounded strictly from calc
-      # Let's get an exact from HSL module: Raxol.Style.Colors.HSL.hsl_to_rgb(350, 1.0, 0.5) -> {255, 0, 43}
+      # From H:350 (Pinkish-Red) S:1, L:0.5 ->
+      # hsl_to_rgb(350,1.0,0.5) -> {255,0,42} ??? No, (255, 0, 43) if rounded
+      # Let's get an exact from HSL module:
+      # Raxol.Style.Colors.HSL.hsl_to_rgb(350, 1.0, 0.5) -> {255, 0, 43}
       # Raxol.Style.Colors.HSL.hsl_to_rgb(10, 1.0, 0.5) -> {255, 43, 0}
 
       # H:350

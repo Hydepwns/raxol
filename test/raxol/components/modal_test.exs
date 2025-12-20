@@ -495,9 +495,9 @@ defmodule Raxol.UI.Components.ModalTest do
     # assert error1_label_map.attrs.content == "Invalid input"
     assert Keyword.get(error1_label_map.attrs, :content) == "Invalid input"
     # assert error1_label_map.attrs.style.color == :red
-    assert Keyword.get(error1_label_map.attrs, :style)
-           |> (fn style -> if is_map(style), do: style.color, else: nil end).() ==
-             :red
+    style = Keyword.get(error1_label_map.attrs, :style)
+    color = if is_map(style), do: style.color, else: nil
+    assert color == :red
 
     # Check second field's column for error row
     field2_column = Enum.at(field_columns, 1)

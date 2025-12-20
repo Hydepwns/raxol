@@ -11,7 +11,12 @@
 #
 #   # Helper to create a basic state map for testing
 #   defp create_test_state(opts \\ []) do
-#     default_model = %{counter: 10, user: %{name: "Test User", password: "secret123"}, settings: %{theme: "dark", public_preference: true}, api_token: "abcdef123456"}
+#     default_model = %{
+#       counter: 10,
+#       user: %{name: "Test User", password: "secret123"},
+#       settings: %{theme: "dark", public_preference: true},
+#       api_token: "abcdef123456"
+#     }
 #     default_metrics = %{start_time: 1_746_304_248_788, frame_count: 600, render_times: [10, 12, 15, 8, 9], last_render_time: 10}
 #
 #     Map.merge(%{
@@ -25,7 +30,11 @@
 #       fps: 60,
 #       uptime: 120,
 #       metrics: default_metrics,
-#       screen_buffer: %{width: 100, height: 50, cells: %{{0, 0} => %{char: "A", fg: :white, bg: :black}}}
+#       screen_buffer: %{
+#         width: 100,
+#         height: 50,
+#         cells: %{{0, 0} => %{char: "A", fg: :white, bg: :black}}
+#       }
 #     }, Map.new(opts))
 #   end
 #
@@ -42,7 +51,12 @@
 #     end
 #
 #     test 'does not overwrite existing metrics' do
-#       initial_metrics = %{start_time: 123, frame_count: 10, render_times: [5], last_render_time: 5}
+#       initial_metrics = %{
+#         start_time: 123,
+#         frame_count: 10,
+#         render_times: [5],
+#         last_render_time: 5
+#       }
 #       state = create_test_state(metrics: initial_metrics)
 #       new_state = Debug.init_metrics(state)
 #
@@ -205,7 +219,14 @@
 #       # Simulate state with max render times already recorded
 #       max_times = Application.get_env(:raxol, :debug_max_render_times, 100)
 #       initial_render_times = Enum.to_list(1..max_times)
-#       state = create_test_state(metrics: %{render_times: initial_render_times, frame_count: max_times, start_time: 0, last_render_time: max_times})
+#       state = create_test_state(
+#         metrics: %{
+#           render_times: initial_render_times,
+#           frame_count: max_times,
+#           start_time: 0,
+#           last_render_time: max_times
+#         }
+#       )
 #
 #       render_time_us = 1000
 #       new_state = Debug.record_render(state, render_time_us)
@@ -256,7 +277,14 @@
 #     test 'calculates FPS correctly' do
 #       # Simulate 1 second elapsed, 60 frames
 #       start_time = System.monotonic_time() - 1_000_000_000 # 1 second ago in ns
-#       state = create_test_state(metrics: %{start_time: start_time, frame_count: 60, render_times: [], last_render_time: 0})
+#       state = create_test_state(
+#         metrics: %{
+#           start_time: start_time,
+#           frame_count: 60,
+#           render_times: [],
+#           last_render_time: 0
+#         }
+#       )
 #       info = Debug.get_debug_info(state)
 #
 #       assert info =~ "FPS: 60.00"
@@ -264,7 +292,14 @@
 #
 #     test 'calculates Avg Render Time correctly' do
 #       render_times = [10_000, 20_000, 30_000] # 10ms, 20ms, 30ms
-#       state = create_test_state(metrics: %{start_time: 0, frame_count: 3, render_times: render_times, last_render_time: 30_000})
+#       state = create_test_state(
+#         metrics: %{
+#           start_time: 0,
+#           frame_count: 3,
+#           render_times: render_times,
+#           last_render_time: 30_000
+#         }
+#       )
 #       info = Debug.get_debug_info(state)
 #
 #       assert info =~ "Avg Render Time: 20.00 ms"

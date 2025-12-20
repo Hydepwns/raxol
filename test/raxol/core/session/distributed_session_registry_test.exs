@@ -27,11 +27,23 @@ defmodule Raxol.Core.Session.DistributedSessionRegistryTest do
 
       # Register session on primary node
       primary_registry = Map.get(cluster.registry_pids, cluster.primary_node)
-      assert :ok = DistributedSessionRegistry.register_session(primary_registry, session_id, cluster.primary_node)
+      assert :ok =
+               DistributedSessionRegistry.register_session(
+                 primary_registry,
+                 session_id,
+                 cluster.primary_node
+               )
 
       # Attempt to register same session on different node should fail
-      secondary_registry = Map.get(cluster.registry_pids, List.first(cluster.secondary_nodes))
-      assert {:error, :session_already_exists} = DistributedSessionRegistry.register_session(secondary_registry, session_id, List.first(cluster.secondary_nodes))
+      secondary_node = List.first(cluster.secondary_nodes)
+      secondary_registry = Map.get(cluster.registry_pids, secondary_node)
+
+      assert {:error, :session_already_exists} =
+               DistributedSessionRegistry.register_session(
+                 secondary_registry,
+                 session_id,
+                 secondary_node
+               )
 
       cleanup_test_cluster(cluster)
     end
@@ -61,15 +73,30 @@ defmodule Raxol.Core.Session.DistributedSessionRegistryTest do
 
       # Test CPU-bound session placement
       session_id_cpu = "cpu_bound_session"
-      assert :ok = DistributedSessionRegistry.register_session(registry_pid, session_id_cpu, cluster.primary_node, affinity: :cpu_bound)
+      assert :ok =
+               DistributedSessionRegistry.register_session(
+                 registry_pid,
+                 session_id_cpu,
+                 cluster.primary_node,
+                 affinity: :cpu_bound
+               )
 
       # Test memory-bound session placement
       session_id_memory = "memory_bound_session"
-      assert :ok = DistributedSessionRegistry.register_session(registry_pid, session_id_memory, cluster.primary_node, affinity: :memory_bound)
+      assert :ok =
+               DistributedSessionRegistry.register_session(
+                 registry_pid,
+                 session_id_memory,
+                 cluster.primary_node,
+                 affinity: :memory_bound
+               )
 
       # Verify sessions are placed correctly
-      assert {:ok, _node} = DistributedSessionRegistry.locate_session(registry_pid, session_id_cpu)
-      assert {:ok, _node} = DistributedSessionRegistry.locate_session(registry_pid, session_id_memory)
+      assert {:ok, _node} =
+               DistributedSessionRegistry.locate_session(registry_pid, session_id_cpu)
+
+      assert {:ok, _node} =
+               DistributedSessionRegistry.locate_session(registry_pid, session_id_memory)
 
       cleanup_test_cluster(cluster)
     end
@@ -184,7 +211,12 @@ defmodule Raxol.Core.Session.DistributedSessionRegistryTest do
       tasks = Enum.map(session_ids, fn session_id ->
         Task.async(fn ->
           registry_pid = Map.get(cluster.registry_pids, cluster.primary_node)
-          DistributedSessionRegistry.register_session(registry_pid, session_id, cluster.primary_node)
+
+          DistributedSessionRegistry.register_session(
+            registry_pid,
+            session_id,
+            cluster.primary_node
+          )
         end)
       end)
 
@@ -222,10 +254,16 @@ defmodule Raxol.Core.Session.DistributedSessionRegistryTest do
       registry_pid = Map.get(cluster.registry_pids, cluster.primary_node)
       {new_session_id, _new_session_data} = SessionBuilder.create_simple_session()
 
-      assert :ok = DistributedSessionRegistry.register_session(registry_pid, new_session_id, cluster.primary_node)
+      assert :ok =
+               DistributedSessionRegistry.register_session(
+                 registry_pid,
+                 new_session_id,
+                 cluster.primary_node
+               )
 
       # Verify session is registered in majority partition
-      assert {:ok, _node} = DistributedSessionRegistry.locate_session(registry_pid, new_session_id)
+      assert {:ok, _node} =
+               DistributedSessionRegistry.locate_session(registry_pid, new_session_id)
 
       cleanup_test_cluster(cluster)
     end
@@ -333,10 +371,20 @@ defmodule Raxol.Core.Session.DistributedSessionRegistryTest do
       assert {:error, :not_found} = DistributedSessionRegistry.locate_session(registry_pid, "nonexistent_session")
 
       # Test invalid node
-      assert {:error, :invalid_node} = DistributedSessionRegistry.register_session(registry_pid, "test_session", :invalid_node)
+      assert {:error, :invalid_node} =
+               DistributedSessionRegistry.register_session(
+                 registry_pid,
+                 "test_session",
+                 :invalid_node
+               )
 
       # Test empty session ID
-      assert {:error, :invalid_session_id} = DistributedSessionRegistry.register_session(registry_pid, "", cluster.primary_node)
+      assert {:error, :invalid_session_id} =
+               DistributedSessionRegistry.register_session(
+                 registry_pid,
+                 "",
+                 cluster.primary_node
+               )
 
       cleanup_test_cluster(cluster)
     end
@@ -371,7 +419,8 @@ defmodule Raxol.Core.Session.DistributedSessionRegistryTest do
 
       # Verify registry is updated
       registry_pid = Map.get(cluster.registry_pids, cluster.primary_node)
-      assert {:ok, ^target_node} = DistributedSessionRegistry.locate_session(registry_pid, session_id)
+      assert {:ok, ^target_node} =
+               DistributedSessionRegistry.locate_session(registry_pid, session_id)
 
       cleanup_test_cluster(cluster)
     end

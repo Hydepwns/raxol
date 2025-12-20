@@ -94,7 +94,8 @@ defmodule Raxol.AccessibilityTestHelpers do
   end
 
   def with_screen_reader_spy(_, _) do
-    raise "with_screen_reader_spy/2 must be called with a pid and a function. Example: with_screen_reader_spy(user_preferences_pid, fn -> ... end)"
+    raise "with_screen_reader_spy/2 must be called with a pid and a function. " <>
+            "Example: with_screen_reader_spy(user_preferences_pid, fn -> ... end)"
   end
 
   defp safe_execute_with_spy(pid, fun) do
@@ -616,8 +617,11 @@ defmodule Raxol.AccessibilityTestHelpers do
          context
        )
        when ratio < min_ratio do
+    level_str = level |> Atom.to_string() |> String.upcase()
+
     flunk(
-      "Insufficient contrast ratio: #{ratio}. Expected at least #{min_ratio} for WCAG #{level |> Atom.to_string() |> String.upcase()} with #{size} text.\n#{context}"
+      "Insufficient contrast ratio: #{ratio}. " <>
+        "Expected at least #{min_ratio} for WCAG #{level_str} with #{size} text.\n#{context}"
     )
   end
 

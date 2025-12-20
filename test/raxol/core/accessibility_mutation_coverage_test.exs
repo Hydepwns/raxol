@@ -39,11 +39,13 @@ defmodule Raxol.Core.AccessibilityMutationCoverageTest do
       keyboard_focus = false
 
       # Test OR operations (these would be mutated to AND)
-      any_active_or = high_contrast || reduced_motion || large_text || screen_reader || keyboard_focus
+      any_active_or =
+        high_contrast || reduced_motion || large_text || screen_reader || keyboard_focus
       assert any_active_or == true  # Should be true because screen_reader is true
 
       # Test AND operations (these would be mutated to OR)
-      all_active_and = high_contrast && reduced_motion && large_text && screen_reader && keyboard_focus
+      all_active_and =
+        high_contrast && reduced_motion && large_text && screen_reader && keyboard_focus
       assert all_active_and == false  # Should be false because not all are true
 
       # Test NOT operations

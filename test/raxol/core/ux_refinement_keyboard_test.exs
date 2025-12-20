@@ -15,7 +15,8 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
   # alias Raxol.Core.UserPreferences # Not directly used in :meck refactor, keep if other tests need
 
   # Define the mock for KeyboardShortcutsBehaviour (already present)
-  # Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock, for: Raxol.Core.KeyboardShortcutsRefactoredBehaviour)
+  # Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
+  #   for: Raxol.Core.KeyboardShortcutsRefactoredBehaviour)
   # Mocks for Accessibility and FocusManager are defined in test/support/mocks.ex
 
   setup :verify_on_exit!
@@ -286,7 +287,10 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
       # Start FocusManager server if not already started
       case GenServer.whereis(Raxol.Core.FocusManager.FocusServer) do
         nil ->
-          {:ok, _pid} = Raxol.Core.FocusManager.FocusServer.start_link(name: Raxol.Core.FocusManager.FocusServer)
+          {:ok, _pid} =
+            Raxol.Core.FocusManager.FocusServer.start_link(
+              name: Raxol.Core.FocusManager.FocusServer
+            )
         _pid ->
           :ok
       end

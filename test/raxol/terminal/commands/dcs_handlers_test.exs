@@ -223,7 +223,8 @@ defmodule Raxol.Terminal.Commands.DCSHandlerTest do
       # This makes the test more robust to changes in SixelGraphics internal parsing
       # and focuses on the integration logic of DCSHandler.
       # However, direct mocking isn't straightforward without a mocking library here.
-      # So, we'll test the integration, assuming SixelGraphics produces expected output for simple input.
+      # So, we'll test the integration, assuming SixelGraphics produces
+      # expected output for simple input.
       # If SixelGraphics.new() initializes palette with color 1 as blue {0,0,255}:
       # And if SixelGraphics.process_sequence("#1?") creates pixel_buffer %{{0,0} => 1}
 
@@ -243,13 +244,15 @@ defmodule Raxol.Terminal.Commands.DCSHandlerTest do
              "Emulator sixel_state should be initialized/updated"
 
       # A more specific check would be on updated_emulator.sixel_state.pixel_buffer or .palette
-      # but this depends heavily on Raxol.Terminal.ANSI.SixelGraphics.process_sequence behavior for "#1?'
+      # but this depends heavily on SixelGraphics.process_sequence
+      # behavior for "#1?'
       # For now, we assume it's non-nil and has been processed.
 
       # 2. Check screen buffer for the rendered Sixel
       # blit_sixel_to_buffer maps Sixel pixels (0,0) to cell (cursor_x + 0, cursor_y + 0)
       # It uses cell_width=2, cell_height=4 by default.
-      # A single sixel '@' (pattern 1 - top pixel) means the top-most pixel line in the 6-pixel Sixel row is active.
+      # A single sixel '@' (pattern 1 - top pixel) means the top-most pixel
+      # line in the 6-pixel Sixel row is active.
       # The blitter averages or takes dominant color. For a single pixel, it should be its color.
       {cx, cy} = initial_cursor_pos
       active_buffer = Emulator.get_screen_buffer(updated_emulator)

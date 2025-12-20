@@ -229,8 +229,11 @@ defmodule Raxol.Plugins.CellProcessor do
   end
 
   defp handle_missing_plugin(manager, plugin_name, placeholder_cell) do
+    placeholder_value = Map.get(placeholder_cell, :value)
+
     Raxol.Core.Runtime.Log.warning_with_context(
-      "[CellProcessor.process] Plugin \"#{plugin_name}\" not loaded for placeholder \"#{Map.get(placeholder_cell, :value)}\". Skipping.",
+      "[CellProcessor.process] Plugin \"#{plugin_name}\" not loaded " <>
+        "for placeholder \"#{placeholder_value}\". Skipping.",
       %{plugin_name: plugin_name, placeholder_cell: placeholder_cell}
     )
 

@@ -38,8 +38,12 @@ defmodule Raxol.Terminal.ANSI.KittyAnimationTest do
     end
 
     test "returns error for invalid dimensions" do
-      assert {:error, :invalid_dimensions} = KittyAnimation.create_animation(%{width: 0, height: 100})
-      assert {:error, :invalid_dimensions} = KittyAnimation.create_animation(%{width: 100, height: 0})
+      assert {:error, :invalid_dimensions} =
+               KittyAnimation.create_animation(%{width: 0, height: 100})
+
+      assert {:error, :invalid_dimensions} =
+               KittyAnimation.create_animation(%{width: 100, height: 0})
+
       assert {:error, :invalid_dimensions} = KittyAnimation.create_animation(%{})
     end
   end

@@ -2,8 +2,13 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
   use ExUnit.Case
 
   setup_all do
-    start_supervised!({Raxol.Terminal.Window.WindowServer, [name: Raxol.Terminal.Window.WindowServer]})
-    start_supervised!({Raxol.Terminal.IO.IOServer, [name: Raxol.Terminal.IO.IOServer]})
+    start_supervised!(
+      {Raxol.Terminal.Window.WindowServer, [name: Raxol.Terminal.Window.WindowServer]}
+    )
+
+    start_supervised!(
+      {Raxol.Terminal.IO.IOServer, [name: Raxol.Terminal.IO.IOServer]}
+    )
     :ok
   end
 

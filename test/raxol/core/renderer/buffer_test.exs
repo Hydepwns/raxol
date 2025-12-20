@@ -259,7 +259,8 @@ defmodule Raxol.Core.Renderer.BufferTest do
   end
 
   describe "get_damage/1" do
-    # Skipping due to persistent, undiagnosed failure (damage set is empty after swap) - Unskipping, logic seems correct now
+    # Skipping due to persistent, undiagnosed failure
+    # (damage set is empty after swap) - Unskipping, logic seems correct now
     # @tag :skip # REMOVING
     test "returns list of damaged cells" do
       buffer =

@@ -47,7 +47,8 @@ defmodule Raxol.Terminal.RendererTest do
       output = Renderer.render(renderer)
 
       expected_output =
-        "<span style=\"color: #F00\">H</span><span style=\"color: #FFF\">i</span>" <>
+        "<span style=\"color: #F00\">H</span>" <>
+          "<span style=\"color: #FFF\">i</span>" <>
           String.duplicate("<span style=\"color: #FFF\"> </span>", 3)
 
       assert output == expected_output

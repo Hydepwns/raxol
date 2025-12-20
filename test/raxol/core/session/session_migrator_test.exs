@@ -105,7 +105,8 @@ defmodule Raxol.Core.Session.SessionMigratorTest do
       target_node = List.first(cluster.secondary_nodes)
 
       # Perform bulk migration
-      assert {:ok, migration_infos} = migrate_session_batch(cluster, session_ids, target_node, :bulk)
+      assert {:ok, migration_infos} =
+               migrate_session_batch(cluster, session_ids, target_node, :bulk)
       assert length(migration_infos) == 10
 
       # Wait for all migrations to complete
@@ -325,7 +326,8 @@ defmodule Raxol.Core.Session.SessionMigratorTest do
         max_migrations_per_rebalance: 5
       }
 
-      assert {:ok, rebalanced_count} = SessionMigrator.rebalance_sessions(migrator_pid, rebalance_config)
+      assert {:ok, rebalanced_count} =
+               SessionMigrator.rebalance_sessions(migrator_pid, rebalance_config)
       assert rebalanced_count > 0
 
       # Wait for rebalancing to complete
@@ -397,8 +399,12 @@ defmodule Raxol.Core.Session.SessionMigratorTest do
       cluster = create_test_cluster(4)
 
       # Create sessions on different nodes
-      sessions_node1 = for _i <- 1..5, do: create_test_session(cluster, :simple, cluster.primary_node)
-      sessions_node2 = for _i <- 1..5, do: create_test_session(cluster, :simple, List.first(cluster.secondary_nodes))
+      sessions_node1 =
+        for _i <- 1..5, do: create_test_session(cluster, :simple, cluster.primary_node)
+
+      secondary_node = List.first(cluster.secondary_nodes)
+      sessions_node2 =
+        for _i <- 1..5, do: create_test_session(cluster, :simple, secondary_node)
 
       all_sessions = sessions_node1 ++ sessions_node2
       target_node = List.last(cluster.secondary_nodes)

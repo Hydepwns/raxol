@@ -314,7 +314,8 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
     #   assert Emulator.get_cursor_position(emulator) == {4, 1}
     # end
 
-    # test "EL erases line from beginning to cursor", %{emulator: emulator, buffer_width: _buffer_width} do
+    # test "EL erases line from beginning to cursor",
+    #      %{emulator: emulator, buffer_width: _buffer_width} do
     #   input_str = "Hello\e[2;3HWorld\e[3D\e[1K"
     #   {emulator, _output} = Emulator.process_input(emulator, input_str)
     #   buffer = Emulator.get_screen_buffer(emulator)
@@ -324,7 +325,8 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
     #   # Line 0 should remain "Hello" followed by spaces
     #   assert Enum.map(line1_cells, & &1.char) == String.graphemes("Hello") ++ List.duplicate(" ", buffer.width - 5)
     #   # Line 1: After "World" at (2,1) -> "  World   "
-    #   # Cursor moves to (4,1) (on 'l' of "World"). Content: [' ', ' ', 'W', 'o', 'r', 'l', 'd', ' ', ' ', ' ']. Cursor x-coord is 4.
+    #   # Cursor moves to (4,1) (on 'l' of "World").
+    #   # Content: [' ', ' ', 'W', 'o', 'r', 'l', 'd', ' ', ' ', ' ']. Cursor x=4.
     #   # \e[1K clears from beginning up to and including cursor (index 4).
     #   # Clears indices 0, 1, 2, 3, 4. Expected: "     ld   "
     #   assert Enum.map(line2_cells, & &1.char) == List.duplicate(" ", 5) ++ String.graphemes("ld") ++ List.duplicate(" ", buffer.width - 7)

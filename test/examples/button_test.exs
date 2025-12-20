@@ -104,7 +104,8 @@ defmodule Raxol.Examples.ButtonTest do
       assert Map.has_key?(button_unfocused.state, :focused)
       assert Map.get(button_unfocused.state, :focused) == false
 
-      # Simulate window resize (assuming button doesn't directly react, just checking it doesn't crash)
+      # Simulate window resize
+      # (assuming button doesn't directly react, just checking it doesn't crash)
       {button_after_resize, _cmd3} =
         Raxol.Test.Unit.simulate_event(
           button_unfocused,
@@ -192,16 +193,19 @@ defmodule Raxol.Examples.ButtonTest do
           button_attrs: %{role: :this_is_an_invalid_role}
         )
 
-      # Assumption: The Button component's init function will validate props (like :role)
-      # and store any validation errors in its state, possibly in button.state.errors.
-      # The actual key and structure would depend on Raxol.UI.Components.Input.Button's implementation.
+      # Assumption: The Button component's init function will validate props
+      # (like :role) and store any validation errors in its state, possibly
+      # in button.state.errors. The actual key and structure would depend
+      # on Raxol.UI.Components.Input.Button's implementation.
 
       # Check if button.state.errors exists and is a non-empty map.
       # Default to empty map if :errors key is missing
       button_errors = Map.get(button.state, :errors, %{})
 
       assert map_size(button_errors) > 0,
-             "Expected button to have validation errors due to invalid role, but got errors: #{inspect(button_errors)}. Button state: #{inspect(button.state)}"
+             "Expected button to have validation errors due to invalid role, " <>
+               "but got errors: #{inspect(button_errors)}. " <>
+               "Button state: #{inspect(button.state)}"
     end
   end
 
