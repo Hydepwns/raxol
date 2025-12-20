@@ -27,7 +27,7 @@ if :os.type() == {:win32, :nt} do
     "[CI] Skipping Unix-only tests on Windows (termbox2 NIF not compiled)"
   )
 
-  ExUnit.configure(exclude: [unix_only: true])
+  ExUnit.configure(exclude: [unix_only: true, skip_on_windows: true])
 end
 
 # To mark a test as Docker-dependent, use:
