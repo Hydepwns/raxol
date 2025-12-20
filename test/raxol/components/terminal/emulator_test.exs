@@ -40,7 +40,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
   end
 
   # Helper for debug test
-  defp return_a_two_tuple() do
+  defp return_a_two_tuple do
     # This is what the function intends to return
     # Ensure :a is a distinct atom
     value_to_return = {Map.put(%{}, :a, 1), "b"}

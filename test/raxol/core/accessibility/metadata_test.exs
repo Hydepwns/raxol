@@ -12,10 +12,18 @@ defmodule Raxol.Core.Accessibility.MetadataTest do
   setup :set_mox_global
 
   setup do
+    # Reset all global state for proper test isolation
+    Raxol.Test.IsolationHelper.reset_global_state()
+
     # Start AccessibilityServer with unique name to avoid conflicts with other tests
-    accessibility_server_name = :"accessibility_server_metadata_#{System.unique_integer([:positive])}"
-    {:ok, _pid} = start_supervised({Raxol.Core.Accessibility.AccessibilityServer,
-      [name: accessibility_server_name]})
+    accessibility_server_name =
+      :"accessibility_server_metadata_#{System.unique_integer([:positive])}"
+
+    {:ok, _pid} =
+      start_supervised(
+        {Raxol.Core.Accessibility.AccessibilityServer,
+         [name: accessibility_server_name]}
+      )
 
     Raxol.Core.I18n.init()
 

@@ -267,7 +267,7 @@ defmodule Raxol.Search.FuzzyTest do
       assert search.matches == []
     end
 
-    test "handles single character buffer", %{buffer: buffer} do
+    test "handles single character buffer", %{buffer: _buffer} do
       small_buffer = Buffer.write_at(Buffer.create_blank_buffer(1, 1), 0, 0, "a")
       results = Fuzzy.search(small_buffer, "a", :exact)
 

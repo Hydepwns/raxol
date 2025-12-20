@@ -1,5 +1,6 @@
 defmodule Raxol.Core.Buffer.BufferPerformanceTest do
-  use ExUnit.Case, async: true
+  # async: false to ensure accurate memory measurements without interference
+  use ExUnit.Case, async: false
 
   @moduletag :performance
   alias Raxol.Terminal.Buffer

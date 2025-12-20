@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
   defp unwrap_ok({:error, _reason, value}), do: value
   defp unwrap_ok(value) when is_map(value), do: value
 
-  defp new_emulator() do
+  defp new_emulator do
     Raxol.Test.TestUtils.create_test_emulator_with_struct_cursor()
   end
 

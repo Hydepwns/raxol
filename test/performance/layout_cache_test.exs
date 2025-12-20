@@ -33,7 +33,7 @@ defmodule Raxol.Performance.LayoutCacheTest do
       constraints = %{width: 80, height: 24}
 
       # Layout with original
-      original_result = Layouter.layout_tree(:no_change, test_tree)
+      _original_result = Layouter.layout_tree(:no_change, test_tree)
 
       # Layout with cache (first call - miss)
       cached_result1 = LayouterCached.layout_tree(:no_change, test_tree, constraints)
@@ -78,8 +78,8 @@ defmodule Raxol.Performance.LayoutCacheTest do
       constraints2 = %{width: 160, height: 50}
 
       # Layout with different constraints
-      result1 = LayouterCached.layout_tree(:no_change, tree, constraints1)
-      result2 = LayouterCached.layout_tree(:no_change, tree, constraints2)
+      _result1 = LayouterCached.layout_tree(:no_change, tree, constraints1)
+      _result2 = LayouterCached.layout_tree(:no_change, tree, constraints2)
 
       # Results might differ due to constraints
       # But both should be cached
@@ -136,10 +136,10 @@ defmodule Raxol.Performance.LayoutCacheTest do
       constraints2 = %{width: 102, height: 31}  # Within 10% tolerance
 
       # First layout
-      result1 = LayouterCached.layout_tree(:no_change, tree, constraints1)
+      _result1 = LayouterCached.layout_tree(:no_change, tree, constraints1)
 
       # Second layout with similar constraints
-      result2 = LayouterCached.layout_tree(:no_change, tree, constraints2)
+      _result2 = LayouterCached.layout_tree(:no_change, tree, constraints2)
 
       # Due to constraint compatibility, might reuse cache
       stats = ETSCacheManager.stats()[:layout]

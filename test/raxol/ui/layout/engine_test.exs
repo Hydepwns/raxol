@@ -2,7 +2,6 @@ defmodule Raxol.UI.Layout.EngineTest do
   use ExUnit.Case, async: true
 
   alias Raxol.UI.Layout.Engine
-  alias Raxol.UI.Layout.{Grid, Panels, Containers}
 
   describe "apply_layout/2" do
     test "applies layout to a simple view" do

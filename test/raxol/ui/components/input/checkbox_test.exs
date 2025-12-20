@@ -231,7 +231,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     end
 
     # Helper to create a click event
-    defp click_event() do
+    defp click_event do
       %Event{
         # Use :mouse type
         type: :mouse,
@@ -251,7 +251,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     end
 
     # Helper to create a space keypress event
-    defp space_keypress_event() do
+    defp space_keypress_event do
       %Event{
         # Use :key type
         type: :key,
@@ -268,7 +268,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     end
 
     # Helper to create some other keypress event
-    defp other_keypress_event() do
+    defp other_keypress_event do
       %Event{
         # Use :key type
         type: :key,

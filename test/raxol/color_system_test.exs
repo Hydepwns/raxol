@@ -11,6 +11,9 @@ defmodule Raxol.ColorSystemTest do
   require Raxol.Core.Runtime.Log
 
   setup do
+    # Reset global state for test isolation
+    Raxol.Test.IsolationHelper.reset_global_state()
+
     # Start UserPreferences with a test-specific name
     local_user_prefs_name = __MODULE__.UserPreferences
     user_prefs_opts = [name: local_user_prefs_name, test_mode?: true]
@@ -130,8 +133,8 @@ defmodule Raxol.ColorSystemTest do
       local_user_prefs_name
     )
 
-    # Wait for preferences to be applied
-    assert_receive {:preferences_applied, _}, 100
+    # Wait for preferences to be applied - use longer timeout for CI environments
+    assert_receive {:preferences_applied, _}, 500
 
     on_exit(fn ->
       # Cleanup

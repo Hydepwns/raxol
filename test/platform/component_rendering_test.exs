@@ -71,7 +71,7 @@ defmodule Raxol.Test.Platform.ComponentRenderingTest do
     end
 
     test "box component renders borders correctly" do
-      platform = Platform.get_current_platform()
+      _platform = Platform.get_current_platform()
 
       # Create a basic box component
       box =

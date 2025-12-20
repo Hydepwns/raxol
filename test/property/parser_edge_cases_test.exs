@@ -21,7 +21,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
     end
 
     property "missing terminators are handled" do
-      check all cmd_char <- member_of(["H", "A", "B", "C", "D", "m", "J", "K"]),
+      check all _cmd_char <- member_of(["H", "A", "B", "C", "D", "m", "J", "K"]),
                 params <- list_of(integer(0..100), min_length: 1, max_length: 3),
                 text <- string(:alphanumeric, min_length: 1, max_length: 20),
                 max_runs: 500 do

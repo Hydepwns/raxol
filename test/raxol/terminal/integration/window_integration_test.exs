@@ -181,7 +181,7 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
     test "updates window manager configuration", %{state: _state} do
       # Note: Manager.update_config/1 is not implemented
       # This test is skipped until the API is available
-      config = %{
+      _config = %{
         min_window_size: {20, 10},
         max_window_size: {200, 100},
         default_window_size: {80, 24}
@@ -211,7 +211,7 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
     end
 
     test "resizes terminal through state", %{state: state} do
-      updated_state = State.resize(state, 100, 50)
+      _updated_state = State.resize(state, 100, 50)
 
       {:ok, window_id} = Manager.get_active_window()
       {:ok, window} = Manager.get_window(window_id)

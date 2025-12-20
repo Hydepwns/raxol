@@ -107,8 +107,8 @@ defmodule Raxol.Protocols.AdvancedProtocolTest do
     end
 
     test "handles function event handlers" do
-      handler = fn _self, event, state ->
-        {:ok, _self, Map.put(state, :handled, event.type)}
+      handler = fn self, event, state ->
+        {:ok, self, Map.put(state, :handled, event.type)}
       end
 
       event = %{type: :test, target: nil, timestamp: 123, data: %{}}

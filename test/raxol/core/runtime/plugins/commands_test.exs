@@ -264,7 +264,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
         def terminate(_, state), do: state
         def enable(state), do: {:ok, state}
         def disable(state), do: {:ok, state}
-        def filter_event(_event, state), do: {:ok, nil}
+        def filter_event(_event, _state), do: {:ok, nil}
         def handle_command(_cmd, _args, state), do: {:ok, state, :noop}
       end
 
@@ -277,7 +277,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
       command_table: table
     } do
       # Register first plugin
-      result =
+      _result =
         CommandHelper.register_plugin_commands(
           Raxol.Core.Runtime.Plugins.CommandsTest.DuplicatePlugin1,
           %{},
@@ -310,7 +310,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
       command_table: table
     } do
       # Should handle gracefully
-      table =
+      _table =
         CommandHelper.register_plugin_commands(
           Raxol.Core.Runtime.Plugins.CommandsTest.InvalidPlugin,
           %{},

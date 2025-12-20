@@ -126,7 +126,7 @@ defmodule Raxol.Terminal.Input.BufferTest do
     test "handles callback errors gracefully", %{
       pid: pid,
       events: events,
-      counter: counter
+      counter: _counter
     } do
       # Callback that raises an error
       Buffer.register_callback(pid, fn _event -> raise "Callback error" end)

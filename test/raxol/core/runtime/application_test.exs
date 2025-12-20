@@ -10,8 +10,6 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
   defmodule TestApp do
     use Raxol.Core.Runtime.Application
     require Raxol.View.Elements
-    # Import for cleaner syntax
-    import Raxol.View.Elements
 
     @impl Raxol.Core.Runtime.Application
     def init(_context), do: %{count: 0, initialized: true}
@@ -179,7 +177,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
 
       assert length(subscriptions) == 2
       # Check interval subscription
-      [interval_sub, events_sub] = subscriptions
+      [interval_sub, _events_sub] = subscriptions
       assert interval_sub.data.interval == 1000
       assert interval_sub.data.message == :tick
 

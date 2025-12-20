@@ -155,13 +155,13 @@ defmodule Raxol.Core.Session.SessionMigratorTest do
 
       # Create sessions specifically on the target evacuation node
       evacuation_node = List.first(cluster.secondary_nodes)
-      sessions_on_node = for i <- 1..8 do
+      sessions_on_node = for _i <- 1..8 do
         create_test_session(cluster, :simple, evacuation_node)
       end
       session_ids = Enum.map(sessions_on_node, fn {session_id, _data} -> session_id end)
 
       # Evacuate the node
-      assert {:ok, migrated_count} = evacuate_node(cluster, evacuation_node)
+      assert {:ok, _migrated_count} = evacuate_node(cluster, evacuation_node)
 
       # Verify sessions were migrated away from evacuation node
       Enum.each(session_ids, fn session_id ->
@@ -192,7 +192,7 @@ defmodule Raxol.Core.Session.SessionMigratorTest do
       end
       session_ids = Enum.map(sessions_on_node, fn {session_id, _data} -> session_id end)
 
-      remaining_nodes = cluster.all_nodes -- [evacuation_node]
+      _remaining_nodes = cluster.all_nodes -- [evacuation_node]
 
       # Evacuate the node
       assert {:ok, migrated_count} = evacuate_node(cluster, evacuation_node)
@@ -360,7 +360,7 @@ defmodule Raxol.Core.Session.SessionMigratorTest do
         target_node = List.first(cluster.secondary_nodes)
 
         # Create sessions for this test
-        sessions = for i <- 1..session_count do
+        sessions = for _i <- 1..session_count do
           create_test_session(cluster, :simple, cluster.primary_node)
         end
         session_ids = Enum.map(sessions, fn {session_id, _data} -> session_id end)
@@ -492,7 +492,7 @@ defmodule Raxol.Core.Session.SessionMigratorTest do
     test "coordinates with session replication during migration" do
       cluster = create_test_cluster(4, replication_factor: 2)
 
-      {session_id, session_data} = create_test_session(cluster, :simple, cluster.primary_node)
+      {session_id, _session_data} = create_test_session(cluster, :simple, cluster.primary_node)
 
       # Ensure session is replicated
       assert_session_replicated(cluster, session_id, 2)
@@ -517,7 +517,7 @@ defmodule Raxol.Core.Session.SessionMigratorTest do
       # This test would verify integration with the existing
       # Raxol.Core.Session.SessionManager and Raxol.Terminal.SessionManager
 
-      {session_id, session_data} = create_test_session(cluster, :complex, cluster.primary_node)
+      {session_id, _session_data} = create_test_session(cluster, :complex, cluster.primary_node)
 
       # Migrate complex session with terminal state
       target_node = List.first(cluster.secondary_nodes)

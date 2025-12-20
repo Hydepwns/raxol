@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Extension.ManagerTest do
     end
 
     test "creates a new extension manager with custom config", %{
-      manager: manager
+      manager: _manager
     } do
       manager = Manager.new(custom_option: "value")
       assert manager.config.custom_option == "value"
@@ -153,7 +153,7 @@ defmodule Raxol.Terminal.Extension.ManagerTest do
 
       {:ok, manager} = Manager.load_extension(manager, extension)
 
-      assert {:ok, result, updated_manager} =
+      assert {:ok, _result, updated_manager} =
                Manager.execute_command(manager, "test_command", ["arg1"])
 
       assert updated_manager.metrics.command_executions == 1

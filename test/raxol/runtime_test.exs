@@ -546,7 +546,7 @@ defmodule Raxol.RuntimeTest do
     cleanup_user_preferences()
   end
 
-  defp cleanup_dispatcher() do
+  defp cleanup_dispatcher do
     disp_pid = Process.whereis(Raxol.Core.Runtime.Events.Dispatcher)
 
     if disp_pid && Process.alive?(disp_pid) do
@@ -571,7 +571,7 @@ defmodule Raxol.RuntimeTest do
     end
   end
 
-  defp cleanup_registry() do
+  defp cleanup_registry do
     reg_pid = Process.whereis(:raxol_event_subscriptions)
 
     if reg_pid && Process.alive?(reg_pid) do
@@ -596,7 +596,7 @@ defmodule Raxol.RuntimeTest do
     end
   end
 
-  defp cleanup_user_preferences() do
+  defp cleanup_user_preferences do
     # Clear out user preferences to ensure a clean state for each test
     # Ensure UserPreferences is stopped before deleting its file
     case Process.whereis(Raxol.Core.UserPreferences) do

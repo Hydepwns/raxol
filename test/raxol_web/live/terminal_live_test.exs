@@ -4,7 +4,6 @@ defmodule RaxolWeb.TerminalLiveTest do
   # Note: This is a unit test file for the TerminalLive module.
   # For full integration tests with LiveView, use Phoenix.LiveViewTest.
 
-  alias RaxolWeb.TerminalLive
   alias Raxol.Web.SessionBridge
 
   setup do

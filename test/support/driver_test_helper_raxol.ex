@@ -6,8 +6,8 @@ defmodule Raxol.Terminal.DriverTestHelper do
   Helper module for terminal driver tests providing common test utilities and fixtures.
   """
 
-  alias Raxol.Terminal.Driver
   alias Raxol.Core.Events.Event
+  alias Raxol.Terminal.Driver
 
   def start_driver(test_pid) do
     IO.puts("[TestHelper] Starting driver with test_pid: #{inspect(test_pid)}")

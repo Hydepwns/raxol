@@ -63,6 +63,9 @@ defmodule Raxol.Core.AccessibilityTestHelper do
   end
 
   def setup_test_preferences_with_events(prefs_name) do
+    # Reset global state for test isolation
+    Raxol.Test.IsolationHelper.reset_global_state()
+
     # Ensure EventManager is started and supervised (if not already running)
     # Must use name: option so Process.whereis can find it
     case Process.whereis(Raxol.Core.Events.EventManager) do
@@ -140,7 +143,9 @@ defmodule Raxol.Core.AccessibilityTestHelper do
   def clear_test_state(prefs_name) do
     Raxol.Core.Accessibility.clear_announcements()
     Raxol.Core.Accessibility.disable(prefs_name)
-    Raxol.Core.Events.EventManager.cleanup()
+
+    # Use clear_handlers() instead of cleanup() to avoid stopping the global EventManager
+    Raxol.Core.Events.EventManager.clear_handlers()
   end
 
   defp get_or_start_preferences do

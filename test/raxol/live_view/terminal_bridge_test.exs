@@ -1,7 +1,7 @@
 defmodule Raxol.LiveView.TerminalBridgeTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Core.{Buffer, Style}
+  alias Raxol.Core.Buffer
   alias Raxol.LiveView.TerminalBridge
 
   describe "buffer_to_html/2" do

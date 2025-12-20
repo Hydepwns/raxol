@@ -5,7 +5,7 @@ defmodule Raxol.Test.Support.DriverTestHelper do
 
   import ExUnit.Assertions
 
-  def setup_terminal() do
+  def setup_terminal do
     # Setup terminal for testing
     :ok
   end
@@ -20,7 +20,7 @@ defmodule Raxol.Test.Support.DriverTestHelper do
     :ok
   end
 
-  def consume_initial_resize() do
+  def consume_initial_resize do
     # Consume initial resize event
     :ok
   end

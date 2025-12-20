@@ -1,8 +1,6 @@
 defmodule Raxol.Terminal.Commands.DeviceHandlerTest do
   use ExUnit.Case, async: false
   alias Raxol.Terminal.{Commands.DeviceHandler, Emulator, OutputManager}
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
   setup do
     # Create a test emulator with a 10x10 screen using the proper constructor

@@ -4,6 +4,9 @@ defmodule Raxol.UI.ComponentCompositionTest do
   alias Raxol.Test.RendererTestHelper, as: Helper
 
   setup do
+    # Reset all global state for proper test isolation
+    Raxol.Test.IsolationHelper.reset_global_state()
+
     # UserPreferences is already started by the supervision tree in test_helper.exs
     # Just ensure it's available and reset to defaults
     Raxol.Core.UserPreferences.reset_to_defaults_for_test!()
@@ -12,12 +15,23 @@ defmodule Raxol.UI.ComponentCompositionTest do
     Raxol.UI.Theming.Theme.init()
 
     # Start AccessibilityServer with unique name to avoid conflicts with other tests
-    accessibility_server_name = :"accessibility_server_composition_#{System.unique_integer([:positive])}"
-    {:ok, _pid} = start_supervised({Raxol.Core.Accessibility.AccessibilityServer,
-      [name: accessibility_server_name]})
+    accessibility_server_name =
+      :"accessibility_server_composition_#{System.unique_integer([:positive])}"
+
+    {:ok, _pid} =
+      start_supervised(
+        {Raxol.Core.Accessibility.AccessibilityServer,
+         [name: accessibility_server_name]}
+      )
 
     # Initialize accessibility system with default settings
     Raxol.Core.Accessibility.init()
+
+    on_exit(fn ->
+      # Ensure clean state for next test
+      Application.delete_env(:raxol, :themes)
+      Application.delete_env(:raxol, :current_theme)
+    end)
 
     :ok
   end
@@ -60,18 +74,8 @@ defmodule Raxol.UI.ComponentCompositionTest do
 
     cells = Renderer.render_to_cells(parent)
 
-    # Debug: Print all cells to see what's being rendered
-    IO.puts("DEBUG: All rendered cells:")
-
-    Enum.each(cells, fn {x, y, char, fg, bg, _attrs} ->
-      IO.puts(
-        "  Cell at (#{x}, #{y}): char='#{char}', fg=#{inspect(fg)}, bg=#{inspect(bg)}"
-      )
-    end)
-
     # Child should inherit parent's background
     cell = Helper.get_cell_at(cells, 0, 0)
-    IO.puts("DEBUG: Cell at (0, 0): #{inspect(cell)}")
     Helper.assert_cell_style(cell, :red, :primary)
   end
 

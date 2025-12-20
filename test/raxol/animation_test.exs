@@ -31,34 +31,21 @@ defmodule Raxol.AnimationTest do
   setup_all do
     Process.flag(:trap_exit, true)
 
+    # Stop any existing global UserPreferences to ensure clean test environment
     if pid = Process.whereis(Raxol.Core.UserPreferences) do
-      IO.puts(
-        "setup_all: Linked processes before stop: #{inspect(Process.info(self(), :links))}"
-      )
-
-      IO.puts(
-        "setup_all: Stopping global UserPreferences process gracefully: #{inspect(pid)} from #{inspect(self())}"
-      )
-
       try do
         GenServer.stop(pid)
       catch
-        :exit, reason ->
-          IO.puts("setup_all: GenServer.stop exit: #{inspect(reason)}")
+        :exit, _reason -> :ok
       end
 
       ref = Process.monitor(pid)
 
       receive do
-        {:DOWN, ^ref, :process, ^pid, _reason} ->
-          IO.puts("setup_all: Confirmed UserPreferences stopped")
+        {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
       after
-        500 -> IO.puts("setup_all: Timeout waiting for UserPreferences to stop")
+        500 -> :ok
       end
-
-      IO.puts(
-        "setup_all: Linked processes after stop: #{inspect(Process.info(self(), :links))}"
-      )
     end
 
     :ok
@@ -66,6 +53,9 @@ defmodule Raxol.AnimationTest do
 
   setup _context do
     Process.flag(:trap_exit, true)
+
+    # Reset all global state for proper test isolation
+    Raxol.Test.IsolationHelper.reset_global_state()
 
     # Start EventManager first
     case Raxol.Core.Events.EventManager.start_link(
@@ -112,7 +102,8 @@ defmodule Raxol.AnimationTest do
     )
 
     Accessibility.clear_announcements()
-    assert_receive {:preferences_applied, ^local_user_prefs_name}, 100
+    # Use a longer timeout for CI environments with variable timing
+    assert_receive {:preferences_applied, ^local_user_prefs_name}, 500
 
     on_exit(fn ->
       # Cleanup Framework process

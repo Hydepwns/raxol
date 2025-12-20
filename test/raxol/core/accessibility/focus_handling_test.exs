@@ -17,6 +17,9 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
   setup :set_mox_global
 
   setup do
+    # Reset global state for test isolation
+    Raxol.Test.IsolationHelper.reset_global_state()
+
     Raxol.Core.I18n.init()
     :ok
   end
