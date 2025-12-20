@@ -2,10 +2,10 @@ defmodule Raxol.Terminal.Render.RenderServerTest do
   use ExUnit.Case, async: false
 
   alias Raxol.Terminal.{
-    Render.RenderServer,
     Buffer.BufferManager,
     Cursor.Manager,
-    Integration.State
+    Integration.State,
+    Render.RenderServer
   }
 
   setup do

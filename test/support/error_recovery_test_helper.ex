@@ -31,8 +31,8 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
   import ExUnit.Callbacks
 
   alias Raxol.Core.ErrorRecovery.{
-    RecoverySupervisor,
-    ContextManager
+    ContextManager,
+    RecoverySupervisor
   }
 
   alias Raxol.Core.ErrorRecovery.EnhancedPatternLearner
@@ -40,7 +40,7 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
   defmacro __using__(_opts) do
     quote do
       import Raxol.Test.ErrorRecoveryTestHelper
-      alias Raxol.Test.ErrorRecoveryTestHelper.{TestWorker, FaultInjector}
+      alias Raxol.Test.ErrorRecoveryTestHelper.{FaultInjector, TestWorker}
     end
   end
 

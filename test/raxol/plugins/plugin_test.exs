@@ -4,12 +4,12 @@ defmodule Raxol.Plugins.PluginTest do
   alias Raxol.Plugins.Manager.Events, as: PluginManager
 
   alias Raxol.Test.PluginTestFixtures.{
-    TestPlugin,
     BadReturnPlugin,
-    DependentPlugin,
-    TimeoutPlugin,
+    CircularDependencyPlugin,
     CrashPlugin,
-    CircularDependencyPlugin
+    DependentPlugin,
+    TestPlugin,
+    TimeoutPlugin
   }
 
   describe "plugin manager" do

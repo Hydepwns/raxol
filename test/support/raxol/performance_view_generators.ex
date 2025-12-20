@@ -5,8 +5,8 @@ defmodule Raxol.Test.PerformanceViewGenerators do
 
   require Raxol.Core.Renderer.View
 
-  alias Raxol.Core.Renderer.Views.{Table, Chart}
   alias Raxol.Core.Renderer.View
+  alias Raxol.Core.Renderer.Views.{Chart, Table}
   alias Raxol.Test.PerformanceTestData
 
   # Helper function for macro expansions

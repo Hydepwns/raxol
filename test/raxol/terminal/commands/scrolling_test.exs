@@ -1,10 +1,10 @@
 defmodule Raxol.Terminal.Commands.ScrollingTest do
   use ExUnit.Case, async: true
 
+  alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.Commands.Scrolling
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.ANSI.TextFormatting
 
   setup do
     default_style = Raxol.Terminal.ANSI.TextFormatting.default_style()

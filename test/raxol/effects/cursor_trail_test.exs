@@ -1,7 +1,7 @@
 defmodule Raxol.Effects.CursorTrailTest do
   use ExUnit.Case, async: true
-  alias Raxol.Effects.CursorTrail
   alias Raxol.Core.Buffer
+  alias Raxol.Effects.CursorTrail
 
   setup do
     buffer = Buffer.create_blank_buffer(80, 24)

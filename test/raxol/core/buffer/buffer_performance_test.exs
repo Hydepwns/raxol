@@ -3,9 +3,10 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
   use ExUnit.Case, async: false
 
   @moduletag :performance
+
+  alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Buffer
   alias Raxol.Terminal.Buffer.Cell
-  alias Raxol.Terminal.ANSI.TextFormatting
 
   @moduledoc """
   Performance benchmarks for buffer operations.

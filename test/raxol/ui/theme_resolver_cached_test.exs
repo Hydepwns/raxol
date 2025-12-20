@@ -1,8 +1,8 @@
 defmodule Raxol.UI.ThemeResolverCachedTest do
   use ExUnit.Case, async: false
 
-  alias Raxol.UI.ThemeResolverCached
   alias Raxol.Performance.ETSCacheManager
+  alias Raxol.UI.ThemeResolverCached
 
   setup do
     # Ensure cache manager is running with a name

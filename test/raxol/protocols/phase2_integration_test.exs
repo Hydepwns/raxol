@@ -37,14 +37,14 @@ defmodule Raxol.Protocols.Phase2IntegrationTest do
 
   alias Raxol.Protocols.{
     ComponentFramework,
-    PluginSystemIntegration,
-    EventSystemIntegration
+    EventSystemIntegration,
+    PluginSystemIntegration
   }
 
-  alias Raxol.Protocols.{Renderable, Styleable, EventHandler, Serializable}
+  alias Raxol.Protocols.{EventHandler, Renderable, Serializable, Styleable}
+  alias Raxol.Style.Colors.Color
   alias Raxol.UI.Components.Table
   alias Raxol.UI.Theming.Theme
-  alias Raxol.Style.Colors.Color
 
   describe "ComponentFramework" do
     test "creates components with protocol support" do

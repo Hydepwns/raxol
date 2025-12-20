@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.ManagerTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Terminal.Manager
   alias Raxol.Core.Events.Event
+  alias Raxol.Terminal.Manager
 
   setup do
     emulator = Raxol.Terminal.Emulator.new()

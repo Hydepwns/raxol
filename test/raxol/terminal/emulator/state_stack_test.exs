@@ -2,10 +2,10 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
   use ExUnit.Case
   # # @tag :skip # Temporarily skip due to persistent UndefinedFunctionError
 
-  alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Cursor.Manager
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Cursor.Manager
+  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.ScreenBuffer
 
   # Note: CharacterSets alias might be needed if asserting charset_state fields directly
   # remove charactersets terminal ansi

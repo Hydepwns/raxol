@@ -1,14 +1,16 @@
 defmodule Raxol.ColorSystemTest do
   use ExUnit.Case, async: false
-  alias Raxol.Core.Runtime.ProcessStore
+
   import Raxol.AccessibilityTestHelpers
 
+  require Raxol.Core.Runtime.Log
+
+  alias Raxol.Animation.Framework, as: Framework
   alias Raxol.Core.Accessibility, as: Accessibility
+  alias Raxol.Core.Runtime.ProcessStore
   alias Raxol.Core.UserPreferences
   alias Raxol.Style.Colors.PaletteManager, as: PaletteManager
   alias Raxol.Style.Colors.System, as: ColorSystem
-  alias Raxol.Animation.Framework, as: Framework
-  require Raxol.Core.Runtime.Log
 
   setup do
     # Reset global state for test isolation

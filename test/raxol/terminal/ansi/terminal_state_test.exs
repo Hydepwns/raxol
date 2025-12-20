@@ -1,10 +1,10 @@
 defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   use ExUnit.Case
   # remove charactersets terminal ansi
-  alias Raxol.Terminal.ModeManager
   alias Raxol.Terminal.ANSI.TerminalState
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.ModeManager
 
   defp create_test_emulator(
          {x, y},

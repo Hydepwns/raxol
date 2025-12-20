@@ -5,8 +5,8 @@ defmodule Raxol.Style.Colors.SystemTest do
   import Mox
   import Raxol.Test.TestUtils
 
-  alias Raxol.Style.Colors.{Color, System, Theme}
   alias Raxol.Core.Events.EventManager, as: Manager, as: EventManager
+  alias Raxol.Style.Colors.{Color, System, Theme}
   alias Raxol.UI.Theming.Theme
 
   @color_keys [

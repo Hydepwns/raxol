@@ -1,7 +1,7 @@
 defmodule Raxol.UI.BasicRenderingTest do
   use ExUnit.Case
-  alias Raxol.UI.Renderer
   alias Raxol.Test.RendererTestHelper, as: Helper
+  alias Raxol.UI.Renderer
 
   setup do
     # Ensure UserPreferences is started for all tests

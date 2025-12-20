@@ -1,9 +1,9 @@
 defmodule Raxol.UI.RendererTest do
   use ExUnit.Case, async: true
 
+  alias Raxol.Core.UserPreferences
   alias Raxol.UI.Renderer
   alias Raxol.UI.Theming.Theme
-  alias Raxol.Core.UserPreferences
 
   # Helper function to find cells at a specific coordinate
   defp find_cell(cells, x, y) do

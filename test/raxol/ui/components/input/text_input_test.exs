@@ -1,8 +1,8 @@
 defmodule Raxol.UI.Components.Input.TextInputTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.UI.Components.Input.TextInput
   alias Raxol.Core.Events.Event
+  alias Raxol.UI.Components.Input.TextInput
   # import Raxol.Test.TestUtils # Removed - default_context not used
 
   # Helper to initialize component state with optional props

@@ -3,8 +3,8 @@ defmodule Raxol.Terminal.Input.ProcessorTest do
 
   alias Raxol.Terminal.Input.{
     # Event,
-    Event.MouseEvent,
-    Event.KeyEvent
+    Event.KeyEvent,
+    Event.MouseEvent
   }
   alias Raxol.Terminal.Input.InputProcessor, as: Processor
 

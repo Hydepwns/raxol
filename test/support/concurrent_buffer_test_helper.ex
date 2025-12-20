@@ -7,9 +7,9 @@ defmodule ConcurrentBufferTestHelper do
   test behavior.
   """
 
-  alias Raxol.Terminal.Buffer.ConcurrentBuffer
-  alias Raxol.Terminal.Buffer.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Buffer.Cell
+  alias Raxol.Terminal.Buffer.ConcurrentBuffer
 
   @doc """
   Creates a unique buffer server for testing.

@@ -31,9 +31,9 @@ defmodule Raxol.Test.Integration do
 
   # Delegation to focused modules
   alias Raxol.Test.Integration.{
-    HierarchySetup,
+    ComponentManagement,
     EventSimulation,
-    ComponentManagement
+    HierarchySetup
   }
 
   defmacro __using__(_opts) do

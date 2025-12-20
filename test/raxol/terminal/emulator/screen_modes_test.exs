@@ -2,8 +2,8 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
   use ExUnit.Case, async: true
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ModeManager
+  alias Raxol.Terminal.ScreenBuffer
   # alias Raxol.Terminal.Modes.ModeStateManager
 
   describe "screen mode functionality" do

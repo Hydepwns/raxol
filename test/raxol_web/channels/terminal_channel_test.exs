@@ -4,8 +4,8 @@ defmodule RaxolWeb.TerminalChannelTest do
   # Note: This is a unit test file for the TerminalChannel module.
   # For full integration tests, use Phoenix.ChannelTest with proper endpoint setup.
 
-  alias Raxol.Web.SessionBridge
   alias Raxol.Web.PersistentStore
+  alias Raxol.Web.SessionBridge
 
   setup do
     # Use unique names to avoid conflicts between tests

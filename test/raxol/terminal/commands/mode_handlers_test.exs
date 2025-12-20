@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Commands.ModeHandlerTest do
   use ExUnit.Case, async: false
+  alias Raxol.Terminal.Commands.CSIHandler.ModeHandlers
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Commands.CSIHandler.ModeHandlers
 
   setup do
     emulator = Emulator.new()

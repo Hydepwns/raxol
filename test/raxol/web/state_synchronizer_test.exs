@@ -2,7 +2,7 @@ defmodule Raxol.Web.StateSynchronizerTest do
   use ExUnit.Case, async: true
 
   alias Raxol.Web.StateSynchronizer
-  alias Raxol.Web.StateSynchronizer.{VectorClock, Operation}
+  alias Raxol.Web.StateSynchronizer.{Operation, VectorClock}
 
   describe "VectorClock" do
     test "new creates empty clock" do

@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.SessionTest do
   use ExUnit.Case, async: false
-  alias Raxol.Terminal.Session
   alias Raxol.Terminal.Renderer
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.Session
 
   setup_all do
     # Start GlobalRegistry if not running - needed for session registration

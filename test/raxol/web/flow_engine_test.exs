@@ -412,8 +412,7 @@ defmodule Raxol.Web.FlowEngine.DSLTest do
   defmodule TestFlows do
     use Raxol.Web.FlowEngine
 
-    alias Raxol.Web.FlowEngine.DSLTest.StepHelpers
-    alias Raxol.Web.FlowEngine.DSLTest.HandlerHelpers
+    alias Raxol.Web.FlowEngine.DSLTest.{HandlerHelpers, StepHelpers}
 
     flow :simple do
       step :first, &StepHelpers.first/1

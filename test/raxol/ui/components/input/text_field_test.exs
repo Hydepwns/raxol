@@ -1,8 +1,8 @@
 defmodule Raxol.UI.Components.Input.TextFieldTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.UI.Components.Input.TextField
   alias Raxol.Core.Renderer.Element
+  alias Raxol.UI.Components.Input.TextField
 
   defp create_state(props) do
     state = TextField.init(props)

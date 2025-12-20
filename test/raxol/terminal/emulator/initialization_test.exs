@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.Emulator.InitializationTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ModeManager
 
   describe "Emulator Initialization" do

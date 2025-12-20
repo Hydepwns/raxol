@@ -3,8 +3,8 @@
 defmodule Raxol.Terminal.ANSI.SixelParserTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Terminal.ANSI.SixelParser
   alias Raxol.Terminal.ANSI.SixelPalette
+  alias Raxol.Terminal.ANSI.SixelParser
 
   test "SixelParser handles raster attributes" do
     initial_state = %SixelParser.ParserState{

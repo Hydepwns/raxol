@@ -5,8 +5,8 @@ defmodule Raxol.Core.Session.SessionMigratorTest do
   @moduletag :distributed
   @moduletag skip: "Requires distributed Erlang nodes - depends on DistributedSessionRegistry"
 
-  alias Raxol.Core.Session.SessionMigrator
   alias Raxol.Core.Session.DistributedSessionStorage
+  alias Raxol.Core.Session.SessionMigrator
 
   describe "single session migration" do
     test "performs hot migration successfully" do

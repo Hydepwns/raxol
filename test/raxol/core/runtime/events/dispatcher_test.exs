@@ -9,8 +9,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
   defmock(ApplicationMock, for: Raxol.Core.Runtime.Application)
 
   alias Raxol.Core.Events.Event
-  alias Raxol.Core.Runtime.Events.Dispatcher
   alias Raxol.Core.Runtime.Command
+  alias Raxol.Core.Runtime.Events.Dispatcher
 
   # Simple Mock GenServer for PluginManager
   defmodule Mock.PluginManager do

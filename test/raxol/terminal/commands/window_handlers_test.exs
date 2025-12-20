@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlerTest do
   alias Raxol.Terminal.Commands.WindowHandler
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.{Window}
+  alias Raxol.Terminal.Window
 
   # Default char dimensions from WindowHandlers for calculations
   @default_char_width_px WindowHandler.default_char_width_px()

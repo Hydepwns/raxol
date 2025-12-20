@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.Buffer.CharEditorTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Buffer.CharEditor
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Buffer.CharEditor
   alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ScreenBuffer
 
   setup do
     buffer = ScreenBuffer.new(10, 5)

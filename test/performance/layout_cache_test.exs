@@ -1,8 +1,8 @@
 defmodule Raxol.Performance.LayoutCacheTest do
   use ExUnit.Case
 
-  alias Raxol.UI.Rendering.{Layouter, LayouterCached}
   alias Raxol.Performance.ETSCacheManager
+  alias Raxol.UI.Rendering.{Layouter, LayouterCached}
 
   setup do
     # Ensure cache manager is started with a name

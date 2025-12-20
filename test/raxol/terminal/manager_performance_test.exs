@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.ManagerPerformanceTest do
   use ExUnit.Case
 
-  alias Raxol.Terminal.Manager
-  alias Raxol.Terminal.Emulator
   alias Raxol.Core.Events.Event
+  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Manager
 
   setup do
     # Create a test terminal

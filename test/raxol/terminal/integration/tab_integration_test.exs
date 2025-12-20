@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.Integration.TabIntegrationTest do
   use ExUnit.Case
   @moduletag :integration
+  alias Raxol.Terminal.Integration.State
   alias Raxol.Terminal.Tab.TabServer
   alias Raxol.Terminal.Window.Manager
-  alias Raxol.Terminal.Integration.State
 
   setup do
     # Start the IOServer process if not already running

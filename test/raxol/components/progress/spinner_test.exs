@@ -1,7 +1,8 @@
 defmodule Raxol.UI.Components.Progress.SpinnerTest do
   use ExUnit.Case
-    alias Raxol.UI.Components.Progress.Spinner
+
   alias Raxol.Core.Events.Event
+  alias Raxol.UI.Components.Progress.Spinner
 
   describe "init/1" do
     test ~c"initializes with default values when no props provided" do

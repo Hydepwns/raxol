@@ -5,6 +5,8 @@ alias Raxol.Terminal.ScreenBuffer
 alias Raxol.Style.TextFormatting
 
 defmodule TerminalMenu do
+  @moduledoc false
+
   def render(buffer, x, y, items, selected_index) do
     # Render menu header
     buffer = render_header(buffer, x, y)

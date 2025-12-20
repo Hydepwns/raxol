@@ -7,8 +7,8 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   import Mox
   import Raxol.Test.ClipboardAssertions
 
-  alias Raxol.Core.Plugins.Core.ClipboardPlugin
   alias Raxol.Core.ClipboardMock
+  alias Raxol.Core.Plugins.Core.ClipboardPlugin
 
   setup :verify_on_exit!
 

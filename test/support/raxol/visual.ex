@@ -26,8 +26,8 @@ defmodule Raxol.Test.Visual do
       end
   """
 
-  alias Raxol.Test.TestHelper
   alias Raxol.Terminal.ScreenBuffer.Operations
+  alias Raxol.Test.TestHelper
 
   defmacro __using__(_opts) do
     quote do

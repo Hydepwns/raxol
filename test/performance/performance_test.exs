@@ -2,10 +2,10 @@ defmodule Raxol.PerformanceTest do
   use ExUnit.Case, async: false
 
   alias Raxol.Benchmarks.Performance
-  alias Raxol.Benchmarks.Performance.Rendering
+  alias Raxol.Benchmarks.Performance.Animation
   alias Raxol.Benchmarks.Performance.EventHandling
   alias Raxol.Benchmarks.Performance.MemoryUsage
-  alias Raxol.Benchmarks.Performance.Animation
+  alias Raxol.Benchmarks.Performance.Rendering
   alias Raxol.Benchmarks.Performance.Reporting
 
   @moduletag :performance

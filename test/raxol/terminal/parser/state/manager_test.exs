@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Parser.State.ManagerTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.Parser.State.Manager
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Parser.State.Manager
 
   describe "ParserStateManager" do
     test ~c"new/0 creates a new parser state with default values" do

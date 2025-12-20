@@ -1,10 +1,10 @@
 defmodule Raxol.Terminal.Commands.ScreenTest do
   use ExUnit.Case, async: false
 
+  alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Commands.Screen
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.ANSI.TextFormatting
 
   defp assert_entire_buffer_cleared(buffer, width \\ 10, height \\ 5) do
     for y <- 0..(height - 1) do

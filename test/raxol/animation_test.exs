@@ -3,7 +3,7 @@ defmodule Raxol.AnimationTest do
   require Raxol.AccessibilityTestHelpers
   import Raxol.AccessibilityTestHelpers
 
-  alias Raxol.Animation.{Framework, Animation, StateManager}
+  alias Raxol.Animation.{Animation, Framework, StateManager}
   alias Raxol.Core.Accessibility, as: Accessibility
   alias Raxol.Core.UserPreferences
 

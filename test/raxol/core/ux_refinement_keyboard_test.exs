@@ -6,11 +6,11 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
   # Aliases for mocks will be used directly, e.g., Raxol.Mocks.AccessibilityMock
   # alias Raxol.Core.Accessibility, as: Accessibility # Removed
   # alias Raxol.Core.Accessibility, as: Accessibility.Mock
+  alias Raxol.Core.Events.Event
   alias Raxol.Core.Events.EventManager, as: EventManager
   # alias Raxol.Core.FocusManager, as: FocusManager # Removed
   # alias Raxol.Core.KeyboardShortcuts, as: KeyboardShortcuts # Removed
   alias Raxol.Core.UXRefinement, as: UXRefinement, as: UXRefinement
-  alias Raxol.Core.Events.Event
 
   # alias Raxol.Core.UserPreferences # Not directly used in :meck refactor, keep if other tests need
 
@@ -280,8 +280,8 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
       end)
 
       # Use real implementations
-      alias Raxol.Core.KeyboardShortcuts
       alias Raxol.Core.FocusManager
+      alias Raxol.Core.KeyboardShortcuts
 
       # Start FocusManager server if not already started
       case GenServer.whereis(Raxol.Core.FocusManager.FocusServer) do

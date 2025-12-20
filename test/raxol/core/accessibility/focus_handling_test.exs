@@ -7,8 +7,8 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
   import Mox
 
   alias Raxol.Core.Accessibility, as: Accessibility
-  alias Raxol.Core.UserPreferences
   alias Raxol.Core.AccessibilityTestHelper, as: Helper
+  alias Raxol.Core.UserPreferences
 
   # Timeout for async event processing in CI environments
   @async_timeout 500

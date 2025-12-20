@@ -2,7 +2,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisorTest do
   use ExUnit.Case, async: false
   use Raxol.Test.ErrorRecoveryTestHelper
 
-  alias Raxol.Core.ErrorRecovery.{RecoverySupervisor, ContextManager}
+  alias Raxol.Core.ErrorRecovery.{ContextManager, RecoverySupervisor}
 
   describe "adaptive restart strategies" do
     setup do

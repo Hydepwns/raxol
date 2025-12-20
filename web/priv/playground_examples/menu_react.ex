@@ -3,6 +3,7 @@
 import Raxol.HEEx.Components
 
 defmodule MenuComponent do
+  @moduledoc false
   use Phoenix.Component
 
   attr :items, :list, required: true

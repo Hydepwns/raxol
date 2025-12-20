@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
   use ExUnit.Case, async: false
 
+  alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Buffer.BufferServer
   alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.ANSI.TextFormatting
 
   setup do
     # Start a buffer server for each test

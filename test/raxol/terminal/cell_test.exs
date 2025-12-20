@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.CellTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Cell
 
   describe "Cell" do
     test "new/0 creates an empty cell" do

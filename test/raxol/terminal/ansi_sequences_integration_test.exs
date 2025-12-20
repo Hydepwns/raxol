@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.ANSISequencesIntegrationTest do
   use ExUnit.Case, async: false
 
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
   # Load test fixtures
   Code.require_file("../../fixtures/ansi_sequences.exs", __DIR__)

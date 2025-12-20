@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
   use ExUnit.Case
-  alias Raxol.Terminal.{Emulator, ScreenBuffer, Cell}
+  alias Raxol.Terminal.{Cell, Emulator, ScreenBuffer}
 
   setup do
     # Create a terminal emulator with default dimensions (80x24)

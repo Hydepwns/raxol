@@ -5,8 +5,8 @@ defmodule Raxol.Terminal.CursorTest do
   doctest Raxol.Terminal.Cursor.Style
 
   alias Raxol.Terminal.Cursor.{Manager, Movement, Style}
-  alias Raxol.Terminal.Modes
   alias Raxol.Terminal.EscapeSequence
+  alias Raxol.Terminal.Modes
 
   describe "Cursor Movement" do
     test "move_up moves cursor up" do

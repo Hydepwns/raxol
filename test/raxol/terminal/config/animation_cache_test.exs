@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Config.AnimationCacheTest do
   use ExUnit.Case, async: false
-  alias Raxol.Terminal.Config.AnimationCache
   alias Raxol.Terminal.Cache.System
+  alias Raxol.Terminal.Config.AnimationCache
 
   setup do
     # Ensure the cache system is started and ready

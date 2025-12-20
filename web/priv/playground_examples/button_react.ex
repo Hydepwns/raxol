@@ -2,6 +2,7 @@
 import Raxol.HEEx.Components
 
 defmodule ButtonComponent do
+  @moduledoc false
   use Phoenix.Component
 
   attr :label, :string, required: true

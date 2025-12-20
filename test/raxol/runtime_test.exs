@@ -101,10 +101,10 @@ defmodule Raxol.RuntimeTest do
 
   # Mox is used with module prefix, no import needed
 
-  alias Raxol.Core.Runtime.Supervisor, as: RuntimeSupervisor
-  alias Raxol.Core.Runtime.Plugins.PluginManager, as: PluginManager
   alias Raxol.Core.Runtime.Events.Dispatcher
+  alias Raxol.Core.Runtime.Plugins.PluginManager, as: PluginManager
   alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
+  alias Raxol.Core.Runtime.Supervisor, as: RuntimeSupervisor
   alias Raxol.Terminal.Driver, as: TerminalDriver
 
   # DriverMock already defined in test/support/terminal_driver_mock.ex

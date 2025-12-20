@@ -1,7 +1,8 @@
 defmodule Raxol.UI.Components.TerminalTest do
   use ExUnit.Case, async: true
-    alias Raxol.UI.Components.Terminal
+
   alias Raxol.Core.Events.Event
+  alias Raxol.UI.Components.Terminal
 
   defp initial_terminal_state(opts \\ []) do
     Terminal.init(opts)

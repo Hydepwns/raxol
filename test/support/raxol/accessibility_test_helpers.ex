@@ -1,6 +1,4 @@
 defmodule Raxol.AccessibilityTestHelpers do
-  alias Raxol.Core.Runtime.ProcessStore
-
   @moduledoc """
   Test helpers for accessibility-related assertions and simulation in Raxol.
 
@@ -16,13 +14,14 @@ defmodule Raxol.AccessibilityTestHelpers do
   - Reduced motion testing
   """
 
+  import ExUnit.Assertions
+
   alias Raxol.Core.Accessibility, as: Accessibility
-  alias Raxol.Style.Colors.Utilities
+  alias Raxol.Core.Events.EventManager, as: EventManager
   alias Raxol.Core.FocusManager, as: FocusManager
   alias Raxol.Core.KeyboardShortcuts, as: KeyboardShortcuts
-  alias Raxol.Core.Events.EventManager, as: EventManager
-
-  import ExUnit.Assertions
+  alias Raxol.Core.Runtime.ProcessStore
+  alias Raxol.Style.Colors.Utilities
 
   @doc """
   Run a test with a spy on screen reader announcements.

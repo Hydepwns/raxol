@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Emulator.CursorManagementTest do
   use ExUnit.Case
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Cursor.Manager
+  alias Raxol.Terminal.Emulator
 
   setup do
     emulator = Emulator.new(80, 24)

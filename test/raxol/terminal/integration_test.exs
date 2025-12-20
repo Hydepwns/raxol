@@ -2,9 +2,9 @@
 
 defmodule Raxol.Terminal.IntegrationTest do
   use ExUnit.Case
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ModeManager
+  alias Raxol.Terminal.ScreenBuffer
 
   # Helper to extract text from a ScreenBuffer
   defp buffer_text(buffer) do

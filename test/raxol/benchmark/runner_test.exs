@@ -2,7 +2,7 @@ defmodule Raxol.Benchmark.RunnerTest do
   use ExUnit.Case, async: true
   @moduletag :benchmark
 
-  alias Raxol.Benchmark.{Runner, Analyzer, Reporter}
+  alias Raxol.Benchmark.{Analyzer, Reporter, Runner}
 
   describe "benchmark runner" do
     test "can run a simple benchmark" do

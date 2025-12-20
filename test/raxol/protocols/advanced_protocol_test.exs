@@ -1,7 +1,7 @@
 defmodule Raxol.Protocols.AdvancedProtocolTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Protocols.{Styleable, EventHandler, BehaviourAdapter}
+  alias Raxol.Protocols.{BehaviourAdapter, EventHandler, Styleable}
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
 
   describe "Styleable protocol" do

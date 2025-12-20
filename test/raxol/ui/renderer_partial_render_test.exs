@@ -1,9 +1,9 @@
 defmodule Raxol.UI.RendererPartialRenderTest do
   use ExUnit.Case, async: false
 
-  alias Raxol.UI.Rendering.Renderer
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.UI.Rendering.Renderer
 
   setup do
     # Start the Renderer GenServer with a global name so API calls work

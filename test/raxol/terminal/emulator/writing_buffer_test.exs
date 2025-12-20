@@ -2,9 +2,9 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
   use ExUnit.Case
   import Mox
 
+  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
   # Removed unused alias: Raxol.Terminal.ANSI.ScreenModes
 
   # Setup block to ensure a fresh emulator and Mox state for each test

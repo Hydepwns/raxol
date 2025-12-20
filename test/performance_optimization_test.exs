@@ -7,9 +7,9 @@ defmodule PerformanceOptimizationTest do
 
   @moduletag :skip
 
-  alias Raxol.Terminal.Escape.Parsers.{CSIParser, CSIParserCached}
-  alias Raxol.Terminal.{Cell, CellCached}
   alias Raxol.Performance.ETSCacheManager
+  alias Raxol.Terminal.{Cell, CellCached}
+  alias Raxol.Terminal.Escape.Parsers.{CSIParser, CSIParserCached}
 
   setup do
     # Ensure cache manager is started for tests

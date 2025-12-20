@@ -1,9 +1,9 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
   use ExUnit.Case, async: true
 
+  alias Raxol.Core.Events.Event
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.MultiLineInput.EventHandler
-  alias Raxol.Core.Events.Event
 
   # Utility to normalize dimensions
   defp normalize_dimensions(%{width: _, height: _} = dims), do: dims

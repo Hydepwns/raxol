@@ -1,8 +1,8 @@
 defmodule Raxol.UI.Components.Input.SingleLineInputTest do
   use ExUnit.Case, async: false
 
-  alias Raxol.UI.Components.Input.SingleLineInput
   alias Raxol.Core.Events.Event
+  alias Raxol.UI.Components.Input.SingleLineInput
 
   describe "init/1" do
     test ~c"initializes with default values when no props provided" do

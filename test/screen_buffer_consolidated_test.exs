@@ -2,16 +2,16 @@ defmodule ScreenBufferTest do
   use ExUnit.Case
   doctest Raxol.Terminal.ScreenBuffer.Core
 
+  alias Raxol.Terminal.Cell
+
   alias Raxol.Terminal.ScreenBuffer.{
+    Attributes,
     Core,
+    Manager,
     Operations,
     Scroll,
-    Selection,
-    Attributes,
-    Manager
+    Selection
   }
-
-  alias Raxol.Terminal.Cell
 
   describe "Core module" do
     test "creates a buffer with correct dimensions" do

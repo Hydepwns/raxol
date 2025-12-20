@@ -1,8 +1,9 @@
 defmodule Raxol.Core.Buffer.BufferConcurrentTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.Buffer.ConcurrentBuffer
-  alias Raxol.Terminal.Buffer.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Buffer.Cell
+  alias Raxol.Terminal.Buffer.ConcurrentBuffer
+
   import ConcurrentBufferTestHelper
 
   @moduledoc """

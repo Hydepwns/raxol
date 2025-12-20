@@ -2,8 +2,8 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
   use ExUnit.Case, async: false
 
   # remove charactersets terminal ansi
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.Emulator
 
   # Define initial state if used consistently
   # Consider a setup block if state creation is complex or repeated

@@ -1,13 +1,13 @@
 defmodule Raxol.Terminal.Commands.CSIHandlerTest do
   use ExUnit.Case, async: false
 
-  alias Raxol.Terminal.Commands.CSIHandler
-  alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
-  alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.CharacterSets.StateManager
-  alias Raxol.Terminal.{Window}
+  alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Commands.CSIHandler
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.Window
 
   setup do
     emulator = new_emulator()

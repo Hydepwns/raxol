@@ -33,9 +33,9 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
 
   alias Raxol.Core.Session.{
     DistributedSessionRegistry,
-    SessionReplicator,
     DistributedSessionStorage,
-    SessionMigrator
+    SessionMigrator,
+    SessionReplicator
   }
 
   alias Raxol.Core.Runtime.Log
@@ -45,9 +45,9 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
       import Raxol.Test.DistributedSessionTestHelper
 
       alias Raxol.Test.DistributedSessionTestHelper.{
-        TestCluster,
+        FaultInjector,
         SessionBuilder,
-        FaultInjector
+        TestCluster
       }
 
       setup_all do

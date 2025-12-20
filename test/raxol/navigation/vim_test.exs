@@ -1,7 +1,7 @@
 defmodule Raxol.Navigation.VimTest do
   use ExUnit.Case, async: true
-  alias Raxol.Navigation.Vim
   alias Raxol.Core.Buffer
+  alias Raxol.Navigation.Vim
 
   setup do
     buffer = Buffer.create_blank_buffer(80, 24)

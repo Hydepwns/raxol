@@ -1,7 +1,7 @@
 defmodule Raxol.UI.ComponentCompositionTest do
   use ExUnit.Case, async: false
-  alias Raxol.UI.Renderer
   alias Raxol.Test.RendererTestHelper, as: Helper
+  alias Raxol.UI.Renderer
 
   setup do
     # Reset all global state for proper test isolation

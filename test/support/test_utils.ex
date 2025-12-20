@@ -16,7 +16,7 @@ defmodule Raxol.Test.TestUtils do
   import ExUnit.Assertions
   import ExUnit.Callbacks
 
-  alias Raxol.Core.Events.{Event}
+  alias Raxol.Core.Events.Event
   require Raxol.Core.Runtime.Log
 
   # =============================================================================

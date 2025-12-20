@@ -1,7 +1,7 @@
 defmodule Raxol.Search.FuzzyTest do
   use ExUnit.Case, async: true
-  alias Raxol.Search.Fuzzy
   alias Raxol.Core.Buffer
+  alias Raxol.Search.Fuzzy
 
   setup do
     buffer = Buffer.create_blank_buffer(80, 10)

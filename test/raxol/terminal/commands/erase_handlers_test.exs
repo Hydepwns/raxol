@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Commands.EraseHandlerTest do
   use ExUnit.Case, async: false
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.EraseHandler, as: EraseHandlers
+  alias Raxol.Terminal.Emulator
 
   setup do
     emulator = Emulator.new(80, 24, [])

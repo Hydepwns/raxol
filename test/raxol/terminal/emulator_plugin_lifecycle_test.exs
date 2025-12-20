@@ -2,8 +2,8 @@ defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
   use ExUnit.Case
   @moduletag :integration
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Core.Runtime.Plugins.PluginManager, as: Manager
+  alias Raxol.Terminal.Emulator
 
   setup context do
     reloading_enabled =
