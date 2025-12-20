@@ -70,13 +70,11 @@ defmodule Raxol.Core.Utils.ErrorPatterns do
   """
   @spec call_with_timeout(GenServer.server(), any(), timeout()) :: result(any())
   def call_with_timeout(server, request, timeout \\ 5000) do
-    try do
-      result = GenServer.call(server, request, timeout)
-      {:ok, result}
-    catch
-      :exit, {:timeout, _} -> {:error, :timeout}
-      :exit, reason -> {:error, {:exit, reason}}
-    end
+    result = GenServer.call(server, request, timeout)
+    {:ok, result}
+  catch
+    :exit, {:timeout, _} -> {:error, :timeout}
+    :exit, reason -> {:error, {:exit, reason}}
   end
 
   @doc """

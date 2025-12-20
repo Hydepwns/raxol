@@ -478,21 +478,19 @@ defmodule Raxol.Web.StateMachine do
   """
   @spec deserialize(binary()) :: {:ok, Machine.t()} | {:error, term()}
   def deserialize(binary) when is_binary(binary) do
-    try do
-      data = :erlang.binary_to_term(binary, [:safe])
+    data = :erlang.binary_to_term(binary, [:safe])
 
-      machine = %Machine{
-        definition: data.definition,
-        current_state: data.current_state,
-        context: data.context,
-        history: data.history,
-        started_at: data.started_at
-      }
+    machine = %Machine{
+      definition: data.definition,
+      current_state: data.current_state,
+      context: data.context,
+      history: data.history,
+      started_at: data.started_at
+    }
 
-      {:ok, machine}
-    rescue
-      e -> {:error, e}
-    end
+    {:ok, machine}
+  rescue
+    e -> {:error, e}
   end
 
   # ============================================================================

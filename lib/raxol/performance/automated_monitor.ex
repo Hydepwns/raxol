@@ -407,21 +407,17 @@ defmodule Raxol.Performance.AutomatedMonitor do
   end
 
   defp get_telemetry_events(event_pattern) do
-    try do
-      :ets.match(:performance_telemetry, {{event_pattern, :_}, :"$1"})
-      |> List.flatten()
-    rescue
-      ArgumentError -> []
-    end
+    :ets.match(:performance_telemetry, {{event_pattern, :_}, :"$1"})
+    |> List.flatten()
+  rescue
+    ArgumentError -> []
   end
 
   defp get_all_telemetry_events do
-    try do
-      :ets.tab2list(:performance_telemetry)
-      |> Enum.map(fn {_key, value} -> value end)
-    rescue
-      ArgumentError -> []
-    end
+    :ets.tab2list(:performance_telemetry)
+    |> Enum.map(fn {_key, value} -> value end)
+  rescue
+    ArgumentError -> []
   end
 
   defp check_threshold_violations(metrics, thresholds, current_alerts) do

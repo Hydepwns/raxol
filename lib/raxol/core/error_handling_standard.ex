@@ -115,17 +115,15 @@ defmodule Raxol.Core.ErrorHandlingStandard do
   @spec safe_call((-> any()), standard_error()) ::
           {:ok, any()} | {:error, standard_error(), map()}
   def safe_call(fun, error_type \\ :internal_error) do
-    try do
-      {:ok, fun.()}
-    rescue
-      e ->
-        Log.error("Exception caught: #{inspect(e)}")
-        {:error, error_type, %{exception: e, stacktrace: __STACKTRACE__}}
-    catch
-      kind, reason ->
-        Log.error("Caught #{kind}: #{inspect(reason)}")
-        {:error, error_type, %{kind: kind, reason: reason}}
-    end
+    {:ok, fun.()}
+  rescue
+    e ->
+      Log.error("Exception caught: #{inspect(e)}")
+      {:error, error_type, %{exception: e, stacktrace: __STACKTRACE__}}
+  catch
+    kind, reason ->
+      Log.error("Caught #{kind}: #{inspect(reason)}")
+      {:error, error_type, %{kind: kind, reason: reason}}
   end
 
   @doc """

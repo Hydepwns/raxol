@@ -381,23 +381,21 @@ defmodule Raxol.Core.Events.EventManager do
 
   defp safe_call_handler(target, handler, event_type, event_data)
        when is_atom(target) do
-    try do
-      # For atom events with no data, pass just the event_type
-      # For all other events, use standard 2-parameter approach
-      case {event_type, event_data} do
-        {event_type, data}
-        when is_atom(event_type) and is_map(data) and map_size(data) == 0 ->
-          apply(target, handler, [event_type])
+    # For atom events with no data, pass just the event_type
+    # For all other events, use standard 2-parameter approach
+    case {event_type, event_data} do
+      {event_type, data}
+      when is_atom(event_type) and is_map(data) and map_size(data) == 0 ->
+        apply(target, handler, [event_type])
 
-        _ ->
-          apply(target, handler, [event_type, event_data])
-      end
-    rescue
-      error ->
-        Raxol.Core.Runtime.Log.error(
-          "Handler #{target}.#{handler} failed: #{inspect(error)}"
-        )
+      _ ->
+        apply(target, handler, [event_type, event_data])
     end
+  rescue
+    error ->
+      Raxol.Core.Runtime.Log.error(
+        "Handler #{target}.#{handler} failed: #{inspect(error)}"
+      )
   end
 
   defp safe_call_handler({module, function}, _handler, event_type, event_data) do

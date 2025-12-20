@@ -225,22 +225,18 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
 
   @impl true
   def handle_manager_call({:batch, fun}, _from, state) do
-    try do
-      updated_buffer = fun.(state.buffer)
-      {:reply, :ok, %{state | buffer: updated_buffer}}
-    rescue
-      e -> {:reply, {:error, e}, state}
-    end
+    updated_buffer = fun.(state.buffer)
+    {:reply, :ok, %{state | buffer: updated_buffer}}
+  rescue
+    e -> {:reply, {:error, e}, state}
   end
 
   @impl true
   def handle_manager_call({:batch_operations, operations}, _from, state) do
-    try do
-      updated_buffer = apply_batch_operations(operations, state.buffer, state)
-      {:reply, :ok, %{state | buffer: updated_buffer}}
-    rescue
-      e -> {:reply, {:error, e}, state}
-    end
+    updated_buffer = apply_batch_operations(operations, state.buffer, state)
+    {:reply, :ok, %{state | buffer: updated_buffer}}
+  rescue
+    e -> {:reply, {:error, e}, state}
   end
 
   # Private helpers

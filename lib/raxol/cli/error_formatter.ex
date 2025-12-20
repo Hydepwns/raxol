@@ -115,8 +115,7 @@ defmodule Raxol.CLI.ErrorFormatter do
       suggestions
       |> Enum.take(3)
       |> Enum.with_index(1)
-      |> Enum.map(&format_single_suggestion/1)
-      |> Enum.join("\n")
+      |> Enum.map_join("\n", &format_single_suggestion/1)
 
     header <> formatted
   end

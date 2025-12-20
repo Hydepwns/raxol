@@ -318,20 +318,18 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
   defp event_to_shortcut_string(_), do: ""
 
   defp execute_shortcut_callback(entry) do
-    try do
-      case entry.callback do
-        fun when is_function(fun, 0) -> fun.()
-        fun when is_function(fun, 1) -> fun.(entry)
-        {module, function, args} -> apply(module, function, args)
-        _ -> :invalid_callback
-      end
-
-      :handled
-    rescue
-      error ->
-        Log.warning("Shortcut callback error: #{inspect(error)}")
-        :callback_error
+    case entry.callback do
+      fun when is_function(fun, 0) -> fun.()
+      fun when is_function(fun, 1) -> fun.(entry)
+      {module, function, args} -> apply(module, function, args)
+      _ -> :invalid_callback
     end
+
+    :handled
+  rescue
+    error ->
+      Log.warning("Shortcut callback error: #{inspect(error)}")
+      :callback_error
   end
 
   defp filter_shortcuts_by_context(shortcuts, context) do

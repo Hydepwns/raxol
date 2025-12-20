@@ -565,13 +565,11 @@ defmodule Raxol.Core.StateManager do
 
   @impl GenServer
   def handle_call({:update, update_fun}, _from, %{state: state} = manager_state) do
-    try do
-      new_state = update_fun.(state)
-      {:reply, {:ok, new_state}, %{manager_state | state: new_state}}
-    catch
-      kind, reason ->
-        {:reply, {:error, {kind, reason}}, manager_state}
-    end
+    new_state = update_fun.(state)
+    {:reply, {:ok, new_state}, %{manager_state | state: new_state}}
+  catch
+    kind, reason ->
+      {:reply, {:error, {kind, reason}}, manager_state}
   end
 
   @impl GenServer
@@ -656,16 +654,14 @@ defmodule Raxol.Core.StateManager do
   Executes a function within a transaction.
   """
   def transaction(func, _opts \\ []) when is_function(func, 0) do
-    try do
-      result = func.()
-      {:ok, result}
-    rescue
-      error ->
-        {:error, error}
-    catch
-      kind, reason ->
-        {:error, {kind, reason}}
-    end
+    result = func.()
+    {:ok, result}
+  rescue
+    error ->
+      {:error, error}
+  catch
+    kind, reason ->
+      {:error, {kind, reason}}
   end
 
   # Placeholder implementations for functions referenced but not fully implemented

@@ -243,12 +243,10 @@ defmodule Raxol.Themes do
 
   defp convert_color_value(color) when is_binary(color) do
     # Handle hex colors, named colors, etc.
-    cond do
-      String.starts_with?(color, "#") ->
-        parse_hex_color(color)
-
-      true ->
-        String.to_atom(color)
+    if String.starts_with?(color, "#") do
+      parse_hex_color(color)
+    else
+      String.to_atom(color)
     end
   end
 

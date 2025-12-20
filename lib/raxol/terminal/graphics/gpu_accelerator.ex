@@ -481,17 +481,15 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   defp gpu_process_graphics(graphics_data, operations, _state) do
     # This would contain the actual GPU processing logic
     # For now, simulate GPU processing
-    try do
-      # Simulate GPU processing time (much faster than CPU)
-      # ~1ms per MB
-      :timer.sleep(div(byte_size(graphics_data), 1_000_000) + 1)
+    # Simulate GPU processing time (much faster than CPU)
+    # ~1ms per MB
+    :timer.sleep(div(byte_size(graphics_data), 1_000_000) + 1)
 
-      # Return processed data (in real implementation, this would be GPU-processed)
-      processed_data = simulate_gpu_operations(graphics_data, operations)
-      {:ok, processed_data}
-    rescue
-      error -> {:error, {:gpu_processing_failed, error}}
-    end
+    # Return processed data (in real implementation, this would be GPU-processed)
+    processed_data = simulate_gpu_operations(graphics_data, operations)
+    {:ok, processed_data}
+  rescue
+    error -> {:error, {:gpu_processing_failed, error}}
   end
 
   defp fallback_cpu_process(graphics_data, operations) do

@@ -685,21 +685,19 @@ if Code.ensure_loaded?(:ssh) do
     defp send_global_keepalive(_state) do
       # Send SSH_MSG_GLOBAL_REQUEST with custom keepalive type
       # This is the most efficient method and follows OpenSSH conventions
-      try do
-        # Note: Erlang SSH doesn't expose direct global request API,
-        # so we use the connection module's internal messaging
-        _ref = make_ref()
+      # Note: Erlang SSH doesn't expose direct global request API,
+      # so we use the connection module's internal messaging
+      _ref = make_ref()
 
-        # Send a harmless global request that servers should ignore
-        # Following OpenSSH's "keepalive@openssh.com" pattern
-        _request_type = "keepalive@raxol.io"
+      # Send a harmless global request that servers should ignore
+      # Following OpenSSH's "keepalive@openssh.com" pattern
+      _request_type = "keepalive@raxol.io"
 
-        # For now, we'll use a channel-based approach as Erlang SSH
-        # doesn't expose SSH_MSG_GLOBAL_REQUEST directly
-        {:error, :not_supported}
-      rescue
-        _ -> {:error, :not_supported}
-      end
+      # For now, we'll use a channel-based approach as Erlang SSH
+      # doesn't expose SSH_MSG_GLOBAL_REQUEST directly
+      {:error, :not_supported}
+    rescue
+      _ -> {:error, :not_supported}
     end
 
     defp send_channel_keepalive(state) do

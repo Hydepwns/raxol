@@ -113,29 +113,27 @@ defmodule Mix.Tasks.Raxol.Perf do
 
   defp handle_command(["profile", module_name], opts)
        when is_binary(module_name) do
-    try do
-      module = Module.concat([module_name])
+    module = Module.concat([module_name])
 
-      if Code.ensure_loaded?(module) do
-        Mix.shell().info("[PROF] Profiling module: #{module}")
+    if Code.ensure_loaded?(module) do
+      Mix.shell().info("[PROF] Profiling module: #{module}")
 
-        profile_opts = build_profile_opts(opts)
+      profile_opts = build_profile_opts(opts)
 
-        # Profile module functions
-        _result =
-          Raxol.Performance.DevProfiler.profile(profile_opts, fn ->
-            # Call some representative functions if they exist
-            profile_module_functions(module)
-          end)
+      # Profile module functions
+      _result =
+        Raxol.Performance.DevProfiler.profile(profile_opts, fn ->
+          # Call some representative functions if they exist
+          profile_module_functions(module)
+        end)
 
-        Mix.shell().info("[OK] Profiling complete")
-      else
-        Mix.shell().error("Module #{module} not found or not loaded")
-      end
-    rescue
-      ArgumentError ->
-        Mix.shell().error("Invalid module name: #{module_name}")
+      Mix.shell().info("[OK] Profiling complete")
+    else
+      Mix.shell().error("Module #{module} not found or not loaded")
     end
+  rescue
+    ArgumentError ->
+      Mix.shell().error("Invalid module name: #{module_name}")
   end
 
   defp handle_command(["profile"], _opts) do
@@ -293,25 +291,23 @@ defmodule Mix.Tasks.Raxol.Perf do
 
   defp simulate_workload do
     # Simulate typical Raxol operations for comprehensive profiling
-    try do
-      # Terminal operations
-      _ =
-        if Code.ensure_loaded?(Raxol.Terminal.Emulator) do
-          emulator = Raxol.Terminal.Emulator.new(80, 24)
-          _ = Raxol.Terminal.Emulator.process_input(emulator, "Hello, World!")
-        end
+    # Terminal operations
+    _ =
+      if Code.ensure_loaded?(Raxol.Terminal.Emulator) do
+        emulator = Raxol.Terminal.Emulator.new(80, 24)
+        _ = Raxol.Terminal.Emulator.process_input(emulator, "Hello, World!")
+      end
 
-      # Buffer operations
-      _ =
-        if Code.ensure_loaded?(Raxol.Terminal.ScreenBuffer) do
-          alias Raxol.Terminal.ScreenBuffer
-          buffer = ScreenBuffer.new(80, 24)
-          _ = ScreenBuffer.write_string(buffer, 0, 0, "Test content", nil)
-          :ok
-        end
-    catch
-      _, _ -> :ok
-    end
+    # Buffer operations
+    _ =
+      if Code.ensure_loaded?(Raxol.Terminal.ScreenBuffer) do
+        alias Raxol.Terminal.ScreenBuffer
+        buffer = ScreenBuffer.new(80, 24)
+        _ = ScreenBuffer.write_string(buffer, 0, 0, "Test content", nil)
+        :ok
+      end
+  catch
+    _, _ -> :ok
   end
 
   defp ensure_started do

@@ -171,37 +171,34 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   # Private Functions
 
   defp do_load_plugin(plugin_path, state) do
-    try do
-      compiled_modules = Code.compile_file(plugin_path)
+    compiled_modules = Code.compile_file(plugin_path)
 
-      case compiled_modules do
-        [{plugin_module, _binary} | _] ->
-          {:ok, plugin_metadata} = extract_metadata(plugin_module)
+    case compiled_modules do
+      [{plugin_module, _binary} | _] ->
+        {:ok, plugin_metadata} = extract_metadata(plugin_module)
 
-          case initialize_plugin(plugin_module, %{}) do
-            {:ok, _initial_state} ->
-              new_state = %{
-                state
-                | loaded_plugins:
-                    Map.put(state.loaded_plugins, plugin_path, plugin_module),
-                  plugin_configs:
-                    Map.put(state.plugin_configs, plugin_path, %{}),
-                  plugin_metadata:
-                    Map.put(state.plugin_metadata, plugin_path, plugin_metadata)
-              }
+        case initialize_plugin(plugin_module, %{}) do
+          {:ok, _initial_state} ->
+            new_state = %{
+              state
+              | loaded_plugins:
+                  Map.put(state.loaded_plugins, plugin_path, plugin_module),
+                plugin_configs: Map.put(state.plugin_configs, plugin_path, %{}),
+                plugin_metadata:
+                  Map.put(state.plugin_metadata, plugin_path, plugin_metadata)
+            }
 
-              {:ok, new_state}
+            {:ok, new_state}
 
-            {:error, reason} ->
-              {:error, reason}
-          end
+          {:error, reason} ->
+            {:error, reason}
+        end
 
-        [] ->
-          {:error, :no_modules_compiled}
-      end
-    rescue
-      e -> {:error, e}
+      [] ->
+        {:error, :no_modules_compiled}
     end
+  rescue
+    e -> {:error, e}
   end
 
   defp do_unload_plugin(plugin, state) do

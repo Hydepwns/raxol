@@ -262,20 +262,18 @@ defmodule Raxol.Terminal.Commands.CommandServer do
   ## Command Execution
 
   defp execute_command(emulator, handler_func, cmd_params) do
-    try do
-      handler_func.(emulator, cmd_params, %{})
-    rescue
-      error ->
-        Raxol.Core.Runtime.Log.error(
-          "Command execution failed: #{inspect(error)}"
-        )
+    handler_func.(emulator, cmd_params, %{})
+  rescue
+    error ->
+      Raxol.Core.Runtime.Log.error(
+        "Command execution failed: #{inspect(error)}"
+      )
 
-        {:error, :command_execution_failed, emulator}
-    catch
-      :throw, reason ->
-        Raxol.Core.Runtime.Log.error("Command threw: #{inspect(reason)}")
-        {:error, :command_thrown, emulator}
-    end
+      {:error, :command_execution_failed, emulator}
+  catch
+    :throw, reason ->
+      Raxol.Core.Runtime.Log.error("Command threw: #{inspect(reason)}")
+      {:error, :command_thrown, emulator}
   end
 
   ## Cursor Movement Commands

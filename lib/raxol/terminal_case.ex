@@ -126,13 +126,11 @@ defmodule Raxol.TerminalCase do
 
   defp buffer_to_text(buffer) do
     buffer.lines
-    |> Enum.map(fn line ->
+    |> Enum.map_join("\n", fn line ->
       line.cells
-      |> Enum.map(& &1.char)
-      |> Enum.join()
+      |> Enum.map_join(& &1.char)
       |> String.trim_trailing()
     end)
-    |> Enum.join("\n")
     |> String.trim()
   end
 end

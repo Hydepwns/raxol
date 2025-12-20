@@ -86,21 +86,19 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
         false
 
       {start_x, start_y, end_x, end_y} ->
-        cond do
+        if start_y == end_y do
           # Single line selection
-          start_y == end_y ->
-            y == start_y and x >= start_x and x <= end_x
-
+          y == start_y and x >= start_x and x <= end_x
+        else
           # Multi-line selection
-          true ->
-            position_in_multiline_selection?(
-              x,
-              y,
-              start_x,
-              start_y,
-              end_x,
-              end_y
-            )
+          position_in_multiline_selection?(
+            x,
+            y,
+            start_x,
+            start_y,
+            end_x,
+            end_y
+          )
         end
     end
   end
@@ -197,35 +195,33 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   end
 
   defp extract_lines_region(buffer, start_x, start_y, end_x, end_y) do
-    cond do
+    if start_y == end_y do
       # Single line selection
-      start_y == end_y ->
-        line = Core.get_line(buffer, start_y)
+      line = Core.get_line(buffer, start_y)
 
-        text =
-          line
-          |> Enum.slice(start_x..end_x)
-          |> Enum.map_join("", &cell_to_char/1)
+      text =
+        line
+        |> Enum.slice(start_x..end_x)
+        |> Enum.map_join("", &cell_to_char/1)
 
-        [text]
-
+      [text]
+    else
       # Multi-line selection
-      true ->
-        for y <- start_y..end_y do
-          line = Core.get_line(buffer, y)
+      for y <- start_y..end_y do
+        line = Core.get_line(buffer, y)
 
-          {from, to} =
-            cond do
-              y == start_y -> {start_x, buffer.width - 1}
-              y == end_y -> {0, end_x}
-              true -> {0, buffer.width - 1}
-            end
+        {from, to} =
+          cond do
+            y == start_y -> {start_x, buffer.width - 1}
+            y == end_y -> {0, end_x}
+            true -> {0, buffer.width - 1}
+          end
 
-          line
-          |> Enum.slice(from..to)
-          |> Enum.map_join("", &cell_to_char/1)
-          |> String.trim_trailing()
-        end
+        line
+        |> Enum.slice(from..to)
+        |> Enum.map_join("", &cell_to_char/1)
+        |> String.trim_trailing()
+      end
     end
   end
 

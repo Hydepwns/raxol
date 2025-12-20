@@ -445,12 +445,10 @@ defmodule Raxol.Terminal.Metrics.MetricsServer do
   defp export_prometheus do
     metrics = get_all()
 
-    metrics
-    |> Enum.map(fn {key, data} ->
+    Enum.map_join(metrics, "\n", fn {key, data} ->
       name = format_metric_name(key)
       format_prometheus_metric(name, key, data)
     end)
-    |> Enum.join("\n")
   end
 
   defp format_prometheus_metric(name, key, %{type: :counter, value: value}) do
@@ -490,11 +488,7 @@ defmodule Raxol.Terminal.Metrics.MetricsServer do
   defp format_prometheus_labels({_name}), do: ""
 
   defp format_prometheus_labels({_name, labels}) do
-    label_str =
-      labels
-      |> Enum.map(fn {k, v} -> "#{k}=\"#{v}\"" end)
-      |> Enum.join(",")
-
+    label_str = Enum.map_join(labels, ",", fn {k, v} -> "#{k}=\"#{v}\"" end)
     "{#{label_str}}"
   end
 

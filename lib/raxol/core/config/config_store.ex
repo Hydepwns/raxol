@@ -151,12 +151,13 @@ defmodule Raxol.Core.Config.Store do
   @impl GenServer
   def init(opts) do
     # Create ETS table with read_concurrency for fast reads
-    :ets.new(@table_name, [
-      :named_table,
-      :public,
-      :set,
-      read_concurrency: true
-    ])
+    _ =
+      :ets.new(@table_name, [
+        :named_table,
+        :public,
+        :set,
+        read_concurrency: true
+      ])
 
     # Initialize with defaults
     config = Config.new()
@@ -181,7 +182,7 @@ defmodule Raxol.Core.Config.Store do
     }
 
     if auto_save do
-      schedule_auto_save(interval)
+      _ = schedule_auto_save(interval)
     end
 
     {:ok, state}
@@ -242,7 +243,7 @@ defmodule Raxol.Core.Config.Store do
     end
 
     if state.auto_save do
-      schedule_auto_save(state.save_interval)
+      _ = schedule_auto_save(state.save_interval)
     end
 
     {:noreply, state}

@@ -196,16 +196,14 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec clear(t(), keyword()) :: t()
   def clear(buffer, _opts \\ []) do
-    try do
-      screen_buffer = to_screen_buffer(buffer)
+    screen_buffer = to_screen_buffer(buffer)
 
-      updated_screen_buffer =
-        Operations.clear_to_end_of_screen(screen_buffer)
+    updated_screen_buffer =
+      Operations.clear_to_end_of_screen(screen_buffer)
 
-      from_screen_buffer(updated_screen_buffer, buffer)
-    rescue
-      _ -> buffer
-    end
+    from_screen_buffer(updated_screen_buffer, buffer)
+  rescue
+    _ -> buffer
   end
 
   @doc """
@@ -251,16 +249,14 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec scroll(t(), integer()) :: t()
   def scroll(buffer, lines) when is_integer(lines) do
-    try do
-      screen_buffer = to_screen_buffer(buffer)
+    screen_buffer = to_screen_buffer(buffer)
 
-      {updated_screen_buffer, _scrolled_lines} =
-        ScreenBuffer.scroll_up(screen_buffer, abs(lines))
+    {updated_screen_buffer, _scrolled_lines} =
+      ScreenBuffer.scroll_up(screen_buffer, abs(lines))
 
-      from_screen_buffer(updated_screen_buffer, buffer)
-    rescue
-      _ -> buffer
-    end
+    from_screen_buffer(updated_screen_buffer, buffer)
+  rescue
+    _ -> buffer
   end
 
   def scroll(_buffer, nil) do
@@ -335,11 +331,9 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec add(t(), String.t()) :: t()
   def add(buffer, content) do
-    try do
-      write(buffer, content)
-    rescue
-      _ -> buffer
-    end
+    write(buffer, content)
+  rescue
+    _ -> buffer
   end
 
   @doc """

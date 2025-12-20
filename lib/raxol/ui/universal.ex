@@ -181,13 +181,11 @@ defmodule Raxol.UI.Universal do
   defp interpolate(from, to, progress)
        when is_binary(from) and is_binary(to) do
     # String and color interpolation based on progress
-    cond do
-      hex_color?(from) and hex_color?(to) ->
-        interpolate_hex_colors(from, to, progress)
-
-      true ->
-        # For non-color strings, use simple threshold-based switching
-        if progress < 0.5, do: from, else: to
+    if hex_color?(from) and hex_color?(to) do
+      interpolate_hex_colors(from, to, progress)
+    else
+      # For non-color strings, use simple threshold-based switching
+      if progress < 0.5, do: from, else: to
     end
   end
 

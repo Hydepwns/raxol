@@ -319,7 +319,7 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
     auto_collect = Keyword.get(opts, :auto_collect_system_metrics, true)
 
     if auto_collect do
-      schedule_system_metrics_collection()
+      _ = schedule_system_metrics_collection()
     end
 
     state = %{
@@ -335,7 +335,7 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
     collect_system_metrics()
 
     if state.auto_collect do
-      schedule_system_metrics_collection()
+      _ = schedule_system_metrics_collection()
     end
 
     {:noreply, state}
@@ -358,24 +358,26 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
   defp create_tables do
     # Main metrics table - ordered_set for time-ordered queries
     if :ets.whereis(@metrics_table) == :undefined do
-      :ets.new(@metrics_table, [
-        :ordered_set,
-        :public,
-        :named_table,
-        read_concurrency: true,
-        write_concurrency: true
-      ])
+      _ =
+        :ets.new(@metrics_table, [
+          :ordered_set,
+          :public,
+          :named_table,
+          read_concurrency: true,
+          write_concurrency: true
+        ])
     end
 
     # Metadata table for counters and aggregates
     if :ets.whereis(@meta_table) == :undefined do
-      :ets.new(@meta_table, [
-        :set,
-        :public,
-        :named_table,
-        read_concurrency: true,
-        write_concurrency: true
-      ])
+      _ =
+        :ets.new(@meta_table, [
+          :set,
+          :public,
+          :named_table,
+          read_concurrency: true,
+          write_concurrency: true
+        ])
     end
 
     :ok

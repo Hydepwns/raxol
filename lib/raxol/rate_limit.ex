@@ -171,13 +171,11 @@ defmodule Raxol.RateLimit do
     custom_limit = Keyword.get(opts, :limit)
     custom_window = Keyword.get(opts, :window)
 
-    cond do
-      custom_limit && custom_window ->
-        {custom_limit, custom_window}
-
-      true ->
-        Application.get_env(:raxol, {:rate_limit, action}) ||
-          Map.get(@default_limits, action, {100, 60_000})
+    if custom_limit && custom_window do
+      {custom_limit, custom_window}
+    else
+      Application.get_env(:raxol, {:rate_limit, action}) ||
+        Map.get(@default_limits, action, {100, 60_000})
     end
   end
 end

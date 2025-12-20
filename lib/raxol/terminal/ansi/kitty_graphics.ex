@@ -554,7 +554,7 @@ defmodule Raxol.Terminal.ANSI.KittyGraphics do
 
     chunks
     |> Enum.with_index()
-    |> Enum.map(fn {chunk, index} ->
+    |> Enum.map_join("", fn {chunk, index} ->
       is_last = index == total_chunks - 1
       encoded_chunk = Base.encode64(chunk)
 
@@ -566,7 +566,6 @@ defmodule Raxol.Terminal.ANSI.KittyGraphics do
 
       @kitty_start <> control <> ";" <> encoded_chunk <> @kitty_end
     end)
-    |> Enum.join()
   end
 
   defp build_control_string(image, more_data) do

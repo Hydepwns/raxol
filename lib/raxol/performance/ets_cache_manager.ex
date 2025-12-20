@@ -446,12 +446,10 @@ defmodule Raxol.Performance.ETSCacheManager do
   defp get_table_name(name), do: name
 
   defp create_table_safe(table_name, options) do
-    try do
-      :ets.new(table_name, options)
-    rescue
-      ArgumentError ->
-        # Table already exists, just return the table name
-        table_name
-    end
+    :ets.new(table_name, options)
+  rescue
+    ArgumentError ->
+      # Table already exists, just return the table name
+      table_name
   end
 end

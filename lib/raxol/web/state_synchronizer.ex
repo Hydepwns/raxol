@@ -408,35 +408,33 @@ defmodule Raxol.Web.StateSynchronizer do
   """
   @spec deserialize(binary()) :: {:ok, t()} | {:error, term()}
   def deserialize(binary) when is_binary(binary) do
-    try do
-      data = :erlang.binary_to_term(binary, [:safe])
+    data = :erlang.binary_to_term(binary, [:safe])
 
-      history =
-        Enum.map(data.history, fn op_data ->
-          %Operation{
-            id: op_data.id,
-            type: op_data.type,
-            data: op_data.data,
-            timestamp: op_data.timestamp,
-            node_id: op_data.node_id,
-            vector_clock: %VectorClock{clock: op_data.vector_clock}
-          }
-        end)
+    history =
+      Enum.map(data.history, fn op_data ->
+        %Operation{
+          id: op_data.id,
+          type: op_data.type,
+          data: op_data.data,
+          timestamp: op_data.timestamp,
+          node_id: op_data.node_id,
+          vector_clock: %VectorClock{clock: op_data.vector_clock}
+        }
+      end)
 
-      sync = %__MODULE__{
-        session_id: data.session_id,
-        node_id: data.node_id,
-        state: data.state,
-        vector_clock: %VectorClock{clock: data.vector_clock},
-        pending_ops: [],
-        history: history,
-        subscribers: []
-      }
+    sync = %__MODULE__{
+      session_id: data.session_id,
+      node_id: data.node_id,
+      state: data.state,
+      vector_clock: %VectorClock{clock: data.vector_clock},
+      pending_ops: [],
+      history: history,
+      subscribers: []
+    }
 
-      {:ok, sync}
-    rescue
-      e -> {:error, e}
-    end
+    {:ok, sync}
+  rescue
+    e -> {:error, e}
   end
 
   # ============================================================================

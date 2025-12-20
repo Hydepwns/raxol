@@ -288,15 +288,13 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
   defp get_state_from_wrapped_process(wrapped_pid) do
     # Try to get state from wrapped process
     # This assumes the wrapped process responds to :get_state
-    try do
-      GenServer.call(wrapped_pid, :get_state, 1000)
-    catch
-      :exit, {:timeout, _} ->
-        {:error, :timeout}
+    GenServer.call(wrapped_pid, :get_state, 1000)
+  catch
+    :exit, {:timeout, _} ->
+      {:error, :timeout}
 
-      :exit, reason ->
-        {:error, reason}
-    end
+    :exit, reason ->
+      {:error, reason}
   end
 
   defp capture_state_snapshot(state) do
@@ -352,45 +350,37 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
 
   defp graceful_shutdown(wrapped_pid) do
     # Try graceful shutdown first
-    try do
-      GenServer.stop(wrapped_pid, :normal, 5000)
-    catch
-      :exit, _reason ->
-        # Force kill if graceful shutdown fails
-        Process.exit(wrapped_pid, :kill)
-    end
+    GenServer.stop(wrapped_pid, :normal, 5000)
+  catch
+    :exit, _reason ->
+      # Force kill if graceful shutdown fails
+      Process.exit(wrapped_pid, :kill)
   end
 
   defp forward_call_to_wrapped(wrapped_pid, request, from) do
-    try do
-      # Forward the call and let GenServer handle the response
-      result = GenServer.call(wrapped_pid, request)
-      GenServer.reply(from, result)
-      :ok
-    catch
-      :exit, reason ->
-        {:error, reason}
-    end
+    # Forward the call and let GenServer handle the response
+    result = GenServer.call(wrapped_pid, request)
+    GenServer.reply(from, result)
+    :ok
+  catch
+    :exit, reason ->
+      {:error, reason}
   end
 
   defp forward_cast_to_wrapped(wrapped_pid, msg) do
-    try do
-      GenServer.cast(wrapped_pid, msg)
-      :ok
-    catch
-      :exit, reason ->
-        {:error, reason}
-    end
+    GenServer.cast(wrapped_pid, msg)
+    :ok
+  catch
+    :exit, reason ->
+      {:error, reason}
   end
 
   defp forward_info_to_wrapped(wrapped_pid, msg) do
-    try do
-      send(wrapped_pid, msg)
-      :ok
-    catch
-      :exit, reason ->
-        {:error, reason}
-    end
+    send(wrapped_pid, msg)
+    :ok
+  catch
+    :exit, reason ->
+      {:error, reason}
   end
 
   defp handle_wrapped_error(reason, state) do

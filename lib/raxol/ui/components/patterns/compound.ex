@@ -250,7 +250,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
                   attrs: %{
                     content:
                       case Map.get(item_context, :is_expanded) do
-                        true -> "−"
+                        true -> "-"
                         false -> "+"
                       end,
                     style: %{font_weight: :bold}

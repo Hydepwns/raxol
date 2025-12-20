@@ -120,7 +120,7 @@ defmodule Raxol.AccessibilityCase do
   """
   def announce(text) do
     current = Process.get(:screen_reader_announcements, [])
-    Process.put(:screen_reader_announcements, current ++ [text])
+    Process.put(:screen_reader_announcements, [text | current])
   end
 
   # Private helpers

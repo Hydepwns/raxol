@@ -218,14 +218,12 @@ defmodule Raxol.Core.ErrorHandling do
   @spec safe_genserver_call(GenServer.server(), any(), timeout()) ::
           result(any())
   def safe_genserver_call(server, message, timeout \\ 5000) do
-    try do
-      result = GenServer.call(server, message, timeout)
-      {:ok, result}
-    catch
-      :exit, {:noproc, _} -> {:error, :not_available}
-      :exit, {:timeout, _} -> {:error, :timeout}
-      kind, reason -> {:error, {kind, reason}}
-    end
+    result = GenServer.call(server, message, timeout)
+    {:ok, result}
+  catch
+    :exit, {:noproc, _} -> {:error, :not_available}
+    :exit, {:timeout, _} -> {:error, :timeout}
+    kind, reason -> {:error, {kind, reason}}
   end
 
   @doc """

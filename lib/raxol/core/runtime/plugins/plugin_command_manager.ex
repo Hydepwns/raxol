@@ -152,24 +152,22 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
 
   @spec execute_command(any(), list()) :: any()
   defp execute_command(command, args) do
-    try do
-      # Execute the command handler
-      case command do
-        %{handler: handler} when is_function(handler) ->
-          {:ok, handler.(args)}
+    # Execute the command handler
+    case command do
+      %{handler: handler} when is_function(handler) ->
+        {:ok, handler.(args)}
 
-        %{module: module, function: function} ->
-          {:ok, apply(module, function, [args])}
+      %{module: module, function: function} ->
+        {:ok, apply(module, function, [args])}
 
-        _ ->
-          {:error, :invalid_command_spec}
-      end
-    rescue
-      e ->
-        Log.error("Error executing command #{command.name}: #{inspect(e)}")
-
-        {:error, e}
+      _ ->
+        {:error, :invalid_command_spec}
     end
+  rescue
+    e ->
+      Log.error("Error executing command #{command.name}: #{inspect(e)}")
+
+      {:error, e}
   end
 
   @doc """

@@ -174,16 +174,14 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
   end
 
   def handle_call({:batch_operations, operations}, _from, state) do
-    try do
-      new_state =
-        Enum.reduce(operations, state, fn operation, acc ->
-          apply_operation(operation, acc)
-        end)
+    new_state =
+      Enum.reduce(operations, state, fn operation, acc ->
+        apply_operation(operation, acc)
+      end)
 
-      {:reply, :ok, new_state}
-    catch
-      :error, reason -> {:reply, {:error, reason}, state}
-    end
+    {:reply, :ok, new_state}
+  catch
+    :error, reason -> {:reply, {:error, reason}, state}
   end
 
   def handle_call({:atomic_operation, _fun}, _from, state) do

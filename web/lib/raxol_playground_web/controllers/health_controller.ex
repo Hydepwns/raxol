@@ -19,14 +19,12 @@ defmodule RaxolPlaygroundWeb.HealthController do
   end
 
   defp check_raxol_core do
-    try do
-      case Application.get_application(Raxol) do
-        nil -> "not_loaded"
-        _app -> "ok"
-      end
-    rescue
-      _ -> "error"
+    case Application.get_application(Raxol) do
+      nil -> "not_loaded"
+      _app -> "ok"
     end
+  rescue
+    _ -> "error"
   end
 
   defp check_memory do

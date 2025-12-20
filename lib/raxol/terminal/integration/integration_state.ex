@@ -120,28 +120,26 @@ defmodule Raxol.Terminal.Integration.State do
   """
   def update(%__MODULE__{} = state, content) when is_binary(content) do
     # Process content through IO system
-    try do
-      case IOServer.process_output(content) do
-        {:ok, _commands} ->
-          # Only update if buffer_manager is a PID
-          case state.buffer_manager do
-            nil ->
-              %{state | buffer: content}
+    case IOServer.process_output(content) do
+      {:ok, _commands} ->
+        # Only update if buffer_manager is a PID
+        case state.buffer_manager do
+          nil ->
+            %{state | buffer: content}
 
-            _buffer_manager ->
-              # For testing purposes, also update the buffer field even with buffer_manager
-              %{state | buffer: content}
-          end
+          _buffer_manager ->
+            # For testing purposes, also update the buffer field even with buffer_manager
+            %{state | buffer: content}
+        end
 
-        {:error, _} ->
-          # If IO processing fails, still update the buffer for testing
-          %{state | buffer: content}
-      end
-    rescue
-      # If IOServer GenServer is not running, fallback to direct buffer update
-      _ ->
+      {:error, _} ->
+        # If IO processing fails, still update the buffer for testing
         %{state | buffer: content}
     end
+  rescue
+    # If IOServer GenServer is not running, fallback to direct buffer update
+    _ ->
+      %{state | buffer: content}
   end
 
   def update(%__MODULE__{} = state, nil) do

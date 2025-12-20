@@ -221,11 +221,9 @@ defmodule Raxol.Terminal.ANSI.KittyParser do
   def decompress(data, :none), do: {:ok, data}
 
   def decompress(data, :zlib) do
-    try do
-      {:ok, :zlib.uncompress(data)}
-    rescue
-      e -> {:error, {:decompression_failed, e}}
-    end
+    {:ok, :zlib.uncompress(data)}
+  rescue
+    e -> {:error, {:decompression_failed, e}}
   end
 
   @doc """

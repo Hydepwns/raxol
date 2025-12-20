@@ -152,12 +152,10 @@ defmodule Raxol.Command.Parser do
   # Tokenization
 
   defp tokenize(command_str) do
-    try do
-      tokens = do_tokenize(command_str, "", [], false)
-      {:ok, tokens}
-    rescue
-      e -> {:error, "Tokenization failed: #{Exception.message(e)}"}
-    end
+    tokens = do_tokenize(command_str, "", [], false)
+    {:ok, tokens}
+  rescue
+    e -> {:error, "Tokenization failed: #{Exception.message(e)}"}
   end
 
   defp do_tokenize("", "", acc, _in_quotes), do: Enum.reverse(acc)

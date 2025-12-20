@@ -117,9 +117,7 @@ defmodule Raxol.ComponentCase do
   end
 
   defp extract_text(%{children: children}) when is_list(children) do
-    children
-    |> Enum.map(&extract_text/1)
-    |> Enum.join()
+    Enum.map_join(children, &extract_text/1)
   end
 
   defp extract_text(%{type: :text, value: value}), do: value

@@ -95,8 +95,7 @@ defmodule Raxol.Query do
     placeholders =
       values
       |> Enum.with_index(1)
-      |> Enum.map(fn {_v, i} -> "$#{i}" end)
-      |> Enum.join(", ")
+      |> Enum.map_join(", ", fn {_v, i} -> "$#{i}" end)
 
     {:ok, placeholders, values}
   end

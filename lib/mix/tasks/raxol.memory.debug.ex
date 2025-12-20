@@ -325,26 +325,24 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
   end
 
   defp get_ets_table_info(table) do
-    try do
-      info = :ets.info(table)
+    info = :ets.info(table)
 
-      case info do
-        :undefined ->
-          nil
+    case info do
+      :undefined ->
+        nil
 
-        _ ->
-          %{
-            table: table,
-            name: info[:name],
-            size: info[:size],
-            memory: info[:memory] * :erlang.system_info(:wordsize),
-            type: info[:type],
-            owner: info[:owner]
-          }
-      end
-    rescue
-      _ -> nil
+      _ ->
+        %{
+          table: table,
+          name: info[:name],
+          size: info[:size],
+          memory: info[:memory] * :erlang.system_info(:wordsize),
+          type: info[:type],
+          owner: info[:owner]
+        }
     end
+  rescue
+    _ -> nil
   end
 
   defp analyze_binary_usage do

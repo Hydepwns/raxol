@@ -51,19 +51,17 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   """
   def register_handler(event_type, handler) do
     # Check if the handler implements the protocol
-    try do
-      if EventHandler.can_handle?(handler, %{type: event_type}) do
-        # Register handler using the EventManager API
-        # EventManager.register_handler expects (event_type, pid, handler_function)
-        # but we need to verify the correct arity first
-        {:ok, :registered}
-      else
-        {:error, :handler_cannot_handle_event}
-      end
-    rescue
-      Protocol.UndefinedError ->
-        {:error, :handler_does_not_implement_protocol}
+    if EventHandler.can_handle?(handler, %{type: event_type}) do
+      # Register handler using the EventManager API
+      # EventManager.register_handler expects (event_type, pid, handler_function)
+      # but we need to verify the correct arity first
+      {:ok, :registered}
+    else
+      {:error, :handler_cannot_handle_event}
     end
+  rescue
+    Protocol.UndefinedError ->
+      {:error, :handler_does_not_implement_protocol}
   end
 
   @doc """

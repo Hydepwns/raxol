@@ -122,46 +122,42 @@ defmodule Raxol.Core.ErrorReporter do
 
   @impl true
   def handle_call({:generate_report, error, context, opts}, _from, state) do
-    try do
-      report_config = merge_config(state.config, opts)
-      report = build_error_report(error, context, report_config, state)
+    report_config = merge_config(state.config, opts)
+    report = build_error_report(error, context, report_config, state)
 
-      if report_config.auto_persist do
-        persist_report(report, state)
-      end
-
-      new_state = %{
-        state
-        | error_count: state.error_count + 1,
-          last_report_time: DateTime.utc_now()
-      }
-
-      {:reply, {:ok, report}, new_state}
-    rescue
-      exception ->
-        Log.error("Failed to generate error report: #{inspect(exception)}")
-
-        {:reply, {:error, exception}, state}
+    if report_config.auto_persist do
+      persist_report(report, state)
     end
+
+    new_state = %{
+      state
+      | error_count: state.error_count + 1,
+        last_report_time: DateTime.utc_now()
+    }
+
+    {:reply, {:ok, report}, new_state}
+  rescue
+    exception ->
+      Log.error("Failed to generate error report: #{inspect(exception)}")
+
+      {:reply, {:error, exception}, state}
   end
 
   @impl true
   def handle_call({:generate_session_report, opts}, _from, state) do
-    try do
-      report_config = merge_config(state.config, opts)
-      report = build_session_report(report_config, state)
+    report_config = merge_config(state.config, opts)
+    report = build_session_report(report_config, state)
 
-      if report_config.auto_persist do
-        persist_session_report(report, state)
-      end
-
-      {:reply, {:ok, report}, state}
-    rescue
-      exception ->
-        Log.error("Failed to generate session report: #{inspect(exception)}")
-
-        {:reply, {:error, exception}, state}
+    if report_config.auto_persist do
+      persist_session_report(report, state)
     end
+
+    {:reply, {:ok, report}, state}
+  rescue
+    exception ->
+      Log.error("Failed to generate session report: #{inspect(exception)}")
+
+      {:reply, {:error, exception}, state}
   end
 
   @impl true
@@ -213,14 +209,12 @@ defmodule Raxol.Core.ErrorReporter do
 
   @impl true
   def handle_call({:export_reports, export_opts}, _from, state) do
-    try do
-      export_result = export_reports_to_formats(export_opts, state)
-      {:reply, {:ok, export_result}, state}
-    rescue
-      exception ->
-        Log.error("Failed to export reports: #{inspect(exception)}")
-        {:reply, {:error, exception}, state}
-    end
+    export_result = export_reports_to_formats(export_opts, state)
+    {:reply, {:ok, export_result}, state}
+  rescue
+    exception ->
+      Log.error("Failed to export reports: #{inspect(exception)}")
+      {:reply, {:error, exception}, state}
   end
 
   @impl true

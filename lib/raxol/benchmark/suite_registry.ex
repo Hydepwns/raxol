@@ -206,21 +206,19 @@ defmodule Raxol.Benchmark.SuiteRegistry do
   end
 
   defp extract_suite_info(module) do
-    try do
-      suites = module.list_suites()
+    suites = module.list_suites()
 
-      suite_info = %{
-        module: module,
-        name: module |> Module.split() |> List.last(),
-        scenarios: extract_scenarios(suites),
-        tags: extract_tags(suites),
-        registered_at: DateTime.utc_now()
-      }
+    suite_info = %{
+      module: module,
+      name: module |> Module.split() |> List.last(),
+      scenarios: extract_scenarios(suites),
+      tags: extract_tags(suites),
+      registered_at: DateTime.utc_now()
+    }
 
-      {:ok, suite_info}
-    rescue
-      _ -> {:error, :extraction_failed}
-    end
+    {:ok, suite_info}
+  rescue
+    _ -> {:error, :extraction_failed}
   end
 
   defp extract_scenarios(suites) do

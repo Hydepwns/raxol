@@ -13,17 +13,15 @@ defmodule Raxol.Terminal.ScreenUpdater do
   """
   @spec update_screen(ScreenBuffer.t(), map()) :: :ok | {:error, term()}
   def update_screen(buffer, options \\ %{}) do
-    try do
-      # Prepare the update
-      updates = prepare_updates(buffer, options)
+    # Prepare the update
+    updates = prepare_updates(buffer, options)
 
-      # Apply updates to the screen
-      apply_updates(updates, options)
+    # Apply updates to the screen
+    apply_updates(updates, options)
 
-      :ok
-    rescue
-      error -> {:error, error}
-    end
+    :ok
+  rescue
+    error -> {:error, error}
   end
 
   @doc """
@@ -32,20 +30,18 @@ defmodule Raxol.Terminal.ScreenUpdater do
   @spec batch_update_screen(list(ScreenBuffer.t()), map()) ::
           :ok | {:error, term()}
   def batch_update_screen(buffers, options \\ %{}) when is_list(buffers) do
-    try do
-      # Collect all updates
-      all_updates =
-        buffers
-        |> Enum.map(&prepare_updates(&1, options))
-        |> merge_updates()
+    # Collect all updates
+    all_updates =
+      buffers
+      |> Enum.map(&prepare_updates(&1, options))
+      |> merge_updates()
 
-      # Apply all updates at once
-      apply_updates(all_updates, options)
+    # Apply all updates at once
+    apply_updates(all_updates, options)
 
-      :ok
-    rescue
-      error -> {:error, error}
-    end
+    :ok
+  rescue
+    error -> {:error, error}
   end
 
   @doc """

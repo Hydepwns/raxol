@@ -239,14 +239,12 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
   end
 
   defp encode_image_data(data) do
-    try do
-      # No padding
-      encoded = Base.encode64(data)
-      {:ok, encoded}
-    rescue
-      error ->
-        {:error, {:base64_encoding_error, error}}
-    end
+    # No padding
+    encoded = Base.encode64(data)
+    {:ok, encoded}
+  rescue
+    error ->
+      {:error, {:base64_encoding_error, error}}
   end
 
   defp build_arguments(options) do

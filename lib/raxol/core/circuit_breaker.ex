@@ -313,22 +313,20 @@ defmodule Raxol.Core.CircuitBreaker do
   end
 
   defp execute_function(fun) do
-    try do
-      result = fun.()
-      {:ok, result}
-    rescue
-      error ->
-        Log.warning("Circuit breaker caught error: #{inspect(error)}")
-        {:error, error}
-    catch
-      :exit, reason ->
-        Log.warning("Circuit breaker caught exit: #{inspect(reason)}")
-        {:error, {:exit, reason}}
+    result = fun.()
+    {:ok, result}
+  rescue
+    error ->
+      Log.warning("Circuit breaker caught error: #{inspect(error)}")
+      {:error, error}
+  catch
+    :exit, reason ->
+      Log.warning("Circuit breaker caught exit: #{inspect(reason)}")
+      {:error, {:exit, reason}}
 
-      kind, reason ->
-        Log.warning("Circuit breaker caught #{kind}: #{inspect(reason)}")
-        {:error, {kind, reason}}
-    end
+    kind, reason ->
+      Log.warning("Circuit breaker caught #{kind}: #{inspect(reason)}")
+      {:error, {kind, reason}}
   end
 
   defp should_open_circuit?(state) do

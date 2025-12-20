@@ -23,53 +23,51 @@ defmodule StateManager do
   @spec initialize_plugin_state(plugin_module(), plugin_config()) ::
           {:ok, plugin_state()}
   def initialize_plugin_state(plugin_module, config) do
-    try do
-      # Generate plugin ID from module name
-      plugin_id = generate_plugin_id(plugin_module)
+    # Generate plugin ID from module name
+    plugin_id = generate_plugin_id(plugin_module)
 
-      # Initialize state based on plugin type and config
-      initial_state =
-        case {has_init_callback?(plugin_module), config} do
-          {true, _} ->
-            # Plugin has custom initialization
-            apply(plugin_module, :init_state, [config])
+    # Initialize state based on plugin type and config
+    initial_state =
+      case {has_init_callback?(plugin_module), config} do
+        {true, _} ->
+          # Plugin has custom initialization
+          apply(plugin_module, :init_state, [config])
 
-          {false, config} when map_size(config) > 0 ->
-            # Use config as initial state
-            config
+        {false, config} when map_size(config) > 0 ->
+          # Use config as initial state
+          config
 
-          _ ->
-            # Default empty state
-            %{}
-        end
+        _ ->
+          # Default empty state
+          %{}
+      end
 
-      # Store in unified state manager
-      state_key = [:plugins, :states, plugin_id]
-      _ = StateManager.set_state(state_key, initial_state)
+    # Store in unified state manager
+    state_key = [:plugins, :states, plugin_id]
+    _ = StateManager.set_state(state_key, initial_state)
 
-      # Track plugin metadata
-      metadata_key = [:plugins, :metadata, plugin_id]
+    # Track plugin metadata
+    metadata_key = [:plugins, :metadata, plugin_id]
 
-      metadata = %{
-        module: plugin_module,
-        initialized_at: :os.system_time(:millisecond),
-        config: config,
-        status: :initialized
-      }
+    metadata = %{
+      module: plugin_module,
+      initialized_at: :os.system_time(:millisecond),
+      config: config,
+      status: :initialized
+    }
 
-      _ = StateManager.set_state(metadata_key, metadata)
+    _ = StateManager.set_state(metadata_key, metadata)
 
-      Log.info("Initialized state for plugin #{plugin_id} (#{plugin_module})")
+    Log.info("Initialized state for plugin #{plugin_id} (#{plugin_module})")
 
-      {:ok, initial_state}
-    rescue
-      error ->
-        Log.error(
-          "Failed to initialize plugin state for #{plugin_module}: #{inspect(error)}"
-        )
+    {:ok, initial_state}
+  rescue
+    error ->
+      Log.error(
+        "Failed to initialize plugin state for #{plugin_module}: #{inspect(error)}"
+      )
 
-        {:error, error}
-    end
+      {:error, error}
   end
 
   @doc """
@@ -81,54 +79,52 @@ defmodule StateManager do
   @spec update_plugin_state_legacy(plugin_id(), plugin_state(), plugin_config()) ::
           {:ok, plugin_state()}
   def update_plugin_state_legacy(plugin_id, state, config) do
-    try do
-      # Update state in unified state manager
-      state_key = [:plugins, :states, plugin_id]
+    # Update state in unified state manager
+    state_key = [:plugins, :states, plugin_id]
 
-      # Merge new state with existing state
-      updated_state =
-        case StateManager.get_state(state_key) do
+    # Merge new state with existing state
+    updated_state =
+      case StateManager.get_state(state_key) do
+        nil ->
+          state
+
+        existing_state when is_map(existing_state) and is_map(state) ->
+          Map.merge(existing_state, state)
+
+        _existing_state ->
+          # Replace entirely if types don't match
+          state
+      end
+
+    _ = StateManager.set_state(state_key, updated_state)
+
+    # Update metadata
+    metadata_key = [:plugins, :metadata, plugin_id]
+
+    _ =
+      StateManager.update_state(metadata_key, fn metadata ->
+        case metadata do
           nil ->
-            state
+            %{updated_at: :os.system_time(:millisecond), config: config}
 
-          existing_state when is_map(existing_state) and is_map(state) ->
-            Map.merge(existing_state, state)
-
-          _existing_state ->
-            # Replace entirely if types don't match
-            state
+          existing ->
+            Map.merge(existing, %{
+              updated_at: :os.system_time(:millisecond),
+              config: config,
+              status: :updated
+            })
         end
+      end)
 
-      _ = StateManager.set_state(state_key, updated_state)
+    Log.debug("Updated legacy state for plugin #{plugin_id}")
+    {:ok, updated_state}
+  rescue
+    error ->
+      Log.error(
+        "Failed to update legacy plugin state for #{plugin_id}: #{inspect(error)}"
+      )
 
-      # Update metadata
-      metadata_key = [:plugins, :metadata, plugin_id]
-
-      _ =
-        StateManager.update_state(metadata_key, fn metadata ->
-          case metadata do
-            nil ->
-              %{updated_at: :os.system_time(:millisecond), config: config}
-
-            existing ->
-              Map.merge(existing, %{
-                updated_at: :os.system_time(:millisecond),
-                config: config,
-                status: :updated
-              })
-          end
-        end)
-
-      Log.debug("Updated legacy state for plugin #{plugin_id}")
-      {:ok, updated_state}
-    rescue
-      error ->
-        Log.error(
-          "Failed to update legacy plugin state for #{plugin_id}: #{inspect(error)}"
-        )
-
-        {:error, error}
-    end
+      {:error, error}
   end
 
   @doc """
@@ -162,35 +158,33 @@ defmodule StateManager do
   def update_plugin_state(plugin_id, update_fn) do
     state_key = [:plugins, :states, plugin_id]
 
-    try do
-      _ =
-        StateManager.update_state(state_key, fn current_state ->
-          update_fn.(current_state || %{})
-        end)
+    _ =
+      StateManager.update_state(state_key, fn current_state ->
+        update_fn.(current_state || %{})
+      end)
 
-      # Update metadata timestamp
-      metadata_key = [:plugins, :metadata, plugin_id]
+    # Update metadata timestamp
+    metadata_key = [:plugins, :metadata, plugin_id]
 
-      _ =
-        StateManager.update_state(metadata_key, fn metadata ->
-          case metadata do
-            nil ->
-              %{updated_at: :os.system_time(:millisecond)}
+    _ =
+      StateManager.update_state(metadata_key, fn metadata ->
+        case metadata do
+          nil ->
+            %{updated_at: :os.system_time(:millisecond)}
 
-            existing ->
-              Map.put(existing, :updated_at, :os.system_time(:millisecond))
-          end
-        end)
+          existing ->
+            Map.put(existing, :updated_at, :os.system_time(:millisecond))
+        end
+      end)
 
-      {:ok, StateManager.get_state(state_key)}
-    rescue
-      error ->
-        Log.error(
-          "Failed to update plugin state for #{plugin_id}: #{inspect(error)}"
-        )
+    {:ok, StateManager.get_state(state_key)}
+  rescue
+    error ->
+      Log.error(
+        "Failed to update plugin state for #{plugin_id}: #{inspect(error)}"
+      )
 
-        {:error, error}
-    end
+      {:error, error}
   end
 
   @doc """
@@ -269,12 +263,10 @@ defmodule StateManager do
 
   @spec has_init_callback?(module()) :: boolean()
   defp has_init_callback?(plugin_module) do
-    try do
-      plugin_module.module_info(:exports)
-      |> Keyword.has_key?(:init_state)
-    rescue
-      _ -> false
-    end
+    plugin_module.module_info(:exports)
+    |> Keyword.has_key?(:init_state)
+  rescue
+    _ -> false
   end
 end
 

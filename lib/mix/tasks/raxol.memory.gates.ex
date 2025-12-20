@@ -98,20 +98,18 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
       "Time: #{config.time}s, Memory Time: #{config.memory_time}s"
     )
 
-    try do
-      results = run_memory_gates(config)
-      exit_code = evaluate_results(results, config)
+    results = run_memory_gates(config)
+    exit_code = evaluate_results(results, config)
 
-      if config.output do
-        save_results(results, config.output)
-      end
-
-      System.halt(exit_code)
-    rescue
-      error ->
-        Mix.shell().error("Memory gates execution failed: #{inspect(error)}")
-        System.halt(2)
+    if config.output do
+      save_results(results, config.output)
     end
+
+    System.halt(exit_code)
+  rescue
+    error ->
+      Mix.shell().error("Memory gates execution failed: #{inspect(error)}")
+      System.halt(2)
   end
 
   defp build_config(opts) do
@@ -208,17 +206,15 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
       "/tmp/memory_analysis_#{scenario}.json"
     ]
 
-    try do
-      Mix.Tasks.Raxol.Bench.MemoryAnalysis.run(analysis_args)
+    Mix.Tasks.Raxol.Bench.MemoryAnalysis.run(analysis_args)
 
-      # Read the results
-      case File.read("/tmp/memory_analysis_#{scenario}.json") do
-        {:ok, content} -> Jason.decode!(content)
-        {:error, _} -> %{}
-      end
-    rescue
-      _ -> %{}
+    # Read the results
+    case File.read("/tmp/memory_analysis_#{scenario}.json") do
+      {:ok, content} -> Jason.decode!(content)
+      {:error, _} -> %{}
     end
+  rescue
+    _ -> %{}
   end
 
   defp run_memory_benchmark(scenario, config) do

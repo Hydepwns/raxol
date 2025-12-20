@@ -182,19 +182,15 @@ defmodule Raxol.Auth do
   end
 
   defp get_session(token) do
-    try do
-      :persistent_term.get({__MODULE__, token})
-    rescue
-      ArgumentError -> nil
-    end
+    :persistent_term.get({__MODULE__, token})
+  rescue
+    ArgumentError -> nil
   end
 
   defp delete_session(token) do
-    try do
-      :persistent_term.erase({__MODULE__, token})
-    rescue
-      ArgumentError -> :ok
-    end
+    :persistent_term.erase({__MODULE__, token})
+  rescue
+    ArgumentError -> :ok
   end
 
   defp generate_totp_uri(user, secret) do

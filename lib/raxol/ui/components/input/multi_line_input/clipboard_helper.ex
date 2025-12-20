@@ -72,32 +72,30 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
 
     lines = state.lines || []
 
-    cond do
-      start_row == end_row ->
-        # Single line selection
-        line = Enum.at(lines, start_row, "")
-        String.slice(line, start_col, end_col - start_col)
+    if start_row == end_row do
+      # Single line selection
+      line = Enum.at(lines, start_row, "")
+      String.slice(line, start_col, end_col - start_col)
+    else
+      # Multi-line selection
+      selected_lines =
+        lines
+        |> Enum.slice(start_row..end_row)
+        |> Enum.with_index(start_row)
+        |> Enum.map(fn {line, idx} ->
+          cond do
+            idx == start_row ->
+              String.slice(line, start_col..-1//1)
 
-      true ->
-        # Multi-line selection
-        selected_lines =
-          lines
-          |> Enum.slice(start_row..end_row)
-          |> Enum.with_index(start_row)
-          |> Enum.map(fn {line, idx} ->
-            cond do
-              idx == start_row ->
-                String.slice(line, start_col..-1//1)
+            idx == end_row ->
+              String.slice(line, 0, end_col)
 
-              idx == end_row ->
-                String.slice(line, 0, end_col)
+            true ->
+              line
+          end
+        end)
 
-              true ->
-                line
-            end
-          end)
-
-        Enum.join(selected_lines, "\n")
+      Enum.join(selected_lines, "\n")
     end
   end
 

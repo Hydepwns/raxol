@@ -347,35 +347,33 @@ defmodule Mix.Tasks.Raxol.Mutation do
 
   defp run_tests do
     # Simplified test runner
-    try do
-      {output, exit_code} =
-        System.cmd(
-          "mix",
-          [
-            "test",
-            "--exclude",
-            "slow",
-            "--exclude",
-            "integration",
-            "--exclude",
-            "docker"
-          ],
-          env: [
-            {"SKIP_TERMBOX2_TESTS", "true"},
-            {"TMPDIR", "/tmp"},
-            {"MIX_ENV", "test"}
-          ],
-          stderr_to_stdout: true
-        )
+    {output, exit_code} =
+      System.cmd(
+        "mix",
+        [
+          "test",
+          "--exclude",
+          "slow",
+          "--exclude",
+          "integration",
+          "--exclude",
+          "docker"
+        ],
+        env: [
+          {"SKIP_TERMBOX2_TESTS", "true"},
+          {"TMPDIR", "/tmp"},
+          {"MIX_ENV", "test"}
+        ],
+        stderr_to_stdout: true
+      )
 
-      # Parse basic results from output
-      tests = extract_test_count(output)
-      failures = determine_failure_count(exit_code, output)
+    # Parse basic results from output
+    tests = extract_test_count(output)
+    failures = determine_failure_count(exit_code, output)
 
-      %{tests: tests, failures: failures, errors: 0, exit_code: exit_code}
-    rescue
-      _ -> %{tests: 0, failures: 1, errors: 1, exit_code: 1}
-    end
+    %{tests: tests, failures: failures, errors: 0, exit_code: exit_code}
+  rescue
+    _ -> %{tests: 0, failures: 1, errors: 1, exit_code: 1}
   end
 
   defp determine_failure_count(0, _output), do: 0

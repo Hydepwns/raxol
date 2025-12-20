@@ -367,35 +367,33 @@ defmodule Raxol.Application do
   # Supervisor Starting with Error Handling
 
   defp start_supervisor(children, opts) do
-    try do
-      case Supervisor.start_link(children, opts) do
-        {:ok, pid} = success ->
-          Log.info(
-            "[Raxol.Application] Supervisor started successfully: #{inspect(pid)}"
-          )
+    case Supervisor.start_link(children, opts) do
+      {:ok, pid} = success ->
+        Log.info(
+          "[Raxol.Application] Supervisor started successfully: #{inspect(pid)}"
+        )
 
-          success
+        success
 
-        {:error, {:shutdown, {:failed_to_start_child, child, reason}}} = error ->
-          handle_child_start_failure(child, reason)
-          error
+      {:error, {:shutdown, {:failed_to_start_child, child, reason}}} = error ->
+        handle_child_start_failure(child, reason)
+        error
 
-        {:error, reason} = error ->
-          Log.error(
-            "[Raxol.Application] Failed to start supervisor: #{inspect(reason)}"
-          )
+      {:error, reason} = error ->
+        Log.error(
+          "[Raxol.Application] Failed to start supervisor: #{inspect(reason)}"
+        )
 
-          error
-      end
-    rescue
-      exception ->
-        Log.error("""
-        [Raxol.Application] Exception during startup:
-        #{Exception.format(:error, exception, __STACKTRACE__)}
-        """)
-
-        {:error, exception}
+        error
     end
+  rescue
+    exception ->
+      Log.error("""
+      [Raxol.Application] Exception during startup:
+      #{Exception.format(:error, exception, __STACKTRACE__)}
+      """)
+
+      {:error, exception}
   end
 
   defp handle_child_start_failure(child, reason) do

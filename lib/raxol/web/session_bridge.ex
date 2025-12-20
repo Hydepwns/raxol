@@ -168,11 +168,9 @@ defmodule Raxol.Web.SessionBridge do
   """
   @spec deserialize_terminal_state(binary()) :: {:ok, map()} | {:error, term()}
   def deserialize_terminal_state(binary) when is_binary(binary) do
-    try do
-      {:ok, :erlang.binary_to_term(binary, [:safe])}
-    rescue
-      ArgumentError -> {:error, :invalid_binary}
-    end
+    {:ok, :erlang.binary_to_term(binary, [:safe])}
+  rescue
+    ArgumentError -> {:error, :invalid_binary}
   end
 
   @doc """

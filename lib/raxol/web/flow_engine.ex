@@ -278,16 +278,14 @@ defmodule Raxol.Web.FlowEngine do
   """
   @spec execute_step(step_fn(), context()) :: step_result()
   def execute_step(step_fn, ctx) when is_function(step_fn, 1) do
-    try do
-      case step_fn.(ctx) do
-        {:ok, new_ctx} when is_map(new_ctx) -> {:ok, new_ctx}
-        {:error, _} = error -> error
-        {:halt, _} = halt -> halt
-        other -> {:error, {:invalid_step_result, other}}
-      end
-    rescue
-      e -> {:error, {:step_exception, e}}
+    case step_fn.(ctx) do
+      {:ok, new_ctx} when is_map(new_ctx) -> {:ok, new_ctx}
+      {:error, _} = error -> error
+      {:halt, _} = halt -> halt
+      other -> {:error, {:invalid_step_result, other}}
     end
+  rescue
+    e -> {:error, {:step_exception, e}}
   end
 
   @doc """

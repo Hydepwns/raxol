@@ -129,21 +129,19 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
       buffer.cells
       |> Enum.with_index()
       |> Enum.map(fn {row, row_idx} ->
-        cond do
-          row_idx < y or row_idx >= y + height ->
-            row
-
-          true ->
-            # Clear columns x to x+width-1 in this row
-            row
-            |> Enum.with_index()
-            |> Enum.map(fn {cell, col_idx} ->
-              if col_idx >= x and col_idx < x + width do
-                empty_cell
-              else
-                cell
-              end
-            end)
+        if row_idx < y or row_idx >= y + height do
+          row
+        else
+          # Clear columns x to x+width-1 in this row
+          row
+          |> Enum.with_index()
+          |> Enum.map(fn {cell, col_idx} ->
+            if col_idx >= x and col_idx < x + width do
+              empty_cell
+            else
+              cell
+            end
+          end)
         end
       end)
 

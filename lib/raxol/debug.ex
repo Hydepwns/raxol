@@ -68,11 +68,9 @@ defmodule Raxol.Debug do
   """
   @spec get_debug_level() :: debug_level()
   def get_debug_level do
-    try do
-      GenServer.call(__MODULE__, :get_level)
-    catch
-      :exit, _ -> :off
-    end
+    GenServer.call(__MODULE__, :get_level)
+  catch
+    :exit, _ -> :off
   end
 
   @doc """

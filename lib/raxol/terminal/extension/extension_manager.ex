@@ -396,12 +396,10 @@ defmodule Raxol.Terminal.Extension.ExtensionManager do
 
   defp execute_handler(_manager, _ext_id, handler, data)
        when is_function(handler, 1) do
-    try do
-      result = handler.(data)
-      {:ok, result}
-    rescue
-      e -> {:error, {:handler_error, e}}
-    end
+    result = handler.(data)
+    {:ok, result}
+  rescue
+    e -> {:error, {:handler_error, e}}
   end
 
   defp execute_handler(_manager, _ext_id, _handler, _data) do

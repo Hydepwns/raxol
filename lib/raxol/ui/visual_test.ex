@@ -177,14 +177,17 @@ defmodule Raxol.UI.VisualTest do
 
       diff_lines =
         comparison.differences
-        |> Enum.map(fn %{line: line, expected: expected, actual: actual} ->
+        |> Enum.map_join("\n", fn %{
+                                    line: line,
+                                    expected: expected,
+                                    actual: actual
+                                  } ->
           """
           Line #{line}:
             Expected: #{inspect(expected)}
             Actual:   #{inspect(actual)}
           """
         end)
-        |> Enum.join("\n")
 
       header <> diff_lines
     end

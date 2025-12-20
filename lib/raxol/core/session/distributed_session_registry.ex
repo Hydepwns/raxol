@@ -766,12 +766,10 @@ defmodule Raxol.Core.Session.DistributedSessionRegistry do
   end
 
   defp call_remote_node(node_id, function, args) do
-    try do
-      :rpc.call(node_id, __MODULE__, function, args, 5000)
-    catch
-      :exit, {:timeout, _} -> {:error, :timeout}
-      :exit, reason -> {:error, reason}
-    end
+    :rpc.call(node_id, __MODULE__, function, args, 5000)
+  catch
+    :exit, {:timeout, _} -> {:error, :timeout}
+    :exit, reason -> {:error, reason}
   end
 
   defp send_to_node(node_id, message) do

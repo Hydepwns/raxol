@@ -315,11 +315,9 @@ defmodule Raxol.Terminal.Emulator do
   # Screen operations
   @doc "Clears the entire screen."
   def clear_screen(emulator) do
-    try do
-      Raxol.Terminal.Operations.ScreenOperations.clear_screen(emulator)
-    rescue
-      _ -> emulator
-    end
+    Raxol.Terminal.Operations.ScreenOperations.clear_screen(emulator)
+  rescue
+    _ -> emulator
   end
 
   @doc "Clears the specified line."
@@ -423,11 +421,9 @@ defmodule Raxol.Terminal.Emulator do
   # Scroll operations
   @doc "Scrolls the display up by the specified number of lines."
   def scroll_up(emulator, lines) do
-    try do
-      Raxol.Terminal.Operations.ScrollOperations.scroll_up(emulator, lines)
-    rescue
-      _ -> emulator
-    end
+    Raxol.Terminal.Operations.ScrollOperations.scroll_up(emulator, lines)
+  rescue
+    _ -> emulator
   end
 
   @doc "Scrolls the display down by the specified number of lines."
@@ -471,11 +467,9 @@ defmodule Raxol.Terminal.Emulator do
 
   @doc "Writes data to the output buffer."
   def write_to_output(emulator, data) do
-    try do
-      Raxol.Terminal.Emulator.BufferOperations.write_to_output(emulator, data)
-    rescue
-      _ -> emulator
-    end
+    Raxol.Terminal.Emulator.BufferOperations.write_to_output(emulator, data)
+  rescue
+    _ -> emulator
   end
 
   # Dimension and property operations
@@ -586,12 +580,10 @@ defmodule Raxol.Terminal.Emulator do
   @doc "Creates a new terminal emulator with session ID and client options."
   @impl Raxol.Terminal.EmulatorBehaviour
   def new(width, height, session_id, client_options) do
-    try do
-      opts = [session_id: session_id, client_options: client_options]
-      {:ok, new(width, height, opts)}
-    rescue
-      error -> {:error, error}
-    end
+    opts = [session_id: session_id, client_options: client_options]
+    {:ok, new(width, height, opts)}
+  rescue
+    error -> {:error, error}
   end
 
   # Deprecated - kept for backward compatibility but delegates to new/3
@@ -903,17 +895,15 @@ defmodule Raxol.Terminal.Emulator do
   defp create_full_emulator(width, height, opts) do
     # This creates an emulator with full GenServer processes
     # Uses the Coordinator which starts all the GenServers
-    try do
-      Coordinator.new(width, height, opts)
-    rescue
-      error ->
-        Log.warning(
-          "Failed to create full emulator with GenServers: #{inspect(error)}"
-        )
+    Coordinator.new(width, height, opts)
+  rescue
+    error ->
+      Log.warning(
+        "Failed to create full emulator with GenServers: #{inspect(error)}"
+      )
 
-        # Fall back to basic emulator
-        create_basic_emulator(width, height, opts)
-    end
+      # Fall back to basic emulator
+      create_basic_emulator(width, height, opts)
   end
 
   defp create_basic_emulator(width, height, opts) do

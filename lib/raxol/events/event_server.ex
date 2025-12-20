@@ -157,28 +157,26 @@ defmodule Raxol.Events.EventServer do
   ## Private Functions
 
   defp delegate_to_handler(handler_module, event_type, event_data, _state) do
-    try do
-      case event_type do
-        :terminal ->
-          handle_terminal_delegation(handler_module, event_data)
+    case event_type do
+      :terminal ->
+        handle_terminal_delegation(handler_module, event_data)
 
-        :plugin ->
-          handle_plugin_delegation(handler_module, event_data)
+      :plugin ->
+        handle_plugin_delegation(handler_module, event_data)
 
-        :accessibility ->
-          handle_accessibility_delegation(handler_module, event_data)
+      :accessibility ->
+        handle_accessibility_delegation(handler_module, event_data)
 
-        :system ->
-          handle_system_delegation(handler_module, event_data)
+      :system ->
+        handle_system_delegation(handler_module, event_data)
 
-        _ ->
-          {:error, :unknown_event_type}
-      end
-    rescue
-      error ->
-        Log.error("Event handler error: #{inspect(error)}")
-        {:error, {:handler_exception, error}}
+      _ ->
+        {:error, :unknown_event_type}
     end
+  rescue
+    error ->
+      Log.error("Event handler error: #{inspect(error)}")
+      {:error, {:handler_exception, error}}
   end
 
   defp handle_terminal_delegation(handler_module, %{

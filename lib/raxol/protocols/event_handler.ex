@@ -144,11 +144,9 @@ defimpl Raxol.Protocols.EventHandler, for: PID do
   end
 
   def get_event_listeners(pid) when is_pid(pid) do
-    try do
-      GenServer.call(pid, :get_event_listeners, 1000)
-    rescue
-      _ -> []
-    end
+    GenServer.call(pid, :get_event_listeners, 1000)
+  rescue
+    _ -> []
   end
 
   def subscribe(pid, event_types) when is_pid(pid) do

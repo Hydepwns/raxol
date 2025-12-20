@@ -818,36 +818,28 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   def erase_from_cursor_to_end(buffer, x, y, top, bottom) do
-    try do
-      EraseOperations.erase_from_cursor_to_end(buffer, x, y, top, bottom)
-    rescue
-      _ -> buffer
-    end
+    EraseOperations.erase_from_cursor_to_end(buffer, x, y, top, bottom)
+  rescue
+    _ -> buffer
   end
 
   def erase_from_start_to_cursor(buffer, x, y, top, bottom) do
-    try do
-      EraseOperations.erase_from_start_to_cursor(buffer, x, y, top, bottom)
-    rescue
-      _ -> buffer
-    end
+    EraseOperations.erase_from_start_to_cursor(buffer, x, y, top, bottom)
+  rescue
+    _ -> buffer
   end
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_all(buffer) do
-    try do
-      EraseOperations.erase_all(buffer)
-    rescue
-      _ -> buffer
-    end
+    EraseOperations.erase_all(buffer)
+  rescue
+    _ -> buffer
   end
 
   def clear_region(buffer, x, y, width, height) do
-    try do
-      EraseOperations.clear_region(buffer, x, y, width, height)
-    rescue
-      _ -> buffer
-    end
+    EraseOperations.clear_region(buffer, x, y, width, height)
+  rescue
+    _ -> buffer
   end
 
   def mark_damaged(buffer, x, y, width, height, _reason) do
@@ -952,22 +944,18 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   def shift_region_to_line(buffer, region, target_line) do
-    try do
-      Operations.shift_region_to_line(buffer, region, target_line)
-    rescue
-      _ -> buffer
-    end
+    Operations.shift_region_to_line(buffer, region, target_line)
+  rescue
+    _ -> buffer
   end
 
   @doc """
   Gets the estimated memory usage of the screen buffer.
   """
   def erase_in_line(buffer, position, type) do
-    try do
-      EraseOperations.erase_in_line(buffer, position, type)
-    rescue
-      _ -> buffer
-    end
+    EraseOperations.erase_in_line(buffer, position, type)
+  rescue
+    _ -> buffer
   end
 
   def erase_in_display(buffer, position, type) do
@@ -976,11 +964,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_cursor_to_end(buffer) do
-    try do
-      EraseOperations.erase_from_cursor_to_end(buffer)
-    rescue
-      _ -> buffer
-    end
+    EraseOperations.erase_from_cursor_to_end(buffer)
+  rescue
+    _ -> buffer
   end
 
   # Higher-arity delete_characters for command handlers
@@ -997,17 +983,15 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
   def scroll_down(buffer, lines, count)
       when is_integer(lines) and is_integer(count) do
-    try do
-      # scroll_down returns a map directly, not a tuple
-      Raxol.Terminal.Commands.Scrolling.scroll_down(
-        buffer,
-        lines,
-        buffer.scroll_region,
-        %{}
-      )
-    rescue
-      _ -> buffer
-    end
+    # scroll_down returns a map directly, not a tuple
+    Raxol.Terminal.Commands.Scrolling.scroll_down(
+      buffer,
+      lines,
+      buffer.scroll_region,
+      %{}
+    )
+  rescue
+    _ -> buffer
   end
 
   # Handle case where lines parameter is a list (from tests)

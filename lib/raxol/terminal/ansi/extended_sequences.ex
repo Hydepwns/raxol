@@ -177,15 +177,13 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
           # Process the character based on its codepoint
           codepoint = :binary.first(char)
 
-          cond do
-            codepoint < 32 or codepoint == 127 ->
-              handle_control_character(char, buffer)
-
-            true ->
-              # Note: combining characters (U+0300-U+036F) require multi-byte
-              # handling via String.to_charlist/1 since :binary.first only
-              # returns first byte (0-255)
-              handle_printable_character(char, buffer)
+          if codepoint < 32 or codepoint == 127 do
+            handle_control_character(char, buffer)
+          else
+            # Note: combining characters (U+0300-U+036F) require multi-byte
+            # handling via String.to_charlist/1 since :binary.first only
+            # returns first byte (0-255)
+            handle_printable_character(char, buffer)
           end
 
         false ->
