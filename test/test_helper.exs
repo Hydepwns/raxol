@@ -261,4 +261,9 @@ end
 # end
 IO.puts("[TestHelper] Skipping endpoint - Phoenix web interface disabled")
 
+# Reset global state to ensure clean slate before tests run
+# This clears any accumulated state from module loading
+Raxol.Test.IsolationHelper.reset_global_state()
+IO.puts("[TestHelper] Global state reset for test isolation")
+
 IO.puts("[TestHelper] Test helper setup complete!")
