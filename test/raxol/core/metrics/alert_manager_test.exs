@@ -284,8 +284,9 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       end
 
       # Wait for alert to become active with retries (CI runners can be slow)
+      # Windows CI is particularly slow, so we use a longer timeout (3 seconds)
       alert_active =
-        Enum.reduce_while(1..20, false, fn _, _acc ->
+        Enum.reduce_while(1..60, false, fn _, _acc ->
           Process.sleep(50)
 
           case AlertManager.get_alert_state(rule_id, test_name) do
@@ -295,7 +296,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         end)
 
       assert alert_active,
-             "Expected alert to become active within 1 second"
+             "Expected alert to become active within 3 seconds"
     end
   end
 

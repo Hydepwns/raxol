@@ -294,7 +294,7 @@ defmodule Raxol.Terminal.Metrics.MetricsServer do
   def cleanup_metrics(opts \\ [], _store_name \\ nil) do
     ensure_initialized!()
 
-    older_than = Keyword.get(opts, :older_than, 3600_000)
+    older_than = Keyword.get(opts, :older_than, 3_600_000)
     cutoff = System.system_time(:millisecond) - older_than
 
     type = Keyword.get(opts, :type)
