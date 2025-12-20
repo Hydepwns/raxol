@@ -16,8 +16,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   import Raxol.HEEx.Components
 
   alias RaxolPlaygroundWeb.Playground.{
-    CodeExecutor,
     CodeExamples,
+    CodeExecutor,
     DemoComponents,
     Helpers,
     TerminalView
