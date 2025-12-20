@@ -162,10 +162,13 @@ defmodule Raxol.Core.Accessibility do
   # Backward compatibility for tests that pass user_preferences_pid
   def set_high_contrast(enabled, user_preferences_pid_or_name)
       when is_boolean(enabled) do
-    _started = ensure_started()
-    # Update the accessibility server
-    AccessibilityServer.set_high_contrast(enabled)
-    # Also update UserPreferences directly for tests that check it
+    # Only use AccessibilityServer when using the default preferences
+    update_accessibility_server_for_high_contrast(
+      enabled,
+      user_preferences_pid_or_name
+    )
+
+    # Update UserPreferences directly
     pref_key = [:accessibility, :high_contrast]
 
     Raxol.Core.UserPreferences.set(
@@ -177,6 +180,17 @@ defmodule Raxol.Core.Accessibility do
     :ok
   end
 
+  defp update_accessibility_server_for_high_contrast(
+         enabled,
+         Raxol.Core.UserPreferences
+       ) do
+    _started = ensure_started()
+    AccessibilityServer.set_high_contrast(enabled)
+  end
+
+  defp update_accessibility_server_for_high_contrast(_enabled, _custom_prefs),
+    do: :ok
+
   @doc """
   Check if high contrast mode is enabled.
   """
@@ -187,9 +201,20 @@ defmodule Raxol.Core.Accessibility do
 
   # Backward compatibility function for tests
   def high_contrast_enabled?(user_preferences_pid_or_name) do
-    # Ignore the pid parameter
-    _ = user_preferences_pid_or_name
-    high_contrast?()
+    check_preference_enabled(:high_contrast, user_preferences_pid_or_name)
+  end
+
+  defp check_preference_enabled(pref, Raxol.Core.UserPreferences) do
+    case pref do
+      :high_contrast -> high_contrast?()
+      :reduced_motion -> reduced_motion?()
+      :large_text -> large_text?()
+    end
+  end
+
+  defp check_preference_enabled(pref, custom_prefs) do
+    pref_key = [:accessibility, pref]
+    Raxol.Core.UserPreferences.get(pref_key, custom_prefs) == true
   end
 
   @doc """
@@ -203,10 +228,13 @@ defmodule Raxol.Core.Accessibility do
   # Backward compatibility for tests that pass user_preferences_pid
   def set_reduced_motion(enabled, user_preferences_pid_or_name)
       when is_boolean(enabled) do
-    _started = ensure_started()
-    # Update the accessibility server
-    AccessibilityServer.set_reduced_motion(enabled)
-    # Also update UserPreferences directly for tests that check it
+    # Only use AccessibilityServer when using the default preferences
+    update_accessibility_server_for_reduced_motion(
+      enabled,
+      user_preferences_pid_or_name
+    )
+
+    # Update UserPreferences directly
     pref_key = [:accessibility, :reduced_motion]
 
     Raxol.Core.UserPreferences.set(
@@ -218,6 +246,17 @@ defmodule Raxol.Core.Accessibility do
     :ok
   end
 
+  defp update_accessibility_server_for_reduced_motion(
+         enabled,
+         Raxol.Core.UserPreferences
+       ) do
+    _started = ensure_started()
+    AccessibilityServer.set_reduced_motion(enabled)
+  end
+
+  defp update_accessibility_server_for_reduced_motion(_enabled, _custom_prefs),
+    do: :ok
+
   @doc """
   Check if reduced motion mode is enabled.
   """
@@ -228,9 +267,7 @@ defmodule Raxol.Core.Accessibility do
 
   # Backward compatibility function for tests
   def reduced_motion_enabled?(user_preferences_pid_or_name) do
-    # Ignore the pid parameter
-    _ = user_preferences_pid_or_name
-    reduced_motion?()
+    check_preference_enabled(:reduced_motion, user_preferences_pid_or_name)
   end
 
   @doc """
@@ -247,10 +284,15 @@ defmodule Raxol.Core.Accessibility do
   @impl true
   def set_large_text(enabled, user_preferences_pid_or_name)
       when is_boolean(enabled) do
-    _started = ensure_started()
-    # Update the accessibility server
-    AccessibilityServer.set_large_text(enabled)
-    # Also update UserPreferences directly for tests that check it
+    # Only use AccessibilityServer when using the default preferences
+    # When a custom user_preferences_pid_or_name is passed (test mode),
+    # skip the AccessibilityServer to avoid stale reference issues
+    update_accessibility_server_for_large_text(
+      enabled,
+      user_preferences_pid_or_name
+    )
+
+    # Update UserPreferences directly
     pref_key = [:accessibility, :large_text]
 
     Raxol.Core.UserPreferences.set(
@@ -266,6 +308,17 @@ defmodule Raxol.Core.Accessibility do
     :ok
   end
 
+  defp update_accessibility_server_for_large_text(
+         enabled,
+         Raxol.Core.UserPreferences
+       ) do
+    _started = ensure_started()
+    AccessibilityServer.set_large_text(enabled)
+  end
+
+  defp update_accessibility_server_for_large_text(_enabled, _custom_prefs),
+    do: :ok
+
   @doc """
   Check if large text mode is enabled.
   """
@@ -276,9 +329,7 @@ defmodule Raxol.Core.Accessibility do
 
   # Backward compatibility function for tests
   def large_text_enabled?(user_preferences_pid_or_name) do
-    # Ignore the pid parameter
-    _ = user_preferences_pid_or_name
-    large_text?()
+    check_preference_enabled(:large_text, user_preferences_pid_or_name)
   end
 
   @doc """
@@ -559,13 +610,23 @@ defmodule Raxol.Core.Accessibility do
   end
 
   # Backward compatibility function for tests
-  def get_text_scale(_user_preferences_pid_or_name \\ nil) do
+  def get_text_scale(user_preferences_pid_or_name \\ nil) do
     # Text scale is related to large_text setting
-    case large_text?() do
+    is_large_text = get_large_text_status(user_preferences_pid_or_name)
+
+    case is_large_text do
       # 150% scale when large text is enabled
       true -> 1.5
       # Normal scale
       false -> 1.0
     end
+  end
+
+  defp get_large_text_status(nil), do: large_text?()
+  defp get_large_text_status(Raxol.Core.UserPreferences), do: large_text?()
+
+  defp get_large_text_status(custom_prefs) do
+    pref_key = [:accessibility, :large_text]
+    Raxol.Core.UserPreferences.get(pref_key, custom_prefs) == true
   end
 end

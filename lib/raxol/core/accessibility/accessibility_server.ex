@@ -87,6 +87,14 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   end
 
   @doc """
+  Resets the accessibility server to its default state.
+  Used for test isolation to ensure clean state between tests.
+  """
+  def reset(server \\ __MODULE__) do
+    GenServer.call(server, :reset)
+  end
+
+  @doc """
   Checks if accessibility is enabled.
   """
   def enabled?(server \\ __MODULE__) do
@@ -499,6 +507,15 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
       do: EventManager.dispatch(:accessibility_disabled)
 
     {:reply, :ok, new_state}
+  end
+
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:reset, _from, _state) do
+    # Unregister any event handlers before resetting
+    unregister_event_handlers()
+
+    # Return to default state for test isolation
+    {:reply, :ok, @default_state}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
@@ -1076,24 +1093,10 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
         explicit_role = Map.get(metadata, :role)
         description = Map.get(metadata, :description, "")
 
-        # Start with just the label
-        parts = [label]
-
-        # Only add role if it was explicitly set (not default)
-        parts =
-          case explicit_role do
-            nil -> parts
-            role -> parts ++ [role]
-          end
-
-        # Add description if present
-        parts =
-          case description != "" do
-            true -> parts ++ [description]
-            false -> parts
-          end
-
-        Enum.join(parts, ", ")
+        # Build list of parts, filtering out nil/empty values
+        [label, explicit_role, if(description != "", do: description)]
+        |> Enum.reject(&is_nil/1)
+        |> Enum.join(", ")
     end
   end
 
