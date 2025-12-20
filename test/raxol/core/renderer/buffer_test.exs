@@ -229,7 +229,8 @@ defmodule Raxol.Core.Renderer.BufferTest do
       {:ok, buffer: buffer}
     end
 
-    # Skipping due to persistent, undiagnosed failure (should_render is false) - REVERTING to fix timing logic
+    # Skipping due to persistent, undiagnosed failure (should_render is false)
+    # REVERTING to fix timing logic
     # @tag :skip # REMOVING
     test "swaps buffers when enough time has passed", %{buffer: buffer} do
       # Ensure last_frame_time is not exactly now

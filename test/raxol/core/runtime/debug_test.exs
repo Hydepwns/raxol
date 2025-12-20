@@ -17,7 +17,12 @@
 #       settings: %{theme: "dark", public_preference: true},
 #       api_token: "abcdef123456"
 #     }
-#     default_metrics = %{start_time: 1_746_304_248_788, frame_count: 600, render_times: [10, 12, 15, 8, 9], last_render_time: 10}
+#     default_metrics = %{
+#       start_time: 1_746_304_248_788,
+#       frame_count: 600,
+#       render_times: [10, 12, 15, 8, 9],
+#       last_render_time: 10
+#     }
 #
 #     Map.merge(%{
 #       app_name: :test_app,
