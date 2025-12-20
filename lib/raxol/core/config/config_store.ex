@@ -181,9 +181,10 @@ defmodule Raxol.Core.Config.Store do
       save_interval: interval
     }
 
-    if auto_save do
-      _ = schedule_auto_save(interval)
-    end
+    _ =
+      if auto_save do
+        schedule_auto_save(interval)
+      end
 
     {:ok, state}
   end
@@ -242,9 +243,10 @@ defmodule Raxol.Core.Config.Store do
         Log.warning("Config auto-save failed: #{inspect(reason)}")
     end
 
-    if state.auto_save do
-      _ = schedule_auto_save(state.save_interval)
-    end
+    _ =
+      if state.auto_save do
+        schedule_auto_save(state.save_interval)
+      end
 
     {:noreply, state}
   end

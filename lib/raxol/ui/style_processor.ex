@@ -259,11 +259,14 @@ defmodule Raxol.UI.StyleProcessor do
       Application.get_env(:raxol, :style_processor, [])[:cache_enabled]
 
     # opts override config, default to false
-    case {cache_from_opts, cache_from_config} do
-      {nil, nil} -> false
-      {nil, config} -> !!config
-      {opt, _} -> !!opt
-    end and cache_available?()
+    enabled =
+      case {cache_from_opts, cache_from_config} do
+        {nil, nil} -> false
+        {nil, config} -> config not in [nil, false]
+        {opt, _} -> opt not in [nil, false]
+      end
+
+    enabled and cache_available?()
   end
 
   defp cache_available? do

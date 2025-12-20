@@ -84,7 +84,27 @@ defmodule Raxol.Terminal.ANSI.KittyParser do
     @doc """
     Create a new parser state with default values.
     """
-    @spec new() :: t()
+    @spec new() :: %__MODULE__{
+            action: :transmit,
+            format: :rgba,
+            compression: :none,
+            transmission: :direct,
+            image_id: nil,
+            placement_id: nil,
+            width: nil,
+            height: nil,
+            x_offset: 0,
+            y_offset: 0,
+            cell_x: nil,
+            cell_y: nil,
+            z_index: 0,
+            quiet: 0,
+            more_data: false,
+            chunk_data: <<>>,
+            pixel_buffer: <<>>,
+            errors: [],
+            raw_control: <<>>
+          }
     def new, do: %__MODULE__{}
 
     @doc """

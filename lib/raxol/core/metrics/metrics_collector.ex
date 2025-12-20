@@ -235,8 +235,7 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
   @doc """
   Gets metrics for a specific metric name and tags.
   """
-  @spec get_metrics(String.t() | atom(), map()) ::
-          {:ok, list(map())} | {:error, term()}
+  @spec get_metrics(String.t() | atom(), map()) :: {:ok, list(map())}
   def get_metrics(metric_name, tags) when is_map(tags) do
     ensure_tables_exist()
 
@@ -270,7 +269,13 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
   @doc """
   Gets metric statistics (count, latest value, etc.)
   """
-  @spec get_metric_stats(atom(), atom()) :: map()
+  @spec get_metric_stats(atom(), atom()) :: %{
+          count: non_neg_integer(),
+          latest: term(),
+          min: number() | nil,
+          max: number() | nil,
+          avg: number() | nil
+        }
   def get_metric_stats(name, type) do
     entries = get_metric(name, type)
 
@@ -318,9 +323,10 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
     # Start periodic system metrics collection if enabled
     auto_collect = Keyword.get(opts, :auto_collect_system_metrics, true)
 
-    if auto_collect do
-      _ = schedule_system_metrics_collection()
-    end
+    _ =
+      if auto_collect do
+        schedule_system_metrics_collection()
+      end
 
     state = %{
       start_time: System.monotonic_time(),
@@ -334,9 +340,10 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
   def handle_info(:collect_system_metrics, state) do
     collect_system_metrics()
 
-    if state.auto_collect do
-      _ = schedule_system_metrics_collection()
-    end
+    _ =
+      if state.auto_collect do
+        schedule_system_metrics_collection()
+      end
 
     {:noreply, state}
   end
@@ -357,8 +364,8 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
 
   defp create_tables do
     # Main metrics table - ordered_set for time-ordered queries
-    if :ets.whereis(@metrics_table) == :undefined do
-      _ =
+    _ =
+      if :ets.whereis(@metrics_table) == :undefined do
         :ets.new(@metrics_table, [
           :ordered_set,
           :public,
@@ -366,11 +373,11 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
           read_concurrency: true,
           write_concurrency: true
         ])
-    end
+      end
 
     # Metadata table for counters and aggregates
-    if :ets.whereis(@meta_table) == :undefined do
-      _ =
+    _ =
+      if :ets.whereis(@meta_table) == :undefined do
         :ets.new(@meta_table, [
           :set,
           :public,
@@ -378,7 +385,7 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
           read_concurrency: true,
           write_concurrency: true
         ])
-    end
+      end
 
     :ok
   end

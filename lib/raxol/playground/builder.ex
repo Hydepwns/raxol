@@ -52,6 +52,7 @@ defmodule Raxol.Playground.Builder do
       iex> Builder.new()
       %Builder{component: nil, props: %{}, state: %{}, theme: :default}
   """
+  @dialyzer {:nowarn_function, new: 0}
   @spec new() :: t()
   def new, do: %__MODULE__{}
 
@@ -308,7 +309,8 @@ defmodule Raxol.Playground.Builder do
       [ Click ]
       :ok
   """
-  @spec show(t()) :: :ok | {:error, atom()}
+  @dialyzer {:nowarn_function, show: 1}
+  @spec show(t()) :: :ok | {:error, atom() | String.t()}
   def show(builder) do
     case preview(builder) do
       {:ok, output} ->

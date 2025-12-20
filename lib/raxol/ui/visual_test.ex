@@ -45,7 +45,14 @@ defmodule Raxol.UI.VisualTest do
 
       snapshot = render_snapshot(MyButton, label: "Click", width: 20, height: 3)
   """
-  @spec render_snapshot(module(), keyword()) :: map()
+  @spec render_snapshot(module(), keyword()) :: %{
+          content: String.t(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          component: module(),
+          props: keyword(),
+          checksum: String.t()
+        }
   def render_snapshot(component, opts \\ []) do
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)

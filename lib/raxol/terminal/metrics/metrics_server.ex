@@ -56,35 +56,38 @@ defmodule Raxol.Terminal.Metrics.MetricsServer do
   @spec init() :: :ok
   def init do
     # Main metrics table (counters and gauges)
-    if :ets.whereis(@metrics_table) == :undefined do
-      :ets.new(@metrics_table, [
-        :named_table,
-        :public,
-        :set,
-        write_concurrency: true,
-        read_concurrency: true
-      ])
-    end
+    _ =
+      if :ets.whereis(@metrics_table) == :undefined do
+        :ets.new(@metrics_table, [
+          :named_table,
+          :public,
+          :set,
+          write_concurrency: true,
+          read_concurrency: true
+        ])
+      end
 
     # Histograms table (stores individual samples)
-    if :ets.whereis(@histograms_table) == :undefined do
-      :ets.new(@histograms_table, [
-        :named_table,
-        :public,
-        :bag,
-        write_concurrency: true
-      ])
-    end
+    _ =
+      if :ets.whereis(@histograms_table) == :undefined do
+        :ets.new(@histograms_table, [
+          :named_table,
+          :public,
+          :bag,
+          write_concurrency: true
+        ])
+      end
 
     # Errors table
-    if :ets.whereis(@errors_table) == :undefined do
-      :ets.new(@errors_table, [
-        :named_table,
-        :public,
-        :ordered_set,
-        write_concurrency: true
-      ])
-    end
+    _ =
+      if :ets.whereis(@errors_table) == :undefined do
+        :ets.new(@errors_table, [
+          :named_table,
+          :public,
+          :ordered_set,
+          write_concurrency: true
+        ])
+      end
 
     :ok
   end
@@ -297,18 +300,20 @@ defmodule Raxol.Terminal.Metrics.MetricsServer do
     type = Keyword.get(opts, :type)
 
     # Clean histograms
-    if type in [nil, :histogram] do
-      :ets.select_delete(@histograms_table, [
-        {{:_, :_, :"$1"}, [{:<, :"$1", cutoff}], [true]}
-      ])
-    end
+    _ =
+      if type in [nil, :histogram] do
+        :ets.select_delete(@histograms_table, [
+          {{:_, :_, :"$1"}, [{:<, :"$1", cutoff}], [true]}
+        ])
+      end
 
     # Clean errors
-    if type in [nil, :error] do
-      :ets.select_delete(@errors_table, [
-        {{:_, :_, :_, :"$1"}, [{:<, :"$1", cutoff}], [true]}
-      ])
-    end
+    _ =
+      if type in [nil, :error] do
+        :ets.select_delete(@errors_table, [
+          {{:_, :_, :_, :"$1"}, [{:<, :"$1", cutoff}], [true]}
+        ])
+      end
 
     :ok
   end

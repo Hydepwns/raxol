@@ -149,7 +149,7 @@ defmodule Raxol.Core.Telemetry.Context do
       # ... do rendering ...
       Context.end_span()
   """
-  @spec start_span(atom()) :: t() | nil
+  @spec start_span(atom()) :: t()
   def start_span(name) when is_atom(name) do
     case get() do
       nil ->
@@ -223,12 +223,12 @@ defmodule Raxol.Core.Telemetry.Context do
   """
   @spec with_span(atom(), (-> result)) :: result when result: any()
   def with_span(name, fun) when is_atom(name) and is_function(fun, 0) do
-    start_span(name)
+    _ = start_span(name)
 
     try do
       fun.()
     after
-      end_span()
+      _ = end_span()
     end
   end
 
@@ -335,44 +335,47 @@ defmodule Raxol.Core.Telemetry.Context do
       |> to_string()
       |> String.to_atom()
 
-    start_span(span_name)
+    _ = start_span(span_name)
     start_time = System.monotonic_time()
 
     enriched_metadata = to_metadata(metadata)
 
-    execute(
-      event_prefix ++ [:start],
-      %{system_time: System.system_time()},
-      enriched_metadata
-    )
+    _ =
+      execute(
+        event_prefix ++ [:start],
+        %{system_time: System.system_time()},
+        enriched_metadata
+      )
 
     try do
       result = fun.()
       duration = System.monotonic_time() - start_time
 
-      execute(
-        event_prefix ++ [:stop],
-        %{duration: duration},
-        Map.put(enriched_metadata, :result, :ok)
-      )
+      _ =
+        execute(
+          event_prefix ++ [:stop],
+          %{duration: duration},
+          Map.put(enriched_metadata, :result, :ok)
+        )
 
       result
     rescue
       exception ->
         duration = System.monotonic_time() - start_time
 
-        execute(
-          event_prefix ++ [:exception],
-          %{duration: duration},
-          Map.merge(enriched_metadata, %{
-            exception: exception,
-            stacktrace: __STACKTRACE__
-          })
-        )
+        _ =
+          execute(
+            event_prefix ++ [:exception],
+            %{duration: duration},
+            Map.merge(enriched_metadata, %{
+              exception: exception,
+              stacktrace: __STACKTRACE__
+            })
+          )
 
         reraise exception, __STACKTRACE__
     after
-      end_span()
+      _ = end_span()
     end
   end
 
@@ -394,7 +397,7 @@ defmodule Raxol.Core.Telemetry.Context do
         # ... work with trace context ...
       end)
   """
-  @spec capture() :: map() | nil
+  @spec capture() :: t() | nil
   def capture do
     case get() do
       nil -> nil

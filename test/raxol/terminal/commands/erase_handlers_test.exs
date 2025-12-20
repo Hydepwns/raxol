@@ -9,7 +9,6 @@ defmodule Raxol.Terminal.Commands.EraseHandlerTest do
     {:ok, emulator: emulator}
   end
 
-
   describe "handle_erase/4 (Erase in Display)" do
     test "erases from cursor to end of screen (mode 0)", %{emulator: emulator} do
       # Set cursor to middle of screen

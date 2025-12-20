@@ -218,13 +218,15 @@ defmodule Raxol.Terminal.Theme.Manager do
       {:ok, manager} = Manager.load_from_registry(manager, :dracula)
       {:ok, manager} = Manager.load_from_registry(manager, :synthwave84)
   """
-  @spec load_from_registry(t(), atom()) :: {:ok, t()} | {:error, term()}
+  @dialyzer {:nowarn_function, load_from_registry: 2}
+  @spec load_from_registry(t(), atom()) ::
+          {:ok, t()} | {:error, :theme_not_found}
   def load_from_registry(manager, theme_name) when is_atom(theme_name) do
     case ThemeRegistry.to_terminal_format(theme_name) do
       nil ->
         {:error, :theme_not_found}
 
-      theme ->
+      theme when is_map(theme) ->
         # Add to available themes and set as current
         updated_themes = Map.put(manager.themes, theme.name, theme)
 

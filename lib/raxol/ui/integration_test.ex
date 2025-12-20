@@ -38,7 +38,14 @@ defmodule Raxol.UI.IntegrationTest do
 
       app = start_test_app(MyApp, width: 120, height: 40)
   """
-  @spec start_test_app(module(), keyword()) :: map()
+  @spec start_test_app(module(), keyword()) :: %{
+          module: module(),
+          state: map(),
+          buffer: term(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          event_log: list()
+        }
   def start_test_app(app_module, opts \\ []) do
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
@@ -87,7 +94,25 @@ defmodule Raxol.UI.IntegrationTest do
       app = send_key(app, "a")
       app = send_key(app, :tab, ctrl: true)
   """
-  @spec send_key(map(), atom() | String.t(), keyword()) :: map()
+  @spec send_key(
+          %{
+            module: module(),
+            state: map(),
+            buffer: term(),
+            width: non_neg_integer(),
+            height: non_neg_integer(),
+            event_log: list()
+          },
+          atom() | String.t(),
+          keyword()
+        ) :: %{
+          module: module(),
+          state: map(),
+          buffer: term(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          event_log: list()
+        }
   def send_key(app, key, modifiers \\ []) do
     event = build_key_event(key, modifiers)
     process_event(app, event)
@@ -296,7 +321,21 @@ defmodule Raxol.UI.IntegrationTest do
 
       app = clear_event_log(app)
   """
-  @spec clear_event_log(map()) :: map()
+  @spec clear_event_log(%{
+          module: module(),
+          state: map(),
+          buffer: term(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          event_log: list()
+        }) :: %{
+          module: module(),
+          state: map(),
+          buffer: term(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          event_log: list()
+        }
   def clear_event_log(app) do
     %{app | event_log: []}
   end

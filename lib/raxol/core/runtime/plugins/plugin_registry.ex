@@ -54,24 +54,26 @@ defmodule Raxol.Core.Runtime.Plugins.PluginRegistry do
   @spec init() :: :ok
   def init do
     # Main registry table
-    if :ets.whereis(@table_name) == :undefined do
-      :ets.new(@table_name, [
-        :named_table,
-        :public,
-        :set,
-        read_concurrency: true
-      ])
-    end
+    _ =
+      if :ets.whereis(@table_name) == :undefined do
+        :ets.new(@table_name, [
+          :named_table,
+          :public,
+          :set,
+          read_concurrency: true
+        ])
+      end
 
     # Commands lookup table (command -> plugin_id)
-    if :ets.whereis(@commands_table) == :undefined do
-      :ets.new(@commands_table, [
-        :named_table,
-        :public,
-        :bag,
-        read_concurrency: true
-      ])
-    end
+    _ =
+      if :ets.whereis(@commands_table) == :undefined do
+        :ets.new(@commands_table, [
+          :named_table,
+          :public,
+          :bag,
+          read_concurrency: true
+        ])
+      end
 
     :ok
   end

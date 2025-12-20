@@ -49,7 +49,15 @@ defmodule Raxol.UI.PerformanceTest do
       stats = benchmark_render(MyButton, label: "Click")
       IO.inspect(stats.mean, label: "Mean render time (us)")
   """
-  @spec benchmark_render(module(), keyword()) :: map()
+  @spec benchmark_render(module(), keyword()) :: %{
+          min: number(),
+          max: number(),
+          mean: float(),
+          median: float(),
+          std_dev: float(),
+          p99: number(),
+          count: non_neg_integer()
+        }
   def benchmark_render(component, opts \\ []) do
     iterations = Keyword.get(opts, :iterations, 100)
     warmup = Keyword.get(opts, :warmup, 10)
@@ -151,7 +159,13 @@ defmodule Raxol.UI.PerformanceTest do
 
       mem_stats = measure_memory(MyButton, label: "Click")
   """
-  @spec measure_memory(module(), keyword()) :: map()
+  @spec measure_memory(module(), keyword()) :: %{
+          memory_before: non_neg_integer(),
+          memory_after: non_neg_integer(),
+          memory_delta: integer(),
+          heap_size: non_neg_integer(),
+          reductions: non_neg_integer()
+        }
   def measure_memory(component, opts \\ []) do
     gc_before = Keyword.get(opts, :gc_before, true)
     width = Keyword.get(opts, :width, 80)
@@ -252,7 +266,13 @@ defmodule Raxol.UI.PerformanceTest do
 
       results = stress_test(MyButton, label: "Click")
   """
-  @spec stress_test(module(), keyword()) :: map()
+  @spec stress_test(module(), keyword()) :: %{
+          total_iterations: non_neg_integer(),
+          batches: list(),
+          degradation: float(),
+          first_batch_mean: float(),
+          last_batch_mean: float()
+        }
   def stress_test(component, opts \\ []) do
     iterations = Keyword.get(opts, :iterations, 1000)
     batch_size = Keyword.get(opts, :batch_size, 100)
@@ -318,11 +338,17 @@ defmodule Raxol.UI.PerformanceTest do
         {NewButton, [label: "Click"]}
       )
   """
+  @dialyzer {:nowarn_function, compare_performance: 3}
   @spec compare_performance(
           {module(), keyword()},
           {module(), keyword()},
           keyword()
-        ) :: map()
+        ) :: %{
+          component_a: map(),
+          component_b: map(),
+          speedup: float(),
+          faster: :a | :b
+        }
   def compare_performance(
         {component_a, props_a},
         {component_b, props_b},

@@ -92,5 +92,14 @@
   #   Raises for unrecognized benchmark scenarios (programming error)
   ~r"view_utils\.ex:.*no_return.*handle_invalid_",
   ~r"recovery_supervisor\.ex:.*no_return.*escalate_to_parent",
-  ~r"bench\.memory_analysis\.ex:.*no_return.*handle_unknown_scenario"
+  ~r"bench\.memory_analysis\.ex:.*no_return.*handle_unknown_scenario",
+
+  # ------------------------------------------------------------------------------
+  # CREDO MACRO EXPANSION (custom checks)
+  # ------------------------------------------------------------------------------
+  # Custom Credo checks use `use Credo.Check` which expands to inject internal
+  # Credo functions that dialyzer cannot resolve. These are false positives -
+  # the functions exist at runtime via the Credo dependency but are injected
+  # by macro expansion in a way dialyzer cannot analyze.
+  ~r"credo/.*:unknown_function.*Credo\."
 ]

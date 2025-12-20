@@ -129,7 +129,7 @@ defmodule Raxol.Core.Theming.ThemeRegistry do
   @doc """
   Returns the default theme name.
   """
-  @spec default() :: theme_name()
+  @spec default() :: :dracula
   def default, do: :dracula
 
   # ============================================================================
@@ -174,7 +174,16 @@ defmodule Raxol.Core.Theming.ThemeRegistry do
   @doc """
   Converts a theme to LiveView format (for Raxol.LiveView.Themes compatibility).
   """
-  @spec to_liveview_format(theme_name()) :: map() | nil
+  @spec to_liveview_format(theme_name()) ::
+          %{
+            name: atom(),
+            background: hex_color(),
+            foreground: hex_color(),
+            cursor: hex_color(),
+            selection: hex_color(),
+            colors: map()
+          }
+          | nil
   def to_liveview_format(theme_name) do
     case get(theme_name) do
       {:ok, theme} ->
@@ -195,7 +204,15 @@ defmodule Raxol.Core.Theming.ThemeRegistry do
   @doc """
   Converts a theme to terminal manager format (RGBA maps).
   """
-  @spec to_terminal_format(theme_name()) :: map() | nil
+  @spec to_terminal_format(theme_name()) ::
+          %{
+            name: String.t(),
+            description: String.t(),
+            author: String.t(),
+            version: String.t(),
+            colors: map()
+          }
+          | nil
   def to_terminal_format(theme_name) do
     case get(theme_name) do
       {:ok, theme} ->

@@ -73,7 +73,7 @@ defmodule Raxol.Core.Performance.FlameGraph do
       )
   """
   @spec profile((-> any()), profile_opts()) ::
-          {:ok, String.t()} | {:error, term()}
+          {:ok, String.t(), any()} | {:error, term()}
   def profile(fun, opts \\ []) when is_function(fun, 0) do
     output = Keyword.get(opts, :output, @default_output)
     format = Keyword.get(opts, :format, :svg)
@@ -325,7 +325,7 @@ defmodule Raxol.Core.Performance.FlameGraph do
       true ->
         # Fallback: save as folded format with instructions
         folded_output = String.replace(output, ".svg", ".folded")
-        generate_folded(analysis_file, folded_output)
+        _ = generate_folded(analysis_file, folded_output)
 
         Logger.warning("""
         SVG generation tools not available.
@@ -351,7 +351,7 @@ defmodule Raxol.Core.Performance.FlameGraph do
        ) do
     # First convert to folded format
     folded_file = String.replace(output, ".svg", ".folded")
-    generate_folded(analysis_file, folded_file)
+    _ = generate_folded(analysis_file, folded_file)
 
     # Then use flamegraph.pl to generate SVG
     args = [
@@ -368,7 +368,7 @@ defmodule Raxol.Core.Performance.FlameGraph do
     case System.cmd("flamegraph.pl", args, stdin: File.read!(folded_file)) do
       {svg_content, 0} ->
         File.write!(output, svg_content)
-        File.rm(folded_file)
+        _ = File.rm(folded_file)
         {:ok, output}
 
       {error, _} ->

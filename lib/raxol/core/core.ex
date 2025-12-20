@@ -224,15 +224,15 @@ defmodule Raxol.Core do
   {:ok, plugin_info} = Raxol.Core.load_plugin(:accessibility, [enabled: true])
   ```
   """
-  @spec load_plugin(plugin_id(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec load_plugin(plugin_id(), keyword()) :: :ok | {:error, atom()}
   def load_plugin(plugin_id, _options \\ []) do
     case Raxol.Core.Runtime.Plugins.PluginManager.load_plugin(plugin_id) do
-      {:ok, plugin_info} ->
+      :ok ->
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Plugin loaded: #{inspect(plugin_id)}"
         )
 
-        {:ok, plugin_info}
+        :ok
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
@@ -287,12 +287,9 @@ defmodule Raxol.Core do
   # Returns: {:ok, [:accessibility, :performance, :themes]}
   ```
   """
-  @spec list_plugins() :: {:ok, [plugin_id()]} | {:error, term()}
+  @spec list_plugins() :: [map()]
   def list_plugins do
-    case Raxol.Core.Runtime.Plugins.PluginManager.list_plugins() do
-      {:ok, plugins} -> {:ok, plugins}
-      {:error, reason} -> {:error, reason}
-    end
+    Raxol.Core.Runtime.Plugins.PluginManager.list_plugins()
   end
 
   # ============================================================================
@@ -601,8 +598,7 @@ defmodule Raxol.Core do
   end
 
   defp get_performance_info do
-    case Performance.get_stats() do
-      {:ok, stats} -> stats
-    end
+    {:ok, stats} = Performance.get_stats()
+    stats
   end
 end

@@ -22,6 +22,11 @@ defmodule Raxol.Credo.DuplicateFilenameCheck do
     - `:include_tests` - Whether to check test files (default: true)
   """
 
+  # Dialyzer warnings about Credo internal functions are false positives
+  # from macro expansion in `use Credo.Check`. The :no_unknown suppresses
+  # warnings about functions injected by the Credo.Check macro.
+  @dialyzer [:no_undefined_callbacks, :no_missing_calls, :no_unknown]
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,

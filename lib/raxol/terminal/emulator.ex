@@ -700,15 +700,11 @@ defmodule Raxol.Terminal.Emulator do
     result =
       Raxol.Terminal.Input.CoreHandler.process_terminal_input(emulator, input)
 
+    # process_terminal_input returns {emulator, list()}, convert list to binary
     {updated_emulator, output} =
       case result do
-        {updated_emulator, output} when is_list(output) ->
-          # Convert list output to string for backward compatibility
-          {updated_emulator, IO.iodata_to_binary(output)}
-
-        {updated_emulator, output} ->
-          # Already a string or other type, pass through
-          {updated_emulator, output}
+        {emu, out} ->
+          {emu, IO.iodata_to_binary(out)}
       end
 
     # Track command history if enabled

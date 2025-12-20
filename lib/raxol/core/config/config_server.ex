@@ -85,8 +85,7 @@ defmodule Raxol.Core.Config.ConfigServer do
   @doc """
   Sets entire namespace configuration.
   """
-  @spec set_namespace(GenServer.server(), config_namespace(), map()) ::
-          :ok | {:error, any()}
+  @spec set_namespace(GenServer.server(), config_namespace(), map()) :: :ok
   def set_namespace(_server \\ __MODULE__, namespace, config) do
     Store.put_namespace(namespace, config)
   end

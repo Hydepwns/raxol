@@ -43,8 +43,8 @@ defmodule Raxol.Core.Utils.Debounce do
   alias Raxol.Core.Utils.TimerManager
 
   @type t :: %__MODULE__{
-          timers: %{atom() => reference()},
-          ids: %{atom() => integer()}
+          timers: %{term() => reference()},
+          ids: %{term() => integer()}
         }
 
   defstruct timers: %{}, ids: %{}
@@ -57,7 +57,7 @@ defmodule Raxol.Core.Utils.Debounce do
       iex> Debounce.new()
       %Debounce{timers: %{}, ids: %{}}
   """
-  @spec new() :: t()
+  @spec new() :: %__MODULE__{timers: %{}, ids: %{}}
   def new, do: %__MODULE__{}
 
   @doc """
@@ -76,7 +76,7 @@ defmodule Raxol.Core.Utils.Debounce do
       # Schedule with custom message (sent as {:debounce, key, data})
       {debounce, ref} = Debounce.schedule(debounce, :save, 1000, data: changes)
   """
-  @spec schedule(t(), atom(), non_neg_integer(), keyword()) ::
+  @spec schedule(t(), term(), non_neg_integer(), keyword()) ::
           {t(), reference()}
   def schedule(debounce, key, delay_ms, opts \\ []) do
     # Cancel existing timer if any
@@ -113,7 +113,7 @@ defmodule Raxol.Core.Utils.Debounce do
 
       debounce = Debounce.cancel(debounce, :save)
   """
-  @spec cancel(t(), atom()) :: t()
+  @spec cancel(t(), term()) :: t()
   def cancel(debounce, key) do
     case Map.get(debounce.timers, key) do
       nil ->
@@ -147,7 +147,7 @@ defmodule Raxol.Core.Utils.Debounce do
         end
       end
   """
-  @spec clear(t(), atom()) :: t()
+  @spec clear(t(), term()) :: t()
   def clear(debounce, key) do
     %{
       debounce
@@ -170,7 +170,7 @@ defmodule Raxol.Core.Utils.Debounce do
         {:noreply, state}
       end
   """
-  @spec valid?(t(), atom(), integer()) :: boolean()
+  @spec valid?(t(), term(), integer()) :: boolean()
   def valid?(debounce, key, id) do
     Map.get(debounce.ids, key) == id
   end
@@ -184,7 +184,7 @@ defmodule Raxol.Core.Utils.Debounce do
         Logger.debug("Save is pending")
       end
   """
-  @spec pending?(t(), atom()) :: boolean()
+  @spec pending?(t(), term()) :: boolean()
   def pending?(debounce, key) do
     Map.has_key?(debounce.timers, key)
   end
@@ -218,7 +218,7 @@ defmodule Raxol.Core.Utils.Debounce do
       keys = Debounce.pending_keys(debounce)
       # => [:save, :sync]
   """
-  @spec pending_keys(t()) :: [atom()]
+  @spec pending_keys(t()) :: [term()]
   def pending_keys(debounce) do
     Map.keys(debounce.timers)
   end
@@ -242,7 +242,7 @@ defmodule Raxol.Core.Utils.Debounce do
           state
       end
   """
-  @spec fire_now(t(), atom()) :: {:fire, atom(), t()} | {:nothing, t()}
+  @spec fire_now(t(), term()) :: {:fire, term(), t()} | {:nothing, t()}
   def fire_now(debounce, key) do
     case Map.get(debounce.timers, key) do
       nil ->

@@ -21,7 +21,6 @@ defmodule Raxol.Playground do
     Builder,
     Catalog,
     CodeGenerator,
-    Errors,
     Examples,
     Preview,
     PropertyEditor,
@@ -383,7 +382,7 @@ defmodule Raxol.Playground do
         :ok
 
       {:error, reason} ->
-        {:error, Errors.format_error({:error, reason})}
+        {:error, reason}
     end
   end
 

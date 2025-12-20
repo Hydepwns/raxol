@@ -59,6 +59,10 @@ defmodule Raxol.Terminal.Driver do
       iex> Raxol.Terminal.Driver.backend()
       :io_terminal
   """
+  # The spec covers both possible return values across platforms.
+  # On any given compilation, only one branch is reachable due to
+  # @termbox2_available being a compile-time constant.
+  @dialyzer {:nowarn_function, backend: 0}
   @spec backend() :: :termbox2_nif | :io_terminal
   def backend do
     if @termbox2_available, do: :termbox2_nif, else: :io_terminal
@@ -754,6 +758,7 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
+  @dialyzer {:nowarn_function, init_io_terminal: 0}
   defp init_io_terminal do
     # Use pure Elixir IOTerminal when NIF not available
     Raxol.Core.Runtime.Log.info(

@@ -8,7 +8,6 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   import Mox
   import Raxol.Test.TestUtils
 
-
   # Mock modules for testing
   defmodule Mock.EventLoop do
     use GenServer

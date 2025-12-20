@@ -149,7 +149,7 @@ defmodule Mix.Tasks.Raxol.Flamegraph do
                fn -> apply(module, function, args) end,
                profile_opts
              ) do
-          {:ok, output, result} ->
+          {:ok, output, _result} ->
             Mix.shell().info("")
 
             Mix.shell().info(
@@ -157,12 +157,6 @@ defmodule Mix.Tasks.Raxol.Flamegraph do
             )
 
             Mix.shell().info("  " <> Colors.muted("Output:") <> " " <> output)
-
-            Mix.shell().info(
-              "  " <>
-                Colors.muted("Result:") <> " #{inspect(result, limit: 50)}"
-            )
-
             Mix.shell().info("")
             suggest_viewing(output)
 
@@ -297,10 +291,8 @@ defmodule Mix.Tasks.Raxol.Flamegraph do
 
   defp parse_arg(arg_str) do
     # Try to parse as Elixir term
-    case Code.eval_string(arg_str) do
-      {value, _} -> value
-      _ -> arg_str
-    end
+    {value, _} = Code.eval_string(arg_str)
+    value
   rescue
     _ -> arg_str
   end

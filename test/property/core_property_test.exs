@@ -101,7 +101,6 @@ defmodule Raxol.Property.CoreTest do
     end
   end
 
-
   describe "Terminal state property tests" do
     property "terminal dimensions are valid" do
       check all width <- integer(20..500),

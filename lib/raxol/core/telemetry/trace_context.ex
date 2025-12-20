@@ -183,12 +183,12 @@ defmodule Raxol.Core.Telemetry.TraceContext do
   """
   @spec with_span(String.t(), (-> result)) :: result when result: term()
   def with_span(name, fun) when is_binary(name) and is_function(fun, 0) do
-    start_span(name)
+    _ = start_span(name)
 
     try do
       fun.()
     after
-      end_span()
+      _ = end_span()
     end
   end
 
@@ -207,12 +207,12 @@ defmodule Raxol.Core.Telemetry.TraceContext do
   """
   @spec with_trace((-> result)) :: result when result: term()
   def with_trace(fun) when is_function(fun, 0) do
-    start_trace()
+    _ = start_trace()
 
     try do
       fun.()
     after
-      clear()
+      _ = clear()
     end
   end
 
@@ -245,7 +245,7 @@ defmodule Raxol.Core.Telemetry.TraceContext do
       headers = TraceContext.to_headers()
       # => %{"x-trace-id" => "abc123", "x-span-id" => "def456"}
   """
-  @spec to_headers() :: map()
+  @spec to_headers() :: %{optional(String.t()) => String.t()}
   def to_headers do
     ctx = current()
 
@@ -267,13 +267,14 @@ defmodule Raxol.Core.Telemetry.TraceContext do
     trace_id = Map.get(headers, "x-trace-id")
     parent_span_id = Map.get(headers, "x-span-id")
 
-    if trace_id do
-      start_trace(trace_id: trace_id)
+    _ =
+      if trace_id do
+        _ = start_trace(trace_id: trace_id)
 
-      if parent_span_id do
-        Process.put(:raxol_parent_span_id, parent_span_id)
+        if parent_span_id do
+          Process.put(:raxol_parent_span_id, parent_span_id)
+        end
       end
-    end
 
     current()
   end
@@ -286,7 +287,11 @@ defmodule Raxol.Core.Telemetry.TraceContext do
     |> Base.encode16(case: :lower)
   end
 
-  @spec maybe_put(map(), String.t(), term()) :: map()
+  @spec maybe_put(
+          %{optional(String.t()) => String.t()},
+          String.t(),
+          String.t() | nil
+        ) :: %{optional(String.t()) => String.t()}
   defp maybe_put(map, _key, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

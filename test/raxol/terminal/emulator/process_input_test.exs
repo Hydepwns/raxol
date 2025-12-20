@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
 
-
   describe "process_input state machine" do
     # Tests focus on how Emulator.process_input handles various sequences
 

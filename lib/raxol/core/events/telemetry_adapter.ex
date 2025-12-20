@@ -139,7 +139,18 @@ defmodule Raxol.Core.Events.TelemetryAdapter do
     end
   end
 
-  @spec maybe_put_parent_span(map(), term()) :: map()
+  @spec maybe_put_parent_span(
+          %{
+            :span_id => nil | binary(),
+            :trace_id => binary(),
+            optional(any()) => any()
+          },
+          binary() | nil
+        ) :: %{
+          :span_id => nil | binary(),
+          :trace_id => binary(),
+          optional(any()) => any()
+        }
   defp maybe_put_parent_span(metadata, nil), do: metadata
 
   defp maybe_put_parent_span(metadata, parent),

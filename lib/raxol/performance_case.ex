@@ -190,6 +190,7 @@ defmodule Raxol.PerformanceCase do
 
   defp format_bytes(bytes), do: "#{Float.round(bytes / 1_048_576, 2)}MB"
 
+  @spec fail_assertion(String.t()) :: no_return()
   defp fail_assertion(message) do
     raise ExUnit.AssertionError, message: message
   end
