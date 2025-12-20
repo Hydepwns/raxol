@@ -150,7 +150,8 @@ defmodule Raxol.UI.Layout.TableTest do
       # Widths should be calculated based on content:
       # "Name" header (4) vs "Alice Johnson" (13) vs "Charlie Brown" (13) -> max 13 + 2 = 15
       # "Age" header (3) vs "25", "30", "35" (2 chars each) -> max 3 + 2 = 5
-      # "Location" header (8) vs "New York" (8) vs "Los Angeles" (11) vs "Chicago" (7) -> max 11 + 2 = 13
+      # "Location" header (8) vs "New York" (8) vs "Los Angeles" (11)
+      # vs "Chicago" (7) -> max 11 + 2 = 13
       assert calculated_widths == [15, 5, 13]
 
       # Total width should be sum of column widths + separators

@@ -120,7 +120,8 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       {emulator, ""} = Emulator.process_input(emulator, "\e[?1047h")
       assert emulator.active_buffer_type == :alternate
 
-      # *** Verify alternate buffer content was NOT cleared and still matches previous alt content ***
+      # Verify alternate buffer content was NOT cleared and still matches
+      # previous alt content
       assert Emulator.get_screen_buffer(emulator) == alt_buffer_content_snapshot
     end
 

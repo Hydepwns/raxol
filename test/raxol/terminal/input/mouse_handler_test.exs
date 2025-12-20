@@ -411,7 +411,11 @@ defmodule Raxol.Terminal.Input.MouseHandlerTest do
 
       # Restore original env vars
       if original_term, do: System.put_env("TERM", original_term), else: System.delete_env("TERM")
-      if original_term_program, do: System.put_env("TERM_PROGRAM", original_term_program), else: System.delete_env("TERM_PROGRAM")
+      if original_term_program do
+        System.put_env("TERM_PROGRAM", original_term_program)
+      else
+        System.delete_env("TERM_PROGRAM")
+      end
     end
   end
 end

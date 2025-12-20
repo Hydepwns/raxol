@@ -75,7 +75,8 @@ defmodule Raxol.UI.ThemeResolverCachedTest do
 
       # Should return system default theme when theme not found, but consistently
       assert result1 == result2
-      # When theme name is not found, it returns the system's default theme, not the passed-in default
+      # When theme name is not found, it returns the system's default theme,
+      # not the passed-in default
       assert result1.id == :default
       assert is_struct(result1, Raxol.UI.Theming.Theme)
     end

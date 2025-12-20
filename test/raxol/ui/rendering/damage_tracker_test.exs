@@ -302,9 +302,24 @@ defmodule Raxol.UI.Rendering.DamageTrackerTest do
 
     test "processes larger damage maps" do
       damage = %{
-        [0] => %{path: [0], type: :content, priority: :medium, bounds: %{x: 0, y: 0, width: 100, height: 50}},
-        [1] => %{path: [1], type: :layout, priority: :high, bounds: %{x: 50, y: 25, width: 100, height: 50}},
-        [2] => %{path: [2], type: :style, priority: :low, bounds: %{x: 200, y: 0, width: 50, height: 25}}
+        [0] => %{
+          path: [0],
+          type: :content,
+          priority: :medium,
+          bounds: %{x: 0, y: 0, width: 100, height: 50}
+        },
+        [1] => %{
+          path: [1],
+          type: :layout,
+          priority: :high,
+          bounds: %{x: 50, y: 25, width: 100, height: 50}
+        },
+        [2] => %{
+          path: [2],
+          type: :style,
+          priority: :low,
+          bounds: %{x: 200, y: 0, width: 50, height: 25}
+        }
       }
 
       optimized = DamageTracker.optimize_damage_regions(damage)

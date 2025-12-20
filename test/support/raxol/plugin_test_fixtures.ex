@@ -362,7 +362,8 @@ defmodule Raxol.Test.PluginTestFixtures do
     def get_api_version, do: "1.0.0"
 
     # Added Behaviour Callbacks
-    # handle_input and handle_output are effectively implemented by handle_input_crash / handle_output_crash
+    # handle_input and handle_output are effectively implemented by
+    # handle_input_crash / handle_output_crash
     # for the specific commands. Adding general ones for completeness.
     def handle_input(_input, state), do: {:ok, state}
     def handle_output(_output, state), do: {:ok, state}

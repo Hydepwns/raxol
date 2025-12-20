@@ -31,8 +31,9 @@ defmodule Raxol.Test.Integration.Assertions do
     received =
       Enum.any?(messages, fn
         # Match against the module atom and the event struct's type
-        # {:event_dispatched, ^child_module_expected, %Raxol.Core.Events.Event{type: actual_event_type}} ->
-        #   actual_event_type == expected_event_type_atom
+        # {:event_dispatched, ^child_module_expected,
+        #   %Raxol.Core.Events.Event{type: actual_event_type}} ->
+        #     actual_event_type == expected_event_type_atom
         # More flexible match
         {:event_dispatched, mod, event_struct} ->
           mod == child_module_expected &&
@@ -59,8 +60,9 @@ defmodule Raxol.Test.Integration.Assertions do
 
     updated =
       Enum.any?(messages, fn
-        # {:event_dispatched, ^parent_module_expected, %Raxol.Core.Events.Event{type: actual_event_type}} ->
-        #   actual_event_type == expected_event_type_atom
+        # {:event_dispatched, ^parent_module_expected,
+        #   %Raxol.Core.Events.Event{type: actual_event_type}} ->
+        #     actual_event_type == expected_event_type_atom
         # More flexible match
         {:event_dispatched, mod, event_struct} ->
           mod == parent_module_expected &&

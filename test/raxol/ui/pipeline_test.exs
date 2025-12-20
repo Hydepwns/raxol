@@ -389,7 +389,8 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     Process.sleep(10)
 
     # Update to new tree (should trigger a partial update)
-    # At this point, previous_tree should be old_tree, so TreeDiffer should generate a partial update
+    # At this point, previous_tree should be old_tree, so TreeDiffer should
+    # generate a partial update
     Pipeline.update_tree(new_tree)
 
     # The diff should be at path [] (root), child 1

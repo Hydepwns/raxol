@@ -528,7 +528,8 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       # Verify parent remains stable (accounting for mounted state change)
       expected_parent_state = Map.put(parent.state, :mounted, true)
 
-      # Only compare relevant fields, excluding component_manager_id which is added by ComponentManager
+      # Only compare relevant fields, excluding component_manager_id which is
+      # added by ComponentManager
       relevant_fields = [
         :id,
         :type,

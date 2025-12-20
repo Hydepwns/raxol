@@ -68,8 +68,11 @@ defmodule Raxol.Property.CoreTest do
         assert is_list(result)
 
         # Time should scale roughly linearly (with some tolerance)
-        # Adjusted expectation based on current parser performance characteristics and system variance
-        expected_max = size * 800  # 800 microseconds per char as upper bound (allowing for test environment overhead)
+        # Adjusted expectation based on current parser performance characteristics
+        # and system variance
+        # 800 microseconds per char as upper bound
+        # (allowing for test environment overhead)
+        expected_max = size * 800
         assert time < expected_max
       end
     end

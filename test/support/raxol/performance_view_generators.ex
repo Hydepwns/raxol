@@ -210,7 +210,8 @@ defmodule Raxol.Test.PerformanceViewGenerators do
     # Use count to determine how many frames, though spinner_chars is fixed length
     # This example will cycle through spinner_chars `count` times if count > length(spinner_chars)
     # or take a subset if count < length(spinner_chars)
-    # For simplicity, let's just create one frame for each char, ignoring count for now if not needed for variation
+    # For simplicity, let's just create one frame for each char, ignoring count
+    # for now if not needed for variation
     for {char, _idx} <-
           Enum.take(Stream.cycle(spinner_chars), count) |> Enum.with_index() do
       View.box(

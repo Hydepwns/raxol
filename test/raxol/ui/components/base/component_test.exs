@@ -264,7 +264,8 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
           }
         })
 
-      # If you want to check contrast, ARIA, etc., use the helpers from Raxol.AccessibilityTestHelpers
+      # If you want to check contrast, ARIA, etc., use the helpers from
+      # Raxol.AccessibilityTestHelpers
       assert rendered.type == :test_component
     end
   end

@@ -93,8 +93,10 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       emulator = Emulator.new(80, 24)
 
       # Ensure cursor starts hidden for the test to be meaningful (if default is visible)
-      # Note: We might need a function like Emulator.set_mode(emulator, :cursor_visible, false) if available
-      # Or assume a reset sequence was processed: emulator = process_input(emulator, "\e[?25l") first
+      # Note: We might need a function like
+      # Emulator.set_mode(emulator, :cursor_visible, false) if available
+      # Or assume a reset sequence was processed:
+      # emulator = process_input(emulator, "\e[?25l") first
 
       # Example private mode sequence: Show Cursor (DECTCEM)
       # CSI ? 25 h

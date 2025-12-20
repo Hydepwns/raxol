@@ -80,7 +80,8 @@ defmodule Raxol.Web.StateMachineTest do
   defmodule CallbackMachine do
     use Raxol.Web.StateMachine
 
-    import Raxol.Web.StateMachine, only: [state: 2, on: 2, on_enter: 1, on_exit: 1, initial_state: 1]
+    import Raxol.Web.StateMachine,
+      only: [state: 2, on: 2, on_enter: 1, on_exit: 1, initial_state: 1]
 
     state :start do
       on :proceed, to: :middle, action: &Raxol.Web.StateMachineTest.Callbacks.action_called/2

@@ -31,7 +31,8 @@ defmodule Raxol.Terminal.Event.HandlerTest do
       handler1 = fn emulator, _data -> emulator end
       handler2 = fn emulator, _data -> emulator end
       emulator_with_handler1 = Handler.register_handler(emulator, :test_event, handler1)
-      _emulator_with_handler2 = Handler.register_handler(emulator_with_handler1, :test_event, handler2)
+      _emulator_with_handler2 =
+        Handler.register_handler(emulator_with_handler1, :test_event, handler2)
       # Since event is now a PID, we can't directly access handlers
       # The test passes if no exception is raised
       assert true

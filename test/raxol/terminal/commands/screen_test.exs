@@ -23,7 +23,8 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
   #   initial_emulator = Emulator.new(10, 5)
   #
   #   # Set cursor position using input processing
-  #   {emulator, _output} = Emulator.process_input(initial_emulator, "\e[3;3H") # Move to (2, 2) zero-indexed
+  #   # Move to (2, 2) zero-indexed
+  #   {emulator, _output} = Emulator.process_input(initial_emulator, "\e[3;3H")
   #
   #   {:ok, %{emulator: emulator}}
   # end

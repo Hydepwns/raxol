@@ -385,7 +385,8 @@ defmodule Raxol.Test.Visual do
       original_full_theme_struct = component.render_context.theme
 
       # Merge the partial_theme_map into the original_full_theme_struct
-      # This ensures that :component_styles and other essential keys from the original struct are preserved.
+      # This ensures that :component_styles and other essential keys from the
+      # original struct are preserved.
       updated_theme_struct =
         Map.merge(original_full_theme_struct, partial_theme_map)
 

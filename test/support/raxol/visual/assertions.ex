@@ -201,7 +201,8 @@ defmodule Raxol.Test.Visual.Assertions do
   # """
   # def assert_layout_constraints(component, dimensions) do
   #   message =
-  #     "expected component layout to match constraints with dimensions #{inspect(dimensions)}, but it didn't"
+  #     "expected component layout to match constraints with " <>
+  #       "dimensions #{inspect(dimensions)}, but it didn't"
   #
   #   # Commenting out the call as the function is a placeholder
   #   # case Visual.verify_layout_constraints(component, dimensions) do
