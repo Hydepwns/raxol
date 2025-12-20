@@ -154,7 +154,7 @@ defmodule Raxol.Core.Style do
 
     case codes do
       [] -> ""
-      _ -> "\e[#{Enum.join(codes, ";")}m"
+      _ -> "\e[#{codes |> Enum.reverse() |> Enum.join(";")}m"
     end
   end
 
@@ -171,7 +171,7 @@ defmodule Raxol.Core.Style do
 
   # Private helpers
 
-  defp maybe_add_code(codes, true, code), do: codes ++ [code]
+  defp maybe_add_code(codes, true, code), do: [code | codes]
   defp maybe_add_code(codes, _, _code), do: codes
 
   defp add_fg_color(codes, nil), do: codes
@@ -179,24 +179,23 @@ defmodule Raxol.Core.Style do
   defp add_fg_color(codes, color) when is_atom(color) do
     case Map.get(@color_codes, color) do
       nil -> codes
-      code -> codes ++ [Integer.to_string(30 + code)]
+      code -> [Integer.to_string(30 + code) | codes]
     end
   end
 
   defp add_fg_color(codes, index) when is_integer(index) and index in 0..255 do
-    codes ++ ["38", "5", Integer.to_string(index)]
+    [Integer.to_string(index), "5", "38" | codes]
   end
 
   defp add_fg_color(codes, {r, g, b})
        when r in 0..255 and g in 0..255 and b in 0..255 do
-    codes ++
-      [
-        "38",
-        "2",
-        Integer.to_string(r),
-        Integer.to_string(g),
-        Integer.to_string(b)
-      ]
+    [
+      Integer.to_string(b),
+      Integer.to_string(g),
+      Integer.to_string(r),
+      "2",
+      "38" | codes
+    ]
   end
 
   defp add_fg_color(codes, _), do: codes
@@ -206,24 +205,23 @@ defmodule Raxol.Core.Style do
   defp add_bg_color(codes, color) when is_atom(color) do
     case Map.get(@color_codes, color) do
       nil -> codes
-      code -> codes ++ [Integer.to_string(40 + code)]
+      code -> [Integer.to_string(40 + code) | codes]
     end
   end
 
   defp add_bg_color(codes, index) when is_integer(index) and index in 0..255 do
-    codes ++ ["48", "5", Integer.to_string(index)]
+    [Integer.to_string(index), "5", "48" | codes]
   end
 
   defp add_bg_color(codes, {r, g, b})
        when r in 0..255 and g in 0..255 and b in 0..255 do
-    codes ++
-      [
-        "48",
-        "2",
-        Integer.to_string(r),
-        Integer.to_string(g),
-        Integer.to_string(b)
-      ]
+    [
+      Integer.to_string(b),
+      Integer.to_string(g),
+      Integer.to_string(r),
+      "2",
+      "48" | codes
+    ]
   end
 
   defp add_bg_color(codes, _), do: codes

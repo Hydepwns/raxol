@@ -536,7 +536,7 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
         case find_ligature_at_position(remaining_text, ligature_map) do
           {ligature_text, _unicode, ligature_length} ->
             # This position starts a ligature
-            new_acc_chars = acc_chars ++ [ligature_text]
+            new_acc_chars = [ligature_text | acc_chars]
 
             # Map all positions in the ligature to the same visual position
             ligature_positions =
@@ -549,7 +549,7 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
 
           nil ->
             # Regular character
-            new_acc_chars = acc_chars ++ [char]
+            new_acc_chars = [char | acc_chars]
             new_acc_map = Map.put(acc_map, original_pos, visual_pos)
             {new_acc_chars, new_acc_map}
         end
@@ -619,7 +619,7 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
               position: pos
             }
 
-            {acc ++ [ligature_info], pos + length}
+            {[ligature_info | acc], pos + length}
 
           nil ->
             char_info = %{
@@ -630,11 +630,11 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
               position: pos
             }
 
-            {acc ++ [char_info], pos + 1}
+            {[char_info | acc], pos + 1}
         end
       end)
 
-    result
+    Enum.reverse(result)
   end
 
   @doc """

@@ -101,7 +101,7 @@ defmodule Raxol.Core.Renderer do
     |> chunk_by_style()
     |> Enum.map_join("", fn {style, chars} ->
       ansi_prefix = Style.to_ansi(style)
-      text = Enum.join(chars)
+      text = chars |> Enum.reverse() |> Enum.join()
 
       case ansi_prefix do
         "" -> text
@@ -118,7 +118,7 @@ defmodule Raxol.Core.Renderer do
           [{cell.style, [cell.char]}]
 
         [{prev_style, chars} | rest] when prev_style == cell.style ->
-          [{prev_style, chars ++ [cell.char]} | rest]
+          [{prev_style, [cell.char | chars]} | rest]
 
         _ ->
           [{cell.style, [cell.char]} | acc]
@@ -142,23 +142,25 @@ defmodule Raxol.Core.Renderer do
           # Cell changed, accumulate or start new run
           case run_start do
             nil -> {ops, x, [new_cell]}
-            _ -> {ops, run_start, run_chars ++ [new_cell]}
+            _ -> {ops, run_start, [new_cell | run_chars]}
           end
       end
     end)
     |> then(fn {ops, run_start, run_chars} ->
       flush_run(ops, run_start, run_chars, y, new_cells)
       |> elem(0)
+      |> Enum.reverse()
     end)
   end
 
   defp flush_run(ops, nil, _run_chars, _y, _cells), do: {ops, nil, []}
 
   defp flush_run(ops, run_start, run_chars, y, _cells) do
-    text = Enum.map_join(run_chars, "", & &1.char)
-    style = List.first(run_chars) |> Map.get(:style, %{})
+    reversed_chars = Enum.reverse(run_chars)
+    text = Enum.map_join(reversed_chars, "", & &1.char)
+    style = List.first(reversed_chars) |> Map.get(:style, %{})
 
-    new_ops = ops ++ [{:move, run_start, y}, {:write, text, style}]
+    new_ops = [{:move, run_start, y}, {:write, text, style} | ops]
     {new_ops, nil, []}
   end
 
