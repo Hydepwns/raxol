@@ -9,8 +9,8 @@ defmodule Raxol.UI.Theming.Theme do
   - Theme variants and accessibility
   """
 
-  alias Raxol.Style.Colors.{Color, Utilities}
   alias Raxol.Core.ColorSystem
+  alias Raxol.Style.Colors.{Color, Utilities}
 
   @type color_value :: Color.t() | atom() | String.t()
   @type style_map :: %{atom() => any()}
@@ -66,7 +66,7 @@ defmodule Raxol.UI.Theming.Theme do
   @doc """
   Creates a new theme with the given attributes.
   """
-  def new(), do: new(default_attrs())
+  def new, do: new(default_attrs())
 
   def new(attrs) when is_map(attrs) do
     attrs = process_colors(attrs)
@@ -399,7 +399,7 @@ defmodule Raxol.UI.Theming.Theme do
     end
   end
 
-  def default_theme_id(), do: :default
+  def default_theme_id, do: :default
 
   case Code.ensure_loaded?(String.Chars) do
     true ->

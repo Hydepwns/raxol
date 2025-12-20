@@ -29,8 +29,8 @@ defmodule Raxol.Terminal.Screen do
   ```
   """
 
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.ScreenBuffer
 
   @doc """
   Resizes the screen buffer to new dimensions.

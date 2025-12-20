@@ -6,10 +6,10 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
 
   # Delegation to focused modules
   alias Raxol.Terminal.Buffer.LineOperations.{
-    Insertion,
+    CharOperations,
     Deletion,
-    Management,
-    CharOperations
+    Insertion,
+    Management
   }
 
   # Delegate insertion operations

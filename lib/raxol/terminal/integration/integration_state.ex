@@ -4,11 +4,11 @@ defmodule Raxol.Terminal.Integration.State do
   """
 
   alias Raxol.Terminal.{
-    ScreenBuffer.Manager,
-    Render.RenderServer,
+    Integration.Config,
     IO.IOServer,
-    Window.Manager,
-    Integration.Config
+    Render.RenderServer,
+    ScreenBuffer.Manager,
+    Window.Manager
   }
 
   @type t :: %__MODULE__{

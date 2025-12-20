@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Window do
   ```
   """
 
-  alias Raxol.Terminal.{Emulator, Config}
+  alias Raxol.Terminal.{Config, Emulator}
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @type window_state :: :active | :inactive | :minimized | :maximized

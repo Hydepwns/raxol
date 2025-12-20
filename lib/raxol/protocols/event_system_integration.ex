@@ -6,10 +6,11 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   the current event management system and the new protocol-based approach.
   """
 
-  alias Raxol.Protocols.EventHandler
+  require Logger
+
   alias Raxol.Core.Events.EventManager
   alias Raxol.Core.Runtime.Log
-  require Logger
+  alias Raxol.Protocols.EventHandler
 
   # Event Bus struct
   defmodule EventBus do

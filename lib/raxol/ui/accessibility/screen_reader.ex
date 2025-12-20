@@ -61,8 +61,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Platform
-  alias Raxol.UI.Events.KeyboardTracker
   alias Raxol.Core.Runtime.Log
+  alias Raxol.UI.Events.KeyboardTracker
 
   defstruct [
     :config,

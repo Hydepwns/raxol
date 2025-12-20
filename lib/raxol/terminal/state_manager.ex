@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.StateManager do
   alias Raxol.Core.StateManager
 
   # Delegate common state operations to consolidated StateManager
-  def init(), do: {:ok, %{}}
+  def init, do: {:ok, %{}}
   def init(opts), do: {:ok, Keyword.get(opts, :initial_state, %{})}
   defdelegate get(state, key), to: StateManager
   defdelegate get(state, key, default), to: StateManager

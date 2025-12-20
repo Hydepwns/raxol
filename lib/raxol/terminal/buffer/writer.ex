@@ -4,9 +4,9 @@ defmodule Raxol.Terminal.Buffer.Writer do
   Responsible for character width, bidirectional text segmentation, and cell creation.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ScreenBuffer
 
   @doc """
   Writes a character to the buffer at the specified position.

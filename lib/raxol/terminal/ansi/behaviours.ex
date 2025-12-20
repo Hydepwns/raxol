@@ -33,8 +33,8 @@ defmodule Raxol.Terminal.ANSI.Behaviours do
     Behaviour for managing terminal state saving and restoring.
     """
 
-    alias Raxol.Terminal.Emulator
     alias Raxol.Terminal.ANSI.TerminalState
+    alias Raxol.Terminal.Emulator
 
     # Represents the map of state data from restore_state
     @type state_data_map :: map()

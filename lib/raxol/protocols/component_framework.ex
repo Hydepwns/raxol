@@ -33,7 +33,7 @@ defmodule Raxol.Protocols.ComponentFramework do
   ```
   """
 
-  alias Raxol.Protocols.{Renderable, Styleable, EventHandler, Serializable}
+  alias Raxol.Protocols.{EventHandler, Renderable, Serializable, Styleable}
 
   @doc """
   Macro for defining protocol-aware components.

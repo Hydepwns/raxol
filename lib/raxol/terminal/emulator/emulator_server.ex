@@ -6,8 +6,9 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Terminal.Emulator
+
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.Emulator
 
   ## Client API
   # Use BaseManager's start_link - it accepts keyword list options

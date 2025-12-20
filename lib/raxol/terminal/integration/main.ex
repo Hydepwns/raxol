@@ -11,14 +11,14 @@ defmodule Raxol.Terminal.Integration do
   - Configuration
   """
 
-  alias Raxol.Terminal.Integration.State
-  alias Raxol.Terminal.Integration.Buffer
-  alias Raxol.Terminal.Integration.Renderer, as: IntegrationRenderer
-  alias Raxol.Terminal.Integration.Config
-  alias Raxol.Terminal.ScreenBuffer.Manager, as: BufferManager
-  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
-  alias Raxol.Terminal.Command.Manager, as: CommandHistoryManager
   alias Raxol.Terminal.Buffer.Scroll
+  alias Raxol.Terminal.Command.Manager, as: CommandHistoryManager
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Terminal.Integration.Buffer
+  alias Raxol.Terminal.Integration.Config
+  alias Raxol.Terminal.Integration.Renderer, as: IntegrationRenderer
+  alias Raxol.Terminal.Integration.State
+  alias Raxol.Terminal.ScreenBuffer.Manager, as: BufferManager
 
   @doc """
   Initializes a new terminal integration state.

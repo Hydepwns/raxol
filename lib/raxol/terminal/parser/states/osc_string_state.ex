@@ -4,10 +4,11 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
   This state is entered when an OSC sequence is initiated.
   """
 
+  require Raxol.Core.Runtime.Log
+
+  alias Raxol.Terminal.Commands.Executor
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.ParserState, as: State
-  alias Raxol.Terminal.Commands.Executor
-  require Raxol.Core.Runtime.Log
 
   @doc """
   Processes input when the parser is in the :osc_string state.

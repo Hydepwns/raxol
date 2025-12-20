@@ -5,8 +5,8 @@ defmodule Raxol.Terminal.Buffer.Queries do
   including dimensions, content, and selection state.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ScreenBuffer
 
   @doc """
   Gets the dimensions of the buffer.

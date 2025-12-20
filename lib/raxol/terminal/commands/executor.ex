@@ -1,12 +1,12 @@
 defmodule Raxol.Terminal.Commands.Executor do
   @moduledoc false
 
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Commands.CommandsParser, as: Parser
   alias Raxol.Terminal.Commands.CSIHandler
-  alias Raxol.Terminal.Commands.OSCHandler
   alias Raxol.Terminal.Commands.DCSHandler
-  alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.Commands.OSCHandler
+  alias Raxol.Terminal.Emulator
 
   @basic_commands [?m, ?H, ?r, ?J, ?K]
   @cursor_commands [?A, ?B, ?C, ?D, ?E, ?F, ?G, ?d]

@@ -15,7 +15,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     # Normalize command name: trim whitespace and downcase
     processed_command_name =
       command_name
-      |> (fn name -> if is_atom(name), do: Atom.to_string(name), else: name end).()
+      |> to_string_if_atom()
       |> String.trim()
       |> String.downcase()
 
@@ -57,6 +57,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   defp process_namespace(namespace) when is_atom(namespace), do: namespace
   @spec process_namespace(term()) :: nil
   defp process_namespace(_), do: nil
+
+  @spec to_string_if_atom(atom() | String.t()) :: String.t()
+  defp to_string_if_atom(name) when is_atom(name), do: Atom.to_string(name)
+  defp to_string_if_atom(name), do: name
 
   @spec safe_string_to_existing_atom(String.t()) ::
           {:ok, atom()} | {:error, :atom_not_found}

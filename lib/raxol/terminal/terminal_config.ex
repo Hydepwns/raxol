@@ -9,8 +9,8 @@ defmodule Raxol.Terminal.Config do
   - Configuration persistence
   """
 
-  alias Raxol.Terminal.Config.{Persistence}
   alias Raxol.Terminal.Config.ConfigValidator, as: Validator
+  alias Raxol.Terminal.Config.Persistence
 
   defstruct [
     :version,

@@ -3,10 +3,10 @@ defmodule Raxol.Terminal.Integration.Renderer do
   Handles terminal output rendering and display management using Termbox2.
   """
 
+  alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.Integration.State
   alias Raxol.Terminal.ScreenBuffer.Manager
-  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
-  alias Raxol.Core.Runtime.Log
 
   @doc """
   Initializes the underlying terminal system.

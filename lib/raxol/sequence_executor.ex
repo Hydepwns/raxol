@@ -3,8 +3,8 @@ defmodule Raxol.SequenceExecutor do
   Executes sequences of commands and animations.
   """
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Sequence
+  alias Raxol.Terminal.Emulator
 
   @doc """
   Executes a sequence of terminal commands.

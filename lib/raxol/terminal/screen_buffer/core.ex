@@ -4,8 +4,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   Consolidates: Initializer, Common, Helpers, and basic state management.
   """
 
-  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Cell
 
   # Minimal, focused struct definition
   defstruct [

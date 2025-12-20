@@ -16,8 +16,8 @@ defmodule Raxol.UI.Terminal do
   - Accessibility-friendly output formatting
   """
 
-  alias Raxol.Style.Colors.System, as: ColorSystem
   alias Raxol.Core.I18n
+  alias Raxol.Style.Colors.System, as: ColorSystem
 
   @spec clear() :: :ok
   @doc """

@@ -5,8 +5,8 @@ defmodule Raxol.Terminal.Emulator.TextOperations do
   """
 
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator.{BufferOperations, Helpers}
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Emulator.{Helpers, BufferOperations}
 
   @type emulator :: Emulator.t()
 

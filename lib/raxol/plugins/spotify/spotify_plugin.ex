@@ -75,7 +75,7 @@ defmodule Raxol.Plugins.Spotify do
 
   @behaviour Raxol.Plugin
 
-  alias Raxol.Core.{Buffer, Box}
+  alias Raxol.Core.{Box, Buffer}
   alias Raxol.Plugins.Spotify.{API, Auth, Config}
 
   @type mode ::

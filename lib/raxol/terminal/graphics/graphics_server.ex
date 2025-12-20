@@ -32,11 +32,12 @@ defmodule Raxol.Terminal.Graphics.GraphicsServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Terminal.Graphics.KittyProtocol
-  alias Raxol.Terminal.Graphics.ImageProcessor
-  alias Raxol.Terminal.Graphics.ImageCache
-  alias Raxol.Terminal.ANSI.SixelGraphics
+
   alias Raxol.System.Platform
+  alias Raxol.Terminal.ANSI.SixelGraphics
+  alias Raxol.Terminal.Graphics.ImageCache
+  alias Raxol.Terminal.Graphics.ImageProcessor
+  alias Raxol.Terminal.Graphics.KittyProtocol
 
   # Types
   @type graphics_id :: non_neg_integer()

@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Input.InputProcessor do
-  alias Raxol.Terminal.Input.Event.{MouseEvent, KeyEvent}
+  alias Raxol.Terminal.Input.Event.{KeyEvent, MouseEvent}
 
   @moduledoc """
   Processes input events for the terminal emulator.

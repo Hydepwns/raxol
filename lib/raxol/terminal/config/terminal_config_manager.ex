@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Config.Manager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Terminal.{Emulator, Config}
+  alias Raxol.Terminal.{Config, Emulator}
   require Raxol.Core.Runtime.Log
 
   # Client API

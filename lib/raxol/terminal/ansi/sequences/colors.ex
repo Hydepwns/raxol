@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   including 16-color mode, 256-color mode, and true color (24-bit) mode.
   """
 
-  alias Raxol.Style.Colors.{Color, Advanced}
+  alias Raxol.Style.Colors.{Advanced, Color}
   alias Raxol.Terminal.ANSI.TextFormatting
 
   # Standard 16 colors

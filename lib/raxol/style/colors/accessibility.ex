@@ -3,9 +3,10 @@ defmodule Raxol.Style.Colors.Accessibility do
   Provides utilities for color accessibility, focusing on WCAG contrast.
   """
 
-  alias Raxol.Style.Colors.Utilities
-  alias Raxol.Style.Colors.Color
   require Raxol.Core.Runtime.Log
+
+  alias Raxol.Style.Colors.Color
+  alias Raxol.Style.Colors.Utilities
 
   # WCAG contrast ratio thresholds
   # AA level for normal text

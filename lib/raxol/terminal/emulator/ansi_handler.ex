@@ -13,8 +13,8 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
     ANSI.SequenceHandler,
     ANSI.SGRProcessor,
     Commands.CursorHandler,
-    Operations.ScreenOperations,
-    ModeManager
+    ModeManager,
+    Operations.ScreenOperations
   }
 
   alias Raxol.Terminal.Emulator.CommandHandler

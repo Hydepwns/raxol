@@ -8,10 +8,10 @@ defmodule Raxol.Terminal.ControlCodes do
 
   require Raxol.Core.Runtime.Log
 
+  alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.Cursor.Movement
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cursor.Movement
-  alias Raxol.Terminal.ANSI.CharacterSets
   # Removed unused alias: ModeManager
 
   # C0 Constants

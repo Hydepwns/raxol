@@ -4,8 +4,8 @@ defmodule Raxol.Terminal.EmulatorFactory do
   This module is responsible for initializing and configuring new emulator instances.
   """
 
-  alias Raxol.Terminal.{ScreenManager, ParserStateManager}
   alias Raxol.Terminal.Emulator.Struct
+  alias Raxol.Terminal.{ParserStateManager, ScreenManager}
 
   @doc """
   Creates a new terminal emulator with the given options.

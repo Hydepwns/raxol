@@ -1026,7 +1026,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   end
 
   # Override new() to match test expectations
-  def new() do
+  def new do
     %{
       g0: Raxol.Terminal.ANSI.CharacterSets.ASCII,
       g1: Raxol.Terminal.ANSI.CharacterSets.DEC,

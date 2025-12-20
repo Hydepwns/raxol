@@ -10,8 +10,8 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   import Raxol.Core.ErrorHandler
   import Raxol.Core.Performance.Profiler
   alias Raxol.Core.ErrorRecovery
-  alias Raxol.UI.Rendering.Pipeline
   alias Raxol.Core.Runtime.Log
+  alias Raxol.UI.Rendering.Pipeline
 
   # Target 60 FPS
   @render_timeout 16

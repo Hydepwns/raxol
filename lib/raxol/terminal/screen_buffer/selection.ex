@@ -4,9 +4,9 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   Handles selection creation, updates, text extraction, and clipboard operations.
   """
 
+  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ScreenBuffer.Core
   alias Raxol.Terminal.ScreenBuffer.SharedOperations
-  alias Raxol.Terminal.Cell
 
   @type selection ::
           {non_neg_integer(), non_neg_integer(), non_neg_integer(),

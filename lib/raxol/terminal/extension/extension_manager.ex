@@ -41,7 +41,7 @@ defmodule Raxol.Terminal.Extension.ExtensionManager do
   @doc """
   Creates a new extension manager.
   """
-  def new() do
+  def new do
     %__MODULE__{}
   end
 

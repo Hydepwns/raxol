@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Commands.Editor do
   Handles editor-related terminal commands.
   """
 
-  alias Raxol.Terminal.Buffer.{LineEditor, CharEditor, Eraser}
+  alias Raxol.Terminal.Buffer.{CharEditor, Eraser, LineEditor}
   alias Raxol.Terminal.Emulator
 
   def insert_lines(buffer, row, count, default_style) do

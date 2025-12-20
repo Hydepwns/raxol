@@ -38,8 +38,9 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Terminal.Rendering.GPUAccelerator, as: BaseGPUAccelerator
+
   alias Raxol.Terminal.Graphics.ImageProcessor
+  alias Raxol.Terminal.Rendering.GPUAccelerator, as: BaseGPUAccelerator
 
   @type gpu_context :: %{
           backend: :metal | :vulkan | :opengl | :software,

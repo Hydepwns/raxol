@@ -3,8 +3,8 @@ defmodule Raxol.Terminal.Emulator.ModeOperations do
   Mode operation functions extracted from the main emulator module.
   Handles terminal mode setting and resetting operations.
   """
-  alias Raxol.Terminal.Emulator
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.Emulator
 
   @type emulator :: Emulator.t()
 

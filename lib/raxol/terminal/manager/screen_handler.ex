@@ -10,10 +10,11 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Terminal.ScreenUpdater
-  alias Raxol.Terminal.NotificationManager
-  alias Raxol.Terminal.MemoryManager
+
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
+  alias Raxol.Terminal.MemoryManager
+  alias Raxol.Terminal.NotificationManager
+  alias Raxol.Terminal.ScreenUpdater
 
   @doc """
   Processes a single screen update and returns updated state.

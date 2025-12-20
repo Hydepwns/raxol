@@ -8,8 +8,9 @@ defmodule Raxol.Terminal.TerminalProcess do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Terminal.TerminalRegistry
+
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.TerminalRegistry
   # Terminal process aliases will be added as needed
 
   defstruct [

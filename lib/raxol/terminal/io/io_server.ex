@@ -16,9 +16,9 @@ defmodule Raxol.Terminal.IO.IOServer do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{
-    ScreenBuffer.Manager,
+    Commands.History,
     Render.RenderServer,
-    Commands.History
+    ScreenBuffer.Manager
   }
 
   # Types

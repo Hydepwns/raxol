@@ -7,9 +7,9 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   implements robust lifecycle hooks, and supports accessibility/extra props.
   """
 
+  alias Raxol.Core.Events.Event
   alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
-  alias Raxol.Core.Events.Event
 
   @behaviour Raxol.UI.Components.Base.Component
 

@@ -36,8 +36,8 @@ defmodule Raxol.UI.State.Hooks do
   - `Raxol.UI.State.HooksFunctional` (Task-based implementation)
   """
 
-  alias Raxol.UI.State.Management.StateManagementServer, as: Server
   alias Raxol.Core.Runtime.Log
+  alias Raxol.UI.State.Management.StateManagementServer, as: Server
   # Result type for safe operations (from HooksRefactored)
   defmodule Result do
     @moduledoc """

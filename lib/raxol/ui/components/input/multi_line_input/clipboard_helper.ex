@@ -3,8 +3,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
   Clipboard operations for MultiLineInput component.
   """
 
-  alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.System.Clipboard
+  alias Raxol.UI.Components.Input.MultiLineInput
 
   @doc """
   Copies the current selection to clipboard.

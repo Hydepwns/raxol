@@ -10,8 +10,8 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   operation layers without requiring architectural changes.
   """
 
-  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Cell
 
   @doc """
   Convert buffer from cells format to lines format.

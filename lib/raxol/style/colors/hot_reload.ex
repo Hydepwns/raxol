@@ -9,8 +9,8 @@ defmodule Raxol.Style.Colors.HotReload do
 
   use Raxol.Core.Behaviours.BaseManager
 
-  alias Raxol.Style.Colors.Persistence
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Style.Colors.Persistence
 
   # Check for changes every 100ms (faster for tests)
   @check_interval 100

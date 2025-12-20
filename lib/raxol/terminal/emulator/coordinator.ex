@@ -6,9 +6,9 @@ defmodule Raxol.Terminal.Emulator.Coordinator do
   """
 
   alias Raxol.Terminal.{
-    ScreenBuffer,
     Emulator.Constructors,
-    Emulator.Reset
+    Emulator.Reset,
+    ScreenBuffer
   }
 
   @doc """

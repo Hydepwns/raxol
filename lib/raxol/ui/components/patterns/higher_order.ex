@@ -37,8 +37,8 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
       ]).(UserList)
   """
 
-  alias Raxol.UI.State.{Context, Hooks}
   alias Raxol.Core.Runtime.Log
+  alias Raxol.UI.State.{Context, Hooks}
 
   @doc """
   Creates a HOC that adds loading state management.

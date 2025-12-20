@@ -5,9 +5,10 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.ANSI.KittyGraphics
+
   alias Raxol.Plugins.Visualization.DrawingUtils
+  alias Raxol.Terminal.ANSI.KittyGraphics
+  alias Raxol.Terminal.Cell
 
   @doc """
   Public entry point for rendering image content.

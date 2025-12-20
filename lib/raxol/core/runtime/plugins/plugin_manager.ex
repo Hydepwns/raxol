@@ -46,9 +46,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
       PluginManager.disable_plugin(:my_plugin)
   """
 
-  alias Raxol.Core.Runtime.Plugins.PluginRegistry
-  alias Raxol.Core.Runtime.Plugins.PluginLifecycle
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Plugins.PluginLifecycle
+  alias Raxol.Core.Runtime.Plugins.PluginRegistry
 
   @type plugin_id :: atom() | String.t()
   @type plugin_metadata :: map()

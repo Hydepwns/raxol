@@ -3,9 +3,7 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   Provides buffer management functionality for the terminal emulator.
   """
 
-  alias Raxol.Terminal.{
-    ScreenBuffer
-  }
+  alias Raxol.Terminal.ScreenBuffer
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 

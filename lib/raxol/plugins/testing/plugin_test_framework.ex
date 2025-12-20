@@ -74,6 +74,7 @@ defmodule Raxol.Plugins.Testing.PluginTestFramework do
       import Raxol.Plugins.Testing.PluginTestFramework
       import Raxol.Plugins.Testing.Assertions
       import Raxol.Plugins.Testing.Helpers
+      import Raxol.Plugins.Testing.FrameworkHelpers
 
       alias Raxol.Plugins.Testing.MockTerminal
       alias Raxol.Plugins.Testing.PluginRunner
@@ -394,12 +395,18 @@ defmodule Raxol.Plugins.Testing.FrameworkAssertions do
   end
 end
 
-defmodule Raxol.Plugins.Testing.Helpers do
+defmodule Raxol.Plugins.Testing.FrameworkHelpers do
   @moduledoc """
-  Test helper functions for common plugin testing scenarios
+  Test helper functions for common plugin testing scenarios.
+  Note: This module provides additional helpers specific to the PluginTestFramework.
+  For basic test helpers, see Raxol.Plugins.Testing.Helpers.
   """
 
-  def create_test_config(overrides \\ %{}) do
+  @doc """
+  Creates a test config for git plugin testing with git-specific defaults.
+  Returns as keyword list for compatibility with BaseManager.
+  """
+  def create_git_test_config(overrides \\ %{}) do
     default_config = %{
       enabled: true,
       hotkey: "ctrl+t",
@@ -447,7 +454,7 @@ defmodule Raxol.Plugins.Testing.Helpers do
     end
   end
 
-  def create_temp_directory() do
+  def create_temp_directory do
     # Create temp directory but don't clean it up automatically
     temp_dir = Path.join("/tmp", "plugin_test_#{:rand.uniform(1_000_000)}")
     File.mkdir_p!(temp_dir)

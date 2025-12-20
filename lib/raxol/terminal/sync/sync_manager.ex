@@ -5,8 +5,9 @@ defmodule Raxol.Terminal.Sync.Manager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Terminal.Sync.{System, Component}
+
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.Sync.{Component, System}
 
   defstruct [
     :components,

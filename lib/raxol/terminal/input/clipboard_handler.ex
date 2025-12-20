@@ -21,9 +21,9 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
   - Security controls and size limits
   """
 
+  alias Raxol.Core.Runtime.Log
   alias Raxol.System.Clipboard
   alias Raxol.Terminal.Input.CoreHandler
-  alias Raxol.Core.Runtime.Log
   # OSC 52 constants
   @osc_52_prefix "\e]52;"
   @osc_52_suffix "\e\\"

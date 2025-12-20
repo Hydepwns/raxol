@@ -11,8 +11,8 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   - Improved cursor control
   """
 
+  alias Raxol.Terminal.ANSI.Monitor
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.ANSI.{Monitor}
 
   # --- Types ---
 

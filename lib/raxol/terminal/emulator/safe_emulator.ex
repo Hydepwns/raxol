@@ -5,9 +5,10 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   alias Raxol.Core.ErrorRecovery
-  alias Raxol.Terminal.Emulator.Telemetry
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.Emulator.Telemetry
 
   # 1MB max input
   @max_input_size 1_048_576

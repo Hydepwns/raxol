@@ -3,10 +3,10 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
   Handles the :csi_param state of the terminal parser.
   """
 
+  alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.Commands.Executor
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.ParserState, as: State
-  alias Raxol.Terminal.Commands.Executor
-  alias Raxol.Core.Runtime.Log
 
   @doc """
   Processes input when the parser is in the :csi_param state.

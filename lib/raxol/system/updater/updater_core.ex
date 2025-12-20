@@ -3,8 +3,9 @@ defmodule Raxol.System.Updater.Core do
   Core update logic and GenServer callbacks for the Raxol System Updater.
   """
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.System.Updater.{Network, Validation, State}
+
   alias Raxol.Core.Runtime.Log
+  alias Raxol.System.Updater.{Network, State, Validation}
 
   @github_repo "username/raxol"
   @version Mix.Project.config()[:version]

@@ -35,9 +35,9 @@ defmodule Raxol.Terminal.ANSI.Utils do
     Processes ANSI escape sequences for terminal control.
     """
 
-    alias Raxol.Terminal.Cursor
+    alias Raxol.Terminal.ANSI.{CharacterSets, TextFormatting}
     alias Raxol.Terminal.Buffer.Eraser
-    alias Raxol.Terminal.ANSI.{TextFormatting, CharacterSets}
+    alias Raxol.Terminal.Cursor
 
     @doc """
     Processes an ANSI escape sequence and updates the terminal state accordingly.
@@ -165,7 +165,7 @@ defmodule Raxol.Terminal.ANSI.Utils do
     """
 
     require Raxol.Core.Runtime.Log
-    alias Raxol.Terminal.ANSI.{StateMachine, Monitor}
+    alias Raxol.Terminal.ANSI.{Monitor, StateMachine}
 
     @type sequence_type :: :csi | :osc | :sos | :pm | :apc | :esc | :text
 

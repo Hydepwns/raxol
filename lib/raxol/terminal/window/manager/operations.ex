@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
   Handles all the complex logic for window creation, updates, and hierarchy management.
   """
 
-  alias Raxol.Terminal.{Window, Window.Registry, Config}
+  alias Raxol.Terminal.{Config, Window, Window.Registry}
 
   @type window_id :: String.t()
   @type window_state :: :active | :inactive | :minimized | :maximized

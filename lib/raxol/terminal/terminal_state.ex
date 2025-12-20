@@ -5,8 +5,8 @@ defmodule Raxol.Terminal.State do
   and managing state transitions.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.ScreenBuffer
 
   @type cursor :: %{
           position: {non_neg_integer(), non_neg_integer()},

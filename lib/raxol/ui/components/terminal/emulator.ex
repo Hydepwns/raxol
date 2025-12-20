@@ -4,8 +4,8 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   """
 
   alias Raxol.Terminal.{
-    IO.IOServer,
-    Integration.State
+    Integration.State,
+    IO.IOServer
   }
 
   @type emulator_state :: %{

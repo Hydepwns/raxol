@@ -7,6 +7,7 @@ defmodule Raxol.Terminal.ModeManager do
   emulator state (like screen buffer switching or resizing).
   """
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.ModeManager.SavedState
 
   alias Raxol.Terminal.Modes.Handlers.{
     DECPrivateHandler,
@@ -14,7 +15,6 @@ defmodule Raxol.Terminal.ModeManager do
   }
 
   alias Raxol.Terminal.Modes.Types.ModeTypes
-  alias Raxol.Terminal.ModeManager.{SavedState}
 
   @type mode :: atom()
 

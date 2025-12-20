@@ -8,8 +8,9 @@ defmodule Raxol.Terminal.TerminalRegistry do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Events.{TerminalCreatedEvent, TerminalClosedEvent}
+
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Events.{TerminalClosedEvent, TerminalCreatedEvent}
 
   defstruct [
     :terminals,

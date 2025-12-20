@@ -3,9 +3,9 @@ defmodule Raxol.Terminal.Buffer.LineEditor do
   Provides functionality for line editing operations in the terminal buffer.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ScreenBuffer
 
   @doc """
   Inserts a specified number of blank lines at the given row index using the provided default_style.

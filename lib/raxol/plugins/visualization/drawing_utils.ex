@@ -4,8 +4,8 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   Used by visualization renderers.
   """
 
-  alias Raxol.Terminal.Cell
   alias Raxol.Style
+  alias Raxol.Terminal.Cell
 
   @doc """
   Draws a simple box with optional text centered inside.

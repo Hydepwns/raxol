@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
   import Raxol.Core.Performance.Optimizer
   import :erlang, only: [iolist_to_binary: 1]
   alias Raxol.Core.Performance.Profiler
-  alias Raxol.Terminal.{ScreenBuffer, Input.CoreHandler}
+  alias Raxol.Terminal.{Input.CoreHandler, ScreenBuffer}
 
   # Cache charset commands for faster lookup
   @charset_commands %{

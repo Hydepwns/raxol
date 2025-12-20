@@ -19,9 +19,10 @@ defmodule Raxol.Terminal.ParserStateManager do
   Use `create_parser_manager/0` instead of `Parser.State.Manager.new/0`
   """
 
-  alias Raxol.Terminal.ParserState
-  alias Raxol.Terminal.Parser.State.Manager, as: DetailedManager
   require Raxol.Core.Runtime.Log
+
+  alias Raxol.Terminal.Parser.State.Manager, as: DetailedManager
+  alias Raxol.Terminal.ParserState
 
   # Delegate comprehensive parser management to the detailed manager
   defdelegate create_parser_manager(), to: DetailedManager, as: :new

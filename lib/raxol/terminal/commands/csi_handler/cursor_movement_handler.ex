@@ -14,9 +14,9 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
   - Horizontal and Vertical Position Absolute (HPA/VPA)
   """
 
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Commands.CSIHandler.Cursor
   alias Raxol.Terminal.Emulator
-  alias Raxol.Core.Runtime.Log
   @type emulator :: Emulator.t()
   @type cursor_amount :: non_neg_integer()
   @type cursor_position :: {non_neg_integer(), non_neg_integer()}

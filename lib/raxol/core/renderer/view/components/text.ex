@@ -57,16 +57,13 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
     text
     |> String.split(" ")
     |> Enum.reduce({[], ""}, &process_word(&1, &2, width))
-    |> (fn {lines, last_line} ->
-          final_lines =
-            case last_line do
-              "" -> lines
-              _ -> [last_line | lines]
-            end
-
-          Enum.reverse(final_lines)
-        end).()
+    |> finalize_word_wrap()
   end
+
+  defp finalize_word_wrap({lines, ""}), do: Enum.reverse(lines)
+
+  defp finalize_word_wrap({lines, last_line}),
+    do: Enum.reverse([last_line | lines])
 
   defp process_word(word, {lines, current_line}, width) do
     case String.length(current_line) + String.length(word) + 1 <= width do

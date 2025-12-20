@@ -12,7 +12,7 @@ defmodule Raxol.System.Updater do
   - Managing update settings and configurations
   """
 
-  alias Raxol.System.Updater.{Core, Network, Validation, State}
+  alias Raxol.System.Updater.{Core, Network, State, Validation}
 
   # --- Client API ---
 

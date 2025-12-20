@@ -6,8 +6,8 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   including movement, position saving/restoring, and visibility.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.ScreenBuffer
 
   @doc """
   Move cursor to absolute position.

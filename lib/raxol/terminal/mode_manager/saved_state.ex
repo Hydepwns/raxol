@@ -4,8 +4,8 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
   This includes saving and restoring cursor positions, screen states, and other terminal modes.
   """
 
-  alias Raxol.Terminal.{Cursor, ScreenBuffer}
   alias Raxol.Terminal.ANSI.TerminalState
+  alias Raxol.Terminal.{Cursor, ScreenBuffer}
 
   @doc """
   Saves the current terminal state.

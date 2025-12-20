@@ -5,9 +5,10 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Terminal.Cell
+
   alias Raxol.Plugins.Visualization.DrawingUtils
   alias Raxol.Style
+  alias Raxol.Terminal.Cell
 
   @doc """
   Public entry point for rendering treemap content.

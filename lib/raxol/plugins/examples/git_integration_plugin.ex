@@ -15,8 +15,9 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Terminal.ANSI.TextFormatting
+
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.ANSI.TextFormatting
 
   # Plugin Manifest
   def manifest do

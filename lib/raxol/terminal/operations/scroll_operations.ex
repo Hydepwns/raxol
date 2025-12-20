@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Operations.ScrollOperations do
   Implements scroll-related operations for the terminal emulator.
   """
 
-  alias Raxol.Terminal.{ScreenBuffer, Operations.TextOperations}
+  alias Raxol.Terminal.{Operations.TextOperations, ScreenBuffer}
 
   def get_scroll_region(emulator) do
     buffer = get_screen_buffer(emulator)

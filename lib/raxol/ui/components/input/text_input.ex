@@ -174,8 +174,8 @@ end
 defmodule Raxol.UI.Components.Input.TextInput.KeyHandler do
   @moduledoc false
   alias Raxol.UI.Components.Input.TextInput.{
-    NavigationHandler,
-    EditingHandler
+    EditingHandler,
+    NavigationHandler
   }
 
   def handle_key(state, :enter, _modifiers), do: handle_enter(state)

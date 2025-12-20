@@ -18,9 +18,10 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Security.Encryption.KeyManager
+
   alias Raxol.Audit.Logger, as: AuditLogger
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Security.Encryption.KeyManager
 
   defstruct [
     :key_manager,

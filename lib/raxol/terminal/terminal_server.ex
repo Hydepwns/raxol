@@ -55,12 +55,12 @@ defmodule Raxol.Terminal.TerminalServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.ScreenBuffer.Manager, as: BufferManager
   alias Raxol.Core.Events.EventManager
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Core.Utils.TimerManager
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.ScreenBuffer.Manager, as: BufferManager
 
   defstruct [
     :sessions,

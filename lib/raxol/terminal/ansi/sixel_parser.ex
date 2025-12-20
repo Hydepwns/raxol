@@ -3,8 +3,8 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   Handles the parsing logic for Sixel graphics data streams within a DCS sequence.
   """
   alias Raxol.Core.Runtime.Log
-  alias Raxol.Terminal.ANSI.Utils.SixelPatternMap
   alias Raxol.Terminal.ANSI.SixelPalette
+  alias Raxol.Terminal.ANSI.Utils.SixelPatternMap
 
   defmodule ParserState do
     @moduledoc """

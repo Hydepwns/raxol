@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Config.Application do
   ensuring all changes are properly propagated throughout the system.
   """
 
-  alias Raxol.Terminal.Config.{Validation, Capabilities}
+  alias Raxol.Terminal.Config.{Capabilities, Validation}
 
   @doc """
   Applies a configuration to the terminal.

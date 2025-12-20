@@ -19,10 +19,11 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   * Managing content within the region
   """
 
+  require Raxol.Core.Runtime.Log
+
+  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ScreenBuffer.Core, as: ScreenBufferCore
-  alias Raxol.Terminal.Cell
-  require Raxol.Core.Runtime.Log
 
   @doc """
   Sets the scroll region boundaries.

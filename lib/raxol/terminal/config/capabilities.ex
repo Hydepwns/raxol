@@ -6,8 +6,8 @@ defmodule Raxol.Terminal.Config.Capabilities do
   such as color support, unicode support, etc.
   """
 
-  alias Raxol.Terminal.Config.Defaults
   alias Raxol.System.EnvironmentAdapterImpl
+  alias Raxol.Terminal.Config.Defaults
   alias Raxol.Terminal.Config.Schema
 
   @doc """

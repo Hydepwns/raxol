@@ -378,8 +378,8 @@ defmodule Raxol.Terminal.Commands.WindowHandler do
   # Caching support functions
   # Originally from WindowHandler module
 
-  alias Raxol.Terminal.Font.Manager, as: FontManager
   alias Raxol.Core.Performance.Caches.FontMetricsCache
+  alias Raxol.Terminal.Font.Manager, as: FontManager
 
   @default_font_size 14
   @default_line_height 1.143

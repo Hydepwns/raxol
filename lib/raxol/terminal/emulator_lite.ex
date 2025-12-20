@@ -9,10 +9,10 @@ defmodule Raxol.Terminal.EmulatorLite do
   concurrent operations, use Raxol.Terminal.Emulator.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Cursor
   alias Raxol.Terminal.ModeManager
+  alias Raxol.Terminal.ScreenBuffer
 
   defstruct [
     # Core state

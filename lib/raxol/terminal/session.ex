@@ -16,12 +16,12 @@ defmodule Raxol.Terminal.Session do
 
   use Raxol.Core.Behaviours.BaseManager
 
+  require Raxol.Core.Runtime.Log
+
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
   alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
   alias Raxol.Terminal.Session.Storage
-  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-
-  require Raxol.Core.Runtime.Log
 
   @type t :: %__MODULE__{
           id: String.t(),

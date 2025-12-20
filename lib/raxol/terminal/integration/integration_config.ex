@@ -7,8 +7,8 @@ defmodule Raxol.Terminal.Integration.Config do
 
   alias Raxol.Terminal.{
     Config,
-    ScreenBuffer.Manager,
-    Render.RenderServer
+    Render.RenderServer,
+    ScreenBuffer.Manager
   }
 
   alias Raxol.Terminal.Integration.State

@@ -35,15 +35,16 @@ defmodule Raxol.Terminal.Commands.CommandServer do
   - **Buffer Commands**: Buffer switching, scrolling, etc.
   """
 
-  alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.{OutputManager, ScreenBuffer}
-  alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
-  alias Raxol.Terminal.Commands.CursorUtils
-  alias Raxol.Terminal.Buffer.Eraser
-
   require Raxol.Core.Runtime.Log
+
+  alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Buffer.Eraser
+  alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.Commands.CursorUtils
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.OutputManager
+  alias Raxol.Terminal.ScreenBuffer
 
   @type command_result :: {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   @type command_type :: :csi | :osc | :dcs | :escape | :control

@@ -8,27 +8,27 @@ defmodule Raxol.Architecture.CQRS.Setup do
   alias Raxol.Architecture.CQRS.CommandDispatcher
 
   alias Raxol.Architecture.CQRS.Middleware.{
-    ValidationMiddleware,
     AuthorizationMiddleware,
-    LoggingMiddleware
+    LoggingMiddleware,
+    ValidationMiddleware
   }
 
   alias Raxol.Commands.{
-    CreateTerminalCommand,
-    UpdateTerminalCommand,
-    SendInputCommand,
+    ApplyThemeCommand,
     CloseTerminalCommand,
-    ApplyThemeCommand
+    CreateTerminalCommand,
+    SendInputCommand,
+    UpdateTerminalCommand
   }
 
   alias Raxol.Core.Runtime.Log
 
   alias Raxol.Handlers.{
-    CreateTerminalHandler,
-    UpdateTerminalHandler,
-    SendInputHandler,
+    ApplyThemeHandler,
     CloseTerminalHandler,
-    ApplyThemeHandler
+    CreateTerminalHandler,
+    SendInputHandler,
+    UpdateTerminalHandler
   }
 
   @doc """

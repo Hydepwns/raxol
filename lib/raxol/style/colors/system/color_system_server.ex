@@ -16,9 +16,9 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
   use Raxol.Core.Behaviours.BaseManager
   require Logger
 
+  alias Raxol.Core.Events.EventManager, as: EventManager
   alias Raxol.Style.Colors.{Color, Utilities}
   alias Raxol.UI.Theming.Theme
-  alias Raxol.Core.Events.EventManager, as: EventManager
 
   @default_theme :default
 

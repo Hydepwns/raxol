@@ -12,10 +12,10 @@ defmodule Raxol.UI.RendererCached do
   - Reduced CPU usage during animations and updates
   """
 
-  alias Raxol.UI.{Renderer, CellManager}
+  alias Raxol.UI.{CellManager, Renderer}
   alias Raxol.UI.Rendering.ComponentCache
-  alias Raxol.UI.ThemeResolver
   alias Raxol.UI.StyleProcessor
+  alias Raxol.UI.ThemeResolver
 
   @doc """
   Renders elements to cells using cache when possible.

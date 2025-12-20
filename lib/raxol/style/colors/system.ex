@@ -22,7 +22,7 @@ defmodule Raxol.Style.Colors.System do
   require Raxol.Core.Runtime.Log
   require Logger
 
-  alias Raxol.Style.Colors.{Utilities, Color}
+  alias Raxol.Style.Colors.{Color, Utilities}
   alias Raxol.Style.Colors.System.ColorSystemServer, as: Server
   alias Raxol.UI.Theming.Theme
 

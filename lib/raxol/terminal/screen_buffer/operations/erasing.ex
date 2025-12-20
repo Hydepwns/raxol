@@ -6,8 +6,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations.Erasing do
   erase in display and erase in line with different modes.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ScreenBuffer
 
   @doc """
   Erases in display based on mode.

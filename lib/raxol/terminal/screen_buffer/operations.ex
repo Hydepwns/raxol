@@ -6,9 +6,9 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   """
 
   alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.CharacterHandling
   alias Raxol.Terminal.ScreenBuffer.Core
   alias Raxol.Terminal.ScreenBuffer.SharedOperations
-  alias Raxol.Terminal.CharacterHandling
 
   @doc """
   Writes a character at the specified position.

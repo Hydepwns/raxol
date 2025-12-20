@@ -25,8 +25,8 @@ defmodule Raxol.Terminal.Window.Manager do
   - Hierarchical window relationships
   """
 
-  alias Raxol.Terminal.Window.Manager.WindowManagerServer, as: Server
   alias Raxol.Terminal.Config
+  alias Raxol.Terminal.Window.Manager.WindowManagerServer, as: Server
 
   @type t :: %{tabs: map()}
   @type window_id :: String.t()

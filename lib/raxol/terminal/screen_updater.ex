@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.ScreenUpdater do
   Clears the screen.
   """
   @spec clear_screen() :: :ok
-  def clear_screen() do
+  def clear_screen do
     IO.write("\e[2J\e[H")
     :ok
   end

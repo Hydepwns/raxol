@@ -3,11 +3,11 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
   Implements screen-related operations for the terminal emulator.
   """
 
-  alias Raxol.Terminal.ScreenManager
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.Buffer.Eraser
   alias Raxol.Terminal.Buffer.LineOperations
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.ScreenManager
   @type emulator :: map()
 
   def clear_screen(emulator) do

@@ -65,11 +65,11 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   use Raxol.Core.Behaviours.BaseManager
   require Logger
 
-  alias Raxol.Terminal.Graphics.ChartRenderers
-  alias Raxol.Terminal.Graphics.VisualizationHelpers
-  alias Raxol.Terminal.Graphics.ChartOperations
   alias Raxol.Terminal.Graphics.ChartExport
+  alias Raxol.Terminal.Graphics.ChartOperations
+  alias Raxol.Terminal.Graphics.ChartRenderers
   alias Raxol.Terminal.Graphics.StreamingManager
+  alias Raxol.Terminal.Graphics.VisualizationHelpers
 
   @type chart_id :: String.t()
   @type data_point :: %{

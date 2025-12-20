@@ -78,7 +78,7 @@ defmodule Raxol.Core.StateManager do
   @doc """
   Initializes state manager with default empty state.
   """
-  def initialize(), do: {:ok, %{}}
+  def initialize, do: {:ok, %{}}
 
   @doc """
   Initializes state manager with options.

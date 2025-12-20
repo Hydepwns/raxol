@@ -3,12 +3,12 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   Handles character processing, translation, and writing to the terminal buffer.
   """
 
-  alias Raxol.Terminal.{Emulator, ScreenBuffer, CharacterHandling}
-  alias Raxol.Terminal.ANSI.CharacterSets
-  alias Raxol.Terminal.ScreenBuffer.Operations
-  alias Raxol.Terminal.ModeManager
-
   require Raxol.Core.Runtime.Log
+
+  alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.{CharacterHandling, Emulator, ScreenBuffer}
+  alias Raxol.Terminal.ModeManager
+  alias Raxol.Terminal.ScreenBuffer.Operations
 
   @doc """
   Processes a single character codepoint.

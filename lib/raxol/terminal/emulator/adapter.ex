@@ -6,8 +6,8 @@ defmodule Raxol.Terminal.Emulator.Adapter do
   This module provides conversion functions and compatibility shims.
   """
 
-  alias Raxol.Terminal.EmulatorLite
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.EmulatorLite
   alias Raxol.Terminal.ModeManager
 
   @doc """

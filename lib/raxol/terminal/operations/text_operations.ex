@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Operations.TextOperations do
   Implements text-related operations for the terminal emulator.
   """
 
-  alias Raxol.Terminal.{ScreenManager, ScreenBuffer}
+  alias Raxol.Terminal.{ScreenBuffer, ScreenManager}
 
   def write_string(emulator, x, y, string, style) do
     buffer = ScreenManager.get_screen_buffer(emulator)

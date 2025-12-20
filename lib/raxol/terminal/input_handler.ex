@@ -4,10 +4,10 @@ defmodule Raxol.Terminal.InputHandler do
   """
 
   alias Raxol.Terminal.Input.{
-    CoreHandler,
     CharacterProcessor,
+    ClipboardHandler,
     ControlSequenceHandler,
-    ClipboardHandler
+    CoreHandler
   }
 
   @doc """

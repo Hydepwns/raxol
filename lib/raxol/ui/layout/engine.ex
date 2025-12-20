@@ -11,15 +11,15 @@ defmodule Raxol.UI.Layout.Engine do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.UI.Layout.{
-    Grid,
-    Panels,
     Containers,
-    Table,
-    Elements,
-    Inputs,
-    Flexbox,
     CSSGrid,
-    Responsive
+    Elements,
+    Flexbox,
+    Grid,
+    Inputs,
+    Panels,
+    Responsive,
+    Table
   }
 
   @doc """

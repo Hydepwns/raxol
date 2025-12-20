@@ -36,8 +36,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycle do
 
   use GenServer
 
-  alias Raxol.Core.Runtime.Plugins.PluginRegistry
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Plugins.PluginRegistry
   alias Raxol.Core.Utils.Debounce
 
   @type plugin_id :: atom() | String.t()

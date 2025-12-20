@@ -28,7 +28,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def get_api_version(), do: "0.1.0"
+  def get_api_version, do: "0.1.0"
 
   @doc """
   Returns the API version for compatibility checking.
@@ -38,7 +38,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def get_dependencies(), do: []
+  def get_dependencies, do: []
 
   @impl Raxol.Plugins.LifecycleBehaviour
   def start(config) do
@@ -54,7 +54,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     :ok
   end
 
-  def get_commands(), do: []
+  def get_commands, do: []
 
   def handle_command(_command, _args, _plugin_meta, plugin_state) do
     {:error, :unknown_command, plugin_state}

@@ -12,11 +12,11 @@ defmodule Raxol.UI.Components.Input.SelectList do
   """
 
   alias Raxol.UI.Components.Input.SelectList.{
-    Search,
-    Pagination,
     Navigation,
-    Selection,
-    Renderer
+    Pagination,
+    Renderer,
+    Search,
+    Selection
   }
 
   @behaviour Raxol.UI.Components.Base.Component

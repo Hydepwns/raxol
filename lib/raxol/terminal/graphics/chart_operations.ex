@@ -3,8 +3,8 @@ defmodule Raxol.Terminal.Graphics.ChartOperations do
   Chart operations and management functions extracted from DataVisualization.
   Contains streaming updates, data processing, and chart maintenance functions.
   """
-  alias Raxol.Terminal.Graphics.ChartDataUtils
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.Graphics.ChartDataUtils
 
   @doc """
   Updates all streaming charts in the given state.

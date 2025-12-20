@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   This module extracts the constructor logic from the main emulator.
   """
 
-  alias Raxol.Terminal.{ScreenBuffer, ModeManager, Cursor.Manager}
+  alias Raxol.Terminal.{Cursor.Manager, ModeManager, ScreenBuffer}
   alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
 
   @doc """

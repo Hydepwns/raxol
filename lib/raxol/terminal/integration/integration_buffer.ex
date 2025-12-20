@@ -4,9 +4,9 @@ defmodule Raxol.Terminal.Integration.Buffer do
   """
 
   alias Raxol.Terminal.{
-    ScreenBuffer.Manager,
     Buffer.Scroll,
-    Integration.State
+    Integration.State,
+    ScreenBuffer.Manager
   }
 
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager

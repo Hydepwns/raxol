@@ -10,10 +10,10 @@ defmodule Raxol.Terminal.Emulator.Core do
   """
 
   alias Raxol.Terminal.{
-    ScreenBuffer,
     Buffer.Scrollback,
     Cursor.Manager,
-    Input.CoreHandler
+    Input.CoreHandler,
+    ScreenBuffer
   }
 
   @doc """

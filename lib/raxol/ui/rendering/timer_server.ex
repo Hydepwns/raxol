@@ -14,8 +14,9 @@ defmodule Raxol.UI.Rendering.TimerServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Utils.TimerManager
+
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Utils.TimerManager
 
   # Timer types for rendering pipeline
   @animation_frame_timer :animation_frame

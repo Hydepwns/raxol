@@ -36,8 +36,8 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
 
   require Logger
 
-  alias Raxol.Terminal.{Window, Config}
   alias Raxol.Core.NavigationUtils
+  alias Raxol.Terminal.{Config, Window}
 
   @default_state %{
     windows: %{},

@@ -5,11 +5,11 @@ defmodule Raxol.UI.Components.Progress do
 
   # Delegation to focused modules
   alias Raxol.UI.Components.Progress.{
-    Component,
     Bar,
-    Spinner,
+    Circular,
+    Component,
     Indeterminate,
-    Circular
+    Spinner
   }
 
   # Delegate component behaviour

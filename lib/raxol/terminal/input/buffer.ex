@@ -5,8 +5,8 @@ defmodule Raxol.Terminal.Input.Buffer do
 
   use Raxol.Core.Behaviours.BaseManager
 
-  alias Raxol.Terminal.Input.Event.{KeyEvent, MouseEvent}
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.Input.Event.{KeyEvent, MouseEvent}
 
   # Client API
 

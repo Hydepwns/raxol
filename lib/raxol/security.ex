@@ -17,8 +17,8 @@ defmodule Raxol.Security do
       {:ok, safe_path} = Raxol.Security.validate_path(path)
   """
 
-  alias Raxol.Security.InputValidator
   alias Raxol.Security.Auditor
+  alias Raxol.Security.InputValidator
 
   # Dangerous command patterns
   @dangerous_commands ~w(rm rmdir del format fdisk mkfs dd shutdown reboot halt poweroff)

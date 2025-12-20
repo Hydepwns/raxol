@@ -90,18 +90,19 @@ defmodule Raxol.CLI.ErrorFormatter do
   defp format_error_details(enhanced) do
     impact_color = impact_to_color(enhanced.performance_impact)
 
-    lines = [
+    base_lines = [
       "  #{Colors.muted("Category:")} #{enhanced.category}",
       "  #{Colors.muted("Severity:")} #{enhanced.severity}",
       "  #{Colors.muted("Impact:")} #{impact_color.(Atom.to_string(enhanced.performance_impact))}"
     ]
 
-    if enhanced.related_optimizations != [] do
-      opts = Enum.join(enhanced.related_optimizations, ", ")
-      lines ++ ["  #{Colors.muted("Related:")} #{opts}"]
-    else
-      lines
-    end
+    related_line =
+      case enhanced.related_optimizations do
+        [] -> []
+        opts -> ["  #{Colors.muted("Related:")} #{Enum.join(opts, ", ")}"]
+      end
+
+    (base_lines ++ related_line)
     |> Enum.join("\n")
   end
 
@@ -132,20 +133,19 @@ defmodule Raxol.CLI.ErrorFormatter do
         :documentation -> Colors.muted("[DOCS]")
       end
 
-    lines = [
+    base_lines = [
       "  #{Colors.bold("#{index}.")} #{suggestion.description}",
       "     #{type_badge} #{confidence_bar} #{confidence_pct}% confidence"
     ]
 
-    lines =
+    action_line =
       if suggestion.action do
-        lines ++
-          ["     #{Colors.muted("Run:")} #{Colors.info(suggestion.action)}"]
+        ["     #{Colors.muted("Run:")} #{Colors.info(suggestion.action)}"]
       else
-        lines
+        []
       end
 
-    Enum.join(lines, "\n")
+    Enum.join(base_lines ++ action_line, "\n")
   end
 
   defp format_performance_context(%{performance_impact: :none}), do: nil

@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Session.Serializer do
   All try/catch blocks have been replaced with with statements and proper error tuples.
   """
 
-  alias Raxol.Terminal.{Session, ScreenBuffer, Emulator}
+  alias Raxol.Terminal.{Emulator, ScreenBuffer, Session}
   alias Raxol.Terminal.ScreenBuffer.Core, as: ConsolidatedBuffer
   require Raxol.Core.Runtime.Log
 

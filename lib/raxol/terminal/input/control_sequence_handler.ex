@@ -13,10 +13,10 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   Where `G` indicates Kitty graphics and control-data contains key=value pairs.
   """
 
-  alias Raxol.Terminal.Commands.{CSIHandler, OSCHandler}
-  alias Raxol.Terminal.ANSI.KittyGraphics
-
   require Raxol.Core.Runtime.Log
+
+  alias Raxol.Terminal.ANSI.KittyGraphics
+  alias Raxol.Terminal.Commands.{CSIHandler, OSCHandler}
 
   @doc """
   Handles a CSI (Control Sequence Introducer) sequence.

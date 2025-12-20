@@ -11,8 +11,9 @@ defmodule Raxol.Security.SessionManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Utils.TimerManager
+
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Utils.TimerManager
 
   # 30 minutes
   @session_timeout_ms 30 * 60 * 1000

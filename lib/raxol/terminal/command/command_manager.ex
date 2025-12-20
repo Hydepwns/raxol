@@ -7,8 +7,9 @@ defmodule Raxol.Terminal.Command.Manager do
   This module is responsible for handling command parsing, validation, and execution.
   """
 
-  alias Raxol.Terminal.{Emulator, Command}
   require Raxol.Core.Runtime.Log
+
+  alias Raxol.Terminal.{Command, Emulator}
 
   defstruct command_buffer: "",
             command_history: [],

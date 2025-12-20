@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.ANSI.SGR do
     Handles SGR parameter parsing, formatting, and attribute handling.
     """
 
-    alias Raxol.Terminal.ANSI.TextFormatting.{Core, Colors}
+    alias Raxol.Terminal.ANSI.TextFormatting.{Colors, Core}
 
     @sgr_style_map %{
       bold: 1,

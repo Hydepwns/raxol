@@ -86,8 +86,8 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   end
 
   # import Raxol.Core.Performance.Optimizer  # Commented out to avoid macro conflict
-  alias Raxol.UI.Rendering.{TreeDiffer, Pipeline}
   alias Raxol.Core.Runtime.Log
+  alias Raxol.UI.Rendering.{Pipeline, TreeDiffer}
 
   defmodule State do
     @moduledoc false

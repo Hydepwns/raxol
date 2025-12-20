@@ -5,11 +5,11 @@ defmodule Raxol.Terminal.ScreenBufferAdapter do
   """
 
   alias Raxol.Terminal.ScreenBuffer.{
+    Attributes,
     Core,
     Operations,
     Scroll,
-    Selection,
-    Attributes
+    Selection
   }
 
   # Re-export the Core struct as ScreenBuffer.t()

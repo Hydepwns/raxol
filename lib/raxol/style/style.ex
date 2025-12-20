@@ -21,8 +21,7 @@ defmodule Raxol.Style do
             text_decoration: [],
             decorations: []
 
-  alias Raxol.Style.{Layout, Borders}
-  alias Raxol.Style.Colors
+  alias Raxol.Style.{Borders, Colors, Layout}
 
   @ansi_codes %{
     underline: 4,

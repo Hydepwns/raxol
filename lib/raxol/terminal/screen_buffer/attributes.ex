@@ -4,8 +4,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   Consolidates: Formatting, TextFormatting, Charset, Cursor functionality.
   """
 
-  alias Raxol.Terminal.ScreenBuffer.SharedOperations
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.ScreenBuffer.SharedOperations
 
   # Cursor operations
 

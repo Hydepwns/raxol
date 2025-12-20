@@ -6,10 +6,10 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.Modes.Types.ModeTypes
+  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ModeManager
+  alias Raxol.Terminal.Modes.Types.ModeTypes
 
   @screen_buffer_module Application.compile_env(
                           :raxol,

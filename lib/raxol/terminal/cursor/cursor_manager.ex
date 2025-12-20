@@ -4,15 +4,14 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Handles cursor position, visibility, style, and blinking state.
   """
 
-  alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Cursor.{Movement, Callbacks}
+  alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.Cursor.{Callbacks, Movement}
   alias Raxol.Terminal.Cursor.CursorState, as: State
-  require Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.Emulator
 
   defstruct row: 0,
             col: 0,
@@ -325,7 +324,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
     GenServer.call(pid, :reset_position)
   end
 
-  def update_blink(), do: GenServer.call(__MODULE__, :update_blink)
+  def update_blink, do: GenServer.call(__MODULE__, :update_blink)
 
   @doc """
   Updates the cursor position after a resize operation.

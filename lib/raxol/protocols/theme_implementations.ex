@@ -1,6 +1,4 @@
 defmodule Raxol.Protocols.ThemeImplementations do
-  alias Raxol.Utils.ColorConversion
-
   @moduledoc """
   Protocol implementations for theme-related structures.
 
@@ -8,7 +6,8 @@ defmodule Raxol.Protocols.ThemeImplementations do
   implementations for theme and color system components.
   """
 
-  alias Raxol.Protocols.{Styleable, Renderable, Serializable}
+  alias Raxol.Protocols.{Renderable, Serializable, Styleable}
+  alias Raxol.Utils.ColorConversion
 
   # Theme Protocol Implementations
   defimpl Styleable, for: Raxol.UI.Theming.Theme do

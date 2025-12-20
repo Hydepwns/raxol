@@ -32,18 +32,16 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   use Raxol.Core.Behaviours.BaseManager
 
+  alias Raxol.Core.Runtime.Log
+  alias Raxol.UI.Rendering.Pipeline.{Stages, State}
   alias Raxol.UI.Rendering.Renderer
   alias Raxol.UI.Rendering.TreeDiffer
-
-  # New pipeline modules
-  alias Raxol.UI.Rendering.Pipeline.{State, Stages}
 
   # Animation tick interval in milliseconds
   @animation_tick_interval_ms (case Mix.env() do
                                  :test -> 25
                                  _ -> 16
                                end)
-  alias Raxol.Core.Runtime.Log
   @default_renderer Raxol.UI.Rendering.Renderer
 
   # Public API

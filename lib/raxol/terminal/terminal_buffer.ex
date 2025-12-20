@@ -3,9 +3,9 @@ defmodule Raxol.Terminal.Buffer do
   Manages the terminal buffer state and operations.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Cell
-  alias Raxol.Terminal.ScreenBuffer.{Operations, Attributes}
+  alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.ScreenBuffer.{Attributes, Operations}
 
   @type t :: %__MODULE__{
           width: non_neg_integer(),

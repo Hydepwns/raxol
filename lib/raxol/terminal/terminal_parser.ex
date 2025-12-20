@@ -4,18 +4,19 @@ defmodule Raxol.Terminal.TerminalParser do
   Handles escape sequences (CSI, OSC, DCS, etc.) and plain text.
   """
 
-  alias Raxol.Terminal.Parser.States.GroundState
-  alias Raxol.Terminal.Parser.States.EscapeState
-  alias Raxol.Terminal.Parser.States.DesignateCharsetState
-  alias Raxol.Terminal.Parser.States.CSIEntryState
-  alias Raxol.Terminal.Parser.States.CSIParamState
-  alias Raxol.Terminal.Parser.States.CSIIntermediateState
-  alias Raxol.Terminal.Parser.States.OSCStringState
-  alias Raxol.Terminal.Parser.States.OSCStringMaybeSTState
-  alias Raxol.Terminal.Parser.States.DCSEntryState
-  alias Raxol.Terminal.Parser.States.DCSPassthroughState
-  alias Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState
   require Raxol.Core.Runtime.Log
+
+  alias Raxol.Terminal.Parser.States.CSIEntryState
+  alias Raxol.Terminal.Parser.States.CSIIntermediateState
+  alias Raxol.Terminal.Parser.States.CSIParamState
+  alias Raxol.Terminal.Parser.States.DCSEntryState
+  alias Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState
+  alias Raxol.Terminal.Parser.States.DCSPassthroughState
+  alias Raxol.Terminal.Parser.States.DesignateCharsetState
+  alias Raxol.Terminal.Parser.States.EscapeState
+  alias Raxol.Terminal.Parser.States.GroundState
+  alias Raxol.Terminal.Parser.States.OSCStringMaybeSTState
+  alias Raxol.Terminal.Parser.States.OSCStringState
 
   # --- Public API ---
 

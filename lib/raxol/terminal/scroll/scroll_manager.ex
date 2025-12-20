@@ -9,8 +9,8 @@ defmodule Raxol.Terminal.Scroll.Manager do
   - Scroll synchronization across splits
   """
 
-  alias Raxol.Terminal.Scroll.Predictor
   alias Raxol.Terminal.Scroll.Optimizer
+  alias Raxol.Terminal.Scroll.Predictor
   alias Raxol.Terminal.Scroll.Sync
 
   @type t :: %__MODULE__{

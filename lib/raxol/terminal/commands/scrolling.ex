@@ -3,10 +3,11 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   Handles scrolling operations for the terminal screen buffer.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.ANSI.TextFormatting
   require Raxol.Core.Runtime.Log
+
+  alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ScreenBuffer
 
   @spec scroll_up(
           map(),

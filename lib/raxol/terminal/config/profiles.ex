@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Config.Profiles do
   terminal configuration profiles.
   """
 
-  alias Raxol.Terminal.Config.{Persistence, Validation, Defaults}
+  alias Raxol.Terminal.Config.{Defaults, Persistence, Validation}
 
   @profiles_dir "priv/config/profiles"
   @profile_ext ".json"

@@ -4,10 +4,10 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   This is a simplified version that delegates to the available handler modules.
   """
 
-  alias Raxol.Terminal.Commands.WindowHandler
-  alias Raxol.Terminal.Commands.CSIHandler.{CursorMovementHandler, Cursor}
-  alias Raxol.Terminal.ModeManager
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.Commands.CSIHandler.{Cursor, CursorMovementHandler}
+  alias Raxol.Terminal.Commands.WindowHandler
+  alias Raxol.Terminal.ModeManager
   # Cursor movement delegations
   defdelegate handle_cursor_up(emulator, amount), to: CursorMovementHandler
   defdelegate handle_cursor_down(emulator, amount), to: CursorMovementHandler
