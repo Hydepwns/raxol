@@ -113,7 +113,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
 
         {:error, :not_started} ->
           # Fallback to Process.send_after in test mode when TimerServer isn't running
-          timer_ref = Process.send_after(self(), :adapt_framerate, 1000)
+          timer_ref = Process.send_after(self(), {:adaptive_frame_tick}, 1000)
 
           %FramerateState{
             adaptation_timer_ref: timer_ref
