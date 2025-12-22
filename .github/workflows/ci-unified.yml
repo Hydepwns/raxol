@@ -79,7 +79,7 @@ jobs:
       
       - name: Cache dependencies
         id: deps-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             deps
@@ -118,7 +118,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             deps
@@ -151,7 +151,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             deps
@@ -187,7 +187,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             deps
@@ -240,7 +240,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             deps
@@ -282,7 +282,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             deps
@@ -323,7 +323,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             deps
@@ -353,7 +353,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             deps
@@ -362,7 +362,7 @@ jobs:
           key: ${{ needs.setup.outputs.cache-key }}
       
       - name: Restore PLT cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: priv/plts
           key: plt-${{ runner.os }}-${{ needs.setup.outputs.otp-version }}-${{ needs.setup.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
@@ -393,7 +393,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             deps
@@ -472,7 +472,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             deps
