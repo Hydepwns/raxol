@@ -222,7 +222,7 @@ defmodule Raxol.MixProject do
   defp database_deps do
     [
       {:ecto_sql, "~> 3.12"},
-      {:postgrex, "~> 0.21.1", runtime: false},
+      {:postgrex, "~> 0.22.0", runtime: false},
       # Password hashing
       {:bcrypt_elixir, "~> 3.3"}
     ]
