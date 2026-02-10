@@ -425,10 +425,7 @@ defmodule Raxol.Terminal.Script.ScriptServer do
         # Execute script with arguments
         cmd = [temp_file] ++ args
 
-        case System.cmd(interpreter, cmd,
-               timeout: timeout,
-               stderr_to_stdout: true
-             ) do
+        case System.cmd(interpreter, cmd, stderr_to_stdout: true) do
           {output, 0} ->
             # Clean up
             _ = File.rm(temp_file)

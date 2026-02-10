@@ -25,12 +25,20 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   """
   @spec check_file(String.t()) :: {:ok, [issue()]} | {:error, term()}
   def check_file(file_path) do
-    with {:ok, content} <- File.read(file_path),
-         {:ok, ast} <-
-           Code.string_to_quoted(content, warn_on_unnecessary_quotes: false) do
-      issues = analyze_file(file_path, content, ast)
-      {:ok, issues}
-    else
+    case File.read(file_path) do
+      {:ok, content} ->
+        case Code.string_to_quoted(content,
+               warn_on_unnecessary_quotes: false,
+               file: file_path
+             ) do
+          {:ok, ast} ->
+            issues = analyze_file(file_path, content, ast)
+            {:ok, issues}
+
+          {:error, {_line, _error, _token} = parse_error} ->
+            {:error, {:parse_error, file_path, parse_error}}
+        end
+
       {:error, reason} ->
         {:error, {:file_read_error, file_path, reason}}
     end
@@ -736,6 +744,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     )
   end
 
+  @spec collect_file_issues(String.t()) :: [issue()]
   defp collect_file_issues(file) do
     case check_file(file) do
       {:ok, file_issues} -> file_issues

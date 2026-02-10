@@ -79,9 +79,14 @@ defmodule Raxol.Plugins.ClipboardPlugin do
               "[Clipboard] Yanked selection to clipboard: #{text}"
             )
 
-          {:error, reason} ->
+          {:error, :command_not_found} ->
             Raxol.Core.Runtime.Log.error(
-              "[Clipboard] Failed to yank selection: #{inspect(reason)}"
+              "[Clipboard] Failed to yank selection: clipboard command not found"
+            )
+
+          {:error, {_cmd, output}} ->
+            Raxol.Core.Runtime.Log.error(
+              "[Clipboard] Failed to yank selection: #{output}"
             )
         end
 
