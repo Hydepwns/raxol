@@ -32,7 +32,28 @@ defmodule Raxol.Demo.SessionManager do
   """
   @spec create_session(ip_address()) :: {:ok, session_id()} | {:error, atom()}
   def create_session(ip_address) do
-    GenServer.call(__MODULE__, {:create_session, ip_address})
+    GenServer.call(__MODULE__, {:create_session, ip_address, nil})
+  end
+
+  @doc """
+  Registers a session with a pre-generated session_id.
+  Used when the LiveView creates the session_id before channel join.
+  Returns {:ok, session_id} or {:error, reason}.
+  """
+  @spec register_session(session_id(), ip_address()) ::
+          {:ok, session_id()} | {:error, atom()}
+  def register_session(session_id, ip_address) do
+    GenServer.call(__MODULE__, {:create_session, ip_address, session_id})
+  end
+
+  @doc """
+  Checks if a session exists and belongs to the given IP.
+  Returns {:ok, session_id} or {:error, reason}.
+  """
+  @spec validate_session(session_id(), ip_address()) ::
+          {:ok, session_id()} | {:error, atom()}
+  def validate_session(session_id, ip_address) do
+    GenServer.call(__MODULE__, {:validate_session, session_id, ip_address})
   end
 
   @doc """
@@ -76,7 +97,11 @@ defmodule Raxol.Demo.SessionManager do
   end
 
   @impl true
-  def handle_call({:create_session, ip_address}, _from, state) do
+  def handle_call(
+        {:create_session, ip_address, provided_session_id},
+        _from,
+        state
+      ) do
     max_sessions = config(:max_sessions, @default_max_sessions)
     max_per_ip = config(:max_sessions_per_ip, @default_max_per_ip)
 
@@ -88,7 +113,7 @@ defmodule Raxol.Demo.SessionManager do
         {:reply, {:error, :max_sessions_per_ip_reached}, state}
 
       true ->
-        session_id = generate_session_id()
+        session_id = provided_session_id || generate_session_id()
         now = System.monotonic_time(:millisecond)
 
         session = %{
@@ -105,6 +130,20 @@ defmodule Raxol.Demo.SessionManager do
 
         {:reply, {:ok, session_id},
          %{state | sessions: new_sessions, ip_counts: new_ip_counts}}
+    end
+  end
+
+  @impl true
+  def handle_call({:validate_session, session_id, ip_address}, _from, state) do
+    case Map.get(state.sessions, session_id) do
+      nil ->
+        {:reply, {:error, :session_not_found}, state}
+
+      %{ip_address: ^ip_address} ->
+        {:reply, {:ok, session_id}, state}
+
+      _session ->
+        {:reply, {:error, :ip_mismatch}, state}
     end
   end
 

@@ -15,9 +15,9 @@ defmodule Raxol.Demo.DemoHandlerTest do
       {:ok, output} = DemoHandler.help()
 
       assert output =~ "help"
+      assert output =~ "demo"
       assert output =~ "demo colors"
       assert output =~ "demo components"
-      assert output =~ "demo animation"
       assert output =~ "demo emulation"
       assert output =~ "theme"
       assert output =~ "clear"

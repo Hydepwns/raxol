@@ -13,20 +13,18 @@ defmodule RaxolWeb.DemoTerminalChannelTest do
 
   setup do
     # Skip if endpoint not started
-    case Process.whereis(RaxolWeb.Endpoint) do
-      nil ->
-        :skip
-
-      _pid ->
-        start_supervised!(SessionManager)
-
-        {:ok, socket} =
-          Phoenix.ChannelTest.connect(RaxolWeb.UserSocket, %{},
-            connect_info: %{peer_data: %{address: {127, 0, 0, 1}}}
-          )
-
-        {:ok, socket: socket}
+    if Process.whereis(RaxolWeb.Endpoint) == nil do
+      raise ExUnit.SkipTest, "Endpoint not running"
     end
+
+    start_supervised!(SessionManager)
+
+    {:ok, socket} =
+      Phoenix.ChannelTest.connect(RaxolWeb.UserSocket, %{},
+        connect_info: %{peer_data: %{address: {127, 0, 0, 1}}}
+      )
+
+    {:ok, socket: socket}
   end
 
   describe "join/3" do

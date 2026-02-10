@@ -21,20 +21,15 @@ defmodule Raxol.Demo.CommandWhitelistTest do
       assert output =~ "UI Component Gallery"
     end
 
-    test "demo animation returns animation showcase" do
-      assert {:ok, output} = CommandWhitelist.execute("demo animation")
-      assert output =~ "Animation Capabilities"
-    end
-
     test "demo emulation returns terminal emulation info" do
       assert {:ok, output} = CommandWhitelist.execute("demo emulation")
       assert output =~ "Terminal Emulation"
       assert output =~ "VT100"
     end
 
-    test "demo without subcommand returns usage error" do
-      assert {:error, message} = CommandWhitelist.execute("demo")
-      assert message =~ "Usage: demo"
+    test "demo without subcommand returns animate tuple for showcase" do
+      assert {:animate, fun} = CommandWhitelist.execute("demo")
+      assert is_function(fun, 1)
     end
 
     test "demo with unknown subcommand returns error" do
