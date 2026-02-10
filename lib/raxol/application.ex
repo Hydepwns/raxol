@@ -173,6 +173,12 @@ defmodule Raxol.Application do
       {Raxol.Config, []},
       {Raxol.Debug, []},
 
+      # Demo terminal session manager
+      {Raxol.Demo.SessionManager, []},
+
+      # SSH demo server (port 2222)
+      {Raxol.Demo.SSHServer, []},
+
       # Conditional core services
       maybe_add_repo(),
       maybe_add_pubsub(),

@@ -1,5 +1,20 @@
 import Config
 
+# Enable web interface in dev
+config :raxol, :features, %{
+  web_interface: true,
+  pubsub: true,
+  database: false,
+  terminal_driver: true,
+  performance_monitoring: true,
+  terminal_sync: true,
+  rate_limiting: false,
+  telemetry: true,
+  plugins: false,
+  audit: false,
+  dev_performance_hints: true
+}
+
 # Disable Ecto repos for dev (Raxol uses Phoenix as library, no active Repo)
 # This prevents Tidewave from trying to use Ecto tools
 config :raxol, ecto_repos: []
@@ -24,11 +39,19 @@ config :raxol, Raxol.Repo,
 config :raxol, RaxolWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {127, 0, 0, 1}, port: 4000],
+  http: [
+    ip: {127, 0, 0, 1},
+    port: String.to_integer(System.get_env("PORT") || "4000")
+  ],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "your-secret-key-base"
+  secret_key_base:
+    "DauGZaFAyuvhf8qoZqqMUbcmikP0Mb0KHDpEY2Dbv35J54NA9L/0R9JYG8G+tmRu",
+  watchers: [
+    esbuild:
+      {Esbuild, :install_and_run, [:raxol, ~w(--sourcemap=inline --watch)]}
+  ]
 
 # Watch static and templates for browser reloading.
 config :raxol, RaxolWeb.Endpoint,

@@ -122,7 +122,10 @@ defmodule Raxol.MixProject do
           :telemetry,
           :file_system,
           :mnesia,
-          :os_mon
+          :os_mon,
+          :ssh,
+          :public_key,
+          :crypto
         ] ++ test_applications()
     ]
   end

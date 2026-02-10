@@ -35,8 +35,15 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-# Configure esbuild version
-config :esbuild, :version, "0.25.0"
+# Configure esbuild version and profiles
+config :esbuild,
+  version: "0.25.0",
+  raxol: [
+    args:
+      ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
+    cd: Path.expand("../assets", __DIR__),
+    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
+  ]
 
 # Configure dart_sass version
 config :dart_sass, :version, "1.61.0"
@@ -76,7 +83,8 @@ config :raxol, RaxolWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "your-secret-key-base",
+  secret_key_base:
+    "DauGZaFAyuvhf8qoZqqMUbcmikP0Mb0KHDpEY2Dbv35J54NA9L/0R9JYG8G+tmRu",
   adapter: Phoenix.Endpoint.Cowboy2Adapter
 
 # Watch static and templates for browser reloading.
@@ -117,3 +125,9 @@ config :raxol, :web,
   default_theme: "dark",
   enable_websockets: true,
   session_timeout: 3600
+
+# Configure demo terminal
+config :raxol, :demo,
+  max_sessions: 1000,
+  session_timeout_ms: 1_800_000,
+  max_sessions_per_ip: 10

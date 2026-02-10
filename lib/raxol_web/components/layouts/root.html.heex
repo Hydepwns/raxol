@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <.live_title><%= assigns[:page_title] || "Raxol" %></.live_title>
+    <link rel="stylesheet" href={~p"/assets/vendor/xterm/xterm.css"} />
+    <script src={~p"/assets/vendor/xterm/xterm.min.js"}></script>
+    <script src={~p"/assets/vendor/xterm/addon-fit.min.js"}></script>
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
+  </head>
+  <body>
+    <%= @inner_content %>
+  </body>
+</html>

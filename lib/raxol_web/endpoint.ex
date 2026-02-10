@@ -18,12 +18,16 @@ defmodule RaxolWeb.Endpoint do
     longpoll: false
   )
 
+  socket("/live", Phoenix.LiveView.Socket,
+    websocket: [connect_info: [session: @session_options]]
+  )
+
   # Serve at "/" the static files from "priv/static" directory.
   plug Plug.Static,
     at: "/",
     from: :raxol,
     gzip: false,
-    only: ~w(css fonts images js favicon.ico robots.txt)
+    only: ~w(assets css fonts images js favicon.ico robots.txt)
 
   # Tidewave AI development assistant
   if Code.ensure_loaded?(Tidewave) do
