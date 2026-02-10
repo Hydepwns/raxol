@@ -32,6 +32,7 @@ defmodule Raxol.Core.Performance.FlameGraph do
   Without these, raw profiling data is saved in Erlang fprof format.
   """
 
+  alias Raxol.System.PortCommand
   require Logger
 
   @type profile_opts :: [
@@ -365,7 +366,9 @@ defmodule Raxol.Core.Performance.FlameGraph do
       to_string(colors)
     ]
 
-    case run_with_stdin("flamegraph.pl", args, File.read!(folded_file)) do
+    case PortCommand.run("flamegraph.pl", args, File.read!(folded_file),
+           timeout: 30_000
+         ) do
       {:ok, svg_content} ->
         File.write!(output, svg_content)
         _ = File.rm(folded_file)
@@ -373,44 +376,6 @@ defmodule Raxol.Core.Performance.FlameGraph do
 
       {:error, error} ->
         {:error, "flamegraph.pl failed: #{error}"}
-    end
-  end
-
-  @spec run_with_stdin(String.t(), [String.t()], String.t()) ::
-          {:ok, String.t()} | {:error, String.t()}
-  defp run_with_stdin(command, args, input) do
-    case System.find_executable(command) do
-      nil ->
-        {:error, "command not found: #{command}"}
-
-      executable ->
-        port =
-          Port.open(
-            {:spawn_executable, executable},
-            [:binary, :exit_status, :stderr_to_stdout, {:args, args}]
-          )
-
-        Port.command(port, input)
-        Port.close(port)
-        collect_port_output(port, "")
-    end
-  end
-
-  @spec collect_port_output(port(), String.t()) ::
-          {:ok, String.t()} | {:error, String.t()}
-  defp collect_port_output(port, acc) do
-    receive do
-      {^port, {:data, data}} ->
-        collect_port_output(port, acc <> data)
-
-      {^port, {:exit_status, 0}} ->
-        {:ok, acc}
-
-      {^port, {:exit_status, _status}} ->
-        {:error, acc}
-    after
-      30_000 ->
-        {:error, "timeout waiting for command"}
     end
   end
 

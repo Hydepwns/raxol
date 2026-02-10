@@ -11,6 +11,7 @@ defmodule Raxol.System.Clipboard do
 
   @behaviour Raxol.Core.Clipboard.Behaviour
 
+  alias Raxol.System.PortCommand
   require Raxol.Core.Runtime.Log
 
   @doc """
@@ -29,7 +30,7 @@ defmodule Raxol.System.Clipboard do
 
   @spec copy_macos(String.t()) :: :ok | {:error, {:pbcopy_failed, String.t()}}
   defp copy_macos(text) do
-    case run_with_stdin("pbcopy", [], text) do
+    case PortCommand.run("pbcopy", [], text) do
       {:ok, _output} ->
         :ok
 
@@ -58,7 +59,7 @@ defmodule Raxol.System.Clipboard do
   @spec copy_with_xclip(String.t()) ::
           :ok | {:error, {:xclip_failed, String.t()}}
   defp copy_with_xclip(text) do
-    case run_with_stdin("xclip", ["-selection", "clipboard"], text) do
+    case PortCommand.run("xclip", ["-selection", "clipboard"], text) do
       {:ok, _output} ->
         :ok
 
@@ -70,7 +71,7 @@ defmodule Raxol.System.Clipboard do
 
   @spec copy_windows(String.t()) :: :ok | {:error, {:clip_failed, String.t()}}
   defp copy_windows(text) do
-    case run_with_stdin("clip", [], text) do
+    case PortCommand.run("clip", [], text) do
       {:ok, _output} ->
         :ok
 
@@ -184,44 +185,6 @@ defmodule Raxol.System.Clipboard do
 
             {:error, {:powershell_get_clipboard_failed, output}}
         end
-    end
-  end
-
-  @spec run_with_stdin(String.t(), [String.t()], String.t()) ::
-          {:ok, String.t()} | {:error, String.t()}
-  defp run_with_stdin(command, args, input) do
-    case System.find_executable(command) do
-      nil ->
-        {:error, "command not found: #{command}"}
-
-      executable ->
-        port =
-          Port.open(
-            {:spawn_executable, executable},
-            [:binary, :exit_status, :stderr_to_stdout, {:args, args}]
-          )
-
-        Port.command(port, input)
-        Port.close(port)
-        collect_port_output(port, "")
-    end
-  end
-
-  @spec collect_port_output(port(), String.t()) ::
-          {:ok, String.t()} | {:error, String.t()}
-  defp collect_port_output(port, acc) do
-    receive do
-      {^port, {:data, data}} ->
-        collect_port_output(port, acc <> data)
-
-      {^port, {:exit_status, 0}} ->
-        {:ok, acc}
-
-      {^port, {:exit_status, _status}} ->
-        {:error, acc}
-    after
-      5000 ->
-        {:error, "timeout waiting for clipboard command"}
     end
   end
 end
