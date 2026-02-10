@@ -304,13 +304,8 @@ if Code.ensure_loaded?(:ssh) do
     end
 
     def handle_manager_call({:start_shell, options}, _from, state) do
-      case start_shell_session(state, options) do
-        {:ok, session_pid} ->
-          {:reply, {:ok, session_pid}, update_activity(state)}
-
-        {:error, reason} ->
-          {:reply, {:error, reason}, state}
-      end
+      result = start_shell_session(state, options)
+      {:reply, result, update_activity(state)}
     end
 
     def handle_manager_call(:open_sftp, _from, %{connected: false} = state) do
@@ -332,19 +327,16 @@ if Code.ensure_loaded?(:ssh) do
           _from,
           state
         ) do
-      case create_port_forward(
-             state,
-             :local,
-             local_port,
-             remote_host,
-             remote_port
-           ) do
-        {:ok, forward_ref} ->
-          {:reply, {:ok, forward_ref}, state}
+      result =
+        create_port_forward(
+          state,
+          :local,
+          local_port,
+          remote_host,
+          remote_port
+        )
 
-        {:error, reason} ->
-          {:reply, {:error, reason}, state}
-      end
+      {:reply, result, state}
     end
 
     def handle_manager_call(
@@ -352,19 +344,16 @@ if Code.ensure_loaded?(:ssh) do
           _from,
           state
         ) do
-      case create_port_forward(
-             state,
-             :remote,
-             remote_port,
-             local_host,
-             local_port
-           ) do
-        {:ok, forward_ref} ->
-          {:reply, {:ok, forward_ref}, state}
+      result =
+        create_port_forward(
+          state,
+          :remote,
+          remote_port,
+          local_host,
+          local_port
+        )
 
-        {:error, reason} ->
-          {:reply, {:error, reason}, state}
-      end
+      {:reply, result, state}
     end
 
     def handle_manager_call(
@@ -413,7 +402,6 @@ if Code.ensure_loaded?(:ssh) do
       {:noreply, state}
     end
 
-    @impl true
     def terminate_manager(reason, state) do
       Log.info("SSH client terminating: #{inspect(reason)}")
       perform_disconnect(state)
@@ -663,41 +651,11 @@ if Code.ensure_loaded?(:ssh) do
 
     defp send_keepalive(state) do
       if state.connected && state.connection_ref do
-        # Try global request keepalive first (most efficient)
-        case send_global_keepalive(state) do
-          {:ok, _response} ->
-            update_last_activity(state)
-            :ok
-
-          {:error, :not_supported} ->
-            # Fallback to channel-based keepalive
-            send_channel_keepalive(state)
-
-          {:error, reason} ->
-            Log.warning("Keepalive failed: #{inspect(reason)}")
-            {:error, reason}
-        end
+        # Global keepalive not supported by Erlang SSH, use channel-based
+        send_channel_keepalive(state)
       else
         {:error, :not_connected}
       end
-    end
-
-    defp send_global_keepalive(_state) do
-      # Send SSH_MSG_GLOBAL_REQUEST with custom keepalive type
-      # This is the most efficient method and follows OpenSSH conventions
-      # Note: Erlang SSH doesn't expose direct global request API,
-      # so we use the connection module's internal messaging
-      _ref = make_ref()
-
-      # Send a harmless global request that servers should ignore
-      # Following OpenSSH's "keepalive@openssh.com" pattern
-      _request_type = "keepalive@raxol.io"
-
-      # For now, we'll use a channel-based approach as Erlang SSH
-      # doesn't expose SSH_MSG_GLOBAL_REQUEST directly
-      {:error, :not_supported}
-    rescue
-      _ -> {:error, :not_supported}
     end
 
     defp send_channel_keepalive(state) do

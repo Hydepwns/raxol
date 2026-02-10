@@ -651,9 +651,6 @@ defmodule Raxol.Demo.Animations do
       case color do
         :white -> "48;5;255"
         :cyan -> "48;5;51"
-        :magenta -> "48;5;201"
-        :gold -> "48;5;220"
-        _ -> "48;5;255"
       end
 
     for _ <- 1..frames do

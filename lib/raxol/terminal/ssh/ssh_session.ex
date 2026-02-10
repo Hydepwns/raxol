@@ -304,31 +304,26 @@ if Code.ensure_loaded?(:ssh) do
       # Get connection reference from SSH client
       case Raxol.Terminal.SSH.SSHClient.get_connection_info(ssh_client) do
         {:ok, _connection_info} ->
-          case start_session_channel(ssh_client, pty_options) do
-            {:ok, connection_ref, channel_id} ->
-              state = %{
-                ssh_client: ssh_client,
-                connection_ref: connection_ref,
-                channel_id: channel_id,
-                pty_options: normalize_pty_options(pty_options),
-                output_buffer: "",
-                input_buffer: "",
-                subscribers: [],
-                recording: false,
-                recording_file: nil,
-                started_at: DateTime.utc_now(),
-                last_activity: DateTime.utc_now(),
-                exit_status: nil
-              }
+          {:ok, connection_ref, channel_id} =
+            start_session_channel(ssh_client, pty_options)
 
-              Log.info("SSH session started on channel #{channel_id}")
-              {:ok, state}
+          state = %{
+            ssh_client: ssh_client,
+            connection_ref: connection_ref,
+            channel_id: channel_id,
+            pty_options: normalize_pty_options(pty_options),
+            output_buffer: "",
+            input_buffer: "",
+            subscribers: [],
+            recording: false,
+            recording_file: nil,
+            started_at: DateTime.utc_now(),
+            last_activity: DateTime.utc_now(),
+            exit_status: nil
+          }
 
-            {:error, reason} ->
-              Log.error("Failed to start SSH session: #{inspect(reason)}")
-
-              {:stop, {:session_start_failed, reason}}
-          end
+          Log.info("SSH session started on channel #{channel_id}")
+          {:ok, state}
 
         {:error, reason} ->
           Log.error("Failed to get SSH connection info: #{inspect(reason)}")
