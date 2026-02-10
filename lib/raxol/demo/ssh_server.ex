@@ -129,22 +129,23 @@ defmodule Raxol.Demo.SSHServer do
 
     host_key_path = Path.join(ssh_dir, "ssh_host_rsa_key")
 
-    unless File.exists?(host_key_path) do
-      Logger.info("Generating SSH host key...")
+    _ =
+      if not File.exists?(host_key_path) do
+        Logger.info("Generating SSH host key...")
 
-      {_, 0} =
-        System.cmd("ssh-keygen", [
-          "-t",
-          "rsa",
-          "-b",
-          "2048",
-          "-f",
-          host_key_path,
-          "-N",
-          "",
-          "-q"
-        ])
-    end
+        {_, 0} =
+          System.cmd("ssh-keygen", [
+            "-t",
+            "rsa",
+            "-b",
+            "2048",
+            "-f",
+            host_key_path,
+            "-N",
+            "",
+            "-q"
+          ])
+      end
 
     ssh_dir
   end

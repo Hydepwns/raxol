@@ -22,7 +22,19 @@ defmodule Raxol.Demo.Particles do
   @white_palette [255, 254, 253, 252, 251]
   @red_palette [196, 197, 198, 199, 200]
 
-  @type particle :: map()
+  @type particle :: %{
+          :x => float(),
+          :y => float(),
+          :vx => float(),
+          :vy => float(),
+          :char => String.t(),
+          :color => non_neg_integer(),
+          :life => integer(),
+          :history => list({float(), float()}),
+          :generation => non_neg_integer(),
+          :spawn_at_life => non_neg_integer(),
+          optional(:phase) => float()
+        }
 
   @doc """
   Creates a new particle at the given position.
@@ -384,7 +396,7 @@ defmodule Raxol.Demo.Particles do
   @doc """
   Converts hue (0-360) to an ANSI 256 color code.
   """
-  @spec hue_to_color(integer()) :: non_neg_integer()
+  @spec hue_to_color(integer()) :: 21 | 46 | 196 | 201 | 202 | 226
   def hue_to_color(hue) do
     case rem(div(hue, 60), 6) do
       0 -> 196

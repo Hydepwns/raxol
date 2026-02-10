@@ -111,5 +111,18 @@
   # because it doesn't properly track the return type across nested case expressions.
   # This is defensive programming - we want to handle errors even if dialyzer
   # thinks they can't occur in the current code paths.
-  ~r"consistency_checker\.ex:\d+:\d+:pattern_match The pattern can never match"
+  ~r"consistency_checker\.ex:\d+:\d+:pattern_match The pattern can never match",
+
+  # ------------------------------------------------------------------------------
+  # PROTOCOL FALLBACK IMPLEMENTATIONS (for: Any)
+  # ------------------------------------------------------------------------------
+  # Protocol specs define the contract that real implementations must follow.
+  # The `for: Any` fallback implementations return minimal/default values like
+  # `%{}` or `:stopped`, which are narrower than the full spec allows.
+  #
+  # Dialyzer only sees these fallback implementations, not the real ones that
+  # implement the full contract. These warnings are false positives:
+  # - extra_range: spec allows {:ok, _} | {:error, _} but fallback only returns one
+  # - contract_supertype: spec is map() but fallback returns literal %{}
+  ~r"core_protocols\.ex:\d+:(extra_range|contract_supertype)"
 ]
