@@ -32,12 +32,6 @@ defmodule Raxol.MixProject do
           Termbox2Nif
         ]
       ],
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.detail": :test,
-        "coveralls.post": :test,
-        "coveralls.html": :test
-      ],
       make_cwd: "lib/termbox2_nif/c_src",
       make_targets: ["all"],
       make_clean: ["clean"],
@@ -81,6 +75,17 @@ defmodule Raxol.MixProject do
         ignore_modules: [
           # Add modules that consistently produce false positives
         ]
+      ]
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
       ]
     ]
   end

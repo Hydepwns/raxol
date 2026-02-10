@@ -1,6 +1,10 @@
 import Config
 
-# Configure your database
+# Disable Ecto repos for dev (Raxol uses Phoenix as library, no active Repo)
+# This prevents Tidewave from trying to use Ecto tools
+config :raxol, ecto_repos: []
+
+# Configure your database (not started in dev)
 config :raxol, Raxol.Repo,
   username: "postgres",
   password: "postgres",

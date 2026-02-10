@@ -41,8 +41,8 @@ lib/termbox2_nif/c_src/*.so
 lib/termbox2_nif/priv/*.so
 priv/termbox2_nif.so
 
-# Claude Code configuration directory
-.claude/
+# Claude Code local configuration (user-specific, not shared)
+.claude/settings.local.json
 
 # Ignore package tarball (built via "mix hex.build").
 raxol-*.tar

@@ -55,6 +55,7 @@ use Raxol.UI, framework: :raw        # Direct terminal control
 ```
 
 ### React-Style Example
+
 ```elixir
 defmodule MyApp do
   use Raxol.Component
@@ -71,6 +72,7 @@ end
 ```
 
 ### Emulator Usage
+
 ```elixir
 # Default configuration
 emulator = Emulator.new(80, 24)
@@ -89,6 +91,7 @@ emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
 When importing Raxol with `runtime: false`, you get access to:
 
 ### UI Components
+
 - All framework adapters (React, LiveView, HEEx, Raw)
 - Complete component library (Button, Input, Table, Modal, etc.)
 - State management and context systems
@@ -96,6 +99,7 @@ When importing Raxol with `runtime: false`, you get access to:
 - Theme system and styling utilities
 
 ### Not Included in Components-Only
+
 - Terminal emulator runtime
 - ANSI/VT100 sequence processing
 - PTY/TTY management
@@ -107,17 +111,20 @@ This makes Raxol perfect as a lightweight UI component library for web applicati
 ## Architecture
 
 ### Terminal Framework
+
 - VT100/ANSI compliance with modern extensions
 - Sixel graphics, GPU acceleration
 - Mouse support, event handling
 - Tab completion, command history
 
 ### UI System
+
 - Universal features: actions, transitions, context, slots
 - 60 FPS animation engine
 - Component composition, theming
 
 ### Enterprise Features
+
 - Session continuity
 - Real-time collaboration with CRDT sync
 - SOC2/HIPAA/GDPR audit logging
@@ -157,6 +164,7 @@ See [Performance Metrics](docs/_includes/performance-metrics.md) and [Benchmark 
 - **[Full Documentation](https://hexdocs.pm/raxol)** - Complete API reference
 
 ### Recent Features
+
 - **Feature Additions** (v2.0.0 Phase 6) - VIM navigation, command parser, fuzzy search, filesystem, cursor effects
 - **Documentation Overhaul** (v2.0.0 Phase 4) - Beginner-friendly guides and practical cookbooks
 - **Plugin System** (v2.0.0 Phase 3) - Spotify plugin showcase
