@@ -22,19 +22,7 @@ defmodule Raxol.Demo.Particles do
   @white_palette [255, 254, 253, 252, 251]
   @red_palette [196, 197, 198, 199, 200]
 
-  @type particle :: %{
-          x: float(),
-          y: float(),
-          vx: float(),
-          vy: float(),
-          char: String.t(),
-          color: non_neg_integer(),
-          life: integer(),
-          # Optional fields for enhanced features
-          history: list({float(), float()}),
-          generation: integer(),
-          spawn_at_life: integer()
-        }
+  @type particle :: map()
 
   @doc """
   Creates a new particle at the given position.

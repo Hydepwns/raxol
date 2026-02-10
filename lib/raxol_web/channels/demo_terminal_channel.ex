@@ -97,17 +97,17 @@ defmodule RaxolWeb.DemoTerminalChannel do
     end
 
     # Handle animation if requested
-    if animation do
-      {:run_animation, fun} = animation
-      channel_pid = self()
-      cols = Map.get(socket.assigns, :cols, 80)
-      rows = Map.get(socket.assigns, :rows, 24)
+    _ =
+      if animation do
+        {:run_animation, fun} = animation
+        channel_pid = self()
+        cols = Map.get(socket.assigns, :cols, 80)
+        rows = Map.get(socket.assigns, :rows, 24)
 
-      spawn(fn ->
-        # Create a custom IO device that sends to the channel
-        run_web_animation(fun, channel_pid, cols, rows)
-      end)
-    end
+        spawn(fn ->
+          run_web_animation(fun, channel_pid, cols, rows)
+        end)
+      end
 
     if should_close do
       {:stop, :normal, socket}

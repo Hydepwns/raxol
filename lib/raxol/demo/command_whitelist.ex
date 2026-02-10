@@ -6,7 +6,11 @@ defmodule Raxol.Demo.CommandWhitelist do
 
   @max_input_size 1024
 
-  @type command_result :: {:ok, String.t()} | {:error, String.t()}
+  @type command_result ::
+          {:ok, String.t()}
+          | {:error, String.t()}
+          | {:animate, (term() -> term())}
+          | {:exit, String.t()}
 
   @doc """
   Executes a command if it's whitelisted. Returns error for unknown commands.
@@ -30,10 +34,9 @@ defmodule Raxol.Demo.CommandWhitelist do
   def available_commands do
     [
       {"help", "List available commands"},
+      {"demo", "*** FULL SHOWCASE with particles & animations ***"},
       {"demo colors", "ANSI color palette showcase"},
       {"demo components", "UI component gallery"},
-      {"demo animation", "Static animation preview"},
-      {"demo live", "*** LIVE animated spinners & progress ***"},
       {"demo emulation", "VT100/ANSI escape sequence demo"},
       {"theme <name>", "Switch theme (dracula, nord, monokai, solarized)"},
       {"clear", "Clear screen"},
@@ -58,27 +61,20 @@ defmodule Raxol.Demo.CommandWhitelist do
 
   defp dispatch({"demo", args}) do
     case args do
+      [] ->
+        {:animate, &Raxol.Demo.Animations.run_showcase/1}
+
       ["colors" | _] ->
         Raxol.Demo.DemoHandler.demo_colors()
 
       ["components" | _] ->
         Raxol.Demo.DemoHandler.demo_components()
 
-      ["animation" | _] ->
-        Raxol.Demo.DemoHandler.demo_animation()
-
-      ["live" | _] ->
-        {:animate, &Raxol.Demo.Animations.run_all/1}
-
       ["emulation" | _] ->
         Raxol.Demo.DemoHandler.demo_emulation()
 
-      [] ->
-        {:error, "Usage: demo <colors|components|animation|emulation|live>"}
-
       [unknown | _] ->
-        {:error,
-         "Unknown demo: #{unknown}. Try: colors, components, animation, emulation, live"}
+        {:error, "Unknown demo: #{unknown}. Try: colors, components, emulation"}
     end
   end
 

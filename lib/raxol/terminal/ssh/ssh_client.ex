@@ -404,7 +404,7 @@ if Code.ensure_loaded?(:ssh) do
 
     def terminate_manager(reason, state) do
       Log.info("SSH client terminating: #{inspect(reason)}")
-      perform_disconnect(state)
+      _ = perform_disconnect(state)
       :ok
     end
 
@@ -631,14 +631,16 @@ if Code.ensure_loaded?(:ssh) do
     end
 
     defp perform_disconnect(state) do
-      if state.connected && state.connection_ref do
-        :ssh.close(state.connection_ref)
-        Log.info("SSH disconnected from #{state.host}:#{state.port}")
-      end
+      _ =
+        if state.connected && state.connection_ref do
+          _ = :ssh.close(state.connection_ref)
+          Log.info("SSH disconnected from #{state.host}:#{state.port}")
+        end
 
-      if state.keepalive_timer do
-        _ = Process.cancel_timer(state.keepalive_timer)
-      end
+      _ =
+        if state.keepalive_timer do
+          Process.cancel_timer(state.keepalive_timer)
+        end
 
       %{
         state
@@ -665,7 +667,7 @@ if Code.ensure_loaded?(:ssh) do
           # Send empty data packet as keepalive
           case :ssh_connection.send(state.connection_ref, channel_id, <<>>, 0) do
             :ok ->
-              update_last_activity(state)
+              _ = update_last_activity(state)
               :ok
 
             {:error, reason} ->

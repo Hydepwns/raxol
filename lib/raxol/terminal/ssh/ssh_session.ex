@@ -130,7 +130,7 @@ if Code.ensure_loaded?(:ssh) do
     - `:ok` - Input sent successfully
     - `{:error, reason}` - Failed to send input
     """
-    @spec send_input(pid(), binary()) :: :ok | {:error, term()}
+    @spec send_input(pid(), binary()) :: :ok
     def send_input(session, data) when is_binary(data) do
       GenServer.cast(session, {:send_input, data})
     end
@@ -449,10 +449,10 @@ if Code.ensure_loaded?(:ssh) do
       new_output_buffer = append_to_buffer(state.output_buffer, output_data)
 
       # Record if recording is enabled
-      record_data(state, output_data, :output)
+      _ = record_data(state, output_data, :output)
 
       # Notify subscribers
-      notify_subscribers(state.subscribers, output_data)
+      _ = notify_subscribers(state.subscribers, output_data)
 
       new_state = %{
         state
@@ -500,12 +500,13 @@ if Code.ensure_loaded?(:ssh) do
       Log.info("SSH session terminating: #{inspect(reason)}")
 
       # Stop recording if active
-      stop_session_recording(state)
+      _ = stop_session_recording(state)
 
       # Close SSH channel
-      if state.connection_ref && state.channel_id do
-        :ssh_connection.close(state.connection_ref, state.channel_id)
-      end
+      _ =
+        if state.connection_ref && state.channel_id do
+          :ssh_connection.close(state.connection_ref, state.channel_id)
+        end
 
       :ok
     end
@@ -568,7 +569,7 @@ if Code.ensure_loaded?(:ssh) do
              data
            ) do
         :ok ->
-          record_data(state, data, :input)
+          _ = record_data(state, data, :input)
           :ok
 
         {:error, reason} ->
@@ -718,7 +719,7 @@ if Code.ensure_loaded?(:ssh) do
       case File.open(file_path, [:write, :binary]) do
         {:ok, file} ->
           # Close immediately, we'll append later
-          File.close(file)
+          _ = File.close(file)
           new_state = %{state | recording: true, recording_file: file_path}
           Log.info("Started recording SSH session to #{file_path}")
           {:ok, new_state}
