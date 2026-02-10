@@ -15,7 +15,7 @@ defmodule RaxolWeb.DemoTerminalChannel do
   def join("demo:terminal:" <> session_id, _params, socket) do
     ip_address = get_ip_address(socket)
 
-    case SessionManager.create_session(ip_address) do
+    case SessionManager.register_session(session_id, ip_address) do
       {:ok, ^session_id} ->
         send(self(), :send_welcome)
 
@@ -26,10 +26,6 @@ defmodule RaxolWeb.DemoTerminalChannel do
           |> assign(:input_buffer, "")
 
         {:ok, socket}
-
-      {:ok, different_id} ->
-        SessionManager.remove_session(different_id)
-        {:error, %{reason: "session_id_mismatch"}}
 
       {:error, :max_sessions_reached} ->
         Logger.warning(
@@ -64,6 +60,17 @@ defmodule RaxolWeb.DemoTerminalChannel do
   end
 
   @impl true
+  def handle_in("resize", %{"cols" => cols, "rows" => rows}, socket)
+      when is_integer(cols) and is_integer(rows) do
+    socket =
+      socket
+      |> assign(:cols, cols)
+      |> assign(:rows, rows)
+
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_in("input", %{"data" => data}, socket)
       when byte_size(data) > @max_input_size do
     push(socket, "output", %{
@@ -93,10 +100,12 @@ defmodule RaxolWeb.DemoTerminalChannel do
     if animation do
       {:run_animation, fun} = animation
       channel_pid = self()
+      cols = Map.get(socket.assigns, :cols, 80)
+      rows = Map.get(socket.assigns, :rows, 24)
 
       spawn(fn ->
         # Create a custom IO device that sends to the channel
-        run_web_animation(fun, channel_pid)
+        run_web_animation(fun, channel_pid, cols, rows)
       end)
     end
 
@@ -193,9 +202,9 @@ defmodule RaxolWeb.DemoTerminalChannel do
     "\e[32mraxol>\e[0m "
   end
 
-  defp run_web_animation(fun, channel_pid) do
-    # Run animation with {:web, pid} target - output goes via messages
-    fun.({:web, channel_pid})
+  defp run_web_animation(fun, channel_pid, cols, rows) do
+    # Run animation with {:web, pid, cols, rows} target - output goes via messages
+    fun.({:web, channel_pid, cols, rows})
     send(channel_pid, :animation_complete)
   end
 

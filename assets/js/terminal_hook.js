@@ -7,6 +7,8 @@
  * - window.FitAddon
  */
 
+import { Socket } from "phoenix"
+
 const TerminalDemo = {
   mounted() {
     this.initTerminal()
@@ -15,6 +17,9 @@ const TerminalDemo = {
   destroyed() {
     if (this.channel) {
       this.channel.leave()
+    }
+    if (this.socket) {
+      this.socket.disconnect()
     }
     if (this.terminal) {
       this.terminal.dispose()
@@ -38,9 +43,9 @@ const TerminalDemo = {
     this.terminal = new Terminal({
       cursorBlink: true,
       cursorStyle: "block",
-      fontFamily: '"Fira Code", "JetBrains Mono", "SF Mono", Menlo, Monaco, monospace',
+      fontFamily: '"Monaspace Neon", "Fira Code", "JetBrains Mono", "SF Mono", Menlo, Monaco, monospace',
       fontSize: 14,
-      lineHeight: 1.2,
+      lineHeight: 1.3,
       theme: {
         background: "#1a1b26",
         foreground: "#a9b1d6",
@@ -77,6 +82,7 @@ const TerminalDemo = {
     // Handle window resize
     this.resizeObserver = new ResizeObserver(() => {
       this.fitAddon.fit()
+      this.sendSize()
     })
     this.resizeObserver.observe(this.el)
 
@@ -96,9 +102,12 @@ const TerminalDemo = {
 
   connectChannel() {
     const sessionId = this.el.dataset.sessionId
-    const socket = window.liveSocket.socket
 
-    this.channel = socket.channel(`demo:terminal:${sessionId}`, {})
+    // Connect to UserSocket (separate from LiveView socket)
+    this.socket = new Socket("/socket", {})
+    this.socket.connect()
+
+    this.channel = this.socket.channel(`demo:terminal:${sessionId}`, {})
 
     this.channel.on("output", ({ data }) => {
       this.terminal.write(data)
@@ -107,12 +116,22 @@ const TerminalDemo = {
     this.channel.join()
       .receive("ok", () => {
         console.log("Demo terminal connected")
+        // Send initial terminal size
+        this.sendSize()
       })
       .receive("error", ({ reason }) => {
         console.error("Failed to join demo terminal:", reason)
         this.terminal.write(`\r\n\x1b[31mConnection error: ${reason}\x1b[0m\r\n`)
         this.terminal.write("Please refresh the page to try again.\r\n")
       })
+  },
+
+  sendSize() {
+    if (this.channel && this.terminal) {
+      const cols = this.terminal.cols
+      const rows = this.terminal.rows
+      this.channel.push("resize", { cols, rows })
+    }
   }
 }
 
