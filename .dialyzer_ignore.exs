@@ -6,20 +6,17 @@
   # This file contains patterns for dialyzer warnings that are intentionally
   # suppressed. Each section documents why the suppression exists.
   #
-  # Total suppressed: ~104 warnings
-  # Last updated: 2024-12
+  # Total suppressed: ~53 warnings
+  # Last updated: 2025-02
   #
   # ================================================================================
 
   # ------------------------------------------------------------------------------
-  # EXTERNAL CODE (deps, NIF, tests)
+  # EXTERNAL CODE (NIF)
   # ------------------------------------------------------------------------------
-  # Dependencies are maintained externally and their type issues are not our concern.
   # The termbox2 NIF is C code with Elixir bindings that dialyzer can't analyze.
-  # Test files often use mocks and fixtures with intentionally loose typing.
-  ~r"^deps/",
+  # Note: deps/ and test/ don't need patterns - dialyzer only analyzes project beams.
   ~r"lib/termbox2_nif/",
-  ~r"^test/",
 
   # ------------------------------------------------------------------------------
   # DEFENSIVE CATCH-ALL CLAUSES
