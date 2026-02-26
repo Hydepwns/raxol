@@ -271,7 +271,7 @@ IO.puts(output)
 ##### render_diff/2
 
 ```elixir
-@spec render_diff(Buffer.t(), Buffer.t()) :: list(String.t())
+@spec render_diff(Buffer.t(), Buffer.t()) :: list()
 ```
 
 Calculates minimal updates between two buffers.
@@ -280,7 +280,10 @@ Calculates minimal updates between two buffers.
 - `old_buffer` - Previous buffer state
 - `new_buffer` - New buffer state
 
-**Returns:** List of ANSI cursor positioning and update sequences
+**Returns:** List of update tuples:
+- `{:move, x, y}` - Move cursor to position
+- `{:write, text, style}` - Write text with style
+- `{:clear_line, y}` - Clear line at y
 
 **Example:**
 ```elixir
@@ -288,15 +291,44 @@ old_buffer = Raxol.Core.Buffer.create_blank_buffer(80, 24)
 new_buffer = Raxol.Core.Buffer.write_at(old_buffer, 5, 3, "Changed!")
 
 diff = Raxol.Core.Renderer.render_diff(old_buffer, new_buffer)
-# => ["\e[4;6HChanged!"]  # Only updates changed cells
+# => [{:move, 5, 3}, {:write, "Changed!", %{}}]
+
+# Convert to ANSI and write to terminal
+IO.write(Raxol.Core.Renderer.apply_diff(diff))
 ```
 
 **Optimization:**
-- Only generates updates for changed lines
+- Only generates updates for changed cells
 - Uses efficient Enum.zip for line comparison
-- Minimal ANSI escape sequences
+- Batches consecutive changed cells into single write operations
 
 **Performance:** < 2ms for 80x24 buffer (target met in benchmarks)
+
+---
+
+##### apply_diff/1
+
+```elixir
+@spec apply_diff(list()) :: String.t()
+```
+
+Converts diff operations to an ANSI output string.
+
+**Parameters:**
+- `operations` - List of diff operations from `render_diff/2`
+
+**Returns:** String with ANSI cursor movement and styling codes
+
+**Example:**
+```elixir
+diff = Raxol.Core.Renderer.render_diff(old_buffer, new_buffer)
+ansi_output = Raxol.Core.Renderer.apply_diff(diff)
+IO.write(ansi_output)
+```
+
+**Notes:**
+- Cursor positions use ANSI 1-indexed coordinates
+- Styles are applied inline with reset codes after each styled segment
 
 ---
 

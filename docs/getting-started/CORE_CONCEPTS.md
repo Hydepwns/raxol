@@ -120,9 +120,9 @@ new_buffer = # ... current frame
 diff = Renderer.render_diff(old_buffer, new_buffer)
 # => [
 #   {:move, 10, 7},
-#   {:write, "Updated text"},
+#   {:write, "Updated text", %{}},
 #   {:move, 15, 10},
-#   {:write, "More changes"}
+#   {:write, "More changes", %{}}
 # ]
 ```
 
@@ -138,7 +138,7 @@ IO.puts(Buffer.to_string(new_buffer))
 With diffing:
 ```elixir
 # Only update changed cells (fast, smooth)
-Enum.each(diff, &IO.write/1)
+IO.write(Renderer.apply_diff(diff))
 ```
 
 **Performance Impact:**
@@ -156,7 +156,7 @@ IO.puts(output)
 
 # Option 2: Diff output (for efficiency)
 diff = Renderer.render_diff(old, new)
-Enum.each(diff, &IO.write/1)
+IO.write(Renderer.apply_diff(diff))
 
 # Option 3: HTML output (for web)
 html = TerminalBridge.buffer_to_html(buffer)
@@ -228,7 +228,7 @@ defmodule StatefulApp do
 
     # Diff and output
     diff = Renderer.render_diff(state.buffer, new_buffer)
-    Enum.each(diff, &IO.write/1)
+    IO.write(Renderer.apply_diff(diff))
 
     # Continue loop
     loop(%{new_state | buffer: new_buffer})
@@ -347,7 +347,7 @@ end
 def render_loop(state) do
   new_buffer = create_frame(state)
   diff = Renderer.render_diff(state.buffer, new_buffer)
-  Enum.each(diff, &IO.write/1)  # FAST!
+  IO.write(Renderer.apply_diff(diff))  # FAST!
   render_loop(%{state | buffer: new_buffer})
 end
 ```

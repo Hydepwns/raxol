@@ -84,12 +84,12 @@ defmodule ParserPropertyTest do
     check all width <- integer(1..200),
               height <- integer(1..100),
               ops <- list_of(buffer_operation()) do
-      
-      buffer = Buffer.new(width, height)
+
+      buffer = Buffer.create_blank_buffer(width, height)
       buffer = Enum.reduce(ops, buffer, &apply_op/2)
-      
-      assert Buffer.width(buffer) == width
-      assert Buffer.height(buffer) == height
+
+      assert buffer.width == width
+      assert buffer.height == height
     end
   end
 end

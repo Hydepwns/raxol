@@ -50,7 +50,7 @@ defmodule PerformantRenderer do
     diff = Renderer.render_diff(state.buffer, new_buffer)
 
     # Apply only changed cells
-    Enum.each(diff, &IO.write/1)
+    IO.write(Renderer.apply_diff(diff))
 
     # Continue with new buffer
     Process.sleep(16)  # ~60fps
@@ -72,7 +72,7 @@ end)
 # With diffing (GOOD)
 {time, _} = :timer.tc(fn ->
   diff = Renderer.render_diff(old_buffer, new_buffer)
-  Enum.each(diff, &IO.write/1)
+  IO.write(Renderer.apply_diff(diff))
 end)
 # => ~300μs (0.3ms) for typical updates
 # 50x faster!
@@ -94,7 +94,7 @@ defmodule SmartDiffing do
     else
       # Diff for incremental updates
       diff = Renderer.render_diff(state.buffer, new_buffer)
-      Enum.each(diff, &IO.write/1)
+      IO.write(Renderer.apply_diff(diff))
     end
 
     %{state | buffer: new_buffer}
@@ -561,7 +561,7 @@ def update_counter(state) do
   old_buffer = state.buffer
   new_buffer = Buffer.write_at(old_buffer, 20, 5, "#{state.count}")
   diff = Renderer.render_diff(old_buffer, new_buffer)
-  Enum.each(diff, &IO.write/1)
+  IO.write(Renderer.apply_diff(diff))
   %{state | buffer: new_buffer}
 end
 ```

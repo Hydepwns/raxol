@@ -38,6 +38,7 @@ defmodule Raxol.MixProject do
       make_env: %{
         "MIX_APP_PATH" => "priv"
       },
+      usage_rules: usage_rules(),
       dialyzer: [
         # PLT Configuration for caching
         plt_core_path: "priv/plts/core.plt",
@@ -263,8 +264,8 @@ defmodule Raxol.MixProject do
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
 
       # AI development tools
-      {:tidewave, "~> 0.5", only: :dev},
-      {:usage_rules, "~> 0.1", only: :dev},
+      {:tidewave, "~> 0.5.4", only: :dev},
+      {:usage_rules, "~> 1.2", only: :dev},
 
       # Testing
       {:mox, "~> 1.2", only: :test},
@@ -318,6 +319,13 @@ defmodule Raxol.MixProject do
     ]
   end
 
+  defp usage_rules do
+    [
+      file: "CLAUDE.md",
+      usage_rules: [:elixir, :otp]
+    ]
+  end
+
   defp aliases do
     [
       setup: ["deps.get"],
@@ -355,9 +363,7 @@ defmodule Raxol.MixProject do
       "release.clean": ["run scripts/release.exs --clean"],
       "release.tag": ["run scripts/release.exs --tag"],
       # AI development tools
-      "usage_rules.update": [
-        "usage_rules.sync CLAUDE.md usage_rules:all phoenix ecto --inline usage_rules:all --link-to-folder deps --remove-missing --yes"
-      ]
+      "usage_rules.update": ["usage_rules.sync"]
     ]
   end
 

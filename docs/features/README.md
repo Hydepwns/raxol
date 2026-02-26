@@ -43,6 +43,8 @@ fs = FileSystem.new()
 Visual trails and glow: configurable colors, presets, smooth interpolation.
 
 ```elixir
+alias Raxol.Effects.CursorTrail
+
 trail = CursorTrail.rainbow()
 trail = CursorTrail.update(trail, {x, y})
 buffer = CursorTrail.apply(trail, buffer)
@@ -52,6 +54,8 @@ buffer = CursorTrail.apply(trail, buffer)
 
 ```elixir
 defmodule Terminal do
+  alias Raxol.Effects.CursorTrail
+
   defstruct [:buffer, :vim, :parser, :search, :fs, :trail]
 
   def new do
