@@ -35,6 +35,9 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Suppress Tesla deprecated builder warning (oauth2 uses it)
+config :tesla, :disable_deprecated_builder_warning, true
+
 # Configure esbuild version and profiles
 config :esbuild,
   version: "0.25.0",

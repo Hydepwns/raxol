@@ -416,11 +416,7 @@ defmodule Raxol.MixProject do
         "docs/cookbook/VIM_NAVIGATION.md",
         "docs/plugins/PLUGIN_DEVELOPMENT_GUIDE.md",
         "docs/bench/README.md",
-        "docs/project/TODO.md",
-        "examples/core/README.md",
-        "apps/raxol_core/README.md",
-        "apps/raxol_liveview/README.md",
-        "apps/raxol_plugin/README.md"
+        "examples/core/README.md"
       ],
       groups_for_extras: [
         "Getting Started": [
@@ -446,17 +442,9 @@ defmodule Raxol.MixProject do
         Plugins: [
           "docs/plugins/PLUGIN_DEVELOPMENT_GUIDE.md"
         ],
-        Packages: [
-          "apps/raxol_core/README.md",
-          "apps/raxol_liveview/README.md",
-          "apps/raxol_plugin/README.md"
-        ],
         "Examples & Benchmarks": [
           "examples/core/README.md",
           "docs/bench/README.md"
-        ],
-        Project: [
-          "docs/project/TODO.md"
         ],
         "Project Info": [
           "CHANGELOG.md",
