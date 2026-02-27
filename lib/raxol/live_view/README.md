@@ -235,7 +235,7 @@ Using StreamData for generative testing:
 
 Run tests:
 ```bash
-mix test test/raxol/liveview/
+mix test test/raxol/live_view/
 ```
 
 ### Benchmarks
@@ -243,7 +243,7 @@ mix test test/raxol/liveview/
 Performance benchmarks verify 60fps capability:
 
 ```bash
-mix run bench/liveview/renderer_bench.exs
+mix run bench/live_view/renderer_bench.exs
 ```
 
 Results on Apple Silicon:
@@ -290,7 +290,7 @@ Results on Apple Silicon:
 
 ## Examples
 
-See `examples/liveview/basic_terminal_live.ex` for a complete working example.
+See `examples/live_view/basic_terminal_live.ex` for a complete working example.
 
 ## Migration from RaxolWeb
 
@@ -316,8 +316,8 @@ If upgrading from the old `RaxolWeb` namespace:
    ```diff
    - lib/raxol_web/
    - test/raxol_web/
-   + lib/raxol/liveview/
-   + test/raxol/liveview/
+   + lib/raxol/live_view/
+   + test/raxol/live_view/
    ```
 
 All functionality remains identical.
@@ -326,7 +326,7 @@ All functionality remains identical.
 
 ### Code Quality
 
-- **Format**: `mix format lib/raxol/liveview/*.ex`
+- **Format**: `mix format lib/raxol/live_view/*.ex`
 - **Warnings**: Zero with `--warnings-as-errors`
 - **Type Specs**: 100% coverage on all functions
 - **Tests**: 73 tests (67 unit + 6 properties), 100% passing
