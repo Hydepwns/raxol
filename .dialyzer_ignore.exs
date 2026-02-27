@@ -121,5 +121,20 @@
   # implement the full contract. These warnings are false positives:
   # - extra_range: spec allows {:ok, _} | {:error, _} but fallback only returns one
   # - contract_supertype: spec is map() but fallback returns literal %{}
-  ~r"core_protocols\.ex:\d+:(extra_range|contract_supertype)"
+  ~r"core_protocols\.ex:\d+:(extra_range|contract_supertype)",
+
+  # ------------------------------------------------------------------------------
+  # SAFE SUPERTYPE SPECS (returning narrower types than declared)
+  # ------------------------------------------------------------------------------
+  # These functions return more specific types than their specs declare.
+  # This is safe - callers get MORE than promised, not less.
+  # Examples: returning literal `false` when spec says `boolean()`,
+  # or specific struct fields when spec says general type.
+  #
+  # beam_analyzer.ex - analyze_module returns specific error shapes
+  # capability_detector.ex - policy functions return literal true/false maps
+  # format.ex - new() returns struct with specific default values
+  ~r"beam_analyzer\.ex:\d+:contract_supertype",
+  ~r"capability_detector\.ex:\d+:contract_supertype",
+  ~r"format\.ex:\d+:contract_supertype"
 ]

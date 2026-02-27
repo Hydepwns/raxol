@@ -20,8 +20,31 @@ defmodule Raxol.Core.Runtime.Plugins.Security.BeamAnalyzer do
 
   @type capability ::
           :file_access | :network_access | :code_injection | :system_commands
-  @type capabilities :: %{capability() => boolean()}
-  @type analysis_result :: {:ok, capabilities()} | {:error, term()}
+
+  @type capabilities :: %{
+          file_access: boolean(),
+          network_access: boolean(),
+          code_injection: boolean(),
+          system_commands: boolean()
+        }
+
+  @type beam_lib_error ::
+          {:beam_lib_error,
+           {:not_a_beam_file, list()}
+           | {:file_error
+              | :invalid_beam_file
+              | :invalid_chunk
+              | :key_missing_or_invalid
+              | :missing_backend
+              | :missing_chunk
+              | :unknown_chunk, list(), atom() | list() | non_neg_integer()}
+           | {:chunk_too_big, list(), list(), non_neg_integer(),
+              non_neg_integer()}}
+
+  @type analysis_error ::
+          :no_abstract_code | :unknown_beam_format | beam_lib_error()
+
+  @type analysis_result :: {:ok, capabilities()} | {:error, analysis_error()}
 
   # Modules/functions that indicate file system access
   @file_access_patterns [

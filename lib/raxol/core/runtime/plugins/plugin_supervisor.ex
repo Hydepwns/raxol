@@ -127,21 +127,35 @@ defmodule Raxol.Core.Runtime.Plugins.PluginSupervisor do
   """
   @spec async_plugin_task(atom(), (-> term())) :: :ok
   def async_plugin_task(plugin_id, func) do
-    Task.Supervisor.start_child(@task_supervisor_name, fn ->
-      try do
-        func.()
-      rescue
-        error ->
-          log_plugin_crash(plugin_id, error)
-          {:error, {:crashed, error}}
-      catch
-        kind, value ->
-          log_plugin_crash(plugin_id, {kind, value})
-          {:error, {:crashed, {kind, value}}}
-      end
-    end)
+    case Task.Supervisor.start_child(@task_supervisor_name, fn ->
+           try do
+             func.()
+           rescue
+             error ->
+               log_plugin_crash(plugin_id, error)
+               {:error, {:crashed, error}}
+           catch
+             kind, value ->
+               log_plugin_crash(plugin_id, {kind, value})
+               {:error, {:crashed, {kind, value}}}
+           end
+         end) do
+      {:ok, _pid} ->
+        :ok
 
-    :ok
+      {:ok, _pid, _info} ->
+        :ok
+
+      :ignore ->
+        :ok
+
+      {:error, reason} ->
+        Log.error(
+          "[PluginSupervisor] Failed to start async task for #{inspect(plugin_id)}: #{inspect(reason)}"
+        )
+
+        :ok
+    end
   end
 
   @doc """
@@ -182,12 +196,12 @@ defmodule Raxol.Core.Runtime.Plugins.PluginSupervisor do
 
       {task, {:exit, reason}} ->
         log_plugin_crash(plugin_id, reason)
-        Task.shutdown(task, :brutal_kill)
+        shutdown_task(task)
         {:error, {:crashed, reason}}
 
       {task, nil} ->
         log_plugin_timeout(plugin_id, timeout)
-        Task.shutdown(task, :brutal_kill)
+        shutdown_task(task)
         {:error, {:timeout, timeout}}
     end)
   end
@@ -229,7 +243,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginSupervisor do
   @doc """
   Gets statistics about plugin task execution.
   """
-  @spec stats() :: map()
+  @spec stats() :: %{
+          active_tasks: non_neg_integer(),
+          supervisor_info: nil | keyword()
+        }
   def stats do
     %{
       active_tasks: Task.Supervisor.children(@task_supervisor_name) |> length(),
@@ -251,5 +268,15 @@ defmodule Raxol.Core.Runtime.Plugins.PluginSupervisor do
     Log.warning(
       "[PluginSupervisor] Plugin #{inspect(plugin_id)} timed out after #{timeout}ms"
     )
+  end
+
+  # Cleanup helper that handles all Task.shutdown outcomes.
+  # Called after task has already exited or timed out, so we just need cleanup.
+  defp shutdown_task(task) do
+    case Task.shutdown(task, :brutal_kill) do
+      {:ok, _result} -> :ok
+      {:exit, _reason} -> :ok
+      nil -> :ok
+    end
   end
 end

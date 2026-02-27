@@ -29,12 +29,19 @@ defmodule Raxol.Core.Runtime.Plugins.Security.CapabilityDetector do
 
   @type capability ::
           :file_access | :network_access | :code_injection | :system_commands
-  @type capabilities :: %{capability() => boolean()}
+
+  @type capabilities :: %{
+          file_access: boolean(),
+          network_access: boolean(),
+          code_injection: boolean(),
+          system_commands: boolean()
+        }
+
   @type policy :: %{
-          optional(:allow_file_access) => boolean(),
-          optional(:allow_network_access) => boolean(),
-          optional(:allow_code_injection) => boolean(),
-          optional(:allow_system_commands) => boolean()
+          allow_file_access: boolean(),
+          allow_network_access: boolean(),
+          allow_code_injection: boolean(),
+          allow_system_commands: boolean()
         }
 
   @default_policy %{
@@ -49,8 +56,7 @@ defmodule Raxol.Core.Runtime.Plugins.Security.CapabilityDetector do
 
   Returns a map indicating which security-sensitive capabilities the module has.
   """
-  @spec detect_capabilities(module()) ::
-          {:ok, capabilities()} | {:error, term()}
+  @spec detect_capabilities(module()) :: BeamAnalyzer.analysis_result()
   def detect_capabilities(module) do
     BeamAnalyzer.analyze_module(module)
   end
