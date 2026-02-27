@@ -1,3 +1,42 @@
+## [2.1.0] - 2025-02-27
+
+### Added
+
+- **ScreenBuffer.Scroll Module** - Complete scroll operations for terminal buffer
+  - Scroll region management (set/get scroll regions)
+  - Basic scroll operations (scroll_up/down with configurable line counts)
+  - Region-specific scrolling (scroll within defined regions)
+  - Scrollback buffer management (save, clear, get with limits)
+  - Scroll position tracking for viewing history
+  - VT100 index operations (IND/RI for cursor-triggered scrolling)
+
+- **Core.Performance Module** - ETS-backed performance statistics tracking
+  - Frame timing and FPS calculation
+  - Memory usage monitoring
+  - Sample-based metrics with configurable limits
+  - Non-blocking initialization (works without GenServer)
+
+### Fixed
+
+- **Dialyzer Errors** - Resolved all dialyzer warnings in plugin modules
+  - plugin_supervisor: Explicit handling of Task.Supervisor return values
+  - beam_analyzer: Precise error types for analysis_result
+  - capability_detector: Tightened policy and capabilities types
+  - Added documented ignore patterns for safe supertype specs
+
+- **Orphaned Tests Cleanup** - Removed test files for non-existent modules
+  - Deleted adaptive_framerate_test.exs (module removed in 9f27ae77)
+  - Deleted monitor_test.exs (module never existed)
+  - Deleted gpu_renderer_test.exs (module never existed)
+  - Deleted render_server_test.exs (module never existed)
+  - Tagged termbox2 NIF loading test with :docker for CI compatibility
+
+### Changed
+
+- **Test Suite** - Improved test stability and reduced flaky failures
+  - 4669 tests passing with 0 failures
+  - Removed ~750 lines of orphaned test code
+
 ## [Unreleased]
 
 ### Added

@@ -165,14 +165,13 @@ See [Performance Metrics](docs/_includes/performance-metrics.md) and [Benchmark 
 
 ### Recent Features
 
+- **ScreenBuffer.Scroll** (v2.1.0) - Complete scroll operations: regions, scrollback, VT100 index
+- **Core.Performance** (v2.1.0) - ETS-backed performance monitoring and frame statistics
 - **Feature Additions** (v2.0.0 Phase 6) - VIM navigation, command parser, fuzzy search, filesystem, cursor effects
 - **Documentation Overhaul** (v2.0.0 Phase 4) - Beginner-friendly guides and practical cookbooks
 - **Plugin System** (v2.0.0 Phase 3) - Spotify plugin showcase
 - **LiveView Integration** (v2.0.0 Phase 2) - Terminal rendering in Phoenix
 - **Raxol.Core** (v2.0.0 Phase 1) - Lightweight buffer primitives (< 100KB, zero deps)
-- **Code Consolidation** (v1.5.4) - BaseManager pattern, TimerManager integration, 99.8% test coverage
-- **Type Spec Generator** (v1.4.1) - Automated type specification generation
-- **Unified Configuration** (v1.4.1) - TOML-based configuration system
 
 ## VS Code Extension
 
