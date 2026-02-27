@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.AIAnalyzer do
+defmodule Raxol.Performance.AIAnalyzer do
   @moduledoc """
   Handles AI-based analysis of performance metrics and generates optimization recommendations.
   This module integrates with an AI agent to provide deep insights and actionable suggestions.
@@ -6,8 +6,8 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Core.Performance.AIIntegration
-  alias Raxol.Core.Performance.Analyzer
+  alias Raxol.Performance.AIIntegration
+  alias Raxol.Performance.Analyzer
 
   @doc """
   Analyzes performance metrics using AI and returns detailed insights and recommendations.

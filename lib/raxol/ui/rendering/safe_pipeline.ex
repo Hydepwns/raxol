@@ -8,7 +8,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
 
   use Raxol.Core.Behaviours.BaseManager
   import Raxol.Core.ErrorHandler
-  import Raxol.Core.Performance.Profiler
+  import Raxol.Performance.Profiler
   alias Raxol.Core.ErrorRecovery
   alias Raxol.Core.Runtime.Log
   alias Raxol.UI.Rendering.Pipeline

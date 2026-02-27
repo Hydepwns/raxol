@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.JankDetector do
+defmodule Raxol.Performance.JankDetector do
   @moduledoc """
   Detects UI jank by analyzing frame timing.
 

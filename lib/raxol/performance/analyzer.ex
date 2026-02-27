@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.Analyzer do
+defmodule Raxol.Performance.Analyzer do
   @moduledoc """
   Analyzes performance metrics and generates insights for AI analysis.
 

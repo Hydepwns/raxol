@@ -12,9 +12,9 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
   - Minimized cursor position checks
   """
 
-  import Raxol.Core.Performance.Optimizer
+  import Raxol.Performance.Optimizer
   import :erlang, only: [iolist_to_binary: 1]
-  alias Raxol.Core.Performance.Profiler
+  alias Raxol.Performance.Profiler
   alias Raxol.Terminal.{Input.CoreHandler, ScreenBuffer}
 
   # Cache charset commands for faster lookup
@@ -134,7 +134,7 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
   end
 
   defp memoize_cursor_y(emulator) do
-    case Raxol.Core.Performance.Memoization.MemoizationServer.get_memoized(
+    case Raxol.Performance.Memoization.MemoizationServer.get_memoized(
            {:get_cursor_y, [emulator]}
          ) do
       nil ->
@@ -151,7 +151,7 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
               0
           end
 
-        Raxol.Core.Performance.Memoization.MemoizationServer.memoize(
+        Raxol.Performance.Memoization.MemoizationServer.memoize(
           {:get_cursor_y, [emulator]},
           result
         )
@@ -165,13 +165,13 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
 
   defp get_buffer_height(emulator) do
     # Cache buffer height as it rarely changes
-    case Raxol.Core.Performance.Memoization.MemoizationServer.get_memoized(
+    case Raxol.Performance.Memoization.MemoizationServer.get_memoized(
            {:buffer_height, emulator.active_buffer}
          ) do
       nil ->
         height = ScreenBuffer.get_height(emulator.active_buffer)
 
-        Raxol.Core.Performance.Memoization.MemoizationServer.memoize(
+        Raxol.Performance.Memoization.MemoizationServer.memoize(
           {:buffer_height, emulator.active_buffer},
           height
         )

@@ -1,14 +1,14 @@
-defmodule Raxol.Core.Performance.ProfilerTest do
+defmodule Raxol.Performance.ProfilerTest do
   use ExUnit.Case, async: false
 
-  import Raxol.Core.Performance.Profiler
-  alias Raxol.Core.Performance.Profiler
+  import Raxol.Performance.Profiler
+  alias Raxol.Performance.Profiler
 
   setup do
-    {:ok, _pid} = Profiler.start_link(name: Raxol.Core.Performance.Profiler)
+    {:ok, _pid} = Profiler.start_link(name: Raxol.Performance.Profiler)
     on_exit(fn ->
       try do
-        case Process.whereis(Raxol.Core.Performance.Profiler) do
+        case Process.whereis(Raxol.Performance.Profiler) do
           pid when is_pid(pid) -> GenServer.stop(pid, :normal, 100)
           nil -> :ok
         end

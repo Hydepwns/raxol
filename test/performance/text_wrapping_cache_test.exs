@@ -1,7 +1,7 @@
 defmodule Raxol.Performance.TextWrappingCacheTest do
   use ExUnit.Case, async: false
 
-  alias Raxol.Core.Performance.Caches.FontMetricsCache
+  alias Raxol.Performance.Caches.FontMetricsCache
   alias Raxol.Performance.ETSCacheManager
   alias Raxol.UI.Components.Input.TextWrappingCached
 

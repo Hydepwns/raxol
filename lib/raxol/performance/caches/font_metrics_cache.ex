@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.Caches.FontMetricsCache do
+defmodule Raxol.Performance.Caches.FontMetricsCache do
   @moduledoc """
   High-performance cache for font metrics calculations.
 

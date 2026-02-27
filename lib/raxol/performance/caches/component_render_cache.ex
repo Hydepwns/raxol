@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.Caches.ComponentRenderCache do
+defmodule Raxol.Performance.Caches.ComponentRenderCache do
   @moduledoc """
   High-performance cache for component rendering results.
 

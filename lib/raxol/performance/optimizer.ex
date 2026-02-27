@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.Optimizer do
+defmodule Raxol.Performance.Optimizer do
   @moduledoc """
   Refactored Performance optimization strategies with GenServer-based memoization.
 
@@ -7,11 +7,11 @@ defmodule Raxol.Core.Performance.Optimizer do
 
   ## Migration Notes
 
-  The memoize macro now uses Raxol.Core.Performance.Memoization.Server instead
+  The memoize macro now uses Raxol.Performance.Memoization.Server instead
   of Process dictionary, providing better fault tolerance and monitoring.
   """
 
-  import Raxol.Core.Performance.Profiler
+  import Raxol.Performance.Profiler
   alias Raxol.Core.Runtime.Log
 
   @doc """
@@ -56,7 +56,7 @@ defmodule Raxol.Core.Performance.Optimizer do
   """
   defmacro cached(operation, opts, do: block) do
     quote do
-      Raxol.Core.Performance.Optimizer.execute_with_cache(
+      Raxol.Performance.Optimizer.execute_with_cache(
         unquote(operation),
         unquote(opts),
         fn -> unquote(block) end
@@ -90,7 +90,7 @@ defmodule Raxol.Core.Performance.Optimizer do
   ## Examples
 
       defmodule Calculator do
-        use Raxol.Core.Performance.Optimizer
+        use Raxol.Performance.Optimizer
   alias Raxol.Core.Runtime.Log
 
         memoize expensive_calculation(n) do
@@ -103,9 +103,9 @@ defmodule Raxol.Core.Performance.Optimizer do
     key = {name, args}
 
     quote do
-      Raxol.Core.Performance.Optimizer.ensure_memoization_server()
+      Raxol.Performance.Optimizer.ensure_memoization_server()
 
-      Raxol.Core.Performance.Memoization.Server.get_or_compute(
+      Raxol.Performance.Memoization.Server.get_or_compute(
         unquote(key),
         fn -> unquote(body) end
       )
@@ -440,7 +440,7 @@ defmodule Raxol.Core.Performance.Optimizer do
     pool_config = [
       name: {:local, pool_name},
       worker_module:
-        Keyword.get(opts, :worker, Raxol.Core.Performance.DefaultWorker),
+        Keyword.get(opts, :worker, Raxol.Performance.DefaultWorker),
       size: Keyword.get(opts, :size, 5),
       max_overflow: Keyword.get(opts, :max_overflow, 10)
     ]

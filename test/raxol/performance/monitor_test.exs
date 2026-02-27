@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.MonitorTest do
+defmodule Raxol.Performance.MonitorTest do
   @moduledoc """
   Tests for the performance monitor, including frame rate tracking,
   memory usage monitoring, garbage collection statistics,
@@ -9,7 +9,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
   # Skip entire module - Performance.Monitor module not yet implemented
   @moduletag :skip
 
-  alias Raxol.Core.Performance.Monitor
+  alias Raxol.Performance.Monitor
 
   setup do
     {:ok, monitor} = Monitor.start_link()

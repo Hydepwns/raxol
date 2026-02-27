@@ -1,11 +1,11 @@
-defmodule Raxol.Core.Performance.JankDetectorTest do
+defmodule Raxol.Performance.JankDetectorTest do
   @moduledoc """
   Tests for the jank detector, including frame time recording,
   jank detection, window size management, and error handling.
   """
   use ExUnit.Case
 
-  alias Raxol.Core.Performance.JankDetector
+  alias Raxol.Performance.JankDetector
 
   describe "Jank Detector" do
     test "creates new detector with default settings" do

@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.Profiler do
+defmodule Raxol.Performance.Profiler do
   @moduledoc """
   Performance profiling and optimization tools for Raxol.
 
@@ -15,7 +15,7 @@ defmodule Raxol.Core.Performance.Profiler do
 
   ## Usage
 
-      import Raxol.Core.Performance.Profiler
+      import Raxol.Performance.Profiler
 
       # Profile a function
       profile :my_operation do
@@ -75,7 +75,7 @@ defmodule Raxol.Core.Performance.Profiler do
   """
   defmacro profile(operation, opts \\ [], do: block) do
     quote do
-      Raxol.Core.Performance.Profiler.profile_execution(
+      Raxol.Performance.Profiler.profile_execution(
         unquote(operation),
         unquote(opts),
         fn -> unquote(block) end
@@ -122,7 +122,7 @@ defmodule Raxol.Core.Performance.Profiler do
           max(time, 1)
         end
 
-      Raxol.Core.Performance.Profiler.analyze_benchmark_results(
+      Raxol.Performance.Profiler.analyze_benchmark_results(
         unquote(operation),
         results
       )
@@ -210,10 +210,10 @@ defmodule Raxol.Core.Performance.Profiler do
           Keyword.get(before_info, :memory, 0)
 
       gc_runs =
-        Raxol.Core.Performance.Profiler.get_gc_runs(after_info) -
-          Raxol.Core.Performance.Profiler.get_gc_runs(before_info)
+        Raxol.Performance.Profiler.get_gc_runs(after_info) -
+          Raxol.Performance.Profiler.get_gc_runs(before_info)
 
-      Raxol.Core.Performance.Profiler.record_memory_metrics(
+      Raxol.Performance.Profiler.record_memory_metrics(
         unquote(operation),
         memory_delta,
         gc_runs

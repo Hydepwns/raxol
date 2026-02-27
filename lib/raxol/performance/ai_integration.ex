@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.AIIntegration do
+defmodule Raxol.Performance.AIIntegration do
   @moduledoc """
   AI integration module for performance analysis.
 
@@ -9,7 +9,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Core.Performance.Analyzer
+  alias Raxol.Performance.Analyzer
   # AI modules removed - using stub implementations
 
   @type ai_service :: :openai | :anthropic | :local | :mock

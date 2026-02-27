@@ -1,11 +1,11 @@
-defmodule Raxol.Core.Performance.MetricsCollectorTest do
+defmodule Raxol.Performance.MetricsCollectorTest do
   @moduledoc """
   Tests for the metrics collector, including frame time recording, FPS calculation,
   memory usage tracking, garbage collection statistics, and error handling.
   """
   use ExUnit.Case, async: true
 
-  alias Raxol.Core.Performance.MetricsCollector
+  alias Raxol.Performance.MetricsCollector
   alias Raxol.Core.Runtime.ProcessStore
 
   describe "Metrics Collector" do

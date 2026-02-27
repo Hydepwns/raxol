@@ -256,7 +256,7 @@ defmodule Raxol.Application do
     if feature_enabled?(:performance_monitoring) do
       [
         {Raxol.Performance.ETSCacheManager, [hibernate_after: 30_000]},
-        {Raxol.Core.Performance.Profiler, [hibernate_after: 30_000]}
+        {Raxol.Performance.Profiler, [hibernate_after: 30_000]}
       ]
     end
   end

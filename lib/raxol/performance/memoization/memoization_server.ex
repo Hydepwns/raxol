@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
+defmodule Raxol.Performance.Memoization.MemoizationServer do
   @moduledoc """
   GenServer implementation for function memoization cache.
 

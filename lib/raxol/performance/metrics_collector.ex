@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.MetricsCollector do
+defmodule Raxol.Performance.MetricsCollector do
   @moduledoc """
   Enhanced performance metrics collection system for Raxol.
 

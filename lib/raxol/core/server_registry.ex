@@ -41,7 +41,7 @@ defmodule Raxol.Core.ServerRegistry do
     {Raxol.Terminal.Emulator.EmulatorServer, name: :emulator_server},
 
     # Performance and Monitoring
-    {Raxol.Core.Performance.Memoization.MemoizationServer,
+    {Raxol.Performance.Memoization.MemoizationServer,
      name: :memoization_server},
 
     # Optional/Plugin Servers (conditionally started)

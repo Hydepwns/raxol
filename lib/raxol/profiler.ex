@@ -3,7 +3,7 @@ defmodule Raxol.Profiler do
   Compatibility layer for performance profiling.
 
   This module provides a simplified API for profiling code execution.
-  Delegates to `Raxol.Core.Performance.Profiler` for the actual implementation.
+  Delegates to `Raxol.Performance.Profiler` for the actual implementation.
 
   ## Example
 
@@ -16,7 +16,7 @@ defmodule Raxol.Profiler do
       Raxol.Profiler.report()
   """
 
-  alias Raxol.Core.Performance.Profiler, as: CoreProfiler
+  alias Raxol.Performance.Profiler, as: CoreProfiler
 
   @doc """
   Enable the profiler.

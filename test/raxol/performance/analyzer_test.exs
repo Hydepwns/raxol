@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.AnalyzerTest do
+defmodule Raxol.Performance.AnalyzerTest do
   @moduledoc """
   Tests for the performance analyzer, including performance metrics analysis,
   issue identification, optimization suggestions, performance patterns,
@@ -6,7 +6,7 @@ defmodule Raxol.Core.Performance.AnalyzerTest do
   """
   use ExUnit.Case
 
-  alias Raxol.Core.Performance.Analyzer
+  alias Raxol.Performance.Analyzer
 
   describe "Performance Analyzer" do
     test "analyzes good performance metrics" do

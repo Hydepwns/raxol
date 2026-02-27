@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Performance.FlameGraph do
+defmodule Raxol.Performance.FlameGraph do
   @moduledoc """
   Flame graph generation for performance profiling.
 
