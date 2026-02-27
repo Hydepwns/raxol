@@ -110,7 +110,10 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
           scenario.memory_usage_data.statistics
         rescue
           e ->
-            Logger.warning("Failed to get memory stats for #{name}: #{Exception.message(e)}")
+            Logger.warning(
+              "Failed to get memory stats for #{name}: #{Exception.message(e)}"
+            )
+
             nil
         end
 
@@ -194,7 +197,10 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
               scenario.memory_usage_data.statistics.average
             rescue
               e ->
-                Logger.warning("Failed to get memory average for #{name}: #{Exception.message(e)}")
+                Logger.warning(
+                  "Failed to get memory average for #{name}: #{Exception.message(e)}"
+                )
+
                 0
             end
 
@@ -214,7 +220,10 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
                 scenario.memory_usage_data.statistics.average
               rescue
                 e ->
-                  Logger.warning("Failed to get scenario memory for #{name}: #{Exception.message(e)}")
+                  Logger.warning(
+                    "Failed to get scenario memory for #{name}: #{Exception.message(e)}"
+                  )
+
                   0
               end
 

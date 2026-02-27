@@ -335,7 +335,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginRegistry do
           module.commands()
         rescue
           e ->
-            Logger.warning("Failed to get commands from plugin #{module}: #{Exception.message(e)}")
+            Logger.warning(
+              "Failed to get commands from plugin #{module}: #{Exception.message(e)}"
+            )
+
             []
         end
       else

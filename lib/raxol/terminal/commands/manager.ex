@@ -206,7 +206,10 @@ defmodule Raxol.Terminal.Commands.Manager do
   @doc """
   Updates the command buffer.
   """
-  def update_command_buffer(%Raxol.Terminal.Commands.Command{} = state, new_buffer)
+  def update_command_buffer(
+        %Raxol.Terminal.Commands.Command{} = state,
+        new_buffer
+      )
       when is_binary(new_buffer) do
     %{state | command_buffer: new_buffer}
   end
@@ -257,20 +260,35 @@ defmodule Raxol.Terminal.Commands.Manager do
   @doc """
   Processes a key event and updates the command buffer accordingly.
   """
-  def process_key_event(%Raxol.Terminal.Commands.Command{} = state, {:key, :enter}),
-    do: handle_enter(state)
+  def process_key_event(
+        %Raxol.Terminal.Commands.Command{} = state,
+        {:key, :enter}
+      ),
+      do: handle_enter(state)
 
-  def process_key_event(%Raxol.Terminal.Commands.Command{} = state, {:key, :backspace}),
-    do: handle_backspace(state)
+  def process_key_event(
+        %Raxol.Terminal.Commands.Command{} = state,
+        {:key, :backspace}
+      ),
+      do: handle_backspace(state)
 
-  def process_key_event(%Raxol.Terminal.Commands.Command{} = state, {:key, :up}),
-    do: handle_up(state)
+  def process_key_event(
+        %Raxol.Terminal.Commands.Command{} = state,
+        {:key, :up}
+      ),
+      do: handle_up(state)
 
-  def process_key_event(%Raxol.Terminal.Commands.Command{} = state, {:key, :down}),
-    do: handle_down(state)
+  def process_key_event(
+        %Raxol.Terminal.Commands.Command{} = state,
+        {:key, :down}
+      ),
+      do: handle_down(state)
 
-  def process_key_event(%Raxol.Terminal.Commands.Command{} = state, {:char, char}),
-    do: handle_char(state, char)
+  def process_key_event(
+        %Raxol.Terminal.Commands.Command{} = state,
+        {:char, char}
+      ),
+      do: handle_char(state, char)
 
   def process_key_event(state, _), do: state
 

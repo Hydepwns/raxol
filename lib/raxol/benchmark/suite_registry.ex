@@ -221,7 +221,10 @@ defmodule Raxol.Benchmark.SuiteRegistry do
     {:ok, suite_info}
   rescue
     e ->
-      Logger.warning("Failed to extract suite info for #{module}: #{Exception.message(e)}")
+      Logger.warning(
+        "Failed to extract suite info for #{module}: #{Exception.message(e)}"
+      )
+
       {:error, :extraction_failed}
   end
 

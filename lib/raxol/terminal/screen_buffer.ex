@@ -823,7 +823,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
     EraseOperations.erase_from_cursor_to_end(buffer, x, y, top, bottom)
   rescue
     e ->
-      Logger.warning("Failed to erase from cursor to end at (#{x},#{y}): #{Exception.message(e)}")
+      Logger.warning(
+        "Failed to erase from cursor to end at (#{x},#{y}): #{Exception.message(e)}"
+      )
+
       buffer
   end
 
@@ -831,7 +834,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
     EraseOperations.erase_from_start_to_cursor(buffer, x, y, top, bottom)
   rescue
     e ->
-      Logger.warning("Failed to erase from start to cursor at (#{x},#{y}): #{Exception.message(e)}")
+      Logger.warning(
+        "Failed to erase from start to cursor at (#{x},#{y}): #{Exception.message(e)}"
+      )
+
       buffer
   end
 
@@ -840,7 +846,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
     EraseOperations.erase_all(buffer)
   rescue
     e ->
-      Logger.warning("Failed to erase all buffer content: #{Exception.message(e)}")
+      Logger.warning(
+        "Failed to erase all buffer content: #{Exception.message(e)}"
+      )
+
       buffer
   end
 
@@ -848,7 +857,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
     EraseOperations.clear_region(buffer, x, y, width, height)
   rescue
     e ->
-      Logger.warning("Failed to clear region at (#{x},#{y}) size #{width}x#{height}: #{Exception.message(e)}")
+      Logger.warning(
+        "Failed to clear region at (#{x},#{y}) size #{width}x#{height}: #{Exception.message(e)}"
+      )
+
       buffer
   end
 
@@ -957,7 +969,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
     Operations.shift_region_to_line(buffer, region, target_line)
   rescue
     e ->
-      Logger.warning("Failed to shift region to line #{target_line}: #{Exception.message(e)}")
+      Logger.warning(
+        "Failed to shift region to line #{target_line}: #{Exception.message(e)}"
+      )
+
       buffer
   end
 
@@ -968,7 +983,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
     EraseOperations.erase_in_line(buffer, position, type)
   rescue
     e ->
-      Logger.warning("Failed to erase in line at #{inspect(position)} type #{type}: #{Exception.message(e)}")
+      Logger.warning(
+        "Failed to erase in line at #{inspect(position)} type #{type}: #{Exception.message(e)}"
+      )
+
       buffer
   end
 
@@ -981,7 +999,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
     EraseOperations.erase_from_cursor_to_end(buffer)
   rescue
     e ->
-      Logger.warning("Failed to erase from cursor to end: #{Exception.message(e)}")
+      Logger.warning(
+        "Failed to erase from cursor to end: #{Exception.message(e)}"
+      )
+
       buffer
   end
 
@@ -1008,7 +1029,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
     )
   rescue
     e ->
-      Logger.warning("Failed to scroll down #{lines} lines: #{Exception.message(e)}")
+      Logger.warning(
+        "Failed to scroll down #{lines} lines: #{Exception.message(e)}"
+      )
+
       buffer
   end
 

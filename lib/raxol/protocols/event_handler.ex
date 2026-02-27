@@ -131,7 +131,10 @@ defimpl Raxol.Protocols.EventHandler, for: PID do
     end
   rescue
     e ->
-      Logger.warning("Event handler call to #{inspect(pid)} failed: #{Exception.message(e)}")
+      Logger.warning(
+        "Event handler call to #{inspect(pid)} failed: #{Exception.message(e)}"
+      )
+
       {:error, :process_unavailable}
   end
 
@@ -145,7 +148,10 @@ defimpl Raxol.Protocols.EventHandler, for: PID do
           GenServer.call(pid, {:can_handle?, event}, 1000)
         rescue
           e ->
-            Logger.warning("can_handle? check for #{inspect(pid)} failed: #{Exception.message(e)}")
+            Logger.warning(
+              "can_handle? check for #{inspect(pid)} failed: #{Exception.message(e)}"
+            )
+
             false
         end
     end
@@ -155,7 +161,10 @@ defimpl Raxol.Protocols.EventHandler, for: PID do
     GenServer.call(pid, :get_event_listeners, 1000)
   rescue
     e ->
-      Logger.warning("get_event_listeners for #{inspect(pid)} failed: #{Exception.message(e)}")
+      Logger.warning(
+        "get_event_listeners for #{inspect(pid)} failed: #{Exception.message(e)}"
+      )
+
       []
   end
 

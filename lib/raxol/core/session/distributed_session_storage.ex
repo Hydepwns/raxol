@@ -301,7 +301,10 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
               :ets.delete(table_name)
             rescue
               e ->
-                Log.warning("Failed to delete ETS table #{table_name}: #{Exception.message(e)}")
+                Log.warning(
+                  "Failed to delete ETS table #{table_name}: #{Exception.message(e)}"
+                )
+
                 :ok
             end
         end
@@ -319,7 +322,10 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
             :ets.delete(metadata_table_name)
           rescue
             e ->
-              Log.warning("Failed to delete ETS metadata table #{metadata_table_name}: #{Exception.message(e)}")
+              Log.warning(
+                "Failed to delete ETS metadata table #{metadata_table_name}: #{Exception.message(e)}"
+              )
+
               :ok
           end
       end

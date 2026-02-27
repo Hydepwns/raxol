@@ -261,7 +261,10 @@ defmodule Raxol.Terminal.Buffer do
     from_screen_buffer(updated_screen_buffer, buffer)
   rescue
     e ->
-      Logger.warning("Failed to scroll buffer by #{lines} lines: #{Exception.message(e)}")
+      Logger.warning(
+        "Failed to scroll buffer by #{lines} lines: #{Exception.message(e)}"
+      )
+
       buffer
   end
 
