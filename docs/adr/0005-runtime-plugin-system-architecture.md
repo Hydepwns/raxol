@@ -64,8 +64,16 @@ Implement a comprehensive runtime plugin system using Elixir's native code loadi
 - **Event Filtering**: Plugin event processing with security boundaries
 - **Resource Limits**: Memory and CPU usage monitoring per plugin
 - **Permission System**: Fine-grained access control to system features
+- **BEAM Security Analysis**: Static analysis of plugin bytecode for security-sensitive operations
+- **Capability Detection**: Automatic detection and policy enforcement for file, network, code injection, and system command access
 
-#### 6. **Dependency Management** (`lib/raxol/core/runtime/plugins/dependency_manager.ex`)
+#### 6. **Process Isolation** (`lib/raxol/core/runtime/plugins/plugin_supervisor.ex`)
+- Crash isolation via Task.Supervisor for all plugin operations
+- Configurable timeouts for plugin tasks (default: 5000ms)
+- Concurrent task execution with individual failure isolation
+- Safe callback invocation with export checking
+
+#### 7. **Dependency Management** (`lib/raxol/core/runtime/plugins/dependency_manager.ex`)
 - Topological sorting for load order
 - Circular dependency detection and prevention
 - Version compatibility checking
@@ -131,6 +139,13 @@ Raxol.Plugins.unload("plugin_name")
 - **Resource isolation**: Memory and CPU limits per plugin
 - **API restrictions**: Only approved APIs accessible to plugins
 - **Audit logging**: All plugin actions logged for security monitoring
+- **BEAM Bytecode Analysis**: Static analysis detects security-sensitive operations:
+  - `:file_access` - File system operations (File.*, :file.*, Path.*)
+  - `:network_access` - Network operations (:gen_tcp.*, :ssl.*, Req.*, HTTPoison.*)
+  - `:code_injection` - Dynamic code evaluation (Code.eval_*, Module.create)
+  - `:system_commands` - System command execution (System.cmd, Port.open)
+- **Policy Enforcement**: Configurable security policies validate plugins before loading
+- **Process Isolation**: Plugin operations run under Task.Supervisor for crash isolation
 
 ### Performance Considerations
 - **Lazy loading**: Plugins loaded only when needed
@@ -184,12 +199,15 @@ Raxol.Plugins.unload("plugin_name")
 
 ## References
 
-- [Plugin System Guide](../PLUGIN_SYSTEM_GUIDE.md)
+- [Plugin Development Guide](../plugins/GUIDE.md)
 - [Plugin Manager Implementation](../../lib/raxol/core/runtime/plugins/plugin_manager.ex)
 - [Plugin Behavior Definition](../../lib/raxol/core/runtime/plugins/plugin.ex)
 - [Lifecycle Management](../../lib/raxol/core/runtime/plugins/lifecycle.ex)
 - [State Management](../../lib/raxol/core/runtime/plugins/state_manager.ex)
 - [Dependency Manager](../../lib/raxol/core/runtime/plugins/dependency_manager.ex)
+- [Plugin Supervisor](../../lib/raxol/core/runtime/plugins/plugin_supervisor.ex)
+- [BEAM Analyzer](../../lib/raxol/core/runtime/plugins/security/beam_analyzer.ex)
+- [Capability Detector](../../lib/raxol/core/runtime/plugins/security/capability_detector.ex)
 
 ## Alternative Approaches Considered
 

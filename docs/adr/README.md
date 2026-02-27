@@ -19,6 +19,8 @@ An Architecture Decision Record captures a single architectural decision and its
 | [0007](0007-state-management-strategy.md) | State Management Strategy | Implemented | 2025-05-15 |
 | [0008](0008-phoenix-liveview-integration-architecture.md) | Phoenix LiveView Integration Architecture | Implemented | 2025-05-20 |
 | [0009](0009-high-performance-buffer-management.md) | High-Performance Buffer Management | Implemented | 2025-04-20 |
+| [0010](0010-functional-error-handling-architecture.md) | Functional Error Handling Architecture | Implemented | 2025-02-01 |
+| [0011](0011-terminal-module-consolidation.md) | Terminal Module Consolidation | Implemented | 2025-02-27 |
 
 ## ADR Template
 
@@ -79,6 +81,7 @@ When making significant architectural decisions:
 - [0001: Component-Based Architecture](0001-component-based-architecture.md)
 - [0003: Terminal Emulation Strategy](0003-terminal-emulation-strategy.md)
 - [0007: State Management Strategy](0007-state-management-strategy.md)
+- [0011: Terminal Module Consolidation](0011-terminal-module-consolidation.md)
 
 ### Performance & Scalability
 - [0002: Parser Performance Optimization](0002-parser-performance-optimization.md)
@@ -92,18 +95,22 @@ When making significant architectural decisions:
 - [0005: Runtime Plugin System Architecture](0005-runtime-plugin-system-architecture.md)
 - [0006: Enterprise Security and Compliance Model](0006-enterprise-security-and-compliance-model.md)
 
+### Code Quality & Maintainability
+- [0010: Functional Error Handling Architecture](0010-functional-error-handling-architecture.md)
+
 ## Status: ADR Coverage Complete
 
-**Current Coverage**: 9 ADRs covering all major architectural decisions  
+**Current Coverage**: 11 ADRs covering all major architectural decisions
 **Gap Analysis**: ADR Audit Plan - COMPLETED
 
 ### Major Architecture Areas Documented
 - Core Framework: Component architecture and terminal emulation strategy
 - Performance: Parser optimization and high-performance buffer management (42,000x improvement)
 - Web Integration: WASH-style continuity and Phoenix LiveView integration
-- Extensibility: Runtime plugin system with hot reloading
+- Extensibility: Runtime plugin system with hot reloading and BEAM security analysis
 - Enterprise: Security, compliance, and audit logging
 - State Management: Multi-layered state architecture with React-style patterns
+- Code Quality: Functional error handling and terminal module consolidation
 
 ### Implementation Status
 All ADRs represent implemented and production-ready architectural decisions. The ADR process now documents the complete architectural foundation of Raxol.
