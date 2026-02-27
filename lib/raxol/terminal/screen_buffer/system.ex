@@ -1,6 +1,8 @@
 defmodule Raxol.Terminal.ScreenBuffer.System do
   @moduledoc """
-  Manages system-related settings for the screen buffer.
+  Deprecated: This module is not used in the codebase.
+
+  Originally intended for system settings but never integrated.
   """
 
   use Raxol.Core.Behaviours.BaseManager

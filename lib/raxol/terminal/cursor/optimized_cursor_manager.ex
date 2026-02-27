@@ -1,7 +1,10 @@
 defmodule Raxol.Terminal.Cursor.OptimizedCursorManager do
   @moduledoc """
-  Optimized cursor manager using BaseManager behavior to reduce boilerplate.
-  Demonstrates the performance benefits of our consolidated base behaviors.
+  Deprecated: Use `Raxol.Terminal.Cursor.Manager` instead.
+
+  This module was a demonstration of the BaseManager behavior but is not used
+  in production. The full-featured `Raxol.Terminal.Cursor.Manager` should be
+  used for all cursor management needs.
   """
 
   use Raxol.Core.Behaviours.BaseManager

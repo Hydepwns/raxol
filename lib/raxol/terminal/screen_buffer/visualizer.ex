@@ -1,5 +1,9 @@
 defmodule Raxol.Terminal.ScreenBuffer.Visualizer do
-  @moduledoc false
+  @moduledoc """
+  Deprecated: This module is not used in the codebase.
+
+  Originally intended for chart visualization but never integrated.
+  """
 
   defstruct [:charts]
 

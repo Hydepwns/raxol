@@ -1,8 +1,9 @@
 defmodule Raxol.Terminal.ScreenBuffer.Metrics do
   @moduledoc """
-  Handles metrics collection and management for the terminal screen buffer.
-  This module provides functions for recording and retrieving various metrics
-  related to screen buffer performance, operations, and resource usage.
+  Deprecated: This module is not used in the codebase.
+
+  Originally intended for screen buffer metrics but never integrated.
+  Use `Raxol.Core.Metrics.MetricsCollector` for metrics instead.
   """
 
   @type metric_type :: :performance | :operation | :resource

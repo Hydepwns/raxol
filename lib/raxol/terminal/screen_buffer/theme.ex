@@ -1,6 +1,9 @@
 defmodule Raxol.Terminal.ScreenBuffer.Theme do
   @moduledoc """
-  Manages themes for the screen buffer.
+  Deprecated: This module is not used in the codebase.
+
+  Originally intended for screen buffer themes but never integrated.
+  Use `Raxol.UI.Theming` for theme management instead.
   """
 
   use Raxol.Core.Behaviours.BaseManager

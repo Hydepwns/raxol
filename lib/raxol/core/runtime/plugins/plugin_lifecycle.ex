@@ -38,6 +38,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycle do
 
   alias Raxol.Core.Runtime.Log
   alias Raxol.Core.Runtime.Plugins.PluginRegistry
+  alias Raxol.Core.Runtime.Plugins.PluginSupervisor
+  alias Raxol.Core.Runtime.Plugins.StateManager, as: PluginStateManager
   alias Raxol.Core.Utils.Debounce
 
   @type plugin_id :: atom() | String.t()
@@ -46,7 +48,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycle do
 
   defstruct [
     :runtime_pid,
-    plugin_states: %{},
+    # plugin_states removed - now managed by PluginStateManager (ETS-backed)
     plugin_configs: %{},
     plugin_status: %{},
     initialized: false,
@@ -284,20 +286,24 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycle do
   def handle_call({:get_state, plugin_id}, _from, state) do
     id = normalize_id(plugin_id)
 
-    case Map.fetch(state.plugin_states, id) do
+    # Use centralized StateManager (ETS-backed) for plugin state
+    case PluginStateManager.get_plugin_state(to_string(id)) do
       {:ok, plugin_state} -> {:reply, {:ok, plugin_state}, state}
-      :error -> {:reply, {:error, :not_found}, state}
+      {:error, :not_found} -> {:reply, {:error, :not_found}, state}
     end
   end
 
   def handle_call({:set_state, plugin_id, plugin_state}, _from, state) do
     id = normalize_id(plugin_id)
 
-    if Map.has_key?(state.plugin_status, id) do
-      new_states = Map.put(state.plugin_states, id, plugin_state)
-      {:reply, :ok, %{state | plugin_states: new_states}}
-    else
-      {:reply, {:error, :not_found}, state}
+    case Map.has_key?(state.plugin_status, id) do
+      true ->
+        # Use centralized StateManager (ETS-backed) for plugin state
+        PluginStateManager.set_plugin_state(to_string(id), plugin_state)
+        {:reply, :ok, state}
+
+      false ->
+        {:reply, {:error, :not_found}, state}
     end
   end
 
@@ -399,14 +405,14 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycle do
            loaded_at: DateTime.utc_now()
          }) do
       :ok ->
-        # Initialize plugin state
+        # Initialize plugin state using centralized StateManager
         initial_state = initialize_plugin_state(module, config)
+        plugin_id_str = to_string(plugin_id)
+        PluginStateManager.set_plugin_state(plugin_id_str, initial_state)
 
         new_state = %{
           state
-          | plugin_states:
-              Map.put(state.plugin_states, plugin_id, initial_state),
-            plugin_configs: Map.put(state.plugin_configs, plugin_id, config),
+          | plugin_configs: Map.put(state.plugin_configs, plugin_id, config),
             plugin_status: Map.put(state.plugin_status, plugin_id, :loaded)
         }
 
@@ -429,11 +435,12 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycle do
         # Unregister from registry
         PluginRegistry.unregister(plugin_id)
 
-        # Clean up state
+        # Clean up state using centralized StateManager
+        PluginStateManager.remove_plugin(to_string(plugin_id))
+
         new_state = %{
           state
-          | plugin_states: Map.delete(state.plugin_states, plugin_id),
-            plugin_configs: Map.delete(state.plugin_configs, plugin_id),
+          | plugin_configs: Map.delete(state.plugin_configs, plugin_id),
             plugin_status: Map.delete(state.plugin_status, plugin_id)
         }
 
@@ -442,17 +449,22 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycle do
   end
 
   defp initialize_plugin_state(module, config) do
-    if function_exported?(module, :init, 1) do
-      try do
-        case module.init(config) do
-          {:ok, state} -> state
-          _ -> %{}
-        end
-      rescue
-        _ -> %{}
-      end
-    else
-      %{}
+    # Use PluginSupervisor for isolated plugin initialization
+    case PluginSupervisor.call_plugin_callback(:init, module, :init, [config],
+           timeout: 5_000
+         ) do
+      {:ok, {:ok, state}} ->
+        state
+
+      {:ok, state} when is_map(state) ->
+        state
+
+      {:error, reason} ->
+        Log.warning("Plugin init failed: #{inspect(reason)}, using empty state")
+        %{}
+
+      :not_exported ->
+        %{}
     end
   end
 
@@ -462,16 +474,24 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycle do
         :ok
 
       module ->
-        if function_exported?(module, hook, 0) do
-          try do
-            apply(module, hook, [])
-          rescue
-            e -> Log.warning("Plugin hook #{hook} failed: #{inspect(e)}")
-          end
+        # Use PluginSupervisor for isolated hook execution (fire and forget)
+        case PluginSupervisor.call_plugin_callback(plugin_id, module, hook, [],
+               timeout: 2_000
+             ) do
+          {:ok, _result} ->
+            :ok
+
+          {:error, reason} ->
+            Log.warning(
+              "Plugin hook #{hook} failed for #{plugin_id}: #{inspect(reason)}"
+            )
+
+            :ok
+
+          :not_exported ->
+            :ok
         end
     end
-
-    :ok
   end
 
   defp normalize_id(id) when is_atom(id), do: id

@@ -1,5 +1,10 @@
 defmodule Raxol.Terminal.ScreenBuffer.Mode do
-  @moduledoc false
+  @moduledoc """
+  Deprecated: This module is not used in the codebase.
+
+  Originally intended for mode state but never integrated.
+  Use `Raxol.Terminal.ModeManager` instead.
+  """
 
   defstruct [:insert_mode, :origin_mode, :auto_wrap, :cursor_visible]
 

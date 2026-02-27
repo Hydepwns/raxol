@@ -236,55 +236,5 @@ defmodule RaxolWeb.TerminalChannelTest do
   defp serialize_color(color), do: color
 end
 
-defmodule RaxolWeb.TerminalChannelIntegrationTest do
-  @moduledoc """
-  Integration tests for TerminalChannel.
-
-  These tests require the full Phoenix endpoint to be running.
-  They are tagged with :integration and can be run separately.
-  """
-  use ExUnit.Case, async: false
-
-  # These tests would use Phoenix.ChannelTest
-  # Keeping them as placeholders for when the endpoint is configured
-
-  @moduletag :integration
-
-  describe "channel join" do
-    @tag :skip
-    test "joins successfully with valid session_id" do
-      # Would use Phoenix.ChannelTest.socket/2 and subscribe_and_join/4
-    end
-
-    @tag :skip
-    test "rejects join with invalid session_id" do
-      # Would test error response
-    end
-  end
-
-  describe "input handling" do
-    @tag :skip
-    test "processes input and broadcasts output" do
-      # Would test push and receive
-    end
-
-    @tag :skip
-    test "enforces rate limiting" do
-      # Would test rate limit enforcement
-    end
-  end
-
-  describe "resize handling" do
-    @tag :skip
-    test "resizes terminal and broadcasts to collaborators" do
-      # Would test resize message
-    end
-  end
-
-  describe "presence tracking" do
-    @tag :skip
-    test "tracks user presence on join" do
-      # Would test presence updates
-    end
-  end
-end
+# Note: TerminalChannelIntegrationTest was removed as it contained only empty stub tests.
+# Integration tests requiring full Phoenix endpoint should be implemented when needed.

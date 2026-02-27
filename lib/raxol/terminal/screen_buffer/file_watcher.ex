@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.ScreenBuffer.FileWatcher do
   @moduledoc """
-  Handles file system event monitoring for the terminal screen buffer.
-  This module provides functions for processing file system events and managing
-  debounced event handling.
+  Deprecated: This module is not used in the codebase.
+
+  Originally intended for file system event monitoring but never integrated.
   """
 
   @type event ::

@@ -10,6 +10,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   """
 
   alias Raxol.Core.Runtime.Plugins.Loader
+  alias Raxol.Core.Runtime.Plugins.Security.BeamAnalyzer
 
   @type validation_result :: :ok | {:error, term()}
   @type plugin_metadata :: %{
@@ -390,82 +391,18 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     validate_dependencies_available(missing_deps)
   end
 
-  # Security analysis helpers
+  # Security analysis helpers using BeamAnalyzer
 
   defp has_file_system_access?(plugin_module) do
-    # Analyze module for file system operations
-    case safe_analyze_beam_chunks(plugin_module) do
-      {:ok, forms} -> analyze_forms_for_file_access(forms)
-      {:error, _} -> false
-    end
+    BeamAnalyzer.has_file_access?(plugin_module)
   end
 
   defp has_network_access?(plugin_module) do
-    # Analyze module for network operations
-    case safe_analyze_beam_chunks(plugin_module) do
-      {:ok, forms} -> analyze_forms_for_network_access(forms)
-      {:error, _} -> false
-    end
+    BeamAnalyzer.has_network_access?(plugin_module)
   end
 
-  defp safe_analyze_beam_chunks(plugin_module) do
-    with {:ok, compile_info} <- safe_get_compile_info(plugin_module),
-         {:ok, source} <- extract_source_from_compile_info(compile_info),
-         {:ok, chunks} <- safe_beam_chunks(source) do
-      extract_forms_from_chunks(plugin_module, chunks)
-    else
-      _ -> {:error, :beam_analysis_failed}
-    end
-  end
-
-  defp safe_get_compile_info(plugin_module) do
-    case safe_module_info(plugin_module, :compile) do
-      {:ok, compile_info} -> {:ok, compile_info}
-      _ -> {:error, :no_compile_info}
-    end
-  end
-
-  defp safe_module_info(module, info_type) do
-    task = Task.async(fn -> module.module_info(info_type) end)
-
-    case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
-      {:ok, info} -> {:ok, info}
-      _ -> {:error, :module_info_failed}
-    end
-  end
-
-  defp extract_source_from_compile_info(compile_info) do
-    case Keyword.get(compile_info, :source) do
-      nil -> {:error, :no_source}
-      source -> {:ok, source}
-    end
-  end
-
-  defp safe_beam_chunks(source) do
-    task =
-      Task.async(fn ->
-        :beam_lib.chunks(source, [:abstract_code])
-      end)
-
-    case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, result} -> {:ok, result}
-      _ -> {:error, :beam_chunks_failed}
-    end
-  end
-
-  defp extract_forms_from_chunks(plugin_module, chunks) do
-    case chunks do
-      {:ok, {^plugin_module, [abstract_code: {:raw_abstract_v1, forms}]}} ->
-        {:ok, forms}
-
-      _ ->
-        {:error, :invalid_chunks}
-    end
-  end
-
-  defp has_code_injection_risk?(_plugin_module) do
-    # Analyze for potential code injection patterns
-    false
+  defp has_code_injection_risk?(plugin_module) do
+    BeamAnalyzer.has_code_injection_risk?(plugin_module)
   end
 
   defp check_resource_usage(_plugin_module) do
@@ -490,16 +427,6 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
       {:ok, _} -> {:error, :module_path_not_found}
       _ -> {:error, :which_failed}
     end
-  end
-
-  defp analyze_forms_for_file_access(_forms) do
-    # Simplified analysis - in practice would check for File.* calls
-    false
-  end
-
-  defp analyze_forms_for_network_access(_forms) do
-    # Simplified analysis - in practice would check for HTTPoison.*, :gen_tcp, etc.
-    false
   end
 
   ## Pattern matching helper functions for if statement elimination
@@ -559,27 +486,28 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   end
 
   defp validate_file_access_restrictions(true, plugin_module) do
-    # has_file_system_access?/1 currently always returns false
-    # (analyze_forms_for_file_access/1 is stubbed to return false)
-    false = has_file_system_access?(plugin_module)
-    :ok
+    case has_file_system_access?(plugin_module) do
+      true -> {:error, :file_access_detected}
+      false -> :ok
+    end
   end
 
   defp validate_file_access_restrictions(false, _plugin_module), do: :ok
 
   defp validate_network_access_restrictions(true, plugin_module) do
-    # has_network_access?/1 currently always returns false
-    # (analyze_forms_for_network_access/1 is stubbed to return false)
-    false = has_network_access?(plugin_module)
-    :ok
+    case has_network_access?(plugin_module) do
+      true -> {:error, :network_access_detected}
+      false -> :ok
+    end
   end
 
   defp validate_network_access_restrictions(false, _plugin_module), do: :ok
 
   defp check_code_injection_safety(plugin_module) do
-    # has_code_injection_risk?/1 currently always returns false
-    false = has_code_injection_risk?(plugin_module)
-    :ok
+    case has_code_injection_risk?(plugin_module) do
+      true -> {:error, :code_injection_risk_detected}
+      false -> :ok
+    end
   end
 
   defp validate_version_compatibility(current_version, min_version, :elixir) do

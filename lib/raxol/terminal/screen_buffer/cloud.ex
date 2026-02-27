@@ -1,6 +1,9 @@
 defmodule Raxol.Terminal.ScreenBuffer.Cloud do
   @moduledoc """
-  Manages cloud-related settings for the screen buffer.
+  Deprecated: This module is not used in the codebase.
+
+  Originally intended for cloud-related settings but never integrated.
+  Kept for potential future use but should not be used in new code.
   """
 
   use Raxol.Core.Behaviours.BaseManager

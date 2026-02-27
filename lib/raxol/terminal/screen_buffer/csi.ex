@@ -1,6 +1,9 @@
 defmodule Raxol.Terminal.ScreenBuffer.CSI do
   @moduledoc """
-  Handles CSI (Control Sequence Introducer) sequences for the screen buffer.
+  Deprecated: This module is not used in the codebase.
+
+  Originally intended for CSI sequence handling but never integrated.
+  CSI parsing is handled by `Raxol.Terminal.ANSI.Parser` instead.
   """
 
   defstruct [

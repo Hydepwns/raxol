@@ -1,7 +1,9 @@
 defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @moduledoc """
-  Scrolling and scrollback operations for the buffer.
-  Consolidates: Scroll, Scroller, ScrollRegion, Scrollback, and operations/scrolling.
+  Deprecated: This module is not used in the codebase.
+
+  Originally intended to consolidate scrolling operations but never integrated.
+  Scroll operations are handled by `Raxol.Terminal.Buffer.Scroller` instead.
   """
 
   alias Raxol.Terminal.Cell

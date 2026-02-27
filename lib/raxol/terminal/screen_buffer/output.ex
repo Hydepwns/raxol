@@ -1,8 +1,9 @@
 defmodule Raxol.Terminal.ScreenBuffer.Output do
   @moduledoc """
-  Handles output buffer operations for the terminal screen buffer.
-  This module manages the output buffer state and provides functions for writing,
-  flushing, and clearing the buffer.
+  Deprecated: This module is not used in the codebase.
+
+  Originally intended for output buffer operations but never integrated.
+  Output is handled by `Raxol.Terminal.OutputBuffer` instead.
   """
 
   @type t :: %__MODULE__{

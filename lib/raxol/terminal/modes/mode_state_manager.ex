@@ -1,25 +1,26 @@
 defmodule Raxol.Terminal.Modes.ModeStateManager do
   @moduledoc """
-  Manages the state of terminal modes, including transitions and validation.
-  Handles mode dependencies, conflicts, and state persistence.
+  Deprecated: Use `Raxol.Terminal.ModeManager` instead.
+
+  This module was a GenServer variant for mode state management with validation.
+  The validation logic has been consolidated into `Raxol.Terminal.ModeManager`.
+
+  This module is maintained for backward compatibility only.
   """
 
-  use Raxol.Core.Behaviours.BaseManager
-  require Logger
+  # Note: This module previously used BaseManager behavior.
+  # For new code, use Raxol.Terminal.ModeManager directly.
 
   alias Raxol.Terminal.Modes.Types.ModeTypes
-  require Raxol.Core.Runtime.Log
 
   defstruct modes: %{}
 
   @type t :: %__MODULE__{}
 
-  # Client API
-
-  # BaseManager provides start_link
-
   @doc """
   Creates a new mode state with default values.
+
+  Deprecated: Use `Raxol.Terminal.ModeManager.new/0` instead.
   """
   def new do
     %__MODULE__{
@@ -29,6 +30,8 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
 
   @doc """
   Sets a mode to a specific value.
+
+  Deprecated: Use `Raxol.Terminal.ModeManager.set_mode/3` instead.
   """
   def set_mode(state, mode_name, value) do
     with {:ok, mode_def} <- validate_mode(mode_name),
@@ -41,6 +44,8 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
 
   @doc """
   Resets a mode to its default value.
+
+  Deprecated: Use `Raxol.Terminal.ModeManager.reset_mode/3` instead.
   """
   def reset_mode(state, mode_name) do
     with {:ok, mode_def} <- validate_mode(mode_name) do
@@ -51,6 +56,8 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
 
   @doc """
   Checks if a mode is enabled.
+
+  Deprecated: Use `Raxol.Terminal.ModeManager.mode_enabled?/2` instead.
   """
   def mode_enabled?(state, mode_name) do
     case Map.get(state.modes, mode_name) do
@@ -59,41 +66,7 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
     end
   end
 
-  # Server Callbacks
-
-  @impl true
-  def init_manager(_init_arg) do
-    {:ok, new()}
-  end
-
-  @impl true
-  def handle_manager_call(:get_state, _from, state) do
-    {:reply, state, state}
-  end
-
-  @impl true
-  def handle_manager_call({:set_mode, mode_name, value}, _from, state) do
-    case set_mode(state, mode_name, value) do
-      {:ok, new_state} -> {:reply, :ok, new_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
-    end
-  end
-
-  @impl true
-  def handle_manager_call({:reset_mode, mode_name}, _from, state) do
-    case reset_mode(state, mode_name) do
-      {:ok, new_state} -> {:reply, :ok, new_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
-    end
-  end
-
-  @impl true
-  def handle_manager_call({:get_mode, mode_name}, _from, state) do
-    value = mode_enabled?(state, mode_name)
-    {:reply, value, state}
-  end
-
-  # Private Functions
+  # Private functions for validation
 
   defp initialize_default_modes do
     ModeTypes.get_all_modes()

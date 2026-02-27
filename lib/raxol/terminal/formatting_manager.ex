@@ -1,99 +1,69 @@
 defmodule Raxol.Terminal.FormattingManager do
   @moduledoc """
-  Manages the terminal text formatting.
+  Deprecated: Use `Raxol.Terminal.Format` instead.
+
+  This module is maintained for backward compatibility only.
   """
+
+  # Note: @deprecated removed because it triggers warnings on struct usage within
+  # the module itself. The @moduledoc documents the deprecation instead.
+
+  alias Raxol.Terminal.Format
 
   defstruct style: %{}
 
-  @type t :: %__MODULE__{
-          style: map()
-        }
+  @type t :: %__MODULE__{style: map()}
 
-  @doc """
-  Gets the current style.
-  """
-  @spec get_style(t()) :: map()
-  def get_style(state) do
-    state.style
-  end
+  @doc false
+  def get_style(%__MODULE__{style: style}), do: style
 
-  @doc """
-  Updates the style.
-  """
-  @spec update_style(t(), map()) :: t()
-  def update_style(state, style) do
-    %{state | style: style}
-  end
+  @doc false
+  def update_style(%__MODULE__{} = state, style), do: %{state | style: style}
 
-  @doc """
-  Sets the given attribute in the style.
-  """
-  @spec set_attribute(t(), atom()) :: t()
-  def set_attribute(state, attribute) do
+  @doc false
+  def set_attribute(%__MODULE__{} = state, attribute) do
     %{state | style: Map.put(state.style, attribute, true)}
   end
 
-  @doc """
-  Resets the given attribute in the style.
-  """
-  @spec reset_attribute(t(), atom()) :: t()
-  def reset_attribute(state, attribute) do
+  @doc false
+  def reset_attribute(%__MODULE__{} = state, attribute) do
     %{state | style: Map.delete(state.style, attribute)}
   end
 
-  @doc """
-  Sets the foreground color in the style.
-  """
-  @spec set_foreground(t(), atom()) :: t()
-  def set_foreground(state, color) do
+  @doc false
+  def set_foreground(%__MODULE__{} = state, color) do
     %{state | style: Map.put(state.style, :fg, color)}
   end
 
-  @doc """
-  Sets the background color in the style.
-  """
-  @spec set_background(t(), atom()) :: t()
-  def set_background(state, color) do
+  @doc false
+  def set_background(%__MODULE__{} = state, color) do
     %{state | style: Map.put(state.style, :bg, color)}
   end
 
-  @doc """
-  Resets all attributes in the style.
-  """
-  @spec reset_all_attributes(t()) :: t()
-  def reset_all_attributes(state) do
-    %{state | style: %{}}
+  @doc false
+  def reset_all_attributes(%__MODULE__{} = state), do: %{state | style: %{}}
+
+  @doc false
+  def get_foreground(%__MODULE__{style: style}),
+    do: Map.get(style, :fg, :default)
+
+  @doc false
+  def get_background(%__MODULE__{style: style}),
+    do: Map.get(style, :bg, :default)
+
+  @doc false
+  def attribute_set?(%__MODULE__{style: style}, attribute) do
+    Map.get(style, attribute, false)
   end
 
-  @doc """
-  Gets the foreground color from the style.
-  """
-  @spec get_foreground(t()) :: atom()
-  def get_foreground(state) do
-    Map.get(state.style, :fg, :default)
+  @doc false
+  def get_set_attributes(%__MODULE__{style: style}) do
+    Enum.filter(style, fn {_, value} -> value end)
   end
 
+  # Bridge to new module for new code
   @doc """
-  Gets the background color from the style.
+  Creates a new Format state. Use `Raxol.Terminal.Format.new/0` directly.
   """
-  @spec get_background(t()) :: atom()
-  def get_background(state) do
-    Map.get(state.style, :bg, :default)
-  end
-
-  @doc """
-  Checks if the given attribute is set in the style.
-  """
-  @spec attribute_set?(t(), atom()) :: boolean()
-  def attribute_set?(state, attribute) do
-    Map.get(state.style, attribute, false)
-  end
-
-  @doc """
-  Gets the set attributes from the style.
-  """
-  @spec get_set_attributes(t()) :: list()
-  def get_set_attributes(state) do
-    Enum.filter(state.style, fn {_, value} -> value end)
-  end
+  def new_format, do: Format.new()
 end
