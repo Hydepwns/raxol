@@ -4,7 +4,7 @@
 
 Complete guide to developing Raxol plugins with lifecycle management.
 
-**Version**: v1.6.0 | **Target**: Plugin developers | **Level**: Intermediate
+**Version**: v2.0.0 | **Target**: Plugin developers | **Level**: Intermediate
 
 ## Quick Start
 
@@ -68,7 +68,7 @@ System discovers plugins and validates manifests:
 - Module discovery
 - Manifest validation
 - Dependency resolution
-- Security check
+- Security analysis (BEAM bytecode inspection)
 
 ### 2. Loading Phase (init/1)
 
@@ -214,23 +214,78 @@ end
 ### Event Flow
 
 ```
-System Event → filter_event/2 (each plugin) → Core Processing
+System Event → filter_event/2 (priority order) → Core Processing
+                     ↓
+              Can modify, pass through, or halt
 ```
 
 ### Event Filtering
 
+Implement `filter_event/2` to intercept, modify, or block events:
+
 ```elixir
-# Block events
+# Block events (stops propagation to other plugins and core)
 def filter_event({:key_press, "F12"}, _state), do: :halt
 
 # Modify events
-def filter_event({:key_press, "j"}, state) do
+def filter_event({:key_press, "j"}, _state) do
   {:ok, {:key_press, :arrow_down}}
 end
 
-# Pass through
+# Pass through unchanged
 def filter_event(event, _state), do: {:ok, event}
 ```
+
+### Plugin Priority
+
+Control event processing order with the `priority` metadata field:
+
+```elixir
+def manifest do
+  %{
+    name: "high-priority-plugin",
+    version: "1.0.0",
+    priority: 1,  # Lower = higher priority (processed first)
+    # ...
+  }
+end
+```
+
+Plugins without explicit priority default to `1000` (low priority).
+
+### Plugin Dependencies
+
+Declare dependencies to ensure correct processing order:
+
+```elixir
+def manifest do
+  %{
+    name: "dependent-plugin",
+    version: "1.0.0",
+    dependencies: %{
+      "base-plugin" => "~> 1.0"  # Processed after base-plugin
+    },
+    # ...
+  }
+end
+```
+
+The event processor automatically sorts plugins by dependency order, ensuring
+dependent plugins see events after their dependencies have processed them.
+
+### Error Handling in Filters
+
+Filter errors are logged but don't stop event propagation:
+
+```elixir
+# If this crashes, the event passes through to the next plugin
+def filter_event(event, state) do
+  # Plugin errors are isolated
+  {:ok, transform(event)}
+end
+```
+
+Filters run under `PluginSupervisor` with a 1-second timeout by default.
 
 ## Capabilities
 
@@ -284,6 +339,9 @@ end
 
 ## State Management
 
+Plugin state is managed through an ETS-backed `StateManager` for efficient
+concurrent access and crash recovery.
+
 ### Best Practices
 
 ```elixir
@@ -297,6 +355,18 @@ defstruct [
 ]
 ```
 
+### State Isolation
+
+Each plugin's state is isolated. State updates from `handle_event/2` are
+automatically persisted:
+
+```elixir
+def handle_event(event, state) do
+  # Return updated state - automatically persisted
+  {:ok, %{state | last_event: event}}
+end
+```
+
 ### Hot Reload
 
 State persists across hot reloads:
@@ -308,6 +378,11 @@ def enable(state) do
   {:ok, state}
 end
 ```
+
+### Crash Recovery
+
+If a plugin crashes, its last known state is preserved and restored on restart.
+The ETS-backed storage ensures state survives individual plugin failures.
 
 ## Performance
 
@@ -337,6 +412,138 @@ def handle_command(:risky_operation, _args, state) do
       Logger.error("Operation failed: #{inspect(reason)}")
       {:error, reason, state}
   end
+end
+```
+
+## Security Analysis
+
+Raxol automatically analyzes plugin BEAM bytecode to detect security-sensitive operations.
+
+### Detected Capabilities
+
+The `BeamAnalyzer` inspects compiled modules for:
+
+| Capability | Detected Operations |
+|------------|---------------------|
+| `:file_access` | `File.*`, `:file.*`, `Path.*` |
+| `:network_access` | `:gen_tcp.*`, `:ssl.*`, `Req.*`, `HTTPoison.*` |
+| `:code_injection` | `Code.eval_*`, `Module.create`, `:erl_eval.*` |
+| `:system_commands` | `System.cmd`, `Port.open`, `:os.cmd` |
+
+### Security Policies
+
+Plugins are validated against configurable security policies:
+
+```elixir
+alias Raxol.Core.Runtime.Plugins.Security.CapabilityDetector
+
+# Default policy (denies all sensitive operations)
+policy = CapabilityDetector.default_policy()
+
+# Custom policy allowing specific capabilities
+policy = CapabilityDetector.create_policy([:file_access])
+
+# Validate a plugin module
+case CapabilityDetector.validate_against_policy(MyPlugin, policy) do
+  :ok -> :load_plugin
+  {:error, :file_access_denied} -> :reject_plugin
+  {:error, :network_access_denied} -> :reject_plugin
+end
+```
+
+### Capability Reports
+
+Generate human-readable security reports:
+
+```elixir
+report = CapabilityDetector.capability_report(MyPlugin)
+# Capability Report for MyPlugin
+# ==================================================
+#
+# [X] File System Access
+# [ ] Network Access
+# [ ] Dynamic Code Evaluation
+# [ ] System Command Execution
+#
+# --------------------------------------------------
+# Total sensitive capabilities: 1
+```
+
+### Declaring Capabilities
+
+Declare capabilities in your manifest to pass security validation:
+
+```elixir
+def manifest do
+  %{
+    name: "my-plugin",
+    version: "1.0.0",
+    capabilities: [:file_access],  # Must match detected capabilities
+    # ...
+  }
+end
+```
+
+## Process Isolation
+
+Plugin operations run under `PluginSupervisor` for crash isolation.
+
+### Isolated Task Execution
+
+Plugin crashes don't affect the core application:
+
+```elixir
+alias Raxol.Core.Runtime.Plugins.PluginSupervisor
+
+# Synchronous execution with isolation
+case PluginSupervisor.run_plugin_task(:my_plugin, fn ->
+  risky_operation()
+end) do
+  {:ok, result} -> handle_result(result)
+  {:error, {:crashed, reason}} -> log_crash(reason)
+  {:error, {:timeout, ms}} -> log_timeout(ms)
+end
+
+# Fire and forget (async)
+PluginSupervisor.async_plugin_task(:my_plugin, fn ->
+  background_work()
+end)
+```
+
+### Timeout Control
+
+Set custom timeouts for slow operations:
+
+```elixir
+# Default timeout: 5000ms
+PluginSupervisor.run_plugin_task(:my_plugin, fn ->
+  slow_operation()
+end, timeout: 10_000)
+```
+
+### Concurrent Plugin Tasks
+
+Run multiple operations concurrently with individual failure isolation:
+
+```elixir
+results = PluginSupervisor.run_plugin_tasks_concurrent(:my_plugin, [
+  fn -> fetch_data() end,
+  fn -> process_config() end,
+  fn -> load_cache() end
+])
+# => [{:ok, data}, {:ok, config}, {:ok, cache}]
+# Failed tasks return {:error, reason} without affecting others
+```
+
+### Safe Callback Invocation
+
+Call plugin callbacks with automatic export checking:
+
+```elixir
+case PluginSupervisor.call_plugin_callback(:my_plugin, MyPlugin, :on_load, []) do
+  {:ok, result} -> result
+  :not_exported -> :skip
+  {:error, reason} -> handle_error(reason)
 end
 ```
 
@@ -378,3 +585,10 @@ end
 - [TEMPLATES.md](TEMPLATES.md) - Ready-to-use plugin templates
 - [TESTING.md](TESTING.md) - Testing strategies
 - [README.md](README.md) - Plugin system overview
+
+## Module Reference
+
+- `Raxol.Core.Runtime.Plugins.Security.BeamAnalyzer` - BEAM bytecode security analysis
+- `Raxol.Core.Runtime.Plugins.Security.CapabilityDetector` - Policy-based capability validation
+- `Raxol.Core.Runtime.Plugins.PluginSupervisor` - Crash-isolated plugin task execution
+- `Raxol.Core.Runtime.Plugins.PluginEventProcessor` - Event filtering and routing
