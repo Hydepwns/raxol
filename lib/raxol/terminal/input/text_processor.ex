@@ -45,12 +45,12 @@ defmodule Raxol.Terminal.Input.TextProcessor do
   defp add_to_history_if_valid(false, _emulator, _command), do: :ok
 
   defp add_to_history_if_valid(true, emulator, command) do
-    Raxol.Terminal.Command.Manager.add_to_history(emulator.command, command)
+    Raxol.Terminal.Commands.Manager.add_to_history(emulator.command, command)
   end
 
   defp can_add_to_history?(emulator) do
     Map.has_key?(emulator, :command) and
-      function_exported?(Raxol.Terminal.Command.Manager, :add_to_history, 2)
+      function_exported?(Raxol.Terminal.Commands.Manager, :add_to_history, 2)
   end
 
   defp process_input_characters(emulator, input) do

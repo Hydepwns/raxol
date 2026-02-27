@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Command do
+defmodule Raxol.Terminal.Commands.Command do
   @moduledoc """
   Defines the structure for terminal commands.
   """

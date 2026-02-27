@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.CommandProcessor do
+defmodule Raxol.Terminal.Commands.Processor do
   @moduledoc """
   Handles command processing for the terminal emulator.
   This module is responsible for parsing, validating, and executing terminal commands.

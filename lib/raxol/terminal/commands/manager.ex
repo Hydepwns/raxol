@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Command.Manager do
+defmodule Raxol.Terminal.Commands.Manager do
   use Raxol.Core.Behaviours.BaseManager
   require Logger
 
@@ -9,7 +9,8 @@ defmodule Raxol.Terminal.Command.Manager do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.{Command, Emulator}
+  alias Raxol.Terminal.Commands.Command
+  alias Raxol.Terminal.Emulator
 
   defstruct command_buffer: "",
             command_history: [],
@@ -77,9 +78,9 @@ defmodule Raxol.Terminal.Command.Manager do
     GenServer.call(pid, {:execute_command, command})
   end
 
-  def get_command_history(manager \\ %Raxol.Terminal.Command{})
+  def get_command_history(manager \\ %Raxol.Terminal.Commands.Command{})
 
-  def get_command_history(%Raxol.Terminal.Command{} = state) do
+  def get_command_history(%Raxol.Terminal.Commands.Command{} = state) do
     state.history
   end
 
@@ -103,9 +104,9 @@ defmodule Raxol.Terminal.Command.Manager do
     GenServer.call(pid, {:set_current_command, command})
   end
 
-  def get_command_buffer(manager \\ %Raxol.Terminal.Command{})
+  def get_command_buffer(manager \\ %Raxol.Terminal.Commands.Command{})
 
-  def get_command_buffer(%Raxol.Terminal.Command{} = state) do
+  def get_command_buffer(%Raxol.Terminal.Commands.Command{} = state) do
     state.command_buffer
   end
 
@@ -205,7 +206,7 @@ defmodule Raxol.Terminal.Command.Manager do
   @doc """
   Updates the command buffer.
   """
-  def update_command_buffer(%Raxol.Terminal.Command{} = state, new_buffer)
+  def update_command_buffer(%Raxol.Terminal.Commands.Command{} = state, new_buffer)
       when is_binary(new_buffer) do
     %{state | command_buffer: new_buffer}
   end
@@ -213,7 +214,7 @@ defmodule Raxol.Terminal.Command.Manager do
   @doc """
   Adds a command to the history.
   """
-  def add_to_history_state(%Raxol.Terminal.Command{} = state, command)
+  def add_to_history_state(%Raxol.Terminal.Commands.Command{} = state, command)
       when is_binary(command) do
     new_history = state.history ++ [command]
     max_history = state.max_history || 100
@@ -235,40 +236,40 @@ defmodule Raxol.Terminal.Command.Manager do
   @doc """
   Clears the command history.
   """
-  def clear_history(%Raxol.Terminal.Command{} = state) do
+  def clear_history(%Raxol.Terminal.Commands.Command{} = state) do
     %{state | history: [], history_index: -1}
   end
 
   @doc """
   Gets the last key event.
   """
-  def get_last_key_event(%Raxol.Terminal.Command{} = state) do
+  def get_last_key_event(%Raxol.Terminal.Commands.Command{} = state) do
     state.last_key_event
   end
 
   @doc """
   Updates the last key event.
   """
-  def update_last_key_event(%Raxol.Terminal.Command{} = state, event) do
+  def update_last_key_event(%Raxol.Terminal.Commands.Command{} = state, event) do
     %{state | last_key_event: event}
   end
 
   @doc """
   Processes a key event and updates the command buffer accordingly.
   """
-  def process_key_event(%Raxol.Terminal.Command{} = state, {:key, :enter}),
+  def process_key_event(%Raxol.Terminal.Commands.Command{} = state, {:key, :enter}),
     do: handle_enter(state)
 
-  def process_key_event(%Raxol.Terminal.Command{} = state, {:key, :backspace}),
+  def process_key_event(%Raxol.Terminal.Commands.Command{} = state, {:key, :backspace}),
     do: handle_backspace(state)
 
-  def process_key_event(%Raxol.Terminal.Command{} = state, {:key, :up}),
+  def process_key_event(%Raxol.Terminal.Commands.Command{} = state, {:key, :up}),
     do: handle_up(state)
 
-  def process_key_event(%Raxol.Terminal.Command{} = state, {:key, :down}),
+  def process_key_event(%Raxol.Terminal.Commands.Command{} = state, {:key, :down}),
     do: handle_down(state)
 
-  def process_key_event(%Raxol.Terminal.Command{} = state, {:char, char}),
+  def process_key_event(%Raxol.Terminal.Commands.Command{} = state, {:char, char}),
     do: handle_char(state, char)
 
   def process_key_event(state, _), do: state
@@ -332,7 +333,7 @@ defmodule Raxol.Terminal.Command.Manager do
   @doc """
   Gets a command from history by index.
   """
-  def get_history_command(%Raxol.Terminal.Command{} = state, index)
+  def get_history_command(%Raxol.Terminal.Commands.Command{} = state, index)
       when is_integer(index) do
     valid_index = index >= 0 and index < length(state.history)
     get_command_by_validity(valid_index, state, index)
@@ -348,7 +349,7 @@ defmodule Raxol.Terminal.Command.Manager do
   @doc """
   Searches command history for a matching command.
   """
-  def search_history(%Raxol.Terminal.Command{} = state, pattern)
+  def search_history(%Raxol.Terminal.Commands.Command{} = state, pattern)
       when is_binary(pattern) do
     matches = Enum.filter(state.history, &String.contains?(&1, pattern))
     return_search_result(Enum.empty?(matches), matches)
