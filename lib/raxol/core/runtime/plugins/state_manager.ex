@@ -266,7 +266,9 @@ defmodule StateManager do
     plugin_module.module_info(:exports)
     |> Keyword.has_key?(:init_state)
   rescue
-    _ -> false
+    e ->
+      Log.warning("Failed to check init callback for #{plugin_module}: #{Exception.message(e)}")
+      false
   end
 end
 

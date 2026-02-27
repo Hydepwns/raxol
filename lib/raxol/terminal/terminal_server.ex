@@ -636,7 +636,9 @@ defmodule Raxol.Terminal.TerminalServer do
       false -> %{status: :not_running}
     end
   rescue
-    _ -> %{status: :error}
+    e ->
+      Log.warning("Failed to get buffer manager stats: #{Exception.message(e)}")
+      %{status: :error}
   end
 
   defp get_buffer_manager_stats(_buffer_manager) do
@@ -649,7 +651,9 @@ defmodule Raxol.Terminal.TerminalServer do
       false -> %{status: :not_running}
     end
   rescue
-    _ -> %{status: :error}
+    e ->
+      Log.warning("Failed to get state manager stats: #{Exception.message(e)}")
+      %{status: :error}
   end
 
   defp get_event_manager_stats(event_manager) do
@@ -658,6 +662,8 @@ defmodule Raxol.Terminal.TerminalServer do
       false -> %{status: :not_running}
     end
   rescue
-    _ -> %{status: :error}
+    e ->
+      Log.warning("Failed to get event manager stats: #{Exception.message(e)}")
+      %{status: :error}
   end
 end

@@ -33,6 +33,8 @@ defmodule Raxol.HEEx.Components do
 
   use Phoenix.Component
 
+  require Logger
+
   alias Raxol.Style
   alias Raxol.Style.Borders
 
@@ -444,7 +446,9 @@ defmodule Raxol.HEEx.Components do
     |> Map.from_struct()
     |> Jason.encode!()
   rescue
-    _ -> "{}"
+    e ->
+      Logger.warning("Failed to encode style: #{Exception.message(e)}")
+      "{}"
   end
 
   defp encode_style(_), do: "{}"

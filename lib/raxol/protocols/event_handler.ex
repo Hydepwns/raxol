@@ -13,6 +13,8 @@ defprotocol Raxol.Protocols.EventHandler do
     * `:timestamp` - When the event occurred
     * `:data` - Event-specific data
 
+  Note: `require Logger` is in the implementation module below.
+
   ## Examples
 
       defimpl Raxol.Protocols.EventHandler, for: MyComponent do
@@ -119,6 +121,8 @@ end
 
 # Implementation for GenServer processes
 defimpl Raxol.Protocols.EventHandler, for: PID do
+  require Logger
+
   def handle_event(pid, event, _state) when is_pid(pid) do
     case GenServer.call(pid, {:handle_event, event}, 5000) do
       {:ok, result} -> {:ok, pid, result}
@@ -126,7 +130,9 @@ defimpl Raxol.Protocols.EventHandler, for: PID do
       :unhandled -> {:unhandled, pid, nil}
     end
   rescue
-    _ -> {:error, :process_unavailable}
+    e ->
+      Logger.warning("Event handler call to #{inspect(pid)} failed: #{Exception.message(e)}")
+      {:error, :process_unavailable}
   end
 
   def can_handle?(pid, event) when is_pid(pid) do
@@ -138,7 +144,9 @@ defimpl Raxol.Protocols.EventHandler, for: PID do
         try do
           GenServer.call(pid, {:can_handle?, event}, 1000)
         rescue
-          _ -> false
+          e ->
+            Logger.warning("can_handle? check for #{inspect(pid)} failed: #{Exception.message(e)}")
+            false
         end
     end
   end
@@ -146,7 +154,9 @@ defimpl Raxol.Protocols.EventHandler, for: PID do
   def get_event_listeners(pid) when is_pid(pid) do
     GenServer.call(pid, :get_event_listeners, 1000)
   rescue
-    _ -> []
+    e ->
+      Logger.warning("get_event_listeners for #{inspect(pid)} failed: #{Exception.message(e)}")
+      []
   end
 
   def subscribe(pid, event_types) when is_pid(pid) do

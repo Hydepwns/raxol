@@ -28,6 +28,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginRegistry do
       PluginRegistry.registered?(:my_plugin)
   """
 
+  require Logger
+
   @table_name :raxol_plugin_registry
   @commands_table :raxol_plugin_commands
 
@@ -332,7 +334,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginRegistry do
         try do
           module.commands()
         rescue
-          _ -> []
+          e ->
+            Logger.warning("Failed to get commands from plugin #{module}: #{Exception.message(e)}")
+            []
         end
       else
         []

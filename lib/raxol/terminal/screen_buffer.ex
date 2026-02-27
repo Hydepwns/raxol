@@ -31,6 +31,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   * `Formatting` - Text formatting and styling
   """
 
+  require Logger
+
   @behaviour Raxol.Terminal.ScreenBufferBehaviour
 
   alias Raxol.Terminal.ANSI.TextFormatting
@@ -820,26 +822,34 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def erase_from_cursor_to_end(buffer, x, y, top, bottom) do
     EraseOperations.erase_from_cursor_to_end(buffer, x, y, top, bottom)
   rescue
-    _ -> buffer
+    e ->
+      Logger.warning("Failed to erase from cursor to end at (#{x},#{y}): #{Exception.message(e)}")
+      buffer
   end
 
   def erase_from_start_to_cursor(buffer, x, y, top, bottom) do
     EraseOperations.erase_from_start_to_cursor(buffer, x, y, top, bottom)
   rescue
-    _ -> buffer
+    e ->
+      Logger.warning("Failed to erase from start to cursor at (#{x},#{y}): #{Exception.message(e)}")
+      buffer
   end
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_all(buffer) do
     EraseOperations.erase_all(buffer)
   rescue
-    _ -> buffer
+    e ->
+      Logger.warning("Failed to erase all buffer content: #{Exception.message(e)}")
+      buffer
   end
 
   def clear_region(buffer, x, y, width, height) do
     EraseOperations.clear_region(buffer, x, y, width, height)
   rescue
-    _ -> buffer
+    e ->
+      Logger.warning("Failed to clear region at (#{x},#{y}) size #{width}x#{height}: #{Exception.message(e)}")
+      buffer
   end
 
   def mark_damaged(buffer, x, y, width, height, _reason) do
@@ -946,7 +956,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def shift_region_to_line(buffer, region, target_line) do
     Operations.shift_region_to_line(buffer, region, target_line)
   rescue
-    _ -> buffer
+    e ->
+      Logger.warning("Failed to shift region to line #{target_line}: #{Exception.message(e)}")
+      buffer
   end
 
   @doc """
@@ -955,7 +967,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def erase_in_line(buffer, position, type) do
     EraseOperations.erase_in_line(buffer, position, type)
   rescue
-    _ -> buffer
+    e ->
+      Logger.warning("Failed to erase in line at #{inspect(position)} type #{type}: #{Exception.message(e)}")
+      buffer
   end
 
   def erase_in_display(buffer, position, type) do
@@ -966,7 +980,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def erase_from_cursor_to_end(buffer) do
     EraseOperations.erase_from_cursor_to_end(buffer)
   rescue
-    _ -> buffer
+    e ->
+      Logger.warning("Failed to erase from cursor to end: #{Exception.message(e)}")
+      buffer
   end
 
   # Higher-arity delete_characters for command handlers
@@ -991,7 +1007,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
       %{}
     )
   rescue
-    _ -> buffer
+    e ->
+      Logger.warning("Failed to scroll down #{lines} lines: #{Exception.message(e)}")
+      buffer
   end
 
   # Handle case where lines parameter is a list (from tests)

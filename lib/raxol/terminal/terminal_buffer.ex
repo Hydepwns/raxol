@@ -3,6 +3,8 @@ defmodule Raxol.Terminal.Buffer do
   Manages the terminal buffer state and operations.
   """
 
+  require Logger
+
   alias Raxol.Terminal.Buffer.Cell
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ScreenBuffer.{Attributes, Operations}
@@ -203,7 +205,9 @@ defmodule Raxol.Terminal.Buffer do
 
     from_screen_buffer(updated_screen_buffer, buffer)
   rescue
-    _ -> buffer
+    e ->
+      Logger.warning("Failed to clear buffer: #{Exception.message(e)}")
+      buffer
   end
 
   @doc """
@@ -256,7 +260,9 @@ defmodule Raxol.Terminal.Buffer do
 
     from_screen_buffer(updated_screen_buffer, buffer)
   rescue
-    _ -> buffer
+    e ->
+      Logger.warning("Failed to scroll buffer by #{lines} lines: #{Exception.message(e)}")
+      buffer
   end
 
   def scroll(_buffer, nil) do
@@ -333,7 +339,9 @@ defmodule Raxol.Terminal.Buffer do
   def add(buffer, content) do
     write(buffer, content)
   rescue
-    _ -> buffer
+    e ->
+      Logger.warning("Failed to add content to buffer: #{Exception.message(e)}")
+      buffer
   end
 
   @doc """

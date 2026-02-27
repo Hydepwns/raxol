@@ -255,7 +255,9 @@ defmodule Raxol.Protocols.EventSystemIntegration do
     :ok = EventManager.dispatch(event_type)
     {:ok, target, state}
   rescue
-    _ -> {:unhandled, target, state}
+    e ->
+      Logger.warning("Fallback event dispatch failed for #{event.type}: #{Exception.message(e)}")
+      {:unhandled, target, state}
   end
 
   defp default_error_handler(event, error) do
