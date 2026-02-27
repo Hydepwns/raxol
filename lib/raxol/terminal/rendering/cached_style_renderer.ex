@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
+defmodule Raxol.Terminal.Rendering.CachedStyleRenderer do
   @moduledoc """
   High-performance terminal renderer with style string caching.
 

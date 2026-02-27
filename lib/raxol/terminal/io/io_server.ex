@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.IO.IOServer do
 
   alias Raxol.Terminal.{
     Commands.History,
-    Render.RenderServer,
+    Rendering.RenderServer,
     ScreenBuffer.Manager
   }
 
@@ -394,14 +394,14 @@ defmodule Raxol.Terminal.IO.IOServer do
 
   # Helper functions
   defp set_cursor_visibility_if_available(visible) do
-    case Process.whereis(Raxol.Terminal.Render.RenderServer) do
+    case Process.whereis(Raxol.Terminal.Rendering.RenderServer) do
       nil -> :ok
       _pid -> RenderServer.set_cursor_visibility(visible)
     end
   end
 
   defp update_render_server_config_if_available(rendering_config) do
-    case Process.whereis(Raxol.Terminal.Render.RenderServer) do
+    case Process.whereis(Raxol.Terminal.Rendering.RenderServer) do
       nil -> :ok
       _pid -> RenderServer.update_config(rendering_config)
     end

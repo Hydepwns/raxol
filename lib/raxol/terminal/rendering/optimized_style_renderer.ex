@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Renderer.OptimizedStyleRenderer do
+defmodule Raxol.Terminal.Rendering.OptimizedStyleRenderer do
   @moduledoc """
   Phase 3 optimized terminal renderer with efficient style handling.
 

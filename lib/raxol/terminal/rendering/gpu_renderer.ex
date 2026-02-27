@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Renderer.GPURenderer do
+defmodule Raxol.Terminal.Rendering.GPURenderer do
   @moduledoc """
   GPU-accelerated terminal renderer.
 

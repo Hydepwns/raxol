@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Render.RenderServerTest do
+defmodule Raxol.Terminal.Rendering.RenderServerTest do
   use ExUnit.Case, async: false
 
   alias Raxol.Terminal.{

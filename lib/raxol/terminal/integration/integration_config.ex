@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Integration.Config do
 
   alias Raxol.Terminal.{
     Config,
-    Render.RenderServer,
+    Rendering.RenderServer,
     ScreenBuffer.Manager
   }
 

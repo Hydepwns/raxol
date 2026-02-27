@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Renderer.GPURendererTest do
+defmodule Raxol.Terminal.Rendering.GPURendererTest do
   use ExUnit.Case, async: true
   alias Raxol.Terminal.{Renderer, Renderer.GPURenderer, ScreenBuffer}
 

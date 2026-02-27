@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Render.RenderServer do
+defmodule Raxol.Terminal.Rendering.RenderServer do
   @moduledoc """
   Provides a unified interface for terminal rendering operations.
   """
