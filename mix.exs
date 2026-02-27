@@ -400,6 +400,7 @@ defmodule Raxol.MixProject do
         "README.md",
         "CHANGELOG.md",
         "LICENSE.md",
+        "ROADMAP.md",
         ".github/CONTRIBUTING.md",
         "docs/getting-started/PACKAGES.md",
         "docs/getting-started/QUICKSTART.md",
@@ -439,6 +440,7 @@ defmodule Raxol.MixProject do
         "Project Info": [
           "CHANGELOG.md",
           "LICENSE.md",
+          "ROADMAP.md",
           ".github/CONTRIBUTING.md"
         ]
       ],

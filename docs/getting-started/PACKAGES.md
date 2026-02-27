@@ -211,7 +211,7 @@ Raxol.Plugin.Runtime.load_plugin(MyApp.SpotifyPlugin)
 Raxol.Plugin.Runtime.execute_command("spotify:play")
 ```
 
-See [Plugin Development Guide](../plugins/PLUGIN_DEVELOPMENT_GUIDE.md) for details.
+See the plugin examples in `examples/plugins/` for details.
 
 ---
 
@@ -369,7 +369,7 @@ All packages are ready for Hex.pm publication:
 
 - **raxol_core**: [Buffer API Reference](../core/BUFFER_API.md)
 - **raxol_liveview**: [LiveView Integration](../cookbook/LIVEVIEW_INTEGRATION.md)
-- **raxol_plugin**: [Plugin Development](../plugins/PLUGIN_DEVELOPMENT_GUIDE.md)
+- **raxol_plugin**: See `examples/plugins/` for plugin examples
 
 ### General Support
 

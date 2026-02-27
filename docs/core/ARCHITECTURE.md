@@ -655,7 +655,6 @@ def write_at(%{} = buffer, x, y, text, %{} = style)
 ## References
 
 - [BUFFER_API.md](./BUFFER_API.md) - Complete API reference
-- [GETTING_STARTED.md](./GETTING_STARTED.md) - Quick start guide
 - [ANSI Escape Codes](https://en.wikipedia.org/wiki/ANSI_escape_code)
 - [Box Drawing Characters](https://en.wikipedia.org/wiki/Box-drawing_character)
 

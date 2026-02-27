@@ -615,7 +615,6 @@ All modules are pure functional - no shared state:
 
 ## See Also
 
-- [Getting Started Guide](./GETTING_STARTED.md)
 - [Architecture Documentation](./ARCHITECTURE.md)
 - [Examples](../../examples/core/README.md)
 - [Benchmarks](../../docs/bench/README.md)
