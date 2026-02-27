@@ -4,6 +4,8 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
   performance analysis, and visual reporting for Raxol benchmarks.
   """
 
+  require Logger
+
   alias Raxol.Benchmark.Config
 
   @behaviour Benchee.Formatter
@@ -107,7 +109,9 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
         try do
           scenario.memory_usage_data.statistics
         rescue
-          _ -> nil
+          e ->
+            Logger.warning("Failed to get memory stats for #{name}: #{Exception.message(e)}")
+            nil
         end
 
       %{
@@ -184,12 +188,14 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
       %{available: false, message: "No memory usage data collected"}
     else
       total_memory =
-        Enum.reduce(memory_scenarios, 0, fn {_name, scenario}, acc ->
+        Enum.reduce(memory_scenarios, 0, fn {name, scenario}, acc ->
           memory =
             try do
               scenario.memory_usage_data.statistics.average
             rescue
-              _ -> 0
+              e ->
+                Logger.warning("Failed to get memory average for #{name}: #{Exception.message(e)}")
+                0
             end
 
           acc + memory
@@ -207,7 +213,9 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
               try do
                 scenario.memory_usage_data.statistics.average
               rescue
-                _ -> 0
+                e ->
+                  Logger.warning("Failed to get scenario memory for #{name}: #{Exception.message(e)}")
+                  0
               end
 
             %{

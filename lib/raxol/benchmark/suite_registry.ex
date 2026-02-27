@@ -4,6 +4,8 @@ defmodule Raxol.Benchmark.SuiteRegistry do
   Manages suite discovery, registration, and execution.
   """
 
+  require Logger
+
   use Raxol.Core.Behaviours.BaseManager
 
   # Client API
@@ -218,7 +220,9 @@ defmodule Raxol.Benchmark.SuiteRegistry do
 
     {:ok, suite_info}
   rescue
-    _ -> {:error, :extraction_failed}
+    e ->
+      Logger.warning("Failed to extract suite info for #{module}: #{Exception.message(e)}")
+      {:error, :extraction_failed}
   end
 
   defp extract_scenarios(suites) do

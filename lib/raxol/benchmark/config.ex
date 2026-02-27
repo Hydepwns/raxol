@@ -451,7 +451,9 @@ defmodule Raxol.Benchmark.Config do
       _ -> "unknown"
     end
   rescue
-    _ -> "unknown"
+    e ->
+      Logger.warning("Failed to get git SHA: #{Exception.message(e)}")
+      "unknown"
   end
 
   defp check_statistical_significance(samples, target) when is_list(samples) do
