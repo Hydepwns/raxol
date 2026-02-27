@@ -53,20 +53,25 @@ Raxol is a terminal application framework supporting multiple UI paradigms (Reac
 
 ```
 lib/raxol/
-├── terminal/     # Terminal emulation (VT100/ANSI)
-│   ├── ansi/     # ANSI sequence parsing
-│   ├── buffer/   # Screen buffer management
-│   ├── emulator/ # Terminal emulator
-│   └── driver.ex # Platform-specific backend selection
-├── ui/           # Multi-framework UI
+├── terminal/        # Terminal emulation (VT100/ANSI)
+│   ├── ansi/        # ANSI sequence parsing
+│   ├── buffer/      # Screen buffer management
+│   ├── commands/    # Command processing (CSI/OSC/DCS handlers, executor)
+│   ├── emulator/    # Terminal emulator
+│   ├── rendering/   # Terminal rendering (backend, GPU, styles)
+│   └── driver.ex    # Platform-specific backend selection
+├── ui/              # Multi-framework UI
 │   ├── components/
-│   ├── events/
+│   ├── rendering/   # UI rendering pipeline
 │   └── theming/
-├── core/         # Services and utilities
+├── core/            # Services and utilities
 │   ├── behaviours/  # BaseManager pattern for GenServers
+│   ├── renderer/    # Core rendering primitives (layout, views)
 │   ├── runtime/     # Plugin system
 │   └── *_compat.ex  # Compatibility layers (Buffer, Renderer, Style, Box)
-└── effects/      # Visual effects (CursorTrail, etc.)
+├── performance/     # Performance monitoring, profiling, caching
+├── live_view/       # Phoenix LiveView integration
+└── effects/         # Visual effects (CursorTrail, etc.)
 ```
 
 ### Key Architectural Decisions
@@ -115,6 +120,15 @@ IO.write(Renderer.apply_diff(diff))  # NOT Enum.each(diff, &IO.write/1)
 - Module files: `<domain>_<function>.ex` (e.g., `cursor_manager.ex`, `buffer_server.ex`)
 - Avoid generic names: `manager.ex`, `handler.ex`, `server.ex`
 - Effects use full module paths: `Raxol.Effects.CursorTrail` not bare `CursorTrail`
+
+### Consolidated Namespaces
+
+These namespaces have been consolidated - avoid creating new top-level alternatives:
+
+- `Raxol.Terminal.Commands.*` - All command processing (not `terminal/command/` or `command_processor.ex`)
+- `Raxol.Terminal.Rendering.*` - All terminal rendering (not `terminal/render/` or `terminal/renderer/`)
+- `Raxol.Performance.*` - All performance tools (not `core/performance/`)
+- `Raxol.LiveView.*` - LiveView integration (not `liveview/`)
 
 ## Environment Variables
 
