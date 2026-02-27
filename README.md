@@ -43,7 +43,7 @@ See **[Package Guide](docs/getting-started/PACKAGES.md)** for detailed compariso
 
 ## Quick Start
 
-See [Installation Guide](docs/_includes/installation.md) and [Quickstart Tutorial](docs/getting-started/QUICKSTART.md).
+See [Quickstart Tutorial](docs/getting-started/QUICKSTART.md).
 
 ## Choose Your Framework
 
@@ -132,7 +132,7 @@ This makes Raxol perfect as a lightweight UI component library for web applicati
 
 ## Performance
 
-See [Performance Metrics](docs/_includes/performance-metrics.md) and [Benchmark Docs](docs/bench/).
+See [Benchmark Docs](docs/bench/README.md).
 
 ## Documentation
 

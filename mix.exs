@@ -407,14 +407,10 @@ defmodule Raxol.MixProject do
         "docs/getting-started/MIGRATION_FROM_DIY.md",
         "docs/core/BUFFER_API.md",
         "docs/core/ARCHITECTURE.md",
-        "docs/core/GETTING_STARTED.md",
         "docs/cookbook/README.md",
         "docs/cookbook/LIVEVIEW_INTEGRATION.md",
         "docs/cookbook/THEMING.md",
-        "docs/cookbook/COMMAND_SYSTEM.md",
         "docs/cookbook/PERFORMANCE_OPTIMIZATION.md",
-        "docs/cookbook/VIM_NAVIGATION.md",
-        "docs/plugins/PLUGIN_DEVELOPMENT_GUIDE.md",
         "docs/bench/README.md",
         "examples/core/README.md"
       ],
@@ -428,19 +424,13 @@ defmodule Raxol.MixProject do
         ],
         "Core Concepts": [
           "docs/core/BUFFER_API.md",
-          "docs/core/ARCHITECTURE.md",
-          "docs/core/GETTING_STARTED.md"
+          "docs/core/ARCHITECTURE.md"
         ],
         Cookbook: [
           "docs/cookbook/README.md",
           "docs/cookbook/LIVEVIEW_INTEGRATION.md",
           "docs/cookbook/THEMING.md",
-          "docs/cookbook/COMMAND_SYSTEM.md",
-          "docs/cookbook/PERFORMANCE_OPTIMIZATION.md",
-          "docs/cookbook/VIM_NAVIGATION.md"
-        ],
-        Plugins: [
-          "docs/plugins/PLUGIN_DEVELOPMENT_GUIDE.md"
+          "docs/cookbook/PERFORMANCE_OPTIMIZATION.md"
         ],
         "Examples & Benchmarks": [
           "examples/core/README.md",
