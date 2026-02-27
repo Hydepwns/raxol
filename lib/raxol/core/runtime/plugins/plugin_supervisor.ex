@@ -56,7 +56,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginSupervisor do
   @impl Supervisor
   def init(_opts) do
     children = [
-      {Task.Supervisor, name: @task_supervisor_name, max_restarts: 100, max_seconds: 60}
+      {Task.Supervisor,
+       name: @task_supervisor_name, max_restarts: 100, max_seconds: 60}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
@@ -212,9 +213,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginSupervisor do
 
     case function_exported?(module, function, arity) do
       true ->
-        run_plugin_task(plugin_id, fn ->
-          apply(module, function, args)
-        end, opts)
+        run_plugin_task(
+          plugin_id,
+          fn ->
+            apply(module, function, args)
+          end,
+          opts
+        )
 
       false ->
         :not_exported

@@ -329,7 +329,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
                  plugin_id,
                  fn ->
                    module.filter_event(event, plugin_state)
-                 end, timeout: 1_000) do
+                 end,
+                 timeout: 1_000
+               ) do
             {:ok, {:ok, filtered}} ->
               {:ok, filtered}
 

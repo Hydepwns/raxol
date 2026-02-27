@@ -27,7 +27,8 @@ defmodule Raxol.Core.Runtime.Plugins.Security.CapabilityDetector do
 
   alias Raxol.Core.Runtime.Plugins.Security.BeamAnalyzer
 
-  @type capability :: :file_access | :network_access | :code_injection | :system_commands
+  @type capability ::
+          :file_access | :network_access | :code_injection | :system_commands
   @type capabilities :: %{capability() => boolean()}
   @type policy :: %{
           optional(:allow_file_access) => boolean(),
@@ -48,7 +49,8 @@ defmodule Raxol.Core.Runtime.Plugins.Security.CapabilityDetector do
 
   Returns a map indicating which security-sensitive capabilities the module has.
   """
-  @spec detect_capabilities(module()) :: {:ok, capabilities()} | {:error, term()}
+  @spec detect_capabilities(module()) ::
+          {:ok, capabilities()} | {:error, term()}
   def detect_capabilities(module) do
     BeamAnalyzer.analyze_module(module)
   end
@@ -140,13 +142,44 @@ defmodule Raxol.Core.Runtime.Plugins.Security.CapabilityDetector do
 
   defp find_policy_violations(capabilities, policy) do
     []
-    |> check_capability(capabilities, policy, :file_access, :allow_file_access, :file_access_denied)
-    |> check_capability(capabilities, policy, :network_access, :allow_network_access, :network_access_denied)
-    |> check_capability(capabilities, policy, :code_injection, :allow_code_injection, :code_injection_denied)
-    |> check_capability(capabilities, policy, :system_commands, :allow_system_commands, :system_commands_denied)
+    |> check_capability(
+      capabilities,
+      policy,
+      :file_access,
+      :allow_file_access,
+      :file_access_denied
+    )
+    |> check_capability(
+      capabilities,
+      policy,
+      :network_access,
+      :allow_network_access,
+      :network_access_denied
+    )
+    |> check_capability(
+      capabilities,
+      policy,
+      :code_injection,
+      :allow_code_injection,
+      :code_injection_denied
+    )
+    |> check_capability(
+      capabilities,
+      policy,
+      :system_commands,
+      :allow_system_commands,
+      :system_commands_denied
+    )
   end
 
-  defp check_capability(violations, capabilities, policy, cap_key, policy_key, error) do
+  defp check_capability(
+         violations,
+         capabilities,
+         policy,
+         cap_key,
+         policy_key,
+         error
+       ) do
     has_capability = Map.get(capabilities, cap_key, false)
     is_allowed = Map.get(policy, policy_key, false)
 
@@ -157,7 +190,9 @@ defmodule Raxol.Core.Runtime.Plugins.Security.CapabilityDetector do
   end
 
   defp format_capability_report(module, capabilities) do
-    header = "Capability Report for #{inspect(module)}\n" <> String.duplicate("=", 50) <> "\n\n"
+    header =
+      "Capability Report for #{inspect(module)}\n" <>
+        String.duplicate("=", 50) <> "\n\n"
 
     body =
       capabilities

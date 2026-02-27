@@ -18,7 +18,8 @@ defmodule Raxol.Core.Runtime.Plugins.Security.BeamAnalyzer do
 
   """
 
-  @type capability :: :file_access | :network_access | :code_injection | :system_commands
+  @type capability ::
+          :file_access | :network_access | :code_injection | :system_commands
   @type capabilities :: %{capability() => boolean()}
   @type analysis_result :: {:ok, capabilities()} | {:error, term()}
 
@@ -283,9 +284,12 @@ defmodule Raxol.Core.Runtime.Plugins.Security.BeamAnalyzer do
 
     %{
       file_access: has_pattern_match?(remote_calls, @file_access_patterns),
-      network_access: has_pattern_match?(remote_calls, @network_access_patterns),
-      code_injection: has_pattern_match?(remote_calls, @code_injection_patterns),
-      system_commands: has_pattern_match?(remote_calls, @system_command_patterns)
+      network_access:
+        has_pattern_match?(remote_calls, @network_access_patterns),
+      code_injection:
+        has_pattern_match?(remote_calls, @code_injection_patterns),
+      system_commands:
+        has_pattern_match?(remote_calls, @system_command_patterns)
     }
   end
 
