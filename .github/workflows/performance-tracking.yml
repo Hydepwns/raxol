@@ -248,7 +248,7 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
       
       - name: Upload metrics
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v4.4.3
         with:
           name: performance-metrics-${{ github.run_number }}
           path: |
