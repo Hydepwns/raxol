@@ -51,7 +51,6 @@ mix raxol.check --skip test   # Skip specific checks
 
 ```bash
 mix phx.server                # Start Phoenix server (includes Tidewave in dev)
-mix raxol.gen.component Name  # Generate component
 mix raxol.gen.specs lib/path  # Generate type specs for private functions
 mix docs                      # Generate documentation
 ```
@@ -99,7 +98,7 @@ lib/raxol/
 
 **State Management**: ETS-backed UnifiedStateManager
 
-**Configuration**: TOML-based in `config/raxol.toml` with environment overrides in `config/environments/`
+**Configuration**: TOML-based (`config/raxol.example.toml` as template) with environment overrides in `config/environments/`
 
 ### Buffer/Renderer API
 
@@ -165,7 +164,7 @@ These namespaces have been consolidated - avoid creating new top-level alternati
 ## Dialyzer
 
 - PLT cached in `priv/plts/` for faster reruns
-- `.dialyzer_ignore.exs` contains ~100 documented intentional suppressions
+- `.dialyzer_ignore.exs` contains ~53 documented intentional suppressions
 - Mix aliases: `mix dialyzer.setup`, `mix dialyzer.check`, `mix dialyzer.clean`
 
 ## Deployment
