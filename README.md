@@ -173,6 +173,22 @@ See [Benchmark Docs](docs/bench/README.md).
 - **LiveView Integration** (v2.0.0 Phase 2) - Terminal rendering in Phoenix
 - **Raxol.Core** (v2.0.0 Phase 1) - Lightweight buffer primitives (< 100KB, zero deps)
 
+## Development Setup
+
+```bash
+git clone --recursive https://github.com/Hydepwns/raxol.git
+cd raxol
+mix deps.get
+MIX_ENV=test mix compile
+MIX_ENV=test mix test --exclude slow --exclude integration --exclude docker
+```
+
+If you already cloned without `--recursive`, initialize the termbox2 submodule:
+
+```bash
+git submodule update --init --recursive
+```
+
 ## VS Code Extension
 
 Development version available in `editors/vscode/`. To install:

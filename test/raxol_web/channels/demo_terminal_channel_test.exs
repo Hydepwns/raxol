@@ -48,9 +48,9 @@ defmodule RaxolWeb.DemoTerminalChannelTest do
         leave(socket)
 
         {:ok, socket} =
-          Phoenix.ChannelTest.connect(RaxolWeb.UserSocket, %{}, %{
-            peer_data: %{address: {127, 0, 0, i + 1}}
-          })
+          Phoenix.ChannelTest.connect(RaxolWeb.UserSocket, %{},
+            connect_info: %{peer_data: %{address: {127, 0, 0, i + 1}}}
+          )
       end
 
       session_id = generate_session_id()
@@ -85,9 +85,8 @@ defmodule RaxolWeb.DemoTerminalChannelTest do
       assert_push "output", _welcome
 
       push(socket, "input", %{"data" => "ab\x7f"})
-      assert_push "output", %{data: "a"}
-      assert_push "output", %{data: "b"}
-      assert_push "output", %{data: "\b \b"}
+      assert_push "output", %{data: data}
+      assert data == "ab\b \b"
     end
 
     test "rejects oversized input", %{socket: socket} do
