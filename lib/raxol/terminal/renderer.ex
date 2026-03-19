@@ -2,11 +2,12 @@ defmodule Raxol.Terminal.Renderer do
   @moduledoc """
   Terminal renderer module.
 
-  This module handles rendering of terminal output, including:
+  This module handles rendering of terminal output using ANSI escape codes,
+  including:
   - Character cell rendering
-  - Text styling
+  - Text styling (colors, bold, italic, underline)
   - Cursor rendering
-  - Performance optimizations
+  - Performance optimizations (style batching, caching)
 
   ## Integration with Other Modules
 
@@ -32,7 +33,7 @@ defmodule Raxol.Terminal.Renderer do
   The renderer includes several optimizations:
   - Only renders changed cells
   - Batches style updates for consecutive cells
-  - Minimizes DOM updates
+  - Minimizes terminal output
   - Caches rendered output when possible
 
   ## Usage
@@ -73,30 +74,50 @@ defmodule Raxol.Terminal.Renderer do
 
   require Logger
 
-  # Pre-compiled style templates for common combinations - Phase 3 optimization
-  @style_templates %{
-    # Empty/default style - most common
-    default: "",
+  # ANSI escape code constants
+  @ansi_reset "\e[0m"
+  @ansi_bold "\e[1m"
+  @ansi_italic "\e[3m"
+  @ansi_underline "\e[4m"
 
-    # Basic colors - very common
-    red: "color: #FF0000",
-    green: "color: #00FF00",
-    blue: "color: #0000FF",
-    yellow: "color: #FFFF00",
-    cyan: "color: #00FFFF",
-    magenta: "color: #FF00FF",
-    white: "color: #FFFFFF",
-    black: "color: #000000",
+  # Standard foreground color codes
+  @fg_color_codes %{
+    black: "30",
+    red: "31",
+    green: "32",
+    yellow: "33",
+    blue: "34",
+    magenta: "35",
+    cyan: "36",
+    white: "37",
+    bright_black: "90",
+    bright_red: "91",
+    bright_green: "92",
+    bright_yellow: "93",
+    bright_blue: "94",
+    bright_magenta: "95",
+    bright_cyan: "96",
+    bright_white: "97"
+  }
 
-    # Text attributes - common
-    bold: "font-weight: bold",
-    italic: "font-style: italic",
-    underline: "text-decoration: underline",
-
-    # Common combinations
-    bold_red: "font-weight: bold; color: #FF0000",
-    bold_green: "font-weight: bold; color: #00FF00",
-    bold_blue: "font-weight: bold; color: #0000FF"
+  # Standard background color codes
+  @bg_color_codes %{
+    black: "40",
+    red: "41",
+    green: "42",
+    yellow: "43",
+    blue: "44",
+    magenta: "45",
+    cyan: "46",
+    white: "47",
+    bright_black: "100",
+    bright_red: "101",
+    bright_green: "102",
+    bright_yellow: "103",
+    bright_blue: "104",
+    bright_magenta: "105",
+    bright_cyan: "106",
+    bright_white: "107"
   }
 
   @doc """
@@ -143,13 +164,10 @@ defmodule Raxol.Terminal.Renderer do
   Renders the terminal content with additional options.
   """
   def render(%__MODULE__{} = renderer, _opts \\ %{}, _additional_opts \\ %{}) do
-    content =
-      renderer.screen_buffer
-      |> get_styled_content_optimized(renderer.theme, renderer.style_batching)
-      |> apply_font_settings(renderer.font_settings)
-      |> maybe_apply_cursor(renderer.cursor)
-
-    content
+    renderer.screen_buffer
+    |> get_styled_content_optimized(renderer.theme, renderer.style_batching)
+    |> apply_font_settings(renderer.font_settings)
+    |> maybe_apply_cursor(renderer.cursor)
   end
 
   defp get_styled_content_optimized(buffer, theme, style_batching) do
@@ -166,193 +184,221 @@ defmodule Raxol.Terminal.Renderer do
     end
   end
 
-  # Simple optimized batched rendering
+  # Batched rendering: group consecutive cells with the same style
   defp render_batched_optimized(row, theme) do
     row
     |> Enum.chunk_by(& &1.style)
     |> Enum.map_join("", fn cells_with_same_style ->
       style = hd(cells_with_same_style).style
       chars = Enum.map_join(cells_with_same_style, "", & &1.char)
-      style_string = build_style_string_fast(style, theme)
+      ansi_prefix = build_ansi_prefix(style, theme)
 
-      # Always wrap in span for consistent HTML output
-      "<span style=\"#{style_string}\">#{chars}</span>"
+      case ansi_prefix do
+        "" -> chars
+        prefix -> prefix <> chars <> @ansi_reset
+      end
     end)
   end
 
-  # Simple optimized individual rendering
+  # Individual cell rendering
   defp render_individual_optimized(row, theme) do
     row
     |> Enum.map_join("", fn cell ->
-      style_string = build_style_string_fast(cell.style, theme)
+      ansi_prefix = build_ansi_prefix(cell.style, theme)
 
-      # Always wrap in span for consistent HTML output
-      "<span style=\"#{style_string}\">#{cell.char}</span>"
-    end)
-  end
-
-  # Fast style string building with pre-compiled templates
-  defp build_style_string_fast(style, theme) do
-    style_map = normalize_style(style)
-
-    # Templates should only be used when we have no theme restrictions
-    # If theme is provided but empty, we should respect that and not apply defaults
-    case should_use_templates?(theme, style_map) do
-      true ->
-        case get_template_match(style_map) do
-          nil -> build_style_string_optimized(style, theme)
-          template -> template
-        end
-
-      false ->
-        build_style_string_optimized(style, theme)
-    end
-  end
-
-  defp get_template_match(style_map) do
-    cond do
-      default_style?(style_map) ->
-        # Don't use static template for default style - need dynamic theme colors
-        nil
-
-      simple_color_match?(style_map, :red) ->
-        Map.get(@style_templates, :red)
-
-      simple_color_match?(style_map, :green) ->
-        Map.get(@style_templates, :green)
-
-      simple_color_match?(style_map, :blue) ->
-        Map.get(@style_templates, :blue)
-
-      simple_attribute_match?(style_map, :bold) ->
-        Map.get(@style_templates, :bold)
-
-      bold_color_combo?(style_map, :red) ->
-        Map.get(@style_templates, :bold_red)
-
-      bold_color_combo?(style_map, :green) ->
-        Map.get(@style_templates, :bold_green)
-
-      bold_color_combo?(style_map, :blue) ->
-        Map.get(@style_templates, :bold_blue)
-
-      true ->
-        nil
-    end
-  end
-
-  # Fast template matchers using pattern matching
-  defp simple_color_match?(style_map, color) do
-    Map.get(style_map, :foreground) == color and
-      not Map.get(style_map, :bold, false) and
-      not Map.get(style_map, :italic, false) and
-      not Map.get(style_map, :underline, false) and
-      is_nil(Map.get(style_map, :background))
-  end
-
-  defp simple_attribute_match?(style_map, attr) do
-    Map.get(style_map, attr, false) == true and
-      is_nil(Map.get(style_map, :foreground)) and
-      is_nil(Map.get(style_map, :background)) and
-      not Map.get(style_map, :italic, false) and
-      not Map.get(style_map, :underline, false) and
-      (attr != :bold or not Map.get(style_map, :italic, false))
-  end
-
-  defp bold_color_combo?(style_map, color) do
-    Map.get(style_map, :foreground) == color and
-      Map.get(style_map, :bold, false) == true and
-      not Map.get(style_map, :italic, false) and
-      not Map.get(style_map, :underline, false) and
-      is_nil(Map.get(style_map, :background))
-  end
-
-  # Template matching helper
-  defp default_style?(style_map) do
-    Enum.all?([:foreground, :background, :bold, :italic, :underline], fn key ->
-      case Map.get(style_map, key) do
-        nil -> true
-        false -> true
-        _ -> false
+      case ansi_prefix do
+        "" -> cell.char
+        prefix -> prefix <> cell.char <> @ansi_reset
       end
     end)
   end
 
-  defp should_use_templates?(theme, _style_map) do
-    # Only use templates when theme is completely nil/undefined
-    # If theme is an empty map %{}, that's an intentional choice to disable defaults
-    is_nil(theme)
-  end
-
-  defp build_style_string_optimized(style, theme) do
+  # Build ANSI escape prefix from style and theme
+  defp build_ansi_prefix(style, theme) do
     style_map = normalize_style(style)
+    codes = []
 
-    # Use iolist for efficient string building
-    parts = []
-
-    # Add foreground color
-    parts =
+    # Foreground color
+    codes =
       case Map.get(style_map, :foreground) do
         nil ->
-          # Apply default theme color when no explicit foreground is set
-          default_color = get_default_foreground_color(theme)
-
-          case default_color do
-            "" -> parts
-            _ -> ["color: " <> default_color | parts]
+          case get_default_fg_ansi(theme) do
+            nil -> codes
+            code -> [code | codes]
           end
 
         color ->
-          css_color = resolve_color_value(color, theme)
-
-          case css_color do
-            "" -> parts
-            _ -> ["color: " <> css_color | parts]
+          case resolve_fg_ansi(color, theme) do
+            nil -> codes
+            code -> [code | codes]
           end
       end
 
-    # Add background color
-    parts =
+    # Background color
+    codes =
       case Map.get(style_map, :background) do
         nil ->
-          # Apply default theme background color when no explicit background is set
-          default_bg_color = get_default_background_color(theme)
-
-          case default_bg_color do
-            "" -> parts
-            _ -> ["background-color: " <> default_bg_color | parts]
+          case get_default_bg_ansi(theme) do
+            nil -> codes
+            code -> [code | codes]
           end
 
         color ->
-          css_color = resolve_background_color_value(color, theme)
-
-          case css_color do
-            "" -> parts
-            _ -> ["background-color: " <> css_color | parts]
+          case resolve_bg_ansi(color, theme) do
+            nil -> codes
+            code -> [code | codes]
           end
       end
 
-    # Add text attributes
-    parts =
+    # Text attributes
+    codes =
       if Map.get(style_map, :bold, false),
-        do: ["font-weight: bold" | parts],
-        else: parts
+        do: [@ansi_bold | codes],
+        else: codes
 
-    parts =
+    codes =
       if Map.get(style_map, :italic, false),
-        do: ["font-style: italic" | parts],
-        else: parts
+        do: [@ansi_italic | codes],
+        else: codes
 
-    parts =
+    codes =
       if Map.get(style_map, :underline, false),
-        do: ["text-decoration: underline" | parts],
-        else: parts
+        do: [@ansi_underline | codes],
+        else: codes
 
-    case parts do
+    case codes do
       [] -> ""
-      _ -> parts |> Enum.reverse() |> Enum.join("; ")
+      _ -> codes |> Enum.reverse() |> Enum.join("")
     end
   end
+
+  # Resolve foreground color to ANSI code
+  defp resolve_fg_ansi(color, theme) when is_atom(color) do
+    # Check theme first
+    theme_color = get_in(theme, [:foreground, color])
+
+    case theme_color do
+      nil ->
+        # Use standard ANSI color code
+        case Map.get(@fg_color_codes, color) do
+          nil -> nil
+          code -> "\e[#{code}m"
+        end
+
+      hex when is_binary(hex) ->
+        hex_to_ansi_fg(hex)
+    end
+  end
+
+  defp resolve_fg_ansi(%{r: r, g: g, b: b}, _theme) do
+    "\e[38;2;#{r};#{g};#{b}m"
+  end
+
+  defp resolve_fg_ansi(color, _theme)
+       when is_integer(color) and color >= 0 and color <= 255 do
+    "\e[38;5;#{color}m"
+  end
+
+  defp resolve_fg_ansi(color, _theme) when is_binary(color) do
+    hex_to_ansi_fg(color)
+  end
+
+  defp resolve_fg_ansi(_, _), do: nil
+
+  # Resolve background color to ANSI code
+  defp resolve_bg_ansi(color, theme) when is_atom(color) do
+    theme_color = get_in(theme, [:background, color])
+
+    case theme_color do
+      nil ->
+        case Map.get(@bg_color_codes, color) do
+          nil -> nil
+          code -> "\e[#{code}m"
+        end
+
+      hex when is_binary(hex) ->
+        hex_to_ansi_bg(hex)
+    end
+  end
+
+  defp resolve_bg_ansi(%{r: r, g: g, b: b}, _theme) do
+    "\e[48;2;#{r};#{g};#{b}m"
+  end
+
+  defp resolve_bg_ansi(color, _theme)
+       when is_integer(color) and color >= 0 and color <= 255 do
+    "\e[48;5;#{color}m"
+  end
+
+  defp resolve_bg_ansi(color, _theme) when is_binary(color) do
+    hex_to_ansi_bg(color)
+  end
+
+  defp resolve_bg_ansi(_, _), do: nil
+
+  # Get default foreground ANSI from theme
+  defp get_default_fg_ansi(theme) do
+    case get_in(theme, [:foreground, :default]) do
+      nil -> nil
+      hex when is_binary(hex) -> hex_to_ansi_fg(hex)
+      _ -> nil
+    end
+  end
+
+  # Get default background ANSI from theme
+  defp get_default_bg_ansi(theme) do
+    case get_in(theme, [:background, :default]) do
+      nil -> nil
+      hex when is_binary(hex) -> hex_to_ansi_bg(hex)
+      _ -> nil
+    end
+  end
+
+  # Convert hex color string to ANSI 24-bit foreground escape
+  defp hex_to_ansi_fg(hex) do
+    case parse_hex_color(hex) do
+      {:ok, r, g, b} -> "\e[38;2;#{r};#{g};#{b}m"
+      :error -> nil
+    end
+  end
+
+  # Convert hex color string to ANSI 24-bit background escape
+  defp hex_to_ansi_bg(hex) do
+    case parse_hex_color(hex) do
+      {:ok, r, g, b} -> "\e[48;2;#{r};#{g};#{b}m"
+      :error -> nil
+    end
+  end
+
+  # Parse "#RRGGBB" or "#RGB" hex color strings
+  defp parse_hex_color("#" <> hex), do: parse_hex_digits(hex)
+  defp parse_hex_color(hex) when is_binary(hex), do: parse_hex_digits(hex)
+
+  defp parse_hex_digits(
+         <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>>
+       ) do
+    with {r_val, ""} <- Integer.parse(r, 16),
+         {g_val, ""} <- Integer.parse(g, 16),
+         {b_val, ""} <- Integer.parse(b, 16) do
+      {:ok, r_val, g_val, b_val}
+    else
+      _ -> :error
+    end
+  end
+
+  defp parse_hex_digits(
+         <<r::binary-size(1), g::binary-size(1), b::binary-size(1)>>
+       ) do
+    with {r_val, ""} <- Integer.parse(r <> r, 16),
+         {g_val, ""} <- Integer.parse(g <> g, 16),
+         {b_val, ""} <- Integer.parse(b <> b, 16) do
+      {:ok, r_val, g_val, b_val}
+    else
+      _ -> :error
+    end
+  end
+
+  defp parse_hex_digits(_), do: :error
 
   defp normalize_style(%{__struct__: _} = style) do
     Map.from_struct(style)
@@ -364,93 +410,6 @@ defmodule Raxol.Terminal.Renderer do
 
   defp normalize_style(_style) do
     %{}
-  end
-
-  defp resolve_color_value(color, theme) when is_atom(color) do
-    # Basic color resolution with fallback to default color map
-    color_map = Map.get(theme, :foreground, %{})
-
-    case Map.get(color_map, color) do
-      nil ->
-        # Only use default colors if theme has some color configuration
-        # If theme is empty/minimal, return empty string to avoid unwanted defaults
-        case map_size(theme) > 0 and map_size(color_map) > 0 do
-          true -> get_default_color(color)
-          false -> ""
-        end
-
-      value ->
-        value
-    end
-  end
-
-  defp resolve_color_value(%{r: r, g: g, b: b}, _theme) do
-    "##{Integer.to_string(r, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(g, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(b, 16) |> String.pad_leading(2, "0")}"
-  end
-
-  defp resolve_color_value(color, _theme), do: to_string(color)
-
-  defp resolve_background_color_value(color, theme) when is_atom(color) do
-    # Background color resolution with fallback to default color map
-    color_map = Map.get(theme, :background, %{})
-
-    case Map.get(color_map, color) do
-      nil ->
-        # Only use default colors if theme has some color configuration
-        # If theme is empty/minimal, return empty string to avoid unwanted defaults
-        case map_size(theme) > 0 and map_size(color_map) > 0 do
-          true -> get_default_color(color)
-          false -> ""
-        end
-
-      value ->
-        value
-    end
-  end
-
-  defp resolve_background_color_value(%{r: r, g: g, b: b}, _theme) do
-    "##{Integer.to_string(r, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(g, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(b, 16) |> String.pad_leading(2, "0")}"
-  end
-
-  defp resolve_background_color_value(color, _theme), do: to_string(color)
-
-  defp get_default_color(color) do
-    default_colors = %{
-      red: "#FF0000",
-      green: "#00FF00",
-      blue: "#0000FF",
-      yellow: "#FFFF00",
-      cyan: "#00FFFF",
-      magenta: "#FF00FF",
-      white: "#FFFFFF",
-      black: "#000000",
-      bright_red: "#FF8080",
-      bright_green: "#80FF80",
-      bright_blue: "#8080FF",
-      bright_yellow: "#FFFF80",
-      bright_cyan: "#80FFFF",
-      bright_magenta: "#FF80FF",
-      bright_white: "#FFFFFF",
-      bright_black: "#808080"
-    }
-
-    Map.get(default_colors, color, "")
-  end
-
-  defp get_default_foreground_color(theme) do
-    # Get the default foreground color from theme
-    case get_in(theme, [:foreground, :default]) do
-      nil -> ""
-      color -> color
-    end
-  end
-
-  defp get_default_background_color(theme) do
-    # Get the default background color from theme
-    case get_in(theme, [:background, :default]) do
-      nil -> ""
-      color -> color
-    end
   end
 
   defp apply_font_settings(content, _font_settings), do: content
@@ -536,7 +495,6 @@ defmodule Raxol.Terminal.Renderer do
   Stops the renderer process.
   """
   def stop(_renderer) do
-    # Cleanup any resources if needed
     :ok
   end
 
@@ -586,7 +544,6 @@ defmodule Raxol.Terminal.Renderer do
 
   # Handle buffer manager PIDs (legacy support - deprecated after buffer consolidation)
   def get_content(manager_pid, _opts) when is_pid(manager_pid) do
-    # Buffer.Manager has been removed - return error for deprecated usage
     {:error, :deprecated_buffer_manager}
   end
 

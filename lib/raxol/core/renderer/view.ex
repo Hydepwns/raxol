@@ -611,9 +611,14 @@ defmodule Raxol.Core.Renderer.View do
       rendered_view = unquote(block)
 
       rendered_view
-      |> Map.merge(unquote(opts))
-      |> normalize_spacing()
+      |> Map.merge(Map.new(unquote(opts)))
+      |> Raxol.Core.Renderer.View.do_normalize_spacing()
     end
+  end
+
+  @doc false
+  def do_normalize_spacing(view) do
+    normalize_spacing(view)
   end
 
   defp normalize_spacing(view) do

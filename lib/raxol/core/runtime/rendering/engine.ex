@@ -309,7 +309,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       end)
 
     # Render the buffer using the Terminal Renderer
-    output_string = Raxol.Terminal.Renderer.render(updated_buffer)
+    renderer = Raxol.Terminal.Renderer.new(updated_buffer)
+    output_string = Raxol.Terminal.Renderer.render(renderer)
 
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Terminal output generated (length: #{String.length(output_string)})"

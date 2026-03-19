@@ -22,6 +22,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
               command_registry_table: nil,
               initial_commands: [],
               dispatcher_pid: nil,
+              # PID of the Terminal Driver
+              driver_pid: nil,
+              # PID of the Rendering Engine
+              rendering_engine_pid: nil,
               # Application's own model
               model: %{},
               # Flag to indicate Dispatcher is ready
@@ -74,7 +78,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     )
 
     case initialize_components(app_module, options) do
-      {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid} ->
+      {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid,
+       driver_pid, rendering_engine_pid} ->
         state =
           build_initial_state(
             app_module,
@@ -82,7 +87,9 @@ defmodule Raxol.Core.Runtime.Lifecycle do
             pm_pid,
             registry_table,
             dispatcher_pid,
-            initialized_model
+            initialized_model,
+            driver_pid,
+            rendering_engine_pid
           )
 
         log_successful_init(app_module, dispatcher_pid)
@@ -106,8 +113,12 @@ defmodule Raxol.Core.Runtime.Lifecycle do
              options,
              pm_pid,
              registry_table
-           ) do
-      {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid}
+           ),
+         {:ok, driver_pid} <- start_driver(dispatcher_pid),
+         {:ok, rendering_engine_pid} <-
+           start_rendering_engine(app_module, dispatcher_pid, options) do
+      {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid,
+       driver_pid, rendering_engine_pid}
     end
   end
 
@@ -117,7 +128,9 @@ defmodule Raxol.Core.Runtime.Lifecycle do
          pm_pid,
          registry_table,
          dispatcher_pid,
-         initialized_model
+         initialized_model,
+         driver_pid,
+         rendering_engine_pid
        ) do
     %State{
       app_module: app_module,
@@ -131,6 +144,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       command_registry_table: registry_table,
       initial_commands: Keyword.get(options, :initial_commands, []),
       dispatcher_pid: dispatcher_pid,
+      driver_pid: driver_pid,
+      rendering_engine_pid: rendering_engine_pid,
       model: initialized_model,
       dispatcher_ready: false,
       plugin_manager_ready: false
@@ -214,6 +229,52 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
+  defp start_driver(dispatcher_pid) do
+    case Raxol.Terminal.Driver.start_link(dispatcher_pid: dispatcher_pid) do
+      {:ok, driver_pid} ->
+        Log.info_with_context(
+          "[#{__MODULE__}] Terminal Driver started with PID: #{inspect(driver_pid)}"
+        )
+
+        {:ok, driver_pid}
+
+      {:error, reason} ->
+        Log.warning_with_context(
+          "[#{__MODULE__}] Terminal Driver failed to start: #{inspect(reason)}. Continuing without driver.",
+          %{}
+        )
+
+        {:ok, nil}
+    end
+  end
+
+  defp start_rendering_engine(app_module, dispatcher_pid, options) do
+    engine_opts = [
+      app_module: app_module,
+      dispatcher_pid: dispatcher_pid,
+      width: Keyword.get(options, :width, 80),
+      height: Keyword.get(options, :height, 24),
+      environment: Keyword.get(options, :environment, :terminal)
+    ]
+
+    case Raxol.Core.Runtime.Rendering.Engine.start_link(engine_opts) do
+      {:ok, engine_pid} ->
+        Log.info_with_context(
+          "[#{__MODULE__}] Rendering Engine started with PID: #{inspect(engine_pid)}"
+        )
+
+        {:ok, engine_pid}
+
+      {:error, reason} ->
+        Log.warning_with_context(
+          "[#{__MODULE__}] Rendering Engine failed to start: #{inspect(reason)}. Continuing without rendering engine.",
+          %{}
+        )
+
+        {:ok, nil}
+    end
+  end
+
   defp initialize_app_model(app_module, initial_model_args) do
     init_function_exported = function_exported?(app_module, :init, 1)
 
@@ -287,10 +348,23 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   @impl true
   def handle_info(:render_needed, state) do
     Raxol.Core.Runtime.Log.debug(
-      "[#{__MODULE__}] Received :render_needed. Passing through or logging."
+      "[#{__MODULE__}] Received :render_needed. Forwarding to Rendering Engine."
     )
 
+    if state.rendering_engine_pid && Process.alive?(state.rendering_engine_pid) do
+      GenServer.cast(state.rendering_engine_pid, :render_frame)
+    end
+
     {:noreply, state}
+  end
+
+  @impl true
+  def handle_info(:quit_runtime, state) do
+    Raxol.Core.Runtime.Log.info_with_context(
+      "[#{__MODULE__}] Received :quit_runtime. Shutting down."
+    )
+
+    handle_cast(:shutdown, state)
   end
 
   @impl true
@@ -304,19 +378,21 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   defp maybe_process_initial_commands(%State{} = state) do
-    ready_to_process =
-      state.dispatcher_ready && state.plugin_manager_ready &&
-        Enum.any?(state.initial_commands)
+    both_ready = state.dispatcher_ready && state.plugin_manager_ready
 
-    handle_initial_commands_processing(ready_to_process, state)
-  end
+    state =
+      if both_ready && Enum.any?(state.initial_commands) do
+        process_initial_commands(state)
+      else
+        log_waiting_status(state)
+        state
+      end
 
-  defp handle_initial_commands_processing(true, state) do
-    process_initial_commands(state)
-  end
+    # Trigger initial render once both subsystems are ready
+    if both_ready do
+      trigger_initial_render(state)
+    end
 
-  defp handle_initial_commands_processing(false, state) do
-    log_waiting_status(state)
     state
   end
 
@@ -386,29 +462,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       "[#{__MODULE__}] Received :shutdown cast for #{inspect(state.app_name)}. Stopping dependent processes..."
     )
 
-    case state.dispatcher_pid do
-      nil ->
-        :ok
-
-      pid ->
-        Raxol.Core.Runtime.Log.info_with_context(
-          "[#{__MODULE__}] Stopping Dispatcher PID: #{inspect(pid)}"
-        )
-
-        GenServer.stop(pid, :shutdown, :infinity)
-    end
-
-    case state.plugin_manager do
-      nil ->
-        :ok
-
-      pid ->
-        Raxol.Core.Runtime.Log.info_with_context(
-          "[#{__MODULE__}] Stopping PluginManager PID: #{inspect(pid)}"
-        )
-
-        GenServer.stop(pid, :shutdown, :infinity)
-    end
+    stop_process(state.rendering_engine_pid, "Rendering Engine")
+    stop_process(state.driver_pid, "Terminal Driver")
+    stop_process(state.dispatcher_pid, "Dispatcher")
+    stop_process(state.plugin_manager, "PluginManager")
 
     {:stop, :normal, state}
   end
@@ -454,6 +511,29 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     handle_registry_table_cleanup(has_registry_table, state)
 
     :ok
+  end
+
+  defp trigger_initial_render(%State{rendering_engine_pid: pid})
+       when is_pid(pid) do
+    if Process.alive?(pid) do
+      GenServer.cast(pid, :render_frame)
+    end
+  end
+
+  defp trigger_initial_render(_state), do: :ok
+
+  defp stop_process(nil, _label), do: :ok
+
+  defp stop_process(pid, label) when is_pid(pid) do
+    if Process.alive?(pid) do
+      Raxol.Core.Runtime.Log.info_with_context(
+        "[#{__MODULE__}] Stopping #{label} PID: #{inspect(pid)}"
+      )
+
+      GenServer.stop(pid, :shutdown, 5_000)
+    end
+  rescue
+    _ -> :ok
   end
 
   # Private helper functions

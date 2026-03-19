@@ -177,6 +177,25 @@ defmodule Raxol do
   end
 
   @doc """
+  Starts and links a Raxol application lifecycle manager.
+
+  This is the standard OTP entry point for supervised processes.
+  Delegates to `Raxol.Core.Runtime.Lifecycle.start_link/2`.
+
+  ## Parameters
+
+  * `app` - Module implementing the `Raxol.Core.Runtime.Application` behaviour
+  * `opts` - Options passed to the lifecycle manager
+
+  ## Returns
+
+  `{:ok, pid}` on success, `{:error, reason}` on failure.
+  """
+  def start_link(app, opts \\ []) do
+    Raxol.Core.Runtime.Lifecycle.start_link(app, opts)
+  end
+
+  @doc """
   Gracefully stops a running Raxol application.
 
   This function can be called from within your application to exit gracefully.
