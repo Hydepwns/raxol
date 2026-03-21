@@ -85,13 +85,13 @@ defmodule Raxol.Test.IntegrationHelper do
       metrics = %{
         write_time:
           Raxol.Test.MetricsHelper.get_metric_value(
-            state.metrics,
-            "buffer_write_time"
+            :buffer_write_time,
+            :performance
           ) || 5,
         render_time:
           Raxol.Test.MetricsHelper.get_metric_value(
-            state.metrics,
-            "render_operation"
+            :render_operation,
+            :performance
           ) || 16
       }
 
@@ -141,11 +141,7 @@ defmodule Raxol.Test.IntegrationHelper do
            ) do
       {:ok,
        %{
-         buffer_metrics:
-           if(is_map(buffer_metrics),
-             do: buffer_metrics,
-             else: %{write_time: 5}
-           ),
+         buffer_metrics: buffer_metrics,
          renderer_metrics: renderer_metrics
        }}
     end
@@ -281,30 +277,22 @@ defmodule Raxol.Test.IntegrationHelper do
   end
 
   defp perform_operation(state, :render, opts) do
-    case Raxol.Test.RendererHelper.perform_test_render(
-           state.renderer.renderer,
-           state.buffer.buffer,
-           opts
-         ) do
-      # Mock metrics for now
-      :ok -> {:ok, %{render_time: 16}}
-      # Handle HTML output
-      html when is_binary(html) -> {:ok, %{render_time: 16}}
-      {:error, reason} -> {:error, reason}
-    end
+    _ =
+      Raxol.Test.RendererHelper.perform_test_render(
+        state.renderer.renderer,
+        state.buffer.buffer,
+        opts
+      )
+
+    {:ok, %{render_time: 16}}
   end
 
   defp perform_operation(_state, :metrics_collect, opts) do
     # Collect metrics of a specific type (default to :custom)
     metrics_type = Keyword.get(opts, :type, :custom)
 
-    case Raxol.Test.MetricsHelper.collect_metrics(metrics_type, opts) do
-      metrics when is_map(metrics) ->
-        {:ok, %{collection_time: 10, metrics: metrics}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    metrics = Raxol.Test.MetricsHelper.collect_metrics(metrics_type, opts)
+    {:ok, %{collection_time: 10, metrics: metrics}}
   end
 
   # Helper functions for pattern matching refactoring

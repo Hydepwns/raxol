@@ -330,7 +330,7 @@ defmodule Raxol.Core do
   {:ok, stats} = Raxol.Core.get_performance_stats()
   ```
   """
-  @spec get_performance_stats() :: {:ok, map()}
+  @spec get_performance_stats() :: {:ok, Performance.stats()}
   def get_performance_stats do
     Performance.get_stats()
   end
@@ -501,7 +501,7 @@ defmodule Raxol.Core do
            %{
              accessibility: boolean(),
              colors: 0 | 256,
-             performance: map(),
+             performance: Performance.stats(),
              terminal: binary(),
              version: binary()
            }}

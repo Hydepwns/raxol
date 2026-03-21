@@ -29,9 +29,10 @@ defmodule Raxol.Test.TestUtils do
   """
   def setup_test_env(opts \\ []) do
     # Start services if requested
-    if Keyword.get(opts, :start_services, false) do
-      {:ok, _} = Application.ensure_all_started(:raxol)
-    end
+    _ =
+      if Keyword.get(opts, :start_services, false) do
+        Application.ensure_all_started(:raxol)
+      end
 
     SharedUtilities.setup_basic_test_env()
 

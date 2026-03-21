@@ -15,6 +15,17 @@ defmodule Raxol.Core.Performance do
 
   @table __MODULE__
 
+  @typedoc "Performance statistics map"
+  @type stats :: %{
+          uptime_ms: number(),
+          frame_count: non_neg_integer(),
+          avg_frame_time_ms: float(),
+          fps: float(),
+          memory_mb: float(),
+          samples: non_neg_integer(),
+          initialized: boolean()
+        }
+
   @doc """
   Initializes the performance monitoring system.
 
@@ -30,9 +41,10 @@ defmodule Raxol.Core.Performance do
   @spec init(keyword()) :: :ok
   def init(options \\ []) do
     # Create ETS table if it doesn't exist
-    if :ets.whereis(@table) == :undefined do
-      :ets.new(@table, [:named_table, :public, :set])
-    end
+    _ =
+      if :ets.whereis(@table) == :undefined do
+        :ets.new(@table, [:named_table, :public, :set])
+      end
 
     :ets.insert(@table, {:start_time, System.monotonic_time(:millisecond)})
     :ets.insert(@table, {:max_samples, Keyword.get(options, :max_samples, 100)})
@@ -55,7 +67,7 @@ defmodule Raxol.Core.Performance do
     - `:fps` - Estimated frames per second
     - `:memory_mb` - Current memory usage in MB
   """
-  @spec get_stats() :: {:ok, map()}
+  @spec get_stats() :: {:ok, stats()}
   def get_stats do
     stats =
       if :ets.whereis(@table) != :undefined do

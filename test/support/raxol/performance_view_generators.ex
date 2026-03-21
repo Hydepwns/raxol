@@ -78,11 +78,7 @@ defmodule Raxol.Test.PerformanceViewGenerators do
         %{format: :sparkline} = col_spec ->
           key_for_sparkline = Map.get(col_spec, :key, :sales)
 
-          sparkline_width =
-            case is_map(col_spec) do
-              true -> Map.get(col_spec, :width, 12)
-              false -> 12
-            end
+          sparkline_width = Map.get(col_spec, :width, 12)
 
           Map.merge(col_spec, %{
             key: key_for_sparkline,
@@ -96,19 +92,17 @@ defmodule Raxol.Test.PerformanceViewGenerators do
             end
           })
 
-        col_spec ->
-          Map.put_new_lazy(col_spec, :format, fn data_for_cell ->
-            to_string(data_for_cell)
-          end)
+        %{} = col_spec ->
+          Map.put_new(col_spec, :format, &to_string/1)
       end)
 
     table_view =
-      Table.new(
+      Table.new(%{
         columns: processed_table_columns,
         data: actual_table_data,
         border: :single,
         striped: Keyword.get(opts, :table_striped, true)
-      )
+      })
 
     charts_view_children =
       for _i <- 1..num_charts do
@@ -165,11 +159,11 @@ defmodule Raxol.Test.PerformanceViewGenerators do
   end
 
   def create_simple_table(rows, columns) do
-    Table.new(
+    Table.new(%{
       columns: PerformanceTestData.generate_columns(columns),
       data: PerformanceTestData.generate_data(rows, columns),
       border: :single
-    )
+    })
   end
 
   def update_some_data(data, index) do

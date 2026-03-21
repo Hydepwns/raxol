@@ -34,11 +34,11 @@ defmodule Raxol.I18nTestHelpers do
     result =
       Raxol.Core.ErrorHandling.ensure_cleanup(
         fn ->
-          Gettext.put_locale(locale)
+          _ = Gettext.put_locale(locale)
           fun.()
         end,
         fn ->
-          Gettext.put_locale(original_locale)
+          _ = Gettext.put_locale(original_locale)
         end
       )
 
@@ -57,7 +57,10 @@ defmodule Raxol.I18nTestHelpers do
   """
   def assert_translation_exists(locale, key)
       when is_binary(locale) and is_binary(key) do
-    translated = RaxolWeb.Gettext.t(key, %{}, locale: locale, default: key)
+    translated =
+      Gettext.with_locale(RaxolWeb.Gettext, locale, fn ->
+        RaxolWeb.Gettext.t(key)
+      end)
 
     assert translated != key,
            # {key}" to exist for locale "#{locale}", but it doesn't"
@@ -73,7 +76,10 @@ defmodule Raxol.I18nTestHelpers do
   """
   def assert_translation(locale, key, expected)
       when is_binary(locale) and is_binary(key) do
-    actual = RaxolWeb.Gettext.t(key, %{}, locale)
+    actual =
+      Gettext.with_locale(RaxolWeb.Gettext, locale, fn ->
+        RaxolWeb.Gettext.t(key)
+      end)
 
     assert actual == expected,
            # {key}" in "#{locale}" to be "#{expected}", but got "#{actual}""
@@ -142,7 +148,11 @@ defmodule Raxol.I18nTestHelpers do
 
     missing_keys =
       Enum.filter(essential_keys, fn key ->
-        translated = RaxolWeb.Gettext.t(key, %{}, locale: locale, default: key)
+        translated =
+          Gettext.with_locale(RaxolWeb.Gettext, locale, fn ->
+            RaxolWeb.Gettext.t(key)
+          end)
+
         translated == key
       end)
 
@@ -162,8 +172,7 @@ defmodule Raxol.I18nTestHelpers do
     with_locale(locale, fn ->
       key = "accessibility.screen_reader.#{announcement_type}"
 
-      _raw_translation =
-        RaxolWeb.Gettext.t(key, %{}, locale: locale, default: key)
+      _raw_translation = RaxolWeb.Gettext.t(key)
 
       formatted = RaxolWeb.Gettext.t(key, bindings)
 
@@ -186,7 +195,7 @@ defmodule Raxol.I18nTestHelpers do
       when is_binary(locale) and is_binary(component_id) and
              is_list(label_types) do
     with_locale(locale, fn ->
-      metadata = get_mock_element_metadata(component_id) || %{}
+      metadata = get_mock_element_metadata(component_id)
 
       metadata =
         metadata
@@ -224,16 +233,15 @@ defmodule Raxol.I18nTestHelpers do
     with_locale(rtl_locale, fun)
   end
 
-  defp validate_binding_values(bindings, formatted, _key)
-       when map_size(bindings) > 0 do
-    Enum.each(bindings, fn {_key, value} ->
-      assert String.contains?(formatted, to_string(value)),
-             # {value}" for key "#{key}". Formatted: "#{formatted}""
-             "Screen reader announcement doesn't contain binding value "
-    end)
+  defp validate_binding_values(bindings, formatted, _key) do
+    unless Enum.empty?(bindings) do
+      Enum.each(bindings, fn {_key, value} ->
+        assert String.contains?(formatted, to_string(value)),
+               # {value}" for key "#{key}". Formatted: "#{formatted}""
+               "Screen reader announcement doesn't contain binding value "
+      end)
+    end
   end
-
-  defp validate_binding_values(_bindings, _formatted, _key), do: :ok
 
   defp compare_with_default_locale(
          locale,
@@ -254,7 +262,7 @@ defmodule Raxol.I18nTestHelpers do
     default_label =
       with_locale(default_locale, fn ->
         default_metadata =
-          get_mock_element_metadata(component_id) || %{}
+          get_mock_element_metadata(component_id)
 
         Map.get(default_metadata, label_type)
       end)

@@ -106,10 +106,10 @@ defmodule Raxol.Test.RendererHelper do
       iex> render_test_content(renderer, buffer)
       :ok
   """
-  def render_test_content(renderer, buffer, opts \\ []) do
+  def render_test_content(renderer, buffer, _opts \\ []) do
     case buffer do
       nil -> {:error, :invalid_buffer}
-      _ -> Raxol.Terminal.Renderer.render(renderer, buffer, opts)
+      _ -> Raxol.Terminal.Renderer.render(renderer)
     end
   end
 
@@ -189,33 +189,22 @@ defmodule Raxol.Test.RendererHelper do
     result = render_test_content(renderer, buffer, opts)
 
     # Handle both :ok and HTML content as successful results
+    duration = System.monotonic_time(:millisecond) - start_time
+
     case result do
-      :ok ->
-        duration = System.monotonic_time(:millisecond) - start_time
-
-        Raxol.Test.MetricsHelper.record_test_metric(
-          "render_operation",
-          :performance,
-          duration,
-          tags: %{mode: Keyword.get(opts, :mode, :gpu)}
-        )
-
-        :ok
-
-      html when is_binary(html) ->
-        duration = System.monotonic_time(:millisecond) - start_time
-
-        Raxol.Test.MetricsHelper.record_test_metric(
-          "render_operation",
-          :performance,
-          duration,
-          tags: %{mode: Keyword.get(opts, :mode, :gpu)}
-        )
-
-        :ok
-
       {:error, reason} ->
         {:error, reason}
+
+      _output ->
+        _ =
+          Raxol.Test.MetricsHelper.record_test_metric(
+            :render_operation,
+            :performance,
+            duration,
+            tags: %{mode: Keyword.get(opts, :mode, :gpu)}
+          )
+
+        :ok
     end
   end
 
@@ -242,9 +231,8 @@ defmodule Raxol.Test.RendererHelper do
         start_time = System.monotonic_time(:millisecond)
 
         case render_test_content(renderer, buffer, opts) do
-          :ok -> :ok
-          html when is_binary(html) -> :ok
           {:error, reason} -> throw({:error, reason})
+          _output -> :ok
         end
 
         System.monotonic_time(:millisecond) - start_time
@@ -256,15 +244,16 @@ defmodule Raxol.Test.RendererHelper do
       max_time: Enum.max(times)
     }
 
-    Raxol.Test.MetricsHelper.record_test_metric(
-      "render_performance",
-      :performance,
-      metrics.avg_time,
-      tags: %{
-        mode: Keyword.get(opts, :mode, :gpu),
-        iterations: iterations
-      }
-    )
+    _ =
+      Raxol.Test.MetricsHelper.record_test_metric(
+        :render_performance,
+        :performance,
+        metrics.avg_time,
+        tags: %{
+          mode: Keyword.get(opts, :mode, :gpu),
+          iterations: iterations
+        }
+      )
 
     {:ok, metrics}
   end

@@ -65,12 +65,8 @@ defmodule Raxol.Test.MockDB do
     %{id: __MODULE__, start: {__MODULE__, :start_link, [[]]}}
   end
 
-  def start_link(config) do
-    case Task.start_link(fn -> Process.sleep(:infinity) end) do
-      {:ok, pid} -> {:ok, pid, config}
-      {:error, {:already_started, pid}} -> {:ok, pid, config}
-      other -> other
-    end
+  def start_link(_config) do
+    Task.start_link(fn -> Process.sleep(:infinity) end)
   end
 
   # Ecto.Adapter.Queryable callbacks
@@ -78,8 +74,7 @@ defmodule Raxol.Test.MockDB do
   def prepare(_operation, query), do: {:cache, query, query}
 
   def execute(_meta, _query_cache, _query_params, _opts, _log) do
-    # Return {:ok, num_rows, result}
-    {:ok, 0, []}
+    {0, []}
   end
 
   def stream(_meta, _query_cache, _query_params, _opts, _log) do
@@ -121,8 +116,7 @@ defmodule Raxol.Test.MockDB do
         Enum.map(returning, fn {_key, index} -> {index, nil} end)
       end)
 
-    # Return {:ok, num_inserted, returned_values}
-    {:ok, length(rows), returned_rows}
+    {length(rows), returned_rows}
   end
 
   def update(_meta, _schema_meta, _fields, _filters, returning, _log) do
@@ -139,7 +133,7 @@ defmodule Raxol.Test.MockDB do
   end
 
   def execute_ddl(_command, _opts, _log) do
-    :ok
+    {:ok, []}
   end
 
   def lock_for_migrations(_meta, _config, _lock) do

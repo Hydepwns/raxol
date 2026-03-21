@@ -6,8 +6,8 @@
   # This file contains patterns for dialyzer warnings that are intentionally
   # suppressed. Each section documents why the suppression exists.
   #
-  # Total suppressed: ~53 warnings
-  # Last updated: 2025-02
+  # Total suppressed: ~49 warnings
+  # Last updated: 2026-03
   #
   # ================================================================================
 
@@ -111,19 +111,6 @@
   ~r"consistency_checker\.ex:\d+:\d+:pattern_match The pattern can never match",
 
   # ------------------------------------------------------------------------------
-  # PROTOCOL FALLBACK IMPLEMENTATIONS (for: Any)
-  # ------------------------------------------------------------------------------
-  # Protocol specs define the contract that real implementations must follow.
-  # The `for: Any` fallback implementations return minimal/default values like
-  # `%{}` or `:stopped`, which are narrower than the full spec allows.
-  #
-  # Dialyzer only sees these fallback implementations, not the real ones that
-  # implement the full contract. These warnings are false positives:
-  # - extra_range: spec allows {:ok, _} | {:error, _} but fallback only returns one
-  # - contract_supertype: spec is map() but fallback returns literal %{}
-  ~r"core_protocols\.ex:\d+:(extra_range|contract_supertype)",
-
-  # ------------------------------------------------------------------------------
   # SAFE SUPERTYPE SPECS (returning narrower types than declared)
   # ------------------------------------------------------------------------------
   # These functions return more specific types than their specs declare.
@@ -136,5 +123,18 @@
   # format.ex - new() returns struct with specific default values
   ~r"beam_analyzer\.ex:\d+:contract_supertype",
   ~r"capability_detector\.ex:\d+:contract_supertype",
-  ~r"format\.ex:\d+:contract_supertype"
+  ~r"format\.ex:\d+:contract_supertype",
+
+  # ------------------------------------------------------------------------------
+  # TEST SUPPORT HELPERS (macro artifacts and harmless patterns)
+  # ------------------------------------------------------------------------------
+  # test_utils.ex - ExUnit.CaseTemplate macro expansion generates a false/true
+  #   branch that dialyzer correctly identifies as unreachable
+  # dependency_manager_test_helper.ex - Stub functions return %{} or [] which
+  #   are narrower than the spec's map()/list() (safe supertype)
+  # assertion_helpers.ex - assert_receive macro return value is intentionally
+  #   unmatched (standard ExUnit pattern)
+  ~r"test_utils\.ex:\d+:pattern_match",
+  ~r"dependency_manager_test_helper\.ex:\d+:contract_supertype",
+  ~r"assertion_helpers\.ex:\d+:unmatched_return"
 ]

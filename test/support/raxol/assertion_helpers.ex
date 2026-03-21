@@ -103,7 +103,7 @@ defmodule Raxol.Test.AssertionHelpers do
   """
   def assert_theme_consistent(component, themes) do
     Enum.each(themes, fn theme ->
-      apply_theme(theme)
+      _ = apply_theme(theme)
       assert_receive {:theme_changed, ^theme}, 100
       output = capture_render(component)
 

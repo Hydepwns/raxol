@@ -591,16 +591,17 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
             storage_pid = Map.get(cluster.storage_pids, target_node)
 
             if storage_pid && Process.alive?(storage_pid) do
-              DistributedSessionStorage.store(
-                storage_pid,
-                session_id,
-                session_data,
-                %{}
-              )
+              _ =
+                DistributedSessionStorage.store(
+                  storage_pid,
+                  session_id,
+                  session_data,
+                  %{}
+                )
 
               Process.sleep(:rand.uniform(100))
-              DistributedSessionStorage.get(storage_pid, session_id)
-              DistributedSessionStorage.delete(storage_pid, session_id)
+              _ = DistributedSessionStorage.get(storage_pid, session_id)
+              _ = DistributedSessionStorage.delete(storage_pid, session_id)
             end
           end)
         end
@@ -671,12 +672,13 @@ defmodule Raxol.Test.DistributedSessionTestHelper do
       primary_replicator =
         Map.get(cluster.replicator_pids, cluster.primary_node)
 
-      DistributedSessionStorage.store(
-        primary_storage,
-        session_id,
-        session_data,
-        %{}
-      )
+      _ =
+        DistributedSessionStorage.store(
+          primary_storage,
+          session_id,
+          session_data,
+          %{}
+        )
 
       SessionReplicator.replicate_session(
         primary_replicator,
