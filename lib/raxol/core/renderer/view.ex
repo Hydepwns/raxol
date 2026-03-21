@@ -555,6 +555,67 @@ defmodule Raxol.Core.Renderer.View do
   end
 
   @doc """
+  Creates a split pane layout that distributes space between children by ratio.
+
+  ## Examples
+
+      View.split :horizontal, ratio: {1, 2} do
+        [left_panel, right_panel]
+      end
+
+      View.split :vertical do
+        [top, bottom]
+      end
+  """
+  defmacro split(direction, opts, do: block) do
+    quote do
+      Raxol.UI.Layout.SplitPane.new(
+        direction: unquote(direction),
+        ratio: Keyword.get(unquote(opts), :ratio, {1, 1}),
+        min_size: Keyword.get(unquote(opts), :min_size, 5),
+        id: Keyword.get(unquote(opts), :id),
+        children: unquote(block)
+      )
+    end
+  end
+
+  defmacro split(direction, do: block) do
+    quote do
+      Raxol.UI.Layout.SplitPane.new(
+        direction: unquote(direction),
+        children: unquote(block)
+      )
+    end
+  end
+
+  @doc """
+  Creates a split pane from a named preset.
+
+  ## Presets
+
+    * `:sidebar` - Horizontal, ratio `{1, 3}`
+    * `:dashboard` - Horizontal outer `{1, 3}` with vertical inner right `{3, 1}`
+    * `:triple` - Horizontal 3-pane, ratio `{1, 1, 1}`
+    * `:stacked` - Vertical 2-pane, ratio `{1, 1}`
+
+  ## Examples
+
+      View.split_layout :sidebar do
+        [sidebar, main_content]
+      end
+  """
+  defmacro split_layout(preset, do: block) do
+    quote do
+      Raxol.UI.Layout.SplitPane.from_preset(
+        unquote(preset),
+        unquote(block)
+      )
+    end
+  end
+
+  defdelegate split_pane(opts \\ []), to: Raxol.UI.Layout.SplitPane, as: :new
+
+  @doc """
   Creates a button element.
 
   ## Options

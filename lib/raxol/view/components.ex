@@ -330,6 +330,22 @@ defmodule Raxol.View.Components do
   end
 
   @doc """
+  Creates a split pane layout component.
+
+  ## Options
+
+    * `:direction` - `:horizontal` or `:vertical` (default `:horizontal`)
+    * `:ratio` - Tuple for space distribution (default `{1, 1}`)
+    * `:min_size` - Minimum pane dimension (default `5`)
+    * `:id` - Optional identifier
+    * `:children` - Child elements (one per pane)
+  """
+  @spec split_pane(keyword() | map()) :: map()
+  def split_pane(opts \\ []) do
+    Raxol.UI.Layout.SplitPane.new(opts)
+  end
+
+  @doc """
   Helper to wrap content in a styled span.
   """
   @spec span(binary(), keyword()) :: map()

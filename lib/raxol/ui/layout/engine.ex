@@ -19,6 +19,7 @@ defmodule Raxol.UI.Layout.Engine do
     Inputs,
     Panels,
     Responsive,
+    SplitPane,
     Table
   }
 
@@ -212,6 +213,10 @@ defmodule Raxol.UI.Layout.Engine do
     checkbox_elements ++ acc
   end
 
+  def process_element(%{type: :split_pane} = split, space, acc) do
+    SplitPane.process(split, space, acc)
+  end
+
   def process_element(%{type: :table} = table_element, space, acc) do
     # Delegate table measurement and positioning to the dedicated module
     Table.measure_and_position(table_element, space, acc)
@@ -268,6 +273,9 @@ defmodule Raxol.UI.Layout.Engine do
             space,
             current_acc
           )
+
+        %{type: :split_pane} = split ->
+          SplitPane.process(split, space, current_acc)
 
         _ ->
           # For non-container elements, process in the same space
@@ -334,7 +342,8 @@ defmodule Raxol.UI.Layout.Engine do
              :flex,
              :css_grid,
              :responsive,
-             :responsive_grid
+             :responsive_grid,
+             :split_pane
            ] ->
         measure_container_element(type, element, available_space)
 
@@ -372,6 +381,9 @@ defmodule Raxol.UI.Layout.Engine do
 
   defp measure_container_element(:responsive_grid, element, available_space),
     do: Responsive.measure_responsive(element, available_space)
+
+  defp measure_container_element(:split_pane, element, available_space),
+    do: SplitPane.measure_split_pane(element, available_space)
 
   defp measure_view(element, available_space) do
     %{type: :column, children: Map.get(element, :children, [])}
