@@ -254,20 +254,20 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
     test "renders input box with text" do
       state = create_component_state(%{value: "Hello"})
       elements = TextInput.render(state, %{})
-      assert elements.text == "Hello"
-      assert elements.type == :text_input
+      assert elements.content == "Hello"
+      assert elements.type == :text
     end
 
     test "renders placeholder when value is empty" do
       state = create_component_state(%{placeholder: "Type here"})
       elements = TextInput.render(state, %{})
-      assert elements.text == "Type here"
+      assert elements.content == "Type here"
     end
 
     test "renders password input as masked" do
       state = create_component_state(%{value: "secret", mask_char: "*"})
       elements = TextInput.render(state, %{})
-      assert elements.text == "******"
+      assert elements.content == "******"
     end
 
     test "renders cursor when focused" do

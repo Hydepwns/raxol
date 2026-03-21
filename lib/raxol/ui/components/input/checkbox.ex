@@ -8,7 +8,6 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   """
 
   alias Raxol.Core.Events.Event
-  alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
 
   @behaviour Raxol.UI.Components.Base.Component
@@ -175,14 +174,21 @@ defmodule Raxol.UI.Components.Input.Checkbox do
       |> Enum.reject(fn {_k, v} -> is_nil(v) or v == false end)
       |> Enum.into(%{})
 
-    Element.new(
-      :hbox,
-      Map.merge(%{style: attrs}, extra_attrs),
-      do: [
-        Element.new(:text, %{id: "#{state.id}-check", text: check_char}),
-        Element.new(:text, %{id: "#{state.id}-label", text: " " <> label_text})
+    %{
+      type: :row,
+      style: attrs,
+      children: [
+        Raxol.View.Components.text(
+          id: "#{state.id}-check",
+          content: check_char
+        ),
+        Raxol.View.Components.text(
+          id: "#{state.id}-label",
+          content: " " <> label_text
+        )
       ]
-    )
+    }
+    |> Map.merge(extra_attrs)
   end
 
   defp get_check_character(true), do: "[x]"

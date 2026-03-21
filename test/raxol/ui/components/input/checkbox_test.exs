@@ -73,81 +73,48 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
 
     test "renders unchecked checkbox" do
       {:ok, state} = Checkbox.init(label: "Option")
-      # Render requires state and context
-      hbox_element = Checkbox.render(state, default_context())
+      row_element = Checkbox.render(state, default_context())
 
-      # Check the hbox structure using struct field access
-      assert hbox_element.tag == :hbox
-      assert length(hbox_element.children) == 2
+      assert row_element.type == :row
+      assert length(row_element.children) == 2
 
-      # Check the checkmark text element using struct field access
-      check_element = Enum.at(hbox_element.children, 0)
-      assert check_element.tag == :text
-      # Access text from attributes
-      text_attr =
-        Enum.find(check_element.attributes, fn {key, _} -> key == :text end)
+      check_element = Enum.at(row_element.children, 0)
+      assert check_element.type == :text
+      assert check_element.content == "[ ]"
 
-      assert text_attr == {:text, "[ ]"}
-
-      # Check the label text element using struct field access
-      label_element = Enum.at(hbox_element.children, 1)
-      assert label_element.tag == :text
-      # Access text from attributes
-      text_attr =
-        Enum.find(label_element.attributes, fn {key, _} -> key == :text end)
-
-      assert text_attr == {:text, " Option"}
+      label_element = Enum.at(row_element.children, 1)
+      assert label_element.type == :text
+      assert label_element.content == " Option"
     end
 
     test "renders checked checkbox" do
       {:ok, state} = Checkbox.init(label: "Option", checked: true)
-      hbox_element = Checkbox.render(state, default_context())
+      row_element = Checkbox.render(state, default_context())
 
-      # Check the hbox structure using struct field access
-      assert hbox_element.tag == :hbox
-      assert length(hbox_element.children) == 2
+      assert row_element.type == :row
+      assert length(row_element.children) == 2
 
-      # Check the checkmark text element using struct field access
-      check_element = Enum.at(hbox_element.children, 0)
-      assert check_element.tag == :text
-      # Access text from attributes
-      text_attr =
-        Enum.find(check_element.attributes, fn {key, _} -> key == :text end)
+      check_element = Enum.at(row_element.children, 0)
+      assert check_element.type == :text
+      assert check_element.content == "[x]"
 
-      assert text_attr == {:text, "[x]"}
-
-      # Check the label text element using struct field access
-      label_element = Enum.at(hbox_element.children, 1)
-      assert label_element.tag == :text
-      # Access text from attributes
-      text_attr =
-        Enum.find(label_element.attributes, fn {key, _} -> key == :text end)
-
-      assert text_attr == {:text, " Option"}
+      label_element = Enum.at(row_element.children, 1)
+      assert label_element.type == :text
+      assert label_element.content == " Option"
     end
 
     test "renders disabled checkbox with disabled style" do
-      # Note: Now that render uses the theme, we expect the theme's
-      # disabled style (e.g., disabled_fg) to be applied.
       {:ok, state} =
         Checkbox.init(
           label: "Option",
           disabled: true
-          # No explicit style needed here unless overriding theme
         )
 
-      hbox_element = Checkbox.render(state, default_context())
+      row_element = Checkbox.render(state, default_context())
 
-      # Check basic structure using struct field access
-      assert hbox_element.tag == :hbox
-      assert length(hbox_element.children) == 2
-
-      # Check that the style applied to the hbox reflects the disabled state
-      # Access style from attributes
-      style_attr =
-        Enum.find(hbox_element.attributes, fn {key, _} -> key == :style end)
-
-      assert style_attr == {:style, %{fg: :gray, bg: :default}}
+      assert row_element.type == :row
+      assert length(row_element.children) == 2
+      assert row_element.style == %{fg: :gray, bg: :default}
     end
   end
 

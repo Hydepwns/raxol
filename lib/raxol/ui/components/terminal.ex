@@ -25,8 +25,7 @@ defmodule Raxol.UI.Components.Terminal do
 
   require Raxol.Core.Runtime.Log
 
-  # Require view macros
-  # require Raxol.View.Elements  # Removed
+  # Uses View.Components for consistent render return format
 
   # Define state struct
   defstruct id: nil,
@@ -100,38 +99,22 @@ defmodule Raxol.UI.Components.Terminal do
   @doc "Renders the Terminal component, displaying the buffer as lines."
   @impl Raxol.UI.Components.Base.Component
   def render(state, %{} = _props) do
-    # Generate label elements
     label_elements =
       Enum.map(state.buffer, fn line_content ->
-        # Build label element with attrs as a map
-        %{type: :label, attrs: %{content: line_content}}
+        %{type: :label, content: line_content}
       end)
 
-    # Create column element map explicitly
-    column_element = %{
-      type: :column,
-      # Assuming no specific attrs for column here
-      attrs: [],
-      # Assign the list of labels
-      children: label_elements
-    }
-
-    # Create box element map explicitly, using column as child
-    box_element = %{
+    %{
       type: :box,
-      # Make attrs a map instead of keyword list
-      attrs: %{
-        id: Map.get(state, :id, nil),
-        width: state.width,
-        height: state.height,
-        style: state.style
-      },
-      # Assign the column map
-      children: column_element
+      id: state.id,
+      width: state.width,
+      height: state.height,
+      style: state.style,
+      children: %{
+        type: :column,
+        children: label_elements
+      }
     }
-
-    # Return the final element structure
-    box_element
   end
 
   @doc """

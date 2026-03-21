@@ -153,8 +153,8 @@ defmodule Raxol.UI.Components.Input.TextInput do
       Map.merge(state.theme[:input] || %{}, state.style[:input] || %{})
 
     %{
-      type: :text_input,
-      text: display_text,
+      type: :text,
+      content: display_text,
       cursor_pos: state.cursor_pos,
       focused: state.focused,
       style: merged_style

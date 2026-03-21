@@ -71,12 +71,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         %{}
       end
 
-    %{
-      type: :text,
-      props: %{
-        content: apply_style("#{prefix}#{label}\n", style)
-      }
-    }
+    Raxol.View.Components.text(
+      content: apply_style("#{prefix}#{label}\n", style)
+    )
   end
 
   defp render_search_bar(state) do
@@ -94,12 +91,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
       ]
       |> IO.iodata_to_binary()
 
-    %{
-      type: :text,
-      props: %{
-        content: content
-      }
-    }
+    Raxol.View.Components.text(content: content)
   end
 
   defp render_pagination_info(state) do
@@ -118,12 +110,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
       ]
       |> IO.iodata_to_binary()
 
-    %{
-      type: :text,
-      props: %{
-        content: content
-      }
-    }
+    Raxol.View.Components.text(content: content)
   end
 
   defp get_option_label(option) when is_binary(option), do: option

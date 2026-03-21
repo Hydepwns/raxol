@@ -1,7 +1,6 @@
 defmodule Raxol.UI.Components.Input.TextFieldTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Components.Input.TextField
 
   defp create_state(props) do
@@ -29,8 +28,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
 
       rendered_element = TextField.render(state, %{theme: theme_map})
 
-      assert %Element{attributes: rendered_attrs_list} = rendered_element
-      actual_merged_style = Keyword.get(rendered_attrs_list, :style, %{})
+      assert %{type: :view, style: actual_merged_style} = rendered_element
 
       # Prop style assertions
       assert actual_merged_style.color == "#654321"
@@ -57,7 +55,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
         TextField.render(state, %{theme: %{text_field: %{layout: %{}}}})
 
       [text_elem] = rendered.children
-      assert text_elem.tag == :text
+      assert text_elem.type == :text
       assert String.trim(text_elem.content) == "Hello"
 
       state2 = create_state(%{value: "", placeholder: "Type here"})
@@ -66,10 +64,10 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
         TextField.render(state2, %{theme: %{text_field: %{layout: %{}}}})
 
       [text_elem2] = rendered2.children
-      assert text_elem2.tag == :text
+      assert text_elem2.type == :text
       assert String.trim(text_elem2.content) == "Type here"
-      assert text_elem2.attributes[:color] == "#888"
-      assert :italic in (text_elem2.attributes[:text_decoration] || [])
+      assert text_elem2.style[:color] == "#888"
+      assert :italic in (text_elem2.style[:text_decoration] || [])
     end
 
     test "renders masked value if secret is true" do
@@ -79,7 +77,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
         TextField.render(state, %{theme: %{text_field: %{layout: %{}}}})
 
       [text_elem] = rendered.children
-      assert text_elem.tag == :text
+      assert text_elem.type == :text
       assert String.trim(text_elem.content) == String.duplicate("•", 6)
     end
 

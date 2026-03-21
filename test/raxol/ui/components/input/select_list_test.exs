@@ -672,7 +672,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
 
       Enum.each(result, fn element ->
         assert element.type == :text
-        assert is_binary(element.props.content)
+        assert is_binary(element.content)
       end)
     end
 
@@ -681,7 +681,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       result = SelectList.render(state, %{})
 
       contents =
-        Enum.map(result, fn el -> el.props.content end)
+        Enum.map(result, fn el -> el.content end)
         |> Enum.join("")
 
       assert contents =~ "Apple"
@@ -694,7 +694,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       result = SelectList.render(state, %{})
 
       banana_el = Enum.at(result, 1)
-      assert banana_el.props.content =~ "> "
+      assert banana_el.content =~ "> "
     end
 
     test "renders only visible options based on scroll_offset and visible_items" do
@@ -705,7 +705,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
 
       assert length(result) == 5
 
-      first_content = Enum.at(result, 0).props.content
+      first_content = Enum.at(result, 0).content
       assert first_content =~ "Item 4"
     end
 
@@ -719,14 +719,14 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       result = SelectList.render(state, %{})
 
       assert length(result) == 1
-      assert Enum.at(result, 0).props.content =~ "Banana"
+      assert Enum.at(result, 0).content =~ "Banana"
     end
 
     test "renders search bar when search_enabled is true" do
       state = %{init_state() | search_enabled: true, search_query: "test"}
       result = SelectList.render(state, %{})
 
-      search_content = Enum.at(result, 0).props.content
+      search_content = Enum.at(result, 0).content
       assert search_content =~ "Search:"
       assert search_content =~ "test"
     end
@@ -736,7 +736,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       result = SelectList.render(state, %{})
 
       last_el = List.last(result)
-      assert last_el.props.content =~ "Page"
+      assert last_el.content =~ "Page"
     end
 
     test "renders empty list when options are empty" do

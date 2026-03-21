@@ -4,7 +4,6 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   It supports validation, placeholders, masks, and styling.
   """
-  alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
 
   @behaviour Raxol.UI.Components.Base.Component
@@ -314,7 +313,7 @@ defmodule Raxol.UI.Components.Input.TextField do
         merged_style
       )
 
-    Element.new(:view, %{style: merged_style}, do: text_children)
+    %{type: :view, style: merged_style, children: text_children}
   end
 
   defp get_merged_style(state) do
@@ -410,8 +409,7 @@ defmodule Raxol.UI.Components.Input.TextField do
     }
 
     [
-      Element.new(:text, placeholder_style, do: [])
-      |> Map.put(:content, visible_value)
+      Raxol.View.Components.text(content: visible_value, style: placeholder_style)
     ]
   end
 
@@ -429,16 +427,15 @@ defmodule Raxol.UI.Components.Input.TextField do
     }
 
     [
-      Element.new(:text, %{}, do: []) |> Map.put(:content, left),
-      Element.new(:text, cursor_style, do: []) |> Map.put(:content, "|"),
-      Element.new(:text, %{}, do: []) |> Map.put(:content, right)
+      Raxol.View.Components.text(content: left),
+      Raxol.View.Components.text(content: "|", style: cursor_style),
+      Raxol.View.Components.text(content: right)
     ]
   end
 
   defp build_normal_children(visible_value) do
     [
-      Element.new(:text, %{}, do: [])
-      |> Map.put(:content, visible_value)
+      Raxol.View.Components.text(content: visible_value)
     ]
   end
 
