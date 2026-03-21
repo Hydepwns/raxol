@@ -163,3 +163,7 @@ bench/output/*.json
 # Package build artifacts
 packages/**/_build/
 packages/**/deps/
+
+# Personal notes (not tracked)
+IDEAS.md
+SPECS.md

@@ -6,7 +6,6 @@ defmodule Raxol.Security.InputValidator do
   preventing common attacks like SQL injection, XSS, and command injection.
   """
 
-
   @type validation_rule ::
           {:type, atom()}
           | {:required, boolean()}

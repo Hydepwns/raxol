@@ -140,7 +140,6 @@ defmodule Raxol.SecurityCase do
     end
   end
 
-
   @doc """
   Generate test payloads for security testing.
   """
