@@ -13,12 +13,12 @@ Make raxol the best terminal UI framework in any language. The Elixir/OTP ecosys
 - LiveView bridge -- buffer-to-HTML with caching, dirty checking, themes
 - Tree diffing -- keyed and non-keyed child handling
 - Layout engines -- flexbox (1028 lines) and CSS grid (1092 lines) with real algorithms
-- Test suite -- ~4756 tests, 0 failures, property-based tests, broad coverage (4715 last verified)
+- Test suite -- ~4756 tests, 0 failures, property-based tests, broad coverage (4735 last verified)
 - Plugin system -- real architecture with lifecycle, dependency resolution, events (40+ modules)
 - Counter example -- runs end-to-end (`mix run examples/getting_started/counter.exs`)
 - `Raxol.start_link/2` -- defined, delegates to `Raxol.Core.Runtime.Lifecycle.start_link/2`
 - Render pipeline -- `lib/raxol/ui/rendering/pipeline.ex` (834 lines) is a working GenServer; most stages implemented, only stage 5 (render/paint) has stubs
-- 9 real widgets (TextInput, TextArea, Table, Button, Modal, SelectList, Checkbox, ProgressBar, MultiLineInput), 2 partial (CodeBlock, MarkdownRenderer), 1 stub (Terminal)
+- 11 real widgets (TextInput, TextArea, Table, Button, Modal, SelectList, Checkbox, ProgressBar, MultiLineInput, CodeBlock, MarkdownRenderer), 1 stub (Terminal)
 - All widgets render consistent `%{type: ..., content/children: ..., style: ...}` maps (normalized in Track A Step 4)
 - MultiLineInput has undo/redo (snapshot-based, 100-entry cap) and desired_col vertical navigation
 
@@ -37,6 +37,7 @@ Steps 1-3 completed in prior session. Step 4 completed in current session:
 - **Step 4.3**: Fixed EventHandler/MessageRouter message mismatch -- EventHandler now emits tuples matching router expectations (e.g., `{:select_all}` not `:select_all`, `{:selection_move, dir}` not `{:select_and_move, dir}`)
 - **Step 4.4**: Normalized render return types across all widgets -- standardized to `%{type: ..., content/children: ..., style: ...}` flat maps compatible with TreeDiffer. Affected: Terminal, TextInput, TextField, Checkbox, SelectList renderer, Progress. Updated 7 test files.
 - **Step 4.5**: Fixed desired_col persistence in NavigationHelper -- vertical movements preserve intended column across short lines, horizontal movements clear it. Added 10 tests.
+- **Step 4.6**: Rewrote MarkdownRenderer for TUI output -- parses markdown AST via EarmarkParser (when available) or built-in regex parser, converts to styled text elements (headings=bold+cyan, code=yellow, blockquotes=green+pipe prefix, lists=bullet markers). No longer dumps raw HTML. 22 tests.
 
 ### Codebase Stats
 
@@ -53,7 +54,7 @@ Steps 1-3 completed in prior session. Step 4 completed in current session:
 | Ink        | JS         | 35.6k   | Flexbox (Yoga)          | 6+UI lib     | React             |
 | Textual    | Python     | 26k     | CSS Grid+Flex           | 31+          | Retained DOM      |
 | Ratatui    | Rust       | 19k     | Constraint              | 15           | Immediate mode    |
-| **Raxol**  | **Elixir** | **<1k** | **Flex+Grid (partial)** | **9 real + 3 partial/stub** | **TEA (partial)** |
+| **Raxol**  | **Elixir** | **<1k** | **Flex+Grid (partial)** | **11 real + 1 stub** | **TEA (partial)** |
 
 ### Why Raxol Can Win
 
@@ -146,9 +147,9 @@ Build 15 production-quality widgets. Each widget must have: implementation, test
 
 #### Additional Widgets (beyond original plan)
 
-- **MultiLineInput** -- exists as separate widget from TextArea
-- **CodeBlock** -- syntax-highlighted code display
-- **MarkdownRenderer** -- terminal markdown rendering
+- **MultiLineInput** -- exists as separate widget from TextArea, has undo/redo and desired_col
+- **CodeBlock** -- syntax-highlighted code display (uses Makeup when available, plain text fallback)
+- **MarkdownRenderer** -- terminal markdown rendering (headings, bold, italic, lists, code blocks, blockquotes, links, hr)
 
 #### Widget Architecture
 
