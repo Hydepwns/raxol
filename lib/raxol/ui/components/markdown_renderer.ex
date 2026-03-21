@@ -1,88 +1,281 @@
 defmodule Raxol.UI.Components.MarkdownRenderer do
   @moduledoc """
-  Renders Markdown text into Raxol elements or raw HTML.
+  Renders Markdown text into styled Raxol elements for terminal display.
 
-  Requires the `earmark` dependency.
+  Supports headings, bold, italic, code spans, code blocks, lists,
+  blockquotes, horizontal rules, and links. Uses EarmarkParser when
+  available, falls back to a built-in regex parser.
   """
   use Raxol.UI.Components.Base.Component
 
-  @doc """
-  Renders the given Markdown string.
-  """
+  alias Raxol.View.Components
 
-  # Option 1: Render as raw HTML (Simpler, relies on browser rendering)
-  # Requires Raxol to have a way to render raw HTML, e.g., a `raw_html` element
-  # or specific handling in the rendering engine.
-  # def render(assigns) do
-  #   ~H"""
-  #   <div class="markdown-content">
-  #     <%= raw_html(render_markdown(@markdown_text)) %>
-  #   </div>
-  #   """
-  # end
-
-  # Option 2: Basic Earmark AST to Raxol Elements (More complex, less feature complete)
-  # This is a placeholder implementation and likely needs significant expansion
-  # to handle various Markdown features correctly.
-  # It avoids raw HTML but might not render complex Markdown accurately.
-
-  @spec render(map(), map()) :: any()
-  @impl true
-  def render(state, _context) do
-    markdown_text = state[:markdown_text] || ""
-
-    case Code.ensure_loaded?(Earmark) do
-      true ->
-        # Use apply to avoid compile-time dependency warning
-        html_content =
-          apply(Earmark, :as_html!, [
-            markdown_text,
-            %{gfm: true, breaks: true, smartypants: true}
-          ])
-
-        Raxol.View.Components.text(content: html_content)
-
-      false ->
-        Raxol.View.Components.text(
-          content:
-            markdown_text <>
-              "\n[MarkdownRenderer Error: Earmark library not found.]"
-        )
-    end
-  end
-
-  @doc "Initializes the MarkdownRenderer component state from props."
   @spec init(map()) :: {:ok, map()}
   @impl true
-  def init(props), do: {:ok, props}
+  def init(props) do
+    state =
+      Map.merge(
+        %{markdown_text: "", width: 80},
+        props
+      )
 
-  @doc "Updates the MarkdownRenderer component state. No updates are handled by default."
-  @spec update(term(), map()) :: map()
-  @impl true
-  def update(_message, state), do: state
+    {:ok, state}
+  end
 
-  @doc "Handles events for the MarkdownRenderer component. No events are handled by default."
-  @spec handle_event(term(), map(), map()) :: {map(), list()}
-  @impl true
-  def handle_event(_event, state, _context), do: {state, []}
-
-  # Hypothetical raw_html component/function - needed for the above approach
-  # If Raxol doesn't have this, the render function needs to change.
-  # defp raw_html(assigns), do: # ... implementation depends on Raxol internals
-
-  @doc """
-  Mount hook - called when component is mounted.
-  No special setup needed for MarkdownRenderer.
-  """
   @impl true
   @spec mount(map()) :: {map(), list()}
   def mount(state), do: {state, []}
 
-  @doc """
-  Unmount hook - called when component is unmounted.
-  No cleanup needed for MarkdownRenderer.
-  """
   @impl true
   @spec unmount(map()) :: map()
   def unmount(state), do: state
+
+  @impl true
+  @spec update(term(), map()) :: map()
+  def update(_message, state), do: state
+
+  @impl true
+  @spec handle_event(term(), map(), map()) :: {map(), list()}
+  def handle_event(_event, state, _context), do: {state, []}
+
+  @spec render(map(), map()) :: map()
+  @impl true
+  def render(state, _context) do
+    markdown_text = state[:markdown_text] || ""
+    width = state[:width] || 80
+
+    elements =
+      if Code.ensure_loaded?(EarmarkParser) do
+        render_with_earmark(markdown_text, width)
+      else
+        render_with_builtin(markdown_text, width)
+      end
+
+    %{type: :column, children: elements, style: %{}}
+  end
+
+  # --- Earmark-based rendering ---
+
+  defp render_with_earmark(markdown_text, width) do
+    case apply(EarmarkParser, :as_ast, [markdown_text]) do
+      {:ok, ast, _} -> Enum.flat_map(ast, &ast_node_to_elements(&1, width))
+      _ -> render_with_builtin(markdown_text, width)
+    end
+  end
+
+  defp ast_node_to_elements(node, _width) when is_binary(node) do
+    [Components.text(content: node)]
+  end
+
+  defp ast_node_to_elements({"h1", _attrs, children, _meta}, width) do
+    text = extract_text(children)
+    [
+      Components.text(content: ""),
+      Components.text(content: "# " <> text, style: %{bold: true, fg: :cyan}),
+      Components.text(content: String.duplicate("=", min(String.length(text) + 2, width))),
+      Components.text(content: "")
+    ]
+  end
+
+  defp ast_node_to_elements({"h2", _attrs, children, _meta}, width) do
+    text = extract_text(children)
+    [
+      Components.text(content: ""),
+      Components.text(content: "## " <> text, style: %{bold: true, fg: :cyan}),
+      Components.text(content: String.duplicate("-", min(String.length(text) + 3, width))),
+      Components.text(content: "")
+    ]
+  end
+
+  defp ast_node_to_elements({"h" <> level, _attrs, children, _meta}, _width)
+       when level in ["3", "4", "5", "6"] do
+    text = extract_text(children)
+    prefix = String.duplicate("#", String.to_integer(level)) <> " "
+    [
+      Components.text(content: ""),
+      Components.text(content: prefix <> text, style: %{bold: true, fg: :cyan}),
+      Components.text(content: "")
+    ]
+  end
+
+  defp ast_node_to_elements({"p", _attrs, children, _meta}, _width) do
+    text = extract_inline(children)
+    [Components.text(content: text), Components.text(content: "")]
+  end
+
+  defp ast_node_to_elements({"ul", _attrs, children, _meta}, width) do
+    items = Enum.flat_map(children, fn
+      {"li", _, li_children, _} ->
+        text = extract_inline(li_children)
+        [Components.text(content: "  * " <> text)]
+      other ->
+        ast_node_to_elements(other, width)
+    end)
+    items ++ [Components.text(content: "")]
+  end
+
+  defp ast_node_to_elements({"ol", _attrs, children, _meta}, width) do
+    items =
+      children
+      |> Enum.with_index(1)
+      |> Enum.flat_map(fn
+        {{"li", _, li_children, _}, idx} ->
+          text = extract_inline(li_children)
+          [Components.text(content: "  #{idx}. " <> text)]
+        {other, _idx} ->
+          ast_node_to_elements(other, width)
+      end)
+    items ++ [Components.text(content: "")]
+  end
+
+  defp ast_node_to_elements({"pre", _attrs, children, _meta}, _width) do
+    code_text = extract_code_text(children)
+    lines = String.split(code_text, "\n")
+    code_elements = Enum.map(lines, fn line ->
+      Components.text(content: "  " <> line, style: %{fg: :yellow})
+    end)
+    [Components.text(content: "")] ++ code_elements ++ [Components.text(content: "")]
+  end
+
+  defp ast_node_to_elements({"blockquote", _attrs, children, _meta}, width) do
+    inner = Enum.flat_map(children, &ast_node_to_elements(&1, width))
+    Enum.map(inner, fn el ->
+      content = el[:content] || ""
+      if content == "" do
+        el
+      else
+        %{el | content: "| " <> content, style: Map.merge(el[:style] || %{}, %{fg: :green})}
+      end
+    end)
+  end
+
+  defp ast_node_to_elements({"hr", _attrs, _children, _meta}, width) do
+    [
+      Components.text(content: ""),
+      Components.text(content: String.duplicate("-", min(40, width)), style: %{fg: :white}),
+      Components.text(content: "")
+    ]
+  end
+
+  defp ast_node_to_elements({_tag, _attrs, children, _meta}, width) do
+    Enum.flat_map(children, &ast_node_to_elements(&1, width))
+  end
+
+  defp ast_node_to_elements(_, _width), do: []
+
+  defp extract_text(children) when is_list(children) do
+    Enum.map_join(children, "", fn
+      text when is_binary(text) -> text
+      {_tag, _attrs, inner, _meta} -> extract_text(inner)
+    end)
+  end
+
+  defp extract_text(text) when is_binary(text), do: text
+  defp extract_text(_), do: ""
+
+  defp extract_inline(children) when is_list(children) do
+    Enum.map_join(children, "", fn
+      text when is_binary(text) -> text
+      {"strong", _, inner, _} -> "*" <> extract_text(inner) <> "*"
+      {"em", _, inner, _} -> "_" <> extract_text(inner) <> "_"
+      {"code", _, inner, _} -> "`" <> extract_text(inner) <> "`"
+      {"a", attrs, inner, _} ->
+        href = attrs |> Enum.find_value("", fn {k, v} -> if k == "href", do: v end)
+        extract_text(inner) <> " (" <> href <> ")"
+      {_tag, _, inner, _} -> extract_inline(inner)
+    end)
+  end
+
+  defp extract_inline(text) when is_binary(text), do: text
+  defp extract_inline(_), do: ""
+
+  defp extract_code_text(children) when is_list(children) do
+    Enum.map_join(children, "", fn
+      text when is_binary(text) -> text
+      {"code", _, inner, _} -> extract_text(inner)
+      {_tag, _, inner, _} -> extract_code_text(inner)
+    end)
+  end
+
+  # --- Built-in regex-based rendering (no deps) ---
+
+  defp render_with_builtin(markdown_text, width) do
+    markdown_text
+    |> String.split("\n")
+    |> parse_blocks(width, [])
+    |> Enum.reverse()
+  end
+
+  defp parse_blocks([], _width, acc), do: acc
+
+  # Fenced code block
+  defp parse_blocks(["```" <> _ | rest], width, acc) do
+    {code_lines, remaining} = take_until_fence(rest, [])
+    code_elements = Enum.map(code_lines, fn line ->
+      Components.text(content: "  " <> line, style: %{fg: :yellow})
+    end)
+    new_acc = [Components.text(content: "") | code_elements] ++ [Components.text(content: "") | acc]
+    parse_blocks(remaining, width, new_acc)
+  end
+
+  # Heading
+  defp parse_blocks([line | rest], width, acc) do
+    element = parse_line(line, width)
+    parse_blocks(rest, width, [element | acc])
+  end
+
+  defp parse_line("# " <> text, _width) do
+    Components.text(content: "# " <> strip_inline(text), style: %{bold: true, fg: :cyan})
+  end
+
+  defp parse_line("## " <> text, _width) do
+    Components.text(content: "## " <> strip_inline(text), style: %{bold: true, fg: :cyan})
+  end
+
+  defp parse_line("### " <> text, _width) do
+    Components.text(content: "### " <> strip_inline(text), style: %{bold: true, fg: :cyan})
+  end
+
+  defp parse_line("---" <> _, width) do
+    Components.text(content: String.duplicate("-", min(40, width)), style: %{fg: :white})
+  end
+
+  defp parse_line("***" <> _, width) do
+    Components.text(content: String.duplicate("-", min(40, width)), style: %{fg: :white})
+  end
+
+  defp parse_line("> " <> text, _width) do
+    Components.text(content: "| " <> strip_inline(text), style: %{fg: :green})
+  end
+
+  defp parse_line("- " <> text, _width) do
+    Components.text(content: "  * " <> strip_inline(text))
+  end
+
+  defp parse_line("* " <> text, _width) do
+    Components.text(content: "  * " <> strip_inline(text))
+  end
+
+  defp parse_line(line, _width) do
+    # Check for ordered list: "1. text", "2. text", etc.
+    case Regex.run(~r/^(\d+)\.\s+(.*)/, line) do
+      [_, num, text] ->
+        Components.text(content: "  #{num}. " <> strip_inline(text))
+      _ ->
+        Components.text(content: strip_inline(line))
+    end
+  end
+
+  defp strip_inline(text) do
+    text
+    |> String.replace(~r/\*\*(.+?)\*\*/, "*\\1*")
+    |> String.replace(~r/__(.+?)__/, "*\\1*")
+    |> String.replace(~r/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/, "_\\1_")
+    |> String.replace(~r/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/, "_\\1_")
+    |> String.replace(~r/\[(.+?)\]\((.+?)\)/, "\\1 (\\2)")
+  end
+
+  defp take_until_fence([], acc), do: {Enum.reverse(acc), []}
+  defp take_until_fence(["```" <> _ | rest], acc), do: {Enum.reverse(acc), rest}
+  defp take_until_fence([line | rest], acc), do: take_until_fence(rest, [line | acc])
 end
