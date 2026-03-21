@@ -14,6 +14,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Runtime.Application
   alias Raxol.Core.Runtime.Command
+  alias Raxol.Core.FocusManager
   alias Raxol.Core.UserPreferences
 
   @registry_name :raxol_event_subscriptions
@@ -407,9 +408,15 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       "Dispatcher received :get_render_context call. State: #{inspect(state)}"
     )
 
+    focused_element =
+      if focus_manager_active?(),
+        do: FocusManager.get_focused_element(),
+        else: nil
+
     render_context = %{
       model: state.model,
-      theme_id: state.current_theme_id
+      theme_id: state.current_theme_id,
+      focused_element: focused_element
     }
 
     Raxol.Core.Runtime.Log.debug(
@@ -522,8 +529,44 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp handle_filtered_event(nil, state), do: {:ok, state, []}
 
-  defp handle_filtered_event(filtered_event, state),
-    do: handle_event(filtered_event, state)
+  defp handle_filtered_event(filtered_event, state) do
+    case maybe_handle_focus_navigation(filtered_event, state) do
+      {:handled, result} -> result
+      :pass -> handle_event(filtered_event, state)
+    end
+  end
+
+  defp maybe_handle_focus_navigation(
+         %Event{type: :key, data: %{key: :tab} = data},
+         state
+       ) do
+    if focus_manager_active?() do
+      shift = Map.get(data, :shift, false)
+      old_focus = FocusManager.get_focused_element()
+
+      result =
+        if shift,
+          do: FocusManager.focus_previous(),
+          else: FocusManager.focus_next()
+
+      case result do
+        {:ok, new_focus_id} ->
+          {:handled,
+           process_app_update(state, {:focus_changed, old_focus, new_focus_id}, nil)}
+
+        {:error, _} ->
+          :pass
+      end
+    else
+      :pass
+    end
+  end
+
+  defp maybe_handle_focus_navigation(_event, _state), do: :pass
+
+  defp focus_manager_active? do
+    Process.whereis(Raxol.Core.FocusManager.FocusServer) != nil
+  end
 
   # --- Command Processing ---
 
