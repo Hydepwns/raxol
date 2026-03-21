@@ -19,7 +19,6 @@ defmodule Raxol.UI.Components.CodeBlockTest do
       props = %{
         content: "def foo, do: :bar",
         language: "elixir",
-        style: :some_style,
         class: "my-class"
       }
 
@@ -62,29 +61,44 @@ defmodule Raxol.UI.Components.CodeBlockTest do
   end
 
   describe "render/2" do
-    test "renders code content with Makeup unavailable fallback message when lexer missing" do
-      # Makeup is available in test env but PlainTextLexer is not a real module,
-      # so the {true, true} branch will attempt to use it and fail.
-      # The {true, false} branch would also fail similarly.
-      # We test that render produces output for the fallback case by providing
-      # state where Makeup path is exercised.
-      {:ok, state} = CodeBlock.init(%{content: "hello world", language: "text"})
-
-      # Since Makeup is loaded but PlainTextLexer doesn't exist,
-      # calling render will raise. This documents the current behavior.
-      assert_raise UndefinedFunctionError, fn ->
-        CodeBlock.render(state, %{})
-      end
+    test "renders elixir code content without raising" do
+      {:ok, state} = CodeBlock.init(%{content: "IO.puts(:hello)", language: "elixir"})
+      result = CodeBlock.render(state, %{})
+      assert result.content
+      assert is_binary(result.content)
     end
 
-    test "renders with empty content defaults gracefully" do
-      {:ok, state} = CodeBlock.init(%{})
+    test "rendered content preserves the source text" do
+      {:ok, state} = CodeBlock.init(%{content: "IO.puts(:hello)", language: "elixir"})
+      result = CodeBlock.render(state, %{})
+      assert result.content =~ "IO"
+      assert result.content =~ "puts"
+      assert result.content =~ "hello"
+    end
 
-      # Empty content still hits the same Makeup code path and raises
-      # because PlainTextLexer doesn't exist
-      assert_raise UndefinedFunctionError, fn ->
-        CodeBlock.render(state, %{})
-      end
+    test "renders unknown language without raising" do
+      {:ok, state} = CodeBlock.init(%{content: "print('hi')", language: "python"})
+      result = CodeBlock.render(state, %{})
+      assert result.content =~ "print"
+    end
+
+    test "renders with empty content" do
+      {:ok, state} = CodeBlock.init(%{})
+      result = CodeBlock.render(state, %{})
+      assert result.content == ""
+    end
+
+    test "renders plain text language" do
+      {:ok, state} = CodeBlock.init(%{content: "hello world", language: "text"})
+      result = CodeBlock.render(state, %{})
+      assert result.content =~ "hello world"
+    end
+
+    test "strips HTML tags from Makeup output" do
+      {:ok, state} = CodeBlock.init(%{content: "defmodule Foo do\nend", language: "elixir"})
+      result = CodeBlock.render(state, %{})
+      refute result.content =~ "<span"
+      refute result.content =~ "</span>"
     end
   end
 end
