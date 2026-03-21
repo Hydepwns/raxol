@@ -1,10 +1,10 @@
 # Spotify Plugin
 
-Control Spotify playback from your terminal using Raxol's Spotify plugin.
+Control Spotify playback from your terminal.
 
 ## Features
 
-- View currently playing track with album art (ASCII) and progress bar
+- View currently playing track with ASCII album art and progress bar
 - Full playback controls (play/pause/next/previous)
 - Volume control
 - Browse and play playlists
@@ -14,15 +14,15 @@ Control Spotify playback from your terminal using Raxol's Spotify plugin.
 
 ## Prerequisites
 
-1. **Spotify Premium Account** - Required for playback control via API
-2. **Spotify Developer Account** - Free at [developer.spotify.com](https://developer.spotify.com)
-3. **Elixir Dependencies** - `req` and `oauth2` packages
+1. **Spotify Premium Account** -- required for playback control via API
+2. **Spotify Developer Account** -- free at [developer.spotify.com](https://developer.spotify.com)
+3. **Elixir Dependencies** -- `req` and `oauth2` packages
 
 ## Setup
 
-### 1. Create Spotify Application
+### 1. Create a Spotify Application
 
-1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 2. Click "Create App"
 3. Fill in the details:
    - App name: "Raxol Terminal"
@@ -38,21 +38,17 @@ Add to your `mix.exs`:
 def deps do
   [
     {:raxol, "~> 2.0"},
-    {:req, "~> 0.5"},      # HTTP client
-    {:oauth2, "~> 2.1"}     # OAuth2 flow
+    {:req, "~> 0.5"},
+    {:oauth2, "~> 2.1"}
   ]
 end
 ```
 
-Run:
-
-```bash
-mix deps.get
-```
+Then run `mix deps.get`.
 
 ### 3. Configure Credentials
 
-**Option A: Environment Variables (Recommended for development)**
+**Environment variables (recommended for development):**
 
 ```bash
 export SPOTIFY_CLIENT_ID="your_client_id_here"
@@ -60,7 +56,7 @@ export SPOTIFY_CLIENT_SECRET="your_client_secret_here"
 export SPOTIFY_REDIRECT_URI="http://localhost:8888/callback"
 ```
 
-**Option B: Application Config**
+**Application config:**
 
 ```elixir
 # config/config.exs
@@ -70,7 +66,7 @@ config :raxol, Raxol.Plugins.Spotify,
   redirect_uri: "http://localhost:8888/callback"
 ```
 
-**Option C: Runtime Config (Recommended for production)**
+**Runtime config (recommended for production):**
 
 ```elixir
 # config/runtime.exs
@@ -82,10 +78,9 @@ config :raxol, Raxol.Plugins.Spotify,
 
 ### 4. Authenticate
 
-First time running the plugin, you'll need to authenticate:
+On first run, you need to complete the OAuth flow:
 
 ```elixir
-# Run the plugin
 Raxol.Plugin.run(Raxol.Plugins.Spotify)
 
 # Press 'a' to start OAuth flow
@@ -95,21 +90,19 @@ Raxol.Plugin.run(Raxol.Plugins.Spotify)
 # Paste it into the terminal
 ```
 
-The access token is stored in memory during the session. For persistent tokens, implement token storage (see Advanced Usage below).
+The access token is stored in memory for the session. For persistent tokens, see Advanced Usage below.
 
 ## Usage
 
-### Standalone Mode
+### Standalone
 
 ```elixir
-# Run the plugin directly
 Raxol.Plugin.run(Raxol.Plugins.Spotify)
 ```
 
-### Integrated Mode
+### Integrated into a Terminal App
 
 ```elixir
-# In your terminal application
 defmodule MyApp.Terminal do
   alias Raxol.Core.Buffer
   alias Raxol.Plugins.Spotify
@@ -117,17 +110,13 @@ defmodule MyApp.Terminal do
   def run do
     {:ok, state} = Spotify.init([])
     buffer = Buffer.create_blank_buffer(80, 24)
-
-    # Game loop
     loop(buffer, state)
   end
 
   defp loop(buffer, state) do
-    # Render plugin
     buffer = Spotify.render(buffer, state)
     IO.puts(Buffer.to_string(buffer))
 
-    # Handle input
     key = get_key()
     modifiers = %{ctrl: false, alt: false, shift: false, meta: false}
 
@@ -142,40 +131,34 @@ end
 ## Controls
 
 ### Playback
-
-- `SPACE` - Play/pause
-- `n` - Next track
-- `p` - Previous track
+- `SPACE` -- Play/pause
+- `n` -- Next track
+- `p` -- Previous track
 
 ### Volume
-
-- `+` - Increase volume by 10%
-- `-` - Decrease volume by 10%
+- `+` -- Increase volume by 10%
+- `-` -- Decrease volume by 10%
 
 ### Modes
-
-- `s` - Toggle shuffle
-- `r` - Cycle repeat mode (off → context → track → off)
+- `s` -- Toggle shuffle
+- `r` -- Cycle repeat mode (off -> context -> track -> off)
 
 ### Navigation
-
-- `l` - View playlists
-- `d` - View devices
-- `/` - Search
+- `l` -- View playlists
+- `d` -- View devices
+- `/` -- Search
 
 ### General
-
-- `q` - Quit plugin
-- `ESC` - Go back (from submenus)
+- `q` -- Quit plugin
+- `ESC` -- Go back (from submenus)
 
 ## API Usage
 
-The Spotify plugin can also be used programmatically:
+The plugin can also be used programmatically:
 
 ```elixir
 alias Raxol.Plugins.Spotify.API
 
-# Initialize with access token
 client = API.new("your_access_token")
 
 # Get currently playing
@@ -187,7 +170,7 @@ client = API.new("your_access_token")
 :ok = API.next(client)
 :ok = API.previous(client)
 
-# Volume control (0-100)
+# Volume (0-100)
 :ok = API.set_volume(client, 50)
 
 # Playlists
@@ -204,7 +187,7 @@ client = API.new("your_access_token")
 
 ### Persistent Token Storage
 
-Store refresh tokens to avoid re-authenticating:
+Store refresh tokens to avoid re-authenticating every session:
 
 ```elixir
 defmodule MyApp.SpotifyAuth do
@@ -213,11 +196,9 @@ defmodule MyApp.SpotifyAuth do
   def get_client do
     case load_refresh_token() do
       nil ->
-        # No saved token, start OAuth flow
         authenticate_new()
 
       refresh_token ->
-        # Refresh existing token
         client = API.new("", refresh_token: refresh_token)
 
         case API.refresh_token(client, get_config()) do
@@ -245,7 +226,6 @@ defmodule MyApp.SpotifyAuth do
   end
 
   defp load_refresh_token do
-    # Load from file, database, etc.
     case File.read(".spotify_token") do
       {:ok, token} -> token
       _ -> nil
@@ -285,48 +265,33 @@ config = [
 auth_url = Raxol.Plugins.Spotify.API.get_authorization_url(config)
 ```
 
-See [Spotify Authorization Scopes](https://developer.spotify.com/documentation/web-api/concepts/scopes) for full list.
+Full list of scopes: [Spotify Authorization Scopes](https://developer.spotify.com/documentation/web-api/concepts/scopes).
 
 ## Troubleshooting
 
-### "Invalid client" error
+**"Invalid client" error** -- Double-check your `client_id` and `client_secret`. Make sure the redirect URI in your config matches the one in your Spotify app settings exactly.
 
-- Verify `client_id` and `client_secret` are correct
-- Check that redirect URI in config matches your Spotify app settings exactly
+**"Premium required" error** -- The Spotify Web API requires a Premium account for playback control. Reading playback state works with free accounts.
 
-### "Premium required" error
+**Token expired** -- Implement refresh token logic (see Advanced Usage). Tokens expire after 1 hour.
 
-- Spotify Web API requires a Premium account for playback control
-- Reading playback state works with free accounts
+**No devices available** -- Spotify needs to be open on at least one device, and the device must have been recently active.
 
-### Token expired
-
-- Implement refresh token logic (see Advanced Usage)
-- Tokens expire after 1 hour by default
-
-### No devices available
-
-- Make sure Spotify is open on at least one device
-- Device must be actively playing or have been recently used
-
-### Rate limiting
-
-- Spotify API has rate limits (typically 1000 requests per hour)
-- Implement caching and batch requests when possible
+**Rate limiting** -- The Spotify API has rate limits (typically 1000 requests/hour). Use caching and batch requests where possible.
 
 ## Examples
 
 See `examples/plugins/spotify/` for:
 
-- `01_simple_playback.exs` - Basic play/pause control
-- `02_playlist_browser.exs` - Browse and play playlists
-- `03_search_and_play.exs` - Search and play tracks
-- `04_device_switcher.exs` - Switch between devices
+- `01_simple_playback.exs` -- Basic play/pause control
+- `02_playlist_browser.exs` -- Browse and play playlists
+- `03_search_and_play.exs` -- Search and play tracks
+- `04_device_switcher.exs` -- Switch between devices
 
 ## Credits
 
-This plugin was inspired by the implementation in [droodotfoo](https://droodotfoo.foo).
+Inspired by the implementation in [droodotfoo](https://droodotfoo.foo).
 
 ## License
 
-MIT License - See LICENSE file for details
+MIT License -- See LICENSE file.

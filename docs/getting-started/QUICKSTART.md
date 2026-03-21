@@ -1,8 +1,6 @@
 # Quickstart Guide
 
-> [Documentation](../README.md) > [Getting Started](CORE_CONCEPTS.md) > Quickstart
-
-Get started with Raxol in 5, 10, or 15 minutes. Choose your path.
+Get started with Raxol in 5, 10, or 15 minutes.
 
 ## What is Raxol?
 
@@ -10,13 +8,12 @@ Raxol is a terminal UI framework for Elixir that scales from simple buffers to f
 
 ### Packages
 
-- **Raxol.Core** - Pure functional buffer primitives (< 100KB, zero deps, < 1ms ops)
-  - Perfect for: CLI tools, LiveView components, incremental adoption
+- **Raxol.Core** - Pure functional buffer primitives (< 100KB, zero deps, < 1ms ops). Good for CLI tools, LiveView components, incremental adoption.
 - **Raxol.LiveView** - Phoenix LiveView integration
 - **Raxol.Plugin** - Extensible plugin system
-- **Raxol** (full) - Complete framework with enterprise features
+- **Raxol** (full) - Complete framework
 
-Start small, add features as needed. See [Package Guide](PACKAGES.md) for detailed comparison.
+Start small, add features as needed. See [Package Guide](PACKAGES.md) for details.
 
 ---
 
@@ -67,19 +64,19 @@ elixir hello.exs
 
 Output:
 ```
-╔══════════════════════════════════════╗
-║                                      ║
-║                                      ║
-║                                      ║
-║     Hello, Raxol!                    ║
-║                                      ║
-║                                      ║
-║                                      ║
-║                                      ║
-╚══════════════════════════════════════╝
++======================================+
+|                                      |
+|                                      |
+|                                      |
+|     Hello, Raxol!                    |
+|                                      |
+|                                      |
+|                                      |
+|                                      |
++======================================+
 ```
 
-**That's it!** Pure functional, no servers, no complexity.
+Pure functional, no servers, no complexity.
 
 ### Key Concepts (5 min version)
 
@@ -118,12 +115,10 @@ defmodule MyAppWeb.TerminalLive do
   alias Raxol.Core.{Buffer, Box}
 
   def mount(_params, _session, socket) do
-    # Create initial buffer
     buffer = Buffer.create_blank_buffer(80, 24)
     buffer = Box.draw_box(buffer, 0, 0, 80, 24, :rounded)
     buffer = Buffer.write_at(buffer, 10, 10, "Hello from LiveView!", %{})
 
-    # Schedule periodic updates (optional)
     if connected?(socket), do: Process.send_after(self(), :tick, 1000)
 
     {:ok, assign(socket, buffer: buffer, count: 0)}
@@ -146,7 +141,6 @@ defmodule MyAppWeb.TerminalLive do
   end
 
   def handle_info(:tick, socket) do
-    # Update buffer every second
     count = socket.assigns.count + 1
     buffer = Buffer.write_at(
       socket.assigns.buffer,
@@ -194,11 +188,10 @@ mix phx.server
 # Visit http://localhost:4000/terminal
 ```
 
-**You now have a live terminal in your web app!** Updates in real-time, handles keyboard/mouse events.
+You now have a live terminal in your web app with real-time updates, keyboard/mouse events, and theming.
 
 ### Available Themes
 
-Choose from built-in themes:
 - `:nord` - Nord color scheme
 - `:dracula` - Dracula theme
 - `:solarized_dark` - Solarized Dark
@@ -209,17 +202,7 @@ Choose from built-in themes:
 
 ## 15-Minute Tutorial: Interactive Terminal
 
-Build a fully interactive REPL-style terminal.
-
-### The Plan
-
-We'll create:
-1. Command input at the bottom
-2. Scrollable output area
-3. Command history (up/down arrows)
-4. Real-time updates
-
-### Full Implementation
+Build a REPL-style terminal with command input, scrollable output, history navigation, and real-time updates.
 
 ```elixir
 defmodule MyAppWeb.InteractiveTerminalLive do
@@ -299,7 +282,6 @@ defmodule MyAppWeb.InteractiveTerminalLive do
   defp update_display(socket) do
     buffer = create_initial_buffer()
 
-    # Render output lines (last N lines that fit)
     output_lines = Enum.take(socket.assigns.output_lines, -(@output_height - 2))
     buffer =
       output_lines
@@ -308,7 +290,6 @@ defmodule MyAppWeb.InteractiveTerminalLive do
         Buffer.write_at(buf, 2, idx + 1, line, %{})
       end)
 
-    # Render input line
     buffer =
       Buffer.write_at(
         buffer,
@@ -348,30 +329,13 @@ defmodule MyAppWeb.InteractiveTerminalLive do
     ]
   end
 
-  defp process_command("clear") do
-    # Clear handled separately
-    []
-  end
+  defp process_command("clear"), do: []
+  defp process_command("echo " <> text), do: [text]
+  defp process_command("time"), do: [DateTime.utc_now() |> to_string()]
+  defp process_command("exit"), do: ["Goodbye!"]
+  defp process_command(cmd), do: ["Unknown command: #{cmd}. Type 'help' for available commands."]
 
-  defp process_command("echo " <> text) do
-    [text]
-  end
-
-  defp process_command("time") do
-    [DateTime.utc_now() |> to_string()]
-  end
-
-  defp process_command("exit") do
-    ["Goodbye!"]
-  end
-
-  defp process_command(cmd) do
-    ["Unknown command: #{cmd}. Type 'help' for available commands."]
-  end
-
-  defp clear_input(socket) do
-    assign(socket, input: "")
-  end
+  defp clear_input(socket), do: assign(socket, input: "")
 
   defp navigate_history(socket, direction) do
     history = socket.assigns.history
@@ -397,14 +361,6 @@ defmodule MyAppWeb.InteractiveTerminalLive do
 end
 ```
 
-### What You've Built
-
-- **Command input** - Type commands at the bottom
-- **Command history** - Up/Down arrows navigate history
-- **Scrollable output** - Shows last 20 lines
-- **Real-time rendering** - Instant visual updates
-- **Themed UI** - Professional Nord theme
-
 ### Try It
 
 ```bash
@@ -420,93 +376,36 @@ mix phx.server
 
 ## What's Next?
 
-### Add More Features
-
 **Syntax highlighting:**
 ```elixir
-# Use Style module
 style = Raxol.Core.Style.new(fg_color: :green, bold: true)
 buffer = Buffer.write_at(buffer, x, y, "def function", style)
 ```
 
 **Progress bars:**
 ```elixir
-# Draw a progress bar
 progress = 0.75  # 75%
 width = 40
 filled = round(width * progress)
 
-buffer = Box.fill_area(buffer, 2, 10, filled, 1, "█", %{fg_color: :green})
-buffer = Box.fill_area(buffer, 2 + filled, 10, width - filled, 1, "░", %{fg_color: :gray})
+buffer = Box.fill_area(buffer, 2, 10, filled, 1, "~", %{fg_color: :green})
+buffer = Box.fill_area(buffer, 2 + filled, 10, width - filled, 1, ".", %{fg_color: :gray})
 ```
 
 **Multiple panels:**
 ```elixir
-# Split screen layout
 buffer = Box.draw_box(buffer, 0, 0, 40, 24, :single)      # Left panel
 buffer = Box.draw_box(buffer, 40, 0, 40, 24, :single)     # Right panel
 ```
 
-### Explore More
+### Further Reading
 
-- **[Core Concepts](./CORE_CONCEPTS.md)** - Deep dive into buffers and rendering
-- **[Migration Guide](./MIGRATION_FROM_DIY.md)** - Already have a terminal renderer?
-- **[Cookbook](../cookbook/README.md)** - Practical patterns and recipes
-- **[API Reference](../core/BUFFER_API.md)** - Complete function documentation
+- [Core Concepts](./CORE_CONCEPTS.md) - Buffers, rendering, state management
+- [Migration Guide](./MIGRATION_FROM_DIY.md) - Already have a terminal renderer?
+- [Cookbook](../cookbook/README.md) - Practical patterns and recipes
+- [API Reference](../core/BUFFER_API.md) - Complete function documentation
 
-### Examples Directory
-
-Check out working examples:
-```bash
-# Run examples
-mix run examples/core/01_hello_buffer.exs
-mix run examples/core/02_box_drawing.exs
-mix run examples/liveview/01_simple_terminal/
-```
-
-### Performance Targets
-
-Raxol.Core is built for speed:
-- **Buffer operations**: < 1ms for 80x24 grids
-- **Rendering**: < 16ms (60fps capable)
-- **Memory**: < 100KB per buffer
-- **Dependencies**: Zero runtime dependencies
-
-### Get Help
-
-- **GitHub Issues**: https://github.com/Hydepwns/raxol/issues
-- **Documentation**: Browse `docs/` directory
-- **Examples**: Working code in `examples/`
-
----
-
-## Frequently Asked Questions
-
-### Do I need the full Raxol framework?
-
-No! Start with `raxol_core` for just buffers, add `raxol_liveview` for web integration, or use `raxol` for everything.
-
-### Can I use this with my existing Phoenix app?
-
-Yes! Raxol.LiveView integrates seamlessly with Phoenix LiveView.
-
-### Does this work in production?
-
-Yes. Raxol is production-ready with 99%+ test coverage and performance benchmarks.
-
-### Can I customize the themes?
-
-Yes! Either use built-in themes or create custom CSS. See [Theming Cookbook](../cookbook/THEMING.md).
-
-### What about mobile browsers?
-
-Yes! The LiveView component is responsive and works on mobile (though keyboard input is limited to mobile keyboards).
-
----
-
-## Quick Reference
-
-### Buffer Operations
+### Quick Reference
 
 ```elixir
 # Create
@@ -527,12 +426,8 @@ buffer = Buffer.resize(buffer, new_width, new_height)
 # Render
 output = Buffer.to_string(buffer)
 diff = Renderer.render_diff(old_buffer, new_buffer)
-```
 
-### Box Drawing
-
-```elixir
-# Styles: :single, :double, :rounded, :heavy, :dashed
+# Box styles: :single, :double, :rounded, :heavy, :dashed
 buffer = Box.draw_box(buffer, x, y, width, height, :double)
 
 # Lines
@@ -541,28 +436,11 @@ buffer = Box.draw_vertical_line(buffer, x, y, length, "|")
 
 # Fill
 buffer = Box.fill_area(buffer, x, y, width, height, " ", style)
-```
 
-### Styles
-
-```elixir
-# Create style
-style = Style.new(
-  fg_color: :cyan,
-  bg_color: :black,
-  bold: true,
-  italic: false,
-  underline: false
-)
-
-# Merge styles
+# Styles
+style = Style.new(fg_color: :cyan, bg_color: :black, bold: true)
 new_style = Style.merge(base_style, %{bold: true})
-
 # Colors: :black, :red, :green, :yellow, :blue, :magenta, :cyan, :white
 # Or RGB: {255, 128, 0}
 # Or 256-color: 42
 ```
-
----
-
-**Ready to build?** Pick a tutorial above and start coding!

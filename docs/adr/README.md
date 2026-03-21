@@ -1,10 +1,6 @@
 # Architecture Decision Records
 
-This directory contains Architecture Decision Records (ADRs) for the Raxol project. ADRs document important architectural decisions made during development, including the context, decision, and consequences.
-
-## What is an ADR?
-
-An Architecture Decision Record captures a single architectural decision and its rationale. The goal is to document why decisions were made, not just what was decided.
+ADRs for the Raxol project. Each one captures a single architectural decision -- why it was made, not just what was decided.
 
 ## ADR Index
 
@@ -22,9 +18,9 @@ An Architecture Decision Record captures a single architectural decision and its
 | [0010](0010-functional-error-handling-architecture.md) | Functional Error Handling Architecture | Implemented | 2025-02-01 |
 | [0011](0011-terminal-module-consolidation.md) | Terminal Module Consolidation | Implemented | 2025-02-27 |
 
-## ADR Template
+## Template
 
-When creating a new ADR, use this template:
+New ADRs should follow this structure:
 
 ```markdown
 # ADR-XXXX: Title
@@ -44,7 +40,7 @@ What becomes easier or more difficult to do because of this change?
 ### Positive
 - List of positive consequences
 
-### Negative  
+### Negative
 - List of negative consequences
 
 ### Mitigation
@@ -59,23 +55,17 @@ Links to related documentation, discussions, or resources.
 
 ## Why ADRs?
 
-1. **Historical Context**: Understand why decisions were made
-2. **Onboarding**: Help new team members understand the architecture
-3. **Decision Review**: Revisit decisions when context changes
-4. **Documentation**: Complement code comments and design docs
+They preserve context for why decisions were made, help new contributors understand the architecture, and give us something concrete to revisit when circumstances change.
 
-## Contributing
+## Adding a New ADR
 
-When making significant architectural decisions:
+1. Create a new file using the template above
+2. Number it sequentially (0012, 0013, etc.)
+3. Start with status "Proposed"
+4. Get review, then update to "Accepted"
+5. Update the index table in this file
 
-1. Create a new ADR using the template
-2. Number it sequentially (0004, 0005, etc.)
-3. Set status to "Proposed" initially
-4. Get review from team members
-5. Update status to "Accepted" after approval
-6. Update this index
-
-## Categories
+## By Category
 
 ### Core Architecture
 - [0001: Component-Based Architecture](0001-component-based-architecture.md)
@@ -83,39 +73,21 @@ When making significant architectural decisions:
 - [0007: State Management Strategy](0007-state-management-strategy.md)
 - [0011: Terminal Module Consolidation](0011-terminal-module-consolidation.md)
 
-### Performance & Scalability
+### Performance
 - [0002: Parser Performance Optimization](0002-parser-performance-optimization.md)
 - [0009: High-Performance Buffer Management](0009-high-performance-buffer-management.md)
 
-### Web Integration & Collaboration
+### Web Integration
 - [0004: WASH-Style Web Continuity Architecture](0004-wash-style-web-continuity.md)
 - [0008: Phoenix LiveView Integration Architecture](0008-phoenix-liveview-integration-architecture.md)
 
-### Extensibility & Security
+### Extensibility and Security
 - [0005: Runtime Plugin System Architecture](0005-runtime-plugin-system-architecture.md)
 - [0006: Enterprise Security and Compliance Model](0006-enterprise-security-and-compliance-model.md)
 
-### Code Quality & Maintainability
+### Code Quality
 - [0010: Functional Error Handling Architecture](0010-functional-error-handling-architecture.md)
 
-## Status: ADR Coverage Complete
+## Coverage
 
-**Current Coverage**: 11 ADRs covering all major architectural decisions
-**Gap Analysis**: ADR Audit Plan - COMPLETED
-
-### Major Architecture Areas Documented
-- Core Framework: Component architecture and terminal emulation strategy
-- Performance: Parser optimization and high-performance buffer management (42,000x improvement)
-- Web Integration: WASH-style continuity and Phoenix LiveView integration
-- Extensibility: Runtime plugin system with hot reloading and BEAM security analysis
-- Enterprise: Security, compliance, and audit logging
-- State Management: Multi-layered state architecture with React-style patterns
-- Code Quality: Functional error handling and terminal module consolidation
-
-### Implementation Status
-All ADRs represent implemented and production-ready architectural decisions. The ADR process now documents the complete architectural foundation of Raxol.
-
-### Future ADR Process
-- New architectural decisions will follow the established ADR workflow
-- Regular ADR reviews during major version releases
-- ADR updates when architectural patterns evolve
+11 ADRs covering all major architectural areas: core framework, performance, web integration, extensibility, security, state management, and code quality. All represent implemented decisions. New architectural decisions follow the same ADR workflow.

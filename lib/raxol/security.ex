@@ -17,7 +17,6 @@ defmodule Raxol.Security do
       {:ok, safe_path} = Raxol.Security.validate_path(path)
   """
 
-  alias Raxol.Security.Auditor
   alias Raxol.Security.InputValidator
 
   # Dangerous command patterns
@@ -172,40 +171,6 @@ defmodule Raxol.Security do
   end
 
   def verify_csrf_token(_, _), do: false
-
-  @doc """
-  Check rate limiting for an identifier and action.
-
-  ## Options
-
-    - `:limit` - Maximum requests allowed (default: 100)
-    - `:window` - Time window in milliseconds (default: 60_000)
-
-  ## Example
-
-      case Raxol.Security.check_rate_limit(user_id, :api_call) do
-        {:ok, remaining} -> proceed()
-        {:error, :rate_limited} -> reject()
-      end
-  """
-  @spec check_rate_limit(String.t(), atom(), keyword()) ::
-          {:ok, :allowed} | {:error, :medium, String.t()}
-  def check_rate_limit(identifier, action, opts \\ []) do
-    Auditor.check_rate_limit(identifier, action, opts)
-  end
-
-  @doc """
-  Validate and sanitize input with type checking.
-
-  ## Example
-
-      {:ok, safe_input} = Raxol.Security.validate_input(user_input, :text)
-  """
-  @spec validate_input(String.t(), atom(), keyword()) ::
-          {:ok, String.t()} | {:error, atom(), String.t()}
-  def validate_input(input, type, opts \\ []) do
-    Auditor.validate_input(input, type, opts)
-  end
 
   # Private functions
 

@@ -32,20 +32,28 @@ MIX_ENV=test mix test --max-failures 5                 # limit failures
 MIX_ENV=test mix test --failed                         # rerun failed
 ```
 
-Note: TMPDIR and SKIP_TERMBOX2_TESTS are set automatically via `.claude/settings.local.json`.
+Note: `TMPDIR=/tmp` and `SKIP_TERMBOX2_TESTS=true` are set automatically via `.claude/settings.json`. `MIX_ENV=test` must be specified explicitly for compile and test commands.
 
 ### Code Quality
 
 ```bash
-mix format                    # Format code
-mix format --check-formatted  # Check formatting (CI)
-mix credo                     # Style checks
-mix dialyzer                  # Type checking
 mix raxol.check               # All checks: format, compile, credo, dialyzer, security, test
 mix raxol.check --quick       # Skip dialyzer
 mix raxol.check --only format,credo  # Run specific checks only
 mix raxol.check --skip test   # Skip specific checks
+mix format                    # Format code
+mix format --check-formatted  # Check formatting (CI)
+mix credo                     # Style checks
+mix dialyzer                  # Type checking
 ```
+
+### Running Examples
+
+```bash
+mix run examples/getting_started/counter.exs  # Known working example (TEA model)
+```
+
+The counter is currently the only verified end-to-end example. `todo_app.ex` and `showcase_app.ex` reference undefined modules (`Screen`, `Stack`) and need rewriting.
 
 ### Development
 
@@ -55,9 +63,30 @@ mix raxol.gen.specs lib/path  # Generate type specs for private functions
 mix docs                      # Generate documentation
 ```
 
+### Development Scripts
+
+```bash
+./scripts/dev.sh test [pattern]  # Run tests with grep filter
+./scripts/dev.sh test-all        # Comprehensive test suite
+./scripts/dev.sh check           # Pre-commit quality checks
+./scripts/dev.sh dialyzer        # Static analysis with PLT caching
+./scripts/dev.sh setup           # Environment setup
+```
+
 ## Architecture
 
 Raxol is a terminal application framework supporting multiple UI paradigms (React, LiveView, HEEx, Raw).
+
+### Application Model
+
+**TEA (The Elm Architecture) is the canonical app model.** Applications implement `init/1`, `update/2`, and `view/1` callbacks, mapped to a GenServer via `Raxol.start_link/2` which delegates to `Raxol.Core.Runtime.Lifecycle.start_link/2`. Do not introduce competing application models (e.g., LiveView-style `mount/render`).
+
+```elixir
+use Raxol.UI, framework: :react      # React patterns (TEA)
+use Raxol.UI, framework: :liveview   # Phoenix LiveView patterns
+use Raxol.UI, framework: :heex       # Phoenix templates
+use Raxol.UI, framework: :raw        # Direct terminal control
+```
 
 ### Core Layers
 
@@ -71,22 +100,21 @@ lib/raxol/
 │   ├── rendering/   # Terminal rendering (backend, GPU, styles)
 │   └── driver.ex    # Platform-specific backend selection
 ├── ui/              # Multi-framework UI
-│   ├── components/
-│   ├── rendering/   # UI rendering pipeline
+│   ├── components/  # ~12 real widgets (TextInput, Table, Button, Modal, etc.)
+│   ├── layout/      # Flexbox and CSS grid layout engines
+│   ├── rendering/   # UI rendering pipeline (pipeline.ex is 834-line GenServer)
 │   └── theming/
 ├── core/            # Services and utilities
 │   ├── behaviours/  # BaseManager pattern for GenServers
 │   ├── renderer/    # Core rendering primitives (layout, views)
-│   ├── runtime/     # Plugin system
+│   ├── runtime/     # Plugin system, lifecycle, event management
 │   └── *_compat.ex  # Compatibility layers (Buffer, Renderer, Style, Box)
 ├── performance/     # Performance monitoring, profiling, caching
-├── live_view/       # Phoenix LiveView integration
+├── live_view/       # Phoenix LiveView integration (terminal + browser bridge)
 └── effects/         # Visual effects (CursorTrail, etc.)
 ```
 
 ### Key Architectural Decisions
-
-**Multi-Framework UI**: Use via `use Raxol.UI, framework: :react/:liveview/:heex/:raw`
 
 **Terminal Backend**: Automatic platform detection in `lib/raxol/terminal/driver.ex`
 - Unix/macOS: Native termbox2 NIF (`lib/termbox2_nif/c_src/`)
@@ -100,6 +128,8 @@ lib/raxol/
 
 **Configuration**: TOML-based (`config/raxol.example.toml` as template) with environment overrides in `config/environments/`
 
+**Phoenix as library only**: No active web server in core, Ecto.Repo explicitly disabled at runtime.
+
 ### Buffer/Renderer API
 
 The `Raxol.Core.Renderer` API:
@@ -110,6 +140,10 @@ The `Raxol.Core.Renderer` API:
 diff = Renderer.render_diff(old_buffer, new_buffer)
 IO.write(Renderer.apply_diff(diff))  # NOT Enum.each(diff, &IO.write/1)
 ```
+
+### Render Pipeline
+
+The render pipeline at `lib/raxol/ui/rendering/pipeline.ex` is a working GenServer with most stages implemented. Only stage 5 (render/paint) has stubs. The flow is: element tree -> layout engine -> positioned cells -> buffer write -> terminal output.
 
 ### Testing Patterns
 
@@ -124,6 +158,7 @@ IO.write(Renderer.apply_diff(diff))  # NOT Enum.each(diff, &IO.write/1)
 - `Raxol.Test.IsolationHelper.reset_global_state()` runs between tests
 - Property-based tests in `test/property/`
 - MockDB used instead of Ecto sandbox
+- Mox mocks defined in `test/test_helper.exs` for core runtime behaviours
 
 ### Naming Conventions
 
@@ -133,7 +168,7 @@ IO.write(Renderer.apply_diff(diff))  # NOT Enum.each(diff, &IO.write/1)
 
 ### Consolidated Namespaces
 
-These namespaces have been consolidated - avoid creating new top-level alternatives:
+These namespaces have been consolidated -- avoid creating new top-level alternatives:
 
 - `Raxol.Terminal.Commands.*` - All command processing (not `terminal/command/` or `command_processor.ex`)
 - `Raxol.Terminal.Rendering.*` - All terminal rendering (not `terminal/render/` or `terminal/renderer/`)
@@ -142,24 +177,13 @@ These namespaces have been consolidated - avoid creating new top-level alternati
 
 ## Environment Variables
 
-**Required for tests** (set automatically in `.claude/settings.local.json`):
+**Set automatically** (via `.claude/settings.json`):
 - `SKIP_TERMBOX2_TESTS=true` - Skip Docker/termbox2-dependent tests
 - `TMPDIR=/tmp` - Temporary directory for test artifacts
-- `MIX_ENV=test` - Required for test compilation
 
 **Optional**:
 - `CI=true` - Triggers CI-specific config
 - `RAXOL_SKIP_TERMINAL_INIT=true` - Skip terminal init in certain contexts
-
-## Development Scripts
-
-```bash
-./scripts/dev.sh test [pattern]  # Run tests with grep filter
-./scripts/dev.sh test-all        # Comprehensive test suite
-./scripts/dev.sh check           # Pre-commit quality checks
-./scripts/dev.sh dialyzer        # Static analysis with PLT caching
-./scripts/dev.sh setup           # Environment setup
-```
 
 ## Dialyzer
 
@@ -181,11 +205,12 @@ Configuration: `fly.toml`, Dockerfile: `docker/Dockerfile.web`
 
 ## Project Notes
 
-- **Phoenix as library only** - No active web server in core, Ecto.Repo explicitly disabled
 - Themes stored in `priv/themes/` as JSON
-- Never add coauthored-by claude or emojis to commits
 - Domain: raxol.io (made by axol.io)
 - Plugin docs: `docs/plugins/GUIDE.md`
+- `AGENTS.md` contains the improvement roadmap, competitive analysis, and implementation plan
+- HEEx terminal compilation (`compile_heex_for_terminal`) is experimental/naive
+- CQRS and EventSourcing remain entangled with core terminal code (too coupled to remove without core rewrite)
 
 <!-- usage-rules-start -->
 <!-- usage_rules-start -->
@@ -217,7 +242,7 @@ mix usage_rules.docs Enum.zip/1
 
 ## Searching Documentation
 
-You should also consult the documentation of any tools you are using, early and often. The best 
+You should also consult the documentation of any tools you are using, early and often. The best
 way to accomplish this is to use the `usage_rules.search_docs` mix task. Once you have
 found what you are looking for, use the links in the search results to get more detail. For example:
 

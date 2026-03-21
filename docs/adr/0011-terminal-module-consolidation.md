@@ -5,41 +5,25 @@ Implemented
 
 ## Context
 
-The terminal subsystem had accumulated significant technical debt through organic growth:
+The terminal subsystem had accumulated duplicates and dead code through organic growth:
 
-1. **Duplicate Formatting Modules**: Multiple modules providing overlapping formatting functionality:
-   - `Raxol.Terminal.FormattingManager`
-   - `Raxol.Terminal.Formatting.FormattingManager`
-   - Various inline formatting helpers
+- **Duplicate formatting**: `Raxol.Terminal.FormattingManager`, `Raxol.Terminal.Formatting.FormattingManager`, and scattered inline helpers all doing overlapping things.
+- **Redundant mode managers**: `Mode.ModeManager`, `Modes.ModeStateManager`, `Cursor.OptimizedCursorManager` -- three modules for what should be one concern.
+- **11 unused screen_buffer modules**: `cloud.ex`, `csi.ex`, `file_watcher.ex`, `metrics.ex`, `mode.ex`, `output.ex`, `preferences.ex`, `scroll.ex`, `system.ex`, `theme.ex`, `visualizer.ex` -- stubs with minimal or no usage.
+- **No unified caching strategy** across terminal operations.
 
-2. **Redundant Mode Managers**: Several mode management implementations:
-   - `Raxol.Terminal.Mode.ModeManager`
-   - `Raxol.Terminal.Modes.ModeStateManager`
-   - `Raxol.Terminal.Cursor.OptimizedCursorManager`
-
-3. **Unused Screen Buffer Modules**: 11 screen_buffer modules with minimal or no usage:
-   - `cloud.ex`, `csi.ex`, `file_watcher.ex`, `metrics.ex`, `mode.ex`
-   - `output.ex`, `preferences.ex`, `scroll.ex`, `system.ex`, `theme.ex`, `visualizer.ex`
-
-4. **Scattered Caching Logic**: No unified caching strategy across terminal operations
-
-This fragmentation led to:
-- Confusion about which module to use for what purpose
-- Duplicate code paths with subtle behavioral differences
-- Increased maintenance burden
-- Difficulty onboarding new contributors
+This made it unclear which module to use, created subtle behavioral differences between duplicate code paths, and made the codebase harder to contribute to.
 
 ## Decision
 
-Consolidate terminal modules into a smaller set of well-defined, single-responsibility modules:
+Consolidate into fewer, well-defined modules.
 
-### 1. Unified Formatting Module
+### Unified Formatting
 
-Create `Raxol.Terminal.Format` as the single source of truth for all text formatting:
+`Raxol.Terminal.Format` becomes the single source for all text formatting:
 
 ```elixir
 defmodule Raxol.Terminal.Format do
-  # All formatting functions consolidated here
   def bold(text), do: ...
   def italic(text), do: ...
   def color(text, fg, bg \\ nil), do: ...
@@ -47,13 +31,12 @@ defmodule Raxol.Terminal.Format do
 end
 ```
 
-### 2. Unified Caching Layer
+### Unified Caching
 
-Create `Raxol.Performance.Cache` for all caching needs:
+`Raxol.Performance.Cache` for all caching needs:
 
 ```elixir
 defmodule Raxol.Performance.Cache do
-  # ETS-backed caching with TTL support
   def get(key), do: ...
   def put(key, value, opts \\ []), do: ...
   def invalidate(key), do: ...
@@ -61,79 +44,53 @@ defmodule Raxol.Performance.Cache do
 end
 ```
 
-### 3. Deprecate Redundant Modules
+### 16 Modules Deprecated
 
-Mark 16 modules as deprecated with clear migration paths:
+**Formatting (2)**: Both `FormattingManager` modules -> use `Raxol.Terminal.Format`
 
-**Formatting (2 modules)**:
-- `Raxol.Terminal.FormattingManager` -> Use `Raxol.Terminal.Format`
-- `Raxol.Terminal.Formatting.FormattingManager` -> Use `Raxol.Terminal.Format`
+**Mode management (3)**: `Mode.ModeManager`, `Modes.ModeStateManager`, `Cursor.OptimizedCursorManager` -> use existing mode handling in emulator and `Raxol.Terminal.Cursor`
 
-**Mode Management (3 modules)**:
-- `Raxol.Terminal.Mode.ModeManager` -> Use existing mode handling in emulator
-- `Raxol.Terminal.Modes.ModeStateManager` -> Use existing mode handling
-- `Raxol.Terminal.Cursor.OptimizedCursorManager` -> Use `Raxol.Terminal.Cursor`
+**Screen buffer (11)**: All `screen_buffer/*.ex` modules deprecated as unused stubs.
 
-**Screen Buffer (11 modules)**:
-- All `screen_buffer/*.ex` modules deprecated as unused stubs
+Each deprecated module got a `@moduledoc` notice pointing to the replacement, and will be removed in v3.0.
 
-### 4. Preserve GenServer Efficiency
+### GenServer Efficiency
 
-The audit confirmed existing GenServers (ConfigServer, MetricsCollector) already use ETS backing efficiently. No changes needed to process architecture.
+The audit confirmed existing GenServers (ConfigServer, MetricsCollector) already use ETS backing efficiently. No process architecture changes needed.
 
-## Implementation
+## Migration
 
-### New Modules Created
-- `lib/raxol/terminal/format.ex` - Unified formatting
-- `lib/raxol/performance/cache.ex` - Unified caching
-
-### Modules Deprecated
-Each deprecated module received a `@moduledoc` update:
-
-```elixir
-@moduledoc """
-DEPRECATED: This module is deprecated. Use Raxol.Terminal.Format instead.
-
-This module remains for backwards compatibility but will be removed in v3.0.
-"""
-```
-
-### Migration Strategy
-- Phase 1: Create new consolidated modules (complete)
-- Phase 2: Add deprecation notices to old modules (complete)
-- Phase 3: Update internal callers to use new modules (in progress)
-- Phase 4: Remove deprecated modules in v3.0 (future)
+1. Create consolidated modules (done)
+2. Add deprecation notices to old modules (done)
+3. Update internal callers (in progress)
+4. Remove deprecated modules in v3.0 (future)
 
 ## Consequences
 
 ### Positive
-- **Clarity**: Single module for each concern eliminates confusion
-- **Maintainability**: 16 fewer modules to maintain
-- **Onboarding**: Clearer architecture for new contributors
-- **Performance**: Unified caching layer enables better optimization
-- **Testing**: Fewer code paths means more focused test coverage
+- One module per concern, no more guessing
+- 16 fewer modules to maintain
+- Clearer architecture for new contributors
+- Unified caching enables better optimization
+- Fewer code paths means more focused tests
 
 ### Negative
-- **Breaking Changes**: Callers of deprecated modules need updates
-- **Deprecation Period**: Must maintain deprecated modules until v3.0
+- Callers of deprecated modules need updates
+- Must maintain deprecated modules until v3.0
 
 ### Mitigation
-- Deprecation warnings guide users to new modules
 - Old modules continue to work during transition
-- Clear migration documentation in module docs
+- Deprecation warnings guide users to replacements
+- Migration paths documented in module docs
 
 ## Validation
 
-### Metrics
-- **Modules Consolidated**: 16 deprecated, 2 new created
-- **Lines of Code**: Net reduction of ~500 lines
-- **Test Coverage**: All new modules have comprehensive tests
-- **Compile Warnings**: Zero warnings from consolidation
-
-### Technical Validation
-- All existing tests continue to pass
+- 16 modules deprecated, 2 new created
+- Net reduction of ~500 lines
+- All existing tests pass
 - New modules have 100% function coverage
-- Performance benchmarks show no regression
+- No performance regression in benchmarks
+- Zero compile warnings from consolidation
 
 ## References
 
@@ -145,4 +102,3 @@ This module remains for backwards compatibility but will be removed in v3.0.
 
 **Decision Date**: 2025-02-27
 **Implementation Completed**: 2025-02-27
-**Impact**: Reduced terminal subsystem complexity and maintenance burden

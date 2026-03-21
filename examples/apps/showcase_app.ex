@@ -545,7 +545,7 @@ defmodule Raxol.Examples.Showcase do
 
   @impl true
   def handle_event("show_toast", _, socket) do
-    Raxol.Toast.show("This is a toast message!", type: :success)
+    # TODO: Add toast notification when Raxol.Toast is implemented
     {:noreply, socket}
   end
 

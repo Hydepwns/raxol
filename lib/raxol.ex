@@ -92,8 +92,7 @@ defmodule Raxol do
   * `Raxol.UI` - Layout engines and UI utilities
   * `Raxol.Events` - Event handling and distribution
   * `Raxol.Plugin` - Plugin system for extensibility
-  * `Raxol.Audit` - Enterprise audit logging
-  * `Raxol.Security` - Encryption and security features
+  * `Raxol.Security` - Input validation and security features
 
   ## Quick Examples
 
@@ -228,11 +227,11 @@ defmodule Raxol do
 
   ```elixir
   Raxol.version()
-  # => "1.0.0"
+  # => "2.1.0"
   ```
   """
   def version do
-    "1.0.0"
+    "2.1.0"
   end
 
   @doc """

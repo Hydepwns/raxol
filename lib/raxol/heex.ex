@@ -1,9 +1,13 @@
 defmodule Raxol.HEEx do
   @moduledoc """
-  HEEx template integration for Raxol.
+  **EXPERIMENTAL** -- HEEx template integration for Raxol.
 
   Allows using Phoenix HEEx templates directly in terminal applications,
   with terminal-specific components and styling.
+
+  Note: `Raxol.HEEx.Components` provides real Phoenix Component implementations,
+  but `compile_heex_for_terminal/2` uses naive string replacement and is not
+  production-ready.
 
   ## Example
 

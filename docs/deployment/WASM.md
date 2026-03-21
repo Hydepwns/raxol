@@ -1,60 +1,35 @@
-# WebAssembly Deployment Guide
+# WebAssembly Deployment
 
-> [Documentation](../README.md) > [Deployment](README.md) > WASM
-
-Raxol can be compiled to WebAssembly (WASM) for deployment in web browsers, enabling terminal emulation directly in the browser without server-side processing. This guide covers building, deploying, and integrating Raxol's WASM module.
-
-## Table of Contents
-
-1. [Prerequisites](#prerequisites)
-2. [Building WASM Module](#building-wasm-module)
-3. [Integration Options](#integration-options)
-4. [Deployment Strategies](#deployment-strategies)
-5. [Performance Optimization](#performance-optimization)
-6. [Browser Compatibility](#browser-compatibility)
-7. [Troubleshooting](#troubleshooting)
+Raxol can compile to WebAssembly for in-browser terminal emulation without server-side processing.
 
 ## Prerequisites
 
-### Required Tools
-
-1. **Rust Toolchain** (1.70+)
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   rustup target add wasm32-unknown-unknown
-   ```
-
-2. **wasm-opt** (Optional, for optimization)
-   ```bash
-   npm install -g wasm-opt
-   # or
-   brew install binaryen
-   ```
-
-3. **Elixir** (1.14+) with Mix
-
-### System Requirements
-
-- 4GB RAM minimum for compilation
-- 500MB free disk space
-- macOS, Linux, or Windows with WSL2
-
-## Building WASM Module
-
-### Quick Build
-
+**Rust Toolchain** (1.70+):
 ```bash
-# Basic build
-mix raxol.wasm
-
-# Optimized release build
-mix raxol.wasm --release
-
-# Development build with watch mode
-mix raxol.wasm --watch
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+rustup target add wasm32-unknown-unknown
 ```
 
-### Build Configuration
+**wasm-opt** (optional, for optimization):
+```bash
+npm install -g wasm-opt
+# or
+brew install binaryen
+```
+
+**Elixir** 1.14+ with Mix.
+
+**System requirements:** 4GB RAM for compilation, 500MB disk, macOS/Linux/WSL2.
+
+## Building
+
+```bash
+mix raxol.wasm              # basic build
+mix raxol.wasm --release    # optimized release
+mix raxol.wasm --watch      # dev build with watch mode
+```
+
+### Build Config
 
 Configure in `config/wasm.exs`:
 
@@ -80,20 +55,18 @@ config :raxol, :wasm,
 
 ### Build Output
 
-The build generates:
-
 ```
 priv/static/
 ├── wasm/
-│   ├── raxol.wasm        # WebAssembly module (~200KB)
-│   └── index.html        # Demo page
+│   ├── raxol.wasm        # ~200KB
+│   └── index.html        # demo page
 └── js/
-    └── raxol-terminal.js # JavaScript bindings
+    └── raxol-terminal.js # JS bindings
 ```
 
-## Integration Options
+## Integration
 
-### 1. Vanilla JavaScript
+### Vanilla JavaScript
 
 ```html
 <!DOCTYPE html>
@@ -111,11 +84,9 @@ priv/static/
       const terminal = new RaxolTerminal(80, 24);
       await terminal.initialize('/wasm/raxol.wasm');
 
-      // Basic usage
       terminal.writeLine('Welcome to Raxol Terminal!');
       terminal.write('$ ');
 
-      // Handle input
       document.addEventListener('keypress', (e) => {
         terminal.processInput(e.key);
       });
@@ -127,7 +98,7 @@ priv/static/
 </html>
 ```
 
-### 2. React Component
+### React
 
 ```jsx
 import React, { useEffect, useRef, useState } from 'react';
@@ -174,7 +145,7 @@ function Terminal({ width = 80, height = 24 }) {
 export default Terminal;
 ```
 
-### 3. Vue.js Component
+### Vue.js
 
 ```vue
 <template>
@@ -207,10 +178,10 @@ export default {
   },
   computed: {
     pixelWidth() {
-      return this.width * 10; // 10px per character
+      return this.width * 10;
     },
     pixelHeight() {
-      return this.height * 20; // 20px per line
+      return this.height * 20;
     }
   },
   async mounted() {
@@ -231,7 +202,6 @@ export default {
       this.render();
     },
     render() {
-      // Render terminal output to canvas
       const ctx = this.$refs.canvas.getContext('2d');
       const output = this.terminal.getOutput();
       // ... rendering logic
@@ -241,7 +211,7 @@ export default {
 </script>
 ```
 
-### 4. Web Components
+### Web Components
 
 ```javascript
 class RaxolTerminalElement extends HTMLElement {
@@ -296,27 +266,24 @@ Usage:
 
 ## Deployment Strategies
 
-### 1. Static Hosting (CDN)
+### Static Hosting (CDN)
 
-**Recommended for:** Public websites, documentation sites
+Works well for public sites and documentation.
 
 ```bash
-# Build optimized version
 mix raxol.wasm --release
 
-# Upload to CDN
 aws s3 cp priv/static/wasm/raxol.wasm s3://my-cdn/wasm/
 aws s3 cp priv/static/js/raxol-terminal.js s3://my-cdn/js/
 
-# Set appropriate headers
 aws s3 cp s3://my-cdn/wasm/raxol.wasm s3://my-cdn/wasm/raxol.wasm \
   --content-type "application/wasm" \
   --cache-control "public, max-age=31536000"
 ```
 
-### 2. Application Bundle
+### Application Bundle
 
-**Recommended for:** SPAs, React/Vue applications
+For SPAs and React/Vue apps:
 
 ```javascript
 // webpack.config.js
@@ -336,16 +303,13 @@ module.exports = {
 ```
 
 ```javascript
-// Import and use
 import wasmModule from './raxol.wasm';
 
 const terminal = new RaxolTerminal(80, 24);
 await terminal.initializeFromModule(wasmModule);
 ```
 
-### 3. Service Worker Caching
-
-**Recommended for:** Offline support, PWAs
+### Service Worker (Offline/PWA)
 
 ```javascript
 // service-worker.js
@@ -372,12 +336,11 @@ self.addEventListener('fetch', (event) => {
 });
 ```
 
-### 4. Server-Side Rendering (SSR)
+### SSR Frameworks
 
-**Note:** WASM runs client-side only
+WASM is client-side only. In Next.js, use dynamic imports:
 
 ```javascript
-// Next.js example
 import dynamic from 'next/dynamic';
 
 const RaxolTerminal = dynamic(
@@ -393,12 +356,13 @@ export default function Page() {
 }
 ```
 
-## Performance Optimization
+## Performance
 
-### 1. Lazy Loading
+### Lazy Loading
+
+Load the WASM module only when needed:
 
 ```javascript
-// Load WASM only when needed
 const loadTerminal = async () => {
   const { RaxolTerminal } = await import('./raxol-terminal');
   const terminal = new RaxolTerminal(80, 24);
@@ -406,16 +370,15 @@ const loadTerminal = async () => {
   return terminal;
 };
 
-// Triggered by user action
 button.addEventListener('click', async () => {
   const terminal = await loadTerminal();
   terminal.show();
 });
 ```
 
-### 2. Compression
+### Compression
 
-Enable gzip/brotli compression on your server:
+Enable gzip/brotli on your server:
 
 ```nginx
 # nginx.conf
@@ -427,15 +390,14 @@ location ~ \.wasm$ {
 }
 ```
 
-### 3. Memory Management
+### Memory Management
 
 ```javascript
-// Configure memory limits
 const terminal = new RaxolTerminal(80, 24, {
   memory: {
-    initial: 8,    // 8MB initial
-    maximum: 64,   // 64MB maximum
-    shared: false  // Use SharedArrayBuffer if available
+    initial: 8,    // 8MB
+    maximum: 64,   // 64MB
+    shared: false  // use SharedArrayBuffer if available
   }
 });
 
@@ -443,10 +405,10 @@ const terminal = new RaxolTerminal(80, 24, {
 terminal.destroy();
 ```
 
-### 4. Rendering Optimization
+### Rendering
 
 ```javascript
-// Use requestAnimationFrame for smooth rendering
+// Throttle renders with requestAnimationFrame
 let renderRequested = false;
 
 function requestRender() {
@@ -459,7 +421,6 @@ function requestRender() {
   }
 }
 
-// Debounce input handling
 const handleInput = debounce((input) => {
   terminal.processInput(input);
   requestRender();
@@ -467,8 +428,6 @@ const handleInput = debounce((input) => {
 ```
 
 ## Browser Compatibility
-
-### Supported Browsers
 
 | Browser | Minimum Version | Notes |
 |---------|----------------|-------|
@@ -481,23 +440,18 @@ const handleInput = debounce((input) => {
 ### Feature Detection
 
 ```javascript
-// Check WASM support
 if (typeof WebAssembly === 'undefined') {
   console.error('WebAssembly not supported');
-  // Fall back to server-side terminal
   return;
 }
 
-// Check for required features
 const features = {
   wasm: typeof WebAssembly !== 'undefined',
   instantiateStreaming: typeof WebAssembly.instantiateStreaming === 'function',
   sharedArrayBuffer: typeof SharedArrayBuffer !== 'undefined'
 };
 
-// Adapt based on capabilities
 if (!features.instantiateStreaming) {
-  // Use polyfill
   WebAssembly.instantiateStreaming = async (resp, imports) => {
     const source = await (await resp).arrayBuffer();
     return await WebAssembly.instantiate(source, imports);
@@ -505,18 +459,16 @@ if (!features.instantiateStreaming) {
 }
 ```
 
-### Mobile Support
+### Mobile
 
 ```javascript
-// Detect mobile and adjust
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 const terminal = new RaxolTerminal(
-  isMobile ? 40 : 80,  // Smaller width on mobile
-  isMobile ? 20 : 24   // Fewer lines on mobile
+  isMobile ? 40 : 80,
+  isMobile ? 20 : 24
 );
 
-// Touch input handling
 if (isMobile) {
   terminal.enableTouchKeyboard();
 }
@@ -524,50 +476,28 @@ if (isMobile) {
 
 ## Troubleshooting
 
-### Common Issues
+### WASM module fails to load
 
-#### 1. WASM Module Failed to Load
+Check that Content-Type is `application/wasm`, the file path is correct, and CORS headers are set if loading cross-origin.
 
-**Error:** `Failed to compile WebAssembly module`
+### Memory errors ("Cannot grow memory")
 
-**Solutions:**
-- Check Content-Type header is `application/wasm`
-- Verify file path is correct
-- Ensure CORS headers if loading cross-origin
-- Check browser console for detailed error
-
-#### 2. Memory Error
-
-**Error:** `Cannot grow memory`
-
-**Solutions:**
+Increase initial memory:
 ```javascript
-// Increase initial memory
 const terminal = new RaxolTerminal(80, 24, {
   memory: { initial: 32, maximum: 256 }
 });
 ```
 
-#### 3. Performance Issues
+### Slow rendering, high CPU
 
-**Symptoms:** Slow rendering, high CPU usage
+Reduce terminal size, use `mix raxol.wasm --release`, use production JS builds, and add render throttling.
 
-**Solutions:**
-- Reduce terminal size
-- Enable optimization: `mix raxol.wasm --release`
-- Use production build of JavaScript
-- Implement render throttling
+### Input not captured
 
-#### 4. Input Not Working
-
-**Error:** Keyboard input not captured
-
-**Solutions:**
 ```javascript
-// Ensure focus
 terminalElement.focus();
 
-// Prevent default behaviors
 document.addEventListener('keydown', (e) => {
   if (terminal.isActive()) {
     e.preventDefault();
@@ -576,9 +506,7 @@ document.addEventListener('keydown', (e) => {
 });
 ```
 
-### Debug Mode
-
-Enable debug output:
+### Debug mode
 
 ```javascript
 const terminal = new RaxolTerminal(80, 24, {
@@ -586,44 +514,36 @@ const terminal = new RaxolTerminal(80, 24, {
   logLevel: 'verbose'
 });
 
-// Monitor performance
 terminal.on('metrics', (metrics) => {
   console.log('FPS:', metrics.fps);
   console.log('Memory:', metrics.memory);
 });
 ```
 
-### Error Reporting
+### Error reporting
 
 ```javascript
 window.addEventListener('error', (e) => {
   if (e.error && e.error.stack.includes('wasm')) {
-    // Report WASM errors
     console.error('WASM Error:', e.error);
-    // Send to error tracking service
   }
 });
 ```
 
-## Advanced Topics
+## Advanced
 
 ### Custom Protocols
-
-Implement custom terminal protocols:
 
 ```javascript
 terminal.registerProtocol('custom', {
   pattern: /\x1b\[custom:([^;]+);/,
   handler: (match, args) => {
-    // Handle custom sequence
     console.log('Custom protocol:', args);
   }
 });
 ```
 
-### Plugin System
-
-Load WASM plugins dynamically:
+### Dynamic Plugins
 
 ```javascript
 async function loadPlugin(url) {
@@ -636,13 +556,10 @@ async function loadPlugin(url) {
   terminal.registerPlugin(module.instance.exports);
 }
 
-// Usage
 await loadPlugin('/plugins/rainbow-theme.wasm');
 ```
 
 ### Streaming Output
-
-Handle large outputs efficiently:
 
 ```javascript
 const decoder = new TextDecoder();
@@ -657,7 +574,7 @@ while (true) {
 }
 ```
 
-## Security Considerations
+## Security
 
 ### Content Security Policy
 
@@ -672,13 +589,11 @@ while (true) {
 ### Sandboxing
 
 ```javascript
-// Run terminal in sandboxed iframe
 const iframe = document.createElement('iframe');
 iframe.sandbox = 'allow-scripts';
 iframe.src = '/terminal.html';
 document.body.appendChild(iframe);
 
-// Communicate via postMessage
 iframe.contentWindow.postMessage({
   type: 'input',
   data: 'ls -la\n'
@@ -688,9 +603,7 @@ iframe.contentWindow.postMessage({
 ### Input Validation
 
 ```javascript
-// Sanitize user input
 function sanitizeInput(input) {
-  // Remove control characters except standard ones
   return input.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '');
 }
 
@@ -703,10 +616,3 @@ terminal.processInput(sanitizeInput(userInput));
 - [Raxol GitHub Repository](https://github.com/axol/raxol)
 - [WASM Performance Best Practices](https://developers.google.com/web/updates/2019/02/hotpath-with-wasm)
 - [Terminal Emulator Standards](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html)
-
-## Support
-
-For issues or questions:
-- GitHub Issues: [github.com/axol/raxol/issues](https://github.com/axol/raxol/issues)
-- Documentation: [raxol.io/docs](https://raxol.io/docs)
-- Community Discord: [discord.gg/raxol](https://discord.gg/raxol)

@@ -205,7 +205,7 @@ defmodule Raxol.Application do
     [
       if(features[:terminal_driver], do: get_terminal_driver_children()),
       if(features[:plugins], do: {Raxol.Plugin.Supervisor, []}),
-      if(features[:audit], do: {Raxol.Audit.Supervisor, []})
+      nil
     ]
   end
 
@@ -426,7 +426,6 @@ defmodule Raxol.Application do
       # Added for graceful web telemetry degradation
       RaxolWeb.Telemetry,
       Raxol.Plugin.Supervisor,
-      Raxol.Audit.Supervisor,
       RaxolWeb.RateLimitManager,
       Raxol.Terminal.Driver
     ]

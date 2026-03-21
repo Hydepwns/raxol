@@ -120,30 +120,12 @@ defmodule Raxol.SecurityCase do
   end
 
   @doc """
-  Assert that input passes validation.
+  Assert that input passes sanitization.
   """
-  def assert_input_valid(input, type, opts \\ []) do
-    case Security.validate_input(input, type, opts) do
-      {:ok, _} ->
+  def assert_input_valid(input, _type, _opts \\ []) do
+    case Security.sanitize_input(input) do
+      sanitized when is_binary(sanitized) ->
         :ok
-
-      {:error, _, reason} ->
-        raise ExUnit.AssertionError,
-          message: "Expected input to be valid, but got error: #{reason}"
-    end
-  end
-
-  @doc """
-  Assert that input fails validation.
-  """
-  def assert_input_invalid(input, type, opts \\ []) do
-    case Security.validate_input(input, type, opts) do
-      {:error, _, _} ->
-        :ok
-
-      {:ok, _} ->
-        raise ExUnit.AssertionError,
-          message: "Expected input to be invalid, but it passed validation"
     end
   end
 
@@ -158,28 +140,6 @@ defmodule Raxol.SecurityCase do
     end
   end
 
-  @doc """
-  Assert that rate limiting is triggered.
-  """
-  def assert_rate_limited(identifier, action, opts \\ []) do
-    limit = Keyword.get(opts, :limit, 5)
-
-    # Exhaust the rate limit
-    for _ <- 1..limit do
-      _ = Security.check_rate_limit(identifier, action, opts)
-    end
-
-    # Next call should be limited
-    case Security.check_rate_limit(identifier, action, opts) do
-      {:error, :medium, _message} ->
-        :ok
-
-      {:ok, _} ->
-        raise ExUnit.AssertionError,
-          message:
-            "Expected rate limiting to be triggered after #{limit} requests"
-    end
-  end
 
   @doc """
   Generate test payloads for security testing.

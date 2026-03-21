@@ -6,7 +6,6 @@ defmodule Raxol.Security.InputValidator do
   preventing common attacks like SQL injection, XSS, and command injection.
   """
 
-  alias Raxol.Security.Auditor
 
   @type validation_rule ::
           {:type, atom()}
@@ -252,7 +251,12 @@ defmodule Raxol.Security.InputValidator do
   defp sanitize_if_needed(value, _), do: {:ok, value}
 
   defp sanitize_html(html) do
-    Auditor.sanitize_html(html)
+    html
+    |> String.replace("&", "&amp;")
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+    |> String.replace("\"", "&quot;")
+    |> String.replace("'", "&#39;")
   end
 
   defp sanitize_sql(value) do

@@ -1,14 +1,8 @@
 # Plugin Development Guide
 
-> [Documentation](../README.md) > [Plugins](README.md) > Guide
-
-Complete guide to developing Raxol plugins with lifecycle management.
-
-**Version**: v2.0.0 | **Target**: Plugin developers | **Level**: Intermediate
+How to build Raxol plugins with lifecycle management, event filtering, and process isolation.
 
 ## Quick Start
-
-### Basic Plugin Structure
 
 ```elixir
 defmodule YourApp.Plugins.MyPlugin do
@@ -58,19 +52,11 @@ See [TEMPLATES.md](TEMPLATES.md) for complete working examples.
 ### States & Transitions
 
 ```
-Discovery → Loading → Starting → Running → Stopping → Stopped → Terminated
-            ↑ init   ↑ enable           ↑ disable           ↑ terminate
+Discovery -> Loading -> Starting -> Running -> Stopping -> Stopped -> Terminated
+             | init    | enable              | disable              | terminate
 ```
 
-### 1. Discovery Phase
-
-System discovers plugins and validates manifests:
-- Module discovery
-- Manifest validation
-- Dependency resolution
-- Security analysis (BEAM bytecode inspection)
-
-### 2. Loading Phase (init/1)
+### Loading Phase (init/1)
 
 ```elixir
 @impl true
@@ -83,72 +69,28 @@ def init(config) do
 end
 ```
 
-**Status**: `:loaded`
-
-### 3. Starting Phase (enable/1)
+### Starting Phase (enable/1)
 
 ```elixir
 @impl true
 def enable(state) do
-  # Set up resources
   timer = :timer.send_interval(5000, :refresh)
   new_state = %{state | timers: [timer]}
   {:ok, new_state}
 end
 ```
 
-**Status**: `:starting` → `:running`
-
-### 4. Runtime Phase
-
-Plugins handle events and commands while running.
-
-#### Event Filtering (Optional)
-
-```elixir
-@callback filter_event(event(), state()) :: {:ok, event()} | :halt | any()
-
-def filter_event({:key_press, "ctrl+p"}, state) do
-  # Intercept and handle
-  {:ok, {:plugin_event, :palette_open}}
-end
-
-def filter_event(event, _state) do
-  # Pass through
-  {:ok, event}
-end
-```
-
-#### Command Handling (Optional)
-
-```elixir
-@callback handle_command(command(), list(), state()) ::
-  {:ok, state(), any()} | {:error, any(), state()}
-
-def handle_command(:refresh, [], state) do
-  new_data = fetch_data()
-  {:ok, %{state | data: new_data}, :ok}
-end
-
-def get_commands do
-  [{:refresh, :handle_command, 3}]
-end
-```
-
-### 5. Stopping Phase (disable/1)
+### Stopping Phase (disable/1)
 
 ```elixir
 @impl true
 def disable(state) do
-  # Clean up resources
   Enum.each(state.timers, &:timer.cancel/1)
   {:ok, %{state | timers: []}}
 end
 ```
 
-**Status**: `:stopping` → `:stopped`
-
-### 6. Termination Phase (terminate/2)
+### Termination (terminate/2)
 
 ```elixir
 @impl true
@@ -160,21 +102,19 @@ end
 
 ## Plugin Manifest
 
-Complete manifest configuration:
-
 ```elixir
 def manifest do
   %{
     # Required
     name: "unique-name",              # Kebab-case
     version: "1.0.0",                 # Semantic versioning
-    description: "What it does",      # User-facing
-    author: "Your Name",              # Author info
+    description: "What it does",
+    author: "Your Name",
 
     # Dependencies
     dependencies: %{
-      "raxol-core" => "~> 1.5",      # Raxol version
-      "other-plugin" => "~> 2.0"     # Plugin deps
+      "raxol-core" => "~> 1.5",
+      "other-plugin" => "~> 2.0"
     },
 
     # Capabilities
@@ -192,9 +132,9 @@ def manifest do
     config_schema: %{
       field: %{
         type: :string,           # :string, :integer, :boolean, :list, :map
-        default: "value",        # Default value
-        description: "Purpose",  # Documentation
-        required: false,         # Optional?
+        default: "value",
+        description: "Purpose",
+        required: false,
         enum: ["a", "b"]        # Valid values (optional)
       }
     }
@@ -214,8 +154,8 @@ end
 ### Event Flow
 
 ```
-System Event → filter_event/2 (priority order) → Core Processing
-                     ↓
+System Event -> filter_event/2 (priority order) -> Core Processing
+                     |
               Can modify, pass through, or halt
 ```
 
@@ -224,7 +164,7 @@ System Event → filter_event/2 (priority order) → Core Processing
 Implement `filter_event/2` to intercept, modify, or block events:
 
 ```elixir
-# Block events (stops propagation to other plugins and core)
+# Block events (stops propagation)
 def filter_event({:key_press, "F12"}, _state), do: :halt
 
 # Modify events
@@ -236,9 +176,25 @@ end
 def filter_event(event, _state), do: {:ok, event}
 ```
 
+### Command Handling
+
+```elixir
+@callback handle_command(command(), list(), state()) ::
+  {:ok, state(), any()} | {:error, any(), state()}
+
+def handle_command(:refresh, [], state) do
+  new_data = fetch_data()
+  {:ok, %{state | data: new_data}, :ok}
+end
+
+def get_commands do
+  [{:refresh, :handle_command, 3}]
+end
+```
+
 ### Plugin Priority
 
-Control event processing order with the `priority` metadata field:
+Control event processing order with `priority` in the manifest:
 
 ```elixir
 def manifest do
@@ -251,41 +207,13 @@ def manifest do
 end
 ```
 
-Plugins without explicit priority default to `1000` (low priority).
+Plugins without explicit priority default to `1000`.
 
-### Plugin Dependencies
-
-Declare dependencies to ensure correct processing order:
-
-```elixir
-def manifest do
-  %{
-    name: "dependent-plugin",
-    version: "1.0.0",
-    dependencies: %{
-      "base-plugin" => "~> 1.0"  # Processed after base-plugin
-    },
-    # ...
-  }
-end
-```
-
-The event processor automatically sorts plugins by dependency order, ensuring
-dependent plugins see events after their dependencies have processed them.
+Dependencies are automatically sorted -- dependent plugins see events after their dependencies have processed them.
 
 ### Error Handling in Filters
 
-Filter errors are logged but don't stop event propagation:
-
-```elixir
-# If this crashes, the event passes through to the next plugin
-def filter_event(event, state) do
-  # Plugin errors are isolated
-  {:ok, transform(event)}
-end
-```
-
-Filters run under `PluginSupervisor` with a 1-second timeout by default.
+Filter errors are logged but don't stop event propagation. Filters run under `PluginSupervisor` with a 1-second timeout by default. If a filter crashes, the event passes through to the next plugin.
 
 ## Capabilities
 
@@ -304,12 +232,9 @@ end
 ### Keyboard Input
 
 ```elixir
-# Register in manifest
 capabilities: [:keyboard_input]
 
-# Handle in filter_event/2
 def filter_event({:key_press, hotkey}, state) when hotkey == state.config.hotkey do
-  # Handle hotkey
   {:ok, {:plugin_event, :activated}}
 end
 ```
@@ -332,96 +257,21 @@ def init(config) do
 end
 
 def filter_event({:file_event, _watcher, {path, _events}}, state) do
-  # Handle file change
   {:ok, {:file_changed, path}}
 end
 ```
 
 ## State Management
 
-Plugin state is managed through an ETS-backed `StateManager` for efficient
-concurrent access and crash recovery.
+Plugin state is managed through an ETS-backed `StateManager` for concurrent access and crash recovery. Each plugin's state is isolated. State updates from `handle_event/2` are automatically persisted.
 
-### Best Practices
-
-```elixir
-defstruct [
-  :config,          # User configuration
-  :ui_state,        # UI-related state
-  :data,            # Plugin data
-  :timers,          # Active timers
-  :subscriptions,   # Event subscriptions
-  :cache            # Cached computations
-]
-```
-
-### State Isolation
-
-Each plugin's state is isolated. State updates from `handle_event/2` are
-automatically persisted:
-
-```elixir
-def handle_event(event, state) do
-  # Return updated state - automatically persisted
-  {:ok, %{state | last_event: event}}
-end
-```
-
-### Hot Reload
-
-State persists across hot reloads:
-
-```elixir
-def enable(state) do
-  # Restore from previous state if hot reload
-  state = maybe_restore_state(state)
-  {:ok, state}
-end
-```
-
-### Crash Recovery
-
-If a plugin crashes, its last known state is preserved and restored on restart.
-The ETS-backed storage ensures state survives individual plugin failures.
-
-## Performance
-
-### Monitoring
-
-Plugin System v2.0 tracks:
-- CPU usage per plugin
-- Memory usage
-- Event processing time
-- Command execution time
-
-### Best Practices
-
-- Keep `filter_event/2` fast (< 1ms)
-- Use async for slow operations
-- Cache expensive computations
-- Clean up resources in `disable/1`
-
-## Error Handling
-
-```elixir
-def handle_command(:risky_operation, _args, state) do
-  case safe_operation() do
-    {:ok, result} ->
-      {:ok, state, result}
-    {:error, reason} ->
-      Logger.error("Operation failed: #{inspect(reason)}")
-      {:error, reason, state}
-  end
-end
-```
+State persists across hot reloads. If a plugin crashes, its last known state is preserved and restored on restart.
 
 ## Security Analysis
 
 Raxol automatically analyzes plugin BEAM bytecode to detect security-sensitive operations.
 
 ### Detected Capabilities
-
-The `BeamAnalyzer` inspects compiled modules for:
 
 | Capability | Detected Operations |
 |------------|---------------------|
@@ -431,8 +281,6 @@ The `BeamAnalyzer` inspects compiled modules for:
 | `:system_commands` | `System.cmd`, `Port.open`, `:os.cmd` |
 
 ### Security Policies
-
-Plugins are validated against configurable security policies:
 
 ```elixir
 alias Raxol.Core.Runtime.Plugins.Security.CapabilityDetector
@@ -451,51 +299,16 @@ case CapabilityDetector.validate_against_policy(MyPlugin, policy) do
 end
 ```
 
-### Capability Reports
-
-Generate human-readable security reports:
-
-```elixir
-report = CapabilityDetector.capability_report(MyPlugin)
-# Capability Report for MyPlugin
-# ==================================================
-#
-# [X] File System Access
-# [ ] Network Access
-# [ ] Dynamic Code Evaluation
-# [ ] System Command Execution
-#
-# --------------------------------------------------
-# Total sensitive capabilities: 1
-```
-
-### Declaring Capabilities
-
-Declare capabilities in your manifest to pass security validation:
-
-```elixir
-def manifest do
-  %{
-    name: "my-plugin",
-    version: "1.0.0",
-    capabilities: [:file_access],  # Must match detected capabilities
-    # ...
-  }
-end
-```
+Declare capabilities in your manifest to pass validation -- they must match what the bytecode analyzer detects.
 
 ## Process Isolation
 
-Plugin operations run under `PluginSupervisor` for crash isolation.
-
-### Isolated Task Execution
-
-Plugin crashes don't affect the core application:
+Plugin operations run under `PluginSupervisor` for crash isolation. Plugin crashes don't affect the core application.
 
 ```elixir
 alias Raxol.Core.Runtime.Plugins.PluginSupervisor
 
-# Synchronous execution with isolation
+# Synchronous with isolation
 case PluginSupervisor.run_plugin_task(:my_plugin, fn ->
   risky_operation()
 end) do
@@ -504,68 +317,34 @@ end) do
   {:error, {:timeout, ms}} -> log_timeout(ms)
 end
 
-# Fire and forget (async)
+# Fire and forget
 PluginSupervisor.async_plugin_task(:my_plugin, fn ->
   background_work()
 end)
-```
 
-### Timeout Control
-
-Set custom timeouts for slow operations:
-
-```elixir
-# Default timeout: 5000ms
-PluginSupervisor.run_plugin_task(:my_plugin, fn ->
-  slow_operation()
-end, timeout: 10_000)
-```
-
-### Concurrent Plugin Tasks
-
-Run multiple operations concurrently with individual failure isolation:
-
-```elixir
+# Concurrent tasks with individual failure isolation
 results = PluginSupervisor.run_plugin_tasks_concurrent(:my_plugin, [
   fn -> fetch_data() end,
   fn -> process_config() end,
   fn -> load_cache() end
 ])
 # => [{:ok, data}, {:ok, config}, {:ok, cache}]
-# Failed tasks return {:error, reason} without affecting others
 ```
 
-### Safe Callback Invocation
-
-Call plugin callbacks with automatic export checking:
-
-```elixir
-case PluginSupervisor.call_plugin_callback(:my_plugin, MyPlugin, :on_load, []) do
-  {:ok, result} -> result
-  :not_exported -> :skip
-  {:error, reason} -> handle_error(reason)
-end
-```
+Custom timeouts: `PluginSupervisor.run_plugin_task(:my_plugin, fun, timeout: 10_000)`
 
 ## Testing
 
-See [TESTING.md](TESTING.md) for comprehensive testing guide.
-
-### Quick Example
+See [TESTING.md](TESTING.md) for the full testing guide.
 
 ```elixir
 defmodule MyPluginTest do
   use ExUnit.Case
 
   test "plugin lifecycle" do
-    # Init
     {:ok, state} = MyPlugin.init(%{})
-
-    # Enable
     {:ok, state} = MyPlugin.enable(state)
     assert state.enabled
-
-    # Disable
     {:ok, state} = MyPlugin.disable(state)
     refute state.enabled
   end
@@ -579,16 +358,3 @@ end
 - [File Browser](../../lib/raxol/plugins/examples/file_browser_plugin.ex)
 - [Git Integration](../../lib/raxol/plugins/examples/git_integration_plugin.ex)
 - [Spotify](examples/SPOTIFY.md)
-
-## See Also
-
-- [TEMPLATES.md](TEMPLATES.md) - Ready-to-use plugin templates
-- [TESTING.md](TESTING.md) - Testing strategies
-- [README.md](README.md) - Plugin system overview
-
-## Module Reference
-
-- `Raxol.Core.Runtime.Plugins.Security.BeamAnalyzer` - BEAM bytecode security analysis
-- `Raxol.Core.Runtime.Plugins.Security.CapabilityDetector` - Policy-based capability validation
-- `Raxol.Core.Runtime.Plugins.PluginSupervisor` - Crash-isolated plugin task execution
-- `Raxol.Core.Runtime.Plugins.PluginEventProcessor` - Event filtering and routing

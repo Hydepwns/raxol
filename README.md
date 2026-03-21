@@ -7,54 +7,33 @@
 [![Hex.pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
 [![Documentation](https://img.shields.io/badge/docs-hexdocs-purple.svg)](https://hexdocs.pm/raxol)
 
-## Terminal Application Framework
+A terminal application framework for Elixir.
 
-Terminal framework supporting React, LiveView, HEEx, and Raw UI patterns.
+Raxol started as a terminal interface for AGI -- the kind of cockpit UI you'd build into a Gundam. We needed something that could render fast, compose like React, survive process crashes via OTP supervision, and run the same app over SSH, in a browser, or on bare metal. Nothing in the Elixir ecosystem did that, so we built it.
 
-### Features
-
-- Sub-microsecond parser operations
-- Multi-framework UI support (React, LiveView, HEEx, Raw)
-- Enterprise features: audit logging, encryption, SAML/OIDC
-- Graphics: Sixel support, session continuity
-- **NEW**: VIM navigation, command parser, fuzzy search, virtual filesystem, cursor effects
-- **Cross-platform**: Windows, macOS, Linux support
-
-### Platform Support
-
-Raxol works on all major platforms with automatic backend selection:
-
-- **Unix/macOS**: Native termbox2 NIF for optimal performance (~50μs per frame)
-- **Windows 10+**: Pure Elixir driver using OTP 28+ raw mode (~500μs per frame)
-- **All platforms**: Consistent API, automatic fallback, full feature parity
-
-Windows support uses VT100 terminal emulation (enabled by default in Windows 10+). No additional setup required.
-
-## Modular Packages (v2.0+)
-
-Raxol is now available as focused, independently releasable packages:
-
-- **[raxol_core](https://hex.pm/packages/raxol_core)** - Lightweight buffer primitives (< 100KB, zero deps)
-- **[raxol_liveview](https://hex.pm/packages/raxol_liveview)** - Phoenix LiveView integration
-- **[raxol_plugin](https://hex.pm/packages/raxol_plugin)** - Plugin system
-- **raxol** - Full framework (includes all packages)
-
-See **[Package Guide](docs/getting-started/PACKAGES.md)** for detailed comparison, migration paths, and installation instructions.
+It supports four UI paradigms (React, LiveView, HEEx, Raw), runs on all major platforms, and the same application code can render to a terminal or a Phoenix LiveView -- no rewrite needed.
 
 ## Quick Start
 
-See [Quickstart Tutorial](docs/getting-started/QUICKSTART.md).
+See the [Quickstart Tutorial](docs/getting-started/QUICKSTART.md), or just run the counter example:
 
-## Choose Your Framework
+```bash
+git clone --recursive https://github.com/Hydepwns/raxol.git
+cd raxol
+mix deps.get
+mix run examples/getting_started/counter.exs
+```
+
+Pick your framework:
 
 ```elixir
-use Raxol.UI, framework: :react      # Familiar React patterns
+use Raxol.UI, framework: :react      # React-style components with TEA (init/update/view)
 use Raxol.UI, framework: :liveview   # Phoenix LiveView patterns
 use Raxol.UI, framework: :heex       # Phoenix templates
 use Raxol.UI, framework: :raw        # Direct terminal control
 ```
 
-### React-Style Example
+A basic component looks like this:
 
 ```elixir
 defmodule MyApp do
@@ -71,107 +50,61 @@ defmodule MyApp do
 end
 ```
 
-### Emulator Usage
+The emulator can be configured for different use cases:
 
 ```elixir
-# Default configuration
-emulator = Emulator.new(80, 24)
-
-# With GenServers for concurrent operations
-emulator = Emulator.new(80, 24, use_genservers: true)
-
-# Minimal configuration
-emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
+emulator = Emulator.new(80, 24)                                              # defaults
+emulator = Emulator.new(80, 24, use_genservers: true)                        # concurrent ops
+emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)  # minimal
 ```
 
-[View more examples →](examples/README.md)
+[More examples](examples/README.md)
+
+## Platform Support
+
+Backend selection is automatic:
+
+- **Unix/macOS** -- Native termbox2 NIF (~50us per frame)
+- **Windows 10+** -- Pure Elixir driver via OTP 28+ raw mode (~500us per frame)
+
+Windows uses VT100 terminal emulation, enabled by default. No extra setup.
+
+## Packages
+
+Available as focused packages or as the full framework:
+
+- **[raxol_core](https://hex.pm/packages/raxol_core)** -- Buffer primitives (< 100KB, zero deps)
+- **[raxol_liveview](https://hex.pm/packages/raxol_liveview)** -- Phoenix LiveView integration
+- **[raxol_plugin](https://hex.pm/packages/raxol_plugin)** -- Plugin system
+- **raxol** -- Everything
+
+See the [Package Guide](docs/getting-started/PACKAGES.md) for details.
 
 ## Components-Only Mode
 
-When importing Raxol with `runtime: false`, you get access to:
-
-### UI Components
-
-- All framework adapters (React, LiveView, HEEx, Raw)
-- Complete component library (Button, Input, Table, Modal, etc.)
-- State management and context systems
-- Animation and transition engines
-- Theme system and styling utilities
-
-### Not Included in Components-Only
-
-- Terminal emulator runtime
-- ANSI/VT100 sequence processing
-- PTY/TTY management
-- SSH session handling
-- Sixel graphics rendering
-
-This makes Raxol perfect as a lightweight UI component library for web applications or other non-terminal use cases.
+Import with `runtime: false` and you get the UI layer without the terminal runtime -- all the framework adapters, components (Button, Input, Table, Modal, etc.), state management, animations, and theming. No terminal emulator, no ANSI processing, no PTY management. Useful if you just want the component library for a web app.
 
 ## Architecture
 
-### Terminal Framework
+The terminal layer handles VT100/ANSI compliance, Sixel graphics, mouse support, tab completion, and command history. The UI system gives you component composition, theming, and a 60 FPS animation engine. OTP supervision means a crash in one component doesn't take down the app.
 
-- VT100/ANSI compliance with modern extensions
-- Sixel graphics, GPU acceleration
-- Mouse support, event handling
-- Tab completion, command history
+The thing that makes Raxol different from Ratatui or Bubble Tea: a single app can render to a terminal AND a browser via the LiveView bridge. Deploy to SSH and web from one codebase. Erlang's built-in `:ssh` module means you can serve TUI apps over SSH with zero client requirements.
 
-### UI System
-
-- Universal features: actions, transitions, context, slots
-- 60 FPS animation engine
-- Component composition, theming
-
-### Enterprise Features
-
-- Session continuity
-- Real-time collaboration with CRDT sync
-- SOC2/HIPAA/GDPR audit logging
-- AES-256-GCM encryption with key rotation
+See [Architecture docs](docs/core/ARCHITECTURE.md) for internals.
 
 ## Performance
 
-See [Benchmark Docs](docs/bench/README.md).
+Parser operations run at 3.3us/sequence. See [Benchmark Docs](docs/bench/README.md).
 
 ## Documentation
 
-### Getting Started
+**Getting Started** -- [Quickstart](docs/getting-started/QUICKSTART.md) | [Core Concepts](docs/getting-started/CORE_CONCEPTS.md) | [Migration Guide](docs/getting-started/MIGRATION_FROM_DIY.md)
 
-- **[Quickstart](https://github.com/Hydepwns/raxol/blob/master/docs/getting-started/QUICKSTART.md)** - 5/10/15 minute tutorials
-- **[Core Concepts](https://github.com/Hydepwns/raxol/blob/master/docs/getting-started/CORE_CONCEPTS.md)** - Understand buffers and rendering
-- **[Migration Guide](https://github.com/Hydepwns/raxol/blob/master/docs/getting-started/MIGRATION_FROM_DIY.md)** - For teams with existing terminal code
+**Cookbooks** -- [LiveView Integration](docs/cookbook/LIVEVIEW_INTEGRATION.md) | [Performance](docs/cookbook/PERFORMANCE_OPTIMIZATION.md) | [Theming](docs/cookbook/THEMING.md)
 
-### Cookbooks
+**Features** -- [VIM Navigation](docs/features/VIM_NAVIGATION.md) | [Command Parser](docs/features/COMMAND_PARSER.md) | [Fuzzy Search](docs/features/FUZZY_SEARCH.md) | [Virtual Filesystem](docs/features/FILESYSTEM.md) | [Cursor Effects](docs/features/CURSOR_EFFECTS.md) | [Overview](docs/features/README.md)
 
-- **[LiveView Integration](https://github.com/Hydepwns/raxol/blob/master/docs/cookbook/LIVEVIEW_INTEGRATION.md)** - Render terminals in Phoenix
-- **[Performance Optimization](https://github.com/Hydepwns/raxol/blob/master/docs/cookbook/PERFORMANCE_OPTIMIZATION.md)** - 60fps techniques
-- **[Theming](https://github.com/Hydepwns/raxol/blob/master/docs/cookbook/THEMING.md)** - Custom color schemes
-
-### Features
-
-- **[VIM Navigation](https://github.com/Hydepwns/raxol/blob/master/docs/features/VIM_NAVIGATION.md)** - VIM-style keybindings and movement
-- **[Command Parser](https://github.com/Hydepwns/raxol/blob/master/docs/features/COMMAND_PARSER.md)** - Tab completion, history, argument parsing
-- **[Fuzzy Search](https://github.com/Hydepwns/raxol/blob/master/docs/features/FUZZY_SEARCH.md)** - Multi-mode search with highlighting
-- **[File System](https://github.com/Hydepwns/raxol/blob/master/docs/features/FILESYSTEM.md)** - Virtual filesystem with Unix commands
-- **[Cursor Effects](https://github.com/Hydepwns/raxol/blob/master/docs/features/CURSOR_EFFECTS.md)** - Visual trails and glow effects
-- **[Features Overview](https://github.com/Hydepwns/raxol/blob/master/docs/features/README.md)** - Complete guide to all features
-
-### API Reference
-
-- **[Buffer API](https://github.com/Hydepwns/raxol/blob/master/docs/core/BUFFER_API.md)** - Complete buffer operations reference
-- **[Architecture](https://github.com/Hydepwns/raxol/blob/master/docs/core/ARCHITECTURE.md)** - Design decisions and internals
-- **[Full Documentation](https://hexdocs.pm/raxol)** - Complete API reference
-
-### Recent Features
-
-- **ScreenBuffer.Scroll** (v2.1.0) - Complete scroll operations: regions, scrollback, VT100 index
-- **Core.Performance** (v2.1.0) - ETS-backed performance monitoring and frame statistics
-- **Feature Additions** (v2.0.0 Phase 6) - VIM navigation, command parser, fuzzy search, filesystem, cursor effects
-- **Documentation Overhaul** (v2.0.0 Phase 4) - Beginner-friendly guides and practical cookbooks
-- **Plugin System** (v2.0.0 Phase 3) - Spotify plugin showcase
-- **LiveView Integration** (v2.0.0 Phase 2) - Terminal rendering in Phoenix
-- **Raxol.Core** (v2.0.0 Phase 1) - Lightweight buffer primitives (< 100KB, zero deps)
+**API** -- [Buffer API](docs/core/BUFFER_API.md) | [Architecture](docs/core/ARCHITECTURE.md) | [Full API Reference](https://hexdocs.pm/raxol)
 
 ## Development Setup
 
@@ -183,7 +116,7 @@ MIX_ENV=test mix compile
 MIX_ENV=test mix test --exclude slow --exclude integration --exclude docker
 ```
 
-If you already cloned without `--recursive`, initialize the termbox2 submodule:
+Already cloned without `--recursive`? Initialize the termbox2 submodule:
 
 ```bash
 git submodule update --init --recursive
@@ -191,33 +124,18 @@ git submodule update --init --recursive
 
 ## VS Code Extension
 
-Development version available in `editors/vscode/`. To install:
+Dev version in `editors/vscode/`:
 
 ```bash
-cd editors/vscode
-npm install
-npm run compile
-code --install-extension .
+cd editors/vscode && npm install && npm run compile && code --install-extension .
 ```
 
-Features: syntax highlighting, IntelliSense, component snippets, live preview
-
-## Use Cases
-
-Use cases: terminal IDEs, DevOps tools, system monitoring, database clients, chat applications, games.
+Gives you syntax highlighting, IntelliSense, component snippets, and live preview.
 
 ## Roadmap
 
-### Planned Features
-
-- **Svelte Framework Support** - Reactive component patterns with compile-time optimization
-- **Enhanced Graphics** - WebGL-style rendering in terminal
-- **Multi-session Collaboration** - Real-time shared terminal sessions
-- **Plugin Marketplace** - Community plugins and themes
-- **Mobile Terminal** - iOS/Android terminal clients
-
-See [ROADMAP.md](ROADMAP.md) for detailed timeline and feature specifications.
+What's next: Svelte framework support, WebGL-style terminal rendering, multi-session collaboration, a plugin marketplace, and mobile terminal clients. See [ROADMAP.md](ROADMAP.md).
 
 ## License
 
-MIT License - see [LICENSE.md](LICENSE.md)
+MIT -- see [LICENSE.md](LICENSE.md)

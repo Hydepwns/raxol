@@ -1,140 +1,50 @@
-# Raxol Performance Targets
+# Performance Targets
 
-## Summary
+Current performance measurements and goals for Raxol.
 
-v2.0 performance targets exceeded. Ultra-fast sub-microsecond operations with optimized memory usage.
+## Measured Results
 
-## Performance Metrics Achievement
-
-| Metric | Target | Achieved | Status |
+| Metric | Target | Measured | Status |
 |--------|--------|----------|--------|
-| Parser Performance | <5 μs/op | 0.17-1.25 μs/op | Exceeded |
-| Render Performance | <1ms | 265-283 μs | Exceeded |
-| Memory per Session | <3MB | <2.8MB | Met |
-| Startup Time | <10ms | <10ms | Met |
-| Response Time | <2ms | <2ms | Met |
-| Render Frame Rate | 60 FPS | 60+ FPS | Exceeded |
-| Plugin Load Time | <15ms | ~10ms | Met |
+| Parser throughput | < 5 us/op | 0.17-1.25 us/op | Exceeded |
+| Render frame time | < 1ms | 265-283 us | Exceeded |
+| Memory per session | < 3MB | ~2.8MB | Met |
+| Startup time | < 10ms | < 10ms | Met |
+| Response latency | < 2ms P99 | < 2ms | Met |
+| Frame rate | 60 FPS | 60+ FPS | Met |
+| Plugin load time | < 15ms | ~10ms | Met |
 
-## Performance Details
+## Details
 
-### Parser Performance
-- Target: <5 μs per operation
-- Achieved: 0.17-1.25 μs per operation
-- Throughput: 800K-5.8M operations per second
+**Parser** -- 0.17-1.25 us per operation, which translates to 800K-5.8M ops/sec depending on input complexity.
 
-### Render Performance
-- Target: <1ms per frame
-- Achieved: 265-283 μs per frame
-- Frame Rate: 3,500+ FPS capability
+**Rendering** -- 265-283 us per frame. That's ~3,500 FPS of headroom, well within the 60 FPS budget (16.67ms).
 
-### Memory Usage
-- Target: <3MB per session
-- Achieved: 2.8MB per session
-- Concurrent sessions: 350+ per GB of RAM
+**Memory** -- ~2.8MB per session. Roughly 350 concurrent sessions per GB of RAM.
 
-### Startup Time
-- Target: <10ms cold start
-- Achieved: Consistently under 10ms
-- Hot reload: <1ms for component updates
+**Startup** -- Under 10ms cold start. Hot reload for component updates is under 1ms.
 
-### Response Time
-- Target: <2ms P99 latency
-- Achieved: <2ms for all operations
-- Input response: <1ms
-- Screen updates: <2ms refresh cycle
+**Response** -- Sub-2ms for all operations. Input handling is under 1ms, screen refresh under 2ms.
 
-### Rendering
-- Target: 60 FPS animations
-- Achieved: Consistent 60 FPS
-- Buffer updates use optimized diff algorithm
+**Plugins** -- ~10ms average load time. Message passing adds < 100us overhead. Hot reload works without downtime.
 
-### Plugin System
-- Target: <15ms load time
-- Achieved: ~10ms average
-- Hot reload: Zero-downtime updates
-- Message passing: <100μs overhead
-
-## Benchmark Commands
-
-Run these commands to verify performance:
+## Running Benchmarks
 
 ```bash
-# Parser performance
-mix run benchmarks/parser_bench.exs
-
-# Memory usage
-mix run benchmarks/memory_bench.exs
-
-# Full suite
-mix benchmark --all
-
-# Generate HTML report
-mix benchmark --all --formatter html
+mix run benchmarks/parser_bench.exs    # Parser only
+mix run benchmarks/memory_bench.exs    # Memory only
+mix benchmark --all                    # Full suite
+mix benchmark --all --formatter html   # HTML report
 ```
 
-## Performance Optimizations Applied
+## Optimizations Applied
 
-### Compile-Time Optimizations
-- Static content inlining
-- Dead code elimination
-- Constant folding
-- Template precompilation
+**Compile-time**: static content inlining, dead code elimination, constant folding, template precompilation.
 
-### Runtime Optimizations
-- Buffer pooling
-- Lazy evaluation
-- Incremental rendering
-- Efficient diff algorithms
+**Runtime**: buffer pooling, lazy evaluation, incremental rendering, efficient diff algorithms.
 
-### Memory Optimizations
-- String interning
-- Buffer reuse
-- Minimal allocations
-- GC-friendly data structures
-
-## Comparison with Competitors
-
-| Framework | Parser Speed | Memory Usage | Startup Time | Notes |
-|-----------|-------------|--------------|--------------|-------|
-| **Raxol** | **3.3 μs** | **2.8MB** | **<10ms** | Multi-framework |
-| Alacritty | ~5 μs | ~15MB | ~50ms | GPU-accelerated, Rust |
-| Kitty | ~4 μs | ~25MB | ~40ms | GPU-accelerated, Python/C |
-| WezTerm | ~6 μs | ~20MB | ~60ms | GPU-accelerated, Rust |
-| iTerm2 | ~15 μs | ~50MB | ~100ms | macOS native |
-| tmux | ~10 μs | ~5MB | ~20ms | Terminal multiplexer |
-| Windows Terminal | ~20 μs | ~30MB | ~150ms | Windows native |
-
-## Future Performance Goals
-
-All v1.0.0 targets met. Continued optimization:
-
-### v1.1 Targets
-- Parser: <2 μs/op (WASM optimization)
-- Memory: <2MB per session
-- Startup: <5ms cold start
-- Response: <1ms P99
-
-### v2.0 Vision
-- Parser: <1 μs/op (native code generation)
-- Memory: <1MB per session
-- Startup: <1ms cold start
-- Response: <500μs P99
+**Memory**: string interning, buffer reuse, minimal allocations, GC-friendly data structures.
 
 ## Verification
 
-Verification:
-- CI/CD pipeline benchmarks
-- Real-world testing
-- Property-based tests
-- Load testing (1000+ sessions)
-
-## Conclusion
-
-v1.0.0 meets all performance targets. Efficient terminal application framework with low resource usage.
-
----
-
-**Last Verified**: 2025-12-12
-**Version**: 2.0.1
-**Status**: ALL TARGETS ACHIEVED
+Benchmarks run in CI on every push. Also verified through property-based tests and load testing with 1000+ concurrent sessions.
