@@ -9,8 +9,7 @@
 defmodule SubscriptionsExample do
   # Use the correct Application behaviour
   use Raxol.Core.Runtime.Application
-  # Import the View DSL
-  import Raxol.View.Elements
+
 
   # Alias for subscriptions
   alias Raxol.Core.Runtime.Events.Subscription

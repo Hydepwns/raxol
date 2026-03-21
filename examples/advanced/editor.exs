@@ -12,7 +12,6 @@
 defmodule EditorExample do
   # Use correct behaviour and DSL
   use Raxol.Core.Runtime.Application
-  import Raxol.View.Elements
 
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Commands.Command

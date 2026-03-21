@@ -9,9 +9,10 @@ defmodule Raxol.Examples.FocusRingShowcase do
   - Accessibility integration (high contrast mode, reduced motion)
   """
   use Raxol.UI.Components.Base.Component
+  import Raxol.Core.Renderer.View, except: [view: 1]
   require Raxol.Core.Runtime.Log
-  require Raxol.View.Elements
-  import Raxol.View.Elements
+
+
 
   @animation_types [:none, :pulse, :blink, :fade, :glow, :bounce]
   @component_types [:button, :text_input, :checkbox]

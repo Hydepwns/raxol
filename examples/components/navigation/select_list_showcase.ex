@@ -10,9 +10,10 @@ defmodule Raxol.Examples.SelectListShowcase do
   - Styling options
   """
   use Raxol.UI.Components.Base.Component
+  import Raxol.Core.Renderer.View, except: [view: 1]
   require Raxol.Core.Runtime.Log
-  require Raxol.View.Elements
-  import Raxol.View.Elements
+
+
 
   @impl Raxol.UI.Components.Base.Component
   def init(_props) do

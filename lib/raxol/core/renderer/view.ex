@@ -538,6 +538,22 @@ defmodule Raxol.Core.Renderer.View do
     Raxol.Core.Renderer.View.Layout.Flex.column(opts)
   end
 
+  defmacro column(opts, do: block) do
+    quote do
+      Raxol.Core.Renderer.View.validate_keyword_opts(
+        unquote(opts),
+        "View.column macro"
+      )
+
+      Raxol.Core.Renderer.View.Layout.Flex.column(
+        Keyword.merge(
+          Raxol.Core.Renderer.View.ensure_keyword(unquote(opts)),
+          Raxol.Core.Renderer.View.ensure_keyword(children: unquote(block))
+        )
+      )
+    end
+  end
+
   @doc """
   Creates a button element.
 
@@ -682,6 +698,21 @@ defmodule Raxol.Core.Renderer.View do
   def shadow(opts \\ []) do
     Components.shadow(opts)
   end
+
+  # Delegate unique Components functions so View is the single complete DSL.
+  defdelegate label(opts \\ []), to: Raxol.View.Components
+  defdelegate input(opts \\ []), to: Raxol.View.Components
+  defdelegate list(opts \\ []), to: Raxol.View.Components
+  defdelegate spacer(opts \\ []), to: Raxol.View.Components
+  defdelegate divider(opts \\ []), to: Raxol.View.Components
+  defdelegate progress(opts \\ []), to: Raxol.View.Components
+  defdelegate modal(opts \\ []), to: Raxol.View.Components
+  defdelegate select(opts \\ []), to: Raxol.View.Components
+  defdelegate radio_group(opts \\ []), to: Raxol.View.Components
+  defdelegate textarea(opts \\ []), to: Raxol.View.Components
+  defdelegate container(opts \\ []), to: Raxol.View.Components
+  defdelegate tabs(opts \\ []), to: Raxol.View.Components
+  defdelegate span(content, opts \\ []), to: Raxol.View.Components
 
   defp process_layout_result(result, _view), do: result
 

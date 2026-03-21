@@ -1,7 +1,6 @@
 # This example demonstrates the Raxol.UI.Components.Display.Progress component.
 defmodule Raxol.Docs.Guides.Examples.Display.ProgressBarTest do
   use Raxol.Core.Runtime.Application
-  import Raxol.View.Elements
 
   defmodule State do
     defstruct progress_value: 25, timer: nil

@@ -1,7 +1,6 @@
 # This example demonstrates event handling using the Raxol.UI.Components.Input.Button and Raxol.UI.Components.Input.TextField components.
 defmodule Raxol.Docs.Guides.Examples.Interactive.EventHandlingTest do
   use Raxol.Core.Runtime.Application
-  import Raxol.View.Elements
 
   # Define the application state (model)
   defmodule State do

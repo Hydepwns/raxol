@@ -15,7 +15,6 @@
 defmodule TodoExample do
   use Raxol.Core.Runtime.Application
 
-  import Raxol.View.Elements, only: [column: 2]
 
   require Raxol.Core.Runtime.Log
 

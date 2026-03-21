@@ -1,7 +1,6 @@
 # This example demonstrates advanced layout techniques using the `row` and `column` elements from Raxol.View.Elements.
 defmodule Raxol.Docs.Guides.Examples.Layout.AdvancedLayoutTest do
   use Raxol.Core.Runtime.Application
-  import Raxol.View.Elements
 
   @impl true
   def init(_opts) do

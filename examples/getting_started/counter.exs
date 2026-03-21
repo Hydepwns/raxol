@@ -8,8 +8,6 @@
 defmodule CounterExample do
   use Raxol.Core.Runtime.Application
 
-  import Raxol.View.Elements
-
   require Raxol.Core.Runtime.Log
 
   @impl true
