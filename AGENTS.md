@@ -13,18 +13,30 @@ Make raxol the best terminal UI framework in any language. The Elixir/OTP ecosys
 - LiveView bridge -- buffer-to-HTML with caching, dirty checking, themes
 - Tree diffing -- keyed and non-keyed child handling
 - Layout engines -- flexbox (1028 lines) and CSS grid (1092 lines) with real algorithms
-- Test suite -- ~4756 tests, 0 failures, property-based tests, broad coverage
+- Test suite -- ~4756 tests, 0 failures, property-based tests, broad coverage (4715 last verified)
 - Plugin system -- real architecture with lifecycle, dependency resolution, events (40+ modules)
 - Counter example -- runs end-to-end (`mix run examples/getting_started/counter.exs`)
 - `Raxol.start_link/2` -- defined, delegates to `Raxol.Core.Runtime.Lifecycle.start_link/2`
 - Render pipeline -- `lib/raxol/ui/rendering/pipeline.ex` (834 lines) is a working GenServer; most stages implemented, only stage 5 (render/paint) has stubs
 - 9 real widgets (TextInput, TextArea, Table, Button, Modal, SelectList, Checkbox, ProgressBar, MultiLineInput), 2 partial (CodeBlock, MarkdownRenderer), 1 stub (Terminal)
+- All widgets render consistent `%{type: ..., content/children: ..., style: ...}` maps (normalized in Track A Step 4)
+- MultiLineInput has undo/redo (snapshot-based, 100-entry cap) and desired_col vertical navigation
 
 ### What's Broken
 
 - **HEEx terminal compilation is naive** -- `lib/raxol/heex/components.ex` has 455 lines of real Phoenix Component implementations, but `compile_heex_for_terminal` is still naive string replacement
 - **Scope creep** -- CQRS and EventSourcing remain entangled with core terminal code; Spotify, SSH, WASM, encryption, and audit modules have been removed
 - **Version mismatch** -- FIXED: `version/0` now returns "2.1.0" matching mix.exs
+
+### Track A: Widget Audit & Hardening (Completed Steps)
+
+Steps 1-3 completed in prior session. Step 4 completed in current session:
+
+- **Step 4.1**: Fixed CodeBlock render/2 -- replaced nonexistent Makeup modules with actual API (`Makeup.highlight_inner_html/2`), added HTML tag stripping for TUI
+- **Step 4.2**: Implemented MultiLineInput undo/redo -- snapshot-based history stack (`{value, cursor_pos}`), pushed before mutations, redo cleared on new edits, 100-entry cap
+- **Step 4.3**: Fixed EventHandler/MessageRouter message mismatch -- EventHandler now emits tuples matching router expectations (e.g., `{:select_all}` not `:select_all`, `{:selection_move, dir}` not `{:select_and_move, dir}`)
+- **Step 4.4**: Normalized render return types across all widgets -- standardized to `%{type: ..., content/children: ..., style: ...}` flat maps compatible with TreeDiffer. Affected: Terminal, TextInput, TextField, Checkbox, SelectList renderer, Progress. Updated 7 test files.
+- **Step 4.5**: Fixed desired_col persistence in NavigationHelper -- vertical movements preserve intended column across short lines, horizontal movements clear it. Added 10 tests.
 
 ### Codebase Stats
 
@@ -140,7 +152,10 @@ Build 15 production-quality widgets. Each widget must have: implementation, test
 
 #### Widget Architecture
 
-- Each widget is a module implementing a behaviour: `init/1`, `update/2`, `render/1`
+- Each widget is a module implementing a behaviour: `init/1`, `update/2`, `render/2` (state, context)
+- `render/2` returns flat maps: `%{type: atom, content: string, style: map, children: list}` -- compatible with TreeDiffer
+- Use `Raxol.View.Components.text(content: ...)` to build text elements (returns `%{type: :text, content: ..., style: %{}, id: nil}`)
+- Do NOT use `Raxol.Core.Renderer.Element.new` (returns `%Element{tag:, attributes:, children:}` which is incompatible with TreeDiffer)
 - Widgets receive focused/unfocused events
 - Widgets declare their minimum/preferred size for the layout engine
 - Widgets are composable -- a Modal contains other widgets, a List contains Text items
