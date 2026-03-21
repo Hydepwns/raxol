@@ -80,9 +80,9 @@ defmodule Raxol.UI.Components.CodeBlock do
   end
 
   @doc "Initializes the component state from props."
-  @spec init(map()) :: map()
+  @spec init(map()) :: {:ok, map()}
   @impl true
-  def init(props), do: props
+  def init(props), do: {:ok, props}
 
   @doc "Updates the component state. No updates are handled by default."
   @spec update(term(), map()) :: map()

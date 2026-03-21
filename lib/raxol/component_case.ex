@@ -138,8 +138,8 @@ defmodule Raxol.ComponentCase do
   defp extract_styles(_), do: []
 
   defp apply_event(component, event) do
-    if function_exported?(component.module, :handle_event, 2) do
-      new_state = component.module.handle_event(event, component.state)
+    if function_exported?(component.module, :handle_event, 3) do
+      {new_state, _commands} = component.module.handle_event(event, component.state, %{})
 
       {:ok,
        %{

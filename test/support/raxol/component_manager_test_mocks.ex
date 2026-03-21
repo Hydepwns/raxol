@@ -63,12 +63,12 @@ defmodule Raxol.Test.ComponentManagerTestMocks do
       {Map.put(state, :last_message, msg), []}
     end
 
-    def handle_event({:test_event, value}, state) do
+    def handle_event({:test_event, value}, state, _context) do
       new_state = Map.put(state, :event_value, value)
       {new_state, []}
     end
 
-    def handle_event(_event, state) do
+    def handle_event(_event, state, _context) do
       {state, []}
     end
 
@@ -84,7 +84,7 @@ defmodule Raxol.Test.ComponentManagerTestMocks do
       {state, commands}
     end
 
-    def handle_event_with_commands(_event, state) do
+    def handle_event_with_commands(_event, state, _context) do
       commands = [
         {:broadcast, :broadcast_message}
       ]

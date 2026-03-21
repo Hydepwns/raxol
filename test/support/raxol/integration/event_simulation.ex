@@ -248,7 +248,7 @@ defmodule Raxol.Test.Integration.EventSimulation do
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
       |> Enum.into(%{})
 
-    result = component.module.handle_event(component.state, event, context)
+    result = component.module.handle_event(event, component.state, context)
     handle_event_result(result, component)
   end
 

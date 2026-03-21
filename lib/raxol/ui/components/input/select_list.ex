@@ -151,7 +151,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
     }
 
     # Merge validated props with default internal state
-    Map.merge(defaults, props)
+    {:ok, Map.merge(defaults, props)}
   end
 
   @doc """
@@ -237,10 +237,15 @@ defmodule Raxol.UI.Components.Input.SelectList do
     do_update(message, state)
   end
 
-  defp normalize_state(state) when not is_map(state), do: init(%{options: []})
+  defp normalize_state(state) when not is_map(state) do
+    {:ok, s} = init(%{options: []})
+    s
+  end
 
-  defp normalize_state(state) when map_size(state) == 0,
-    do: init(%{options: []})
+  defp normalize_state(state) when map_size(state) == 0 do
+    {:ok, s} = init(%{options: []})
+    s
+  end
 
   defp normalize_state(%{} = state) do
     ensure_options_present(state)
@@ -279,22 +284,22 @@ defmodule Raxol.UI.Components.Input.SelectList do
   Handles events for the SelectList component, such as keypresses, mouse events, and context changes.
   """
   @impl Raxol.UI.Components.Base.Component
-  def handle_event(%{__struct__: _} = event, context, state) do
-    handle_event(Map.from_struct(event), context, state)
+  def handle_event(%{__struct__: _} = event, state, context) do
+    handle_event(Map.from_struct(event), state, context)
   end
 
-  def handle_event(%{type: :key, data: %{key: key}}, _context, state) do
+  def handle_event(%{type: :key, data: %{key: key}}, state, _context) do
     state = ensure_state(state)
     handle_key_event(key, state)
   end
 
-  def handle_event(%{type: :focus}, _context, state) do
+  def handle_event(%{type: :focus}, state, _context) do
     state = ensure_state(state)
     {new_state, _} = update({:set_focus, true}, state)
     {new_state, nil}
   end
 
-  def handle_event(%{type: :blur}, _context, state) do
+  def handle_event(%{type: :blur}, state, _context) do
     state = ensure_state(state)
     {new_state, _} = update({:set_focus, false}, state)
     {new_state, nil}
@@ -302,15 +307,15 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   def handle_event(
         %{type: :resize, data: %{width: _w, height: h}},
-        _context,
-        state
+        state,
+        _context
       ) do
     state = ensure_state(state)
     {new_state, _} = update({:set_visible_height, h}, state)
     {Navigation.update_scroll_position(new_state), nil}
   end
 
-  def handle_event(%{type: :mouse, data: %{x: _x, y: y}}, _context, state) do
+  def handle_event(%{type: :mouse, data: %{x: _x, y: y}}, state, _context) do
     state = ensure_state(state)
     handle_mouse_click(y, state)
   end
@@ -564,7 +569,11 @@ defmodule Raxol.UI.Components.Input.SelectList do
   end
 
   defp ensure_options_present(%{options: _} = state), do: state
-  defp ensure_options_present(_state), do: init(%{options: []})
+
+  defp ensure_options_present(_state) do
+    {:ok, s} = init(%{options: []})
+    s
+  end
 
   defp handle_option_click_if_valid(state, index, effective_options)
        when index >= 0 and index < length(effective_options) do

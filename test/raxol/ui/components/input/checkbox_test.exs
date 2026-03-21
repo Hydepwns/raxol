@@ -287,8 +287,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "toggles state from unchecked to checked on click" do
       state = init_state(checked: false)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(click_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(click_event(), state, %{})
 
       assert new_state.checked == true
     end
@@ -296,8 +296,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "toggles state from checked to unchecked on click" do
       state = init_state(checked: true)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(click_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(click_event(), state, %{})
 
       assert new_state.checked == false
     end
@@ -305,8 +305,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "toggles state from unchecked to checked on space keypress" do
       state = init_state(checked: false)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(space_keypress_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(space_keypress_event(), state, %{})
 
       assert new_state.checked == true
     end
@@ -314,8 +314,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "toggles state from checked to unchecked on space keypress" do
       state = init_state(checked: true)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(space_keypress_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(space_keypress_event(), state, %{})
 
       assert new_state.checked == false
     end
@@ -323,15 +323,15 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "does not toggle state on other keypress" do
       state = init_state(checked: false)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(other_keypress_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(other_keypress_event(), state, %{})
 
       assert new_state.checked == false
 
       state_checked = init_state(checked: true)
 
-      {:noreply, new_state_checked, _cmds} =
-        Checkbox.handle_event(other_keypress_event(), %{}, state_checked)
+      {new_state_checked, _cmds} =
+        Checkbox.handle_event(other_keypress_event(), state_checked, %{})
 
       assert new_state_checked.checked == true
     end
@@ -339,8 +339,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "does not toggle when disabled (click)" do
       state = init_state(checked: false, disabled: true)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(click_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(click_event(), state, %{})
 
       assert new_state.checked == false
     end
@@ -348,8 +348,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "does not toggle when disabled (space keypress)" do
       state = init_state(checked: false, disabled: true)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(space_keypress_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(space_keypress_event(), state, %{})
 
       assert new_state.checked == false
     end
@@ -365,8 +365,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       # Reset tracker
       ProcessStore.put(:toggled_to, nil)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(click_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(click_event(), state, %{})
 
       assert new_state.checked == true
       assert ProcessStore.get(:toggled_to) == true
@@ -374,8 +374,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       # Reset tracker
       ProcessStore.put(:toggled_to, nil)
 
-      {:noreply, final_state, _cmds} =
-        Checkbox.handle_event(space_keypress_event(), %{}, new_state)
+      {final_state, _cmds} =
+        Checkbox.handle_event(space_keypress_event(), new_state, %{})
 
       assert final_state.checked == false
       assert ProcessStore.get(:toggled_to) == false
@@ -391,16 +391,16 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       # Reset tracker
       ProcessStore.put(:toggle_called, false)
 
-      {:noreply, _new_state, _cmds} =
-        Checkbox.handle_event(click_event(), %{}, state)
+      {_new_state, _cmds} =
+        Checkbox.handle_event(click_event(), state, %{})
 
       assert ProcessStore.get(:toggle_called) == false
 
       # Reset tracker
       ProcessStore.put(:toggle_called, false)
 
-      {:noreply, _final_state, _cmds} =
-        Checkbox.handle_event(other_keypress_event(), %{}, state)
+      {_final_state, _cmds} =
+        Checkbox.handle_event(other_keypress_event(), state, %{})
 
       assert ProcessStore.get(:toggle_called) == false
     end

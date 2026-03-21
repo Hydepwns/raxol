@@ -46,15 +46,16 @@ defmodule Raxol.UI.Components.Terminal do
     props_map = if Keyword.keyword?(props), do: Map.new(props), else: props
 
     # Initialize terminal state using props, providing defaults
-    %__MODULE__{
-      id: Map.get(props_map, :id, nil),
-      width: Map.get(props_map, :width, 80),
-      height: Map.get(props_map, :height, 24),
-      # Use buffer from props or default to []
-      buffer: Map.get(props_map, :buffer, []),
-      style: Map.get(props_map, :style, %{})
-      # Initialize other relevant fields if added later
-    }
+    {:ok,
+     %__MODULE__{
+       id: Map.get(props_map, :id, nil),
+       width: Map.get(props_map, :width, 80),
+       height: Map.get(props_map, :height, 24),
+       # Use buffer from props or default to []
+       buffer: Map.get(props_map, :buffer, []),
+       style: Map.get(props_map, :style, %{})
+       # Initialize other relevant fields if added later
+     }}
   end
 
   @doc "Updates the Terminal component state in response to messages. Handles writing, clearing, etc."
@@ -72,7 +73,7 @@ defmodule Raxol.UI.Components.Terminal do
   @doc "Handles key events for the Terminal component."
   @impl Raxol.UI.Components.Base.Component
   # Use map matching
-  def handle_event(%{type: :key} = event, %{} = _props, state) do
+  def handle_event(%{type: :key} = event, state, %{} = _context) do
     # Process key event, send to terminal emulator/process
     Raxol.Core.Runtime.Log.debug(
       "Terminal #{Map.get(state, :id, nil)} received key event: #{inspect(event.data)}"
@@ -86,7 +87,7 @@ defmodule Raxol.UI.Components.Terminal do
 
   # Catch-all handle_event
   @impl Raxol.UI.Components.Base.Component
-  def handle_event(event, %{} = _props, state) do
+  def handle_event(event, state, %{} = _context) do
     Raxol.Core.Runtime.Log.debug(
       "Terminal #{Map.get(state, :id, nil)} received event: #{inspect(event.type)}"
     )

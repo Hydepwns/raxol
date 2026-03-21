@@ -69,26 +69,26 @@ defmodule Raxol.UI.Components.Input.TextInput do
   """
   @impl Component
   @spec handle_event(map(), map(), map()) :: {map(), list()}
-  def handle_event(state, %Event{type: :key, data: key_data}, _context) do
+  def handle_event(%Event{type: :key, data: key_data}, state, _context) do
     KeyHandler.handle_key(state, key_data.key, key_data.modifiers || [])
   end
 
-  def handle_event(state, %{type: :focus}, _context) do
+  def handle_event(%{type: :focus}, state, _context) do
     new_state = %{state | focused: true}
     {new_state, []}
   end
 
-  def handle_event(state, %{type: :blur}, _context) do
+  def handle_event(%{type: :blur}, state, _context) do
     new_state = %{state | focused: false}
     {new_state, []}
   end
 
-  def handle_event(state, %{type: :mouse}, _context) do
+  def handle_event(%{type: :mouse}, state, _context) do
     new_state = %{state | focused: true}
     {new_state, []}
   end
 
-  def handle_event(state, _event, _context) do
+  def handle_event(_event, state, _context) do
     {state, []}
   end
 

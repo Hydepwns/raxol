@@ -152,8 +152,8 @@ defmodule Raxol.UI.Components.Input.Button do
 
   ## Parameters
 
-  * `button` - The button component
   * `event` - The input event to handle
+  * `button` - The button component state
   * `context` - The event context
 
   ## Returns
@@ -163,21 +163,21 @@ defmodule Raxol.UI.Components.Input.Button do
   `:passthrough` if the event wasn't handled by the button.
   """
   @impl true
-  def handle_event(button, %Raxol.Core.Events.Event{type: :click}, _context) do
+  def handle_event(%Raxol.Core.Events.Event{type: :click}, button, _context) do
     handle_click_event(button)
   end
 
   def handle_event(
-        button,
         %Raxol.Core.Events.Event{type: :click, data: _data},
+        button,
         _context
       ) do
     handle_click_event(button)
   end
 
   def handle_event(
-        button,
         %Raxol.Core.Events.Event{type: :focus, data: data},
+        button,
         _context
       )
       when is_map(data) do
@@ -186,15 +186,15 @@ defmodule Raxol.UI.Components.Input.Button do
     {:update, updated_button, []}
   end
 
-  def handle_event(button, %Raxol.Core.Events.Event{type: :focus}, _context) do
+  def handle_event(%Raxol.Core.Events.Event{type: :focus}, button, _context) do
     updated_button = %{button | focused: true}
     updated_button = %{updated_button | errors: errors(updated_button)}
     {:update, updated_button, []}
   end
 
   def handle_event(
-        button,
         %Raxol.Core.Events.Event{type: :keypress, data: %{key: key}},
+        button,
         _context
       ) do
     case {button.disabled, key} do
@@ -215,11 +215,11 @@ defmodule Raxol.UI.Components.Input.Button do
   end
 
   def handle_event(
-        button,
         %Raxol.Core.Events.Event{
           type: :mouse,
           data: %{button: :left, state: :pressed}
         },
+        button,
         _context
       ) do
     case button.disabled do
@@ -242,14 +242,8 @@ defmodule Raxol.UI.Components.Input.Button do
     end
   end
 
-  def handle_event(_button, %Raxol.Core.Events.Event{} = _event, _context) do
+  def handle_event(%Raxol.Core.Events.Event{} = _event, _button, _context) do
     :passthrough
-  end
-
-  # Support both (button, event, context) and (event, button, context) argument orders
-  def handle_event(%Raxol.Core.Events.Event{} = event, button, context)
-      when is_map(button) do
-    handle_event(button, event, context)
   end
 
   # Add validation for invalid roles

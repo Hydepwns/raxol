@@ -5,7 +5,8 @@ defmodule Raxol.UI.Components.TerminalTest do
   alias Raxol.UI.Components.Terminal
 
   defp initial_terminal_state(opts \\ []) do
-    Terminal.init(opts)
+    {:ok, state} = Terminal.init(opts)
+    state
   end
 
   describe "Terminal component" do
@@ -24,7 +25,7 @@ defmodule Raxol.UI.Components.TerminalTest do
       event = %Event{type: :resize, data: %{cols: 100, rows: 50}}
 
       {new_terminal_state, _commands} =
-        Terminal.handle_event(event, %{}, terminal)
+        Terminal.handle_event(event, terminal, %{})
 
       assert new_terminal_state.width == 80
       assert new_terminal_state.height == 24
@@ -35,7 +36,7 @@ defmodule Raxol.UI.Components.TerminalTest do
       event = %Event{type: :key, data: %{key: :i}}
 
       {new_terminal_state, _commands} =
-        Terminal.handle_event(event, %{}, terminal)
+        Terminal.handle_event(event, terminal, %{})
 
       assert new_terminal_state.buffer == ["Key: :i"]
     end
@@ -45,7 +46,7 @@ defmodule Raxol.UI.Components.TerminalTest do
       event = %Event{type: :key, data: %{key: :colon}}
 
       {new_terminal_state, _commands} =
-        Terminal.handle_event(event, %{}, terminal)
+        Terminal.handle_event(event, terminal, %{})
 
       assert new_terminal_state.buffer == ["Key: :colon"]
     end
@@ -56,12 +57,12 @@ defmodule Raxol.UI.Components.TerminalTest do
       insert_mode_event = %Event{type: :key, data: %{key: :i}}
 
       {insert_mode_state, _} =
-        Terminal.handle_event(insert_mode_event, %{}, terminal)
+        Terminal.handle_event(insert_mode_event, terminal, %{})
 
       char_event = %Event{type: :key, data: %{key: "a"}}
 
       {final_state, _} =
-        Terminal.handle_event(char_event, %{}, insert_mode_state)
+        Terminal.handle_event(char_event, insert_mode_state, %{})
 
       assert final_state.buffer == ["Key: :i", "Key: \"a\""]
     end
@@ -72,14 +73,14 @@ defmodule Raxol.UI.Components.TerminalTest do
       insert_mode_event = %Event{type: :key, data: %{key: :i}}
 
       {insert_mode_state, _} =
-        Terminal.handle_event(insert_mode_event, %{}, terminal)
+        Terminal.handle_event(insert_mode_event, terminal, %{})
 
       assert insert_mode_state.buffer == ["Key: :i"]
 
       escape_event = %Event{type: :key, data: %{key: :escape}}
 
       {final_state, _} =
-        Terminal.handle_event(escape_event, %{}, insert_mode_state)
+        Terminal.handle_event(escape_event, insert_mode_state, %{})
 
       assert final_state.buffer == ["Key: :i", "Key: :escape"]
     end

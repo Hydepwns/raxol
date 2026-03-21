@@ -145,7 +145,7 @@ defmodule Raxol.Performance.FlameGraph do
       FlameGraph.profile_module(Raxol.Terminal.Buffer, duration: 3000)
 
       FlameGraph.profile_module(
-        Raxol.UI.Components.Button,
+        Raxol.UI.Components.Input.Button,
         duration: 5000,
         functions: [:render, :handle_event]
       )

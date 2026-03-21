@@ -114,19 +114,19 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   @impl Raxol.UI.Components.Base.Component
   def handle_event(
         %Event{type: :mouse, data: %{action: :press}},
-        _context,
-        state
+        state,
+        _context
       )
       when not state.disabled do
     toggle_state(state)
   end
 
-  def handle_event(%Event{type: :key, data: %{key: :space}}, _context, state)
+  def handle_event(%Event{type: :key, data: %{key: :space}}, state, _context)
       when not state.disabled do
     toggle_state(state)
   end
 
-  def handle_event(_event, _context, state), do: {:noreply, state, []}
+  def handle_event(_event, state, _context), do: {state, []}
 
   defp toggle_state(state) do
     new_checked_state = !state.checked
@@ -134,7 +134,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
 
     commands = execute_toggle_callback(state.on_toggle, new_checked_state)
 
-    {:noreply, new_state, commands}
+    {new_state, commands}
   end
 
   defp execute_toggle_callback(on_toggle, new_checked_state)

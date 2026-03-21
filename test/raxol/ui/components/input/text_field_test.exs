@@ -5,7 +5,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
   alias Raxol.UI.Components.Input.TextField
 
   defp create_state(props) do
-    state = TextField.init(props)
+    {:ok, state} = TextField.init(props)
     state = Map.put_new(state, :style, %{})
     Map.put_new(state, :type, :text_field)
   end

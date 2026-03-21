@@ -59,7 +59,7 @@ defmodule Raxol.UI.Components.Input.TextField do
     id = props[:id] || Raxol.Core.ID.generate()
     width = props[:width] || 20
     state = struct!(__MODULE__, Map.merge(%{id: id}, props))
-    Map.put(state, :width, width)
+    {:ok, Map.put(state, :width, width)}
   end
 
   @doc """

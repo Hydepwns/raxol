@@ -6,7 +6,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
 
   describe "init/1" do
     test ~c"initializes with default values when no props provided" do
-      state = MultiLineInput.init(%{id: :mle_default})
+      {:ok, state} = MultiLineInput.init(%{id: :mle_default})
       assert state.id == :mle_default
       assert state.value == ""
       assert state.placeholder == ""
@@ -33,7 +33,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
         on_change: fn _ -> :changed end
       }
 
-      state = MultiLineInput.init(props)
+      {:ok, state} = MultiLineInput.init(props)
       assert state.id == :mle_props
       assert state.value == "Hello\nWorld"
       assert state.placeholder == "Type here..."
@@ -69,7 +69,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
         style: expected_style
       }
 
-      state = MultiLineInput.init(props)
+      {:ok, state} = MultiLineInput.init(props)
       assert state.id == :mle_props
       assert state.value == "Hello\nWorld"
       assert state.placeholder == "Type here..."
@@ -90,7 +90,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
 
   describe "update/2" do
     setup do
-      initial_state =
+      {:ok, initial_state} =
         MultiLineInput.init(%{id: :mle_update, value: "test\ntext"})
 
       {:ok, state: initial_state}
@@ -146,7 +146,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
 
     test "handles scrolling (via cursor movement)", %{state: state} do
       # Simulate moving cursor down multiple times to trigger scroll
-      state_many_lines =
+      {:ok, state_many_lines} =
         MultiLineInput.init(%{
           value: Enum.map_join(1..20, "\n", &"Line #{&1}"),
           height: 5

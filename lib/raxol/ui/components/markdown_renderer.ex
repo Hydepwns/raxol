@@ -52,9 +52,9 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
   end
 
   @doc "Initializes the MarkdownRenderer component state from props."
-  @spec init(map()) :: map()
+  @spec init(map()) :: {:ok, map()}
   @impl true
-  def init(props), do: props
+  def init(props), do: {:ok, props}
 
   @doc "Updates the MarkdownRenderer component state. No updates are handled by default."
   @spec update(term(), map()) :: map()

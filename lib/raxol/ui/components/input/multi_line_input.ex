@@ -61,7 +61,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
             lines: [""],
             desired_col: nil
 
-  @spec init(map()) :: __MODULE__.t()
+  @spec init(map()) :: {:ok, __MODULE__.t()}
   @impl true
   @doc """
   Initializes the MultiLineInput state, harmonizing style/theme/extra props and splitting lines for editing.
@@ -87,27 +87,28 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
         wrap
       )
 
-    %__MODULE__{
-      id: id,
-      value: value,
-      placeholder: placeholder,
-      width: width,
-      height: height,
-      theme: theme,
-      wrap: wrap,
-      cursor_pos: {0, 0},
-      scroll_offset: {0, 0},
-      selection_start: nil,
-      selection_end: nil,
-      history: nil,
-      shift_held: false,
-      focused: focused,
-      on_change: on_change,
-      on_submit: on_submit,
-      aria_label: aria_label,
-      tooltip: tooltip,
-      lines: lines
-    }
+    {:ok,
+     %__MODULE__{
+       id: id,
+       value: value,
+       placeholder: placeholder,
+       width: width,
+       height: height,
+       theme: theme,
+       wrap: wrap,
+       cursor_pos: {0, 0},
+       scroll_offset: {0, 0},
+       selection_start: nil,
+       selection_end: nil,
+       history: nil,
+       shift_held: false,
+       focused: focused,
+       on_change: on_change,
+       on_submit: on_submit,
+       aria_label: aria_label,
+       tooltip: tooltip,
+       lines: lines
+     }}
   end
 
   @doc """
@@ -371,7 +372,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   Handles events for the MultiLineInput component, such as keypresses, mouse events, and context changes.
   """
   @impl true
-  def handle_event(event, _context, state) do
+  def handle_event(event, state, _context) do
     # Delegate to the legacy EventHandler for translation
     case Raxol.UI.Components.Input.MultiLineInput.EventHandler.handle_event(
            event,

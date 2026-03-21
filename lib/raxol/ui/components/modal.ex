@@ -146,7 +146,7 @@ defmodule Raxol.UI.Components.Modal do
   end
 
   @impl Raxol.UI.Components.Base.Component
-  def handle_event(event, %{} = _props, state) do
+  def handle_event(event, state, %{} = _context) do
     Raxol.Core.Runtime.Log.debug(
       "Modal #{Map.get(state, :id, nil)} received event: #{inspect(event)} with state.type: #{inspect(state.type)}"
     )

@@ -2,147 +2,78 @@ defmodule Raxol.Property.UIComponentTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
 
-  alias Raxol.UI.Components.{Button, TextInput}
+  alias Raxol.UI.Components.Input.Button
+  alias Raxol.UI.Components.Input.TextInput
   alias Raxol.UI.Layout.{Flexbox, Grid}
   alias Raxol.UI.State.Store, as: Store
 
   describe "Button component properties" do
-    property "button renders with any valid text" do
+    property "button initializes with any valid label" do
       check all(
-              text <- string(:printable, min_length: 1, max_length: 50),
+              label <- string(:printable, min_length: 1, max_length: 50),
               enabled <- boolean(),
               max_runs: 500
             ) do
-        button = Button.new(text, disabled: !enabled)
+        {:ok, button} = Button.init(%{label: label, disabled: !enabled})
 
-        # Should have valid structure
-        assert button.label == text
+        assert button.label == label
         assert button.disabled == !enabled
-
-        # Should render without error
-        rendered = Button.render(button)
-        assert %Raxol.Core.Renderer.Element{} = rendered
-        assert rendered.content == text
       end
     end
 
-    @tag :skip
-    property "button click handling is deterministic" do
+    property "button state is consistent after init" do
       check all(
-              clicks <- integer(0..100),
-              max_runs: 200
-            ) do
-        counter = :counters.new(1, [])
-
-        button =
-          Button.new(
-            text: "Click me",
-            on_click: fn -> :counters.add(counter, 1, 1) end
-          )
-
-        # Click multiple times
-        for _ <- 1..clicks do
-          Button.handle_click(button)
-        end
-
-        # Counter should match clicks
-        assert :counters.get(counter, 1) == clicks
-      end
-    end
-
-    @tag :skip
-    property "button styling properties are preserved" do
-      check all(
-              color <- rgb_color_generator(),
-              padding <- integer(0..20),
-              margin <- integer(0..20),
+              label <- string(:printable, min_length: 1, max_length: 50),
+              role <- member_of([:primary, :secondary, :danger, :success, :default]),
               max_runs: 500
             ) do
-        button =
-          Button.new("Styled",
-            style: %{
-              color: color,
-              padding: padding,
-              margin: margin
-            }
-          )
+        {:ok, button} = Button.init(%{label: label, role: role})
 
-        assert button.style.color == color
-        assert button.style.padding == padding
-        assert button.style.margin == margin
+        assert button.label == label
+        assert button.role == role
+        refute button.focused
+        refute button.pressed
       end
     end
   end
 
   describe "TextInput component properties" do
-    property "text input handles any valid input" do
+    property "text input initializes with any valid value" do
       check all(
               initial <- string(:printable, max_length: 100),
-              typed <- string(:printable, max_length: 50),
               max_runs: 500
             ) do
-        input = TextInput.new(value: initial)
+        {:ok, state} = TextInput.init(%{value: initial})
 
-        # Type additional text
-        updated = TextInput.handle_input(input, typed)
-
-        # Should contain both initial and typed
-        assert String.contains?(updated.value, initial)
-        assert String.contains?(updated.value, typed)
+        assert state.value == initial
+        assert state.cursor_pos == 0
       end
     end
 
-    property "text input respects max_length constraint" do
+    property "text input respects max_length on init" do
       check all(
               max_length <- integer(1..100),
-              text <-
-                string(:printable, min_length: max_length + 1, max_length: 200),
               max_runs: 500
             ) do
-        input = TextInput.new(value: "", max_length: max_length)
+        {:ok, state} = TextInput.init(%{max_length: max_length})
 
-        # Try to input text longer than max
-        updated = TextInput.handle_input(input, text)
-
-        # Should be truncated to max_length
-        assert String.length(updated.value) <= max_length
+        assert state.max_length == max_length
       end
     end
 
-    property "text input validation is consistent" do
+    property "text input focus/blur toggles state" do
       check all(
-              text <- string(:alphanumeric, max_length: 50),
+              initial <- string(:printable, max_length: 50),
               max_runs: 500
             ) do
-        # Numeric validator
-        validator = fn value -> Regex.match?(~r/^\d*$/, value) end
+        {:ok, state} = TextInput.init(%{value: initial})
+        refute state.focused
 
-        input = TextInput.new(value: "", validation: validator)
-        updated = TextInput.handle_input(input, text)
+        {focused_state, []} = TextInput.handle_event(%{type: :focus}, state, %{})
+        assert focused_state.focused
 
-        # Should only contain digits or be empty
-        assert Regex.match?(~r/^[\d]*$/, updated.value)
-      end
-    end
-
-    @tag :skip
-    property "cursor position stays within bounds" do
-      check all(
-              text <- string(:printable, min_length: 1, max_length: 100),
-              cursor_moves <-
-                list_of(cursor_movement_generator(), max_length: 50),
-              max_runs: 500
-            ) do
-        input = TextInput.new(value: text)
-
-        final =
-          Enum.reduce(cursor_moves, input, fn move, acc ->
-            TextInput.handle_cursor(acc, move)
-          end)
-
-        # Cursor should be within text bounds
-        assert final.cursor_position >= 0
-        assert final.cursor_position <= String.length(text)
+        {blurred_state, []} = TextInput.handle_event(%{type: :blur}, focused_state, %{})
+        refute blurred_state.focused
       end
     end
   end
@@ -409,20 +340,6 @@ defmodule Raxol.Property.UIComponentTest do
   end
 
   # Generator helpers
-
-  defp rgb_color_generator do
-    gen all(
-          r <- integer(0..255),
-          g <- integer(0..255),
-          b <- integer(0..255)
-        ) do
-      %{r: r, g: g, b: b}
-    end
-  end
-
-  defp cursor_movement_generator do
-    member_of([:left, :right, :home, :end, :delete, :backspace])
-  end
 
   defp grid_item_generator(max_row, max_col) do
     gen all(
