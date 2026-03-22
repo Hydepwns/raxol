@@ -81,15 +81,7 @@ defmodule Raxol.LiveView.TEALive do
   @impl true
   def handle_event("keydown", params, socket) do
     event = InputAdapter.translate_key_event(params)
-
-    if socket.assigns.lifecycle_pid do
-      dispatcher_pid = find_dispatcher(socket.assigns.lifecycle_pid)
-
-      if dispatcher_pid do
-        GenServer.cast(dispatcher_pid, {:dispatch, event})
-      end
-    end
-
+    dispatch_to_app(socket.assigns.lifecycle_pid, event)
     {:noreply, socket}
   end
 
@@ -129,8 +121,17 @@ defmodule Raxol.LiveView.TEALive do
     :ok
   end
 
-  defp find_dispatcher(lifecycle_pid) do
-    state = GenServer.call(lifecycle_pid, :get_full_state)
-    state.dispatcher_pid
+  defp dispatch_to_app(nil, _event), do: :ok
+
+  defp dispatch_to_app(lifecycle_pid, event) do
+    case GenServer.call(lifecycle_pid, :get_full_state) do
+      %{dispatcher_pid: pid} when is_pid(pid) ->
+        GenServer.cast(pid, {:dispatch, event})
+
+      _ ->
+        :ok
+    end
+  rescue
+    _ -> :ok
   end
 end

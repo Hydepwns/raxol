@@ -68,29 +68,14 @@ defmodule Raxol.SSH.Session do
   @impl true
   def handle_info({:ssh_data, data}, state) do
     events = IOAdapter.parse_input(data)
-
-    dispatcher_pid = get_dispatcher(state.lifecycle_pid)
-
-    Enum.each(events, fn event ->
-      if dispatcher_pid do
-        GenServer.cast(dispatcher_pid, {:dispatch, event})
-      end
-    end)
-
+    dispatch_events(state.lifecycle_pid, events)
     {:noreply, state}
   end
 
   @impl true
   def handle_info({:resize, width, height}, state) do
-    if state.lifecycle_pid && Process.alive?(state.lifecycle_pid) do
-      event = Raxol.Core.Events.Event.window(width, height, :resize)
-      dispatcher_pid = get_dispatcher(state.lifecycle_pid)
-
-      if dispatcher_pid do
-        GenServer.cast(dispatcher_pid, {:dispatch, event})
-      end
-    end
-
+    event = Raxol.Core.Events.Event.window(width, height, :resize)
+    dispatch_events(state.lifecycle_pid, [event])
     {:noreply, %{state | width: width, height: height}}
   end
 
@@ -118,12 +103,23 @@ defmodule Raxol.SSH.Session do
     :ok
   end
 
-  defp get_dispatcher(lifecycle_pid) do
-    if Process.alive?(lifecycle_pid) do
-      state = GenServer.call(lifecycle_pid, :get_full_state)
-      state.dispatcher_pid
+  defp dispatch_events(lifecycle_pid, events) do
+    case get_dispatcher(lifecycle_pid) do
+      nil -> :ok
+      pid -> Enum.each(events, &GenServer.cast(pid, {:dispatch, &1}))
     end
-  rescue
-    _ -> nil
+  end
+
+  defp get_dispatcher(lifecycle_pid) do
+    case Process.alive?(lifecycle_pid) do
+      true ->
+        %{dispatcher_pid: pid} = GenServer.call(lifecycle_pid, :get_full_state)
+        pid
+
+      false ->
+        nil
+    end
+  catch
+    :exit, _ -> nil
   end
 end

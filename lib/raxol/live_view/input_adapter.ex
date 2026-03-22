@@ -49,32 +49,25 @@ defmodule Raxol.LiveView.InputAdapter do
   @spec translate_key_event(map()) :: Event.t()
   def translate_key_event(params) do
     key_name = Map.get(params, "key", "")
-    ctrl = Map.get(params, "ctrlKey", false)
-    alt = Map.get(params, "altKey", false)
-    shift = Map.get(params, "shiftKey", false)
+    modifiers = extract_modifiers(params)
 
-    if key_name in @modifier_keys do
-      Event.new(:key, %{key: :modifier, char: nil, ctrl: ctrl, alt: alt, shift: shift})
-    else
-      case Map.get(@special_keys, key_name) do
-        nil ->
-          Event.new(:key, %{
-            key: :char,
-            char: key_name,
-            ctrl: ctrl,
-            alt: alt,
-            shift: shift
-          })
+    cond do
+      key_name in @modifier_keys ->
+        Event.new(:key, Map.merge(%{key: :modifier, char: nil}, modifiers))
 
-        special ->
-          Event.new(:key, %{
-            key: special,
-            char: nil,
-            ctrl: ctrl,
-            alt: alt,
-            shift: shift
-          })
-      end
+      special = Map.get(@special_keys, key_name) ->
+        Event.new(:key, Map.merge(%{key: special, char: nil}, modifiers))
+
+      true ->
+        Event.new(:key, Map.merge(%{key: :char, char: key_name}, modifiers))
     end
+  end
+
+  defp extract_modifiers(params) do
+    %{
+      ctrl: Map.get(params, "ctrlKey", false),
+      alt: Map.get(params, "altKey", false),
+      shift: Map.get(params, "shiftKey", false)
+    }
   end
 end

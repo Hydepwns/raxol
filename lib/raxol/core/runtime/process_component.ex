@@ -52,15 +52,7 @@ defmodule Raxol.Core.Runtime.ProcessComponent do
       "[ProcessComponent] Starting #{inspect(module)} (#{id})"
     )
 
-    component_state =
-      if function_exported?(module, :init, 1) do
-        case module.init(props) do
-          {:ok, state} -> state
-          state when is_map(state) -> state
-        end
-      else
-        %{}
-      end
+    component_state = initialize_component(module, props)
 
     component_state = maybe_mount(module, component_state)
 
@@ -76,23 +68,13 @@ defmodule Raxol.Core.Runtime.ProcessComponent do
 
   @impl true
   def handle_call({:update, message}, _from, %__MODULE__{} = pc) do
-    if function_exported?(pc.module, :update, 2) do
-      new_state = pc.module.update(message, pc.state)
-      {:reply, :ok, %{pc | state: new_state}}
-    else
-      {:reply, :ok, pc}
-    end
+    new_state = dispatch_update(pc.module, message, pc.state)
+    {:reply, :ok, %{pc | state: new_state}}
   end
 
   @impl true
   def handle_call({:render, context}, _from, %__MODULE__{} = pc) do
-    tree =
-      if function_exported?(pc.module, :render, 2) do
-        pc.module.render(pc.state, context)
-      else
-        %{type: :text, content: "[#{pc.id}]", style: %{}}
-      end
-
+    tree = dispatch_render(pc.module, pc.state, context, pc.id)
     {:reply, tree, pc}
   end
 
@@ -102,11 +84,35 @@ defmodule Raxol.Core.Runtime.ProcessComponent do
   @impl true
   def handle_info(_msg, state), do: {:noreply, state}
 
+  defp initialize_component(module, props) do
+    case function_exported?(module, :init, 1) do
+      true -> normalize_init_result(module.init(props))
+      false -> %{}
+    end
+  end
+
+  defp normalize_init_result({:ok, state}), do: state
+  defp normalize_init_result(state) when is_map(state), do: state
+  defp normalize_init_result(_), do: %{}
+
   defp maybe_mount(module, state) do
-    if function_exported?(module, :mount, 1) do
-      module.mount(state)
-    else
-      state
+    case function_exported?(module, :mount, 1) do
+      true -> module.mount(state)
+      false -> state
+    end
+  end
+
+  defp dispatch_update(module, message, state) do
+    case function_exported?(module, :update, 2) do
+      true -> module.update(message, state)
+      false -> state
+    end
+  end
+
+  defp dispatch_render(module, state, context, id) do
+    case function_exported?(module, :render, 2) do
+      true -> module.render(state, context)
+      false -> %{type: :text, content: "[#{id}]", style: %{}}
     end
   end
 end

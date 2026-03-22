@@ -287,42 +287,11 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   defp render_to_terminal(cells, state) do
     Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine: Executing render_to_terminal. State: #{inspect(state)}"
+      "Rendering Engine: Executing render_to_terminal"
     )
 
-    # Get current buffer or create if not exists
-    screen_buffer =
-      state.buffer || ScreenBuffer.new(state.width, state.height)
+    updated_buffer = apply_cells_to_buffer(cells, state)
 
-    # Transform cells into format {x, y, %Cell{...}}
-    transformed_cells = transform_cells_for_update(cells)
-
-    # Apply cells to the buffer
-    updated_buffer =
-      Enum.reduce(transformed_cells, screen_buffer, fn {x, y, cell}, buffer ->
-        # Extract style from cell, handling both struct and map styles
-        style =
-          case Map.get(cell, :style) do
-            nil ->
-              %{
-                foreground: Map.get(cell, :foreground),
-                background: Map.get(cell, :background),
-                bold: Map.get(cell, :bold, false),
-                underline: Map.get(cell, :underline, false),
-                italic: Map.get(cell, :italic, false)
-              }
-
-            cell_style when is_map(cell_style) ->
-              cell_style
-
-            _ ->
-              nil
-          end
-
-        ScreenBuffer.write_char(buffer, x, y, cell.char || " ", style)
-      end)
-
-    # Render the buffer using the Terminal Renderer
     renderer = Raxol.Terminal.Renderer.new(updated_buffer)
     output_string = Raxol.Terminal.Renderer.render(renderer)
 
@@ -330,31 +299,12 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       "Rendering Engine: Terminal output generated (length: #{String.length(output_string)})"
     )
 
-    # Send rendered output (ANSI codes) to stdout
-    # This assumes the process running this code has direct access to the terminal stdout.
-    # In a more complex setup, this might involve sending to a dedicated IO process.
-    Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine: Writing output string to IO"
-    )
-
     # Mode 2026: synchronized output to prevent tearing
-    # Terminals that don't support it silently ignore these sequences
     IO.write("\e[?2026h")
     IO.write(output_string)
     IO.write("\e[?2026l")
 
-    Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine: Finished writing output string to IO"
-    )
-
-    # Return updated state with the new buffer
-    updated_state_with_buffer = Map.put(state, :buffer, updated_buffer)
-
-    Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine: render_to_terminal complete. New state: #{inspect(updated_state_with_buffer)}"
-    )
-
-    {:ok, updated_state_with_buffer}
+    {:ok, %{state | buffer: updated_buffer}}
   end
 
   defp render_to_vscode(cells, state) do
@@ -447,21 +397,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # --- LiveView Backend ---
 
   defp render_to_liveview(cells, state) do
-    screen_buffer = state.buffer || ScreenBuffer.new(state.width, state.height)
-    transformed_cells = transform_cells_for_update(cells)
-
-    updated_buffer =
-      Enum.reduce(transformed_cells, screen_buffer, fn {x, y, cell}, buffer ->
-        style =
-          case Map.get(cell, :style) do
-            nil -> %{foreground: Map.get(cell, :foreground), background: Map.get(cell, :background)}
-            cell_style when is_map(cell_style) -> cell_style
-            _ -> nil
-          end
-
-        ScreenBuffer.write_char(buffer, x, y, cell.char || " ", style)
-      end)
-
+    updated_buffer = apply_cells_to_buffer(cells, state)
     html = Raxol.LiveView.TerminalBridge.buffer_to_html(updated_buffer)
 
     if state.liveview_topic do
@@ -474,38 +410,54 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # --- SSH Backend ---
 
   defp render_to_ssh(cells, state) do
-    screen_buffer = state.buffer || ScreenBuffer.new(state.width, state.height)
-    transformed_cells = transform_cells_for_update(cells)
-
-    updated_buffer =
-      Enum.reduce(transformed_cells, screen_buffer, fn {x, y, cell}, buffer ->
-        style =
-          case Map.get(cell, :style) do
-            nil -> %{foreground: Map.get(cell, :foreground), background: Map.get(cell, :background)}
-            cell_style when is_map(cell_style) -> cell_style
-            _ -> nil
-          end
-
-        ScreenBuffer.write_char(buffer, x, y, cell.char || " ", style)
-      end)
+    updated_buffer = apply_cells_to_buffer(cells, state)
 
     renderer = Raxol.Terminal.Renderer.new(updated_buffer)
     output_string = Raxol.Terminal.Renderer.render(renderer)
 
-    case state.io_writer do
-      writer when is_function(writer, 1) ->
-        writer.("\e[?2026h")
-        writer.(output_string)
-        writer.("\e[?2026l")
-
-      _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "SSH render: no io_writer configured",
-          %{}
-        )
-    end
+    write_with_sync(state.io_writer, output_string)
 
     {:ok, %{state | buffer: updated_buffer}}
+  end
+
+  defp write_with_sync(writer, output) when is_function(writer, 1) do
+    writer.("\e[?2026h")
+    writer.(output)
+    writer.("\e[?2026l")
+  end
+
+  defp write_with_sync(_, _) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "SSH render: no io_writer configured",
+      %{}
+    )
+  end
+
+  # Shared helper: transforms raw cells and writes them into a ScreenBuffer.
+  defp apply_cells_to_buffer(cells, state) do
+    screen_buffer = state.buffer || ScreenBuffer.new(state.width, state.height)
+    transformed_cells = transform_cells_for_update(cells)
+
+    Enum.reduce(transformed_cells, screen_buffer, fn {x, y, cell}, buffer ->
+      style = extract_cell_style(cell)
+      ScreenBuffer.write_char(buffer, x, y, cell.char || " ", style)
+    end)
+  end
+
+  defp extract_cell_style(cell) do
+    case Map.get(cell, :style) do
+      nil ->
+        %{
+          foreground: Map.get(cell, :foreground),
+          background: Map.get(cell, :background)
+        }
+
+      cell_style when is_map(cell_style) ->
+        cell_style
+
+      _ ->
+        nil
+    end
   end
 
   # --- Process Component Resolution ---
