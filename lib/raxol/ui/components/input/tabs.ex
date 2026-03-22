@@ -123,9 +123,13 @@ defmodule Raxol.UI.Components.Input.Tabs do
   @impl true
   @spec render(t(), map()) :: map()
   def render(state, context) do
+    focused = Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused
+    state = %{state | focused: focused}
+
     theme = Map.merge(context[:theme] || %{}, state.theme || %{})
     theme_style = Theme.component_style(theme, :tabs)
     base_style = Map.merge(theme_style, state.style || %{})
+    base_style = Raxol.UI.FocusHelper.maybe_focus_style(state.id, context, base_style)
 
     children = build_children(state)
 

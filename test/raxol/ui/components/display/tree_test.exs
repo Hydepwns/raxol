@@ -344,7 +344,7 @@ defmodule Raxol.UI.Components.Display.TreeTest do
       assert length(rendered.children) == 2
 
       root1 = Enum.at(rendered.children, 0)
-      assert root1.content == "> Root 1"
+      assert root1.content == "▶ Root 1"
 
       root2 = Enum.at(rendered.children, 1)
       assert root2.content == "  Root 2"
@@ -358,14 +358,14 @@ defmodule Raxol.UI.Components.Display.TreeTest do
       assert length(rendered.children) == 4
 
       root1 = Enum.at(rendered.children, 0)
-      assert root1.content == "v Root 1"
+      assert root1.content == "▼ Root 1"
 
       child1a = Enum.at(rendered.children, 1)
       assert child1a.content == "    Root 1A" |> then(fn _ -> child1a.content end)
       assert String.starts_with?(child1a.content, "  ")
 
       child1b = Enum.at(rendered.children, 2)
-      assert String.contains?(child1b.content, ">")
+      assert String.contains?(child1b.content, "▶")
       assert String.contains?(child1b.content, "Child 1B")
     end
 
@@ -389,8 +389,8 @@ defmodule Raxol.UI.Components.Display.TreeTest do
       # leaf icon is space: "  " (indent) + " " (icon) + " " + label
       assert String.contains?(child1a.content, "Child 1A")
       # The icon for a leaf is a space, so no > or v before label
-      refute String.contains?(child1a.content, ">")
-      refute String.contains?(child1a.content, "v")
+      refute String.contains?(child1a.content, "▶")
+      refute String.contains?(child1a.content, "▼")
     end
 
     test "deeply nested renders correct indentation" do

@@ -158,9 +158,13 @@ defmodule Raxol.UI.Components.Display.Tree do
   @impl true
   @spec render(t(), map()) :: map()
   def render(state, context) do
+    focused = Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused
+    state = %{state | focused: focused}
+
     theme = Map.merge(context[:theme] || %{}, state.theme || %{})
     theme_style = Theme.component_style(theme, :tree)
     base_style = Map.merge(theme_style, state.style || %{})
+    base_style = Raxol.UI.FocusHelper.maybe_focus_style(state.id, context, base_style)
 
     visible = visible_nodes(state)
     children = build_children(state, visible)
@@ -350,6 +354,6 @@ defmodule Raxol.UI.Components.Display.Tree do
   defp node_icon(%{children: []}, _expanded), do: " "
 
   defp node_icon(%{id: id}, expanded) do
-    if MapSet.member?(expanded, id), do: "v", else: ">"
+    if MapSet.member?(expanded, id), do: "▼", else: "▶"
   end
 end
