@@ -414,6 +414,8 @@ defmodule Raxol.MixProject do
         "docs/core/BUFFER_API.md",
         "docs/core/ARCHITECTURE.md",
         "docs/cookbook/README.md",
+        "docs/cookbook/BUILDING_APPS.md",
+        "docs/cookbook/SSH_DEPLOYMENT.md",
         "docs/cookbook/LIVEVIEW_INTEGRATION.md",
         "docs/cookbook/THEMING.md",
         "docs/cookbook/PERFORMANCE_OPTIMIZATION.md",
@@ -441,6 +443,8 @@ defmodule Raxol.MixProject do
         ],
         Cookbook: [
           "docs/cookbook/README.md",
+          "docs/cookbook/BUILDING_APPS.md",
+          "docs/cookbook/SSH_DEPLOYMENT.md",
           "docs/cookbook/LIVEVIEW_INTEGRATION.md",
           "docs/cookbook/THEMING.md",
           "docs/cookbook/PERFORMANCE_OPTIMIZATION.md"

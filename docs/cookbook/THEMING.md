@@ -1,10 +1,160 @@
 # Theming
 
-Custom color schemes and themes for your terminals.
+Color schemes and styling for terminal and LiveView apps.
 
-## Built-in Themes
+## Terminal Theming
 
-Raxol.LiveView ships with 5 themes:
+### Inline colors
+
+The View DSL accepts colors directly via `fg:` and `bg:`:
+
+```elixir
+text("Hello", fg: :cyan)                    # Named ANSI color
+text("Warning", fg: :yellow, style: [:bold]) # Bold yellow
+text("Custom", fg: {255, 107, 174})          # RGB tuple
+text("256-color", fg: 198)                   # 256-color palette index
+text("Hex color", fg: "#ff6bae")             # Hex string
+```
+
+Available named colors: `:black`, `:red`, `:green`, `:yellow`, `:blue`, `:magenta`, `:cyan`, `:white`.
+
+### Color by status
+
+Pattern match to return colors based on data:
+
+```elixir
+defp severity_color(:critical), do: :red
+defp severity_color(:warning), do: :yellow
+defp severity_color(:info), do: :cyan
+defp severity_color(_), do: :white
+
+# Usage:
+text(message, fg: severity_color(level))
+```
+
+### Terminal capability detection
+
+Raxol auto-detects terminal color support and downsamples:
+
+- **Truecolor** (24-bit): RGB tuples and hex strings render exactly
+- **256-color**: RGB is mapped to the nearest 256-color value
+- **16-color**: Mapped to the closest ANSI color
+- **Mono**: All colors stripped, styling preserved (bold, underline)
+
+`Raxol.Core.ColorSystem.Adaptive.adapt_color_safe/1` handles this transparently.
+
+### Synthwave '84 palette example
+
+The flagship demo uses Synthwave '84 Soft mapped to ANSI:
+
+```elixir
+# Consistent color language across your app
+defp accent, do: :cyan       # Titles, active elements
+defp highlight, do: :magenta # Key hints, borders
+defp warn, do: :yellow       # Warnings, headers
+defp ok, do: :green          # Success, healthy
+defp err, do: :red           # Errors, critical
+
+# Usage:
+text(" DASHBOARD ", fg: accent(), style: [:bold])
+text(" q:quit  Tab:switch ", fg: highlight())
+text("CPU: #{pct}%", fg: if(pct > 90, do: err(), else: ok()))
+```
+
+### Themed panels
+
+Create a reusable panel helper:
+
+```elixir
+defp panel(title, opts \\ []) do
+  border = Keyword.get(opts, :border, :single)
+  active = Keyword.get(opts, :active, false)
+  children = Keyword.get(opts, :children, [])
+
+  box style: %{border: (if active, do: :double, else: border), flex: 1} do
+    column do
+      [text(" #{title} ", fg: :cyan, style: [:bold]) | children]
+    end
+  end
+end
+```
+
+---
+
+## Theme System
+
+### ThemeManager
+
+Register and switch themes at runtime:
+
+```elixir
+# Register a custom theme
+Raxol.UI.Theming.ThemeManager.register_theme(:ocean, %{
+  name: "Ocean",
+  colors: %{
+    primary: {64, 196, 255},
+    secondary: {0, 255, 157},
+    background: {15, 25, 45},
+    foreground: {200, 220, 240},
+    error: {255, 85, 85},
+    warning: {255, 200, 0}
+  },
+  component_styles: %{
+    button: %{fg: {64, 196, 255}, bold: true},
+    text_input: %{border: :single, fg: {200, 220, 240}},
+    tree: %{fg: {200, 220, 240}}
+  }
+})
+
+# Switch theme
+Raxol.UI.Theming.ThemeManager.set_theme(:ocean)
+```
+
+### Component-level theming
+
+Widgets read theme styles from the render context:
+
+```elixir
+# In your component render:
+def render(state, context) do
+  theme = context[:theme] || %{}
+  theme_style = Raxol.UI.Theming.Theme.component_style(theme, :button)
+  base_style = Map.merge(theme_style, state.style || %{})
+  # ...render with base_style...
+end
+```
+
+### Pseudo-state styles
+
+Themes can define styles for `:focus`, `:active`, and `:disabled` states:
+
+```elixir
+component_styles: %{
+  button: %{
+    fg: :cyan,
+    focus: %{fg: :white, bg: :blue, bold: true},
+    active: %{fg: :black, bg: :cyan},
+    disabled: %{fg: :white, dim: true}
+  }
+}
+```
+
+The `FocusHelper` module resolves the correct style based on widget state.
+
+### Built-in themes
+
+Themes are stored as JSON in `priv/themes/`:
+
+```bash
+ls priv/themes/
+# default.json, nord.json, dracula.json, ...
+```
+
+---
+
+## LiveView Theming
+
+When using the LiveView bridge, themes apply via CSS classes:
 
 ```elixir
 <.live_component
@@ -15,221 +165,87 @@ Raxol.LiveView ships with 5 themes:
 />
 ```
 
-Options: `:nord`, `:dracula`, `:solarized_dark`, `:solarized_light`, `:monokai`.
+Built-in LiveView themes: `:nord`, `:dracula`, `:solarized_dark`, `:solarized_light`, `:monokai`.
 
-### Color Previews
-
-**Nord** - bg: #2e3440, fg: #d8dee9, accent colors: red #bf616a, green #a3be8c, yellow #ebcb8b, blue #81a1c1, magenta #b48ead, cyan #88c0d0.
-
-**Dracula** - bg: #282a36, fg: #f8f8f2, red #ff5555, green #50fa7b, yellow #f1fa8c, blue #bd93f9, magenta #ff79c6, cyan #8be9fd.
-
----
-
-## Custom Color Schemes
-
-### CSS Theme
+### Custom CSS theme
 
 ```css
-/* priv/static/css/custom_terminal.css */
 .terminal.theme-custom {
-  background-color: #1a1a1a;
-  color: #f0f0f0;
+  background-color: #1a1a2e;
+  color: #e0e0e0;
 }
 
-.terminal.theme-custom .fg-black { color: #2e3436; }
-.terminal.theme-custom .fg-red { color: #cc0000; }
-.terminal.theme-custom .fg-green { color: #4e9a06; }
-.terminal.theme-custom .fg-yellow { color: #c4a000; }
-.terminal.theme-custom .fg-blue { color: #3465a4; }
-.terminal.theme-custom .fg-magenta { color: #75507b; }
-.terminal.theme-custom .fg-cyan { color: #06989a; }
-.terminal.theme-custom .fg-white { color: #d3d7cf; }
-
-.terminal.theme-custom .bold { font-weight: bold; }
-.terminal.theme-custom .italic { font-style: italic; }
-.terminal.theme-custom .underline { text-decoration: underline; }
+.terminal.theme-custom .fg-cyan { color: #40c4ff; }
+.terminal.theme-custom .fg-magenta { color: #ff6bae; }
+.terminal.theme-custom .fg-green { color: #00ff9d; }
+.terminal.theme-custom .fg-yellow { color: #ffd700; }
+.terminal.theme-custom .fg-red { color: #ff5555; }
 
 .terminal.theme-custom .cursor {
-  background-color: #f0f0f0;
+  background-color: #40c4ff;
 }
 ```
 
-Include in your layout and use `theme={:custom}`.
-
-### Programmatic Generation
+### Dynamic theme switching
 
 ```elixir
-defmodule MyApp.ThemeGenerator do
-  def generate_theme(name, colors) do
-    """
-    .terminal.theme-#{name} {
-      background-color: #{colors.background};
-      color: #{colors.foreground};
-    }
-
-    #{generate_ansi_colors(name, colors)}
-    """
-  end
-
-  defp generate_ansi_colors(name, colors) do
-    for {color_name, value} <- colors.ansi do
-      """
-      .terminal.theme-#{name} .fg-#{color_name} { color: #{value}; }
-      .terminal.theme-#{name} .bg-#{color_name} { background-color: #{value}; }
-      """
-    end
-    |> Enum.join("\n")
-  end
+def handle_event("change_theme", %{"theme" => theme}, socket) do
+  {:noreply, assign(socket, theme: String.to_existing_atom(theme))}
 end
 ```
 
 ---
 
-## Dynamic Theme Switching
+## Color Palettes
 
-```elixir
-defmodule MyAppWeb.TerminalWithThemeLive do
-  use MyAppWeb, :live_view
+Popular palettes mapped to ANSI for quick reference:
 
-  @themes [:nord, :dracula, :solarized_dark, :solarized_light, :monokai]
+### Nord
+`red: #bf616a, green: #a3be8c, yellow: #ebcb8b, blue: #81a1c1, magenta: #b48ead, cyan: #88c0d0`
 
-  def mount(_params, _session, socket) do
-    {:ok, assign(socket, buffer: create_buffer(), theme: :nord)}
-  end
+### Dracula
+`red: #ff5555, green: #50fa7b, yellow: #f1fa8c, blue: #bd93f9, magenta: #ff79c6, cyan: #8be9fd`
 
-  def render(assigns) do
-    ~H"""
-    <div>
-      <div class="theme-selector">
-        <%= for theme <- @themes do %>
-          <button
-            phx-click="change_theme"
-            phx-value-theme={theme}
-            class={"theme-button #{if theme == @theme, do: "active"}"}
-          >
-            <%= theme %>
-          </button>
-        <% end %>
-      </div>
+### Tokyo Night
+`red: #f7768e, green: #9ece6a, yellow: #e0af68, blue: #7aa2f7, magenta: #ad8ee6, cyan: #449dab`
 
-      <.live_component
-        module={Raxol.LiveView.TerminalComponent}
-        id="terminal"
-        buffer={@buffer}
-        theme={@theme}
-      />
-    </div>
-    """
-  end
-
-  def handle_event("change_theme", %{"theme" => theme}, socket) do
-    {:noreply, assign(socket, theme: String.to_atom(theme))}
-  end
-end
-```
-
-### Persistent Preferences
-
-Save theme to session, database, or browser localStorage via a JS hook:
-
-```javascript
-// assets/js/app.js
-Hooks.ThemeManager = {
-  mounted() {
-    const saved = localStorage.getItem('terminal_theme')
-    if (saved) this.pushEvent("load_theme", { theme: saved })
-
-    this.handleEvent("save_theme", ({ theme }) => {
-      localStorage.setItem('terminal_theme', theme)
-    })
-  }
-}
-```
+### Catppuccin Mocha
+`red: #f38ba8, green: #a6e3a1, yellow: #f9e2af, blue: #89b4fa, magenta: #f5c2e7, cyan: #94e2d5`
 
 ---
 
 ## Accessibility
 
-### High Contrast Mode
+### High contrast
 
-```css
-.terminal.theme-high-contrast {
-  background-color: #000000;
-  color: #ffffff;
-}
-
-.terminal.theme-high-contrast .fg-red { color: #ff0000; }
-.terminal.theme-high-contrast .fg-green { color: #00ff00; }
-.terminal.theme-high-contrast .fg-blue { color: #0000ff; }
-
-.terminal.theme-high-contrast .cursor {
-  background-color: #ffffff;
-  opacity: 1 !important;
-}
-
-.terminal.theme-high-contrast {
-  font-weight: 500;
-}
-```
-
-### Contrast Checker
-
-Validate WCAG AA/AAA contrast ratios:
+Use maximum contrast ratios. Avoid relying on color alone:
 
 ```elixir
-defmodule MyApp.ContrastChecker do
-  @wcag_aa 4.5
-  @wcag_aaa 7.0
+# Bad: color is the only indicator
+text("OK", fg: :green)
+text("FAIL", fg: :red)
 
-  def check_contrast(fg_hex, bg_hex) do
-    ratio = calculate_ratio(luminance(fg_hex), luminance(bg_hex))
-    %{ratio: ratio, passes_aa: ratio >= @wcag_aa, passes_aaa: ratio >= @wcag_aaa}
-  end
-end
-
-# Usage
-MyApp.ContrastChecker.check_contrast("#2e3440", "#d8dee9")
-# => %{ratio: 12.4, passes_aa: true, passes_aaa: true}
+# Good: text + color
+text("[OK] Passed", fg: :green)
+text("[!!] FAILED", fg: :red, style: [:bold])
 ```
 
----
+### WCAG contrast checking
 
-## Theme Gallery
+Ensure foreground/background pairs meet WCAG AA (4.5:1 ratio):
 
-Community themes ready to use:
-
-### Gruvbox Dark
-bg: #282828, fg: #ebdbb2. red #cc241d, green #98971a, yellow #d79921, blue #458588, magenta #b16286, cyan #689d6a.
-
-### Tokyo Night
-bg: #1a1b26, fg: #a9b1d6. red #f7768e, green #9ece6a, yellow #e0af68, blue #7aa2f7, magenta #ad8ee6, cyan #449dab.
-
-### Catppuccin Mocha
-bg: #1e1e2e, fg: #cdd6f4. red #f38ba8, green #a6e3a1, yellow #f9e2af, blue #89b4fa, magenta #f5c2e7, cyan #94e2d5.
-
-### One Dark
-bg: #282c34, fg: #abb2bf. red #e06c75, green #98c379, yellow #e5c07b, blue #61afef, magenta #c678dd, cyan #56b6c2.
-
-### Material
-bg: #263238, fg: #eeffff. red #ff5370, green #c3e88d, yellow #ffcb6b, blue #82aaff, magenta #c792ea, cyan #89ddff.
-
-Full CSS for each theme is available in `priv/static/css/`.
-
----
-
-## Best Practices
-
-- Test themes in different lighting conditions
-- Ensure sufficient contrast (WCAG AA minimum: 4.5:1)
-- Provide both light and dark options
-- Include high-contrast mode
-- Test with colorblind simulators
-- Don't rely only on color for information
-- Don't override system preferences without an option to revert
+```elixir
+# High contrast pairs that work everywhere:
+text("...", fg: :white, bg: :black)    # 21:1
+text("...", fg: :black, bg: :green)    # ~5.5:1
+text("...", fg: :black, bg: :cyan)     # ~8.6:1
+text("...", fg: :black, bg: :yellow)   # ~10.2:1
+```
 
 ---
 
 ## Next Steps
 
-- [LiveView Cookbook](./LIVEVIEW_INTEGRATION.md)
-- [Performance Cookbook](./PERFORMANCE_OPTIMIZATION.md)
+- [Building Apps](./BUILDING_APPS.md) -- TEA patterns and recipes
+- [SSH Deployment](./SSH_DEPLOYMENT.md) -- Serve apps over SSH
+- [Performance](./PERFORMANCE_OPTIMIZATION.md) -- 60fps techniques
