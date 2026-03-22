@@ -15,11 +15,11 @@ Planned features and direction for Raxol.
 - **Phase 5.3: Developer Tooling** -- `mix raxol.new` generator (4 templates, 8 flags, interactive mode, CI, mise), `mix raxol.gen.component` scaffolder
 - **Phase 5.4: Documentation** -- TEA-first quickstart guide, widget gallery (all 23 widgets), flagship demo with live BEAM dashboard
 
-### Known Tech Debt
+### Tech Debt Resolved
 
-- CQRS/EventSourcing entangled with terminal core (too coupled to remove without core rewrite)
-- Render pipeline has two paths: Rendering.Engine (live) and Pipeline GenServer (stage 5 stubs)
-- 27% of core modules are GenServers; many could be pure functions + ETS
+- ~~CQRS/EventSourcing~~ -- Removed ~5,500 LOC of unused code (commands never dispatched, events never read)
+- ~~Pipeline GenServer~~ -- Removed ~1,860 LOC of dead code (Engine uses LayoutEngine/UIRenderer directly)
+- ~~GenServer overuse~~ -- Converted I18nServer to ETS-backed reads; audited remaining servers (most already well-designed)
 
 ---
 
@@ -47,8 +47,6 @@ Planned features and direction for Raxol.
 |------|-------------|--------|
 | Unify theme system | Single source of truth for terminal + LiveView themes | Medium |
 | File browser example | End-to-end app using Tree + Viewport + Modal widgets | Medium |
-| Render pipeline cleanup | Remove Pipeline GenServer stubs or wire stage 5 | Medium |
-| CQRS decoupling | Untangle EventSourcing from terminal core | Large |
 
 ### Longer Term
 
