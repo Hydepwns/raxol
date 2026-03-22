@@ -173,11 +173,8 @@ defmodule Raxol.Application do
       {Raxol.Config, []},
       {Raxol.Debug, []},
 
-      # Demo terminal session manager
-      {Raxol.Demo.SessionManager, []},
-
-      # SSH demo server (port 2222)
-      {Raxol.Demo.SSHServer, []},
+      # Demo services (guarded - may not be compiled)
+      maybe_add_demo_services(),
 
       # Conditional core services
       maybe_add_repo(),
@@ -250,6 +247,22 @@ defmodule Raxol.Application do
 
       []
     end
+  end
+
+  defp maybe_add_demo_services do
+    children = []
+
+    children =
+      if module_available?(Raxol.Demo.SessionManager),
+        do: [{Raxol.Demo.SessionManager, []} | children],
+        else: children
+
+    children =
+      if module_available?(Raxol.Demo.SSHServer),
+        do: [{Raxol.Demo.SSHServer, []} | children],
+        else: children
+
+    children
   end
 
   defp maybe_add_performance_monitoring do
