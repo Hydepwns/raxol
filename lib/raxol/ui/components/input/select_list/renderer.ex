@@ -9,8 +9,8 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
   @doc """
   Renders the SelectList component.
   """
-  @spec render(SelectList.t(), map()) :: iolist()
-  def render(state, _context \\ %{}) do
+  @spec render(SelectList.t(), map()) :: map()
+  def render(state, context \\ %{}) do
     visible_options = get_visible_options(state)
 
     rendered_options =
@@ -34,8 +34,23 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         []
       end
 
-    (search_bar ++ rendered_options ++ pagination_info)
-    |> Enum.filter(&(&1 != nil))
+    children =
+      (search_bar ++ rendered_options ++ pagination_info)
+      |> Enum.filter(&(&1 != nil))
+
+    container_style =
+      if state.has_focus do
+        Raxol.UI.FocusHelper.focus_style(state.style || %{}, context)
+      else
+        state.style || %{}
+      end
+
+    %{
+      type: :container,
+      id: state[:id],
+      style: container_style,
+      children: children
+    }
   end
 
   # Private functions

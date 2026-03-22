@@ -355,7 +355,10 @@ defmodule Raxol.UI.Components.Input.SelectList do
   """
   @impl Raxol.UI.Components.Base.Component
   def render(state, context) do
-    Renderer.render(state, context)
+    has_focus =
+      Raxol.UI.FocusHelper.focused?(state[:id], context) or state.has_focus
+
+    Renderer.render(%{state | has_focus: has_focus}, context)
   end
 
   @doc """

@@ -663,14 +663,15 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
   # -- render/2 --
 
   describe "render/2" do
-    test "returns a list of rendered elements" do
+    test "returns a container with rendered children" do
       state = init_state()
       result = SelectList.render(state, %{})
 
-      assert is_list(result)
-      assert length(result) == 3
+      assert result.type == :container
+      assert is_list(result.children)
+      assert length(result.children) == 3
 
-      Enum.each(result, fn element ->
+      Enum.each(result.children, fn element ->
         assert element.type == :text
         assert is_binary(element.content)
       end)
@@ -681,7 +682,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       result = SelectList.render(state, %{})
 
       contents =
-        Enum.map(result, fn el -> el.content end)
+        Enum.map(result.children, fn el -> el.content end)
         |> Enum.join("")
 
       assert contents =~ "Apple"
@@ -693,7 +694,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       state = %{init_state() | selected_index: 1}
       result = SelectList.render(state, %{})
 
-      banana_el = Enum.at(result, 1)
+      banana_el = Enum.at(result.children, 1)
       assert banana_el.content =~ "> "
     end
 
@@ -703,9 +704,9 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
 
       result = SelectList.render(state, %{})
 
-      assert length(result) == 5
+      assert length(result.children) == 5
 
-      first_content = Enum.at(result, 0).content
+      first_content = Enum.at(result.children, 0).content
       assert first_content =~ "Item 4"
     end
 
@@ -718,15 +719,15 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
 
       result = SelectList.render(state, %{})
 
-      assert length(result) == 1
-      assert Enum.at(result, 0).content =~ "Banana"
+      assert length(result.children) == 1
+      assert Enum.at(result.children, 0).content =~ "Banana"
     end
 
     test "renders search bar when search_enabled is true" do
       state = %{init_state() | search_enabled: true, search_query: "test"}
       result = SelectList.render(state, %{})
 
-      search_content = Enum.at(result, 0).content
+      search_content = Enum.at(result.children, 0).content
       assert search_content =~ "Search:"
       assert search_content =~ "test"
     end
@@ -735,15 +736,16 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       state = %{init_state(%{options: many_options(20)}) | paginated: true}
       result = SelectList.render(state, %{})
 
-      last_el = List.last(result)
+      last_el = List.last(result.children)
       assert last_el.content =~ "Page"
     end
 
-    test "renders empty list when options are empty" do
+    test "renders empty container when options are empty" do
       state = init_state(%{options: []})
       result = SelectList.render(state, %{})
 
-      assert result == []
+      assert result.type == :container
+      assert result.children == []
     end
   end
 

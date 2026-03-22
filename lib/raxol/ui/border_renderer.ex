@@ -39,6 +39,17 @@ defmodule Raxol.UI.BorderRenderer do
     }
   end
 
+  def get_border_chars(:ascii) do
+    %{
+      top_left: "+",
+      top_right: "+",
+      bottom_left: "+",
+      bottom_right: "+",
+      horizontal: "-",
+      vertical: "|"
+    }
+  end
+
   # Fallback for unknown or :none
   def get_border_chars(_) do
     %{
@@ -49,6 +60,24 @@ defmodule Raxol.UI.BorderRenderer do
       horizontal: " ",
       vertical: " "
     }
+  end
+
+  @doc """
+  Returns border characters, falling back to ASCII if the terminal
+  does not support Unicode box-drawing characters.
+  """
+  def get_border_chars_adaptive(style) do
+    case unicode_supported?() do
+      true -> get_border_chars(style)
+      false -> get_border_chars(:ascii)
+    end
+  end
+
+  defp unicode_supported? do
+    case System.get_env("LANG") do
+      nil -> false
+      lang -> String.contains?(lang, "UTF") or String.contains?(lang, "utf")
+    end
   end
 
   @doc """
