@@ -159,6 +159,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
     with {:ok, view} <- safe_get_view(state.app_module, model),
          {:ok, positioned_elements} <- safe_apply_layout(view, state),
+         :ok <- update_dispatcher_view_tree(state.dispatcher_pid, view),
          {:ok, cells} <- safe_render_to_cells(positioned_elements, theme),
          {:ok, final_cells} <- safe_apply_plugin_transforms(cells, state),
          {:ok, new_state} <- safe_render_to_backend(final_cells, state) do
@@ -633,6 +634,15 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   defp execute_plugin_commands(_), do: :ok
+
+  # Send the view tree to Dispatcher for event bubbling
+  defp update_dispatcher_view_tree(dispatcher_pid, view)
+       when is_pid(dispatcher_pid) do
+    GenServer.cast(dispatcher_pid, {:update_view_tree, view})
+    :ok
+  end
+
+  defp update_dispatcher_view_tree(_, _), do: :ok
 
   # Functional wrapper for dispatcher plugin manager updates
   defp update_plugin_manager_in_dispatcher(dispatcher_pid, updated_manager)

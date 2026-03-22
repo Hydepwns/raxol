@@ -14,6 +14,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Runtime.Application
   alias Raxol.Core.Runtime.Command
+  alias Raxol.Core.Runtime.Events.Bubbler
   alias Raxol.Core.FocusManager
   alias Raxol.Core.UserPreferences
 
@@ -32,7 +33,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
               plugin_manager_struct: nil,
               command_registry_table: nil,
               current_theme_id: :default,
-              command_module: Raxol.Core.Runtime.Command
+              command_module: Raxol.Core.Runtime.Command,
+              view_tree: nil
   end
 
   # BaseManager provides start_link/1 and start_link/2 automatically
@@ -100,8 +102,44 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   Handles an application-level event and updates the application state.
   """
   def handle_event(event, %State{} = state) do
-    message = default_event_to_message(event)
-    process_app_update(state, message, event)
+    case try_bubble_event(event, state) do
+      {:handled, {:message, message}} ->
+        process_app_update(state, message, event)
+
+      {:handled, _} ->
+        send(state.runtime_pid, :render_needed)
+        {:ok, state, []}
+
+      {:commands, commands} ->
+        context = build_command_context(state)
+        process_commands(commands, context, state.command_module)
+        send(state.runtime_pid, :render_needed)
+        {:ok, state, commands}
+
+      :passthrough ->
+        message = default_event_to_message(event)
+        process_app_update(state, message, event)
+    end
+  end
+
+  defp try_bubble_event(_event, %State{view_tree: nil}), do: :passthrough
+
+  defp try_bubble_event(event, state) do
+    focused_id =
+      if focus_manager_active?(),
+        do: FocusManager.get_focused_element(),
+        else: nil
+
+    if focused_id do
+      context = %{
+        focused_element: focused_id,
+        theme_id: state.current_theme_id
+      }
+
+      Bubbler.bubble(event, state.view_tree, focused_id, context)
+    else
+      :passthrough
+    end
   end
 
   defp process_app_update(state, message, event) do
@@ -314,6 +352,11 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   @impl true
   def handle_manager_cast({:update_plugin_manager, %Raxol.Plugins.Manager{} = updated}, state) do
     {:noreply, %{state | plugin_manager_struct: updated}}
+  end
+
+  @impl true
+  def handle_manager_cast({:update_view_tree, view_tree}, state) do
+    {:noreply, %{state | view_tree: view_tree}}
   end
 
   def handle_manager_cast(msg, state) do
