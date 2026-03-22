@@ -239,16 +239,13 @@ defmodule Raxol.Terminal.TerminalUtils do
 
   @doc """
   Returns true if the current process is attached to a real TTY device.
+
+  Uses Erlang's :io.columns/0 to detect whether the standard IO device
+  supports terminal operations, which works reliably from within the BEAM
+  (unlike shelling out to `tty` which doesn't inherit stdin).
   """
   @spec real_tty?() :: boolean()
   def real_tty? do
-    case System.cmd("tty", []) do
-      {tty, 0} ->
-        tty = String.trim(tty)
-        tty != "not a tty" and String.starts_with?(tty, "/dev/")
-
-      _ ->
-        false
-    end
+    match?({:ok, _}, :io.columns()) and match?({:ok, _}, :io.rows())
   end
 end

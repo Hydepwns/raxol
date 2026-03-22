@@ -14,6 +14,7 @@ defmodule Raxol.Terminal.Driver do
   alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
+  require Logger
   require Raxol.Core.Runtime.Log
   # Import Bitwise for bitwise operations
   # import Bitwise
@@ -82,12 +83,11 @@ defmodule Raxol.Terminal.Driver do
       "[#{__MODULE__}] init called with dispatcher: #{inspect(dispatcher_pid)}"
     )
 
-    # Get original terminal settings
+    # Get original terminal settings using Erlang IO (no subprocess needed)
     output =
-      case System.cmd("stty", ["size"]) do
-        {output, 0} -> String.trim(output)
-        # fallback to default size as a string
-        {_, _} -> "80 24"
+      case {:io.rows(), :io.columns()} do
+        {{:ok, rows}, {:ok, cols}} -> "#{rows} #{cols}"
+        _ -> "80 24"
       end
 
     state = %State{
@@ -128,18 +128,31 @@ defmodule Raxol.Terminal.Driver do
         {:ok, state}
 
       {_, true, _} ->
-        Raxol.Core.Runtime.Log.debug(
-          "[TerminalDriver] TTY detected, initializing terminal backend..."
+        Raxol.Core.Runtime.Log.info(
+          "[TerminalDriver] TTY detected, initializing ANSI terminal..."
         )
 
-        {_terminal_init_result, io_terminal_state} =
-          if @termbox2_available do
-            {apply(:termbox2_nif, :tb_init, []), nil}
-          else
-            init_io_terminal()
-          end
+        # Suppress Logger console output so it doesn't corrupt the TUI
+        Logger.configure(level: :none)
 
-        state = %{state | io_terminal_state: io_terminal_state}
+        # Enter alternate screen, hide cursor
+        IO.write("\e[?1049h\e[?25l")
+
+        # Configure Erlang IO for raw-ish input (no echo, no line buffering)
+        :io.setopts(:standard_io, binary: true, echo: false)
+
+        # Send initial resize event if we have a dispatcher
+        if dispatcher_pid, do: send_initial_resize_event(dispatcher_pid)
+
+        # Start input reader process
+        input_reader_pid = start_input_reader(self())
+
+        state = %{
+          state
+          | termbox_state: :initialized,
+            io_terminal_state: %{input_reader: input_reader_pid}
+        }
+
         {:ok, state}
 
       {_, false, _} ->
@@ -286,6 +299,20 @@ defmodule Raxol.Terminal.Driver do
   end
 
   @impl true
+  def handle_manager_info({:raw_input, data}, state) when is_binary(data) do
+    events = parse_ansi_input(data)
+
+    Enum.each(events, fn event ->
+      case state.dispatcher_pid do
+        nil -> :ok
+        pid -> send_event_to_dispatcher(pid, event)
+      end
+    end)
+
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_manager_info(unhandled_message, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "#{__MODULE__} received unhandled message: #{inspect(unhandled_message)}",
@@ -333,8 +360,18 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  def terminate(_reason, %{termbox_state: :initialized} = _state) do
+  def terminate(_reason, %{termbox_state: :initialized} = state) do
     Raxol.Core.Runtime.Log.info("Terminal Driver terminating.")
+
+    # Kill input reader if running
+    case get_in(state, [
+           Access.key(:io_terminal_state),
+           Access.key(:input_reader)
+         ]) do
+      pid when is_pid(pid) -> Process.exit(pid, :shutdown)
+      _ -> :ok
+    end
+
     # Only attempt shutdown if not in test environment
     _ =
       case {Mix.env(), real_tty?()} do
@@ -345,12 +382,12 @@ defmodule Raxol.Terminal.Driver do
           :ok
 
         {_, true} ->
-          _ =
-            if @termbox2_available do
-              apply(:termbox2_nif, :tb_shutdown, [])
-            else
-              0
-            end
+          # Restore terminal: show cursor, leave alternate screen
+          IO.write("\e[?25h\e[?1049l")
+          :io.setopts(:standard_io, echo: true)
+          # Restore Logger output
+          Logger.configure(level: :debug)
+          :ok
       end
 
     :ok
@@ -411,6 +448,110 @@ defmodule Raxol.Terminal.Driver do
       end
 
     {:noreply, state}
+  end
+
+  # --- Input Reader ---
+
+  defp start_input_reader(driver_pid) do
+    spawn_link(fn -> input_read_loop(driver_pid) end)
+  end
+
+  defp input_read_loop(driver_pid) do
+    # Use :io.get_chars for raw single-character reads
+    case :io.get_chars(:standard_io, ~c"", 1) do
+      :eof ->
+        :ok
+
+      {:error, _} ->
+        :ok
+
+      data when is_binary(data) ->
+        # If we got an escape byte, try to read the rest of the sequence
+        full_data =
+          if data == <<27>> do
+            read_escape_sequence(data)
+          else
+            data
+          end
+
+        send(driver_pid, {:raw_input, full_data})
+        input_read_loop(driver_pid)
+
+      data when is_list(data) ->
+        # :io.get_chars may return charlist
+        send(driver_pid, {:raw_input, IO.chardata_to_string(data)})
+        input_read_loop(driver_pid)
+
+      _ ->
+        input_read_loop(driver_pid)
+    end
+  end
+
+  defp read_escape_sequence(escape_byte) do
+    # Brief pause to let escape sequence bytes arrive
+    Process.sleep(5)
+
+    # Try to read more bytes (non-blocking via small timeout)
+    # Use a task with timeout to avoid blocking forever
+    task =
+      Task.async(fn ->
+        case :io.get_chars(:standard_io, ~c"", 8) do
+          data when is_binary(data) -> data
+          data when is_list(data) -> IO.chardata_to_string(data)
+          _ -> ""
+        end
+      end)
+
+    case Task.yield(task, 50) do
+      {:ok, more} when is_binary(more) and byte_size(more) > 0 ->
+        escape_byte <> more
+
+      _ ->
+        Task.shutdown(task, :brutal_kill)
+        escape_byte
+    end
+  end
+
+  defp parse_ansi_input(<<27, 91, 65>>),
+    do: [%Event{type: :key, data: %{key: :up}}]
+
+  defp parse_ansi_input(<<27, 91, 66>>),
+    do: [%Event{type: :key, data: %{key: :down}}]
+
+  defp parse_ansi_input(<<27, 91, 67>>),
+    do: [%Event{type: :key, data: %{key: :right}}]
+
+  defp parse_ansi_input(<<27, 91, 68>>),
+    do: [%Event{type: :key, data: %{key: :left}}]
+
+  defp parse_ansi_input(<<27>>), do: [%Event{type: :key, data: %{key: :escape}}]
+  defp parse_ansi_input(<<13>>), do: [%Event{type: :key, data: %{key: :enter}}]
+
+  defp parse_ansi_input(<<127>>),
+    do: [%Event{type: :key, data: %{key: :backspace}}]
+
+  defp parse_ansi_input(<<9>>), do: [%Event{type: :key, data: %{key: :tab}}]
+
+  # Ctrl+C
+  defp parse_ansi_input(<<3>>),
+    do: [%Event{type: :key, data: %{key: :char, char: "c", ctrl: true}}]
+
+  # Ctrl+Q
+  defp parse_ansi_input(<<17>>),
+    do: [%Event{type: :key, data: %{key: :char, char: "q", ctrl: true}}]
+
+  # Regular printable character
+  defp parse_ansi_input(<<char>>) when char >= 32 and char <= 126 do
+    [%Event{type: :key, data: %{key: :char, char: <<char>>}}]
+  end
+
+  # Multi-byte UTF-8 or unknown sequence
+  defp parse_ansi_input(data) when is_binary(data) do
+    # Try to parse as UTF-8 character
+    case String.valid?(data) and String.length(data) == 1 do
+      true -> [%Event{type: :key, data: %{key: :char, char: data}}]
+      false -> []
+    end
   end
 
   # --- Private Helpers ---
@@ -564,10 +705,9 @@ defmodule Raxol.Terminal.Driver do
   end
 
   defp stty_size_fallback do
-    case System.cmd("stty", ["size"]) do
-      {output, 0} ->
-        [height, width] = String.split(String.trim(output), " ")
-        {:ok, String.to_integer(width), String.to_integer(height)}
+    case {:io.columns(), :io.rows()} do
+      {{:ok, cols}, {:ok, rows}} ->
+        {:ok, cols, rows}
 
       _ ->
         {:ok, 80, 24}
@@ -755,19 +895,6 @@ defmodule Raxol.Terminal.Driver do
 
         # Return a generic event or handle error as appropriate
         %Event{type: :unknown_test_input, data: %{raw: input_data}}
-    end
-  end
-
-  @dialyzer {:nowarn_function, init_io_terminal: 0}
-  defp init_io_terminal do
-    # Use pure Elixir IOTerminal when NIF not available
-    Raxol.Core.Runtime.Log.info(
-      "[TerminalDriver] Using pure Elixir IOTerminal (NIF not available)"
-    )
-
-    case IOTerminal.init() do
-      {:ok, io_state} -> {0, io_state}
-      {:error, _reason} -> {-1, nil}
     end
   end
 
