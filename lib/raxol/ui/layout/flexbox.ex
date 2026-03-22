@@ -59,6 +59,9 @@ defmodule Raxol.UI.Layout.Flexbox do
     # Apply padding to available space
     content_space = apply_padding(space, flex_props.padding)
 
+    # Propagate inheritable styles (fg, bg, bold, etc.) to children
+    children = inherit_styles(flex, children)
+
     # Sort children by order property
     sorted_children = sort_children_by_order(children)
 
@@ -1024,5 +1027,26 @@ defmodule Raxol.UI.Layout.Flexbox do
         y: if(flexbox.direction == :column, do: index * 10, else: 0)
       })
     end)
+  end
+
+  # Text styling properties that cascade from parent to child.
+  @inheritable_keys [
+    :fg, :bg, :foreground, :background, :fg_color, :bg_color,
+    :bold, :italic, :underline, :strikethrough, :reverse, :dim
+  ]
+
+  defp inherit_styles(parent, children) do
+    parent_style = Map.get(parent, :style, %{})
+    inheritable = Map.take(parent_style, @inheritable_keys)
+
+    if map_size(inheritable) == 0 do
+      children
+    else
+      Enum.map(children, fn child ->
+        child_style = Map.get(child, :style, %{})
+        merged = Map.merge(inheritable, child_style)
+        Map.put(child, :style, merged)
+      end)
+    end
   end
 end

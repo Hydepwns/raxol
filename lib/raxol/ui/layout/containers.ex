@@ -34,6 +34,9 @@ defmodule Raxol.UI.Layout.Containers do
     justify = Map.get(attrs, :justify, :start)
     align = Map.get(attrs, :align, :start)
 
+    # Propagate inheritable styles (fg, bg, bold, etc.) to children
+    children = inherit_styles(row, children)
+
     # Skip if no children
     process_row_with_children(children, gap, justify, align, space, acc)
   end
@@ -138,6 +141,9 @@ defmodule Raxol.UI.Layout.Containers do
     gap = Map.get(attrs, :gap, 1)
     justify = Map.get(attrs, :justify, :start)
     align = Map.get(attrs, :align, :start)
+
+    # Propagate inheritable styles (fg, bg, bold, etc.) to children
+    children = inherit_styles(column, children)
 
     # Skip if no children
     process_column_with_children(children, gap, justify, align, space, acc)
@@ -371,4 +377,40 @@ defmodule Raxol.UI.Layout.Containers do
          _total_height
        ),
        do: gap
+
+  # --- Style Inheritance ---
+
+  # Text styling properties that cascade from parent to child.
+  # Layout properties (padding, border, width, height, gap) do NOT inherit.
+  @inheritable_keys [
+    :fg,
+    :bg,
+    :foreground,
+    :background,
+    :fg_color,
+    :bg_color,
+    :bold,
+    :italic,
+    :underline,
+    :strikethrough,
+    :reverse,
+    :dim
+  ]
+
+  # Propagates inheritable style properties from a parent container
+  # into each child's style map. Child values take precedence.
+  defp inherit_styles(parent, children) do
+    parent_style = Map.get(parent, :style, %{})
+    inheritable = Map.take(parent_style, @inheritable_keys)
+
+    if map_size(inheritable) == 0 do
+      children
+    else
+      Enum.map(children, fn child ->
+        child_style = Map.get(child, :style, %{})
+        merged = Map.merge(inheritable, child_style)
+        Map.put(child, :style, merged)
+      end)
+    end
+  end
 end

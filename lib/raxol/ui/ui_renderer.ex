@@ -151,8 +151,27 @@ defmodule Raxol.UI.Renderer do
     merged_style =
       StyleProcessor.flatten_merged_style(parent_style, box_element, theme)
 
-    cells = ElementRenderer.render_box(x, y, w, h, merged_style, theme)
-    CellManager.clip_cells_to_bounds(cells, Map.get(box_element, :clip_bounds))
+    box_cells = ElementRenderer.render_box(x, y, w, h, merged_style, theme)
+    clip_bounds = Map.get(box_element, :clip_bounds)
+
+    children_cells =
+      case Map.get(box_element, :children) do
+        nil ->
+          []
+
+        children when is_list(children) ->
+          Enum.flat_map(children, fn child ->
+            child_with_clip = add_clip_bounds(child, clip_bounds)
+            render_element(child_with_clip, theme, merged_style)
+          end)
+
+        child when is_map(child) ->
+          child_with_clip = add_clip_bounds(child, clip_bounds)
+          render_element(child_with_clip, theme, merged_style)
+      end
+
+    all_cells = CellManager.merge_cells(box_cells, children_cells)
+    CellManager.clip_cells_to_bounds(all_cells, clip_bounds)
   end
 
   defp render_visible_element(
@@ -240,4 +259,7 @@ defmodule Raxol.UI.Renderer do
   defp render_visible_element(_element, _theme, _parent_style) do
     []
   end
+
+  defp add_clip_bounds(child, nil), do: child
+  defp add_clip_bounds(child, clip_bounds), do: Map.put(child, :clip_bounds, clip_bounds)
 end
