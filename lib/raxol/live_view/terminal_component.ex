@@ -105,290 +105,292 @@ defmodule Raxol.LiveView.TerminalComponent do
       }
   """
 
-  use Phoenix.LiveComponent
-  alias Raxol.LiveView.{Renderer, Themes}
+  if Code.ensure_loaded?(Phoenix.LiveComponent) do
+    use Phoenix.LiveComponent
+    alias Raxol.LiveView.{Renderer, Themes}
 
-  @doc """
-  Initializes the component with a new renderer instance.
+    @doc """
+    Initializes the component with a new renderer instance.
 
-  Called once when the component is first mounted to the page.
-  Sets up an empty renderer and nil theme CSS which will be
-  populated on first update.
-  """
-  @impl true
-  def mount(socket) do
-    renderer = Renderer.new()
-
-    {:ok,
-     socket
-     |> assign(:renderer, renderer)
-     |> assign(:theme_css, nil)}
-  end
-
-  @doc """
-  Updates the component state with new assigns from the parent LiveView.
-
-  ## Assigns
-
-  Required:
-  - `:id` - Unique identifier for this component instance
-
-  Optional:
-  - `:buffer` - Terminal buffer to render (creates blank if not provided)
-  - `:theme` - Theme atom or custom theme map (default: `:synthwave84`)
-  - `:width` - Terminal width in characters (default: 80)
-  - `:height` - Terminal height in characters (default: 24)
-  - `:crt_mode` - Enable CRT scanline effects (default: false)
-  - `:high_contrast` - Enable high contrast mode (default: false)
-  - `:aria_label` - ARIA label for accessibility (default: "Interactive terminal")
-  - `:on_keypress` - Event name for keyboard events (optional)
-  - `:on_cell_click` - Event name for cell click events (optional)
-
-  ## Performance
-
-  - Only regenerates theme CSS when theme changes
-  - Uses renderer's virtual DOM diffing for efficient updates
-  - Caches common character/style combinations
-  """
-  @impl true
-  def update(assigns, socket) do
-    config = extract_config(assigns)
-
-    buffer =
-      Map.get(
-        assigns,
-        :buffer,
-        create_blank_buffer(config.width, config.height)
-      )
-
-    # Render buffer to HTML
-    {html, new_renderer} = Renderer.render(socket.assigns.renderer, buffer)
-
-    # Generate theme CSS if theme changed
-    theme_css =
-      generate_theme_css(
-        config.theme,
-        assigns.id,
-        socket.assigns[:current_theme],
-        socket.assigns[:theme_css]
-      )
-
-    {:ok,
-     socket
-     |> assign(:id, assigns.id)
-     |> assign(:buffer, buffer)
-     |> assign(:terminal_html, html)
-     |> assign(:renderer, new_renderer)
-     |> assign(:theme, config.theme)
-     |> assign(:current_theme, config.theme)
-     |> assign(:theme_css, theme_css)
-     |> assign(:width, config.width)
-     |> assign(:height, config.height)
-     |> assign(:crt_mode, config.crt_mode)
-     |> assign(:high_contrast, config.high_contrast)
-     |> assign(:aria_label, config.aria_label)
-     |> assign(:on_keypress, Map.get(assigns, :on_keypress))
-     |> assign(:on_cell_click, Map.get(assigns, :on_cell_click))}
-  end
-
-  @doc """
-  Renders the terminal component HTML.
-
-  Outputs a wrapper div with:
-  - Scoped theme CSS injected as <style> tag
-  - Base CSS for terminal grid layout
-  - CRT mode and high contrast class modifiers
-  - ARIA attributes for accessibility
-  - Keyboard and mouse event handlers
-  - Rendered terminal HTML from buffer
-
-  The rendered HTML uses character-perfect 1ch grid alignment
-  with monospace fonts for pixel-perfect terminal display.
-  """
-  @impl true
-  def render(assigns) do
-    ~H"""
-    <div
-      id={"raxol-wrapper-#{@id}"}
-      class={[
-        "raxol-terminal-wrapper",
-        "raxol-terminal-#{@id}",
-        @crt_mode && "raxol-crt-mode",
-        @high_contrast && "raxol-high-contrast"
-      ]}
-      role="application"
-      aria-label={@aria_label}
-      tabindex="0"
-      phx-window-keydown={@on_keypress}
-      phx-target={@myself}
-    >
-      <!-- Inject theme CSS -->
-      <%= if @theme_css do %>
-        <style>
-          <%= Phoenix.HTML.raw(@theme_css) %>
-        </style>
-      <% end %>
-
-      <!-- Base CSS for terminal rendering -->
-      <style>
-        .raxol-terminal-<%= @id %> {
-          font-family: 'Monaspace Argon', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
-          font-size: 14px;
-          line-height: 1.4;
-          padding: 1rem;
-          overflow: hidden;
-          width: fit-content;
-        }
-
-        .raxol-terminal-<%= @id %> .raxol-line {
-          display: block;
-          white-space: pre;
-          height: 1.4em;
-        }
-
-        .raxol-terminal-<%= @id %> .raxol-cell {
-          display: inline;
-          width: 1ch;
-        }
-
-        /* CRT Mode Effects */
-        .raxol-terminal-<%= @id %>.raxol-crt-mode::before {
-          content: " ";
-          display: block;
-          position: absolute;
-          top: 0;
-          left: 0;
-          bottom: 0;
-          right: 0;
-          background: linear-gradient(
-            rgba(18, 16, 16, 0) 50%,
-            rgba(0, 0, 0, 0.25) 50%
-          );
-          background-size: 100% 4px;
-          z-index: 2;
-          pointer-events: none;
-        }
-
-        .raxol-terminal-<%= @id %>.raxol-crt-mode {
-          animation: flicker 0.15s infinite;
-        }
-
-        @keyframes flicker {
-          0% { opacity: 0.97; }
-          50% { opacity: 1; }
-          100% { opacity: 0.97; }
-        }
-
-        /* High Contrast Mode */
-        .raxol-terminal-<%= @id %>.raxol-high-contrast {
-          filter: contrast(1.3) brightness(1.1);
-        }
-
-        /* Selection */
-        .raxol-terminal-<%= @id %> ::selection {
-          background: rgba(255, 255, 255, 0.2);
-        }
-      </style>
-
-      <!-- Terminal Content -->
-      <%= Phoenix.HTML.raw(@terminal_html) %>
-    </div>
+    Called once when the component is first mounted to the page.
+    Sets up an empty renderer and nil theme CSS which will be
+    populated on first update.
     """
-  end
+    @impl true
+    def mount(socket) do
+      renderer = Renderer.new()
 
-  @doc """
-  Handles terminal events (keyboard and cell clicks).
-
-  ## Events
-
-  ### "keypress"
-  When `:on_keypress` assign is set, sends a message to the parent
-  LiveView in the format `{:terminal_keypress, component_id, key}`.
-
-  ### "cell_click"
-  When `:on_cell_click` assign is set, sends a message to the parent
-  LiveView in the format `{:terminal_cell_click, component_id, row, col}`.
-
-  The parent LiveView should implement handlers for these messages to
-  process user interactions with the terminal.
-  """
-  @impl true
-  def handle_event("keypress", %{"key" => key}, socket) do
-    if socket.assigns.on_keypress do
-      send(self(), {:terminal_keypress, socket.assigns.id, key})
+      {:ok,
+       socket
+       |> assign(:renderer, renderer)
+       |> assign(:theme_css, nil)}
     end
 
-    {:noreply, socket}
-  end
+    @doc """
+    Updates the component state with new assigns from the parent LiveView.
 
-  @impl true
-  def handle_event("cell_click", %{"row" => row, "col" => col}, socket) do
-    if socket.assigns.on_cell_click do
-      send(self(), {:terminal_cell_click, socket.assigns.id, row, col})
+    ## Assigns
+
+    Required:
+    - `:id` - Unique identifier for this component instance
+
+    Optional:
+    - `:buffer` - Terminal buffer to render (creates blank if not provided)
+    - `:theme` - Theme atom or custom theme map (default: `:synthwave84`)
+    - `:width` - Terminal width in characters (default: 80)
+    - `:height` - Terminal height in characters (default: 24)
+    - `:crt_mode` - Enable CRT scanline effects (default: false)
+    - `:high_contrast` - Enable high contrast mode (default: false)
+    - `:aria_label` - ARIA label for accessibility (default: "Interactive terminal")
+    - `:on_keypress` - Event name for keyboard events (optional)
+    - `:on_cell_click` - Event name for cell click events (optional)
+
+    ## Performance
+
+    - Only regenerates theme CSS when theme changes
+    - Uses renderer's virtual DOM diffing for efficient updates
+    - Caches common character/style combinations
+    """
+    @impl true
+    def update(assigns, socket) do
+      config = extract_config(assigns)
+
+      buffer =
+        Map.get(
+          assigns,
+          :buffer,
+          create_blank_buffer(config.width, config.height)
+        )
+
+      # Render buffer to HTML
+      {html, new_renderer} = Renderer.render(socket.assigns.renderer, buffer)
+
+      # Generate theme CSS if theme changed
+      theme_css =
+        generate_theme_css(
+          config.theme,
+          assigns.id,
+          socket.assigns[:current_theme],
+          socket.assigns[:theme_css]
+        )
+
+      {:ok,
+       socket
+       |> assign(:id, assigns.id)
+       |> assign(:buffer, buffer)
+       |> assign(:terminal_html, html)
+       |> assign(:renderer, new_renderer)
+       |> assign(:theme, config.theme)
+       |> assign(:current_theme, config.theme)
+       |> assign(:theme_css, theme_css)
+       |> assign(:width, config.width)
+       |> assign(:height, config.height)
+       |> assign(:crt_mode, config.crt_mode)
+       |> assign(:high_contrast, config.high_contrast)
+       |> assign(:aria_label, config.aria_label)
+       |> assign(:on_keypress, Map.get(assigns, :on_keypress))
+       |> assign(:on_cell_click, Map.get(assigns, :on_cell_click))}
     end
 
-    {:noreply, socket}
-  end
+    @doc """
+    Renders the terminal component HTML.
 
-  # Helpers
+    Outputs a wrapper div with:
+    - Scoped theme CSS injected as <style> tag
+    - Base CSS for terminal grid layout
+    - CRT mode and high contrast class modifiers
+    - ARIA attributes for accessibility
+    - Keyboard and mouse event handlers
+    - Rendered terminal HTML from buffer
 
-  defp extract_config(assigns) do
-    %{
-      theme: Map.get(assigns, :theme, :synthwave84),
-      width: Map.get(assigns, :width, 80),
-      height: Map.get(assigns, :height, 24),
-      crt_mode: Map.get(assigns, :crt_mode, false),
-      high_contrast: Map.get(assigns, :high_contrast, false),
-      aria_label: Map.get(assigns, :aria_label, "Interactive terminal")
-    }
-  end
+    The rendered HTML uses character-perfect 1ch grid alignment
+    with monospace fonts for pixel-perfect terminal display.
+    """
+    @impl true
+    def render(assigns) do
+      ~H"""
+      <div
+        id={"raxol-wrapper-#{@id}"}
+        class={[
+          "raxol-terminal-wrapper",
+          "raxol-terminal-#{@id}",
+          @crt_mode && "raxol-crt-mode",
+          @high_contrast && "raxol-high-contrast"
+        ]}
+        role="application"
+        aria-label={@aria_label}
+        tabindex="0"
+        phx-window-keydown={@on_keypress}
+        phx-target={@myself}
+      >
+        <!-- Inject theme CSS -->
+        <%= if @theme_css do %>
+          <style>
+            <%= Phoenix.HTML.raw(@theme_css) %>
+          </style>
+        <% end %>
 
-  @spec generate_theme_css(
-          atom() | map(),
-          String.t(),
-          atom() | map() | nil,
-          String.t() | nil
-        ) :: String.t() | nil
-  defp generate_theme_css(theme, _id, current_theme, current_css)
-       when theme == current_theme do
-    current_css
-  end
+        <!-- Base CSS for terminal rendering -->
+        <style>
+          .raxol-terminal-<%= @id %> {
+            font-family: 'Monaspace Argon', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            padding: 1rem;
+            overflow: hidden;
+            width: fit-content;
+          }
 
-  defp generate_theme_css(theme, id, _current_theme, _current_css) do
-    theme_data = resolve_theme(theme)
-    Themes.to_css(theme_data, ".raxol-terminal-#{id}")
-  end
+          .raxol-terminal-<%= @id %> .raxol-line {
+            display: block;
+            white-space: pre;
+            height: 1.4em;
+          }
 
-  @spec resolve_theme(atom() | map()) :: map()
-  defp resolve_theme(theme) when is_atom(theme) do
-    Themes.get(theme) || Themes.get(:synthwave84)
-  end
+          .raxol-terminal-<%= @id %> .raxol-cell {
+            display: inline;
+            width: 1ch;
+          }
 
-  defp resolve_theme(theme) when is_map(theme), do: theme
+          /* CRT Mode Effects */
+          .raxol-terminal-<%= @id %>.raxol-crt-mode::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+              rgba(18, 16, 16, 0) 50%,
+              rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+          }
 
-  @doc false
-  @spec create_blank_buffer(integer(), integer()) :: map()
-  defp create_blank_buffer(width, height) do
-    lines =
-      for _ <- 1..height do
-        cells =
-          for _ <- 1..width do
-            %{
-              char: " ",
-              style: %{
-                bold: false,
-                italic: false,
-                underline: false,
-                reverse: false,
-                fg_color: nil,
-                bg_color: nil
-              }
-            }
-          end
+          .raxol-terminal-<%= @id %>.raxol-crt-mode {
+            animation: flicker 0.15s infinite;
+          }
 
-        %{cells: cells}
+          @keyframes flicker {
+            0% { opacity: 0.97; }
+            50% { opacity: 1; }
+            100% { opacity: 0.97; }
+          }
+
+          /* High Contrast Mode */
+          .raxol-terminal-<%= @id %>.raxol-high-contrast {
+            filter: contrast(1.3) brightness(1.1);
+          }
+
+          /* Selection */
+          .raxol-terminal-<%= @id %> ::selection {
+            background: rgba(255, 255, 255, 0.2);
+          }
+        </style>
+
+        <!-- Terminal Content -->
+        <%= Phoenix.HTML.raw(@terminal_html) %>
+      </div>
+      """
+    end
+
+    @doc """
+    Handles terminal events (keyboard and cell clicks).
+
+    ## Events
+
+    ### "keypress"
+    When `:on_keypress` assign is set, sends a message to the parent
+    LiveView in the format `{:terminal_keypress, component_id, key}`.
+
+    ### "cell_click"
+    When `:on_cell_click` assign is set, sends a message to the parent
+    LiveView in the format `{:terminal_cell_click, component_id, row, col}`.
+
+    The parent LiveView should implement handlers for these messages to
+    process user interactions with the terminal.
+    """
+    @impl true
+    def handle_event("keypress", %{"key" => key}, socket) do
+      if socket.assigns.on_keypress do
+        send(self(), {:terminal_keypress, socket.assigns.id, key})
       end
 
-    %{lines: lines, width: width, height: height}
+      {:noreply, socket}
+    end
+
+    @impl true
+    def handle_event("cell_click", %{"row" => row, "col" => col}, socket) do
+      if socket.assigns.on_cell_click do
+        send(self(), {:terminal_cell_click, socket.assigns.id, row, col})
+      end
+
+      {:noreply, socket}
+    end
+
+    # Helpers
+
+    defp extract_config(assigns) do
+      %{
+        theme: Map.get(assigns, :theme, :synthwave84),
+        width: Map.get(assigns, :width, 80),
+        height: Map.get(assigns, :height, 24),
+        crt_mode: Map.get(assigns, :crt_mode, false),
+        high_contrast: Map.get(assigns, :high_contrast, false),
+        aria_label: Map.get(assigns, :aria_label, "Interactive terminal")
+      }
+    end
+
+    @spec generate_theme_css(
+            atom() | map(),
+            String.t(),
+            atom() | map() | nil,
+            String.t() | nil
+          ) :: String.t() | nil
+    defp generate_theme_css(theme, _id, current_theme, current_css)
+         when theme == current_theme do
+      current_css
+    end
+
+    defp generate_theme_css(theme, id, _current_theme, _current_css) do
+      theme_data = resolve_theme(theme)
+      Themes.to_css(theme_data, ".raxol-terminal-#{id}")
+    end
+
+    @spec resolve_theme(atom() | map()) :: map()
+    defp resolve_theme(theme) when is_atom(theme) do
+      Themes.get(theme) || Themes.get(:synthwave84)
+    end
+
+    defp resolve_theme(theme) when is_map(theme), do: theme
+
+    @doc false
+    @spec create_blank_buffer(integer(), integer()) :: map()
+    defp create_blank_buffer(width, height) do
+      lines =
+        for _ <- 1..height do
+          cells =
+            for _ <- 1..width do
+              %{
+                char: " ",
+                style: %{
+                  bold: false,
+                  italic: false,
+                  underline: false,
+                  reverse: false,
+                  fg_color: nil,
+                  bg_color: nil
+                }
+              }
+            end
+
+          %{cells: cells}
+        end
+
+      %{lines: lines, width: width, height: height}
+    end
   end
 end

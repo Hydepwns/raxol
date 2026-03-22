@@ -411,7 +411,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     updated_buffer = apply_cells_to_buffer(cells, state)
     html = Raxol.LiveView.TerminalBridge.buffer_to_html(updated_buffer)
 
-    if state.liveview_topic do
+    if state.liveview_topic && Code.ensure_loaded?(Phoenix.PubSub) do
       Phoenix.PubSub.broadcast(Raxol.PubSub, state.liveview_topic, {:render_update, html})
     end
 

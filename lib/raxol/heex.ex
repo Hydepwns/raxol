@@ -34,12 +34,16 @@ defmodule Raxol.HEEx do
   require Logger
 
   defmacro __using__(_opts) do
-    quote do
-      import Phoenix.Component
-      import Raxol.HEEx
-
-      # Make terminal-specific components available
-      import Raxol.HEEx.Components
+    if Code.ensure_loaded?(Phoenix.Component) do
+      quote do
+        import Phoenix.Component
+        import Raxol.HEEx
+        import Raxol.HEEx.Components
+      end
+    else
+      quote do
+        import Raxol.HEEx
+      end
     end
   end
 

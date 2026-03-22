@@ -223,7 +223,7 @@ defmodule Raxol.Application do
   end
 
   defp maybe_add_pubsub do
-    if feature_enabled?(:pubsub) do
+    if feature_enabled?(:pubsub) and Code.ensure_loaded?(Phoenix.PubSub) do
       {Phoenix.PubSub, name: Raxol.PubSub}
     end
   end
