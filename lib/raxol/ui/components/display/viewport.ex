@@ -134,7 +134,8 @@ defmodule Raxol.UI.Components.Display.Viewport do
 
   @impl true
   @spec render(t(), map()) :: map()
-  def render(state, _context) do
+  def render(state, context) do
+    state = %{state | focused: Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused}
     visible_children = Enum.slice(state.children, state.scroll_top, state.visible_height)
 
     content_column = %{

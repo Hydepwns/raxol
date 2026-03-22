@@ -543,6 +543,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   """
   @impl true
   def render(state, context) do
+    state = %{state | focused: Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused}
     merged_theme = merge_themes(context, state)
     visible_lines = calculate_visible_lines(state)
 

@@ -48,6 +48,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
   @spec init(map()) :: {:ok, map()}
   def init(props) do
     initial_state = %{
+      id: props[:id],
       value: props[:value] || "",
       cursor_pos: 0,
       focused: false,
@@ -142,21 +143,26 @@ defmodule Raxol.UI.Components.Input.TextInput do
   """
   @impl Component
   @spec render(map(), map()) :: any()
-  def render(state, _context) do
+  def render(state, context) do
     value = state.value
     placeholder = state.placeholder
 
     masked_text = get_masked_text(state.mask_char, value)
     display_text = get_display_text(value == "", placeholder, masked_text)
 
+    widget_id = state[:id]
+    focused = Raxol.UI.FocusHelper.focused?(widget_id, context) or state.focused
+
     merged_style =
       Map.merge(state.theme[:input] || %{}, state.style[:input] || %{})
+
+    merged_style = Raxol.UI.FocusHelper.maybe_focus_style(widget_id, context, merged_style)
 
     %{
       type: :text,
       content: display_text,
       cursor_pos: state.cursor_pos,
-      focused: state.focused,
+      focused: focused,
       style: merged_style
     }
   end

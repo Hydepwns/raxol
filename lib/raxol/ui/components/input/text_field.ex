@@ -301,8 +301,11 @@ defmodule Raxol.UI.Components.Input.TextField do
   Renders the TextField component using the current state and context.
   """
   @impl Raxol.UI.Components.Base.Component
-  def render(state, _context) do
+  def render(state, context) do
+    focused = Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused
+    state = %{state | focused: focused}
     merged_style = get_merged_style(state)
+    merged_style = Raxol.UI.FocusHelper.maybe_focus_style(state.id, context, merged_style)
     {visible_value, showing_placeholder} = get_visible_value(state)
 
     text_children =
