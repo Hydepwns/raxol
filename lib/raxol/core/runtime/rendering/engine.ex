@@ -323,7 +323,11 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       "Rendering Engine: Writing output string to IO"
     )
 
+    # Mode 2026: synchronized output to prevent tearing
+    # Terminals that don't support it silently ignore these sequences
+    IO.write("\e[?2026h")
     IO.write(output_string)
+    IO.write("\e[?2026l")
 
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Finished writing output string to IO"

@@ -20,6 +20,7 @@ defmodule Raxol.Terminal.Driver do
   # import Bitwise
 
   alias Raxol.Core.Events.Event
+  alias Raxol.Terminal.ANSI.InputParser
   alias Raxol.Terminal.IOTerminal
 
   # Check if termbox2_nif is available at compile time
@@ -137,6 +138,9 @@ defmodule Raxol.Terminal.Driver do
 
         # Enter alternate screen, hide cursor
         IO.write("\e[?1049h\e[?25l")
+
+        # Enable terminal modes: all-motion mouse, SGR encoding, focus reporting, bracketed paste
+        IO.write("\e[?1003h\e[?1006h\e[?1004h\e[?2004h")
 
         # Configure Erlang IO for raw-ish input (no echo, no line buffering)
         :io.setopts(:standard_io, binary: true, echo: false)
@@ -300,7 +304,7 @@ defmodule Raxol.Terminal.Driver do
 
   @impl true
   def handle_manager_info({:raw_input, data}, state) when is_binary(data) do
-    events = parse_ansi_input(data)
+    events = InputParser.parse(data)
 
     Enum.each(events, fn event ->
       case state.dispatcher_pid do
@@ -382,6 +386,8 @@ defmodule Raxol.Terminal.Driver do
           :ok
 
         {_, true} ->
+          # Disable terminal modes before restoring
+          IO.write("\e[?1003l\e[?1006l\e[?1004l\e[?2004l")
           # Restore terminal: show cursor, leave alternate screen
           IO.write("\e[?25h\e[?1049l")
           :io.setopts(:standard_io, echo: true)
@@ -489,20 +495,20 @@ defmodule Raxol.Terminal.Driver do
 
   defp read_escape_sequence(escape_byte) do
     # Brief pause to let escape sequence bytes arrive
-    Process.sleep(5)
+    Process.sleep(2)
 
     # Try to read more bytes (non-blocking via small timeout)
-    # Use a task with timeout to avoid blocking forever
+    # Buffer size 32 to accommodate SGR mouse sequences (12+ bytes)
     task =
       Task.async(fn ->
-        case :io.get_chars(:standard_io, ~c"", 8) do
+        case :io.get_chars(:standard_io, ~c"", 32) do
           data when is_binary(data) -> data
           data when is_list(data) -> IO.chardata_to_string(data)
           _ -> ""
         end
       end)
 
-    case Task.yield(task, 50) do
+    case Task.yield(task, 100) do
       {:ok, more} when is_binary(more) and byte_size(more) > 0 ->
         escape_byte <> more
 
@@ -512,47 +518,6 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  defp parse_ansi_input(<<27, 91, 65>>),
-    do: [%Event{type: :key, data: %{key: :up}}]
-
-  defp parse_ansi_input(<<27, 91, 66>>),
-    do: [%Event{type: :key, data: %{key: :down}}]
-
-  defp parse_ansi_input(<<27, 91, 67>>),
-    do: [%Event{type: :key, data: %{key: :right}}]
-
-  defp parse_ansi_input(<<27, 91, 68>>),
-    do: [%Event{type: :key, data: %{key: :left}}]
-
-  defp parse_ansi_input(<<27>>), do: [%Event{type: :key, data: %{key: :escape}}]
-  defp parse_ansi_input(<<13>>), do: [%Event{type: :key, data: %{key: :enter}}]
-
-  defp parse_ansi_input(<<127>>),
-    do: [%Event{type: :key, data: %{key: :backspace}}]
-
-  defp parse_ansi_input(<<9>>), do: [%Event{type: :key, data: %{key: :tab}}]
-
-  # Ctrl+C
-  defp parse_ansi_input(<<3>>),
-    do: [%Event{type: :key, data: %{key: :char, char: "c", ctrl: true}}]
-
-  # Ctrl+Q
-  defp parse_ansi_input(<<17>>),
-    do: [%Event{type: :key, data: %{key: :char, char: "q", ctrl: true}}]
-
-  # Regular printable character
-  defp parse_ansi_input(<<char>>) when char >= 32 and char <= 126 do
-    [%Event{type: :key, data: %{key: :char, char: <<char>>}}]
-  end
-
-  # Multi-byte UTF-8 or unknown sequence
-  defp parse_ansi_input(data) when is_binary(data) do
-    # Try to parse as UTF-8 character
-    case String.valid?(data) and String.length(data) == 1 do
-      true -> [%Event{type: :key, data: %{key: :char, char: data}}]
-      false -> []
-    end
-  end
 
   # --- Private Helpers ---
 
@@ -806,95 +771,14 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  # Helper for parsing test input
-  # This function translates simple string inputs from tests into Event structs.
-  # It's a simplified version for testing purposes.
   defp parse_test_input(input_data) when is_binary(input_data) do
-    # Basic parsing: assume simple characters or known ctrl sequences
-    # This is a simplified parser for test inputs.
     Raxol.Core.Runtime.Log.debug(
       "[TerminalDriver.parse_test_input] Parsing: #{inspect(input_data)}"
     )
 
-    case input_data do
-      # Ctrl+Q (ASCII 17)
-      <<17>> ->
-        %Event{
-          type: :key,
-          data: %{
-            key: :char,
-            char: <<17>>,
-            ctrl: true,
-            alt: false,
-            shift: false,
-            meta: false
-          }
-        }
-
-      # Ctrl+V (ASCII 22)
-      <<22>> ->
-        %Event{
-          type: :key,
-          data: %{
-            key: :char,
-            char: <<22>>,
-            ctrl: true,
-            alt: false,
-            shift: false,
-            meta: false
-          }
-        }
-
-      # Ctrl+X (ASCII 24)
-      <<24>> ->
-        %Event{
-          type: :key,
-          data: %{
-            key: :char,
-            char: <<24>>,
-            ctrl: true,
-            alt: false,
-            shift: false,
-            meta: false
-          }
-        }
-
-      # Ctrl+N (ASCII 14)
-      <<14>> ->
-        %Event{
-          type: :key,
-          data: %{
-            key: :char,
-            char: <<14>>,
-            ctrl: true,
-            alt: false,
-            shift: false,
-            meta: false
-          }
-        }
-
-      # Other ASCII characters (simplified)
-      <<char>> when char >= 32 and char <= 126 ->
-        %Event{
-          type: :key,
-          data: %{
-            key: :char,
-            char: <<char>>,
-            ctrl: false,
-            alt: false,
-            shift: false,
-            meta: false
-          }
-        }
-
-      _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[TerminalDriver.parse_test_input] Unhandled test input: #{inspect(input_data)}",
-          %{}
-        )
-
-        # Return a generic event or handle error as appropriate
-        %Event{type: :unknown_test_input, data: %{raw: input_data}}
+    case InputParser.parse(input_data) do
+      [event | _] -> event
+      [] -> %Event{type: :unknown_test_input, data: %{raw: input_data}}
     end
   end
 
