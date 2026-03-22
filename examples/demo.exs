@@ -1,8 +1,15 @@
 # Raxol Demo
 #
-# A multi-panel dashboard showcasing Raxol's key features:
-# live-updating stats, multiple border styles, text styling,
-# flexbox layout, progress bars, and keyboard navigation.
+# A live BEAM dashboard showcasing Raxol's terminal UI capabilities:
+# real-time scheduler utilization, memory sparklines, process table,
+# color theming, and keyboard-driven navigation.
+#
+# Palette: Synthwave '84 Soft (mapped to ANSI)
+#   cyan    -> accents, active titles
+#   magenta -> highlights, key hints
+#   yellow  -> warnings, table headers
+#   green   -> healthy status
+#   red     -> critical status
 #
 # Usage:
 #   mix run examples/demo.exs
@@ -12,59 +19,93 @@ defmodule RaxolDemo do
 
   require Raxol.Core.Runtime.Log
 
-  @panels [:system, :activity]
+  @panels [:runtime, :schedulers, :log, :processes]
+  @spark ~w(▁ ▂ ▃ ▄ ▅ ▆ ▇ █)
+  @bar_fill "█"
+  @bar_empty "░"
+
+  # -- TEA Callbacks --
 
   @impl true
   def init(_context) do
+    :erlang.system_flag(:scheduler_wall_time, true)
+
     %{
-      tick_count: 0,
-      active_panel: :system,
-      log_entries: [
-        {now(), "Raxol runtime initialized"},
-        {now(), "TEA lifecycle started"},
-        {now(), "Render engine ready"}
+      tick: 0,
+      panel: :runtime,
+      paused: false,
+      log: [
+        {ts(), "Raxol runtime initialized"},
+        {ts(), "TEA lifecycle active"},
+        {ts(), "Rendering engine ready"}
       ],
-      start_time: System.monotonic_time(:second)
+      mem_history: List.duplicate(0, 20),
+      proc_offset: 0,
+      start_time: System.monotonic_time(:second),
+      sched_prev: :erlang.statistics(:scheduler_wall_time) |> Enum.sort(),
+      sched_utils: []
     }
   end
 
   @impl true
   def update(message, model) do
     case message do
+      :tick when model.paused ->
+        {model, []}
+
       :tick ->
-        uptime = System.monotonic_time(:second) - model.start_time
-        entry = tick_log_entry(model.tick_count)
+        curr = :erlang.statistics(:scheduler_wall_time) |> Enum.sort()
 
-        log =
-          [{now(), entry} | model.log_entries]
-          |> Enum.take(12)
+        utils =
+          Enum.zip(model.sched_prev, curr)
+          |> Enum.map(fn {{_id, a1, t1}, {_id2, a2, t2}} ->
+            delta_total = t2 - t1
+            if delta_total > 0, do: round((a2 - a1) / delta_total * 100), else: 0
+          end)
 
-        {%{model | tick_count: model.tick_count + 1, log_entries: log},
-         if(rem(uptime, 10) == 0 and uptime > 0,
-           do: [],
-           else: []
-         )}
+        mem_pct = mem_percent()
+        history = (model.mem_history ++ [mem_pct]) |> Enum.take(-20)
 
-      :next_panel ->
-        {%{model | active_panel: next_panel(model.active_panel)}, []}
+        entry = tick_entry(model.tick)
+        log = [{ts(), entry} | model.log] |> Enum.take(12)
 
-      :prev_panel ->
-        {%{model | active_panel: prev_panel(model.active_panel)}, []}
+        {%{model |
+          tick: model.tick + 1,
+          sched_prev: curr,
+          sched_utils: utils,
+          mem_history: history,
+          log: log
+        }, []}
 
+      # Navigation
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
+        {%{model | panel: next_panel(model.panel)}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "l"}} ->
+        {%{model | panel: next_panel(model.panel)}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "h"}} ->
+        {%{model | panel: prev_panel(model.panel)}, []}
+
+      # Process table scroll
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}} ->
+        {%{model | proc_offset: min(model.proc_offset + 1, 20)}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}} ->
+        {%{model | proc_offset: max(model.proc_offset - 1, 0)}, []}
+
+      # Pause / Resume
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: " "}} ->
+        log_msg = if model.paused, do: "Resumed", else: "Paused"
+        log = [{ts(), log_msg} | model.log] |> Enum.take(12)
+        {%{model | paused: !model.paused, log: log}, []}
+
+      # Quit
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
         {model, [command(:quit)]}
-
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
-        {%{model | active_panel: next_panel(model.active_panel)}, []}
-
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "l"}} ->
-        {%{model | active_panel: next_panel(model.active_panel)}, []}
-
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "h"}} ->
-        {%{model | active_panel: prev_panel(model.active_panel)}, []}
 
       _ ->
         {model, []}
@@ -75,54 +116,18 @@ defmodule RaxolDemo do
   def view(model) do
     column style: %{padding: 0, gap: 0} do
       [
-        # -- Header --
-        box style: %{border: :double, width: :fill, padding: 0} do
-          row style: %{gap: 1, justify_content: :space_between} do
-            [
-              text("  RAXOL DEMO  ", style: [:bold]),
-              text(clock_string(), style: [:dim])
-            ]
-          end
-        end,
-
-        # -- Main content: two panels side by side --
+        header_bar(model),
+        spacer(size: 1),
         row style: %{gap: 1} do
           [
-            # Left panel: System info
-            system_panel(model),
-            # Right panel: Activity log
-            activity_panel(model)
+            runtime_panel(model),
+            scheduler_panel(model),
+            log_panel(model)
           ]
         end,
-
-        # -- Divider --
-        divider(char: "="),
-
-        # -- Key hints --
-        box style: %{border: :rounded, width: :fill, padding: 0} do
-          column style: %{gap: 0} do
-            [
-              row style: %{gap: 2} do
-                [
-                  text("[Tab/h/l]", style: [:bold]),
-                  text("Switch panel"),
-                  text("  "),
-                  text("[q/Ctrl+C]", style: [:bold]),
-                  text("Quit")
-                ]
-              end,
-              spacer(size: 1),
-              text("-- More Raxol demos --", style: [:underline]),
-              text("  SSH serving:         mix run examples/ssh/ssh_counter.exs", style: [:dim]),
-              text("  Hot reload:          iex -S mix run examples/dev/hot_reload_demo.exs",
-                style: [:dim]
-              ),
-              text("  Process isolation:   mix run examples/components/process_component_demo.exs",
-                style: [:dim]
-              )
-            ]
-          end
-        end
+        spacer(size: 1),
+        process_table(model),
+        key_bar(model)
       ]
     end
   end
@@ -132,42 +137,55 @@ defmodule RaxolDemo do
     [subscribe_interval(1000, :tick)]
   end
 
-  # -- Panel builders --
+  # -- Header --
 
-  defp system_panel(model) do
-    active = model.active_panel == :system
-    border = if active, do: :double, else: :single
+  defp header_bar(model) do
+    status = if model.paused, do: "PAUSED", else: clock()
 
-    mem = memory_stats()
+    box style: %{border: :double, width: :fill, padding: 0} do
+      row style: %{gap: 1, justify_content: :space_between} do
+        [
+          text("  R A X O L", style: [:bold], fg: :cyan),
+          text("Terminal UI Framework for Elixir", style: [:dim]),
+          text(status, style: [:bold], fg: if(model.paused, do: :yellow, else: :cyan))
+        ]
+      end
+    end
+  end
+
+  # -- BEAM Runtime Panel --
+
+  defp runtime_panel(model) do
+    active = model.panel == :runtime
+    mem = mem_stats()
     uptime = System.monotonic_time(:second) - model.start_time
-    process_count = :erlang.system_info(:process_count)
-    process_limit = :erlang.system_info(:process_limit)
-    mem_pct = round(mem.used_mb / mem.total_mb * 100)
+    pct = mem_percent()
 
-    box style: %{border: border, width: 40, padding: 1} do
+    box style: %{border: panel_border(active), width: 30, padding: 1} do
       column style: %{gap: 0} do
         [
-          text(panel_title("System Info", active), style: [:bold]),
-          divider(),
-          text("Elixir:      #{System.version()}"),
-          text("OTP:         #{:erlang.system_info(:otp_release)}"),
-          text("Uptime:      #{format_uptime(uptime)}"),
+          text(panel_title("BEAM Runtime", active), style: [:bold], fg: title_color(active)),
+          divider(char: "-"),
+          text("Elixir     #{System.version()}"),
+          text("OTP        #{:erlang.system_info(:otp_release)}"),
+          text("Uptime     #{fmt_uptime(uptime)}"),
           spacer(size: 1),
-          text("Processes:   #{process_count} / #{process_limit}"),
-          text("Reductions:  #{format_number(:erlang.statistics(:reductions) |> elem(0))}"),
-          text("Tick:        ##{model.tick_count}"),
+          text("Processes  #{:erlang.system_info(:process_count)}"),
+          text("Ports      #{length(:erlang.ports())}"),
+          text("Atoms      #{fmt_num(:erlang.system_info(:atom_count))}"),
+          text("ETS        #{length(:ets.all())}"),
           spacer(size: 1),
-          text("Memory", style: [:bold, :underline]),
-          text("  Total:     #{mem.total_mb} MB"),
-          text("  Used:      #{mem.used_mb} MB"),
-          text("  Atoms:     #{mem.atom_mb} MB"),
-          text("  Binaries:  #{mem.binary_mb} MB"),
+          text("Memory", style: [:bold], fg: :cyan),
+          text("  Total    #{mem.total} MB"),
+          text("  Used     #{mem.used} MB"),
+          text("  Binary   #{mem.binary} MB"),
+          spacer(size: 1),
+          text("  #{sparkline(model.mem_history)}", fg: :cyan),
           spacer(size: 1),
           row style: %{gap: 1} do
             [
-              text("Mem:"),
-              progress(value: mem_pct, max: 100),
-              text("#{mem_pct}%", style: [:bold])
+              text(bar(pct, 14), fg: bar_color(pct)),
+              text("#{pct}%", style: [:bold], fg: bar_color(pct))
             ]
           end
         ]
@@ -175,31 +193,225 @@ defmodule RaxolDemo do
     end
   end
 
-  defp activity_panel(model) do
-    active = model.active_panel == :activity
-    border = if active, do: :double, else: :single
+  # -- Scheduler Panel --
 
-    entries =
-      model.log_entries
-      |> Enum.map(fn {time, msg} ->
-        text("#{time}  #{msg}", style: [:dim])
+  defp scheduler_panel(model) do
+    active = model.panel == :schedulers
+    utils = model.sched_utils
+
+    sched_rows =
+      utils
+      |> Enum.with_index(1)
+      |> Enum.map(fn {pct, idx} ->
+        row style: %{gap: 1} do
+          [
+            text("##{idx}", style: [:dim]),
+            text(bar(pct, 12), fg: bar_color(pct)),
+            text("#{String.pad_leading("#{pct}", 3)}%", fg: bar_color(pct))
+          ]
+        end
       end)
 
-    box style: %{border: border, width: 44, padding: 1} do
+    avg = if utils == [], do: 0, else: round(Enum.sum(utils) / length(utils))
+
+    box style: %{border: panel_border(active), width: 28, padding: 1} do
       column style: %{gap: 0} do
         [
-          text(panel_title("Activity Log", active), style: [:bold]),
-          divider()
+          text(panel_title("Schedulers", active), style: [:bold], fg: title_color(active)),
+          divider(char: "-")
+          | sched_rows ++
+              [
+                spacer(size: 1),
+                divider(char: "-"),
+                row style: %{gap: 1} do
+                  [
+                    text("Avg", style: [:bold]),
+                    text(bar(avg, 12), fg: bar_color(avg)),
+                    text("#{String.pad_leading("#{avg}", 3)}%", style: [:bold], fg: bar_color(avg))
+                  ]
+                end,
+                spacer(size: 1),
+                text("#{status_dot(avg)} #{sched_status(avg)}", fg: bar_color(avg))
+              ]
+        ]
+      end
+    end
+  end
+
+  # -- Event Log Panel --
+
+  defp log_panel(model) do
+    active = model.panel == :log
+    tick_label = if model.paused, do: " (paused)", else: ""
+
+    entries =
+      model.log
+      |> Enum.map(fn {time, msg} ->
+        row style: %{gap: 1} do
+          [
+            text(time, style: [:dim]),
+            text(msg)
+          ]
+        end
+      end)
+
+    box style: %{border: panel_border(active), width: 36, padding: 1} do
+      column style: %{gap: 0} do
+        [
+          text(panel_title("Event Log#{tick_label}", active), style: [:bold], fg: title_color(active)),
+          divider(char: "-")
           | entries
         ]
       end
     end
   end
 
-  # -- Helpers --
+  # -- Process Table --
+
+  defp process_table(model) do
+    active = model.panel == :processes
+    procs = top_processes(model.proc_offset)
+
+    header =
+      row style: %{gap: 1} do
+        [
+          text(String.pad_trailing("PID", 16), style: [:bold], fg: :yellow),
+          text(String.pad_trailing("Name", 28), style: [:bold], fg: :yellow),
+          text(String.pad_leading("Reductions", 12), style: [:bold], fg: :yellow),
+          text(String.pad_leading("Memory", 10), style: [:bold], fg: :yellow)
+        ]
+      end
+
+    rows =
+      procs
+      |> Enum.map(fn p ->
+        row style: %{gap: 1} do
+          [
+            text(String.pad_trailing(p.pid, 16), style: [:dim]),
+            text(String.pad_trailing(p.name, 28), fg: name_color(p.name)),
+            text(String.pad_leading(fmt_num(p.reds), 12)),
+            text(String.pad_leading(fmt_bytes(p.mem), 10))
+          ]
+        end
+      end)
+
+    box style: %{border: panel_border(active), width: :fill, padding: 1} do
+      column style: %{gap: 0} do
+        [
+          text(panel_title("Top Processes", active), style: [:bold], fg: title_color(active)),
+          divider(char: "-"),
+          header,
+          divider(char: "-")
+          | rows
+        ]
+      end
+    end
+  end
+
+  # -- Key Hints Bar --
+
+  defp key_bar(model) do
+    pause_label = if model.paused, do: "Resume", else: "Pause"
+
+    row style: %{gap: 2} do
+      [
+        text(" Tab/h/l", style: [:bold], fg: :magenta),
+        text("panel", style: [:dim]),
+        text("j/k", style: [:bold], fg: :magenta),
+        text("scroll", style: [:dim]),
+        text("Space", style: [:bold], fg: :magenta),
+        text(pause_label, style: [:dim]),
+        text("q", style: [:bold], fg: :magenta),
+        text("quit", style: [:dim])
+      ]
+    end
+  end
+
+  # -- Data Helpers --
+
+  defp top_processes(offset) do
+    Process.list()
+    |> Enum.flat_map(fn pid ->
+      case Process.info(pid, [:registered_name, :reductions, :memory]) do
+        nil ->
+          []
+
+        info ->
+          name =
+            case info[:registered_name] do
+              [] -> inspect(pid)
+              n -> inspect(n)
+            end
+
+          [%{pid: inspect(pid), name: name, reds: info[:reductions], mem: info[:memory]}]
+      end
+    end)
+    |> Enum.sort_by(& &1.reds, :desc)
+    |> Enum.drop(offset)
+    |> Enum.take(6)
+  end
+
+  defp mem_stats do
+    m = :erlang.memory()
+    %{
+      total: Float.round(m[:total] / 1_048_576, 1),
+      used: Float.round((m[:total] - m[:binary]) / 1_048_576, 1),
+      binary: Float.round(m[:binary] / 1_048_576, 1)
+    }
+  end
+
+  defp mem_percent do
+    m = :erlang.memory()
+    round((m[:total] - m[:binary]) / m[:total] * 100)
+  end
+
+  # -- Rendering Helpers --
+
+  defp sparkline(values) do
+    max_val = Enum.max(values ++ [1])
+
+    values
+    |> Enum.map(fn v ->
+      idx = if max_val > 0, do: round(v / max_val * 7), else: 0
+      Enum.at(@spark, min(idx, 7))
+    end)
+    |> Enum.join()
+  end
+
+  defp bar(pct, width) do
+    filled = round(pct / 100 * width)
+    empty = width - filled
+    String.duplicate(@bar_fill, filled) <> String.duplicate(@bar_empty, empty)
+  end
+
+  defp bar_color(pct) when pct >= 80, do: :red
+  defp bar_color(pct) when pct >= 60, do: :yellow
+  defp bar_color(_pct), do: :green
+
+  defp status_dot(pct) when pct >= 80, do: "●"
+  defp status_dot(pct) when pct >= 60, do: "●"
+  defp status_dot(_pct), do: "●"
+
+  defp sched_status(pct) when pct >= 80, do: "High load"
+  defp sched_status(pct) when pct >= 60, do: "Moderate"
+  defp sched_status(_pct), do: "Healthy"
+
+  defp name_color(name) do
+    if String.contains?(name, "Raxol") or String.contains?(name, "Demo"),
+      do: :magenta,
+      else: :white
+  end
+
+  defp panel_border(true), do: :double
+  defp panel_border(false), do: :single
+
+  defp title_color(true), do: :cyan
+  defp title_color(false), do: :white
 
   defp panel_title(title, true), do: ">> #{title} <<"
   defp panel_title(title, false), do: "   #{title}   "
+
+  # -- Navigation --
 
   defp next_panel(current) do
     idx = Enum.find_index(@panels, &(&1 == current))
@@ -211,55 +423,47 @@ defmodule RaxolDemo do
     Enum.at(@panels, rem(idx - 1 + length(@panels), length(@panels)))
   end
 
-  defp now do
-    Calendar.strftime(DateTime.utc_now(), "%H:%M:%S")
-  end
+  # -- Formatting --
 
-  defp clock_string do
-    Calendar.strftime(DateTime.utc_now(), "%Y-%m-%d %H:%M:%S UTC")
-  end
+  defp ts, do: Calendar.strftime(DateTime.utc_now(), "%H:%M:%S")
 
-  defp format_uptime(seconds) do
-    hours = div(seconds, 3600)
-    minutes = div(rem(seconds, 3600), 60)
-    secs = rem(seconds, 60)
+  defp clock, do: Calendar.strftime(DateTime.utc_now(), "%Y-%m-%d %H:%M:%S UTC")
+
+  defp fmt_uptime(s) do
+    h = div(s, 3600)
+    m = div(rem(s, 3600), 60)
+    sec = rem(s, 60)
 
     cond do
-      hours > 0 -> "#{hours}h #{minutes}m #{secs}s"
-      minutes > 0 -> "#{minutes}m #{secs}s"
-      true -> "#{secs}s"
+      h > 0 -> "#{h}h #{m}m #{sec}s"
+      m > 0 -> "#{m}m #{sec}s"
+      true -> "#{sec}s"
     end
   end
 
-  defp format_number(n) when n >= 1_000_000, do: "#{Float.round(n / 1_000_000, 1)}M"
-  defp format_number(n) when n >= 1_000, do: "#{Float.round(n / 1_000, 1)}K"
-  defp format_number(n), do: "#{n}"
+  defp fmt_num(n) when n >= 1_000_000, do: "#{Float.round(n / 1_000_000, 1)}M"
+  defp fmt_num(n) when n >= 1_000, do: "#{Float.round(n / 1_000, 1)}K"
+  defp fmt_num(n), do: "#{n}"
 
-  defp memory_stats do
-    mem = :erlang.memory()
-    %{
-      total_mb: Float.round(mem[:total] / 1_048_576, 1),
-      used_mb: Float.round((mem[:total] - mem[:binary] - mem[:atom]) / 1_048_576, 1),
-      atom_mb: Float.round(mem[:atom] / 1_048_576, 1),
-      binary_mb: Float.round(mem[:binary] / 1_048_576, 1)
-    }
-  end
+  defp fmt_bytes(b) when b >= 1_048_576, do: "#{Float.round(b / 1_048_576, 1)} MB"
+  defp fmt_bytes(b) when b >= 1024, do: "#{Float.round(b / 1024, 1)} KB"
+  defp fmt_bytes(b), do: "#{b} B"
 
-  defp tick_log_entry(count) do
-    messages = [
-      "Memory stats refreshed",
+  defp tick_entry(count) do
+    entries = [
+      "Memory stats sampled",
       "Process tree scanned",
-      "Render frame #{count} complete",
-      "Scheduler utilization: #{70 + :rand.uniform(25)}%",
-      "GC minor collection ran",
-      "IO throughput: #{:rand.uniform(500) + 100} KB/s",
-      "ETS tables checked: #{:ets.all() |> length()}",
-      "Reduction count sampled",
-      "Port status verified",
-      "Node uptime checkpoint"
+      "Frame #{count} rendered",
+      "Scheduler util: #{70 + :rand.uniform(25)}%",
+      "GC minor collection",
+      "IO: #{:rand.uniform(500) + 100} KB/s",
+      "ETS tables: #{length(:ets.all())}",
+      "Reductions sampled",
+      "Port status checked",
+      "Uptime checkpoint"
     ]
 
-    Enum.at(messages, rem(count, length(messages)))
+    Enum.at(entries, rem(count, length(entries)))
   end
 end
 
