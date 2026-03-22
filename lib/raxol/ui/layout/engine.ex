@@ -411,6 +411,61 @@ defmodule Raxol.UI.Layout.Engine do
     %{width: width, height: length(lines)}
   end
 
+  # Button with top-level :text key (new View DSL format)
+  def measure_element(%{type: :button, text: text} = _element, available_space) do
+    label = text || "Button"
+    Inputs.measure(:button, %{label: label}, available_space)
+  end
+
+  # Checkbox with top-level :label key (new View DSL format)
+  def measure_element(%{type: :checkbox, label: label} = _element, _available_space) do
+    Elements.measure(:checkbox, %{label: label || ""})
+  end
+
+  # TextInput with top-level :value/:placeholder keys (new View DSL format)
+  def measure_element(%{type: :text_input} = element, available_space) do
+    attrs_map = %{
+      value: Map.get(element, :value, ""),
+      placeholder: Map.get(element, :placeholder, "")
+    }
+
+    Inputs.measure(:text_input, attrs_map, available_space)
+  end
+
+  # Box with top-level properties (new View DSL format from Box.new/1)
+  def measure_element(%{type: :box, children: children} = element, available_space)
+      when is_list(children) do
+    attrs_map = %{
+      width: Map.get(element, :width) || Map.get(element, :size),
+      height: Map.get(element, :height)
+    }
+
+    # If explicit dimensions, use them; otherwise measure as container
+    case {attrs_map.width, attrs_map.height} do
+      {w, h} when is_integer(w) and is_integer(h) ->
+        %{width: w, height: h}
+
+      _ ->
+        measure_container_element(:column, %{type: :column, children: children}, available_space)
+    end
+  end
+
+  # Flex with top-level properties (new View DSL format from Flex.row/1 etc.)
+  def measure_element(%{type: :flex, children: children} = element, available_space)
+      when is_list(children) do
+    # Build attrs map from top-level keys so parse_flex_properties works
+    attrs = %{
+      flex_direction: Map.get(element, :direction, :row),
+      justify_content: Map.get(element, :justify, :flex_start),
+      align_items: Map.get(element, :align, :stretch),
+      gap: Map.get(element, :gap, 0),
+      padding: Map.get(element, :padding, 0)
+    }
+
+    enriched = Map.put(element, :attrs, attrs)
+    Flexbox.measure_flex(enriched, available_space)
+  end
+
   def measure_element(
         %{type: container_type, children: children} = element,
         available_space

@@ -29,6 +29,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
               focused: true,
               debug_mode: false,
               plugin_manager: nil,
+              plugin_manager_struct: nil,
               command_registry_table: nil,
               current_theme_id: :default,
               command_module: Raxol.Core.Runtime.Command
@@ -58,6 +59,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       focused: true,
       debug_mode: initial_state.debug_mode,
       plugin_manager: initial_state.plugin_manager,
+      plugin_manager_struct: Raxol.Plugins.Manager.new(),
       command_registry_table: initial_state.command_registry_table,
       current_theme_id: UserPreferences.get_theme_id(),
       command_module: command_module
@@ -310,6 +312,10 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # Catch-all for other cast messages
   @impl true
+  def handle_manager_cast({:update_plugin_manager, %Raxol.Plugins.Manager{} = updated}, state) do
+    {:noreply, %{state | plugin_manager_struct: updated}}
+  end
+
   def handle_manager_cast(msg, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Dispatcher received unhandled cast message",
@@ -399,7 +405,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @impl true
   def handle_manager_call(:get_plugin_manager, _from, state) do
-    {:reply, {:ok, state.plugin_manager}, state}
+    {:reply, {:ok, state.plugin_manager_struct}, state}
   end
 
   @impl true
@@ -454,12 +460,18 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp apply_plugin_filters(event, state) do
     manager_pid = state.plugin_manager
 
-    case GenServer.call(manager_pid, {:filter_event, event}) do
-      {:ok, filtered_event} -> filtered_event
-      :halt -> nil
-      {:error, _reason} -> nil
-      _ -> event
+    if is_pid(manager_pid) and Process.alive?(manager_pid) do
+      case GenServer.call(manager_pid, {:filter_event, event}) do
+        {:ok, filtered_event} -> filtered_event
+        :halt -> nil
+        {:error, _reason} -> nil
+        _ -> event
+      end
+    else
+      event
     end
+  rescue
+    _ -> event
   end
 
   defp default_event_to_message(%Event{

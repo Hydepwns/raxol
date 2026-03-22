@@ -35,7 +35,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
               # Writer function for SSH rendering
               io_writer: nil,
               # Registry of running process components {id => pid}
-              process_components: %{}
+              process_components: %{},
+              # Whether terminal supports Mode 2026 synchronized output
+              sync_output: false
   end
 
   # --- Public API ---
@@ -76,7 +78,12 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     state = struct!(State, initial_state_map)
     # Initialize buffer with initial dimensions
     initial_buffer = ScreenBuffer.new(state.width, state.height)
-    new_state = %{state | buffer: initial_buffer}
+
+    sync_supported =
+      state.environment == :terminal and
+        Raxol.Terminal.AdvancedFeatures.supports_synchronized_output?()
+
+    new_state = %{state | buffer: initial_buffer, sync_output: sync_supported}
 
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine init completed. State: #{inspect(new_state)}"
@@ -299,10 +306,13 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       "Rendering Engine: Terminal output generated (length: #{String.length(output_string)})"
     )
 
-    # Mode 2026: synchronized output to prevent tearing
-    IO.write("\e[?2026h")
-    IO.write(output_string)
-    IO.write("\e[?2026l")
+    if state.sync_output do
+      IO.write("\e[?2026h")
+      IO.write(output_string)
+      IO.write("\e[?2026l")
+    else
+      IO.write(output_string)
+    end
 
     {:ok, %{state | buffer: updated_buffer}}
   end
@@ -415,18 +425,22 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     renderer = Raxol.Terminal.Renderer.new(updated_buffer)
     output_string = Raxol.Terminal.Renderer.render(renderer)
 
-    write_with_sync(state.io_writer, output_string)
+    write_output(state.io_writer, output_string, state.sync_output)
 
     {:ok, %{state | buffer: updated_buffer}}
   end
 
-  defp write_with_sync(writer, output) when is_function(writer, 1) do
+  defp write_output(writer, output, true) when is_function(writer, 1) do
     writer.("\e[?2026h")
     writer.(output)
     writer.("\e[?2026l")
   end
 
-  defp write_with_sync(_, _) do
+  defp write_output(writer, output, _sync) when is_function(writer, 1) do
+    writer.(output)
+  end
+
+  defp write_output(_, _, _) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "SSH render: no io_writer configured",
       %{}
