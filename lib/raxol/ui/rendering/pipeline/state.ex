@@ -16,7 +16,9 @@ defmodule Raxol.UI.Rendering.Pipeline.State do
     :previous_painted_output,
     :animation_ticker_ref,
     :render_scheduled_for_next_frame,
-    :deferred_render_data
+    :deferred_render_data,
+    :width,
+    :height
   ]
 
   @type t :: %__MODULE__{
@@ -32,7 +34,9 @@ defmodule Raxol.UI.Rendering.Pipeline.State do
           previous_painted_output: term() | nil,
           animation_ticker_ref: reference() | nil,
           render_scheduled_for_next_frame: boolean(),
-          deferred_render_data: tuple() | nil
+          deferred_render_data: tuple() | nil,
+          width: non_neg_integer(),
+          height: non_neg_integer()
         }
 
   @doc """
@@ -52,7 +56,9 @@ defmodule Raxol.UI.Rendering.Pipeline.State do
       previous_composed_tree: nil,
       previous_painted_output: nil,
       animation_ticker_ref: nil,
-      render_scheduled_for_next_frame: false
+      render_scheduled_for_next_frame: false,
+      width: Keyword.get(opts, :width, 80),
+      height: Keyword.get(opts, :height, 24)
     }
   end
 

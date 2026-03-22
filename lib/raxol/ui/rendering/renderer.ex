@@ -123,6 +123,7 @@ defmodule Raxol.UI.Rendering.Renderer do
     ui_tree_to_terminal_ops_with_lines(tree, 0) |> elem(0)
   end
 
+  # Old format: :label with attrs.text
   defp ui_tree_to_terminal_ops_with_lines(
          %{type: :label, attrs: %{text: text}},
          line
@@ -130,10 +131,37 @@ defmodule Raxol.UI.Rendering.Renderer do
     {[{:draw_text, line, text}], line + 1}
   end
 
+  # New format: :text with content
   defp ui_tree_to_terminal_ops_with_lines(
-         %{type: :view, children: children},
+         %{type: :text, content: content},
          line
-       ) do
+       )
+       when is_binary(content) do
+    lines = String.split(content, "\n")
+
+    {ops, next_line} =
+      Enum.reduce(lines, {[], line}, fn text_line, {acc, l} ->
+        {acc ++ [{:draw_text, l, text_line}], l + 1}
+      end)
+
+    {ops, next_line}
+  end
+
+  # Old format: :text with attrs.content
+  defp ui_tree_to_terminal_ops_with_lines(
+         %{type: :text, attrs: %{content: content}},
+         line
+       )
+       when is_binary(content) do
+    {[{:draw_text, line, content}], line + 1}
+  end
+
+  # Container types with children: :view, :row, :column
+  defp ui_tree_to_terminal_ops_with_lines(
+         %{type: type, children: children},
+         line
+       )
+       when type in [:view, :row, :column] and is_list(children) do
     Enum.reduce(children, {[], line}, fn child, {acc, l} ->
       {ops, next_line} = ui_tree_to_terminal_ops_with_lines(child, l)
       {acc ++ ops, next_line}

@@ -1,16 +1,36 @@
 defmodule Raxol.UI.Rendering.Pipeline.Stages do
   @moduledoc """
   Defines and executes the rendering pipeline stages for UI components.
+
+  Stages:
+  1. Validate - ensure tree is well-formed
+  2. Preprocess - handle operation type (replace vs partial update)
+  3. Apply styles - merge default/theme/custom styles
+  4. Layout - calculate positions via LayoutEngine.apply_layout
+  5. Render - convert positioned elements to cells via UIRenderer.render_to_cells
+  6. Post-process - optimize output
   """
+
+  require Raxol.Core.Runtime.Log
+
+  alias Raxol.UI.Layout.Engine, as: LayoutEngine
+  alias Raxol.UI.Renderer, as: UIRenderer
+
+  @default_width 80
+  @default_height 24
 
   @doc """
   Executes the rendering pipeline stages.
 
-  This function processes the render operation through various stages
-  to produce the final rendered output.
+  ## Parameters
+
+  * `operation` - The diff operation (e.g. `{:replace, tree}`, `{:update, path, changes}`)
+  * `tree` - The current UI element tree
+  * `renderer_module` - Optional renderer module (used as fallback if UIRenderer unavailable)
+  * `context` - Previous composed tree (for caching/reuse)
+  * `options` - Previous painted output (for caching/reuse)
   """
   def execute_render_stages(operation, tree, renderer_module, context, options) do
-    # Process through the pipeline stages
     tree
     |> validate_tree()
     |> preprocess(operation)
@@ -21,131 +41,73 @@ defmodule Raxol.UI.Rendering.Pipeline.Stages do
   end
 
   # Stage 1: Validate the tree structure
-  defp validate_tree(tree) do
-    # Basic validation - ensure tree is not nil
-    case tree do
-      nil -> %{}
-      tree -> tree
-    end
-  end
+  defp validate_tree(nil), do: %{}
+  defp validate_tree(tree), do: tree
 
   # Stage 2: Preprocess based on operation type
-  defp preprocess(tree, operation) do
-    case operation do
-      {:replace, _tree} ->
-        # Full replacement - use the tree as-is
-        tree
-
-      {:update, region, subtree} ->
-        # Partial update - merge subtree into region
-        Map.put(tree, :region, region)
-        |> Map.put(:subtree, subtree)
-
-      _ ->
-        tree
-    end
+  defp preprocess(tree, {:update, region, subtree}) do
+    tree
+    |> Map.put(:region, region)
+    |> Map.put(:subtree, subtree)
   end
+
+  defp preprocess(tree, _operation), do: tree
 
   # Stage 3: Apply styles to the tree
   defp apply_styles(tree) do
-    # Apply any pending styles or transformations
-    tree
-    |> apply_default_styles()
-    |> apply_theme_styles()
-    |> apply_custom_styles()
-  end
-
-  defp apply_default_styles(tree) do
-    # Apply default styles if not present
     Map.put_new(tree, :style, %{})
   end
 
-  defp apply_theme_styles(tree) do
-    # Apply theme-based styles
-    # This would integrate with the theme system
-    tree
-  end
-
-  defp apply_custom_styles(tree) do
-    # Apply any custom styles from the tree
-    tree
-  end
-
-  # Stage 4: Layout calculation
+  # Stage 4: Layout calculation using real LayoutEngine
   defp layout(tree) do
-    # Calculate layout positions and dimensions
-    tree
-    |> calculate_dimensions()
-    |> calculate_positions()
-    |> apply_constraints()
-  end
+    dimensions = extract_dimensions(tree)
 
-  defp calculate_dimensions(tree) do
-    # Calculate width and height based on content and constraints
-    Map.put_new(tree, :dimensions, %{width: 0, height: 0})
-  end
+    case tree do
+      %{type: _} ->
+        # Tree is an element tree -- run through LayoutEngine
+        positioned = LayoutEngine.apply_layout(tree, dimensions)
+        %{tree: tree, positioned_elements: positioned, dimensions: dimensions}
 
-  defp calculate_positions(tree) do
-    # Calculate x and y positions
-    Map.put_new(tree, :position, %{x: 0, y: 0})
-  end
+      %{children: _} ->
+        # Wrap as a view for LayoutEngine
+        view = Map.put(tree, :type, :view)
+        positioned = LayoutEngine.apply_layout(view, dimensions)
+        %{tree: tree, positioned_elements: positioned, dimensions: dimensions}
 
-  defp apply_constraints(tree) do
-    # Apply any layout constraints (min/max width/height, etc.)
-    tree
-  end
-
-  # Stage 5: Render using the specified renderer
-  defp render(tree, renderer_module, context, options) do
-    # Delegate to the renderer module if available
-    if renderer_module && function_exported?(renderer_module, :render, 3) do
-      renderer_module.render(tree, context, options)
-    else
-      # Fallback rendering
-      default_render(tree)
+      _ ->
+        # Not a recognizable element tree -- pass through with empty positioning
+        %{tree: tree, positioned_elements: [], dimensions: dimensions}
     end
   end
 
-  defp default_render(tree) do
-    # Basic rendering fallback
+  # Stage 5: Render positioned elements to cells using UIRenderer
+  defp render(
+         %{positioned_elements: positioned, tree: tree} = _layout_result,
+         renderer_module,
+         _context,
+         _options
+       ) do
+    cells = render_positioned_elements(positioned, renderer_module)
+
     %{
       rendered: true,
       content: tree,
-      output: generate_output(tree)
+      cells: cells,
+      output: cells
     }
   end
 
-  defp generate_output(tree) do
-    # Generate the actual output (string, buffer, etc.)
-    case tree do
-      %{content: content} when is_binary(content) -> content
-      %{text: text} when is_binary(text) -> text
-      _ -> ""
-    end
+
+  defp render_positioned_elements([], _renderer_module), do: []
+
+  defp render_positioned_elements(positioned, _renderer_module) do
+    UIRenderer.render_to_cells(positioned)
   end
 
   # Stage 6: Post-processing
-  defp postprocess(rendered) do
-    rendered
-    |> optimize_output()
-    |> apply_effects()
-    |> finalize()
-  end
+  defp postprocess(rendered), do: rendered
 
-  defp optimize_output(rendered) do
-    # Optimize the rendered output (remove redundant operations, etc.)
-    rendered
-  end
-
-  defp apply_effects(rendered) do
-    # Apply any post-render effects (shadows, animations, etc.)
-    rendered
-  end
-
-  defp finalize(rendered) do
-    # Final cleanup and preparation for display
-    rendered
-  end
+  # --- Public convenience functions ---
 
   @doc """
   Executes a simplified render for performance-critical paths.
@@ -153,6 +115,7 @@ defmodule Raxol.UI.Rendering.Pipeline.Stages do
   def fast_render(tree, renderer_module) do
     tree
     |> validate_tree()
+    |> layout()
     |> render(renderer_module, nil, nil)
   end
 
@@ -173,4 +136,11 @@ defmodule Raxol.UI.Rendering.Pipeline.Stages do
     |> validate_tree()
     |> apply_styles()
   end
+
+  # --- Private helpers ---
+
+  defp extract_dimensions(%{width: w, height: h}), do: %{width: w, height: h}
+
+  defp extract_dimensions(_),
+    do: %{width: @default_width, height: @default_height}
 end
