@@ -1,7 +1,7 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "2.1.0"
+  @version "2.2.0"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
@@ -219,7 +219,7 @@ defmodule Raxol.MixProject do
     [
       {:phoenix, "~> 1.8.1"},
       {:phoenix_pubsub, "~> 2.1"},
-      {:phoenix_ecto, "~> 4.4"},
+      {:phoenix_ecto, "~> 4.4", optional: true},
       {:phoenix_live_view, "~> 1.1.13"},
       {:phoenix_html, "~> 4.3"},
       {:plug_cowboy, "~> 2.7"},
@@ -230,27 +230,27 @@ defmodule Raxol.MixProject do
 
   defp database_deps do
     [
-      {:ecto_sql, "~> 3.12"},
-      {:postgrex, "~> 0.21.1", runtime: false},
+      {:ecto_sql, "~> 3.12", optional: true},
+      {:postgrex, "~> 0.21.1", optional: true, runtime: false},
       # Password hashing
-      {:bcrypt_elixir, "~> 3.3"}
+      {:bcrypt_elixir, "~> 3.3", optional: true}
     ]
   end
 
   defp visualization_deps do
     [
-      # Image processing
-      {:mogrify, "~> 0.9.3"},
+      # Image processing (for terminal image rendering)
+      {:mogrify, "~> 0.9.3", optional: true},
       # Charts and plots
-      {:contex, "~> 0.5.0"}
+      {:contex, "~> 0.5.0", optional: true}
     ]
   end
 
   defp development_deps do
     [
-      # Build tools
-      {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
-      {:dart_sass, "~> 0.7", runtime: Mix.env() == :dev},
+      # Build tools (web assets)
+      {:esbuild, "~> 0.10", only: :dev, runtime: false},
+      {:dart_sass, "~> 0.7", only: :dev, runtime: false},
       {:elixir_make, "~> 0.9", runtime: false},
 
       # Code quality
@@ -293,8 +293,8 @@ defmodule Raxol.MixProject do
       {:toml, "~> 0.7"},
       # MIME type detection (removed - unused)
       # {:mimerl, "~> 1.4"},
-      # HTTP client
-      {:httpoison, "~> 2.2"},
+      # HTTP client (for optional integrations)
+      {:httpoison, "~> 2.2", optional: true},
       # Localization
       {:gettext, "~> 1.0"},
       # File system watching
@@ -312,10 +312,10 @@ defmodule Raxol.MixProject do
 
   defp i18n_deps do
     [
-      {:ex_cldr, "~> 2.43.2"},
-      {:ex_cldr_numbers, "~> 2.35.2"},
-      {:ex_cldr_currencies, "~> 2.5"},
-      {:ex_cldr_dates_times, "~> 2.24.0"}
+      {:ex_cldr, "~> 2.43.2", optional: true},
+      {:ex_cldr_numbers, "~> 2.35.2", optional: true},
+      {:ex_cldr_currencies, "~> 2.5", optional: true},
+      {:ex_cldr_dates_times, "~> 2.24.0", optional: true}
     ]
   end
 
@@ -369,7 +369,9 @@ defmodule Raxol.MixProject do
 
   defp description do
     """
-    Meta-package for Raxol terminal framework. Includes core buffer primitives, plugin system, and Phoenix LiveView integration. Build fast terminal UIs with React-style components.
+    Terminal UI framework for Elixir. 23 widgets, flexbox + CSS grid layout,
+    TEA architecture on OTP, hot code reload, crash isolation, LiveView bridge,
+    and SSH app serving. The missing TUI framework for the BEAM.
     """
   end
 
@@ -377,7 +379,8 @@ defmodule Raxol.MixProject do
     [
       name: "raxol",
       files:
-        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md docs examples .github/CONTRIBUTING.md),
+        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md),
+      exclude_patterns: [~r/\.so$/, ~r/\.o$/, ~r/\.dylib$/],
       maintainers: ["DROO AMOR"],
       licenses: ["MIT"],
       links: %{
@@ -388,7 +391,8 @@ defmodule Raxol.MixProject do
       },
       description: description(),
       source_url: @source_url,
-      homepage_url: "https://github.com/Hydepwns/raxol"
+      homepage_url: "https://github.com/Hydepwns/raxol",
+      build_tools: ["mix", "make"]
     ]
   end
 

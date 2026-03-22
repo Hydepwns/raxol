@@ -1,3 +1,20 @@
+## [2.2.0] - 2026-03-22
+
+### Added
+
+- Widget examples for Viewport, CodeBlock, MarkdownRenderer, MultiLineInput
+- Modal test file (22 tests) and Terminal test file (16 tests) verified
+
+### Changed
+
+- Rewrote `examples/apps/todo_app.ex` from broken LiveView/HEEx to TEA pattern
+- Hex package readiness: `mix hex.build` succeeds (1.8MB)
+- 14 deps marked optional (Ecto, PostGres, bcrypt, mogrify, contex, HTTPoison, ex_cldr, phoenix_ecto)
+- Excluded compiled `.so`/`.o` binaries from hex package
+- Moved esbuild/dart_sass to dev-only
+- Replaced `Ecto.UUID.generate()` with `UUID.uuid4()` in emulator struct
+- Updated package description
+
 ## [2.1.0] - 2025-02-27
 
 ### Added

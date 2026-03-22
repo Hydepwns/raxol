@@ -53,7 +53,7 @@ mix dialyzer                  # Type checking
 mix run examples/getting_started/counter.exs  # Known working example (TEA model)
 ```
 
-The counter is currently the only verified end-to-end example. `todo_app.ex` and `showcase_app.ex` reference undefined modules (`Screen`, `Stack`) and need rewriting.
+Working examples: `counter.exs`, `getting_started/todo_app.exs`, `apps/showcase_app.exs` (all TEA pattern). `apps/todo_app.ex` is broken (uses LiveView/HEEx pattern with undefined components).
 
 ### Development
 

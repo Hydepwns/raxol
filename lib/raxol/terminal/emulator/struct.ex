@@ -409,7 +409,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
       memory_limit: Keyword.get(opts, :memory_limit, 100_000),
       max_command_history: Keyword.get(opts, :max_command_history, 100),
       plugin_manager: Keyword.get(opts, :plugin_manager),
-      session_id: Keyword.get(opts, :session_id, Ecto.UUID.generate()),
+      session_id: Keyword.get(opts, :session_id, UUID.uuid4()),
       client_options: Keyword.get(opts, :client_options, %{}),
       state: Keyword.get(opts, :state, :normal),
       window_manager: Keyword.get(opts, :window_manager)

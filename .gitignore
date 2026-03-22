@@ -45,8 +45,9 @@ priv/termbox2_nif.so
 # Claude Code local configuration (user-specific, not shared)
 .claude/settings.local.json
 
-# Ignore package tarball (built via "mix hex.build").
+# Ignore package tarball and unpacked dir (built via "mix hex.build").
 raxol-*.tar
+raxol-*/
 
 # Temporary files, for example, from tests.
 .tmp/
