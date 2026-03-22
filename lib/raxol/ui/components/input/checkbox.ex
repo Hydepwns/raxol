@@ -150,8 +150,11 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   @impl Raxol.UI.Components.Base.Component
   @spec render(t(), map()) :: any()
   def render(state, context) do
+    focused = Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused
+    state = %{state | focused: focused}
+
     # Harmonize theme merging: context.theme < state.theme < state.style
-    theme = Map.merge(context.theme || %{}, state.theme || %{})
+    theme = Map.merge(context[:theme] || %{}, state.theme || %{})
     theme_style = Theme.component_style(theme, :checkbox)
     base_style = Map.merge(theme_style, state.style || %{})
 
