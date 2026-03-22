@@ -136,8 +136,11 @@ defmodule Raxol.UI.FocusHelper do
 
     Enum.reduce(color_keys, style, fn key, acc ->
       case Map.get(acc, key) do
-        nil -> acc
-        val -> Map.put(acc, key, Raxol.Style.Colors.Adaptive.adapt_color_safe(val))
+        nil ->
+          acc
+
+        val ->
+          Map.put(acc, key, Raxol.Style.Colors.Adaptive.adapt_color_safe(val))
       end
     end)
   end

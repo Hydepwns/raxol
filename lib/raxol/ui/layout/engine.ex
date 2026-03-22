@@ -231,6 +231,77 @@ defmodule Raxol.UI.Layout.Engine do
     checkbox_elements ++ acc
   end
 
+  # Process box elements in new View DSL format (no :attrs key)
+  def process_element(%{type: :box, children: %{} = child} = box, space, acc) do
+    process_element(%{box | children: [child]}, space, acc)
+  end
+
+  def process_element(%{type: :box, children: children} = box, space, acc)
+      when is_list(children) do
+    padding = Map.get(box, :padding, 0)
+    border = Map.get(box, :border, :none)
+
+    # Calculate inner space accounting for border and padding
+    border_offset = if border == :none, do: 0, else: 1
+    pad = if is_integer(padding), do: padding, else: 0
+
+    inner_space = %{
+      x: space.x + border_offset + pad,
+      y: space.y + border_offset + pad,
+      width: max(0, space.width - 2 * (border_offset + pad)),
+      height: max(0, space.height - 2 * (border_offset + pad))
+    }
+
+    # Add box frame element
+    box_element = %{
+      type: :box,
+      x: space.x,
+      y: space.y,
+      width: space.width,
+      height: space.height,
+      attrs: %{
+        border: border,
+        padding: padding,
+        style: Map.get(box, :style, %{})
+      }
+    }
+
+    # Process children in inner space
+    children_acc = process_children(children, inner_space, [])
+    [box_element | children_acc] ++ acc
+  end
+
+  # Process button elements in new View DSL format (no :attrs key)
+  def process_element(%{type: :button, text: text} = button, space, acc)
+      when is_binary(text) do
+    component_attrs = %{
+      component_type: :button,
+      label: text,
+      on_click: Map.get(button, :on_click),
+      style: Map.get(button, :style, %{})
+    }
+
+    button_elements = [
+      %{
+        type: :box,
+        x: space.x,
+        y: space.y,
+        width: min(String.length(text) + 4, space.width),
+        height: 3,
+        attrs: component_attrs
+      },
+      %{
+        type: :text,
+        x: space.x + 2,
+        y: space.y + 1,
+        text: text,
+        attrs: component_attrs
+      }
+    ]
+
+    button_elements ++ acc
+  end
+
   def process_element(%{type: :split_pane} = split, space, acc) do
     SplitPane.process(split, space, acc)
   end

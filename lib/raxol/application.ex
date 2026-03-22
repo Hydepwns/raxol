@@ -164,14 +164,14 @@ defmodule Raxol.Application do
   defp get_core_children do
     [
       # Essential services that should always run
-      {Raxol.Core.ErrorRecovery, []},
-      {Raxol.Core.UserPreferences, []},
+      {Raxol.Core.ErrorRecovery, [name: Raxol.Core.ErrorRecovery]},
+      {Raxol.Core.UserPreferences, [name: Raxol.Core.UserPreferences]},
       {Raxol.DynamicSupervisor, []},
       {Raxol.Terminal.Supervisor, []},
 
       # Configuration and Debug services
-      {Raxol.Config, []},
-      {Raxol.Debug, []},
+      {Raxol.Config, [name: Raxol.Config]},
+      {Raxol.Debug, [name: Raxol.Debug]},
 
       # Demo services (guarded - may not be compiled)
       maybe_add_demo_services(),

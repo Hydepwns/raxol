@@ -102,7 +102,12 @@ defmodule Raxol.Core.Runtime.Plugins.Security.CapabilityDetector do
 
   By default, all sensitive capabilities are denied.
   """
-  @spec default_policy() :: %{allow_file_access: false, allow_network_access: false, allow_code_injection: false, allow_system_commands: false}
+  @spec default_policy() :: %{
+          allow_file_access: false,
+          allow_network_access: false,
+          allow_code_injection: false,
+          allow_system_commands: false
+        }
   def default_policy, do: @default_policy
 
   @doc """
@@ -110,7 +115,12 @@ defmodule Raxol.Core.Runtime.Plugins.Security.CapabilityDetector do
 
   Use with caution - only for trusted plugins.
   """
-  @spec permissive_policy() :: %{allow_file_access: true, allow_network_access: true, allow_code_injection: true, allow_system_commands: true}
+  @spec permissive_policy() :: %{
+          allow_file_access: true,
+          allow_network_access: true,
+          allow_code_injection: true,
+          allow_system_commands: true
+        }
   def permissive_policy do
     %{
       allow_file_access: true,

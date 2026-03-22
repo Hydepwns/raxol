@@ -433,7 +433,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
     # Get the plugin manager from the dispatcher
     case get_plugin_manager_from_dispatcher(state.dispatcher_pid) do
-      {:ok, plugin_manager} ->
+      {:ok, %Raxol.Plugins.Manager{} = plugin_manager} ->
         # Create emulator state context for plugins
         emulator_state = %{
           width: state.width,
@@ -465,6 +465,14 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         )
 
         processed_cells
+
+      {:ok, _non_struct_manager} ->
+        # Plugin manager is a PID or other non-struct value; skip cell processing
+        Raxol.Core.Runtime.Log.debug(
+          "Rendering Engine: Plugin manager is not a Manager struct, skipping cell processing"
+        )
+
+        cells
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning_with_context(

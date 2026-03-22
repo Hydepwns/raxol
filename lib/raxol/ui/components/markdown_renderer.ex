@@ -10,7 +10,8 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
   alias Raxol.View.Components
 
-  @spec init(map()) :: {:ok, %{markdown_text: String.t(), width: non_neg_integer()}}
+  @spec init(map()) ::
+          {:ok, %{markdown_text: String.t(), width: non_neg_integer()}}
   @impl true
   def init(props) do
     state =

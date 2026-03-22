@@ -398,6 +398,11 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   @impl true
+  def handle_manager_call(:get_plugin_manager, _from, state) do
+    {:reply, {:ok, state.plugin_manager}, state}
+  end
+
+  @impl true
   def handle_manager_call(:get_model, _from, state) do
     {:reply, {:ok, state.model}, state}
   end

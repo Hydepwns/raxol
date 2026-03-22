@@ -97,7 +97,6 @@ defmodule Raxol.UI.Rendering.Pipeline.Stages do
     }
   end
 
-
   defp render_positioned_elements([], _renderer_module), do: []
 
   defp render_positioned_elements(positioned, _renderer_module) do
