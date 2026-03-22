@@ -53,7 +53,8 @@ mix dialyzer                  # Type checking
 mix run examples/getting_started/counter.exs  # Known working example (TEA model)
 ```
 
-Working examples: `counter.exs`, `getting_started/todo_app.exs`, `apps/todo_app.ex`, `apps/showcase_app.exs` (all TEA pattern).
+Working examples: `counter.exs`, `getting_started/todo_app.exs`, `apps/todo_app.ex`, `apps/showcase_app.exs`, `demo.exs` (all TEA pattern).
+`demo.exs` is the flagship demo showing dashboard layout, live stats, and OTP differentiators.
 
 ### Development
 

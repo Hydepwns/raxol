@@ -408,6 +408,7 @@ defmodule Raxol.MixProject do
         ".github/CONTRIBUTING.md",
         "docs/getting-started/PACKAGES.md",
         "docs/getting-started/QUICKSTART.md",
+        "docs/getting-started/WIDGET_GALLERY.md",
         "docs/getting-started/CORE_CONCEPTS.md",
         "docs/getting-started/MIGRATION_FROM_DIY.md",
         "docs/core/BUFFER_API.md",
@@ -424,6 +425,7 @@ defmodule Raxol.MixProject do
           "README.md",
           "docs/getting-started/PACKAGES.md",
           "docs/getting-started/QUICKSTART.md",
+          "docs/getting-started/WIDGET_GALLERY.md",
           "docs/getting-started/CORE_CONCEPTS.md",
           "docs/getting-started/MIGRATION_FROM_DIY.md"
         ],
