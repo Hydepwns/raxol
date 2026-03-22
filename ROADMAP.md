@@ -11,11 +11,13 @@ Planned features and direction for Raxol.
 - **Phase 3: Framework Polish** -- Focus management, W3C-style event capture/bubble, style inheritance, terminal compatibility (color downsampling, Unicode width, synchronized output)
 - **Phase 4: OTP Differentiators** -- Process-per-component crash isolation, hot code reload, LiveView bridge, SSH app serving
 - **Phase 5.1: Hex Package** -- `mix hex.build` succeeds, optional deps trimmed, NIF compiles via elixir_make
+- **Phase 5.2: Phoenix Optional** -- LiveView/web code wrapped in `Code.ensure_loaded?` guards; pure-terminal apps no longer require Phoenix
+- **Phase 5.3: Developer Tooling** -- `mix raxol.new` generator (4 templates, 8 flags, interactive mode, CI, mise), `mix raxol.gen.component` scaffolder
+- **Phase 5.4: Documentation** -- TEA-first quickstart guide, widget gallery (all 23 widgets), flagship demo with live BEAM dashboard
 
 ### Known Tech Debt
 
 - CQRS/EventSourcing entangled with terminal core (too coupled to remove without core rewrite)
-- Phoenix is a required dep (used in 24 files for LiveView bridge) -- should be optional for pure-terminal users
 - Render pipeline has two paths: Rendering.Engine (live) and Pipeline GenServer (stage 5 stubs)
 - 27% of core modules are GenServers; many could be pure functions + ETS
 
@@ -25,14 +27,10 @@ Planned features and direction for Raxol.
 
 ### Ecosystem & Adoption
 
-These are the highest-impact items for getting real users.
-
 | Task | Description | Effort |
 |------|-------------|--------|
-| `mix raxol.new` generator | Scaffold a working TEA app with one command | Medium |
-| HexDocs | Widget gallery, architecture overview, TEA tutorial | Medium |
-| Make Phoenix optional | Wrap LiveView/web code in `Code.ensure_loaded?` guards | Large |
-| Publish to Hex | `mix hex.publish` once docs and deps are clean | Small |
+| Publish to Hex | `mix hex.publish` once final review is complete | Small |
+| HexDocs polish | Architecture overview, cookbook examples, API docs cleanup | Medium |
 
 ### Developer Experience
 
