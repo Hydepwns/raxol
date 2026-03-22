@@ -266,15 +266,11 @@ defmodule Mix.Tasks.Raxol.Bench do
   end
 
   defp run_rendering_benchmarks(config) do
-    alias Raxol.UI.Rendering.Pipeline
     alias Raxol.UI.Rendering.RenderBatcher
 
-    {small_buffer, medium_buffer, large_buffer} = create_test_buffers()
+    {_small_buffer, medium_buffer, large_buffer} = create_test_buffers()
 
     jobs = %{
-      "render_small_buffer" => fn -> Pipeline.render(small_buffer) end,
-      "render_medium_buffer" => fn -> Pipeline.render(medium_buffer) end,
-      "render_large_buffer" => fn -> Pipeline.render(large_buffer) end,
       "render_with_damage_tracking" => fn ->
         RenderBatcher.batch_render(medium_buffer,
           changed_regions: [{0, 0, 10, 10}]

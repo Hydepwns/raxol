@@ -27,7 +27,6 @@ defmodule Raxol.Core.ServerRegistry do
   @server_specs [
     # Core System Servers
     {Raxol.Core.StateManager, name: :state_manager},
-    {Raxol.Events.EventServer, name: :event_handler},
     {Raxol.Core.Config.ConfigServer, name: :config_manager},
 
     # UI System Servers
