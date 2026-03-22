@@ -227,11 +227,11 @@ defmodule Raxol do
 
   ```elixir
   Raxol.version()
-  # => "2.1.0"
+  # => "2.2.0"
   ```
   """
   def version do
-    "2.1.0"
+    :application.get_key(:raxol, :vsn) |> elem(1) |> to_string()
   end
 
   @doc """

@@ -33,32 +33,41 @@ use Raxol.UI, framework: :heex       # Phoenix templates
 use Raxol.UI, framework: :raw        # Direct terminal control
 ```
 
-A basic component looks like this:
+A basic app uses TEA (The Elm Architecture) -- `init/update/view`:
 
 ```elixir
 defmodule MyApp do
-  use Raxol.Component
+  use Raxol.Core.Runtime.Application
 
-  def render(assigns) do
-    ~H"""
-    <Box padding={2}>
-      <Text color="green" bold>Hello, Raxol!</Text>
-      <Button on_click={@on_click}>Click me!</Button>
-    </Box>
-    """
+  @impl true
+  def init(_context), do: %{count: 0}
+
+  @impl true
+  def update(message, model) do
+    case message do
+      :increment -> {%{model | count: model.count + 1}, []}
+      _ -> {model, []}
+    end
   end
+
+  @impl true
+  def view(model) do
+    column style: %{padding: 1, gap: 1} do
+      [
+        text("Count: #{model.count}", style: [:bold]),
+        button("Increment", on_click: :increment)
+      ]
+    end
+  end
+
+  @impl true
+  def subscribe(_model), do: []
 end
+
+Raxol.start_link(MyApp, [])
 ```
 
-The emulator can be configured for different use cases:
-
-```elixir
-emulator = Emulator.new(80, 24)                                              # defaults
-emulator = Emulator.new(80, 24, use_genservers: true)                        # concurrent ops
-emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)  # minimal
-```
-
-[More examples](examples/README.md)
+[More examples](examples/)
 
 ## Platform Support
 
