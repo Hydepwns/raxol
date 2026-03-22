@@ -53,7 +53,7 @@ mix dialyzer                  # Type checking
 mix run examples/getting_started/counter.exs  # Known working example (TEA model)
 ```
 
-Working examples: `counter.exs`, `getting_started/todo_app.exs`, `apps/showcase_app.exs` (all TEA pattern). `apps/todo_app.ex` is broken (uses LiveView/HEEx pattern with undefined components).
+Working examples: `counter.exs`, `getting_started/todo_app.exs`, `apps/todo_app.ex`, `apps/showcase_app.exs` (all TEA pattern).
 
 ### Development
 
