@@ -17,13 +17,6 @@ defmodule Raxol.Core.Runtime.Events.BubblerTest do
     %Event{type: :click, data: %{}}
   end
 
-  defp mouse_event do
-    %Event{
-      type: :mouse,
-      data: %{button: :left, state: :pressed, x: 0, y: 0}
-    }
-  end
-
   # --- find_ancestor_path tests ---
 
   describe "find_ancestor_path/2" do
@@ -183,8 +176,6 @@ defmodule Raxol.Core.Runtime.Events.BubblerTest do
       }
 
       result = Bubbler.bubble(key_event(:down), tree, :btn, %{})
-      # Should passthrough since :down key doesn't trigger on_click
-      # and button has no component module match in test context
       assert result in [:passthrough, {:handled, :ok}]
     end
   end
@@ -256,6 +247,197 @@ defmodule Raxol.Core.Runtime.Events.BubblerTest do
     end
   end
 
+  # --- Capture phase tests ---
+
+  describe "dispatch/4 capture phase" do
+    test "on_capture atom handler intercepts before target" do
+      tree = %{
+        type: :column,
+        id: :root,
+        on_capture: :captured_at_root,
+        children: [
+          %{type: :button, id: :btn, on_click: :should_not_reach}
+        ]
+      }
+
+      result = Bubbler.dispatch(click_event(), tree, :btn, %{})
+      assert {:handled, {:message, :captured_at_root}} = result
+    end
+
+    test "on_capture function handler can halt" do
+      tree = %{
+        type: :column,
+        id: :root,
+        on_capture: fn _event -> :halt end,
+        children: [
+          %{type: :button, id: :btn, on_click: :should_not_reach}
+        ]
+      }
+
+      result = Bubbler.dispatch(click_event(), tree, :btn, %{})
+      assert {:handled, :ok} = result
+    end
+
+    test "on_capture function handler can halt with message" do
+      tree = %{
+        type: :column,
+        id: :root,
+        on_capture: fn _event -> {:halt, :intercepted} end,
+        children: [
+          %{type: :button, id: :btn, on_click: :should_not_reach}
+        ]
+      }
+
+      result = Bubbler.dispatch(click_event(), tree, :btn, %{})
+      assert {:handled, {:message, :intercepted}} = result
+    end
+
+    test "on_capture function handler can passthrough" do
+      tree = %{
+        type: :column,
+        id: :root,
+        on_capture: fn _event -> :passthrough end,
+        children: [
+          %{type: :button, id: :btn, on_click: :reached_target}
+        ]
+      }
+
+      result = Bubbler.dispatch(click_event(), tree, :btn, %{})
+      assert {:handled, {:message, :reached_target}} = result
+    end
+
+    test "capture handler receives the event" do
+      test_pid = self()
+
+      tree = %{
+        type: :column,
+        id: :root,
+        on_capture: fn event ->
+          send(test_pid, {:captured_event, event.type})
+          :passthrough
+        end,
+        children: [
+          %{type: :button, id: :btn, on_click: :click_handled}
+        ]
+      }
+
+      Bubbler.dispatch(click_event(), tree, :btn, %{})
+      assert_received {:captured_event, :click}
+    end
+
+    test "capture runs on ancestors only, not on target" do
+      tree = %{
+        type: :button,
+        id: :btn,
+        on_capture: :should_not_fire_on_self,
+        on_click: :target_click
+      }
+
+      result = Bubbler.dispatch(click_event(), tree, :btn, %{})
+      # on_capture should not fire on target itself, only ancestors
+      assert {:handled, {:message, :target_click}} = result
+    end
+
+    test "capture walks top-down through ancestors" do
+      test_pid = self()
+
+      tree = %{
+        type: :column,
+        id: :root,
+        on_capture: fn _event ->
+          send(test_pid, {:capture, :root})
+          :passthrough
+        end,
+        children: [
+          %{
+            type: :row,
+            id: :middle,
+            on_capture: fn _event ->
+              send(test_pid, {:capture, :middle})
+              :passthrough
+            end,
+            children: [
+              %{type: :button, id: :btn, on_click: :click}
+            ]
+          }
+        ]
+      }
+
+      Bubbler.dispatch(click_event(), tree, :btn, %{})
+      assert_received {:capture, :root}
+      assert_received {:capture, :middle}
+    end
+
+    test "middle ancestor capture stops propagation" do
+      tree = %{
+        type: :column,
+        id: :root,
+        on_click: :should_not_reach,
+        children: [
+          %{
+            type: :row,
+            id: :middle,
+            on_capture: :captured_at_middle,
+            children: [
+              %{type: :button, id: :btn, on_click: :should_not_reach}
+            ]
+          }
+        ]
+      }
+
+      result = Bubbler.dispatch(click_event(), tree, :btn, %{})
+      assert {:handled, {:message, :captured_at_middle}} = result
+    end
+
+    test "no capture handlers falls through to bubble" do
+      tree = %{
+        type: :column,
+        id: :root,
+        on_click: :root_bubble,
+        children: [
+          %{type: :text, id: :child, content: "text"}
+        ]
+      }
+
+      result = Bubbler.dispatch(click_event(), tree, :child, %{})
+      assert {:handled, {:message, :root_bubble}} = result
+    end
+
+    test "dispatch returns passthrough when nothing handles" do
+      tree = %{
+        type: :column,
+        id: :root,
+        children: [
+          %{type: :text, id: :child, content: "text"}
+        ]
+      }
+
+      result = Bubbler.dispatch(key_event(:a), tree, :child, %{})
+      assert result == :passthrough
+    end
+
+    test "dispatch returns passthrough when element not found" do
+      tree = %{type: :box, id: :root, children: []}
+      result = Bubbler.dispatch(click_event(), tree, :nonexistent, %{})
+      assert result == :passthrough
+    end
+
+    test "capture handler exception is caught gracefully" do
+      tree = %{
+        type: :column,
+        id: :root,
+        on_capture: fn _event -> raise "boom" end,
+        children: [
+          %{type: :button, id: :btn, on_click: :fallback}
+        ]
+      }
+
+      result = Bubbler.dispatch(click_event(), tree, :btn, %{})
+      # Exception in capture should passthrough, bubble handles it
+      assert {:handled, {:message, :fallback}} = result
+    end
+  end
+
   # --- Edge cases ---
 
   describe "edge cases" do
@@ -269,7 +451,6 @@ defmodule Raxol.Core.Runtime.Events.BubblerTest do
       }
 
       result = Bubbler.bubble(click_event(), tree, :btn, %{})
-      # nil on_click should not match, falls through
       assert result in [:passthrough, {:handled, :ok}]
     end
 
@@ -283,6 +464,20 @@ defmodule Raxol.Core.Runtime.Events.BubblerTest do
       tree = %{type: :text, id: :root, content: "hello"}
       path = Bubbler.find_ancestor_path(tree, :root)
       assert [%{id: :root}] = path
+    end
+
+    test "nil on_capture is ignored" do
+      tree = %{
+        type: :column,
+        id: :root,
+        on_capture: nil,
+        children: [
+          %{type: :button, id: :btn, on_click: :reached}
+        ]
+      }
+
+      result = Bubbler.dispatch(click_event(), tree, :btn, %{})
+      assert {:handled, {:message, :reached}} = result
     end
   end
 end

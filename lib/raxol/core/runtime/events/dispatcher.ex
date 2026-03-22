@@ -136,7 +136,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         theme_id: state.current_theme_id
       }
 
-      Bubbler.bubble(event, state.view_tree, focused_id, context)
+      Bubbler.dispatch(event, state.view_tree, focused_id, context)
     else
       :passthrough
     end
