@@ -5,8 +5,10 @@ Runnable examples organized by complexity.
 ## Quick Start
 
 ```bash
-elixir examples/getting_started/hello_world.exs
-mix run examples/apps/todo_app.ex
+mix run examples/getting_started/counter.exs    # Simple counter (TEA basics)
+mix run examples/demo.exs                       # Live BEAM dashboard
+mix run examples/apps/file_browser.exs           # File browser with tree nav
+mix run examples/apps/file_browser.exs -- /path  # Browse a specific directory
 ```
 
 ## Directory Structure

@@ -67,7 +67,7 @@ end
 Raxol.start_link(MyApp, [])
 ```
 
-[More examples](examples/)
+[More examples](examples/README.md)
 
 ## Platform Support
 

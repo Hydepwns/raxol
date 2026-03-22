@@ -1,175 +1,162 @@
 # Architecture
 
-Design decisions and implementation details for Raxol.Core.
+How Raxol works, from application model to terminal output.
 
-## Design Philosophy
+## The Big Picture
 
-### Pure Functional Design
+```
+Your App (TEA)          Raxol Framework              Terminal
+┌─────────────┐    ┌──────────────────────┐    ┌─────────────┐
+│ init/1       │    │ Lifecycle (GenServer) │    │ termbox2 NIF│
+│ update/2     │───>│ Rendering Engine      │───>│ or          │
+│ view/1       │    │ Layout Engine         │    │ IOTerminal  │
+│ subscribe/1  │    │ Event Dispatcher      │    │ or          │
+└─────────────┘    └──────────────────────┘    │ LiveView    │
+                                                └─────────────┘
+```
 
-All modules use pure functions with immutable data structures. Every function returns a new buffer, never mutates the original.
+Your app provides pure functions. Raxol manages the runtime loop, layout, rendering, and I/O. You never write ANSI escape codes.
+
+## Application Model: TEA
+
+Every Raxol app implements The Elm Architecture:
 
 ```elixir
-def write_at(buffer, x, y, content, style) do
-  # Create new cells, lines, and buffer
-  # Original buffer unchanged
+use Raxol.Core.Runtime.Application
+
+def init(context) -> model                    # Initial state
+def update(message, model) -> {model, cmds}   # State transitions
+def view(model) -> view_tree                  # Declarative UI
+def subscribe(model) -> [subscription]        # External events
+```
+
+The runtime calls `view(model)` after every `update`, diffs the result against the previous view tree, and renders only what changed. This is the same virtual DOM idea from React, but for terminals.
+
+## Layer Stack
+
+### 1. View DSL -> Element Tree
+
+The `view/1` callback uses macros to build a tree of plain maps:
+
+```elixir
+column style: %{padding: 1} do
+  [
+    text("Hello", fg: :cyan),
+    row do
+      [button("+", on_click: :inc), button("-", on_click: :dec)]
+    end
+  ]
 end
 ```
 
-Trade-offs: safety, testability, and concurrency at the cost of memory allocations (mitigated by BEAM optimization).
+Produces: `%{type: :column, children: [%{type: :text, ...}, %{type: :row, ...}], ...}`
 
-### Zero Dependencies
+### 2. Layout Engine -> Positioned Elements
 
-Raxol.Core has no runtime dependencies beyond Elixir stdlib. Only uses Enum, List, Map, String. Under 100KB, no version conflicts, fast compilation.
+`Raxol.UI.Layout.Engine` takes the element tree and computes `{x, y, width, height}` for every node. Supports:
 
-### Performance First
+- **Flexbox**: `row`/`column` with `flex`, `gap`, `align_items`, `justify_content`
+- **CSS Grid**: `grid` with `template_columns`, `template_rows`
+- **Box model**: `padding`, `border`, `margin`, `width`, `height`
 
-Target < 1ms for all operations on standard buffers. 60fps requires < 16ms frame budget, and we want headroom for user code.
+### 3. UIRenderer -> Cell Grid
 
-Measured results:
-- Buffer operations: 0.001-0.5ms
-- Render diff: ~2ms (80x24 buffer)
-- Box drawing: 0.04-0.6ms
-- Style generation: < 0.1ms
-
-### Fail-Safe Boundaries
-
-Out-of-bounds operations are silently ignored, never crash:
+`Raxol.UI.UIRenderer` walks the positioned tree and produces cell tuples:
 
 ```elixir
-def set_cell(buffer, x, y, char, style) do
-  cond do
-    y >= height or y < 0 -> buffer  # No-op
-    x >= width or x < 0 -> buffer   # No-op
-    true -> do_update(buffer, x, y, char, style)
-  end
-end
+{x, y, char, fg_color, bg_color, attrs}
 ```
 
-This means less defensive code for users, but silent failures can hide bugs. Use debug mode if that's a concern.
+Each cell is one character at one position with its styling.
 
----
+### 4. Screen Buffer -> Diff
 
-## Module Architecture
+`Raxol.Terminal.ScreenBuffer` holds the current and previous frame. Only changed cells produce output.
 
-### Buffer Module
+### 5. Terminal Backend -> Output
 
-Core data structure and basic operations.
+Platform-detected backend writes ANSI escape sequences:
+
+- **Unix/macOS**: Native C NIF via termbox2 (`lib/termbox2_nif/c_src/`)
+- **Windows**: Pure Elixir `IOTerminal` using `IO.write/1`
+- **Browser**: LiveView bridge via PubSub (`Raxol.LiveView.TEALive`)
+- **SSH**: Erlang `:ssh` module (`Raxol.SSH.Server`)
+
+## Event Flow
+
+```
+Terminal Input
+  -> Driver (raw bytes -> Event struct)
+  -> Dispatcher (GenServer)
+  -> Capture phase (root -> target, W3C-style)
+  -> Target handlers (on_click, on_change)
+  -> Bubble phase (target -> root)
+  -> Component handle_event/3
+  -> App update/2
+```
+
+Events bubble through the view tree. Any handler can return `:stop` to halt propagation or `:passthrough` to continue. Unhandled events reach `update/2`.
+
+## OTP Architecture
+
+Every Raxol app runs as a supervision tree:
+
+```
+Application Supervisor
+├── Lifecycle (GenServer) -- owns the TEA loop
+├── Dispatcher (GenServer) -- event routing
+├── FocusManager (GenServer) -- tab order, focus state
+├── Rendering.Engine -- view -> layout -> render -> output
+├── ThemeManager -- ETS-backed theme registry
+├── I18nServer -- ETS-backed translations
+└── [ProcessComponent supervisors] -- optional per-widget processes
+```
+
+### Process-Per-Component (Optional)
+
+Any widget can run in its own process via `process_component/2`:
 
 ```elixir
-%{
-  lines: [%{cells: [%{char: "A", style: %{...}}]}],
-  width: 80,
-  height: 24
-}
+process_component(ExpensiveChart, data: sensor_feed)
 ```
 
-Uses a list of lines, each containing a list of cells. Elixir lists are optimized for sequential access, most rendering is line-by-line, and it maps naturally to terminal output. A flat array with index math was considered but rejected as less idiomatic.
+The component gets its own GenServer under a DynamicSupervisor. If it crashes, it restarts without affecting the rest of the UI. State is preserved in ETS across restarts.
 
-### Renderer Module
+### Hot Code Reload (Dev Only)
 
-Converts buffers to output strings. The key algorithm is diff rendering:
+`Raxol.Dev.CodeReloader` watches `.ex` files via FileSystem, debounces changes, recompiles, and sends `:render_needed` to the Lifecycle. Your app updates in-place without restart.
 
-```elixir
-def render_diff(old_buffer, new_buffer) do
-  old_buffer.lines
-  |> Enum.zip(new_buffer.lines)
-  |> Enum.with_index()
-  |> Enum.filter(fn {{old_line, new_line}, _} -> old_line != new_line end)
-  |> Enum.map(fn {{_, new_line}, y} ->
-    "\e[#{y + 1};1H" <> line_to_string(new_line)
-  end)
-end
-```
+## Performance Design
 
-Uses Enum.zip for single-pass comparison. Under 2ms for 80x24 buffers.
+- **Buffer diff**: Only changed cells are written. ~2ms for 80x24.
+- **ETS for reads**: Theme, i18n, config, and metrics use ETS tables. Reads bypass GenServer serialization entirely.
+- **Synchronized output**: Uses DEC mode 2026 (`\e[?2026h`) to batch terminal writes, preventing flicker.
+- **Damage tracking**: `DamageTracker` computes rectangular dirty regions. `RenderBatcher` coalesces rapid updates into single frames at 60fps.
+- **Color downsampling**: `Raxol.Core.ColorSystem.Adaptive` detects terminal capabilities and maps 24-bit colors to 256 or 16 colors automatically.
 
-### Style Module
+## Terminal Compatibility
 
-Style management and ANSI escape code generation. Supports named colors, 256-color palette, and RGB:
+- **Unicode width**: `Raxol.Terminal.Emulator.CharWidth` handles double-width CJK, combining characters, emoji
+- **Border fallback**: Box drawing uses ASCII (`+-|`) when Unicode isn't supported
+- **Color detection**: `COLORTERM`, `TERM`, capability queries for truecolor/256/16/mono
 
-```elixir
-defp color_to_ansi(:red, :fg), do: "31"
-defp color_to_ansi(n, :fg) when is_integer(n), do: "38;5;#{n}"
-defp color_to_ansi({r, g, b}, :fg), do: "38;2;#{r};#{g};#{b}"
-```
+## Key Modules
 
-Style merging uses simple map merge with last-wins semantics.
-
-### Box Module
-
-Higher-level drawing utilities using Unicode box-drawing characters. Builds complex shapes from simple operations:
-
-```elixir
-def draw_box(buffer, x, y, width, height, style) do
-  chars = box_chars(style)
-  buffer
-  |> draw_corners(x, y, width, height, chars)
-  |> draw_edges(x, y, width, height, chars)
-end
-```
-
-Character sets: single (---+), double (===+), rounded, heavy, dashed.
-
----
-
-## Performance Optimizations
-
-**Lazy line updates.** Only modified lines are included in diffs. ~50% reduction in diff size for typical updates.
-
-**Pattern matching guards.** Fast validation at the BEAM level:
-
-```elixir
-def set_cell(buffer, x, y, char, style)
-    when x >= 0 and y >= 0 and x < buffer.width and y < buffer.height do
-  # Hot path - no branching
-end
-
-def set_cell(buffer, _, _, _, _), do: buffer
-```
-
-**Structural sharing.** Elixir's persistent data structures share unchanged subtrees:
-
-```elixir
-new_buffer = %{buffer | lines: updated_lines}
-# Shares all unchanged lines with old buffer
-```
-
----
-
-## Memory Management
-
-For an 80x24 buffer: 24 lines x 80 cells x ~100 bytes/cell = ~192KB. Actual usage is typically 50-100KB due to structural sharing and BEAM optimization.
-
-Immutable buffers become garbage when replaced. BEAM GC is per-process and generational, so old buffers are collected quickly if not referenced. Don't hold onto old buffers in history lists unless you need them.
-
----
-
-## Design Patterns
-
-**Pipeline pattern.** Chain buffer operations with `|>`.
-
-**Builder pattern.** Construct complex UIs from small focused functions (`add_header`, `add_sidebar`, etc.).
-
-**Renderer pattern.** Separate data from presentation -- components take buffer + state and return updated buffer.
-
----
-
-## Error Handling
-
-Valid operations never throw. Bounds checking returns buffer unchanged, invalid styles use defaults, empty strings are handled gracefully. Types are validated through pattern matching and guards.
-
----
-
-## Comparison with Alternatives
-
-**vs Raw ANSI** - Raxol adds buffer abstraction, diff rendering, type safety, testability. Raw ANSI gives lower-level control and smaller code size.
-
-**vs ncurses** - Raxol is pure Elixir (no C deps), functional, lightweight, thread-safe. ncurses has more features, decades of optimization, wider platform support.
-
----
+| Module | Role |
+|--------|------|
+| `Raxol.Core.Runtime.Lifecycle` | TEA loop GenServer |
+| `Raxol.Core.Runtime.Events.Dispatcher` | Event routing + bubbling |
+| `Raxol.Core.Runtime.Rendering.Engine` | view -> layout -> render |
+| `Raxol.UI.Layout.Engine` | Flexbox/Grid layout computation |
+| `Raxol.UI.UIRenderer` | Element tree -> cell grid |
+| `Raxol.Terminal.ScreenBuffer` | Double-buffered cell storage |
+| `Raxol.Terminal.Renderer` | Cell grid -> ANSI string |
+| `Raxol.Terminal.Driver` | Platform backend selection |
+| `Raxol.Core.Renderer.View` | View DSL macros |
 
 ## References
 
-- [Buffer API Reference](./BUFFER_API.md)
-- [ANSI Escape Codes](https://en.wikipedia.org/wiki/ANSI_escape_code)
-- [Box Drawing Characters](https://en.wikipedia.org/wiki/Box-drawing_character)
+- [Buffer API](./BUFFER_API.md)
+- [Quickstart Guide](../getting-started/QUICKSTART.md)
+- [Widget Gallery](../getting-started/WIDGET_GALLERY.md)
+- [Theming Cookbook](../cookbook/THEMING.md)

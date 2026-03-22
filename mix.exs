@@ -418,6 +418,12 @@ defmodule Raxol.MixProject do
         "docs/cookbook/THEMING.md",
         "docs/cookbook/PERFORMANCE_OPTIMIZATION.md",
         "docs/bench/README.md",
+        "docs/features/README.md",
+        "docs/features/VIM_NAVIGATION.md",
+        "docs/features/COMMAND_PARSER.md",
+        "docs/features/FUZZY_SEARCH.md",
+        "docs/features/FILESYSTEM.md",
+        "docs/features/CURSOR_EFFECTS.md",
         "examples/core/README.md"
       ],
       groups_for_extras: [
@@ -438,6 +444,14 @@ defmodule Raxol.MixProject do
           "docs/cookbook/LIVEVIEW_INTEGRATION.md",
           "docs/cookbook/THEMING.md",
           "docs/cookbook/PERFORMANCE_OPTIMIZATION.md"
+        ],
+        Features: [
+          "docs/features/README.md",
+          "docs/features/VIM_NAVIGATION.md",
+          "docs/features/COMMAND_PARSER.md",
+          "docs/features/FUZZY_SEARCH.md",
+          "docs/features/FILESYSTEM.md",
+          "docs/features/CURSOR_EFFECTS.md"
         ],
         "Examples & Benchmarks": [
           "examples/core/README.md",
