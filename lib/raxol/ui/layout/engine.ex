@@ -107,7 +107,7 @@ defmodule Raxol.UI.Layout.Engine do
     Responsive.process_responsive_grid(responsive_grid, space, acc)
   end
 
-  # Process basic text/label
+  # Process basic text/label (old format with :attrs)
   def process_element(%{type: type, attrs: attrs} = _element, space, acc)
       when type in [:label, :text] do
     # Convert keyword list to map if needed
@@ -121,6 +121,24 @@ defmodule Raxol.UI.Layout.Engine do
       text: Map.get(attrs_map, :content, Map.get(attrs_map, :text, "")),
       # Pass original attributes through, let Renderer handle styling
       attrs: Map.put(attrs_map, :original_type, type)
+    }
+
+    [text_element | acc]
+  end
+
+  # Process text elements in new widget format (flat map with :content)
+  def process_element(%{type: :text, content: content} = element, space, acc)
+      when is_binary(content) do
+    text_element = %{
+      type: :text,
+      x: space.x,
+      y: space.y,
+      text: content,
+      attrs: %{
+        style: Map.get(element, :style, %{}),
+        id: Map.get(element, :id),
+        original_type: :text
+      }
     }
 
     [text_element | acc]
@@ -312,6 +330,22 @@ defmodule Raxol.UI.Layout.Engine do
     # Convert keyword list to map if needed
     attrs_map = convert_attrs_to_map(attrs)
     measure_element_by_type(type, element, attrs_map, available_space)
+  end
+
+  # Handles new widget format (flat maps with :content/:children, no :attrs)
+  def measure_element(%{type: :text, content: content}, _available_space)
+      when is_binary(content) do
+    lines = String.split(content, "\n")
+    width = lines |> Enum.map(&String.length/1) |> Enum.max(fn -> 0 end)
+    %{width: width, height: length(lines)}
+  end
+
+  def measure_element(
+        %{type: container_type, children: children} = element,
+        available_space
+      )
+      when container_type in [:row, :column, :view] and is_list(children) do
+    measure_element_by_type(container_type, element, %{}, available_space)
   end
 
   # Catch-all for unknown element types
