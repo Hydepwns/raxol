@@ -29,7 +29,13 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
               # Default rendering target
               environment: :terminal,
               # For VSCode, etc.
-              stdio_interface_pid: nil
+              stdio_interface_pid: nil,
+              # PubSub topic for LiveView rendering
+              liveview_topic: nil,
+              # Writer function for SSH rendering
+              io_writer: nil,
+              # Registry of running process components {id => pid}
+              process_components: %{}
   end
 
   # --- Public API ---
@@ -172,11 +178,13 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     Raxol.Core.ErrorHandling.safe_call(fn ->
       case apply(app_module, :view, [model]) do
         view when not is_nil(view) ->
+          resolved = resolve_process_components(view)
+
           Raxol.Core.Runtime.Log.debug(
-            "Rendering Engine: Got view: #{inspect(view)}"
+            "Rendering Engine: Got view: #{inspect(resolved)}"
           )
 
-          {:ok, view}
+          {:ok, resolved}
 
         _ ->
           {:error, :invalid_view}
@@ -256,6 +264,12 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
       :vscode ->
         render_to_vscode(final_cells, state)
+
+      :liveview ->
+        render_to_liveview(final_cells, state)
+
+      :ssh ->
+        render_to_ssh(final_cells, state)
 
       other ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
@@ -429,6 +443,99 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       {x, y, cell}
     end)
   end
+
+  # --- LiveView Backend ---
+
+  defp render_to_liveview(cells, state) do
+    screen_buffer = state.buffer || ScreenBuffer.new(state.width, state.height)
+    transformed_cells = transform_cells_for_update(cells)
+
+    updated_buffer =
+      Enum.reduce(transformed_cells, screen_buffer, fn {x, y, cell}, buffer ->
+        style =
+          case Map.get(cell, :style) do
+            nil -> %{foreground: Map.get(cell, :foreground), background: Map.get(cell, :background)}
+            cell_style when is_map(cell_style) -> cell_style
+            _ -> nil
+          end
+
+        ScreenBuffer.write_char(buffer, x, y, cell.char || " ", style)
+      end)
+
+    html = Raxol.LiveView.TerminalBridge.buffer_to_html(updated_buffer)
+
+    if state.liveview_topic do
+      Phoenix.PubSub.broadcast(Raxol.PubSub, state.liveview_topic, {:render_update, html})
+    end
+
+    {:ok, %{state | buffer: updated_buffer}}
+  end
+
+  # --- SSH Backend ---
+
+  defp render_to_ssh(cells, state) do
+    screen_buffer = state.buffer || ScreenBuffer.new(state.width, state.height)
+    transformed_cells = transform_cells_for_update(cells)
+
+    updated_buffer =
+      Enum.reduce(transformed_cells, screen_buffer, fn {x, y, cell}, buffer ->
+        style =
+          case Map.get(cell, :style) do
+            nil -> %{foreground: Map.get(cell, :foreground), background: Map.get(cell, :background)}
+            cell_style when is_map(cell_style) -> cell_style
+            _ -> nil
+          end
+
+        ScreenBuffer.write_char(buffer, x, y, cell.char || " ", style)
+      end)
+
+    renderer = Raxol.Terminal.Renderer.new(updated_buffer)
+    output_string = Raxol.Terminal.Renderer.render(renderer)
+
+    case state.io_writer do
+      writer when is_function(writer, 1) ->
+        writer.("\e[?2026h")
+        writer.(output_string)
+        writer.("\e[?2026l")
+
+      _ ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "SSH render: no io_writer configured",
+          %{}
+        )
+    end
+
+    {:ok, %{state | buffer: updated_buffer}}
+  end
+
+  # --- Process Component Resolution ---
+
+  defp resolve_process_components(%{type: :process_component, module: mod, props: props} = node) do
+    id = Map.get(node, :id, "pc-#{inspect(mod)}")
+
+    pid =
+      case DynamicSupervisor.start_child(
+             Raxol.DynamicSupervisor,
+             {Raxol.Core.Runtime.ProcessComponent,
+              [module: mod, props: props, id: id]}
+           ) do
+        {:ok, pid} -> pid
+        {:error, {:already_started, pid}} -> pid
+        _ -> nil
+      end
+
+    if pid do
+      Raxol.Core.Runtime.ProcessComponent.get_render_tree(pid, %{})
+    else
+      %{type: :text, content: "[#{id}: failed to start]", style: %{}}
+    end
+  end
+
+  defp resolve_process_components(%{children: children} = node) when is_list(children) do
+    %{node | children: Enum.map(children, &resolve_process_components/1)}
+  end
+
+  defp resolve_process_components(node), do: node
 
   defp apply_plugin_transforms(cells, state) do
     Raxol.Core.Runtime.Log.debug(

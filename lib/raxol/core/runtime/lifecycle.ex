@@ -26,6 +26,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
               driver_pid: nil,
               # PID of the Rendering Engine
               rendering_engine_pid: nil,
+              # PID of the CodeReloader (dev only)
+              code_reloader_pid: nil,
               # Application's own model
               model: %{},
               # Flag to indicate Dispatcher is ready
@@ -102,6 +104,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   defp initialize_components(app_module, options) do
+    environment = Keyword.get(options, :environment, :terminal)
+
     with {:ok, registry_table} <- initialize_registry_table(app_module),
          {:ok, pm_pid} <- start_plugin_manager(options),
          {:ok, initialized_model} <-
@@ -114,7 +118,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
              pm_pid,
              registry_table
            ),
-         {:ok, driver_pid} <- start_driver(dispatcher_pid),
+         {:ok, driver_pid} <- maybe_start_driver(dispatcher_pid, environment),
          {:ok, rendering_engine_pid} <-
            start_rendering_engine(app_module, dispatcher_pid, options) do
       {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid,
@@ -132,6 +136,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
          driver_pid,
          rendering_engine_pid
        ) do
+    code_reloader_pid = maybe_start_code_reloader(self())
+
     %State{
       app_module: app_module,
       options: options,
@@ -146,6 +152,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       dispatcher_pid: dispatcher_pid,
       driver_pid: driver_pid,
       rendering_engine_pid: rendering_engine_pid,
+      code_reloader_pid: code_reloader_pid,
       model: initialized_model,
       dispatcher_ready: false,
       plugin_manager_ready: false
@@ -229,7 +236,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
-  defp start_driver(dispatcher_pid) do
+  defp maybe_start_driver(_dispatcher_pid, :liveview), do: {:ok, nil}
+  defp maybe_start_driver(_dispatcher_pid, :ssh), do: {:ok, nil}
+
+  defp maybe_start_driver(dispatcher_pid, _environment) do
     case Raxol.Terminal.Driver.start_link(dispatcher_pid: dispatcher_pid) do
       {:ok, driver_pid} ->
         Log.info_with_context(
@@ -249,13 +259,16 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   defp start_rendering_engine(app_module, dispatcher_pid, options) do
-    engine_opts = [
-      app_module: app_module,
-      dispatcher_pid: dispatcher_pid,
-      width: Keyword.get(options, :width, 80),
-      height: Keyword.get(options, :height, 24),
-      environment: Keyword.get(options, :environment, :terminal)
-    ]
+    engine_opts =
+      [
+        app_module: app_module,
+        dispatcher_pid: dispatcher_pid,
+        width: Keyword.get(options, :width, 80),
+        height: Keyword.get(options, :height, 24),
+        environment: Keyword.get(options, :environment, :terminal)
+      ]
+      |> maybe_add_opt(:liveview_topic, Keyword.get(options, :liveview_topic))
+      |> maybe_add_opt(:io_writer, Keyword.get(options, :io_writer))
 
     case Raxol.Core.Runtime.Rendering.Engine.start_link(engine_opts) do
       {:ok, engine_pid} ->
@@ -462,6 +475,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       "[#{__MODULE__}] Received :shutdown cast for #{inspect(state.app_name)}. Stopping dependent processes..."
     )
 
+    stop_process(state.code_reloader_pid, "CodeReloader")
     stop_process(state.rendering_engine_pid, "Rendering Engine")
     stop_process(state.driver_pid, "Terminal Driver")
     stop_process(state.dispatcher_pid, "Dispatcher")
@@ -695,4 +709,20 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   defp get_app_name_by_export(false, _app_module), do: :default
   defp get_app_name_by_export(true, app_module), do: app_module.app_name()
+
+  defp maybe_start_code_reloader(lifecycle_pid) do
+    if Code.ensure_loaded?(Mix) and Mix.env() == :dev do
+      case Raxol.Dev.CodeReloader.start_link(lifecycle_pid) do
+        {:ok, pid} -> pid
+        _ -> nil
+      end
+    else
+      nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp maybe_add_opt(opts, _key, nil), do: opts
+  defp maybe_add_opt(opts, key, value), do: Keyword.put(opts, key, value)
 end

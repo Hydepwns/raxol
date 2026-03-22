@@ -775,6 +775,30 @@ defmodule Raxol.Core.Renderer.View do
   defdelegate tabs(opts \\ []), to: Raxol.View.Components
   defdelegate span(content, opts \\ []), to: Raxol.View.Components
 
+  @doc """
+  Creates a process-isolated component node.
+
+  The component module runs in its own GenServer process under
+  `Raxol.DynamicSupervisor`. If it crashes, the supervisor restarts it
+  with fresh state from `init/1` -- the rest of the app continues.
+
+  ## Parameters
+    * `module` - Component module implementing `init/1`, `render/2`, and optionally `update/2`
+    * `props` - Initial properties passed to `init/1`
+
+  ## Examples
+
+      process_component(MyHeavyWidget, %{path: "/tmp"})
+  """
+  def process_component(module, props \\ %{}) do
+    %{
+      type: :process_component,
+      module: module,
+      props: props,
+      id: "pc-#{inspect(module)}"
+    }
+  end
+
   defp process_layout_result(result, _view), do: result
 
   # Helper functions for if statement elimination
