@@ -35,7 +35,8 @@ defmodule Raxol.UI.Components.Display.Viewport do
     children = Map.get(props, :children, [])
 
     state = %{
-      id: Map.get(props, :id, "viewport-#{:erlang.unique_integer([:positive])}"),
+      id:
+        Map.get(props, :id, "viewport-#{:erlang.unique_integer([:positive])}"),
       children: children,
       scroll_top: Map.get(props, :scroll_top, 0),
       scroll_left: Map.get(props, :scroll_left, 0),
@@ -59,8 +60,15 @@ defmodule Raxol.UI.Components.Display.Viewport do
 
   @impl true
   def update({:set_children, children}, state) do
-    scroll_top = clamp_scroll(state.scroll_top, length(children), state.visible_height)
-    {%{state | children: children, content_height: length(children), scroll_top: scroll_top}, []}
+    scroll_top =
+      clamp_scroll(state.scroll_top, length(children), state.visible_height)
+
+    {%{
+       state
+       | children: children,
+         content_height: length(children),
+         scroll_top: scroll_top
+     }, []}
   end
 
   def update({:scroll_to, row}, state) do
@@ -69,7 +77,13 @@ defmodule Raxol.UI.Components.Display.Viewport do
   end
 
   def update({:scroll_by, delta}, state) do
-    scroll_top = clamp_scroll(state.scroll_top + delta, state.content_height, state.visible_height)
+    scroll_top =
+      clamp_scroll(
+        state.scroll_top + delta,
+        state.content_height,
+        state.visible_height
+      )
+
     {%{state | scroll_top: scroll_top}, []}
   end
 
@@ -89,7 +103,14 @@ defmodule Raxol.UI.Components.Display.Viewport do
       |> maybe_update(:theme, props)
 
     new_state = %{new_state | content_height: length(new_state.children)}
-    scroll_top = clamp_scroll(new_state.scroll_top, new_state.content_height, new_state.visible_height)
+
+    scroll_top =
+      clamp_scroll(
+        new_state.scroll_top,
+        new_state.content_height,
+        new_state.visible_height
+      )
+
     {%{new_state | scroll_top: scroll_top}, []}
   end
 
@@ -135,8 +156,14 @@ defmodule Raxol.UI.Components.Display.Viewport do
   @impl true
   @spec render(t(), map()) :: map()
   def render(state, context) do
-    state = %{state | focused: Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused}
-    visible_children = Enum.slice(state.children, state.scroll_top, state.visible_height)
+    state = %{
+      state
+      | focused:
+          Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused
+    }
+
+    visible_children =
+      Enum.slice(state.children, state.scroll_top, state.visible_height)
 
     content_column = %{
       type: :column,
@@ -166,6 +193,7 @@ defmodule Raxol.UI.Components.Display.Viewport do
 
     thumb_size = max(1, div(visible * visible, max(total, 1)))
     scrollable = max_scroll(total, visible)
+
     thumb_pos =
       if scrollable > 0,
         do: div(state.scroll_top * (visible - thumb_size), scrollable),
@@ -173,7 +201,9 @@ defmodule Raxol.UI.Components.Display.Viewport do
 
     track =
       Enum.map(0..(visible - 1), fn i ->
-        char = if i >= thumb_pos and i < thumb_pos + thumb_size, do: "█", else: "░"
+        char =
+          if i >= thumb_pos and i < thumb_pos + thumb_size, do: "█", else: "░"
+
         Components.text(content: char, style: %{fg: :white})
       end)
 
@@ -181,7 +211,13 @@ defmodule Raxol.UI.Components.Display.Viewport do
   end
 
   defp scroll(state, delta) do
-    scroll_top = clamp_scroll(state.scroll_top + delta, state.content_height, state.visible_height)
+    scroll_top =
+      clamp_scroll(
+        state.scroll_top + delta,
+        state.content_height,
+        state.visible_height
+      )
+
     {%{state | scroll_top: scroll_top}, []}
   end
 

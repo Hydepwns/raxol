@@ -35,9 +35,9 @@ defmodule Raxol.UI.Components.Display.Tree do
           cursor: atom() | nil,
           focused: boolean(),
           indent_size: non_neg_integer(),
-          on_select: ((atom(), any()) -> any()) | nil,
-          on_expand: ((atom()) -> any()) | nil,
-          on_collapse: ((atom()) -> any()) | nil,
+          on_select: (atom(), any() -> any()) | nil,
+          on_expand: (atom() -> any()) | nil,
+          on_collapse: (atom() -> any()) | nil,
           style: map(),
           theme: map()
         }
@@ -48,7 +48,8 @@ defmodule Raxol.UI.Components.Display.Tree do
     nodes = Keyword.get(props, :nodes, [])
 
     state = %{
-      id: Keyword.get(props, :id, "tree-#{:erlang.unique_integer([:positive])}"),
+      id:
+        Keyword.get(props, :id, "tree-#{:erlang.unique_integer([:positive])}"),
       nodes: nodes,
       expanded: Keyword.get(props, :expanded, MapSet.new()),
       cursor: Keyword.get(props, :cursor, first_node_id(nodes)),
@@ -164,7 +165,9 @@ defmodule Raxol.UI.Components.Display.Tree do
     theme = Map.merge(context[:theme] || %{}, state.theme || %{})
     theme_style = Theme.component_style(theme, :tree)
     base_style = Map.merge(theme_style, state.style || %{})
-    base_style = Raxol.UI.FocusHelper.maybe_focus_style(state.id, context, base_style)
+
+    base_style =
+      Raxol.UI.FocusHelper.maybe_focus_style(state.id, context, base_style)
 
     visible = visible_nodes(state)
     children = build_children(state, visible)

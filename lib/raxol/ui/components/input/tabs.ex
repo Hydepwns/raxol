@@ -31,7 +31,8 @@ defmodule Raxol.UI.Components.Input.Tabs do
   @spec init(keyword()) :: {:ok, t()}
   def init(props) do
     state = %{
-      id: Keyword.get(props, :id, "tabs-#{:erlang.unique_integer([:positive])}"),
+      id:
+        Keyword.get(props, :id, "tabs-#{:erlang.unique_integer([:positive])}"),
       tabs: Keyword.get(props, :tabs, []),
       active_index: Keyword.get(props, :active_index, 0),
       focused: Keyword.get(props, :focused, false),
@@ -96,7 +97,11 @@ defmodule Raxol.UI.Components.Input.Tabs do
   end
 
   # Number keys 1-9 for direct tab selection
-  def handle_event(%Event{type: :key, data: %{key: :char, char: ch}}, state, _context)
+  def handle_event(
+        %Event{type: :key, data: %{key: :char, char: ch}},
+        state,
+        _context
+      )
       when ch in ~w(1 2 3 4 5 6 7 8 9) do
     index = String.to_integer(ch) - 1
 
@@ -129,7 +134,9 @@ defmodule Raxol.UI.Components.Input.Tabs do
     theme = Map.merge(context[:theme] || %{}, state.theme || %{})
     theme_style = Theme.component_style(theme, :tabs)
     base_style = Map.merge(theme_style, state.style || %{})
-    base_style = Raxol.UI.FocusHelper.maybe_focus_style(state.id, context, base_style)
+
+    base_style =
+      Raxol.UI.FocusHelper.maybe_focus_style(state.id, context, base_style)
 
     children = build_children(state)
 

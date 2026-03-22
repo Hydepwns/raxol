@@ -111,6 +111,11 @@ defmodule Raxol.UI.Components.Input.Button do
   """
   @impl true
   def render(button, context) do
+    focused =
+      Raxol.UI.FocusHelper.focused?(button.id, context) or button.focused
+
+    button = %{button | focused: focused}
+
     merged_style = build_merged_style(button, context)
     {fg, bg} = resolve_colors(button, merged_style)
 
@@ -285,8 +290,8 @@ defmodule Raxol.UI.Components.Input.Button do
   # Private helpers
 
   defp build_merged_style(button, context) do
-    component_styles = context.component_styles || %{}
-    button_theme_from_context = component_styles.button || %{}
+    component_styles = (context || %{})[:component_styles] || %{}
+    button_theme_from_context = component_styles[:button] || %{}
     theme = Map.merge(button_theme_from_context, button.theme || %{})
     style = button.style || %{}
     # Style should override theme, so merge style into theme
@@ -300,7 +305,7 @@ defmodule Raxol.UI.Components.Input.Button do
     # Padding accounts for borders, spacing, and maximum focus decorations ("> " and " <" = 4 chars)
     # 8 for borders/spacing + 4 for focus decorations
     padding = 12
-    max_width = context.max_width || 80
+    max_width = (context || %{})[:max_width] || 80
     # Calculate available space for the base label
     available_label_width = max(max_width - padding, 1)
 

@@ -53,7 +53,8 @@ defmodule Raxol.UI.Components.Input.Menu do
     items = Keyword.get(props, :items, [])
 
     state = %{
-      id: Keyword.get(props, :id, "menu-#{:erlang.unique_integer([:positive])}"),
+      id:
+        Keyword.get(props, :id, "menu-#{:erlang.unique_integer([:positive])}"),
       items: items,
       cursor: Keyword.get(props, :cursor, first_enabled_id(items)),
       open_path: Keyword.get(props, :open_path, []),
@@ -179,7 +180,9 @@ defmodule Raxol.UI.Components.Input.Menu do
     theme = Map.merge(context[:theme] || %{}, state.theme || %{})
     theme_style = Theme.component_style(theme, :menu)
     base_style = Map.merge(theme_style, state.style || %{})
-    base_style = Raxol.UI.FocusHelper.maybe_focus_style(state.id, context, base_style)
+
+    base_style =
+      Raxol.UI.FocusHelper.maybe_focus_style(state.id, context, base_style)
 
     visible = visible_items(state)
     children = build_children(state, visible)
@@ -250,7 +253,10 @@ defmodule Raxol.UI.Components.Input.Menu do
   end
 
   defp next_enabled(visible, cursor) do
-    ids = Enum.map(visible, fn {item, _} -> {item.id, Map.get(item, :disabled, false)} end)
+    ids =
+      Enum.map(visible, fn {item, _} ->
+        {item.id, Map.get(item, :disabled, false)}
+      end)
 
     case Enum.find_index(ids, fn {id, _} -> id == cursor end) do
       nil ->
@@ -268,7 +274,10 @@ defmodule Raxol.UI.Components.Input.Menu do
   end
 
   defp prev_enabled(visible, cursor) do
-    ids = Enum.map(visible, fn {item, _} -> {item.id, Map.get(item, :disabled, false)} end)
+    ids =
+      Enum.map(visible, fn {item, _} ->
+        {item.id, Map.get(item, :disabled, false)}
+      end)
 
     case Enum.find_index(ids, fn {id, _} -> id == cursor end) do
       nil ->
