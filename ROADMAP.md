@@ -13,8 +13,9 @@ Planned features and direction for Raxol.
 - **Phase 5.1: Hex Package** -- `mix hex.build` succeeds, optional deps trimmed, NIF compiles via elixir_make
 - **Phase 5.2: Phoenix Optional** -- LiveView/web code wrapped in `Code.ensure_loaded?` guards; pure-terminal apps no longer require Phoenix
 - **Phase 5.3: Developer Tooling** -- `mix raxol.new` generator (4 templates, 8 flags, interactive mode, CI, mise), `mix raxol.gen.component` scaffolder, 20 mix tasks
-- **Phase 5.4: Documentation** -- TEA-first quickstart guide, widget gallery (all 23 widgets), flagship demo with live BEAM dashboard
+- **Phase 5.4: Documentation** -- Quickstart, widget gallery, architecture overview, 5 cookbook guides (TEA patterns, SSH deployment, theming, LiveView, performance)
 - **Phase 5.5: Tech Debt Cleanup** -- Removed ~7,300 LOC dead code (CQRS/EventSourcing, Pipeline stubs), ETS-backed GenServers where appropriate
+- **Phase 5.6: Showcase** -- Flagship demo (live BEAM dashboard), file browser example, benchmark suite vs Ratatui/Bubble Tea/Textual
 
 ---
 
@@ -24,19 +25,10 @@ Planned features and direction for Raxol.
 
 | Task | Description | Effort |
 |------|-------------|--------|
-| Fix doc links | 3 broken references in README (FUZZY_SEARCH, FILESYSTEM, CURSOR_EFFECTS) | Small |
-| HexDocs polish | Architecture overview page, cookbook examples | Medium |
-| Publish to Hex | `mix hex.publish` once docs are clean | Small |
-
-### Showcase
-
-| Task | Description | Effort |
-|------|-------------|--------|
-| File browser app | End-to-end example using Tree + Viewport + Modal + TextInput | Medium |
+| Publish to Hex | `mix hex.publish` -- build succeeds, docs clean, zero warnings | Small |
 
 ### Longer Term
 
-- Benchmark suite comparing against Ratatui/Bubble Tea/Textual
 - VS Code extension for component previews
 - Plugin marketplace
 - Session recording & replay (see IDEAS.md)
