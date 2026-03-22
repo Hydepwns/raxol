@@ -6,12 +6,8 @@ defmodule Mix.Tasks.Raxol.New do
 
       mix raxol.new my_app
 
-  This creates a new directory `my_app/` with a working TEA application
-  that you can run immediately:
-
-      cd my_app
-      mix deps.get
-      mix run lib/my_app.ex
+  When run without flags, an interactive prompt guides you through setup.
+  Pass flags to skip prompts.
 
   ## Options
 
@@ -20,16 +16,18 @@ defmodule Mix.Tasks.Raxol.New do
     * `--ssh` - Include SSH server boilerplate for remote access
     * `--liveview` - Include Phoenix LiveView bridge for browser rendering
     * `--template` - Starter template: `counter` (default), `blank`, `todo`, `dashboard`
+    * `--ci` - Generate GitHub Actions CI workflow
     * `--no-test` - Skip generating test files
-    * `--install` - Run `mix deps.get` after generation
+    * `--install` - Run `mix deps.get`, compile, and test after generation
+    * `--list` - Show available templates with descriptions
 
   ## Examples
 
       mix raxol.new dashboard
       mix raxol.new my_tui --module MyTUI
-      mix raxol.new my_app --sup --template todo
+      mix raxol.new my_app --sup --template todo --ci
       mix raxol.new my_app --ssh --install
-      mix raxol.new my_app --template dashboard --liveview
+      mix raxol.new --list
   """
 
   use Mix.Task
@@ -45,40 +43,189 @@ defmodule Mix.Tasks.Raxol.New do
     ssh: :boolean,
     liveview: :boolean,
     template: :string,
-    install: :boolean
+    install: :boolean,
+    list: :boolean,
+    ci: :boolean
   ]
 
-  @templates ~w(counter blank todo dashboard)
+  @template_descriptions %{
+    "counter" => "Interactive counter with buttons and keyboard shortcuts",
+    "blank" => "Minimal skeleton with just quit handling",
+    "todo" => "Todo list with add/delete/toggle and input modes",
+    "dashboard" => "Multi-panel layout with tabs, live stats via subscriptions"
+  }
+
+  @templates Map.keys(@template_descriptions) |> Enum.sort()
 
   @impl Mix.Task
   def run(args) do
     case OptionParser.parse(args, strict: @switches) do
-      {opts, [name], _} ->
-        template = Keyword.get(opts, :template, "counter")
-
-        if template not in @templates do
-          Mix.raise(
-            "Unknown template: #{template}. Available: #{Enum.join(@templates, ", ")}"
-          )
+      {opts, [], _} ->
+        if Keyword.get(opts, :list, false) do
+          print_template_list()
+        else
+          print_usage()
         end
 
-        generate(name, Keyword.put(opts, :template, template))
+      {opts, [name], _} ->
+        if Keyword.get(opts, :list, false) do
+          print_template_list()
+        else
+          opts = maybe_prompt_interactive(opts)
+          template = Keyword.get(opts, :template, "counter")
+
+          if template not in @templates do
+            Mix.raise(
+              "Unknown template: #{template}. Available: #{Enum.join(@templates, ", ")}"
+            )
+          end
+
+          generate(name, Keyword.put(opts, :template, template))
+        end
 
       _ ->
-        Mix.shell().error("Usage: mix raxol.new APP_NAME [options]")
-        Mix.shell().error("")
-        Mix.shell().error("Options:")
-        Mix.shell().error("  --module NAME      Module name (default: derived from app name)")
-        Mix.shell().error("  --sup              Generate OTP application with supervision tree")
-        Mix.shell().error("  --ssh              Include SSH server boilerplate")
-        Mix.shell().error("  --liveview         Include Phoenix LiveView bridge")
-        Mix.shell().error("  --template NAME    Starter template: counter, blank, todo, dashboard")
-        Mix.shell().error("  --no-test          Skip test files")
-        Mix.shell().error("  --install          Run mix deps.get after generation")
-        Mix.shell().error("")
-        Mix.shell().error("Example: mix raxol.new my_app --sup --template todo")
+        print_usage()
     end
   end
+
+  defp print_usage do
+    Mix.shell().error("Usage: mix raxol.new APP_NAME [options]")
+    Mix.shell().error("")
+    Mix.shell().error("Options:")
+    Mix.shell().error("  --module NAME      Module name (default: derived from app name)")
+    Mix.shell().error("  --sup              Generate OTP application with supervision tree")
+    Mix.shell().error("  --ssh              Include SSH server boilerplate")
+    Mix.shell().error("  --liveview         Include Phoenix LiveView bridge")
+    Mix.shell().error("  --template NAME    Starter template: #{Enum.join(@templates, ", ")}")
+    Mix.shell().error("  --ci               Generate GitHub Actions CI workflow")
+    Mix.shell().error("  --no-test          Skip test files")
+    Mix.shell().error("  --install          Run mix deps.get + compile + test after generation")
+    Mix.shell().error("  --list             Show available templates with descriptions")
+    Mix.shell().error("")
+    Mix.shell().error("Example: mix raxol.new my_app --sup --template todo")
+  end
+
+  defp print_template_list do
+    Mix.shell().info([:bright, "Available templates:", :reset])
+    Mix.shell().info("")
+
+    for name <- @templates do
+      desc = @template_descriptions[name]
+      label = String.pad_trailing(name, 12)
+      Mix.shell().info(["  ", :cyan, label, :reset, desc])
+    end
+
+    Mix.shell().info("")
+    Mix.shell().info("Usage: mix raxol.new my_app --template NAME")
+    Mix.shell().info("")
+
+    for name <- @templates do
+      print_template_preview(name)
+    end
+  end
+
+  defp print_template_preview("counter") do
+    Mix.shell().info([:bright, "counter", :reset, " generates:"])
+    Mix.shell().info("  lib/my_app.ex      -- Counter with +/- buttons and keyboard control")
+    Mix.shell().info("  test/my_app_test.exs -- Tests for increment/decrement/unknown")
+    Mix.shell().info("")
+  end
+
+  defp print_template_preview("blank") do
+    Mix.shell().info([:bright, "blank", :reset, " generates:"])
+    Mix.shell().info("  lib/my_app.ex      -- Empty TEA app with quit handling")
+    Mix.shell().info("  test/my_app_test.exs -- Tests for init and unknown messages")
+    Mix.shell().info("")
+  end
+
+  defp print_template_preview("todo") do
+    Mix.shell().info([:bright, "todo", :reset, " generates:"])
+    Mix.shell().info("  lib/my_app.ex      -- Todo list with add/toggle/delete, input mode")
+    Mix.shell().info("  test/my_app_test.exs -- Tests for CRUD operations")
+    Mix.shell().info("")
+  end
+
+  defp print_template_preview("dashboard") do
+    Mix.shell().info([:bright, "dashboard", :reset, " generates:"])
+    Mix.shell().info("  lib/my_app.ex      -- 3-panel dashboard with live stats subscription")
+    Mix.shell().info("  test/my_app_test.exs -- Tests for panel switching and tick")
+    Mix.shell().info("")
+  end
+
+  # ---------------------------------------------------------------------------
+  # Interactive prompts
+  # ---------------------------------------------------------------------------
+
+  defp maybe_prompt_interactive(opts) do
+    has_flags =
+      Keyword.has_key?(opts, :template) or
+        Keyword.has_key?(opts, :sup) or
+        Keyword.has_key?(opts, :ssh) or
+        Keyword.has_key?(opts, :liveview) or
+        Keyword.has_key?(opts, :ci)
+
+    if has_flags do
+      opts
+    else
+      prompt_all(opts)
+    end
+  end
+
+  defp prompt_all(opts) do
+    opts
+    |> prompt_template()
+    |> prompt_yes_no(:sup, "Generate OTP supervision tree?")
+    |> prompt_yes_no(:ssh, "Include SSH server?")
+    |> prompt_yes_no(:liveview, "Include LiveView bridge?")
+    |> prompt_yes_no(:ci, "Generate GitHub Actions CI?")
+  end
+
+  defp prompt_template(opts) do
+    Mix.shell().info("")
+    Mix.shell().info([:bright, "Available templates:", :reset])
+
+    for {name, i} <- Enum.with_index(@templates, 1) do
+      desc = @template_descriptions[name]
+      Mix.shell().info("  #{i}. #{String.pad_trailing(name, 12)} #{desc}")
+    end
+
+    answer =
+      Mix.shell().prompt("Template [counter/blank/todo/dashboard] (default: counter)")
+      |> String.trim()
+      |> String.downcase()
+
+    template =
+      case answer do
+        "" -> "counter"
+        "1" -> "counter"
+        "2" -> "blank"
+        "3" -> "dashboard"
+        "4" -> "todo"
+        t when t in @templates -> t
+        _ ->
+          Mix.shell().info([:yellow, "Unknown template, using counter.", :reset])
+          "counter"
+      end
+
+    Keyword.put(opts, :template, template)
+  end
+
+  defp prompt_yes_no(opts, key, question) do
+    if Keyword.has_key?(opts, key) do
+      opts
+    else
+      answer =
+        Mix.shell().prompt("#{question} [y/N]")
+        |> String.trim()
+        |> String.downcase()
+
+      Keyword.put(opts, key, answer in ~w(y yes))
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Generation
+  # ---------------------------------------------------------------------------
 
   defp generate(name, opts) do
     path = Path.expand(name)
@@ -88,6 +235,7 @@ defmodule Mix.Tasks.Raxol.New do
     sup? = Keyword.get(opts, :sup, false)
     ssh? = Keyword.get(opts, :ssh, false)
     liveview? = Keyword.get(opts, :liveview, false)
+    ci? = Keyword.get(opts, :ci, false)
     skip_test = Keyword.get(opts, :no_test, false)
     install? = Keyword.get(opts, :install, false)
 
@@ -102,6 +250,7 @@ defmodule Mix.Tasks.Raxol.New do
       sup: sup?,
       ssh: ssh?,
       liveview: liveview?,
+      ci: ci?,
       version: @raxol_version
     }
 
@@ -115,12 +264,15 @@ defmodule Mix.Tasks.Raxol.New do
       File.mkdir_p!(Path.join(path, "test"))
     end
 
+    # Core files
     write_file(path, "mix.exs", mix_exs(bindings))
     write_file(path, "config/config.exs", config_exs(bindings))
     write_file(path, ".formatter.exs", formatter())
     write_file(path, ".gitignore", gitignore())
     write_file(path, "README.md", readme(bindings))
+    write_file(path, ".mise.toml", mise_toml())
 
+    # App modules
     if sup? do
       write_file(path, "lib/#{app}.ex", app_module_sup(bindings))
       write_file(path, "lib/#{app}/application.ex", application_module(bindings))
@@ -137,29 +289,54 @@ defmodule Mix.Tasks.Raxol.New do
       write_file(path, "lib/#{app}/live.ex", liveview_module(bindings))
     end
 
+    # Tests
     unless skip_test do
       write_file(path, "test/test_helper.exs", test_helper())
       write_file(path, "test/#{app}_test.exs", app_test(bindings))
     end
 
+    # CI
+    if ci? do
+      write_file(path, ".github/workflows/ci.yml", ci_workflow(bindings))
+    end
+
+    # Git init
+    git_init(path)
+
     Mix.shell().info("")
 
     if install? do
-      install_deps(path)
+      install_and_verify(path)
     end
 
     print_instructions(bindings, name, install?)
   end
 
-  defp install_deps(path) do
-    Mix.shell().info([:cyan, "Installing dependencies...", :reset])
+  defp git_init(path) do
+    case System.cmd("git", ["init"], cd: path, stderr_to_stdout: true) do
+      {_, 0} ->
+        System.cmd("git", ["add", "."], cd: path, stderr_to_stdout: true)
+
+        System.cmd("git", ["commit", "-m", "Initial commit from mix raxol.new"],
+          cd: path,
+          stderr_to_stdout: true
+        )
+
+        Mix.shell().info(["  ", :green, "* initialized ", :reset, "git repo with initial commit"])
+
+      _ ->
+        Mix.shell().info(["  ", :yellow, "* skipping ", :reset, "git init (git not available)"])
+    end
+  end
+
+  defp install_and_verify(path) do
+    Mix.shell().info([:cyan, "Fetching dependencies...", :reset])
 
     case System.cmd("mix", ["deps.get"], cd: path, stderr_to_stdout: true) do
       {output, 0} ->
         Mix.shell().info(output)
         Mix.shell().info([:green, "Dependencies installed.", :reset])
-
-        run_tests(path)
+        compile_and_test(path)
 
       {output, _} ->
         Mix.shell().info(output)
@@ -167,10 +344,33 @@ defmodule Mix.Tasks.Raxol.New do
     end
   end
 
+  defp compile_and_test(path) do
+    Mix.shell().info([:cyan, "Compiling...", :reset])
+
+    case System.cmd("mix", ["compile", "--warnings-as-errors"],
+           cd: path,
+           env: [{"MIX_ENV", "test"}],
+           stderr_to_stdout: true
+         ) do
+      {output, 0} ->
+        Mix.shell().info(output)
+        Mix.shell().info([:green, "Compilation succeeded.", :reset])
+        run_tests(path)
+
+      {output, _} ->
+        Mix.shell().info(output)
+        Mix.shell().error("Compilation failed.")
+    end
+  end
+
   defp run_tests(path) do
     Mix.shell().info([:cyan, "Running tests...", :reset])
 
-    case System.cmd("mix", ["test"], cd: path, env: [{"MIX_ENV", "test"}], stderr_to_stdout: true) do
+    case System.cmd("mix", ["test"],
+           cd: path,
+           env: [{"MIX_ENV", "test"}],
+           stderr_to_stdout: true
+         ) do
       {output, 0} ->
         Mix.shell().info(output)
         Mix.shell().info([:green, "All tests passed.", :reset])
@@ -357,6 +557,17 @@ defmodule Mix.Tasks.Raxol.New do
     """
   end
 
+  defp mise_toml do
+    elixir_vsn = System.version()
+    otp_vsn = :erlang.system_info(:otp_release) |> to_string()
+
+    """
+    [tools]
+    elixir = "#{elixir_vsn}"
+    erlang = "#{otp_vsn}"
+    """
+  end
+
   defp readme(%{app: app, module: module, template: template, sup: sup?}) do
     run_cmd =
       if sup? do
@@ -391,6 +602,52 @@ defmodule Mix.Tasks.Raxol.New do
 
     - [Raxol Documentation](https://hexdocs.pm/raxol)
     - [The Elm Architecture](https://guide.elm-lang.org/architecture/)
+    """
+  end
+
+  defp ci_workflow(_bindings) do
+    """
+    name: CI
+
+    on:
+      push:
+        branches: [main, master]
+      pull_request:
+        branches: [main, master]
+
+    jobs:
+      test:
+        runs-on: ubuntu-latest
+
+        steps:
+          - uses: actions/checkout@v4
+
+          - name: Set up Elixir
+            uses: erlef/setup-beam@v1
+            with:
+              elixir-version: "1.17"
+              otp-version: "27"
+
+          - name: Restore dependencies cache
+            uses: actions/cache@v4
+            with:
+              path: deps
+              key: ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}
+              restore-keys: ${{ runner.os }}-mix-
+
+          - name: Install dependencies
+            run: mix deps.get
+
+          - name: Check formatting
+            run: mix format --check-formatted
+
+          - name: Compile with warnings as errors
+            run: mix compile --warnings-as-errors
+
+          - name: Run tests
+            run: mix test
+            env:
+              MIX_ENV: test
     """
   end
 
