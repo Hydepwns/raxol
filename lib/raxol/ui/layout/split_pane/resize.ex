@@ -45,7 +45,14 @@ defmodule Raxol.UI.Layout.SplitPane.Resize do
 
   Returns a ratio tuple with integer parts proportional to the drag position.
   """
-  def calculate_ratio(drag_pos, direction, origin, total_size, pane_count, min_size \\ 5) do
+  def calculate_ratio(
+        drag_pos,
+        direction,
+        origin,
+        total_size,
+        pane_count,
+        min_size \\ 5
+      ) do
     divider_space = max(0, pane_count - 1)
     usable = max(1, total_size - divider_space)
 
@@ -83,7 +90,12 @@ defmodule Raxol.UI.Layout.SplitPane.Resize do
     * `current_ratio` - Current ratio tuple
     * `step` - Adjustment step as float proportion (default 0.05)
   """
-  def handle_keyboard_resize(key_event, direction, current_ratio, step \\ @default_step) do
+  def handle_keyboard_resize(
+        key_event,
+        direction,
+        current_ratio,
+        step \\ @default_step
+      ) do
     case classify_key(key_event, direction) do
       :grow_first -> {:ok, adjust_ratio(current_ratio, step)}
       :shrink_first -> {:ok, adjust_ratio(current_ratio, -step)}
@@ -141,8 +153,12 @@ defmodule Raxol.UI.Layout.SplitPane.Resize do
 
   # -- Private --
 
-  defp classify_key(%{ctrl: true, key: :arrow_right}, :horizontal), do: :grow_first
-  defp classify_key(%{ctrl: true, key: :arrow_left}, :horizontal), do: :shrink_first
+  defp classify_key(%{ctrl: true, key: :arrow_right}, :horizontal),
+    do: :grow_first
+
+  defp classify_key(%{ctrl: true, key: :arrow_left}, :horizontal),
+    do: :shrink_first
+
   defp classify_key(%{ctrl: true, key: :arrow_down}, :vertical), do: :grow_first
   defp classify_key(%{ctrl: true, key: :arrow_up}, :vertical), do: :shrink_first
   defp classify_key(_, _), do: :ignore

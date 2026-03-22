@@ -33,7 +33,8 @@ defmodule Raxol.UI.Components.Display.Text do
   @spec init(keyword()) :: {:ok, t()}
   def init(props) do
     state = %{
-      id: Keyword.get(props, :id, "text-#{:erlang.unique_integer([:positive])}"),
+      id:
+        Keyword.get(props, :id, "text-#{:erlang.unique_integer([:positive])}"),
       content: Keyword.get(props, :content, ""),
       wrap: Keyword.get(props, :wrap, :none),
       align: Keyword.get(props, :align, :left),
@@ -79,7 +80,9 @@ defmodule Raxol.UI.Components.Display.Text do
     theme_style = Theme.component_style(theme, :text)
     style = Map.merge(theme_style, state.style || %{})
 
-    lines = process_content(state.content, state.width, state.wrap, state.truncate)
+    lines =
+      process_content(state.content, state.width, state.wrap, state.truncate)
+
     lines = align_lines(lines, state.width, state.align)
 
     case lines do
@@ -105,7 +108,9 @@ defmodule Raxol.UI.Components.Display.Text do
   # --- Content processing ---
 
   defp process_content(content, nil, _wrap, _truncate), do: [content]
-  defp process_content(content, _width, _wrap, _truncate) when content == "", do: [""]
+
+  defp process_content(content, _width, _wrap, _truncate) when content == "",
+    do: [""]
 
   defp process_content(content, width, :none, true) do
     [truncate_line(content, width)]
@@ -150,7 +155,9 @@ defmodule Raxol.UI.Components.Display.Text do
       total_pad = max(width - String.length(line), 0)
       left_pad = div(total_pad, 2)
       right_pad = total_pad - left_pad
-      String.duplicate(" ", left_pad) <> line <> String.duplicate(" ", right_pad)
+
+      String.duplicate(" ", left_pad) <>
+        line <> String.duplicate(" ", right_pad)
     end)
   end
 end

@@ -17,7 +17,13 @@ defmodule Raxol.Examples.Showcase do
   require Raxol.Core.Runtime.Log
 
   @tab_count 5
-  @tab_labels ["Text & Layout", "Form Inputs", "Data Display", "Interactive", "About"]
+  @tab_labels [
+    "Text & Layout",
+    "Form Inputs",
+    "Data Display",
+    "Interactive",
+    "About"
+  ]
 
   @sample_table_rows [
     ["1", "Elixir", "Functional", "1.16"],
@@ -46,7 +52,10 @@ defmodule Raxol.Examples.Showcase do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       # -- Tab switching: number keys --
@@ -236,7 +245,12 @@ defmodule Raxol.Examples.Showcase do
     column style: %{gap: 1} do
       [
         text("-- Counter --", style: [:bold]),
-        box style: %{border: :single, padding: 1, width: 24, justify_content: :center} do
+        box style: %{
+              border: :single,
+              padding: 1,
+              width: 24,
+              justify_content: :center
+            } do
           text("Count: #{model.counter}", style: [:bold])
         end,
         row style: %{gap: 1} do
@@ -262,7 +276,9 @@ defmodule Raxol.Examples.Showcase do
         text("Architecture: TEA (The Elm Architecture)"),
         text("Callbacks: init/1, update/2, view/1, subscribe/1"),
         text("Layout: Flexbox + CSS Grid engines"),
-        text("Widgets: text, box, button, checkbox, table, progress, list, modal"),
+        text(
+          "Widgets: text, box, button, checkbox, table, progress, list, modal"
+        ),
         text(""),
         text("-- Keyboard Reference --", style: [:bold]),
         text("  1-5       Switch sections"),
@@ -279,7 +295,10 @@ defmodule Raxol.Examples.Showcase do
 
   defp footer(%{tab: 1}), do: text("[Space] toggle  [1-5] sections  [q] quit")
   defp footer(%{tab: 2}), do: text("[j/k] navigate  [1-5] sections  [q] quit")
-  defp footer(%{tab: 3}), do: text("[+/-] count  [r] reset  [1-5] sections  [q] quit")
+
+  defp footer(%{tab: 3}),
+    do: text("[+/-] count  [r] reset  [1-5] sections  [q] quit")
+
   defp footer(_), do: text("[1-5] sections  [Tab] next  [q] quit")
 end
 

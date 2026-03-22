@@ -10,7 +10,6 @@ defmodule SubscriptionsExample do
   # Use the correct Application behaviour
   use Raxol.Core.Runtime.Application
 
-
   # Alias for subscriptions
   alias Raxol.Core.Runtime.Events.Subscription
   require Raxol.Core.Runtime.Log

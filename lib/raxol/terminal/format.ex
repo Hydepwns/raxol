@@ -71,7 +71,22 @@ defmodule Raxol.Terminal.Format do
   @doc """
   Creates a new formatting state with default values.
   """
-  @spec new() :: t()
+  @spec new() :: %__MODULE__{
+          current_format: %{
+            bold: false,
+            faint: false,
+            italic: false,
+            underline: false,
+            blink: false,
+            reverse: false,
+            conceal: false,
+            strikethrough: false,
+            foreground: nil,
+            background: nil,
+            font: 0
+          },
+          saved_format: nil
+        }
   def new do
     %__MODULE__{}
   end

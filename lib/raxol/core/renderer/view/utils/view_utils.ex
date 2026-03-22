@@ -73,31 +73,17 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     raise ArgumentError, "Padding must be a positive integer or tuple"
   end
 
-  @spec handle_invalid_spacing_type(String.t() | integer()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_invalid_spacing_type(term()) :: no_return()
   defp handle_invalid_spacing_type(invalid)
        when is_integer(invalid) and invalid < 0 do
     raise ArgumentError, "Padding must be a positive integer or tuple"
   end
 
-  @spec handle_invalid_spacing_type(String.t() | integer()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
   defp handle_invalid_spacing_type(invalid)
        when is_tuple(invalid) and tuple_size(invalid) == 3 do
     raise ArgumentError, "Invalid padding tuple length"
   end
 
-  @spec handle_invalid_spacing_type(String.t() | integer()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
   defp handle_invalid_spacing_type(_invalid) do
     raise ArgumentError, "Padding must be a positive integer or tuple"
   end
@@ -168,31 +154,17 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     raise ArgumentError, "Margin must be a positive integer or tuple"
   end
 
-  @spec handle_invalid_margin_type(String.t() | integer()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
+  @spec handle_invalid_margin_type(term()) :: no_return()
   defp handle_invalid_margin_type(invalid)
        when is_integer(invalid) and invalid < 0 do
     raise ArgumentError, "Margin must be a positive integer or tuple"
   end
 
-  @spec handle_invalid_margin_type(String.t() | integer()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
   defp handle_invalid_margin_type(invalid)
        when is_tuple(invalid) and tuple_size(invalid) == 3 do
     raise ArgumentError, "Invalid margin tuple length"
   end
 
-  @spec handle_invalid_margin_type(String.t() | integer()) ::
-          {:ok, any()}
-          | {:error, any()}
-          | {:reply, any(), any()}
-          | {:noreply, any()}
   defp handle_invalid_margin_type(_invalid) do
     raise ArgumentError, "Margin must be a positive integer or tuple"
   end

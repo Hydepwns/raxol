@@ -59,15 +59,7 @@ defmodule Raxol.Terminal.Emulator.Output do
             output_buffer: remaining_buffer
         }
 
-        # For compatibility, return empty commands list since parse_chunk doesn't return commands
         {:ok, final_emulator, []}
-
-      unexpected_result ->
-        Raxol.Core.Runtime.Log.error(
-          "[Output.process_buffer] Parser returned unexpected result: #{inspect(unexpected_result)}"
-        )
-
-        {:error, "Parser call failed: #{inspect(unexpected_result)}"}
     end
   end
 

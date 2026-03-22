@@ -156,7 +156,8 @@ defmodule Raxol.UI.Components.Input.TextInput do
     merged_style =
       Map.merge(state.theme[:input] || %{}, state.style[:input] || %{})
 
-    merged_style = Raxol.UI.FocusHelper.maybe_focus_style(widget_id, context, merged_style)
+    merged_style =
+      Raxol.UI.FocusHelper.maybe_focus_style(widget_id, context, merged_style)
 
     %{
       type: :text,

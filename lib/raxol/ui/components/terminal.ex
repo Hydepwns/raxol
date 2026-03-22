@@ -62,7 +62,12 @@ defmodule Raxol.UI.Components.Terminal do
   def update({:write, text}, state) do
     buffer = EmulatorLite.get_active_buffer(state.emulator)
     updated_buffer = write_text_to_buffer(buffer, text)
-    emulator = EmulatorLite.update_active_buffer(state.emulator, fn _buf -> updated_buffer end)
+
+    emulator =
+      EmulatorLite.update_active_buffer(state.emulator, fn _buf ->
+        updated_buffer
+      end)
+
     {%{state | emulator: emulator}, []}
   end
 
@@ -83,11 +88,20 @@ defmodule Raxol.UI.Components.Terminal do
     buffer = EmulatorLite.get_active_buffer(state.emulator)
     char = key_to_char(key)
     updated_buffer = write_text_to_buffer(buffer, char)
-    emulator = EmulatorLite.update_active_buffer(state.emulator, fn _buf -> updated_buffer end)
+
+    emulator =
+      EmulatorLite.update_active_buffer(state.emulator, fn _buf ->
+        updated_buffer
+      end)
+
     {%{state | emulator: emulator}, []}
   end
 
-  def handle_event(%{type: :resize, data: %{width: w, height: h}}, state, _context) do
+  def handle_event(
+        %{type: :resize, data: %{width: w, height: h}},
+        state,
+        _context
+      ) do
     emulator = EmulatorLite.resize(state.emulator, w, h)
     {%{state | emulator: emulator, width: w, height: h}, []}
   end

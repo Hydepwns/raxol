@@ -4,15 +4,15 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerTestHelper do
   """
 
   @doc "Creates a complex version requirements structure for testing."
-  @spec create_complex_version_requirements(term()) :: map()
+  @spec create_complex_version_requirements(term()) :: %{}
   def create_complex_version_requirements(_input), do: %{}
 
   @doc "Creates a plugin set for dependency tests."
-  @spec create_plugin_set(term()) :: map()
+  @spec create_plugin_set(term()) :: %{}
   def create_plugin_set(_input), do: %{}
 
   @doc "Creates a dependency chain for testing."
-  @spec create_dependency_chain(term()) :: list()
+  @spec create_dependency_chain(term()) :: []
   def create_dependency_chain(_input), do: []
 
   @doc "Measures the execution time of a function or operation."

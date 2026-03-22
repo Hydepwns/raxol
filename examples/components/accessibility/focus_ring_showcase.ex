@@ -12,8 +12,6 @@ defmodule Raxol.Examples.FocusRingShowcase do
   import Raxol.Core.Renderer.View, except: [view: 1]
   require Raxol.Core.Runtime.Log
 
-
-
   @animation_types [:none, :pulse, :blink, :fade, :glow, :bounce]
   @component_types [:button, :text_input, :checkbox]
   @component_states [:normal, :active, :disabled]

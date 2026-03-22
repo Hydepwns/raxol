@@ -15,7 +15,6 @@
 defmodule TodoExample do
   use Raxol.Core.Runtime.Application
 
-
   require Raxol.Core.Runtime.Log
 
   @impl true

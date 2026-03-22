@@ -13,8 +13,6 @@ defmodule Raxol.Examples.SelectListShowcase do
   import Raxol.Core.Renderer.View, except: [view: 1]
   require Raxol.Core.Runtime.Log
 
-
-
   @impl Raxol.UI.Components.Base.Component
   def init(_props) do
     %{

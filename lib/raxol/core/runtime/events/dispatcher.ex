@@ -552,7 +552,11 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       case result do
         {:ok, new_focus_id} ->
           {:handled,
-           process_app_update(state, {:focus_changed, old_focus, new_focus_id}, nil)}
+           process_app_update(
+             state,
+             {:focus_changed, old_focus, new_focus_id},
+             nil
+           )}
 
         {:error, _} ->
           :pass

@@ -35,7 +35,8 @@ defmodule Raxol.Core.Focus do
 
   Elements are sorted by `tab_index`; the lowest gets initial focus.
   """
-  @spec setup_focus([{binary(), integer()} | {binary(), integer(), keyword()}]) :: :ok
+  @spec setup_focus([{binary(), integer()} | {binary(), integer(), keyword()}]) ::
+          :ok
   def setup_focus(elements) when is_list(elements) do
     FocusManager.ensure_started()
 

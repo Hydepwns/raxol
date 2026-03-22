@@ -56,7 +56,11 @@ defmodule Raxol.UI.Layout.SplitPane do
   Returns a list of positioned elements with absolute coordinates, including
   divider elements between each pane.
   """
-  def process(%{type: :split_pane, attrs: attrs, children: children}, space, acc) do
+  def process(
+        %{type: :split_pane, attrs: attrs, children: children},
+        space,
+        acc
+      ) do
     children = normalize_children(children)
     count = length(children)
 

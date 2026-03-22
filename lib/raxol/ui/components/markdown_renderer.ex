@@ -10,7 +10,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
   alias Raxol.View.Components
 
-  @spec init(map()) :: {:ok, map()}
+  @spec init(map()) :: {:ok, %{markdown_text: String.t(), width: non_neg_integer()}}
   @impl true
   def init(props) do
     state =
@@ -69,20 +69,26 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
   defp ast_node_to_elements({"h1", _attrs, children, _meta}, width) do
     text = extract_text(children)
+
     [
       Components.text(content: ""),
       Components.text(content: "# " <> text, style: %{bold: true, fg: :cyan}),
-      Components.text(content: String.duplicate("=", min(String.length(text) + 2, width))),
+      Components.text(
+        content: String.duplicate("=", min(String.length(text) + 2, width))
+      ),
       Components.text(content: "")
     ]
   end
 
   defp ast_node_to_elements({"h2", _attrs, children, _meta}, width) do
     text = extract_text(children)
+
     [
       Components.text(content: ""),
       Components.text(content: "## " <> text, style: %{bold: true, fg: :cyan}),
-      Components.text(content: String.duplicate("-", min(String.length(text) + 3, width))),
+      Components.text(
+        content: String.duplicate("-", min(String.length(text) + 3, width))
+      ),
       Components.text(content: "")
     ]
   end
@@ -91,6 +97,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
        when level in ["3", "4", "5", "6"] do
     text = extract_text(children)
     prefix = String.duplicate("#", String.to_integer(level)) <> " "
+
     [
       Components.text(content: ""),
       Components.text(content: prefix <> text, style: %{bold: true, fg: :cyan}),
@@ -104,13 +111,16 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
   end
 
   defp ast_node_to_elements({"ul", _attrs, children, _meta}, width) do
-    items = Enum.flat_map(children, fn
-      {"li", _, li_children, _} ->
-        text = extract_inline(li_children)
-        [Components.text(content: "  * " <> text)]
-      other ->
-        ast_node_to_elements(other, width)
-    end)
+    items =
+      Enum.flat_map(children, fn
+        {"li", _, li_children, _} ->
+          text = extract_inline(li_children)
+          [Components.text(content: "  * " <> text)]
+
+        other ->
+          ast_node_to_elements(other, width)
+      end)
+
     items ++ [Components.text(content: "")]
   end
 
@@ -122,29 +132,41 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
         {{"li", _, li_children, _}, idx} ->
           text = extract_inline(li_children)
           [Components.text(content: "  #{idx}. " <> text)]
+
         {other, _idx} ->
           ast_node_to_elements(other, width)
       end)
+
     items ++ [Components.text(content: "")]
   end
 
   defp ast_node_to_elements({"pre", _attrs, children, _meta}, _width) do
     code_text = extract_code_text(children)
     lines = String.split(code_text, "\n")
-    code_elements = Enum.map(lines, fn line ->
-      Components.text(content: "  " <> line, style: %{fg: :yellow})
-    end)
-    [Components.text(content: "")] ++ code_elements ++ [Components.text(content: "")]
+
+    code_elements =
+      Enum.map(lines, fn line ->
+        Components.text(content: "  " <> line, style: %{fg: :yellow})
+      end)
+
+    [Components.text(content: "")] ++
+      code_elements ++ [Components.text(content: "")]
   end
 
   defp ast_node_to_elements({"blockquote", _attrs, children, _meta}, width) do
     inner = Enum.flat_map(children, &ast_node_to_elements(&1, width))
+
     Enum.map(inner, fn el ->
       content = el[:content] || ""
+
       if content == "" do
         el
       else
-        %{el | content: "| " <> content, style: Map.merge(el[:style] || %{}, %{fg: :green})}
+        %{
+          el
+          | content: "| " <> content,
+            style: Map.merge(el[:style] || %{}, %{fg: :green})
+        }
       end
     end)
   end
@@ -152,7 +174,10 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
   defp ast_node_to_elements({"hr", _attrs, _children, _meta}, width) do
     [
       Components.text(content: ""),
-      Components.text(content: String.duplicate("-", min(40, width)), style: %{fg: :white}),
+      Components.text(
+        content: String.duplicate("-", min(40, width)),
+        style: %{fg: :white}
+      ),
       Components.text(content: "")
     ]
   end
@@ -175,14 +200,26 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
   defp extract_inline(children) when is_list(children) do
     Enum.map_join(children, "", fn
-      text when is_binary(text) -> text
-      {"strong", _, inner, _} -> "*" <> extract_text(inner) <> "*"
-      {"em", _, inner, _} -> "_" <> extract_text(inner) <> "_"
-      {"code", _, inner, _} -> "`" <> extract_text(inner) <> "`"
+      text when is_binary(text) ->
+        text
+
+      {"strong", _, inner, _} ->
+        "*" <> extract_text(inner) <> "*"
+
+      {"em", _, inner, _} ->
+        "_" <> extract_text(inner) <> "_"
+
+      {"code", _, inner, _} ->
+        "`" <> extract_text(inner) <> "`"
+
       {"a", attrs, inner, _} ->
-        href = attrs |> Enum.find_value("", fn {k, v} -> if k == "href", do: v end)
+        href =
+          attrs |> Enum.find_value("", fn {k, v} -> if k == "href", do: v end)
+
         extract_text(inner) <> " (" <> href <> ")"
-      {_tag, _, inner, _} -> extract_inline(inner)
+
+      {_tag, _, inner, _} ->
+        extract_inline(inner)
     end)
   end
 
@@ -211,10 +248,16 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
   # Fenced code block
   defp parse_blocks(["```" <> _ | rest], width, acc) do
     {code_lines, remaining} = take_until_fence(rest, [])
-    code_elements = Enum.map(code_lines, fn line ->
-      Components.text(content: "  " <> line, style: %{fg: :yellow})
-    end)
-    new_acc = [Components.text(content: "") | code_elements] ++ [Components.text(content: "") | acc]
+
+    code_elements =
+      Enum.map(code_lines, fn line ->
+        Components.text(content: "  " <> line, style: %{fg: :yellow})
+      end)
+
+    new_acc =
+      [Components.text(content: "") | code_elements] ++
+        [Components.text(content: "") | acc]
+
     parse_blocks(remaining, width, new_acc)
   end
 
@@ -225,23 +268,38 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
   end
 
   defp parse_line("# " <> text, _width) do
-    Components.text(content: "# " <> strip_inline(text), style: %{bold: true, fg: :cyan})
+    Components.text(
+      content: "# " <> strip_inline(text),
+      style: %{bold: true, fg: :cyan}
+    )
   end
 
   defp parse_line("## " <> text, _width) do
-    Components.text(content: "## " <> strip_inline(text), style: %{bold: true, fg: :cyan})
+    Components.text(
+      content: "## " <> strip_inline(text),
+      style: %{bold: true, fg: :cyan}
+    )
   end
 
   defp parse_line("### " <> text, _width) do
-    Components.text(content: "### " <> strip_inline(text), style: %{bold: true, fg: :cyan})
+    Components.text(
+      content: "### " <> strip_inline(text),
+      style: %{bold: true, fg: :cyan}
+    )
   end
 
   defp parse_line("---" <> _, width) do
-    Components.text(content: String.duplicate("-", min(40, width)), style: %{fg: :white})
+    Components.text(
+      content: String.duplicate("-", min(40, width)),
+      style: %{fg: :white}
+    )
   end
 
   defp parse_line("***" <> _, width) do
-    Components.text(content: String.duplicate("-", min(40, width)), style: %{fg: :white})
+    Components.text(
+      content: String.duplicate("-", min(40, width)),
+      style: %{fg: :white}
+    )
   end
 
   defp parse_line("> " <> text, _width) do
@@ -261,6 +319,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
     case Regex.run(~r/^(\d+)\.\s+(.*)/, line) do
       [_, num, text] ->
         Components.text(content: "  #{num}. " <> strip_inline(text))
+
       _ ->
         Components.text(content: strip_inline(line))
     end
@@ -277,5 +336,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
   defp take_until_fence([], acc), do: {Enum.reverse(acc), []}
   defp take_until_fence(["```" <> _ | rest], acc), do: {Enum.reverse(acc), rest}
-  defp take_until_fence([line | rest], acc), do: take_until_fence(rest, [line | acc])
+
+  defp take_until_fence([line | rest], acc),
+    do: take_until_fence(rest, [line | acc])
 end

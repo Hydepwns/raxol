@@ -33,7 +33,12 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
 
       row > 0 ->
         prev_line = Enum.at(state.lines, row - 1, "")
-        %{state | cursor_pos: {row - 1, String.length(prev_line)}, desired_col: nil}
+
+        %{
+          state
+          | cursor_pos: {row - 1, String.length(prev_line)},
+            desired_col: nil
+        }
 
       true ->
         state
@@ -85,7 +90,12 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     case find_word_boundary_left(before_cursor) do
       0 when row > 0 ->
         prev_line = Enum.at(state.lines, row - 1, "")
-        %{state | cursor_pos: {row - 1, String.length(prev_line)}, desired_col: nil}
+
+        %{
+          state
+          | cursor_pos: {row - 1, String.length(prev_line)},
+            desired_col: nil
+        }
 
       new_col ->
         %{state | cursor_pos: {row, new_col}, desired_col: nil}

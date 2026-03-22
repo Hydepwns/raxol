@@ -48,7 +48,10 @@ defmodule SplitPaneDemo do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       # Keyboard resize for outer split (horizontal)
@@ -68,9 +71,14 @@ defmodule SplitPaneDemo do
         end
 
       # Mouse press - check for divider hit
-      %Raxol.Core.Events.Event{type: :mouse, data: %{action: :press, x: mx, y: my}} ->
+      %Raxol.Core.Events.Event{
+        type: :mouse,
+        data: %{action: :press, x: mx, y: my}
+      } ->
         space = %{x: 0, y: 0, width: model.width, height: model.height}
-        outer_dividers = Resize.divider_positions(:horizontal, model.outer_ratio, space)
+
+        outer_dividers =
+          Resize.divider_positions(:horizontal, model.outer_ratio, space)
 
         case Resize.check_divider_hit({mx, my}, outer_dividers, :horizontal) do
           {:hit, _idx} ->
@@ -78,10 +86,29 @@ defmodule SplitPaneDemo do
 
           :miss ->
             # Check inner dividers (in the right pane area)
-            outer_sizes = SplitPane.distribute_space(:horizontal, Tuple.to_list(model.outer_ratio), space, 5)
+            outer_sizes =
+              SplitPane.distribute_space(
+                :horizontal,
+                Tuple.to_list(model.outer_ratio),
+                space,
+                5
+              )
+
             left_width = hd(outer_sizes)
-            inner_space = %{x: left_width + 1, y: 0, width: List.last(outer_sizes), height: model.height}
-            inner_dividers = Resize.divider_positions(:vertical, model.inner_ratio, inner_space)
+
+            inner_space = %{
+              x: left_width + 1,
+              y: 0,
+              width: List.last(outer_sizes),
+              height: model.height
+            }
+
+            inner_dividers =
+              Resize.divider_positions(
+                :vertical,
+                model.inner_ratio,
+                inner_space
+              )
 
             case Resize.check_divider_hit({mx, my}, inner_dividers, :vertical) do
               {:hit, _idx} ->
@@ -93,22 +120,45 @@ defmodule SplitPaneDemo do
         end
 
       # Mouse drag - resize if dragging
-      %Raxol.Core.Events.Event{type: :mouse, data: %{action: :drag, x: mx, y: my}} ->
+      %Raxol.Core.Events.Event{
+        type: :mouse,
+        data: %{action: :drag, x: mx, y: my}
+      } ->
         case model.dragging do
           {:outer, _start} ->
             space = %{x: 0, y: 0, width: model.width, height: model.height}
-            new_ratio = Resize.calculate_ratio({mx, my}, :horizontal, {0, 0}, model.width, 2)
+
+            new_ratio =
+              Resize.calculate_ratio(
+                {mx, my},
+                :horizontal,
+                {0, 0},
+                model.width,
+                2
+              )
+
             {%{model | outer_ratio: new_ratio}, []}
 
           {:inner, _start} ->
-            outer_sizes = SplitPane.distribute_space(
-              :horizontal,
-              Tuple.to_list(model.outer_ratio),
-              %{x: 0, y: 0, width: model.width, height: model.height},
-              5
-            )
+            outer_sizes =
+              SplitPane.distribute_space(
+                :horizontal,
+                Tuple.to_list(model.outer_ratio),
+                %{x: 0, y: 0, width: model.width, height: model.height},
+                5
+              )
+
             left_width = hd(outer_sizes)
-            new_ratio = Resize.calculate_ratio({mx, my}, :vertical, {left_width + 1, 0}, model.height, 2)
+
+            new_ratio =
+              Resize.calculate_ratio(
+                {mx, my},
+                :vertical,
+                {left_width + 1, 0},
+                model.height,
+                2
+              )
+
             {%{model | inner_ratio: new_ratio}, []}
 
           nil ->
@@ -130,47 +180,51 @@ defmodule SplitPaneDemo do
 
   @impl true
   def view(model) do
-    sidebar_content = column style: %{padding: 1} do
-      [
-        text("=== Sidebar ===", style: [:bold]),
-        text(""),
-        text("Outer: #{inspect(model.outer_ratio)}"),
-        text("Inner: #{inspect(model.inner_ratio)}"),
-        text(""),
-        text("Drag dividers"),
-        text("to resize."),
-        text(""),
-        text("Ctrl+Arrows"),
-        text("also work."),
-        text(""),
-        text("q to quit")
-      ]
-    end
+    sidebar_content =
+      column style: %{padding: 1} do
+        [
+          text("=== Sidebar ===", style: [:bold]),
+          text(""),
+          text("Outer: #{inspect(model.outer_ratio)}"),
+          text("Inner: #{inspect(model.inner_ratio)}"),
+          text(""),
+          text("Drag dividers"),
+          text("to resize."),
+          text(""),
+          text("Ctrl+Arrows"),
+          text("also work."),
+          text(""),
+          text("q to quit")
+        ]
+      end
 
-    main_content = column style: %{padding: 1} do
-      [
-        text("=== Content ===", style: [:bold]),
-        text(""),
-        text("Terminal: #{model.width}x#{model.height}"),
-        text("Dragging: #{inspect(model.dragging)}"),
-        text(""),
-        text("This is the main content area."),
-        text("It resizes when you drag the"),
-        text("dividers or use Ctrl+arrows.")
-      ]
-    end
+    main_content =
+      column style: %{padding: 1} do
+        [
+          text("=== Content ===", style: [:bold]),
+          text(""),
+          text("Terminal: #{model.width}x#{model.height}"),
+          text("Dragging: #{inspect(model.dragging)}"),
+          text(""),
+          text("This is the main content area."),
+          text("It resizes when you drag the"),
+          text("dividers or use Ctrl+arrows.")
+        ]
+      end
 
-    status_content = column style: %{padding: 0} do
-      [
-        text("-- Status: Split Pane Demo | #{model.width}x#{model.height} --")
-      ]
-    end
+    status_content =
+      column style: %{padding: 0} do
+        [
+          text("-- Status: Split Pane Demo | #{model.width}x#{model.height} --")
+        ]
+      end
 
-    inner_split = SplitPane.new(
-      direction: :vertical,
-      ratio: model.inner_ratio,
-      children: [main_content, status_content]
-    )
+    inner_split =
+      SplitPane.new(
+        direction: :vertical,
+        ratio: model.inner_ratio,
+        children: [main_content, status_content]
+      )
 
     SplitPane.new(
       direction: :horizontal,

@@ -143,7 +143,10 @@ defmodule Raxol.Core.Runtime.Application do
       @behaviour Raxol.Core.Runtime.Application
 
       import Raxol.Core.Renderer.View, except: [view: 1]
-      import Raxol.Core.Focus, only: [setup_focus: 1, focused?: 1, current_focus: 0]
+
+      import Raxol.Core.Focus,
+        only: [setup_focus: 1, focused?: 1, current_focus: 0]
+
       alias Raxol.Core.Events.Event
       alias Raxol.Core.Runtime.Command
       alias Raxol.Core.Runtime.Subscription

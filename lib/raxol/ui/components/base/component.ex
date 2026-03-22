@@ -100,7 +100,13 @@ defmodule Raxol.UI.Components.Base.Component do
   The context map provides additional event details or UI state.
   Returns the potentially modified state and any commands to execute.
   """
-  @callback handle_event(event(), state(), context()) :: {state(), [command()]}
+  @callback handle_event(event(), state(), context()) ::
+              {state(), [command()]}
+              | {:ok, state()}
+              | {:update, state(), [command()]}
+              | {:noreply, state(), term()}
+              | {:handled, state()}
+              | :passthrough
 
   @doc """
   Called when the component is being removed from the UI.

@@ -199,7 +199,15 @@ defmodule Raxol.Core.Runtime.Plugins.Security.BeamAnalyzer do
 
   Returns a map of capability flags indicating what the module can do.
   """
-  @spec analyze_module(module()) :: analysis_result()
+  @spec analyze_module(module()) ::
+          {:ok, %{file_access: boolean(), network_access: boolean(), code_injection: boolean(), system_commands: boolean()}}
+          | {:error,
+             :no_abstract_code
+             | :unknown_beam_format
+             | {:beam_lib_error,
+                {:not_a_beam_file, [any()]}
+                | {:file_error | :invalid_beam_file | :invalid_chunk | :key_missing_or_invalid | :missing_backend | :missing_chunk | :unknown_chunk, [any()], atom() | nonempty_list() | non_neg_integer()}
+                | {:chunk_too_big, [any()], nonempty_list(), non_neg_integer(), non_neg_integer()}}}
   def analyze_module(module) when is_atom(module) do
     with {:ok, forms} <- get_abstract_code(module) do
       capabilities = analyze_forms(forms)
