@@ -5,7 +5,6 @@ defmodule Raxol.Property.UIComponentTest do
   alias Raxol.UI.Components.Input.Button
   alias Raxol.UI.Components.Input.TextInput
   alias Raxol.UI.Layout.{Flexbox, Grid}
-  alias Raxol.UI.State.Store, as: Store
 
   describe "Button component properties" do
     property "button initializes with any valid label" do
@@ -201,95 +200,9 @@ defmodule Raxol.Property.UIComponentTest do
     end
   end
 
-  describe "State Store properties" do
-    @tag skip: "Store module not implemented (no Store.start_link/1 or Store.update/3)"
-    property "store updates are atomic" do
-      check all(
-              initial <- map_of(atom(:alphanumeric), integer()),
-              updates <- list_of(store_update_generator(), max_length: 100),
-              max_runs: 200
-            ) do
-        # Use unique store name to avoid conflicts
-        store_name =
-          String.to_atom("store_#{System.unique_integer([:positive])}")
-
-        {:ok, store} =
-          Store.start_link(name: store_name, initial_state: initial)
-
-        # Apply all updates
-        Enum.each(updates, fn {key, value} ->
-          Store.update(store, key, value)
-        end)
-
-        # Final state should reflect all updates
-        final_state = Store.get_state(store)
-
-        Enum.each(updates, fn {key, value} ->
-          assert Map.get(final_state, key) == value
-        end)
-      end
-    end
-
-    @tag skip: "Store module not implemented (no Store.start_link/1 or Store.subscribe/2)"
-    property "store subscriptions receive all updates" do
-      check all(
-              updates <-
-                list_of(store_update_generator(), min_length: 1, max_length: 50),
-              max_runs: 200
-            ) do
-        # Use unique store name to avoid conflicts
-        store_name =
-          String.to_atom("store_#{System.unique_integer([:positive])}")
-
-        {:ok, store} = Store.start_link(name: store_name)
-        received = :ets.new(:received, [:set, :public])
-
-        # Subscribe to updates
-        Store.subscribe(store, fn state ->
-          :ets.insert(received, {:update, state})
-        end)
-
-        # Apply updates
-        Enum.each(updates, fn {key, value} ->
-          Store.update(store, key, value)
-        end)
-
-        # Should have received all updates
-        all_received = :ets.tab2list(received)
-        assert length(all_received) == length(updates)
-      end
-    end
-
-    @tag skip: "Store module not implemented (no Store.start_link/1 or Store.update/3)"
-    property "store handles concurrent updates safely" do
-      check all(
-              update_count <- integer(10..100),
-              max_runs: 100
-            ) do
-        # Use unique store name to avoid conflicts
-        store_name =
-          String.to_atom("store_#{System.unique_integer([:positive])}")
-
-        {:ok, store} =
-          Store.start_link(name: store_name, initial_state: %{counter: 0})
-
-        # Spawn concurrent updaters
-        tasks =
-          for _i <- 1..update_count do
-            Task.async(fn ->
-              Store.update(store, :counter, fn count -> count + 1 end)
-            end)
-          end
-
-        # Wait for all updates
-        Task.await_many(tasks)
-
-        # Counter should equal update count
-        final_state = Store.get_state(store)
-        assert final_state.counter == update_count
-      end
-    end
-  end
+  # State Store property tests removed -- Store module is not planned.
+  # If a Store GenServer is added in the future, re-add property tests for
+  # atomic updates, subscriptions, and concurrent safety.
 
   describe "Component composition properties" do
     property "nested components maintain hierarchy" do
@@ -350,14 +263,6 @@ defmodule Raxol.Property.UIComponentTest do
     end
   end
 
-  defp store_update_generator do
-    gen all(
-          key <- atom(:alphanumeric),
-          value <- one_of([integer(), string(:alphanumeric), boolean()])
-        ) do
-      {key, value}
-    end
-  end
 
   # Helper functions
 

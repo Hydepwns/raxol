@@ -457,4 +457,29 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   defp set_keypad_numeric_mode(buffer) do
     {:ok, %{buffer | keypad_mode: :numeric}}
   end
+
+  @doc """
+  Processes terminal state escape sequences.
+  Handles cursor visibility (?25h/l), alternate screen (?47h/l, ?1049h/l).
+  """
+  @spec process_terminal_state(String.t(), ScreenBuffer.t()) :: ScreenBuffer.t()
+  def process_terminal_state("?25h", buffer),
+    do: %{buffer | cursor_visible: true}
+
+  def process_terminal_state("?25l", buffer),
+    do: %{buffer | cursor_visible: false}
+
+  def process_terminal_state("?47h", buffer),
+    do: %{buffer | alternate_screen: true}
+
+  def process_terminal_state("?47l", buffer),
+    do: %{buffer | alternate_screen: false}
+
+  def process_terminal_state("?1049h", buffer),
+    do: %{buffer | alternate_screen: true}
+
+  def process_terminal_state("?1049l", buffer),
+    do: %{buffer | alternate_screen: false}
+
+  def process_terminal_state(_sequence, buffer), do: buffer
 end

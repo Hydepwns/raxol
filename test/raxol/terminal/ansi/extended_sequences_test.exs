@@ -80,7 +80,6 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
   end
 
   describe "process_unicode/2" do
-    @tag skip: "process_unicode returns different struct than expected"
     test ~c"handles valid Unicode characters" do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_unicode("あ", buffer)
@@ -95,7 +94,6 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
   end
 
   describe "process_terminal_state/2" do
-    @tag skip: "process_terminal_state/2 not implemented"
     test ~c"handles cursor visibility" do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_terminal_state("?25h", buffer)
@@ -105,7 +103,6 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
       assert buffer.cursor_visible == false
     end
 
-    @tag skip: "process_terminal_state/2 not implemented"
     test ~c"handles alternate screen" do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_terminal_state("?47h", buffer)
@@ -115,7 +112,6 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
       assert buffer.alternate_screen == false
     end
 
-    @tag skip: "process_terminal_state/2 not implemented"
     test ~c"handles alternate screen buffer" do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_terminal_state("?1049h", buffer)
@@ -125,7 +121,6 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
       assert buffer.alternate_screen == false
     end
 
-    @tag skip: "process_terminal_state/2 not implemented"
     test ~c"handles unknown state" do
       buffer = ScreenBuffer.new(80, 24)
       result = ExtendedSequences.process_terminal_state("?999h", buffer)

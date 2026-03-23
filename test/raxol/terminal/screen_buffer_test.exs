@@ -234,7 +234,6 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert buffer.selection == {1, 1, 3, 2}
     end
 
-    @tag skip: "get_selection returns tuple, not text string"
     test ~c"gets selected text" do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.write_string(buffer, 0, 0, "Hello")
@@ -245,7 +244,6 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert ScreenBuffer.get_selection(buffer) == "Hello\nWorld"
     end
 
-    @tag skip: "in_selection? not implemented"
     test ~c"checks if position is in selection" do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.start_selection(buffer, 1, 1)

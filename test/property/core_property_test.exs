@@ -53,27 +53,30 @@ defmodule Raxol.Property.CoreTest do
       end
     end
 
-    @tag skip: "timing-based assertion too sensitive to system load variance"
-    @tag :flaky
-    property "parser performance scales linearly" do
-      check all size <- integer(10..1000),
-                max_runs: 100 do
-        # Generate input of specific size
-        input = String.duplicate("a", size)
+    property "parser performance scales sub-quadratically" do
+      check all size <- integer(100..1000),
+                max_runs: 50 do
+        small_input = String.duplicate("a", 10)
+        large_input = String.duplicate("a", size)
 
-        # Measure parsing time
-        {time, result} = :timer.tc(fn -> Parser.parse(input) end)
+        # Warm up
+        _ = Parser.parse(small_input)
 
-        # Should complete and return a list
+        # Measure baseline (10 chars)
+        {base_time, _} = :timer.tc(fn -> Parser.parse(small_input) end)
+
+        # Measure scaled input
+        {scaled_time, result} = :timer.tc(fn -> Parser.parse(large_input) end)
+
         assert is_list(result)
 
-        # Time should scale roughly linearly (with some tolerance)
-        # Adjusted expectation based on current parser performance characteristics
-        # and system variance
-        # 800 microseconds per char as upper bound
-        # (allowing for test environment overhead)
-        expected_max = size * 800
-        assert time < expected_max
+        # If truly quadratic, ratio would be (size/10)^2
+        # Allow up to 5x the linear expectation to account for variance
+        scale_factor = size / 10
+        max_ratio = scale_factor * 5
+        # Guard against near-zero base_time
+        ratio = if base_time > 0, do: scaled_time / base_time, else: 1.0
+        assert ratio < max_ratio
       end
     end
   end

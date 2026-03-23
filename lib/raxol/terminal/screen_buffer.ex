@@ -657,7 +657,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
     end
   end
 
-  def get_selection(buffer), do: buffer.selection
+  def get_selection(buffer), do: get_selected_text(buffer)
 
   def in_selection?(buffer, x, y), do: Selection.selected?(buffer, x, y)
 
