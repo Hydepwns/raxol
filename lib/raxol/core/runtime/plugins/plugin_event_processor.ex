@@ -321,39 +321,34 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
   def filter_through_plugin(plugin_id, event, plugins, metadata, plugin_states) do
     with {:ok, module} <- get_plugin_module(plugins, plugin_id),
          {:ok, _} <- validate_plugin_enabled(metadata, plugin_id),
-         {:ok, plugin_state} <- get_plugin_state(plugin_states, plugin_id) do
-      case function_exported?(module, :filter_event, 2) do
-        true ->
-          # Run filter in isolation
-          case PluginSupervisor.run_plugin_task(
-                 plugin_id,
-                 fn ->
-                   module.filter_event(event, plugin_state)
-                 end,
-                 timeout: 1_000
-               ) do
-            {:ok, {:ok, filtered}} ->
-              {:ok, filtered}
-
-            {:ok, :halt} ->
-              :halt
-
-            {:ok, {:error, reason}} ->
-              {:error, reason}
-
-            {:error, reason} ->
-              log_filter_error(plugin_id, event, reason)
-              # Pass through on error
-              {:ok, event}
-          end
-
-        false ->
-          # Plugin doesn't implement filter_event, pass through
-          {:ok, event}
-      end
+         {:ok, plugin_state} <- get_plugin_state(plugin_states, plugin_id),
+         true <- function_exported?(module, :filter_event, 2) do
+      run_filter(plugin_id, module, event, plugin_state)
     else
+      false -> {:ok, event}
       {:error, :plugin_disabled} -> {:ok, event}
       {:error, _} = error -> error
+    end
+  end
+
+  defp run_filter(plugin_id, module, event, plugin_state) do
+    case PluginSupervisor.run_plugin_task(
+           plugin_id,
+           fn -> module.filter_event(event, plugin_state) end,
+           timeout: 1_000
+         ) do
+      {:ok, {:ok, filtered}} ->
+        {:ok, filtered}
+
+      {:ok, :halt} ->
+        :halt
+
+      {:ok, {:error, reason}} ->
+        {:error, reason}
+
+      {:error, reason} ->
+        log_filter_error(plugin_id, event, reason)
+        {:ok, event}
     end
   end
 

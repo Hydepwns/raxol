@@ -251,35 +251,20 @@ defmodule Raxol.UI.State.Store do
     # Get current value, apply function, then update
     current_value = get_state(path_list, store)
 
-    # Safely handle arithmetic operations using functional error handling
     new_value =
       case Raxol.Core.ErrorHandling.safe_call(fn -> fun.(current_value) end) do
         {:ok, result} ->
           result
 
         {:error, %ArithmeticError{}} ->
-          case current_value do
-            nil ->
-              Raxol.Core.ErrorHandling.safe_call_with_default(
-                fn -> fun.(0) end,
-                0
-              )
+          fallback = if is_number(current_value), do: current_value, else: 0
 
-            n when is_number(n) ->
-              Raxol.Core.ErrorHandling.safe_call_with_default(
-                fn -> fun.(n) end,
-                n
-              )
-
-            _ ->
-              Raxol.Core.ErrorHandling.safe_call_with_default(
-                fn -> fun.(0) end,
-                0
-              )
-          end
+          Raxol.Core.ErrorHandling.safe_call_with_default(
+            fn -> fun.(fallback) end,
+            fallback
+          )
 
         {:error, _} ->
-          # Fallback to original value on any other error
           current_value
       end
 

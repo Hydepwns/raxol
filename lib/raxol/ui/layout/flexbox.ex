@@ -532,34 +532,12 @@ defmodule Raxol.UI.Layout.Flexbox do
         gap_size
       )
 
-    start_coord =
-      case main_axis do
-        :horizontal -> space.x + start_pos
-        :vertical -> space.y + start_pos
-      end
+    start_coord = get_coord(space, main_axis) + start_pos
 
     {_, positioned} =
       Enum.reduce(sized_children, {start_coord, []}, fn {child, dims, flex},
                                                         {current_pos, acc} ->
-        child_space =
-          case main_axis do
-            :horizontal ->
-              %{
-                x: current_pos,
-                y: space.y,
-                width: dims.width,
-                height: dims.height
-              }
-
-            :vertical ->
-              %{
-                x: space.x,
-                y: current_pos,
-                width: dims.width,
-                height: dims.height
-              }
-          end
-
+        child_space = build_child_space(space, dims, main_axis, current_pos)
         next_pos = current_pos + get_dimension(dims, main_axis) + item_gap
         {next_pos, [{child, child_space, flex} | acc]}
       end)
@@ -568,52 +546,44 @@ defmodule Raxol.UI.Layout.Flexbox do
   end
 
   defp position_cross_axis(positioned_children, space, flex_props, cross_axis) do
-    _max_cross_size = get_dimension(space, cross_axis)
-
     Enum.map(positioned_children, fn {child, child_space, flex} ->
-      # Determine alignment for this item
       alignment = flex.align_self || flex_props.align_items
-
-      # Calculate cross axis position
-      new_child_space =
-        case {cross_axis, alignment} do
-          {:horizontal, :flex_start} ->
-            %{child_space | x: space.x}
-
-          {:horizontal, :flex_end} ->
-            %{child_space | x: space.x + space.width - child_space.width}
-
-          {:horizontal, :center} ->
-            %{
-              child_space
-              | x: space.x + div(space.width - child_space.width, 2)
-            }
-
-          {:horizontal, :stretch} ->
-            %{child_space | x: space.x, width: space.width}
-
-          {:vertical, :flex_start} ->
-            %{child_space | y: space.y}
-
-          {:vertical, :flex_end} ->
-            %{child_space | y: space.y + space.height - child_space.height}
-
-          {:vertical, :center} ->
-            %{
-              child_space
-              | y: space.y + div(space.height - child_space.height, 2)
-            }
-
-          {:vertical, :stretch} ->
-            %{child_space | y: space.y, height: space.height}
-
-          _ ->
-            child_space
-        end
-
+      new_child_space = align_cross(child_space, space, cross_axis, alignment)
       {child, new_child_space}
     end)
   end
+
+  defp align_cross(child_space, space, cross_axis, alignment) do
+    origin = get_coord(space, cross_axis)
+    total = get_dimension(space, cross_axis)
+    child_size = get_dimension(child_space, cross_axis)
+
+    case alignment do
+      :flex_start ->
+        set_cross_coord(child_space, cross_axis, origin)
+
+      :flex_end ->
+        set_cross_coord(child_space, cross_axis, origin + total - child_size)
+
+      :center ->
+        set_cross_coord(
+          child_space,
+          cross_axis,
+          origin + div(total - child_size, 2)
+        )
+
+      :stretch ->
+        child_space
+        |> set_cross_coord(cross_axis, origin)
+        |> set_cross_dimension(cross_axis, total)
+
+      _ ->
+        child_space
+    end
+  end
+
+  defp set_cross_dimension(space, :horizontal, val), do: %{space | width: val}
+  defp set_cross_dimension(space, :vertical, val), do: %{space | height: val}
 
   defp calculate_justify_positioning(
          :flex_start,
@@ -757,12 +727,8 @@ defmodule Raxol.UI.Layout.Flexbox do
        ) do
     line_heights =
       Enum.map(lines_with_layout, fn line ->
-        Enum.reduce(line, 0, fn
-          {_child, child_space, _flex}, acc ->
-            max(acc, get_dimension(child_space, cross_axis))
-
-          {_child, child_space}, acc ->
-            max(acc, get_dimension(child_space, cross_axis))
+        Enum.reduce(line, 0, fn item, acc ->
+          max(acc, get_dimension(item_space(item), cross_axis))
         end)
       end)
 
@@ -779,43 +745,45 @@ defmodule Raxol.UI.Layout.Flexbox do
         gap_size
       )
 
-    start_coord =
-      case cross_axis do
-        :horizontal -> space.x + start_pos
-        :vertical -> space.y + start_pos
-      end
+    start_coord = get_coord(space, cross_axis) + start_pos
 
     {_, positioned_lines} =
       Enum.zip(lines_with_layout, line_heights)
       |> Enum.reduce({start_coord, []}, fn {line, line_height},
                                            {current_pos, acc} ->
-        # Position each item in the line
         positioned_line =
-          Enum.map(line, fn
-            {child, child_space} ->
-              new_child_space =
-                case cross_axis do
-                  :horizontal -> %{child_space | x: current_pos}
-                  :vertical -> %{child_space | y: current_pos}
-                end
-
-              {child, new_child_space}
-
-            {child, child_space, _flex} ->
-              new_child_space =
-                case cross_axis do
-                  :horizontal -> %{child_space | x: current_pos}
-                  :vertical -> %{child_space | y: current_pos}
-                end
-
-              {child, new_child_space}
-          end)
+          Enum.map(line, &set_item_cross_pos(&1, cross_axis, current_pos))
 
         next_pos = current_pos + line_height + line_gap
         {next_pos, positioned_line ++ acc}
       end)
 
     positioned_lines
+  end
+
+  defp item_space({_child, child_space, _flex}), do: child_space
+  defp item_space({_child, child_space}), do: child_space
+
+  defp set_item_cross_pos({child, child_space}, cross_axis, pos) do
+    {child, set_cross_coord(child_space, cross_axis, pos)}
+  end
+
+  defp set_item_cross_pos({child, child_space, _flex}, cross_axis, pos) do
+    {child, set_cross_coord(child_space, cross_axis, pos)}
+  end
+
+  defp get_coord(space, :horizontal), do: space.x
+  defp get_coord(space, :vertical), do: space.y
+
+  defp set_cross_coord(space, :horizontal, pos), do: %{space | x: pos}
+  defp set_cross_coord(space, :vertical, pos), do: %{space | y: pos}
+
+  defp build_child_space(space, dims, :horizontal, main_pos) do
+    %{x: main_pos, y: space.y, width: dims.width, height: dims.height}
+  end
+
+  defp build_child_space(space, dims, :vertical, main_pos) do
+    %{x: space.x, y: main_pos, width: dims.width, height: dims.height}
   end
 
   defp calculate_align_content_positioning(

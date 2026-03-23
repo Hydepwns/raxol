@@ -122,30 +122,29 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
           non_neg_integer()
         ) :: ScreenBuffer.t()
   def clear_region(buffer, x, y, width, height) do
-    # Clear the specified region by filling it with empty cells
     empty_cell = Cell.new()
+    col_range = x..(x + width - 1)
 
     new_cells =
       buffer.cells
       |> Enum.with_index()
       |> Enum.map(fn {row, row_idx} ->
-        if row_idx < y or row_idx >= y + height do
-          row
+        if row_idx >= y and row_idx < y + height do
+          clear_columns(row, col_range, empty_cell)
         else
-          # Clear columns x to x+width-1 in this row
           row
-          |> Enum.with_index()
-          |> Enum.map(fn {cell, col_idx} ->
-            if col_idx >= x and col_idx < x + width do
-              empty_cell
-            else
-              cell
-            end
-          end)
         end
       end)
 
     %{buffer | cells: new_cells}
+  end
+
+  defp clear_columns(row, col_range, empty_cell) do
+    row
+    |> Enum.with_index()
+    |> Enum.map(fn {cell, col_idx} ->
+      if col_idx in col_range, do: empty_cell, else: cell
+    end)
   end
 
   @doc """
