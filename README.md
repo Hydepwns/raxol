@@ -85,6 +85,27 @@ These aren't bolted on -- they fall out naturally from running on the BEAM:
 
 **LiveView bridge** -- The same TEA app can render to a Phoenix LiveView. Terminal and browser, same codebase, same state model.
 
+**AI agents as TEA apps** -- An agent is just a TEA app where input comes from LLMs and tools instead of a keyboard. `use Raxol.Agent`, implement `init/update/view`, and you get OTP supervision, crash isolation, and inter-agent messaging for free. Coordinate agent teams with a supervisor -- no agent framework needed, just processes.
+
+```elixir
+defmodule MyAgent do
+  use Raxol.Agent
+
+  def init(_ctx), do: %{findings: []}
+
+  def update({:agent_message, _from, {:analyze, file}}, model) do
+    {model, [Command.shell("wc -l #{file}")]}
+  end
+
+  def update({:command_result, {:shell_result, %{output: out}}}, model) do
+    {%{model | findings: [out | model.findings]}, []}
+  end
+end
+
+{:ok, _} = Raxol.Agent.Session.start_link(app_module: MyAgent, id: :my_agent)
+Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
+```
+
 ## Try the Demo
 
 The flagship demo is a live BEAM dashboard -- scheduler utilization, memory sparklines, process table, all updating in real time:
@@ -101,6 +122,8 @@ More examples:
 mix run examples/getting_started/counter.exs    # Minimal counter
 mix run examples/apps/file_browser.exs           # File browser with tree nav
 mix run examples/apps/todo_app.ex                # Todo list
+mix run examples/agents/code_review_agent.exs    # AI agent analyzing files
+mix run examples/agents/agent_team.exs           # Coordinator + worker agents
 ```
 
 ## Performance

@@ -56,6 +56,8 @@ mix run examples/getting_started/counter.exs  # Known working example (TEA model
 Working examples: `counter.exs`, `getting_started/todo_app.exs`, `apps/todo_app.ex`, `apps/showcase_app.exs`, `demo.exs` (all TEA pattern).
 `demo.exs` is the flagship demo showing dashboard layout, live stats, and OTP differentiators.
 
+Agent examples: `agents/code_review_agent.exs` (single agent with shell commands), `agents/agent_team.exs` (coordinator + worker team pattern).
+
 ### Development
 
 ```bash
@@ -93,6 +95,11 @@ use Raxol.UI, framework: :raw        # Direct terminal control
 
 ```
 lib/raxol/
+├── agent/           # AI agent framework (TEA-based)
+│   ├── session.ex   # GenServer wrapping Lifecycle (environment: :agent)
+│   ├── team.ex      # OTP Supervisor for agent groups
+│   └── comm.ex      # Inter-agent messaging primitives
+├── agent.ex         # `use Raxol.Agent` macro
 ├── terminal/        # Terminal emulation (VT100/ANSI)
 │   ├── ansi/        # ANSI sequence parsing
 │   ├── buffer/      # Screen buffer management
@@ -128,6 +135,8 @@ lib/raxol/
 **State Management**: ETS-backed UnifiedStateManager
 
 **Configuration**: TOML-based (`config/raxol.example.toml` as template) with environment overrides in `config/environments/`
+
+**Agent Framework**: `use Raxol.Agent` creates TEA apps for AI agents. `Agent.Session` wraps Lifecycle with `environment: :agent` (skips terminal driver and plugin manager, uses anonymous Dispatcher to avoid singleton conflicts). Agents discover each other via `Raxol.Agent.Registry` (unique Registry). `Agent.Team` is an OTP Supervisor for coordinator/worker groups. Three agent-specific Command types: `:async` (streaming sender callback), `:shell` (Port-based execution), `:send_agent` (Registry-routed inter-agent messages arriving as `{:agent_message, from, payload}`). `view/1` is optional -- headless agents skip rendering entirely.
 
 **Phoenix as library only**: No active web server in core, Ecto.Repo explicitly disabled at runtime.
 
