@@ -23,18 +23,10 @@ defmodule Raxol.Application do
         plugins: false,
         telemetry: true
 
-  ## Health Monitoring
-
-  The application includes built-in health checks:
-  - Supervision tree health
-  - Memory usage monitoring
-  - Process count tracking
-  - Telemetry event monitoring
   """
 
   use Application
   alias Raxol.Core.Runtime.Log
-  alias Raxol.Core.Utils.TimerManager
 
   @type feature_flag :: atom()
   @type start_mode :: :full | :minimal | :custom
@@ -201,8 +193,9 @@ defmodule Raxol.Application do
 
     [
       if(features[:terminal_driver], do: get_terminal_driver_children()),
-      if(features[:plugins], do: {Raxol.Plugin.Supervisor, []}),
-      nil
+      if(features[:plugins] && module_available?(Raxol.Plugin.Supervisor),
+        do: {Raxol.Plugin.Supervisor, []}
+      )
     ]
   end
 
@@ -250,19 +243,11 @@ defmodule Raxol.Application do
   end
 
   defp maybe_add_demo_services do
-    children = []
-
-    children =
-      if module_available?(Raxol.Demo.SessionManager),
-        do: [{Raxol.Demo.SessionManager, []} | children],
-        else: children
-
-    children =
-      if module_available?(Raxol.Demo.SSHServer),
-        do: [{Raxol.Demo.SSHServer, []} | children],
-        else: children
-
-    children
+    if module_available?(Raxol.Demo.SessionManager) do
+      [{Raxol.Demo.SessionManager, []}]
+    else
+      []
+    end
   end
 
   defp maybe_add_performance_monitoring do
@@ -281,7 +266,8 @@ defmodule Raxol.Application do
   end
 
   defp maybe_add_rate_limiting do
-    if feature_enabled?(:rate_limiting) && feature_enabled?(:web_interface) do
+    if feature_enabled?(:rate_limiting) && feature_enabled?(:web_interface) &&
+         module_available?(RaxolWeb.RateLimitManager) do
       RaxolWeb.RateLimitManager
     end
   end
@@ -451,70 +437,12 @@ defmodule Raxol.Application do
 
   # Health Monitoring
 
-  defp schedule_health_checks(mode) when mode in [:test, :minimal], do: :ok
-
-  defp schedule_health_checks(_mode) do
-    if feature_enabled?(:health_checks) do
-      TimerManager.send_after(:perform_health_check, 30_000)
-    end
-  end
-
-  def handle_info(:perform_health_check, state) do
-    perform_health_check()
-    _health_check_ref = schedule_health_checks(:full)
-    {:noreply, state}
-  end
-
-  defp perform_health_check do
-    health_data = %{
-      supervisor_alive: Process.alive?(Process.whereis(Raxol.Supervisor)),
-      child_count: count_children(),
-      memory_usage: :erlang.memory(:total),
-      process_count: :erlang.system_info(:process_count),
-      timestamp: System.system_time(:second)
-    }
-
-    :telemetry.execute(
-      [:raxol, :application, :health_check],
-      health_data,
-      %{}
-    )
-
-    check_memory_threshold(health_data.memory_usage)
-    check_process_threshold(health_data.process_count)
-  end
+  defp schedule_health_checks(_mode), do: :ok
 
   defp count_children do
     case Process.whereis(Raxol.Supervisor) do
       nil -> 0
       pid -> Supervisor.count_children(pid).active
-    end
-  end
-
-  defp check_memory_threshold(memory_bytes) do
-    max_memory = Application.get_env(:raxol, :max_memory_mb, 500) * 1_048_576
-
-    if memory_bytes > max_memory do
-      Log.warning("""
-      [Raxol.Application] Memory usage exceeds threshold:
-      Current: #{div(memory_bytes, 1_048_576)}MB
-      Max: #{div(max_memory, 1_048_576)}MB
-      """)
-
-      # Trigger garbage collection on all processes
-      :erlang.garbage_collect()
-    end
-  end
-
-  defp check_process_threshold(process_count) do
-    max_processes = Application.get_env(:raxol, :max_processes, 10_000)
-
-    if process_count > max_processes do
-      Log.warning("""
-      [Raxol.Application] Process count exceeds threshold:
-      Current: #{process_count}
-      Max: #{max_processes}
-      """)
     end
   end
 

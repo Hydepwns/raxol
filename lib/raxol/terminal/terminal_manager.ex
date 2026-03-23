@@ -58,8 +58,7 @@ defmodule Raxol.Terminal.Manager do
 
   alias Raxol.Terminal.Manager.{
     EventHandler,
-    ScreenHandler,
-    SessionHandler
+    ScreenHandler
   }
 
   alias Raxol.Terminal.Emulator
@@ -279,51 +278,41 @@ defmodule Raxol.Terminal.Manager do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:create_session, opts}, _from, state) do
-    case SessionHandler.create_session(opts, state) do
-      {:ok, session_id, new_state} -> {:reply, {:ok, session_id}, new_state}
-      error -> {:reply, error, state}
-    end
+    session_id = Map.get(opts, :id, UUID.uuid4())
+    new_sessions = Map.put(state.sessions, session_id, %{id: session_id, opts: opts})
+    {:reply, {:ok, session_id}, %{state | sessions: new_sessions}}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:destroy_session, session_id}, _from, state) do
-    case SessionHandler.destroy_session(session_id, state) do
-      {:ok, new_state} -> {:reply, :ok, new_state}
-      error -> {:reply, error, state}
-    end
+    {:reply, :ok, %{state | sessions: Map.delete(state.sessions, session_id)}}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:get_session, session_id}, _from, state) do
-    case SessionHandler.get_session(session_id, state) do
-      {:ok, session_state} -> {:reply, {:ok, session_state}, state}
-      error -> {:reply, error, state}
+    case Map.fetch(state.sessions, session_id) do
+      {:ok, session} -> {:reply, {:ok, session}, state}
+      :error -> {:reply, {:error, :not_found}, state}
     end
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(:list_sessions, _from, state) do
-    sessions = SessionHandler.list_sessions(state)
-    {:reply, sessions, state}
+    {:reply, Map.values(state.sessions), state}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(:count_sessions, _from, state) do
-    count = SessionHandler.count_sessions(state)
-    {:reply, count, state}
+    {:reply, map_size(state.sessions), state}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:monitor_session, session_id}, _from, state) do
-    # SessionHandler.monitor_session always returns :ok
-    :ok = SessionHandler.monitor_session(session_id, state)
+  def handle_manager_call({:monitor_session, _session_id}, _from, state) do
     {:reply, :ok, state}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
-  def handle_manager_call({:unmonitor_session, session_id}, _from, state) do
-    # SessionHandler.unmonitor_session always returns :ok
-    :ok = SessionHandler.unmonitor_session(session_id, state)
+  def handle_manager_call({:unmonitor_session, _session_id}, _from, state) do
     {:reply, :ok, state}
   end
 
@@ -392,8 +381,13 @@ defmodule Raxol.Terminal.Manager do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_info({:DOWN, _ref, :process, pid, _reason}, state) do
-    new_state = SessionHandler.handle_session_down(pid, state)
-    {:noreply, new_state}
+    # Remove any session associated with the crashed process
+    new_sessions =
+      state.sessions
+      |> Enum.reject(fn {_id, session} -> Map.get(session, :pid) == pid end)
+      |> Map.new()
+
+    {:noreply, %{state | sessions: new_sessions}}
   end
 end
 

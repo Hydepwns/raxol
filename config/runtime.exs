@@ -34,16 +34,6 @@ if config_env() == :prod do
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     ssl: true
 
-  # Configure your mailer
-  config :raxol, Raxol.Mailer,
-    adapter: Swoosh.Adapters.SMTP,
-    relay: System.get_env("SMTP_RELAY"),
-    username: System.get_env("SMTP_USERNAME"),
-    password: System.get_env("SMTP_PASSWORD"),
-    tls: :always,
-    auth: :always,
-    port: 587
-
   # Configure terminal settings from environment
   config :raxol, :terminal,
     default_width: String.to_integer(System.get_env("TERMINAL_WIDTH") || "80"),

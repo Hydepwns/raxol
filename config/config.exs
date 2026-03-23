@@ -35,8 +35,6 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-# Suppress Tesla deprecated builder warning (oauth2 uses it)
-config :tesla, :disable_deprecated_builder_warning, true
 
 # Configure esbuild version and profiles
 config :esbuild,
@@ -54,7 +52,6 @@ config :dart_sass, :version, "1.61.0"
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
-import_config "cldr.exs"
 
 # Configure the database
 config :raxol, Raxol.Repo,

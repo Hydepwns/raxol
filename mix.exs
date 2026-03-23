@@ -211,7 +211,7 @@ defmodule Raxol.MixProject do
       {:circular_buffer, "~> 1.0"},
       # Plugin dependencies (optional - only needed for specific plugins)
       {:req, "~> 0.5", optional: true},
-      {:oauth2, "~> 2.1", optional: true}
+      # {:oauth2, "~> 2.1", optional: true}  # Removed - unused
     ]
   end
 
@@ -232,8 +232,8 @@ defmodule Raxol.MixProject do
     [
       {:ecto_sql, "~> 3.12", optional: true},
       {:postgrex, "~> 0.21.1", optional: true, runtime: false},
-      # Password hashing
-      {:bcrypt_elixir, "~> 3.3", optional: true}
+      # Password hashing (removed - unused)
+      # {:bcrypt_elixir, "~> 3.3", optional: true}
     ]
   end
 
@@ -269,10 +269,8 @@ defmodule Raxol.MixProject do
 
       # Testing
       {:mox, "~> 1.2", only: :test},
-      {:muzak, "~> 1.1", only: :test, runtime: false},
       {:meck, "~> 1.0", only: :test},
       {:excoveralls, "~> 0.18", only: :test},
-      {:floki, ">= 0.30.0", only: :test},
       {:stream_data, "~> 1.1", only: [:dev, :test]},
       {:junit_formatter, "~> 3.4", only: :test},
 
@@ -311,12 +309,8 @@ defmodule Raxol.MixProject do
   end
 
   defp i18n_deps do
-    [
-      {:ex_cldr, "~> 2.43.2", optional: true},
-      {:ex_cldr_numbers, "~> 2.35.2", optional: true},
-      {:ex_cldr_currencies, "~> 2.5", optional: true},
-      {:ex_cldr_dates_times, "~> 2.24.0", optional: true}
-    ]
+    # ex_cldr deps removed - unused. Re-add when i18n is implemented.
+    []
   end
 
   defp usage_rules do
@@ -340,10 +334,9 @@ defmodule Raxol.MixProject do
         "esbuild.install --if-missing",
         "sass.install --if-missing"
       ],
-      "assets.deploy": ["sass.deploy", "tailwind.deploy"],
+      "assets.deploy": ["sass.deploy"],
       "assets.build": [
-        "sass default",
-        "tailwind default"
+        "sass default"
       ],
       "explain.credo": ["run scripts/explain_credo_warning.exs"],
       lint: ["credo"],
