@@ -26,7 +26,7 @@ defmodule CodeReviewAgent do
     case model.files do
       [file | rest] ->
         {%{model | current_file: file, files: rest, status: :reading},
-         [Command.shell("wc -l #{file}")]}
+         [Command.shell("wc -l < #{file}")]}
 
       [] ->
         {%{model | status: :done}, []}
@@ -45,7 +45,7 @@ defmodule CodeReviewAgent do
     case model.files do
       [next | rest] ->
         {%{new_model | current_file: next, files: rest},
-         [Command.shell("wc -l #{next}")]}
+         [Command.shell("wc -l < #{next}")]}
 
       [] ->
         # Simulate async LLM analysis
