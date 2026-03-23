@@ -40,6 +40,7 @@ defmodule Raxol.Agent do
 
       def init(_), do: %{}
       def update(_, state), do: {state, Command.none()}
+      def view(_model), do: nil
       def subscribe(_), do: []
       def subscriptions(_), do: []
       def handle_event(_), do: nil
@@ -49,6 +50,7 @@ defmodule Raxol.Agent do
 
       defoverridable init: 1,
                      update: 2,
+                     view: 1,
                      subscribe: 1,
                      subscriptions: 1,
                      handle_event: 1,
