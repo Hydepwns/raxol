@@ -41,8 +41,20 @@ defmodule Raxol.Agent do
       def init(_), do: %{}
       def update(_, state), do: {state, Command.none()}
       def subscribe(_), do: []
+      def subscriptions(_), do: []
+      def handle_event(_), do: nil
+      def handle_tick(model), do: {model, []}
+      def handle_message(_, model), do: {model, []}
+      def terminate(_, _), do: :ok
 
-      defoverridable init: 1, update: 2, subscribe: 1
+      defoverridable init: 1,
+                     update: 2,
+                     subscribe: 1,
+                     subscriptions: 1,
+                     handle_event: 1,
+                     handle_tick: 1,
+                     handle_message: 2,
+                     terminate: 2
 
       @doc false
       def async(fun), do: Command.async(fun)

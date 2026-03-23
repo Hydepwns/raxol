@@ -12,21 +12,23 @@ defmodule CodeReviewAgent do
   def init(_context) do
     files = ["lib/raxol/agent.ex", "lib/raxol/agent/session.ex"]
 
-    {%{
-       files: files,
-       current_file: nil,
-       findings: [],
-       status: :starting
-     }, Command.async(fn sender -> sender.({:start_review, files}) end)}
+    %{
+      files: files,
+      current_file: nil,
+      findings: [],
+      status: :starting
+    }
   end
 
-  def update({:command_result, {:start_review, [file | rest]}}, model) do
-    {%{model | current_file: file, files: rest, status: :reading},
-     Command.shell("wc -l #{file}")}
-  end
+  def update({:agent_message, _from, :start_review}, model) do
+    case model.files do
+      [file | rest] ->
+        {%{model | current_file: file, files: rest, status: :reading},
+         [Command.shell("wc -l #{file}")]}
 
-  def update({:command_result, {:start_review, []}}, model) do
-    {%{model | status: :done}, Command.none()}
+      [] ->
+        {%{model | status: :done}, []}
+    end
   end
 
   def update({:command_result, {:shell_result, result}}, model) do
@@ -41,18 +43,20 @@ defmodule CodeReviewAgent do
     case model.files do
       [next | rest] ->
         {%{new_model | current_file: next, files: rest},
-         Command.shell("wc -l #{next}")}
+         [Command.shell("wc -l #{next}")]}
 
       [] ->
         # Simulate async LLM analysis
         {%{new_model | status: :analyzing},
-         Command.async(fn sender ->
-           Process.sleep(100)
+         [
+           Command.async(fn sender ->
+             Process.sleep(100)
 
-           sender.(
-             {:analysis_complete, "All files reviewed. No critical issues."}
-           )
-         end)}
+             sender.(
+               {:analysis_complete, "All files reviewed. No critical issues."}
+             )
+           end)
+         ]}
     end
   end
 
@@ -65,23 +69,22 @@ defmodule CodeReviewAgent do
       IO.puts("  #{f.file}: #{f.line_count}")
     end)
 
-    {%{model | status: :done}, Command.quit()}
+    {%{model | status: :done}, [Command.quit()]}
   end
 
   def update(msg, model) do
     IO.puts("[CodeReviewAgent] Unhandled: #{inspect(msg)}")
-    {model, Command.none()}
+    {model, []}
   end
 
   def view(model) do
-    import Raxol.Core.Renderer.View
-
-    view do
-      panel title: "Code Review Agent" do
-        text(content: "Status: #{model.status}")
-        text(content: "Files remaining: #{length(model.files)}")
-        text(content: "Findings: #{length(model.findings)}")
-      end
+    column do
+      [
+        text("Code Review Agent", style: [:bold]),
+        text("Status: #{model.status}"),
+        text("Files remaining: #{length(model.files)}"),
+        text("Findings: #{length(model.findings)}")
+      ]
     end
   end
 end
@@ -93,5 +96,8 @@ end
     id: :code_reviewer
   )
 
+# Kick off the review
+Raxol.Agent.Session.send_message(:code_reviewer, :start_review)
+
 # Wait for it to finish
-Process.sleep(2000)
+Process.sleep(3000)

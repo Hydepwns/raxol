@@ -287,6 +287,19 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   # --- BaseManager Callbacks ---
 
   @impl true
+  def handle_manager_cast(
+        {:dispatch, {:agent_message, _from, _payload} = msg},
+        state
+      ) do
+    Raxol.Core.Runtime.Log.debug(
+      "[Dispatcher] handle_cast :dispatch agent_message: #{inspect(msg)}"
+    )
+
+    # Agent messages go directly to update/2, bypassing event/plugin pipeline
+    dispatch_raw_message(msg, state)
+  end
+
+  @impl true
   def handle_manager_cast({:dispatch, event}, state) do
     Raxol.Core.Runtime.Log.debug(
       "[Dispatcher] handle_cast :dispatch event: #{inspect(event)}"
@@ -558,6 +571,17 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp apply_theme_update(false, state, updated_model, new_theme_id) do
     :ok = UserPreferences.set("theme.active_id", new_theme_id)
     %{state | model: updated_model, current_theme_id: new_theme_id}
+  end
+
+  # Route a raw message (not an Event struct) directly through update/2
+  defp dispatch_raw_message(msg, state) do
+    case process_app_update(state, msg, msg) do
+      {:ok, new_state, _commands} ->
+        {:noreply, new_state}
+
+      _ ->
+        {:noreply, state}
+    end
   end
 
   defp broadcast_event_if_valid(event_type, event_data)
