@@ -44,9 +44,6 @@ defmodule Raxol.Test.MockApplicationSupervisor do
     # Add TerminalSupervisor for tests
     terminal_supervisor_child_spec = Raxol.Terminal.Supervisor
 
-    # Add WebSupervisor for tests (mock version)
-    web_supervisor_child_spec = Raxol.Web.Supervisor
-
     # Add RateLimitManager for tests
     rate_limit_manager_child_spec = Raxol.Terminal.RateLimitManager
 
@@ -57,7 +54,6 @@ defmodule Raxol.Test.MockApplicationSupervisor do
       accounts_child_spec,
       sync_system_child_spec,
       terminal_supervisor_child_spec,
-      web_supervisor_child_spec,
       rate_limit_manager_child_spec
     ]
 

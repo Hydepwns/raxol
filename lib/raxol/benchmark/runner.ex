@@ -298,23 +298,11 @@ defmodule Raxol.Benchmark.Runner do
     %{
       name: "Security Operations",
       benchmarks: %{
-        "Input sanitization" => fn input ->
-          Raxol.Security.sanitize_input(input)
-        end,
-        "Session create" => fn ->
-          Raxol.Security.SessionManager.create_session(123)
-        end,
         "Password hash" => fn ->
           hash_password("test_password_123")
         end
       },
-      options: [
-        inputs: %{
-          "safe input" => "Hello, World!",
-          "suspicious" => "'; DROP TABLE users; --",
-          "large input" => String.duplicate("a", 10_000)
-        }
-      ]
+      options: []
     }
   end
 

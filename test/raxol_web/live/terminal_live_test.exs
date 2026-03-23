@@ -4,18 +4,7 @@ defmodule RaxolWeb.TerminalLiveTest do
   # Note: This is a unit test file for the TerminalLive module.
   # For full integration tests with LiveView, use Phoenix.LiveViewTest.
 
-  alias Raxol.Web.SessionBridge
-
   setup do
-    # Ensure SessionBridge is running
-    case GenServer.whereis(SessionBridge) do
-      nil ->
-        {:ok, _pid} = SessionBridge.start_link([])
-
-      _pid ->
-        :ok
-    end
-
     :ok
   end
 

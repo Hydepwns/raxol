@@ -4,38 +4,8 @@ defmodule RaxolWeb.TerminalChannelTest do
   # Note: This is a unit test file for the TerminalChannel module.
   # For full integration tests, use Phoenix.ChannelTest with proper endpoint setup.
 
-  alias Raxol.Web.PersistentStore
-  alias Raxol.Web.SessionBridge
-
   setup do
-    # Use unique names to avoid conflicts between tests
-    test_id = :erlang.unique_integer([:positive])
-
-    # Start SessionBridge with unique name - ExUnit will clean up
-    session_bridge_name = :"SessionBridge_#{test_id}"
-
-    case Process.whereis(SessionBridge) do
-      nil ->
-        start_supervised!({SessionBridge, name: session_bridge_name})
-
-      _pid ->
-        :ok
-    end
-
-    # Start PersistentStore with unique name - ExUnit will clean up
-    persistent_store_name = :"PersistentStore_#{test_id}"
-
-    case Process.whereis(PersistentStore) do
-      nil ->
-        start_supervised!({PersistentStore, name: persistent_store_name})
-
-      _pid ->
-        :ok
-    end
-
-    # Ensure module is loaded before any tests run
     Code.ensure_loaded!(RaxolWeb.TerminalChannel)
-
     :ok
   end
 
