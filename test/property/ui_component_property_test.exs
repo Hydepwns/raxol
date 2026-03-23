@@ -118,7 +118,7 @@ defmodule Raxol.Property.UIComponentTest do
       end
     end
 
-    @tag :skip
+    @tag skip: "Flexbox.calculate_layout returns struct without .children accessor"
     property "flex properties distribute space correctly" do
       check all(
               flex_values <-
@@ -202,7 +202,7 @@ defmodule Raxol.Property.UIComponentTest do
   end
 
   describe "State Store properties" do
-    @tag :skip
+    @tag skip: "Store module not implemented (no Store.start_link/1 or Store.update/3)"
     property "store updates are atomic" do
       check all(
               initial <- map_of(atom(:alphanumeric), integer()),
@@ -230,7 +230,7 @@ defmodule Raxol.Property.UIComponentTest do
       end
     end
 
-    @tag :skip
+    @tag skip: "Store module not implemented (no Store.start_link/1 or Store.subscribe/2)"
     property "store subscriptions receive all updates" do
       check all(
               updates <-
@@ -260,7 +260,7 @@ defmodule Raxol.Property.UIComponentTest do
       end
     end
 
-    @tag :skip
+    @tag skip: "Store module not implemented (no Store.start_link/1 or Store.update/3)"
     property "store handles concurrent updates safely" do
       check all(
               update_count <- integer(10..100),

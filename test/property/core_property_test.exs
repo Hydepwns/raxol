@@ -53,7 +53,7 @@ defmodule Raxol.Property.CoreTest do
       end
     end
 
-    @tag :skip
+    @tag skip: "timing-based assertion too sensitive to system load variance"
     @tag :flaky
     property "parser performance scales linearly" do
       check all size <- integer(10..1000),

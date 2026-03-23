@@ -24,8 +24,7 @@ defmodule Raxol.UI.BasicRenderingTest do
     assert cells == []
   end
 
-  @tag :skip
-  @tag :flaky
+  @tag skip: "default fg/bg values differ from expected"
   test "handles missing required attributes" do
     element = Helper.create_test_element(:box, 0, 0, %{width: 1, height: 1})
     cells = Renderer.render_to_cells(element)

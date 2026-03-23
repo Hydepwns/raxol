@@ -116,7 +116,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert line_to_string(ScreenBuffer.get_line(buffer, 4)) =~ ~r/^\s*$/
     end
 
-    @tag :skip
+    @tag skip: "scroll_down does not insert blank lines yet"
     test ~c"scrolling down inserts lines correctly (no scrollback)" do
       buffer = ScreenBuffer.new(10, 5)
 
@@ -186,7 +186,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert line_to_string(ScreenBuffer.get_line(buffer, 3)) =~ ~r/^\s*$/
     end
 
-    @tag :skip
+    @tag skip: "scroll_down does not insert blank lines yet"
     test ~c"scrolling scrolls down within scroll region" do
       buffer = ScreenBuffer.new(10, 5)
 
@@ -236,7 +236,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert buffer.selection == {1, 1, 3, 2}
     end
 
-    @tag :skip
+    @tag skip: "get_selection returns tuple, not text string"
     test ~c"gets selected text" do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.write_string(buffer, 0, 0, "Hello")
@@ -247,7 +247,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert ScreenBuffer.get_selection(buffer) == "Hello\nWorld"
     end
 
-    @tag :skip
+    @tag skip: "in_selection? not implemented"
     test ~c"checks if position is in selection" do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.start_selection(buffer, 1, 1)

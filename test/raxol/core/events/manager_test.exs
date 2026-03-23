@@ -133,7 +133,7 @@ defmodule Raxol.Core.Events.EventManagerTest do
   end
 
   describe "dispatch/1" do
-    @tag :skip
+    @tag skip: "requires process registration that conflicts across tests"
     test "dispatches event to registered handlers" do
       # Create a temporary process that will receive messages
       parent = self()
