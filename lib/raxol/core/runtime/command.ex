@@ -72,7 +72,10 @@ defmodule Raxol.Core.Runtime.Command do
             | :quit
             | :clipboard_write
             | :clipboard_read
-            | :notify,
+            | :notify
+            | :async
+            | :shell
+            | :send_agent,
           data: term()
         }
 
@@ -159,6 +162,44 @@ defmodule Raxol.Core.Runtime.Command do
   end
 
   @doc """
+  Creates an async command with a sender callback.
+
+  The function receives a `sender` function that can be called multiple
+  times to send messages back to the TEA loop:
+
+      Command.async(fn sender ->
+        sender.({:progress, 50})
+        result = do_work()
+        sender.({:done, result})
+      end)
+  """
+  def async(fun) when is_function(fun, 1) do
+    new(:async, fun)
+  end
+
+  @doc """
+  Creates a command to execute a shell command with structured output.
+
+  ## Options
+    * `:timeout` - Max execution time in ms (default: 30_000)
+    * `:cd` - Working directory
+    * `:env` - Environment variables as list of `{key, value}` tuples
+  """
+  def shell(command, opts \\ []) when is_binary(command) do
+    new(:shell, {command, opts})
+  end
+
+  @doc """
+  Creates a command to send a message to another agent by id.
+
+  The message arrives in the target agent's `update/2` as
+  `{:agent_message, source_agent_id, message}`.
+  """
+  def send_agent(target_id, message) do
+    new(:send_agent, {target_id, message})
+  end
+
+  @doc """
   Maps a function over a command's result message. This is useful for
   namespacing messages or transforming them before they reach the update
   function.
@@ -189,6 +230,16 @@ defmodule Raxol.Core.Runtime.Command do
 
   def map(%__MODULE__{type: :broadcast, data: msg} = cmd, mapper) do
     %{cmd | data: mapper.(msg)}
+  end
+
+  def map(%__MODULE__{type: :async, data: fun} = cmd, mapper)
+      when is_function(mapper, 1) do
+    mapped_fun = fn sender ->
+      mapped_sender = fn msg -> sender.(mapper.(msg)) end
+      fun.(mapped_sender)
+    end
+
+    %{cmd | data: mapped_fun}
   end
 
   def map(cmd, _), do: cmd
@@ -272,6 +323,64 @@ defmodule Raxol.Core.Runtime.Command do
     )
   end
 
+  @spec execute_command_type(any(), any(), any()) :: any()
+  defp execute_command_type(:async, fun, context) do
+    pid = context.pid
+
+    sender = fn msg ->
+      send(pid, {:command_result, msg})
+    end
+
+    Task.start(fn ->
+      try do
+        fun.(sender)
+      rescue
+        e ->
+          send(pid, {:command_result, {:async_error, Exception.message(e)}})
+      end
+    end)
+  end
+
+  @spec execute_command_type(any(), any(), any()) :: any()
+  defp execute_command_type(:shell, {command, opts}, context) do
+    timeout = Keyword.get(opts, :timeout, 30_000)
+    cd = Keyword.get(opts, :cd)
+    env = Keyword.get(opts, :env, [])
+
+    Task.start(fn ->
+      port_opts =
+        [
+          :binary,
+          :exit_status,
+          :use_stdio,
+          :stderr_to_stdout,
+          args: ["-c", command]
+        ]
+        |> maybe_add_port_opt(:cd, cd)
+        |> maybe_add_port_opt(:env, if(env != [], do: env))
+
+      port = Port.open({:spawn_executable, "/bin/sh"}, port_opts)
+      result = collect_port_output(port, [], timeout)
+      send(context.pid, {:command_result, {:shell_result, result}})
+    end)
+  end
+
+  @spec execute_command_type(any(), any(), any()) :: any()
+  defp execute_command_type(:send_agent, {target_id, message}, context) do
+    source_id = Map.get(context, :agent_id, :unknown)
+
+    case Registry.lookup(Raxol.Agent.Registry, target_id) do
+      [{pid, _}] ->
+        GenServer.cast(pid, {:send_message, {:from, source_id, message}})
+
+      [] ->
+        send(
+          context.pid,
+          {:command_result, {:send_agent_error, :not_found, target_id}}
+        )
+    end
+  end
+
   # Private helper for system operations
   @spec execute_system_operation(any(), keyword(), any()) :: any()
   defp execute_system_operation(operation, opts, context) do
@@ -309,6 +418,25 @@ defmodule Raxol.Core.Runtime.Command do
           nil,
           %{operation: operation, opts: opts, context: context}
         )
+    end
+  end
+
+  defp maybe_add_port_opt(opts, _key, nil), do: opts
+  defp maybe_add_port_opt(opts, key, value), do: [{key, value} | opts]
+
+  defp collect_port_output(port, acc, timeout) do
+    receive do
+      {^port, {:data, data}} ->
+        collect_port_output(port, [data | acc], timeout)
+
+      {^port, {:exit_status, status}} ->
+        output = acc |> Enum.reverse() |> IO.iodata_to_binary()
+        %{exit_status: status, output: output}
+    after
+      timeout ->
+        Port.close(port)
+        output = acc |> Enum.reverse() |> IO.iodata_to_binary()
+        %{exit_status: :timeout, output: output}
     end
   end
 end

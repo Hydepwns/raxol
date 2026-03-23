@@ -160,6 +160,7 @@ defmodule Raxol.Application do
       {Raxol.Core.UserPreferences, [name: Raxol.Core.UserPreferences]},
       {Raxol.DynamicSupervisor, []},
       {Raxol.Terminal.Supervisor, []},
+      {Registry, keys: :unique, name: Raxol.Agent.Registry},
 
       # Configuration and Debug services
       {Raxol.Config, [name: Raxol.Config]},

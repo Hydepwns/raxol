@@ -1,0 +1,148 @@
+defmodule Raxol.Agent.Session do
+  @moduledoc """
+  Manages a single agent's TEA application lifecycle.
+
+  Follows the same pattern as `Raxol.SSH.Session`: wraps a Lifecycle
+  instance with `environment: :agent`. Agents register in
+  `Raxol.Agent.Registry` for discovery by other agents.
+  """
+
+  use GenServer
+
+  require Raxol.Core.Runtime.Log
+
+  defstruct [:id, :app_module, :lifecycle_pid, :team_id]
+
+  @type t :: %__MODULE__{
+          id: term(),
+          app_module: module(),
+          lifecycle_pid: pid() | nil,
+          team_id: term() | nil
+        }
+
+  def start_link(opts) do
+    id = Keyword.fetch!(opts, :id)
+
+    GenServer.start_link(__MODULE__, opts,
+      name: {:via, Registry, {Raxol.Agent.Registry, id}}
+    )
+  end
+
+  @doc "Send a message into the agent's TEA loop."
+  def send_message(agent_id, message) do
+    case Registry.lookup(Raxol.Agent.Registry, agent_id) do
+      [{pid, _}] -> GenServer.cast(pid, {:send_message, message})
+      [] -> {:error, :not_found}
+    end
+  end
+
+  @doc "Read the agent's current model."
+  def get_model(agent_id) do
+    case Registry.lookup(Raxol.Agent.Registry, agent_id) do
+      [{pid, _}] -> GenServer.call(pid, :get_model)
+      [] -> {:error, :not_found}
+    end
+  end
+
+  @doc "Read the agent's latest view tree."
+  def get_view_tree(agent_id) do
+    case Registry.lookup(Raxol.Agent.Registry, agent_id) do
+      [{pid, _}] -> GenServer.call(pid, :get_view_tree)
+      [] -> {:error, :not_found}
+    end
+  end
+
+  @impl true
+  def init(opts) do
+    app_module = Keyword.fetch!(opts, :app_module)
+    id = Keyword.fetch!(opts, :id)
+    team_id = Keyword.get(opts, :team_id)
+
+    {:ok, lifecycle_pid} =
+      Raxol.Core.Runtime.Lifecycle.start_link(app_module,
+        environment: :agent,
+        width: 80,
+        height: 24,
+        name: :"agent_lifecycle_#{inspect(id)}"
+      )
+
+    Raxol.Core.Runtime.Log.info(
+      "[Agent.Session] Started agent #{inspect(id)} (#{inspect(app_module)})"
+    )
+
+    {:ok,
+     %__MODULE__{
+       id: id,
+       app_module: app_module,
+       lifecycle_pid: lifecycle_pid,
+       team_id: team_id
+     }}
+  end
+
+  @impl true
+  def handle_cast({:send_message, message}, state) do
+    case get_dispatcher(state.lifecycle_pid) do
+      nil ->
+        :ok
+
+      dispatcher_pid ->
+        GenServer.cast(
+          dispatcher_pid,
+          {:dispatch, {:agent_message, state.id, message}}
+        )
+    end
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast(_msg, state), do: {:noreply, state}
+
+  @impl true
+  def handle_call(:get_model, _from, state) do
+    result =
+      case get_dispatcher(state.lifecycle_pid) do
+        nil -> {:error, :no_dispatcher}
+        pid -> GenServer.call(pid, :get_model)
+      end
+
+    {:reply, result, state}
+  end
+
+  @impl true
+  def handle_call(:get_view_tree, _from, state) do
+    result =
+      case get_dispatcher(state.lifecycle_pid) do
+        nil -> {:error, :no_dispatcher}
+        pid -> GenServer.call(pid, :get_view_tree)
+      end
+
+    {:reply, result, state}
+  end
+
+  @impl true
+  def handle_call(_msg, _from, state),
+    do: {:reply, {:error, :unknown_call}, state}
+
+  @impl true
+  def terminate(_reason, state) do
+    if state.lifecycle_pid && Process.alive?(state.lifecycle_pid) do
+      Raxol.Core.Runtime.Lifecycle.stop(state.lifecycle_pid)
+    end
+
+    :ok
+  end
+
+  defp get_dispatcher(lifecycle_pid) when is_pid(lifecycle_pid) do
+    if Process.alive?(lifecycle_pid) do
+      %{dispatcher_pid: pid} = GenServer.call(lifecycle_pid, :get_full_state)
+      pid
+    else
+      nil
+    end
+  catch
+    :exit, _ -> nil
+  end
+
+  defp get_dispatcher(_), do: nil
+end

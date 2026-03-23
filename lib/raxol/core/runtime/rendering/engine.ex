@@ -279,6 +279,11 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       :ssh ->
         render_to_ssh(final_cells, state)
 
+      :agent ->
+        # Agent environment: buffer maintained for inspection, no output written
+        updated_buffer = apply_cells_to_buffer(final_cells, state)
+        {:ok, %{state | buffer: updated_buffer}}
+
       other ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Unknown rendering environment",
@@ -412,7 +417,11 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     html = Raxol.LiveView.TerminalBridge.buffer_to_html(updated_buffer)
 
     if state.liveview_topic && Code.ensure_loaded?(Phoenix.PubSub) do
-      Phoenix.PubSub.broadcast(Raxol.PubSub, state.liveview_topic, {:render_update, html})
+      Phoenix.PubSub.broadcast(
+        Raxol.PubSub,
+        state.liveview_topic,
+        {:render_update, html}
+      )
     end
 
     {:ok, %{state | buffer: updated_buffer}}
@@ -477,7 +486,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   # --- Process Component Resolution ---
 
-  defp resolve_process_components(%{type: :process_component, module: mod, props: props} = node) do
+  defp resolve_process_components(
+         %{type: :process_component, module: mod, props: props} = node
+       ) do
     id = Map.get(node, :id, "pc-#{inspect(mod)}")
 
     pid =
@@ -498,7 +509,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
-  defp resolve_process_components(%{children: children} = node) when is_list(children) do
+  defp resolve_process_components(%{children: children} = node)
+       when is_list(children) do
     %{node | children: Enum.map(children, &resolve_process_components/1)}
   end
 

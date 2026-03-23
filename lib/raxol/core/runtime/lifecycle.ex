@@ -250,6 +250,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   defp maybe_start_driver(_dispatcher_pid, :liveview), do: {:ok, nil}
   defp maybe_start_driver(_dispatcher_pid, :ssh), do: {:ok, nil}
+  defp maybe_start_driver(_dispatcher_pid, :agent), do: {:ok, nil}
 
   defp maybe_start_driver(dispatcher_pid, _environment) do
     case Raxol.Terminal.Driver.start_link(dispatcher_pid: dispatcher_pid) do
