@@ -44,10 +44,16 @@ defmodule MultiLineInputDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "q", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       %Raxol.Core.Events.Event{} = event ->

@@ -58,8 +58,10 @@ defmodule Raxol.Core.I18n.I18nServer do
     new_state = %{
       state
       | locale: Map.get(config, :default_locale, state.locale),
-        fallback_locale: Map.get(config, :fallback_locale, state.fallback_locale),
-        translations: Map.merge(state.translations, Map.get(config, :translations, %{})),
+        fallback_locale:
+          Map.get(config, :fallback_locale, state.fallback_locale),
+        translations:
+          Map.merge(state.translations, Map.get(config, :translations, %{})),
         currency: Map.get(config, :currency, state.currency),
         timezone: Map.get(config, :timezone, state.timezone)
     }
@@ -129,9 +131,17 @@ defmodule Raxol.Core.I18n.I18nServer do
 
   defp get_state do
     case :ets.lookup(@table, :state) do
-      [{:state, state}] -> state
-      [] -> %{locale: @default_locale, fallback_locale: @default_locale,
-              translations: %{}, currency: "USD", timezone: "UTC"}
+      [{:state, state}] ->
+        state
+
+      [] ->
+        %{
+          locale: @default_locale,
+          fallback_locale: @default_locale,
+          translations: %{},
+          currency: "USD",
+          timezone: "UTC"
+        }
     end
   end
 
@@ -146,7 +156,11 @@ defmodule Raxol.Core.I18n.I18nServer do
   defp get_translation(state, key, bindings) do
     case get_translation_for_locale(state.translations, state.locale, key) do
       nil ->
-        case get_translation_for_locale(state.translations, state.fallback_locale, key) do
+        case get_translation_for_locale(
+               state.translations,
+               state.fallback_locale,
+               key
+             ) do
           nil -> key
           translation -> interpolate(translation, bindings)
         end

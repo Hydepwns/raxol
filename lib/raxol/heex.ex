@@ -139,7 +139,10 @@ defmodule Raxol.HEEx do
   # Parse HTML attributes from a string
   defp parse_attributes(attrs_str) do
     # Match key="value" and key={value} and standalone boolean attrs
-    Regex.scan(~r/([\w\-]+)(?:=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\}))?/, attrs_str)
+    Regex.scan(
+      ~r/([\w\-]+)(?:=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\}))?/,
+      attrs_str
+    )
     |> Enum.map(fn
       [_, key, value, "", ""] -> {key, value}
       [_, key, "", value, ""] -> {key, value}
@@ -366,6 +369,7 @@ defmodule Raxol.HEEx do
   defp parse_align(_), do: :start
 
   defp parse_color_attr(nil), do: :default
+
   defp parse_color_attr(color) when is_binary(color) do
     try do
       String.to_existing_atom(color)

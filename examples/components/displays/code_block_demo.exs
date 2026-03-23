@@ -11,45 +11,48 @@ defmodule CodeBlockDemo do
   alias Raxol.UI.Components.CodeBlock
 
   @samples [
-    {"Elixir - GenServer", "elixir", """
-    defmodule Counter do
-      use GenServer
+    {"Elixir - GenServer", "elixir",
+     """
+     defmodule Counter do
+       use GenServer
 
-      def start_link(initial) do
-        GenServer.start_link(__MODULE__, initial, name: __MODULE__)
-      end
+       def start_link(initial) do
+         GenServer.start_link(__MODULE__, initial, name: __MODULE__)
+       end
 
-      @impl true
-      def init(count), do: {:ok, count}
+       @impl true
+       def init(count), do: {:ok, count}
 
-      @impl true
-      def handle_call(:get, _from, count) do
-        {:reply, count, count}
-      end
+       @impl true
+       def handle_call(:get, _from, count) do
+         {:reply, count, count}
+       end
 
-      @impl true
-      def handle_cast(:increment, count) do
-        {:noreply, count + 1}
-      end
-    end
-    """},
-    {"Elixir - Pattern Matching", "elixir", """
-    defmodule Parser do
-      def parse({:ok, data}), do: process(data)
-      def parse({:error, reason}), do: {:error, reason}
+       @impl true
+       def handle_cast(:increment, count) do
+         {:noreply, count + 1}
+       end
+     end
+     """},
+    {"Elixir - Pattern Matching", "elixir",
+     """
+     defmodule Parser do
+       def parse({:ok, data}), do: process(data)
+       def parse({:error, reason}), do: {:error, reason}
 
-      defp process(%{name: name, age: age}) when age > 0 do
-        {:ok, String.upcase(name)}
-      end
+       defp process(%{name: name, age: age}) when age > 0 do
+         {:ok, String.upcase(name)}
+       end
 
-      defp process(_), do: {:error, :invalid}
-    end
-    """},
-    {"Plain Text", "text", """
-    This is plain text without syntax highlighting.
-    It serves as a fallback when no lexer is available.
-    Line 3 of the plain text sample.
-    """}
+       defp process(_), do: {:error, :invalid}
+     end
+     """},
+    {"Plain Text", "text",
+     """
+     This is plain text without syntax highlighting.
+     It serves as a fallback when no lexer is available.
+     Line 3 of the plain text sample.
+     """}
   ]
 
   @impl true
@@ -63,7 +66,10 @@ defmodule CodeBlockDemo do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "n"}} ->
@@ -71,7 +77,9 @@ defmodule CodeBlockDemo do
         {%{model | current: next}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "p"}} ->
-        prev = rem(model.current - 1 + length(model.samples), length(model.samples))
+        prev =
+          rem(model.current - 1 + length(model.samples), length(model.samples))
+
         {%{model | current: prev}, []}
 
       _ ->
@@ -83,12 +91,15 @@ defmodule CodeBlockDemo do
   def view(model) do
     {title, language, code} = Enum.at(model.samples, model.current)
 
-    {:ok, cb_state} = CodeBlock.init(%{content: String.trim(code), language: language})
+    {:ok, cb_state} =
+      CodeBlock.init(%{content: String.trim(code), language: language})
 
     column style: %{padding: 1, gap: 1} do
       [
         text("CodeBlock Demo", style: [:bold]),
-        text("Sample #{model.current + 1}/#{length(model.samples)}: #{title} (#{language})"),
+        text(
+          "Sample #{model.current + 1}/#{length(model.samples)}: #{title} (#{language})"
+        ),
         text("Press 'n'/'p' to cycle samples, 'q' to quit."),
         box style: %{border: :single, padding: 1} do
           CodeBlock.render(cb_state, %{})

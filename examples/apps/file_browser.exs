@@ -102,7 +102,7 @@ defmodule FileBrowser do
           [
             # Tree panel
             box style: %{
-                  border: (if model.panel == :tree, do: :double, else: :single),
+                  border: if(model.panel == :tree, do: :double, else: :single),
                   width: "40%",
                   padding: 0
                 } do
@@ -112,7 +112,8 @@ defmodule FileBrowser do
             end,
             # Preview panel
             box style: %{
-                  border: (if model.panel == :preview, do: :double, else: :single),
+                  border:
+                    if(model.panel == :preview, do: :double, else: :single),
                   flex: 1,
                   padding: 0
                 } do
@@ -180,13 +181,26 @@ defmodule FileBrowser do
 
   defp node_icon(%{label: label}, _expanded) do
     cond do
-      String.ends_with?(label, ".ex") -> "💧"
-      String.ends_with?(label, ".exs") -> "💧"
-      String.ends_with?(label, ".md") -> "📄"
-      String.ends_with?(label, ".json") -> "📋"
-      String.ends_with?(label, ".toml") -> "⚙"
-      String.ends_with?(label, ".yml") or String.ends_with?(label, ".yaml") -> "⚙"
-      true -> "  "
+      String.ends_with?(label, ".ex") ->
+        "💧"
+
+      String.ends_with?(label, ".exs") ->
+        "💧"
+
+      String.ends_with?(label, ".md") ->
+        "📄"
+
+      String.ends_with?(label, ".json") ->
+        "📋"
+
+      String.ends_with?(label, ".toml") ->
+        "⚙"
+
+      String.ends_with?(label, ".yml") or String.ends_with?(label, ".yaml") ->
+        "⚙"
+
+      true ->
+        "  "
     end
   end
 
@@ -299,10 +313,22 @@ defmodule FileBrowser do
       true ->
         case read_preview(node.path) do
           {:ok, lines, meta} ->
-            {%{model | preview: lines, preview_name: node.label, meta: meta, error: nil}, []}
+            {%{
+               model
+               | preview: lines,
+                 preview_name: node.label,
+                 meta: meta,
+                 error: nil
+             }, []}
 
           {:error, reason} ->
-            {%{model | preview: "Cannot preview: #{reason}", preview_name: node.label, meta: nil, error: nil}, []}
+            {%{
+               model
+               | preview: "Cannot preview: #{reason}",
+                 preview_name: node.label,
+                 meta: nil,
+                 error: nil
+             }, []}
         end
     end
   end
@@ -334,7 +360,19 @@ defmodule FileBrowser do
             label: name,
             path: path,
             is_dir: is_dir,
-            children: if(is_dir, do: [%{id: :"#{path}/__placeholder", label: "...", path: path, is_dir: false, children: []}], else: [])
+            children:
+              if(is_dir,
+                do: [
+                  %{
+                    id: :"#{path}/__placeholder",
+                    label: "...",
+                    path: path,
+                    is_dir: false,
+                    children: []
+                  }
+                ],
+                else: []
+              )
           }
         end)
 
@@ -370,9 +408,11 @@ defmodule FileBrowser do
 
     child_entries =
       if node.is_dir and MapSet.member?(expanded, node.id) do
-        real_children = Enum.reject(node.children, fn c ->
-          String.ends_with?(to_string(c.id), "/__placeholder")
-        end)
+        real_children =
+          Enum.reject(node.children, fn c ->
+            String.ends_with?(to_string(c.id), "/__placeholder")
+          end)
+
         visible_nodes(real_children, expanded, depth + 1)
       else
         []
@@ -405,7 +445,8 @@ defmodule FileBrowser do
     end
   end
 
-  defp do_find_parent([_ | rest], id, parent), do: do_find_parent(rest, id, parent)
+  defp do_find_parent([_ | rest], id, parent),
+    do: do_find_parent(rest, id, parent)
 
   defp replace_children(nodes, target_id, new_children) do
     Enum.map(nodes, fn node ->
@@ -414,7 +455,10 @@ defmodule FileBrowser do
           %{node | children: new_children}
 
         node.children != [] ->
-          %{node | children: replace_children(node.children, target_id, new_children)}
+          %{
+            node
+            | children: replace_children(node.children, target_id, new_children)
+          }
 
         true ->
           node
@@ -425,7 +469,10 @@ defmodule FileBrowser do
   # -- Formatting --
 
   defp format_size(bytes) when bytes < 1024, do: "#{bytes} B"
-  defp format_size(bytes) when bytes < 1024 * 1024, do: "#{Float.round(bytes / 1024, 1)} KB"
+
+  defp format_size(bytes) when bytes < 1024 * 1024,
+    do: "#{Float.round(bytes / 1024, 1)} KB"
+
   defp format_size(bytes), do: "#{Float.round(bytes / (1024 * 1024), 1)} MB"
 
   defp format_time({{y, m, d}, {h, min, _s}}) do

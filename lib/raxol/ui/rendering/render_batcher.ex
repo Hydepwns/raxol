@@ -316,7 +316,6 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
     Log.debug(
       "RenderBatcher: Would send to pipeline - tree nodes: #{count_tree_nodes(tree)}, damage regions: #{map_size(damage_regions)}"
     )
-
   end
 
   defp cancel_batch_timer(nil), do: :ok

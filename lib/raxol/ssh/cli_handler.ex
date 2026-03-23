@@ -19,7 +19,10 @@ defmodule Raxol.SSH.CLIHandler do
 
   @impl true
   def handle_msg(msg, state) do
-    Raxol.Core.Runtime.Log.debug("[SSH.CLIHandler] Unhandled msg: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug(
+      "[SSH.CLIHandler] Unhandled msg: #{inspect(msg)}"
+    )
+
     {:ok, state}
   end
 
@@ -31,7 +34,8 @@ defmodule Raxol.SSH.CLIHandler do
 
   @impl true
   def handle_ssh_msg(
-        {:ssh_cm, _conn, {:pty, _ch, _want_reply, {_term, width, height, _pxw, _pxh, _modes}}},
+        {:ssh_cm, _conn,
+         {:pty, _ch, _want_reply, {_term, width, height, _pxw, _pxh, _modes}}},
         state
       ) do
     {:ok, session_pid} =
@@ -47,7 +51,10 @@ defmodule Raxol.SSH.CLIHandler do
   end
 
   @impl true
-  def handle_ssh_msg({:ssh_cm, _conn, {:window_change, _ch, width, height, _pxw, _pxh}}, state) do
+  def handle_ssh_msg(
+        {:ssh_cm, _conn, {:window_change, _ch, width, height, _pxw, _pxh}},
+        state
+      ) do
     maybe_send(state.session_pid, {:resize, width, height})
     {:ok, state}
   end

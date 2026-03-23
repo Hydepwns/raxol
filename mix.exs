@@ -210,7 +210,7 @@ defmodule Raxol.MixProject do
       # Efficient circular buffer implementation
       {:circular_buffer, "~> 1.0"},
       # Plugin dependencies (optional - only needed for specific plugins)
-      {:req, "~> 0.5", optional: true},
+      {:req, "~> 0.5", optional: true}
       # {:oauth2, "~> 2.1", optional: true}  # Removed - unused
     ]
   end
@@ -231,7 +231,7 @@ defmodule Raxol.MixProject do
   defp database_deps do
     [
       {:ecto_sql, "~> 3.12", optional: true},
-      {:postgrex, "~> 0.21.1", optional: true, runtime: false},
+      {:postgrex, "~> 0.21.1", optional: true, runtime: false}
       # Password hashing (removed - unused)
       # {:bcrypt_elixir, "~> 3.3", optional: true}
     ]
@@ -403,13 +403,15 @@ defmodule Raxol.MixProject do
         {"docs/getting-started/QUICKSTART.md", [title: "Quickstart"]},
         {"docs/getting-started/WIDGET_GALLERY.md", [title: "Widget Gallery"]},
         {"docs/getting-started/CORE_CONCEPTS.md", [title: "Core Concepts"]},
-        {"docs/getting-started/MIGRATION_FROM_DIY.md", [title: "Migration Guide"]},
+        {"docs/getting-started/MIGRATION_FROM_DIY.md",
+         [title: "Migration Guide"]},
         {"docs/core/BUFFER_API.md", [title: "Buffer API"]},
         {"docs/core/ARCHITECTURE.md", [title: "Architecture"]},
         {"docs/cookbook/README.md", [title: "Cookbook", filename: "cookbook"]},
         {"docs/cookbook/BUILDING_APPS.md", [title: "Building Apps"]},
         {"docs/cookbook/SSH_DEPLOYMENT.md", [title: "SSH Deployment"]},
-        {"docs/cookbook/LIVEVIEW_INTEGRATION.md", [title: "LiveView Integration"]},
+        {"docs/cookbook/LIVEVIEW_INTEGRATION.md",
+         [title: "LiveView Integration"]},
         {"docs/cookbook/THEMING.md", [title: "Theming"]},
         {"docs/cookbook/PERFORMANCE_OPTIMIZATION.md", [title: "Performance"]},
         {"docs/bench/README.md", [title: "Benchmarks", filename: "benchmarks"]},
@@ -419,7 +421,8 @@ defmodule Raxol.MixProject do
         {"docs/features/FUZZY_SEARCH.md", [title: "Fuzzy Search"]},
         {"docs/features/FILESYSTEM.md", [title: "Virtual Filesystem"]},
         {"docs/features/CURSOR_EFFECTS.md", [title: "Cursor Effects"]},
-        {"examples/core/README.md", [title: "Core Examples", filename: "core-examples"]}
+        {"examples/core/README.md",
+         [title: "Core Examples", filename: "core-examples"]}
       ],
       groups_for_extras: [
         "Getting Started": ~w(

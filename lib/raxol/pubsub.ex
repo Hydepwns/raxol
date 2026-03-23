@@ -159,13 +159,26 @@ defmodule Raxol.PubSub do
       }
     end
   else
-    def subscribe(_topic), do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
-    def subscribe(_topic, _opts), do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
-    def unsubscribe(_topic), do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
-    def broadcast(_topic, _message), do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
-    def broadcast_from(_from, _topic, _message), do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
-    def local_broadcast(_topic, _message), do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
-    def local_broadcast_from(_from, _topic, _message), do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+    def subscribe(_topic),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def subscribe(_topic, _opts),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def unsubscribe(_topic),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def broadcast(_topic, _message),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def broadcast_from(_from, _topic, _message),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def local_broadcast(_topic, _message),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def local_broadcast_from(_from, _topic, _message),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
 
     def child_spec(_opts) do
       raise "Raxol.PubSub requires the :phoenix_pubsub dependency"

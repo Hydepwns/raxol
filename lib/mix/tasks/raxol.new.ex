@@ -92,15 +92,36 @@ defmodule Mix.Tasks.Raxol.New do
     Mix.shell().error("Usage: mix raxol.new APP_NAME [options]")
     Mix.shell().error("")
     Mix.shell().error("Options:")
-    Mix.shell().error("  --module NAME      Module name (default: derived from app name)")
-    Mix.shell().error("  --sup              Generate OTP application with supervision tree")
+
+    Mix.shell().error(
+      "  --module NAME      Module name (default: derived from app name)"
+    )
+
+    Mix.shell().error(
+      "  --sup              Generate OTP application with supervision tree"
+    )
+
     Mix.shell().error("  --ssh              Include SSH server boilerplate")
     Mix.shell().error("  --liveview         Include Phoenix LiveView bridge")
-    Mix.shell().error("  --template NAME    Starter template: #{Enum.join(@templates, ", ")}")
-    Mix.shell().error("  --ci               Generate GitHub Actions CI workflow")
+
+    Mix.shell().error(
+      "  --template NAME    Starter template: #{Enum.join(@templates, ", ")}"
+    )
+
+    Mix.shell().error(
+      "  --ci               Generate GitHub Actions CI workflow"
+    )
+
     Mix.shell().error("  --no-test          Skip test files")
-    Mix.shell().error("  --install          Run mix deps.get + compile + test after generation")
-    Mix.shell().error("  --list             Show available templates with descriptions")
+
+    Mix.shell().error(
+      "  --install          Run mix deps.get + compile + test after generation"
+    )
+
+    Mix.shell().error(
+      "  --list             Show available templates with descriptions"
+    )
+
     Mix.shell().error("")
     Mix.shell().error("Example: mix raxol.new my_app --sup --template todo")
   end
@@ -126,29 +147,51 @@ defmodule Mix.Tasks.Raxol.New do
 
   defp print_template_preview("counter") do
     Mix.shell().info([:bright, "counter", :reset, " generates:"])
-    Mix.shell().info("  lib/my_app.ex      -- Counter with +/- buttons and keyboard control")
-    Mix.shell().info("  test/my_app_test.exs -- Tests for increment/decrement/unknown")
+
+    Mix.shell().info(
+      "  lib/my_app.ex      -- Counter with +/- buttons and keyboard control"
+    )
+
+    Mix.shell().info(
+      "  test/my_app_test.exs -- Tests for increment/decrement/unknown"
+    )
+
     Mix.shell().info("")
   end
 
   defp print_template_preview("blank") do
     Mix.shell().info([:bright, "blank", :reset, " generates:"])
     Mix.shell().info("  lib/my_app.ex      -- Empty TEA app with quit handling")
-    Mix.shell().info("  test/my_app_test.exs -- Tests for init and unknown messages")
+
+    Mix.shell().info(
+      "  test/my_app_test.exs -- Tests for init and unknown messages"
+    )
+
     Mix.shell().info("")
   end
 
   defp print_template_preview("todo") do
     Mix.shell().info([:bright, "todo", :reset, " generates:"])
-    Mix.shell().info("  lib/my_app.ex      -- Todo list with add/toggle/delete, input mode")
+
+    Mix.shell().info(
+      "  lib/my_app.ex      -- Todo list with add/toggle/delete, input mode"
+    )
+
     Mix.shell().info("  test/my_app_test.exs -- Tests for CRUD operations")
     Mix.shell().info("")
   end
 
   defp print_template_preview("dashboard") do
     Mix.shell().info([:bright, "dashboard", :reset, " generates:"])
-    Mix.shell().info("  lib/my_app.ex      -- 3-panel dashboard with live stats subscription")
-    Mix.shell().info("  test/my_app_test.exs -- Tests for panel switching and tick")
+
+    Mix.shell().info(
+      "  lib/my_app.ex      -- 3-panel dashboard with live stats subscription"
+    )
+
+    Mix.shell().info(
+      "  test/my_app_test.exs -- Tests for panel switching and tick"
+    )
+
     Mix.shell().info("")
   end
 
@@ -190,20 +233,39 @@ defmodule Mix.Tasks.Raxol.New do
     end
 
     answer =
-      Mix.shell().prompt("Template [counter/blank/todo/dashboard] (default: counter)")
+      Mix.shell().prompt(
+        "Template [counter/blank/todo/dashboard] (default: counter)"
+      )
       |> String.trim()
       |> String.downcase()
 
     template =
       case answer do
-        "" -> "counter"
-        "1" -> "counter"
-        "2" -> "blank"
-        "3" -> "dashboard"
-        "4" -> "todo"
-        t when t in @templates -> t
+        "" ->
+          "counter"
+
+        "1" ->
+          "counter"
+
+        "2" ->
+          "blank"
+
+        "3" ->
+          "dashboard"
+
+        "4" ->
+          "todo"
+
+        t when t in @templates ->
+          t
+
         _ ->
-          Mix.shell().info([:yellow, "Unknown template, using counter.", :reset])
+          Mix.shell().info([
+            :yellow,
+            "Unknown template, using counter.",
+            :reset
+          ])
+
           "counter"
       end
 
@@ -275,7 +337,13 @@ defmodule Mix.Tasks.Raxol.New do
     # App modules
     if sup? do
       write_file(path, "lib/#{app}.ex", app_module_sup(bindings))
-      write_file(path, "lib/#{app}/application.ex", application_module(bindings))
+
+      write_file(
+        path,
+        "lib/#{app}/application.ex",
+        application_module(bindings)
+      )
+
       write_file(path, "lib/#{app}/app.ex", tea_module(bindings))
     else
       write_file(path, "lib/#{app}.ex", tea_module_standalone(bindings))
@@ -322,10 +390,22 @@ defmodule Mix.Tasks.Raxol.New do
           stderr_to_stdout: true
         )
 
-        Mix.shell().info(["  ", :green, "* initialized ", :reset, "git repo with initial commit"])
+        Mix.shell().info([
+          "  ",
+          :green,
+          "* initialized ",
+          :reset,
+          "git repo with initial commit"
+        ])
 
       _ ->
-        Mix.shell().info(["  ", :yellow, "* skipping ", :reset, "git init (git not available)"])
+        Mix.shell().info([
+          "  ",
+          :yellow,
+          "* skipping ",
+          :reset,
+          "git init (git not available)"
+        ])
     end
   end
 
@@ -340,7 +420,10 @@ defmodule Mix.Tasks.Raxol.New do
 
       {output, _} ->
         Mix.shell().info(output)
-        Mix.shell().error("Failed to install dependencies. Run `mix deps.get` manually.")
+
+        Mix.shell().error(
+          "Failed to install dependencies. Run `mix deps.get` manually."
+        )
     end
   end
 
@@ -417,7 +500,13 @@ defmodule Mix.Tasks.Raxol.New do
     if ssh? do
       Mix.shell().info("")
       Mix.shell().info([:yellow, "SSH server:", :reset, " mix run --no-halt"])
-      Mix.shell().info(["Then connect: ", :cyan, "ssh localhost -p 2222", :reset])
+
+      Mix.shell().info([
+        "Then connect: ",
+        :cyan,
+        "ssh localhost -p 2222",
+        :reset
+      ])
     end
 
     Mix.shell().info("")
@@ -1124,7 +1213,8 @@ defmodule Mix.Tasks.Raxol.New do
   # ---------------------------------------------------------------------------
 
   defp ssh_module(%{module: module}) do
-    app_mod = if String.ends_with?(module, ".App"), do: module, else: "#{module}.App"
+    app_mod =
+      if String.ends_with?(module, ".App"), do: module, else: "#{module}.App"
 
     """
     defmodule #{module}.SSH do
@@ -1153,7 +1243,8 @@ defmodule Mix.Tasks.Raxol.New do
   # ---------------------------------------------------------------------------
 
   defp liveview_module(%{module: module}) do
-    app_mod = if String.ends_with?(module, ".App"), do: module, else: "#{module}.App"
+    app_mod =
+      if String.ends_with?(module, ".App"), do: module, else: "#{module}.App"
 
     """
     defmodule #{module}.Live do

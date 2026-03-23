@@ -279,7 +279,10 @@ defmodule Raxol.Terminal.Manager do
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:create_session, opts}, _from, state) do
     session_id = Map.get(opts, :id, UUID.uuid4())
-    new_sessions = Map.put(state.sessions, session_id, %{id: session_id, opts: opts})
+
+    new_sessions =
+      Map.put(state.sessions, session_id, %{id: session_id, opts: opts})
+
     {:reply, {:ok, session_id}, %{state | sessions: new_sessions}}
   end
 

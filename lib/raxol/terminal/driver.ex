@@ -518,7 +518,6 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-
   # --- Private Helpers ---
 
   # defp init_test_environment(state, dispatcher_pid) do

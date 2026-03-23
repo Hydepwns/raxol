@@ -33,7 +33,13 @@ defmodule FileListWidget do
     %{
       type: :container,
       children:
-        [%{type: :text, content: "Files in #{state.path}:", style: %{bold: true}}] ++
+        [
+          %{
+            type: :text,
+            content: "Files in #{state.path}:",
+            style: %{bold: true}
+          }
+        ] ++
           file_lines,
       style: %{border: :single, padding: 1}
     }
@@ -62,7 +68,8 @@ defmodule ProcessComponentDemo do
         {model, [command(:quit)]}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c"}} ->
-        {%{model | status: "Widget crashed! It will restart on next render."}, []}
+        {%{model | status: "Widget crashed! It will restart on next render."},
+         []}
 
       _ ->
         {model, []}

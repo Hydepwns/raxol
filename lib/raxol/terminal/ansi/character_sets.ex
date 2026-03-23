@@ -311,7 +311,9 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     def resolve_charset_name(charset) when is_atom(charset) do
       case Code.ensure_loaded(charset) do
         {:module, _} ->
-          if function_exported?(charset, :name, 0), do: charset.name(), else: charset
+          if function_exported?(charset, :name, 0),
+            do: charset.name(),
+            else: charset
 
         _ ->
           charset

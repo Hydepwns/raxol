@@ -1042,8 +1042,18 @@ defmodule Raxol.UI.Layout.Flexbox do
 
   # Text styling properties that cascade from parent to child.
   @inheritable_keys [
-    :fg, :bg, :foreground, :background, :fg_color, :bg_color,
-    :bold, :italic, :underline, :strikethrough, :reverse, :dim
+    :fg,
+    :bg,
+    :foreground,
+    :background,
+    :fg_color,
+    :bg_color,
+    :bold,
+    :italic,
+    :underline,
+    :strikethrough,
+    :reverse,
+    :dim
   ]
 
   defp inherit_styles(parent, children) do

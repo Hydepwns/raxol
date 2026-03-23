@@ -26,8 +26,11 @@ defmodule Raxol.SSH.Server do
     * `:host_keys_dir` - Directory for SSH host keys (default: "/tmp/raxol_ssh_keys")
   """
   def serve(app_module, opts \\ []) do
-    start_link(app_module: app_module, port: Keyword.get(opts, :port, 2222),
-      host_keys_dir: Keyword.get(opts, :host_keys_dir, "/tmp/raxol_ssh_keys"))
+    start_link(
+      app_module: app_module,
+      port: Keyword.get(opts, :port, 2222),
+      host_keys_dir: Keyword.get(opts, :host_keys_dir, "/tmp/raxol_ssh_keys")
+    )
   end
 
   def start_link(opts) do
@@ -94,7 +97,12 @@ defmodule Raxol.SSH.Server do
 
   defp generate_host_key(dir) do
     rsa_key = :public_key.generate_key({:rsa, 2048, 65537})
-    rsa_pem = :public_key.pem_encode([:public_key.pem_entry_encode(:RSAPrivateKey, rsa_key)])
+
+    rsa_pem =
+      :public_key.pem_encode([
+        :public_key.pem_entry_encode(:RSAPrivateKey, rsa_key)
+      ])
+
     File.write!(Path.join(dir, "ssh_host_rsa_key"), rsa_pem)
   end
 end

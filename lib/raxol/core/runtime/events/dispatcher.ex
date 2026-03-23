@@ -350,7 +350,10 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # Catch-all for other cast messages
   @impl true
-  def handle_manager_cast({:update_plugin_manager, %Raxol.Plugins.Manager{} = updated}, state) do
+  def handle_manager_cast(
+        {:update_plugin_manager, %Raxol.Plugins.Manager{} = updated},
+        state
+      ) do
     {:noreply, %{state | plugin_manager_struct: updated}}
   end
 

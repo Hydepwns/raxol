@@ -60,7 +60,10 @@ defmodule RaxolDemo do
           Enum.zip(model.sched_prev, curr)
           |> Enum.map(fn {{_id, a1, t1}, {_id2, a2, t2}} ->
             delta_total = t2 - t1
-            if delta_total > 0, do: round((a2 - a1) / delta_total * 100), else: 0
+
+            if delta_total > 0,
+              do: round((a2 - a1) / delta_total * 100),
+              else: 0
           end)
 
         mem_pct = mem_percent()
@@ -69,13 +72,14 @@ defmodule RaxolDemo do
         entry = tick_entry(model.tick)
         log = [{ts(), entry} | model.log] |> Enum.take(12)
 
-        {%{model |
-          tick: model.tick + 1,
-          sched_prev: curr,
-          sched_utils: utils,
-          mem_history: history,
-          log: log
-        }, []}
+        {%{
+           model
+           | tick: model.tick + 1,
+             sched_prev: curr,
+             sched_utils: utils,
+             mem_history: history,
+             log: log
+         }, []}
 
       # Navigation
       %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
@@ -104,7 +108,10 @@ defmodule RaxolDemo do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       _ ->
@@ -147,7 +154,10 @@ defmodule RaxolDemo do
         [
           text("  R A X O L", style: [:bold], fg: :cyan),
           text("Terminal UI Framework for Elixir", style: [:dim]),
-          text(status, style: [:bold], fg: if(model.paused, do: :yellow, else: :cyan))
+          text(status,
+            style: [:bold],
+            fg: if(model.paused, do: :yellow, else: :cyan)
+          )
         ]
       end
     end
@@ -164,7 +174,10 @@ defmodule RaxolDemo do
     box style: %{border: panel_border(active), width: 30, padding: 1} do
       column style: %{gap: 0} do
         [
-          text(panel_title("BEAM Runtime", active), style: [:bold], fg: title_color(active)),
+          text(panel_title("BEAM Runtime", active),
+            style: [:bold],
+            fg: title_color(active)
+          ),
           divider(char: "-"),
           text("Elixir     #{System.version()}"),
           text("OTP        #{:erlang.system_info(:otp_release)}"),
@@ -217,7 +230,10 @@ defmodule RaxolDemo do
     box style: %{border: panel_border(active), width: 28, padding: 1} do
       column style: %{gap: 0} do
         [
-          text(panel_title("Schedulers", active), style: [:bold], fg: title_color(active)),
+          text(panel_title("Schedulers", active),
+            style: [:bold],
+            fg: title_color(active)
+          ),
           divider(char: "-")
           | sched_rows ++
               [
@@ -227,11 +243,16 @@ defmodule RaxolDemo do
                   [
                     text("Avg", style: [:bold]),
                     text(bar(avg, 12), fg: bar_color(avg)),
-                    text("#{String.pad_leading("#{avg}", 3)}%", style: [:bold], fg: bar_color(avg))
+                    text("#{String.pad_leading("#{avg}", 3)}%",
+                      style: [:bold],
+                      fg: bar_color(avg)
+                    )
                   ]
                 end,
                 spacer(size: 1),
-                text("#{status_dot(avg)} #{sched_status(avg)}", fg: bar_color(avg))
+                text("#{status_dot(avg)} #{sched_status(avg)}",
+                  fg: bar_color(avg)
+                )
               ]
         ]
       end
@@ -258,7 +279,10 @@ defmodule RaxolDemo do
     box style: %{border: panel_border(active), width: 36, padding: 1} do
       column style: %{gap: 0} do
         [
-          text(panel_title("Event Log#{tick_label}", active), style: [:bold], fg: title_color(active)),
+          text(panel_title("Event Log#{tick_label}", active),
+            style: [:bold],
+            fg: title_color(active)
+          ),
           divider(char: "-")
           | entries
         ]
@@ -277,7 +301,10 @@ defmodule RaxolDemo do
         [
           text(String.pad_trailing("PID", 16), style: [:bold], fg: :yellow),
           text(String.pad_trailing("Name", 28), style: [:bold], fg: :yellow),
-          text(String.pad_leading("Reductions", 12), style: [:bold], fg: :yellow),
+          text(String.pad_leading("Reductions", 12),
+            style: [:bold],
+            fg: :yellow
+          ),
           text(String.pad_leading("Memory", 10), style: [:bold], fg: :yellow)
         ]
       end
@@ -298,7 +325,10 @@ defmodule RaxolDemo do
     box style: %{border: panel_border(active), width: :fill, padding: 1} do
       column style: %{gap: 0} do
         [
-          text(panel_title("Top Processes", active), style: [:bold], fg: title_color(active)),
+          text(panel_title("Top Processes", active),
+            style: [:bold],
+            fg: title_color(active)
+          ),
           divider(char: "-"),
           header,
           divider(char: "-")
@@ -343,7 +373,14 @@ defmodule RaxolDemo do
               n -> inspect(n)
             end
 
-          [%{pid: inspect(pid), name: name, reds: info[:reductions], mem: info[:memory]}]
+          [
+            %{
+              pid: inspect(pid),
+              name: name,
+              reds: info[:reductions],
+              mem: info[:memory]
+            }
+          ]
       end
     end)
     |> Enum.sort_by(& &1.reds, :desc)
@@ -353,6 +390,7 @@ defmodule RaxolDemo do
 
   defp mem_stats do
     m = :erlang.memory()
+
     %{
       total: Float.round(m[:total] / 1_048_576, 1),
       used: Float.round((m[:total] - m[:binary]) / 1_048_576, 1),
@@ -445,7 +483,9 @@ defmodule RaxolDemo do
   defp fmt_num(n) when n >= 1_000, do: "#{Float.round(n / 1_000, 1)}K"
   defp fmt_num(n), do: "#{n}"
 
-  defp fmt_bytes(b) when b >= 1_048_576, do: "#{Float.round(b / 1_048_576, 1)} MB"
+  defp fmt_bytes(b) when b >= 1_048_576,
+    do: "#{Float.round(b / 1_048_576, 1)} MB"
+
   defp fmt_bytes(b) when b >= 1024, do: "#{Float.round(b / 1024, 1)} KB"
   defp fmt_bytes(b), do: "#{b} B"
 

@@ -46,7 +46,10 @@ defmodule Mix.Tasks.Raxol.Gen.Component do
       )
     end
 
-    app = Mix.Project.config()[:app] || Mix.raise("Could not determine app name from mix.exs")
+    app =
+      Mix.Project.config()[:app] ||
+        Mix.raise("Could not determine app name from mix.exs")
+
     app_module = app |> to_string() |> Macro.camelize()
     module = "#{app_module}.Components.#{name}"
     filename = name |> Macro.underscore() |> String.replace("/", "_")
@@ -55,7 +58,10 @@ defmodule Mix.Tasks.Raxol.Gen.Component do
     write_file("lib/#{app}/components/#{filename}.ex", component_module(module))
 
     unless skip_test do
-      write_file("test/#{app}/components/#{filename}_test.exs", component_test(module))
+      write_file(
+        "test/#{app}/components/#{filename}_test.exs",
+        component_test(module)
+      )
     end
 
     Mix.shell().info("")
@@ -63,7 +69,14 @@ defmodule Mix.Tasks.Raxol.Gen.Component do
     Mix.shell().info("")
     Mix.shell().info("Use it in your view:")
     Mix.shell().info("")
-    Mix.shell().info(["    ", :cyan, "process_component(#{module}, %{my_prop: value})", :reset])
+
+    Mix.shell().info([
+      "    ",
+      :cyan,
+      "process_component(#{module}, %{my_prop: value})",
+      :reset
+    ])
+
     Mix.shell().info("")
   end
 

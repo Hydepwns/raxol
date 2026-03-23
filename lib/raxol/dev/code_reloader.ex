@@ -21,13 +21,14 @@ defmodule Raxol.Dev.CodeReloader do
 
   @impl true
   def init(lifecycle_pid) do
-    case FileSystem.start_link(dirs: [Path.expand("lib")], name: :code_reloader_watcher) do
+    case FileSystem.start_link(
+           dirs: [Path.expand("lib")],
+           name: :code_reloader_watcher
+         ) do
       {:ok, watcher_pid} ->
         FileSystem.subscribe(:code_reloader_watcher)
 
-        Raxol.Core.Runtime.Log.info(
-          "[CodeReloader] Watching lib/ for changes"
-        )
+        Raxol.Core.Runtime.Log.info("[CodeReloader] Watching lib/ for changes")
 
         {:ok,
          %__MODULE__{

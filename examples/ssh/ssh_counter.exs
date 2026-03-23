@@ -41,7 +41,12 @@ defmodule SSHCounterExample do
     column style: %{padding: 1, gap: 1, align_items: :center} do
       [
         text("SSH Counter (connected via SSH!)", style: [:bold]),
-        box style: %{padding: 1, border: :single, width: 20, justify_content: :center} do
+        box style: %{
+              padding: 1,
+              border: :single,
+              width: 20,
+              justify_content: :center
+            } do
           text("Count: #{model.count}", style: [:bold])
         end,
         text("Press '+'/'-' to change, 'q' to quit")

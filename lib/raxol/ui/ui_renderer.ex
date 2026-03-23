@@ -261,5 +261,7 @@ defmodule Raxol.UI.Renderer do
   end
 
   defp add_clip_bounds(child, nil), do: child
-  defp add_clip_bounds(child, clip_bounds), do: Map.put(child, :clip_bounds, clip_bounds)
+
+  defp add_clip_bounds(child, clip_bounds),
+    do: Map.put(child, :clip_bounds, clip_bounds)
 end

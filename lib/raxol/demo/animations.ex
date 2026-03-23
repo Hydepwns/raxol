@@ -571,19 +571,20 @@ defmodule Raxol.Demo.Animations do
     combined = all_explosions ++ ring_particles
 
     # Animate rings expanding
-    _particles = Enum.reduce(1..35, combined, fn _frame, particles ->
-      particles =
+    _particles =
+      Enum.reduce(1..35, combined, fn _frame, particles ->
+        particles =
+          particles
+          |> Enum.map(&Particles.update_with_trail(&1, gravity: 0.02))
+          |> Particles.prune()
+          |> Enum.take(200)
+
+        out(target, "\e[2J\e[H")
+        out(target, Particles.render_with_trails(particles, width, height))
+        Process.sleep(@frame_delay)
+
         particles
-        |> Enum.map(&Particles.update_with_trail(&1, gravity: 0.02))
-        |> Particles.prune()
-        |> Enum.take(200)
-
-      out(target, "\e[2J\e[H")
-      out(target, Particles.render_with_trails(particles, width, height))
-      Process.sleep(@frame_delay)
-
-      particles
-    end)
+      end)
 
     # Phase 3: Screen flash and final message
     flash_screen(target, :white, 3, width, height)

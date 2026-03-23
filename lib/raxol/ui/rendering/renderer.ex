@@ -139,12 +139,12 @@ defmodule Raxol.UI.Rendering.Renderer do
        when is_binary(content) do
     lines = String.split(content, "\n")
 
-    {ops, next_line} =
+    {ops_reversed, next_line} =
       Enum.reduce(lines, {[], line}, fn text_line, {acc, l} ->
-        {acc ++ [{:draw_text, l, text_line}], l + 1}
+        {[{:draw_text, l, text_line} | acc], l + 1}
       end)
 
-    {ops, next_line}
+    {Enum.reverse(ops_reversed), next_line}
   end
 
   # Old format: :text with attrs.content

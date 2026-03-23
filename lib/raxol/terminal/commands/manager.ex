@@ -219,7 +219,7 @@ defmodule Raxol.Terminal.Commands.Manager do
   """
   def add_to_history_state(%Raxol.Terminal.Commands.Command{} = state, command)
       when is_binary(command) do
-    new_history = state.history ++ [command]
+    new_history = [command | state.history]
     max_history = state.max_history || 100
 
     trimmed_history =
@@ -377,7 +377,7 @@ defmodule Raxol.Terminal.Commands.Manager do
   defp return_search_result(false, matches), do: {:ok, matches}
 
   defp trim_history_if_needed(true, new_history, max_history) do
-    Enum.slice(new_history, -max_history, max_history)
+    Enum.take(new_history, max_history)
   end
 
   defp trim_history_if_needed(false, new_history, _max_history), do: new_history

@@ -43,7 +43,10 @@ defmodule TodoApp do
       when model.mode == :normal ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       # -- Normal mode --
@@ -229,7 +232,10 @@ defmodule TodoApp do
 
   defp filter_by_search(todos, search) do
     term = String.downcase(search)
-    Enum.filter(todos, fn t -> String.contains?(String.downcase(t.text), term) end)
+
+    Enum.filter(todos, fn t ->
+      String.contains?(String.downcase(t.text), term)
+    end)
   end
 
   defp move_cursor(model, delta) do
@@ -266,7 +272,13 @@ defmodule TodoApp do
 
       todo ->
         todos = Enum.reject(model.todos, &(&1.id == todo.id))
-        filtered_len = length(filter_by_status(todos, model.filter) |> filter_by_search(model.search))
+
+        filtered_len =
+          length(
+            filter_by_status(todos, model.filter)
+            |> filter_by_search(model.search)
+          )
+
         new_cursor = min(model.cursor, max(filtered_len - 1, 0))
         %{model | todos: todos, cursor: new_cursor}
     end
@@ -274,8 +286,11 @@ defmodule TodoApp do
 
   defp start_edit(model) do
     case todo_at_cursor(model) do
-      nil -> model
-      todo -> %{model | mode: :edit, editing_id: todo.id, input_buffer: todo.text}
+      nil ->
+        model
+
+      todo ->
+        %{model | mode: :edit, editing_id: todo.id, input_buffer: todo.text}
     end
   end
 

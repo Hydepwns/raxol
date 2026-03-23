@@ -418,7 +418,10 @@ defmodule Raxol.UI.Layout.Engine do
   end
 
   # Checkbox with top-level :label key (new View DSL format)
-  def measure_element(%{type: :checkbox, label: label} = _element, _available_space) do
+  def measure_element(
+        %{type: :checkbox, label: label} = _element,
+        _available_space
+      ) do
     Elements.measure(:checkbox, %{label: label || ""})
   end
 
@@ -433,7 +436,10 @@ defmodule Raxol.UI.Layout.Engine do
   end
 
   # Box with top-level properties (new View DSL format from Box.new/1)
-  def measure_element(%{type: :box, children: children} = element, available_space)
+  def measure_element(
+        %{type: :box, children: children} = element,
+        available_space
+      )
       when is_list(children) do
     attrs_map = %{
       width: Map.get(element, :width) || Map.get(element, :size),
@@ -446,12 +452,19 @@ defmodule Raxol.UI.Layout.Engine do
         %{width: w, height: h}
 
       _ ->
-        measure_container_element(:column, %{type: :column, children: children}, available_space)
+        measure_container_element(
+          :column,
+          %{type: :column, children: children},
+          available_space
+        )
     end
   end
 
   # Flex with top-level properties (new View DSL format from Flex.row/1 etc.)
-  def measure_element(%{type: :flex, children: children} = element, available_space)
+  def measure_element(
+        %{type: :flex, children: children} = element,
+        available_space
+      )
       when is_list(children) do
     # Build attrs map from top-level keys so parse_flex_properties works
     attrs = %{

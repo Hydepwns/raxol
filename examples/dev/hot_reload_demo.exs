@@ -21,8 +21,11 @@ defmodule HotReloadDemo do
   @impl true
   def update(message, model) do
     case message do
-      :increment -> {%{model | count: model.count + 1}, []}
-      :decrement -> {%{model | count: model.count - 1}, []}
+      :increment ->
+        {%{model | count: model.count + 1}, []}
+
+      :decrement ->
+        {%{model | count: model.count - 1}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} ->
         {%{model | count: model.count + 1}, []}
@@ -45,7 +48,12 @@ defmodule HotReloadDemo do
       [
         text("Hot Reload Demo", style: [:bold]),
         text("Edit this view/1 function and save to see changes!"),
-        box style: %{padding: 1, border: :single, width: 30, justify_content: :center} do
+        box style: %{
+              padding: 1,
+              border: :single,
+              width: 30,
+              justify_content: :center
+            } do
           text("Count: #{model.count}", style: [:bold])
         end,
         text("Press '+'/'-' to change count, 'q' to quit")

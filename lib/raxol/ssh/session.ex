@@ -13,7 +13,14 @@ defmodule Raxol.SSH.Session do
 
   alias Raxol.SSH.IOAdapter
 
-  defstruct [:app_module, :lifecycle_pid, :connection_ref, :channel_id, :width, :height]
+  defstruct [
+    :app_module,
+    :lifecycle_pid,
+    :connection_ref,
+    :channel_id,
+    :width,
+    :height
+  ]
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)

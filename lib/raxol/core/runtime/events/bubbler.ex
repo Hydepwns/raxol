@@ -196,7 +196,9 @@ defmodule Raxol.Core.Runtime.Events.Bubbler do
     {:handled, {:message, handler}}
   end
 
-  defp try_inline_handler(%Event{type: :key, data: %{key: key}}, %{on_click: handler})
+  defp try_inline_handler(%Event{type: :key, data: %{key: key}}, %{
+         on_click: handler
+       })
        when key in [:enter, :space] and not is_nil(handler) do
     {:handled, {:message, handler}}
   end
