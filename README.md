@@ -1,149 +1,143 @@
 # Raxol
 
-[![CI](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml/badge.svg?branch=master)](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml)
-[![Security](https://github.com/Hydepwns/raxol/actions/workflows/security.yml/badge.svg?branch=master)](https://github.com/Hydepwns/raxol/actions/workflows/security.yml)
-[![Coverage](https://img.shields.io/badge/coverage-98.7%25-brightgreen.svg)](https://codecov.io/gh/Hydepwns/raxol)
-[![Performance](https://img.shields.io/badge/parser-3.3μs%2Fseq-brightgreen.svg)](bench/README.md)
 [![Hex.pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
 [![Documentation](https://img.shields.io/badge/docs-hexdocs-purple.svg)](https://hexdocs.pm/raxol)
+[![CI](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml/badge.svg?branch=master)](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml)
 
-A terminal application framework for Elixir.
+Terminal apps for Elixir, built on OTP.
 
-Raxol started as a terminal interface for AGI -- the kind of cockpit UI you'd build into a Gundam. We needed something that could render fast, compose like React, survive process crashes via OTP supervision, and run the same app over SSH, in a browser, or on bare metal. Nothing in the Elixir ecosystem did that, so we built it.
+Raxol gives you a component model, layout engine, and render pipeline for building terminal UIs -- the kind of thing you'd reach for Ratatui, Bubble Tea, or Textual to do, but in Elixir with all the OTP batteries included.
 
-It supports four UI paradigms (React, LiveView, HEEx, Raw), runs on all major platforms, and the same application code can render to a terminal or a Phoenix LiveView -- no rewrite needed.
+Your app is a GenServer. Components can crash and restart without taking down the UI. You can hot-reload your view function while the app is running. The same code renders to a terminal, a browser via LiveView, or over SSH. No other TUI framework does all of that.
 
-## Quick Start
+## Install
 
-See the [Quickstart Tutorial](docs/getting-started/QUICKSTART.md), or just run the counter example:
+```elixir
+# mix.exs
+def deps do
+  [{:raxol, "~> 2.2"}]
+end
+```
+
+Or generate a new project:
 
 ```bash
-git clone --recursive https://github.com/Hydepwns/raxol.git
-cd raxol
-mix deps.get
-mix run examples/getting_started/counter.exs
+mix archive.install hex raxol_new
+mix raxol.new my_app
 ```
 
-Pick your framework:
+## Hello World
+
+Every Raxol app follows [The Elm Architecture](https://guide.elm-lang.org/architecture/) -- `init`, `update`, `view`:
 
 ```elixir
-use Raxol.UI, framework: :react      # React-style components with TEA (init/update/view)
-use Raxol.UI, framework: :liveview   # Phoenix LiveView patterns
-use Raxol.UI, framework: :heex       # Phoenix templates
-use Raxol.UI, framework: :raw        # Direct terminal control
-```
-
-A basic app uses TEA (The Elm Architecture) -- `init/update/view`:
-
-```elixir
-defmodule MyApp do
+defmodule Counter do
   use Raxol.Core.Runtime.Application
 
-  @impl true
-  def init(_context), do: %{count: 0}
+  def init(_ctx), do: %{count: 0}
 
-  @impl true
-  def update(message, model) do
-    case message do
-      :increment -> {%{model | count: model.count + 1}, []}
-      _ -> {model, []}
-    end
-  end
+  def update(:inc, model), do: {%{model | count: model.count + 1}, []}
+  def update(:dec, model), do: {%{model | count: model.count - 1}, []}
+  def update(_, model), do: {model, []}
 
-  @impl true
   def view(model) do
     column style: %{padding: 1, gap: 1} do
       [
         text("Count: #{model.count}", style: [:bold]),
-        button("Increment", on_click: :increment)
+        row style: %{gap: 1} do
+          [button("+", on_click: :inc), button("-", on_click: :dec)]
+        end
       ]
     end
   end
 
-  @impl true
   def subscribe(_model), do: []
 end
-
-Raxol.start_link(MyApp, [])
 ```
 
-[More examples](examples/README.md)
+Run it:
 
-## Platform Support
+```bash
+mix run examples/getting_started/counter.exs
+```
 
-Backend selection is automatic:
+## What You Get
 
-- **Unix/macOS** -- Native termbox2 NIF (~50us per frame)
-- **Windows 10+** -- Pure Elixir driver via OTP 28+ raw mode (~500us per frame)
+**23 widgets** -- Button, TextInput, Table, Tree, Modal, SelectList, Checkbox, Sparkline, and more. All keyboard-navigable with focus management.
 
-Windows uses VT100 terminal emulation, enabled by default. No extra setup.
+**Layout engine** -- Flexbox (`row`/`column` with `flex`, `gap`, `align_items`) and CSS Grid (`template_columns`, `template_rows`). Nested freely.
 
-## Packages
+**60fps rendering** -- Virtual DOM diffing, damage tracking, synchronized terminal output. Full frame renders in ~2ms, leaving 87% of the budget for your code.
 
-Available as focused packages or as the full framework:
+**Theming** -- Named colors, RGB, 256-color, hex strings. Auto-downsample to whatever the terminal supports. Runtime theme switching.
 
-- **[raxol_core](https://hex.pm/packages/raxol_core)** -- Buffer primitives (< 100KB, zero deps)
-- **[raxol_liveview](https://hex.pm/packages/raxol_liveview)** -- Phoenix LiveView integration
-- **[raxol_plugin](https://hex.pm/packages/raxol_plugin)** -- Plugin system
-- **raxol** -- Everything
+**Event system** -- W3C-style capture and bubble phases. Events propagate through the view tree with `on_click`, `on_change`, `on_event` handlers.
 
-See the [Package Guide](docs/getting-started/PACKAGES.md) for details.
+## What Makes It Different
 
-## Components-Only Mode
+These aren't bolted on -- they fall out naturally from running on the BEAM:
 
-Import with `runtime: false` and you get the UI layer without the terminal runtime -- all the framework adapters, components (Button, Input, Table, Modal, etc.), state management, animations, and theming. No terminal emulator, no ANSI processing, no PTY management. Useful if you just want the component library for a web app.
+**Crash isolation** -- Wrap any widget in `process_component/2` and it runs in its own process. If it crashes, it restarts. The rest of your UI doesn't blink.
 
-## Architecture
+**Hot code reload** -- Change your `view/1` function, save the file, and the running app updates. No restart. Powered by `Raxol.Dev.CodeReloader` watching the filesystem.
 
-The terminal layer handles VT100/ANSI compliance, Sixel graphics, mouse support, tab completion, and command history. The UI system gives you component composition, theming, and a 60 FPS animation engine. OTP supervision means a crash in one component doesn't take down the app.
+**SSH serving** -- `Raxol.SSH.serve(MyApp, port: 2222)` and anyone can `ssh localhost -p 2222` into your app. Each connection gets its own supervised process.
 
-The thing that makes Raxol different from Ratatui or Bubble Tea: a single app can render to a terminal AND a browser via the LiveView bridge. Deploy to SSH and web from one codebase. Erlang's built-in `:ssh` module means you can serve TUI apps over SSH with zero client requirements.
+**LiveView bridge** -- The same TEA app can render to a Phoenix LiveView. Terminal and browser, same codebase, same state model.
 
-See [Architecture docs](docs/core/ARCHITECTURE.md) for internals.
+## Try the Demo
+
+The flagship demo is a live BEAM dashboard -- scheduler utilization, memory sparklines, process table, all updating in real time:
+
+```bash
+git clone --recursive https://github.com/Hydepwns/raxol.git
+cd raxol && mix deps.get
+mix run examples/demo.exs
+```
+
+More examples:
+
+```bash
+mix run examples/getting_started/counter.exs    # Minimal counter
+mix run examples/apps/file_browser.exs           # File browser with tree nav
+mix run examples/apps/todo_app.ex                # Todo list
+```
 
 ## Performance
 
-Parser operations run at 3.3us/sequence. See [Benchmark Docs](docs/bench/README.md).
+Measured on Apple M1 Pro, Elixir 1.19 / OTP 26:
+
+| Operation | Time |
+|-----------|------|
+| Full frame (create + fill + diff) | 2.1 ms |
+| Tree diff (100 nodes) | 4 us |
+| Cell write | 0.97 us |
+| ANSI parse | 38 us |
+
+2.1ms per frame = 13% of the 60fps budget. See the [benchmark suite](docs/bench/README.md) for comparison against Ratatui, Bubble Tea, and Textual.
 
 ## Documentation
 
-**Getting Started** -- [Quickstart](docs/getting-started/QUICKSTART.md) | [Core Concepts](docs/getting-started/CORE_CONCEPTS.md) | [Migration Guide](docs/getting-started/MIGRATION_FROM_DIY.md)
+**Start here** -- [Quickstart](docs/getting-started/QUICKSTART.md) / [Core Concepts](docs/getting-started/CORE_CONCEPTS.md) / [Widget Gallery](docs/getting-started/WIDGET_GALLERY.md)
 
-**Cookbooks** -- [LiveView Integration](docs/cookbook/LIVEVIEW_INTEGRATION.md) | [Performance](docs/cookbook/PERFORMANCE_OPTIMIZATION.md) | [Theming](docs/cookbook/THEMING.md)
+**Cookbook** -- [Building Apps](docs/cookbook/BUILDING_APPS.md) / [SSH Deployment](docs/cookbook/SSH_DEPLOYMENT.md) / [Theming](docs/cookbook/THEMING.md) / [LiveView](docs/cookbook/LIVEVIEW_INTEGRATION.md) / [Performance](docs/cookbook/PERFORMANCE_OPTIMIZATION.md)
 
-**Features** -- [VIM Navigation](docs/features/VIM_NAVIGATION.md) | [Command Parser](docs/features/COMMAND_PARSER.md) | [Fuzzy Search](docs/features/FUZZY_SEARCH.md) | [Virtual Filesystem](docs/features/FILESYSTEM.md) | [Cursor Effects](docs/features/CURSOR_EFFECTS.md) | [Overview](docs/features/README.md)
+**Reference** -- [Architecture](docs/core/ARCHITECTURE.md) / [Buffer API](docs/core/BUFFER_API.md) / [Benchmarks](docs/bench/README.md) / [API Docs](https://hexdocs.pm/raxol)
 
-**API** -- [Buffer API](docs/core/BUFFER_API.md) | [Architecture](docs/core/ARCHITECTURE.md) | [Full API Reference](https://hexdocs.pm/raxol)
-
-## Development Setup
+## Development
 
 ```bash
 git clone --recursive https://github.com/Hydepwns/raxol.git
 cd raxol
 mix deps.get
-MIX_ENV=test mix compile
 MIX_ENV=test mix test --exclude slow --exclude integration --exclude docker
 ```
 
-Already cloned without `--recursive`? Initialize the termbox2 submodule:
+The termbox2 NIF requires a git submodule. If you cloned without `--recursive`:
 
 ```bash
 git submodule update --init --recursive
 ```
-
-## VS Code Extension
-
-Dev version in `editors/vscode/`:
-
-```bash
-cd editors/vscode && npm install && npm run compile && code --install-extension .
-```
-
-Gives you syntax highlighting, IntelliSense, component snippets, and live preview.
-
-## Roadmap
-
-What's next: Svelte framework support, WebGL-style terminal rendering, multi-session collaboration, a plugin marketplace, and mobile terminal clients. See [ROADMAP.md](ROADMAP.md).
 
 ## License
 

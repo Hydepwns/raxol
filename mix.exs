@@ -398,75 +398,73 @@ defmodule Raxol.MixProject do
 
   defp docs do
     [
-      main: "readme-1",
+      main: "readme",
       logo: "assets/logo.svg",
       extras: [
-        "README.md",
-        "CHANGELOG.md",
-        "LICENSE.md",
-        "ROADMAP.md",
-        ".github/CONTRIBUTING.md",
-        "docs/getting-started/PACKAGES.md",
-        "docs/getting-started/QUICKSTART.md",
-        "docs/getting-started/WIDGET_GALLERY.md",
-        "docs/getting-started/CORE_CONCEPTS.md",
-        "docs/getting-started/MIGRATION_FROM_DIY.md",
-        "docs/core/BUFFER_API.md",
-        "docs/core/ARCHITECTURE.md",
-        "docs/cookbook/README.md",
-        "docs/cookbook/BUILDING_APPS.md",
-        "docs/cookbook/SSH_DEPLOYMENT.md",
-        "docs/cookbook/LIVEVIEW_INTEGRATION.md",
-        "docs/cookbook/THEMING.md",
-        "docs/cookbook/PERFORMANCE_OPTIMIZATION.md",
-        "docs/bench/README.md",
-        "docs/features/README.md",
-        "docs/features/VIM_NAVIGATION.md",
-        "docs/features/COMMAND_PARSER.md",
-        "docs/features/FUZZY_SEARCH.md",
-        "docs/features/FILESYSTEM.md",
-        "docs/features/CURSOR_EFFECTS.md",
-        "examples/core/README.md"
+        {"README.md", [title: "Overview"]},
+        {"CHANGELOG.md", [title: "Changelog"]},
+        {"LICENSE.md", [title: "License"]},
+        {"ROADMAP.md", [title: "Roadmap"]},
+        {".github/CONTRIBUTING.md", [title: "Contributing"]},
+        {"docs/getting-started/PACKAGES.md", [title: "Packages"]},
+        {"docs/getting-started/QUICKSTART.md", [title: "Quickstart"]},
+        {"docs/getting-started/WIDGET_GALLERY.md", [title: "Widget Gallery"]},
+        {"docs/getting-started/CORE_CONCEPTS.md", [title: "Core Concepts"]},
+        {"docs/getting-started/MIGRATION_FROM_DIY.md", [title: "Migration Guide"]},
+        {"docs/core/BUFFER_API.md", [title: "Buffer API"]},
+        {"docs/core/ARCHITECTURE.md", [title: "Architecture"]},
+        {"docs/cookbook/README.md", [title: "Cookbook", filename: "cookbook"]},
+        {"docs/cookbook/BUILDING_APPS.md", [title: "Building Apps"]},
+        {"docs/cookbook/SSH_DEPLOYMENT.md", [title: "SSH Deployment"]},
+        {"docs/cookbook/LIVEVIEW_INTEGRATION.md", [title: "LiveView Integration"]},
+        {"docs/cookbook/THEMING.md", [title: "Theming"]},
+        {"docs/cookbook/PERFORMANCE_OPTIMIZATION.md", [title: "Performance"]},
+        {"docs/bench/README.md", [title: "Benchmarks", filename: "benchmarks"]},
+        {"docs/features/README.md", [title: "Features", filename: "features"]},
+        {"docs/features/VIM_NAVIGATION.md", [title: "Vim Navigation"]},
+        {"docs/features/COMMAND_PARSER.md", [title: "Command Parser"]},
+        {"docs/features/FUZZY_SEARCH.md", [title: "Fuzzy Search"]},
+        {"docs/features/FILESYSTEM.md", [title: "Virtual Filesystem"]},
+        {"docs/features/CURSOR_EFFECTS.md", [title: "Cursor Effects"]},
+        {"examples/core/README.md", [title: "Core Examples", filename: "core-examples"]}
       ],
       groups_for_extras: [
-        "Getting Started": [
-          "README.md",
-          "docs/getting-started/PACKAGES.md",
-          "docs/getting-started/QUICKSTART.md",
-          "docs/getting-started/WIDGET_GALLERY.md",
-          "docs/getting-started/CORE_CONCEPTS.md",
-          "docs/getting-started/MIGRATION_FROM_DIY.md"
-        ],
-        "Core Concepts": [
-          "docs/core/BUFFER_API.md",
-          "docs/core/ARCHITECTURE.md"
-        ],
-        Cookbook: [
-          "docs/cookbook/README.md",
-          "docs/cookbook/BUILDING_APPS.md",
-          "docs/cookbook/SSH_DEPLOYMENT.md",
-          "docs/cookbook/LIVEVIEW_INTEGRATION.md",
-          "docs/cookbook/THEMING.md",
-          "docs/cookbook/PERFORMANCE_OPTIMIZATION.md"
-        ],
-        Features: [
-          "docs/features/README.md",
-          "docs/features/VIM_NAVIGATION.md",
-          "docs/features/COMMAND_PARSER.md",
-          "docs/features/FUZZY_SEARCH.md",
-          "docs/features/FILESYSTEM.md",
-          "docs/features/CURSOR_EFFECTS.md"
-        ],
-        "Examples & Benchmarks": [
-          "examples/core/README.md",
-          "docs/bench/README.md"
-        ],
-        "Project Info": [
-          "CHANGELOG.md",
-          "LICENSE.md",
-          "ROADMAP.md",
-          ".github/CONTRIBUTING.md"
-        ]
+        "Getting Started": ~w(
+          README.md
+          docs/getting-started/QUICKSTART.md
+          docs/getting-started/CORE_CONCEPTS.md
+          docs/getting-started/WIDGET_GALLERY.md
+          docs/getting-started/PACKAGES.md
+          docs/getting-started/MIGRATION_FROM_DIY.md
+        ),
+        Architecture: ~w(
+          docs/core/ARCHITECTURE.md
+          docs/core/BUFFER_API.md
+          docs/bench/README.md
+        ),
+        Cookbook: ~w(
+          docs/cookbook/README.md
+          docs/cookbook/BUILDING_APPS.md
+          docs/cookbook/SSH_DEPLOYMENT.md
+          docs/cookbook/THEMING.md
+          docs/cookbook/LIVEVIEW_INTEGRATION.md
+          docs/cookbook/PERFORMANCE_OPTIMIZATION.md
+        ),
+        Features: ~w(
+          docs/features/README.md
+          docs/features/VIM_NAVIGATION.md
+          docs/features/COMMAND_PARSER.md
+          docs/features/FUZZY_SEARCH.md
+          docs/features/FILESYSTEM.md
+          docs/features/CURSOR_EFFECTS.md
+        ),
+        "Project Info": ~w(
+          CHANGELOG.md
+          ROADMAP.md
+          .github/CONTRIBUTING.md
+          LICENSE.md
+          examples/core/README.md
+        )
       ],
       groups_for_modules: [
         Core: [
