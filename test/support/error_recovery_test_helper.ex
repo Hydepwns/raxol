@@ -35,7 +35,6 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
     RecoverySupervisor
   }
 
-  alias Raxol.Core.ErrorRecovery.EnhancedPatternLearner
 
   defmacro __using__(_opts) do
     quote do
@@ -524,7 +523,6 @@ defmodule Raxol.Test.ErrorRecoveryTestHelper do
   def setup_error_recovery_test do
     # Start necessary services for error recovery testing
     {:ok, _} = ContextManager.start_link(name: :test_context_manager)
-    {:ok, _} = EnhancedPatternLearner.start_link(name: :test_pattern_learner)
 
     on_exit(fn ->
       cleanup_test_services()
