@@ -1,6 +1,8 @@
 # Agent Cockpit Demo
 #
-# Multi-pane dashboard showing supervised agents working in real time.
+# Multi-pane dashboard showing supervised agents working in real time,
+# rendered entirely through Raxol's View DSL and TEA architecture.
+#
 # Demonstrates: OTP supervision, crash recovery, inter-agent coordination,
 # live system metrics with sparklines, and dramatic crash visualization.
 #
@@ -202,14 +204,15 @@ defmodule CockpitDemo.DepChecker do
   def update(_msg, model), do: {model, []}
 end
 
-# --- Dashboard ---
+# --- Dashboard (TEA Architecture) ---
 
 defmodule CockpitDemo do
   @moduledoc false
+  use Raxol.Core.Runtime.Application
+
   alias Raxol.Agent.Session
 
-  # Tick-based scheduling: 200ms per tick
-  # Agents come online at staggered ticks
+  # Tick schedule (200ms per tick)
   @boot_scanner 5
   @boot_analyzer 10
   @boot_monitor 15
@@ -218,22 +221,22 @@ defmodule CockpitDemo do
   @crash_tick 55
   @recover_tick 65
   @end_tick 90
+  @title_ticks 12
 
-  @sparks ~w(▁ ▂ ▃ ▄ ▅ ▆ ▇ █)
+  @sparks ~w(\u2581 \u2582 \u2583 \u2584 \u2585 \u2586 \u2587 \u2588)
+  @bar_fill "\u2588"
+  @bar_empty "\u2591"
 
-  def run do
-    {fw, pw, pi, gap} = calc_layout()
+  # -- TEA Callbacks --
+
+  @impl true
+  def init(_context) do
     ensure_infra()
 
-    # Title card
-    show_title_card(fw)
-    Process.sleep(2500)
-
-    IO.write("\e[?25l\e[2J")
-
-    state = %{
+    %{
+      phase: :title,
       tick: 0,
-      t0: ms(),
+      start_time: System.monotonic_time(:second),
       crashes: 0,
       events: [],
       restarted: false,
@@ -245,92 +248,458 @@ defmodule CockpitDemo do
       pids: %{},
       old_pids: %{},
       booted: MapSet.new(),
-      fw: fw,
-      pw: pw,
-      pi: pi,
-      gap: gap
+      done_logged: MapSet.new()
     }
+  end
 
-    try do
-      loop(state)
-    after
-      IO.write("\e[?25h\n")
+  @impl true
+  def subscribe(_model), do: [subscribe_interval(200, :tick)]
+
+  @impl true
+  def update(message, model) do
+    case message do
+      :tick ->
+        handle_tick(model)
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+        {model, [command(:quit)]}
+
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
+        {model, [command(:quit)]}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :space}}
+      when model.phase == :title ->
+        {%{model | phase: :running, tick: 0}, []}
+
+      _ ->
+        {model, []}
     end
   end
 
-  defp calc_layout do
-    cols =
-      case :io.columns() do
-        {:ok, c} -> max(76, min(c, 120))
-        _ -> 80
+  @impl true
+  def view(model) do
+    case model.phase do
+      :title -> title_view(model)
+      :running -> dashboard_view(model)
+      :summary -> summary_view(model)
+    end
+  end
+
+  # -- Tick Handler --
+
+  defp handle_tick(model) do
+    case model.phase do
+      :title when model.tick >= @title_ticks ->
+        {%{model | phase: :running, tick: 0}, []}
+
+      :title ->
+        {%{model | tick: model.tick + 1}, []}
+
+      :running when model.tick > @end_tick ->
+        {%{model | phase: :summary}, []}
+
+      :running ->
+        new_model =
+          model
+          |> staggered_boot()
+          |> poll_agents()
+          |> track_pids()
+          |> handle_chaos()
+          |> handle_narration()
+          |> track_completions()
+
+        {%{new_model | tick: new_model.tick + 1}, []}
+
+      :summary ->
+        {model, []}
+    end
+  end
+
+  # ============================================================
+  # Views
+  # ============================================================
+
+  # -- Title View --
+
+  defp title_view(model) do
+    dots = String.duplicate(".", min(rem(model.tick, 4) + 1, 3))
+
+    column style: %{padding: 0, gap: 0} do
+      [
+        spacer(size: 2),
+        text("                                  .__   ",
+          style: [:bold],
+          fg: :cyan
+        ),
+        text(" _______ _____  ___  ___  ____    |  |  ",
+          style: [:bold],
+          fg: :cyan
+        ),
+        text(" \\_  __ \\\\__  \\ \\  \\/  / /  _ \\   |  |  ",
+          style: [:bold],
+          fg: :cyan
+        ),
+        text("  |  | \\/ / __ \\_>    < (  <_> )  |  |__",
+          style: [:bold],
+          fg: :cyan
+        ),
+        text("  |__|   (____  /__/\\_ \\ \\____/   |____/",
+          style: [:bold],
+          fg: :cyan
+        ),
+        text("              \\/      \\/                 ",
+          style: [:bold],
+          fg: :cyan
+        ),
+        spacer(size: 1),
+        text("  the terminal for agentic applications", style: [:dim]),
+        spacer(size: 1),
+        text("  OTP supervision * crash recovery * live metrics", fg: :yellow),
+        spacer(size: 2),
+        text("  initializing supervisor tree#{dots}", style: [:dim])
+      ]
+    end
+  end
+
+  # -- Dashboard View --
+
+  defp dashboard_view(model) do
+    uptime = System.monotonic_time(:second) - model.start_time
+
+    column style: %{padding: 0, gap: 0} do
+      [
+        header_bar(uptime),
+        spacer(size: 1),
+        row style: %{gap: 1} do
+          [
+            scanner_panel(model),
+            analyzer_panel(model)
+          ]
+        end,
+        spacer(size: 1),
+        row style: %{gap: 1} do
+          [
+            monitor_panel(model),
+            chaos_panel(model)
+          ]
+        end,
+        spacer(size: 1),
+        event_log_panel(model),
+        key_bar()
+      ]
+    end
+  end
+
+  # -- Summary View --
+
+  defp summary_view(model) do
+    scanner = model.scanner
+    analyzer = model.analyzer
+    dep = model.dep_checker
+
+    lines = (scanner && scanner.total_lines) || 0
+    files_scanned = (scanner && length(scanner.scanned)) || 0
+    files_analyzed = (analyzer && length(analyzer.results)) || 0
+    docs = (analyzer && Enum.count(analyzer.results, fn {_, d} -> d end)) || 0
+    deps_ok = (dep && dep.checked) || 0
+    uptime = System.monotonic_time(:second) - model.start_time
+
+    old_chaos = fmt_pid(model.old_pids[:chaos])
+    new_chaos = fmt_pid(model.pids[:chaos])
+
+    column style: %{padding: 0, gap: 0} do
+      [
+        box style: %{border: :double, width: :fill, padding: 0} do
+          text("  SUMMARY", style: [:bold], fg: :cyan)
+        end,
+        spacer(size: 1),
+        summary_row("Files scanned", "#{files_scanned}"),
+        summary_row("Lines counted", fmt(lines)),
+        summary_row("Doc coverage", "#{docs}/#{files_analyzed} modules"),
+        summary_row("Dependencies", "#{deps_ok} OK"),
+        summary_row("Agent crashes", "#{model.crashes}"),
+        summary_row_colored("Data loss", "zero", :green),
+        summary_row(
+          "Crash recovery",
+          "#{old_chaos} -> #{new_chaos} (new PID proves restart)"
+        ),
+        summary_row("Total uptime", "#{uptime}s"),
+        spacer(size: 2),
+        text(
+          "  Demo complete. 5 agents supervised, crash recovered, work continued.",
+          style: [:bold]
+        ),
+        text("  No other terminal framework does this.", style: [:dim]),
+        spacer(size: 1)
+      ]
+    end
+  end
+
+  # ============================================================
+  # Panel Components
+  # ============================================================
+
+  defp header_bar(uptime) do
+    box style: %{border: :double, width: :fill, padding: 0} do
+      row style: %{justify_content: :space_between} do
+        [
+          text("  RAXOL AGENT COCKPIT", style: [:bold], fg: :cyan),
+          text("uptime #{fmt_uptime(uptime)}  ", style: [:bold])
+        ]
       end
-
-    pw = div(cols - 2, 2)
-    pi = pw - 4
-    gap = String.duplicate(" ", cols - pw * 2)
-    {cols, pw, pi, gap}
-  end
-
-  # -- Title Card --
-
-  defp show_title_card(fw) do
-    IO.write("\e[?25l\e[2J\e[H")
-
-    banner = [
-      "                                  .__   ",
-      " _______ _____  ___  ___  ____    |  |  ",
-      " \\_  __ \\\\__  \\ \\  \\/  / /  _ \\   |  |  ",
-      "  |  | \\/ / __ \\_>    < (  <_> )  |  |__",
-      "  |__|   (____  /__/\\_ \\ \\____/   |____/",
-      "              \\/      \\/                 "
-    ]
-
-    IO.puts("")
-    IO.puts("")
-
-    Enum.each(banner, fn line ->
-      pad = max(0, div(fw - String.length(line), 2))
-      IO.puts("#{String.duplicate(" ", pad)}\e[1;36m#{line}\e[0m")
-    end)
-
-    IO.puts("")
-    tagline = "the terminal for agentic applications"
-    tpad = max(0, div(fw - String.length(tagline), 2))
-    IO.puts("#{String.duplicate(" ", tpad)}\e[90m#{tagline}\e[0m")
-    IO.puts("")
-    sub = "OTP supervision * crash recovery * live metrics"
-    spad = max(0, div(fw - String.length(sub), 2))
-    IO.puts("#{String.duplicate(" ", spad)}\e[33m#{sub}\e[0m")
-    IO.puts("")
-    IO.puts("")
-    loading = "initializing supervisor tree..."
-    lpad = max(0, div(fw - String.length(loading), 2))
-    IO.puts("#{String.duplicate(" ", lpad)}\e[90m#{loading}\e[0m")
-  end
-
-  # -- Main Loop --
-
-  defp loop(state) do
-    state =
-      state
-      |> staggered_boot()
-      |> poll_agents()
-      |> track_pids()
-      |> handle_chaos()
-      |> handle_narration()
-      |> track_completions()
-
-    render(state)
-    Process.sleep(200)
-
-    if state.tick > @end_tick do
-      render_summary(state)
-    else
-      loop(%{state | tick: state.tick + 1})
     end
   end
 
-  # -- Infrastructure --
+  defp scanner_panel(model) do
+    m = model.scanner
+
+    if m do
+      scanned = length(m.scanned)
+      total = scanned + length(m.remaining)
+      current = if m.current, do: Path.basename(m.current), else: "---"
+
+      agent_box("File Scanner", m.status, model.pids[:scanner], [
+        progress_row(scanned, total, 14),
+        stat_line("Lines", fmt(m.total_lines)),
+        stat_line("Current", current)
+      ])
+    else
+      agent_box("File Scanner", :idle, nil, [
+        text("  waiting...", style: [:dim])
+      ])
+    end
+  end
+
+  defp analyzer_panel(model) do
+    m = model.analyzer
+
+    if m do
+      checked = length(m.results)
+      total = checked + length(m.remaining)
+      docs = Enum.count(m.results, fn {_, d} -> d end)
+      current = if m.current, do: Path.basename(m.current), else: "---"
+
+      agent_box("Code Analyzer", m.status, model.pids[:analyzer], [
+        progress_row(checked, total, 14),
+        stat_line("Docs", "#{docs}/#{checked}"),
+        stat_line("Current", current)
+      ])
+    else
+      agent_box("Code Analyzer", :idle, nil, [
+        text("  waiting...", style: [:dim])
+      ])
+    end
+  end
+
+  defp monitor_panel(model) do
+    m = model.monitor
+
+    if m && map_size(m.stats) > 0 do
+      s = m.stats
+
+      agent_box("System Monitor", :monitoring, model.pids[:monitor], [
+        stat_line("Procs", "#{s.processes}"),
+        memory_sparkline_row(s.memory_mb, m.history),
+        stat_line("Scheds", "#{s.schedulers}")
+      ])
+    else
+      agent_box("System Monitor", :idle, nil, [
+        text("  waiting...", style: [:dim])
+      ])
+    end
+  end
+
+  defp chaos_panel(model) do
+    m = model.chaos
+    in_crash = model.tick >= @crash_tick and model.tick < @recover_tick
+    flash = model.tick >= @crash_tick and model.tick < @crash_tick + 4
+
+    cond do
+      flash ->
+        old_pid = fmt_pid(model.old_pids[:chaos] || model.pids[:chaos])
+        crash_box(old_pid)
+
+      in_crash ->
+        agent_box("Chaos Worker", :crashed, nil, [
+          text("  Restarting...", fg: :yellow),
+          stat_line("Crashes", "#{model.crashes}"),
+          stat_line("Status", "auto-restart")
+        ])
+
+      m != nil ->
+        status_label =
+          cond do
+            m.status == :working -> "working"
+            model.crashes > 0 -> "recovered"
+            true -> "#{m.status}"
+          end
+
+        agent_box("Chaos Worker", m.status, model.pids[:chaos], [
+          stat_line("Tasks", "#{m.tasks_done}"),
+          stat_line("Crashes", "#{model.crashes}"),
+          stat_line("Status", status_label)
+        ])
+
+      true ->
+        agent_box("Chaos Worker", :idle, nil, [
+          text("  waiting...", style: [:dim])
+        ])
+    end
+  end
+
+  defp event_log_panel(model) do
+    entries = model.events |> Enum.take(7) |> Enum.reverse()
+
+    rows =
+      Enum.map(entries, fn {elapsed, tag, message} ->
+        {tag_label, tag_fg} = tag_display(tag)
+
+        row style: %{gap: 1} do
+          [
+            text(String.pad_leading("#{elapsed}s", 4), style: [:dim]),
+            text(tag_label, style: [:bold], fg: tag_fg),
+            text(message)
+          ]
+        end
+      end)
+
+    padding = for _ <- 1..max(0, 7 - length(rows)), do: text("")
+
+    box style: %{border: :single, width: :fill, padding: 1} do
+      column style: %{gap: 0} do
+        [
+          text("Event Log", style: [:bold], fg: :cyan),
+          divider(char: "-")
+          | rows ++ padding
+        ]
+      end
+    end
+  end
+
+  defp key_bar do
+    row style: %{gap: 2} do
+      [
+        text(" q", style: [:bold], fg: :magenta),
+        text("quit", style: [:dim])
+      ]
+    end
+  end
+
+  # ============================================================
+  # Reusable View Helpers
+  # ============================================================
+
+  defp agent_box(title, status, pid, content_rows) do
+    border = if status in [:done, :crashed], do: :double, else: :single
+    fg = status_fg(status)
+    pid_str = if pid, do: " #{short_pid(pid)}", else: ""
+
+    box style: %{border: border, width: 38, padding: 1} do
+      column style: %{gap: 0} do
+        [
+          row style: %{gap: 1} do
+            [
+              text(status_dot(status), fg: fg),
+              text(title, style: [:bold], fg: fg),
+              text(pid_str, style: [:dim])
+            ]
+          end,
+          divider(char: "-")
+          | content_rows
+        ]
+      end
+    end
+  end
+
+  defp crash_box(old_pid) do
+    box style: %{border: :double, width: 38, padding: 1} do
+      column style: %{gap: 0} do
+        [
+          row style: %{gap: 1} do
+            [
+              text("x", fg: :red),
+              text("Chaos Worker", style: [:bold], fg: :red)
+            ]
+          end,
+          divider(char: "-"),
+          spacer(size: 1),
+          text("    X PROCESS KILLED X", style: [:bold], fg: :red),
+          text("    PID #{old_pid} terminated", fg: :red),
+          text("    Supervisor notified...", fg: :yellow)
+        ]
+      end
+    end
+  end
+
+  defp progress_row(current, total, width) when total > 0 do
+    filled = div(current * width, total)
+    empty = width - filled
+    filled_str = String.duplicate(@bar_fill, filled)
+    empty_str = String.duplicate(@bar_empty, empty)
+
+    row style: %{gap: 1} do
+      [
+        text(filled_str, fg: :green),
+        text(empty_str, style: [:dim]),
+        text("#{current}/#{total}")
+      ]
+    end
+  end
+
+  defp progress_row(_current, _total, width) do
+    row style: %{gap: 1} do
+      [
+        text(String.duplicate(@bar_empty, width), style: [:dim]),
+        text("0/0")
+      ]
+    end
+  end
+
+  defp stat_line(label, value) do
+    row style: %{gap: 1} do
+      [
+        text("  #{String.pad_trailing(label, 8)}", style: [:dim]),
+        text(value, style: [:bold])
+      ]
+    end
+  end
+
+  defp memory_sparkline_row(mem_mb, history) do
+    spark = sparkline(history)
+
+    row style: %{gap: 1} do
+      [
+        text("  #{String.pad_trailing("Memory", 8)}", style: [:dim]),
+        text("#{mem_mb} MB", style: [:bold]),
+        text(spark, fg: :cyan)
+      ]
+    end
+  end
+
+  defp summary_row(label, value) do
+    row style: %{gap: 1} do
+      [
+        text("  #{String.pad_trailing(label, 18)}", style: [:dim]),
+        text(value)
+      ]
+    end
+  end
+
+  defp summary_row_colored(label, value, color) do
+    row style: %{gap: 1} do
+      [
+        text("  #{String.pad_trailing(label, 18)}", style: [:dim]),
+        text(value, style: [:bold], fg: color)
+      ]
+    end
+  end
+
+  # ============================================================
+  # Agent Lifecycle (side effects in update)
+  # ============================================================
 
   defp ensure_infra do
     case Registry.start_link(keys: :unique, name: Raxol.Agent.Registry) do
@@ -347,9 +716,7 @@ defmodule CockpitDemo do
     end
   end
 
-  # -- Staggered boot --
-
-  defp staggered_boot(state) do
+  defp staggered_boot(model) do
     schedule = [
       {@boot_scanner, CockpitDemo.FileScanner, :scanner},
       {@boot_analyzer, CockpitDemo.CodeAnalyzer, :analyzer},
@@ -358,8 +725,8 @@ defmodule CockpitDemo do
       {@boot_deps, CockpitDemo.DepChecker, :dep_checker}
     ]
 
-    Enum.reduce(schedule, state, fn {tick, mod, id}, st ->
-      if state.tick == tick and not MapSet.member?(st.booted, id) do
+    Enum.reduce(schedule, model, fn {tick, mod, id}, st ->
+      if model.tick == tick and not MapSet.member?(st.booted, id) do
         DynamicSupervisor.start_child(
           Raxol.DynamicSupervisor,
           {Session, app_module: mod, id: id}
@@ -370,24 +737,16 @@ defmodule CockpitDemo do
 
         st
         |> Map.put(:booted, MapSet.put(st.booted, id))
-        |> add_event("\e[36mBOOT\e[0m #{agent_name(id)} online")
+        |> add_event(:boot, "#{agent_name(id)} online")
       else
         st
       end
     end)
   end
 
-  defp agent_name(:scanner), do: "File Scanner"
-  defp agent_name(:analyzer), do: "Code Analyzer"
-  defp agent_name(:monitor), do: "System Monitor"
-  defp agent_name(:chaos), do: "Chaos Worker"
-  defp agent_name(:dep_checker), do: "Dep Checker"
-
-  # -- Polling --
-
-  defp poll_agents(state) do
+  defp poll_agents(model) do
     %{
-      state
+      model
       | scanner: safe_model(:scanner),
         analyzer: safe_model(:analyzer),
         monitor: safe_model(:monitor),
@@ -398,14 +757,12 @@ defmodule CockpitDemo do
 
   defp safe_model(id) do
     case Session.get_model(id) do
-      {:ok, model} -> model
+      {:ok, m} -> m
       _ -> nil
     end
   end
 
-  # -- PID tracking --
-
-  defp track_pids(state) do
+  defp track_pids(model) do
     ids = [:scanner, :analyzer, :monitor, :chaos, :dep_checker]
 
     current =
@@ -417,8 +774,8 @@ defmodule CockpitDemo do
       end)
 
     old =
-      Enum.reduce(ids, state.old_pids, fn id, acc ->
-        case {Map.get(state.pids, id), Map.get(current, id)} do
+      Enum.reduce(ids, model.old_pids, fn id, acc ->
+        case {Map.get(model.pids, id), Map.get(current, id)} do
           {old_pid, new_pid} when old_pid != nil and old_pid != new_pid ->
             Map.put(acc, id, old_pid)
 
@@ -427,22 +784,22 @@ defmodule CockpitDemo do
         end
       end)
 
-    %{state | pids: current, old_pids: old}
+    %{model | pids: current, old_pids: old}
   end
 
-  # -- Crash / Recovery --
-
-  defp handle_chaos(state) do
+  defp handle_chaos(model) do
     cond do
-      state.tick == @crash_tick ->
+      model.tick == @crash_tick ->
         kill_agent(:chaos)
 
-        %{state | crashes: state.crashes + 1}
+        model
+        |> Map.put(:crashes, model.crashes + 1)
         |> add_event(
-          "\e[1;31m!! CRASH\e[0m Chaos Worker killed (#{fmt_pid(state.pids[:chaos])})"
+          :crash,
+          "Chaos Worker killed (#{fmt_pid(model.pids[:chaos])})"
         )
 
-      state.tick == @recover_tick and not state.restarted ->
+      model.tick == @recover_tick and not model.restarted ->
         Session.send_message(:chaos, :start)
 
         new_pid =
@@ -451,13 +808,12 @@ defmodule CockpitDemo do
             [] -> nil
           end
 
-        %{state | restarted: true}
-        |> add_event(
-          "\e[1;32m>> RECOVERED\e[0m new PID #{fmt_pid(new_pid)} -- resuming"
-        )
+        model
+        |> Map.put(:restarted, true)
+        |> add_event(:recover, "new PID #{fmt_pid(new_pid)} -- resuming")
 
       true ->
-        state
+        model
     end
   end
 
@@ -468,264 +824,79 @@ defmodule CockpitDemo do
     end
   end
 
-  # -- Narration --
-
-  defp handle_narration(state) do
+  defp handle_narration(model) do
     cond do
-      state.tick == @crash_tick - 8 ->
-        add_event(state, "\e[33mWARN\e[0m Chaos Worker becoming unstable...")
+      model.tick == @crash_tick - 8 ->
+        add_event(model, :warn, "Chaos Worker becoming unstable...")
 
-      state.tick == @crash_tick + 2 ->
-        add_event(
-          state,
-          "\e[33mWARN\e[0m Supervisor detected exit, restarting child..."
-        )
+      model.tick == @crash_tick + 2 ->
+        add_event(model, :warn, "Supervisor detected exit, restarting child...")
 
-      all_done?(state) and not Map.get(state, :all_done_logged, false) ->
-        state
-        |> add_event("\e[1;32mDONE\e[0m All tasks complete. Zero data loss.")
-        |> Map.put(:all_done_logged, true)
+      all_done?(model) and not MapSet.member?(model.done_logged, :all_done) ->
+        model
+        |> add_event(:done, "All tasks complete. Zero data loss.")
+        |> Map.update!(:done_logged, &MapSet.put(&1, :all_done))
 
       true ->
-        state
+        model
     end
   end
 
-  defp all_done?(state) do
+  defp all_done?(model) do
     Enum.all?([:scanner, :analyzer], fn key ->
-      m = Map.get(state, key)
+      m = Map.get(model, key)
       m && m.status == :done
     end)
   end
 
-  # -- Event tracking --
-
-  defp track_completions(state) do
-    state
-    |> maybe_track(:scanner, fn ->
-      "Scanner: \e[1m#{fmt(state.scanner.total_lines)}\e[0m lines across #{length(state.scanner.scanned)} files"
+  defp track_completions(model) do
+    model
+    |> maybe_log_done(:scanner, fn ->
+      "Scanner: #{fmt(model.scanner.total_lines)} lines across #{length(model.scanner.scanned)} files"
     end)
-    |> maybe_track(:analyzer, fn ->
-      docs = Enum.count(state.analyzer.results, fn {_, d} -> d end)
-      total = length(state.analyzer.results)
-      "Analyzer: \e[1m#{docs}/#{total}\e[0m modules have @moduledoc"
+    |> maybe_log_done(:analyzer, fn ->
+      docs = Enum.count(model.analyzer.results, fn {_, d} -> d end)
+      total = length(model.analyzer.results)
+      "Analyzer: #{docs}/#{total} modules have @moduledoc"
     end)
-    |> maybe_track(:dep_checker, fn ->
-      "Deps: \e[1m#{state.dep_checker.checked}\e[0m dependencies OK"
+    |> maybe_log_done(:dep_checker, fn ->
+      "Deps: #{model.dep_checker.checked} dependencies OK"
     end)
   end
 
-  defp maybe_track(state, key, msg_fn) do
-    m = Map.get(state, key)
-    logged_key = :"#{key}_logged"
+  defp maybe_log_done(model, key, msg_fn) do
+    m = Map.get(model, key)
 
-    if m && m.status == :done && not Map.get(state, logged_key, false) do
-      add_event(state, msg_fn.()) |> Map.put(logged_key, true)
+    if m && m.status == :done && not MapSet.member?(model.done_logged, key) do
+      model
+      |> add_event(:info, msg_fn.())
+      |> Map.update!(:done_logged, &MapSet.put(&1, key))
     else
-      state
+      model
     end
   end
 
-  defp add_event(state, msg) do
-    elapsed = div(ms() - state.t0, 1000)
-    ts = elapsed |> Integer.to_string() |> String.pad_leading(2, "0")
-    entry = "  \e[90m#{ts}s\e[0m \e[90m|\e[0m #{msg}"
-    %{state | events: Enum.take([entry | state.events], 8)}
+  # ============================================================
+  # Event Log
+  # ============================================================
+
+  defp add_event(model, tag, message) do
+    elapsed = System.monotonic_time(:second) - model.start_time
+    entry = {elapsed, tag, message}
+    %{model | events: Enum.take([entry | model.events], 8)}
   end
 
-  # -- Rendering --
+  defp tag_display(:boot), do: {"BOOT  ", :cyan}
+  defp tag_display(:warn), do: {"WARN  ", :yellow}
+  defp tag_display(:crash), do: {"CRASH!", :red}
+  defp tag_display(:recover), do: {"RECOV.", :green}
+  defp tag_display(:done), do: {"DONE  ", :green}
+  defp tag_display(:info), do: {"INFO  ", :cyan}
+  defp tag_display(_), do: {"      ", :white}
 
-  defp render(state) do
-    IO.write("\e[H")
-    fw = state.fw
-
-    uptime = div(ms() - state.t0, 1000)
-    min = uptime |> div(60) |> Integer.to_string() |> String.pad_leading(2, "0")
-    sec = uptime |> rem(60) |> Integer.to_string() |> String.pad_leading(2, "0")
-
-    IO.puts(hline(fw, "="))
-
-    IO.puts(
-      full_line(
-        fw,
-        "  \e[1;36mRAXOL AGENT COCKPIT\e[0m",
-        "uptime \e[1m#{min}:#{sec}\e[0m  "
-      )
-    )
-
-    IO.puts(hline(fw, "="))
-    IO.puts("")
-
-    # Row 1
-    print_panels(state, scanner_panel(state), analyzer_panel(state))
-    IO.puts("")
-
-    # Row 2
-    print_panels(state, monitor_panel(state), chaos_panel(state))
-    IO.puts("")
-
-    # Event log
-    IO.puts(hline(fw, "-", " Event Log "))
-    events = state.events |> Enum.take(7) |> Enum.reverse()
-    padded = events ++ List.duplicate("", max(0, 7 - length(events)))
-    Enum.each(padded, fn e -> IO.puts(log_line(fw, e)) end)
-    IO.puts(hline(fw, "-"))
-  end
-
-  # -- Summary --
-
-  defp render_summary(state) do
-    fw = state.fw
-    IO.puts("")
-    IO.puts(hline(fw, "=", " SUMMARY "))
-    IO.puts("")
-
-    scanner = state.scanner
-    analyzer = state.analyzer
-    dep = state.dep_checker
-
-    lines = (scanner && scanner.total_lines) || 0
-    files_scanned = (scanner && length(scanner.scanned)) || 0
-    files_analyzed = (analyzer && length(analyzer.results)) || 0
-    docs = (analyzer && Enum.count(analyzer.results, fn {_, d} -> d end)) || 0
-    deps_ok = (dep && dep.checked) || 0
-    uptime = div(ms() - state.t0, 1000)
-
-    old_chaos = fmt_pid(state.old_pids[:chaos])
-    new_chaos = fmt_pid(state.pids[:chaos])
-
-    stats = [
-      {"Files scanned", "#{files_scanned}"},
-      {"Lines counted", fmt(lines)},
-      {"Doc coverage", "#{docs}/#{files_analyzed} modules"},
-      {"Dependencies", "#{deps_ok} OK"},
-      {"Agent crashes", "#{state.crashes}"},
-      {"Data loss", "\e[1;32mzero\e[0m"},
-      {"Crash recovery",
-       "#{old_chaos} -> #{new_chaos} (new PID proves restart)"},
-      {"Total uptime", "#{uptime}s"}
-    ]
-
-    Enum.each(stats, fn {label, value} ->
-      IO.puts("  \e[90m#{String.pad_trailing(label, 18)}\e[0m #{value}")
-    end)
-
-    IO.puts("")
-    IO.puts(hline(fw, "="))
-    IO.puts("")
-
-    IO.puts(
-      "  \e[1mDemo complete.\e[0m 5 agents supervised, crash recovered, work continued."
-    )
-
-    IO.puts("  \e[90mNo other terminal framework does this.\e[0m")
-    IO.puts("")
-  end
-
-  # -- Panel builders --
-
-  defp scanner_panel(state) do
-    m = state.scanner
-    pid = state.pids[:scanner]
-
-    if m do
-      scanned = length(m.scanned)
-      total = scanned + length(m.remaining)
-      current = if m.current, do: Path.basename(m.current), else: "---"
-      bar = progress_bar(scanned, total, 14)
-
-      panel("File Scanner", m.status, pid, [
-        "#{bar} #{scanned}/#{total}",
-        "Lines:   \e[1m#{fmt(m.total_lines)}\e[0m",
-        "Current: \e[90m#{current}\e[0m"
-      ])
-    else
-      panel("File Scanner", :idle, nil, ["", "  \e[90mwaiting...\e[0m", ""])
-    end
-  end
-
-  defp analyzer_panel(state) do
-    m = state.analyzer
-    pid = state.pids[:analyzer]
-
-    if m do
-      checked = length(m.results)
-      total = checked + length(m.remaining)
-      docs = Enum.count(m.results, fn {_, d} -> d end)
-      current = if m.current, do: Path.basename(m.current), else: "---"
-      bar = progress_bar(checked, total, 14)
-
-      panel("Code Analyzer", m.status, pid, [
-        "#{bar} #{checked}/#{total}",
-        "Docs:    \e[1m#{docs}/#{checked}\e[0m",
-        "Current: \e[90m#{current}\e[0m"
-      ])
-    else
-      panel("Code Analyzer", :idle, nil, ["", "  \e[90mwaiting...\e[0m", ""])
-    end
-  end
-
-  defp monitor_panel(state) do
-    m = state.monitor
-    pid = state.pids[:monitor]
-
-    if m && map_size(m.stats) > 0 do
-      s = m.stats
-      spark = sparkline(m.history)
-
-      panel("System Monitor", :monitoring, pid, [
-        "Procs:   \e[1m#{s.processes}\e[0m",
-        "Memory:  \e[1m#{s.memory_mb}\e[0m MB #{spark}",
-        "Scheds:  \e[1m#{s.schedulers}\e[0m"
-      ])
-    else
-      panel("System Monitor", :idle, nil, ["", "  \e[90mwaiting...\e[0m", ""])
-    end
-  end
-
-  defp chaos_panel(state) do
-    m = state.chaos
-    pid = state.pids[:chaos]
-    in_crash = state.tick >= @crash_tick and state.tick < @recover_tick
-    flash = state.tick >= @crash_tick and state.tick < @crash_tick + 4
-
-    if flash do
-      old_pid = fmt_pid(state.old_pids[:chaos] || state.pids[:chaos])
-
-      panel_crash("Chaos Worker", [
-        "\e[1;31m  X PROCESS KILLED X\e[0m",
-        "\e[31m  PID #{old_pid} terminated\e[0m",
-        "\e[33m  Supervisor notified...\e[0m"
-      ])
-    else
-      if in_crash do
-        panel("Chaos Worker", :crashed, nil, [
-          "\e[33mRestarting...\e[0m",
-          "Crashes: \e[1m#{state.crashes}\e[0m",
-          "Status:  \e[33mauto-restart\e[0m"
-        ])
-      else
-        if m do
-          status =
-            cond do
-              m.status == :working -> "\e[32mworking\e[0m"
-              state.crashes > 0 -> "\e[32mrecovered\e[0m"
-              true -> "#{m.status}"
-            end
-
-          panel("Chaos Worker", m.status, pid, [
-            "Tasks:   \e[1m#{m.tasks_done}\e[0m",
-            "Crashes: \e[1m#{state.crashes}\e[0m",
-            "Status:  #{status}"
-          ])
-        else
-          panel("Chaos Worker", :idle, nil, ["", "  \e[90mwaiting...\e[0m", ""])
-        end
-      end
-    end
-  end
-
-  # -- Sparkline --
+  # ============================================================
+  # Rendering Helpers
+  # ============================================================
 
   defp sparkline(history) when length(history) < 3, do: ""
 
@@ -740,131 +911,41 @@ defmodule CockpitDemo do
       idx = min(7, div((v - mn) * 7, range))
       Enum.at(@sparks, idx)
     end)
-    |> then(fn chars -> "\e[36m#{Enum.join(chars)}\e[0m" end)
+    |> Enum.join()
   end
 
-  # -- Panel primitives --
+  defp status_dot(:idle), do: "o"
+  defp status_dot(:crashed), do: "x"
+  defp status_dot(:done), do: "*"
+  defp status_dot(_active), do: "*"
 
-  defp panel(title, status, pid, lines) do
-    color = status_color(status)
-    dot = "#{color}*\e[0m"
-    pid_str = if pid, do: " \e[90m#{short_pid(pid)}\e[0m", else: ""
-    {:normal, dot, title, pid_str, lines}
+  defp status_fg(:idle), do: :yellow
+  defp status_fg(:scanning), do: :green
+  defp status_fg(:analyzing), do: :green
+  defp status_fg(:monitoring), do: :green
+  defp status_fg(:checking), do: :green
+  defp status_fg(:working), do: :green
+  defp status_fg(:done), do: :cyan
+  defp status_fg(:crashed), do: :red
+  defp status_fg(_), do: :white
+
+  defp agent_name(:scanner), do: "File Scanner"
+  defp agent_name(:analyzer), do: "Code Analyzer"
+  defp agent_name(:monitor), do: "System Monitor"
+  defp agent_name(:chaos), do: "Chaos Worker"
+  defp agent_name(:dep_checker), do: "Dep Checker"
+
+  # ============================================================
+  # Formatters
+  # ============================================================
+
+  defp fmt_uptime(s) do
+    m = div(s, 60)
+    sec = rem(s, 60)
+    min_str = m |> Integer.to_string() |> String.pad_leading(2, "0")
+    sec_str = sec |> Integer.to_string() |> String.pad_leading(2, "0")
+    "#{min_str}:#{sec_str}"
   end
-
-  defp panel_crash(title, lines) do
-    {:crash, "\e[31mx\e[0m", title, "", lines}
-  end
-
-  defp print_panels(state, p1, p2) do
-    pw = state.pw
-    pi = state.pi
-    gap = state.gap
-
-    {type1, d1, t1, pid1, lines1} = p1
-    {_type2, d2, t2, pid2, lines2} = p2
-
-    b1 = if type1 == :crash, do: "\e[31m", else: ""
-    r1 = if type1 == :crash, do: "\e[0m", else: ""
-
-    IO.puts(
-      ptop(pw, d1, t1, pid1, b1, r1) <> gap <> ptop(pw, d2, t2, pid2, "", "")
-    )
-
-    Enum.zip(pad_lines(lines1, 3), pad_lines(lines2, 3))
-    |> Enum.each(fn {l, r} ->
-      IO.puts(pbody(pi, l, b1, r1) <> gap <> pbody(pi, r, "", ""))
-    end)
-
-    IO.puts(pbot(pw, b1, r1) <> gap <> pbot(pw, "", ""))
-  end
-
-  defp pad_lines(lines, n) do
-    taken = Enum.take(lines, n)
-    taken ++ List.duplicate("", max(0, n - length(taken)))
-  end
-
-  defp ptop(pw, dot, title, pid_str, border, reset) do
-    inner = " #{dot} \e[1m#{title}\e[0m#{pid_str} "
-    vlen = visible_len(inner)
-    dashes = max(1, pw - 2 - vlen)
-
-    "#{border}+--#{reset}#{inner}#{border}#{String.duplicate("-", dashes)}+#{reset}"
-    |> String.replace("+", "#{border}+#{reset}")
-    |> then(fn _ ->
-      "#{border}+-#{reset}#{inner}#{border}#{String.duplicate("-", dashes)}+#{reset}"
-    end)
-  end
-
-  defp pbody(pi, content, border, reset) do
-    "#{border}|#{reset} #{pad_vis(content, pi)} #{border}|#{reset}"
-  end
-
-  defp pbot(pw, border, reset) do
-    "#{border}+#{String.duplicate("-", pw - 2)}+#{reset}"
-  end
-
-  # -- Full-width lines --
-
-  defp hline(fw, char, label \\ "") do
-    if String.length(label) > 0 do
-      pre = String.duplicate(char, 2)
-      post_len = max(0, fw - 2 - String.length(label))
-      pre <> label <> String.duplicate(char, post_len)
-    else
-      String.duplicate(char, fw)
-    end
-  end
-
-  defp full_line(fw, left, right) do
-    lv = visible_len(left)
-    rv = visible_len(right)
-    pad = max(1, fw - lv - rv)
-    "#{left}#{String.duplicate(" ", pad)}#{right}"
-  end
-
-  defp log_line(fw, content) do
-    "#{pad_vis(content, fw - 2)}  "
-  end
-
-  # -- Progress bar --
-
-  defp progress_bar(current, total, width) when total > 0 do
-    filled = div(current * width, total)
-    empty = width - filled
-
-    "\e[32m#{String.duplicate("█", filled)}\e[90m#{String.duplicate("░", empty)}\e[0m"
-  end
-
-  defp progress_bar(_, _, width),
-    do: "\e[90m#{String.duplicate("░", width)}\e[0m"
-
-  # -- Utilities --
-
-  defp status_color(:idle), do: "\e[33m"
-  defp status_color(:scanning), do: "\e[32m"
-  defp status_color(:analyzing), do: "\e[32m"
-  defp status_color(:monitoring), do: "\e[32m"
-  defp status_color(:checking), do: "\e[32m"
-  defp status_color(:working), do: "\e[32m"
-  defp status_color(:done), do: "\e[36m"
-  defp status_color(:crashed), do: "\e[31m"
-  defp status_color(_), do: "\e[0m"
-
-  defp visible_len(str) do
-    str |> String.replace(~r/\e\[[0-9;]*m/, "") |> String.length()
-  end
-
-  defp pad_vis(str, width) do
-    pad = max(0, width - visible_len(str))
-    str <> String.duplicate(" ", pad)
-  end
-
-  defp short_pid(pid) when is_pid(pid) do
-    pid |> inspect() |> String.replace("PID", "")
-  end
-
-  defp short_pid(_), do: ""
 
   defp fmt(nil), do: "0"
 
@@ -878,7 +959,21 @@ defmodule CockpitDemo do
   defp fmt_pid(nil), do: "---"
   defp fmt_pid(pid) when is_pid(pid), do: inspect(pid)
 
-  defp ms, do: System.monotonic_time(:millisecond)
+  defp short_pid(pid) when is_pid(pid) do
+    pid |> inspect() |> String.replace("PID", "")
+  end
+
+  defp short_pid(_), do: ""
 end
 
-CockpitDemo.run()
+# --- Start ---
+
+Raxol.Core.Runtime.Log.info("CockpitDemo: Starting...")
+{:ok, pid} = Raxol.start_link(CockpitDemo, [])
+Raxol.Core.Runtime.Log.info("CockpitDemo: Running. Press 'q' to quit.")
+
+ref = Process.monitor(pid)
+
+receive do
+  {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
+end
