@@ -257,7 +257,7 @@ defmodule Raxol.Performance.CacheConfig do
                try do
                  case function_exported?(:memsup, :get_system_memory_data, 0) do
                    true ->
-                     apply(:memsup, :get_system_memory_data, [])
+                     :memsup.get_system_memory_data()
 
                    false ->
                      [{:system_total_memory, 1_048_576_000}]

@@ -1057,17 +1057,28 @@ defmodule Raxol.UI.Layout.Flexbox do
   ]
 
   defp inherit_styles(parent, children) do
-    parent_style = Map.get(parent, :style, %{})
+    parent_style = ensure_style_map(Map.get(parent, :style, %{}))
     inheritable = Map.take(parent_style, @inheritable_keys)
 
     if map_size(inheritable) == 0 do
       children
     else
       Enum.map(children, fn child ->
-        child_style = Map.get(child, :style, %{})
+        child_style = ensure_style_map(Map.get(child, :style, %{}))
         merged = Map.merge(inheritable, child_style)
         Map.put(child, :style, merged)
       end)
     end
   end
+
+  defp ensure_style_map(style) when is_map(style), do: style
+
+  defp ensure_style_map(style) when is_list(style) do
+    Enum.into(style, %{}, fn
+      {k, v} -> {k, v}
+      atom when is_atom(atom) -> {atom, true}
+    end)
+  end
+
+  defp ensure_style_map(_), do: %{}
 end

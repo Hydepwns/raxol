@@ -422,7 +422,7 @@ defmodule Raxol.Terminal.Driver do
         {_, true} ->
           _ =
             if @termbox2_available do
-              apply(:termbox2_nif, :tb_set_title, [title])
+              :termbox2_nif.tb_set_title(title)
             else
               0
             end
@@ -447,7 +447,7 @@ defmodule Raxol.Terminal.Driver do
         {_, true} ->
           _ =
             if @termbox2_available do
-              apply(:termbox2_nif, :tb_set_position, [x, y])
+              :termbox2_nif.tb_set_position(x, y)
             else
               0
             end
