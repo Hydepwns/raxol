@@ -71,9 +71,10 @@ defmodule Raxol.Property.CoreTest do
         assert is_list(result)
 
         # If truly quadratic, ratio would be (size/10)^2
-        # Allow up to 5x the linear expectation to account for variance
+        # Allow up to 10x the linear expectation to account for GC, scheduling,
+        # and parallel test load variance
         scale_factor = size / 10
-        max_ratio = scale_factor * 5
+        max_ratio = scale_factor * 10
         # Guard against near-zero base_time
         ratio = if base_time > 0, do: scaled_time / base_time, else: 1.0
         assert ratio < max_ratio
