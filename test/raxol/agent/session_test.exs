@@ -89,6 +89,22 @@ defmodule Raxol.Agent.SessionTest do
   end
 
   setup do
+    # Ensure required processes exist (may have been stopped by another test's cleanup)
+    case Registry.start_link(keys: :unique, name: Raxol.Agent.Registry) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
+    case Raxol.Core.UserPreferences.start_link(name: Raxol.Core.UserPreferences) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
+    case DynamicSupervisor.start_link(name: Raxol.DynamicSupervisor, strategy: :one_for_one) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
     :ok
   end
 

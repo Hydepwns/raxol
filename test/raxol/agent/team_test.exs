@@ -39,6 +39,25 @@ defmodule Raxol.Agent.TeamTest do
     def update(_msg, model), do: {model, Command.none()}
   end
 
+  setup do
+    case Registry.start_link(keys: :unique, name: Raxol.Agent.Registry) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
+    case Raxol.Core.UserPreferences.start_link(name: Raxol.Core.UserPreferences) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
+    case DynamicSupervisor.start_link(name: Raxol.DynamicSupervisor, strategy: :one_for_one) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
+    :ok
+  end
+
   describe "team startup" do
     test "starts coordinator and workers" do
       {:ok, team_pid} =

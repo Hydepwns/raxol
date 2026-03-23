@@ -48,7 +48,11 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
   end
 
   setup_all do
-    start_supervised!(Raxol.DynamicSupervisor)
+    case start_supervised(Raxol.DynamicSupervisor) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+      {:error, {{:already_started, _pid}, _}} -> :ok
+    end
 
     # Handle case where registry is already running from global test setup or supervisor
     case start_supervised(Raxol.Terminal.Registry) do
