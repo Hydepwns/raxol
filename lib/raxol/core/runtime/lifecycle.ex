@@ -1,5 +1,17 @@
 defmodule Raxol.Core.Runtime.Lifecycle do
-  @moduledoc "Manages the application lifecycle, including startup, shutdown, and terminal interaction."
+  @moduledoc """
+  Manages the application lifecycle, including startup, shutdown, and terminal interaction.
+
+  Orchestrates initialization of subsystems in order:
+  1. PluginManager -- loads and starts plugins
+  2. Dispatcher -- manages app model and event routing (TEA update/2 loop)
+  3. Terminal Driver -- raw terminal I/O (skipped for :liveview/:ssh environments)
+  4. Rendering Engine -- view -> layout -> buffer -> output pipeline
+
+  Uses a two-phase readiness pattern: rendering begins only after both
+  `dispatcher_ready` and `plugin_manager_ready` flags are set. In dev mode,
+  a CodeReloader is started to watch for source changes and trigger re-renders.
+  """
 
   use GenServer
   alias Raxol.Core.CompilerState

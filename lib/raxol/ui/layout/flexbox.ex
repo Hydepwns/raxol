@@ -757,8 +757,12 @@ defmodule Raxol.UI.Layout.Flexbox do
        ) do
     line_heights =
       Enum.map(lines_with_layout, fn line ->
-        Enum.reduce(line, 0, fn {_child, child_space, _flex}, acc ->
-          max(acc, get_dimension(child_space, cross_axis))
+        Enum.reduce(line, 0, fn
+          {_child, child_space, _flex}, acc ->
+            max(acc, get_dimension(child_space, cross_axis))
+
+          {_child, child_space}, acc ->
+            max(acc, get_dimension(child_space, cross_axis))
         end)
       end)
 
@@ -787,17 +791,24 @@ defmodule Raxol.UI.Layout.Flexbox do
                                            {current_pos, acc} ->
         # Position each item in the line
         positioned_line =
-          Enum.map(line, fn {child, child_space} ->
-            new_child_space =
-              case cross_axis do
-                :horizontal ->
-                  %{child_space | x: current_pos}
+          Enum.map(line, fn
+            {child, child_space} ->
+              new_child_space =
+                case cross_axis do
+                  :horizontal -> %{child_space | x: current_pos}
+                  :vertical -> %{child_space | y: current_pos}
+                end
 
-                :vertical ->
-                  %{child_space | y: current_pos}
-              end
+              {child, new_child_space}
 
-            {child, new_child_space}
+            {child, child_space, _flex} ->
+              new_child_space =
+                case cross_axis do
+                  :horizontal -> %{child_space | x: current_pos}
+                  :vertical -> %{child_space | y: current_pos}
+                end
+
+              {child, new_child_space}
           end)
 
         next_pos = current_pos + line_height + line_gap
