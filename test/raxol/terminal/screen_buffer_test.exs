@@ -116,7 +116,6 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert line_to_string(ScreenBuffer.get_line(buffer, 4)) =~ ~r/^\s*$/
     end
 
-    @tag skip: "scroll_down does not insert blank lines yet"
     test ~c"scrolling down inserts lines correctly (no scrollback)" do
       buffer = ScreenBuffer.new(10, 5)
 
@@ -186,7 +185,6 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert line_to_string(ScreenBuffer.get_line(buffer, 3)) =~ ~r/^\s*$/
     end
 
-    @tag skip: "scroll_down does not insert blank lines yet"
     test ~c"scrolling scrolls down within scroll region" do
       buffer = ScreenBuffer.new(10, 5)
 

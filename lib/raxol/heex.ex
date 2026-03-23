@@ -326,11 +326,10 @@ defmodule Raxol.HEEx do
 
   defp extract_text_content(children) do
     children
-    |> Enum.map(fn
+    |> Enum.map_join(" ", fn
       {:text_node, text} -> text
       {:element, _, _, nested} -> extract_text_content(nested)
     end)
-    |> Enum.join(" ")
     |> String.trim()
   end
 

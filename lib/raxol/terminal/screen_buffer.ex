@@ -1038,15 +1038,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   # Handle case where lines parameter is a list (from tests)
   def scroll_down(buffer, _lines, count) when is_integer(count) do
-    _ =
-      Raxol.Terminal.Commands.Scrolling.scroll_down(
-        buffer,
-        count,
-        buffer.scroll_region,
-        %{}
-      )
-
-    buffer
+    scroll_down(buffer, count)
   end
 
   # === Behaviour Callback Implementations ===

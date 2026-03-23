@@ -121,8 +121,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.reverse == false
     end
 
-    @tag skip: "conceal style attribute not on Emulator.Style"
-  test ~c"handles SGR conceal (8) and reveal (28)" do
+    test ~c"handles SGR conceal (8) and reveal (28)" do
       emulator = Emulator.new()
       assert emulator.style.conceal == false
       {emulator, _} = Emulator.process_input(emulator, "\e[8m")
@@ -131,8 +130,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.conceal == false
     end
 
-    @tag skip: "strikethrough SGR reset (29) not handled"
-  test ~c"handles SGR strikethrough (9) and not strikethrough (29)" do
+    test ~c"handles SGR strikethrough (9) and not strikethrough (29)" do
       emulator = Emulator.new()
       assert emulator.style.strikethrough == false
       {emulator, _} = Emulator.process_input(emulator, "\e[9m")
@@ -141,8 +139,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.strikethrough == false
     end
 
-    @tag skip: "fraktur style attribute not on Emulator.Style"
-  test ~c"handles SGR fraktur (20) and not fraktur (23)" do
+    test ~c"handles SGR fraktur (20) and not fraktur (23)" do
       emulator = Emulator.new()
       assert emulator.style.fraktur == false
       {emulator, _} = Emulator.process_input(emulator, "\e[20m")

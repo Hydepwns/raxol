@@ -212,12 +212,11 @@ defmodule Raxol.Core.Runtime.Plugins.Security.CapabilityDetector do
 
     body =
       capabilities
-      |> Enum.map(fn {capability, has_it} ->
+      |> Enum.map_join("\n", fn {capability, has_it} ->
         status = if has_it, do: "[X]", else: "[ ]"
         description = capability_description(capability)
         "#{status} #{description}"
       end)
-      |> Enum.join("\n")
 
     summary =
       "\n\n" <>

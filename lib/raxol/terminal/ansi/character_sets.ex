@@ -304,17 +304,21 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
           :g3 -> state.g3
         end
 
-      # Convert module to charset name if needed
-      resolved_charset =
-        if is_atom(active_charset) and
-             function_exported?(active_charset, :name, 0) do
-          active_charset.name()
-        else
-          active_charset
-        end
-
-      %{state | active: resolved_charset}
+      %{state | active: resolve_charset_name(active_charset)}
     end
+
+    @doc false
+    def resolve_charset_name(charset) when is_atom(charset) do
+      case Code.ensure_loaded(charset) do
+        {:module, _} ->
+          if function_exported?(charset, :name, 0), do: charset.name(), else: charset
+
+        _ ->
+          charset
+      end
+    end
+
+    def resolve_charset_name(charset), do: charset
 
     @doc """
     Validates character set state.
@@ -452,14 +456,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     def translate_char(codepoint, active_set, single_shift)
         when is_integer(codepoint) do
       set = single_shift || active_set
-
-      # Convert module to charset name if needed
-      charset_name =
-        if is_atom(set) and function_exported?(set, :name, 0) do
-          set.name()
-        else
-          set
-        end
+      charset_name = StateManager.resolve_charset_name(set)
 
       case charset_name do
         :us_ascii -> codepoint
@@ -988,23 +985,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
 
     single_shift = Map.get(state, :single_shift, nil)
 
-    # Convert module-based charset to charset atom
-    active_charset_atom =
-      if active_charset && is_atom(active_charset) &&
-           function_exported?(active_charset, :name, 0) do
-        active_charset.name()
-      else
-        active_charset
-      end
-
-    # Convert module-based single_shift to charset atom
-    single_shift_charset =
-      if single_shift && is_atom(single_shift) &&
-           function_exported?(single_shift, :name, 0) do
-        single_shift.name()
-      else
-        single_shift
-      end
+    active_charset_atom = StateManager.resolve_charset_name(active_charset)
+    single_shift_charset = StateManager.resolve_charset_name(single_shift)
 
     # Use the proper Translator module to handle translation
     translated =

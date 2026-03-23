@@ -312,14 +312,13 @@ defmodule Raxol.Demo.Particles do
     |> Enum.filter(fn p ->
       p.life > 0 and p.x >= 0 and p.x < width and p.y >= 0 and p.y < height
     end)
-    |> Enum.map(fn p ->
+    |> Enum.map_join(fn p ->
       x = trunc(p.x) + 1
       y = trunc(p.y) + 1
       alpha = min(1.0, p.life / 20)
       color_code = if alpha > 0.5, do: p.color, else: dim_color(p.color)
       "\e[#{y};#{x}H\e[38;5;#{color_code}m#{p.char}\e[0m"
     end)
-    |> Enum.join("")
   end
 
   @doc """

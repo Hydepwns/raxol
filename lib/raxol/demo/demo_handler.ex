@@ -24,10 +24,9 @@ defmodule Raxol.Demo.DemoHandler do
 
     commands =
       CommandWhitelist.available_commands()
-      |> Enum.map(fn {cmd, desc} ->
+      |> Enum.map_join("\r\n", fn {cmd, desc} ->
         "  #{@esc}33m#{String.pad_trailing(cmd, 18)}#{@reset} #{desc}"
       end)
-      |> Enum.join("\r\n")
 
     footer = "\r\n\r\n#{@esc}2mType a command and press Enter#{@reset}"
 
@@ -167,13 +166,11 @@ defmodule Raxol.Demo.DemoHandler do
   defp standard_colors do
     normal =
       0..7
-      |> Enum.map(fn n -> "#{@esc}48;5;#{n}m   #{@reset}" end)
-      |> Enum.join("")
+      |> Enum.map_join(fn n -> "#{@esc}48;5;#{n}m   #{@reset}" end)
 
     bright =
       8..15
-      |> Enum.map(fn n -> "#{@esc}48;5;#{n}m   #{@reset}" end)
-      |> Enum.join("")
+      |> Enum.map_join(fn n -> "#{@esc}48;5;#{n}m   #{@reset}" end)
 
     "    #{normal}\r\n    #{bright}"
   end
@@ -197,13 +194,12 @@ defmodule Raxol.Demo.DemoHandler do
   defp truecolor_gradient do
     gradient =
       0..59
-      |> Enum.map(fn i ->
+      |> Enum.map_join(fn i ->
         r = round(255 * i / 59)
         g = round(255 * (59 - i) / 59)
         b = 128
         "#{@esc}48;2;#{r};#{g};#{b}m #{@reset}"
       end)
-      |> Enum.join("")
 
     "    #{gradient}"
   end

@@ -571,7 +571,7 @@ defmodule Raxol.Demo.Animations do
     combined = all_explosions ++ ring_particles
 
     # Animate rings expanding
-    Enum.reduce(1..35, combined, fn _frame, particles ->
+    _particles = Enum.reduce(1..35, combined, fn _frame, particles ->
       particles =
         particles
         |> Enum.map(&Particles.update_with_trail(&1, gravity: 0.02))

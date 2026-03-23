@@ -682,8 +682,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       result = SelectList.render(state, %{})
 
       contents =
-        Enum.map(result.children, fn el -> el.content end)
-        |> Enum.join("")
+        Enum.map_join(result.children, "", fn el -> el.content end)
 
       assert contents =~ "Apple"
       assert contents =~ "Banana"

@@ -223,13 +223,12 @@ defmodule Raxol.Demo.TextFormation do
     |> Enum.filter(fn p ->
       p.life > 0 and p.x >= 0 and p.x < width and p.y >= 0 and p.y < height
     end)
-    |> Enum.map(fn p ->
+    |> Enum.map_join(fn p ->
       x = trunc(p.x) + 1
       y = trunc(p.y) + 1
       brightness = if p.arrived, do: "1;", else: ""
       "\e[#{y};#{x}H\e[#{brightness}38;5;#{p.color}m#{p.char}\e[0m"
     end)
-    |> Enum.join("")
   end
 
   @doc """

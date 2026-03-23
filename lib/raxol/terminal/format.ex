@@ -375,11 +375,10 @@ defmodule Raxol.Terminal.Format do
     params =
       codes
       |> Enum.reverse()
-      |> Enum.map(fn
+      |> Enum.map_join(";", fn
         {a, b, c} -> "#{a};#{b};#{c}"
         code -> to_string(code)
       end)
-      |> Enum.join(";")
 
     "\e[#{params}m"
   end
