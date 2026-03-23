@@ -193,7 +193,10 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
       Raxol.Core.ErrorHandling.safe_call(fn ->
         case apply(app_module, :view, [model]) do
-          view when not is_nil(view) ->
+          nil ->
+            {:ok, nil}
+
+          view ->
             resolved = resolve_process_components(view)
 
             Raxol.Core.Runtime.Log.debug(
@@ -201,9 +204,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
             )
 
             {:ok, resolved}
-
-          _ ->
-            {:error, :invalid_view}
         end
       end)
       |> case do
