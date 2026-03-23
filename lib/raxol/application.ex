@@ -116,8 +116,10 @@ defmodule Raxol.Application do
     # Minimal children for test environment
     # Tests can start their own processes as needed
     [
-      # ETSCacheManager for performance tests
-      {Raxol.Performance.ETSCacheManager, []}
+      {Raxol.Performance.ETSCacheManager, []},
+      {Registry, keys: :unique, name: Raxol.Agent.Registry},
+      {Raxol.DynamicSupervisor, []},
+      {Raxol.Core.UserPreferences, [name: Raxol.Core.UserPreferences]}
     ]
   end
 

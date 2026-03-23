@@ -6,6 +6,8 @@
 #
 # Run with: mix run examples/agents/code_review_agent.exs
 
+Logger.configure(level: :warning)
+
 defmodule CodeReviewAgent do
   use Raxol.Agent
 

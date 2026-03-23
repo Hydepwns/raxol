@@ -43,10 +43,16 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     command_module =
       Keyword.get(opts, :command_module, Raxol.Core.Runtime.Command)
 
+    server_opts =
+      case Keyword.get(opts, :name, __MODULE__) do
+        nil -> []
+        name -> [name: name]
+      end
+
     GenServer.start_link(
       __MODULE__,
       {runtime_pid, initial_state, command_module},
-      name: __MODULE__
+      server_opts
     )
   end
 
@@ -470,6 +476,11 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   @impl true
   def handle_manager_call(:get_model, _from, state) do
     {:reply, {:ok, state.model}, state}
+  end
+
+  @impl true
+  def handle_manager_call(:get_view_tree, _from, state) do
+    {:reply, {:ok, state.view_tree}, state}
   end
 
   @impl true

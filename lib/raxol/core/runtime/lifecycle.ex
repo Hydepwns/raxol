@@ -167,7 +167,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       code_reloader_pid: code_reloader_pid,
       model: initialized_model,
       dispatcher_ready: false,
-      plugin_manager_ready: false
+      plugin_manager_ready: pm_pid == nil
     }
   end
 
@@ -197,18 +197,24 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   defp start_plugin_manager(options) do
-    plugin_manager_opts = Keyword.get(options, :plugin_manager_opts, [])
+    environment = Keyword.get(options, :environment, :terminal)
 
-    case Manager.start_link(plugin_manager_opts) do
-      {:ok, pm_pid} ->
-        Raxol.Core.Runtime.Log.info_with_context(
-          "[#{__MODULE__}] PluginManager started with PID: #{inspect(pm_pid)}"
-        )
+    if environment == :agent do
+      {:ok, nil}
+    else
+      plugin_manager_opts = Keyword.get(options, :plugin_manager_opts, [])
 
-        {:ok, pm_pid}
+      case Manager.start_link(plugin_manager_opts) do
+        {:ok, pm_pid} ->
+          Raxol.Core.Runtime.Log.info_with_context(
+            "[#{__MODULE__}] PluginManager started with PID: #{inspect(pm_pid)}"
+          )
 
-      {:error, reason} ->
-        {:error, {:plugin_manager_start_failed, reason}, fn -> :ok end}
+          {:ok, pm_pid}
+
+        {:error, reason} ->
+          {:error, {:plugin_manager_start_failed, reason}, fn -> :ok end}
+      end
     end
   end
 
@@ -238,13 +244,24 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       command_registry_table: registry_table
     }
 
-    case Dispatcher.start_link(self(), dispatcher_initial_state) do
+    environment = Keyword.get(options, :environment, :terminal)
+
+    dispatcher_opts =
+      if environment == :agent, do: [name: nil], else: []
+
+    case Dispatcher.start_link(
+           self(),
+           dispatcher_initial_state,
+           dispatcher_opts
+         ) do
       {:ok, dispatcher_pid} ->
         {:ok, dispatcher_pid}
 
       {:error, reason} ->
-        {:error, {:dispatcher_start_failed, reason},
-         fn -> Manager.stop(pm_pid) end}
+        cleanup =
+          if pm_pid, do: fn -> Manager.stop(pm_pid) end, else: fn -> :ok end
+
+        {:error, {:dispatcher_start_failed, reason}, cleanup}
     end
   end
 

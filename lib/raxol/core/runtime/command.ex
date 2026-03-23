@@ -348,6 +348,11 @@ defmodule Raxol.Core.Runtime.Command do
     env = Keyword.get(opts, :env, [])
 
     Task.start(fn ->
+      charlist_env =
+        Enum.map(env, fn {k, v} ->
+          {String.to_charlist(to_string(k)), String.to_charlist(to_string(v))}
+        end)
+
       port_opts =
         [
           :binary,
@@ -357,7 +362,7 @@ defmodule Raxol.Core.Runtime.Command do
           args: ["-c", command]
         ]
         |> maybe_add_port_opt(:cd, cd)
-        |> maybe_add_port_opt(:env, if(env != [], do: env))
+        |> maybe_add_port_opt(:env, if(charlist_env != [], do: charlist_env))
 
       port = Port.open({:spawn_executable, "/bin/sh"}, port_opts)
       result = collect_port_output(port, [], timeout)
@@ -367,11 +372,11 @@ defmodule Raxol.Core.Runtime.Command do
 
   @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:send_agent, {target_id, message}, context) do
-    source_id = Map.get(context, :agent_id, :unknown)
+    _source_id = Map.get(context, :agent_id, :unknown)
 
     case Registry.lookup(Raxol.Agent.Registry, target_id) do
       [{pid, _}] ->
-        GenServer.cast(pid, {:send_message, {:from, source_id, message}})
+        GenServer.cast(pid, {:send_message, message})
 
       [] ->
         send(

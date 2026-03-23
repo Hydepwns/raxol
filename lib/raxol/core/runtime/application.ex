@@ -304,6 +304,9 @@ defmodule Raxol.Core.Runtime.Application do
       {new_model, commands} when is_map(new_model) and is_list(commands) ->
         {:ok, {new_model, commands}}
 
+      {new_model, %Raxol.Core.Runtime.Command{} = cmd} when is_map(new_model) ->
+        {:ok, {new_model, [cmd]}}
+
       invalid_return ->
         log_invalid_update_result(
           app_module,

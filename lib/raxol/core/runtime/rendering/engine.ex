@@ -158,6 +158,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     )
 
     with {:ok, view} <- safe_get_view(state.app_module, model),
+         false <- is_nil(view),
          {:ok, positioned_elements} <- safe_apply_layout(view, state),
          :ok <- update_dispatcher_view_tree(state.dispatcher_pid, view),
          {:ok, cells} <- safe_render_to_cells(positioned_elements, theme),
@@ -165,6 +166,10 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
          {:ok, new_state} <- safe_render_to_backend(final_cells, state) do
       {:ok, new_state}
     else
+      true ->
+        # Headless agent -- no view/1, skip rendering
+        {:ok, state}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Render error",
@@ -179,28 +184,32 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   # Safe view retrieval using functional error handling
   defp safe_get_view(app_module, model) do
-    Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine: Calling app_module.view(model)"
-    )
+    if not function_exported?(app_module, :view, 1) do
+      {:ok, nil}
+    else
+      Raxol.Core.Runtime.Log.debug(
+        "Rendering Engine: Calling app_module.view(model)"
+      )
 
-    Raxol.Core.ErrorHandling.safe_call(fn ->
-      case apply(app_module, :view, [model]) do
-        view when not is_nil(view) ->
-          resolved = resolve_process_components(view)
+      Raxol.Core.ErrorHandling.safe_call(fn ->
+        case apply(app_module, :view, [model]) do
+          view when not is_nil(view) ->
+            resolved = resolve_process_components(view)
 
-          Raxol.Core.Runtime.Log.debug(
-            "Rendering Engine: Got view: #{inspect(resolved)}"
-          )
+            Raxol.Core.Runtime.Log.debug(
+              "Rendering Engine: Got view: #{inspect(resolved)}"
+            )
 
-          {:ok, resolved}
+            {:ok, resolved}
 
-        _ ->
-          {:error, :invalid_view}
+          _ ->
+            {:error, :invalid_view}
+        end
+      end)
+      |> case do
+        {:ok, result} -> result
+        {:error, reason} -> {:error, {:view_error, reason}}
       end
-    end)
-    |> case do
-      {:ok, result} -> result
-      {:error, reason} -> {:error, {:view_error, reason}}
     end
   end
 

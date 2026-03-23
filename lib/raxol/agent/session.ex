@@ -20,6 +20,16 @@ defmodule Raxol.Agent.Session do
           team_id: term() | nil
         }
 
+  def child_spec(opts) do
+    id = Keyword.fetch!(opts, :id)
+
+    %{
+      id: {__MODULE__, id},
+      start: {__MODULE__, :start_link, [opts]},
+      restart: :permanent
+    }
+  end
+
   def start_link(opts) do
     id = Keyword.fetch!(opts, :id)
 
