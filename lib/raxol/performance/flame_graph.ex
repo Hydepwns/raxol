@@ -95,22 +95,25 @@ defmodule Raxol.Performance.FlameGraph do
       )
 
     try do
-      # Start fprof
-      _ = :fprof.start()
+      ensure_fprof()
+      _ = apply(:fprof, :start, [])
 
-      # Trace and execute
-      _ = :fprof.trace([:start, {:file, String.to_charlist(trace_file)}])
+      _ =
+        apply(:fprof, :trace, [
+          [:start, {:file, String.to_charlist(trace_file)}]
+        ])
+
       result = fun.()
-      _ = :fprof.trace(:stop)
+      _ = apply(:fprof, :trace, [:stop])
+      _ = apply(:fprof, :profile, [[file: String.to_charlist(trace_file)]])
 
-      # Profile and analyze
-      _ = :fprof.profile(file: String.to_charlist(trace_file))
-      _ = :fprof.analyse(dest: String.to_charlist(analysis_file), cols: 120)
+      _ =
+        apply(:fprof, :analyse, [
+          [dest: String.to_charlist(analysis_file), cols: 120]
+        ])
 
-      # Stop fprof
-      _ = :fprof.stop()
+      _ = apply(:fprof, :stop, [])
 
-      # Generate output based on format
       _ =
         case format do
           :svg -> generate_svg(analysis_file, output, opts)
@@ -118,14 +121,17 @@ defmodule Raxol.Performance.FlameGraph do
           :fprof -> copy_fprof_output(analysis_file, output)
         end
 
-      # Return result from profiled function
       {:ok, output, result}
     rescue
       e ->
-        _ = :fprof.stop()
+        try do
+          apply(:fprof, :stop, [])
+        rescue
+          _ -> :ok
+        end
+
         {:error, Exception.message(e)}
     after
-      # Cleanup temp files
       _ = File.rm(trace_file)
       _ = File.rm(analysis_file)
     end
@@ -172,31 +178,41 @@ defmodule Raxol.Performance.FlameGraph do
       )
 
     try do
-      _ = :fprof.start()
+      ensure_fprof()
+      _ = apply(:fprof, :start, [])
 
-      # Set up tracing for the module
       trace_spec = build_trace_spec(module, functions)
 
       _ =
-        :fprof.trace([
-          :start,
-          {:file, String.to_charlist(trace_file)} | trace_spec
+        apply(:fprof, :trace, [
+          [
+            :start,
+            {:file, String.to_charlist(trace_file)} | trace_spec
+          ]
         ])
 
-      # Wait for the specified duration
       Process.sleep(duration)
 
-      _ = :fprof.trace(:stop)
-      _ = :fprof.profile(file: String.to_charlist(trace_file))
-      _ = :fprof.analyse(dest: String.to_charlist(analysis_file), cols: 120)
-      _ = :fprof.stop()
+      _ = apply(:fprof, :trace, [:stop])
+      _ = apply(:fprof, :profile, [[file: String.to_charlist(trace_file)]])
 
-      # Generate SVG
+      _ =
+        apply(:fprof, :analyse, [
+          [dest: String.to_charlist(analysis_file), cols: 120]
+        ])
+
+      _ = apply(:fprof, :stop, [])
+
       _ = generate_svg(analysis_file, output, opts)
       {:ok, output}
     rescue
       e ->
-        _ = :fprof.stop()
+        try do
+          apply(:fprof, :stop, [])
+        rescue
+          _ -> :ok
+        end
+
         {:error, Exception.message(e)}
     after
       _ = File.rm(trace_file)
@@ -232,27 +248,40 @@ defmodule Raxol.Performance.FlameGraph do
       )
 
     try do
-      _ = :fprof.start()
+      ensure_fprof()
+      _ = apply(:fprof, :start, [])
 
       _ =
-        :fprof.trace([
-          :start,
-          {:procs, [self()]},
-          {:file, String.to_charlist(trace_file)}
+        apply(:fprof, :trace, [
+          [
+            :start,
+            {:procs, [self()]},
+            {:file, String.to_charlist(trace_file)}
+          ]
         ])
 
       Process.sleep(duration)
 
-      _ = :fprof.trace(:stop)
-      _ = :fprof.profile(file: String.to_charlist(trace_file))
-      _ = :fprof.analyse(dest: String.to_charlist(analysis_file), cols: 120)
-      _ = :fprof.stop()
+      _ = apply(:fprof, :trace, [:stop])
+      _ = apply(:fprof, :profile, [[file: String.to_charlist(trace_file)]])
+
+      _ =
+        apply(:fprof, :analyse, [
+          [dest: String.to_charlist(analysis_file), cols: 120]
+        ])
+
+      _ = apply(:fprof, :stop, [])
 
       _ = generate_svg(analysis_file, output, opts)
       {:ok, output}
     rescue
       e ->
-        _ = :fprof.stop()
+        try do
+          apply(:fprof, :stop, [])
+        rescue
+          _ -> :ok
+        end
+
         {:error, Exception.message(e)}
     after
       _ = File.rm(trace_file)
@@ -302,6 +331,10 @@ defmodule Raxol.Performance.FlameGraph do
   end
 
   # Private functions
+
+  defp ensure_fprof do
+    Application.ensure_all_started(:tools)
+  end
 
   defp generate_svg(analysis_file, output, opts) do
     title = Keyword.get(opts, :title, @default_title)

@@ -248,4 +248,18 @@ defmodule Raxol.Terminal.TerminalUtils do
   def real_tty? do
     match?({:ok, _}, :io.columns()) and match?({:ok, _}, :io.rows())
   end
+
+  @doc """
+  Checks if stdout is connected to a real terminal device.
+
+  Unlike `real_tty?/0` which uses Erlang's IO system (fails in -noshell mode),
+  this checks at the OS level via prim_tty NIF. Use this for terminal
+  initialization that needs to work with `mix run` (which sets -noshell).
+  """
+  @spec has_terminal_device?() :: boolean()
+  def has_terminal_device? do
+    # prim_tty:isatty checks the actual fd at the OS level (C isatty()),
+    # which works regardless of Erlang's -noshell flag.
+    :prim_tty.isatty(:stdout) == true
+  end
 end

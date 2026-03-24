@@ -133,6 +133,15 @@ defmodule Raxol.Core.Runtime.Lifecycle do
          {:ok, driver_pid} <- maybe_start_driver(dispatcher_pid, environment),
          {:ok, rendering_engine_pid} <-
            start_rendering_engine(app_module, dispatcher_pid, options) do
+      # Tell the dispatcher about the rendering engine so resize events
+      # can be forwarded to update the layout dimensions.
+      if dispatcher_pid && rendering_engine_pid do
+        GenServer.cast(
+          dispatcher_pid,
+          {:set_rendering_engine, rendering_engine_pid}
+        )
+      end
+
       {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid,
        driver_pid, rendering_engine_pid}
     end
@@ -289,12 +298,17 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   defp start_rendering_engine(app_module, dispatcher_pid, options) do
+    # Use actual terminal size if available, falling back to options/defaults.
+    # The Driver has already sent a resize event to the Dispatcher, but by the
+    # time we query here we can also detect size directly to avoid the race.
+    {actual_w, actual_h} = detect_terminal_size(options)
+
     engine_opts =
       [
         app_module: app_module,
         dispatcher_pid: dispatcher_pid,
-        width: Keyword.get(options, :width, 80),
-        height: Keyword.get(options, :height, 24),
+        width: actual_w,
+        height: actual_h,
         environment: Keyword.get(options, :environment, :terminal)
       ]
       |> maybe_add_opt(:liveview_topic, Keyword.get(options, :liveview_topic))
@@ -755,4 +769,39 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   defp maybe_add_opt(opts, _key, nil), do: opts
   defp maybe_add_opt(opts, key, value), do: Keyword.put(opts, key, value)
+
+  # Detect actual terminal size, falling back to options, then to 80x24.
+  # Uses stty size via /dev/tty which works in -noshell mode (mix run).
+  defp detect_terminal_size(options) do
+    default_w = Keyword.get(options, :width, 80)
+    default_h = Keyword.get(options, :height, 24)
+
+    # Try :io first (works in interactive shell), then stty via /dev/tty
+    case {:io.columns(), :io.rows()} do
+      {{:ok, cols}, {:ok, rows}} when cols > 0 and rows > 0 ->
+        {cols, rows}
+
+      _ ->
+        case :os.cmd(~c"stty size < /dev/tty 2>/dev/null") do
+          result when is_list(result) ->
+            str = List.to_string(result) |> String.trim()
+
+            case String.split(str) do
+              [rows_s, cols_s] ->
+                rows = String.to_integer(rows_s)
+                cols = String.to_integer(cols_s)
+
+                if rows > 0 and cols > 0,
+                  do: {cols, rows},
+                  else: {default_w, default_h}
+
+              _ ->
+                {default_w, default_h}
+            end
+
+          _ ->
+            {default_w, default_h}
+        end
+    end
+  end
 end

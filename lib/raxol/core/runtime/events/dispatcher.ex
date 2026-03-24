@@ -34,7 +34,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
               command_registry_table: nil,
               current_theme_id: :default,
               command_module: Raxol.Core.Runtime.Command,
-              view_tree: nil
+              view_tree: nil,
+              rendering_engine: nil
   end
 
   # BaseManager provides start_link/1 and start_link/2 automatically
@@ -69,6 +70,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       plugin_manager: initial_state.plugin_manager,
       plugin_manager_struct: Raxol.Plugins.Manager.new(),
       command_registry_table: initial_state.command_registry_table,
+      rendering_engine: Map.get(initial_state, :rendering_engine),
       current_theme_id: UserPreferences.get_theme_id(),
       command_module: command_module
     }
@@ -78,6 +80,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     send(runtime_pid, {:plugin_manager_ready, initial_state.plugin_manager})
 
     _ = send_test_ready_message(Mix.env())
+
+    # Start app subscriptions (timers, event sources)
+    state = setup_subscriptions(state)
 
     {:ok, state}
   end
@@ -123,8 +128,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         {:ok, state, commands}
 
       :passthrough ->
-        message = default_event_to_message(event)
-        process_app_update(state, message, event)
+        # Pass the raw Event struct to update/2 — apps pattern-match on %Event{}
+        process_app_update(state, event, event)
     end
   end
 
@@ -238,6 +243,15 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   defp handle_resize_event(%{width: width, height: height}, state) do
+    # Forward size to the Rendering Engine so layout uses actual terminal dimensions
+    if state.rendering_engine do
+      GenServer.cast(
+        state.rendering_engine,
+        {:update_size, %{width: width, height: height}}
+      )
+    end
+
+    send(state.runtime_pid, :render_needed)
     {:ok, %{state | width: width, height: height}, []}
   end
 
@@ -345,6 +359,21 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   @impl true
+  def handle_manager_cast({:set_rendering_engine, pid}, state)
+      when is_pid(pid) do
+    # Forward current dimensions immediately — the initial resize event from the
+    # Driver arrived before we had the rendering engine PID, so it was lost.
+    if state.width > 0 and state.height > 0 do
+      GenServer.cast(
+        pid,
+        {:update_size, %{width: state.width, height: state.height}}
+      )
+    end
+
+    {:noreply, %{state | rendering_engine: pid}}
+  end
+
+  @impl true
   def handle_manager_cast({:register_dispatcher, _pid}, state) do
     # This message is from Terminal.Driver to register itself.
     # No specific action needed here other than acknowledging it if necessary.
@@ -400,6 +429,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   def handle_manager_info({:dispatcher_ready, _pid}, state) do
     # Acknowledge dispatcher initialization in test mode
     {:noreply, state}
+  end
+
+  @impl true
+  def handle_manager_info({:subscription, msg}, state) do
+    # Subscription timer fired — route message through app's update/2
+    dispatch_raw_message(msg, state)
   end
 
   @impl true
@@ -544,28 +579,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     _ -> event
   end
 
-  defp default_event_to_message(%Event{
-         type: :key,
-         data: %{key: key, modifiers: mods}
-       }) do
-    {:key_press, key, mods}
-  end
-
-  defp default_event_to_message(%Event{
-         type: :mouse,
-         data: %{action: action, x: x, y: y, button: button}
-       }) do
-    {:mouse_event, action, x, y, button}
-  end
-
-  defp default_event_to_message(%Event{type: :text, data: %{text: text}}) do
-    {:text_input, text}
-  end
-
-  defp default_event_to_message(event) do
-    {:event, event}
-  end
-
   # --- Command Processing ---
 
   # --- Helper Functions for Pattern Matching ---
@@ -593,6 +606,30 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       _ ->
         {:noreply, state}
     end
+  end
+
+  defp setup_subscriptions(state) do
+    try do
+      if function_exported?(state.app_module, :subscribe, 1) do
+        case state.app_module.subscribe(state.model) do
+          subscriptions when is_list(subscriptions) ->
+            Enum.each(subscriptions, fn
+              %Raxol.Core.Runtime.Subscription{} = sub ->
+                Raxol.Core.Runtime.Subscription.start(sub, %{pid: self()})
+
+              _ ->
+                :ok
+            end)
+
+          _ ->
+            :ok
+        end
+      end
+    rescue
+      _ -> :ok
+    end
+
+    state
   end
 
   defp broadcast_event_if_valid(event_type, event_data)

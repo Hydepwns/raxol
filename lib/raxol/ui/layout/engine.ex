@@ -336,7 +336,14 @@ defmodule Raxol.UI.Layout.Engine do
     char = Map.get(divider, :char, "-")
 
     [
-      %{type: :divider, x: space.x, y: space.y, width: space.width, height: 1, char: char}
+      %{
+        type: :divider,
+        x: space.x,
+        y: space.y,
+        width: space.width,
+        height: 1,
+        char: char
+      }
       | acc
     ]
   end
@@ -466,7 +473,10 @@ defmodule Raxol.UI.Layout.Engine do
   end
 
   # Box with single map child (View DSL produces map, not list, for single child)
-  def measure_element(%{type: :box, children: %{} = child} = element, available_space) do
+  def measure_element(
+        %{type: :box, children: %{} = child} = element,
+        available_space
+      ) do
     measure_element(%{element | children: [child]}, available_space)
   end
 
@@ -482,16 +492,36 @@ defmodule Raxol.UI.Layout.Engine do
         _ -> %{}
       end
 
+    # Calculate border and padding overhead
+    border = Map.get(element, :border) || Map.get(style, :border, :none)
+    padding = Map.get(element, :padding, 0)
+    border_offset = if border == :none, do: 0, else: 1
+    pad = if is_integer(padding), do: padding, else: 0
+    overhead = 2 * (border_offset + pad)
+
     raw_width =
-      Map.get(element, :width) || Map.get(style, :width) || Map.get(element, :size)
+      Map.get(element, :width) || Map.get(style, :width) ||
+        Map.get(element, :size)
 
     # :fill expands to available width
     width = if raw_width == :fill, do: available_space.width, else: raw_width
 
     raw_height = Map.get(element, :height) || Map.get(style, :height)
-    height = if raw_height == :fill, do: available_space.height, else: raw_height
 
-    # If explicit dimensions, use them; otherwise measure as container
+    height =
+      if raw_height == :fill, do: available_space.height, else: raw_height
+
+    # Shrink available space for children by border/padding
+    avail_w = Map.get(available_space, :width, 80)
+    avail_h = Map.get(available_space, :height, 24)
+
+    inner_space =
+      Map.merge(available_space, %{
+        width: max(0, avail_w - overhead),
+        height: max(0, avail_h - overhead)
+      })
+
+    # If explicit dimensions, use them; otherwise measure children and add overhead
     case {width, height} do
       {w, h} when is_integer(w) and is_integer(h) ->
         %{width: w, height: h}
@@ -501,17 +531,23 @@ defmodule Raxol.UI.Layout.Engine do
           measure_container_element(
             :column,
             %{type: :column, children: children},
-            available_space
+            inner_space
           )
 
-        %{width: w, height: child_dims.height}
+        %{width: w, height: child_dims.height + overhead}
 
       _ ->
-        measure_container_element(
-          :column,
-          %{type: :column, children: children},
-          available_space
-        )
+        child_dims =
+          measure_container_element(
+            :column,
+            %{type: :column, children: children},
+            inner_space
+          )
+
+        %{
+          width: child_dims.width + overhead,
+          height: child_dims.height + overhead
+        }
     end
   end
 
@@ -644,7 +680,8 @@ defmodule Raxol.UI.Layout.Engine do
     if map_size(existing) > 0 and Map.has_key?(existing, :flex_direction) do
       flex
     else
-      style = if is_map(Map.get(flex, :style)), do: Map.get(flex, :style), else: %{}
+      style =
+        if is_map(Map.get(flex, :style)), do: Map.get(flex, :style), else: %{}
 
       # Style values take priority over top-level defaults because
       # Flex.row/column always sets top-level gap/padding to 0 as defaults,
@@ -652,7 +689,8 @@ defmodule Raxol.UI.Layout.Engine do
       attrs = %{
         flex_direction: Map.get(flex, :direction, :row),
         justify_content:
-          Map.get(style, :justify_content) || Map.get(flex, :justify, :flex_start),
+          Map.get(style, :justify_content) ||
+            Map.get(flex, :justify, :flex_start),
         align_items:
           Map.get(style, :align_items) || Map.get(flex, :align, :stretch),
         gap: Map.get(style, :gap) || Map.get(flex, :gap, 0),

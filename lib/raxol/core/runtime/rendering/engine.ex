@@ -321,12 +321,13 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       "Rendering Engine: Terminal output generated (length: #{String.length(output_string)})"
     )
 
+    # Move cursor to top-left and clear screen before each frame
     if state.sync_output do
       IO.write("\e[?2026h")
-      IO.write(output_string)
+      IO.write("\e[H\e[2J" <> output_string)
       IO.write("\e[?2026l")
     else
-      IO.write(output_string)
+      IO.write("\e[H\e[2J" <> output_string)
     end
 
     {:ok, %{state | buffer: updated_buffer}}
@@ -466,9 +467,10 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     )
   end
 
-  # Shared helper: transforms raw cells and writes them into a ScreenBuffer.
+  # Shared helper: transforms raw cells and writes them into a fresh ScreenBuffer.
+  # A new buffer is created each frame so stale cells from previous views don't persist.
   defp apply_cells_to_buffer(cells, state) do
-    screen_buffer = state.buffer || ScreenBuffer.new(state.width, state.height)
+    screen_buffer = ScreenBuffer.new(state.width, state.height)
     transformed_cells = transform_cells_for_update(cells)
 
     Enum.reduce(transformed_cells, screen_buffer, fn {x, y, cell}, buffer ->

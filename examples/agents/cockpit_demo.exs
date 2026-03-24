@@ -433,7 +433,8 @@ defmodule CockpitDemo do
           style: [:bold]
         ),
         text("  No other terminal framework does this.", style: [:dim]),
-        spacer(size: 1)
+        spacer(size: 1),
+        key_bar()
       ]
     end
   end
@@ -597,7 +598,7 @@ defmodule CockpitDemo do
     fg = status_fg(status)
     pid_str = if pid, do: " #{short_pid(pid)}", else: ""
 
-    box style: %{border: border, width: 38, padding: 1} do
+    box style: %{border: border, width: :fill, padding: 1} do
       column style: %{gap: 0} do
         [
           row style: %{gap: 1} do
@@ -615,7 +616,7 @@ defmodule CockpitDemo do
   end
 
   defp crash_box(old_pid) do
-    box style: %{border: :double, width: 38, padding: 1} do
+    box style: %{border: :double, width: :fill, padding: 1} do
       column style: %{gap: 0} do
         [
           row style: %{gap: 1} do
@@ -977,6 +978,7 @@ Raxol.Core.Runtime.Log.info("CockpitDemo: Starting...")
 {:ok, pid} = Raxol.start_link(CockpitDemo, [])
 Raxol.Core.Runtime.Log.info("CockpitDemo: Running. Press 'q' to quit.")
 
+# Keep the script alive until the Lifecycle process exits (e.g. user presses 'q')
 ref = Process.monitor(pid)
 
 receive do

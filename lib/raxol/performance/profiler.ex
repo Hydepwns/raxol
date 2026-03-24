@@ -178,19 +178,26 @@ defmodule Raxol.Performance.Profiler do
   Identifies hot paths in the application.
   """
   def identify_hot_paths(duration \\ 5000) do
-    case :fprof.start() do
+    case ensure_fprof(fn -> apply(:fprof, :start, []) end) do
       {:ok, _} ->
-        _ = :fprof.trace([:start, {:procs, :all}])
+        _ = apply(:fprof, :trace, [[:start, {:procs, :all}]])
         Process.sleep(duration)
-        _ = :fprof.trace(:stop)
-        _ = :fprof.profile()
-        _ = :fprof.analyse(dest: "", cols: 120)
-        _ = :fprof.stop()
+        _ = apply(:fprof, :trace, [:stop])
+        _ = apply(:fprof, :profile, [])
+        _ = apply(:fprof, :analyse, [[dest: "", cols: 120]])
+        _ = apply(:fprof, :stop, [])
         parse_fprof_results()
 
       {:error, reason} ->
         {:error, {:fprof_start_failed, reason}}
     end
+  end
+
+  defp ensure_fprof(fun) do
+    Application.ensure_all_started(:tools)
+    fun.()
+  rescue
+    _ -> {:error, :fprof_unavailable}
   end
 
   @doc """

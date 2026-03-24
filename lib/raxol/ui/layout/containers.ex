@@ -247,7 +247,12 @@ defmodule Raxol.UI.Layout.Containers do
         available_space
       )
       when is_list(children) do
-    # Skip if no children
+    measure_row_with_children(children, available_space)
+  end
+
+  # Handle rows without :attrs (e.g. synthetic rows from box measurement)
+  def measure_row(%{type: :row, children: children}, available_space)
+      when is_list(children) do
     measure_row_with_children(children, available_space)
   end
 
@@ -275,10 +280,10 @@ defmodule Raxol.UI.Layout.Containers do
         max(acc, dim.height)
       end)
 
-    # Return dimensions constrained to available space
+    # Return dimensions constrained to available space (if specified)
     %{
-      width: min(row_width, available_space.width),
-      height: min(row_height, available_space.height)
+      width: constrain(row_width, Map.get(available_space, :width)),
+      height: constrain(row_height, Map.get(available_space, :height))
     }
   end
 
@@ -299,7 +304,12 @@ defmodule Raxol.UI.Layout.Containers do
         available_space
       )
       when is_list(children) do
-    # Skip if no children
+    measure_column_with_children(children, available_space)
+  end
+
+  # Handle columns without :attrs (e.g. synthetic columns from box measurement)
+  def measure_column(%{type: :column, children: children}, available_space)
+      when is_list(children) do
     measure_column_with_children(children, available_space)
   end
 
@@ -327,12 +337,15 @@ defmodule Raxol.UI.Layout.Containers do
         max(acc, dim.width)
       end)
 
-    # Return dimensions constrained to available space
+    # Return dimensions constrained to available space (if specified)
     %{
-      width: min(column_width, available_space.width),
-      height: min(column_height, available_space.height)
+      width: constrain(column_width, Map.get(available_space, :width)),
+      height: constrain(column_height, Map.get(available_space, :height))
     }
   end
+
+  defp constrain(value, nil), do: value
+  defp constrain(value, limit), do: min(value, limit)
 
   ## Pattern matching helper functions for gap calculations
 
