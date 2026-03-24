@@ -342,7 +342,7 @@ defmodule Raxol.Terminal.Driver do
   def handle_manager_info({:raw_input, data}, state) when is_binary(data) do
     buffer = state.input_buffer <> data
 
-    if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
+    _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
 
     if incomplete_escape?(buffer) do
       timer = Process.send_after(self(), :flush_input_buffer, 50)
@@ -368,7 +368,7 @@ defmodule Raxol.Terminal.Driver do
     if byte_size(binary) > 0 do
       buffer = state.input_buffer <> binary
 
-      if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
+      _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
 
       if incomplete_escape?(buffer) do
         timer = Process.send_after(self(), :flush_input_buffer, 50)
@@ -393,7 +393,7 @@ defmodule Raxol.Terminal.Driver do
     buffer = state.input_buffer <> data
 
     # Cancel any pending flush timer
-    if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
+    _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
 
     # If the buffer ends with an incomplete escape sequence, wait for more bytes.
     # Otherwise, dispatch immediately.
@@ -606,15 +606,10 @@ defmodule Raxol.Terminal.Driver do
   end
 
   # --- Input reader ---
-  # In -noshell mode (mix run), Erlang's IO server can't read stdin, and
-  # Port subprocesses can't access /dev/tty on macOS. But the BEAM's own
-  # fd 0 (stdin) is still wired to the terminal. We use :prim_file to
-  # open fd 0 as a raw file descriptor and read from it directly.
-  #
-  # Three strategies tried, in order:
-  # 1. /dev/fd/0 via :file.open with :raw — reads the actual stdin fd
-  # 2. /dev/tty via :file.open with :raw — reads the controlling terminal
-  # 3. :io.get_chars — last resort, works if IO server cooperates
+  # In -noshell mode (mix run), prim_tty is initialized with tty => false,
+  # so its reader process never receives select notifications. We trigger
+  # reinit via user_drv:start_shell, then trace-intercept the reader's
+  # data messages.
   defp start_stdin_reader(_driver_pid) do
     # In -noshell mode, user_drv initializes prim_tty with tty => false,
     # so the NIF never sets up the terminal fd for select notifications.

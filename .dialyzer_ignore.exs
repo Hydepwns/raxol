@@ -31,6 +31,7 @@
   # terminal_utils.ex - Dimension detection (4 warnings)
   # dcs_entry_state.ex - Parser state capabilities (1 warning)
   ~r"driver\.ex:.*pattern_match",
+  ~r"driver\.ex:.*unused_fun",
   ~r"terminal_utils\.ex:.*pattern_match",
   ~r"terminal_utils\.ex:.*extra_range",
   ~r"dcs_entry_state\.ex:.*pattern_match",
