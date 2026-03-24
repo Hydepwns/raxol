@@ -260,6 +260,36 @@ defmodule Raxol.UI.Renderer do
   end
 
   defp render_visible_element(
+         %{type: :image, x: x, y: y, width: w, height: _h} = image_el,
+         _theme,
+         _parent_style
+       ) do
+    src = Map.get(image_el, :src)
+
+    opts =
+      [
+        width: Map.get(image_el, :width),
+        height: Map.get(image_el, :height),
+        protocol: Map.get(image_el, :protocol),
+        preserve_aspect: Map.get(image_el, :preserve_aspect, true)
+      ]
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+
+    case Raxol.Terminal.Image.display(src, opts) do
+      {:ok, escape_seq} ->
+        [{x, y, escape_seq, :default, :default, [image: true]}]
+
+      {:error, _reason} ->
+        placeholder = "[image]"
+        truncated = String.slice(placeholder, 0, w)
+
+        for {ch, i} <- Enum.with_index(String.graphemes(truncated)) do
+          {x + i, y, ch, :white, :black, []}
+        end
+    end
+  end
+
+  defp render_visible_element(
          %{type: :divider, x: x, y: y, width: w, char: char} = element,
          _theme,
          _parent_style

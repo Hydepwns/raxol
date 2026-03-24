@@ -766,6 +766,7 @@ defmodule Raxol.Core.Renderer.View do
   defdelegate list(opts \\ []), to: Raxol.View.Components
   defdelegate spacer(opts \\ []), to: Raxol.View.Components
   defdelegate divider(opts \\ []), to: Raxol.View.Components
+  defdelegate image(opts \\ []), to: Raxol.View.Components
   defdelegate progress(opts \\ []), to: Raxol.View.Components
   defdelegate modal(opts \\ []), to: Raxol.View.Components
   defdelegate select(opts \\ []), to: Raxol.View.Components

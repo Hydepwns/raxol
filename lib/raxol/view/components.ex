@@ -180,6 +180,34 @@ defmodule Raxol.View.Components do
   end
 
   @doc """
+  Creates an image component for inline terminal image display.
+
+  ## Options
+  - `:src` - File path or raw binary image data (required)
+  - `:width` - Width in terminal cells (default: 20)
+  - `:height` - Height in terminal cells (default: 10)
+  - `:protocol` - Override protocol (:kitty, :iterm2, :sixel)
+  - `:preserve_aspect` - Preserve aspect ratio (default: true)
+  - `:style` - Optional style attributes
+  - `:id` - Optional component identifier
+  """
+  @spec image(keyword() | map()) :: map()
+  def image(opts \\ []) do
+    opts = if is_list(opts), do: Map.new(opts), else: opts
+
+    %{
+      type: :image,
+      src: Map.get(opts, :src),
+      width: Map.get(opts, :width, 20),
+      height: Map.get(opts, :height, 10),
+      protocol: Map.get(opts, :protocol),
+      preserve_aspect: Map.get(opts, :preserve_aspect, true),
+      style: Map.get(opts, :style, %{}),
+      id: Map.get(opts, :id)
+    }
+  end
+
+  @doc """
   Creates a progress bar component.
   """
   @spec progress(keyword() | map()) :: map()

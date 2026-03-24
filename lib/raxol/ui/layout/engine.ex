@@ -332,6 +332,26 @@ defmodule Raxol.UI.Layout.Engine do
     [%{type: :spacer, x: space.x, y: space.y, width: w, height: h} | acc]
   end
 
+  def process_element(%{type: :image} = image_el, space, acc) do
+    width = min(Map.get(image_el, :width, 20), space.width)
+    height = min(Map.get(image_el, :height, 10), space.height)
+
+    [
+      %{
+        type: :image,
+        x: space.x,
+        y: space.y,
+        width: width,
+        height: height,
+        src: Map.get(image_el, :src),
+        protocol: Map.get(image_el, :protocol),
+        preserve_aspect: Map.get(image_el, :preserve_aspect, true),
+        style: Map.get(image_el, :style, %{})
+      }
+      | acc
+    ]
+  end
+
   def process_element(%{type: :divider} = divider, space, acc) do
     char = Map.get(divider, :char, "-")
 
@@ -575,6 +595,13 @@ defmodule Raxol.UI.Layout.Engine do
       :horizontal -> %{width: size, height: available_space.height}
       _ -> %{width: available_space.width, height: size}
     end
+  end
+
+  def measure_element(%{type: :image} = image_el, _available_space) do
+    %{
+      width: Map.get(image_el, :width, 20),
+      height: Map.get(image_el, :height, 10)
+    }
   end
 
   def measure_element(%{type: :divider}, available_space) do
