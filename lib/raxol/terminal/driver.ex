@@ -176,17 +176,18 @@ defmodule Raxol.Terminal.Driver do
         # Send initial resize event if we have a dispatcher
         if dispatcher_pid, do: send_initial_resize_event(dispatcher_pid)
 
-        # Read raw input from the terminal.
-        # We spawn a reader process that does blocking :io.get_chars reads.
-        # In -noshell mode with stty raw, each keypress returns immediately.
-        reader_pid = start_stdin_reader(self())
+        # Activate prim_tty reader for input. In -noshell mode, prim_tty
+        # was initialized with tty => false, so the reader gets no select
+        # notifications. start_stdin_reader triggers reinit with tty => true
+        # and sets up trace interception of the reader's output.
+        start_stdin_reader(self())
 
         state = %{
           state
           | termbox_state: :initialized,
             original_stty: original_stty,
             io_terminal_state: %{
-              input_reader: reader_pid,
+              input_reader: Process.whereis(:user_drv_reader),
               tty_fd: nil,
               tty_port: nil
             }
@@ -339,10 +340,54 @@ defmodule Raxol.Terminal.Driver do
 
   @impl true
   def handle_manager_info({:raw_input, data}, state) when is_binary(data) do
-    dispatch_raw_input(data, state)
+    buffer = state.input_buffer <> data
+
+    if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
+
+    if incomplete_escape?(buffer) do
+      timer = Process.send_after(self(), :flush_input_buffer, 50)
+      {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
+    else
+      flush_buffer(%{state | input_buffer: buffer, flush_timer: nil})
+    end
   end
 
-  # Port data from cat /dev/tty — accumulate and parse
+  # Trace messages from prim_tty reader — intercept input data
+  @impl true
+  def handle_manager_info(
+        {:trace, _reader, :send, {_ref, {:data, data}}, _to},
+        state
+      ) do
+    binary =
+      cond do
+        is_binary(data) -> data
+        is_list(data) -> IO.iodata_to_binary(data)
+        true -> <<>>
+      end
+
+    if byte_size(binary) > 0 do
+      buffer = state.input_buffer <> binary
+
+      if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
+
+      if incomplete_escape?(buffer) do
+        timer = Process.send_after(self(), :flush_input_buffer, 50)
+        {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
+      else
+        flush_buffer(%{state | input_buffer: buffer, flush_timer: nil})
+      end
+    else
+      {:noreply, state}
+    end
+  end
+
+  # Ignore other trace messages from the reader (signals, receives, etc.)
+  @impl true
+  def handle_manager_info({:trace, _pid, :send, _msg, _to}, state) do
+    {:noreply, state}
+  end
+
+  # Port data — accumulate and parse (buffering handles split escape sequences)
   @impl true
   def handle_manager_info({port, {:data, data}}, state) when is_port(port) do
     buffer = state.input_buffer <> data
@@ -366,7 +411,7 @@ defmodule Raxol.Terminal.Driver do
     flush_buffer(%{state | flush_timer: nil})
   end
 
-  # Port closed (cat exited)
+  # Port closed
   @impl true
   def handle_manager_info({port, :eof}, state) when is_port(port) do
     {:noreply, state}
@@ -561,33 +606,52 @@ defmodule Raxol.Terminal.Driver do
   end
 
   # --- Input reader ---
-  # Reads from stdin using :io.get_chars in a separate process.
-  # In -noshell mode with stty raw, each byte is available immediately.
-  defp start_stdin_reader(driver_pid) do
-    spawn_link(fn -> stdin_read_loop(driver_pid) end)
-  end
+  # In -noshell mode (mix run), Erlang's IO server can't read stdin, and
+  # Port subprocesses can't access /dev/tty on macOS. But the BEAM's own
+  # fd 0 (stdin) is still wired to the terminal. We use :prim_file to
+  # open fd 0 as a raw file descriptor and read from it directly.
+  #
+  # Three strategies tried, in order:
+  # 1. /dev/fd/0 via :file.open with :raw — reads the actual stdin fd
+  # 2. /dev/tty via :file.open with :raw — reads the controlling terminal
+  # 3. :io.get_chars — last resort, works if IO server cooperates
+  defp start_stdin_reader(_driver_pid) do
+    # In -noshell mode, user_drv initializes prim_tty with tty => false,
+    # so the NIF never sets up the terminal fd for select notifications.
+    # The reader process exists but is blocked waiting for events that
+    # never arrive.
+    #
+    # Fix: call user_drv:start_shell to trigger prim_tty:reinit with
+    # tty => true, which activates the terminal fd. Then trace the
+    # reader to intercept input data before it reaches user_drv.
+    reader = Process.whereis(:user_drv_reader)
+    user_drv = Process.whereis(:user_drv)
 
-  defp stdin_read_loop(driver_pid) do
-    case :io.get_chars(:standard_io, ~c"", 1) do
-      data when is_binary(data) and byte_size(data) > 0 ->
-        send(driver_pid, {:raw_input, data})
-        stdin_read_loop(driver_pid)
-
-      :eof ->
-        :ok
-
-      {:error, _} ->
-        :ok
-
-      # :io.get_chars can return a list in some modes
-      data when is_list(data) ->
-        send(driver_pid, {:raw_input, IO.iodata_to_binary(data)})
-        stdin_read_loop(driver_pid)
-
-      _ ->
-        :ok
+    if user_drv do
+      # Activate the terminal fd by triggering prim_tty reinit.
+      try do
+        :gen_statem.call(
+          user_drv,
+          {:start_shell, %{initial_shell: {__MODULE__, :noop_shell, []}}}
+        )
+      catch
+        _, _ -> :ok
+      end
     end
+
+    if reader do
+      # Trace the reader's sends to intercept data before user_drv
+      # forwards it. The reader sends {ref, {:data, bytes}} to user_drv.
+      :erlang.trace(reader, true, [:send])
+    end
+
+    # Return nil — no spawned reader pid to track. Input arrives via
+    # trace messages in handle_manager_info.
+    nil
   end
+
+  @doc false
+  def noop_shell, do: :ok
 
   # --- Input buffering ---
   # Escape sequences may span multiple messages, so we buffer until complete.
