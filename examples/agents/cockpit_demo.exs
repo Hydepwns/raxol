@@ -389,7 +389,12 @@ defmodule CockpitDemo do
           ]
         end,
         spacer(size: 1),
-        event_log_panel(model),
+        row style: %{gap: 1} do
+          [
+            event_log_panel(model),
+            dep_checker_panel(model)
+          ]
+        end,
         key_bar()
       ]
     end
@@ -418,18 +423,24 @@ defmodule CockpitDemo do
           text("  SUMMARY", style: [:bold], fg: :cyan)
         end,
         spacer(size: 1),
-        summary_row("Files scanned", "#{files_scanned}"),
-        summary_row("Lines counted", fmt(lines)),
-        summary_row("Doc coverage", "#{docs}/#{files_analyzed} modules"),
-        summary_row("Dependencies", "#{deps_ok} OK"),
-        summary_row("Agent crashes", "#{model.crashes}"),
-        summary_row_colored("Data loss", "zero", :green),
-        summary_row(
-          "Crash recovery",
-          "#{old_chaos} -> #{new_chaos} (new PID proves restart)"
-        ),
-        summary_row("Total uptime", "#{uptime}s"),
-        spacer(size: 2),
+        box style: %{border: :single, width: :fill, padding: 1} do
+          column style: %{gap: 0} do
+            [
+              summary_row("Files scanned", "#{files_scanned}"),
+              summary_row("Lines counted", fmt(lines)),
+              summary_row("Doc coverage", "#{docs}/#{files_analyzed} modules"),
+              summary_row("Dependencies", "#{deps_ok} OK"),
+              summary_row("Agent crashes", "#{model.crashes}"),
+              summary_row_colored("Data loss", "zero", :green),
+              summary_row(
+                "Crash recovery",
+                "#{old_chaos} -> #{new_chaos} (new PID proves restart)"
+              ),
+              summary_row("Total uptime", "#{uptime}s")
+            ]
+          end
+        end,
+        spacer(size: 1),
         text(
           "  Demo complete. 5 agents supervised, crash recovered, work continued.",
           style: [:bold]
@@ -579,6 +590,21 @@ defmodule CockpitDemo do
           | rows ++ padding
         ]
       end
+    end
+  end
+
+  defp dep_checker_panel(model) do
+    m = model.dep_checker
+
+    if m do
+      agent_box("Dep Checker", m.status, model.pids[:dep_checker], [
+        stat_line("Deps OK", "#{m.checked}"),
+        stat_line("Status", "#{m.status}")
+      ])
+    else
+      agent_box("Dep Checker", :idle, nil, [
+        text("  waiting...", style: [:dim])
+      ])
     end
   end
 
