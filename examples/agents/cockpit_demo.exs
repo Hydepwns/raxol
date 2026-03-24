@@ -359,7 +359,9 @@ defmodule CockpitDemo do
         spacer(size: 1),
         text("  OTP supervision * crash recovery * live metrics", fg: :yellow),
         spacer(size: 2),
-        text("  initializing supervisor tree#{dots}", style: [:dim])
+        text("  initializing supervisor tree#{dots}", style: [:dim]),
+        spacer(size: 1),
+        text("  press space to skip", style: [:dim])
       ]
     end
   end
@@ -516,7 +518,7 @@ defmodule CockpitDemo do
   defp chaos_panel(model) do
     m = model.chaos
     in_crash = model.tick >= @crash_tick and model.tick < @recover_tick
-    flash = model.tick >= @crash_tick and model.tick < @crash_tick + 4
+    flash = model.tick >= @crash_tick and model.tick < @crash_tick + 8
 
     cond do
       flash ->
@@ -723,6 +725,8 @@ defmodule CockpitDemo do
   end
 
   defp staggered_boot(model) do
+    # Each agent boots over 2 ticks: tick N spawns the process,
+    # tick N+1 sends :start (gives the GenServer time to register).
     schedule = [
       {@boot_scanner, CockpitDemo.FileScanner, :scanner},
       {@boot_analyzer, CockpitDemo.CodeAnalyzer, :analyzer},
@@ -732,20 +736,25 @@ defmodule CockpitDemo do
     ]
 
     Enum.reduce(schedule, model, fn {tick, mod, id}, st ->
-      if model.tick == tick and not MapSet.member?(st.booted, id) do
-        DynamicSupervisor.start_child(
-          Raxol.DynamicSupervisor,
-          {Session, app_module: mod, id: id}
-        )
+      cond do
+        model.tick == tick and not MapSet.member?(st.booted, id) ->
+          DynamicSupervisor.start_child(
+            Raxol.DynamicSupervisor,
+            {Session, app_module: mod, id: id}
+          )
 
-        Process.sleep(100)
-        Session.send_message(id, :start)
+          Map.put(st, :booted, MapSet.put(st.booted, id))
 
-        st
-        |> Map.put(:booted, MapSet.put(st.booted, id))
-        |> add_event(:boot, "#{agent_name(id)} online")
-      else
-        st
+        model.tick == tick + 1 and MapSet.member?(st.booted, id) and
+            not MapSet.member?(st.done_logged, {:started, id}) ->
+          Session.send_message(id, :start)
+
+          st
+          |> add_event(:boot, "#{agent_name(id)} online")
+          |> Map.update!(:done_logged, &MapSet.put(&1, {:started, id}))
+
+        true ->
+          st
       end
     end)
   end
@@ -814,9 +823,14 @@ defmodule CockpitDemo do
             [] -> nil
           end
 
+        old_pid = model.old_pids[:chaos] || model.pids[:chaos]
+
         model
         |> Map.put(:restarted, true)
-        |> add_event(:recover, "new PID #{fmt_pid(new_pid)} -- resuming")
+        |> add_event(
+          :recover,
+          "#{fmt_pid(old_pid)} -> #{fmt_pid(new_pid)} (restarted)"
+        )
 
       true ->
         model
