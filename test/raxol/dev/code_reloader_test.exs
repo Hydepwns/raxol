@@ -30,11 +30,10 @@ defmodule Raxol.Dev.CodeReloaderTest do
       send(pid, {:file_event, self(), {"lib/test2.ex", [:modified]}})
       send(pid, {:file_event, self(), {"lib/test3.ex", [:modified]}})
 
-      # Wait for debounce + recompile
-      Process.sleep(700)
-
-      # IEx.Helpers.recompile returns :noop or :ok, either sends :render_needed
-      assert_received :render_needed
+      # Wait for debounce (500ms) + recompile time with generous margin.
+      # recompile() may return :ok (sends :render_needed) or :noop (no changes).
+      # Use assert_receive with timeout to handle variable recompile duration.
+      assert_receive :render_needed, 3000
 
       GenServer.stop(pid)
     end

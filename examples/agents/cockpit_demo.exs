@@ -707,6 +707,11 @@ defmodule CockpitDemo do
       {:error, {:already_started, _}} -> :ok
     end
 
+    case Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions) do
+      {:ok, _} -> :ok
+      {:error, {:already_started, _}} -> :ok
+    end
+
     case DynamicSupervisor.start_link(
            name: Raxol.DynamicSupervisor,
            strategy: :one_for_one

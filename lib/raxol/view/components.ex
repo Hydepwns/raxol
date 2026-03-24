@@ -23,6 +23,8 @@ defmodule Raxol.View.Components do
     %{
       type: :text,
       content: content,
+      fg: Map.get(opts, :fg),
+      bg: Map.get(opts, :bg),
       style: Map.get(opts, :style, %{}),
       id: Map.get(opts, :id)
     }

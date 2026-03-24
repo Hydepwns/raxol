@@ -88,8 +88,10 @@ defmodule Raxol.UI.Layout.Engine do
   end
 
   def process_element(%{type: :flex} = flex, space, acc) do
-    # Delegate to flexbox layout processing
-    Flexbox.process_flex(flex, space, acc)
+    # Build attrs from top-level keys so parse_flex_properties works
+    # (View DSL puts direction/gap/etc. at top level, not in :attrs)
+    enriched = enrich_flex_attrs(flex)
+    Flexbox.process_flex(enriched, space, acc)
   end
 
   def process_element(%{type: :css_grid} = css_grid, space, acc) do
@@ -238,8 +240,14 @@ defmodule Raxol.UI.Layout.Engine do
 
   def process_element(%{type: :box, children: children} = box, space, acc)
       when is_list(children) do
+    style =
+      case Map.get(box, :style) do
+        s when is_map(s) -> s
+        _ -> %{}
+      end
+
     padding = Map.get(box, :padding, 0)
-    border = Map.get(box, :border, :none)
+    border = Map.get(box, :border) || Map.get(style, :border, :none)
 
     # Calculate inner space accounting for border and padding
     border_offset = if border == :none, do: 0, else: 1
@@ -311,6 +319,28 @@ defmodule Raxol.UI.Layout.Engine do
     Table.measure_and_position(table_element, space, acc)
   end
 
+  def process_element(%{type: :spacer} = spacer, space, acc) do
+    size = Map.get(spacer, :size, 1)
+    direction = Map.get(spacer, :direction, :vertical)
+
+    {w, h} =
+      case direction do
+        :horizontal -> {size, space.height}
+        _ -> {space.width, size}
+      end
+
+    [%{type: :spacer, x: space.x, y: space.y, width: w, height: h} | acc]
+  end
+
+  def process_element(%{type: :divider} = divider, space, acc) do
+    char = Map.get(divider, :char, "-")
+
+    [
+      %{type: :divider, x: space.x, y: space.y, width: space.width, height: 1, char: char}
+      | acc
+    ]
+  end
+
   # Catch-all for unknown element types
   def process_element(%{type: type} = element, _space, acc) do
     Raxol.Core.Runtime.Log.warning_with_context(
@@ -348,7 +378,7 @@ defmodule Raxol.UI.Layout.Engine do
           Grid.process(grid, space, current_acc)
 
         %{type: :flex} = flex ->
-          Flexbox.process_flex(flex, space, current_acc)
+          Flexbox.process_flex(enrich_flex_attrs(flex), space, current_acc)
 
         %{type: :css_grid} = css_grid ->
           CSSGrid.process_css_grid(css_grid, space, current_acc)
@@ -435,21 +465,46 @@ defmodule Raxol.UI.Layout.Engine do
     Inputs.measure(:text_input, attrs_map, available_space)
   end
 
+  # Box with single map child (View DSL produces map, not list, for single child)
+  def measure_element(%{type: :box, children: %{} = child} = element, available_space) do
+    measure_element(%{element | children: [child]}, available_space)
+  end
+
   # Box with top-level properties (new View DSL format from Box.new/1)
   def measure_element(
         %{type: :box, children: children} = element,
         available_space
       )
       when is_list(children) do
-    attrs_map = %{
-      width: Map.get(element, :width) || Map.get(element, :size),
-      height: Map.get(element, :height)
-    }
+    style =
+      case Map.get(element, :style) do
+        s when is_map(s) -> s
+        _ -> %{}
+      end
+
+    raw_width =
+      Map.get(element, :width) || Map.get(style, :width) || Map.get(element, :size)
+
+    # :fill expands to available width
+    width = if raw_width == :fill, do: available_space.width, else: raw_width
+
+    raw_height = Map.get(element, :height) || Map.get(style, :height)
+    height = if raw_height == :fill, do: available_space.height, else: raw_height
 
     # If explicit dimensions, use them; otherwise measure as container
-    case {attrs_map.width, attrs_map.height} do
+    case {width, height} do
       {w, h} when is_integer(w) and is_integer(h) ->
         %{width: w, height: h}
+
+      {w, _} when is_integer(w) ->
+        child_dims =
+          measure_container_element(
+            :column,
+            %{type: :column, children: children},
+            available_space
+          )
+
+        %{width: w, height: child_dims.height}
 
       _ ->
         measure_container_element(
@@ -466,17 +521,7 @@ defmodule Raxol.UI.Layout.Engine do
         available_space
       )
       when is_list(children) do
-    # Build attrs map from top-level keys so parse_flex_properties works
-    attrs = %{
-      flex_direction: Map.get(element, :direction, :row),
-      justify_content: Map.get(element, :justify, :flex_start),
-      align_items: Map.get(element, :align, :stretch),
-      gap: Map.get(element, :gap, 0),
-      padding: Map.get(element, :padding, 0)
-    }
-
-    enriched = Map.put(element, :attrs, attrs)
-    Flexbox.measure_flex(enriched, available_space)
+    Flexbox.measure_flex(enrich_flex_attrs(element), available_space)
   end
 
   def measure_element(
@@ -485,6 +530,19 @@ defmodule Raxol.UI.Layout.Engine do
       )
       when container_type in [:row, :column, :view] and is_list(children) do
     measure_element_by_type(container_type, element, %{}, available_space)
+  end
+
+  def measure_element(%{type: :spacer} = spacer, available_space) do
+    size = Map.get(spacer, :size, 1)
+
+    case Map.get(spacer, :direction, :vertical) do
+      :horizontal -> %{width: size, height: available_space.height}
+      _ -> %{width: available_space.width, height: size}
+    end
+  end
+
+  def measure_element(%{type: :divider}, available_space) do
+    %{width: available_space.width, height: 1}
   end
 
   # Catch-all for unknown element types
@@ -576,6 +634,34 @@ defmodule Raxol.UI.Layout.Engine do
 
   defp convert_attrs_to_map(attrs) when is_list(attrs), do: Map.new(attrs)
   defp convert_attrs_to_map(attrs), do: attrs
+
+  # Build :attrs from top-level keys so Flexbox.parse_flex_properties works.
+  # The View DSL (Flex.row/column) puts direction/gap/etc. at the top level,
+  # but Flexbox reads from the :attrs map.
+  defp enrich_flex_attrs(%{type: :flex} = flex) do
+    existing = Map.get(flex, :attrs, %{})
+
+    if map_size(existing) > 0 and Map.has_key?(existing, :flex_direction) do
+      flex
+    else
+      style = if is_map(Map.get(flex, :style)), do: Map.get(flex, :style), else: %{}
+
+      # Style values take priority over top-level defaults because
+      # Flex.row/column always sets top-level gap/padding to 0 as defaults,
+      # so `row style: %{gap: 1}` would otherwise be ignored.
+      attrs = %{
+        flex_direction: Map.get(flex, :direction, :row),
+        justify_content:
+          Map.get(style, :justify_content) || Map.get(flex, :justify, :flex_start),
+        align_items:
+          Map.get(style, :align_items) || Map.get(flex, :align, :stretch),
+        gap: Map.get(style, :gap) || Map.get(flex, :gap, 0),
+        padding: Map.get(style, :padding) || Map.get(flex, :padding, 0)
+      }
+
+      Map.put(flex, :attrs, attrs)
+    end
+  end
 
   defp get_display_text("", placeholder), do: placeholder
   defp get_display_text(value, _placeholder), do: value

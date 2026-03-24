@@ -73,13 +73,11 @@ defmodule Raxol.Dev.CodeReloader do
   def handle_info(:recompile, state) do
     Raxol.Core.Runtime.Log.info("[CodeReloader] Recompiling...")
 
-    case IEx.Helpers.recompile() do
+    result = IEx.Helpers.recompile()
+
+    case result do
       :ok ->
         Raxol.Core.Runtime.Log.info("[CodeReloader] Recompilation succeeded")
-
-        if state.lifecycle_pid && Process.alive?(state.lifecycle_pid) do
-          send(state.lifecycle_pid, :render_needed)
-        end
 
       :noop ->
         Raxol.Core.Runtime.Log.debug("[CodeReloader] Nothing to recompile")
@@ -89,6 +87,13 @@ defmodule Raxol.Dev.CodeReloader do
           "[CodeReloader] Recompilation failed",
           %{}
         )
+    end
+
+    # Always notify lifecycle on success/noop -- the file watcher saw real
+    # changes even if recompile/0 found no bytecode diff (e.g. comment edits).
+    if result in [:ok, :noop] && state.lifecycle_pid &&
+         Process.alive?(state.lifecycle_pid) do
+      send(state.lifecycle_pid, :render_needed)
     end
 
     {:noreply, %{state | timer_ref: nil}}
