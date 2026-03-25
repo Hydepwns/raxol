@@ -85,7 +85,7 @@ defmodule Raxol.Swarm.NodeMonitor do
     ping_interval =
       Keyword.get(opts, :ping_interval_ms, @default_ping_interval_ms)
 
-    :net_kernel.monitor_nodes(true)
+    _ = :net_kernel.monitor_nodes(true)
 
     nodes =
       Node.list()
@@ -206,7 +206,7 @@ defmodule Raxol.Swarm.NodeMonitor do
 
   @impl true
   def terminate(_reason, _state) do
-    :net_kernel.monitor_nodes(false)
+    _ = :net_kernel.monitor_nodes(false)
     :ok
   end
 
@@ -254,7 +254,7 @@ defmodule Raxol.Swarm.NodeMonitor do
   defp classify_status(_age_ms), do: :down
 
   defp schedule_ping(%__MODULE__{} = state) do
-    if state.ping_ref, do: Process.cancel_timer(state.ping_ref)
+    if state.ping_ref, do: _ = Process.cancel_timer(state.ping_ref)
     ref = Process.send_after(self(), :ping, state.ping_interval_ms)
     %__MODULE__{state | ping_ref: ref}
   end
