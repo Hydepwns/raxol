@@ -179,8 +179,7 @@ defmodule Raxol.Core.Runtime.Plugins.MissionProfile do
          {:ok, loaded} <-
            load_plugins_in_order(load_order, manifests, to_plugins) do
       Enum.each(delta.reconfigure, fn plugin_id ->
-        config = Map.get(to_plugins, plugin_id, %{})
-        PluginLifecycle.reload(plugin_id, config)
+        PluginLifecycle.reload(plugin_id)
       end)
 
       {:ok, loaded}

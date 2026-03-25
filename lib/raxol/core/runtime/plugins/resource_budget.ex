@@ -37,6 +37,10 @@ defmodule Raxol.Core.Runtime.Plugins.ResourceBudget do
   @default_interval_ms 5_000
   @default_action :warn
   @warn_cycles_before_throttle 3
+  @default_max_memory_mb 50
+  @default_max_cpu_percent 10
+  @default_max_ets_tables 2
+  @default_max_processes 20
 
   defstruct [
     :timer_ref,
@@ -184,7 +188,7 @@ defmodule Raxol.Core.Runtime.Plugins.ResourceBudget do
   end
 
   defp enforce_action(plugin_id, :warn, state) do
-    Log.warning_msg(
+    Log.warning(
       "[ResourceBudget] Plugin #{plugin_id} over budget (cycle #{Map.get(state.violation_counts, plugin_id, 0)})"
     )
 
@@ -192,12 +196,12 @@ defmodule Raxol.Core.Runtime.Plugins.ResourceBudget do
   end
 
   defp enforce_action(plugin_id, :throttle, state) do
-    Log.warning_msg("[ResourceBudget] Throttling plugin #{plugin_id}")
+    Log.warning("[ResourceBudget] Throttling plugin #{plugin_id}")
     %{state | throttled: MapSet.put(state.throttled, plugin_id)}
   end
 
   defp enforce_action(plugin_id, :kill, state) do
-    Log.warning_msg("[ResourceBudget] Killing over-budget plugin #{plugin_id}")
+    Log.warning("[ResourceBudget] Killing over-budget plugin #{plugin_id}")
     PluginLifecycle.unload(plugin_id)
     %{state | throttled: MapSet.delete(state.throttled, plugin_id)}
   end
@@ -227,10 +231,10 @@ defmodule Raxol.Core.Runtime.Plugins.ResourceBudget do
 
   defp default_budget do
     %{
-      max_memory_mb: 50,
-      max_cpu_percent: 10,
-      max_ets_tables: 2,
-      max_processes: 20
+      max_memory_mb: @default_max_memory_mb,
+      max_cpu_percent: @default_max_cpu_percent,
+      max_ets_tables: @default_max_ets_tables,
+      max_processes: @default_max_processes
     }
   end
 

@@ -31,11 +31,18 @@ defmodule Raxol.Core.Runtime.Plugins.Manifest do
           max_processes: non_neg_integer()
         }
 
+  @default_max_memory_mb 50
+  @default_max_cpu_percent 10
+  @default_max_ets_tables 2
+  @default_max_processes 20
+
+  @supported_api_versions ["1.0", "1.1", "2.0"]
+
   @default_budget %{
-    max_memory_mb: 50,
-    max_cpu_percent: 10,
-    max_ets_tables: 2,
-    max_processes: 20
+    max_memory_mb: @default_max_memory_mb,
+    max_cpu_percent: @default_max_cpu_percent,
+    max_ets_tables: @default_max_ets_tables,
+    max_processes: @default_max_processes
   }
 
   defstruct [
@@ -163,7 +170,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manifest do
   end
 
   defp check_api_version(errors, api) do
-    if api in ["1.0", "1.1", "2.0"] do
+    if api in @supported_api_versions do
       errors
     else
       ["unsupported api_version: #{api}" | errors]

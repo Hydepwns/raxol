@@ -1,6 +1,10 @@
 defmodule Raxol.Terminal.Split.SplitManager do
   @moduledoc """
   Manages terminal split windows and panes.
+
+  Each split can optionally be bound to a `ConcurrentBuffer` pid and a
+  `TerminalProcess` pid, enabling the cockpit to map panes to live
+  terminal buffers.
   """
 
   use Raxol.Core.Behaviours.BaseManager
@@ -13,7 +17,10 @@ defmodule Raxol.Terminal.Split.SplitManager do
     :dimensions,
     :position,
     :content,
-    :created_at
+    :created_at,
+    :buffer_pid,
+    :terminal_pid,
+    :label
   ]
 
   @type t :: %__MODULE__{
@@ -21,7 +28,10 @@ defmodule Raxol.Terminal.Split.SplitManager do
           dimensions: %{width: integer(), height: integer()},
           position: %{x: integer(), y: integer()},
           content: map(),
-          created_at: DateTime.t()
+          created_at: DateTime.t(),
+          buffer_pid: pid() | nil,
+          terminal_pid: pid() | nil,
+          label: String.t() | nil
         }
 
   # Client API
@@ -61,6 +71,52 @@ defmodule Raxol.Terminal.Split.SplitManager do
     GenServer.call(pid, :list_splits)
   end
 
+  @doc """
+  Binds a ConcurrentBuffer and optional TerminalProcess to a split.
+  """
+  @spec bind_buffer(integer(), pid(), pid(), pid() | nil) ::
+          {:ok, t()} | {:error, :not_found}
+  def bind_buffer(split_id, manager_pid, buffer_pid, terminal_pid \\ nil) do
+    GenServer.call(
+      manager_pid,
+      {:bind_buffer, split_id, buffer_pid, terminal_pid}
+    )
+  end
+
+  @doc """
+  Unbinds the buffer from a split.
+  """
+  @spec unbind_buffer(integer(), pid()) :: {:ok, t()} | {:error, :not_found}
+  def unbind_buffer(split_id, manager_pid) do
+    GenServer.call(manager_pid, {:unbind_buffer, split_id})
+  end
+
+  @doc """
+  Gets the buffer pid bound to a split.
+  """
+  @spec get_split_buffer(integer(), pid()) ::
+          {:ok, pid()} | {:error, :not_found | :no_buffer}
+  def get_split_buffer(split_id, manager_pid) do
+    GenServer.call(manager_pid, {:get_split_buffer, split_id})
+  end
+
+  @doc """
+  Sets a label on a split (for display in pane headers).
+  """
+  @spec set_label(integer(), String.t(), pid()) ::
+          {:ok, t()} | {:error, :not_found}
+  def set_label(split_id, label, manager_pid) do
+    GenServer.call(manager_pid, {:set_label, split_id, label})
+  end
+
+  @doc """
+  Removes a split by id.
+  """
+  @spec remove_split(integer(), pid()) :: :ok | {:error, :not_found}
+  def remove_split(split_id, manager_pid) do
+    GenServer.call(manager_pid, {:remove_split, split_id})
+  end
+
   # Server callbacks
 
   @impl true
@@ -90,7 +146,10 @@ defmodule Raxol.Terminal.Split.SplitManager do
       dimensions: dimensions,
       position: position,
       content: %{},
-      created_at: DateTime.utc_now()
+      created_at: DateTime.utc_now(),
+      buffer_pid: opts[:buffer_pid],
+      terminal_pid: opts[:terminal_pid],
+      label: opts[:label]
     }
 
     new_state = %{
@@ -139,5 +198,74 @@ defmodule Raxol.Terminal.Split.SplitManager do
   def handle_manager_call(:list_splits, _from, state) do
     splits = Map.values(state.splits)
     {:reply, splits, state}
+  end
+
+  @impl true
+  def handle_manager_call(
+        {:bind_buffer, split_id, buffer_pid, terminal_pid},
+        _from,
+        state
+      ) do
+    case Map.get(state.splits, split_id) do
+      nil ->
+        {:reply, {:error, :not_found}, state}
+
+      split ->
+        updated = %{split | buffer_pid: buffer_pid, terminal_pid: terminal_pid}
+        new_state = %{state | splits: Map.put(state.splits, split_id, updated)}
+        {:reply, {:ok, updated}, new_state}
+    end
+  end
+
+  @impl true
+  def handle_manager_call({:unbind_buffer, split_id}, _from, state) do
+    case Map.get(state.splits, split_id) do
+      nil ->
+        {:reply, {:error, :not_found}, state}
+
+      split ->
+        updated = %{split | buffer_pid: nil, terminal_pid: nil}
+        new_state = %{state | splits: Map.put(state.splits, split_id, updated)}
+        {:reply, {:ok, updated}, new_state}
+    end
+  end
+
+  @impl true
+  def handle_manager_call({:get_split_buffer, split_id}, _from, state) do
+    case Map.get(state.splits, split_id) do
+      nil ->
+        {:reply, {:error, :not_found}, state}
+
+      %{buffer_pid: nil} ->
+        {:reply, {:error, :no_buffer}, state}
+
+      %{buffer_pid: pid} ->
+        {:reply, {:ok, pid}, state}
+    end
+  end
+
+  @impl true
+  def handle_manager_call({:set_label, split_id, label}, _from, state) do
+    case Map.get(state.splits, split_id) do
+      nil ->
+        {:reply, {:error, :not_found}, state}
+
+      split ->
+        updated = %{split | label: label}
+        new_state = %{state | splits: Map.put(state.splits, split_id, updated)}
+        {:reply, {:ok, updated}, new_state}
+    end
+  end
+
+  @impl true
+  def handle_manager_call({:remove_split, split_id}, _from, state) do
+    case Map.get(state.splits, split_id) do
+      nil ->
+        {:reply, {:error, :not_found}, state}
+
+      _split ->
+        new_state = %{state | splits: Map.delete(state.splits, split_id)}
+        {:reply, :ok, new_state}
+    end
   end
 end
