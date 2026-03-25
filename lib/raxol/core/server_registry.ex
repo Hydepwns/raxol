@@ -27,7 +27,6 @@ defmodule Raxol.Core.ServerRegistry do
   @server_specs [
     # Core System Servers
     {Raxol.Core.StateManager, name: :state_manager},
-    {Raxol.Events.EventServer, name: :event_handler},
     {Raxol.Core.Config.ConfigServer, name: :config_manager},
 
     # UI System Servers
@@ -41,7 +40,7 @@ defmodule Raxol.Core.ServerRegistry do
     {Raxol.Terminal.Emulator.EmulatorServer, name: :emulator_server},
 
     # Performance and Monitoring
-    {Raxol.Core.Performance.Memoization.MemoizationServer,
+    {Raxol.Performance.Memoization.MemoizationServer,
      name: :memoization_server},
 
     # Optional/Plugin Servers (conditionally started)

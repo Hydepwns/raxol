@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.Integration do
   """
 
   alias Raxol.Terminal.Buffer.Scroll
-  alias Raxol.Terminal.Command.Manager, as: CommandHistoryManager
+  alias Raxol.Terminal.Commands.Manager, as: CommandHistoryManager
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.Integration.Buffer
   alias Raxol.Terminal.Integration.Config

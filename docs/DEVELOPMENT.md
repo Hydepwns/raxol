@@ -1,9 +1,5 @@
 # Development Guide
 
-> [Documentation](README.md) > Development
-
-Complete setup, commands, and troubleshooting for Raxol development.
-
 ## Setup
 
 ### Quick Start (Nix)
@@ -27,13 +23,12 @@ mix compile
 
 ### Testing
 ```bash
-# Run all tests
 SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test
 
-# Run specific test
+# Specific test
 SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test test/file.exs
 
-# Run failed tests
+# Rerun failed tests
 SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test --failed
 
 # With coverage
@@ -58,63 +53,46 @@ mix raxol.playground   # Component playground
 iex -S mix            # Interactive shell
 ```
 
-## Static Analysis with Dialyzer
+## Dialyzer
 
-Raxol uses an enhanced Dialyzer setup with intelligent PLT caching for fast, comprehensive type checking.
+Raxol has an enhanced Dialyzer setup with PLT caching for faster type checking.
 
-### Quick Commands
+### Commands
 ```bash
-# Run analysis (builds PLT if needed)
-mix raxol.dialyzer
-
-# Quick check (uses existing PLT)
-mix raxol.dialyzer --check
-
-# Build PLT from scratch
-mix raxol.dialyzer --setup
-
-# Clean PLT cache
-mix raxol.dialyzer --clean
-
-# Show statistics
-mix raxol.dialyzer --stats
-
-# Performance profiling
-mix raxol.dialyzer --profile
+mix raxol.dialyzer           # Run analysis (builds PLT if needed)
+mix raxol.dialyzer --check   # Quick check (uses existing PLT)
+mix raxol.dialyzer --setup   # Build PLT from scratch
+mix raxol.dialyzer --clean   # Clean PLT cache
+mix raxol.dialyzer --stats   # Show statistics
+mix raxol.dialyzer --profile # Performance profiling
 ```
 
-### Development Workflow Integration
+You can also use the dev script:
 ```bash
-# Use via dev.sh script
 ./scripts/dev.sh dialyzer
-
-# Part of quality checks
-./scripts/dev.sh check
+./scripts/dev.sh check      # Runs dialyzer as part of quality checks
 ```
 
-### PLT Caching Strategy
+### PLT Caching
 
-Dialyzer uses a two-tier PLT caching system for optimal performance:
+Two-tier system:
 
 - **Core PLT** (`priv/plts/core.plt`): Erlang/OTP + stable dependencies
 - **Local PLT** (`priv/plts/local.plt`): Project modules + volatile dependencies
 
-This minimizes rebuild times while ensuring analysis accuracy.
+This keeps rebuild times short while staying accurate.
 
-### Handling False Positives
+### False Positives
 
-Known false positives are filtered via `.dialyzer_ignore.exs`:
+Known false positives are filtered in `.dialyzer_ignore.exs`:
 
 ```elixir
-# Terminal/NIF related warnings
 ~r/termbox2_nif.*has no local return/,
 ~r/Phoenix.*callback.*never called/,
 ~r/GenServer.*init.*no local return/
 ```
 
-### CI Integration
-
-Dialyzer runs automatically in CI with PLT caching enabled, providing fast feedback on type safety.
+Dialyzer runs in CI with PLT caching enabled.
 
 ## Configuration
 
@@ -143,8 +121,6 @@ config :raxol,
 
 ## Troubleshooting
 
-### Common Issues
-
 **NIF Compilation Fails**
 ```bash
 export TMPDIR=/tmp
@@ -160,14 +136,12 @@ mix compile --force
 
 **Test Failures**
 ```bash
-# Clear test cache
 rm -rf _build/test
 MIX_ENV=test mix compile
 ```
 
 **Performance Issues**
 ```elixir
-# Enable profiling
 Raxol.Profiler.enable()
 # Run operation
 Raxol.Profiler.report()
@@ -186,18 +160,16 @@ lib/raxol/
 
 ### Naming Conventions
 - Files: `<domain>_<function>.ex` (e.g., `cursor_manager.ex`)
-- Modules: Singular names (e.g., `EventManager` not `EventsManager`)
-- No generic names like `manager.ex` or `handler.ex`
+- Modules: Singular names (`EventManager` not `EventsManager`)
+- Avoid generic names like `manager.ex` or `handler.ex`
 
 ### Error Handling
 ```elixir
-# Use functional patterns
 case safe_call(fn -> operation() end) do
   {:ok, result} -> result
   {:error, _} -> default
 end
 
-# With pipelines
 with {:ok, data} <- fetch(),
      {:ok, result} <- process(data) do
   {:ok, result}
@@ -220,7 +192,7 @@ mix run bench/parser_profiling.exs
 ```
 
 ### Optimization Tips
-- Use damage tracking (automatic)
+- Damage tracking is automatic
 - Enable component caching
 - Batch state updates
 - Profile before optimizing
@@ -229,11 +201,10 @@ mix run bench/parser_profiling.exs
 
 ### Pre-commit Hooks
 ```bash
-# Install hooks
 cp .git-hooks/pre-commit .git/hooks/
 chmod +x .git/hooks/pre-commit
 
-# Or use Mix task
+# Or
 mix raxol.install_hooks
 ```
 
@@ -241,13 +212,12 @@ mix raxol.install_hooks
 - 98.7%+ test coverage
 - Zero compilation warnings
 - All checks must pass
-- Follow functional patterns
+- Functional patterns
 
 ## Build & Release
 
 ### Precompilation
 ```bash
-# Optimize for production
 MIX_ENV=prod mix compile
 mix raxol.precompile
 ```

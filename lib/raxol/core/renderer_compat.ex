@@ -131,26 +131,25 @@ defmodule Raxol.Core.Renderer do
     old_cells
     |> Enum.zip(new_cells)
     |> Enum.with_index()
-    |> Enum.reduce({[], nil, []}, fn {{old_cell, new_cell}, x},
-                                     {ops, run_start, run_chars} ->
-      case cells_equal?(old_cell, new_cell) do
-        true ->
-          # Cell unchanged, flush any accumulated run
-          flush_run(ops, run_start, run_chars, y, new_cells)
-
-        false ->
-          # Cell changed, accumulate or start new run
-          case run_start do
-            nil -> {ops, x, [new_cell]}
-            _ -> {ops, run_start, [new_cell | run_chars]}
-          end
-      end
+    |> Enum.reduce({[], nil, []}, fn {{old_cell, new_cell}, x}, acc ->
+      diff_cell(acc, old_cell, new_cell, x, y, new_cells)
     end)
     |> then(fn {ops, run_start, run_chars} ->
       flush_run(ops, run_start, run_chars, y, new_cells)
       |> elem(0)
       |> Enum.reverse()
     end)
+  end
+
+  defp diff_cell({ops, run_start, run_chars}, old_cell, new_cell, x, y, cells) do
+    if cells_equal?(old_cell, new_cell) do
+      flush_run(ops, run_start, run_chars, y, cells)
+    else
+      case run_start do
+        nil -> {ops, x, [new_cell]}
+        _ -> {ops, run_start, [new_cell | run_chars]}
+      end
+    end
   end
 
   defp flush_run(ops, nil, _run_chars, _y, _cells), do: {ops, nil, []}

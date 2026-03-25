@@ -1,7 +1,6 @@
 # This example demonstrates the Raxol.UI.Components.Data.Table component.
 defmodule Raxol.Docs.Guides.Examples.Basic.TableFeaturesTest do
   use Raxol.Core.Runtime.Application
-  import Raxol.View.Elements
 
   defmodule State do
     defstruct table_data: [],

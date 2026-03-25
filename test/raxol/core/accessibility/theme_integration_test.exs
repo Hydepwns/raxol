@@ -27,6 +27,9 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
         {:error, {:already_started, pid}} -> pid
       end
 
+    # Reset accessibility state before each test
+    ThemeIntegration.cleanup()
+
     # Clean up after tests
     on_exit(fn ->
       # Only cleanup if EventManager is still running

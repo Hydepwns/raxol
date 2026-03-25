@@ -57,7 +57,7 @@ defmodule Mix.Tasks.Raxol.Flamegraph do
   use Mix.Task
 
   alias Raxol.CLI.Colors
-  alias Raxol.Core.Performance.FlameGraph
+  alias Raxol.Performance.FlameGraph
 
   @shortdoc "Generate flame graphs for performance profiling"
 

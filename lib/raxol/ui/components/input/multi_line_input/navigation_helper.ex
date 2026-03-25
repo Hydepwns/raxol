@@ -29,15 +29,18 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   defp move_cursor_left(state, row, col) do
     cond do
       col > 0 ->
-        %{state | cursor_pos: {row, col - 1}}
+        %{state | cursor_pos: {row, col - 1}, desired_col: nil}
 
       row > 0 ->
-        # Move to end of previous line
         prev_line = Enum.at(state.lines, row - 1, "")
-        %{state | cursor_pos: {row - 1, String.length(prev_line)}}
+
+        %{
+          state
+          | cursor_pos: {row - 1, String.length(prev_line)},
+            desired_col: nil
+        }
 
       true ->
-        # Already at start of document
         state
     end
   end
@@ -48,24 +51,22 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
 
     cond do
       col < line_length ->
-        %{state | cursor_pos: {row, col + 1}}
+        %{state | cursor_pos: {row, col + 1}, desired_col: nil}
 
       row < length(state.lines) - 1 ->
-        # Move to start of next line
-        %{state | cursor_pos: {row + 1, 0}}
+        %{state | cursor_pos: {row + 1, 0}, desired_col: nil}
 
       true ->
-        # Already at end of document
         state
     end
   end
 
   defp move_cursor_up(state, row, col) do
     if row > 0 do
+      target_col = state.desired_col || col
       prev_line = Enum.at(state.lines, row - 1, "")
-      prev_line_length = String.length(prev_line)
-      new_col = min(col, prev_line_length)
-      %{state | cursor_pos: {row - 1, new_col}}
+      new_col = min(target_col, String.length(prev_line))
+      %{state | cursor_pos: {row - 1, new_col}, desired_col: target_col}
     else
       state
     end
@@ -73,10 +74,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
 
   defp move_cursor_down(state, row, col) do
     if row < length(state.lines) - 1 do
+      target_col = state.desired_col || col
       next_line = Enum.at(state.lines, row + 1, "")
-      next_line_length = String.length(next_line)
-      new_col = min(col, next_line_length)
-      %{state | cursor_pos: {row + 1, new_col}}
+      new_col = min(target_col, String.length(next_line))
+      %{state | cursor_pos: {row + 1, new_col}, desired_col: target_col}
     else
       state
     end
@@ -88,12 +89,16 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
 
     case find_word_boundary_left(before_cursor) do
       0 when row > 0 ->
-        # Move to end of previous line
         prev_line = Enum.at(state.lines, row - 1, "")
-        %{state | cursor_pos: {row - 1, String.length(prev_line)}}
+
+        %{
+          state
+          | cursor_pos: {row - 1, String.length(prev_line)},
+            desired_col: nil
+        }
 
       new_col ->
-        %{state | cursor_pos: {row, new_col}}
+        %{state | cursor_pos: {row, new_col}, desired_col: nil}
     end
   end
 
@@ -105,11 +110,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     case find_word_boundary_right(after_cursor) do
       offset
       when col + offset >= line_length and row < length(state.lines) - 1 ->
-        # Move to start of next line
-        %{state | cursor_pos: {row + 1, 0}}
+        %{state | cursor_pos: {row + 1, 0}, desired_col: nil}
 
       offset ->
-        %{state | cursor_pos: {row, col + offset}}
+        %{state | cursor_pos: {row, col + offset}, desired_col: nil}
     end
   end
 
@@ -138,7 +142,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   @spec move_cursor_line_start(MultiLineInput.t()) :: MultiLineInput.t()
   def move_cursor_line_start(state) do
     {row, _col} = state.cursor_pos
-    %{state | cursor_pos: {row, 0}}
+    %{state | cursor_pos: {row, 0}, desired_col: nil}
   end
 
   @doc """
@@ -149,7 +153,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     {row, _col} = state.cursor_pos
     current_line = Enum.at(state.lines, row, "")
     line_length = String.length(current_line)
-    %{state | cursor_pos: {row, line_length}}
+    %{state | cursor_pos: {row, line_length}, desired_col: nil}
   end
 
   @doc """
@@ -158,6 +162,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   @spec move_cursor_page(MultiLineInput.t(), :up | :down) :: MultiLineInput.t()
   def move_cursor_page(state, direction) do
     {row, col} = state.cursor_pos
+    target_col = state.desired_col || col
     page_size = state.height
 
     new_row =
@@ -166,11 +171,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
         :down -> min(length(state.lines) - 1, row + page_size)
       end
 
-    # Clamp column to the length of the target line
     target_line = Enum.at(state.lines, new_row, "")
-    new_col = min(col, String.length(target_line))
+    new_col = min(target_col, String.length(target_line))
 
-    %{state | cursor_pos: {new_row, new_col}}
+    %{state | cursor_pos: {new_row, new_col}, desired_col: target_col}
   end
 
   @doc """
@@ -178,7 +182,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   """
   @spec move_cursor_doc_start(MultiLineInput.t()) :: MultiLineInput.t()
   def move_cursor_doc_start(state) do
-    %{state | cursor_pos: {0, 0}}
+    %{state | cursor_pos: {0, 0}, desired_col: nil}
   end
 
   @doc """
@@ -189,7 +193,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     last_line_index = length(state.lines) - 1
     last_line = Enum.at(state.lines, last_line_index, "")
     last_col = String.length(last_line)
-    %{state | cursor_pos: {last_line_index, last_col}}
+    %{state | cursor_pos: {last_line_index, last_col}, desired_col: nil}
   end
 
   @doc """

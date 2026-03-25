@@ -337,7 +337,6 @@ defmodule Raxol.Test.MetricsHelper do
     case Raxol.Core.Metrics.MetricsCollector.get_metric(name, type) do
       [] -> nil
       [metric | _] -> metric.value
-      _ -> nil
     end
   end
 

@@ -1,14 +1,15 @@
 defmodule Raxol.UI.Components.Input.TextFieldTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Components.Input.TextField
 
   defp create_state(props) do
-    state = TextField.init(props)
+    {:ok, state} = TextField.init(props)
     state = Map.put_new(state, :style, %{})
     Map.put_new(state, :type, :text_field)
   end
+
+  defp default_context, do: %{}
 
   describe "theming, style, and lifecycle" do
     test "applies style and theme props to text field" do
@@ -27,8 +28,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
 
       rendered_element = TextField.render(state, %{theme: theme_map})
 
-      assert %Element{attributes: rendered_attrs_list} = rendered_element
-      actual_merged_style = Keyword.get(rendered_attrs_list, :style, %{})
+      assert %{type: :view, style: actual_merged_style} = rendered_element
 
       # Prop style assertions
       assert actual_merged_style.color == "#654321"
@@ -55,7 +55,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
         TextField.render(state, %{theme: %{text_field: %{layout: %{}}}})
 
       [text_elem] = rendered.children
-      assert text_elem.tag == :text
+      assert text_elem.type == :text
       assert String.trim(text_elem.content) == "Hello"
 
       state2 = create_state(%{value: "", placeholder: "Type here"})
@@ -64,10 +64,10 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
         TextField.render(state2, %{theme: %{text_field: %{layout: %{}}}})
 
       [text_elem2] = rendered2.children
-      assert text_elem2.tag == :text
+      assert text_elem2.type == :text
       assert String.trim(text_elem2.content) == "Type here"
-      assert text_elem2.attributes[:color] == "#888"
-      assert :italic in (text_elem2.attributes[:text_decoration] || [])
+      assert text_elem2.style[:color] == "#888"
+      assert :italic in (text_elem2.style[:text_decoration] || [])
     end
 
     test "renders masked value if secret is true" do
@@ -77,8 +77,500 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
         TextField.render(state, %{theme: %{text_field: %{layout: %{}}}})
 
       [text_elem] = rendered.children
-      assert text_elem.tag == :text
+      assert text_elem.type == :text
       assert String.trim(text_elem.content) == String.duplicate("•", 6)
+    end
+
+    test "placeholder is not shown when field is focused" do
+      state =
+        create_state(%{
+          value: "",
+          placeholder: "Type here",
+          focused: true,
+          style: %{color: "#fff", background: "#000"}
+        })
+
+      rendered =
+        TextField.render(state, %{theme: %{text_field: %{layout: %{}}}})
+
+      # When focused with empty value, should render focused children (with cursor),
+      # not the placeholder text
+      children = rendered.children
+      assert length(children) == 3
+    end
+
+    test "renders cursor element when focused with text" do
+      state =
+        create_state(%{
+          value: "Hello",
+          focused: true,
+          cursor_pos: 2,
+          style: %{color: "#fff", background: "#000"}
+        })
+
+      rendered =
+        TextField.render(state, %{theme: %{text_field: %{layout: %{}}}})
+
+      [left, cursor, right] = rendered.children
+      assert left.content == "He"
+      assert cursor.content == "|"
+      assert right.content == "llo"
+    end
+
+    test "secret mode renders masked value with cursor when focused" do
+      state =
+        create_state(%{
+          value: "pass",
+          secret: true,
+          focused: true,
+          cursor_pos: 2,
+          style: %{color: "#fff", background: "#000"}
+        })
+
+      rendered =
+        TextField.render(state, %{theme: %{text_field: %{layout: %{}}}})
+
+      [left, cursor, right] = rendered.children
+      assert left.content == "••"
+      assert cursor.content == "|"
+      assert right.content == "••"
+    end
+  end
+
+  describe "handle_event/3 - character input" do
+    test "inserts a single character at cursor position" do
+      state = create_state(%{value: "hllo", cursor_pos: 1})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, "e", []}, state, default_context())
+
+      assert new_state.value == "hello"
+      assert new_state.cursor_pos == 2
+    end
+
+    test "inserts character at the beginning of text" do
+      state = create_state(%{value: "ello", cursor_pos: 0})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, "h", []}, state, default_context())
+
+      assert new_state.value == "hello"
+      assert new_state.cursor_pos == 1
+    end
+
+    test "inserts character at the end of text" do
+      state = create_state(%{value: "hell", cursor_pos: 4})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, "o", []}, state, default_context())
+
+      assert new_state.value == "hello"
+      assert new_state.cursor_pos == 5
+    end
+
+    test "inserts into empty text" do
+      state = create_state(%{value: "", cursor_pos: 0})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, "a", []}, state, default_context())
+
+      assert new_state.value == "a"
+      assert new_state.cursor_pos == 1
+    end
+
+    test "inserts multi-character string" do
+      state = create_state(%{value: "hd", cursor_pos: 1})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, "ello worl", []}, state, default_context())
+
+      assert new_state.value == "hello world"
+      assert new_state.cursor_pos == 10
+    end
+  end
+
+  describe "handle_event/3 - backspace" do
+    test "deletes character before cursor" do
+      state = create_state(%{value: "hello", cursor_pos: 3})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :backspace, []}, state, default_context())
+
+      assert new_state.value == "helo"
+      assert new_state.cursor_pos == 2
+    end
+
+    test "backspace at position 0 does nothing" do
+      state = create_state(%{value: "hello", cursor_pos: 0})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :backspace, []}, state, default_context())
+
+      assert new_state.value == "hello"
+      assert new_state.cursor_pos == 0
+    end
+
+    test "backspace at end removes last character" do
+      state = create_state(%{value: "hello", cursor_pos: 5})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :backspace, []}, state, default_context())
+
+      assert new_state.value == "hell"
+      assert new_state.cursor_pos == 4
+    end
+
+    test "backspace on single character yields empty string" do
+      state = create_state(%{value: "x", cursor_pos: 1})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :backspace, []}, state, default_context())
+
+      assert new_state.value == ""
+      assert new_state.cursor_pos == 0
+    end
+  end
+
+  describe "handle_event/3 - delete" do
+    test "deletes character at cursor position" do
+      state = create_state(%{value: "hello", cursor_pos: 1})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :delete, []}, state, default_context())
+
+      assert new_state.value == "hllo"
+      assert new_state.cursor_pos == 1
+    end
+
+    test "delete at end of text does nothing" do
+      state = create_state(%{value: "hello", cursor_pos: 5})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :delete, []}, state, default_context())
+
+      assert new_state.value == "hello"
+      assert new_state.cursor_pos == 5
+    end
+
+    test "delete at beginning removes first character" do
+      state = create_state(%{value: "hello", cursor_pos: 0})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :delete, []}, state, default_context())
+
+      assert new_state.value == "ello"
+      assert new_state.cursor_pos == 0
+    end
+
+    test "delete on single character yields empty string" do
+      state = create_state(%{value: "x", cursor_pos: 0})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :delete, []}, state, default_context())
+
+      assert new_state.value == ""
+      assert new_state.cursor_pos == 0
+    end
+  end
+
+  describe "handle_event/3 - arrow keys" do
+    test "arrow_left moves cursor left by one" do
+      state = create_state(%{value: "hello", cursor_pos: 3})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :arrow_left, []}, state, default_context())
+
+      assert new_state.cursor_pos == 2
+      assert new_state.value == "hello"
+    end
+
+    test "arrow_left at position 0 stays at 0" do
+      state = create_state(%{value: "hello", cursor_pos: 0})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :arrow_left, []}, state, default_context())
+
+      assert new_state.cursor_pos == 0
+    end
+
+    test "arrow_right moves cursor right by one" do
+      state = create_state(%{value: "hello", cursor_pos: 2})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :arrow_right, []}, state, default_context())
+
+      assert new_state.cursor_pos == 3
+      assert new_state.value == "hello"
+    end
+
+    test "arrow_right at end of text stays at end" do
+      state = create_state(%{value: "hello", cursor_pos: 5})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :arrow_right, []}, state, default_context())
+
+      assert new_state.cursor_pos == 5
+    end
+  end
+
+  describe "handle_event/3 - home and end" do
+    test "home moves cursor to position 0 and resets scroll" do
+      state = create_state(%{value: "hello world", cursor_pos: 8, scroll_offset: 3})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :home, []}, state, default_context())
+
+      assert new_state.cursor_pos == 0
+      assert new_state.scroll_offset == 0
+    end
+
+    test "end moves cursor to end of text" do
+      state = create_state(%{value: "hello", cursor_pos: 0})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :end, []}, state, default_context())
+
+      assert new_state.cursor_pos == 5
+    end
+  end
+
+  describe "handle_event/3 - disabled field" do
+    test "keypress on disabled field does nothing" do
+      state = create_state(%{value: "hello", disabled: true, cursor_pos: 3})
+
+      {returned_state, commands} =
+        TextField.handle_event({:keypress, "x", []}, state, default_context())
+
+      assert returned_state.value == "hello"
+      assert returned_state.cursor_pos == 3
+      assert commands == []
+    end
+
+    test "backspace on disabled field does nothing" do
+      state = create_state(%{value: "hello", disabled: true, cursor_pos: 3})
+
+      {returned_state, commands} =
+        TextField.handle_event({:keypress, :backspace, []}, state, default_context())
+
+      assert returned_state.value == "hello"
+      assert commands == []
+    end
+  end
+
+  describe "handle_event/3 - focus and blur" do
+    test "focus event sets focused to true" do
+      state = create_state(%{value: "hello", focused: false})
+
+      {new_state, commands} =
+        TextField.handle_event({:focus}, state, default_context())
+
+      assert new_state.focused == true
+      assert commands == []
+    end
+
+    test "blur event sets focused to false" do
+      state = create_state(%{value: "hello", focused: true})
+
+      {new_state, commands} =
+        TextField.handle_event({:blur}, state, default_context())
+
+      assert new_state.focused == false
+      assert commands == []
+    end
+  end
+
+  describe "handle_event/3 - mouse click" do
+    test "mouse click positions cursor based on column" do
+      state = create_state(%{value: "hello world", cursor_pos: 0, scroll_offset: 0})
+
+      {result, commands} =
+        TextField.handle_event({:mouse, {:click, {0, 5}}}, state, default_context())
+
+      # update/2 returns {:noreply, new_state}, so the result is that tuple
+      {:noreply, new_state} = result
+      assert new_state.cursor_pos == 5
+      assert commands == []
+    end
+
+    test "mouse click beyond text length clamps to text length" do
+      state = create_state(%{value: "hi", cursor_pos: 0, scroll_offset: 0})
+
+      {result, _commands} =
+        TextField.handle_event({:mouse, {:click, {0, 10}}}, state, default_context())
+
+      {:noreply, new_state} = result
+      assert new_state.cursor_pos == 2
+    end
+  end
+
+  describe "handle_event/3 - unknown events" do
+    test "unknown event returns state unchanged with empty commands" do
+      state = create_state(%{value: "hello"})
+
+      {returned_state, commands} =
+        TextField.handle_event({:unknown_event}, state, default_context())
+
+      assert returned_state.value == "hello"
+      assert commands == []
+    end
+
+    test "unknown keypress returns noreply with unchanged state" do
+      state = create_state(%{value: "hello", cursor_pos: 2})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :tab, []}, state, default_context())
+
+      assert new_state.value == "hello"
+      assert new_state.cursor_pos == 2
+    end
+  end
+
+  describe "update/2 - move_cursor_to" do
+    test "moves cursor to specified column" do
+      state = create_state(%{value: "hello world", cursor_pos: 0, scroll_offset: 0})
+
+      {:noreply, new_state} = TextField.update({:move_cursor_to, {0, 5}}, state)
+
+      assert new_state.cursor_pos == 5
+    end
+
+    test "clamps cursor to text length when column exceeds text" do
+      state = create_state(%{value: "hi", cursor_pos: 0, scroll_offset: 0})
+
+      {:noreply, new_state} = TextField.update({:move_cursor_to, {0, 100}}, state)
+
+      assert new_state.cursor_pos == 2
+    end
+
+    test "accounts for scroll offset when positioning cursor" do
+      state = create_state(%{value: "a very long text string", cursor_pos: 0, scroll_offset: 5})
+
+      {:noreply, new_state} = TextField.update({:move_cursor_to, {0, 3}}, state)
+
+      # col 3 + scroll_offset 5 = position 8
+      assert new_state.cursor_pos == 8
+    end
+
+    test "clamps cursor to 0 when column plus offset is negative" do
+      state = create_state(%{value: "hello", cursor_pos: 3, scroll_offset: 0})
+
+      {:noreply, new_state} = TextField.update({:move_cursor_to, {0, 0}}, state)
+
+      assert new_state.cursor_pos == 0
+    end
+  end
+
+  describe "update/2 - update_props" do
+    test "updates value and clamps cursor" do
+      state = create_state(%{value: "hello world", cursor_pos: 10})
+
+      new_state = TextField.update({:update_props, %{value: "hi"}}, state)
+
+      assert new_state.value == "hi"
+      assert new_state.cursor_pos == 2
+    end
+
+    test "updates width and clamps scroll_offset" do
+      state = create_state(%{value: "hello", cursor_pos: 0, scroll_offset: 3, width: 20})
+
+      new_state = TextField.update({:update_props, %{width: 10}}, state)
+
+      assert new_state.width == 10
+      # scroll_offset clamped to max(0, len("hello") - 10) = 0
+      assert new_state.scroll_offset == 0
+    end
+  end
+
+  describe "update/2 - unknown message" do
+    test "returns noreply with unchanged state" do
+      state = create_state(%{value: "hello"})
+
+      {:noreply, returned_state} = TextField.update(:some_random_message, state)
+
+      assert returned_state == state
+    end
+  end
+
+  describe "scroll offset behavior" do
+    test "typing past visible width increases scroll offset" do
+      # width=5, so only 5 chars visible at a time
+      state = create_state(%{value: "abcd", cursor_pos: 4, width: 5, scroll_offset: 0})
+
+      # Type a character that puts cursor at position 5 (beyond width-1=4)
+      {:noreply, s1} =
+        TextField.handle_event({:keypress, "e", []}, state, default_context())
+
+      assert s1.value == "abcde"
+      assert s1.cursor_pos == 5
+
+      # Type another character, cursor at 6, should scroll
+      {:noreply, s2} =
+        TextField.handle_event({:keypress, "f", []}, s1, default_context())
+
+      assert s2.value == "abcdef"
+      assert s2.cursor_pos == 6
+      assert s2.scroll_offset > 0
+    end
+
+    test "arrow_left scrolls back when cursor moves before scroll window" do
+      state = create_state(%{value: "abcdefghij", cursor_pos: 5, width: 5, scroll_offset: 5})
+
+      # Move left repeatedly until cursor goes before the scroll window
+      {:noreply, s1} =
+        TextField.handle_event({:keypress, :arrow_left, []}, state, default_context())
+
+      assert s1.cursor_pos == 4
+      assert s1.scroll_offset == 4
+    end
+
+    test "home resets scroll offset to 0" do
+      state = create_state(%{value: "abcdefghij", cursor_pos: 8, width: 5, scroll_offset: 5})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :home, []}, state, default_context())
+
+      assert new_state.cursor_pos == 0
+      assert new_state.scroll_offset == 0
+    end
+
+    test "end key adjusts scroll offset for long text" do
+      state = create_state(%{value: "abcdefghijklmnop", cursor_pos: 0, width: 5, scroll_offset: 0})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :end, []}, state, default_context())
+
+      assert new_state.cursor_pos == 16
+      # scroll_offset should ensure cursor is visible within the 5-char window
+      assert new_state.scroll_offset > 0
+      assert new_state.cursor_pos <= new_state.scroll_offset + 5
+    end
+
+    test "backspace near scroll boundary adjusts scroll offset" do
+      state = create_state(%{value: "abcdefghij", cursor_pos: 5, width: 5, scroll_offset: 5})
+
+      {:noreply, new_state} =
+        TextField.handle_event({:keypress, :backspace, []}, state, default_context())
+
+      assert new_state.value == "abcdfghij"
+      assert new_state.cursor_pos == 4
+      # Scroll should adjust since cursor moved before the window
+      assert new_state.scroll_offset <= new_state.cursor_pos
+    end
+
+    test "delete near end of text may reduce scroll offset" do
+      state = create_state(%{value: "abcdefghij", cursor_pos: 8, width: 5, scroll_offset: 5})
+
+      {:noreply, s1} =
+        TextField.handle_event({:keypress, :delete, []}, state, default_context())
+
+      assert s1.value == "abcdefghj"
+
+      {:noreply, s2} =
+        TextField.handle_event({:keypress, :delete, []}, s1, default_context())
+
+      assert s2.value == "abcdefgh"
+      # With 8 chars and width 5, max scroll = 3
+      assert s2.scroll_offset <= max(0, String.length(s2.value) - 5)
     end
   end
 end

@@ -38,7 +38,6 @@ defmodule RaxolWeb.TerminalLive do
   alias Raxol.LiveView.TerminalBridge
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Web.SessionBridge
   alias RaxolWeb.Presence
 
   @default_width 80
@@ -88,9 +87,6 @@ defmodule RaxolWeb.TerminalLive do
             name: "User #{String.slice(user_id, 0..4)}",
             cursor: Emulator.get_cursor_position(emulator)
           })
-
-        # Register session with bridge
-        SessionBridge.register_session(session_id, %{emulator: emulator})
 
         socket
         |> assign(:emulator, emulator)
@@ -327,20 +323,9 @@ defmodule RaxolWeb.TerminalLive do
         # New session
         Emulator.new(socket.assigns.width, socket.assigns.height)
 
-      token ->
-        # Resume from bridge token
-        case SessionBridge.resume_session(token) do
-          {:ok, %{emulator: emulator}} ->
-            Log.info("[TerminalLive] Resumed session from bridge token")
-            emulator
-
-          {:error, _reason} ->
-            Log.warning(
-              "[TerminalLive] Failed to resume session, starting fresh"
-            )
-
-            Emulator.new(socket.assigns.width, socket.assigns.height)
-        end
+      _token ->
+        # Session bridge not available, start fresh
+        Emulator.new(socket.assigns.width, socket.assigns.height)
     end
   end
 
@@ -619,23 +604,7 @@ defmodule RaxolWeb.TerminalLive do
   end
 
   defp switch_session(socket, new_session_id) do
-    # Save current session state
-    case SessionBridge.restore_state(socket.assigns.session_id, %{
-           emulator: socket.assigns.emulator
-         }) do
-      :ok ->
-        :ok
-
-      {:error, reason} ->
-        Log.warning("Failed to restore session state: #{inspect(reason)}")
-    end
-
-    # Load new session
-    emulator =
-      case SessionBridge.capture_state(new_session_id) do
-        %{emulator: em} -> em
-        _ -> Emulator.new(socket.assigns.width, socket.assigns.height)
-      end
+    emulator = Emulator.new(socket.assigns.width, socket.assigns.height)
 
     socket
     |> assign(:session_id, new_session_id)

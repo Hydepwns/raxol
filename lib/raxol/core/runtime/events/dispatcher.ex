@@ -14,6 +14,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Runtime.Application
   alias Raxol.Core.Runtime.Command
+  alias Raxol.Core.Runtime.Events.Bubbler
+  alias Raxol.Core.FocusManager
   alias Raxol.Core.UserPreferences
 
   @registry_name :raxol_event_subscriptions
@@ -28,9 +30,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
               focused: true,
               debug_mode: false,
               plugin_manager: nil,
+              plugin_manager_struct: nil,
               command_registry_table: nil,
               current_theme_id: :default,
-              command_module: Raxol.Core.Runtime.Command
+              command_module: Raxol.Core.Runtime.Command,
+              view_tree: nil,
+              rendering_engine: nil
   end
 
   # BaseManager provides start_link/1 and start_link/2 automatically
@@ -39,10 +44,16 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     command_module =
       Keyword.get(opts, :command_module, Raxol.Core.Runtime.Command)
 
+    server_opts =
+      case Keyword.get(opts, :name, __MODULE__) do
+        nil -> []
+        name -> [name: name]
+      end
+
     GenServer.start_link(
       __MODULE__,
       {runtime_pid, initial_state, command_module},
-      name: __MODULE__
+      server_opts
     )
   end
 
@@ -57,7 +68,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       focused: true,
       debug_mode: initial_state.debug_mode,
       plugin_manager: initial_state.plugin_manager,
+      plugin_manager_struct: Raxol.Plugins.Manager.new(),
       command_registry_table: initial_state.command_registry_table,
+      rendering_engine: Map.get(initial_state, :rendering_engine),
       current_theme_id: UserPreferences.get_theme_id(),
       command_module: command_module
     }
@@ -67,6 +80,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     send(runtime_pid, {:plugin_manager_ready, initial_state.plugin_manager})
 
     _ = send_test_ready_message(Mix.env())
+
+    # Start app subscriptions (timers, event sources)
+    state = setup_subscriptions(state)
 
     {:ok, state}
   end
@@ -97,8 +113,44 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   Handles an application-level event and updates the application state.
   """
   def handle_event(event, %State{} = state) do
-    message = default_event_to_message(event)
-    process_app_update(state, message, event)
+    case try_bubble_event(event, state) do
+      {:handled, {:message, message}} ->
+        process_app_update(state, message, event)
+
+      {:handled, _} ->
+        send(state.runtime_pid, :render_needed)
+        {:ok, state, []}
+
+      {:commands, commands} ->
+        context = build_command_context(state)
+        process_commands(commands, context, state.command_module)
+        send(state.runtime_pid, :render_needed)
+        {:ok, state, commands}
+
+      :passthrough ->
+        # Pass the raw Event struct to update/2 — apps pattern-match on %Event{}
+        process_app_update(state, event, event)
+    end
+  end
+
+  defp try_bubble_event(_event, %State{view_tree: nil}), do: :passthrough
+
+  defp try_bubble_event(event, state) do
+    focused_id =
+      if focus_manager_active?(),
+        do: FocusManager.get_focused_element(),
+        else: nil
+
+    if focused_id do
+      context = %{
+        focused_element: focused_id,
+        theme_id: state.current_theme_id
+      }
+
+      Bubbler.dispatch(event, state.view_tree, focused_id, context)
+    else
+      :passthrough
+    end
   end
 
   defp process_app_update(state, message, event) do
@@ -191,6 +243,15 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   defp handle_resize_event(%{width: width, height: height}, state) do
+    # Forward size to the Rendering Engine so layout uses actual terminal dimensions
+    if state.rendering_engine do
+      GenServer.cast(
+        state.rendering_engine,
+        {:update_size, %{width: width, height: height}}
+      )
+    end
+
+    send(state.runtime_pid, :render_needed)
     {:ok, %{state | width: width, height: height}, []}
   end
 
@@ -246,6 +307,19 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   # --- BaseManager Callbacks ---
 
   @impl true
+  def handle_manager_cast(
+        {:dispatch, {:agent_message, _from, _payload} = msg},
+        state
+      ) do
+    Raxol.Core.Runtime.Log.debug(
+      "[Dispatcher] handle_cast :dispatch agent_message: #{inspect(msg)}"
+    )
+
+    # Agent messages go directly to update/2, bypassing event/plugin pipeline
+    dispatch_raw_message(msg, state)
+  end
+
+  @impl true
   def handle_manager_cast({:dispatch, event}, state) do
     Raxol.Core.Runtime.Log.debug(
       "[Dispatcher] handle_cast :dispatch event: #{inspect(event)}"
@@ -285,6 +359,21 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   @impl true
+  def handle_manager_cast({:set_rendering_engine, pid}, state)
+      when is_pid(pid) do
+    # Forward current dimensions immediately — the initial resize event from the
+    # Driver arrived before we had the rendering engine PID, so it was lost.
+    if state.width > 0 and state.height > 0 do
+      GenServer.cast(
+        pid,
+        {:update_size, %{width: state.width, height: state.height}}
+      )
+    end
+
+    {:noreply, %{state | rendering_engine: pid}}
+  end
+
+  @impl true
   def handle_manager_cast({:register_dispatcher, _pid}, state) do
     # This message is from Terminal.Driver to register itself.
     # No specific action needed here other than acknowledging it if necessary.
@@ -309,6 +398,18 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # Catch-all for other cast messages
   @impl true
+  def handle_manager_cast(
+        {:update_plugin_manager, %Raxol.Plugins.Manager{} = updated},
+        state
+      ) do
+    {:noreply, %{state | plugin_manager_struct: updated}}
+  end
+
+  @impl true
+  def handle_manager_cast({:update_view_tree, view_tree}, state) do
+    {:noreply, %{state | view_tree: view_tree}}
+  end
+
   def handle_manager_cast(msg, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Dispatcher received unhandled cast message",
@@ -328,6 +429,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   def handle_manager_info({:dispatcher_ready, _pid}, state) do
     # Acknowledge dispatcher initialization in test mode
     {:noreply, state}
+  end
+
+  @impl true
+  def handle_manager_info({:subscription, msg}, state) do
+    # Subscription timer fired — route message through app's update/2
+    dispatch_raw_message(msg, state)
   end
 
   @impl true
@@ -397,8 +504,18 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   @impl true
+  def handle_manager_call(:get_plugin_manager, _from, state) do
+    {:reply, {:ok, state.plugin_manager_struct}, state}
+  end
+
+  @impl true
   def handle_manager_call(:get_model, _from, state) do
     {:reply, {:ok, state.model}, state}
+  end
+
+  @impl true
+  def handle_manager_call(:get_view_tree, _from, state) do
+    {:reply, {:ok, state.view_tree}, state}
   end
 
   @impl true
@@ -407,9 +524,15 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       "Dispatcher received :get_render_context call. State: #{inspect(state)}"
     )
 
+    focused_element =
+      if focus_manager_active?(),
+        do: FocusManager.get_focused_element(),
+        else: nil
+
     render_context = %{
       model: state.model,
-      theme_id: state.current_theme_id
+      theme_id: state.current_theme_id,
+      focused_element: focused_element
     }
 
     Raxol.Core.Runtime.Log.debug(
@@ -442,34 +565,18 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp apply_plugin_filters(event, state) do
     manager_pid = state.plugin_manager
 
-    case GenServer.call(manager_pid, {:filter_event, event}) do
-      {:ok, filtered_event} -> filtered_event
-      :halt -> nil
-      {:error, _reason} -> nil
-      _ -> event
+    if is_pid(manager_pid) and Process.alive?(manager_pid) do
+      case GenServer.call(manager_pid, {:filter_event, event}) do
+        {:ok, filtered_event} -> filtered_event
+        :halt -> nil
+        {:error, _reason} -> nil
+        _ -> event
+      end
+    else
+      event
     end
-  end
-
-  defp default_event_to_message(%Event{
-         type: :key,
-         data: %{key: key, modifiers: mods}
-       }) do
-    {:key_press, key, mods}
-  end
-
-  defp default_event_to_message(%Event{
-         type: :mouse,
-         data: %{action: action, x: x, y: y, button: button}
-       }) do
-    {:mouse_event, action, x, y, button}
-  end
-
-  defp default_event_to_message(%Event{type: :text, data: %{text: text}}) do
-    {:text_input, text}
-  end
-
-  defp default_event_to_message(event) do
-    {:event, event}
+  rescue
+    _ -> event
   end
 
   # --- Command Processing ---
@@ -488,6 +595,41 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp apply_theme_update(false, state, updated_model, new_theme_id) do
     :ok = UserPreferences.set("theme.active_id", new_theme_id)
     %{state | model: updated_model, current_theme_id: new_theme_id}
+  end
+
+  # Route a raw message (not an Event struct) directly through update/2
+  defp dispatch_raw_message(msg, state) do
+    case process_app_update(state, msg, msg) do
+      {:ok, new_state, _commands} ->
+        {:noreply, new_state}
+
+      _ ->
+        {:noreply, state}
+    end
+  end
+
+  defp setup_subscriptions(state) do
+    try do
+      if function_exported?(state.app_module, :subscribe, 1) do
+        case state.app_module.subscribe(state.model) do
+          subscriptions when is_list(subscriptions) ->
+            Enum.each(subscriptions, fn
+              %Raxol.Core.Runtime.Subscription{} = sub ->
+                Raxol.Core.Runtime.Subscription.start(sub, %{pid: self()})
+
+              _ ->
+                :ok
+            end)
+
+          _ ->
+            :ok
+        end
+      end
+    rescue
+      _ -> :ok
+    end
+
+    state
   end
 
   defp broadcast_event_if_valid(event_type, event_data)
@@ -522,8 +664,48 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp handle_filtered_event(nil, state), do: {:ok, state, []}
 
-  defp handle_filtered_event(filtered_event, state),
-    do: handle_event(filtered_event, state)
+  defp handle_filtered_event(filtered_event, state) do
+    case maybe_handle_focus_navigation(filtered_event, state) do
+      {:handled, result} -> result
+      :pass -> handle_event(filtered_event, state)
+    end
+  end
+
+  defp maybe_handle_focus_navigation(
+         %Event{type: :key, data: %{key: :tab} = data},
+         state
+       ) do
+    if focus_manager_active?() do
+      shift = Map.get(data, :shift, false)
+      old_focus = FocusManager.get_focused_element()
+
+      result =
+        if shift,
+          do: FocusManager.focus_previous(),
+          else: FocusManager.focus_next()
+
+      case result do
+        {:ok, new_focus_id} ->
+          {:handled,
+           process_app_update(
+             state,
+             {:focus_changed, old_focus, new_focus_id},
+             nil
+           )}
+
+        {:error, _} ->
+          :pass
+      end
+    else
+      :pass
+    end
+  end
+
+  defp maybe_handle_focus_navigation(_event, _state), do: :pass
+
+  defp focus_manager_active? do
+    Process.whereis(Raxol.Core.FocusManager.FocusServer) != nil
+  end
 
   # --- Command Processing ---
 

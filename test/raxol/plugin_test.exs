@@ -222,14 +222,7 @@ defmodule Raxol.PluginTest do
     end
   end
 
-  describe "Raxol.Plugin.run/2" do
-    @tag :skip
-    test "runs plugin lifecycle" do
-      # This would require mocking IO.puts and IO.gets
-      # Skip for now as it's an integration test
-      :ok
-    end
-  end
+  # Removed: empty stub test "runs plugin lifecycle" (no assertions, just :ok)
 
   describe "integration" do
     test "full plugin lifecycle without run/2" do

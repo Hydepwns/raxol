@@ -1,14 +1,8 @@
 # Plugin Development Guide
 
-> [Documentation](../README.md) > [Plugins](README.md) > Guide
-
-Complete guide to developing Raxol plugins with lifecycle management.
-
-**Version**: v1.6.0 | **Target**: Plugin developers | **Level**: Intermediate
+How to build Raxol plugins with lifecycle management, event filtering, and process isolation.
 
 ## Quick Start
-
-### Basic Plugin Structure
 
 ```elixir
 defmodule YourApp.Plugins.MyPlugin do
@@ -58,19 +52,11 @@ See [TEMPLATES.md](TEMPLATES.md) for complete working examples.
 ### States & Transitions
 
 ```
-Discovery → Loading → Starting → Running → Stopping → Stopped → Terminated
-            ↑ init   ↑ enable           ↑ disable           ↑ terminate
+Discovery -> Loading -> Starting -> Running -> Stopping -> Stopped -> Terminated
+             | init    | enable              | disable              | terminate
 ```
 
-### 1. Discovery Phase
-
-System discovers plugins and validates manifests:
-- Module discovery
-- Manifest validation
-- Dependency resolution
-- Security check
-
-### 2. Loading Phase (init/1)
+### Loading Phase (init/1)
 
 ```elixir
 @impl true
@@ -83,72 +69,28 @@ def init(config) do
 end
 ```
 
-**Status**: `:loaded`
-
-### 3. Starting Phase (enable/1)
+### Starting Phase (enable/1)
 
 ```elixir
 @impl true
 def enable(state) do
-  # Set up resources
   timer = :timer.send_interval(5000, :refresh)
   new_state = %{state | timers: [timer]}
   {:ok, new_state}
 end
 ```
 
-**Status**: `:starting` → `:running`
-
-### 4. Runtime Phase
-
-Plugins handle events and commands while running.
-
-#### Event Filtering (Optional)
-
-```elixir
-@callback filter_event(event(), state()) :: {:ok, event()} | :halt | any()
-
-def filter_event({:key_press, "ctrl+p"}, state) do
-  # Intercept and handle
-  {:ok, {:plugin_event, :palette_open}}
-end
-
-def filter_event(event, _state) do
-  # Pass through
-  {:ok, event}
-end
-```
-
-#### Command Handling (Optional)
-
-```elixir
-@callback handle_command(command(), list(), state()) ::
-  {:ok, state(), any()} | {:error, any(), state()}
-
-def handle_command(:refresh, [], state) do
-  new_data = fetch_data()
-  {:ok, %{state | data: new_data}, :ok}
-end
-
-def get_commands do
-  [{:refresh, :handle_command, 3}]
-end
-```
-
-### 5. Stopping Phase (disable/1)
+### Stopping Phase (disable/1)
 
 ```elixir
 @impl true
 def disable(state) do
-  # Clean up resources
   Enum.each(state.timers, &:timer.cancel/1)
   {:ok, %{state | timers: []}}
 end
 ```
 
-**Status**: `:stopping` → `:stopped`
-
-### 6. Termination Phase (terminate/2)
+### Termination (terminate/2)
 
 ```elixir
 @impl true
@@ -160,21 +102,19 @@ end
 
 ## Plugin Manifest
 
-Complete manifest configuration:
-
 ```elixir
 def manifest do
   %{
     # Required
     name: "unique-name",              # Kebab-case
     version: "1.0.0",                 # Semantic versioning
-    description: "What it does",      # User-facing
-    author: "Your Name",              # Author info
+    description: "What it does",
+    author: "Your Name",
 
     # Dependencies
     dependencies: %{
-      "raxol-core" => "~> 1.5",      # Raxol version
-      "other-plugin" => "~> 2.0"     # Plugin deps
+      "raxol-core" => "~> 1.5",
+      "other-plugin" => "~> 2.0"
     },
 
     # Capabilities
@@ -192,9 +132,9 @@ def manifest do
     config_schema: %{
       field: %{
         type: :string,           # :string, :integer, :boolean, :list, :map
-        default: "value",        # Default value
-        description: "Purpose",  # Documentation
-        required: false,         # Optional?
+        default: "value",
+        description: "Purpose",
+        required: false,
         enum: ["a", "b"]        # Valid values (optional)
       }
     }
@@ -214,23 +154,66 @@ end
 ### Event Flow
 
 ```
-System Event → filter_event/2 (each plugin) → Core Processing
+System Event -> filter_event/2 (priority order) -> Core Processing
+                     |
+              Can modify, pass through, or halt
 ```
 
 ### Event Filtering
 
+Implement `filter_event/2` to intercept, modify, or block events:
+
 ```elixir
-# Block events
+# Block events (stops propagation)
 def filter_event({:key_press, "F12"}, _state), do: :halt
 
 # Modify events
-def filter_event({:key_press, "j"}, state) do
+def filter_event({:key_press, "j"}, _state) do
   {:ok, {:key_press, :arrow_down}}
 end
 
-# Pass through
+# Pass through unchanged
 def filter_event(event, _state), do: {:ok, event}
 ```
+
+### Command Handling
+
+```elixir
+@callback handle_command(command(), list(), state()) ::
+  {:ok, state(), any()} | {:error, any(), state()}
+
+def handle_command(:refresh, [], state) do
+  new_data = fetch_data()
+  {:ok, %{state | data: new_data}, :ok}
+end
+
+def get_commands do
+  [{:refresh, :handle_command, 3}]
+end
+```
+
+### Plugin Priority
+
+Control event processing order with `priority` in the manifest:
+
+```elixir
+def manifest do
+  %{
+    name: "high-priority-plugin",
+    version: "1.0.0",
+    priority: 1,  # Lower = higher priority (processed first)
+    # ...
+  }
+end
+```
+
+Plugins without explicit priority default to `1000`.
+
+Dependencies are automatically sorted -- dependent plugins see events after their dependencies have processed them.
+
+### Error Handling in Filters
+
+Filter errors are logged but don't stop event propagation. Filters run under `PluginSupervisor` with a 1-second timeout by default. If a filter crashes, the event passes through to the next plugin.
 
 ## Capabilities
 
@@ -249,12 +232,9 @@ end
 ### Keyboard Input
 
 ```elixir
-# Register in manifest
 capabilities: [:keyboard_input]
 
-# Handle in filter_event/2
 def filter_event({:key_press, hotkey}, state) when hotkey == state.config.hotkey do
-  # Handle hotkey
   {:ok, {:plugin_event, :activated}}
 end
 ```
@@ -277,88 +257,94 @@ def init(config) do
 end
 
 def filter_event({:file_event, _watcher, {path, _events}}, state) do
-  # Handle file change
   {:ok, {:file_changed, path}}
 end
 ```
 
 ## State Management
 
-### Best Practices
+Plugin state is managed through an ETS-backed `StateManager` for concurrent access and crash recovery. Each plugin's state is isolated. State updates from `handle_event/2` are automatically persisted.
+
+State persists across hot reloads. If a plugin crashes, its last known state is preserved and restored on restart.
+
+## Security Analysis
+
+Raxol automatically analyzes plugin BEAM bytecode to detect security-sensitive operations.
+
+### Detected Capabilities
+
+| Capability | Detected Operations |
+|------------|---------------------|
+| `:file_access` | `File.*`, `:file.*`, `Path.*` |
+| `:network_access` | `:gen_tcp.*`, `:ssl.*`, `Req.*`, `HTTPoison.*` |
+| `:code_injection` | `Code.eval_*`, `Module.create`, `:erl_eval.*` |
+| `:system_commands` | `System.cmd`, `Port.open`, `:os.cmd` |
+
+### Security Policies
 
 ```elixir
-defstruct [
-  :config,          # User configuration
-  :ui_state,        # UI-related state
-  :data,            # Plugin data
-  :timers,          # Active timers
-  :subscriptions,   # Event subscriptions
-  :cache            # Cached computations
-]
-```
+alias Raxol.Core.Runtime.Plugins.Security.CapabilityDetector
 
-### Hot Reload
+# Default policy (denies all sensitive operations)
+policy = CapabilityDetector.default_policy()
 
-State persists across hot reloads:
+# Custom policy allowing specific capabilities
+policy = CapabilityDetector.create_policy([:file_access])
 
-```elixir
-def enable(state) do
-  # Restore from previous state if hot reload
-  state = maybe_restore_state(state)
-  {:ok, state}
+# Validate a plugin module
+case CapabilityDetector.validate_against_policy(MyPlugin, policy) do
+  :ok -> :load_plugin
+  {:error, :file_access_denied} -> :reject_plugin
+  {:error, :network_access_denied} -> :reject_plugin
 end
 ```
 
-## Performance
+Declare capabilities in your manifest to pass validation -- they must match what the bytecode analyzer detects.
 
-### Monitoring
+## Process Isolation
 
-Plugin System v2.0 tracks:
-- CPU usage per plugin
-- Memory usage
-- Event processing time
-- Command execution time
-
-### Best Practices
-
-- Keep `filter_event/2` fast (< 1ms)
-- Use async for slow operations
-- Cache expensive computations
-- Clean up resources in `disable/1`
-
-## Error Handling
+Plugin operations run under `PluginSupervisor` for crash isolation. Plugin crashes don't affect the core application.
 
 ```elixir
-def handle_command(:risky_operation, _args, state) do
-  case safe_operation() do
-    {:ok, result} ->
-      {:ok, state, result}
-    {:error, reason} ->
-      Logger.error("Operation failed: #{inspect(reason)}")
-      {:error, reason, state}
-  end
+alias Raxol.Core.Runtime.Plugins.PluginSupervisor
+
+# Synchronous with isolation
+case PluginSupervisor.run_plugin_task(:my_plugin, fn ->
+  risky_operation()
+end) do
+  {:ok, result} -> handle_result(result)
+  {:error, {:crashed, reason}} -> log_crash(reason)
+  {:error, {:timeout, ms}} -> log_timeout(ms)
 end
+
+# Fire and forget
+PluginSupervisor.async_plugin_task(:my_plugin, fn ->
+  background_work()
+end)
+
+# Concurrent tasks with individual failure isolation
+results = PluginSupervisor.run_plugin_tasks_concurrent(:my_plugin, [
+  fn -> fetch_data() end,
+  fn -> process_config() end,
+  fn -> load_cache() end
+])
+# => [{:ok, data}, {:ok, config}, {:ok, cache}]
 ```
+
+Custom timeouts: `PluginSupervisor.run_plugin_task(:my_plugin, fun, timeout: 10_000)`
 
 ## Testing
 
-See [TESTING.md](TESTING.md) for comprehensive testing guide.
-
-### Quick Example
+See [TESTING.md](TESTING.md) for the full testing guide.
 
 ```elixir
 defmodule MyPluginTest do
   use ExUnit.Case
 
   test "plugin lifecycle" do
-    # Init
     {:ok, state} = MyPlugin.init(%{})
-
-    # Enable
     {:ok, state} = MyPlugin.enable(state)
     assert state.enabled
-
-    # Disable
     {:ok, state} = MyPlugin.disable(state)
     refute state.enabled
   end
@@ -372,9 +358,3 @@ end
 - [File Browser](../../lib/raxol/plugins/examples/file_browser_plugin.ex)
 - [Git Integration](../../lib/raxol/plugins/examples/git_integration_plugin.ex)
 - [Spotify](examples/SPOTIFY.md)
-
-## See Also
-
-- [TEMPLATES.md](TEMPLATES.md) - Ready-to-use plugin templates
-- [TESTING.md](TESTING.md) - Testing strategies
-- [README.md](README.md) - Plugin system overview

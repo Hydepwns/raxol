@@ -4,7 +4,6 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   It supports validation, placeholders, masks, and styling.
   """
-  alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
 
   @behaviour Raxol.UI.Components.Base.Component
@@ -59,7 +58,7 @@ defmodule Raxol.UI.Components.Input.TextField do
     id = props[:id] || Raxol.Core.ID.generate()
     width = props[:width] || 20
     state = struct!(__MODULE__, Map.merge(%{id: id}, props))
-    Map.put(state, :width, width)
+    {:ok, Map.put(state, :width, width)}
   end
 
   @doc """
@@ -302,8 +301,14 @@ defmodule Raxol.UI.Components.Input.TextField do
   Renders the TextField component using the current state and context.
   """
   @impl Raxol.UI.Components.Base.Component
-  def render(state, _context) do
+  def render(state, context) do
+    focused = Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused
+    state = %{state | focused: focused}
     merged_style = get_merged_style(state)
+
+    merged_style =
+      Raxol.UI.FocusHelper.maybe_focus_style(state.id, context, merged_style)
+
     {visible_value, showing_placeholder} = get_visible_value(state)
 
     text_children =
@@ -314,7 +319,7 @@ defmodule Raxol.UI.Components.Input.TextField do
         merged_style
       )
 
-    Element.new(:view, %{style: merged_style}, do: text_children)
+    %{type: :view, style: merged_style, children: text_children}
   end
 
   defp get_merged_style(state) do
@@ -410,8 +415,10 @@ defmodule Raxol.UI.Components.Input.TextField do
     }
 
     [
-      Element.new(:text, placeholder_style, do: [])
-      |> Map.put(:content, visible_value)
+      Raxol.View.Components.text(
+        content: visible_value,
+        style: placeholder_style
+      )
     ]
   end
 
@@ -429,16 +436,15 @@ defmodule Raxol.UI.Components.Input.TextField do
     }
 
     [
-      Element.new(:text, %{}, do: []) |> Map.put(:content, left),
-      Element.new(:text, cursor_style, do: []) |> Map.put(:content, "|"),
-      Element.new(:text, %{}, do: []) |> Map.put(:content, right)
+      Raxol.View.Components.text(content: left),
+      Raxol.View.Components.text(content: "|", style: cursor_style),
+      Raxol.View.Components.text(content: right)
     ]
   end
 
   defp build_normal_children(visible_value) do
     [
-      Element.new(:text, %{}, do: [])
-      |> Map.put(:content, visible_value)
+      Raxol.View.Components.text(content: visible_value)
     ]
   end
 

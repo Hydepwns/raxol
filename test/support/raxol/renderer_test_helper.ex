@@ -239,10 +239,7 @@ defmodule Raxol.Test.RendererTestHelper do
   defp ensure_style_by_presence(true, map), do: map
   defp ensure_style_by_presence(false, map), do: Map.put(map, :style, %{})
 
-  defp ensure_position_by_presence(true, map), do: map
-
-  defp ensure_position_by_presence(false, map),
-    do: Map.put(map, :position, {0, 0})
+  defp ensure_position_by_presence(_has_position, map), do: map
 
   defp ensure_disabled_by_presence(true, map), do: map
 

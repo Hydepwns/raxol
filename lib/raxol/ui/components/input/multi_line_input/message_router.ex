@@ -91,6 +91,13 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.MessageRouter do
       {:clipboard_content, content} ->
         {:ok, MultiLineInput.handle_clipboard_content(content, state)}
 
+      # Undo/redo
+      :undo ->
+        {:ok, MultiLineInput.handle_undo(state)}
+
+      :redo ->
+        {:ok, MultiLineInput.handle_redo(state)}
+
       # State changes
       {:set_shift_held, held} ->
         {:ok, MultiLineInput.handle_set_shift_held(held, state)}

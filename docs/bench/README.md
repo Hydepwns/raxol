@@ -1,277 +1,113 @@
-# Raxol Performance Benchmarking Suite
+# Benchmarks
 
-## Overview
-
-The Raxol benchmarking suite provides comprehensive performance testing and analysis tools to ensure optimal performance across all components of the system.
+Performance measurements for Raxol's core operations.
 
 ## Quick Start
 
 ```bash
-# Run all benchmarks
-mix benchmark --all
+# Framework comparison (vs Ratatui, Bubble Tea, Textual)
+mix run bench/suites/comparison/framework_comparison.exs
 
-# Run specific suite
-mix benchmark --suite terminal
+# Quick mode (~30s instead of ~2min)
+mix run bench/suites/comparison/framework_comparison.exs -- --quick
 
-# Compare with baseline
-mix benchmark --all --compare
-
-# Quick benchmark (reduced time)
-mix benchmark --suite terminal --quick
+# Internal benchmarks
+mix raxol.bench                    # All benchmarks
+mix raxol.bench parser             # Parser only
+mix raxol.bench rendering          # Rendering only
+mix raxol.bench --quick            # Shorter runs
 ```
 
-## Available Benchmark Suites
+## Latest Results
 
-### Terminal Benchmarks
+Measured on Apple M1 Pro, Elixir 1.19.0 / OTP 26.
 
-Tests terminal emulation performance including ANSI parsing, text rendering, cursor movement, and screen operations.
+### Core Operations
+
+| Operation | Time | Throughput |
+|-----------|------|------------|
+| Buffer create (80x24) | 25 us | 40K ops/sec |
+| Cell write (single) | 0.97 us | 1M ops/sec |
+| Cell write (80 cells, line) | 79 us | 12.7K ops/sec |
+| Full screen write (1920 cells) | 2.0 ms | 496 ops/sec |
+| ANSI parse (plain text) | 38 us | 26K ops/sec |
+| ANSI parse (colored) | 67 us | 15K ops/sec |
+| ANSI parse (50 CSI sequences) | 2.0 ms | 510 ops/sec |
+| Tree diff (no change) | 0.04 us | 27M ops/sec |
+| Tree diff (1 node changed) | 0.34 us | 3M ops/sec |
+| Tree diff (100 nodes, 1 change) | 4.0 us | 252K ops/sec |
+
+### Frame Budget
+
+| Metric | Value |
+|--------|-------|
+| Full frame (create + fill + diff) | 2.1 ms |
+| Budget used (of 16ms @ 60fps) | 13% |
+| Headroom for app logic | 13.9 ms |
+| Memory per 80x24 buffer | 216 KB |
+
+### Cross-Framework Comparison
+
+| Operation | Raxol | Ratatui (Rust) | Bubble Tea (Go) | Textual (Python) |
+|-----------|-------|----------------|-----------------|------------------|
+| Buffer create 80x24 | 25 us | ~0.5 us | ~2 us | ~50 us |
+| Cell write (single) | 0.97 us | ~0.01 us | ~0.1 us | ~5 us |
+| Full screen write | 2.0 ms | ~20 us | ~50 us | ~2 ms |
+| ANSI parse (simple) | 38 us | ~0.3 us | ~1 us | ~10 us |
+| Tree/view diff | 4.0 us | ~5 us | N/A | ~100 us |
+
+All values in microseconds unless noted. Lower is better.
+
+**Raxol**: measured on this hardware. **Others**: published/estimated benchmarks.
+
+### Interpretation
+
+Raxol's per-operation latency is higher than Rust/Go (expected for a managed runtime), but:
+
+- **Full frame at 2.1ms** leaves 87% of the 60fps budget for application logic
+- **Tree diff at 4us** is competitive with Ratatui's immediate-mode approach and 25x faster than Textual
+- **Million+ cell writes/sec** is more than enough for any terminal UI
+- **Real advantage**: OTP gives you crash isolation, hot reload, and distribution -- things no Rust/Go/Python TUI framework offers
+
+The BEAM isn't the fastest runtime, but it's fast enough for 60fps terminal rendering while providing guarantees that compiled languages can't match without significant additional infrastructure.
+
+## Suites
+
+| Suite | Location | Focus |
+|-------|----------|-------|
+| Comparison | `bench/suites/comparison/` | Cross-framework performance |
+| Parser | `bench/suites/parser/` | ANSI parsing, CSI sequences |
+| Terminal | `bench/suites/terminal/` | Buffer, cursor, emulator |
+| Rendering | `bench/suites/rendering/` | UI rendering, tree diffing |
+| Core | `bench/suites/core/` | System-wide operations |
+
+## Running Benchmarks
 
 ```bash
-mix benchmark --suite terminal
+# Specific suite files
+mix run bench/suites/parser/parser_benchmark.exs
+mix run bench/suites/terminal/buffer_benchmark.exs
+mix run bench/suites/rendering/render_performance_simple.exs
+
+# Via mix task (uses Benchee, generates HTML reports)
+mix raxol.bench parser --dashboard
+mix raxol.bench --regression    # Check for regressions (5% threshold)
+mix raxol.bench --compare       # Compare with previous run
 ```
 
-### Rendering Benchmarks
-
-Tests UI rendering pipeline performance including scene rendering, animations, and layout calculations.
-
-```bash
-mix benchmark --suite rendering
-```
-
-### Buffer Benchmarks
-
-Tests buffer operations including read/write performance, scrolling, and memory management.
-
-```bash
-mix benchmark --suite buffer
-```
-
-### Plugin Benchmarks
-
-Tests plugin system performance including loading, messaging, and lifecycle operations.
-
-```bash
-mix benchmark --suite plugin
-```
-
-### Component Benchmarks
-
-Tests UI component rendering performance for various component types.
-
-```bash
-mix benchmark --suite component
-```
-
-### Security Benchmarks
-
-Tests security operations performance including input validation and session management.
-
-```bash
-mix benchmark --suite security
-```
-
-## Advanced Usage
-
-### Profiling Mode
-
-Enable detailed profiling to identify performance bottlenecks:
-
-```bash
-mix benchmark --suite terminal --profile
-```
-
-### Custom Benchmark Configuration
-
-```bash
-# Longer benchmark duration for more accurate results
-mix benchmark --suite terminal --time 10 --warmup 5
-
-# Include memory measurements
-mix benchmark --suite terminal --memory
-
-# Run only specific benchmarks
-mix benchmark --suite terminal --only "ANSI.*"
-
-# Exclude specific benchmarks
-mix benchmark --suite terminal --except "Complex.*"
-```
-
-### Output Formats
-
-Generate reports in different formats:
-
-```bash
-# HTML report with charts
-mix benchmark --all --format html --output bench/reports
-
-# JSON for programmatic analysis
-mix benchmark --all --format json
-
-# Markdown for documentation
-mix benchmark --all --format markdown
-```
-
-### Baseline Management
-
-Save and compare performance baselines:
-
-```bash
-# Save current results as baseline
-mix benchmark --all --save-baseline
-
-# Compare with saved baseline
-mix benchmark --all --compare
-
-# Update baseline for specific suite
-UPDATE_BASELINE_terminal=true mix benchmark --suite terminal
-```
-
-## Analyzing Results
-
-### Performance Regression Detection
-
-The benchmark suite automatically detects performance regressions when comparing with baselines:
-
-- **Regression**: Performance degradation > 10%
-- **Improvement**: Performance improvement > 10%
-
-### Report Structure
-
-Generated reports include:
-
-1. **Summary**: Overall performance metrics
-2. **Performance Highlights**: Fastest and slowest operations
-3. **Regressions**: Detected performance degradations
-4. **Improvements**: Detected performance improvements
-5. **Recommendations**: Suggested optimizations
-6. **Detailed Results**: Full benchmark data
-
-### Historical Analysis
-
-View performance trends over time:
-
-```elixir
-# In IEx
-alias Raxol.Benchmark.Storage
-
-# Load last 30 days of results
-Storage.load_historical("terminal", days: 30)
-
-# Export to CSV for external analysis
-Storage.export_to_csv("terminal", "terminal_benchmarks.csv")
-```
-
-## Writing Custom Benchmarks
-
-Create a new benchmark suite:
-
-```elixir
-defmodule Raxol.Benchmark.Suites.CustomBenchmarks do
-  def run(opts \\ []) do
-    Benchee.run(
-      %{
-        "my operation" => fn input ->
-          # Benchmark code here
-        end
-      },
-      Keyword.merge(default_options(), opts)
-    )
-  end
-  
-  defp default_options do
-    [
-      warmup: 2,
-      time: 5,
-      inputs: %{
-        "small" => generate_small_input(),
-        "large" => generate_large_input()
-      }
-    ]
-  end
-end
-```
-
-## Continuous Integration
-
-Add benchmarking to your CI pipeline:
-
-```yaml
-# .github/workflows/benchmark.yml
-- name: Run benchmarks
-  run: mix benchmark --all --compare
-  
-- name: Upload results
-  uses: actions/upload-artifact@v2
-  with:
-    name: benchmark-results
-    path: bench/output/
-```
-
-## Performance Guidelines
-
-### Target Performance Metrics
-
-- **Terminal Operations**: < 1ms for typical operations
-- **Rendering**: 60 FPS (16.67ms per frame)
-- **Buffer Operations**: < 0.1ms for read/write
-- **Component Rendering**: < 5ms for complex components
-
-### Optimization Strategies
-
-1. **Profile First**: Use `--profile` to identify bottlenecks
-2. **Measure Impact**: Compare before/after with baselines
-3. **Focus on Hot Paths**: Optimize frequently called operations
-4. **Memory Efficiency**: Monitor memory usage with `--memory`
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Inconsistent Results**
-   - Increase warmup time: `--warmup 5`
-   - Increase benchmark time: `--time 10`
-   - Close other applications
-
-2. **Out of Memory**
-   - Reduce input size
-   - Run suites individually
-   - Use `--quick` mode
-
-3. **Missing Baseline**
-   - Create initial baseline: `--save-baseline`
-   - Check bench/baselines/ directory
-
-### Debug Mode
-
-Enable verbose output:
-
-```bash
-MIX_DEBUG=1 mix benchmark --suite terminal
-```
-
-## Directory Structure
-
-```
-bench/
-├── README.md           # This file
-├── baselines/         # Saved performance baselines
-├── output/            # Generated reports
-├── results/           # Raw benchmark results
-├── snapshots/         # Version snapshots
-└── scripts/           # Utility scripts
-```
-
-## Contributing
-
-When adding new features:
-
-1. Add corresponding benchmarks
-2. Run benchmarks before submitting PR
-3. Include benchmark results in PR description
-4. Update baseline if intentional performance change
-
-## Resources
-
-- [Benchee Documentation](https://hexdocs.pm/benchee)
-- Performance Monitoring (documentation in progress)
-- Performance Optimization (documentation in progress)
+## Performance Targets
+
+| Operation | Target | Status |
+|-----------|--------|--------|
+| Full frame render | < 16ms (60fps) | 2.1ms -- pass |
+| Buffer operations | < 1ms | 0.97us -- pass |
+| Tree diff (100 nodes) | < 1ms | 4us -- pass |
+| ANSI parse (simple) | < 100us | 38us -- pass |
+| Memory per buffer | < 500 KB | 216 KB -- pass |
+
+## Tips
+
+- Close other apps for consistent results
+- Use `--quick` for development, full runs for publishing
+- Run 3+ times and take the median
+- Compare on the same hardware/OS

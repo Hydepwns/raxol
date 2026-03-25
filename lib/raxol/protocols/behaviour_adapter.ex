@@ -31,13 +31,13 @@ defmodule Raxol.Protocols.BehaviourAdapter do
           defimpl Raxol.Protocols.Renderable, for: __MODULE__ do
             def render(data, opts) do
               # Bridge to the behaviour callback
-              apply(__MODULE__, :render, [data | [opts]])
+              __MODULE__.render(data, opts)
             end
 
             def render_metadata(data) do
               # Provide default metadata or bridge to behaviour
               if function_exported?(__MODULE__, :get_metadata, 1) do
-                apply(__MODULE__, :get_metadata, [data])
+                __MODULE__.get_metadata(data)
               else
                 %{
                   width: 80,
@@ -55,29 +55,29 @@ defmodule Raxol.Protocols.BehaviourAdapter do
         quote do
           defimpl Raxol.Protocols.BufferOperations, for: __MODULE__ do
             def write(buffer, {x, y}, data, style) do
-              apply(__MODULE__, :write_char, [buffer, x, y, data, style])
+              __MODULE__.write_char(buffer, x, y, data, style)
             end
 
             def read(buffer, {x, y}, length) do
-              apply(__MODULE__, :get_char, [buffer, x, y])
+              __MODULE__.get_char(buffer, x, y)
             end
 
             def clear(buffer, :all) do
-              apply(__MODULE__, :clear_screen, [buffer])
+              __MODULE__.clear_screen(buffer)
             end
 
             def clear(buffer, region) do
-              apply(__MODULE__, :clear, [buffer, region])
+              __MODULE__.clear(buffer, region)
             end
 
             def dimensions(buffer) do
-              apply(__MODULE__, :get_dimensions, [buffer])
+              __MODULE__.get_dimensions(buffer)
             end
 
             def scroll(buffer, direction, lines) do
               case direction do
-                :up -> apply(__MODULE__, :scroll_up, [buffer, lines])
-                :down -> apply(__MODULE__, :scroll_down, [buffer, lines])
+                :up -> __MODULE__.scroll_up(buffer, lines)
+                :down -> __MODULE__.scroll_down(buffer, lines)
               end
             end
           end

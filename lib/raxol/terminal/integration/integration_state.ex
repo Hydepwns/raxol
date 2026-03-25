@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Integration.State do
   alias Raxol.Terminal.{
     Integration.Config,
     IO.IOServer,
-    Render.RenderServer,
+    Rendering.RenderServer,
     ScreenBuffer.Manager,
     Window.Manager
   }

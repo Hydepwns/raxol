@@ -11,13 +11,15 @@ defmodule Raxol.System.Clipboard do
 
   @behaviour Raxol.Core.Clipboard.Behaviour
 
+  alias Raxol.System.PortCommand
   require Raxol.Core.Runtime.Log
 
   @doc """
   Copies the given text to the system clipboard.
   """
   @impl Raxol.Core.Clipboard.Behaviour
-  @spec copy(String.t()) :: :ok | {:error, atom() | String.t()}
+  @spec copy(String.t()) ::
+          :ok | {:error, :command_not_found | {atom(), String.t()}}
   def copy(text) when is_binary(text) do
     case :os.type() do
       {:unix, :darwin} -> copy_macos(text)
@@ -26,20 +28,20 @@ defmodule Raxol.System.Clipboard do
     end
   end
 
+  @spec copy_macos(String.t()) :: :ok | {:error, {:pbcopy_failed, String.t()}}
   defp copy_macos(text) do
-    case System.cmd("pbcopy", [], input: text, stderr_to_stdout: true) do
-      {_output, 0} ->
+    case PortCommand.run("pbcopy", [], text) do
+      {:ok, _output} ->
         :ok
 
-      {output, exit_code} ->
-        Raxol.Core.Runtime.Log.error(
-          "Failed to copy using pbcopy. Exit code: #{exit_code}, Output: #{output}"
-        )
-
+      {:error, output} ->
+        Raxol.Core.Runtime.Log.error("Failed to copy using pbcopy: #{output}")
         {:error, {:pbcopy_failed, output}}
     end
   end
 
+  @spec copy_linux(String.t()) ::
+          :ok | {:error, :command_not_found | {:xclip_failed, String.t()}}
   defp copy_linux(text) do
     case System.find_executable("xclip") do
       nil ->
@@ -54,33 +56,27 @@ defmodule Raxol.System.Clipboard do
     end
   end
 
+  @spec copy_with_xclip(String.t()) ::
+          :ok | {:error, {:xclip_failed, String.t()}}
   defp copy_with_xclip(text) do
-    case System.cmd("xclip", ["-selection", "clipboard"],
-           input: text,
-           stderr_to_stdout: true
-         ) do
-      {_output, 0} ->
+    case PortCommand.run("xclip", ["-selection", "clipboard"], text) do
+      {:ok, _output} ->
         :ok
 
-      {output, exit_code} ->
-        Raxol.Core.Runtime.Log.error(
-          "Failed to copy using xclip. Exit code: #{exit_code}, Output: #{output}"
-        )
-
+      {:error, output} ->
+        Raxol.Core.Runtime.Log.error("Failed to copy using xclip: #{output}")
         {:error, {:xclip_failed, output}}
     end
   end
 
+  @spec copy_windows(String.t()) :: :ok | {:error, {:clip_failed, String.t()}}
   defp copy_windows(text) do
-    case System.cmd("clip", [], input: text, stderr_to_stdout: true) do
-      {_output, 0} ->
+    case PortCommand.run("clip", [], text) do
+      {:ok, _output} ->
         :ok
 
-      {output, exit_code} ->
-        Raxol.Core.Runtime.Log.error(
-          "Failed to copy using clip. Exit code: #{exit_code}, Output: #{output}"
-        )
-
+      {:error, output} ->
+        Raxol.Core.Runtime.Log.error("Failed to copy using clip: #{output}")
         {:error, {:clip_failed, output}}
     end
   end
@@ -92,7 +88,9 @@ defmodule Raxol.System.Clipboard do
   An empty clipboard is considered success and returns `{:ok, ""}`.
   """
   @impl Raxol.Core.Clipboard.Behaviour
-  @spec paste() :: {:ok, String.t()} | {:error, atom() | String.t()}
+  @spec paste() ::
+          {:ok, String.t()}
+          | {:error, :command_not_found | {atom(), String.t()}}
   def paste do
     case :os.type() do
       {:unix, :darwin} -> paste_macos()
@@ -101,6 +99,8 @@ defmodule Raxol.System.Clipboard do
     end
   end
 
+  @spec paste_macos() ::
+          {:ok, String.t()} | {:error, {:pbpaste_failed, String.t()}}
   defp paste_macos do
     case System.cmd("pbpaste", [], stderr_to_stdout: true) do
       {output, 0} ->
@@ -115,6 +115,9 @@ defmodule Raxol.System.Clipboard do
     end
   end
 
+  @spec paste_linux() ::
+          {:ok, String.t()}
+          | {:error, :command_not_found | {:xclip_failed, String.t()}}
   defp paste_linux do
     case System.find_executable("xclip") do
       nil ->
@@ -129,6 +132,8 @@ defmodule Raxol.System.Clipboard do
     end
   end
 
+  @spec paste_with_xclip() ::
+          {:ok, String.t()} | {:error, {:xclip_failed, String.t()}}
   defp paste_with_xclip do
     case System.cmd("xclip", ["-selection", "clipboard", "-o"],
            stderr_to_stdout: true
@@ -151,6 +156,9 @@ defmodule Raxol.System.Clipboard do
     end
   end
 
+  @spec paste_windows() ::
+          {:ok, String.t()}
+          | {:error, {:powershell_get_clipboard_failed, String.t()}}
   defp paste_windows do
     case System.cmd("powershell", ["-noprofile", "-command", "Get-Clipboard"],
            stderr_to_stdout: true

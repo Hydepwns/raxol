@@ -25,6 +25,8 @@ defmodule Raxol.Search.Fuzzy do
       results = Fuzzy.search(buffer, ~r/h.llo/, :regex)
   """
 
+  require Logger
+
   alias Raxol.Core.Buffer
 
   @type position :: {non_neg_integer(), non_neg_integer()}
@@ -317,7 +319,9 @@ defmodule Raxol.Search.Fuzzy do
         end)
     end
   rescue
-    _ -> []
+    e ->
+      Logger.warning("Regex search failed: #{Exception.message(e)}")
+      []
   end
 
   @doc """

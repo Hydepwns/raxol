@@ -62,7 +62,7 @@ defmodule RaxolWeb do
   def live_view do
     quote do
       use Phoenix.LiveView,
-        layout: {RaxolWeb.Layouts, :root}
+        layout: {RaxolWeb.Layouts, :app}
 
       unquote(html_helpers())
     end

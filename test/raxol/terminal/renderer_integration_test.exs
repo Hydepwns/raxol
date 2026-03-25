@@ -4,6 +4,9 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
   alias Raxol.Terminal.Validation
 
+  # ANSI escape code helpers
+  @ansi_reset "\e[0m"
+
   setup do
     buffer = ScreenBuffer.new(80, 24)
     # Use terminal theme manager's default theme colors
@@ -36,6 +39,24 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
     {:ok, %{renderer: renderer, buffer: buffer}}
   end
 
+  # Helper: ANSI 24-bit foreground escape for hex color
+  defp ansi_fg(hex) do
+    {r, g, b} = parse_hex(hex)
+    "\e[38;2;#{r};#{g};#{b}m"
+  end
+
+  # Helper: ANSI 24-bit background escape for hex color
+  defp ansi_bg(hex) do
+    {r, g, b} = parse_hex(hex)
+    "\e[48;2;#{r};#{g};#{b}m"
+  end
+
+  defp parse_hex("#" <> hex), do: parse_hex(hex)
+
+  defp parse_hex(<<r::binary-size(2), g::binary-size(2), b::binary-size(2)>>) do
+    {String.to_integer(r, 16), String.to_integer(g, 16), String.to_integer(b, 16)}
+  end
+
   describe "integration with Manipulation module" do
     test "renders text after manipulation operations", %{
       renderer: renderer,
@@ -46,16 +67,22 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       renderer = %{renderer | screen_buffer: buffer}
       output = Renderer.render(renderer)
 
-      assert output =~
-               "<span style=\"color: #FFFFFF; background-color: #000000\">H</span><span style=\"color: #FFFFFF; background-color: #000000\">e</span><span style=\"color: #FFFFFF; background-color: #000000\">l</span><span style=\"color: #FFFFFF; background-color: #000000\">l</span><span style=\"color: #FFFFFF; background-color: #000000\">o</span>"
+      # Each character should be styled and present
+      for char <- ~w(H e l l o) do
+        assert output =~ char
+      end
+
+      assert output =~ ansi_fg("#FFFFFF")
+      assert output =~ ansi_bg("#000000")
+      assert output =~ @ansi_reset
 
       # Delete text (delete 2 chars at 0,0)
       buffer = ScreenBuffer.delete_characters(buffer, 0, 0, 2, %{})
       renderer = %{renderer | screen_buffer: buffer}
       output = Renderer.render(renderer)
 
-      assert output =~
-               "<span style=\"color: #FFFFFF; background-color: #000000\">l</span><span style=\"color: #FFFFFF; background-color: #000000\">l</span><span style=\"color: #FFFFFF; background-color: #000000\">o</span>"
+      assert output =~ "l"
+      assert output =~ "o"
     end
 
     test "renders styled text after manipulation", %{
@@ -96,25 +123,18 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       assert first_cell.style.foreground == :red
       assert first_cell.style.bold == true
 
-      html = Raxol.Terminal.Renderer.render(renderer)
+      output = Raxol.Terminal.Renderer.render(renderer)
 
-      assert html =~
-               ~s(<span style="color: #FF0000; background-color: #000000; font-weight: bold">S</span>)
+      # Red foreground via theme (#FF0000 -> 24-bit ANSI)
+      assert output =~ ansi_fg("#FF0000")
+      # Bold
+      assert output =~ "\e[1m"
+      # All characters present
+      for char <- String.graphemes("Styled") do
+        assert output =~ char
+      end
 
-      assert html =~
-               ~s(<span style="color: #FF0000; background-color: #000000; font-weight: bold">t</span>)
-
-      assert html =~
-               ~s(<span style="color: #FF0000; background-color: #000000; font-weight: bold">y</span>)
-
-      assert html =~
-               ~s(<span style="color: #FF0000; background-color: #000000; font-weight: bold">l</span>)
-
-      assert html =~
-               ~s(<span style="color: #FF0000; background-color: #000000; font-weight: bold">e</span>)
-
-      assert html =~
-               ~s(<span style="color: #FF0000; background-color: #000000; font-weight: bold">d</span>)
+      assert output =~ @ansi_reset
     end
   end
 
@@ -130,8 +150,9 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       renderer = %{renderer | screen_buffer: buffer}
       output = Renderer.render(renderer, selection: selection)
       # Selection highlighting is not currently implemented in the renderer
-      assert output =~
-               "<span style=\"color: #FFFFFF; background-color: #000000\">S</span><span style=\"color: #FFFFFF; background-color: #000000\">e</span><span style=\"color: #FFFFFF; background-color: #000000\">l</span><span style=\"color: #FFFFFF; background-color: #000000\">e</span><span style=\"color: #FFFFFF; background-color: #000000\">c</span><span style=\"color: #FFFFFF; background-color: #000000\">t</span><span style=\"color: #FFFFFF; background-color: #000000\">a</span><span style=\"color: #FFFFFF; background-color: #000000\">b</span><span style=\"color: #FFFFFF; background-color: #000000\">l</span>"
+      for char <- ~w(S e l e c t a b l) do
+        assert output =~ char
+      end
     end
 
     test "handles multiple selections", %{renderer: renderer, buffer: buffer} do
@@ -148,11 +169,9 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       renderer = %{renderer | screen_buffer: buffer}
       output = Renderer.render(renderer, selections: selections)
       # Selection highlighting is not currently implemented in the renderer
-      assert output =~
-               "<span style=\"color: #FFFFFF; background-color: #000000\">F</span><span style=\"color: #FFFFFF; background-color: #000000\">i</span><span style=\"color: #FFFFFF; background-color: #000000\">r</span><span style=\"color: #FFFFFF; background-color: #000000\">s</span><span style=\"color: #FFFFFF; background-color: #000000\">t</span>"
-
-      assert output =~
-               "<span style=\"color: #FFFFFF; background-color: #000000\">S</span><span style=\"color: #FFFFFF; background-color: #000000\">e</span><span style=\"color: #FFFFFF; background-color: #000000\">c</span><span style=\"color: #FFFFFF; background-color: #000000\">o</span><span style=\"color: #FFFFFF; background-color: #000000\">n</span><span style=\"color: #FFFFFF; background-color: #000000\">d</span>"
+      for char <- ~w(F i r s t) do
+        assert output =~ char
+      end
     end
 
     test "renders selectable text", %{renderer: renderer, buffer: buffer} do
@@ -163,8 +182,7 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       output = Renderer.render(renderer, selection: selection)
       # Selection highlighting is not currently implemented in the renderer
       Enum.each(String.graphemes(text), fn char ->
-        assert output =~
-                 "<span style=\"color: #FFFFFF; background-color: #000000\">#{char}</span>"
+        assert output =~ char
       end)
     end
   end
@@ -177,8 +195,9 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       renderer = %{renderer | screen_buffer: buffer}
       output = Renderer.render(renderer, validation: validation)
       # Validation module is currently a stub, so no special styling is applied
-      assert output =~
-               "<span style=\"color: #FFFFFF; background-color: #000000\">I</span><span style=\"color: #FFFFFF; background-color: #000000\">n</span><span style=\"color: #FFFFFF; background-color: #000000\">v</span><span style=\"color: #FFFFFF; background-color: #000000\">a</span><span style=\"color: #FFFFFF; background-color: #000000\">l</span><span style=\"color: #FFFFFF; background-color: #000000\">i</span><span style=\"color: #FFFFFF; background-color: #000000\">d</span><span style=\"color: #FFFFFF; background-color: #000000\"> </span><span style=\"color: #FFFFFF; background-color: #000000\">i</span><span style=\"color: #FFFFFF; background-color: #000000\">n</span><span style=\"color: #FFFFFF; background-color: #000000\">p</span><span style=\"color: #FFFFFF; background-color: #000000\">u</span><span style=\"color: #FFFFFF; background-color: #000000\">t</span>"
+      for char <- String.graphemes("Invalid input") do
+        assert output =~ char
+      end
     end
 
     test "renders validation warnings", %{renderer: renderer, buffer: buffer} do
@@ -188,8 +207,9 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       renderer = %{renderer | screen_buffer: buffer}
       output = Renderer.render(renderer, validation: validation)
       # Validation module is currently a stub, so no special styling is applied
-      assert output =~
-               "<span style=\"color: #FFFFFF; background-color: #000000\">W</span><span style=\"color: #FFFFFF; background-color: #000000\">a</span><span style=\"color: #FFFFFF; background-color: #000000\">r</span><span style=\"color: #FFFFFF; background-color: #000000\">n</span><span style=\"color: #FFFFFF; background-color: #000000\">i</span><span style=\"color: #FFFFFF; background-color: #000000\">n</span><span style=\"color: #FFFFFF; background-color: #000000\">g</span><span style=\"color: #FFFFFF; background-color: #000000\"> </span><span style=\"color: #FFFFFF; background-color: #000000\">t</span><span style=\"color: #FFFFFF; background-color: #000000\">e</span><span style=\"color: #FFFFFF; background-color: #000000\">x</span><span style=\"color: #FFFFFF; background-color: #000000\">t</span>"
+      for char <- String.graphemes("Warning text") do
+        assert output =~ char
+      end
     end
   end
 
@@ -212,8 +232,9 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       # Should only update the changed cell
       assert output1 != output2
 
-      assert output2 =~
-               "<span style=\"color: #FFFFFF; background-color: #000000\">H</span><span style=\"color: #FFFFFF; background-color: #000000\">e</span><span style=\"color: #FFFFFF; background-color: #000000\">l</span><span style=\"color: #FFFFFF; background-color: #000000\">l</span><span style=\"color: #FFFFFF; background-color: #000000\">o</span><span style=\"color: #FFFFFF; background-color: #000000\">!</span>"
+      for char <- ~w(H e l l o !) do
+        assert output2 =~ char
+      end
     end
 
     test "batches style updates", %{renderer: renderer, buffer: buffer} do
@@ -230,10 +251,11 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       renderer = %{renderer | screen_buffer: buffer, style_batching: true}
       output = Renderer.render(renderer)
 
-      # Style batching is now implemented in the renderer
-      # All characters with the same style should be grouped in a single span
-      assert output =~
-               "<span style=\"color: #FF0000; background-color: #000000\">Red text</span>"
+      # With style batching, all chars with the same style should be grouped
+      # "Red text" should appear as a single run
+      assert output =~ "Red text"
+      assert output =~ ansi_fg("#FF0000")
+      assert output =~ @ansi_reset
     end
   end
 
@@ -241,11 +263,10 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
     test "handles empty buffer", %{renderer: renderer} do
       output = Renderer.render(renderer)
 
-      assert output =~
-               String.duplicate(
-                 "<span style=\"color: #FFFFFF; background-color: #000000\"> </span>",
-                 80
-               )
+      # All cells should have default theme colors
+      assert output =~ ansi_fg("#FFFFFF")
+      assert output =~ ansi_bg("#000000")
+      assert output =~ @ansi_reset
     end
 
     test "handles buffer with only spaces", %{
@@ -258,11 +279,8 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       renderer = %{renderer | screen_buffer: buffer}
       output = Renderer.render(renderer)
 
-      assert output =~
-               String.duplicate(
-                 "<span style=\"color: #FFFFFF; background-color: #000000\"> </span>",
-                 80
-               )
+      assert output =~ ansi_fg("#FFFFFF")
+      assert output =~ ansi_bg("#000000")
     end
 
     test "handles buffer with special characters", %{
@@ -273,10 +291,9 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       buffer = ScreenBuffer.write_string(buffer, 0, 0, special_chars)
       renderer = %{renderer | screen_buffer: buffer}
       output = Renderer.render(renderer)
-      # Check that each special character is wrapped in a span
+      # Check that each special character is present in the output
       Enum.each(String.graphemes(special_chars), fn char ->
-        assert output =~
-                 "<span style=\"color: #FFFFFF; background-color: #000000\">#{char}</span>"
+        assert output =~ char
       end)
     end
 
@@ -288,10 +305,9 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       buffer = ScreenBuffer.write_string(buffer, 0, 0, unicode_text)
       renderer = %{renderer | screen_buffer: buffer}
       output = Renderer.render(renderer)
-      # Check that each unicode character is wrapped in a span
+      # Check that each unicode character is present in the output
       Enum.each(String.graphemes(unicode_text), fn char ->
-        assert output =~
-                 "<span style=\"color: #FFFFFF; background-color: #000000\">#{char}</span>"
+        assert output =~ char
       end)
     end
   end

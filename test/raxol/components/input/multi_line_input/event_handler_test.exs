@@ -147,7 +147,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
       state = create_state(["hello"], {0, 3})
       event = Event.key_event(:left, :pressed, [:shift])
 
-      assert {:update, {:select_and_move, :left}, state} ==
+      assert {:update, {:selection_move, :left}, state} ==
                EventHandler.handle_event(event, state)
     end
 
@@ -155,7 +155,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
       state = create_state(["hello"], {0, 3})
       event = Event.key_event(:right, :pressed, [:shift])
 
-      assert {:update, {:select_and_move, :right}, state} ==
+      assert {:update, {:selection_move, :right}, state} ==
                EventHandler.handle_event(event, state)
     end
 
@@ -163,7 +163,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
       state = create_state(["line1", "line2"], {1, 3})
       event = Event.key_event(:up, :pressed, [:shift])
 
-      assert {:update, {:select_and_move, :up}, state} ==
+      assert {:update, {:selection_move, :up}, state} ==
                EventHandler.handle_event(event, state)
     end
 
@@ -171,7 +171,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
       state = create_state(["line1", "line2"], {0, 3})
       event = Event.key_event(:down, :pressed, [:shift])
 
-      assert {:update, {:select_and_move, :down}, state} ==
+      assert {:update, {:selection_move, :down}, state} ==
                EventHandler.handle_event(event, state)
     end
 

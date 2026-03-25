@@ -155,35 +155,38 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
       when is_map(buffer) and is_integer(y) and is_list(line) do
     cond do
       has_lines_format?(buffer) ->
-        lines = Map.put(buffer.lines, y, line)
-        %{buffer | lines: lines}
+        %{buffer | lines: Map.put(buffer.lines, y, line)}
 
       has_cells_format?(buffer) ->
-        if y >= 0 and y < length(buffer.cells) do
-          cells = List.replace_at(buffer.cells, y, line)
-          %{buffer | cells: cells}
-        else
-          buffer
-        end
+        replace_cell_line(buffer, y, line)
 
       true ->
-        # Neither format, assume cells and create
-        height = Map.get(buffer, :height, 24)
-        width = Map.get(buffer, :width, 80)
-        default_style = Map.get(buffer, :default_style, %TextFormatting{})
-
-        # Create empty cells structure
-        cells = create_empty_cells(width, height, default_style)
-
-        updated_cells =
-          if y >= 0 and y < height do
-            List.replace_at(cells, y, line)
-          else
-            cells
-          end
-
-        Map.put(buffer, :cells, updated_cells)
+        initialize_and_set_line(buffer, y, line)
     end
+  end
+
+  defp replace_cell_line(buffer, y, line) do
+    if y >= 0 and y < length(buffer.cells) do
+      %{buffer | cells: List.replace_at(buffer.cells, y, line)}
+    else
+      buffer
+    end
+  end
+
+  defp initialize_and_set_line(buffer, y, line) do
+    height = Map.get(buffer, :height, 24)
+    width = Map.get(buffer, :width, 80)
+    default_style = Map.get(buffer, :default_style, %TextFormatting{})
+    cells = create_empty_cells(width, height, default_style)
+
+    updated_cells =
+      if y >= 0 and y < height do
+        List.replace_at(cells, y, line)
+      else
+        cells
+      end
+
+    Map.put(buffer, :cells, updated_cells)
   end
 
   @doc """

@@ -6,7 +6,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
 
   describe "init/1" do
     test ~c"initializes with default values when no props provided" do
-      state = MultiLineInput.init(%{id: :mle_default})
+      {:ok, state} = MultiLineInput.init(%{id: :mle_default})
       assert state.id == :mle_default
       assert state.value == ""
       assert state.placeholder == ""
@@ -33,7 +33,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
         on_change: fn _ -> :changed end
       }
 
-      state = MultiLineInput.init(props)
+      {:ok, state} = MultiLineInput.init(props)
       assert state.id == :mle_props
       assert state.value == "Hello\nWorld"
       assert state.placeholder == "Type here..."
@@ -69,7 +69,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
         style: expected_style
       }
 
-      state = MultiLineInput.init(props)
+      {:ok, state} = MultiLineInput.init(props)
       assert state.id == :mle_props
       assert state.value == "Hello\nWorld"
       assert state.placeholder == "Type here..."
@@ -90,7 +90,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
 
   describe "update/2" do
     setup do
-      initial_state =
+      {:ok, initial_state} =
         MultiLineInput.init(%{id: :mle_update, value: "test\ntext"})
 
       {:ok, state: initial_state}
@@ -146,7 +146,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
 
     test "handles scrolling (via cursor movement)", %{state: state} do
       # Simulate moving cursor down multiple times to trigger scroll
-      state_many_lines =
+      {:ok, state_many_lines} =
         MultiLineInput.init(%{
           value: Enum.map_join(1..20, "\n", &"Line #{&1}"),
           height: 5
@@ -313,6 +313,83 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       # Assert the expected output for word wrap
       assert lines == ["This is a", "long line", "of text"]
       assert length(lines) == 3
+    end
+  end
+
+  describe "undo/redo" do
+    setup do
+      {:ok, state} =
+        MultiLineInput.init(%{id: :mle_undo, value: "hello", width: 40, height: 10})
+
+      %{state: state}
+    end
+
+    test "undo reverts a character insertion", %{state: state} do
+      {:noreply, after_input, _} = MultiLineInput.update({:input, ?X}, state)
+      assert after_input.value == "Xhello"
+
+      {:noreply, after_undo, _} = MultiLineInput.update(:undo, after_input)
+      assert after_undo.value == "hello"
+    end
+
+    test "redo restores an undone change", %{state: state} do
+      {:noreply, after_input, _} = MultiLineInput.update({:input, ?X}, state)
+      {:noreply, after_undo, _} = MultiLineInput.update(:undo, after_input)
+      assert after_undo.value == "hello"
+
+      {:noreply, after_redo, _} = MultiLineInput.update(:redo, after_undo)
+      assert after_redo.value == "Xhello"
+    end
+
+    test "undo on empty history is a no-op", %{state: state} do
+      {:noreply, after_undo, _} = MultiLineInput.update(:undo, state)
+      assert after_undo.value == state.value
+    end
+
+    test "redo on empty redo stack is a no-op", %{state: state} do
+      {:noreply, after_redo, _} = MultiLineInput.update(:redo, state)
+      assert after_redo.value == state.value
+    end
+
+    test "new edit clears redo stack", %{state: state} do
+      {:noreply, s1, _} = MultiLineInput.update({:input, ?A}, state)
+      {:noreply, s2, _} = MultiLineInput.update(:undo, s1)
+      # Now type something new — redo should be cleared
+      {:noreply, s3, _} = MultiLineInput.update({:input, ?B}, s2)
+      {:noreply, s4, _} = MultiLineInput.update(:redo, s3)
+      # Redo should be no-op since new edit cleared it
+      assert s4.value == s3.value
+    end
+
+    test "multiple undos walk back through history", %{state: state} do
+      {:noreply, s1, _} = MultiLineInput.update({:input, ?A}, state)
+      {:noreply, s2, _} = MultiLineInput.update({:input, ?B}, s1)
+      assert s2.value =~ "AB"
+
+      {:noreply, s3, _} = MultiLineInput.update(:undo, s2)
+      assert s3.value =~ "A"
+      refute s3.value =~ "B"
+
+      {:noreply, s4, _} = MultiLineInput.update(:undo, s3)
+      assert s4.value == "hello"
+    end
+
+    test "undo reverts backspace", %{state: state} do
+      state_at_1 = %{state | cursor_pos: {0, 1}}
+      {:noreply, after_bs, _} = MultiLineInput.update({:backspace}, state_at_1)
+      assert after_bs.value == "ello"
+
+      {:noreply, after_undo, _} = MultiLineInput.update(:undo, after_bs)
+      assert after_undo.value == "hello"
+    end
+
+    test "undo reverts enter (newline insertion)", %{state: state} do
+      state_at_2 = %{state | cursor_pos: {0, 2}}
+      {:noreply, after_enter, _} = MultiLineInput.update({:enter}, state_at_2)
+      assert after_enter.value == "he\nllo"
+
+      {:noreply, after_undo, _} = MultiLineInput.update(:undo, after_enter)
+      assert after_undo.value == "hello"
     end
   end
 end

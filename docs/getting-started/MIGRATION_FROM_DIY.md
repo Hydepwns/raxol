@@ -2,152 +2,76 @@
 
 Already built your own terminal rendering? This guide shows how to integrate or migrate to Raxol.
 
-**New to Raxol?** See the [Package Guide](./PACKAGES.md) to choose the right package for your needs.
-
-## Table of Contents
-
-- [Why Migrate?](#why-migrate)
-- [Migration Strategies](#migration-strategies)
-- [Adapting Your Buffer Format](#adapting-your-buffer-format)
-- [Incremental Migration](#incremental-migration)
-- [Feature Parity Checklist](#feature-parity-checklist)
-- [Case Study: droodotfoo](#case-study-droodotfoo)
-
----
+New to Raxol? See the [Package Guide](./PACKAGES.md) first.
 
 ## Why Migrate?
 
-You've built a working terminal renderer. Why consider Raxol?
+You've built a working terminal renderer. Here's what Raxol adds on top:
 
-### What Raxol Adds
+**LiveView integration.** If you're rendering terminals in web apps, Raxol.LiveView handles buffer-to-HTML conversion, CSS theming (5 built-in themes), event handling, and 60fps rendering optimizations.
 
-**1. Phoenix LiveView Integration**
-
-If you're rendering terminals in web apps, Raxol.LiveView handles:
-- Buffer → HTML conversion
-- CSS theming (5 built-in themes)
-- Event handling (keyboard, mouse, paste)
-- 60fps rendering optimizations
-
-**2. Testing Utilities**
+**Testing utilities.** Instead of fragile string matching against rendered output, you can test the actual data structure:
 
 ```elixir
-# Your current testing (probably):
-output = render_buffer(buffer)
-assert output =~ "expected text"  # Fragile string matching
-
-# With Raxol:
 buffer = Buffer.write_at(buffer, 5, 3, "expected text")
 cell = Buffer.get_cell(buffer, 5, 3)
-assert cell.char == "e"  # Test actual data structure
+assert cell.char == "e"
 ```
 
-**3. Performance Optimizations**
+**Performance optimizations.** Diff rendering (50x faster updates), benchmarking suite, memory profiling, automated regression detection.
 
-- Diff rendering (50x faster updates)
-- Benchmarking suite
-- Memory profiling
-- Automated performance regression detection
-
-**4. Documentation & Examples**
-
-- Comprehensive API docs
-- Cookbook recipes
-- Working examples
-- Active community
-
-### What You Keep
-
-**Your code.** Raxol is designed for incremental adoption:
-
-```elixir
-# Keep your existing code
-MyApp.TerminalRenderer.render(your_buffer)
-
-# Add Raxol for specific features
-html = Raxol.LiveView.TerminalBridge.buffer_to_html(your_buffer)
-```
+Raxol is designed for incremental adoption -- your existing code keeps working.
 
 ---
 
 ## Migration Strategies
 
-Choose the approach that fits your needs.
+### Strategy 1: Side-by-Side (lowest risk)
 
-### Strategy 1: Side-by-Side (Lowest Risk)
-
-Run both implementations, compare outputs:
+Run both implementations, compare outputs in dev/test:
 
 ```elixir
 defmodule MyApp.Renderer do
   def render(data) do
-    # Your implementation
     your_buffer = YourRenderer.create_buffer(data)
     your_output = YourRenderer.render(your_buffer)
 
-    # Raxol implementation (parallel)
     raxol_buffer = RaxolAdapter.from_your_format(your_buffer)
     raxol_output = Raxol.Core.Buffer.to_string(raxol_buffer)
 
-    # Compare (in dev/test)
     if Mix.env() != :prod do
       compare_outputs(your_output, raxol_output)
     end
 
-    # Use your implementation (for now)
     your_output
   end
 end
 ```
 
-**Pros:**
-- Zero risk to production
-- Validate Raxol behavior
-- Identify edge cases
-
-**Cons:**
-- Doubled rendering cost (dev/test only)
-- Maintenance overhead
-
-**When to use:** Validating migration, finding gaps
+Zero risk to production. Good for validating migration and finding edge cases. Doubled rendering cost in dev/test.
 
 ### Strategy 2: Feature Flagging
 
-Gradually roll out Raxol to users:
+Gradually roll out Raxol:
 
 ```elixir
 defmodule MyApp.Renderer do
   def render(data, opts \\ []) do
-    use_raxol? = Keyword.get(opts, :use_raxol, false) ||
-                 Application.get_env(:my_app, :raxol_enabled, false)
-
-    if use_raxol? do
+    if Keyword.get(opts, :use_raxol, false) ||
+       Application.get_env(:my_app, :raxol_enabled, false) do
       render_with_raxol(data)
     else
       render_with_your_code(data)
     end
   end
 end
-
-# config/config.exs
-config :my_app,
-  raxol_enabled: System.get_env("RAXOL_ENABLED") == "true"
 ```
 
-**Pros:**
-- Gradual rollout (1% → 10% → 100%)
-- Easy rollback
-- A/B testing possible
-
-**Cons:**
-- Maintain both paths
-- Feature flag complexity
-
-**When to use:** Production migration with safety net
+Easy rollback. A/B testing possible. You maintain both paths until the switch is complete.
 
 ### Strategy 3: Module Replacement
 
-Replace your module with Raxol adapter:
+Replace your module with a Raxol adapter:
 
 ```elixir
 # Before:
@@ -158,7 +82,6 @@ end
 
 # After:
 defmodule MyApp.Buffer do
-  # Delegate to Raxol
   defdelegate create(width, height), to: Raxol.Core.Buffer, as: :create_blank_buffer
   defdelegate write_at(buffer, x, y, text), to: Raxol.Core.Buffer
   defdelegate write_at(buffer, x, y, text, style), to: Raxol.Core.Buffer
@@ -168,551 +91,99 @@ defmodule MyApp.Buffer do
 end
 ```
 
-**Pros:**
-- Minimal code changes
-- Keep existing API
-- Gradual internal migration
-
-**Cons:**
-- API compatibility required
-- May hide Raxol features
-
-**When to use:** Drop-in replacement, minimal changes
+Minimal code changes. Keep your existing API.
 
 ### Strategy 4: Clean Break
 
-Rewrite using Raxol from scratch:
-
-```elixir
-# Old code (delete):
-defmodule MyApp.OldRenderer do
-  # 500 lines of custom buffer code
-end
-
-# New code:
-defmodule MyApp.Renderer do
-  alias Raxol.Core.{Buffer, Box, Renderer}
-
-  def render(data) do
-    Buffer.create_blank_buffer(80, 24)
-    |> Box.draw_box(0, 0, 80, 24, :single)
-    |> Buffer.write_at(10, 5, data.title)
-  end
-end
-```
-
-**Pros:**
-- Simplest long-term
-- Full Raxol feature access
-- No legacy code
-
-**Cons:**
-- Highest risk
-- Requires comprehensive testing
-- All-or-nothing
-
-**When to use:** Small codebases, greenfield projects
+Rewrite from scratch using Raxol. Simplest long-term, but highest risk and requires comprehensive testing. Best for small codebases or greenfield projects.
 
 ---
 
 ## Adapting Your Buffer Format
 
-Most DIY implementations use similar structures. Here's how to adapt.
-
-### Common DIY Format
-
-```elixir
-# Your buffer (typical structure)
-%{
-  width: 80,
-  height: 24,
-  cells: [
-    # Flat array of cells
-    %{x: 0, y: 0, char: "H", fg: :cyan},
-    %{x: 1, y: 0, char: "e", fg: :cyan},
-    # ...
-  ]
-}
-```
-
-### Raxol Format
-
-```elixir
-# Raxol buffer (nested structure)
-%{
-  width: 80,
-  height: 24,
-  lines: [
-    # Array of lines
-    %{cells: [
-      # Each line has cells
-      %{char: "H", style: %{fg_color: :cyan}},
-      %{char: "e", style: %{fg_color: :cyan}},
-      # ...
-    ]},
-    # ...
-  ]
-}
-```
-
-### Adapter: Your Format → Raxol
+Most DIY implementations use similar structures. Here's a typical adapter:
 
 ```elixir
 defmodule MyApp.BufferAdapter do
-  @doc "Convert your buffer format to Raxol format"
   def to_raxol(your_buffer) do
-    # Create blank Raxol buffer
     raxol_buffer = Raxol.Core.Buffer.create_blank_buffer(
       your_buffer.width,
       your_buffer.height
     )
 
-    # Transfer cells
     Enum.reduce(your_buffer.cells, raxol_buffer, fn cell, buf ->
-      style = convert_style(cell)
+      style = %{
+        fg_color: cell.fg,
+        bg_color: Map.get(cell, :bg),
+        bold: Map.get(cell, :bold, false)
+      }
       Raxol.Core.Buffer.set_cell(buf, cell.x, cell.y, cell.char, style)
     end)
   end
 
-  @doc "Convert your style format to Raxol style"
-  defp convert_style(cell) do
-    %{
-      fg_color: cell.fg,
-      bg_color: Map.get(cell, :bg),
-      bold: Map.get(cell, :bold, false),
-      italic: Map.get(cell, :italic, false),
-      underline: Map.get(cell, :underline, false)
-    }
-  end
-end
-```
-
-### Adapter: Raxol → Your Format
-
-```elixir
-defmodule MyApp.BufferAdapter do
-  @doc "Convert Raxol buffer to your format (if needed)"
   def from_raxol(raxol_buffer) do
     cells =
       for {line, y} <- Enum.with_index(raxol_buffer.lines),
           {cell, x} <- Enum.with_index(line.cells) do
-        %{
-          x: x,
-          y: y,
-          char: cell.char,
-          fg: cell.style[:fg_color],
-          bg: cell.style[:bg_color],
-          bold: cell.style[:bold] || false
-        }
+        %{x: x, y: y, char: cell.char, fg: cell.style[:fg_color]}
       end
 
-    %{
-      width: raxol_buffer.width,
-      height: raxol_buffer.height,
-      cells: cells
-    }
+    %{width: raxol_buffer.width, height: raxol_buffer.height, cells: cells}
   end
 end
 ```
 
-### Performance Consideration
-
-**Adapters add overhead.** Benchmark both approaches:
-
-```elixir
-# Benchmark: Direct Raxol
-{time_raxol, _} = :timer.tc(fn ->
-  Raxol.Core.Buffer.create_blank_buffer(80, 24)
-  |> Raxol.Core.Buffer.write_at(10, 5, "Test")
-end)
-
-# Benchmark: Adapter path
-{time_adapter, _} = :timer.tc(fn ->
-  your_buffer = YourRenderer.create_buffer(80, 24)
-  raxol_buffer = BufferAdapter.to_raxol(your_buffer)
-end)
-
-IO.puts("Direct: #{time_raxol}μs, Adapter: #{time_adapter}μs")
-# If adapter is > 2x slower, consider Strategy 3 or 4
-```
+Adapters add overhead. Benchmark both paths -- if the adapter is > 2x slower, consider Strategy 3 or 4.
 
 ---
 
 ## Incremental Migration
 
-Step-by-step migration plan.
+**Phase 1:** Add `{:raxol_core, "~> 2.0"}` to deps. Run tests, ensure no conflicts.
 
-### Phase 1: Add Raxol Dependency (Week 1)
+**Phase 2:** Create adapters. Write round-trip tests to verify conversions preserve data.
 
-```elixir
-# mix.exs
-def deps do
-  [
-    {:raxol_core, "~> 2.0"},  # Start with just core
-    # ... your other deps
-  ]
-end
-```
+**Phase 3:** If you're using Phoenix, add `{:raxol_liveview, "~> 2.0"}` and use `Raxol.LiveView.TerminalComponent` for web rendering. Keep your buffer code, convert via adapter.
 
-Run tests, ensure no conflicts.
+**Phase 4:** Gradually replace custom components -- box drawing, text rendering, diffing -- with Raxol equivalents.
 
-### Phase 2: Create Adapters (Week 1-2)
+**Phase 5:** Once confidence is high, remove old code and adapters.
 
-```elixir
-# test/support/buffer_adapter_test.exs
-defmodule MyApp.BufferAdapterTest do
-  use ExUnit.Case
-
-  test "converts your buffer to Raxol" do
-    your_buffer = YourRenderer.create_buffer(10, 5)
-    your_buffer = YourRenderer.write_at(your_buffer, 2, 3, "Hi")
-
-    raxol_buffer = BufferAdapter.to_raxol(your_buffer)
-
-    cell = Raxol.Core.Buffer.get_cell(raxol_buffer, 2, 3)
-    assert cell.char == "H"
-  end
-
-  test "round-trip conversion preserves data" do
-    original = YourRenderer.create_buffer(10, 5)
-    original = YourRenderer.write_at(original, 2, 3, "Test")
-
-    raxol = BufferAdapter.to_raxol(original)
-    back = BufferAdapter.from_raxol(raxol)
-
-    assert buffer_equal?(original, back)
-  end
-end
-```
-
-### Phase 3: Add LiveView Support (Week 2-3)
-
-If you're using Phoenix:
-
-```elixir
-# mix.exs
-def deps do
-  [
-    {:raxol_core, "~> 2.0"},
-    {:raxol_liveview, "~> 2.0"},  # Add LiveView support
-    # ...
-  ]
-end
-```
-
-```elixir
-# lib/my_app_web/live/terminal_live.ex
-defmodule MyAppWeb.TerminalLive do
-  use MyAppWeb, :live_view
-
-  def render(assigns) do
-    ~H"""
-    <.live_component
-      module={Raxol.LiveView.TerminalComponent}
-      id="terminal"
-      buffer={@raxol_buffer}
-      theme={:nord}
-    />
-    """
-  end
-
-  def handle_info(:update, socket) do
-    # Your existing logic
-    your_buffer = YourRenderer.update(socket.assigns.your_buffer)
-
-    # Convert to Raxol for rendering
-    raxol_buffer = BufferAdapter.to_raxol(your_buffer)
-
-    {:noreply, assign(socket,
-      your_buffer: your_buffer,
-      raxol_buffer: raxol_buffer
-    )}
-  end
-end
-```
-
-### Phase 4: Replace Components (Week 3-6)
-
-Gradually replace custom components:
-
-```elixir
-# Week 3: Replace box drawing
-# Before:
-your_buffer = YourRenderer.draw_box(buffer, 0, 0, 10, 5)
-
-# After:
-raxol_buffer = Raxol.Core.Box.draw_box(buffer, 0, 0, 10, 5, :single)
-
-# Week 4: Replace text rendering
-# Before:
-your_buffer = YourRenderer.write_colored(buffer, 5, 3, "Text", :cyan)
-
-# After:
-raxol_buffer = Raxol.Core.Buffer.write_at(buffer, 5, 3, "Text", %{fg_color: :cyan})
-
-# Week 5: Replace diffing
-# Before:
-diff = YourRenderer.calculate_diff(old, new)
-
-# After:
-diff = Raxol.Core.Renderer.render_diff(old, new)
-```
-
-### Phase 5: Remove Old Code (Week 6+)
-
-Once confidence is high:
-
-```bash
-# Archive old code (don't delete yet)
-git mv lib/my_app/old_renderer.ex lib/my_app/archived/
-
-# Update imports throughout codebase
-# YourRenderer -> Raxol.Core.Buffer
-# YourRenderer.Box -> Raxol.Core.Box
-
-# Remove adapters (no longer needed)
-git rm lib/my_app/buffer_adapter.ex
-```
-
-### Phase 6: Monitor & Optimize (Ongoing)
-
-```elixir
-# Add performance tracking
-defmodule MyApp.RenderMetrics do
-  def track_render(fun) do
-    {time, result} = :timer.tc(fun)
-
-    MyApp.Metrics.histogram("terminal.render_time_us", time)
-
-    if time > 16_000 do
-      Logger.warn("Slow render: #{time}μs")
-    end
-
-    result
-  end
-end
-```
+**Phase 6:** Add performance tracking. Log slow renders.
 
 ---
 
 ## Feature Parity Checklist
 
-Ensure Raxol can do everything your code does.
+Before migrating, verify Raxol covers your needs:
 
-### Buffer Operations
+- [ ] Create/write/read/clear/resize buffers
+- [ ] Foreground/background colors (16, 256, RGB)
+- [ ] Bold, italic, underline, strikethrough
+- [ ] Box drawing (single, double, rounded, custom)
+- [ ] Full and diff rendering
+- [ ] ANSI and HTML output
+- [ ] Unicode support (graphemes, wide chars, emoji)
+- [ ] < 1ms buffer ops, < 16ms full renders
 
-- [ ] Create buffer with dimensions
-- [ ] Write text at coordinates
-- [ ] Read cell at coordinates
-- [ ] Clear buffer
-- [ ] Resize buffer
-- [ ] Fill rectangular area
-- [ ] Copy region to another buffer
-
-### Styling
-
-- [ ] Foreground colors (16 basic)
-- [ ] Background colors (16 basic)
-- [ ] 256-color palette support
-- [ ] RGB true color support
-- [ ] Bold text
-- [ ] Italic text
-- [ ] Underline
-- [ ] Strikethrough
-- [ ] Reverse video
-- [ ] Custom attributes
-
-### Box Drawing
-
-- [ ] Single-line boxes
-- [ ] Double-line boxes
-- [ ] Rounded corners
-- [ ] Horizontal lines
-- [ ] Vertical lines
-- [ ] Custom line characters
-
-### Rendering
-
-- [ ] Full buffer render to string
-- [ ] Diff rendering (only changed cells)
-- [ ] ANSI escape code generation
-- [ ] HTML output (for web)
-- [ ] Cursor positioning
-
-### Advanced Features
-
-- [ ] Unicode support (grapheme clusters)
-- [ ] Wide characters (CJK)
-- [ ] Zero-width characters (combining diacritics)
-- [ ] Emoji support
-- [ ] Sixel graphics (if applicable)
-- [ ] Custom rendering backends
-
-### Performance
-
-- [ ] < 1ms buffer operations
-- [ ] < 16ms full renders (60fps)
-- [ ] Memory efficient (< 100KB per buffer)
-- [ ] Diff calculation < 2ms
-
-**If any features are missing:** Open a GitHub issue! We'll add them or help you extend Raxol.
+If something's missing, open a GitHub issue.
 
 ---
 
-## Case Study: droodotfoo
+## FAQ
 
-Real-world example of DIY → Raxol migration.
+**Will this break my existing code?** No. Raxol runs alongside your code. Use adapters for gradual migration.
 
-### Their Setup (Before)
+**What if Raxol is missing a feature I need?** Keep that part of your code, extend Raxol with a plugin, or open a GitHub issue.
 
-```elixir
-# lib/droodotfoo/terminal_bridge.ex
-defmodule Droodotfoo.TerminalBridge do
-  use GenServer
-
-  # Custom buffer format
-  defstruct [:width, :height, :cells, :cache]
-
-  # Custom HTML rendering
-  def buffer_to_html(buffer) do
-    # ~300 lines of conversion logic
-  end
-
-  # Custom diffing
-  def calculate_diff(old, new) do
-    # ~100 lines of diff algorithm
-  end
-end
-```
-
-### Pain Points
-
-1. **Maintenance burden** - 500+ lines of buffer code to maintain
-2. **No testing utilities** - Hard to test rendering logic
-3. **Performance unknowns** - No benchmarking infrastructure
-4. **Missing features** - Wanted more themes, better diffing
-
-### Migration Approach (Recommended)
-
-**Phase 1: LiveView Integration Only**
-
-```elixir
-# mix.exs
-def deps do
-  [
-    {:raxol_liveview, "~> 2.0"},  # Just for HTML rendering
-    # Keep their buffer code for now
-  ]
-end
-```
-
-**Phase 2: Adapter**
-
-```elixir
-defmodule Droodotfoo.RaxolAdapter do
-  def to_raxol(droodotfoo_buffer) do
-    # Convert their format to Raxol
-    Raxol.Core.Buffer.create_blank_buffer(
-      droodotfoo_buffer.width,
-      droodotfoo_buffer.height
-    )
-    |> populate_from_droodotfoo(droodotfoo_buffer)
-  end
-
-  defp populate_from_droodotfoo(raxol_buffer, droodotfoo_buffer) do
-    Enum.reduce(droodotfoo_buffer.cells, raxol_buffer, fn {coord, cell}, buf ->
-      {x, y} = coord
-      style = %{
-        fg_color: cell.fg_color,
-        bg_color: cell.bg_color,
-        bold: cell.bold
-      }
-      Raxol.Core.Buffer.set_cell(buf, x, y, cell.char, style)
-    end)
-  end
-end
-```
-
-**Phase 3: Replace HTML Rendering**
-
-```elixir
-# Before: 300 lines of custom code
-Droodotfoo.TerminalBridge.buffer_to_html(buffer)
-
-# After: One line
-buffer
-|> Droodotfoo.RaxolAdapter.to_raxol()
-|> Raxol.LiveView.TerminalBridge.buffer_to_html()
-```
-
-**Result:**
-- 300 lines deleted
-- 5 built-in themes (vs 1 custom)
-- Better performance (1.2ms vs 8ms avg)
-- Easier testing
-
-**Phase 4: (Optional) Full Migration**
-
-Replace buffer implementation:
-
-```elixir
-# Delete custom buffer code (~200 lines)
-# Use Raxol.Core.Buffer directly
-buffer = Raxol.Core.Buffer.create_blank_buffer(80, 24)
-```
-
-### Lessons Learned
-
-1. **Start with LiveView** - Biggest immediate value
-2. **Keep adapters simple** - Don't optimize prematurely
-3. **Measure everything** - Benchmark before/after
-4. **Gradual rollout** - Feature flags in production
-5. **Document differences** - Note any behavior changes
+**Can I contribute my adapter back?** Yes. Open a PR with your adapter in `lib/raxol/adapters/`.
 
 ---
 
-## Getting Help
+## Resources
 
-### Common Questions
-
-**Q: Will this break my existing code?**
-
-A: No. Raxol can run alongside your code. Use adapters for gradual migration.
-
-**Q: What if Raxol is missing a feature I need?**
-
-A: Three options:
-1. Keep that part of your code (use Raxol for other parts)
-2. Extend Raxol with a plugin
-3. Open a GitHub issue (we'll help add it)
-
-**Q: How long does migration typically take?**
-
-A: Depends on strategy:
-- LiveView only: 1-2 days
-- Partial migration: 2-4 weeks
-- Full migration: 4-8 weeks
-
-**Q: Can I contribute my adapter back to Raxol?**
-
-A: Yes! We'd love to see it. Open a PR with your adapter in `lib/raxol/adapters/`.
-
-### Resources
-
-- **[Quickstart](./QUICKSTART.md)** - Get started quickly
-- **[Core Concepts](./CORE_CONCEPTS.md)** - Understand architecture
-- **[API Reference](../core/BUFFER_API.md)** - Complete function docs
-- **[Cookbook](../cookbook/README.md)** - Practical recipes
-- **GitHub Issues** - Ask questions, request features
-
-### Community Support
-
-- Post in GitHub Discussions
-- Join our Discord (coming soon)
-- Tag @Hydepwns on Twitter/X
-
----
-
-**Ready to migrate?** Start with Strategy 1 (side-by-side) to validate, then choose your path.
-
-Good luck! We're here to help.
+- [Quickstart](./QUICKSTART.md)
+- [Core Concepts](./CORE_CONCEPTS.md)
+- [API Reference](../core/BUFFER_API.md)
+- [Cookbook](../cookbook/README.md)
+- [GitHub Issues](https://github.com/Hydepwns/raxol/issues)

@@ -27,7 +27,7 @@ defmodule Raxol.Core.CircuitBreaker do
   alias Raxol.Core.Runtime.Log
           name: :api_breaker,
           failure_threshold: 5,
-          timeout: 30_000
+          open_timeout: 30_000
       end
 
       # Use the circuit breaker
@@ -41,7 +41,7 @@ defmodule Raxol.Core.CircuitBreaker do
   @default_opts [
     failure_threshold: 5,
     success_threshold: 2,
-    timeout: 60_000,
+    open_timeout: 60_000,
     half_open_timeout: 15_000,
     reset_timeout: 120_000,
     failure_rate_threshold: 0.5,
@@ -55,7 +55,7 @@ defmodule Raxol.Core.CircuitBreaker do
     :success_count,
     :failure_threshold,
     :success_threshold,
-    :timeout,
+    :open_timeout,
     :half_open_timeout,
     :reset_timeout,
     :failure_rate_threshold,
@@ -71,7 +71,7 @@ defmodule Raxol.Core.CircuitBreaker do
   @type breaker_opts :: [
           failure_threshold: pos_integer(),
           success_threshold: pos_integer(),
-          timeout: pos_integer(),
+          open_timeout: pos_integer(),
           half_open_timeout: pos_integer(),
           reset_timeout: pos_integer(),
           failure_rate_threshold: float(),
@@ -143,7 +143,7 @@ defmodule Raxol.Core.CircuitBreaker do
       success_count: 0,
       failure_threshold: Keyword.get(opts, :failure_threshold),
       success_threshold: Keyword.get(opts, :success_threshold),
-      timeout: Keyword.get(opts, :timeout),
+      open_timeout: Keyword.get(opts, :open_timeout),
       half_open_timeout: Keyword.get(opts, :half_open_timeout),
       reset_timeout: Keyword.get(opts, :reset_timeout),
       failure_rate_threshold: Keyword.get(opts, :failure_rate_threshold),
@@ -352,7 +352,7 @@ defmodule Raxol.Core.CircuitBreaker do
 
       last_time ->
         time_since_failure = :timer.now_diff(:os.timestamp(), last_time)
-        time_since_failure >= state.timeout * 1000
+        time_since_failure >= state.open_timeout * 1000
     end
   end
 
@@ -361,7 +361,7 @@ defmodule Raxol.Core.CircuitBreaker do
     state.on_state_change.(state.state, :open)
 
     # Schedule transition to half-open
-    Process.send_after(self(), {:timeout, :half_open}, state.timeout)
+    Process.send_after(self(), {:timeout, :half_open}, state.open_timeout)
 
     %{state | state: :open, metrics: add_state_change(state.metrics, :open)}
   end

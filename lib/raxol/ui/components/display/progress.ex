@@ -195,31 +195,28 @@ defmodule Raxol.UI.Components.Display.Progress do
         type: :box,
         width: width,
         height: 1,
-        attrs:
-          Map.merge(
-            %{
-              fg: border,
-              bg: bg,
-              border: %{
-                top_left: "[",
-                top_right: "]",
-                bottom_left: "[",
-                bottom_right: "]",
-                horizontal: " ",
-                vertical: "|"
-              }
-            },
-            extra_attrs
-          )
-      },
+        style: %{
+          fg: border,
+          bg: bg,
+          border: %{
+            top_left: "[",
+            top_right: "]",
+            bottom_left: "[",
+            bottom_right: "]",
+            horizontal: " ",
+            vertical: "|"
+          }
+        }
+      }
+      |> Map.merge(extra_attrs),
       # Progress fill
       %{
         type: :text,
         # Inside the border
         x: 1,
         y: 0,
-        text: bar_content,
-        attrs: %{
+        content: bar_content,
+        style: %{
           fg: fg,
           bg: bg
         }
@@ -235,10 +232,9 @@ defmodule Raxol.UI.Components.Display.Progress do
             type: :text,
             x: 1,
             y: 0,
-            text: percentage_text,
-            attrs: %{
+            content: percentage_text,
+            style: %{
               fg: text_color,
-              # To show the bar underneath
               bg: :transparent
             }
           }
@@ -261,12 +257,10 @@ defmodule Raxol.UI.Components.Display.Progress do
           label_element = %{
             type: :text,
             x: 0,
-            # Above the progress bar
             y: -1,
-            text: label,
-            attrs: %{
+            content: label,
+            style: %{
               fg: text_color,
-              # Use main background color
               bg: bg
             }
           }

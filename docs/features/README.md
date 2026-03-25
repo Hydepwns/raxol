@@ -1,8 +1,6 @@
 # Features
 
-> [Documentation](../README.md) > Features
-
-Advanced terminal interface features from droodotfoo.
+Terminal interface features: navigation, parsing, search, filesystem, and visual effects.
 
 ## Features
 
@@ -43,6 +41,8 @@ fs = FileSystem.new()
 Visual trails and glow: configurable colors, presets, smooth interpolation.
 
 ```elixir
+alias Raxol.Effects.CursorTrail
+
 trail = CursorTrail.rainbow()
 trail = CursorTrail.update(trail, {x, y})
 buffer = CursorTrail.apply(trail, buffer)
@@ -52,6 +52,8 @@ buffer = CursorTrail.apply(trail, buffer)
 
 ```elixir
 defmodule Terminal do
+  alias Raxol.Effects.CursorTrail
+
   defstruct [:buffer, :vim, :parser, :search, :fs, :trail]
 
   def new do
@@ -78,10 +80,10 @@ end
 
 | Feature | Operation | Time |
 |---------|-----------|------|
-| VIM | Movement | < 1μs |
-| Parser | Execute | ~5μs |
-| Search | 1000 lines | ~100μs |
-| FileSystem | List dir | ~10μs |
-| Trail | Update+apply | ~7μs |
+| VIM | Movement | < 1us |
+| Parser | Execute | ~5us |
+| Search | 1000 lines | ~100us |
+| FileSystem | List dir | ~10us |
+| Trail | Update+apply | ~7us |
 
-Total: < 150μs per frame (60fps = 16ms budget)
+Total: < 150us per frame (60fps = 16ms budget)

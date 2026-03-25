@@ -317,7 +317,9 @@ defmodule Raxol.Terminal.Emulator do
   def clear_screen(emulator) do
     Raxol.Terminal.Operations.ScreenOperations.clear_screen(emulator)
   rescue
-    _ -> emulator
+    error ->
+      Log.warning("clear_screen failed: #{inspect(error)}")
+      emulator
   end
 
   @doc "Clears the specified line."
@@ -423,7 +425,9 @@ defmodule Raxol.Terminal.Emulator do
   def scroll_up(emulator, lines) do
     Raxol.Terminal.Operations.ScrollOperations.scroll_up(emulator, lines)
   rescue
-    _ -> emulator
+    error ->
+      Log.warning("scroll_up failed: #{inspect(error)}")
+      emulator
   end
 
   @doc "Scrolls the display down by the specified number of lines."
@@ -469,7 +473,9 @@ defmodule Raxol.Terminal.Emulator do
   def write_to_output(emulator, data) do
     Raxol.Terminal.Emulator.BufferOperations.write_to_output(emulator, data)
   rescue
-    _ -> emulator
+    error ->
+      Log.warning("write_to_output failed: #{inspect(error)}")
+      emulator
   end
 
   # Dimension and property operations

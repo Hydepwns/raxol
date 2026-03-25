@@ -7,7 +7,6 @@
 defmodule Snake do
   # Use the correct Application behaviour and View DSL
   use Raxol.Core.Runtime.Application
-  import Raxol.View.Elements
 
   alias Raxol.Core.Runtime.Events.Subscription
   alias Raxol.Core.Events.Event

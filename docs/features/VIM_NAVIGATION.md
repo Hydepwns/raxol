@@ -1,7 +1,5 @@
 # VIM Navigation
 
-> [Documentation](../README.md) > [Features](README.md) > VIM Navigation
-
 VIM-style keybindings for terminal buffers.
 
 ## Usage
@@ -67,4 +65,4 @@ def handle_input(state, key) do
 end
 ```
 
-Performance: < 1μs per movement
+Performance: < 1us per movement

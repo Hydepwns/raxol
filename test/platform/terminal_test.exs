@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
   # Skip in CI where these are not available
   @moduletag :platform_specific
 
-  defp render_hello_html do
+  defp render_hello do
     buffer = ScreenBuffer.new(80, 24)
 
     buffer =
@@ -84,41 +84,37 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
 
   describe "platform-specific rendering" do
     test ~c"renders with platform-specific colors" do
-      html = render_hello_html()
-      assert html =~ "<span"
-      assert html =~ ">H<"
-      assert html =~ ">e<"
-      assert html =~ ">l<"
-      assert html =~ ">o<"
+      output = render_hello()
+      assert output =~ "H"
+      assert output =~ "e"
+      assert output =~ "l"
+      assert output =~ "o"
     end
 
     test ~c"handles platform-specific terminal features" do
-      html = render_hello_html()
-      assert html =~ "<span"
-      assert html =~ ">H<"
-      assert html =~ ">e<"
-      assert html =~ ">l<"
-      assert html =~ ">o<"
+      output = render_hello()
+      assert output =~ "H"
+      assert output =~ "e"
+      assert output =~ "l"
+      assert output =~ "o"
     end
   end
 
   describe "platform-specific input handling" do
     test ~c"handles platform-specific key codes" do
-      html = render_hello_html()
-      assert html =~ "<span"
-      assert html =~ ">H<"
-      assert html =~ ">e<"
-      assert html =~ ">l<"
-      assert html =~ ">o<"
+      output = render_hello()
+      assert output =~ "H"
+      assert output =~ "e"
+      assert output =~ "l"
+      assert output =~ "o"
     end
 
     test ~c"handles platform-specific mouse events" do
-      html = render_hello_html()
-      assert html =~ "<span"
-      assert html =~ ">H<"
-      assert html =~ ">e<"
-      assert html =~ ">l<"
-      assert html =~ ">o<"
+      output = render_hello()
+      assert output =~ "H"
+      assert output =~ "e"
+      assert output =~ "l"
+      assert output =~ "o"
     end
   end
 end

@@ -54,7 +54,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
     end
 
     @impl true
-    def handle_event(component, event, _context) do
+    def handle_event(event, component, _context) do
       updated = Map.update!(component, :handle_event_count, &(&1 + 1))
 
       updated =
@@ -141,7 +141,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       component = TestComponent.new(value: "initial")
       event = %{type: :test, value: "updated"}
 
-      {:update, updated} = TestComponent.handle_event(component, event, %{})
+      {:update, updated} = TestComponent.handle_event(event, component, %{})
 
       assert updated.value == "updated"
       assert updated.handle_event_count == 1
@@ -152,7 +152,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       component = TestComponent.new()
       event = %{type: :no_change}
 
-      {:handled, updated} = TestComponent.handle_event(component, event, %{})
+      {:handled, updated} = TestComponent.handle_event(event, component, %{})
 
       assert updated.handle_event_count == 1
       assert Enum.at(updated.lifecycle_events, 0) == {:handle_event, event}
@@ -162,7 +162,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       component = TestComponent.new()
       event = %{type: :unknown}
 
-      result = TestComponent.handle_event(component, event, %{})
+      result = TestComponent.handle_event(event, component, %{})
 
       assert result == :passthrough
     end
@@ -173,18 +173,18 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       # Handle a series of events
       {:update, after_first} =
         TestComponent.handle_event(
-          component,
           %{type: :test, value: "first"},
+          component,
           %{}
         )
 
       {:handled, after_second} =
-        TestComponent.handle_event(after_first, %{type: :no_change}, %{})
+        TestComponent.handle_event(%{type: :no_change}, after_first, %{})
 
       {:update, after_third} =
         TestComponent.handle_event(
-          after_second,
           %{type: :test, value: "third"},
+          after_second,
           %{}
         )
 

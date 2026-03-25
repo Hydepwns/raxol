@@ -4,38 +4,8 @@ defmodule RaxolWeb.TerminalChannelTest do
   # Note: This is a unit test file for the TerminalChannel module.
   # For full integration tests, use Phoenix.ChannelTest with proper endpoint setup.
 
-  alias Raxol.Web.PersistentStore
-  alias Raxol.Web.SessionBridge
-
   setup do
-    # Use unique names to avoid conflicts between tests
-    test_id = :erlang.unique_integer([:positive])
-
-    # Start SessionBridge with unique name - ExUnit will clean up
-    session_bridge_name = :"SessionBridge_#{test_id}"
-
-    case Process.whereis(SessionBridge) do
-      nil ->
-        start_supervised!({SessionBridge, name: session_bridge_name})
-
-      _pid ->
-        :ok
-    end
-
-    # Start PersistentStore with unique name - ExUnit will clean up
-    persistent_store_name = :"PersistentStore_#{test_id}"
-
-    case Process.whereis(PersistentStore) do
-      nil ->
-        start_supervised!({PersistentStore, name: persistent_store_name})
-
-      _pid ->
-        :ok
-    end
-
-    # Ensure module is loaded before any tests run
     Code.ensure_loaded!(RaxolWeb.TerminalChannel)
-
     :ok
   end
 
@@ -236,55 +206,5 @@ defmodule RaxolWeb.TerminalChannelTest do
   defp serialize_color(color), do: color
 end
 
-defmodule RaxolWeb.TerminalChannelIntegrationTest do
-  @moduledoc """
-  Integration tests for TerminalChannel.
-
-  These tests require the full Phoenix endpoint to be running.
-  They are tagged with :integration and can be run separately.
-  """
-  use ExUnit.Case, async: false
-
-  # These tests would use Phoenix.ChannelTest
-  # Keeping them as placeholders for when the endpoint is configured
-
-  @moduletag :integration
-
-  describe "channel join" do
-    @tag :skip
-    test "joins successfully with valid session_id" do
-      # Would use Phoenix.ChannelTest.socket/2 and subscribe_and_join/4
-    end
-
-    @tag :skip
-    test "rejects join with invalid session_id" do
-      # Would test error response
-    end
-  end
-
-  describe "input handling" do
-    @tag :skip
-    test "processes input and broadcasts output" do
-      # Would test push and receive
-    end
-
-    @tag :skip
-    test "enforces rate limiting" do
-      # Would test rate limit enforcement
-    end
-  end
-
-  describe "resize handling" do
-    @tag :skip
-    test "resizes terminal and broadcasts to collaborators" do
-      # Would test resize message
-    end
-  end
-
-  describe "presence tracking" do
-    @tag :skip
-    test "tracks user presence on join" do
-      # Would test presence updates
-    end
-  end
-end
+# Note: TerminalChannelIntegrationTest was removed as it contained only empty stub tests.
+# Integration tests requiring full Phoenix endpoint should be implemented when needed.

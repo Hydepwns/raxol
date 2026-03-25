@@ -411,7 +411,7 @@ defmodule Raxol.Terminal.Input.Manager do
       manager.buffer.events
       |> Enum.map_join("", fn %{char: char} -> <<char>> end)
 
-    history = manager.input_history ++ [line]
+    history = [line | manager.input_history]
     %{manager | buffer: %{manager.buffer | events: []}, input_history: history}
   end
 

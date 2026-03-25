@@ -4,114 +4,171 @@ defmodule Raxol.UI.Components.TerminalTest do
   alias Raxol.Core.Events.Event
   alias Raxol.UI.Components.Terminal
 
-  defp initial_terminal_state(opts \\ []) do
-    Terminal.init(opts)
+  defp init_terminal(opts \\ []) do
+    {:ok, state} = Terminal.init(opts)
+    state
   end
 
-  describe "Terminal component" do
-    test "initializes with default values" do
-      terminal = initial_terminal_state()
-
-      assert terminal.id == nil
-      assert terminal.width == 80
-      assert terminal.height == 24
-      assert terminal.buffer == []
-      assert terminal.style == %{}
+  describe "init/1" do
+    test "initializes with default dimensions" do
+      state = init_terminal()
+      assert state.width == 80
+      assert state.height == 24
+      assert state.id == nil
+      assert state.style == %{}
+      assert state.emulator != nil
     end
 
-    test "handles resize events (updates width/height)" do
-      terminal = initial_terminal_state()
-      event = %Event{type: :resize, data: %{cols: 100, rows: 50}}
-
-      {new_terminal_state, _commands} =
-        Terminal.handle_event(event, %{}, terminal)
-
-      assert new_terminal_state.width == 80
-      assert new_terminal_state.height == 24
+    test "initializes with custom dimensions" do
+      state = init_terminal(width: 40, height: 10, id: :term1)
+      assert state.width == 40
+      assert state.height == 10
+      assert state.id == :term1
     end
 
-    test "switches to insert mode on 'i' key (Placeholder - checks buffer)" do
-      terminal = initial_terminal_state()
-      event = %Event{type: :key, data: %{key: :i}}
-
-      {new_terminal_state, _commands} =
-        Terminal.handle_event(event, %{}, terminal)
-
-      assert new_terminal_state.buffer == ["Key: :i"]
+    test "accepts map props" do
+      {:ok, state} = Terminal.init(%{width: 60, height: 20})
+      assert state.width == 60
+      assert state.height == 20
     end
 
-    test "switches to command mode on \"\x3A\" key (Placeholder - checks buffer)" do
-      terminal = initial_terminal_state()
-      event = %Event{type: :key, data: %{key: :colon}}
-
-      {new_terminal_state, _commands} =
-        Terminal.handle_event(event, %{}, terminal)
-
-      assert new_terminal_state.buffer == ["Key: :colon"]
+    test "emulator has matching dimensions" do
+      state = init_terminal(width: 40, height: 10)
+      assert state.emulator.width == 40
+      assert state.emulator.height == 10
     end
+  end
 
-    test "handles character input in insert mode (Placeholder - checks buffer)" do
-      terminal = initial_terminal_state()
+  describe "render/2" do
+    test "renders box with column of text rows" do
+      state = init_terminal(width: 10, height: 3, id: :render_test)
+      rendered = Terminal.render(state, %{})
 
-      insert_mode_event = %Event{type: :key, data: %{key: :i}}
-
-      {insert_mode_state, _} =
-        Terminal.handle_event(insert_mode_event, %{}, terminal)
-
-      char_event = %Event{type: :key, data: %{key: "a"}}
-
-      {final_state, _} =
-        Terminal.handle_event(char_event, %{}, insert_mode_state)
-
-      assert final_state.buffer == ["Key: :i", "Key: \"a\""]
-    end
-
-    test "exits insert mode on escape key (Placeholder - checks buffer)" do
-      terminal = initial_terminal_state()
-
-      insert_mode_event = %Event{type: :key, data: %{key: :i}}
-
-      {insert_mode_state, _} =
-        Terminal.handle_event(insert_mode_event, %{}, terminal)
-
-      assert insert_mode_state.buffer == ["Key: :i"]
-
-      escape_event = %Event{type: :key, data: %{key: :escape}}
-
-      {final_state, _} =
-        Terminal.handle_event(escape_event, %{}, insert_mode_state)
-
-      assert final_state.buffer == ["Key: :i", "Key: :escape"]
-    end
-
-    test "renders visible portion of buffer" do
-      terminal = initial_terminal_state(buffer: ["Line 1", "Line 2"])
-      rendered = Terminal.render(terminal, %{})
-
-      assert is_map(rendered)
-      assert Map.has_key?(rendered, :type)
       assert rendered.type == :box
-      assert Map.get(rendered.attrs, :id) == terminal.id
-      assert Map.get(rendered.attrs, :width) == terminal.width
-      assert Map.get(rendered.attrs, :height) == terminal.height
-      assert Map.get(rendered.attrs, :style) == terminal.style
+      assert rendered.id == :render_test
+      assert rendered.width == 10
+      assert rendered.height == 3
 
       column = rendered.children
-      assert is_map(column)
-      assert Map.has_key?(column, :type)
       assert column.type == :column
+      assert length(column.children) == 3
+    end
 
-      assert is_list(column.children)
-      assert length(column.children) == 2
-      [label1, label2] = column.children
-      assert is_map(label1)
-      assert Map.has_key?(label1, :type)
-      assert label1.type == :label
-      assert Map.get(label1.attrs, :content) == "Line 1"
-      assert is_map(label2)
-      assert Map.has_key?(label2, :type)
-      assert label2.type == :label
-      assert Map.get(label2.attrs, :content) == "Line 2"
+    test "empty buffer renders rows of spaces" do
+      state = init_terminal(width: 5, height: 2)
+      rendered = Terminal.render(state, %{})
+
+      column = rendered.children
+      for row_el <- column.children do
+        content = extract_content(row_el)
+        # Each row should be 5 spaces (empty cells)
+        assert String.length(content) == 5
+        assert String.trim(content) == ""
+      end
+    end
+
+    test "renders written text" do
+      state = init_terminal(width: 10, height: 3)
+      {state, []} = Terminal.update({:write, "Hello"}, state)
+      rendered = Terminal.render(state, %{})
+
+      column = rendered.children
+      first_row = hd(column.children)
+      content = extract_content(first_row)
+      assert content =~ "Hello"
+    end
+
+    test "renders multi-line text" do
+      state = init_terminal(width: 10, height: 3)
+      {state, []} = Terminal.update({:write, "AB\nCD"}, state)
+      rendered = Terminal.render(state, %{})
+
+      column = rendered.children
+      rows = column.children
+      assert extract_content(Enum.at(rows, 0)) =~ "AB"
+      assert extract_content(Enum.at(rows, 1)) =~ "CD"
     end
   end
+
+  describe "update/2" do
+    test "write adds text to buffer" do
+      state = init_terminal(width: 20, height: 5)
+      {updated, []} = Terminal.update({:write, "test"}, state)
+      assert updated.emulator != state.emulator
+    end
+
+    test "clear resets the buffer" do
+      state = init_terminal(width: 20, height: 5)
+      {state, []} = Terminal.update({:write, "something"}, state)
+      {cleared, []} = Terminal.update({:clear}, state)
+
+      rendered = Terminal.render(cleared, %{})
+      column = rendered.children
+      first_content = extract_content(hd(column.children))
+      assert String.trim(first_content) == ""
+    end
+
+    test "resize updates dimensions" do
+      state = init_terminal(width: 80, height: 24)
+      {resized, []} = Terminal.update({:resize, 40, 10}, state)
+      assert resized.width == 40
+      assert resized.height == 10
+      assert resized.emulator.width == 40
+      assert resized.emulator.height == 10
+    end
+
+    test "unknown messages pass through" do
+      state = init_terminal()
+      {same, []} = Terminal.update(:unknown, state)
+      assert same == state
+    end
+  end
+
+  describe "handle_event/3" do
+    test "key event writes character to buffer" do
+      state = init_terminal(width: 20, height: 5)
+      event = %Event{type: :key, data: %{key: "a"}}
+      {updated, []} = Terminal.handle_event(event, state, %{})
+
+      rendered = Terminal.render(updated, %{})
+      column = rendered.children
+      first_content = extract_content(hd(column.children))
+      assert first_content =~ "a"
+    end
+
+    test "resize event updates dimensions" do
+      state = init_terminal(width: 80, height: 24)
+      event = %Event{type: :resize, data: %{width: 40, height: 10}}
+      {updated, []} = Terminal.handle_event(event, state, %{})
+      assert updated.width == 40
+      assert updated.height == 10
+    end
+
+    test "unknown events pass through" do
+      state = init_terminal()
+      event = %Event{type: :mouse, data: %{x: 0, y: 0}}
+      {same, []} = Terminal.handle_event(event, state, %{})
+      assert same == state
+    end
+  end
+
+  describe "mount/1 and unmount/1" do
+    test "mount returns {state, []}" do
+      state = init_terminal()
+      assert {^state, []} = Terminal.mount(state)
+    end
+
+    test "unmount returns state" do
+      state = init_terminal()
+      assert Terminal.unmount(state) == state
+    end
+  end
+
+  # Extract text content from a rendered row element (may be a single text or a row of spans)
+  defp extract_content(%{type: :text, content: content}), do: content
+  defp extract_content(%{type: :row, children: children}) do
+    Enum.map_join(children, "", fn %{content: c} -> c end)
+  end
+  defp extract_content(%{content: content}), do: content
+  defp extract_content(_), do: ""
 end

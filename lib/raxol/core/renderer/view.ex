@@ -538,6 +538,83 @@ defmodule Raxol.Core.Renderer.View do
     Raxol.Core.Renderer.View.Layout.Flex.column(opts)
   end
 
+  defmacro column(opts, do: block) do
+    quote do
+      Raxol.Core.Renderer.View.validate_keyword_opts(
+        unquote(opts),
+        "View.column macro"
+      )
+
+      Raxol.Core.Renderer.View.Layout.Flex.column(
+        Keyword.merge(
+          Raxol.Core.Renderer.View.ensure_keyword(unquote(opts)),
+          Raxol.Core.Renderer.View.ensure_keyword(children: unquote(block))
+        )
+      )
+    end
+  end
+
+  @doc """
+  Creates a split pane layout that distributes space between children by ratio.
+
+  ## Examples
+
+      View.split :horizontal, ratio: {1, 2} do
+        [left_panel, right_panel]
+      end
+
+      View.split :vertical do
+        [top, bottom]
+      end
+  """
+  defmacro split(direction, opts, do: block) do
+    quote do
+      Raxol.UI.Layout.SplitPane.new(
+        direction: unquote(direction),
+        ratio: Keyword.get(unquote(opts), :ratio, {1, 1}),
+        min_size: Keyword.get(unquote(opts), :min_size, 5),
+        id: Keyword.get(unquote(opts), :id),
+        children: unquote(block)
+      )
+    end
+  end
+
+  defmacro split(direction, do: block) do
+    quote do
+      Raxol.UI.Layout.SplitPane.new(
+        direction: unquote(direction),
+        children: unquote(block)
+      )
+    end
+  end
+
+  @doc """
+  Creates a split pane from a named preset.
+
+  ## Presets
+
+    * `:sidebar` - Horizontal, ratio `{1, 3}`
+    * `:dashboard` - Horizontal outer `{1, 3}` with vertical inner right `{3, 1}`
+    * `:triple` - Horizontal 3-pane, ratio `{1, 1, 1}`
+    * `:stacked` - Vertical 2-pane, ratio `{1, 1}`
+
+  ## Examples
+
+      View.split_layout :sidebar do
+        [sidebar, main_content]
+      end
+  """
+  defmacro split_layout(preset, do: block) do
+    quote do
+      Raxol.UI.Layout.SplitPane.from_preset(
+        unquote(preset),
+        unquote(block)
+      )
+    end
+  end
+
+  defdelegate split_pane(opts \\ []), to: Raxol.UI.Layout.SplitPane, as: :new
+
   @doc """
   Creates a button element.
 
@@ -611,9 +688,14 @@ defmodule Raxol.Core.Renderer.View do
       rendered_view = unquote(block)
 
       rendered_view
-      |> Map.merge(unquote(opts))
-      |> normalize_spacing()
+      |> Map.merge(Map.new(unquote(opts)))
+      |> Raxol.Core.Renderer.View.do_normalize_spacing()
     end
+  end
+
+  @doc false
+  def do_normalize_spacing(view) do
+    normalize_spacing(view)
   end
 
   defp normalize_spacing(view) do
@@ -676,6 +758,45 @@ defmodule Raxol.Core.Renderer.View do
   """
   def shadow(opts \\ []) do
     Components.shadow(opts)
+  end
+
+  # Delegate unique Components functions so View is the single complete DSL.
+  defdelegate label(opts \\ []), to: Raxol.View.Components
+  defdelegate input(opts \\ []), to: Raxol.View.Components
+  defdelegate list(opts \\ []), to: Raxol.View.Components
+  defdelegate spacer(opts \\ []), to: Raxol.View.Components
+  defdelegate divider(opts \\ []), to: Raxol.View.Components
+  defdelegate progress(opts \\ []), to: Raxol.View.Components
+  defdelegate modal(opts \\ []), to: Raxol.View.Components
+  defdelegate select(opts \\ []), to: Raxol.View.Components
+  defdelegate radio_group(opts \\ []), to: Raxol.View.Components
+  defdelegate textarea(opts \\ []), to: Raxol.View.Components
+  defdelegate container(opts \\ []), to: Raxol.View.Components
+  defdelegate tabs(opts \\ []), to: Raxol.View.Components
+  defdelegate span(content, opts \\ []), to: Raxol.View.Components
+
+  @doc """
+  Creates a process-isolated component node.
+
+  The component module runs in its own GenServer process under
+  `Raxol.DynamicSupervisor`. If it crashes, the supervisor restarts it
+  with fresh state from `init/1` -- the rest of the app continues.
+
+  ## Parameters
+    * `module` - Component module implementing `init/1`, `render/2`, and optionally `update/2`
+    * `props` - Initial properties passed to `init/1`
+
+  ## Examples
+
+      process_component(MyHeavyWidget, %{path: "/tmp"})
+  """
+  def process_component(module, props \\ %{}) do
+    %{
+      type: :process_component,
+      module: module,
+      props: props,
+      id: "pc-#{inspect(module)}"
+    }
   end
 
   defp process_layout_result(result, _view), do: result

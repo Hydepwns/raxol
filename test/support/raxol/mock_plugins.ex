@@ -220,14 +220,8 @@ defmodule Raxol.Test.MockPlugins do
 
     def get_commands do
       [
-        %{
-          name: :induce_crash,
-          description: "Raises an error to simulate a plugin crash."
-        },
-        %{
-          name: :toggle_crash_on_command,
-          description: "Toggles whether induce_crash actually crashes."
-        }
+        {:induce_crash, :handle_command, 2},
+        {:toggle_crash_on_command, :handle_command, 2}
       ]
     end
 

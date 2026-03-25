@@ -245,6 +245,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
   end
 
   describe "performance stress tests" do
+    @tag :slow
     property "parser handles rapid alternation efficiently" do
       check all count <- integer(100..500),
                 max_runs: 20 do
@@ -265,6 +266,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
       end
     end
 
+    @tag :slow
     property "parser handles mixed content types efficiently" do
       check all segments <- list_of(
                   frequency([

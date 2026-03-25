@@ -111,6 +111,11 @@ defmodule Raxol.UI.Components.Input.Button do
   """
   @impl true
   def render(button, context) do
+    focused =
+      Raxol.UI.FocusHelper.focused?(button.id, context) or button.focused
+
+    button = %{button | focused: focused}
+
     merged_style = build_merged_style(button, context)
     {fg, bg} = resolve_colors(button, merged_style)
 
@@ -152,8 +157,8 @@ defmodule Raxol.UI.Components.Input.Button do
 
   ## Parameters
 
-  * `button` - The button component
   * `event` - The input event to handle
+  * `button` - The button component state
   * `context` - The event context
 
   ## Returns
@@ -163,21 +168,21 @@ defmodule Raxol.UI.Components.Input.Button do
   `:passthrough` if the event wasn't handled by the button.
   """
   @impl true
-  def handle_event(button, %Raxol.Core.Events.Event{type: :click}, _context) do
+  def handle_event(%Raxol.Core.Events.Event{type: :click}, button, _context) do
     handle_click_event(button)
   end
 
   def handle_event(
-        button,
         %Raxol.Core.Events.Event{type: :click, data: _data},
+        button,
         _context
       ) do
     handle_click_event(button)
   end
 
   def handle_event(
-        button,
         %Raxol.Core.Events.Event{type: :focus, data: data},
+        button,
         _context
       )
       when is_map(data) do
@@ -186,15 +191,15 @@ defmodule Raxol.UI.Components.Input.Button do
     {:update, updated_button, []}
   end
 
-  def handle_event(button, %Raxol.Core.Events.Event{type: :focus}, _context) do
+  def handle_event(%Raxol.Core.Events.Event{type: :focus}, button, _context) do
     updated_button = %{button | focused: true}
     updated_button = %{updated_button | errors: errors(updated_button)}
     {:update, updated_button, []}
   end
 
   def handle_event(
-        button,
         %Raxol.Core.Events.Event{type: :keypress, data: %{key: key}},
+        button,
         _context
       ) do
     case {button.disabled, key} do
@@ -215,11 +220,11 @@ defmodule Raxol.UI.Components.Input.Button do
   end
 
   def handle_event(
-        button,
         %Raxol.Core.Events.Event{
           type: :mouse,
           data: %{button: :left, state: :pressed}
         },
+        button,
         _context
       ) do
     case button.disabled do
@@ -242,14 +247,8 @@ defmodule Raxol.UI.Components.Input.Button do
     end
   end
 
-  def handle_event(_button, %Raxol.Core.Events.Event{} = _event, _context) do
+  def handle_event(%Raxol.Core.Events.Event{} = _event, _button, _context) do
     :passthrough
-  end
-
-  # Support both (button, event, context) and (event, button, context) argument orders
-  def handle_event(%Raxol.Core.Events.Event{} = event, button, context)
-      when is_map(button) do
-    handle_event(button, event, context)
   end
 
   # Add validation for invalid roles
@@ -291,8 +290,8 @@ defmodule Raxol.UI.Components.Input.Button do
   # Private helpers
 
   defp build_merged_style(button, context) do
-    component_styles = context.component_styles || %{}
-    button_theme_from_context = component_styles.button || %{}
+    component_styles = context[:component_styles] || %{}
+    button_theme_from_context = component_styles[:button] || %{}
     theme = Map.merge(button_theme_from_context, button.theme || %{})
     style = button.style || %{}
     # Style should override theme, so merge style into theme
@@ -306,7 +305,7 @@ defmodule Raxol.UI.Components.Input.Button do
     # Padding accounts for borders, spacing, and maximum focus decorations ("> " and " <" = 4 chars)
     # 8 for borders/spacing + 4 for focus decorations
     padding = 12
-    max_width = context.max_width || 80
+    max_width = context[:max_width] || 80
     # Calculate available space for the base label
     available_label_width = max(max_width - padding, 1)
 

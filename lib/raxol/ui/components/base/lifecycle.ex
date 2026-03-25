@@ -194,7 +194,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   end
 
   defp has_event_handler(true, component, event, context) do
-    component.__struct__.handle_event(component, event, context)
+    component.__struct__.handle_event(event, component, context)
   end
 
   defp has_event_handler(false, _component, _event, _context) do

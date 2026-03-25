@@ -123,54 +123,43 @@ defmodule Raxol.Style.Colors.Advanced do
   end
 
   defp generate_harmony_colors(h, s, l, type, angle) do
-    case type do
-      :complementary ->
-        [hsl_to_rgb({h, s, l}) | [hsl_to_rgb({normalize_hue(h + angle), s, l})]]
+    base = hsl_to_rgb({h, s, l})
+    [base | harmony_offsets(h, s, l, type, angle)]
+  end
 
-      :analogous ->
-        [
-          hsl_to_rgb({h, s, l})
-          | [
-              hsl_to_rgb({normalize_hue(h - angle), s, l}),
-              hsl_to_rgb({normalize_hue(h + angle), s, l})
-            ]
-        ]
+  defp harmony_offsets(h, s, l, :complementary, angle) do
+    [hsl_to_rgb({normalize_hue(h + angle), s, l})]
+  end
 
-      :triadic ->
-        [
-          hsl_to_rgb({h, s, l})
-          | [
-              hsl_to_rgb({normalize_hue(h - angle), s, l}),
-              hsl_to_rgb({normalize_hue(h + angle), s, l})
-            ]
-        ]
+  defp harmony_offsets(h, s, l, type, angle)
+       when type in [:analogous, :triadic] do
+    [
+      hsl_to_rgb({normalize_hue(h - angle), s, l}),
+      hsl_to_rgb({normalize_hue(h + angle), s, l})
+    ]
+  end
 
-      :split_complementary ->
-        comp_hue = normalize_hue(h + 180)
-        split1 = normalize_hue(comp_hue - angle)
-        split2 = normalize_hue(comp_hue + angle)
+  defp harmony_offsets(h, s, l, :split_complementary, angle) do
+    comp_hue = normalize_hue(h + 180)
 
-        [
-          hsl_to_rgb({h, s, l})
-          | [hsl_to_rgb({split1, s, l}), hsl_to_rgb({split2, s, l})]
-        ]
+    [
+      hsl_to_rgb({normalize_hue(comp_hue - angle), s, l}),
+      hsl_to_rgb({normalize_hue(comp_hue + angle), s, l})
+    ]
+  end
 
-      :tetradic ->
-        hue3 = normalize_hue(h + 180)
-        hue4 = normalize_hue(hue3 + angle)
+  defp harmony_offsets(h, s, l, :tetradic, angle) do
+    hue3 = normalize_hue(h + 180)
 
-        [
-          hsl_to_rgb({h, s, l})
-          | [
-              hsl_to_rgb({normalize_hue(h + angle), s, l}),
-              hsl_to_rgb({hue3, s, l}),
-              hsl_to_rgb({hue4, s, l})
-            ]
-        ]
+    [
+      hsl_to_rgb({normalize_hue(h + angle), s, l}),
+      hsl_to_rgb({hue3, s, l}),
+      hsl_to_rgb({normalize_hue(hue3 + angle), s, l})
+    ]
+  end
 
-      :square ->
-        [hsl_to_rgb({h, s, l}) | generate_square_harmony(h, s, l)]
-    end
+  defp harmony_offsets(h, s, l, :square, _angle) do
+    generate_square_harmony(h, s, l)
   end
 
   defp generate_square_harmony(h, s, l) do

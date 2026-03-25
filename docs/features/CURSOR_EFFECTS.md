@@ -1,7 +1,5 @@
 # Cursor Effects
 
-> [Documentation](../README.md) > [Features](README.md) > Cursor Effects
-
 Visual cursor trails and glow effects.
 
 ## Usage
@@ -78,4 +76,4 @@ def render(state, cursor) do
 end
 ```
 
-Performance: ~7μs per update + apply
+Performance: ~7us per update + apply
