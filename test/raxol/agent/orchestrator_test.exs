@@ -176,6 +176,54 @@ defmodule Raxol.Agent.OrchestratorTest do
     end
   end
 
+  describe "recommendation handling" do
+    test "stores pending recommendation from layout_recommendation message", %{orch: orch} do
+      rec = %{
+        id: "rec1",
+        layout_changes: [%{pane_id: :scout, action: :hide, params: %{}}],
+        confidence: 0.85,
+        reasoning: "test",
+        timestamp: 0
+      }
+
+      send(orch, {:layout_recommendation, rec})
+      Process.sleep(10)
+
+      assert Orchestrator.get_pending_recommendation(orch) == rec
+    end
+
+    test "accept clears pending and notifies subscribers", %{orch: orch} do
+      Orchestrator.subscribe(orch)
+
+      rec = %{id: "rec2", layout_changes: [], confidence: 0.8, reasoning: "", timestamp: 0}
+      send(orch, {:layout_recommendation, rec})
+      assert_receive {:orchestrator_event, {:recommendation_pending, ^rec}}, 100
+
+      :ok = Orchestrator.accept_recommendation(orch)
+
+      assert_receive {:orchestrator_event, {:recommendation_accepted, ^rec}}, 100
+      assert Orchestrator.get_pending_recommendation(orch) == nil
+    end
+
+    test "reject clears pending and notifies subscribers", %{orch: orch} do
+      Orchestrator.subscribe(orch)
+
+      rec = %{id: "rec3", layout_changes: [], confidence: 0.8, reasoning: "", timestamp: 0}
+      send(orch, {:layout_recommendation, rec})
+      assert_receive {:orchestrator_event, {:recommendation_pending, ^rec}}, 100
+
+      :ok = Orchestrator.reject_recommendation(orch)
+
+      assert_receive {:orchestrator_event, {:recommendation_rejected, ^rec}}, 100
+      assert Orchestrator.get_pending_recommendation(orch) == nil
+    end
+
+    test "accept/reject with no pending returns error", %{orch: orch} do
+      assert {:error, :no_pending} = Orchestrator.accept_recommendation(orch)
+      assert {:error, :no_pending} = Orchestrator.reject_recommendation(orch)
+    end
+  end
+
   describe "get_statuses/1" do
     test "returns status for all agents", %{orch: orch} do
       {:ok, _} = Orchestrator.spawn_agent(orch, :s1, SimpleAgent, tick_ms: 50_000)
