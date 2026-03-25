@@ -37,6 +37,19 @@ defmodule Raxol.Dev.CodeReloader do
            lifecycle_pid: lifecycle_pid
          }}
 
+      :ignore ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[CodeReloader] File watcher not available (no filesystem backend)",
+          %{}
+        )
+
+        {:ok,
+         %__MODULE__{
+           watcher_pid: nil,
+           timer_ref: nil,
+           lifecycle_pid: lifecycle_pid
+         }}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "[CodeReloader] Failed to start file watcher: #{inspect(reason)}",

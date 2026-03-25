@@ -171,6 +171,7 @@ defmodule Raxol.Agent.SessionTest do
   end
 
   describe "shell commands" do
+    @tag :unix_only
     test "agent executes shell commands and receives results" do
       {:ok, _pid} = Session.start_link(app_module: ShellAgent, id: :shell_exec)
 

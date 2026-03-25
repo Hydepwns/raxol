@@ -1,9 +1,10 @@
 defmodule RaxolWeb.DemoTerminalChannelTest do
   use ExUnit.Case, async: false
 
-  # These tests require the Phoenix endpoint to be running
-  # Skip in CI where endpoint may not be available
+  # These tests require the Phoenix endpoint to be running.
+  # Tagged both :integration and :skip_on_ci since CI doesn't start the endpoint.
   @moduletag :integration
+  @moduletag :skip_on_ci
 
   import Phoenix.ChannelTest
 
@@ -12,11 +13,6 @@ defmodule RaxolWeb.DemoTerminalChannelTest do
   @endpoint RaxolWeb.Endpoint
 
   setup do
-    # Skip if endpoint not started
-    if Process.whereis(RaxolWeb.Endpoint) == nil do
-      raise ExUnit.SkipTest, "Endpoint not running"
-    end
-
     start_supervised!(SessionManager)
 
     {:ok, socket} =

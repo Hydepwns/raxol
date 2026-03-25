@@ -75,6 +75,7 @@ defmodule Raxol.Agent.CommandTest do
       assert command == "echo hello"
     end
 
+    @tag :unix_only
     test "executes command and collects stdout" do
       cmd = Command.shell("echo hello_world")
 
@@ -85,6 +86,7 @@ defmodule Raxol.Agent.CommandTest do
       assert String.trim(result.output) == "hello_world"
     end
 
+    @tag :unix_only
     test "captures multiline output" do
       cmd = Command.shell("printf 'line1\nline2\nline3'")
 
@@ -96,6 +98,7 @@ defmodule Raxol.Agent.CommandTest do
       assert lines == ["line1", "line2", "line3"]
     end
 
+    @tag :unix_only
     test "reports non-zero exit status" do
       cmd = Command.shell("exit 42")
 
@@ -105,6 +108,7 @@ defmodule Raxol.Agent.CommandTest do
       assert result.exit_status == 42
     end
 
+    @tag :unix_only
     test "reports stderr (merged with stdout)" do
       cmd = Command.shell("echo error_msg >&2")
 
@@ -114,6 +118,7 @@ defmodule Raxol.Agent.CommandTest do
       assert String.contains?(result.output, "error_msg")
     end
 
+    @tag :unix_only
     test "respects timeout option" do
       cmd = Command.shell("sleep 10", timeout: 200)
 
@@ -123,6 +128,7 @@ defmodule Raxol.Agent.CommandTest do
       assert result.exit_status == :timeout
     end
 
+    @tag :unix_only
     test "respects cd option" do
       cmd = Command.shell("pwd", cd: "/tmp")
 
@@ -133,6 +139,7 @@ defmodule Raxol.Agent.CommandTest do
       assert String.trim(result.output) =~ ~r{^(/private)?/tmp$}
     end
 
+    @tag :unix_only
     test "respects env option" do
       cmd = Command.shell("echo $MY_TEST_VAR", env: [{"MY_TEST_VAR", "agent_test_value"}])
 

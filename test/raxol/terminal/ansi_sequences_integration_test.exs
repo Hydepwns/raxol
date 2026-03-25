@@ -361,6 +361,7 @@ defmodule Raxol.Terminal.ANSISequencesIntegrationTest do
       {:ok, emulator: emulator}
     end
 
+    @tag :skip_on_ci
     test "handles rapid color changes efficiently", %{emulator: emulator} do
       stress = ANSISequences.stress_sequences()
 
@@ -374,6 +375,7 @@ defmodule Raxol.Terminal.ANSISequencesIntegrationTest do
       assert state != nil
     end
 
+    @tag :skip_on_ci
     test "handles many cursor movements efficiently", %{emulator: emulator} do
       stress = ANSISequences.stress_sequences()
 

@@ -250,7 +250,7 @@ jobs:
       
       - name: Run integration tests
         run: |
-          mix test --only integration
+          mix test --only integration --exclude skip_on_ci
         env:
           POSTGRES_HOST: localhost
           POSTGRES_USER: postgres
