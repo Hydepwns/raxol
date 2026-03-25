@@ -11,7 +11,9 @@ Most Raxol apps use TEA -- four callbacks that form a loop:
 - **`view/1`** -- Build the UI from state. Called after every update
 - **`subscribe/1`** -- Set up recurring events (timers, data feeds)
 
-State flows one direction. Views are pure functions of state. Side effects go through commands. If you've used Elm, Redux, or Bubble Tea, this will feel familiar.
+State flows one direction. Views are pure functions of the model. Commands are how you request side effects (quitting, async work). If you've used Elm, Redux, or Bubble Tea, this will feel familiar.
+
+Everything that arrives in `update/2` is a "message" -- that includes application atoms like `:increment`, timer ticks like `:tick`, and Raxol events like `%Event{type: :key, data: %{key: :enter}}`. They're all just inputs to the same function.
 
 See the [Quickstart](QUICKSTART.md) for a full walkthrough, or jump to `examples/getting_started/counter.exs` for the code.
 
@@ -140,7 +142,12 @@ html = TerminalBridge.buffer_to_html(buffer)
 
 ## State Management
 
-Raxol supports multiple patterns depending on your needs.
+Raxol supports multiple patterns depending on your needs:
+
+- **TEA / `Raxol.start_link`** -- Most apps. Interactive TUIs with keyboard input, subscriptions, and the View DSL. Start here.
+- **Pure Functional** -- One-off renders, scripts, testing. No loop, no process.
+- **GenServer** -- Multi-user apps, servers, distributed state. Wrap a buffer in a supervised process.
+- **Phoenix LiveView** -- Web apps. Render a buffer to HTML in the browser.
 
 ### Pure Functional (simplest)
 

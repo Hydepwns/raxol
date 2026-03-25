@@ -185,13 +185,17 @@ This generates an Application module with a supervision tree. Run with:
 mix run --no-halt
 ```
 
-## What's Next
+## What You Just Built
+
+That counter is a complete Raxol app -- `init/update/view` is the whole API. Everything else builds on this loop.
+
+**Next steps:**
 
 - [Widget Gallery](WIDGET_GALLERY.md) -- All 23 widgets with examples
-- [Core Concepts](CORE_CONCEPTS.md) -- Deep dive into TEA, events, and commands
-- [Architecture](../core/ARCHITECTURE.md) -- How the render pipeline works
+- [Core Concepts](CORE_CONCEPTS.md) -- Buffers, rendering pipeline, and how it all fits together
+- [Building Apps](../cookbook/BUILDING_APPS.md) -- Patterns for real apps (state machines, scrollable lists, keyboard shortcuts)
 
-### OTP Differentiators
+### Explore Further
 
 These features set Raxol apart from other TUI frameworks:
 

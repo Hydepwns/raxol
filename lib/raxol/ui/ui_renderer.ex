@@ -170,7 +170,9 @@ defmodule Raxol.UI.Renderer do
           render_element(child_with_clip, theme, merged_style)
       end
 
+    title_cells = render_box_title(box_element, x, y, w, merged_style)
     all_cells = CellManager.merge_cells(box_cells, children_cells)
+    all_cells = CellManager.merge_cells(all_cells, title_cells)
     CellManager.clip_cells_to_bounds(all_cells, clip_bounds)
   end
 
@@ -306,6 +308,30 @@ defmodule Raxol.UI.Renderer do
   defp render_visible_element(_element, _theme, _parent_style) do
     []
   end
+
+  defp render_box_title(%{title: title}, x, y, w, style)
+       when is_binary(title) and title != "" do
+    has_border = Map.get(style, :border, :none) != :none
+
+    # Place title in the top border row, offset by 2 for the border corner + space
+    title_x = x + if(has_border, do: 2, else: 0)
+    title_y = y
+    max_len = w - if(has_border, do: 4, else: 0)
+    truncated = String.slice(title, 0, max(0, max_len))
+
+    fg = Map.get(style, :fg, Map.get(style, :fg_color, :white))
+    bg = Map.get(style, :bg, Map.get(style, :bg_color, :black))
+    attrs = if Map.get(style, :bold, false), do: [:bold], else: []
+
+    truncated
+    |> String.graphemes()
+    |> Enum.with_index()
+    |> Enum.map(fn {char, i} ->
+      {title_x + i, title_y, char, fg, bg, attrs}
+    end)
+  end
+
+  defp render_box_title(_box_element, _x, _y, _w, _style), do: []
 
   defp add_clip_bounds(child, nil), do: child
 

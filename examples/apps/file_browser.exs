@@ -54,29 +54,37 @@ defmodule FileBrowser do
   def update(message, model) do
     case message do
       # -- Keyboard --
-      %{type: :key, data: %{key: :char, char: "q"}} ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
-      %{type: :key, data: %{key: :tab}} ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
         next_panel = if model.panel == :tree, do: :preview, else: :tree
         {%{model | panel: next_panel}, []}
 
-      %{type: :key, data: %{key: :down}} when model.panel == :tree ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :down}}
+      when model.panel == :tree ->
         move_cursor(model, :down)
 
-      %{type: :key, data: %{key: :up}} when model.panel == :tree ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :up}}
+      when model.panel == :tree ->
         move_cursor(model, :up)
 
-      %{type: :key, data: %{key: :right}} when model.panel == :tree ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :right}}
+      when model.panel == :tree ->
         expand_node(model)
 
-      %{type: :key, data: %{key: :left}} when model.panel == :tree ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :left}}
+      when model.panel == :tree ->
         collapse_node(model)
 
-      %{type: :key, data: %{key: :enter}} when model.panel == :tree ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}}
+      when model.panel == :tree ->
         activate_node(model)
 
       _ ->

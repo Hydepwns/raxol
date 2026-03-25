@@ -11,8 +11,10 @@ defmodule FileAnalyzer do
   @moduledoc "Worker agent that analyzes files and reports back to coordinator."
   use Raxol.Agent
 
+  @impl true
   def init(_context), do: %{analyzed: 0}
 
+  @impl true
   def update({:agent_message, _from, {:analyze, file, reply_to}}, model) do
     {%{model | analyzed: model.analyzed + 1},
      [
@@ -37,10 +39,12 @@ defmodule FileAnalyzer do
      ]}
   end
 
+  @impl true
   def update({:command_result, {:report_to, reply_to, report}}, model) do
     {model, [Command.send_agent(reply_to, {:file_report, report})]}
   end
 
+  @impl true
   def update(_msg, model), do: {model, []}
 end
 
@@ -48,6 +52,7 @@ defmodule ReviewCoordinator do
   @moduledoc "Coordinator that dispatches files to workers and collects reports."
   use Raxol.Agent
 
+  @impl true
   def init(_context) do
     %{
       reports: [],
@@ -57,6 +62,7 @@ defmodule ReviewCoordinator do
     }
   end
 
+  @impl true
   def update({:agent_message, _from, {:review, files}}, model) do
     assignments =
       files
@@ -73,6 +79,7 @@ defmodule ReviewCoordinator do
     {%{model | pending: length(files), status: :reviewing}, assignments}
   end
 
+  @impl true
   def update({:agent_message, _from, {:file_report, report}}, model) do
     new_reports = [report | model.reports]
     remaining = model.pending - 1
@@ -111,6 +118,7 @@ defmodule ReviewCoordinator do
     end
   end
 
+  @impl true
   def update(_msg, model), do: {model, []}
 end
 

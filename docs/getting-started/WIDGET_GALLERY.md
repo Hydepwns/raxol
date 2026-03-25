@@ -1,6 +1,6 @@
 # Widget Gallery
 
-Raxol ships with 23 widgets organized by category. All are available via the View DSL after `use Raxol.Core.Runtime.Application`.
+You get 23 widgets out of the box, all accessible via the View DSL after `use Raxol.Core.Runtime.Application`.
 
 For a working starting point, see [`examples/getting_started/counter.exs`](../../examples/getting_started/counter.exs). For a full showcase of all widget categories, see [`examples/apps/showcase_app.exs`](../../examples/apps/showcase_app.exs). For a dashboard-style demo with live stats, see [`examples/demo.exs`](../../examples/demo.exs).
 
@@ -238,7 +238,7 @@ Widgets that float above the main content.
 Modal dialog with customizable content and actions.
 
 ```elixir
-modal(visible: true, title: "Confirm", children: [text("Are you sure?")])
+modal(visible: true, title: "Confirm", content: text("Are you sure?"))
 ```
 
 Component module: `Raxol.UI.Components.Modal`

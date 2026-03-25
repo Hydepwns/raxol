@@ -178,6 +178,8 @@ ssh your-app.fly.dev -p 2222
 
 ## Use Cases
 
+SSH shines over web dashboards when you want zero setup on the client side -- no HTTPS certs, no browser, works over slow networks, instant startup. Your app code doesn't change: same `init/update/view` whether local, over SSH, or in a browser.
+
 - **Shared dashboards** -- Deploy a monitoring dashboard. Anyone with SSH access can view it.
 - **Remote admin tools** -- Database inspection, log viewers, config editors -- all in the terminal.
 - **Pair programming** -- Multiple users connected to the same app. Each sees independent state (or share state via PubSub).

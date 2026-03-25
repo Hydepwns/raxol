@@ -11,6 +11,7 @@ Logger.configure(level: :warning)
 defmodule CodeReviewAgent do
   use Raxol.Agent
 
+  @impl true
   def init(_context) do
     files = ["lib/raxol/agent.ex", "lib/raxol/agent/session.ex"]
 
@@ -22,6 +23,7 @@ defmodule CodeReviewAgent do
     }
   end
 
+  @impl true
   def update({:agent_message, _from, :start_review}, model) do
     case model.files do
       [file | rest] ->
@@ -33,6 +35,7 @@ defmodule CodeReviewAgent do
     end
   end
 
+  @impl true
   def update({:command_result, {:shell_result, result}}, model) do
     finding = %{
       file: model.current_file,
@@ -62,6 +65,7 @@ defmodule CodeReviewAgent do
     end
   end
 
+  @impl true
   def update({:command_result, {:analysis_complete, summary}}, model) do
     IO.puts("\n--- Code Review Complete ---")
     IO.puts("Summary: #{summary}")
@@ -74,11 +78,13 @@ defmodule CodeReviewAgent do
     {%{model | status: :done}, [Command.quit()]}
   end
 
+  @impl true
   def update(msg, model) do
     IO.puts("[CodeReviewAgent] Unhandled: #{inspect(msg)}")
     {model, []}
   end
 
+  @impl true
   def view(model) do
     column do
       [

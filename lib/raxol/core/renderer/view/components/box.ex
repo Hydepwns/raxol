@@ -9,6 +9,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
 
   ## Options
     * `:children` - List of child views
+    * `:title` - Optional title rendered in the top border
     * `:padding` - Padding around content (integer or {top, right, bottom, left})
     * `:margin` - Margin around box (integer or {top, right, bottom, left})
     * `:border` - Border style (:none, :single, :double, :rounded, :bold, :dashed)
@@ -30,6 +31,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     %{
       type: :box,
       children: Keyword.get(opts, :children, []),
+      title: Keyword.get(opts, :title),
       padding: normalize_spacing(padding),
       margin: normalize_spacing(Keyword.get(opts, :margin, 0)),
       border: border,
