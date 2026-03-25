@@ -8,7 +8,6 @@ defmodule Raxol.Core.Renderer.View do
   alias Raxol.Core.Renderer.View.Layout.Flex
   alias Raxol.Core.Renderer.View.Style.Border
   alias Raxol.Core.Renderer.View.Types
-  alias Raxol.Core.Renderer.View.Utils.ViewUtils
 
   alias Raxol.Core.Renderer.View.{
     Borders,
@@ -17,10 +16,7 @@ defmodule Raxol.Core.Renderer.View do
     Validation
   }
 
-  @typedoc """
-  Style options for a view. Typically a list of atoms, e.g., [:bold, :underline].
-  See `Raxol.Core.Renderer.View.Types.style()` type for details.
-  """
+  @typedoc "Style options for a view."
   @type style :: Types.style()
 
   @doc """
@@ -32,18 +28,11 @@ defmodule Raxol.Core.Renderer.View do
     * `:z_index` - Z-index for layering
     * `:size` - Size of the view {width, height}
     * `:style` - Style options for the view
-    * `:fg` - Foreground color
-    * `:bg` - Background color
+    * `:fg` / `:bg` - Foreground / background color
     * `:border` - Border style
-    * `:padding` - Padding around the view
-    * `:margin` - Margin around the view
+    * `:padding` / `:margin` - Spacing
     * `:children` - Child views
     * `:content` - Content for the view
-
-  ## Examples
-
-      View.new(:box, size: {80, 24})
-      View.new(:text, content: "Hello", fg: :red)
   """
   def new(type, opts \\ []) do
     Validation.validate_view_type(type)
@@ -65,46 +54,15 @@ defmodule Raxol.Core.Renderer.View do
     }
 
     view = Map.merge(defaults, Map.new(opts))
-    normalize_spacing(view)
+    Validation.normalize_spacing(view)
   end
 
-  @doc """
-  Creates a new text view.
-
-  ## Options
-    * `:content` - The text content
-    * `:fg` - Foreground color
-    * `:bg` - Background color
-    * `:style` - Text style options
-    * `:align` - Text alignment
-    * `:wrap` - Text wrapping mode
-
-  ## Examples
-
-      View.text("Hello", fg: :red)
-      View.text("World", style: [bold: true, underline: true])
-  """
+  @doc "Creates a new text view."
   def text(content, opts \\ []) do
     Text.new(content, opts)
   end
 
-  @doc """
-  Creates a new box view with padding and optional border.
-
-  ## Parameters
-    * `opts` - Options for the box
-      * `:padding` - Padding around the content (default: 0)
-      * `:border` - Border style (`:none`, `:single`, `:double`, `:rounded`, `:bold`, `:block`, `:simple`)
-      * `:children` - Child views to place inside the box
-      * `:size` - Size of the box {width, height}
-      * `:style` - Style options for the box
-
-  ## Examples
-
-      View.box(padding: 2)
-      View.box(padding: 2, border: :single)
-      View.box(style: [border: :double, padding: 1], children: [text("Hello")])
-  """
+  @doc "Creates a new box view with padding and optional border."
   def box(opts \\ []) do
     validate_keyword_opts(opts, "View.box")
     Box.new(opts)
@@ -125,45 +83,29 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
-  Creates a new row layout.
-
-  ## Options
-    * `:children` - Child views
-    * `:align` - Alignment of children
-    * `:justify` - Justification of children
-    * `:gap` - Gap between children
-
-  ## Examples
-
-      View.row do
-        [text("Hello"), text("World")]
-      end
-      View.row align: :center, gap: 2 do
-        [text("A"), text("B")]
-      end
-  """
+  @doc "Creates a new row layout."
   def row(opts \\ []) do
     validate_keyword_opts(opts, "View.row")
     Flex.row(opts)
   end
 
-  @doc """
-  Creates a new flex container.
+  defmacro row(opts, do: block) do
+    quote do
+      Raxol.Core.Renderer.View.validate_keyword_opts(
+        unquote(opts),
+        "View.row macro"
+      )
 
-  ## Options
-    * `:direction` - Flex direction (:row or :column)
-    * `:children` - Child views
-    * `:align` - Alignment of children
-    * `:justify` - Justification of children
-    * `:gap` - Gap between children
-    * `:wrap` - Whether to wrap children
+      Raxol.Core.Renderer.View.Layout.Flex.row(
+        Keyword.merge(
+          Raxol.Core.Renderer.View.ensure_keyword(unquote(opts)),
+          Raxol.Core.Renderer.View.ensure_keyword(children: unquote(block))
+        )
+      )
+    end
+  end
 
-  ## Examples
-
-      View.flex(direction: :column, children: [text("Hello"), text("World")])
-      View.flex(align: :center, gap: 2, wrap: true)
-  """
+  @doc "Creates a new flex container."
   defmacro flex(opts, do: block) do
     quote do
       Raxol.Core.Renderer.View.validate_keyword_opts(
@@ -179,22 +121,7 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
-  Creates a grid layout with the given options and block.
-
-  ## Options
-    * `:columns` - Number of columns in the grid
-    * `:rows` - Number of rows in the grid
-    * `:gap` - Gap between grid items
-    * `:align` - Alignment of grid items
-    * `:justify` - Justification of grid items
-
-  ## Examples
-
-      View.grid(columns: 2, gap: 2) do
-        [text("A"), text("B"), text("C"), text("D")]
-      end
-  """
+  @doc "Creates a grid layout."
   defmacro grid(opts, do: block) do
     quote do
       Raxol.Core.Renderer.View.validate_keyword_opts(
@@ -224,68 +151,22 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
-  Creates a new border around a view.
-
-  ## Options
-    * `:style` - Border style
-    * `:title` - Title for the border
-    * `:fg` - Foreground color
-    * `:bg` - Background color
-
-  ## Examples
-
-      View.border(view, style: :single)
-      View.border(view, title: "Title", style: :double)
-  """
+  @doc "Creates a new border around a view."
   def border(view, opts \\ []) do
     validate_keyword_opts(opts, "View.border")
     Border.wrap(view, opts)
   end
 
-  @doc """
-  Creates a new scrollable view.
-
-  ## Options
-    * `:viewport` - Viewport size {width, height}
-    * `:offset` - Initial scroll offset {x, y}
-    * `:scrollbars` - Whether to show scrollbars
-    * `:fg` - Foreground color
-    * `:bg` - Background color
-
-  ## Examples
-
-      View.scroll(view, viewport: {80, 24})
-      View.scroll(view, offset: {0, 10}, scrollbars: true)
-  """
+  @doc "Creates a new scrollable view."
   def scroll(view, opts \\ []) do
     validate_keyword_opts(opts, "View.scroll")
     Scroll.new(view, opts)
   end
 
-  @doc """
-  Creates a table view.
-
-  ## Options
-    * `:data` - Table data (list of lists)
-    * `:headers` - Column headers
-    * `:style` - Table style options
-    * `:border` - Border style for the table
-
-  ## Examples
-
-      View.table(data: [[1, 2], [3, 4]], headers: ["A", "B"])
-  """
+  @doc "Creates a table view."
   def table(opts \\ []) do
     validate_keyword_opts(opts, "View.table")
-    # Basic table implementation
-    %{
-      type: :table,
-      data: Keyword.get(opts, :data, []),
-      headers: Keyword.get(opts, :headers, []),
-      style: Keyword.get(opts, :style, %{}),
-      border: Keyword.get(opts, :border, :single)
-    }
+    Components.table(opts)
   end
 
   @doc """
@@ -294,49 +175,9 @@ defmodule Raxol.Core.Renderer.View do
   """
   def layout(view, dimensions) do
     Validation.validate_layout_dimensions(dimensions)
-
-    result = LayoutEngine.apply_layout(view, Map.new(dimensions))
-    process_layout_result(result, view)
+    LayoutEngine.apply_layout(view, Map.new(dimensions))
   end
 
-  @doc """
-  Macro for creating a row layout with a do-block for children.
-
-  ## Examples
-
-      View.row style: [:bold] do
-        [View.text("A"), View.text("B")]
-      end
-  """
-  defmacro row(opts, do: block) do
-    quote do
-      Raxol.Core.Renderer.View.validate_keyword_opts(
-        unquote(opts),
-        "View.row macro"
-      )
-
-      Raxol.Core.Renderer.View.Layout.Flex.row(
-        Keyword.merge(
-          Raxol.Core.Renderer.View.ensure_keyword(unquote(opts)),
-          Raxol.Core.Renderer.View.ensure_keyword(children: unquote(block))
-        )
-      )
-    end
-  end
-
-  @doc """
-  Macro for creating a border around a view with a do-block for children.
-
-  ## Examples
-
-      View.border_wrap style: [:bold] do
-        [View.text("A"), View.text("B")]
-      end
-
-      View.border_wrap :single, style: [:bold] do
-        [View.text("A"), View.text("B")]
-      end
-  """
   defmacro border_wrap(style, do: block) do
     quote do
       opts = [style: unquote(style)]
@@ -362,15 +203,6 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
-  Macro for creating a scrollable view with a do-block for children.
-
-  ## Examples
-
-      View.scroll_wrap viewport: {80, 24} do
-        [View.text("A"), View.text("B")]
-      end
-  """
   defmacro scroll_wrap(opts, do: block) do
     quote do
       Raxol.Core.Renderer.View.validate_keyword_opts(
@@ -385,155 +217,32 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
-  Wraps a view with a border, optionally with a title and style.
-
-  ## Parameters
-    * `view` - The view to wrap with a border
-    * `opts` - Options for the border
-      * `:title` - Optional title to display in the border
-      * `:style` - Border style (`:single`, `:double`, `:rounded`, `:bold`, `:block`, `:simple`)
-      * `:align` - Title alignment (`:left`, `:center`, `:right`)
-
-  ## Examples
-
-      View.border_wrap(view, style: :single)
-      View.border_wrap(view, title: "Title", style: :double)
-  """
+  @doc "Wraps a view with a border, optionally with a title and style."
   def wrap_with_border(view, opts \\ []) do
     Borders.wrap_with_border(view, opts)
   end
 
-  @doc """
-  Wraps a view with a border using a block style.
+  @doc "Wraps a view with a block-style border."
+  def block_border(view, opts \\ []), do: Borders.block_border(view, opts)
 
-  ## Parameters
-    * `view` - The view to wrap with a border
-    * `opts` - Options for the border
-      * `:title` - Optional title to display in the border
-      * `:align` - Title alignment (`:left`, `:center`, `:right`)
+  @doc "Wraps a view with a double-line border."
+  def double_border(view, opts \\ []), do: Borders.double_border(view, opts)
 
-  ## Examples
+  @doc "Wraps a view with a rounded border."
+  def rounded_border(view, opts \\ []), do: Borders.rounded_border(view, opts)
 
-      View.block_border(view)
-      View.block_border(view, title: "Title")
-  """
-  def block_border(view, opts \\ []) do
-    Borders.block_border(view, opts)
-  end
+  @doc "Wraps a view with a bold border."
+  def bold_border(view, opts \\ []), do: Borders.bold_border(view, opts)
 
-  @doc """
-  Wraps a view with a border using a double line style.
+  @doc "Wraps a view with a simple border."
+  def simple_border(view, opts \\ []), do: Borders.simple_border(view, opts)
 
-  ## Parameters
-    * `view` - The view to wrap with a border
-    * `opts` - Options for the border
-      * `:title` - Optional title to display in the border
-      * `:align` - Title alignment (`:left`, `:center`, `:right`)
-
-  ## Examples
-
-      View.double_border(view)
-      View.double_border(view, title: "Title")
-  """
-  def double_border(view, opts \\ []) do
-    Borders.double_border(view, opts)
-  end
-
-  @doc """
-  Wraps a view with a border using a rounded style.
-
-  ## Parameters
-    * `view` - The view to wrap with a border
-    * `opts` - Options for the border
-      * `:title` - Optional title to display in the border
-      * `:align` - Title alignment (`:left`, `:center`, `:right`)
-
-  ## Examples
-
-      View.rounded_border(view)
-      View.rounded_border(view, title: "Title")
-  """
-  def rounded_border(view, opts \\ []) do
-    Borders.rounded_border(view, opts)
-  end
-
-  @doc """
-  Wraps a view with a border using a bold style.
-
-  ## Parameters
-    * `view` - The view to wrap with a border
-    * `opts` - Options for the border
-      * `:title` - Optional title to display in the border
-      * `:align` - Title alignment (`:left`, `:center`, `:right`)
-
-  ## Examples
-
-      View.bold_border(view)
-      View.bold_border(view, title: "Title")
-  """
-  def bold_border(view, opts \\ []) do
-    Borders.bold_border(view, opts)
-  end
-
-  @doc """
-  Wraps a view with a border using a simple style.
-
-  ## Parameters
-    * `view` - The view to wrap with a border
-    * `opts` - Options for the border
-      * `:title` - Optional title to display in the border
-      * `:align` - Title alignment (`:left`, `:center`, `:right`)
-
-  ## Examples
-
-      View.simple_border(view)
-      View.simple_border(view, title: "Title")
-  """
-  def simple_border(view, opts \\ []) do
-    Borders.simple_border(view, opts)
-  end
-
-  @doc """
-  Creates a new panel view (box with border and children).
-
-  ## Options
-    * `:children` - Child views
-    * `:border` - Border style (default: :single)
-    * `:padding` - Padding inside the panel (default: 1)
-    * `:style` - Additional style options
-    * `:title` - Optional title for the panel
-    * `:fg` - Foreground color
-    * `:bg` - Background color
-
-  ## Examples
-      View.panel(children: [View.text("Hello")])
-      View.panel(border: :double, title: "Panel")
-
-  NOTE: Only panel/1 (with a keyword list) is supported. Update any panel/2 usages to panel/1.
-  """
+  @doc "Creates a new panel view (box with border and children)."
   def panel(opts \\ []) do
     LayoutHelpers.panel(opts)
   end
 
-  @doc """
-  Creates a new column layout.
-
-  ## Options
-    * `:children` - Child views
-    * `:align` - Alignment of children
-    * `:justify` - Justification of children
-    * `:gap` - Gap between children
-
-  ## Examples
-
-      View.column do
-        [text("Hello"), text("World")]
-      end
-      View.column align: :center, gap: 2 do
-        [text("A"), text("B")]
-      end
-  """
+  @doc "Creates a new column layout."
   def column(opts) do
     Raxol.Core.Renderer.View.Layout.Flex.column(opts)
   end
@@ -554,19 +263,7 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
-  Creates a split pane layout that distributes space between children by ratio.
-
-  ## Examples
-
-      View.split :horizontal, ratio: {1, 2} do
-        [left_panel, right_panel]
-      end
-
-      View.split :vertical do
-        [top, bottom]
-      end
-  """
+  @doc "Creates a split pane layout."
   defmacro split(direction, opts, do: block) do
     quote do
       Raxol.UI.Layout.SplitPane.new(
@@ -588,101 +285,31 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
-  Creates a split pane from a named preset.
-
-  ## Presets
-
-    * `:sidebar` - Horizontal, ratio `{1, 3}`
-    * `:dashboard` - Horizontal outer `{1, 3}` with vertical inner right `{3, 1}`
-    * `:triple` - Horizontal 3-pane, ratio `{1, 1, 1}`
-    * `:stacked` - Vertical 2-pane, ratio `{1, 1}`
-
-  ## Examples
-
-      View.split_layout :sidebar do
-        [sidebar, main_content]
-      end
-  """
+  @doc "Creates a split pane from a named preset."
   defmacro split_layout(preset, do: block) do
     quote do
-      Raxol.UI.Layout.SplitPane.from_preset(
-        unquote(preset),
-        unquote(block)
-      )
+      Raxol.UI.Layout.SplitPane.from_preset(unquote(preset), unquote(block))
     end
   end
 
   defdelegate split_pane(opts \\ []), to: Raxol.UI.Layout.SplitPane, as: :new
 
-  @doc """
-  Creates a button element.
-
-  ## Options
-    * `:id` - Unique identifier for the button
-    * `:on_click` - Event handler for click events
-    * `:aria_label` - Accessibility label
-    * `:aria_description` - Accessibility description
-    * `:style` - Style options for the button
-
-  ## Examples
-
-      View.button("Click Me", on_click: {:button_clicked})
-      View.button("Submit", id: "submit_btn", aria_label: "Submit form")
-  """
+  @doc "Creates a button element."
   def button(text, opts \\ []) do
     Components.button(text, opts)
   end
 
-  @doc """
-  Creates a checkbox element.
-
-  ## Options
-    * `:checked` - Whether the checkbox is checked (default: false)
-    * `:on_toggle` - Event handler for toggle events
-    * `:aria_label` - Accessibility label
-    * `:aria_description` - Accessibility description
-    * `:style` - Style options for the checkbox
-
-  ## Examples
-
-      View.checkbox("Enable Feature", checked: true)
-      View.checkbox("Accept Terms", on_toggle: {:terms_toggled})
-  """
+  @doc "Creates a checkbox element."
   def checkbox(label, opts \\ []) do
     Components.checkbox(label, opts)
   end
 
-  @doc """
-  Creates a text input element.
-
-  ## Options
-    * `:value` - Current value of the input (default: "")
-    * `:placeholder` - Placeholder text
-    * `:on_change` - Event handler for change events
-    * `:aria_label` - Accessibility label
-    * `:aria_description` - Accessibility description
-    * `:style` - Style options for the input
-
-  ## Examples
-
-      View.text_input(placeholder: "Enter your name...")
-      View.text_input(value: "John", on_change: {:name_changed})
-  """
+  @doc "Creates a text input element."
   def text_input(opts \\ []) do
     Components.text_input(opts)
   end
 
-  @doc """
-  Renders a view with the given options.
-
-  ## Parameters
-    - _options: A keyword list of rendering options
-    - _block: A block containing the view content
-
-  ## Returns
-    - A rendered view
-  """
+  @doc "Renders a view with the given options."
   defmacro view(opts, do: block) do
     quote do
       rendered_view = unquote(block)
@@ -695,69 +322,28 @@ defmodule Raxol.Core.Renderer.View do
 
   @doc false
   def do_normalize_spacing(view) do
-    normalize_spacing(view)
+    Validation.normalize_spacing(view)
   end
 
-  defp normalize_spacing(view) do
-    padding = Map.get(view, :padding, {0, 0, 0, 0})
-    margin = Map.get(view, :margin, {0, 0, 0, 0})
-
-    normalized_padding = ViewUtils.normalize_spacing(padding)
-    normalized_margin = ViewUtils.normalize_margin(margin)
-
-    view
-    |> Map.put(:padding, normalized_padding)
-    |> Map.put(:margin, normalized_margin)
-  end
-
-  # Helper function for ensuring keyword lists (public for macro usage)
-  def ensure_keyword_list(opts) when is_list(opts), do: opts
-  def ensure_keyword_list(_), do: []
-
-  defmacro ensure_keyword(opts) do
-    quote do
-      case unquote(opts) do
-        opts when is_list(opts) and length(opts) > 0 ->
-          Raxol.Core.Renderer.View.ensure_keyword_list(opts)
-
-        _opts ->
-          []
-      end
-    end
-  end
-
-  @doc """
-  Creates a simple box element with the given options.
-  """
+  @doc "Creates a simple box element with the given options."
   def box_element(opts \\ []) do
     Components.box_element(opts)
   end
 
-  @doc """
-  Calculates flex layout dimensions based on the given constraints.
-  Returns a map with calculated width and height.
-  """
+  @doc "Calculates flex layout dimensions based on the given constraints."
   @spec flex(map()) :: %{width: integer(), height: integer()}
   def flex(constraints) do
     LayoutHelpers.flex(constraints)
   end
 
-  @doc """
-  Creates a shadow effect for a view.
-
-  ## Options
-    * `:offset` - Shadow offset as a string or tuple {x, y}
-    * `:blur` - Shadow blur radius
-    * `:color` - Shadow color
-    * `:opacity` - Shadow opacity (0.0 to 1.0)
-
-  ## Examples
-
-      View.shadow(offset: "2px 2px", blur: 4, color: :black)
-      View.shadow(offset: {1, 1}, color: :gray, opacity: 0.5)
-  """
+  @doc "Creates a shadow effect for a view."
   def shadow(opts \\ []) do
     Components.shadow(opts)
+  end
+
+  @doc "Creates a process-isolated component node."
+  def process_component(module, props \\ %{}) do
+    Components.process_component(module, props)
   end
 
   # Delegate unique Components functions so View is the single complete DSL.
@@ -776,49 +362,23 @@ defmodule Raxol.Core.Renderer.View do
   defdelegate tabs(opts \\ []), to: Raxol.View.Components
   defdelegate span(content, opts \\ []), to: Raxol.View.Components
 
-  @doc """
-  Creates a process-isolated component node.
-
-  The component module runs in its own GenServer process under
-  `Raxol.DynamicSupervisor`. If it crashes, the supervisor restarts it
-  with fresh state from `init/1` -- the rest of the app continues.
-
-  ## Parameters
-    * `module` - Component module implementing `init/1`, `render/2`, and optionally `update/2`
-    * `props` - Initial properties passed to `init/1`
-
-  ## Examples
-
-      process_component(MyHeavyWidget, %{path: "/tmp"})
-  """
-  def process_component(module, props \\ %{}) do
-    %{
-      type: :process_component,
-      module: module,
-      props: props,
-      id: "pc-#{inspect(module)}"
-    }
-  end
-
-  defp process_layout_result(result, _view), do: result
-
-  # Helper functions for if statement elimination
-
-  def validate_keyword_opts(opts, function_name) when is_list(opts) do
-    require Keyword
-    validate_keyword_list(opts, function_name)
-  end
+  # Helper functions for keyword validation (public for macro usage)
 
   def validate_keyword_opts(opts, function_name) do
-    raise ArgumentError,
-          "#{function_name} expects a keyword list as the first argument, got: #{inspect(opts)}"
+    Validation.validate_keyword_opts(opts, function_name)
   end
 
-  defp validate_keyword_list(opts, _function_name) when is_list(opts) do
-    case opts do
-      [] -> :ok
-      [tuple | _] when is_tuple(tuple) -> :ok
-      _ -> raise ArgumentError, "Expected keyword list"
+  def ensure_keyword_list(opts), do: Validation.ensure_keyword_list(opts)
+
+  defmacro ensure_keyword(opts) do
+    quote do
+      case unquote(opts) do
+        opts when is_list(opts) and length(opts) > 0 ->
+          Raxol.Core.Renderer.View.ensure_keyword_list(opts)
+
+        _opts ->
+          []
+      end
     end
   end
 end

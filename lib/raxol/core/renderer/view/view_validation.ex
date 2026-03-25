@@ -200,4 +200,38 @@ defmodule Raxol.Core.Renderer.View.Validation do
   defp valid_position?({x, y}) when is_integer(x) and is_integer(y), do: true
   @spec valid_position?(any()) :: boolean()
   defp valid_position?(_), do: false
+
+  # --- keyword opts and spacing helpers (used by View and macros) ---
+
+  @doc """
+  Validates that opts is a keyword list; raises ArgumentError otherwise.
+  Public so it can be called from `View` macros via full module name.
+  """
+  def validate_keyword_opts(opts, _function_name) when is_list(opts) do
+    case opts do
+      [] -> :ok
+      [tuple | _] when is_tuple(tuple) -> :ok
+      _ -> raise ArgumentError, "Expected keyword list"
+    end
+  end
+
+  def validate_keyword_opts(opts, function_name) do
+    raise ArgumentError,
+          "#{function_name} expects a keyword list as the first argument, got: #{inspect(opts)}"
+  end
+
+  @doc "Ensures opts is a keyword list; returns [] for non-lists."
+  def ensure_keyword_list(opts) when is_list(opts), do: opts
+  def ensure_keyword_list(_), do: []
+
+  @doc "Normalises padding/margin on a view map."
+  def normalize_spacing(view) do
+    alias Raxol.Core.Renderer.View.Utils.ViewUtils
+    padding = Map.get(view, :padding, {0, 0, 0, 0})
+    margin = Map.get(view, :margin, {0, 0, 0, 0})
+
+    view
+    |> Map.put(:padding, ViewUtils.normalize_spacing(padding))
+    |> Map.put(:margin, ViewUtils.normalize_margin(margin))
+  end
 end

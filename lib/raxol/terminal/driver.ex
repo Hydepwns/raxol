@@ -21,7 +21,12 @@ defmodule Raxol.Terminal.Driver do
 
   alias Raxol.Core.Events.Event
   alias Raxol.Terminal.ANSI.InputParser
+  alias Raxol.Terminal.Driver.EventTranslator
+  alias Raxol.Terminal.Driver.InputBuffer
   alias Raxol.Terminal.IOTerminal
+
+  @compile {:no_warn_undefined, Raxol.Terminal.Driver.EventTranslator}
+  @compile {:no_warn_undefined, Raxol.Terminal.Driver.InputBuffer}
 
   # Check if termbox2_nif is available at compile time
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
@@ -246,7 +251,7 @@ defmodule Raxol.Terminal.Driver do
       "Received termbox event: #{inspect(event_map)}"
     )
 
-    case translate_termbox_event(event_map) do
+    case EventTranslator.translate(event_map) do
       {:ok, %Event{} = event} ->
         # Only send if dispatcher_pid is known
         case dispatcher_pid do
@@ -347,7 +352,7 @@ defmodule Raxol.Terminal.Driver do
 
     _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
 
-    if incomplete_escape?(buffer) do
+    if InputBuffer.incomplete_escape?(buffer) do
       timer = Process.send_after(self(), :flush_input_buffer, 50)
       {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
     else
@@ -373,7 +378,7 @@ defmodule Raxol.Terminal.Driver do
 
       _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
 
-      if incomplete_escape?(buffer) do
+      if InputBuffer.incomplete_escape?(buffer) do
         timer = Process.send_after(self(), :flush_input_buffer, 50)
         {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
       else
@@ -400,7 +405,7 @@ defmodule Raxol.Terminal.Driver do
 
     # If the buffer ends with an incomplete escape sequence, wait for more bytes.
     # Otherwise, dispatch immediately.
-    if incomplete_escape?(buffer) do
+    if InputBuffer.incomplete_escape?(buffer) do
       timer = Process.send_after(self(), :flush_input_buffer, 50)
       {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
     else
@@ -654,44 +659,6 @@ defmodule Raxol.Terminal.Driver do
   # --- Input buffering ---
   # Escape sequences may span multiple messages, so we buffer until complete.
 
-  # Returns true if the buffer contains an ESC that hasn't been completed yet.
-  defp incomplete_escape?(<<>>), do: false
-
-  defp incomplete_escape?(buffer) do
-    # Find the last ESC byte
-    case :binary.matches(buffer, <<27>>) do
-      [] ->
-        false
-
-      matches ->
-        {last_esc_pos, _} = List.last(matches)
-
-        tail =
-          binary_part(buffer, last_esc_pos, byte_size(buffer) - last_esc_pos)
-
-        # A bare ESC or ESC followed by [ but no terminal byte yet
-        incomplete_csi?(tail)
-    end
-  end
-
-  # ESC alone (more bytes expected)
-  defp incomplete_csi?(<<27>>), do: true
-  # ESC [ but no final byte (letters A-Z, a-z, ~)
-  defp incomplete_csi?(<<27, 91, rest::binary>>),
-    do: not has_csi_terminator?(rest)
-
-  # ESC O but no function key letter
-  defp incomplete_csi?(<<27, 79>>), do: true
-  defp incomplete_csi?(_), do: false
-
-  defp has_csi_terminator?(<<>>), do: false
-
-  defp has_csi_terminator?(data) do
-    # CSI terminates with a byte in 64..126 range (@A-Z[\]^_`a-z{|}~)
-    last = :binary.last(data)
-    last >= 64 and last <= 126
-  end
-
   defp flush_buffer(%{input_buffer: <<>>} = state), do: {:noreply, state}
 
   defp flush_buffer(state) do
@@ -845,78 +812,6 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  # --- Event translation from rrex_termbox v2.0.1 NIF ---
-  defp translate_termbox_event(event_map) do
-    case Raxol.Core.ErrorHandling.safe_call(fn ->
-           translate_event_map(event_map)
-         end) do
-      {:ok, result} -> result
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  # Helper for key translation
-  defp translate_key(key_code, char_code, mod_code) do
-    # Actual implementation based on test simulations and potential NIF values
-    # Modifiers: Shift=1, Ctrl=2, Alt=4, Meta=8 (assuming standard bitflags)
-    shift = Bitwise.&&&(mod_code, 1) != 0
-    ctrl = Bitwise.&&&(mod_code, 2) != 0
-    alt = Bitwise.&&&(mod_code, 4) != 0
-    meta = Bitwise.&&&(mod_code, 8) != 0
-
-    # Base data map
-    data = %{
-      shift: shift,
-      ctrl: ctrl,
-      alt: alt,
-      meta: meta,
-      char: nil,
-      key: nil
-    }
-
-    # Character or Special Key
-    translate_key_or_char(data, char_code, key_code)
-  end
-
-  defp translate_key_or_char(data, char_code, _key_code) when char_code > 0 do
-    Map.put(data, :char, <<char_code::utf8>>)
-  end
-
-  defp translate_key_or_char(data, _char_code, 65), do: Map.put(data, :key, :up)
-
-  defp translate_key_or_char(data, _char_code, 66),
-    do: Map.put(data, :key, :down)
-
-  defp translate_key_or_char(data, _char_code, 67),
-    do: Map.put(data, :key, :right)
-
-  defp translate_key_or_char(data, _char_code, 68),
-    do: Map.put(data, :key, :left)
-
-  defp translate_key_or_char(data, _char_code, 265),
-    do: Map.put(data, :key, :f1)
-
-  defp translate_key_or_char(data, _char_code, 266),
-    do: Map.put(data, :key, :f2)
-
-  defp translate_key_or_char(data, _char_code, _key_code),
-    do: Map.put(data, :key, :unknown)
-
-  # Helper for mouse button translation
-  defp translate_mouse_button(btn_code) do
-    # Based on test simulation (button: 0 -> left?)
-    # Actual mapping depends on rrex_termbox v2.0.1 constants/values
-    case btn_code do
-      # Based on test expectations: 0=left, 1=right, 2=middle
-      0 -> :left
-      1 -> :right
-      2 -> :middle
-      3 -> :wheel_up
-      4 -> :wheel_down
-      _ -> :unknown
-    end
-  end
-
   defp parse_test_input(input_data) when is_binary(input_data) do
     Raxol.Core.Runtime.Log.debug(
       "[TerminalDriver.parse_test_input] Parsing: #{inspect(input_data)}"
@@ -925,38 +820,6 @@ defmodule Raxol.Terminal.Driver do
     case InputParser.parse(input_data) do
       [event | _] -> event
       [] -> %Event{type: :unknown_test_input, data: %{raw: input_data}}
-    end
-  end
-
-  defp translate_event_map(event_map) do
-    # Handle event structure from rrex_termbox v2.0.1 NIF
-    case event_map do
-      %{type: :key, key: key_code, char: char_code, mod: mod_code} ->
-        # Translate key_code, char_code, mod_code to Raxol's key event format
-        translated_key = translate_key(key_code, char_code, mod_code)
-        event = %Event{type: :key, data: translated_key}
-        {:ok, event}
-
-      %{type: :resize, width: w, height: h} ->
-        event = %Event{type: :resize, data: %{width: w, height: h}}
-        {:ok, event}
-
-      %{type: :mouse, x: x, y: y, button: btn_code} ->
-        # Translate rrex_termbox mouse button codes and potentially event types
-        translated_button = translate_mouse_button(btn_code)
-        # Add button info to the data
-        event = %Event{
-          type: :mouse,
-          data: %{x: x, y: y, button: translated_button}
-        }
-
-        {:ok, event}
-
-      # Add cases for other event types rrex_termbox might send
-
-      _other ->
-        # Raxol.Core.Runtime.Log.debug("Ignoring unknown termbox event type: #{inspect(event_map)}")
-        :ignore
     end
   end
 end

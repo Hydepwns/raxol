@@ -164,4 +164,43 @@ defmodule Raxol.Core.Renderer.View.Components do
       :error -> 1
     end
   end
+
+  @doc """
+  Creates a table view.
+
+  ## Options
+    * `:data` - Table data (list of lists)
+    * `:headers` - Column headers
+    * `:style` - Table style options
+    * `:border` - Border style for the table
+  """
+  def table(opts \\ []) do
+    %{
+      type: :table,
+      data: Keyword.get(opts, :data, []),
+      headers: Keyword.get(opts, :headers, []),
+      style: Keyword.get(opts, :style, %{}),
+      border: Keyword.get(opts, :border, :single)
+    }
+  end
+
+  @doc """
+  Creates a process-isolated component node.
+
+  The component module runs in its own GenServer process under
+  `Raxol.DynamicSupervisor`. If it crashes, the supervisor restarts it
+  with fresh state from `init/1` -- the rest of the app continues.
+
+  ## Parameters
+    * `module` - Component module implementing `init/1`, `render/2`, and optionally `update/2`
+    * `props` - Initial properties passed to `init/1`
+  """
+  def process_component(module, props \\ %{}) do
+    %{
+      type: :process_component,
+      module: module,
+      props: props,
+      id: "pc-#{inspect(module)}"
+    }
+  end
 end

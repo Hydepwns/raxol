@@ -52,8 +52,13 @@ defmodule Raxol.Animation.DSL do
   """
 
   alias Raxol.Animation.Framework
+  alias Raxol.Animation.DSL.{Compiler, Transforms}
+
+  @compile {:no_warn_undefined, Raxol.Animation.DSL.Compiler}
+  @compile {:no_warn_undefined, Raxol.Animation.DSL.Transforms}
 
   # Animation sequence structure
+
   defmodule Sequence do
     @moduledoc """
     Represents an animation sequence with type, animations, options, conditions and context.
@@ -106,11 +111,7 @@ defmodule Raxol.Animation.DSL do
     defstruct [:stages, :options, :context]
 
     def new(options \\ %{}) do
-      %__MODULE__{
-        stages: [],
-        options: options,
-        context: %{}
-      }
+      %__MODULE__{stages: [], options: options, context: %{}}
     end
 
     def add_stage(choreo, name, sequence) do
@@ -118,43 +119,25 @@ defmodule Raxol.Animation.DSL do
     end
   end
 
-  # DSL functions
+  # DSL entry points
 
-  @doc """
-  Creates a new animation sequence.
-  """
-  def sequence(options \\ %{}) do
-    Sequence.new(:sequence, options)
-  end
+  @doc "Creates a new animation sequence."
+  def sequence(options \\ %{}), do: Sequence.new(:sequence, options)
 
-  @doc """
-  Creates a parallel animation group.
-  """
-  def parallel(options \\ %{}) do
-    Sequence.new(:parallel, options)
-  end
+  @doc "Creates a parallel animation group."
+  def parallel(options \\ %{}), do: Sequence.new(:parallel, options)
 
-  @doc """
-  Creates a new choreography for complex multi-stage animations.
-  """
-  def choreography(options \\ %{}) do
-    Choreography.new(options)
-  end
+  @doc "Creates a new choreography for complex multi-stage animations."
+  def choreography(options \\ %{}), do: Choreography.new(options)
 
   # Basic animation primitives
 
-  @doc """
-  Adds a fade in animation to the sequence.
-  """
+  @doc "Adds a fade in animation to the sequence."
   def fade_in(sequence_or_options \\ %{})
 
-  def fade_in(%Sequence{} = sequence) do
-    fade_in(sequence, %{})
-  end
+  def fade_in(%Sequence{} = sequence), do: fade_in(sequence, %{})
 
-  def fade_in(options) when is_map(options) do
-    sequence() |> fade_in(options)
-  end
+  def fade_in(options) when is_map(options), do: sequence() |> fade_in(options)
 
   def fade_in(%Sequence{} = sequence, options) do
     animation =
@@ -162,12 +145,7 @@ defmodule Raxol.Animation.DSL do
         :fade_in,
         :opacity,
         Map.merge(
-          %{
-            from: 0.0,
-            to: 1.0,
-            duration: 300,
-            easing: :ease_out
-          },
+          %{from: 0.0, to: 1.0, duration: 300, easing: :ease_out},
           options
         )
       )
@@ -175,18 +153,13 @@ defmodule Raxol.Animation.DSL do
     Sequence.add_animation(sequence, animation)
   end
 
-  @doc """
-  Adds a fade out animation to the sequence.
-  """
+  @doc "Adds a fade out animation to the sequence."
   def fade_out(sequence_or_options \\ %{})
 
-  def fade_out(%Sequence{} = sequence) do
-    fade_out(sequence, %{})
-  end
+  def fade_out(%Sequence{} = sequence), do: fade_out(sequence, %{})
 
-  def fade_out(options) when is_map(options) do
-    sequence() |> fade_out(options)
-  end
+  def fade_out(options) when is_map(options),
+    do: sequence() |> fade_out(options)
 
   def fade_out(%Sequence{} = sequence, options) do
     animation =
@@ -194,12 +167,7 @@ defmodule Raxol.Animation.DSL do
         :fade_out,
         :opacity,
         Map.merge(
-          %{
-            from: 1.0,
-            to: 0.0,
-            duration: 300,
-            easing: :ease_in
-          },
+          %{from: 1.0, to: 0.0, duration: 300, easing: :ease_in},
           options
         )
       )
@@ -207,25 +175,19 @@ defmodule Raxol.Animation.DSL do
     Sequence.add_animation(sequence, animation)
   end
 
-  @doc """
-  Adds a slide animation to the sequence.
-  """
+  @doc "Adds a slide animation to the sequence."
   def slide(sequence_or_options \\ %{})
 
-  def slide(%Sequence{} = sequence) do
-    slide(sequence, %{})
-  end
+  def slide(%Sequence{} = sequence), do: slide(sequence, %{})
 
-  def slide(options) when is_map(options) do
-    sequence() |> slide(options)
-  end
+  def slide(options) when is_map(options), do: sequence() |> slide(options)
 
   def slide(%Sequence{} = sequence, options) do
     direction = Map.get(options, :direction, :up)
     distance = Map.get(options, :distance, 20)
 
     {from_transform, to_transform} =
-      calculate_slide_transform(direction, distance)
+      Transforms.calculate_slide_transform(direction, distance)
 
     animation =
       Animation.new(
@@ -245,26 +207,20 @@ defmodule Raxol.Animation.DSL do
     Sequence.add_animation(sequence, animation)
   end
 
-  # Convenience functions for specific slide directions
-  def slide_up(sequence, options \\ %{}) do
-    slide(sequence, Map.put(options, :direction, :up))
-  end
+  # Convenience slide directions
+  def slide_up(sequence, options \\ %{}),
+    do: slide(sequence, Map.put(options, :direction, :up))
 
-  def slide_down(sequence, options \\ %{}) do
-    slide(sequence, Map.put(options, :direction, :down))
-  end
+  def slide_down(sequence, options \\ %{}),
+    do: slide(sequence, Map.put(options, :direction, :down))
 
-  def slide_left(sequence, options \\ %{}) do
-    slide(sequence, Map.put(options, :direction, :left))
-  end
+  def slide_left(sequence, options \\ %{}),
+    do: slide(sequence, Map.put(options, :direction, :left))
 
-  def slide_right(sequence, options \\ %{}) do
-    slide(sequence, Map.put(options, :direction, :right))
-  end
+  def slide_right(sequence, options \\ %{}),
+    do: slide(sequence, Map.put(options, :direction, :right))
 
-  @doc """
-  Adds a slide in animation.
-  """
+  @doc "Adds a slide in animation."
   def slide_in(sequence_or_options \\ %{}, options \\ %{})
 
   def slide_in(%Sequence{} = sequence, options) do
@@ -272,7 +228,7 @@ defmodule Raxol.Animation.DSL do
     distance = Map.get(options, :distance, 30)
 
     {from_transform, to_transform} =
-      calculate_slide_in_transform(direction, distance)
+      Transforms.calculate_slide_in_transform(direction, distance)
 
     animation =
       Animation.new(
@@ -292,13 +248,10 @@ defmodule Raxol.Animation.DSL do
     Sequence.add_animation(sequence, animation)
   end
 
-  def slide_in(options, _extra) when is_map(options) do
-    sequence() |> slide_in(options)
-  end
+  def slide_in(options, _extra) when is_map(options),
+    do: sequence() |> slide_in(options)
 
-  @doc """
-  Adds a slide out animation.
-  """
+  @doc "Adds a slide out animation."
   def slide_out(sequence_or_options \\ %{}, options \\ %{})
 
   def slide_out(%Sequence{} = sequence, options) do
@@ -306,7 +259,7 @@ defmodule Raxol.Animation.DSL do
     distance = Map.get(options, :distance, 30)
 
     {from_transform, to_transform} =
-      calculate_slide_out_transform(direction, distance)
+      Transforms.calculate_slide_out_transform(direction, distance)
 
     animation =
       Animation.new(
@@ -326,22 +279,15 @@ defmodule Raxol.Animation.DSL do
     Sequence.add_animation(sequence, animation)
   end
 
-  def slide_out(options, _extra) when is_map(options) do
-    sequence() |> slide_out(options)
-  end
+  def slide_out(options, _extra) when is_map(options),
+    do: sequence() |> slide_out(options)
 
-  @doc """
-  Adds a scale animation to the sequence.
-  """
+  @doc "Adds a scale animation to the sequence."
   def scale(sequence_or_options \\ %{})
 
-  def scale(%Sequence{} = sequence) do
-    scale(sequence, %{})
-  end
+  def scale(%Sequence{} = sequence), do: scale(sequence, %{})
 
-  def scale(options) when is_map(options) do
-    sequence() |> scale(options)
-  end
+  def scale(options) when is_map(options), do: sequence() |> scale(options)
 
   def scale(%Sequence{} = sequence, options) do
     animation =
@@ -362,30 +308,25 @@ defmodule Raxol.Animation.DSL do
     Sequence.add_animation(sequence, animation)
   end
 
-  @doc """
-  Adds a scale bounce animation.
-  """
+  @doc "Adds a scale bounce animation."
   def scale_bounce(sequence_or_options \\ %{})
 
-  def scale_bounce(%Sequence{} = sequence) do
-    scale_bounce(sequence, %{})
-  end
+  def scale_bounce(%Sequence{} = sequence), do: scale_bounce(sequence, %{})
 
-  def scale_bounce(options) when is_map(options) do
-    sequence() |> scale_bounce(options)
-  end
+  def scale_bounce(options) when is_map(options),
+    do: sequence() |> scale_bounce(options)
 
   def scale_bounce(%Sequence{} = sequence, options) do
     scale_to = Map.get(options, :scale, 1.2)
+    half_dur = Map.get(options, :duration, 200) |> div(2)
 
-    # Create a sequence of scale up -> scale down for bounce effect
     bounce_sequence =
       parallel(%{})
       |> with_animation(
         Animation.new(:scale_up, :scale, %{
           from: 1.0,
           to: scale_to,
-          duration: Map.get(options, :duration, 200) |> div(2),
+          duration: half_dur,
           easing: :ease_out_bounce
         })
       )
@@ -393,27 +334,22 @@ defmodule Raxol.Animation.DSL do
         Animation.new(:scale_down, :scale, %{
           from: scale_to,
           to: 1.0,
-          duration: Map.get(options, :duration, 200) |> div(2),
+          duration: half_dur,
           easing: :ease_in_bounce,
-          delay: Map.get(options, :duration, 200) |> div(2)
+          delay: half_dur
         })
       )
 
     Sequence.add_animation(sequence, bounce_sequence)
   end
 
-  @doc """
-  Adds a scale down animation.
-  """
+  @doc "Adds a scale down animation."
   def scale_down(sequence_or_options \\ %{})
 
-  def scale_down(%Sequence{} = sequence) do
-    scale_down(sequence, %{})
-  end
+  def scale_down(%Sequence{} = sequence), do: scale_down(sequence, %{})
 
-  def scale_down(options) when is_map(options) do
-    sequence() |> scale_down(options)
-  end
+  def scale_down(options) when is_map(options),
+    do: sequence() |> scale_down(options)
 
   def scale_down(%Sequence{} = sequence, options) do
     animation =
@@ -434,18 +370,12 @@ defmodule Raxol.Animation.DSL do
     Sequence.add_animation(sequence, animation)
   end
 
-  @doc """
-  Adds a rotation animation.
-  """
+  @doc "Adds a rotation animation."
   def rotate(sequence_or_options \\ %{})
 
-  def rotate(%Sequence{} = sequence) do
-    rotate(sequence, %{})
-  end
+  def rotate(%Sequence{} = sequence), do: rotate(sequence, %{})
 
-  def rotate(options) when is_map(options) do
-    sequence() |> rotate(options)
-  end
+  def rotate(options) when is_map(options), do: sequence() |> rotate(options)
 
   def rotate(%Sequence{} = sequence, options) do
     animation =
@@ -468,18 +398,13 @@ defmodule Raxol.Animation.DSL do
 
   # Advanced effects
 
-  @doc """
-  Adds a glow effect animation.
-  """
+  @doc "Adds a glow effect animation."
   def glow_effect(sequence_or_options \\ %{})
 
-  def glow_effect(%Sequence{} = sequence) do
-    glow_effect(sequence, %{})
-  end
+  def glow_effect(%Sequence{} = sequence), do: glow_effect(sequence, %{})
 
-  def glow_effect(options) when is_map(options) do
-    sequence() |> glow_effect(options)
-  end
+  def glow_effect(options) when is_map(options),
+    do: sequence() |> glow_effect(options)
 
   def glow_effect(%Sequence{} = sequence, options) do
     animation =
@@ -501,24 +426,18 @@ defmodule Raxol.Animation.DSL do
     Sequence.add_animation(sequence, animation)
   end
 
-  @doc """
-  Adds a pulse scale animation.
-  """
+  @doc "Adds a pulse scale animation."
   def pulse_scale(sequence_or_options \\ %{})
 
-  def pulse_scale(%Sequence{} = sequence) do
-    pulse_scale(sequence, %{})
-  end
+  def pulse_scale(%Sequence{} = sequence), do: pulse_scale(sequence, %{})
 
-  def pulse_scale(options) when is_map(options) do
-    sequence() |> pulse_scale(options)
-  end
+  def pulse_scale(options) when is_map(options),
+    do: sequence() |> pulse_scale(options)
 
   def pulse_scale(%Sequence{} = sequence, options) do
     scale_to = Map.get(options, :scale, 1.05)
     duration = Map.get(options, :duration, 600)
 
-    # Create pulsing effect with back-and-forth scaling
     pulse_animation =
       Animation.new(
         :pulse_scale,
@@ -541,18 +460,13 @@ defmodule Raxol.Animation.DSL do
     Sequence.add_animation(sequence, pulse_animation)
   end
 
-  @doc """
-  Adds a sparkle effect animation.
-  """
+  @doc "Adds a sparkle effect animation."
   def sparkle_effect(sequence_or_options \\ %{})
 
-  def sparkle_effect(%Sequence{} = sequence) do
-    sparkle_effect(sequence, %{})
-  end
+  def sparkle_effect(%Sequence{} = sequence), do: sparkle_effect(sequence, %{})
 
-  def sparkle_effect(options) when is_map(options) do
-    sequence() |> sparkle_effect(options)
-  end
+  def sparkle_effect(options) when is_map(options),
+    do: sequence() |> sparkle_effect(options)
 
   def sparkle_effect(%Sequence{} = sequence, options) do
     animation =
@@ -577,49 +491,37 @@ defmodule Raxol.Animation.DSL do
 
   # Sequence composition and control
 
-  @doc """
-  Adds an animation to a parallel group.
-  """
+  @doc "Adds an animation to a parallel group."
   def with_animation(%Sequence{type: :parallel} = parallel_sequence, animation) do
     Sequence.add_animation(parallel_sequence, animation)
   end
 
-  @doc """
-  Adds a delay to the sequence.
-  """
+  @doc "Adds a delay to the sequence."
   def delay(sequence, duration) do
     animation = Animation.new(:delay, :delay, %{duration: duration})
     Sequence.add_animation(sequence, animation)
   end
 
-  @doc """
-  Adds a conditional block to the sequence.
-  """
+  @doc "Adds a conditional block to the sequence."
   def when_condition(%Sequence{} = sequence, condition_fn)
       when is_function(condition_fn, 1) do
     condition = %{type: :when, condition: condition_fn}
     Sequence.add_condition(sequence, condition)
   end
 
-  @doc """
-  Ends a conditional block.
-  """
+  @doc "Ends a conditional block."
   def end_condition(%Sequence{} = sequence) do
     condition = %{type: :end_when}
     Sequence.add_condition(sequence, condition)
   end
 
-  @doc """
-  Repeats the previous animation or sequence.
-  """
+  @doc "Repeats the previous animation or sequence."
   def repeat(%Sequence{} = sequence, times) when is_integer(times) do
     repeat_animation = Animation.new(:repeat, :repeat, %{times: times})
     Sequence.add_animation(sequence, repeat_animation)
   end
 
-  @doc """
-  Loops the sequence infinitely or for a specified number of iterations.
-  """
+  @doc "Loops the sequence infinitely or for a specified number of iterations."
   def loop(%Sequence{} = sequence, iterations \\ :infinite) do
     loop_animation = Animation.new(:loop, :loop, %{iterations: iterations})
     Sequence.add_animation(sequence, loop_animation)
@@ -627,20 +529,16 @@ defmodule Raxol.Animation.DSL do
 
   # Choreography functions
 
-  @doc """
-  Adds a stage to a choreography.
-  """
+  @doc "Adds a stage to a choreography."
   def stage(%Choreography{} = choreo, name, sequence) do
     Choreography.add_stage(choreo, name, sequence)
   end
 
   # Execution functions
 
-  @doc """
-  Executes the animation sequence for the given element.
-  """
+  @doc "Executes the animation sequence for the given element."
   def execute(%Sequence{} = sequence, element_id, options \\ %{}) do
-    compiled_animations = compile_sequence(sequence)
+    compiled_animations = Compiler.compile_sequence(sequence)
 
     Enum.each(compiled_animations, fn {animation_name, animation_config} ->
       _ = Framework.create_animation(animation_name, animation_config)
@@ -650,155 +548,15 @@ defmodule Raxol.Animation.DSL do
     :ok
   end
 
-  @doc """
-  Executes a choreography with multiple stages.
-  """
+  @doc "Executes a choreography with multiple stages."
   def execute_choreography(%Choreography{} = choreo, element_id, options \\ %{}) do
-    total_delay = 0
-
     _final_delay =
-      Enum.reduce(choreo.stages, total_delay, fn {stage_name, sequence},
-                                                 acc_delay ->
-        # Execute this stage with accumulated delay
+      Enum.reduce(choreo.stages, 0, fn {stage_name, sequence}, acc_delay ->
         stage_options = Map.put(options, :delay, acc_delay)
         execute(sequence, "#{element_id}_#{stage_name}", stage_options)
-
-        # Calculate delay for next stage
-        stage_duration = calculate_sequence_duration(sequence)
-        acc_delay + stage_duration
+        acc_delay + Compiler.calculate_sequence_duration(sequence)
       end)
 
     :ok
-  end
-
-  # Private helper functions
-
-  defp calculate_slide_transform(direction, distance) do
-    case direction do
-      :up -> {"translateY(#{distance}px)", "translateY(0px)"}
-      :down -> {"translateY(-#{distance}px)", "translateY(0px)"}
-      :left -> {"translateX(#{distance}px)", "translateX(0px)"}
-      :right -> {"translateX(-#{distance}px)", "translateX(0px)"}
-    end
-  end
-
-  defp calculate_slide_in_transform(direction, distance) do
-    case direction do
-      :up -> {"translateY(#{distance}px)", "translateY(0px)"}
-      :down -> {"translateY(-#{distance}px)", "translateY(0px)"}
-      :left -> {"translateX(-#{distance}px)", "translateX(0px)"}
-      :right -> {"translateX(#{distance}px)", "translateX(0px)"}
-    end
-  end
-
-  defp calculate_slide_out_transform(direction, distance) do
-    case direction do
-      :up -> {"translateY(0px)", "translateY(-#{distance}px)"}
-      :down -> {"translateY(0px)", "translateY(#{distance}px)"}
-      :left -> {"translateY(0px)", "translateX(-#{distance}px)"}
-      :right -> {"translateY(0px)", "translateX(#{distance}px)"}
-    end
-  end
-
-  defp compile_sequence(%Sequence{type: :sequence, animations: animations}) do
-    animations
-    |> Enum.with_index()
-    |> Enum.map(fn {animation, index} ->
-      animation_name = :"sequence_#{index}_#{animation.name}"
-      animation_config = compile_animation(animation)
-      {animation_name, animation_config}
-    end)
-  end
-
-  defp compile_sequence(%Sequence{type: :parallel, animations: animations}) do
-    animations
-    |> Enum.with_index()
-    |> Enum.map(fn {animation, index} ->
-      animation_name = :"parallel_#{index}_#{animation.name}"
-      animation_config = compile_animation(animation)
-      {animation_name, animation_config}
-    end)
-  end
-
-  defp compile_animation(%Animation{type: animation_type, params: params}) do
-    case animation_type do
-      type when type in [:opacity, :scale, :rotate] ->
-        Map.merge(
-          %{
-            type: :generic,
-            target_path: [type]
-          },
-          params
-        )
-
-      :transform ->
-        Map.merge(
-          %{
-            type: :morph,
-            from_state: %{transform: params.from},
-            to_state: %{transform: params.to}
-          },
-          params
-        )
-
-      :particle_system ->
-        Map.merge(
-          %{
-            type: :particle_system
-          },
-          params
-        )
-
-      :glow ->
-        Map.merge(
-          %{
-            type: :generic,
-            target_path: [:glow_intensity]
-          },
-          params
-        )
-
-      :delay ->
-        %{
-          type: :delay,
-          duration: params.duration,
-          from: 0,
-          to: 0,
-          target_path: [:_delay]
-        }
-
-      other_type ->
-        Map.merge(
-          %{
-            type: other_type
-          },
-          params
-        )
-    end
-  end
-
-  defp compile_animation(%Sequence{} = nested_sequence) do
-    # Handle nested sequences (like for bounce effects)
-    compiled_animations = compile_sequence(nested_sequence)
-
-    %{
-      type: :nested_sequence,
-      animations: compiled_animations
-    }
-  end
-
-  defp calculate_sequence_duration(%Sequence{animations: animations}) do
-    Enum.reduce(animations, 0, fn animation, acc ->
-      duration =
-        case animation do
-          %Animation{params: params} ->
-            Map.get(params, :duration, 300) + Map.get(params, :delay, 0)
-
-          %Sequence{} = nested ->
-            calculate_sequence_duration(nested)
-        end
-
-      acc + duration
-    end)
   end
 end

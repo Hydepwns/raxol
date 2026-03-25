@@ -14,7 +14,6 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
   end
 
   describe "announce/2 related functions" do
-    @describetag :skip
     setup do
       prefs_name =
         String.to_atom(

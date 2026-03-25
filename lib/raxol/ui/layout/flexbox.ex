@@ -33,6 +33,8 @@ defmodule Raxol.UI.Layout.Flexbox do
   """
 
   alias Raxol.UI.Layout.Engine
+  alias Raxol.UI.Layout.LayoutUtils
+  alias Raxol.UI.Layout.Flexbox.{Distributor, Positioner, Wrapper, Calculator}
 
   @type t :: %{
           type: :flexbox,
@@ -52,24 +54,14 @@ defmodule Raxol.UI.Layout.Flexbox do
   def process_flex(%{type: :flex, children: children} = flex, space, acc)
       when is_list(children) do
     attrs = Map.get(flex, :attrs, %{})
-
-    # Parse flex properties
     flex_props = parse_flex_properties(attrs)
-
-    # Apply padding to available space
     content_space = apply_padding(space, flex_props.padding)
-
-    # Propagate inheritable styles (fg, bg, bold, etc.) to children
     children = inherit_styles(flex, children)
-
-    # Sort children by order property
     sorted_children = sort_children_by_order(children)
 
-    # Calculate flex layout
     positioned_children =
       calculate_flex_layout(sorted_children, content_space, flex_props)
 
-    # Process each positioned child
     elements =
       Enum.flat_map(positioned_children, fn {child, child_space} ->
         Engine.process_element(child, child_space, [])
@@ -87,21 +79,20 @@ defmodule Raxol.UI.Layout.Flexbox do
       when is_list(children) do
     attrs = Map.get(flex, :attrs, %{})
     flex_props = parse_flex_properties(attrs)
-
-    # Apply padding to available space for measurement
     content_space = apply_padding(available_space, flex_props.padding)
 
-    # Measure children
     child_dimensions =
       Enum.map(children, fn child ->
         measure_flex_child(child, content_space, flex_props)
       end)
 
-    # Calculate container size based on flex direction and wrapping
     container_size =
-      calculate_container_size(child_dimensions, flex_props, content_space)
+      Calculator.calculate_container_size(
+        child_dimensions,
+        flex_props,
+        content_space
+      )
 
-    # Add padding back to container size
     %{
       width:
         container_size.width + flex_props.padding.left +
@@ -114,7 +105,74 @@ defmodule Raxol.UI.Layout.Flexbox do
 
   def measure_flex(_, _available_space), do: %{width: 0, height: 0}
 
-  # Private helper functions
+  @doc """
+  Creates a new flexbox layout with the given options.
+
+  ## Options
+  - `:direction` - flex direction (row, column)
+  - `:justify` - justify content
+  - `:align` - align items
+  - `:wrap` - flex wrap
+  - `:gap` - gap between items
+  - `:children` - child elements
+  - `:width` - container width
+  - `:height` - container height
+  """
+  @spec new(keyword()) :: t()
+  def new(opts \\ []) do
+    %{
+      type: :flexbox,
+      direction: Keyword.get(opts, :direction, :row),
+      justify: Keyword.get(opts, :justify, :flex_start),
+      align: Keyword.get(opts, :align, :stretch),
+      wrap: Keyword.get(opts, :wrap, :nowrap),
+      gap: Keyword.get(opts, :gap, 0),
+      children: Keyword.get(opts, :children, []),
+      width: Keyword.get(opts, :width),
+      height: Keyword.get(opts, :height)
+    }
+  end
+
+  @doc """
+  Renders the flexbox layout.
+
+  Returns the layout with calculated positions for all children.
+  """
+  @spec render(t()) :: {:ok, map()}
+  def render(flexbox) do
+    {:ok,
+     %{
+       type: :rendered_flexbox,
+       layout: flexbox,
+       children: flexbox.children
+     }}
+  end
+
+  @doc """
+  Calculates the layout for flexbox and its children.
+
+  Returns a map with calculated dimensions and positions.
+  """
+  @spec calculate_layout(t()) :: map()
+  def calculate_layout(flexbox) do
+    total_width = flexbox.width || Calculator.calculate_content_width(flexbox)
+
+    total_height =
+      flexbox.height || Calculator.calculate_content_height(flexbox)
+
+    child_layouts =
+      Calculator.calculate_child_layouts(flexbox, total_width, total_height)
+
+    %{
+      width: total_width,
+      height: total_height,
+      children: child_layouts
+    }
+  end
+
+  # ---------------------------------------------------------------------------
+  # Private helpers
+  # ---------------------------------------------------------------------------
 
   defp parse_flex_properties(attrs) do
     %{
@@ -128,18 +186,9 @@ defmodule Raxol.UI.Layout.Flexbox do
     }
   end
 
-  defp parse_gap(gap) when is_integer(gap) do
-    %{row: gap, column: gap}
-  end
-
-  defp parse_gap(%{row: row, column: column}) do
-    %{row: row, column: column}
-  end
-
+  defp parse_gap(gap) when is_integer(gap), do: %{row: gap, column: gap}
+  defp parse_gap(%{row: row, column: column}), do: %{row: row, column: column}
   defp parse_gap(_), do: %{row: 0, column: 0}
-
-  # Import shared layout utilities
-  alias Raxol.UI.Layout.LayoutUtils
 
   defp parse_padding(padding), do: LayoutUtils.parse_padding(padding)
 
@@ -154,7 +203,6 @@ defmodule Raxol.UI.Layout.Flexbox do
   end
 
   defp calculate_flex_layout(children, space, flex_props) do
-    # Measure all children first
     children_with_dims =
       Enum.map(children, fn child ->
         dims = measure_flex_child(child, space, flex_props)
@@ -162,60 +210,73 @@ defmodule Raxol.UI.Layout.Flexbox do
         {child, dims, flex_attrs}
       end)
 
-    # Determine main and cross axis based on flex direction
     {main_axis, cross_axis} = get_axes(flex_props.flex_direction)
 
-    # Calculate layout based on wrapping
-    calculate_layout_by_wrap(
-      flex_props.flex_wrap,
-      children_with_dims,
-      space,
-      flex_props,
-      main_axis,
-      cross_axis
-    )
+    case flex_props.flex_wrap do
+      :nowrap ->
+        calculate_single_line_layout(
+          children_with_dims,
+          space,
+          flex_props,
+          main_axis,
+          cross_axis
+        )
+
+      _ ->
+        Wrapper.calculate_multi_line_layout(
+          children_with_dims,
+          space,
+          flex_props,
+          main_axis,
+          cross_axis
+        )
+    end
   end
 
-  defp calculate_layout_by_wrap(
-         :nowrap,
+  defp calculate_single_line_layout(
          children_with_dims,
          space,
          flex_props,
          main_axis,
          cross_axis
        ) do
-    calculate_single_line_layout(
-      children_with_dims,
-      space,
-      flex_props,
-      main_axis,
-      cross_axis
-    )
-  end
+    total_main_size =
+      Enum.reduce(children_with_dims, 0, fn {_child, dims, _flex}, acc ->
+        acc + Positioner.get_dimension(dims, main_axis)
+      end)
 
-  defp calculate_layout_by_wrap(
-         _wrap_mode,
-         children_with_dims,
-         space,
-         flex_props,
-         main_axis,
-         cross_axis
-       ) do
-    calculate_multi_line_layout(
-      children_with_dims,
+    gap_size = Positioner.get_gap_size(flex_props.gap, main_axis)
+    total_gaps = gap_size * max(0, length(children_with_dims) - 1)
+
+    available_main_space =
+      Positioner.get_dimension(space, main_axis) - total_main_size - total_gaps
+
+    sized_children =
+      Distributor.distribute_main_space(
+        children_with_dims,
+        available_main_space,
+        main_axis
+      )
+
+    positioned_children =
+      Positioner.position_main_axis(
+        sized_children,
+        space,
+        flex_props,
+        main_axis
+      )
+
+    Positioner.position_cross_axis(
+      positioned_children,
       space,
       flex_props,
-      main_axis,
       cross_axis
     )
   end
 
   defp measure_flex_child(child, available_space, flex_props) do
-    # Get child's flex properties
     child_attrs = Map.get(child, :attrs, %{})
     flex_attrs = Map.get(child_attrs, :flex, %{})
-
-    # Calculate available space for child based on flex-basis
     flex_basis = Map.get(flex_attrs, :basis, :auto)
 
     child_space =
@@ -256,757 +317,6 @@ defmodule Raxol.UI.Layout.Flexbox do
 
   defp get_main_axis(direction) when direction in [:column, :column_reverse],
     do: :vertical
-
-  defp calculate_single_line_layout(
-         children_with_dims,
-         space,
-         flex_props,
-         main_axis,
-         cross_axis
-       ) do
-    # Calculate total main axis size needed by all children
-    total_main_size =
-      Enum.reduce(children_with_dims, 0, fn {_child, dims, _flex}, acc ->
-        acc + get_dimension(dims, main_axis)
-      end)
-
-    # Calculate total gap size
-    gap_size =
-      get_gap_size(flex_props.gap, main_axis) *
-        max(0, length(children_with_dims) - 1)
-
-    # Available space for flex growth/shrinkage
-    available_main_space =
-      get_dimension(space, main_axis) - total_main_size - gap_size
-
-    # Distribute extra space or shrink items
-    sized_children =
-      handle_space_distribution(
-        available_main_space > 0,
-        children_with_dims,
-        available_main_space,
-        main_axis
-      )
-
-    # Position items along main axis
-    positioned_children =
-      position_main_axis(sized_children, space, flex_props, main_axis)
-
-    # Position items along cross axis
-    position_cross_axis(positioned_children, space, flex_props, cross_axis)
-  end
-
-  defp handle_space_distribution(
-         true,
-         children_with_dims,
-         available_main_space,
-         main_axis
-       ) do
-    distribute_extra_space(children_with_dims, available_main_space, main_axis)
-  end
-
-  defp handle_space_distribution(
-         false,
-         children_with_dims,
-         available_main_space,
-         main_axis
-       ) do
-    shrink_items(children_with_dims, -available_main_space, main_axis)
-  end
-
-  defp calculate_multi_line_layout(
-         children_with_dims,
-         space,
-         flex_props,
-         main_axis,
-         cross_axis
-       ) do
-    # Break children into lines
-    lines = break_into_lines(children_with_dims, space, flex_props, main_axis)
-
-    # Calculate layout for each line
-    lines_with_layout =
-      Enum.map(lines, fn line_children ->
-        line_space = %{
-          space
-          | height: calculate_line_height(line_children, cross_axis)
-        }
-
-        calculate_single_line_layout(
-          line_children,
-          line_space,
-          flex_props,
-          main_axis,
-          cross_axis
-        )
-      end)
-
-    # Position lines along cross axis
-    position_lines_cross_axis(lines_with_layout, space, flex_props, cross_axis)
-  end
-
-  defp get_dimension(dims, :horizontal), do: dims.width
-  defp get_dimension(dims, :vertical), do: dims.height
-
-  defp get_gap_size(gap, :horizontal), do: gap.column
-  defp get_gap_size(gap, :vertical), do: gap.row
-
-  defp distribute_extra_space(children_with_dims, extra_space, main_axis) do
-    # Calculate total flex grow
-    total_grow =
-      Enum.reduce(children_with_dims, 0, fn {_child, _dims, flex}, acc ->
-        acc + flex.grow
-      end)
-
-    distribute_grow_space(
-      total_grow == 0,
-      children_with_dims,
-      extra_space,
-      total_grow,
-      main_axis
-    )
-  end
-
-  defp distribute_grow_space(
-         true,
-         children_with_dims,
-         _extra_space,
-         _total_grow,
-         _main_axis
-       ) do
-    children_with_dims
-  end
-
-  defp distribute_grow_space(
-         false,
-         children_with_dims,
-         extra_space,
-         total_grow,
-         main_axis
-       ) do
-    # Distribute extra space proportionally
-    Enum.map(children_with_dims, fn {child, dims, flex} ->
-      apply_flex_grow(
-        flex.grow > 0,
-        child,
-        dims,
-        flex,
-        extra_space,
-        total_grow,
-        main_axis
-      )
-    end)
-  end
-
-  defp apply_flex_grow(
-         false,
-         child,
-         dims,
-         flex,
-         _extra_space,
-         _total_grow,
-         _main_axis
-       ) do
-    {child, dims, flex}
-  end
-
-  defp apply_flex_grow(
-         true,
-         child,
-         dims,
-         flex,
-         extra_space,
-         total_grow,
-         main_axis
-       ) do
-    extra = div(extra_space * flex.grow, total_grow)
-
-    new_dims =
-      case main_axis do
-        :horizontal -> %{dims | width: dims.width + extra}
-        :vertical -> %{dims | height: dims.height + extra}
-      end
-
-    {child, new_dims, flex}
-  end
-
-  defp shrink_items(children_with_dims, shortage, main_axis) do
-    # Calculate total flex shrink weighted by size
-    total_shrink_weight =
-      Enum.reduce(children_with_dims, 0, fn {_child, dims, flex}, acc ->
-        size = get_dimension(dims, main_axis)
-        acc + flex.shrink * size
-      end)
-
-    distribute_shrink_space(
-      total_shrink_weight == 0,
-      children_with_dims,
-      shortage,
-      total_shrink_weight,
-      main_axis
-    )
-  end
-
-  defp distribute_shrink_space(
-         true,
-         children_with_dims,
-         _shortage,
-         _total_shrink_weight,
-         _main_axis
-       ) do
-    children_with_dims
-  end
-
-  defp distribute_shrink_space(
-         false,
-         children_with_dims,
-         shortage,
-         total_shrink_weight,
-         main_axis
-       ) do
-    # Shrink items proportionally
-    Enum.map(children_with_dims, fn {child, dims, flex} ->
-      apply_flex_shrink(
-        flex.shrink > 0,
-        child,
-        dims,
-        flex,
-        shortage,
-        total_shrink_weight,
-        main_axis
-      )
-    end)
-  end
-
-  defp apply_flex_shrink(
-         false,
-         child,
-         dims,
-         flex,
-         _shortage,
-         _total_shrink_weight,
-         _main_axis
-       ) do
-    {child, dims, flex}
-  end
-
-  defp apply_flex_shrink(
-         true,
-         child,
-         dims,
-         flex,
-         shortage,
-         total_shrink_weight,
-         main_axis
-       ) do
-    size = get_dimension(dims, main_axis)
-    shrink_weight = flex.shrink * size
-
-    shrink_amount =
-      min(size, div(shortage * shrink_weight, total_shrink_weight))
-
-    new_dims =
-      case main_axis do
-        :horizontal -> %{dims | width: max(0, dims.width - shrink_amount)}
-        :vertical -> %{dims | height: max(0, dims.height - shrink_amount)}
-      end
-
-    {child, new_dims, flex}
-  end
-
-  defp position_main_axis(sized_children, space, flex_props, main_axis) do
-    total_size =
-      Enum.reduce(sized_children, 0, fn {_child, dims, _flex}, acc ->
-        acc + get_dimension(dims, main_axis)
-      end)
-
-    gap_size = get_gap_size(flex_props.gap, main_axis)
-    total_gaps = gap_size * max(0, length(sized_children) - 1)
-    available_space = get_dimension(space, main_axis) - total_size - total_gaps
-
-    {start_pos, item_gap} =
-      calculate_justify_positioning(
-        flex_props.justify_content,
-        available_space,
-        length(sized_children),
-        gap_size
-      )
-
-    start_coord = get_coord(space, main_axis) + start_pos
-
-    {_, positioned} =
-      Enum.reduce(sized_children, {start_coord, []}, fn {child, dims, flex},
-                                                        {current_pos, acc} ->
-        child_space = build_child_space(space, dims, main_axis, current_pos)
-        next_pos = current_pos + get_dimension(dims, main_axis) + item_gap
-        {next_pos, [{child, child_space, flex} | acc]}
-      end)
-
-    Enum.reverse(positioned)
-  end
-
-  defp position_cross_axis(positioned_children, space, flex_props, cross_axis) do
-    Enum.map(positioned_children, fn {child, child_space, flex} ->
-      alignment = flex.align_self || flex_props.align_items
-      new_child_space = align_cross(child_space, space, cross_axis, alignment)
-      {child, new_child_space}
-    end)
-  end
-
-  defp align_cross(child_space, space, cross_axis, alignment) do
-    origin = get_coord(space, cross_axis)
-    total = get_dimension(space, cross_axis)
-    child_size = get_dimension(child_space, cross_axis)
-
-    case alignment do
-      :flex_start ->
-        set_cross_coord(child_space, cross_axis, origin)
-
-      :flex_end ->
-        set_cross_coord(child_space, cross_axis, origin + total - child_size)
-
-      :center ->
-        set_cross_coord(
-          child_space,
-          cross_axis,
-          origin + div(total - child_size, 2)
-        )
-
-      :stretch ->
-        child_space
-        |> set_cross_coord(cross_axis, origin)
-        |> set_cross_dimension(cross_axis, total)
-
-      _ ->
-        child_space
-    end
-  end
-
-  defp set_cross_dimension(space, :horizontal, val), do: %{space | width: val}
-  defp set_cross_dimension(space, :vertical, val), do: %{space | height: val}
-
-  defp calculate_justify_positioning(
-         :flex_start,
-         _available_space,
-         _item_count,
-         gap
-       ) do
-    {0, gap}
-  end
-
-  defp calculate_justify_positioning(
-         :flex_end,
-         available_space,
-         _item_count,
-         gap
-       ) do
-    {available_space, gap}
-  end
-
-  defp calculate_justify_positioning(:center, available_space, _item_count, gap) do
-    {div(available_space, 2), gap}
-  end
-
-  defp calculate_justify_positioning(
-         :space_between,
-         available_space,
-         item_count,
-         _gap
-       )
-       when item_count > 1 do
-    {0, div(available_space, item_count - 1)}
-  end
-
-  defp calculate_justify_positioning(
-         :space_around,
-         available_space,
-         item_count,
-         _gap
-       ) do
-    space_per_item = div(available_space, item_count)
-    {div(space_per_item, 2), space_per_item}
-  end
-
-  defp calculate_justify_positioning(
-         :space_evenly,
-         available_space,
-         item_count,
-         _gap
-       ) do
-    space_per_gap = div(available_space, item_count + 1)
-    {space_per_gap, space_per_gap}
-  end
-
-  defp calculate_justify_positioning(_, _available_space, _item_count, gap) do
-    {0, gap}
-  end
-
-  defp break_into_lines(children_with_dims, space, flex_props, main_axis) do
-    available_main_size = get_dimension(space, main_axis)
-    gap_size = get_gap_size(flex_props.gap, main_axis)
-
-    {lines, current_line, _current_size} =
-      Enum.reduce(children_with_dims, {[], [], 0}, fn item =
-                                                        {_child, dims, _flex},
-                                                      {lines, current_line,
-                                                       current_size} ->
-        item_size = get_dimension(dims, main_axis)
-
-        needed_size =
-          calculate_needed_size(
-            current_line == [],
-            item_size,
-            current_size,
-            gap_size
-          )
-
-        handle_line_placement(
-          needed_size <= available_main_size or current_line == [],
-          lines,
-          current_line,
-          item,
-          needed_size,
-          item_size
-        )
-      end)
-
-    # Add the last line
-    final_lines = finalize_lines(current_line == [], lines, current_line)
-
-    Enum.reverse(final_lines)
-  end
-
-  defp calculate_needed_size(true, item_size, _current_size, _gap_size),
-    do: item_size
-
-  defp calculate_needed_size(false, item_size, current_size, gap_size) do
-    current_size + gap_size + item_size
-  end
-
-  defp handle_line_placement(
-         true,
-         lines,
-         current_line,
-         item,
-         needed_size,
-         _item_size
-       ) do
-    # Item fits in current line
-    {lines, [item | current_line], needed_size}
-  end
-
-  defp handle_line_placement(
-         false,
-         lines,
-         current_line,
-         item,
-         _needed_size,
-         item_size
-       ) do
-    # Start new line
-    {[Enum.reverse(current_line) | lines], [item], item_size}
-  end
-
-  defp finalize_lines(true, lines, _current_line), do: lines
-
-  defp finalize_lines(false, lines, current_line) do
-    [Enum.reverse(current_line) | lines]
-  end
-
-  defp calculate_line_height(line_children, cross_axis) do
-    Enum.reduce(line_children, 0, fn {_child, dims, _flex}, acc ->
-      max(acc, get_dimension(dims, cross_axis))
-    end)
-  end
-
-  defp position_lines_cross_axis(
-         lines_with_layout,
-         space,
-         flex_props,
-         cross_axis
-       ) do
-    line_heights =
-      Enum.map(lines_with_layout, fn line ->
-        Enum.reduce(line, 0, fn item, acc ->
-          max(acc, get_dimension(item_space(item), cross_axis))
-        end)
-      end)
-
-    total_line_height = Enum.sum(line_heights)
-    available_space = get_dimension(space, cross_axis) - total_line_height
-    gap_size = get_gap_size(flex_props.gap, cross_axis)
-    total_gaps = gap_size * max(0, length(lines_with_layout) - 1)
-
-    {start_pos, line_gap} =
-      calculate_align_content_positioning(
-        flex_props.align_content,
-        available_space - total_gaps,
-        length(lines_with_layout),
-        gap_size
-      )
-
-    start_coord = get_coord(space, cross_axis) + start_pos
-
-    {_, positioned_lines} =
-      Enum.zip(lines_with_layout, line_heights)
-      |> Enum.reduce({start_coord, []}, fn {line, line_height},
-                                           {current_pos, acc} ->
-        positioned_line =
-          Enum.map(line, &set_item_cross_pos(&1, cross_axis, current_pos))
-
-        next_pos = current_pos + line_height + line_gap
-        {next_pos, positioned_line ++ acc}
-      end)
-
-    positioned_lines
-  end
-
-  defp item_space({_child, child_space, _flex}), do: child_space
-  defp item_space({_child, child_space}), do: child_space
-
-  defp set_item_cross_pos({child, child_space}, cross_axis, pos) do
-    {child, set_cross_coord(child_space, cross_axis, pos)}
-  end
-
-  defp set_item_cross_pos({child, child_space, _flex}, cross_axis, pos) do
-    {child, set_cross_coord(child_space, cross_axis, pos)}
-  end
-
-  defp get_coord(space, :horizontal), do: space.x
-  defp get_coord(space, :vertical), do: space.y
-
-  defp set_cross_coord(space, :horizontal, pos), do: %{space | x: pos}
-  defp set_cross_coord(space, :vertical, pos), do: %{space | y: pos}
-
-  defp build_child_space(space, dims, :horizontal, main_pos) do
-    %{x: main_pos, y: space.y, width: dims.width, height: dims.height}
-  end
-
-  defp build_child_space(space, dims, :vertical, main_pos) do
-    %{x: space.x, y: main_pos, width: dims.width, height: dims.height}
-  end
-
-  defp calculate_align_content_positioning(
-         :flex_start,
-         _available_space,
-         _line_count,
-         gap
-       ) do
-    {0, gap}
-  end
-
-  defp calculate_align_content_positioning(
-         :flex_end,
-         available_space,
-         _line_count,
-         gap
-       ) do
-    {available_space, gap}
-  end
-
-  defp calculate_align_content_positioning(
-         :center,
-         available_space,
-         _line_count,
-         gap
-       ) do
-    {div(available_space, 2), gap}
-  end
-
-  defp calculate_align_content_positioning(
-         :space_between,
-         available_space,
-         line_count,
-         _gap
-       )
-       when line_count > 1 do
-    {0, div(available_space, line_count - 1)}
-  end
-
-  defp calculate_align_content_positioning(
-         :space_around,
-         available_space,
-         line_count,
-         _gap
-       ) do
-    space_per_line = div(available_space, line_count)
-    {div(space_per_line, 2), space_per_line}
-  end
-
-  defp calculate_align_content_positioning(
-         _,
-         _available_space,
-         _line_count,
-         gap
-       ) do
-    {0, gap}
-  end
-
-  defp calculate_container_size(child_dimensions, flex_props, _content_space) do
-    calculate_size_by_children(
-      Enum.empty?(child_dimensions),
-      child_dimensions,
-      flex_props
-    )
-  end
-
-  defp calculate_size_by_children(true, _child_dimensions, _flex_props) do
-    %{width: 0, height: 0}
-  end
-
-  defp calculate_size_by_children(false, child_dimensions, flex_props) do
-    {main_axis, cross_axis} = get_axes(flex_props.flex_direction)
-
-    calculate_size_by_wrap(
-      flex_props.flex_wrap == :nowrap,
-      child_dimensions,
-      main_axis,
-      cross_axis
-    )
-  end
-
-  defp calculate_size_by_wrap(true, child_dimensions, main_axis, cross_axis) do
-    # Single line: main axis is sum, cross axis is max
-    main_size =
-      Enum.reduce(child_dimensions, 0, fn dims, acc ->
-        acc + get_dimension(dims, main_axis)
-      end)
-
-    cross_size =
-      Enum.reduce(child_dimensions, 0, fn dims, acc ->
-        max(acc, get_dimension(dims, cross_axis))
-      end)
-
-    case main_axis do
-      :horizontal -> %{width: main_size, height: cross_size}
-      :vertical -> %{width: cross_size, height: main_size}
-    end
-  end
-
-  defp calculate_size_by_wrap(false, child_dimensions, _main_axis, _cross_axis) do
-    # Multi-line: more complex calculation needed
-    # For now, return sum of all dimensions (conservative estimate)
-    total_width =
-      Enum.reduce(child_dimensions, 0, fn dims, acc ->
-        max(acc, dims.width)
-      end)
-
-    total_height =
-      Enum.reduce(child_dimensions, 0, fn dims, acc ->
-        acc + dims.height
-      end)
-
-    %{width: total_width, height: total_height}
-  end
-
-  @doc """
-  Creates a new flexbox layout with the given options.
-
-  ## Options
-  - `:direction` - flex direction (row, column)
-  - `:justify` - justify content
-  - `:align` - align items
-  - `:wrap` - flex wrap
-  - `:gap` - gap between items
-  - `:children` - child elements
-  - `:width` - container width
-  - `:height` - container height
-  """
-  @spec new(keyword()) :: t()
-  def new(opts \\ []) do
-    %{
-      type: :flexbox,
-      direction: Keyword.get(opts, :direction, :row),
-      justify: Keyword.get(opts, :justify, :flex_start),
-      align: Keyword.get(opts, :align, :stretch),
-      wrap: Keyword.get(opts, :wrap, :nowrap),
-      gap: Keyword.get(opts, :gap, 0),
-      children: Keyword.get(opts, :children, []),
-      width: Keyword.get(opts, :width),
-      height: Keyword.get(opts, :height)
-    }
-  end
-
-  @doc """
-  Renders the flexbox layout.
-
-  Returns the layout with calculated positions for all children.
-  """
-  @spec render(t()) :: {:ok, map()}
-  def render(flexbox) do
-    # Simple rendering that returns the structure
-    # In real implementation, this would calculate actual positions
-    {:ok,
-     %{
-       type: :rendered_flexbox,
-       layout: flexbox,
-       children: flexbox.children
-     }}
-  end
-
-  @doc """
-  Calculates the layout for flexbox and its children.
-
-  Returns a map with calculated dimensions and positions.
-  """
-  @spec calculate_layout(t()) :: map()
-  def calculate_layout(flexbox) do
-    # Calculate total space needed
-    total_width = flexbox.width || calculate_content_width(flexbox)
-    total_height = flexbox.height || calculate_content_height(flexbox)
-
-    # Calculate child positions based on flex properties
-    child_layouts = calculate_child_layouts(flexbox, total_width, total_height)
-
-    %{
-      width: total_width,
-      height: total_height,
-      children: child_layouts
-    }
-  end
-
-  defp calculate_content_width(%{direction: :row, children: children, gap: gap}) do
-    children
-    |> Enum.map(fn child -> Map.get(child, :width, 0) end)
-    |> Enum.sum()
-    |> Kernel.+(gap * max(0, length(children) - 1))
-  end
-
-  defp calculate_content_width(%{direction: :column, children: children}) do
-    children
-    |> Enum.map(fn child -> Map.get(child, :width, 0) end)
-    |> Enum.max(fn -> 0 end)
-  end
-
-  defp calculate_content_height(%{
-         direction: :column,
-         children: children,
-         gap: gap
-       }) do
-    children
-    |> Enum.map(fn child -> Map.get(child, :height, 0) end)
-    |> Enum.sum()
-    |> Kernel.+(gap * max(0, length(children) - 1))
-  end
-
-  defp calculate_content_height(%{direction: :row, children: children}) do
-    children
-    |> Enum.map(fn child -> Map.get(child, :height, 0) end)
-    |> Enum.max(fn -> 0 end)
-  end
-
-  defp calculate_child_layouts(flexbox, _total_width, _total_height) do
-    # Simplified child layout calculation
-    # In real implementation, this would respect justify, align, etc.
-    flexbox.children
-    |> Enum.with_index()
-    |> Enum.map(fn {child, index} ->
-      Map.merge(child, %{
-        x: if(flexbox.direction == :row, do: index * 10, else: 0),
-        y: if(flexbox.direction == :column, do: index * 10, else: 0)
-      })
-    end)
-  end
 
   # Text styling properties that cascade from parent to child.
   @inheritable_keys [

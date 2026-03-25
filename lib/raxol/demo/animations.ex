@@ -4,7 +4,9 @@ defmodule Raxol.Demo.Animations do
   Supports both SSH (direct IO) and web (message-based) output.
   """
 
-  alias Raxol.Demo.{Particles, GameOfLife, TextFormation}
+  alias Raxol.Demo.{Effects, GameOfLife, Particles, TextFormation}
+
+  @compile {:no_warn_undefined, Raxol.Demo.Effects}
 
   @spinner_dots ~w(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
   @spinner_circle ~w(◐ ◓ ◑ ◒)
@@ -16,9 +18,7 @@ defmodule Raxol.Demo.Animations do
 
   @tagline "Terminal Application Framework"
 
-  @doc """
-  Run the combined demo showcase (~55 seconds).
-  """
+  @doc "Run the combined demo showcase (~55 seconds)."
   def run_showcase(target) do
     {width, height} = get_dimensions(target)
     out(target, "\e[?25l")
@@ -35,40 +35,17 @@ defmodule Raxol.Demo.Animations do
     out(target, "\e[?25h")
   end
 
-  defp get_dimensions({:web, _pid, cols, rows}), do: {cols, rows}
-  defp get_dimensions({:web, _pid}), do: {@default_width, @default_height}
-
-  defp get_dimensions(_device) do
-    case :io.columns() do
-      {:ok, cols} ->
-        case :io.rows() do
-          {:ok, rows} -> {cols, rows}
-          _ -> {cols, @default_height}
-        end
-
-      _ ->
-        {@default_width, @default_height}
-    end
-  end
-
-  @doc """
-  Run the full animation showcase (legacy).
-  """
+  @doc "Run the full animation showcase (legacy)."
   def run_all(target) do
     out(target, "\e[1;35m━━━ Live Animations ━━━\e[0m\r\n\r\n")
-
     out(target, "\e[1mSpinner:\e[0m\r\n")
     run_spinner(target, 2500)
-
     out(target, "\r\n\e[1mProgress Bar:\e[0m")
     run_progress(target, 2000)
-
     out(target, "\r\n\e[1mTyping Effect:\e[0m")
     run_typing(target)
-
     out(target, "\r\n\e[1mRainbow Wave:\e[0m")
     run_rainbow(target, 2000)
-
     out(target, "\r\n\e[32m✓\e[0m Animation demo complete!\r\n")
   end
 
@@ -77,7 +54,6 @@ defmodule Raxol.Demo.Animations do
   # ==========================================================================
 
   defp scene_opening_particles(target, width, height) do
-    # ~5 seconds: Rising sparkles converging to center with spiral effect
     frames = div(5000, @frame_delay)
     center_x = div(width, 2)
     center_y = min(8, div(height, 3))
@@ -106,13 +82,8 @@ defmodule Raxol.Demo.Animations do
         particles =
           (particles ++ new)
           |> Enum.map(fn p ->
-            dx = center_x - p.x
-            dy = center_y - p.y
-            dist = :math.sqrt(dx * dx + dy * dy)
-
-            if frame > converge_start and dist > 3 do
-              # Apply spiral convergence
-              apply_spiral_force(p, center_x, center_y, 0.03)
+            if frame > converge_start do
+              Effects.apply_spiral_force(p, center_x, center_y, 0.03)
             else
               p
             end
@@ -126,20 +97,17 @@ defmodule Raxol.Demo.Animations do
         out(target, "\e[2J\e[H")
         out(target, Particles.render_with_trails(particles, width, height))
         Process.sleep(@frame_delay)
-
         particles
       end)
 
-    # Flash before explosion
-    flash_screen(target, :white, 2, width, height)
+    Effects.flash_screen(target, :white, 2, width, height)
 
-    # Quick explosion before logo
     explosion_particles =
       for _ <- 1..30 do
         Particles.create_sized_explosion(center_x * 1.0, center_y * 1.0)
       end
 
-    run_particle_burst(
+    Effects.run_particle_burst(
       target,
       particles ++ explosion_particles,
       15,
@@ -150,12 +118,10 @@ defmodule Raxol.Demo.Animations do
   end
 
   defp scene_logo_reveal(target, width, height) do
-    # ~8 seconds: Particles form RAXOL, shimmer, then reveal solid text
     out(target, "\e[2J\e[H")
     center_x = div(width, 2)
     center_y = min(8, div(height, 3))
 
-    # Phase 1: Particles converge to form RAXOL (~3 seconds)
     particles =
       TextFormation.create_formation_particles(
         "RAXOL",
@@ -169,29 +135,23 @@ defmodule Raxol.Demo.Animations do
 
     particles =
       Enum.reduce(1..converge_frames, particles, fn _frame, particles ->
-        particles =
-          particles
-          |> Enum.map(&TextFormation.update_toward_target/1)
-
+        particles = Enum.map(particles, &TextFormation.update_toward_target/1)
         out(target, "\e[2J\e[H")
         out(target, TextFormation.render(particles, width, height))
         Process.sleep(@frame_delay)
-
         particles
       end)
 
-    # Phase 2: Hold formation with shimmer/jitter (~2.5 seconds)
     shimmer_frames = 50
 
     for frame <- 1..shimmer_frames do
-      # Pulsing intensity using sine wave
       intensity = 0.5 + 0.5 * :math.sin(frame * 0.2)
 
       particles =
         particles
         |> Enum.map(fn p ->
           p = TextFormation.update_with_jitter(p)
-          # Vary color based on intensity
+
           color =
             if :rand.uniform() < intensity * 0.3 do
               Particles.palette_color(:white)
@@ -207,23 +167,19 @@ defmodule Raxol.Demo.Animations do
       Process.sleep(50)
     end
 
-    # Flash before solid reveal
-    flash_screen(target, :cyan, 2, width, height)
+    Effects.flash_screen(target, :cyan, 2, width, height)
 
-    # Phase 3: Replace with solid text
     out(target, "\e[2J\e[H")
     logo_x = div(width - String.length("RAXOL"), 2)
     out(target, "\e[#{center_y};#{logo_x}H\e[1;36mRAXOL\e[0m")
 
-    # Explode particles outward
     explosion_particles = TextFormation.explode_formation(particles)
 
-    run_particle_burst(target, explosion_particles, 20, width, height,
+    Effects.run_particle_burst(target, explosion_particles, 20, width, height,
       preserve_text: true,
       text_y: center_y
     )
 
-    # Type out tagline
     tagline_x = div(width - String.length(@tagline), 2)
     tagline_y = center_y + 2
     out(target, "\e[#{tagline_y};#{tagline_x}H")
@@ -237,9 +193,7 @@ defmodule Raxol.Demo.Animations do
   end
 
   defp scene_spinner_fireworks(target, width, height) do
-    # ~10 seconds: Multiple spinners that explode into particles on completion
-    # Transition fade from previous scene
-    transition_fade(target, 10)
+    Effects.transition_fade(target, 10)
 
     out(target, "\e[2J\e[H")
     out(target, "\e[1;35m━━━ Loading Components ━━━\e[0m\r\n\r\n")
@@ -262,7 +216,6 @@ defmodule Raxol.Demo.Animations do
         frame = Enum.at(frames, rem(i, length(frames)))
         out(target, "\e[#{y};25H\e[38;5;#{color}m#{frame}\e[0m")
 
-        # Accelerate in final 20%: 80ms -> 20ms
         delay =
           if i >= accel_start do
             progress = (i - accel_start) / (iterations - accel_start)
@@ -274,19 +227,15 @@ defmodule Raxol.Demo.Animations do
         Process.sleep(delay)
       end
 
-      # Flash before checkmark
-      flash_screen(target, :white, 1, width, height)
-
-      # Mark complete
+      Effects.flash_screen(target, :white, 1, width, height)
       out(target, "\e[#{y};25H\e[32m✓\e[0m")
 
-      # Sized explosion at spinner position
       particles =
         for _ <- 1..25 do
           Particles.create_sized_explosion(25.0, y * 1.0)
         end
 
-      run_particle_burst(target, particles, 20, width, height,
+      Effects.run_particle_burst(target, particles, 20, width, height,
         preserve_text: true,
         text_y: 1..10
       )
@@ -296,7 +245,6 @@ defmodule Raxol.Demo.Animations do
   end
 
   defp scene_progress_bars(target, width, height) do
-    # ~10 seconds: Progress bars with particle trails
     out(target, "\e[2J\e[H")
     out(target, "\e[1;35m━━━ Processing ━━━\e[0m\r\n\r\n")
 
@@ -315,10 +263,8 @@ defmodule Raxol.Demo.Animations do
     steps = 100
     step_delay = 30
 
-    particles = []
-
     particles =
-      Enum.reduce(0..steps, particles, fn step, particles ->
+      Enum.reduce(0..steps, [], fn step, particles ->
         for {y, _label, speed, color} <- bars do
           progress = min(100, div(step * speed, 10))
           filled = div(progress * bar_width, 100)
@@ -352,7 +298,6 @@ defmodule Raxol.Demo.Animations do
         end)
       end)
 
-    # Completion burst
     for {y, _label, _speed, color} <- bars do
       explosion =
         for _ <- 1..15 do
@@ -360,7 +305,12 @@ defmodule Raxol.Demo.Animations do
           |> Map.put(:color, color)
         end
 
-      run_particle_burst(target, particles ++ explosion, 15, width, height,
+      Effects.run_particle_burst(
+        target,
+        particles ++ explosion,
+        15,
+        width,
+        height,
         preserve_text: true,
         text_y: 1..10
       )
@@ -370,7 +320,6 @@ defmodule Raxol.Demo.Animations do
   end
 
   defp scene_game_of_life(target, width, height) do
-    # ~15 seconds: Conway's Game of Life with age-based colors
     out(target, "\e[2J\e[H")
     out(target, "\e[1;35m━━━ Game of Life ━━━\e[0m\r\n")
 
@@ -381,7 +330,6 @@ defmodule Raxol.Demo.Animations do
 
     grid = GameOfLife.create_r_pentomino(gol_width, gol_height)
 
-    # Run simulation
     grid =
       Enum.reduce(1..150, grid, fn i, grid ->
         delay = if i < 50, do: 80, else: if(i < 100, do: 50, else: 30)
@@ -404,7 +352,6 @@ defmodule Raxol.Demo.Animations do
         GameOfLife.step(grid, gol_width, gol_height)
       end)
 
-    # Explode remaining cells into particles
     live_cells = GameOfLife.live_cells(grid)
 
     particles =
@@ -415,27 +362,22 @@ defmodule Raxol.Demo.Animations do
       end)
       |> Enum.take(200)
 
-    run_particle_burst(target, particles, 30, width, height, [])
+    Effects.run_particle_burst(target, particles, 30, width, height, [])
   end
 
   defp scene_color_cascade(target, width, height) do
-    # ~8 seconds: Rainbow particles raining with sine wave motion
-    # Transition fade from previous scene
-    transition_fade(target, 10)
-
+    Effects.transition_fade(target, 10)
     out(target, "\e[2J\e[H")
 
     frames = div(8000, @frame_delay)
-    particles = []
 
-    Enum.reduce(1..frames, particles, fn frame, particles ->
+    Enum.reduce(1..frames, [], fn frame, particles ->
       new =
         if frame < frames - 30 do
           for _ <- 1..4 do
             x = :rand.uniform(width - 1)
             hue = rem(frame * 5 + x * 3, 360)
-            color = hue_to_256(hue)
-            # Add phase based on x position for wave pattern
+            color = Effects.hue_to_256(hue)
             phase = x * 0.3
             Particles.create_rain_with_phase(x * 1.0, 0.0, color, phase)
           end
@@ -452,7 +394,7 @@ defmodule Raxol.Demo.Animations do
               vx: 0,
               vy: -0.5,
               char: "█",
-              color: hue_to_256(rem(frame * 8, 360)),
+              color: Effects.hue_to_256(rem(frame * 8, 360)),
               life: 20
             )
 
@@ -464,7 +406,6 @@ defmodule Raxol.Demo.Animations do
       particles =
         (particles ++ new)
         |> Enum.map(fn p ->
-          # Apply sine wave force based on phase
           phase = Map.get(p, :phase, 0)
           wave_force = :math.sin(p.y * 0.2 + phase) * 0.15
           p = %{p | vx: p.vx + wave_force}
@@ -482,14 +423,11 @@ defmodule Raxol.Demo.Animations do
   end
 
   defp scene_grand_finale(target, width, height) do
-    # ~8 seconds: Rockets, ring bursts, cascading explosions, final message
-    # Transition fade from previous scene
-    transition_fade(target, 15)
+    Effects.transition_fade(target, 15)
 
     center_x = div(width, 2)
     center_y = div(height, 2)
 
-    # Phase 1: Launch 5 rockets from bottom
     rockets =
       for i <- 1..5 do
         x = div(width, 6) * i
@@ -501,7 +439,6 @@ defmodule Raxol.Demo.Animations do
         )
       end
 
-    # Animate rockets rising with trails
     {_exploded_rockets, all_explosions} =
       Enum.reduce(1..40, {rockets, []}, fn _frame, {rockets, explosions} ->
         {rockets, new_explosions} =
@@ -509,9 +446,8 @@ defmodule Raxol.Demo.Animations do
           |> Enum.map(fn r ->
             updated = Particles.update_with_trail(r, gravity: 0, friction: 1.0)
 
-            # Check if rocket should explode
             if updated.life <= 1 do
-              {nil, create_rocket_explosion(updated.x, updated.y)}
+              {nil, Effects.create_rocket_explosion(updated.x, updated.y)}
             else
               {updated, []}
             end
@@ -521,7 +457,6 @@ defmodule Raxol.Demo.Animations do
         rockets = Enum.reject(rockets, &is_nil/1)
         new_explosions = List.flatten(new_explosions)
 
-        # Update existing explosions with cascade
         {explosions, children} =
           explosions
           |> Enum.map(&Particles.update_cascade(&1, gravity: 0.05))
@@ -548,7 +483,6 @@ defmodule Raxol.Demo.Animations do
         {rockets, Particles.prune(explosions ++ new_explosions)}
       end)
 
-    # Phase 2: Ring bursts in 3 colors
     ring_colors = [
       Particles.palette_color(:cyan),
       Particles.palette_color(:magenta),
@@ -570,7 +504,6 @@ defmodule Raxol.Demo.Animations do
 
     combined = all_explosions ++ ring_particles
 
-    # Animate rings expanding
     _particles =
       Enum.reduce(1..35, combined, fn _frame, particles ->
         particles =
@@ -586,8 +519,7 @@ defmodule Raxol.Demo.Animations do
         particles
       end)
 
-    # Phase 3: Screen flash and final message
-    flash_screen(target, :white, 3, width, height)
+    Effects.flash_screen(target, :white, 3, width, height)
 
     out(target, "\e[2J\e[H")
     message = "Built with Raxol"
@@ -613,121 +545,6 @@ defmodule Raxol.Demo.Animations do
     Process.sleep(1500)
     out(target, "\e[2J\e[H")
     out(target, "\e[32m✓\e[0m Demo complete!\r\n")
-  end
-
-  defp create_rocket_explosion(x, y) do
-    # Create cascading explosion (generation 2 = will spawn children)
-    for _ <- 1..15 do
-      Particles.create_cascade_explosion(x, y, 2)
-    end
-  end
-
-  # ==========================================================================
-  # PARTICLE HELPERS
-  # ==========================================================================
-
-  defp run_particle_burst(target, particles, frames, width, height, opts) do
-    preserve = Keyword.get(opts, :preserve_text, false)
-
-    Enum.reduce(1..frames, particles, fn _frame, particles ->
-      particles =
-        particles
-        |> Enum.map(&Particles.update/1)
-        |> Particles.prune()
-
-      unless preserve do
-        out(target, "\e[2J\e[H")
-      end
-
-      out(target, Particles.render(particles, width, height))
-      Process.sleep(@frame_delay)
-
-      particles
-    end)
-  end
-
-  # Brief full-screen color flash effect
-  defp flash_screen(target, color, frames, width, height) do
-    color_code =
-      case color do
-        :white -> "48;5;255"
-        :cyan -> "48;5;51"
-      end
-
-    for _ <- 1..frames do
-      # Fill screen with color
-      out(target, "\e[2J\e[H")
-
-      for y <- 1..height do
-        out(
-          target,
-          "\e[#{y};1H\e[#{color_code}m#{String.duplicate(" ", width)}\e[0m"
-        )
-      end
-
-      Process.sleep(30)
-    end
-
-    out(target, "\e[2J\e[H")
-  end
-
-  # Gradual dim before scene transition
-  defp transition_fade(target, frames) do
-    for i <- 1..frames do
-      # Progressively dim with darker grey
-      grey = 255 - div(255 * i, frames)
-      out(target, "\e[38;2;#{grey};#{grey};#{grey}m")
-      Process.sleep(30)
-    end
-
-    out(target, "\e[0m")
-  end
-
-  # Apply spiral convergence force to particle
-  defp apply_spiral_force(particle, center_x, center_y, strength) do
-    dx = center_x - particle.x
-    dy = center_y - particle.y
-    dist = :math.sqrt(dx * dx + dy * dy)
-
-    if dist > 1 do
-      # Normalize direction
-      nx = dx / dist
-      ny = dy / dist
-
-      # Tangential component (perpendicular to radial)
-      tx = -ny
-      ty = nx
-
-      # Combined force: radial + tangential
-      radial_strength = strength * 1.5
-      tangential_strength = strength * 0.8
-
-      %{
-        particle
-        | vx: particle.vx + nx * radial_strength + tx * tangential_strength,
-          vy: particle.vy + ny * radial_strength + ty * tangential_strength
-      }
-    else
-      particle
-    end
-  end
-
-  defp hue_to_256(hue) do
-    # Map hue (0-360) to ANSI 256 color cube
-    case rem(div(hue, 30), 12) do
-      0 -> 196
-      1 -> 202
-      2 -> 208
-      3 -> 214
-      4 -> 220
-      5 -> 226
-      6 -> 46
-      7 -> 48
-      8 -> 51
-      9 -> 45
-      10 -> 39
-      _ -> 201
-    end
   end
 
   # ==========================================================================
@@ -817,7 +634,7 @@ defmodule Raxol.Demo.Animations do
       line =
         for j <- 0..(width - 1) do
           hue = rem(i * 8 + j * 6, 360)
-          {r, g, b} = hsl_to_rgb(hue, 1.0, 0.5)
+          {r, g, b} = Effects.hsl_to_rgb(hue, 1.0, 0.5)
           "\e[48;2;#{r};#{g};#{b}m \e[0m"
         end
         |> Enum.join("")
@@ -830,43 +647,24 @@ defmodule Raxol.Demo.Animations do
   end
 
   # ==========================================================================
-  # OUTPUT AND COLOR HELPERS
+  # OUTPUT HELPER
   # ==========================================================================
 
-  defp out(device, data) when is_pid(device) or is_atom(device) do
-    IO.write(device, data)
+  defp get_dimensions({:web, _pid, cols, rows}), do: {cols, rows}
+  defp get_dimensions({:web, _pid}), do: {@default_width, @default_height}
+
+  defp get_dimensions(_device) do
+    case :io.columns() do
+      {:ok, cols} ->
+        case :io.rows() do
+          {:ok, rows} -> {cols, rows}
+          _ -> {cols, @default_height}
+        end
+
+      _ ->
+        {@default_width, @default_height}
+    end
   end
 
-  defp out({:web, pid}, data) do
-    send(pid, {:animation_output, data})
-  end
-
-  defp out({:web, pid, _cols, _rows}, data) do
-    send(pid, {:animation_output, data})
-  end
-
-  defp hsl_to_rgb(h, s, l) do
-    c = (1 - abs(2 * l - 1)) * s
-    h_prime = h / 60
-    x = c * (1 - abs(float_mod(h_prime, 2) - 1))
-    m = l - c / 2
-
-    {r1, g1, b1} =
-      case trunc(h_prime) do
-        0 -> {c, x, 0.0}
-        1 -> {x, c, 0.0}
-        2 -> {0.0, c, x}
-        3 -> {0.0, x, c}
-        4 -> {x, 0.0, c}
-        _ -> {c, 0.0, x}
-      end
-
-    {
-      round((r1 + m) * 255),
-      round((g1 + m) * 255),
-      round((b1 + m) * 255)
-    }
-  end
-
-  defp float_mod(a, b), do: a - Float.floor(a / b) * b
+  defp out(device, data), do: Effects.out(device, data)
 end

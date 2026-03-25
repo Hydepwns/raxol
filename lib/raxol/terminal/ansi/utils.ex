@@ -76,7 +76,7 @@ defmodule Raxol.Terminal.ANSI.Utils do
       do: Eraser.clear_line(emulator, mode)
 
     def process_sequence(emulator, {:set_charset, charset}),
-      do: CharacterSets.switch_charset(emulator, charset, :g0)
+      do: CharacterSets.switch_charset_emulator(emulator, charset, :g0)
 
     def process_sequence(emulator, _), do: emulator
 

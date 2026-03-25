@@ -11,40 +11,33 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   Uses a two-phase readiness pattern: rendering begins only after both
   `dispatcher_ready` and `plugin_manager_ready` flags are set. In dev mode,
   a CodeReloader is started to watch for source changes and trigger re-renders.
+
+  ## Sub-modules
+  - `Lifecycle.Initializer` -- component startup sequence
+  - `Lifecycle.Shutdown`    -- stop_process, cleanup, registry management
   """
 
   use GenServer
-  alias Raxol.Core.CompilerState
-  alias Raxol.Core.Runtime.Events.Dispatcher
+  alias Raxol.Core.Runtime.Lifecycle.{Initializer, Shutdown}
   alias Raxol.Core.Runtime.Log
-  alias Raxol.Core.Runtime.Plugins.PluginManager, as: Manager
 
   defmodule State do
     @moduledoc false
     defstruct app_module: nil,
               options: [],
-              # Derived from app_module or options
               app_name: nil,
               width: 80,
               height: 24,
               debug_mode: false,
-              # PID of the PluginManager
               plugin_manager: nil,
-              # ETS table ID / name
               command_registry_table: nil,
               initial_commands: [],
               dispatcher_pid: nil,
-              # PID of the Terminal Driver
               driver_pid: nil,
-              # PID of the Rendering Engine
               rendering_engine_pid: nil,
-              # PID of the CodeReloader (dev only)
               code_reloader_pid: nil,
-              # Application's own model
               model: %{},
-              # Flag to indicate Dispatcher is ready
               dispatcher_ready: false,
-              # Flag to indicate PluginManager is ready
               plugin_manager_ready: false
   end
 
@@ -53,14 +46,12 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   ## Options
     * `:app_module` - Required application module atom.
-    * `:name` - Optional name for registering the GenServer. If not provided, a name
-                will be derived from `app_module`.
+    * `:name` - Optional name for registering the GenServer.
     * `:width` - Terminal width (default: 80).
     * `:height` - Terminal height (default: 24).
     * `:debug` - Enable debug mode (default: false).
     * `:initial_commands` - A list of `Raxol.Core.Runtime.Command` structs to execute on startup.
     * `:plugin_manager_opts` - Options to pass to the PluginManager's start_link function.
-    * Other options are passed to the application module's `init/1` function.
   """
   def start_link(app_module, options \\ [])
       when is_atom(app_module) and is_list(options) do
@@ -73,10 +64,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     Module.concat(__MODULE__, Atom.to_string(app_module))
   end
 
-  @doc """
-  Stops the Raxol application lifecycle manager.
-  `pid_or_name` can be the PID or the registered name of the Lifecycle GenServer.
-  """
+  @doc "Stops the Raxol application lifecycle manager."
   def stop(pid_or_name) do
     GenServer.cast(pid_or_name, :shutdown)
   end
@@ -87,11 +75,11 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   def init(options) when is_list(options) do
     app_module = Keyword.fetch!(options, :app_module)
 
-    Raxol.Core.Runtime.Log.info_with_context(
+    Log.info_with_context(
       "[#{__MODULE__}] initializing for #{inspect(app_module)} with options: #{inspect(options)}"
     )
 
-    case initialize_components(app_module, options) do
+    case Initializer.initialize_all(app_module, options) do
       {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid,
        driver_pid, rendering_engine_pid} ->
         state =
@@ -106,44 +94,15 @@ defmodule Raxol.Core.Runtime.Lifecycle do
             rendering_engine_pid
           )
 
-        log_successful_init(app_module, dispatcher_pid)
+        Log.info_with_context(
+          "[#{__MODULE__}] successfully initialized for #{inspect(app_module)}. Dispatcher PID: #{inspect(dispatcher_pid)}"
+        )
+
         {:ok, state}
 
       {:error, reason, cleanup_fun} ->
         _ = cleanup_fun.()
         {:stop, reason}
-    end
-  end
-
-  defp initialize_components(app_module, options) do
-    environment = Keyword.get(options, :environment, :terminal)
-
-    with {:ok, registry_table} <- initialize_registry_table(app_module),
-         {:ok, pm_pid} <- start_plugin_manager(options),
-         {:ok, initialized_model} <-
-           initialize_app_model(app_module, get_initial_model_args(options)),
-         {:ok, dispatcher_pid} <-
-           start_dispatcher(
-             app_module,
-             initialized_model,
-             options,
-             pm_pid,
-             registry_table
-           ),
-         {:ok, driver_pid} <- maybe_start_driver(dispatcher_pid, environment),
-         {:ok, rendering_engine_pid} <-
-           start_rendering_engine(app_module, dispatcher_pid, options) do
-      # Tell the dispatcher about the rendering engine so resize events
-      # can be forwarded to update the layout dimensions.
-      if dispatcher_pid && rendering_engine_pid do
-        GenServer.cast(
-          dispatcher_pid,
-          {:set_rendering_engine, rendering_engine_pid}
-        )
-      end
-
-      {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid,
-       driver_pid, rendering_engine_pid}
     end
   end
 
@@ -157,7 +116,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
          driver_pid,
          rendering_engine_pid
        ) do
-    code_reloader_pid = maybe_start_code_reloader(self())
+    code_reloader_pid = Initializer.maybe_start_code_reloader(self())
 
     %State{
       app_module: app_module,
@@ -180,231 +139,29 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     }
   end
 
-  defp log_successful_init(app_module, dispatcher_pid) do
-    Raxol.Core.Runtime.Log.info_with_context(
-      "[#{__MODULE__}] successfully initialized for #{inspect(app_module)}. Dispatcher PID: #{inspect(dispatcher_pid)}"
-    )
-  end
-
-  defp initialize_registry_table(app_module) do
-    registry_table_name =
-      Module.concat(CommandRegistryTable, Atom.to_string(app_module))
-
-    case CompilerState.ensure_table(registry_table_name, [
-           :set,
-           :protected,
-           :named_table,
-           {:read_concurrency, true}
-         ]) do
-      :ok ->
-        {:ok, registry_table_name}
-
-      {:error, _reason} ->
-        {:error, :registry_table_creation_failed,
-         fn -> CompilerState.safe_delete_table(registry_table_name) end}
-    end
-  end
-
-  defp start_plugin_manager(options) do
-    environment = Keyword.get(options, :environment, :terminal)
-
-    if environment == :agent do
-      {:ok, nil}
-    else
-      plugin_manager_opts = Keyword.get(options, :plugin_manager_opts, [])
-
-      case Manager.start_link(plugin_manager_opts) do
-        {:ok, pm_pid} ->
-          Raxol.Core.Runtime.Log.info_with_context(
-            "[#{__MODULE__}] PluginManager started with PID: #{inspect(pm_pid)}"
-          )
-
-          {:ok, pm_pid}
-
-        {:error, reason} ->
-          {:error, {:plugin_manager_start_failed, reason}, fn -> :ok end}
-      end
-    end
-  end
-
-  defp get_initial_model_args(options) do
-    %{
-      width: Keyword.get(options, :width, 80),
-      height: Keyword.get(options, :height, 24),
-      options: options
-    }
-  end
-
-  defp start_dispatcher(
-         app_module,
-         initialized_model,
-         options,
-         pm_pid,
-         registry_table
-       ) do
-    dispatcher_initial_state = %{
-      app_module: app_module,
-      model: initialized_model,
-      width: Keyword.get(options, :width, 80),
-      height: Keyword.get(options, :height, 24),
-      debug_mode:
-        Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false)),
-      plugin_manager: pm_pid,
-      command_registry_table: registry_table
-    }
-
-    environment = Keyword.get(options, :environment, :terminal)
-
-    dispatcher_opts =
-      if environment == :agent, do: [name: nil], else: []
-
-    case Dispatcher.start_link(
-           self(),
-           dispatcher_initial_state,
-           dispatcher_opts
-         ) do
-      {:ok, dispatcher_pid} ->
-        {:ok, dispatcher_pid}
-
-      {:error, reason} ->
-        cleanup =
-          if pm_pid, do: fn -> Manager.stop(pm_pid) end, else: fn -> :ok end
-
-        {:error, {:dispatcher_start_failed, reason}, cleanup}
-    end
-  end
-
-  defp maybe_start_driver(_dispatcher_pid, :liveview), do: {:ok, nil}
-  defp maybe_start_driver(_dispatcher_pid, :ssh), do: {:ok, nil}
-  defp maybe_start_driver(_dispatcher_pid, :agent), do: {:ok, nil}
-
-  defp maybe_start_driver(dispatcher_pid, _environment) do
-    case Raxol.Terminal.Driver.start_link(dispatcher_pid: dispatcher_pid) do
-      {:ok, driver_pid} ->
-        Log.info_with_context(
-          "[#{__MODULE__}] Terminal Driver started with PID: #{inspect(driver_pid)}"
-        )
-
-        {:ok, driver_pid}
-
-      {:error, reason} ->
-        Log.warning_with_context(
-          "[#{__MODULE__}] Terminal Driver failed to start: #{inspect(reason)}. Continuing without driver.",
-          %{}
-        )
-
-        {:ok, nil}
-    end
-  end
-
-  defp start_rendering_engine(app_module, dispatcher_pid, options) do
-    # Use actual terminal size if available, falling back to options/defaults.
-    # The Driver has already sent a resize event to the Dispatcher, but by the
-    # time we query here we can also detect size directly to avoid the race.
-    {actual_w, actual_h} = detect_terminal_size(options)
-
-    engine_opts =
-      [
-        app_module: app_module,
-        dispatcher_pid: dispatcher_pid,
-        width: actual_w,
-        height: actual_h,
-        environment: Keyword.get(options, :environment, :terminal)
-      ]
-      |> maybe_add_opt(:liveview_topic, Keyword.get(options, :liveview_topic))
-      |> maybe_add_opt(:io_writer, Keyword.get(options, :io_writer))
-
-    case Raxol.Core.Runtime.Rendering.Engine.start_link(engine_opts) do
-      {:ok, engine_pid} ->
-        Log.info_with_context(
-          "[#{__MODULE__}] Rendering Engine started with PID: #{inspect(engine_pid)}"
-        )
-
-        {:ok, engine_pid}
-
-      {:error, reason} ->
-        Log.warning_with_context(
-          "[#{__MODULE__}] Rendering Engine failed to start: #{inspect(reason)}. Continuing without rendering engine.",
-          %{}
-        )
-
-        {:ok, nil}
-    end
-  end
-
-  defp initialize_app_model(app_module, initial_model_args) do
-    init_function_exported = function_exported?(app_module, :init, 1)
-
-    handle_app_model_initialization(
-      init_function_exported,
-      app_module,
-      initial_model_args
-    )
-  end
-
-  defp handle_app_model_initialization(false, app_module, _initial_model_args) do
-    Raxol.Core.Runtime.Log.info(
-      "[#{__MODULE__}] #{inspect(app_module)}.init/1 not exported. Using empty model."
-    )
-
-    {:ok, %{}}
-  end
-
-  defp handle_app_model_initialization(true, app_module, initial_model_args) do
-    case app_module.init(initial_model_args) do
-      {:ok, model} ->
-        {:ok, model}
-
-      {_, model} ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[#{__MODULE__}] #{inspect(app_module)}.init returned a tuple, using model: #{inspect(model)}",
-          %{}
-        )
-
-        {:ok, model}
-
-      model when is_map(model) ->
-        Raxol.Core.Runtime.Log.info(
-          "[#{__MODULE__}] #{inspect(app_module)}.init returned a map directly, using model: #{inspect(model)}"
-        )
-
-        {:ok, model}
-
-      _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[#{__MODULE__}] #{inspect(app_module)}.init(#{inspect(initial_model_args)}) did not return {:ok, model} or a map. Using empty model.",
-          %{}
-        )
-
-        {:ok, %{}}
-    end
-  end
-
   @impl true
   def handle_info({:runtime_initialized, dispatcher_pid}, state) do
-    Raxol.Core.Runtime.Log.info_with_context(
+    Log.info_with_context(
       "Runtime Lifecycle for #{inspect(state.app_module)} received :runtime_initialized from Dispatcher #{inspect(dispatcher_pid)}."
     )
 
     new_state = %{state | dispatcher_ready: true}
-    updated_state = maybe_process_initial_commands(new_state)
-    {:noreply, updated_state}
+    {:noreply, maybe_process_initial_commands(new_state)}
   end
 
   @impl true
   def handle_info({:plugin_manager_ready, plugin_manager_pid}, state) do
-    Raxol.Core.Runtime.Log.info_with_context(
+    Log.info_with_context(
       "[#{__MODULE__}] Plugin Manager ready notification received from #{inspect(plugin_manager_pid)}."
     )
 
     new_state = %{state | plugin_manager_ready: true}
-    updated_state = maybe_process_initial_commands(new_state)
-    {:noreply, updated_state}
+    {:noreply, maybe_process_initial_commands(new_state)}
   end
 
   @impl true
   def handle_info(:render_needed, state) do
-    Raxol.Core.Runtime.Log.debug(
+    Log.debug(
       "[#{__MODULE__}] Received :render_needed. Forwarding to Rendering Engine."
     )
 
@@ -417,7 +174,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl true
   def handle_info(:quit_runtime, state) do
-    Raxol.Core.Runtime.Log.info_with_context(
+    Log.info_with_context(
       "[#{__MODULE__}] Received :quit_runtime. Shutting down."
     )
 
@@ -426,7 +183,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl true
   def handle_info(unhandled_message, state) do
-    Raxol.Core.Runtime.Log.warning_with_context(
+    Log.warning_with_context(
       "[#{__MODULE__}] Unhandled info message: #{inspect(unhandled_message)}",
       %{}
     )
@@ -434,103 +191,24 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, state}
   end
 
-  defp maybe_process_initial_commands(%State{} = state) do
-    both_ready = state.dispatcher_ready && state.plugin_manager_ready
-
-    state =
-      if both_ready && Enum.any?(state.initial_commands) do
-        process_initial_commands(state)
-      else
-        log_waiting_status(state)
-        state
-      end
-
-    # Trigger initial render once both subsystems are ready
-    if both_ready do
-      trigger_initial_render(state)
-    end
-
-    state
-  end
-
-  defp process_initial_commands(state) do
-    Raxol.Core.Runtime.Log.info_with_context(
-      "Dispatcher and PluginManager ready. Dispatching initial commands: #{inspect(state.initial_commands)}"
-    )
-
-    context = %{
-      pid: state.dispatcher_pid,
-      command_registry_table: state.command_registry_table,
-      runtime_pid: self()
-    }
-
-    Enum.each(state.initial_commands, &execute_initial_command(&1, context))
-    %{state | initial_commands: []}
-  end
-
-  defp execute_initial_command(command, context) do
-    is_valid_command = match?(%Raxol.Core.Runtime.Command{}, command)
-    handle_command_execution(is_valid_command, command, context)
-  end
-
-  defp handle_command_execution(true, command, context) do
-    Raxol.Core.Runtime.Command.execute(command, context)
-  end
-
-  defp handle_command_execution(false, command, _context) do
-    Raxol.Core.Runtime.Log.error(
-      "Invalid initial command found: #{inspect(command)}. Expected %Raxol.Core.Runtime.Command{}."
-    )
-  end
-
-  defp log_waiting_status(state) do
-    has_initial_commands = Enum.any?(state.initial_commands)
-    log_if_has_commands(has_initial_commands, state)
-  end
-
-  defp log_if_has_commands(false, _state), do: :ok
-
-  defp log_if_has_commands(true, state) do
-    case {state.dispatcher_ready, state.plugin_manager_ready} do
-      {false, false} ->
-        Raxol.Core.Runtime.Log.info(
-          "Waiting for Dispatcher and PluginManager to be ready before processing initial commands."
-        )
-
-      {false, true} ->
-        Raxol.Core.Runtime.Log.info(
-          "Waiting for Dispatcher to be ready before processing initial commands."
-        )
-
-      {true, false} ->
-        Raxol.Core.Runtime.Log.info(
-          "Waiting for PluginManager to be ready before processing initial commands."
-        )
-
-      {true, true} ->
-        # Both are ready - no logging needed
-        :ok
-    end
-  end
-
   @impl true
   def handle_cast(:shutdown, state) do
-    Raxol.Core.Runtime.Log.info_with_context(
+    Log.info_with_context(
       "[#{__MODULE__}] Received :shutdown cast for #{inspect(state.app_name)}. Stopping dependent processes..."
     )
 
-    stop_process(state.code_reloader_pid, "CodeReloader")
-    stop_process(state.rendering_engine_pid, "Rendering Engine")
-    stop_process(state.driver_pid, "Terminal Driver")
-    stop_process(state.dispatcher_pid, "Dispatcher")
-    stop_process(state.plugin_manager, "PluginManager")
+    Shutdown.stop_process(state.code_reloader_pid, "CodeReloader")
+    Shutdown.stop_process(state.rendering_engine_pid, "Rendering Engine")
+    Shutdown.stop_process(state.driver_pid, "Terminal Driver")
+    Shutdown.stop_process(state.dispatcher_pid, "Dispatcher")
+    Shutdown.stop_process(state.plugin_manager, "PluginManager")
 
     {:stop, :normal, state}
   end
 
   @impl true
   def handle_cast(unhandled_message, state) do
-    Raxol.Core.Runtime.Log.warning_with_context(
+    Log.warning_with_context(
       "[#{__MODULE__}] Unhandled cast message: #{inspect(unhandled_message)}",
       %{}
     )
@@ -545,7 +223,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl true
   def handle_call(unhandled_message, _from, state) do
-    Raxol.Core.Runtime.Log.warning_with_context(
+    Log.warning_with_context(
       "[#{__MODULE__}] Unhandled call message: #{inspect(unhandled_message)}",
       %{}
     )
@@ -554,21 +232,90 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   def terminate_manager(reason, state) do
-    Raxol.Core.Runtime.Log.info_with_context(
+    Log.info_with_context(
       "[#{__MODULE__}] terminating for #{inspect(state.app_name)}. Reason: #{inspect(reason)}"
     )
 
-    # Ensure PluginManager is stopped if not already by :shutdown cast
-    # This is a fallback, proper shutdown should happen in handle_cast(:shutdown, ...)
     plugin_manager_alive =
       state.plugin_manager && Process.alive?(state.plugin_manager)
 
-    handle_plugin_manager_cleanup(plugin_manager_alive, state)
-
-    has_registry_table = state.command_registry_table != nil
-    handle_registry_table_cleanup(has_registry_table, state)
+    Shutdown.cleanup_plugin_manager(plugin_manager_alive, state)
+    Shutdown.cleanup_registry_table(state.command_registry_table != nil, state)
 
     :ok
+  end
+
+  # Initial commands processing
+
+  defp maybe_process_initial_commands(%State{} = state) do
+    both_ready = state.dispatcher_ready && state.plugin_manager_ready
+
+    state =
+      if both_ready && Enum.any?(state.initial_commands) do
+        process_initial_commands(state)
+      else
+        log_waiting_status(state)
+        state
+      end
+
+    if both_ready do
+      trigger_initial_render(state)
+    end
+
+    state
+  end
+
+  defp process_initial_commands(state) do
+    Log.info_with_context(
+      "Dispatcher and PluginManager ready. Dispatching initial commands: #{inspect(state.initial_commands)}"
+    )
+
+    context = %{
+      pid: state.dispatcher_pid,
+      command_registry_table: state.command_registry_table,
+      runtime_pid: self()
+    }
+
+    Enum.each(state.initial_commands, &execute_initial_command(&1, context))
+    %{state | initial_commands: []}
+  end
+
+  defp execute_initial_command(command, context) do
+    if match?(%Raxol.Core.Runtime.Command{}, command) do
+      Raxol.Core.Runtime.Command.execute(command, context)
+    else
+      Log.error(
+        "Invalid initial command found: #{inspect(command)}. Expected %Raxol.Core.Runtime.Command{}."
+      )
+    end
+  end
+
+  defp log_waiting_status(state) do
+    if Enum.any?(state.initial_commands) do
+      log_if_has_commands(state)
+    end
+  end
+
+  defp log_if_has_commands(state) do
+    case {state.dispatcher_ready, state.plugin_manager_ready} do
+      {false, false} ->
+        Log.info(
+          "Waiting for Dispatcher and PluginManager to be ready before processing initial commands."
+        )
+
+      {false, true} ->
+        Log.info(
+          "Waiting for Dispatcher to be ready before processing initial commands."
+        )
+
+      {true, false} ->
+        Log.info(
+          "Waiting for PluginManager to be ready before processing initial commands."
+        )
+
+      {true, true} ->
+        :ok
+    end
   end
 
   defp trigger_initial_render(%State{rendering_engine_pid: pid})
@@ -580,39 +327,25 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   defp trigger_initial_render(_state), do: :ok
 
-  defp stop_process(nil, _label), do: :ok
+  # Helper functions
 
-  defp stop_process(pid, label) when is_pid(pid) do
-    if Process.alive?(pid) do
-      Raxol.Core.Runtime.Log.info_with_context(
-        "[#{__MODULE__}] Stopping #{label} PID: #{inspect(pid)}"
-      )
-
-      GenServer.stop(pid, :shutdown, 5_000)
-    end
-  rescue
-    _ -> :ok
-  end
-
-  # Private helper functions
   defp get_app_name(app_module, options) do
     Keyword.get(options, :app_name, Atom.to_string(app_module))
   end
 
-  @doc """
-  Gets the application name for a given module.
-  """
+  @doc "Gets the application name for a given module."
   @spec get_app_name(atom()) :: String.t()
   def get_app_name(app_module) when is_atom(app_module) do
-    # Try to call app_name/0 on the module if it exists
-    app_name_exported = function_exported?(app_module, :app_name, 0)
-    get_app_name_by_export(app_name_exported, app_module)
+    if function_exported?(app_module, :app_name, 0) do
+      app_module.app_name()
+    else
+      :default
+    end
   end
 
   # === Compatibility Wrappers ===
-  @doc """
-  Initializes the runtime environment. (Stub for test compatibility)
-  """
+
+  @doc "Initializes the runtime environment. (Stub for test compatibility)"
   def initialize_environment(options) do
     env_type = Keyword.get(options, :environment, :terminal)
 
@@ -633,14 +366,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
-  @doc """
-  Starts a Raxol application (compatibility wrapper).
-  """
+  @doc "Starts a Raxol application (compatibility wrapper)."
   def start_application(app, opts), do: start_link(app, opts)
 
-  @doc """
-  Stops a Raxol application (compatibility wrapper).
-  """
+  @doc "Stops a Raxol application (compatibility wrapper)."
   def stop_application(val), do: stop(val)
 
   def lookup_app(app_id) do
@@ -658,47 +387,37 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   def handle_error(error, _context) do
-    # Handle different error types based on test expectations
     case error do
       {:application_error, reason} ->
-        # For application errors, stop the process
         Log.info("[Lifecycle] Application error: #{inspect(reason)}")
         Log.info("[Lifecycle] Stopping application")
         {:stop, :normal, %{}}
 
       {:termbox_error, reason} ->
-        # For termbox errors, log and attempt retry
         Log.info("[Lifecycle] Termbox error: #{inspect(reason)}")
         Log.info("[Lifecycle] Attempting to restore terminal")
         {:stop, :normal, %{}}
 
       {:unknown_error, _reason} ->
-        # For unknown errors, log and continue
         Log.info("[Lifecycle] Unknown error: #{inspect(error)}")
         Log.info("[Lifecycle] Continuing execution")
         {:stop, :normal, %{}}
 
       %{type: :runtime_error} ->
-        # For runtime errors, try to restart the affected components
         {:ok, :restart_components}
 
       %{type: :resource_error} ->
-        # For resource errors, try to reinitialize resources
         {:ok, :reinitialize_resources}
 
       _ ->
-        # For unknown errors, just log and continue
         {:ok, :continue}
     end
   end
 
   def handle_cleanup(context) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           # Log cleanup operation
            Log.info("[Lifecycle] Cleaning up for app: #{context.app_name}")
            Log.info("[Lifecycle] Cleanup completed")
-
-           # Cleanup is handled by individual components
            :ok
          end) do
       {:ok, result} ->
@@ -707,101 +426,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       {:error, error} ->
         Log.error("[Lifecycle] Cleanup failed: #{inspect(error)}")
         {:error, :cleanup_failed}
-    end
-  end
-
-  ## Helper Functions for Pattern Matching
-
-  defp handle_plugin_manager_cleanup(false, _state), do: :ok
-
-  defp handle_plugin_manager_cleanup(true, state) do
-    Raxol.Core.Runtime.Log.info_with_context(
-      "[#{__MODULE__}] Terminate: Ensuring PluginManager PID #{inspect(state.plugin_manager)} is stopped."
-    )
-
-    # Using GenServer.stop as a generic way to try and stop it if it's a GenServer.
-    # This might produce an error if it's already stopped or not a GenServer.
-    case Raxol.Core.ErrorHandling.safe_call(fn ->
-           GenServer.stop(state.plugin_manager, :shutdown, :infinity)
-         end) do
-      {:ok, _result} ->
-        :ok
-
-      {:error, _reason} ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[#{__MODULE__}] Terminate: Failed to explicitly stop PluginManager #{inspect(state.plugin_manager)}, it might have already stopped.",
-          %{}
-        )
-    end
-  end
-
-  defp handle_registry_table_cleanup(false, _state), do: :ok
-
-  defp handle_registry_table_cleanup(true, state) do
-    case CompilerState.safe_delete_table(state.command_registry_table) do
-      :ok ->
-        Raxol.Core.Runtime.Log.debug(
-          "[#{__MODULE__}] Deleted ETS table: #{inspect(state.command_registry_table)}"
-        )
-
-      {:error, :table_not_found} ->
-        Raxol.Core.Runtime.Log.debug(
-          "[#{__MODULE__}] ETS table #{inspect(state.command_registry_table)} not found or already deleted."
-        )
-    end
-  end
-
-  defp get_app_name_by_export(false, _app_module), do: :default
-  defp get_app_name_by_export(true, app_module), do: app_module.app_name()
-
-  defp maybe_start_code_reloader(lifecycle_pid) do
-    if Code.ensure_loaded?(Mix) and Mix.env() == :dev do
-      case Raxol.Dev.CodeReloader.start_link(lifecycle_pid) do
-        {:ok, pid} -> pid
-        _ -> nil
-      end
-    else
-      nil
-    end
-  rescue
-    _ -> nil
-  end
-
-  defp maybe_add_opt(opts, _key, nil), do: opts
-  defp maybe_add_opt(opts, key, value), do: Keyword.put(opts, key, value)
-
-  # Detect actual terminal size, falling back to options, then to 80x24.
-  # Uses stty size via /dev/tty which works in -noshell mode (mix run).
-  defp detect_terminal_size(options) do
-    default_w = Keyword.get(options, :width, 80)
-    default_h = Keyword.get(options, :height, 24)
-
-    # Try :io first (works in interactive shell), then stty via /dev/tty
-    case {:io.columns(), :io.rows()} do
-      {{:ok, cols}, {:ok, rows}} when cols > 0 and rows > 0 ->
-        {cols, rows}
-
-      _ ->
-        case :os.cmd(~c"stty size < /dev/tty 2>/dev/null") do
-          result when is_list(result) ->
-            str = List.to_string(result) |> String.trim()
-
-            case String.split(str) do
-              [rows_s, cols_s] ->
-                rows = String.to_integer(rows_s)
-                cols = String.to_integer(cols_s)
-
-                if rows > 0 and cols > 0,
-                  do: {cols, rows},
-                  else: {default_w, default_h}
-
-              _ ->
-                {default_w, default_h}
-            end
-
-          _ ->
-            {default_w, default_h}
-        end
     end
   end
 end

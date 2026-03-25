@@ -46,6 +46,17 @@ defmodule Raxol.Animation.FrameworkTest do
 
     Logger.debug("EventManager started successfully")
 
+    # Reset or stop default AccessibilityServer to avoid stale state from prior tests
+    case Process.whereis(Raxol.Core.Accessibility.AccessibilityServer) do
+      nil -> :ok
+      pid ->
+        try do
+          GenServer.stop(pid, :normal, 1000)
+        catch
+          :exit, _ -> :ok
+        end
+    end
+
     local_user_prefs_name = __MODULE__.UserPreferences
     user_prefs_opts = [name: local_user_prefs_name, test_mode?: true]
 

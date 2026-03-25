@@ -51,6 +51,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
     EraseOperations,
     Operations,
     RegionOperations,
+    Scrolling,
     Selection
   }
 
@@ -140,12 +141,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   def resize(buffer, new_width, new_height) do
-    # Validate input dimensions
-    validate_dimensions(
-      new_width <= 0 or new_height <= 0,
-      new_width,
-      new_height
-    )
+    validate_positive_dimensions!(new_width, new_height)
 
     # Create a new ScreenBuffer with the new dimensions
     default_cell = %Raxol.Terminal.Cell{
@@ -360,162 +356,20 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Returns {buffer, scrolled_lines} where scrolled_lines are the lines that were scrolled out.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def scroll_up(buffer, lines) when lines > 0 do
-    {top, bottom} = get_effective_scroll_region(buffer)
-
-    if lines > 0 and top < bottom do
-      # Move lines up within the scroll region
-      cells = buffer.cells || []
-
-      # Extract the region
-      {before_region, region_and_after} = Enum.split(cells, top)
-      {region, after_region} = Enum.split(region_and_after, bottom - top + 1)
-
-      # Get the lines that will be scrolled out
-      lines_to_scroll = min(lines, length(region))
-      scrolled_out = Enum.take(region, lines_to_scroll)
-
-      # Scroll the region
-      remaining_region = Enum.drop(region, lines_to_scroll)
-
-      empty_lines =
-        List.duplicate(create_empty_line(buffer.width), lines_to_scroll)
-
-      scrolled_region = remaining_region ++ empty_lines
-
-      # Reconstruct the buffer
-      new_cells = before_region ++ scrolled_region ++ after_region
-      {%{buffer | cells: new_cells}, scrolled_out}
-    else
-      {buffer, []}
-    end
-  end
-
-  def scroll_up(buffer, _), do: {buffer, []}
+  def scroll_up(buffer, lines), do: Scrolling.scroll_up(buffer, lines)
 
   @doc """
   Scrolls the buffer content down by the specified number of lines.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def scroll_down(buffer, lines) when lines > 0 do
-    {top, bottom} = get_effective_scroll_region(buffer)
-
-    if lines > 0 and top < bottom do
-      # Move lines down within the scroll region
-      cells = buffer.cells || []
-
-      # Extract the region
-      {before_region, region_and_after} = Enum.split(cells, top)
-      {region, after_region} = Enum.split(region_and_after, bottom - top + 1)
-
-      # Scroll the region
-      lines_to_scroll = min(lines, length(region))
-
-      empty_lines =
-        List.duplicate(create_empty_line(buffer.width), lines_to_scroll)
-
-      kept_region = Enum.take(region, length(region) - lines_to_scroll)
-      scrolled_region = empty_lines ++ kept_region
-
-      # Reconstruct the buffer
-      new_cells = before_region ++ scrolled_region ++ after_region
-      %{buffer | cells: new_cells}
-    else
-      buffer
-    end
-  end
-
-  def scroll_down(buffer, _), do: buffer
-
-  defp create_empty_line(width) when is_integer(width) and width > 0 do
-    List.duplicate(Cell.new(), width)
-  end
-
-  defp create_empty_line(_width) do
-    # Return empty list for invalid width
-    []
-  end
-
-  defp get_effective_scroll_region(buffer) do
-    case buffer.scroll_region do
-      nil -> {0, buffer.height - 1}
-      {top, bottom} -> {top, min(bottom, buffer.height - 1)}
-    end
-  end
+  def scroll_down(buffer, lines), do: Scrolling.scroll_down(buffer, lines)
 
   # Additional scroll functions for ScrollOperations
-  def scroll_up(buffer, top, bottom, lines) do
-    do_scroll_up(buffer, lines, top, bottom)
-  end
+  def scroll_up(buffer, top, bottom, lines),
+    do: Scrolling.scroll_up(buffer, top, bottom, lines)
 
-  def scroll_down(buffer, top, bottom, lines) do
-    do_scroll_down(buffer, lines, top, bottom)
-  end
-
-  # Internal scroll implementations
-  defp do_scroll_up(buffer, lines, top, bottom) do
-    {effective_top, effective_bottom} =
-      normalize_scroll_region(buffer, top, bottom)
-
-    cells = buffer.cells || []
-
-    if effective_top < effective_bottom and lines > 0 do
-      # Extract the region
-      {before_region, region_and_after} = Enum.split(cells, effective_top)
-
-      {region, after_region} =
-        Enum.split(region_and_after, effective_bottom - effective_top + 1)
-
-      # Scroll the region
-      lines_to_scroll = min(lines, length(region))
-      kept_region = Enum.drop(region, lines_to_scroll)
-
-      empty_lines =
-        List.duplicate(create_empty_line(buffer.width), lines_to_scroll)
-
-      scrolled_region = kept_region ++ empty_lines
-
-      # Reconstruct the buffer
-      new_cells = before_region ++ scrolled_region ++ after_region
-      %{buffer | cells: new_cells}
-    else
-      buffer
-    end
-  end
-
-  defp do_scroll_down(buffer, lines, top, bottom) do
-    {effective_top, effective_bottom} =
-      normalize_scroll_region(buffer, top, bottom)
-
-    cells = buffer.cells || []
-
-    if effective_top < effective_bottom and lines > 0 do
-      # Extract the region
-      {before_region, region_and_after} = Enum.split(cells, effective_top)
-
-      {region, after_region} =
-        Enum.split(region_and_after, effective_bottom - effective_top + 1)
-
-      # Scroll the region
-      lines_to_scroll = min(lines, length(region))
-
-      empty_lines =
-        List.duplicate(create_empty_line(buffer.width), lines_to_scroll)
-
-      kept_region = Enum.take(region, length(region) - lines_to_scroll)
-      scrolled_region = empty_lines ++ kept_region
-
-      # Reconstruct the buffer
-      new_cells = before_region ++ scrolled_region ++ after_region
-      %{buffer | cells: new_cells}
-    else
-      buffer
-    end
-  end
-
-  defp normalize_scroll_region(buffer, top, bottom) do
-    {max(0, top), min(buffer.height - 1, bottom)}
-  end
+  def scroll_down(buffer, top, bottom, lines),
+    do: Scrolling.scroll_down(buffer, top, bottom, lines)
 
   def scroll_to(buffer, top, bottom, line) do
     # This needs to be implemented or delegated elsewhere
@@ -1161,12 +1015,13 @@ defmodule Raxol.Terminal.ScreenBuffer do
               ),
               to: RegionOperations
 
-  defp validate_dimensions(true, new_width, new_height) do
+  defp validate_positive_dimensions!(width, height)
+       when width <= 0 or height <= 0 do
     raise ArgumentError,
-          "ScreenBuffer dimensions must be positive integers, got: #{new_width}x#{new_height}"
+          "ScreenBuffer dimensions must be positive integers, got: #{width}x#{height}"
   end
 
-  defp validate_dimensions(false, _new_width, _new_height), do: :ok
+  defp validate_positive_dimensions!(_width, _height), do: :ok
 
   # Functions for compatibility
   @doc """

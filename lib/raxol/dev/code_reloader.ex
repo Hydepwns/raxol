@@ -95,6 +95,12 @@ defmodule Raxol.Dev.CodeReloader do
       :noop ->
         Raxol.Core.Runtime.Log.debug("[CodeReloader] Nothing to recompile")
 
+      :error ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[CodeReloader] Recompilation failed",
+          %{}
+        )
+
       {:error, _} ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "[CodeReloader] Recompilation failed",
@@ -102,8 +108,6 @@ defmodule Raxol.Dev.CodeReloader do
         )
     end
 
-    # Always notify lifecycle on success/noop -- the file watcher saw real
-    # changes even if recompile/0 found no bytecode diff (e.g. comment edits).
     if result in [:ok, :noop] && state.lifecycle_pid &&
          Process.alive?(state.lifecycle_pid) do
       send(state.lifecycle_pid, :render_needed)
