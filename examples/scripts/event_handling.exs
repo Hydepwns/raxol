@@ -1,82 +1,79 @@
-# This example demonstrates event handling using the Raxol.UI.Components.Input.Button and Raxol.UI.Components.Input.TextField components.
-defmodule Raxol.Docs.Guides.Examples.Interactive.EventHandlingTest do
+# Event Handling
+#
+# Demonstrates handling keyboard events, button clicks, and text input.
+#
+# Usage:
+#   mix run examples/scripts/event_handling.exs
+
+defmodule EventHandlingExample do
   use Raxol.Core.Runtime.Application
 
-  # Define the application state (model)
-  defmodule State do
-    defstruct count: 0,
-              text_value: ""
-  end
+  require Raxol.Core.Runtime.Log
 
   @impl true
-  def init(_opts) do
-    # Initial state
-    %State{}
+  def init(_context) do
+    %{count: 0, text_value: "", last_key: "none"}
   end
 
   @impl true
   def update(message, model) do
     case message do
-      # Handle the :on_click event from the button
-      {:button_clicked} ->
-        IO.puts("Increment button clicked!")
-        %State{model | count: model.count + 1}
+      :increment ->
+        {%{model | count: model.count + 1}, []}
 
-      # Handle the :on_change event from the text input
-      {:text_changed, new_value} ->
-        IO.puts("Text input changed: #{new_value}")
-        %State{model | text_value: new_value}
+      :decrement ->
+        {%{model | count: model.count - 1}, []}
 
-      # Catch-all for other messages
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+        {model, [command(:quit)]}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+        {model, [command(:quit)]}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}} when is_binary(ch) ->
+        {%{model | last_key: ch}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: key}} ->
+        {%{model | last_key: inspect(key)}, []}
+
       _ ->
-        model
+        {model, []}
     end
   end
 
   @impl true
-  def view(model = %State{}) do
-    view do
-      column(
-        gap: 15,
-        padding: 10,
-        style: "border: 1px solid #ccc; width: 300px;"
-      ) do
-        # Display the current count
-        text(
-          content: "Current Count: #{model.count}",
-          style: "font-size: 1.2em;"
-        )
-
-        # Button that sends a :button_clicked message on click
-        button(
-          content: "Increment",
-          # Send this tuple as the message
-          on_click: {:button_clicked},
-          style: :primary
-        )
-
-        # Text input that sends :text_changed message on change
-        text_input(
-          id: "my-text-input",
-          placeholder: "Type something...",
-          value: model.text_value,
-          # Send {:text_changed, new_value}
-          on_change: {:text_changed}
-        )
-
-        # Display the current text value
-        text(content: "You typed: #{model.text_value}")
-      end
+  def view(model) do
+    column style: %{padding: 1, gap: 1} do
+      [
+        text("Event Handling Demo", style: [:bold]),
+        box title: "Counter", style: %{border: :single, padding: 1} do
+          column style: %{gap: 1} do
+            [
+              text("Count: #{model.count}"),
+              row style: %{gap: 1} do
+                [
+                  button("Increment (+)", on_click: :increment),
+                  button("Decrement (-)", on_click: :decrement)
+                ]
+              end
+            ]
+          end
+        end,
+        box title: "Last Key Pressed", style: %{border: :single, padding: 1} do
+          text("Key: #{model.last_key}")
+        end,
+        text("Press 'q' or Ctrl+C to quit.")
+      ]
     end
   end
 
-  # Function to run the example directly
-  def main do
-    Raxol.start_link(__MODULE__, [])
-    # For CI/test/demo: sleep for 2 seconds, then exit. Adjust as needed.
-    Process.sleep(2000)
-  end
+  @impl true
+  def subscribe(_model), do: []
 end
 
-# To run this example: mix run -e "Raxol.Docs.Guides.Examples.Interactive.EventHandlingTest.main()"
-# (Assuming Raxol is a dependency or mix project is set up)
+Raxol.Core.Runtime.Log.info("EventHandlingExample: Starting...")
+{:ok, pid} = Raxol.start_link(EventHandlingExample, [])
+ref = Process.monitor(pid)
+receive do
+  {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
+end

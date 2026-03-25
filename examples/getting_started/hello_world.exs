@@ -1,47 +1,53 @@
-# This is a simple terminal application to show how Raxol works.
+# Hello World
 #
-# This application will display "Hello, World!" and quit when the 'q' key is
-# pressed.
+# The simplest Raxol application: display a message and quit on 'q'.
 #
-# Run this example with: mix run examples/without-runtime/hello_world.exs
+# Usage:
+#   mix run examples/getting_started/hello_world.exs
 
-alias Raxol.Core.Events.EventManager
-alias Raxol.Window
-# No longer using the `view` macro directly
-# use Raxol.View
+defmodule HelloWorld do
+  use Raxol.Core.Runtime.Application
 
-# Required for the ~V sigil
-import Raxol.View
+  require Raxol.Core.Runtime.Log
 
-# First, we initialize the terminal window.
-{:ok, _pid} = Window.start_link()
+  @impl true
+  def init(_context) do
+    %{message: "Hello, World!"}
+  end
 
-# Next, we start the event manager, which will translate terminal events into
-# Elixir messages for our process.
-{:ok, _pid} = EventManager.start_link(name: EventManager)
+  @impl true
+  def update(message, model) do
+    case message do
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+        {model, [command(:quit)]}
 
-# Let's subscribe `self()` to receive events from the event manager.
-:ok = EventManager.subscribe([:keyboard])
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+        {model, [command(:quit)]}
 
-# Now we define the view using the ~V sigil.
-# view do
-#   panel title: "Hello, World!", height: :fill do
-#     text(content: "Press 'q' to quit.")
-#   end
-# end
-hello_world_view =
-  ~V"""
-  <.panel title="Hello, World!" height=:fill>
-    <.text>Press 'q' to quit.</.text>
-  </.panel>
-  """
+      _ ->
+        {model, []}
+    end
+  end
 
-# Update the window with our view.
-:ok = Window.update(hello_world_view)
+  @impl true
+  def view(model) do
+    column style: %{padding: 2, gap: 1, align_items: :center} do
+      [
+        box style: %{border: :single, padding: 1, width: 30, justify_content: :center} do
+          text(model.message, style: [:bold])
+        end,
+        text("Press 'q' to quit.")
+      ]
+    end
+  end
 
-# We'll loop until a 'q' key is pressed. When the key is detected, we'll close
-# the window and the application will exit.
+  @impl true
+  def subscribe(_model), do: []
+end
+
+Raxol.Core.Runtime.Log.info("HelloWorld: Starting...")
+{:ok, pid} = Raxol.start_link(HelloWorld, [])
+ref = Process.monitor(pid)
 receive do
-  {:event, %{ch: ?q}} ->
-    :ok = Window.close()
+  {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

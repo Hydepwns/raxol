@@ -1,88 +1,83 @@
-# A sample application that shows how to accept user input and render it to the
-# terminal.
+# Simple Editor
 #
-# Supports editing a single line of text with support for entering characters
-# and spaces and deleting them. No support moving the cursor or multiline
-# entry.
+# A single-line text editor demonstrating character input and deletion.
 #
 # Usage:
-#   elixir examples/snippets/advanced/editor.exs
+#   mix run examples/advanced/editor.exs
 
-# Renamed module
 defmodule EditorExample do
-  # Use correct behaviour and DSL
   use Raxol.Core.Runtime.Application
 
-  alias Raxol.Core.Events.Event
-  alias Raxol.Core.Commands.Command
   require Raxol.Core.Runtime.Log
-
-  # Space character
-  @spacebar " "
-
-  @delete_keys [
-    :delete,
-    :backspace
-  ]
 
   @impl true
   def init(_context) do
-    Raxol.Core.Runtime.Log.debug("EditorExample: init/1")
-    # Return :ok tuple with map model
-    {:ok, %{text: ""}}
+    %{text: "", cursor: 0}
   end
 
   @impl true
   def update(message, model) do
-    Raxol.Core.Runtime.Log.debug(
-      "EditorExample: update/2 received message: \#{inspect(message)}"
-    )
-
     case message do
-      # Use Event struct for key presses
-      %Event{type: :key, data: %{key: key_name}} when key_name in @delete_keys ->
-        new_text = String.slice(model.text, 0..-2) || ""
-        {:ok, %{model | text: new_text}, []}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :backspace}} ->
+        if model.cursor > 0 do
+          {before, after_cursor} = String.split_at(model.text, model.cursor)
+          new_text = String.slice(before, 0..-2//1) <> after_cursor
+          {%{model | text: new_text, cursor: model.cursor - 1}, []}
+        else
+          {model, []}
+        end
 
-      %Event{type: :key, data: %{key: :char, char: @spacebar}} ->
-        {:ok, %{model | text: model.text <> @spacebar}, []}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :delete}} ->
+        {before, after_cursor} = String.split_at(model.text, model.cursor)
+        new_after = if after_cursor == "", do: "", else: String.slice(after_cursor, 1..-1//1)
+        {%{model | text: before <> new_after}, []}
 
-      # Check for printable character
-      %Event{type: :key, data: %{key: :char, char: char}}
-      when not is_nil(char) and String.length(char) == 1 ->
-        # Append printable chars (basic check)
-        {:ok, %{model | text: model.text <> char}, []}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :key_left}} ->
+        {%{model | cursor: max(0, model.cursor - 1)}, []}
 
-      # Handle quit keys
-      %Event{type: :key, data: %{key: :char, char: "q"}} ->
-        {:ok, model, [Command.new(:quit)]}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :key_right}} ->
+        {%{model | cursor: min(String.length(model.text), model.cursor + 1)}, []}
 
-      %Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
-        {:ok, model, [Command.new(:quit)]}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+        {model, [command(:quit)]}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}} when is_binary(ch) ->
+        if String.printable?(ch) do
+          {before, after_cursor} = String.split_at(model.text, model.cursor)
+          new_text = before <> ch <> after_cursor
+          {%{model | text: new_text, cursor: model.cursor + 1}, []}
+        else
+          {model, []}
+        end
 
       _ ->
-        # Return :ok tuple
-        {:ok, model, []}
+        {model, []}
     end
   end
 
-  # Renamed from render/1
   @impl true
-  def view(%{text: text} = model) do
-    Raxol.Core.Runtime.Log.debug("EditorExample: view/1")
+  def view(model) do
+    {before, after_cursor} = String.split_at(model.text, model.cursor)
+    display = before <> "_" <> after_cursor
 
-    view do
-      # Use box and text
-      box title: "Simple Editor (q/Ctrl+C to quit)",
-          style: [[:border, :single], [:padding, 1]] do
-        # Add a simple cursor indicator
-        text(content: text <> "_")
-      end
+    column style: %{padding: 1, gap: 1} do
+      [
+        box title: "Simple Editor (Ctrl+C to quit)",
+            style: %{border: :single, padding: 1} do
+          text(display)
+        end,
+        text("#{String.length(model.text)} chars | cursor: #{model.cursor}")
+      ]
     end
   end
+
+  @impl true
+  def subscribe(_model), do: []
 end
 
-Raxol.Core.Runtime.Log.info("EditorExample: Starting Raxol...")
-# Use standard startup
-{:ok, _pid} = Raxol.start_link(EditorExample, [])
-Raxol.Core.Runtime.Log.info("EditorExample: Raxol started. Running...")
+Raxol.Core.Runtime.Log.info("EditorExample: Starting...")
+{:ok, pid} = Raxol.start_link(EditorExample, [])
+ref = Process.monitor(pid)
+receive do
+  {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
+end

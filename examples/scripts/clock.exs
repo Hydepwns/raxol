@@ -1,46 +1,66 @@
-# An example of how to create application loops.
+# Clock
+#
+# A real-time clock demonstrating time-based subscriptions.
+#
+# Usage:
+#   mix run examples/scripts/clock.exs
 
-defmodule Clock do
-  # use Raxol.View
-  import Raxol.View
+defmodule ClockExample do
+  use Raxol.Core.Runtime.Application
 
-  alias Raxol.Core.Events.EventManager
-  alias Raxol.Window
+  require Raxol.Core.Runtime.Log
 
-  def start do
-    {:ok, _pid} = Window.start_link()
-    {:ok, _pid} = EventManager.start_link(name: EventManager)
-    {:ok, _ref} = EventManager.subscribe([:keyboard])
-    loop()
+  @impl true
+  def init(_context) do
+    %{time: DateTime.utc_now()}
   end
 
-  def loop do
-    clock_view = render(DateTime.utc_now())
-    Window.update(clock_view)
+  @impl true
+  def update(message, model) do
+    case message do
+      :tick ->
+        {%{model | time: DateTime.utc_now()}, []}
 
-    receive do
-      {:event, %{ch: ?q}} ->
-        :ok = Window.close()
-    after
-      1_000 ->
-        loop()
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+        {model, [command(:quit)]}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+        {model, [command(:quit)]}
+
+      _ ->
+        {model, []}
     end
   end
 
-  def render(now) do
-    time_str = DateTime.to_string(now)
+  @impl true
+  def view(model) do
+    time_str = Calendar.strftime(model.time, "%H:%M:%S")
+    date_str = Calendar.strftime(model.time, "%Y-%m-%d")
 
-    # view do
-    #   panel title: "Clock Example ('q' to quit)", height: :fill do
-    #     text(content: time_str)
-    #   end
-    # end
-    ~V"""
-    <.panel title="Clock Example ('q' to quit)" height=:fill>
-      <.text>{time_str}</.text>
-    </.panel>
-    """
+    column style: %{padding: 2, gap: 1, align_items: :center} do
+      [
+        box title: "Clock", style: %{border: :single, padding: 1, width: 30, justify_content: :center} do
+          column style: %{gap: 1, align_items: :center} do
+            [
+              text(time_str, style: [:bold]),
+              text(date_str)
+            ]
+          end
+        end,
+        text("Press 'q' to quit.")
+      ]
+    end
+  end
+
+  @impl true
+  def subscribe(_model) do
+    [subscribe_interval(1000, :tick)]
   end
 end
 
-Clock.start()
+Raxol.Core.Runtime.Log.info("ClockExample: Starting...")
+{:ok, pid} = Raxol.start_link(ClockExample, [])
+ref = Process.monitor(pid)
+receive do
+  {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
+end

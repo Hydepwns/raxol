@@ -6,14 +6,12 @@
 defmodule MultipleViewsDemo do
   use Raxol.Core.Runtime.Application
 
-  alias Raxol.Core.Events.Event
-  alias Raxol.Core.Commands.Command
   require Raxol.Core.Runtime.Log
 
   @impl true
   def init(_context) do
     Raxol.Core.Runtime.Log.debug("MultipleViewsDemo: init/1")
-    {:ok, %{selected_tab: 1}}
+    %{selected_tab: 1}
   end
 
   @impl true
@@ -23,18 +21,18 @@ defmodule MultipleViewsDemo do
     )
 
     case message do
-      %Event{type: :key, data: %{key: :char, char: key_char}}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: key_char}}
       when key_char in ["1", "2", "3"] ->
-        {:ok, %{model | selected_tab: String.to_integer(key_char)}, []}
+        {%{model | selected_tab: String.to_integer(key_char)}, []}
 
-      %Event{type: :key, data: %{key: :char, char: "q"}} ->
-        {:ok, model, [Command.new(:quit)]}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+        {model, [command(:quit)]}
 
-      %Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
-        {:ok, model, [Command.new(:quit)]}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+        {model, [command(:quit)]}
 
       _ ->
-        {:ok, model, []}
+        {model, []}
     end
   end
 
