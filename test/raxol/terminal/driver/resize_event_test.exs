@@ -69,23 +69,4 @@ defmodule Raxol.Terminal.Driver.ResizeEventTest do
     end
   end
 
-  describe "handle_info({:signal, :SIGWINCH})" do
-    @describetag :skip
-    test ~c"sends resize event when SIGWINCH is received" do
-      test_pid = self()
-      driver_pid = Helper.start_driver(test_pid)
-
-      # Wait for driver to be ready and consume initial resize
-      Helper.wait_for_driver_ready(driver_pid)
-      Helper.consume_initial_resize()
-
-      # Simulate SIGWINCH
-      Helper.simulate_sigwinch(driver_pid)
-
-      # Assert that a resize event is dispatched
-      Helper.assert_resize_event(90, 30)
-
-      Process.exit(driver_pid, :shutdown)
-    end
-  end
 end

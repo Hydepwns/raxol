@@ -251,7 +251,6 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
   end
 
   describe "shortcut handling specific to UXRefinement callbacks" do
-    @tag skip: "requires real FocusManager.FocusServer and KeyboardShortcuts GenServers running"
     test "shortcut callback from register_component_hint triggers FocusManager.set_focus" do
       # Override config to use real implementations for this test
       original_ks_config = Application.get_env(:raxol, :keyboard_shortcuts_module)
@@ -342,7 +341,6 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
   end
 
   describe "events integration" do
-    @tag skip: "Mox expects on KeyboardShortcutsMock.handle_keyboard_event/2 but EventManager dispatches with /1"
     test "keyboard events are handled via KeyboardShortcuts and EventManager" do
       # Stub KeyboardShortcutsMock.init BEFORE enabling features
       Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)

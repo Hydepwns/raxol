@@ -117,7 +117,6 @@ defmodule Raxol.Property.UIComponentTest do
       end
     end
 
-    @tag skip: "Flexbox.calculate_layout returns struct without .children accessor"
     property "flex properties distribute space correctly" do
       check all(
               flex_values <-

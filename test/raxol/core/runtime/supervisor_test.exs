@@ -4,15 +4,14 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   supervisor configuration, and error handling.
   """
   use ExUnit.Case, async: false
-  require Mox
-  import Mox
   import Raxol.Test.TestUtils
 
   # Mock modules for testing
   defmodule Mock.EventLoop do
     use GenServer
 
-    def start_link(_),
+    # RuntimeSupervisor calls dispatcher with start_link(supervisor_pid, init_arg)
+    def start_link(_sup_pid, _init_arg),
       do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
 
     def init(_), do: {:ok, nil}
@@ -28,15 +27,6 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   end
 
   defmodule Mock.Plugins.Manager do
-    use GenServer
-
-    def start_link(_),
-      do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
-
-    def init(_), do: {:ok, nil}
-  end
-
-  defmodule Mock.Plugins.Commands do
     use GenServer
 
     def start_link(_),
@@ -77,59 +67,44 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   end
 
   describe "supervisor structure" do
-    @tag skip: "requires mock injection architecture not yet wired"
     test ~c"starts all runtime child processes with mocks" do
-      # Define the init args, injecting mock modules
+      # Use the inline Mock modules defined in this test module
       init_arg = %{
-        dispatcher_module: Raxol.Core.Runtime.Events.DispatcherMock,
-        rendering_engine_module: Raxol.Core.Runtime.Rendering.EngineMock,
-        plugin_manager_module: Raxol.Core.Runtime.Plugins.PluginManagerMock,
+        dispatcher_module: Mock.EventLoop,
+        rendering_engine_module: Mock.RenderLoop,
+        plugin_manager_module: Mock.Plugins.Manager,
         app_module: TestApp,
         width: 80,
         height: 24
       }
 
-      # Expectation for Plugins.ManagerMock.start_link/1
-      expect(Raxol.Core.Runtime.Plugins.PluginManagerMock, :start_link, fn _args ->
-        {:ok, spawn(fn -> :ok end)}
-      end)
+      {:ok, sup_pid} = Raxol.Core.Runtime.Supervisor.start_link(init_arg)
 
-      # Expectation for DispatcherMock.start_link/2 (match full init_arg)
-      expect(Raxol.Core.Runtime.Events.DispatcherMock, :start_link, fn pid,
-                                                                       arg ->
-        assert is_pid(pid)
-        assert is_map(arg)
+      # Verify supervisor started and has children
+      children = Supervisor.which_children(sup_pid)
+      assert length(children) >= 3
 
-        assert arg[:dispatcher_module] ==
-                 Raxol.Core.Runtime.Events.DispatcherMock
+      # Verify mock modules are running as children
+      child_ids = Enum.map(children, fn {id, _, _, _} -> id end)
+      assert Mock.EventLoop in child_ids
+      assert Mock.RenderLoop in child_ids
+      assert Mock.Plugins.Manager in child_ids
 
-        {:ok, spawn(fn -> :ok end)}
-      end)
-
-      expect(
-        Raxol.Core.Runtime.Rendering.EngineMock,
-        :start_link,
-        fn _initial_state_map -> {:ok, spawn(fn -> :ok end)} end
-      )
-
-      # Call the supervisor's own start_link/1 function with the modified init_arg
-      {:ok, _pid} = Raxol.Core.Runtime.Supervisor.start_link(init_arg)
+      # Clean up
+      Supervisor.stop(sup_pid)
     end
 
     test ~c"uses one_for_all strategy" do
-      # Minimal init_arg needed for Supervisor.init/1 to work
       init_arg = %{
         app_module: TestApp,
         width: 80,
         height: 24
       }
 
-      # Call the supervisor's init/1 function directly
       result = Raxol.Core.Runtime.Supervisor.init(init_arg)
-      # result is {:ok, {children, opts}}
-      assert match?({:ok, {_children, _opts}}, result)
-      {:ok, {_children, opts}} = result
-      assert is_list(opts)
+      assert {:ok, {sup_flags, children}} = result
+      assert sup_flags.strategy == :one_for_all
+      assert is_list(children)
     end
   end
 end

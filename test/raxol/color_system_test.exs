@@ -147,132 +147,70 @@ defmodule Raxol.ColorSystemTest do
   end
 
   describe "ColorSystem with accessibility integration" do
-    @tag skip: "EventManager subscribe/theme_changed integration not wired end-to-end"
-    @tag :flaky
     test "applies high contrast mode to theme colors" do
-      # Use start_supervised to ensure proper cleanup
-      # Skip test if EventManager can't be started (already running from another test)
-      em_result =
-        case Process.whereis(Raxol.Core.Events.EventManager) do
-          nil ->
-            Raxol.Core.Events.EventManager.start_link([])
-
-          _pid ->
-            {:ok, :already_running}
-        end
-
-      case em_result do
-        {:ok, _} -> :ok
-        {:error, {:already_started, _}} -> :ok
-        {:error, reason} -> flunk("Cannot start EventManager: #{inspect(reason)}")
+      # Ensure EventManager is alive (setup may have started it)
+      case Process.whereis(Raxol.Core.Events.EventManager) do
+        nil -> Raxol.Core.Events.EventManager.start_link([])
+        _pid -> {:ok, :already_running}
       end
 
-      # Wait for EventManager to be ready
-      Process.sleep(50)
+      # Apply standard theme first
+      ColorSystem.apply_theme(:standard)
+      normal_primary = ColorSystem.get_color(:primary)
 
-      # Start UserPreferences if not already started
-      case Process.whereis(Raxol.Core.UserPreferences) do
+      # Apply with high contrast
+      ColorSystem.apply_theme(:standard, high_contrast: true)
+      high_contrast_primary = ColorSystem.get_color(:primary)
+
+      # Verify colors are different in high contrast mode
+      assert normal_primary != high_contrast_primary
+
+      # Get background in high contrast mode
+      background = ColorSystem.get_color(:background)
+
+      # Verify sufficient contrast
+      assert_sufficient_contrast(high_contrast_primary, background)
+    end
+
+    test "announces theme changes to screen readers" do
+      # Start the global AccessibilityServer for announcement storage
+      global_accessibility_name = Raxol.Core.Accessibility.AccessibilityServer
+
+      case GenServer.whereis(global_accessibility_name) do
         nil ->
-          {:ok, _} = Raxol.Core.UserPreferences.start_link(test_mode?: true)
+          {:ok, _} =
+            Raxol.Core.Accessibility.AccessibilityServer.start_link(
+              name: global_accessibility_name,
+              user_preferences_pid: __MODULE__.UserPreferences
+            )
 
         _pid ->
           :ok
       end
 
-      # Subscribe to both theme change and accessibility preference events
-      {:ok, ref} =
-        Raxol.Core.Events.EventManager.subscribe([
-          :theme_changed,
-          :accessibility_preference_changed
-        ])
-
-      # Apply a theme
-      ColorSystem.apply_theme(:standard)
-
-      assert_receive {:event, :theme_changed,
-                      %{theme: _theme, high_contrast: _high_contrast}},
-                     100
-
-      # Get the primary color before high contrast
-      normal_primary = ColorSystem.get_color(:primary)
-
-      # Raxol.Core.Runtime.Log.info("[Test Log] Normal primary: #{inspect(normal_primary)}")
-
-      # Enable high contrast mode
-      Accessibility.set_high_contrast(true)
-      # Wait for high contrast change to be applied
-      assert_receive {:event, :accessibility_preference_changed,
-                      %{high_contrast: true}},
-                     100
-
-      # Get the primary color after high contrast
-      high_contrast_primary = ColorSystem.get_color(:primary)
-
-      # Raxol.Core.Runtime.Log.info("[Test Log] High contrast primary: #{inspect(high_contrast_primary)}")
-
-      # Verify colors are different in high contrast mode
-      assert normal_primary != high_contrast_primary
-
-      # Get the background color (also after high contrast is enabled)
-      background = ColorSystem.get_color(:background)
-
-      # Cleanup subscription
-      Raxol.Core.Events.EventManager.unsubscribe(ref)
-
-      # Raxol.Core.Runtime.Log.info("[Test Log] Background (post high-contrast): #{inspect(background)}")
-
-      # Ensure Raxol.Style.Colors.Utilities is available or use the test helper's path
-      _ratio =
-        Raxol.Style.Colors.Utilities.contrast_ratio(
-          high_contrast_primary,
-          background
-        )
-
-      # Raxol.Core.Runtime.Log.info("[Test Log] Calculated contrast ratio for high_contrast_primary vs background: #{inspect(ratio_for_log)}")
-
-      assert_sufficient_contrast(high_contrast_primary, background)
-    end
-
-    @tag skip: "ProcessStore-based accessibility announcements not implemented"
-    test "announces theme changes to screen readers" do
       # Initialize accessibility system for testing
       Accessibility.enable([screen_reader: true], __MODULE__.UserPreferences)
 
-      # Register the actual event handler that makes announcements
-      # Create a wrapper function that matches the expected signature
-      handler_fn = fn event ->
-        Raxol.Core.Accessibility.EventHandler.handle_theme_changed(
-          event,
-          __MODULE__.UserPreferences
-        )
-      end
+      # Clear any existing announcements
+      Raxol.Core.Accessibility.AccessibilityServer.clear_all_announcements()
 
-      Raxol.Core.Events.EventManager.register_handler(
-        :theme_changed,
-        self(),
-        handler_fn
+      # Call the event handler directly (bypassing EventManager dispatch complexity)
+      Raxol.Core.Accessibility.EventHandler.handle_theme_changed(
+        {:theme_changed, %{theme: :dark}},
+        __MODULE__.UserPreferences
       )
 
-      # Ensure queue is clear before test
-      ProcessStore.put(:accessibility_announcements, [])
-
-      # Set the theme preference
-      UserPreferences.set(:theme, :dark, __MODULE__.UserPreferences)
-
-      # Manually apply the theme to trigger the event handler -> announce
-      ColorSystem.apply_theme(:dark)
-
-      # Wait a moment for the event to be processed
+      # Wait for the cast to be processed
       Process.sleep(50)
 
-      # Get announcements directly from the process dictionary queue
-      announcements = ProcessStore.get(:accessibility_announcements, [])
+      # Get announcement from the AccessibilityServer queue (returns message string)
+      message =
+        Raxol.Core.Accessibility.AccessibilityServer.get_next_announcement(
+          __MODULE__.UserPreferences
+        )
 
-      # Assert announcement was made (should contain theme name)
-      assert Enum.any?(announcements, fn announcement ->
-               announcement.message == "Theme changed to dark"
-             end),
-             "Expected announcement \"Theme changed to dark\" not found in #{inspect(announcements)}"
+      assert message == "Theme changed to dark",
+             "Expected announcement \"Theme changed to dark\" but got #{inspect(message)}"
     end
 
     test "maintains user color preferences" do
