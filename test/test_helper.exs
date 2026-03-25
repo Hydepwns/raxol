@@ -230,8 +230,10 @@ IO.puts("[TestHelper] Clipboard assertions loaded via elixirc_paths...")
 # Start the event registry for tests
 IO.puts("[TestHelper] Starting event registry...")
 
-{:ok, _registry_pid} =
-  Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions)
+case Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions) do
+  {:ok, _pid} -> :ok
+  {:error, {:already_started, _pid}} -> :ok
+end
 
 # Start the EventManager for tests
 IO.puts("[TestHelper] Starting EventManager...")

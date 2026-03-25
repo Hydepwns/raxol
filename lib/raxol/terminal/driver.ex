@@ -167,8 +167,11 @@ defmodule Raxol.Terminal.Driver do
         # Enter alternate screen, hide cursor
         IO.write("\e[?1049h\e[?25l")
 
-        # Explicitly disable mouse tracking (may be left over from a crashed session)
+        # Reset mouse tracking (may be left over from a crashed session)
         IO.write("\e[?1003l\e[?1006l\e[?1000l")
+
+        # Enable SGR mouse mode (button events + SGR extended coordinates)
+        IO.write("\e[?1000h\e[?1006h")
 
         # Enable terminal modes: focus reporting, bracketed paste
         IO.write("\e[?1004h\e[?2004h")
@@ -526,7 +529,7 @@ defmodule Raxol.Terminal.Driver do
 
         {_, true} ->
           # Disable terminal modes before restoring
-          IO.write("\e[?1004l\e[?2004l")
+          IO.write("\e[?1000l\e[?1006l\e[?1004l\e[?2004l")
           # Restore terminal: show cursor, leave alternate screen
           IO.write("\e[?25h\e[?1049l")
           :io.setopts(:standard_io, echo: true)

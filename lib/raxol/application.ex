@@ -118,6 +118,7 @@ defmodule Raxol.Application do
     [
       {Raxol.Performance.ETSCacheManager, []},
       {Registry, keys: :unique, name: Raxol.Agent.Registry},
+      {Registry, keys: :duplicate, name: :raxol_event_subscriptions},
       {Raxol.DynamicSupervisor, []},
       {Raxol.Core.UserPreferences, [name: Raxol.Core.UserPreferences]}
     ]
@@ -163,6 +164,7 @@ defmodule Raxol.Application do
       {Raxol.DynamicSupervisor, []},
       {Raxol.Terminal.Supervisor, []},
       {Registry, keys: :unique, name: Raxol.Agent.Registry},
+      {Registry, keys: :duplicate, name: :raxol_event_subscriptions},
 
       # Configuration and Debug services
       {Raxol.Config, [name: Raxol.Config]},

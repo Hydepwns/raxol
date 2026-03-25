@@ -25,141 +25,177 @@ defmodule Raxol.Terminal.ANSI.InputParser do
   (e.g., pasted text or buffered input).
   """
   @spec parse(binary()) :: [Event.t()]
+  def parse(data) when is_binary(data), do: parse_loop(data, [])
+
+  defp parse_loop(<<>>, acc), do: Enum.reverse(acc)
+
+  defp parse_loop(data, acc) do
+    case parse_one(data) do
+      {nil, <<>>} ->
+        Enum.reverse(acc)
+
+      {nil, _rest} ->
+        # Unrecognized byte -- skip it and continue
+        <<_, rest::binary>> = data
+        parse_loop(rest, acc)
+
+      {event, rest} ->
+        parse_loop(rest, [event | acc])
+    end
+  end
+
+  # --- parse_one/1: consume one event from the front, return {event, rest} ---
 
   # --- CSI sequences: ESC [ ... ---
 
-  # Arrow keys
-  def parse(<<27, 91, 65>>), do: [key_event(:up)]
-  def parse(<<27, 91, 66>>), do: [key_event(:down)]
-  def parse(<<27, 91, 67>>), do: [key_event(:right)]
-  def parse(<<27, 91, 68>>), do: [key_event(:left)]
-
-  # Navigation keys (CSI letter variants)
-  def parse(<<27, 91, 72>>), do: [key_event(:home)]
-  def parse(<<27, 91, 70>>), do: [key_event(:end)]
-
-  # Shift+Tab (backtab)
-  def parse(<<27, 91, 90>>), do: [key_event(:tab, shift: true)]
-
-  # Focus events
-  def parse(<<27, 91, 73>>), do: [%Event{type: :focus, data: %{focused: true}}]
-  def parse(<<27, 91, 79>>), do: [%Event{type: :focus, data: %{focused: false}}]
-
-  # Bracketed paste
-  def parse(<<27, 91, 50, 48, 48, 126, rest::binary>>) do
-    # ESC [ 200 ~ marks paste start
+  # Bracketed paste: ESC [ 200 ~
+  defp parse_one(<<27, 91, 50, 48, 48, 126, rest::binary>>) do
     case :binary.split(rest, <<27, 91, 50, 48, 49, 126>>) do
       [pasted, remaining] ->
-        [%Event{type: :paste, data: %{text: pasted}} | parse(remaining)]
+        {%Event{type: :paste, data: %{text: pasted}}, remaining}
 
       [_no_end] ->
-        # Paste end not yet received, treat entire rest as pasted text
-        [%Event{type: :paste, data: %{text: rest}}]
+        {%Event{type: :paste, data: %{text: rest}}, <<>>}
     end
   end
 
   # Mouse SGR mode: ESC [ < params M/m
-  def parse(<<27, 91, 60, rest::binary>>) do
-    parse_sgr_mouse(rest)
+  defp parse_one(<<27, 91, 60, rest::binary>>) do
+    parse_sgr_mouse_one(rest)
   end
 
   # Mouse X10/normal mode: ESC [ M <3 bytes>
-  def parse(<<27, 91, 77, button, x, y>>) do
-    parse_x10_mouse(button, x, y)
+  defp parse_one(<<27, 91, 77, button, x, y, rest::binary>>) do
+    {parse_x10_mouse_event(button, x, y), rest}
   end
+
+  # Arrow keys
+  defp parse_one(<<27, 91, 65, rest::binary>>), do: {key_event(:up), rest}
+  defp parse_one(<<27, 91, 66, rest::binary>>), do: {key_event(:down), rest}
+  defp parse_one(<<27, 91, 67, rest::binary>>), do: {key_event(:right), rest}
+  defp parse_one(<<27, 91, 68, rest::binary>>), do: {key_event(:left), rest}
+
+  # Navigation keys (CSI letter variants)
+  defp parse_one(<<27, 91, 72, rest::binary>>), do: {key_event(:home), rest}
+  defp parse_one(<<27, 91, 70, rest::binary>>), do: {key_event(:end), rest}
+
+  # Shift+Tab (backtab)
+  defp parse_one(<<27, 91, 90, rest::binary>>),
+    do: {key_event(:tab, shift: true), rest}
+
+  # Focus events
+  defp parse_one(<<27, 91, 73, rest::binary>>),
+    do: {%Event{type: :focus, data: %{focused: true}}, rest}
+
+  defp parse_one(<<27, 91, 79, rest::binary>>),
+    do: {%Event{type: :focus, data: %{focused: false}}, rest}
 
   # Modified keys: ESC [ 1 ; <mod> <letter>
-  def parse(<<27, 91, 49, 59, mod, letter>>)
-      when letter in [65, 66, 67, 68, 70, 72, 80, 81, 82, 83] do
+  defp parse_one(<<27, 91, 49, 59, mod, letter, rest::binary>>)
+       when letter in [65, 66, 67, 68, 70, 72, 80, 81, 82, 83] do
     {shift, alt, ctrl} = decode_modifier(mod - ?0)
     key = csi_letter_to_key(letter)
-    [key_event(key, shift: shift, alt: alt, ctrl: ctrl)]
+    {key_event(key, shift: shift, alt: alt, ctrl: ctrl), rest}
   end
 
-  # CSI tilde sequences: ESC [ <number> ~
-  def parse(<<27, 91, rest::binary>>) do
-    parse_csi_tilde(rest)
+  # CSI tilde/letter sequences: ESC [ <params...> <final>
+  defp parse_one(<<27, 91, rest::binary>>) do
+    parse_csi_tilde_one(rest)
   end
 
   # --- SS3 sequences: ESC O ... ---
 
   # F1-F4 SS3 variants
-  def parse(<<27, 79, 80>>), do: [key_event(:f1)]
-  def parse(<<27, 79, 81>>), do: [key_event(:f2)]
-  def parse(<<27, 79, 82>>), do: [key_event(:f3)]
-  def parse(<<27, 79, 83>>), do: [key_event(:f4)]
+  defp parse_one(<<27, 79, 80, rest::binary>>), do: {key_event(:f1), rest}
+  defp parse_one(<<27, 79, 81, rest::binary>>), do: {key_event(:f2), rest}
+  defp parse_one(<<27, 79, 82, rest::binary>>), do: {key_event(:f3), rest}
+  defp parse_one(<<27, 79, 83, rest::binary>>), do: {key_event(:f4), rest}
 
   # SS3 Home/End (some terminals)
-  def parse(<<27, 79, 72>>), do: [key_event(:home)]
-  def parse(<<27, 79, 70>>), do: [key_event(:end)]
+  defp parse_one(<<27, 79, 72, rest::binary>>), do: {key_event(:home), rest}
+  defp parse_one(<<27, 79, 70, rest::binary>>), do: {key_event(:end), rest}
 
   # --- Alt+key: ESC <char> (must come after ESC[ and ESC O) ---
 
-  def parse(<<27, char>>) when char >= 32 and char <= 126 do
-    [key_event(:char, char: <<char>>, alt: true)]
+  defp parse_one(<<27, char, rest::binary>>) when char >= 32 and char <= 126 do
+    {key_event(:char, char: <<char>>, alt: true), rest}
   end
 
   # --- Bare escape ---
-  def parse(<<27>>), do: [key_event(:escape)]
+  defp parse_one(<<27>>), do: {key_event(:escape), <<>>}
 
   # --- Control characters ---
   # Enter (CR)
-  def parse(<<13>>), do: [key_event(:enter)]
+  defp parse_one(<<13, rest::binary>>), do: {key_event(:enter), rest}
   # Linefeed (LF) - also treat as enter
-  def parse(<<10>>), do: [key_event(:enter)]
+  defp parse_one(<<10, rest::binary>>), do: {key_event(:enter), rest}
   # Backspace
-  def parse(<<127>>), do: [key_event(:backspace)]
+  defp parse_one(<<127, rest::binary>>), do: {key_event(:backspace), rest}
   # Tab
-  def parse(<<9>>), do: [key_event(:tab)]
+  defp parse_one(<<9, rest::binary>>), do: {key_event(:tab), rest}
   # Ctrl+Space / Null
-  def parse(<<0>>), do: [key_event(:char, char: " ", ctrl: true)]
+  defp parse_one(<<0, rest::binary>>),
+    do: {key_event(:char, char: " ", ctrl: true), rest}
 
   # Ctrl+A through Ctrl+Z (bytes 1-26, excluding special cases above)
-  # 1=Ctrl+A, 2=Ctrl+B, ..., 9=Tab, 10=LF(Enter), 13=CR(Enter), 26=Ctrl+Z
-  def parse(<<byte>>) when byte >= 1 and byte <= 26 do
+  defp parse_one(<<byte, rest::binary>>) when byte >= 1 and byte <= 26 do
     char = <<byte + 96>>
-    [key_event(:char, char: char, ctrl: true)]
+    {key_event(:char, char: char, ctrl: true), rest}
   end
 
   # --- Printable ASCII ---
-  def parse(<<char>>) when char >= 32 and char <= 126 do
-    [key_event(:char, char: <<char>>)]
+  defp parse_one(<<char, rest::binary>>) when char >= 32 and char <= 126 do
+    {key_event(:char, char: <<char>>), rest}
   end
 
   # --- Multi-byte UTF-8 ---
-  def parse(data) when is_binary(data) do
-    if String.valid?(data) and String.length(data) == 1 do
-      [key_event(:char, char: data)]
-    else
-      []
-    end
+  # 2-byte: 110xxxxx 10xxxxxx
+  defp parse_one(<<a, b, rest::binary>>)
+       when a >= 0xC0 and a <= 0xDF and b >= 0x80 and b <= 0xBF do
+    {key_event(:char, char: <<a, b>>), rest}
   end
 
-  # --- CSI tilde sequence parser ---
+  # 3-byte: 1110xxxx 10xxxxxx 10xxxxxx
+  defp parse_one(<<a, b, c, rest::binary>>)
+       when a >= 0xE0 and a <= 0xEF and b >= 0x80 and b <= 0xBF and
+              c >= 0x80 and c <= 0xBF do
+    {key_event(:char, char: <<a, b, c>>), rest}
+  end
 
-  defp parse_csi_tilde(rest) do
-    case parse_csi_params(rest) do
-      # Simple: ESC [ <n> ~
-      {[n], ?~} ->
-        [key_event(tilde_key(n))]
+  # 4-byte: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+  defp parse_one(<<a, b, c, d, rest::binary>>)
+       when a >= 0xF0 and a <= 0xF7 and b >= 0x80 and b <= 0xBF and
+              c >= 0x80 and c <= 0xBF and d >= 0x80 and d <= 0xBF do
+    {key_event(:char, char: <<a, b, c, d>>), rest}
+  end
 
-      # Modified: ESC [ <n> ; <mod> ~
-      {[n, mod], ?~} ->
+  # --- Unrecognized ---
+  defp parse_one(<<>>), do: {nil, <<>>}
+  defp parse_one(_data), do: {nil, :skip}
+
+  # --- CSI tilde sequence parser (returns {event, rest}) ---
+
+  defp parse_csi_tilde_one(data) do
+    case parse_csi_params(data) do
+      {[n], ?~, rest} ->
+        {key_event(tilde_key(n)), rest}
+
+      {[n, mod], ?~, rest} ->
         {shift, alt, ctrl} = decode_modifier(mod)
-        [key_event(tilde_key(n), shift: shift, alt: alt, ctrl: ctrl)]
+        {key_event(tilde_key(n), shift: shift, alt: alt, ctrl: ctrl), rest}
 
-      # F1-F4 CSI letter variants (ESC [ <n> ; <mod> <letter>)
-      {[1, mod], letter} when letter in [80, 81, 82, 83] ->
+      {[1, mod], letter, rest} when letter in [80, 81, 82, 83] ->
         {shift, alt, ctrl} = decode_modifier(mod)
         key = csi_letter_to_key(letter)
-        [key_event(key, shift: shift, alt: alt, ctrl: ctrl)]
+        {key_event(key, shift: shift, alt: alt, ctrl: ctrl), rest}
 
       _ ->
-        []
+        {nil, data}
     end
   end
 
-  # Parse semicolon-separated numeric params ending with a final byte
+  # Parse semicolon-separated numeric params ending with a final byte.
+  # Returns {params, final_byte, rest}.
   defp parse_csi_params(data) do
     parse_csi_params(data, [], [])
   end
@@ -174,15 +210,15 @@ defmodule Raxol.Terminal.ANSI.InputParser do
     parse_csi_params(rest, [], params ++ [num])
   end
 
-  defp parse_csi_params(<<final_byte, _rest::binary>>, current_digits, params)
+  defp parse_csi_params(<<final_byte, rest::binary>>, current_digits, params)
        when final_byte >= 64 and final_byte <= 126 do
     num = digits_to_integer(current_digits)
-    {params ++ [num], final_byte}
+    {params ++ [num], final_byte, rest}
   end
 
   defp parse_csi_params(<<>>, current_digits, params) do
     num = digits_to_integer(current_digits)
-    {params ++ [num], nil}
+    {params ++ [num], nil, <<>>}
   end
 
   defp digits_to_integer([]), do: 0
@@ -234,14 +270,26 @@ defmodule Raxol.Terminal.ANSI.InputParser do
     {shift, alt, ctrl}
   end
 
-  # --- SGR mouse parsing ---
+  # --- SGR mouse parsing (returns {event, rest}) ---
 
-  defp parse_sgr_mouse(data) do
-    case Regex.run(~r/^(\d+);(\d+);(\d+)([mM])/, data) do
-      [_full, button_str, x_str, y_str, kind] ->
-        button_code = String.to_integer(button_str)
-        x = String.to_integer(x_str)
-        y = String.to_integer(y_str)
+  defp parse_sgr_mouse_one(data) do
+    case Regex.run(~r/^(\d+);(\d+);(\d+)([mM])/, data, return: :index) do
+      [{0, full_len} | captures] ->
+        [
+          {bs, bl},
+          {xs, xl},
+          {ys, yl},
+          {ks, _kl}
+        ] = captures
+
+        button_code =
+          binary_part(data, bs, bl) |> String.to_integer()
+
+        x = binary_part(data, xs, xl) |> String.to_integer()
+        y = binary_part(data, ys, yl) |> String.to_integer()
+        kind = binary_part(data, ks, 1)
+
+        rest = binary_part(data, full_len, byte_size(data) - full_len)
 
         {button, motion} = decode_sgr_button(button_code)
 
@@ -254,23 +302,23 @@ defmodule Raxol.Terminal.ANSI.InputParser do
 
         {shift, alt, ctrl} = decode_sgr_modifiers(button_code)
 
-        [
-          %Event{
-            type: :mouse,
-            data: %{
-              button: button,
-              x: x,
-              y: y,
-              action: action,
-              shift: shift,
-              alt: alt,
-              ctrl: ctrl
-            }
+        event = %Event{
+          type: :mouse,
+          data: %{
+            button: button,
+            x: x,
+            y: y,
+            action: action,
+            shift: shift,
+            alt: alt,
+            ctrl: ctrl
           }
-        ]
+        }
+
+        {event, rest}
 
       _ ->
-        []
+        {nil, data}
     end
   end
 
@@ -300,9 +348,9 @@ defmodule Raxol.Terminal.ANSI.InputParser do
     {shift, alt, ctrl}
   end
 
-  # --- X10/normal mouse parsing ---
+  # --- X10/normal mouse event ---
 
-  defp parse_x10_mouse(button_byte, x_byte, y_byte) do
+  defp parse_x10_mouse_event(button_byte, x_byte, y_byte) do
     button_code = button_byte - 32
     x = x_byte - 32
     y = y_byte - 32
@@ -315,17 +363,15 @@ defmodule Raxol.Terminal.ANSI.InputParser do
         false -> :press
       end
 
-    [
-      %Event{
-        type: :mouse,
-        data: %{
-          button: button,
-          x: x,
-          y: y,
-          action: action
-        }
+    %Event{
+      type: :mouse,
+      data: %{
+        button: button,
+        x: x,
+        y: y,
+        action: action
       }
-    ]
+    }
   end
 
   # --- Event constructors ---
