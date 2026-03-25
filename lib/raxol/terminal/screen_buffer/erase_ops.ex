@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOps do
 
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.Buffer.CharEditor
-  alias Raxol.Terminal.ScreenBuffer.EraseOperations
+  alias Raxol.Terminal.ScreenBuffer.{BehaviourImpl, EraseOperations}
 
   def clear(buffer, _style \\ nil) do
     new_cells = create_empty_grid(buffer.width, buffer.height)
@@ -70,7 +70,7 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOps do
   def erase_display(buffer, mode, _cursor, _min_row, _max_row) do
     case mode do
       0 -> erase_from_cursor_to_end(buffer)
-      1 -> erase_from_start_to_cursor_no_args(buffer)
+      1 -> BehaviourImpl.erase_from_start_to_cursor(buffer)
       2 -> clear(buffer)
       _ -> buffer
     end
@@ -135,13 +135,6 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOps do
 
   def delete_characters(buffer, row, col, count, default_style) do
     CharEditor.delete_characters(buffer, row, col, count, default_style)
-  end
-
-  # Private: used by erase_display mode 1
-  defp erase_from_start_to_cursor_no_args(buffer) do
-    EraseOperations.erase_from_start_to_cursor(buffer)
-  rescue
-    _ -> buffer
   end
 
   defp create_empty_grid(width, height) when width > 0 and height > 0 do

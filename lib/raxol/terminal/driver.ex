@@ -21,12 +21,15 @@ defmodule Raxol.Terminal.Driver do
 
   alias Raxol.Core.Events.Event
   alias Raxol.Terminal.ANSI.InputParser
+  alias Raxol.Terminal.Driver.Dispatch
   alias Raxol.Terminal.Driver.EventTranslator
   alias Raxol.Terminal.Driver.InputBuffer
-  alias Raxol.Terminal.IOTerminal
+  alias Raxol.Terminal.Driver.TermboxLifecycle
 
+  @compile {:no_warn_undefined, Raxol.Terminal.Driver.Dispatch}
   @compile {:no_warn_undefined, Raxol.Terminal.Driver.EventTranslator}
   @compile {:no_warn_undefined, Raxol.Terminal.Driver.InputBuffer}
+  @compile {:no_warn_undefined, Raxol.Terminal.Driver.TermboxLifecycle}
 
   # Check if termbox2_nif is available at compile time
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
@@ -134,7 +137,7 @@ defmodule Raxol.Terminal.Driver do
           "[Driver] Sending initial resize event to dispatcher_pid: #{inspect(pid)}"
         )
 
-        send_initial_resize_event(pid)
+        Dispatch.send_initial_resize_event(pid)
         state = %{state | termbox_state: :initialized}
         {:ok, state}
 
@@ -182,7 +185,7 @@ defmodule Raxol.Terminal.Driver do
         IO.write("\e[?1004h\e[?2004h")
 
         # Send initial resize event if we have a dispatcher
-        if dispatcher_pid, do: send_initial_resize_event(dispatcher_pid)
+        if dispatcher_pid, do: Dispatch.send_initial_resize_event(dispatcher_pid)
 
         # Activate prim_tty reader for input. In -noshell mode, prim_tty
         # was initialized with tty => false, so the reader gets no select
@@ -218,7 +221,7 @@ defmodule Raxol.Terminal.Driver do
   @impl true
   def handle_manager_info(:retry_init, %{init_retries: retries} = state)
       when retries < @max_init_retries do
-    case initialize_termbox() do
+    case TermboxLifecycle.initialize() do
       :ok ->
         Raxol.Core.Runtime.Log.info("Successfully initialized termbox on retry")
         {:noreply, %{state | termbox_state: :initialized}}
@@ -256,7 +259,7 @@ defmodule Raxol.Terminal.Driver do
         # Only send if dispatcher_pid is known
         case dispatcher_pid do
           nil -> :ok
-          pid -> send_event_to_dispatcher(pid, event)
+          pid -> Dispatch.send_event_to_dispatcher(pid, event)
         end
 
         {:noreply, state}
@@ -292,7 +295,7 @@ defmodule Raxol.Terminal.Driver do
     )
 
     case state.termbox_state do
-      :initialized -> handle_termbox_recovery(reason, state)
+      :initialized -> TermboxLifecycle.handle_recovery(reason, state)
       _ -> {:stop, {:termbox_error, reason}, state}
     end
   end
@@ -302,7 +305,7 @@ defmodule Raxol.Terminal.Driver do
       when is_pid(pid) do
     Raxol.Core.Runtime.Log.info("Registering dispatcher PID: #{inspect(pid)}")
     # Send initial size event now that we have the PID
-    send_initial_resize_event(pid)
+    Dispatch.send_initial_resize_event(pid)
     {:noreply, %{state | dispatcher_pid: pid}}
   end
 
@@ -327,7 +330,7 @@ defmodule Raxol.Terminal.Driver do
       "[TerminalDriver.handle_cast - :test_input] Received input_data: #{inspect(input_data)}, state: #{inspect(state)}"
     )
 
-    event = parse_test_input(input_data)
+    event = Dispatch.parse_test_input(input_data)
 
     Raxol.Core.Runtime.Log.debug(
       "[TerminalDriver.handle_cast - :test_input] Parsed event: #{inspect(event)}"
@@ -447,7 +450,7 @@ defmodule Raxol.Terminal.Driver do
     Enum.each(events, fn event ->
       case state.dispatcher_pid do
         nil -> :ok
-        pid -> send_event_to_dispatcher(pid, event)
+        pid -> Dispatch.send_event_to_dispatcher(pid, event)
       end
     end)
 
@@ -468,92 +471,9 @@ defmodule Raxol.Terminal.Driver do
   defp extract_dispatcher_pid(pid) when is_pid(pid), do: pid
   defp extract_dispatcher_pid(_), do: nil
 
-  defp handle_termbox_recovery(reason, state) do
-    case terminate_termbox() do
-      :ok ->
-        case initialize_termbox() do
-          :ok ->
-            Raxol.Core.Runtime.Log.info(
-              "Successfully recovered from termbox error"
-            )
-
-            {:noreply, state}
-
-          {:error, init_reason} ->
-            Raxol.Core.Runtime.Log.error(
-              "Failed to recover from termbox error: #{inspect(init_reason)}"
-            )
-
-            {:stop, {:termbox_error, reason}, state}
-        end
-
-      _ ->
-        {:stop, {:termbox_error, reason}, state}
-    end
-  end
-
   def terminate(_reason, %{termbox_state: :initialized} = state) do
     Raxol.Core.Runtime.Log.info("Terminal Driver terminating.")
-
-    # Kill the stdin reader process
-    case get_in(state, [
-           Access.key(:io_terminal_state),
-           Access.key(:input_reader)
-         ]) do
-      pid when is_pid(pid) ->
-        Process.exit(pid, :shutdown)
-
-      _ ->
-        :ok
-    end
-
-    # Close tty port if open
-    case get_in(state, [
-           Access.key(:io_terminal_state),
-           Access.key(:tty_port)
-         ]) do
-      port when is_port(port) ->
-        try do
-          Port.close(port)
-        catch
-          _, _ -> :ok
-        end
-
-      _ ->
-        :ok
-    end
-
-    # Only attempt shutdown if not in test environment
-    _ =
-      case {Mix.env(), has_terminal_device?()} do
-        {:test, _} ->
-          :ok
-
-        {_, false} ->
-          :ok
-
-        {_, true} ->
-          # Disable terminal modes before restoring
-          IO.write("\e[?1000l\e[?1006l\e[?1004l\e[?2004l")
-          # Restore terminal: show cursor, leave alternate screen
-          IO.write("\e[?25h\e[?1049l")
-          :io.setopts(:standard_io, echo: true)
-
-          # Restore original TTY settings (OS-level via /dev/tty)
-          case state.original_stty do
-            stty when is_binary(stty) and byte_size(stty) > 0 ->
-              :os.cmd(String.to_charlist("stty #{stty} < /dev/tty 2>/dev/null"))
-
-            _ ->
-              :os.cmd(~c"stty sane < /dev/tty 2>/dev/null")
-          end
-
-          # Restore Logger output
-          Logger.configure(level: :debug)
-          :ok
-      end
-
-    :ok
+    TermboxLifecycle.cleanup_terminal(state)
   end
 
   def terminate(_reason, _state) do
@@ -665,161 +585,4 @@ defmodule Raxol.Terminal.Driver do
     dispatch_raw_input(state.input_buffer, %{state | input_buffer: <<>>})
   end
 
-  # --- Private Helpers ---
-
-  defp send_event_to_dispatcher(dispatcher_pid, event) do
-    case Mix.env() do
-      :test ->
-        Raxol.Core.Runtime.Log.debug(
-          "[Driver] Sending event in test mode: #{inspect(event)} to #{inspect(dispatcher_pid)}"
-        )
-
-        send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
-
-      _ ->
-        GenServer.cast(dispatcher_pid, {:dispatch, event})
-    end
-  end
-
-  defp call_termbox_init do
-    if @termbox2_available do
-      :termbox2_nif.tb_init()
-    else
-      0
-    end
-  end
-
-  defp terminate_termbox do
-    if @termbox2_available do
-      :termbox2_nif.tb_shutdown()
-    else
-      # Shutdown IOTerminal if it was initialized
-      IOTerminal.shutdown()
-      0
-    end
-  end
-
-  defp get_termbox_width do
-    if @termbox2_available do
-      :termbox2_nif.tb_width()
-    else
-      # Use IOTerminal for size detection
-      case IOTerminal.get_terminal_size() do
-        {:ok, {width, _height}} -> width
-        _ -> 80
-      end
-    end
-  end
-
-  defp get_termbox_height do
-    if @termbox2_available do
-      :termbox2_nif.tb_height()
-    else
-      # Use IOTerminal for size detection
-      case IOTerminal.get_terminal_size() do
-        {:ok, {_width, height}} -> height
-        _ -> 24
-      end
-    end
-  end
-
-  defp initialize_termbox do
-    case call_termbox_init() do
-      0 ->
-        :ok
-
-      -1 ->
-        {:error, :init_failed}
-        # NIF only returns 0 or -1
-    end
-  end
-
-  defp get_terminal_size do
-    determine_terminal_size()
-  end
-
-  defp determine_terminal_size do
-    case {Mix.env(), has_terminal_device?()} do
-      {:test, _} -> {:ok, 80, 24}
-      {_, true} -> get_termbox_size()
-      {_, false} -> stty_size_fallback()
-    end
-  end
-
-  defp get_termbox_size do
-    Raxol.Core.ErrorHandling.safe_call(fn ->
-      width = get_termbox_width()
-      height = get_termbox_height()
-
-      case width > 0 and height > 0 do
-        true -> {:ok, width, height}
-        false -> stty_size_fallback()
-      end
-    end)
-    |> case do
-      {:ok, result} -> result
-      {:error, _reason} -> stty_size_fallback()
-    end
-  end
-
-  defp stty_size_fallback do
-    case {:io.columns(), :io.rows()} do
-      {{:ok, cols}, {:ok, rows}} ->
-        {:ok, cols, rows}
-
-      _ ->
-        # In -noshell mode, :io.columns/rows fail. Use stty via /dev/tty.
-        case :os.cmd(~c"stty size < /dev/tty 2>/dev/null") do
-          result when is_list(result) ->
-            str = List.to_string(result) |> String.trim()
-
-            case String.split(str) do
-              [rows_s, cols_s] ->
-                rows = String.to_integer(rows_s)
-                cols = String.to_integer(cols_s)
-
-                if rows > 0 and cols > 0,
-                  do: {:ok, cols, rows},
-                  else: {:ok, 80, 24}
-
-              _ ->
-                {:ok, 80, 24}
-            end
-
-          _ ->
-            {:ok, 80, 24}
-        end
-    end
-  end
-
-  defp send_initial_resize_event(dispatcher_pid) do
-    # Keep this as it provides an immediate size on startup
-    {:ok, width, height} = get_terminal_size()
-    Raxol.Core.Runtime.Log.info("Initial terminal size: #{width}x#{height}")
-    event = %Event{type: :resize, data: %{width: width, height: height}}
-
-    # In test mode, send directly to the test process
-    case Mix.env() do
-      :test ->
-        Raxol.Core.Runtime.Log.info(
-          "[Driver] Sending resize event in test mode: #{inspect(event)}"
-        )
-
-        send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
-
-      _ ->
-        GenServer.cast(dispatcher_pid, {:dispatch, event})
-    end
-  end
-
-  defp parse_test_input(input_data) when is_binary(input_data) do
-    Raxol.Core.Runtime.Log.debug(
-      "[TerminalDriver.parse_test_input] Parsing: #{inspect(input_data)}"
-    )
-
-    case InputParser.parse(input_data) do
-      [event | _] -> event
-      [] -> %Event{type: :unknown_test_input, data: %{raw: input_data}}
-    end
-  end
 end

@@ -19,13 +19,17 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   ## Sub-modules
   - `AnnouncementQueue`  -- queue, priority, history, delivery
   - `PreferenceManager`  -- preference merge/sync/notify
+  - `MetadataRegistry`   -- element/component metadata and style registration
+  - `FocusManager`       -- focus tracking, history, and focus announcements
   """
 
   use Raxol.Core.Behaviours.BaseManager
   require Logger
-  alias Raxol.Core.Accessibility.{AnnouncementQueue, PreferenceManager}
+  alias Raxol.Core.Accessibility.{AnnouncementQueue, FocusManager, MetadataRegistry, PreferenceManager}
   alias Raxol.Core.Events.EventManager
   alias Raxol.Core.Runtime.Log
+
+  @compile {:no_warn_undefined, [Raxol.Core.Accessibility.MetadataRegistry, Raxol.Core.Accessibility.FocusManager]}
 
   @default_preferences %{
     screen_reader: true,
@@ -491,23 +495,17 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:set_metadata, component_id, metadata}, _from, state) do
-    new_state = %{
-      state
-      | metadata: Map.put(state.metadata, component_id, metadata)
-    }
-
-    {:reply, :ok, new_state}
+    {:reply, :ok, MetadataRegistry.put_metadata(state, component_id, metadata)}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:get_metadata, component_id}, _from, state) do
-    {:reply, Map.get(state.metadata, component_id), state}
+    {:reply, MetadataRegistry.get_metadata(state, component_id), state}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:remove_metadata, component_id}, _from, state) do
-    new_state = %{state | metadata: Map.delete(state.metadata, component_id)}
-    {:reply, :ok, new_state}
+    {:reply, :ok, MetadataRegistry.remove_metadata(state, component_id)}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
@@ -552,12 +550,7 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
         _from,
         state
       ) do
-    new_state = %{
-      state
-      | metadata: Map.put(state.metadata, element_id, metadata)
-    }
-
-    {:reply, :ok, new_state}
+    {:reply, :ok, MetadataRegistry.put_metadata(state, element_id, metadata)}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
@@ -566,15 +559,12 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
         _from,
         state
       ) do
-    style_key = {:component_style, component_type}
-    new_state = %{state | metadata: Map.put(state.metadata, style_key, style)}
-    {:reply, :ok, new_state}
+    {:reply, :ok, MetadataRegistry.register_component_style(state, component_type, style)}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:get_component_style, component_type}, _from, state) do
-    style = Map.get(state.metadata, {:component_style, component_type}, %{})
-    {:reply, style, state}
+    {:reply, MetadataRegistry.get_component_style(state, component_type), state}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
@@ -583,18 +573,12 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
         _from,
         state
       ) do
-    new_state = %{
-      state
-      | metadata: Map.delete(state.metadata, {:component_style, component_type})
-    }
-
-    {:reply, :ok, new_state}
+    {:reply, :ok, MetadataRegistry.unregister_component_style(state, component_type)}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(:get_focus_history, _from, state) do
-    focus_history = Map.get(state.metadata, :focus_history, [])
-    {:reply, focus_history, state}
+    {:reply, FocusManager.get_focus_history(state), state}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
@@ -622,7 +606,7 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_cast({:handle_focus_change, _old_focus, new_focus}, state) do
     if state.enabled && state.preferences.screen_reader do
-      handle_focus_announcement(state, new_focus)
+      FocusManager.handle_focus_announcement(state, new_focus)
     else
       {:noreply, state}
     end
@@ -713,95 +697,11 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     )
   end
 
-  defp handle_focus_announcement(state, new_focus) do
-    metadata = Map.get(state.metadata, new_focus, %{})
-
-    case create_focus_announcement(metadata) do
-      nil ->
-        {:noreply, state}
-
-      text ->
-        event_manager_pid = Process.whereis(EventManager)
-
-        new_announcements =
-          AnnouncementQueue.enqueue_focus(
-            state.announcements,
-            text,
-            event_manager_pid
-          )
-
-        {:noreply, %{state | announcements: new_announcements}}
-    end
-  end
-
-  defp create_focus_announcement(metadata) do
-    case Map.get(metadata, :label) do
-      nil ->
-        nil
-
-      label ->
-        explicit_role = Map.get(metadata, :role)
-        description = Map.get(metadata, :description, "")
-
-        [label, explicit_role, if(description != "", do: description)]
-        |> Enum.reject(&is_nil/1)
-        |> Enum.join(", ")
-    end
-  end
-
   defp register_event_handlers do
-    case Process.whereis(EventManager) do
-      nil ->
-        Logger.debug(
-          "EventManager not available, skipping event handler registration"
-        )
-
-        :ok
-
-      _pid ->
-        EventManager.register_handler(
-          :focus_change,
-          __MODULE__,
-          :handle_focus_change_event
-        )
-
-        EventManager.register_handler(
-          :preference_changed,
-          __MODULE__,
-          :handle_preference_changed_event
-        )
-
-        EventManager.register_handler(
-          :theme_changed,
-          __MODULE__,
-          :handle_theme_changed_event
-        )
-    end
+    FocusManager.register_event_handlers(__MODULE__)
   end
 
   defp unregister_event_handlers do
-    case Process.whereis(EventManager) do
-      nil ->
-        :ok
-
-      _pid ->
-        EventManager.unregister_handler(
-          :focus_change,
-          __MODULE__,
-          :handle_focus_change_event
-        )
-
-        EventManager.unregister_handler(
-          :preference_changed,
-          __MODULE__,
-          :handle_preference_changed_event
-        )
-
-        EventManager.unregister_handler(
-          :theme_changed,
-          __MODULE__,
-          :handle_theme_changed_event
-        )
-    end
+    FocusManager.unregister_event_handlers(__MODULE__)
   end
 end
