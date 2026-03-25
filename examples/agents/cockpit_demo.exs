@@ -212,16 +212,31 @@ defmodule CockpitDemo do
 
   alias Raxol.Agent.Session
 
-  # Tick schedule (200ms per tick)
-  @boot_scanner 5
-  @boot_analyzer 10
-  @boot_monitor 15
-  @boot_chaos 20
-  @boot_deps 25
-  @crash_tick 55
-  @recover_tick 65
-  @end_tick 90
+  # Phase transitions (tick-driven, 200ms per tick)
+  #
+  # :title  ──(12 ticks or space)──> :running
+  # :running ──(all agents done + post_done_ticks elapsed)──> :summary
+  #
+  # Within :running, chaos crash/recovery is event-driven:
+  #   crash at tick 55, flash for 8 ticks, recover at tick 65
   @title_ticks 12
+
+  # Agent boot stagger (ticks within :running phase)
+  @boot_schedule [
+    {5, CockpitDemo.FileScanner, :scanner},
+    {10, CockpitDemo.CodeAnalyzer, :analyzer},
+    {15, CockpitDemo.SystemMonitor, :monitor},
+    {20, CockpitDemo.ChaosWorker, :chaos},
+    {25, CockpitDemo.DepChecker, :dep_checker}
+  ]
+
+  # Chaos timing
+  @crash_tick 55
+  @crash_flash_duration 8
+  @recover_tick 65
+
+  # How many ticks after all_done before transitioning to summary
+  @post_done_ticks 15
 
   @sparks ~w(\u2581 \u2582 \u2583 \u2584 \u2585 \u2586 \u2587 \u2588)
   @bar_fill "\u2588"
@@ -233,9 +248,13 @@ defmodule CockpitDemo do
   def init(_context) do
     ensure_infra()
 
+    {w, h} = detect_size()
+
     %{
       phase: :title,
       tick: 0,
+      width: w,
+      height: h,
       start_time: System.monotonic_time(:second),
       crashes: 0,
       events: [],
@@ -274,6 +293,9 @@ defmodule CockpitDemo do
       when model.phase == :title ->
         {%{model | phase: :running, tick: 0}, []}
 
+      %Raxol.Core.Events.Event{type: :resize, data: %{width: w, height: h}} ->
+        {%{model | width: w, height: h}, []}
+
       _ ->
         {model, []}
     end
@@ -298,9 +320,6 @@ defmodule CockpitDemo do
       :title ->
         {%{model | tick: model.tick + 1}, []}
 
-      :running when model.tick > @end_tick ->
-        {%{model | phase: :summary}, []}
-
       :running ->
         new_model =
           model
@@ -310,11 +329,23 @@ defmodule CockpitDemo do
           |> handle_chaos()
           |> handle_narration()
           |> track_completions()
+          |> maybe_transition_to_summary()
 
         {%{new_model | tick: new_model.tick + 1}, []}
 
       :summary ->
         {model, []}
+    end
+  end
+
+  defp maybe_transition_to_summary(model) do
+    # Transition to summary when: all work agents done, crash recovered,
+    # and enough ticks have passed since all_done was logged.
+    if model.restarted and MapSet.member?(model.done_logged, :all_done) and
+         model.tick >= @recover_tick + @post_done_ticks do
+      %{model | phase: :summary}
+    else
+      model
     end
   end
 
@@ -326,10 +357,12 @@ defmodule CockpitDemo do
 
   defp title_view(model) do
     dots = String.duplicate(".", min(rem(model.tick, 4) + 1, 3))
+    # Title block is ~13 lines; center vertically in terminal
+    top_pad = max(1, div(model.height - 13, 3))
 
     column style: %{padding: 0, gap: 0} do
       [
-        spacer(size: 2),
+        spacer(size: top_pad),
         text("                                  .__   ",
           style: [:bold],
           fg: :cyan
@@ -395,6 +428,7 @@ defmodule CockpitDemo do
             dep_checker_panel(model)
           ]
         end,
+        bottom_spacer(model.height, 31),
         key_bar()
       ]
     end
@@ -446,7 +480,7 @@ defmodule CockpitDemo do
           style: [:bold]
         ),
         text("  No other terminal framework does this.", style: [:dim]),
-        spacer(size: 1),
+        bottom_spacer(model.height, 18),
         key_bar()
       ]
     end
@@ -529,7 +563,7 @@ defmodule CockpitDemo do
   defp chaos_panel(model) do
     m = model.chaos
     in_crash = model.tick >= @crash_tick and model.tick < @recover_tick
-    flash = model.tick >= @crash_tick and model.tick < @crash_tick + 8
+    flash = model.tick >= @crash_tick and model.tick < @crash_tick + @crash_flash_duration
 
     cond do
       flash ->
@@ -730,6 +764,19 @@ defmodule CockpitDemo do
   # Agent Lifecycle (side effects in update)
   # ============================================================
 
+  defp bottom_spacer(terminal_height, content_rows) do
+    # Push key_bar to the bottom by filling remaining vertical space
+    gap = max(1, terminal_height - content_rows - 1)
+    spacer(size: gap)
+  end
+
+  defp detect_size do
+    case {:io.columns(), :io.rows()} do
+      {{:ok, w}, {:ok, h}} when w > 0 and h > 0 -> {w, h}
+      _ -> {80, 24}
+    end
+  end
+
   defp ensure_infra do
     case Registry.start_link(keys: :unique, name: Raxol.Agent.Registry) do
       {:ok, _} -> :ok
@@ -753,15 +800,8 @@ defmodule CockpitDemo do
   defp staggered_boot(model) do
     # Each agent boots over 2 ticks: tick N spawns the process,
     # tick N+1 sends :start (gives the GenServer time to register).
-    schedule = [
-      {@boot_scanner, CockpitDemo.FileScanner, :scanner},
-      {@boot_analyzer, CockpitDemo.CodeAnalyzer, :analyzer},
-      {@boot_monitor, CockpitDemo.SystemMonitor, :monitor},
-      {@boot_chaos, CockpitDemo.ChaosWorker, :chaos},
-      {@boot_deps, CockpitDemo.DepChecker, :dep_checker}
-    ]
 
-    Enum.reduce(schedule, model, fn {tick, mod, id}, st ->
+    Enum.reduce(@boot_schedule, model, fn {tick, mod, id}, st ->
       cond do
         model.tick == tick and not MapSet.member?(st.booted, id) ->
           DynamicSupervisor.start_child(
