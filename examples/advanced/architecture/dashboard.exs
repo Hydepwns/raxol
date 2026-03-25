@@ -1,118 +1,118 @@
-defmodule Dashboard do
-  # use Raxol.App, otp_app: :raxol
-  use Raxol.Component
+# Dashboard Layout
+#
+# Demonstrates a multi-panel dashboard layout with header, sidebar, and content.
+#
+# Usage:
+#   mix run examples/advanced/architecture/dashboard.exs
 
-  alias Raxol.View
-  alias Raxol.View.Elements
+defmodule DashboardExample do
+  use Raxol.Core.Runtime.Application
 
-  # @impl Raxol.App
-  # def init(_flags) do
-  #   state = %{}
-  #   {:ok, state}
-  # end
-  @impl Raxol.Component
-  def mount(_params, _session, socket) do
-    # No initial state needed for this static layout
-    {:ok, socket}
+  require Raxol.Core.Runtime.Log
+
+  @impl true
+  def init(_context) do
+    %{selected: :overview, tick: 0}
   end
 
-  # @impl Raxol.App
-  # def update(msg, state) do
-  #   # Handle updates later
-  #   {:ok, state}
-  # end
+  @impl true
+  def update(message, model) do
+    case message do
+      :tick ->
+        {%{model | tick: model.tick + 1}, []}
 
-  @impl Raxol.Component
-  # def render(state) do
-  def render(assigns) do
-    # use Raxol.View
-    ~V"""
-    <.box width="100%" height="100%" border=:rounded padding=1>
-      <.column width="100%" height="100%" gap=1>
-        # Header Row
-        <.row width="100%" height=3>
-          <.panel
-            title="Dashboard Header"
-            width="100%"
-            border=:line
-            padding=1
-            align=:center
-            justify=:center
-          >
-            <.text bold fg=:yellow>Complex Layout Example</.text>
-          </.panel>
-        </.row>
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "1"}} ->
+        {%{model | selected: :overview}, []}
 
-        # Main Content Row (Sidebar + Primary)
-        <.row flex=1 width="100%" gap=1>
-          # Sidebar - Align items bottom-right
-          <.column
-            width=25
-            border={{:line, fg: :cyan}}
-            padding=1
-            gap=1
-            align=:end
-            justify=:end
-          >
-            <.text bold fg=:cyan>Sidebar</.text>
-            <.text>Item 1</.text>
-            <.text>Item 2</.text>
-            # Spacer pushes content down
-            <.box flex=1 />
-            <.text fg=:white>Status: Ready</.text>
-          </.column>
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "2"}} ->
+        {%{model | selected: :stats}, []}
 
-          # Primary Content Area
-          <.column flex=1 gap=1>
-            # Top Row of Panels - Using flex for height distribution
-            # Takes 2/3 of vertical space
-            <.row flex=2 gap=1>
-              <.panel
-                title="Panel A"
-                flex=1
-                border={{:double, fg: :magenta}}
-                padding=1
-                align=:start
-                justify=:start
-              >
-                <.text fg=:white>Content A...</.text>
-                <.text fg=:magenta underline>Details...</.text>
-              </.panel>
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "3"}} ->
+        {%{model | selected: :logs}, []}
 
-              <.panel
-                title="Panel B"
-                flex=1
-                border={{:heavy, fg: :yellow}}
-                padding=1
-                align=:center
-                justify=:center
-              >
-                <.text fg=:white bold>Centered Content B</.text>
-              </.panel>
-            </.row>
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+        {model, [command(:quit)]}
 
-            # Bottom Panel - Using flex for height
-            <.panel
-              title="Panel C (Logs?)"
-              flex=1
-              border={{:dashed, fg: :green}}
-              padding=1
-              align=:start
-              justify=:start
-            >
-              <.text fg=:white>Log entry 1...</.text>
-              <.text fg=:green>Log entry 2...</.text>
-              <.text fg=:gray>Log entry 3...</.text>
-            </.panel>
-          </.column>
-        </.row>
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+        {model, [command(:quit)]}
 
-        # Footer Row - Justify content centrally
-        <.row width="100%" height=1 bg=:gray align=:center justify=:center>
-          <.text fg=:black bold>Footer | Status: OK</.text>
-        </.row>
-      </.column>
-    </.box>
-    """
+      _ ->
+        {model, []}
+    end
   end
+
+  @impl true
+  def view(model) do
+    column do
+      [
+        box title: "Dashboard", style: %{padding: 0} do
+          text(" [1] Overview  [2] Stats  [3] Logs  [q] Quit")
+        end,
+        row do
+          [
+            box title: "Nav", style: %{border: :single, width: 15, padding: 1} do
+              column style: %{gap: 1} do
+                [
+                  text(indicator(:overview, model) <> "Overview"),
+                  text(indicator(:stats, model) <> "Stats"),
+                  text(indicator(:logs, model) <> "Logs")
+                ]
+              end
+            end,
+            box title: panel_title(model.selected), style: %{border: :single, padding: 1} do
+              case model.selected do
+                :overview ->
+                  column style: %{gap: 1} do
+                    [
+                      text("System is running normally."),
+                      text("Uptime ticks: #{model.tick}"),
+                      text("Processes: #{length(Process.list())}")
+                    ]
+                  end
+
+                :stats ->
+                  mem = :erlang.memory(:total)
+                  column style: %{gap: 1} do
+                    [
+                      text("Memory: #{div(mem, 1_048_576)} MB"),
+                      text("Schedulers: #{:erlang.system_info(:schedulers_online)}"),
+                      text("Tick: #{model.tick}")
+                    ]
+                  end
+
+                :logs ->
+                  column do
+                    [
+                      text("[#{model.tick}] Dashboard refreshed"),
+                      text("[#{max(0, model.tick - 1)}] User navigated"),
+                      text("[0] Dashboard started")
+                    ]
+                  end
+              end
+            end
+          ]
+        end
+      ]
+    end
+  end
+
+  @impl true
+  def subscribe(_model) do
+    [subscribe_interval(1000, :tick)]
+  end
+
+  defp indicator(tab, %{selected: selected}) do
+    if tab == selected, do: "> ", else: "  "
+  end
+
+  defp panel_title(:overview), do: "Overview"
+  defp panel_title(:stats), do: "Statistics"
+  defp panel_title(:logs), do: "Recent Logs"
+end
+
+Raxol.Core.Runtime.Log.info("DashboardExample: Starting...")
+{:ok, pid} = Raxol.start_link(DashboardExample, [])
+ref = Process.monitor(pid)
+receive do
+  {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

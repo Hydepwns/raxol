@@ -1,76 +1,65 @@
-# This example demonstrates the Raxol.UI.Components.Display.Progress component.
-defmodule Raxol.Docs.Guides.Examples.Display.ProgressBarTest do
+# Progress Bar Test
+#
+# Demonstrates a cycling progress bar using TEA subscriptions.
+#
+# Usage:
+#   mix run examples/components/displays/progress_bar_test.exs
+
+defmodule ProgressBarTestExample do
   use Raxol.Core.Runtime.Application
 
-  defmodule State do
-    defstruct progress_value: 25, timer: nil
+  require Raxol.Core.Runtime.Log
+
+  @bar_width 40
+
+  @impl true
+  def init(_context) do
+    %{progress: 0}
   end
 
   @impl true
-  def init(_opts) do
-    # Start a timer to update the progress bar
-    {:ok, timer} = :timer.send_interval(500, :tick)
-    %State{progress_value: 0, timer: timer}
-  end
-
-  @impl true
-  def update(message, model = %State{}) do
+  def update(message, model) do
     case message do
       :tick ->
-        new_value =
-          if model.progress_value >= 100 do
-            # Reset
-            0
-          else
-            model.progress_value + 5
-          end
+        new_val = if model.progress >= 100, do: 0, else: model.progress + 5
+        {%{model | progress: new_val}, []}
 
-        %State{model | progress_value: new_value}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+        {model, [command(:quit)]}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+        {model, [command(:quit)]}
 
       _ ->
-        model
+        {model, []}
     end
   end
 
   @impl true
-  def view(model = %State{}) do
-    view do
-      column(gap: 15, padding: 15) do
-        text(
-          content: "Progress Bar Example",
-          style: "font-size: 1.3em; font-weight: bold;"
-        )
+  def view(model) do
+    filled = trunc(model.progress / 100 * @bar_width)
+    empty = @bar_width - filled
+    bar = String.duplicate("█", filled) <> String.duplicate("░", empty)
 
-        # Basic Progress Bar
-        text(content: "Basic Progress Bar (Value: #{model.progress_value}%)")
-
-        progress_bar(
-          value: model.progress_value,
-          max: 100,
-          style: "width: 300px;"
-        )
-
-        # Progress Bar with different styling (if supported/needed)
-        # text(content: "Styled Progress Bar")
-        # progress_bar(value: model.progress_value, max: 100, style: "width: 400px; height: 25px;")
-      end
+    column style: %{padding: 1, gap: 1} do
+      [
+        text("Progress Bar Example", style: [:bold]),
+        text("Value: #{model.progress}%"),
+        text("[#{bar}]"),
+        text("Press 'q' or Ctrl+C to quit.")
+      ]
     end
   end
 
   @impl true
-  def terminate(_reason, model = %State{}) do
-    # Ensure the timer is cancelled when the application stops
-    if model.timer, do: :timer.cancel(model.timer)
-    :ok
-  end
-
-  # Function to run the example directly
-  def main do
-    Raxol.start_link(__MODULE__, [])
-    # For CI/test/demo: sleep for 2 seconds, then exit. Adjust as needed.
-    Process.sleep(2000)
+  def subscribe(_model) do
+    [subscribe_interval(500, :tick)]
   end
 end
 
-# To run this example: mix run -e "Raxol.Docs.Guides.Examples.Display.ProgressBarTest.main()"
-# (Assuming Raxol is a dependency or mix project is set up)
+Raxol.Core.Runtime.Log.info("ProgressBarTestExample: Starting...")
+{:ok, pid} = Raxol.start_link(ProgressBarTestExample, [])
+ref = Process.monitor(pid)
+receive do
+  {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
+end

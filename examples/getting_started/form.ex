@@ -1,162 +1,95 @@
 defmodule Raxol.Examples.FormDemo do
   @moduledoc """
-  A sample form component that demonstrates parent-child interactions.
-
-  This component includes:
-  - Child component management
-  - Event bubbling
-  - State synchronization
-  - Error boundaries
+  A sample form demonstrating parent-child event handling.
   """
 
   use Raxol.Core.Runtime.Application
   require Raxol.Core.Runtime.Log
-  require Raxol.View.Elements
-  alias Raxol.View.Elements, as: UI
 
-  defstruct form_data: %{username: "", password: ""},
-            submitted: false,
-            id: :form_example
-
-  @doc """
-  Initialize the form component with default state (for testing compatibility).
-  """
-  def new(props \\ %{}) do
+  @impl true
+  def init(_opts) do
     %{
+      form_data: %{username: "", password: ""},
       submitted: false,
-      button_clicked: nil,
-      fields: Map.get(props, :fields, %{}),
-      on_submit: Map.get(props, :on_submit, fn -> :submitted end),
-      children: Map.get(props, :children, []),
-      errors: Map.get(props, :errors, %{}),
-      id: Map.get(props, :id, :form_example),
-      form_data: Map.get(props, :form_data, %{username: "", password: ""})
+      active_field: :username
     }
   end
 
-  @impl Raxol.Core.Runtime.Application
-  def init(_opts) do
-    {:ok, %__MODULE__{}}
-  end
+  @impl true
+  def update(message, model) do
+    case message do
+      {:input, field, value} ->
+        new_data = Map.put(model.form_data, field, value)
+        {%{model | form_data: new_data}, []}
 
-  @impl Raxol.Core.Runtime.Application
-  def update({:input, field, value}, state) do
-    new_form_data = Map.put(state.form_data, field, value)
-    {%{state | form_data: new_form_data}, []}
-  end
+      :submit ->
+        Raxol.Core.Runtime.Log.info("Form submitted: #{inspect(model.form_data)}")
+        {%{model | submitted: true}, []}
 
-  def update({:submit}, state) do
-    # Log submission, don't emit command
-    Raxol.Core.Runtime.Log.info("Form submitted: #{inspect(state.form_data)}")
-    {%{state | submitted: true}, []}
-  end
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
+        next = if model.active_field == :username, do: :password, else: :username
+        {%{model | active_field: next}, []}
 
-  def update(_msg, state) do
-    # Ignore other messages
-    {state, []}
-  end
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}} ->
+        Raxol.Core.Runtime.Log.info("Form submitted: #{inspect(model.form_data)}")
+        {%{model | submitted: true}, []}
 
-  # Correct arity for Application behaviour
-  @impl Raxol.Core.Runtime.Application
-  def handle_event(
-        {:raxol_event, _source_pid,
-         {:component_event, component_id, event_type, payload}}
-      ) do
-    # Translate component events into update messages
-    case {component_id, event_type} do
-      # Assuming payload is the new value
-      {:username_input, :change} -> [{:input, :username, payload}]
-      # Assuming payload is the new value
-      {:password_input, :change} -> [{:input, :password, payload}]
-      # Assuming any click in the form context is a submit
-      {_, :click} -> [:submit]
-      # Ignore other component events
-      _ -> []
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :backspace}} ->
+        field = model.active_field
+        current = Map.get(model.form_data, field, "")
+        new_val = String.slice(current, 0..-2//1)
+        new_data = Map.put(model.form_data, field, new_val)
+        {%{model | form_data: new_data, submitted: false}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+        {model, [command(:quit)]}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}} when is_binary(ch) ->
+        if String.printable?(ch) do
+          field = model.active_field
+          current = Map.get(model.form_data, field, "")
+          display = if field == :password, do: current <> ch, else: current <> ch
+          new_data = Map.put(model.form_data, field, display)
+          {%{model | form_data: new_data, submitted: false}, []}
+        else
+          {model, []}
+        end
+
+      _ ->
+        {model, []}
     end
   end
 
-  def handle_event(_event) do
-    # State is managed by Dispatcher, just return commands/messages
-    # Keep this catch-all for other event types (e.g., keyboard, mouse if needed)
-    []
-  end
-
-  @impl Raxol.Core.Runtime.Application
-  # Keep state for handle_message
-  def handle_message(_msg, state), do: {state, []}
-
-  # Correct arity for Application behaviour
-  @impl Raxol.Core.Runtime.Application
-  def handle_tick(_tick) do
-    # State is managed by Dispatcher, just return commands
-    []
-  end
-
-  @impl Raxol.Core.Runtime.Application
-  def subscriptions(_state), do: []
-
-  @impl Raxol.Core.Runtime.Application
-  def terminate(_reason, _state), do: :ok
-
-  @doc """
-  Render the form UI.
-  """
-  @impl Raxol.Core.Runtime.Application
-  @dialyzer {:nowarn_function, view: 1}
-  def view(state) do
-    UI.box id: state.id, border: :rounded, padding: 1 do
-      UI.column do
+  @impl true
+  def view(model) do
+    box style: %{border: :single, padding: 1} do
+      column style: %{gap: 1} do
         [
-          UI.label("Username:"),
-          UI.text_input(id: :username_input, value: state.form_data.username),
-          UI.label("Password:"),
-          UI.text_input(
-            id: :password_input,
-            value: state.form_data.password,
-            password: true
-          ),
-          UI.button(id: :submit_button, label: "Submit"),
-          case state.submitted do
-            true -> UI.label("Submitted!")
-            false -> nil
+          text("Form Demo", style: [:bold]),
+          render_field("Username", :username, model),
+          render_field("Password", :password, model),
+          text(""),
+          button("Submit", on_click: :submit),
+          if model.submitted do
+            text("Submitted!", style: [:bold])
+          else
+            text("[Tab] switch | [Enter] submit | [Ctrl+C] quit")
           end
         ]
-        |> Enum.reject(&is_nil/1)
       end
     end
   end
 
-  # Add a render/2 function for test compatibility
-  # def render(state, _context) do
-  #   view(state)
-  # end
+  @impl true
+  def subscribe(_model), do: []
 
-  # Add handle_event/3 for integration testing with Raxol.Test.Integration
-  # This will be called by the test framework when events bubble from children.
-  def handle_event(
-        state,
-        %Raxol.Core.Events.Event{type: :button_pressed},
-        _opts
-      ) do
-    # Log submission (similar to update/2 logic)
-    Raxol.Core.Runtime.Log.info(
-      "Form received :button_pressed, processing as submit: #{inspect(state.form_data)}"
-    )
+  defp render_field(label, field, model) do
+    active = model.active_field == field
+    value = Map.get(model.form_data, field, "")
+    display = if field == :password, do: String.duplicate("*", String.length(value)), else: value
+    prefix = if active, do: "> ", else: "  "
+    cursor = if active, do: "_", else: ""
 
-    new_state = %{state | submitted: true}
-
-    # For assert_parent_updated to pass, parent must dispatch an event of type :button_clicked.
-    # Use a new :dispatch_to_self command that the integration framework will handle.
-    {:update, new_state,
-     [{:dispatch_to_self, %Raxol.Core.Events.Event{type: :button_clicked}}]}
-  end
-
-  # Catch-all for other events in integration test context if needed,
-  # ensuring it doesn't conflict with the Application behaviour handle_event/1.
-  # This specific arity is for the test framework.
-  def handle_event(state, _event, _opts) do
-    # Default pass-through for other events not specifically handled by Form in this context
-    # Or simply :passthrough if state is guaranteed to be a component state map
-    {:noreply, state, []}
+    text("#{prefix}#{label}: #{display}#{cursor}")
   end
 end

@@ -126,8 +126,6 @@ defmodule SplitPaneDemo do
       } ->
         case model.dragging do
           {:outer, _start} ->
-            space = %{x: 0, y: 0, width: model.width, height: model.height}
-
             new_ratio =
               Resize.calculate_ratio(
                 {mx, my},
