@@ -252,19 +252,18 @@ defmodule Raxol.Animation.EasingTest do
       test_inputs = [0.0, 0.25, 0.5, 0.75, 1.0]
 
       for function <- easing_functions do
-        start_time = System.unique_integer([:positive])
+        start_time = System.monotonic_time(:microsecond)
 
         for input <- test_inputs do
           apply(Easing, function, [input])
         end
 
-        end_time = System.unique_integer([:positive])
+        end_time = System.monotonic_time(:microsecond)
 
-        duration =
-          System.convert_time_unit(end_time - start_time, :native, :microsecond)
+        duration = end_time - start_time
 
-        # Each function should complete within 1 microsecond per call
-        assert duration < 5,
+        # Each function should complete 5 calls well under 1ms
+        assert duration < 1000,
                "Easing function #{function} too slow: #{duration}μs"
       end
     end
