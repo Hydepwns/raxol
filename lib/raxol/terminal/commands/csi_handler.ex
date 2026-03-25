@@ -8,6 +8,12 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   alias Raxol.Terminal.Commands.CSIHandler.{Cursor, CursorMovementHandler}
   alias Raxol.Terminal.Commands.WindowHandler
   alias Raxol.Terminal.ModeManager
+
+  @compile {:no_warn_undefined,
+            [
+              Raxol.Terminal.Commands.CSIHandler.SequenceRouter,
+              Raxol.Terminal.Commands.CSIHandler.ScreenHandlers
+            ]}
   # Cursor movement delegations
   defdelegate handle_cursor_up(emulator, amount), to: CursorMovementHandler
   defdelegate handle_cursor_down(emulator, amount), to: CursorMovementHandler
@@ -29,44 +35,27 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
   @doc """
   Handles cursor movement based on the command byte.
+  Returns `{:ok, emulator}` with the updated emulator struct.
   """
+  @spec handle_cursor_movement(Raxol.Terminal.Emulator.t(), [integer()]) ::
+          {:ok, Raxol.Terminal.Emulator.t()}
   def handle_cursor_movement(emulator, [command_byte]) do
+    # All handle_cursor_* functions already return {:ok, emulator}
     case command_byte do
-      ?A ->
-        {:ok, updated_emulator} = handle_cursor_up(emulator, 1)
-        updated_emulator
-
-      ?B ->
-        {:ok, updated_emulator} = handle_cursor_down(emulator, 1)
-        updated_emulator
-
-      ?C ->
-        {:ok, updated_emulator} = handle_cursor_forward(emulator, 1)
-        updated_emulator
-
-      ?D ->
-        {:ok, updated_emulator} = handle_cursor_backward(emulator, 1)
-        updated_emulator
-
-      _ ->
-        emulator
+      ?A -> handle_cursor_up(emulator, 1)
+      ?B -> handle_cursor_down(emulator, 1)
+      ?C -> handle_cursor_forward(emulator, 1)
+      ?D -> handle_cursor_backward(emulator, 1)
+      _ -> {:ok, emulator}
     end
   end
 
   # Main CSI handler
   def handle_csi_sequence(emulator, command, params) do
-    # Convert command to string if it's an integer (character code)
-    command_str =
-      case command do
-        cmd when is_integer(cmd) -> <<cmd::utf8>>
-        cmd when is_binary(cmd) -> cmd
-        _ -> ""
-      end
+    command_str = normalize_command(command)
 
-    # Delegate to cursor handler for cursor commands
     case Cursor.handle_command(emulator, params, command_str) do
       {:error, :unknown_cursor_command} ->
-        # Try other handlers - use command_str since that's normalized
         handle_other_csi(emulator, command_str, params)
 
       {:ok, updated_emulator} ->
@@ -74,53 +63,22 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     end
   end
 
+  defp normalize_command(cmd) when is_integer(cmd), do: <<cmd::utf8>>
+  defp normalize_command(cmd) when is_binary(cmd), do: cmd
+  defp normalize_command(_), do: ""
+
   defp handle_other_csi(emulator, command, params) do
     case command do
-      "@" ->
-        # ICH - Insert Character
-        count = parse_count_param(params)
-        handle_insert_character(emulator, count)
-
-      "P" ->
-        # DCH - Delete Character
-        count = parse_count_param(params)
-        handle_delete_character(emulator, count)
-
-      "L" ->
-        # IL - Insert Line
-        count = parse_count_param(params)
-        handle_insert_line(emulator, count)
-
-      "M" ->
-        # DL - Delete Line
-        count = parse_count_param(params)
-        handle_delete_line(emulator, count)
-
-      "J" ->
-        # ED - Erase Display
-        mode = parse_mode_param(params)
-        handle_erase_display(emulator, mode)
-
-      "K" ->
-        # EL - Erase Line
-        mode = parse_mode_param(params)
-        handle_erase_line(emulator, mode)
-
-      "m" ->
-        # SGR - Select Graphic Rendition (text formatting/colors)
-        handle_sgr(emulator, params)
-
-      "s" ->
-        # Save cursor position
-        save_cursor_position(emulator)
-
-      "u" ->
-        # Restore cursor position
-        restore_cursor_position(emulator)
-
-      _ ->
-        # For other unknown sequences, return emulator unchanged
-        emulator
+      "@" -> insert_characters(emulator, parse_count_param(params))
+      "P" -> delete_characters(emulator, parse_count_param(params))
+      "L" -> insert_line(emulator, parse_count_param(params))
+      "M" -> delete_line(emulator, parse_count_param(params))
+      "J" -> handle_erase_display(emulator, parse_mode_param(params))
+      "K" -> handle_erase_line(emulator, parse_mode_param(params))
+      "m" -> apply_sgr(emulator, params)
+      "s" -> save_cursor_position(emulator)
+      "u" -> restore_cursor_position(emulator)
+      _ -> emulator
     end
   end
 
@@ -155,11 +113,10 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   def handle_erase_line(emulator, mode) do
     alias Raxol.Terminal.Commands.CSIHandler.ScreenHandlers
 
-    {:ok, updated_emulator} = ScreenHandlers.handle_erase_line(emulator, mode)
-    updated_emulator
+    ScreenHandlers.handle_erase_line(emulator, mode)
   end
 
-  defp handle_insert_character(emulator, count) do
+  defp insert_characters(emulator, count) do
     alias Raxol.Terminal.Buffer.CharEditor
 
     {cursor_y, cursor_x} =
@@ -179,7 +136,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     Raxol.Terminal.Emulator.update_active_buffer(emulator, updated_buffer)
   end
 
-  defp handle_delete_character(emulator, count) do
+  defp delete_characters(emulator, count) do
     alias Raxol.Terminal.Buffer.CharEditor
 
     {cursor_y, cursor_x} =
@@ -199,30 +156,19 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     Raxol.Terminal.Emulator.update_active_buffer(emulator, updated_buffer)
   end
 
-  defp handle_insert_line(emulator, count) do
-    alias Raxol.Terminal.Commands.Screen
-
-    Screen.insert_lines(emulator, count)
+  defp insert_line(emulator, count) do
+    Raxol.Terminal.Commands.Screen.insert_lines(emulator, count)
   end
 
-  defp handle_delete_line(emulator, count) do
-    alias Raxol.Terminal.Commands.Screen
-
-    Screen.delete_lines(emulator, count)
+  defp delete_line(emulator, count) do
+    Raxol.Terminal.Commands.Screen.delete_lines(emulator, count)
   end
 
-  defp handle_sgr(emulator, params) do
+  defp apply_sgr(emulator, params) do
     alias Raxol.Terminal.ANSI.SGR.Processor, as: SGRProcessor
 
-    # Convert params list to string format expected by SGRProcessor
-    params_string =
-      params
-      |> Enum.map_join(";", &Integer.to_string/1)
-
-    # Apply SGR formatting to the emulator's current style
+    params_string = Enum.map_join(params, ";", &Integer.to_string/1)
     updated_style = SGRProcessor.handle_sgr(params_string, emulator.style)
-
-    # Return emulator with updated style
     %{emulator | style: updated_style}
   end
 
@@ -236,28 +182,24 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   defdelegate handle_icon_title(emulator, params), to: WindowHandler
 
   # Handler functions for Executor compatibility
+  # All return {:ok, emulator} or {:error, reason, emulator}
   def handle_basic_command(emulator, params, final_byte) do
     handle_csi_sequence(emulator, final_byte, params)
   end
 
   def handle_cursor_command(emulator, params, final_byte) do
     case Cursor.handle_command(emulator, params, <<final_byte>>) do
-      {:error, :unknown_cursor_command} -> emulator
-      {:ok, updated_emulator} -> updated_emulator
+      {:error, :unknown_cursor_command} -> {:ok, emulator}
+      {:ok, _updated_emulator} = ok -> ok
     end
   end
 
   def handle_screen_command(emulator, params, final_byte) do
-    # Delegate to Screen module for screen commands
     alias Raxol.Terminal.Commands.CSIHandler.Screen
 
     case Screen.handle_command(emulator, params, <<final_byte>>) do
-      {:ok, updated_emulator} ->
-        updated_emulator
-
-      {:error, _reason} ->
-        # Unknown command - return original emulator unchanged
-        emulator
+      {:ok, _updated_emulator} = ok -> ok
+      {:error, _reason} -> {:ok, emulator}
     end
   end
 
@@ -319,184 +261,17 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     end
   end
 
-  def handle_device_command(emulator, params, intermediates, final_byte) do
-    # Handle device commands directly
-    case final_byte do
-      ?c ->
-        # Device Attributes (DA)
-        Raxol.Terminal.Emulator.CommandHandler.handle_device_attributes(
-          params,
-          emulator,
-          intermediates
-        )
-
-      ?n ->
-        # Device Status Report (DSR)
-        handle_device_status_report(emulator, params)
-
-      ?s ->
-        # Save Cursor Position (SCP)
-        save_cursor_position(emulator)
-
-      ?u ->
-        # Restore Cursor Position (RCP)
-        restore_cursor_position(emulator)
-
-      _ ->
-        # Other device commands not yet implemented
-        emulator
-    end
-  end
-
-  defp handle_device_status_report(emulator, params) do
-    case params do
-      [5] ->
-        # DSR 5n - Report device status (OK)
-        response = "\e[0n"
-        %{emulator | output_buffer: emulator.output_buffer <> response}
-
-      [] ->
-        # DSR with no parameters - Report device status (OK)
-        response = "\e[0n"
-        %{emulator | output_buffer: emulator.output_buffer <> response}
-
-      [6] ->
-        # DSR 6n - Report cursor position
-        response = "\e[#{emulator.cursor.row + 1};#{emulator.cursor.col + 1}R"
-        %{emulator | output_buffer: emulator.output_buffer <> response}
-
-      _ ->
-        # Unknown parameter, ignore
-        emulator
-    end
-  end
+  defdelegate handle_device_command(
+                emulator,
+                params,
+                intermediates,
+                final_byte
+              ),
+              to: Raxol.Terminal.Commands.CSIHandler.DeviceOps
 
   def handle_h_or_l(emulator, params, intermediates, final_byte) do
-    # Handle Set Mode (SM - 'h') and Reset Mode (RM - 'l')
-    # ?h = 'h', ?l = 'l'
-    is_set = final_byte == ?h
-    is_private = intermediates == "?"
-
-    # Process each mode parameter
-    result =
-      Enum.reduce(params, emulator, fn param, acc ->
-        mode_value =
-          if is_integer(param), do: param, else: String.to_integer(param)
-
-        if is_private do
-          # Private DEC modes (with '?' prefix)
-          handle_private_mode(acc, mode_value, is_set)
-        else
-          # Standard ANSI modes
-          handle_standard_mode(acc, mode_value, is_set)
-        end
-      end)
-
-    result
-  end
-
-  defp handle_private_mode(emulator, mode, is_set) do
-    mode_name =
-      case mode do
-        # Cursor keys mode
-        1 -> :decckm
-        # 132 column mode
-        3 -> :deccolm_132
-        # Screen mode
-        5 -> :decscnm
-        # Origin mode
-        6 -> :decom
-        # Auto wrap mode
-        7 -> :decawm
-        # Auto repeat mode
-        8 -> :decarm
-        # Interlace mode
-        9 -> :decinlm
-        # Send/receive mode
-        12 -> :decsrm
-        # Text cursor enable mode
-        25 -> :dectcem
-        # Alternate screen buffer
-        47 -> :dec_alt_screen
-        1000 -> :mouse_report_x10
-        1002 -> :mouse_report_cell_motion
-        1003 -> :mouse_any_event
-        1004 -> :focus_events
-        # Alternate screen buffer (no clear)
-        1047 -> :dec_alt_screen_save
-        # Save/restore cursor
-        1048 -> :decsc_deccara
-        # Alternate screen buffer (with save cursor)
-        1049 -> :alt_screen_buffer
-        2004 -> :bracketed_paste
-        _ -> nil
-      end
-
-    if mode_name do
-      # Determine the correct category for the mode
-      category =
-        case mode do
-          47 -> :screen_buffer
-          1047 -> :screen_buffer
-          1048 -> :screen_buffer
-          1049 -> :screen_buffer
-          _ -> :dec_private
-        end
-
-      # Call ModeManager with the emulator and a list of modes
-      updated_emulator =
-        apply_mode_change(emulator, mode_name, category, is_set)
-
-      # Handle special cases for screen buffer switching
-      case {mode_name, is_set} do
-        {:dec_alt_screen, true} ->
-          %{updated_emulator | active_buffer_type: :alternate}
-
-        {:dec_alt_screen, false} ->
-          %{updated_emulator | active_buffer_type: :main}
-
-        {:dec_alt_screen_save, true} ->
-          %{updated_emulator | active_buffer_type: :alternate}
-
-        {:dec_alt_screen_save, false} ->
-          %{updated_emulator | active_buffer_type: :main}
-
-        {:alt_screen_buffer, true} ->
-          # Save cursor and switch to alternate buffer
-          emulator = save_cursor_position(updated_emulator)
-          %{emulator | active_buffer_type: :alternate}
-
-        {:alt_screen_buffer, false} ->
-          # Switch to main buffer and restore cursor
-          emulator = %{updated_emulator | active_buffer_type: :main}
-          restore_cursor_position(emulator)
-
-        _ ->
-          updated_emulator
-      end
-    else
-      emulator
-    end
-  end
-
-  defp handle_standard_mode(emulator, mode, is_set) do
-    mode_name =
-      case mode do
-        # Insert/Replace mode
-        4 -> :irm
-        # Send/Receive mode
-        12 -> :srm
-        # Line feed/new line mode
-        20 -> :lnm
-        _ -> nil
-      end
-
-    if mode_name do
-      # Call ModeManager with the emulator and a list of modes
-      apply_mode_change(emulator, mode_name, :standard, is_set)
-    else
-      emulator
-    end
+    alias Raxol.Terminal.Commands.CSIHandler.ModeProcessor
+    ModeProcessor.handle_h_or_l(emulator, params, intermediates, final_byte)
   end
 
   def handle_scs(emulator, params_buffer, final_byte) do
@@ -555,10 +330,8 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   end
 
   def handle_q_deccusr(emulator, params) do
-    # DECCUSR - Set cursor style
     style =
       case params do
-        # Default
         [0] -> :blink_block
         [1] -> :blink_block
         [2] -> :steady_block
@@ -566,33 +339,28 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
         [4] -> :steady_underline
         [5] -> :blink_bar
         [6] -> :steady_bar
-        # Keep current style for invalid params
         _ -> emulator.cursor.style
       end
 
     updated_cursor = %{emulator.cursor | style: style}
-    %{emulator | cursor: updated_cursor}
+    {:ok, %{emulator | cursor: updated_cursor}}
   end
 
-  # Bracketed paste handling
   def handle_bracketed_paste_start(emulator) do
-    case emulator.mode_manager.bracketed_paste_mode do
-      true ->
-        %{emulator | bracketed_paste_active: true, bracketed_paste_buffer: ""}
-
-      false ->
-        emulator
+    if emulator.mode_manager.bracketed_paste_mode do
+      {:ok,
+       %{emulator | bracketed_paste_active: true, bracketed_paste_buffer: ""}}
+    else
+      {:ok, emulator}
     end
   end
 
   def handle_bracketed_paste_end(emulator) do
-    case emulator.bracketed_paste_active do
-      true ->
-        # Process the accumulated paste buffer
-        %{emulator | bracketed_paste_active: false, bracketed_paste_buffer: ""}
-
-      false ->
-        emulator
+    if emulator.bracketed_paste_active do
+      {:ok,
+       %{emulator | bracketed_paste_active: false, bracketed_paste_buffer: ""}}
+    else
+      {:ok, emulator}
     end
   end
 
@@ -602,10 +370,9 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   # Note: handle_cursor_position is already delegated above
 
   def handle_text_attributes(emulator, attrs) do
-    # Map to actual text attribute handling
     style = Map.get(emulator, :style, %{})
     updated_style = apply_text_attributes(style, attrs)
-    %{emulator | style: updated_style}
+    {:ok, %{emulator | style: updated_style}}
   end
 
   defp apply_text_attributes(style, attrs) do
@@ -617,23 +384,16 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   end
 
   def handle_mode_change(emulator, mode, enabled) do
-    # Handle mode changes through ModeManager
     mode_manager = Map.get(emulator, :mode_manager, %ModeManager{})
 
     updated_mode_manager =
       case mode do
         4 -> %{mode_manager | insert_mode: enabled}
         25 -> %{mode_manager | cursor_visible: enabled}
-        # Unknown mode, no change
         _ -> mode_manager
       end
 
-    if updated_mode_manager == mode_manager do
-      # No change for unknown mode
-      emulator
-    else
-      %{emulator | mode_manager: updated_mode_manager}
-    end
+    {:ok, %{emulator | mode_manager: updated_mode_manager}}
   end
 
   def handle_scroll_up(emulator, _lines) do
@@ -651,10 +411,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   def handle_erase_display(emulator, mode) do
     alias Raxol.Terminal.Commands.CSIHandler.ScreenHandlers
 
-    {:ok, updated_emulator} =
-      ScreenHandlers.handle_erase_display(emulator, mode)
-
-    updated_emulator
+    ScreenHandlers.handle_erase_display(emulator, mode)
   end
 
   # Missing functions that tests expect
@@ -727,104 +484,8 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     {:ok, %{emulator | cursor: home_cursor, scroll_region: scroll_region}}
   end
 
-  def handle_sequence(emulator, params) do
-    # Generic sequence handler - delegate to handle_csi_sequence
-    case params do
-      # Cursor movement
-      [?A] ->
-        {:ok, updated} = handle_cursor_up(emulator, 1)
-        updated
-
-      [?B] ->
-        {:ok, updated} = handle_cursor_down(emulator, 1)
-        updated
-
-      [?C] ->
-        {:ok, updated} = handle_cursor_forward(emulator, 1)
-        updated
-
-      [?D] ->
-        {:ok, updated} = handle_cursor_backward(emulator, 1)
-        updated
-
-      # Cursor Home (H without parameters)
-      [?H] ->
-        # Move cursor to home position (0,0)
-        %{emulator | cursor: %{emulator.cursor | row: 0, col: 0}}
-
-      # Cursor Position with parameters (e.g., 2;3H)
-      [?2, ?;, ?3, ?H] ->
-        # Move cursor to row 1 (2-1), col 2 (3-1) - 1-based to 0-based conversion
-        %{emulator | cursor: %{emulator.cursor | row: 1, col: 2}}
-
-      # Save/Restore cursor
-      [?s] ->
-        {:ok, updated} = handle_s(emulator, [])
-        updated
-
-      [?u] ->
-        {:ok, updated} = handle_u(emulator, [])
-        updated
-
-      # Erase display
-      [?J] ->
-        {:ok, handle_erase_display(emulator, 0)}
-
-      [?1, ?J] ->
-        {:ok, handle_erase_display(emulator, 1)}
-
-      [?2, ?J] ->
-        {:ok, handle_erase_display(emulator, 2)}
-
-      # Erase line
-      [?K] ->
-        {:ok, handle_erase_line(emulator, 0)}
-
-      [?1, ?K] ->
-        {:ok, handle_erase_line(emulator, 1)}
-
-      [?2, ?K] ->
-        {:ok, handle_erase_line(emulator, 2)}
-
-      # Character set locking shifts
-      [?N] ->
-        {:ok, updated} = handle_locking_shift(emulator, :g0)
-        updated
-
-      [?O] ->
-        {:ok, updated} = handle_locking_shift(emulator, :g1)
-        updated
-
-      [?P] ->
-        {:ok, updated} = handle_locking_shift(emulator, :g2)
-        updated
-
-      [?Q] ->
-        {:ok, updated} = handle_locking_shift(emulator, :g3)
-        updated
-
-      # Character set single shifts
-      [?R] ->
-        {:ok, updated} = handle_single_shift(emulator, :g2)
-        updated
-
-      [?S] ->
-        {:ok, updated} = handle_single_shift(emulator, :g3)
-        updated
-
-      # Device status sequences
-      [?6, ?n] ->
-        updated = handle_device_status(emulator, 6)
-        %{updated | device_status_reported: true}
-
-      [?6, ?R] ->
-        updated = handle_device_status(emulator, 6)
-        %{updated | cursor_position_reported: true}
-
-      _ ->
-        emulator
-    end
-  end
+  defdelegate handle_sequence(emulator, params),
+    to: Raxol.Terminal.Commands.CSIHandler.SequenceRouter
 
   @doc """
   Handles locking shift operations for character sets.
@@ -849,77 +510,17 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     {:ok, updated_emulator}
   end
 
-  def handle_save_restore_cursor(emulator, [command]) do
-    case command do
-      ?s -> handle_s(emulator, [])
-      ?u -> handle_u(emulator, [])
-      _ -> {:ok, emulator}
-    end
-  end
+  defdelegate handle_save_restore_cursor(emulator, command),
+    to: Raxol.Terminal.Commands.CSIHandler.SequenceRouter
 
-  def handle_screen_clear(emulator, params) do
-    # Delegate to erase display
-    mode =
-      case params do
-        [] -> 0
-        [mode] -> mode
-        [mode | _] -> mode
-      end
+  defdelegate handle_screen_clear(emulator, params),
+    to: Raxol.Terminal.Commands.CSIHandler.SequenceRouter
 
-    handle_erase_display(emulator, mode)
-  end
+  defdelegate handle_line_clear(emulator, params),
+    to: Raxol.Terminal.Commands.CSIHandler.SequenceRouter
 
-  def handle_line_clear(emulator, params) do
-    # Handle line clearing
-    mode =
-      case params do
-        [] -> 0
-        [mode] -> mode
-        [mode | _] -> mode
-      end
-
-    handle_erase_line(emulator, mode)
-  end
-
-  def handle_device_status(emulator, params) do
-    # Handle device status reports
-    # Normalize params to handle both single integer and list formats
-    param =
-      case params do
-        param when is_integer(param) -> param
-        [param] when is_integer(param) -> param
-        _ -> nil
-      end
-
-    case param do
-      5 ->
-        # Device status OK
-        output = "\e[0n"
-        %{emulator | output_buffer: emulator.output_buffer <> output}
-
-      6 ->
-        # Cursor position report
-        output = "\e[#{emulator.cursor.row + 1};#{emulator.cursor.col + 1}R"
-        %{emulator | output_buffer: emulator.output_buffer <> output}
-
-      _ ->
-        emulator
-    end
-  end
-
-  defp apply_mode_change(emulator, mode_name, category, is_set) do
-    if is_set do
-      case ModeManager.set_mode(emulator, [mode_name], category) do
-        {:ok, emu} -> emu
-        _ -> emulator
-      end
-    else
-      case ModeManager.reset_mode(emulator, [mode_name], category) do
-        {:ok, emu} -> emu
-        _ -> emulator
-      end
-    end
-  end
+  defdelegate handle_device_status(emulator, params),
+    to: Raxol.Terminal.Commands.CSIHandler.DeviceOps
 
   defp parse_charset_char_code(params_buffer) do
     case params_buffer do

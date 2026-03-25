@@ -35,20 +35,14 @@ defmodule Raxol.Terminal.Commands.EraseHandler do
     end
   end
 
+  # CSIHandler.handle_erase_display/2 returns {:ok, emulator} — pass through directly
   defp handle_erase_display(emulator, mode, _position) do
-    # Delegate to CSIHandler's erase display implementation
-    updated_emulator =
-      Raxol.Terminal.Commands.CSIHandler.handle_erase_display(emulator, mode)
-
-    {:ok, updated_emulator}
+    Raxol.Terminal.Commands.CSIHandler.handle_erase_display(emulator, mode)
   end
 
+  # CSIHandler.handle_erase_line/2 returns {:ok, emulator} — pass through directly
   defp handle_erase_line(emulator, mode, _position) do
-    # Delegate to CSIHandler's erase line implementation
-    updated_emulator =
-      Raxol.Terminal.Commands.CSIHandler.handle_erase_line(emulator, mode)
-
-    {:ok, updated_emulator}
+    Raxol.Terminal.Commands.CSIHandler.handle_erase_line(emulator, mode)
   end
 
   defp handle_erase_characters(emulator, count, _position) do

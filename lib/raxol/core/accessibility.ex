@@ -28,10 +28,12 @@ defmodule Raxol.Core.Accessibility do
   @behaviour Raxol.Core.Accessibility.Behaviour
 
   alias Raxol.Core.Accessibility.AccessibilityServer
+  alias Raxol.Core.Accessibility.Announcements
 
   @doc """
   Ensures the Accessibility server is started.
   """
+  @spec ensure_started() :: :ok | {:error, term()}
   def ensure_started do
     case Process.whereis(AccessibilityServer) do
       nil ->
@@ -49,8 +51,9 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Initialize accessibility with the given options.
   """
+  @spec init(keyword()) :: :ok
   def init(options \\ []) do
-    _started = ensure_started()
+    ensure_started()
     enable(options)
   end
 
@@ -67,7 +70,7 @@ defmodule Raxol.Core.Accessibility do
   """
   @impl true
   def enable(options \\ [], user_preferences_pid_or_name \\ nil) do
-    _started = ensure_started()
+    ensure_started()
 
     AccessibilityServer.enable(
       AccessibilityServer,
@@ -80,22 +83,8 @@ defmodule Raxol.Core.Accessibility do
   Disable accessibility features.
   """
   @impl true
-  def disable(user_preferences_pid_or_name \\ nil) do
-    _ = user_preferences_pid_or_name
-
-    case Process.whereis(AccessibilityServer) do
-      nil ->
-        :ok
-
-      _pid ->
-        try do
-          AccessibilityServer.disable()
-        catch
-          :exit, {:noproc, _} -> :ok
-          :exit, {:normal, _} -> :ok
-          :exit, _ -> :ok
-        end
-    end
+  def disable(_user_preferences_pid_or_name \\ nil) do
+    call_if_server_alive(fn -> AccessibilityServer.disable() end)
   end
 
   @doc """
@@ -103,16 +92,13 @@ defmodule Raxol.Core.Accessibility do
   """
   @impl true
   def enabled? do
-    _started = ensure_started()
+    ensure_started()
     AccessibilityServer.enabled?()
   end
 
   # Backward compatibility for tests that pass user_preferences_pid
-  def enabled?(user_preferences_pid_or_name)
-      when is_pid(user_preferences_pid_or_name) or
-             is_atom(user_preferences_pid_or_name) do
-    # Ignore the pid parameter
-    _ = user_preferences_pid_or_name
+  def enabled?(pid_or_name)
+      when is_pid(pid_or_name) or is_atom(pid_or_name) do
     enabled?()
   end
 
@@ -126,7 +112,7 @@ defmodule Raxol.Core.Accessibility do
   """
   @impl true
   def announce(message, opts \\ []) do
-    _started = ensure_started()
+    ensure_started()
     AccessibilityServer.announce(AccessibilityServer, message, opts)
     :ok
   end
@@ -135,10 +121,10 @@ defmodule Raxol.Core.Accessibility do
   Make an announcement with user preferences (behaviour callback).
   """
   @impl true
-  def announce(message, opts, _user_preferences_pid_or_name) do
-    _started = ensure_started()
-    AccessibilityServer.announce(AccessibilityServer, message, opts)
-    :ok
+  def announce(message, opts, user_preferences_pid_or_name) do
+    ensure_started()
+    ensure_announcements_agent()
+    Announcements.announce(message, opts, user_preferences_pid_or_name)
   end
 
   @doc """
@@ -146,60 +132,57 @@ defmodule Raxol.Core.Accessibility do
   """
   @impl true
   def clear_announcements do
-    _started = ensure_started()
-    AccessibilityServer.clear_all_announcements()
-    :ok
+    ensure_started()
+    ensure_announcements_agent()
+    Announcements.clear_announcements()
   end
 
   @doc """
   Set high contrast mode.
   """
+  @spec set_high_contrast(boolean()) :: :ok
   def set_high_contrast(enabled) when is_boolean(enabled) do
-    _started = ensure_started()
+    ensure_started()
     AccessibilityServer.set_high_contrast(enabled)
   end
 
-  # Backward compatibility for tests that pass user_preferences_pid
+  @spec set_high_contrast(boolean(), atom() | pid()) :: :ok
   def set_high_contrast(enabled, user_preferences_pid_or_name)
       when is_boolean(enabled) do
-    # Only use AccessibilityServer when using the default preferences
-    update_accessibility_server_for_high_contrast(
+    set_preference_with_sync(
+      :high_contrast,
       enabled,
       user_preferences_pid_or_name
     )
-
-    # Update UserPreferences directly
-    pref_key = [:accessibility, :high_contrast]
-
-    Raxol.Core.UserPreferences.set(
-      pref_key,
-      enabled,
-      user_preferences_pid_or_name
-    )
-
-    :ok
   end
 
-  defp update_accessibility_server_for_high_contrast(
-         enabled,
-         Raxol.Core.UserPreferences
-       ) do
-    _started = ensure_started()
+  defp maybe_update_server(:high_contrast, enabled, Raxol.Core.UserPreferences) do
+    ensure_started()
     AccessibilityServer.set_high_contrast(enabled)
   end
 
-  defp update_accessibility_server_for_high_contrast(_enabled, _custom_prefs),
-    do: :ok
+  defp maybe_update_server(:reduced_motion, enabled, Raxol.Core.UserPreferences) do
+    ensure_started()
+    AccessibilityServer.set_reduced_motion(enabled)
+  end
+
+  defp maybe_update_server(:large_text, enabled, Raxol.Core.UserPreferences) do
+    ensure_started()
+    AccessibilityServer.set_large_text(enabled)
+  end
+
+  defp maybe_update_server(_setting, _enabled, _custom_prefs), do: :ok
 
   @doc """
   Check if high contrast mode is enabled.
   """
+  @spec high_contrast?() :: boolean()
   def high_contrast? do
-    _started = ensure_started()
+    ensure_started()
     AccessibilityServer.high_contrast?()
   end
 
-  # Backward compatibility function for tests
+  @spec high_contrast_enabled?(atom() | pid()) :: boolean()
   def high_contrast_enabled?(user_preferences_pid_or_name) do
     check_preference_enabled(:high_contrast, user_preferences_pid_or_name)
   end
@@ -220,52 +203,32 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Set reduced motion mode.
   """
+  @spec set_reduced_motion(boolean()) :: :ok
   def set_reduced_motion(enabled) when is_boolean(enabled) do
-    _started = ensure_started()
+    ensure_started()
     AccessibilityServer.set_reduced_motion(enabled)
   end
 
-  # Backward compatibility for tests that pass user_preferences_pid
+  @spec set_reduced_motion(boolean(), atom() | pid()) :: :ok
   def set_reduced_motion(enabled, user_preferences_pid_or_name)
       when is_boolean(enabled) do
-    # Only use AccessibilityServer when using the default preferences
-    update_accessibility_server_for_reduced_motion(
+    set_preference_with_sync(
+      :reduced_motion,
       enabled,
       user_preferences_pid_or_name
     )
-
-    # Update UserPreferences directly
-    pref_key = [:accessibility, :reduced_motion]
-
-    Raxol.Core.UserPreferences.set(
-      pref_key,
-      enabled,
-      user_preferences_pid_or_name
-    )
-
-    :ok
   end
-
-  defp update_accessibility_server_for_reduced_motion(
-         enabled,
-         Raxol.Core.UserPreferences
-       ) do
-    _started = ensure_started()
-    AccessibilityServer.set_reduced_motion(enabled)
-  end
-
-  defp update_accessibility_server_for_reduced_motion(_enabled, _custom_prefs),
-    do: :ok
 
   @doc """
   Check if reduced motion mode is enabled.
   """
+  @spec reduced_motion?() :: boolean()
   def reduced_motion? do
-    _started = ensure_started()
+    ensure_started()
     AccessibilityServer.reduced_motion?()
   end
 
-  # Backward compatibility function for tests
+  @spec reduced_motion_enabled?(atom() | pid()) :: boolean()
   def reduced_motion_enabled?(user_preferences_pid_or_name) do
     check_preference_enabled(:reduced_motion, user_preferences_pid_or_name)
   end
@@ -273,8 +236,9 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Set large text mode.
   """
+  @spec set_large_text(boolean()) :: :ok
   def set_large_text(enabled) when is_boolean(enabled) do
-    _started = ensure_started()
+    ensure_started()
     AccessibilityServer.set_large_text(enabled)
   end
 
@@ -284,22 +248,7 @@ defmodule Raxol.Core.Accessibility do
   @impl true
   def set_large_text(enabled, user_preferences_pid_or_name)
       when is_boolean(enabled) do
-    # Only use AccessibilityServer when using the default preferences
-    # When a custom user_preferences_pid_or_name is passed (test mode),
-    # skip the AccessibilityServer to avoid stale reference issues
-    update_accessibility_server_for_large_text(
-      enabled,
-      user_preferences_pid_or_name
-    )
-
-    # Update UserPreferences directly
-    pref_key = [:accessibility, :large_text]
-
-    Raxol.Core.UserPreferences.set(
-      pref_key,
-      enabled,
-      user_preferences_pid_or_name
-    )
+    set_preference_with_sync(:large_text, enabled, user_preferences_pid_or_name)
 
     # Send text_scale_updated message for test compatibility
     scale = if enabled, do: 1.5, else: 1.0
@@ -308,26 +257,16 @@ defmodule Raxol.Core.Accessibility do
     :ok
   end
 
-  defp update_accessibility_server_for_large_text(
-         enabled,
-         Raxol.Core.UserPreferences
-       ) do
-    _started = ensure_started()
-    AccessibilityServer.set_large_text(enabled)
-  end
-
-  defp update_accessibility_server_for_large_text(_enabled, _custom_prefs),
-    do: :ok
-
   @doc """
   Check if large text mode is enabled.
   """
+  @spec large_text?() :: boolean()
   def large_text? do
-    _started = ensure_started()
+    ensure_started()
     AccessibilityServer.large_text?()
   end
 
-  # Backward compatibility function for tests
+  @spec large_text_enabled?(atom() | pid()) :: boolean()
   def large_text_enabled?(user_preferences_pid_or_name) do
     check_preference_enabled(:large_text, user_preferences_pid_or_name)
   end
@@ -335,32 +274,36 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Set screen reader support.
   """
+  @spec set_screen_reader(boolean()) :: :ok
   def set_screen_reader(enabled) when is_boolean(enabled) do
-    _started = ensure_started()
+    ensure_started()
     AccessibilityServer.set_screen_reader(enabled)
   end
 
   @doc """
   Check if screen reader support is enabled.
   """
+  @spec screen_reader?() :: boolean()
   def screen_reader? do
-    _started = ensure_started()
+    ensure_started()
     AccessibilityServer.screen_reader?()
   end
 
   @doc """
   Set keyboard focus indicators.
   """
+  @spec set_keyboard_focus(boolean()) :: :ok
   def set_keyboard_focus(enabled) when is_boolean(enabled) do
-    _started = ensure_started()
+    ensure_started()
     AccessibilityServer.set_keyboard_focus(enabled)
   end
 
   @doc """
   Get all accessibility preferences.
   """
+  @spec get_preferences() :: map()
   def get_preferences do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.get_preferences()
   end
 
@@ -369,32 +312,36 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Announce with synchronous confirmation.
   """
+  @spec announce_sync(String.t(), keyword()) :: :ok
   def announce_sync(message, opts \\ []) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.announce_sync(message, opts)
   end
 
   @doc """
   Get announcement history.
   """
+  @spec get_announcement_history(non_neg_integer() | nil) :: list(map())
   def get_announcement_history(limit \\ nil) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.get_announcement_history(limit)
   end
 
   @doc """
   Clear announcement history.
   """
+  @spec clear_announcement_history() :: :ok
   def clear_announcement_history do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.clear_announcement_history()
   end
 
   @doc """
   Set announcement callback function.
   """
+  @spec set_announcement_callback((String.t() -> any())) :: :ok
   def set_announcement_callback(callback) when is_function(callback, 1) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.set_announcement_callback(callback)
   end
 
@@ -410,32 +357,36 @@ defmodule Raxol.Core.Accessibility do
   - `:hint` - Usage hint for screen readers
   - `:state` - Current state (expanded, selected, etc.)
   """
+  @spec set_metadata(term(), map()) :: :ok
   def set_metadata(component_id, metadata) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.set_metadata(component_id, metadata)
   end
 
   @doc """
   Get accessibility metadata for a component.
   """
+  @spec get_metadata(term()) :: map() | nil
   def get_metadata(component_id) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.get_metadata(component_id)
   end
 
   @doc """
   Remove metadata for a component.
   """
+  @spec remove_metadata(term()) :: :ok
   def remove_metadata(component_id) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.remove_metadata(component_id)
   end
 
   @doc """
   Update a specific metadata field for a component.
   """
+  @spec update_metadata(term(), atom(), term()) :: :ok
   def update_metadata(component_id, field, value) do
-    _ = ensure_started()
+    ensure_started()
     current = AccessibilityServer.get_metadata(component_id) || %{}
     updated = Map.put(current, field, value)
     AccessibilityServer.set_metadata(component_id, updated)
@@ -446,8 +397,9 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Handle focus change event.
   """
+  @spec handle_focus_change_event({:focus_change, term(), term()}) :: :ok
   def handle_focus_change_event({:focus_change, old_focus, new_focus}) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.handle_focus_change(old_focus, new_focus)
     :ok
   end
@@ -461,6 +413,7 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Announce component activation.
   """
+  @spec announce_activation(term()) :: :ok
   def announce_activation(component_id) do
     metadata = get_metadata(component_id) || %{}
     label = Map.get(metadata, :label, component_id)
@@ -470,6 +423,7 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Announce value change.
   """
+  @spec announce_value_change(term(), term(), term()) :: :ok
   def announce_value_change(component_id, old_value, new_value) do
     metadata = get_metadata(component_id) || %{}
     label = Map.get(metadata, :label, component_id)
@@ -482,8 +436,9 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Check if any accessibility feature is active.
   """
+  @spec any_feature_active?() :: boolean()
   def any_feature_active? do
-    _ = ensure_started()
+    ensure_started()
     prefs = AccessibilityServer.get_preferences()
 
     prefs.high_contrast ||
@@ -496,8 +451,9 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Reset all accessibility settings to defaults.
   """
+  @spec reset() :: :ok
   def reset do
-    _ = ensure_started()
+    ensure_started()
     disable()
     enable()
   end
@@ -506,120 +462,119 @@ defmodule Raxol.Core.Accessibility do
 
   @impl true
   def get_option(key, default \\ nil) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.get_option(key, default)
   end
 
   # Backward compatibility for tests that pass user_preferences_pid
-  def get_option(key, user_preferences_pid_or_name, default)
-      when is_pid(user_preferences_pid_or_name) or
-             is_atom(user_preferences_pid_or_name) do
-    # Ignore the pid parameter
-    _ = user_preferences_pid_or_name
+  def get_option(key, pid_or_name, default)
+      when is_pid(pid_or_name) or is_atom(pid_or_name) do
     get_option(key, default)
   end
 
   @impl true
   def set_option(key, value) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.set_option(key, value)
   end
 
   @impl true
   def get_component_hint(component_id, hint_level \\ :basic) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.get_component_hint(component_id, hint_level)
   end
 
   @impl true
   def register_element_metadata(element_id, metadata) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.register_element_metadata(element_id, metadata)
   end
 
   @impl true
   def get_element_metadata(element_id) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.get_element_metadata(element_id)
   end
 
   @impl true
   def unregister_element_metadata(element_id) do
-    case Process.whereis(AccessibilityServer) do
-      nil ->
-        :ok
-
-      _pid ->
-        try do
-          AccessibilityServer.unregister_element_metadata(element_id)
-        catch
-          :exit, {:noproc, _} -> :ok
-          :exit, {:normal, _} -> :ok
-          :exit, _ -> :ok
-        end
-    end
+    call_if_server_alive(fn ->
+      AccessibilityServer.unregister_element_metadata(element_id)
+    end)
   end
 
   @impl true
   def register_component_style(component_type, style) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.register_component_style(component_type, style)
   end
 
   @impl true
   def get_component_style(component_type) do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.get_component_style(component_type)
   end
 
   @impl true
   def unregister_component_style(component_type) do
-    case Process.whereis(AccessibilityServer) do
-      nil ->
-        :ok
-
-      _pid ->
-        try do
-          AccessibilityServer.unregister_component_style(component_type)
-        catch
-          :exit, {:noproc, _} -> :ok
-          :exit, {:normal, _} -> :ok
-          :exit, _ -> :ok
-        end
-    end
+    call_if_server_alive(fn ->
+      AccessibilityServer.unregister_component_style(component_type)
+    end)
   end
 
   @impl true
   def get_focus_history do
-    _ = ensure_started()
+    ensure_started()
     AccessibilityServer.get_focus_history()
   end
 
   @impl true
-  def get_next_announcement(user_preferences_pid_or_name \\ nil) do
-    _ = user_preferences_pid_or_name
-    _ = ensure_started()
+  def get_next_announcement(_user_preferences_pid_or_name \\ nil) do
+    ensure_started()
     AccessibilityServer.get_next_announcement()
   end
 
-  def set_enabled(enabled) when is_boolean(enabled) do
-    case enabled do
-      true -> enable()
-      false -> disable()
+  @doc """
+  Subscribe to announcement events. Returns :ok.
+  The subscriber will receive `{:announcement_added, ref, message}` messages.
+  """
+  @spec subscribe_to_announcements(reference()) :: :ok
+  def subscribe_to_announcements(ref) do
+    ensure_announcements_agent()
+    Announcements.add_subscription(ref, self())
+    :ok
+  end
+
+  @doc """
+  Unsubscribe from announcement events.
+  """
+  @spec unsubscribe_from_announcements(reference()) :: :ok
+  def unsubscribe_from_announcements(ref) do
+    ensure_announcements_agent()
+    Announcements.remove_subscription(ref)
+    :ok
+  end
+
+  defp ensure_announcements_agent do
+    case Process.whereis(Announcements.Subscriptions) do
+      nil ->
+        case Announcements.start_link([]) do
+          {:ok, _} -> :ok
+          {:error, {:already_started, _}} -> :ok
+        end
+
+      _pid ->
+        :ok
     end
   end
 
-  # Backward compatibility function for tests
-  def get_text_scale(user_preferences_pid_or_name \\ nil) do
-    # Text scale is related to large_text setting
-    is_large_text = get_large_text_status(user_preferences_pid_or_name)
+  @spec set_enabled(boolean()) :: :ok
+  def set_enabled(true), do: enable()
+  def set_enabled(false), do: disable()
 
-    case is_large_text do
-      # 150% scale when large text is enabled
-      true -> 1.5
-      # Normal scale
-      false -> 1.0
-    end
+  @spec get_text_scale(atom() | pid() | nil) :: float()
+  def get_text_scale(user_preferences_pid_or_name \\ nil) do
+    if get_large_text_status(user_preferences_pid_or_name), do: 1.5, else: 1.0
   end
 
   defp get_large_text_status(nil), do: large_text?()
@@ -628,5 +583,33 @@ defmodule Raxol.Core.Accessibility do
   defp get_large_text_status(custom_prefs) do
     pref_key = [:accessibility, :large_text]
     Raxol.Core.UserPreferences.get(pref_key, custom_prefs) == true
+  end
+
+  defp set_preference_with_sync(setting, enabled, user_preferences_pid_or_name) do
+    maybe_update_server(setting, enabled, user_preferences_pid_or_name)
+
+    pref_key = [:accessibility, setting]
+
+    Raxol.Core.UserPreferences.set(
+      pref_key,
+      enabled,
+      user_preferences_pid_or_name
+    )
+
+    :ok
+  end
+
+  defp call_if_server_alive(fun) do
+    case Process.whereis(AccessibilityServer) do
+      nil ->
+        :ok
+
+      _pid ->
+        try do
+          fun.()
+        catch
+          :exit, _ -> :ok
+        end
+    end
   end
 end

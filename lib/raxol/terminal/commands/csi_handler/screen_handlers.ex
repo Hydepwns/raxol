@@ -8,20 +8,22 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ScreenHandlers do
   @doc """
   Handles erase display operations.
   """
+  @spec handle_erase_display(Raxol.Terminal.Emulator.t(), integer()) ::
+          {:ok, Raxol.Terminal.Emulator.t()}
   def handle_erase_display(emulator, mode) do
     alias Raxol.Terminal.Commands.Screen
 
-    updated_emulator = Screen.clear_screen(emulator, mode)
-    {:ok, updated_emulator}
+    {:ok, Screen.clear_screen(emulator, mode)}
   end
 
   @doc """
   Handles erase line operations.
   """
+  @spec handle_erase_line(Raxol.Terminal.Emulator.t(), integer()) ::
+          {:ok, Raxol.Terminal.Emulator.t()}
   def handle_erase_line(emulator, mode) do
     alias Raxol.Terminal.Commands.Screen
 
-    updated_emulator = Screen.clear_line(emulator, mode)
-    {:ok, updated_emulator}
+    {:ok, Screen.clear_line(emulator, mode)}
   end
 end

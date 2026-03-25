@@ -418,22 +418,22 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
 
     test "handles screen clearing sequences" do
       emulator = new_emulator()
-      # These will just check that the function returns an emulator struct
-      {:ok, state} = CSIHandler.handle_sequence(emulator, [?J])
+      # handle_sequence unwraps {:ok, _} internally, returns bare emulator
+      state = CSIHandler.handle_sequence(emulator, [?J])
       assert is_map(state)
-      {:ok, state} = CSIHandler.handle_sequence(state, [?1, ?J])
+      state = CSIHandler.handle_sequence(state, [?1, ?J])
       assert is_map(state)
-      {:ok, state} = CSIHandler.handle_sequence(state, [?2, ?J])
+      state = CSIHandler.handle_sequence(state, [?2, ?J])
       assert is_map(state)
     end
 
     test "handles line clearing sequences" do
       emulator = new_emulator()
-      {:ok, state} = CSIHandler.handle_sequence(emulator, [?K])
+      state = CSIHandler.handle_sequence(emulator, [?K])
       assert is_map(state)
-      {:ok, state} = CSIHandler.handle_sequence(state, [?1, ?K])
+      state = CSIHandler.handle_sequence(state, [?1, ?K])
       assert is_map(state)
-      {:ok, state} = CSIHandler.handle_sequence(state, [?2, ?K])
+      state = CSIHandler.handle_sequence(state, [?2, ?K])
       assert is_map(state)
     end
 
@@ -544,28 +544,28 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
   describe "handle_cursor_movement/2" do
     test "handles cursor up" do
       emulator = new_emulator()
-      state = CSIHandler.handle_cursor_movement(emulator, [?A])
+      {:ok, state} = CSIHandler.handle_cursor_movement(emulator, [?A])
       assert state.cursor.row == 0
       assert state.cursor.col == 0
     end
 
     test "handles cursor down" do
       emulator = new_emulator()
-      state = CSIHandler.handle_cursor_movement(emulator, [?B])
+      {:ok, state} = CSIHandler.handle_cursor_movement(emulator, [?B])
       assert state.cursor.row == 1
       assert state.cursor.col == 0
     end
 
     test "handles cursor forward" do
       emulator = new_emulator()
-      state = CSIHandler.handle_cursor_movement(emulator, [?C])
+      {:ok, state} = CSIHandler.handle_cursor_movement(emulator, [?C])
       assert state.cursor.row == 0
       assert state.cursor.col == 1
     end
 
     test "handles cursor backward" do
       emulator = new_emulator()
-      state = CSIHandler.handle_cursor_movement(emulator, [?D])
+      {:ok, state} = CSIHandler.handle_cursor_movement(emulator, [?D])
       assert state.cursor.row == 0
       assert state.cursor.col == 0
     end
@@ -926,7 +926,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
     end
 
     test "handles invalid erase parameters", %{emulator: emulator} do
-      result = CSIHandler.handle_erase_display(emulator, 3)
+      {:ok, result} = CSIHandler.handle_erase_display(emulator, 3)
       assert result == emulator
     end
   end
@@ -953,38 +953,36 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
     end
 
     test "handles invalid attribute codes", %{emulator: emulator} do
-      result = CSIHandler.handle_text_attributes(emulator, [999])
+      {:ok, result} = CSIHandler.handle_text_attributes(emulator, [999])
       assert result == emulator
     end
   end
 
   describe "mode changes" do
     test "sets insert mode", %{emulator: emulator} do
-      result = CSIHandler.handle_mode_change(emulator, 4, true)
+      {:ok, result} = CSIHandler.handle_mode_change(emulator, 4, true)
       assert result.mode_manager.insert_mode == true
     end
 
     test "unsets insert mode", %{emulator: emulator} do
-      # First set insert mode
-      emulator = CSIHandler.handle_mode_change(emulator, 4, true)
-      result = CSIHandler.handle_mode_change(emulator, 4, false)
+      {:ok, emulator} = CSIHandler.handle_mode_change(emulator, 4, true)
+      {:ok, result} = CSIHandler.handle_mode_change(emulator, 4, false)
       assert result.mode_manager.insert_mode == false
     end
 
     test "sets cursor visibility", %{emulator: emulator} do
-      result = CSIHandler.handle_mode_change(emulator, 25, true)
+      {:ok, result} = CSIHandler.handle_mode_change(emulator, 25, true)
       assert result.mode_manager.cursor_visible == true
     end
 
     test "unsets cursor visibility", %{emulator: emulator} do
-      # First set cursor visible
-      emulator = CSIHandler.handle_mode_change(emulator, 25, true)
-      result = CSIHandler.handle_mode_change(emulator, 25, false)
+      {:ok, emulator} = CSIHandler.handle_mode_change(emulator, 25, true)
+      {:ok, result} = CSIHandler.handle_mode_change(emulator, 25, false)
       assert result.mode_manager.cursor_visible == false
     end
 
     test "handles invalid mode codes", %{emulator: emulator} do
-      result = CSIHandler.handle_mode_change(emulator, 999, true)
+      {:ok, result} = CSIHandler.handle_mode_change(emulator, 999, true)
       assert result == emulator
     end
   end
