@@ -1,30 +1,28 @@
 # Test Isolation Guide
 
-## Current Issues
+## The Problem
 
-Tests fail when run in the full suite but pass individually due to:
+Tests fail when run as a full suite but pass individually. The root causes:
+
 - Dynamic module loading/reloading from plugin fixtures
 - Shared global process state
 - Process name conflicts
 - Test execution order dependencies
 
-## Recommended Fixes
+## Fixes
 
 ### 1. Isolate Plugin Tests with Module Prefixes
 
-**Problem**: Plugin fixtures redefine the same module names repeatedly.
-
-**Solution**: Use unique module names per test or sandbox modules.
+Plugin fixtures redefine the same module names repeatedly. Use unique module names per test.
 
 ```elixir
 # In plugin_server_test.exs
 setup do
-  # Generate unique module prefix for this test
   test_id = :erlang.unique_integer([:positive])
   module_prefix = "TestPlugin#{test_id}"
 
   {:ok, pid} = PluginServer.start_link(
-    name: :"PluginServer#{test_id}",  # Unique name
+    name: :"PluginServer#{test_id}",
     plugin_paths: [],
     auto_load: false
   )
@@ -37,11 +35,9 @@ setup do
 end
 ```
 
-### 2. Use ExUnit's `start_supervised/2` for Process Management
+### 2. Use `start_supervised!` for Process Management
 
-**Problem**: Tests manually start/stop GenServers, causing conflicts.
-
-**Solution**: Let ExUnit manage process lifecycle.
+Manual start/stop of GenServers causes conflicts between tests. Let ExUnit manage the lifecycle instead.
 
 ```elixir
 # Before (problematic)
@@ -55,7 +51,6 @@ end
 
 # After (isolated)
 setup do
-  # ExUnit will automatically stop this after the test
   _pid = start_supervised!(SessionBridge)
   :ok
 end
@@ -63,9 +58,7 @@ end
 
 ### 3. Make Global Processes Test-Specific
 
-**Problem**: `test_helper.exs` starts global processes that tests share.
-
-**Solution**: Start processes in individual test `setup` blocks instead.
+The `test_helper.exs` starts global processes that tests share. Move them to individual test `setup` blocks.
 
 ```elixir
 # test_helper.exs - REMOVE global process starts
@@ -73,13 +66,11 @@ end
 # - Don't start Registry globally
 # - Don't start ProcessStore globally
 
-# individual_test.exs - ADD per-test isolation
+# individual_test.exs - per-test isolation
 setup do
-  # Each test gets its own registry
   registry_name = :"test_registry_#{:erlang.unique_integer([:positive])}"
   start_supervised!({Registry, keys: :duplicate, name: registry_name})
 
-  # Each test gets its own event manager
   event_manager_name = :"test_event_manager_#{:erlang.unique_integer([:positive])}"
   start_supervised!({Raxol.Core.Events.EventManager, name: event_manager_name})
 
@@ -89,9 +80,7 @@ end
 
 ### 4. Add Explicit Module Loading Checks
 
-**Problem**: `function_exported?` races with dynamic compilation.
-
-**Solution**: Ensure modules are loaded before checking.
+`function_exported?` races with dynamic compilation. Ensure modules are loaded first.
 
 ```elixir
 # Before
@@ -101,24 +90,20 @@ end
 
 # After
 test "defines handle_in/3 callback" do
-  # Ensure module is fully loaded
   Code.ensure_loaded!(RaxolWeb.TerminalChannel)
-  # Small delay to ensure compilation is complete
   Process.sleep(10)
   assert function_exported?(RaxolWeb.TerminalChannel, :handle_in, 3)
 end
 ```
 
-### 5. Use `:async true` Where Safe
+### 5. Use `async: true` Where Safe
 
-**Problem**: Tests run sequentially even when they could be parallel.
-
-**Solution**: Enable async for tests without shared state.
+Tests without shared state can run in parallel.
 
 ```elixir
 # Safe for async (no global state, no named processes)
 defmodule Raxol.SomeTest do
-  use ExUnit.Case, async: true  # ✓ Safe
+  use ExUnit.Case, async: true
 
   test "pure function" do
     assert MyModule.add(1, 2) == 3
@@ -127,7 +112,7 @@ end
 
 # Not safe for async (uses named processes)
 defmodule Raxol.PluginServerTest do
-  use ExUnit.Case, async: false  # ✗ Required
+  use ExUnit.Case, async: false
 
   test "starts plugin server" do
     {:ok, _} = PluginServer.start_link(name: PluginServer)
@@ -137,16 +122,13 @@ end
 
 ### 6. Clean Up Dynamic Modules
 
-**Problem**: Plugin tests leave modules defined in memory.
-
-**Solution**: Purge modules after tests.
+Plugin tests leave modules defined in memory. Purge them after each test.
 
 ```elixir
 setup do
   loaded_modules = []
 
   on_exit(fn ->
-    # Purge all modules loaded during test
     Enum.each(loaded_modules, fn mod ->
       :code.purge(mod)
       :code.delete(mod)
@@ -157,45 +139,33 @@ setup do
 end
 ```
 
-## Priority Actions
+## Priority
 
-### High Priority (Do First)
+### High (do first)
 
-1. **Update TerminalChannel and Presence Tests**
-   - Add `Code.ensure_loaded!` before `function_exported?` checks
-   - Use unique process names in setup
+1. **TerminalChannel and Presence tests** - Add `Code.ensure_loaded!` before `function_exported?` checks. Use unique process names in setup.
 
-2. **Fix Plugin Tests**
-   - Use `start_supervised!` for PluginServer
-   - Generate unique module names per test
+2. **Plugin tests** - Use `start_supervised!` for PluginServer. Generate unique module names per test.
 
-### Medium Priority
+### Medium
 
-3. **Refactor test_helper.exs**
-   - Move global process starts to helper functions
-   - Let individual tests opt-in to needed services
+3. **Refactor test_helper.exs** - Move global process starts to helper functions. Let individual tests opt in to needed services.
 
-4. **Add Test Utilities**
-   - Create `TestHelpers.start_test_registry/0`
-   - Create `TestHelpers.start_test_event_manager/0`
+4. **Add test utilities** - Create `TestHelpers.start_test_registry/0` and `TestHelpers.start_test_event_manager/0`.
 
-### Low Priority
+### Low
 
-5. **Enable More Async Tests**
-   - Audit tests for async safety
-   - Convert safe tests to `async: true`
+5. **Enable more async tests** - Audit tests for async safety and convert where possible.
 
-## Example: Complete Fix for TerminalChannelTest
+## Full Example: TerminalChannelTest
 
 ```elixir
 defmodule RaxolWeb.TerminalChannelTest do
   use ExUnit.Case, async: false
 
-  # Use unique names for test processes
   setup do
     test_id = :erlang.unique_integer([:positive])
 
-    # Start supervised processes with unique names
     session_bridge = start_supervised!(
       {Raxol.Web.SessionBridge, name: :"SessionBridge#{test_id}"}
     )
@@ -204,7 +174,6 @@ defmodule RaxolWeb.TerminalChannelTest do
       {Raxol.Web.PersistentStore, name: :"PersistentStore#{test_id}"}
     )
 
-    # Ensure module is loaded
     Code.ensure_loaded!(RaxolWeb.TerminalChannel)
 
     %{
@@ -219,25 +188,23 @@ defmodule RaxolWeb.TerminalChannelTest do
     end
 
     test "defines handle_in/3 callback" do
-      # Module already loaded in setup
       assert function_exported?(RaxolWeb.TerminalChannel, :handle_in, 3)
     end
   end
 end
 ```
 
-## Testing the Fixes
+## Verifying the Fixes
 
-After applying fixes, verify with:
+After applying changes, run the suite multiple times with different seeds to catch ordering issues:
 
 ```bash
-# Run full suite 5 times to catch flakiness
 for i in {1..5}; do
   echo "Run $i"
   env TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test --seed $RANDOM
 done
 
-# Run specific flaky tests repeatedly
+# Or target the previously flaky tests specifically
 env TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test \
   test/raxol_web/channels/terminal_channel_test.exs \
   test/raxol_web/presence_test.exs \

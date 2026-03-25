@@ -55,7 +55,24 @@ defmodule Raxol.UI.StyleProcessor do
     end
   end
 
-  # Direct implementation (original logic)
+  # Properties that cascade from parent to child (text styling).
+  # Layout properties (padding, border, width, height, margin) do NOT inherit.
+  @inheritable_properties [
+    :fg,
+    :bg,
+    :foreground,
+    :background,
+    :fg_color,
+    :bg_color,
+    :bold,
+    :italic,
+    :underline,
+    :strikethrough,
+    :reverse,
+    :dim
+  ]
+
+  # Direct implementation with cascading inheritance
   defp flatten_merged_style_direct(parent_style, child_element, theme) do
     # Handle case where parent_style might be an element map or a style map
     parent_style_map =
@@ -76,7 +93,12 @@ defmodule Raxol.UI.StyleProcessor do
       end
 
     child_style_map = Map.get(child_element, :style, %{})
-    merged_style_map = Map.merge(parent_style_map, child_style_map)
+
+    # Inherit only inheritable properties from parent, then overlay child's
+    # explicit values. This prevents layout properties (padding, border, etc.)
+    # from leaking into children.
+    inherited = Map.take(parent_style_map, @inheritable_properties)
+    merged_style_map = Map.merge(inherited, child_style_map)
     child_other_attrs = Map.drop(child_element, [:style])
 
     # Merge style map with other attributes for proper override resolution

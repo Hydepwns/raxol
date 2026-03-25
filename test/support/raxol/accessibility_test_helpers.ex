@@ -340,7 +340,11 @@ defmodule Raxol.AccessibilityTestHelpers do
         event_tuple = parse_shortcut_string(shortcut)
 
         # Dispatch the keyboard event to simulate pressing the keys
-        EventManager.dispatch({:keyboard_event, event_tuple})
+        {_type, key, modifiers} = event_tuple
+
+        EventManager.dispatch(
+          {:keyboard_event, %{key: key, modifiers: modifiers}}
+        )
 
         # Check if action was executed
         executed = ProcessStore.get(:shortcut_action_executed, false)
@@ -660,11 +664,15 @@ defmodule Raxol.AccessibilityTestHelpers do
     KeyboardShortcuts.set_active_context(shortcut_context)
   end
 
-  defp validate_shortcut_execution(true, _shortcut, _context), do: :ok
+  defp validate_shortcut_execution(executed, shortcut, context) do
+    case executed do
+      true ->
+        :ok
 
-  defp validate_shortcut_execution(false, shortcut, context) do
-    flunk(
-      "Keyboard shortcut \"#{shortcut}\" did not trigger any action.\n#{context}"
-    )
+      false ->
+        flunk(
+          "Keyboard shortcut \"#{shortcut}\" did not trigger any action.\n#{context}"
+        )
+    end
   end
 end

@@ -231,6 +231,28 @@ defmodule Raxol.Style.Colors.Adaptive do
   end
 
   @doc """
+  Safely adapts a color value to the current terminal capabilities.
+
+  Handles atom color names (e.g. `:cyan`), hex strings, Color structs,
+  and nil -- returning the input unchanged for types that don't need
+  adaptation, or the adapted Color struct for those that do.
+  """
+  @spec adapt_color_safe(Color.t() | atom() | String.t() | nil) ::
+          Color.t() | atom() | String.t() | nil
+  def adapt_color_safe(nil), do: nil
+  def adapt_color_safe(color) when is_atom(color), do: color
+
+  def adapt_color_safe(hex) when is_binary(hex) do
+    case Color.from_hex(hex) do
+      %Color{} = color -> adapt_color(color)
+      _ -> hex
+    end
+  end
+
+  def adapt_color_safe(%Color{} = color), do: adapt_color(color)
+  def adapt_color_safe(other), do: other
+
+  @doc """
   Adapts a theme (canonical structure) to the current terminal capabilities and background.
 
   ## Parameters

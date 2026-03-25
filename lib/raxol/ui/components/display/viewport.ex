@@ -1,0 +1,238 @@
+defmodule Raxol.UI.Components.Display.Viewport do
+  @moduledoc """
+  A scrollable container that displays a windowed view of content
+  that may exceed its visible bounds.
+
+  Supports vertical and horizontal scrolling via keyboard (arrow keys,
+  Page Up/Down, Home/End) and programmatic scroll control.
+
+  Content is provided as a list of child elements. The viewport renders
+  only the visible slice based on `scroll_top` and `visible_height`.
+  """
+
+  @behaviour Raxol.UI.Components.Base.Component
+
+  alias Raxol.View.Components
+
+  @type t :: %{
+          id: any(),
+          children: list(map()),
+          scroll_top: non_neg_integer(),
+          scroll_left: non_neg_integer(),
+          visible_height: pos_integer(),
+          visible_width: pos_integer() | nil,
+          content_height: non_neg_integer(),
+          style: map(),
+          theme: map(),
+          show_scrollbar: boolean(),
+          focused: boolean()
+        }
+
+  @impl true
+  @spec init(keyword() | map()) :: {:ok, t()}
+  def init(props) do
+    props = if Keyword.keyword?(props), do: Map.new(props), else: props
+    children = Map.get(props, :children, [])
+
+    state = %{
+      id:
+        Map.get(props, :id, "viewport-#{:erlang.unique_integer([:positive])}"),
+      children: children,
+      scroll_top: Map.get(props, :scroll_top, 0),
+      scroll_left: Map.get(props, :scroll_left, 0),
+      visible_height: Map.get(props, :visible_height, 10),
+      visible_width: Map.get(props, :visible_width, nil),
+      content_height: length(children),
+      style: Map.get(props, :style, %{}),
+      theme: Map.get(props, :theme, %{}),
+      show_scrollbar: Map.get(props, :show_scrollbar, true),
+      focused: Map.get(props, :focused, false)
+    }
+
+    {:ok, state}
+  end
+
+  @impl true
+  def mount(state), do: {state, []}
+
+  @impl true
+  def unmount(state), do: state
+
+  @impl true
+  def update({:set_children, children}, state) do
+    scroll_top =
+      clamp_scroll(state.scroll_top, length(children), state.visible_height)
+
+    {%{
+       state
+       | children: children,
+         content_height: length(children),
+         scroll_top: scroll_top
+     }, []}
+  end
+
+  def update({:scroll_to, row}, state) do
+    scroll_top = clamp_scroll(row, state.content_height, state.visible_height)
+    {%{state | scroll_top: scroll_top}, []}
+  end
+
+  def update({:scroll_by, delta}, state) do
+    scroll_top =
+      clamp_scroll(
+        state.scroll_top + delta,
+        state.content_height,
+        state.visible_height
+      )
+
+    {%{state | scroll_top: scroll_top}, []}
+  end
+
+  def update({:set_visible_height, height}, state) do
+    scroll_top = clamp_scroll(state.scroll_top, state.content_height, height)
+    {%{state | visible_height: height, scroll_top: scroll_top}, []}
+  end
+
+  def update({:update_props, props}, state) do
+    new_state =
+      state
+      |> maybe_update(:children, props)
+      |> maybe_update(:visible_height, props)
+      |> maybe_update(:visible_width, props)
+      |> maybe_update(:show_scrollbar, props)
+      |> maybe_update(:style, props)
+      |> maybe_update(:theme, props)
+
+    new_state = %{new_state | content_height: length(new_state.children)}
+
+    scroll_top =
+      clamp_scroll(
+        new_state.scroll_top,
+        new_state.content_height,
+        new_state.visible_height
+      )
+
+    {%{new_state | scroll_top: scroll_top}, []}
+  end
+
+  def update(_msg, state), do: {state, []}
+
+  @impl true
+  def handle_event(%{type: :key, data: %{key: key}}, state, _context) do
+    case key do
+      k when k in [:up, "Up"] ->
+        scroll(state, -1)
+
+      k when k in [:down, "Down"] ->
+        scroll(state, 1)
+
+      k when k in [:page_up, :pageup, "PageUp"] ->
+        scroll(state, -state.visible_height)
+
+      k when k in [:page_down, :pagedown, "PageDown"] ->
+        scroll(state, state.visible_height)
+
+      k when k in [:home, "Home"] ->
+        {%{state | scroll_top: 0}, []}
+
+      k when k in [:end, "End"] ->
+        scroll_top = max_scroll(state.content_height, state.visible_height)
+        {%{state | scroll_top: scroll_top}, []}
+
+      _ ->
+        {state, []}
+    end
+  end
+
+  def handle_event(%{type: :focus}, state, _context) do
+    {%{state | focused: true}, []}
+  end
+
+  def handle_event(%{type: :blur}, state, _context) do
+    {%{state | focused: false}, []}
+  end
+
+  def handle_event(_event, state, _context), do: {state, []}
+
+  @impl true
+  @spec render(t(), map()) :: map()
+  def render(state, context) do
+    state = %{
+      state
+      | focused:
+          Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused
+    }
+
+    visible_children =
+      Enum.slice(state.children, state.scroll_top, state.visible_height)
+
+    content_column = %{
+      type: :column,
+      style: %{},
+      children: visible_children
+    }
+
+    children =
+      if state.show_scrollbar and state.content_height > state.visible_height do
+        scrollbar = render_scrollbar(state)
+        [content_column, scrollbar]
+      else
+        [content_column]
+      end
+
+    %{
+      type: :row,
+      id: state.id,
+      style: state.style,
+      children: children
+    }
+  end
+
+  defp render_scrollbar(state) do
+    total = state.content_height
+    visible = state.visible_height
+
+    thumb_size = max(1, div(visible * visible, max(total, 1)))
+    scrollable = max_scroll(total, visible)
+
+    thumb_pos =
+      if scrollable > 0,
+        do: div(state.scroll_top * (visible - thumb_size), scrollable),
+        else: 0
+
+    track =
+      Enum.map(0..(visible - 1), fn i ->
+        char =
+          if i >= thumb_pos and i < thumb_pos + thumb_size, do: "█", else: "░"
+
+        Components.text(content: char, style: %{fg: :white})
+      end)
+
+    %{type: :column, style: %{}, children: track}
+  end
+
+  defp scroll(state, delta) do
+    scroll_top =
+      clamp_scroll(
+        state.scroll_top + delta,
+        state.content_height,
+        state.visible_height
+      )
+
+    {%{state | scroll_top: scroll_top}, []}
+  end
+
+  defp clamp_scroll(pos, content_height, visible_height) do
+    max(0, min(pos, max_scroll(content_height, visible_height)))
+  end
+
+  defp max_scroll(content_height, visible_height) do
+    max(0, content_height - visible_height)
+  end
+
+  defp maybe_update(state, key, props) do
+    case Map.fetch(props, key) do
+      {:ok, value} -> Map.put(state, key, value)
+      :error -> state
+    end
+  end
+end

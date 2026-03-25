@@ -381,8 +381,9 @@ defmodule Raxol.UI.IntegrationTest do
     state = app.state
 
     new_state =
-      if function_exported?(module, :handle_event, 2) do
-        case module.handle_event(event, state) do
+      if function_exported?(module, :handle_event, 3) do
+        case module.handle_event(event, state, %{}) do
+          {s, _commands} when is_map(s) -> s
           {:noreply, s} -> s
           {:reply, _msg, s} -> s
           s when is_map(s) -> s

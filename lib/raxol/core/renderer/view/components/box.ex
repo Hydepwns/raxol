@@ -23,8 +23,9 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
   """
   def new(opts \\ []) do
     style = Keyword.get(opts, :style, [])
-    border = Keyword.get(style, :border, Keyword.get(opts, :border, :none))
-    padding = Keyword.get(style, :padding, Keyword.get(opts, :padding, 0))
+    style_map = if is_map(style), do: style, else: Map.new(style)
+    border = Map.get(style_map, :border, Keyword.get(opts, :border, :none))
+    padding = Map.get(style_map, :padding, Keyword.get(opts, :padding, 0))
 
     %{
       type: :box,

@@ -1,132 +1,81 @@
-# Raxol Naming Conventions
+# Naming Conventions
 
-This document outlines the standardized naming conventions used throughout the Raxol codebase, established during Sprint 22-23 refactoring efforts.
+Standardized naming for all modules in the Raxol codebase. Established during Sprint 22-23 refactoring.
 
-## Module Naming
+## General Rule
 
-### General Pattern
-All modules follow the pattern: `<domain>_<function>.ex`
+All modules follow: `<domain>_<function>.ex`
 
-### Examples
+### Correct
 
-#### [OK] Correct Naming
-- `lib/raxol/terminal/cursor/cursor_manager.ex` → `Raxol.Terminal.Cursor.CursorManager`
-- `lib/raxol/core/events/event_manager.ex` → `Raxol.Core.Events.EventManager`
-- `lib/raxol/terminal/buffer/buffer_server.ex` → `Raxol.Terminal.Buffer.BufferServer`
+- `lib/raxol/terminal/cursor/cursor_manager.ex` -> `Raxol.Terminal.Cursor.CursorManager`
+- `lib/raxol/core/events/event_manager.ex` -> `Raxol.Core.Events.EventManager`
+- `lib/raxol/terminal/buffer/buffer_server.ex` -> `Raxol.Terminal.Buffer.BufferServer`
 
-#### [FAIL] Previous Naming (Fixed)
-- `lib/raxol/terminal/cursor/manager.ex` → `Raxol.Terminal.Cursor.Manager`
-- `lib/raxol/core/events/manager.ex` → `Raxol.Core.Events.Manager`
-- `lib/raxol/terminal/buffer/server.ex` → `Raxol.Terminal.Buffer.Server`
+### Wrong (previously used)
 
-## Specific Naming Rules
+- `lib/raxol/terminal/cursor/manager.ex` -> `Raxol.Terminal.Cursor.Manager`
+- `lib/raxol/core/events/manager.ex` -> `Raxol.Core.Events.Manager`
+- `lib/raxol/terminal/buffer/server.ex` -> `Raxol.Terminal.Buffer.Server`
 
-### 1. Managers
-- **Pattern**: `<domain>_manager.ex`
-- **Module**: `<Domain>Manager`
+## Specific Patterns
 
-Examples:
-- `cursor_manager.ex` → `CursorManager`
-- `color_manager.ex` → `ColorManager`
-- `plugin_manager.ex` → `PluginManager`
+### Managers: `<domain>_manager.ex`
 
-### 2. Servers (GenServer processes)
-- **Pattern**: `<domain>_server.ex`
-- **Module**: `<Domain>Server`
+`cursor_manager.ex`, `color_manager.ex`, `plugin_manager.ex`
 
-Examples:
-- `buffer_server.ex` → `BufferServer`
-- `emulator_server.ex` → `EmulatorServer`
-- `accessibility_server.ex` → `AccessibilityServer`
+### Servers (GenServer): `<domain>_server.ex`
 
-### 3. Handlers
-- **Pattern**: `<domain>_handler.ex` (singular)
-- **Module**: `<Domain>Handler`
+`buffer_server.ex`, `emulator_server.ex`, `accessibility_server.ex`
 
-Examples:
-- `cursor_handler.ex` → `CursorHandler`
-- `events_handler.ex` → `EventsHandler`
-- `device_handler.ex` → `DeviceHandler`
+### Handlers: `<domain>_handler.ex` (singular, not plural)
 
-**Note**: Previously used `handlers` (plural) - now standardized to singular.
+`cursor_handler.ex`, `events_handler.ex`, `device_handler.ex`
 
-### 4. Core Modules
-- **Pattern**: `<domain>_<core_function>.ex`
-- **Module**: `<Domain><CoreFunction>`
+### Core Modules: `<domain>_core.ex`
 
-Examples:
-- `terminal_core.ex` → `TerminalCore`
-- `renderer_core.ex` → `RendererCore`
-- `cloud_core.ex` → `CloudCore`
+`terminal_core.ex`, `renderer_core.ex`, `cloud_core.ex`
 
-### 5. State Modules
-- **Pattern**: `<domain>_state.ex`
-- **Module**: `<Domain>State`
+### State: `<domain>_state.ex`
 
-Examples:
-- `emulator_state.ex` → `EmulatorState`
-- `parser_state.ex` → `ParserState`
-- `terminal_state.ex` → `TerminalState`
+`emulator_state.ex`, `parser_state.ex`, `terminal_state.ex`
 
-### 6. Configuration Modules
-- **Pattern**: `<domain>_config.ex`
-- **Module**: `<Domain>Config`
+### Config: `<domain>_config.ex`
 
-Examples:
-- `terminal_config.ex` → `TerminalConfig`
-- `cloud_config.ex` → `CloudConfig`
-- `raxol_config.ex` → `RaxolConfig`
+`terminal_config.ex`, `cloud_config.ex`, `raxol_config.ex`
 
-### 7. Validators
-- **Pattern**: `<domain>_validation.ex`
-- **Module**: `<Domain>Validation`
+### Validators: `<domain>_validation.ex`
 
-Examples:
-- `view_validation.ex` → `ViewValidation`
-- `config_validation.ex` → `ConfigValidation`
-- `lifecycle_validation.ex` → `LifecycleValidation`
+`view_validation.ex`, `config_validation.ex`, `lifecycle_validation.ex`
 
-## Directory Structure Alignment
+## Nested Modules
 
-### Nested Module Names
-When modules are nested deeply, the filename should reflect the full context:
+Filenames reflect the full context:
 
 ```
 lib/raxol/terminal/graphics/kitty/
-├── kitty_protocol.ex      → Raxol.Terminal.Graphics.Kitty.KittyProtocol
-├── kitty_renderer.ex      → Raxol.Terminal.Graphics.Kitty.KittyRenderer
-└── kitty_config.ex        → Raxol.Terminal.Graphics.Kitty.KittyConfig
+├── kitty_protocol.ex      -> Raxol.Terminal.Graphics.Kitty.KittyProtocol
+├── kitty_renderer.ex      -> Raxol.Terminal.Graphics.Kitty.KittyRenderer
+└── kitty_config.ex        -> Raxol.Terminal.Graphics.Kitty.KittyConfig
 ```
 
-### Avoiding Generic Names
-Avoid generic names like:
-- `manager.ex` → Use `<domain>_manager.ex`
-- `server.ex` → Use `<domain>_server.ex`
-- `handler.ex` → Use `<domain>_handler.ex`
-- `core.ex` → Use `<domain>_core.ex`
+## What to Avoid
 
-## Benefits of This Convention
+Never use bare generic names:
+- `manager.ex` -> use `<domain>_manager.ex`
+- `server.ex` -> use `<domain>_server.ex`
+- `handler.ex` -> use `<domain>_handler.ex`
+- `core.ex` -> use `<domain>_core.ex`
 
-1. **No Name Conflicts**: Every filename is unique across the codebase
-2. **Clear Context**: Purpose is immediately clear from filename
-3. **IDE Navigation**: Better autocomplete and file navigation
-4. **Grep/Search**: Easier to find specific functionality
-5. **Consistency**: Uniform pattern across all modules
+## Why This Matters
 
-## Migration Status
+- No filename collisions across the codebase
+- Purpose is clear from the filename alone
+- Better IDE autocomplete and file navigation
+- Easier to grep for specific functionality
 
-[OK] **Completed**: All 154+ duplicate filenames resolved in Sprint 22-23
-[OK] **Verified**: Zero compilation warnings from naming conflicts
-[OK] **Tested**: All module references updated and tests passing
+## Status
 
-## Implementation Notes
+All 154+ duplicate filenames were resolved in Sprint 22-23. Zero compilation warnings from naming conflicts. All module references and tests updated. Test files follow the same convention in `test/`.
 
-- All existing alias statements updated to reflect new module names
-- Import statements maintained backward compatibility where possible  
-- Test files follow same naming convention in `test/` directory
-- Documentation updated to reflect new module names
-
----
-
-**Last Updated**: 2025-09-10  
-**Sprint**: 26 (Technical Debt Cleanup)
+Last updated: 2025-09-10 (Sprint 26)

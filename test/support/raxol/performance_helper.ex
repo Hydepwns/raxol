@@ -19,7 +19,7 @@ defmodule Raxol.Test.PerformanceHelper do
   """
   def setup_performance_test_env do
     # Start performance monitoring
-    {:ok, monitor_pid} = start_supervised(Raxol.Core.Performance.Monitor)
+    {:ok, monitor_pid} = start_supervised(Raxol.Performance.Monitor)
 
     # Initialize test environment
     {:ok, env} = Raxol.Test.TestHelper.setup_test_env()

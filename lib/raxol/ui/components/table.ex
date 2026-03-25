@@ -261,71 +261,71 @@ defmodule Raxol.UI.Components.Table do
   Handles events for the table component.
   """
   @impl Raxol.UI.Components.Base.Component
-  def handle_event({:key, {:arrow_down, _}}, _context, state) do
+  def handle_event({:key, {:arrow_down, _}}, state, _context) do
     new_index = min(state.selected_row + 1, length(state.data) - 1)
     {:ok, %{state | selected_row: new_index}}
   end
 
-  def handle_event({:key, {:arrow_up, _}}, _context, state) do
+  def handle_event({:key, {:arrow_up, _}}, state, _context) do
     new_index = max(state.selected_row - 1, 0)
     {:ok, %{state | selected_row: new_index}}
   end
 
-  def handle_event({:key, {:page_down, _}}, _context, state) do
+  def handle_event({:key, {:page_down, _}}, state, _context) do
     new_index =
       min(state.selected_row + state.page_size, length(state.data) - 1)
 
     {:ok, %{state | selected_row: new_index}}
   end
 
-  def handle_event({:key, {:page_up, _}}, _context, state) do
+  def handle_event({:key, {:page_up, _}}, state, _context) do
     new_index = max(state.selected_row - state.page_size, 0)
     {:ok, %{state | selected_row: new_index}}
   end
 
-  def handle_event({:key, {:home, _}}, _context, state) do
+  def handle_event({:key, {:home, _}}, state, _context) do
     {:ok, %{state | selected_row: 0}}
   end
 
-  def handle_event({:key, {:end, _}}, _context, state) do
+  def handle_event({:key, {:end, _}}, state, _context) do
     {:ok, %{state | selected_row: length(state.data) - 1}}
   end
 
   def handle_event(
         {:key, {:arrow_right, _}},
-        _context,
-        %{options: %{paginate: true}} = state
+        %{options: %{paginate: true}} = state,
+        _context
       ) do
     max_page = ceil(length(state.data) / state.page_size)
     new_page = min(state.current_page + 1, max_page)
     {:ok, %{state | current_page: new_page}}
   end
 
-  def handle_event({:key, {:arrow_right, _}}, _context, state) do
+  def handle_event({:key, {:arrow_right, _}}, state, _context) do
     {:ok, state}
   end
 
   def handle_event(
         {:key, {:arrow_left, _}},
-        _context,
-        %{options: %{paginate: true}} = state
+        %{options: %{paginate: true}} = state,
+        _context
       ) do
     new_page = max(state.current_page - 1, 1)
     {:ok, %{state | current_page: new_page}}
   end
 
-  def handle_event({:key, {:arrow_left, _}}, _context, state) do
+  def handle_event({:key, {:arrow_left, _}}, state, _context) do
     {:ok, state}
   end
 
-  def handle_event({:button_click, button_id}, _context, state) do
+  def handle_event({:button_click, button_id}, state, _context) do
     handle_button_click(button_id, state)
   end
 
   def handle_event(
         {:text_input, input_id, value},
-        _context,
-        %{options: %{searchable: true}} = state
+        %{options: %{searchable: true}} = state,
+        _context
       )
       when is_binary(input_id) do
     case String.ends_with?(input_id, "_search") do
@@ -334,49 +334,49 @@ defmodule Raxol.UI.Components.Table do
     end
   end
 
-  def handle_event({:text_input, _input_id, _value}, _context, state) do
+  def handle_event({:text_input, _input_id, _value}, state, _context) do
     {:ok, state}
   end
 
-  def handle_event({:key, {:enter, _}}, _context, %{selected_row: nil} = state) do
+  def handle_event({:key, {:enter, _}}, %{selected_row: nil} = state, _context) do
     {:ok, state}
   end
 
-  def handle_event({:key, {:enter, _}}, _context, state) do
+  def handle_event({:key, {:enter, _}}, state, _context) do
     {:ok, state}
   end
 
-  def handle_event({:key, {:escape, _}}, _context, state) do
+  def handle_event({:key, {:escape, _}}, state, _context) do
     {:ok, %{state | selected_row: nil}}
   end
 
   def handle_event(
         {:key, {:backspace, _}},
-        _context,
-        %{options: %{searchable: true}} = state
+        %{options: %{searchable: true}} = state,
+        _context
       ) do
     new_term = String.slice(state.filter_term, 0..-2//-1)
     {:ok, %{state | filter_term: new_term, current_page: 1}}
   end
 
-  def handle_event({:key, {:backspace, _}}, _context, state) do
+  def handle_event({:key, {:backspace, _}}, state, _context) do
     {:ok, state}
   end
 
   def handle_event(
         {:key, {:char, char}},
-        _context,
-        %{options: %{searchable: true}} = state
+        %{options: %{searchable: true}} = state,
+        _context
       ) do
     new_term = state.filter_term <> char
     {:ok, %{state | filter_term: new_term, current_page: 1}}
   end
 
-  def handle_event({:key, {:char, _char}}, _context, state) do
+  def handle_event({:key, {:char, _char}}, state, _context) do
     {:ok, state}
   end
 
-  def handle_event({:mouse, {:click, {_x, y}}}, _context, state) do
+  def handle_event({:mouse, {:click, {_x, y}}}, state, _context) do
     # Calculate row index based on y position
     # Assuming each row is 1 unit high
     row_index = div(y - 1, 1)
@@ -388,7 +388,7 @@ defmodule Raxol.UI.Components.Table do
     end
   end
 
-  def handle_event(_event, _context, state), do: {:ok, state}
+  def handle_event(_event, state, _context), do: {:ok, state}
 
   defp handle_button_click(button_id, state) when is_binary(button_id) do
     case categorize_button(button_id) do

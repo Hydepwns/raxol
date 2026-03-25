@@ -150,9 +150,12 @@ defmodule Raxol.Terminal.ScreenUpdater do
 
   defp merge_updates(updates) do
     # Merge multiple updates into one
-    Enum.reduce(updates, %{changes: []}, fn update, acc ->
-      %{acc | changes: acc.changes ++ [update.changes]}
-    end)
+    changes =
+      updates
+      |> Enum.reduce([], fn update, acc -> [update.changes | acc] end)
+      |> Enum.reverse()
+
+    %{changes: changes}
   end
 
   defp apply_updates(%{changes: changes}, options) when is_list(changes) do

@@ -114,10 +114,8 @@ defmodule Raxol.Test.BufferHelper do
       :ok
   """
   def write_test_data(manager, data, opts \\ []) do
-    case Raxol.Terminal.ScreenBuffer.Manager.write(manager, data, opts) do
-      {:ok, result} -> {:ok, result}
-      result -> {:ok, result}
-    end
+    result = Raxol.Terminal.ScreenBuffer.Manager.write(manager, data, opts)
+    {:ok, result}
   end
 
   @doc """

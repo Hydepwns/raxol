@@ -37,8 +37,15 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
     end
   end
 
-  # Extract dependency name from dependency tuple or string
+  # Extract dependency name from dependency tuple or string/atom
+  defp extract_dependency_name({name, _version}) when is_atom(name),
+    do: Atom.to_string(name)
+
   defp extract_dependency_name({name, _version}) when is_binary(name), do: name
+
+  defp extract_dependency_name(name) when is_atom(name),
+    do: Atom.to_string(name)
+
   defp extract_dependency_name(name) when is_binary(name), do: name
 
   def resolve_plugin_order(initialized_plugins) do

@@ -43,15 +43,17 @@ TARGET = termbox2_nif.so
 # Default target
 all: $(TARGET)
 
-# Ensure all object files are rebuilt every time
-.PHONY: all clean $(OBJ)
+.PHONY: all clean
+
+# Header dependency
+TERMBOX_H = termbox2/termbox2.h
 
 # Compile termbox2_nif.c
-termbox2_nif.o: termbox2_nif.c
+termbox2_nif.o: termbox2_nif.c $(TERMBOX_H)
 	$(CC) $(CFLAGS) $(ERL_CFLAGS) -I. -c $< -o $@
 
-# Compile termbox_impl.c
-termbox_impl.o: termbox_impl.c
+# Compile termbox_impl.c (defines TB_IMPL, includes full termbox2 implementation)
+termbox_impl.o: termbox_impl.c $(TERMBOX_H)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Link object files into shared library

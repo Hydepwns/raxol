@@ -29,9 +29,10 @@ defmodule Raxol.Test.TestUtils do
   """
   def setup_test_env(opts \\ []) do
     # Start services if requested
-    if Keyword.get(opts, :start_services, false) do
-      {:ok, _} = Application.ensure_all_started(:raxol)
-    end
+    _ =
+      if Keyword.get(opts, :start_services, false) do
+        Application.ensure_all_started(:raxol)
+      end
 
     SharedUtilities.setup_basic_test_env()
 
@@ -184,18 +185,11 @@ defmodule Raxol.Test.TestUtils do
         {Raxol.UI.Rendering.Renderer, name: Raxol.UI.Rendering.Renderer}
       )
 
-    # Start the Pipeline GenServer with module name registration
-    {:ok, pipeline_pid} =
-      start_supervised(
-        {Raxol.UI.Rendering.Pipeline, name: Raxol.UI.Rendering.Pipeline}
-      )
-
     # Set test notification for renderer using the actual PID
     GenServer.cast(renderer_pid, {:set_test_pid, self()})
 
     %{
       renderer_pid: renderer_pid,
-      pipeline_pid: pipeline_pid,
       timer_server_pid: timer_server_pid
     }
   end

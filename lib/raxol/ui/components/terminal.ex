@@ -1,149 +1,238 @@
 defmodule Raxol.UI.Components.Terminal do
   @moduledoc """
-  A terminal component that emulates a standard terminal within the UI.
+  A terminal emulator component that wraps EmulatorLite to display
+  a fully functional terminal within the UI.
+
+  Renders the emulator's screen buffer as styled text elements,
+  converting cell-level character/style data to the standard
+  `%{type: :text, content: ..., style: ...}` render format.
   """
 
-  @typedoc """
-  State for the Terminal component.
+  use Raxol.UI.Components.Base.Component
 
-  - :id - unique identifier
-  - :width - terminal width
-  - :height - terminal height
-  - :buffer - list of lines
-  - :style - style map
-  """
+  alias Raxol.Terminal.EmulatorLite
+  alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.Cell
+  alias Raxol.View.Components
+
   @type t :: %__MODULE__{
           id: any(),
           width: non_neg_integer(),
           height: non_neg_integer(),
-          buffer: [String.t()],
-          style: map()
+          emulator: EmulatorLite.t() | nil,
+          style: map(),
+          scroll_offset: integer()
         }
 
-  # Use standard component behaviour
-  use Raxol.UI.Components.Base.Component
-
-  require Raxol.Core.Runtime.Log
-
-  # Require view macros
-  # require Raxol.View.Elements  # Removed
-
-  # Define state struct
   defstruct id: nil,
             width: 80,
             height: 24,
-            # Add buffer, emulator state, etc.
-            # Example: List of lines
-            buffer: [],
-            style: %{}
+            emulator: nil,
+            style: %{},
+            scroll_offset: 0
 
-  # --- Component Behaviour Callbacks ---
-
-  @doc "Initializes the Terminal component state from props."
-  @impl Raxol.UI.Components.Base.Component
+  @impl true
+  @spec init(keyword() | map()) :: {:ok, t()}
   def init(props) do
-    # Convert keyword list to map if needed
     props_map = if Keyword.keyword?(props), do: Map.new(props), else: props
 
-    # Initialize terminal state using props, providing defaults
-    %__MODULE__{
-      id: Map.get(props_map, :id, nil),
-      width: Map.get(props_map, :width, 80),
-      height: Map.get(props_map, :height, 24),
-      # Use buffer from props or default to []
-      buffer: Map.get(props_map, :buffer, []),
-      style: Map.get(props_map, :style, %{})
-      # Initialize other relevant fields if added later
-    }
+    width = Map.get(props_map, :width, 80)
+    height = Map.get(props_map, :height, 24)
+
+    emulator = EmulatorLite.new(width, height)
+
+    {:ok,
+     %__MODULE__{
+       id: Map.get(props_map, :id, nil),
+       width: width,
+       height: height,
+       emulator: emulator,
+       style: Map.get(props_map, :style, %{}),
+       scroll_offset: 0
+     }}
   end
 
-  @doc "Updates the Terminal component state in response to messages. Handles writing, clearing, etc."
-  @impl Raxol.UI.Components.Base.Component
-  def update(msg, state) do
-    # Handle messages to write to terminal, clear, etc.
-    Raxol.Core.Runtime.Log.debug(
-      "Terminal #{Map.get(state, :id, nil)} received message: #{inspect(msg)}"
-    )
-
-    # Placeholder
-    {state, []}
-  end
-
-  @doc "Handles key events for the Terminal component."
-  @impl Raxol.UI.Components.Base.Component
-  # Use map matching
-  def handle_event(%{type: :key} = event, %{} = _props, state) do
-    # Process key event, send to terminal emulator/process
-    Raxol.Core.Runtime.Log.debug(
-      "Terminal #{Map.get(state, :id, nil)} received key event: #{inspect(event.data)}"
-    )
-
-    # Placeholder: Append key to buffer for simple echo
-    # Order matters for display - keep append pattern
-    new_buffer = state.buffer ++ ["Key: #{inspect(event.data.key)}"]
-    {%{state | buffer: new_buffer}, []}
-  end
-
-  # Catch-all handle_event
-  @impl Raxol.UI.Components.Base.Component
-  def handle_event(event, %{} = _props, state) do
-    Raxol.Core.Runtime.Log.debug(
-      "Terminal #{Map.get(state, :id, nil)} received event: #{inspect(event.type)}"
-    )
-
-    {state, []}
-  end
-
-  # --- Render Logic ---
-
-  @doc "Renders the Terminal component, displaying the buffer as lines."
-  @impl Raxol.UI.Components.Base.Component
-  def render(state, %{} = _props) do
-    # Generate label elements
-    label_elements =
-      Enum.map(state.buffer, fn line_content ->
-        # Build label element with attrs as a map
-        %{type: :label, attrs: %{content: line_content}}
-      end)
-
-    # Create column element map explicitly
-    column_element = %{
-      type: :column,
-      # Assuming no specific attrs for column here
-      attrs: [],
-      # Assign the list of labels
-      children: label_elements
-    }
-
-    # Create box element map explicitly, using column as child
-    box_element = %{
-      type: :box,
-      # Make attrs a map instead of keyword list
-      attrs: %{
-        id: Map.get(state, :id, nil),
-        width: state.width,
-        height: state.height,
-        style: state.style
-      },
-      # Assign the column map
-      children: column_element
-    }
-
-    # Return the final element structure
-    box_element
-  end
-
-  @doc """
-  Mount hook - called when component is mounted.
-  No special setup needed for Terminal.
-  """
   @impl true
   def mount(state), do: {state, []}
 
-  @doc """
-  Unmount hook - called when component is unmounted.
-  No cleanup needed for Terminal.
-  """
   @impl true
   def unmount(state), do: state
+
+  @impl true
+  def update({:write, text}, state) do
+    buffer = EmulatorLite.get_active_buffer(state.emulator)
+    updated_buffer = write_text_to_buffer(buffer, text)
+
+    emulator =
+      EmulatorLite.update_active_buffer(state.emulator, fn _buf ->
+        updated_buffer
+      end)
+
+    {%{state | emulator: emulator}, []}
+  end
+
+  def update({:resize, width, height}, state) do
+    emulator = EmulatorLite.resize(state.emulator, width, height)
+    {%{state | emulator: emulator, width: width, height: height}, []}
+  end
+
+  def update({:clear}, state) do
+    emulator = EmulatorLite.reset(state.emulator)
+    {%{state | emulator: emulator}, []}
+  end
+
+  def update(_msg, state), do: {state, []}
+
+  @impl true
+  def handle_event(%{type: :key, data: %{key: key}}, state, _context) do
+    buffer = EmulatorLite.get_active_buffer(state.emulator)
+    char = key_to_char(key)
+    updated_buffer = write_text_to_buffer(buffer, char)
+
+    emulator =
+      EmulatorLite.update_active_buffer(state.emulator, fn _buf ->
+        updated_buffer
+      end)
+
+    {%{state | emulator: emulator}, []}
+  end
+
+  def handle_event(
+        %{type: :resize, data: %{width: w, height: h}},
+        state,
+        _context
+      ) do
+    emulator = EmulatorLite.resize(state.emulator, w, h)
+    {%{state | emulator: emulator, width: w, height: h}, []}
+  end
+
+  def handle_event(_event, state, _context), do: {state, []}
+
+  @impl true
+  @spec render(t(), map()) :: map()
+  def render(state, _context) do
+    buffer = EmulatorLite.get_active_buffer(state.emulator)
+    rows = buffer_to_rows(buffer)
+
+    %{
+      type: :box,
+      id: state.id,
+      width: state.width,
+      height: state.height,
+      style: state.style,
+      children: %{
+        type: :column,
+        children: rows
+      }
+    }
+  end
+
+  # Convert the screen buffer's cell grid into a list of styled text elements,
+  # one per row. Adjacent cells with the same style are merged into runs.
+  defp buffer_to_rows(%ScreenBuffer{} = buffer) do
+    Enum.map(0..(buffer.height - 1), fn y ->
+      row_cells = ScreenBuffer.get_line(buffer, y)
+      spans = cells_to_spans(row_cells)
+
+      case spans do
+        [single] ->
+          Components.text(content: single.text, style: single.style)
+
+        multiple ->
+          %{
+            type: :row,
+            children:
+              Enum.map(multiple, fn span ->
+                Components.text(content: span.text, style: span.style)
+              end)
+          }
+      end
+    end)
+  end
+
+  # Group adjacent cells with matching styles into text spans
+  defp cells_to_spans([]), do: [%{text: "", style: %{}}]
+
+  defp cells_to_spans(cells) do
+    cells
+    |> Enum.reduce([], fn cell, acc ->
+      char = cell_char(cell)
+      style = cell_to_style(cell)
+
+      case acc do
+        [%{style: ^style} = current | rest] ->
+          [%{current | text: current.text <> char} | rest]
+
+        _ ->
+          [%{text: char, style: style} | acc]
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  defp cell_char(%Cell{char: nil}), do: " "
+  defp cell_char(%Cell{char: ""}), do: " "
+  defp cell_char(%Cell{char: char}), do: char
+  # Handle map-style cells (from some buffer implementations)
+  defp cell_char(%{char: char}) when is_integer(char), do: <<char::utf8>>
+  defp cell_char(%{char: char}) when is_binary(char), do: char
+  defp cell_char(_), do: " "
+
+  defp cell_to_style(%Cell{style: nil}), do: %{}
+
+  defp cell_to_style(%Cell{style: style}) when is_struct(style) do
+    style
+    |> Map.from_struct()
+    |> Enum.reject(fn {_k, v} -> v == false or v == nil or v == :none end)
+    |> Map.new()
+  end
+
+  defp cell_to_style(%{style: style}) when is_map(style) do
+    style
+    |> Enum.reject(fn {_k, v} -> v == false or v == nil or v == :none end)
+    |> Map.new()
+  end
+
+  defp cell_to_style(_), do: %{}
+
+  # Write a string into the buffer starting at the cursor position
+  defp write_text_to_buffer(buffer, text) do
+    {cursor_x, cursor_y} = buffer.cursor_position
+
+    text
+    |> String.graphemes()
+    |> Enum.reduce({buffer, cursor_x, cursor_y}, fn char, {buf, x, y} ->
+      case char do
+        "\n" ->
+          new_y = min(y + 1, buf.height - 1)
+          buf = %{buf | cursor_position: {0, new_y}}
+          {buf, 0, new_y}
+
+        "\r" ->
+          buf = %{buf | cursor_position: {0, y}}
+          {buf, 0, y}
+
+        _ ->
+          if x < buf.width do
+            buf = ScreenBuffer.write_char(buf, x, y, char)
+            new_x = x + 1
+            buf = %{buf | cursor_position: {new_x, y}}
+            {buf, new_x, y}
+          else
+            # Wrap to next line
+            new_y = min(y + 1, buf.height - 1)
+            buf = ScreenBuffer.write_char(buf, 0, new_y, char)
+            buf = %{buf | cursor_position: {1, new_y}}
+            {buf, 1, new_y}
+          end
+      end
+    end)
+    |> elem(0)
+  end
+
+  defp key_to_char(key) when is_binary(key), do: key
+  defp key_to_char(:enter), do: "\n"
+  defp key_to_char(:space), do: " "
+  defp key_to_char(:tab), do: "\t"
+  defp key_to_char(key), do: inspect(key)
 end

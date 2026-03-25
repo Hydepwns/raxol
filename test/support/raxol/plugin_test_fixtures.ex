@@ -241,7 +241,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def id, do: :dependent_plugin
     def version, do: "1.0.0"
-    def dependencies, do: [{"test_plugin", ">= 1.0.0"}]
+    def dependencies, do: [{:test_plugin, ">= 1.0.0"}]
 
     def get_metadata do
       %{
@@ -418,30 +418,20 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def dependencies,
       do: [
-        {"invalid_dependency", "invalid_version"},
-        {"missing_required_field", "invalid_version"},
-        {"invalid_type", "invalid_version"}
+        {:invalid_dependency, "invalid_version"},
+        {:missing_required_field, "invalid_version"},
+        {:invalid_type, "invalid_version"}
       ]
 
     def get_metadata do
-      # Return invalid metadata structure to test error handling
       %{
-        # Invalid ID
-        id: nil,
-        # Invalid version format
+        id: :invalid_metadata_plugin,
         version: "not_a_semver",
         dependencies: [
-          # Invalid: wrong format
-          {"invalid_dependency", "invalid_version"},
-          # Invalid: missing required field (now with version)
-          {"missing_required_field", "invalid_version"},
-          # Invalid: wrong type (now with version)
-          {"invalid_type", "invalid_version"}
-        ],
-        # Missing required fields
-        name: nil,
-        description: nil,
-        author: nil
+          {:invalid_dependency, "invalid_version"},
+          {:missing_required_field, "invalid_version"},
+          {:invalid_type, "invalid_version"}
+        ]
       }
     end
 
@@ -485,7 +475,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def id, do: :version_mismatch_plugin
     def version, do: "1.0.0"
-    def dependencies, do: [{"test_plugin", ">= 2.0.0"}]
+    def dependencies, do: [{:test_plugin, ">= 2.0.0"}]
 
     def get_metadata do
       %{
@@ -544,7 +534,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def id, do: :circular_dependency_plugin
     def version, do: "1.0.0"
-    def dependencies, do: [{"circular_dependency_plugin", ">= 1.0.0"}]
+    def dependencies, do: [{:circular_dependency_plugin, ">= 1.0.0"}]
 
     def get_metadata do
       %{

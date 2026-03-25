@@ -4,7 +4,7 @@ if skip_termbox2_tests do
   defmodule Termbox2NifTest do
     use ExUnit.Case
     @moduletag :docker
-    @tag :skip
+    @tag skip: "requires real TTY environment (Docker or native terminal)"
     test "termbox2_nif tests are skipped (not in a TTY environment)" do
       assert true
     end

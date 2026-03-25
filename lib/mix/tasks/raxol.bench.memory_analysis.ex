@@ -113,6 +113,7 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
     end
   end
 
+  @spec handle_unknown_scenario(term()) :: no_return()
   defp handle_unknown_scenario(scenario) do
     Mix.shell().error("Unknown scenario: #{scenario}")
 

@@ -147,7 +147,7 @@ defmodule Raxol.ColorSystemTest do
   end
 
   describe "ColorSystem with accessibility integration" do
-    @tag :skip
+    @tag skip: "EventManager subscribe/theme_changed integration not wired end-to-end"
     @tag :flaky
     test "applies high contrast mode to theme colors" do
       # Use start_supervised to ensure proper cleanup
@@ -233,7 +233,7 @@ defmodule Raxol.ColorSystemTest do
       assert_sufficient_contrast(high_contrast_primary, background)
     end
 
-    @tag :skip
+    @tag skip: "ProcessStore-based accessibility announcements not implemented"
     test "announces theme changes to screen readers" do
       # Initialize accessibility system for testing
       Accessibility.enable([screen_reader: true], __MODULE__.UserPreferences)

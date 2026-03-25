@@ -432,17 +432,7 @@ defmodule Raxol.Test.Visual do
     validate_component_keys!(component)
   end
 
-  defp validate_component_structure!(component) do
-    raise ArgumentError,
-          "setup_visual_component/2 expected a map with :module and :state keys, got: #{inspect(component)}"
-  end
-
   defp validate_component_keys!(%{module: _, state: _}), do: :ok
-
-  defp validate_component_keys!(component) do
-    raise ArgumentError,
-          "setup_visual_component/2 expected a map with :module and :state keys, got: #{inspect(component)}"
-  end
 
   defp validate_render_component_structure!(component_map)
        when is_map(component_map) do
@@ -509,9 +499,24 @@ defmodule Raxol.Test.Visual do
     }
   end
 
-  defp compute_visual_diff(_expected, _actual) do
-    # Placeholder: Implement actual diffing logic (e.g., using Diffy)
-    # Return a list of tagged tuples as expected by format_diff/1
-    [{:eq, "No difference detected (placeholder)"}]
+  defp compute_visual_diff(expected, actual) do
+    expected_lines = String.split(expected, "\n")
+    actual_lines = String.split(actual, "\n")
+    max_lines = max(length(expected_lines), length(actual_lines))
+
+    expected_padded =
+      expected_lines ++ List.duplicate("", max_lines - length(expected_lines))
+
+    actual_padded =
+      actual_lines ++ List.duplicate("", max_lines - length(actual_lines))
+
+    Enum.zip(expected_padded, actual_padded)
+    |> Enum.flat_map(fn
+      {same, same} ->
+        [{:eq, same <> "\n"}]
+
+      {exp, act} ->
+        [{:del, exp <> "\n"}, {:ins, act <> "\n"}]
+    end)
   end
 end

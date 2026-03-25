@@ -5,8 +5,12 @@ defmodule Raxol.Performance.ComponentCacheTest do
   alias Raxol.UI.ThemeResolver
 
   setup do
-    # ETSCacheManager should be started by the application supervision tree
-    # Just clear caches before each test
+    # Ensure ETSCacheManager is running (may have been stopped by another test's cleanup)
+    case Raxol.Performance.ETSCacheManager.start_link(name: Raxol.Performance.ETSCacheManager) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
     RendererCached.clear_cache()
 
     :ok

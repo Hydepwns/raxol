@@ -112,6 +112,27 @@ defmodule Raxol.Core.Buffer do
     end)
   end
 
+  @doc "Clear buffer, resetting all cells to blank"
+  def clear(buffer) do
+    create_blank_buffer(buffer.width, buffer.height)
+  end
+
+  @doc "Resize buffer to new dimensions"
+  def resize(buffer, new_width, new_height) do
+    new_buffer = create_blank_buffer(new_width, new_height)
+
+    # Copy existing content where it fits
+    Enum.reduce(0..(min(buffer.height, new_height) - 1), new_buffer, fn y,
+                                                                        acc ->
+      Enum.reduce(0..(min(buffer.width, new_width) - 1), acc, fn x, inner_acc ->
+        case get_cell(buffer, x, y) do
+          %{char: char, style: style} -> set_cell(inner_acc, x, y, char, style)
+          _ -> inner_acc
+        end
+      end)
+    end)
+  end
+
   defp update_cell_at_offset(cells, x, offset, char, style, width) do
     cell_x = x + offset
 

@@ -1,106 +1,52 @@
 defmodule Raxol.View.Elements do
   @moduledoc """
-  Compatibility adapter for view elements.
-  Provides the expected interface for UI components.
+  Backward-compatibility shim for view elements.
+
+  All functions and macros delegate to `Raxol.Core.Renderer.View`, which is
+  the canonical View DSL. Prefer importing View directly in new code.
   """
 
-  # Import the actual view functions
   alias Raxol.Core.Renderer.View
 
-  # Require for macro usage
+  # --- Macros (forward to View) ---
+
   require Raxol.Core.Renderer.View
 
-  @doc """
-  Creates a row layout with a block.
-  """
   defmacro row(opts, do: block) do
     quote do
+      require Raxol.Core.Renderer.View
       Raxol.Core.Renderer.View.row(unquote(opts), do: unquote(block))
     end
   end
 
-  @doc """
-  Creates a row layout without a block.
-  """
-  def row(opts \\ []) do
-    View.row(opts)
-  end
-
-  @doc """
-  Creates a label (text) element.
-  """
-  def label(opts \\ []) do
-    Raxol.View.Components.label(opts)
-  end
-
-  @doc """
-  Creates a box element with a block.
-  """
   defmacro box(opts, do: block) do
     quote do
+      require Raxol.Core.Renderer.View
       Raxol.Core.Renderer.View.box(unquote(opts), do: unquote(block))
     end
   end
 
-  @doc """
-  Creates a box element without a block.
-  """
-  def box(opts \\ []) do
-    View.box(opts)
-  end
-
-  @doc """
-  Creates a column layout.
-  """
   defmacro column(opts, do: block) do
     quote do
-      children = unquote(block)
-
-      Raxol.Core.Renderer.View.column(
-        Keyword.merge(unquote(opts), children: children)
-      )
+      require Raxol.Core.Renderer.View
+      Raxol.Core.Renderer.View.column(unquote(opts), do: unquote(block))
     end
   end
 
-  @doc """
-  Creates a text element.
-  """
-  def text(content, opts \\ []) do
-    View.text(content, opts)
-  end
+  # --- Functions (delegate to View) ---
 
-  @doc """
-  Creates a button element.
-  """
-  def button(text, opts \\ []) do
-    View.button(text, opts)
-  end
-
-  @doc """
-  Creates a checkbox element.
-  """
-  def checkbox(label, opts \\ []) do
-    View.checkbox(label, opts)
-  end
-
-  @doc """
-  Creates a text input element.
-  """
-  def text_input(opts \\ []) do
-    View.text_input(opts)
-  end
-
-  @doc """
-  Creates a table element.
-  """
-  def table(opts \\ []) do
-    View.table(opts)
-  end
-
-  # Forward other common view functions
-  defdelegate panel(opts), to: View
-  defdelegate border(view, opts), to: View
-  defdelegate scroll(view, opts), to: View
-  defdelegate flex(constraints), to: View
-  defdelegate shadow(opts), to: View
+  def row(opts \\ []), do: View.row(opts)
+  def box(opts \\ []), do: View.box(opts)
+  def column(opts \\ []), do: View.column(opts)
+  def text(content, opts \\ []), do: View.text(content, opts)
+  def button(text, opts \\ []), do: View.button(text, opts)
+  def checkbox(label, opts \\ []), do: View.checkbox(label, opts)
+  def text_input(opts \\ []), do: View.text_input(opts)
+  def table(opts \\ []), do: View.table(opts)
+  def label(opts \\ []), do: View.label(opts)
+  def panel(opts \\ []), do: View.panel(opts)
+  def border(view, opts \\ []), do: View.border(view, opts)
+  def scroll(view, opts \\ []), do: View.scroll(view, opts)
+  def flex(constraints), do: View.flex(constraints)
+  def shadow(opts \\ []), do: View.shadow(opts)
 end

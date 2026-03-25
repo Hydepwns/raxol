@@ -34,6 +34,9 @@ defmodule Raxol.UI.Layout.Containers do
     justify = Map.get(attrs, :justify, :start)
     align = Map.get(attrs, :align, :start)
 
+    # Propagate inheritable styles (fg, bg, bold, etc.) to children
+    children = inherit_styles(row, children)
+
     # Skip if no children
     process_row_with_children(children, gap, justify, align, space, acc)
   end
@@ -139,6 +142,9 @@ defmodule Raxol.UI.Layout.Containers do
     justify = Map.get(attrs, :justify, :start)
     align = Map.get(attrs, :align, :start)
 
+    # Propagate inheritable styles (fg, bg, bold, etc.) to children
+    children = inherit_styles(column, children)
+
     # Skip if no children
     process_column_with_children(children, gap, justify, align, space, acc)
   end
@@ -241,7 +247,12 @@ defmodule Raxol.UI.Layout.Containers do
         available_space
       )
       when is_list(children) do
-    # Skip if no children
+    measure_row_with_children(children, available_space)
+  end
+
+  # Handle rows without :attrs (e.g. synthetic rows from box measurement)
+  def measure_row(%{type: :row, children: children}, available_space)
+      when is_list(children) do
     measure_row_with_children(children, available_space)
   end
 
@@ -269,10 +280,10 @@ defmodule Raxol.UI.Layout.Containers do
         max(acc, dim.height)
       end)
 
-    # Return dimensions constrained to available space
+    # Return dimensions constrained to available space (if specified)
     %{
-      width: min(row_width, available_space.width),
-      height: min(row_height, available_space.height)
+      width: constrain(row_width, Map.get(available_space, :width)),
+      height: constrain(row_height, Map.get(available_space, :height))
     }
   end
 
@@ -293,7 +304,12 @@ defmodule Raxol.UI.Layout.Containers do
         available_space
       )
       when is_list(children) do
-    # Skip if no children
+    measure_column_with_children(children, available_space)
+  end
+
+  # Handle columns without :attrs (e.g. synthetic columns from box measurement)
+  def measure_column(%{type: :column, children: children}, available_space)
+      when is_list(children) do
     measure_column_with_children(children, available_space)
   end
 
@@ -321,12 +337,15 @@ defmodule Raxol.UI.Layout.Containers do
         max(acc, dim.width)
       end)
 
-    # Return dimensions constrained to available space
+    # Return dimensions constrained to available space (if specified)
     %{
-      width: min(column_width, available_space.width),
-      height: min(column_height, available_space.height)
+      width: constrain(column_width, Map.get(available_space, :width)),
+      height: constrain(column_height, Map.get(available_space, :height))
     }
   end
+
+  defp constrain(value, nil), do: value
+  defp constrain(value, limit), do: min(value, limit)
 
   ## Pattern matching helper functions for gap calculations
 
@@ -371,4 +390,40 @@ defmodule Raxol.UI.Layout.Containers do
          _total_height
        ),
        do: gap
+
+  # --- Style Inheritance ---
+
+  # Text styling properties that cascade from parent to child.
+  # Layout properties (padding, border, width, height, gap) do NOT inherit.
+  @inheritable_keys [
+    :fg,
+    :bg,
+    :foreground,
+    :background,
+    :fg_color,
+    :bg_color,
+    :bold,
+    :italic,
+    :underline,
+    :strikethrough,
+    :reverse,
+    :dim
+  ]
+
+  # Propagates inheritable style properties from a parent container
+  # into each child's style map. Child values take precedence.
+  defp inherit_styles(parent, children) do
+    parent_style = Map.get(parent, :style, %{})
+    inheritable = Map.take(parent_style, @inheritable_keys)
+
+    if map_size(inheritable) == 0 do
+      children
+    else
+      Enum.map(children, fn child ->
+        child_style = Map.get(child, :style, %{})
+        merged = Map.merge(inheritable, child_style)
+        Map.put(child, :style, merged)
+      end)
+    end
+  end
 end

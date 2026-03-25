@@ -77,7 +77,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   end
 
   describe "supervisor structure" do
-    @tag :skip
+    @tag skip: "requires mock injection architecture not yet wired"
     test ~c"starts all runtime child processes with mocks" do
       # Define the init args, injecting mock modules
       init_arg = %{

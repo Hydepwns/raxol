@@ -1,0 +1,11 @@
+{
+  "enabledMcpjsonServers": ["tidewave"],
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "env": {
+    "TMPDIR": "/tmp",
+    "SKIP_TERMBOX2_TESTS": "true"
+  }
+}

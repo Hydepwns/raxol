@@ -6,6 +6,8 @@ defmodule Raxol.Protocols.ThemeImplementations do
   implementations for theme and color system components.
   """
 
+  require Logger
+
   alias Raxol.Protocols.{Renderable, Serializable, Styleable}
   alias Raxol.Utils.ColorConversion
 
@@ -270,7 +272,9 @@ defmodule Raxol.Protocols.ThemeImplementations do
         # This would require a TOML library
         {:error, :toml_not_available}
       rescue
-        _ -> {:error, :toml_encoding_failed}
+        e ->
+          Logger.warning("TOML encoding failed: #{Exception.message(e)}")
+          {:error, :toml_encoding_failed}
       end
     end
 

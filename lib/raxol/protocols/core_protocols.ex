@@ -10,6 +10,8 @@ defmodule Raxol.Protocols.CoreProtocols do
     Combines functionality from Renderable, Styleable, and EventHandler protocols.
     """
 
+    @fallback_to_any true
+
     @doc """
     Renders the component to terminal output with the given options.
     """
@@ -47,6 +49,8 @@ defmodule Raxol.Protocols.CoreProtocols do
     Handles conversion to/from various formats (JSON, TOML, binary).
     """
 
+    @fallback_to_any true
+
     @doc """
     Serializes the data to the specified format.
     """
@@ -76,6 +80,8 @@ defmodule Raxol.Protocols.CoreProtocols do
     Protocol for buffer operations across different buffer types.
     Provides unified interface for screen buffers, text buffers, etc.
     """
+
+    @fallback_to_any true
 
     @doc """
     Writes data to the buffer at the specified position.
@@ -120,6 +126,8 @@ defmodule Raxol.Protocols.CoreProtocols do
     Handles configuration loading, validation, and persistence.
     """
 
+    @fallback_to_any true
+
     @doc """
     Gets the current configuration.
     """
@@ -156,6 +164,8 @@ defmodule Raxol.Protocols.CoreProtocols do
     Protocol for managing component/module lifecycle.
     Handles initialization, startup, shutdown, and cleanup.
     """
+
+    @fallback_to_any true
 
     @doc """
     Initializes the component/module with given options.
@@ -265,4 +275,45 @@ defmodule Raxol.Protocols do
   defdelegate restart(component), to: Raxol.Protocols.CoreProtocols.Lifecycle
   defdelegate cleanup(component), to: Raxol.Protocols.CoreProtocols.Lifecycle
   defdelegate get_state(component), to: Raxol.Protocols.CoreProtocols.Lifecycle
+end
+
+# Fallback implementations for Any
+defimpl Raxol.Protocols.CoreProtocols.Component, for: Any do
+  def render(_component, _opts), do: ""
+  def handle_event(_component, _event, state), do: {:unhandled, state, nil}
+  def apply_style(component, _style), do: component
+  def get_metadata(_component), do: %{}
+  def validate(_component), do: :ok
+end
+
+defimpl Raxol.Protocols.CoreProtocols.Serializable, for: Any do
+  def serialize(_data, _format), do: {:error, :not_serializable}
+  def deserialize(_data, _format, _target), do: {:error, :not_deserializable}
+  def get_schema(_data), do: %{}
+end
+
+defimpl Raxol.Protocols.CoreProtocols.BufferOperations, for: Any do
+  def write(buffer, _position, _data), do: buffer
+  def read(_buffer, _position), do: nil
+  def clear(buffer, _region), do: buffer
+  def get_dimensions(_buffer), do: {0, 0}
+  def resize(buffer, _width, _height), do: buffer
+  def scroll(buffer, _direction, _amount), do: buffer
+end
+
+defimpl Raxol.Protocols.CoreProtocols.Configurable, for: Any do
+  def get_config(_configurable), do: %{}
+  def set_config(configurable, _config), do: {:ok, configurable}
+  def validate_config(_configurable, _config), do: :ok
+  def get_default_config(_configurable), do: %{}
+  def merge_config(_configurable, config), do: config
+end
+
+defimpl Raxol.Protocols.CoreProtocols.Lifecycle, for: Any do
+  def initialize(component, _opts), do: {:ok, component}
+  def start(component), do: {:ok, component}
+  def stop(component), do: {:ok, component}
+  def restart(component), do: {:ok, component}
+  def cleanup(_component), do: :ok
+  def get_state(_component), do: :stopped
 end

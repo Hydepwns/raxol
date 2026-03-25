@@ -252,14 +252,14 @@ defmodule Raxol.UI.Components.TableTest do
     test "handles arrow key navigation for pagination", %{state: state} do
       assert state.current_page == 1
 
-      result = Table.handle_event({:key, {:arrow_right, []}}, %{}, state)
+      result = Table.handle_event({:key, {:arrow_right, []}}, state, %{})
       assert match?({:ok, _}, result)
       {:ok, state_after_right} = result
 
       assert state_after_right.current_page == 2
 
       result =
-        Table.handle_event({:key, {:arrow_left, []}}, %{}, state_after_right)
+        Table.handle_event({:key, {:arrow_left, []}}, state_after_right, %{})
 
       assert match?({:ok, _}, result)
       {:ok, state_after_left} = result
@@ -267,7 +267,7 @@ defmodule Raxol.UI.Components.TableTest do
       assert state_after_left.current_page == 1
 
       result =
-        Table.handle_event({:key, {:arrow_left, []}}, %{}, state_after_left)
+        Table.handle_event({:key, {:arrow_left, []}}, state_after_left, %{})
 
       assert match?({:ok, _}, result)
       {:ok, state_after_left_again} = result
@@ -277,7 +277,7 @@ defmodule Raxol.UI.Components.TableTest do
 
     test "handles button clicks for pagination", %{state: state} do
       result =
-        Table.handle_event({:button_click, "test_table_next_page"}, %{}, state)
+        Table.handle_event({:button_click, "test_table_next_page"}, state, %{})
 
       assert match?({:ok, _}, result)
       {:ok, state_after_next} = result
@@ -287,8 +287,8 @@ defmodule Raxol.UI.Components.TableTest do
       result =
         Table.handle_event(
           {:button_click, "test_table_prev_page"},
-          %{},
-          state_after_next
+          state_after_next,
+          %{}
         )
 
       assert match?({:ok, _}, result)
@@ -299,7 +299,7 @@ defmodule Raxol.UI.Components.TableTest do
 
     test "handles sort button clicks", %{state: state} do
       result =
-        Table.handle_event({:button_click, "test_table_sort_age"}, %{}, state)
+        Table.handle_event({:button_click, "test_table_sort_age"}, state, %{})
 
       assert match?({:ok, _}, result)
       {:ok, state_after_sort} = result
@@ -310,8 +310,8 @@ defmodule Raxol.UI.Components.TableTest do
       result =
         Table.handle_event(
           {:button_click, "test_table_sort_age"},
-          %{},
-          state_after_sort
+          state_after_sort,
+          %{}
         )
 
       assert match?({:ok, _}, result)
@@ -325,8 +325,8 @@ defmodule Raxol.UI.Components.TableTest do
       result =
         Table.handle_event(
           {:text_input, "test_table_search", "Alice"},
-          %{},
-          state
+          state,
+          %{}
         )
 
       assert match?({:ok, _}, result)

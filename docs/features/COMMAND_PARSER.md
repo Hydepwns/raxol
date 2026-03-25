@@ -1,7 +1,5 @@
 # Command Parser
 
-> [Documentation](../README.md) > [Features](README.md) > Command Parser
-
 CLI with tab completion, history, and argument parsing.
 
 ## Usage
@@ -80,4 +78,4 @@ def handle_key(state, key) do
 end
 ```
 
-Performance: ~5μs per command
+Performance: ~5us per command

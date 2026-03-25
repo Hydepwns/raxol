@@ -276,7 +276,7 @@ defmodule Raxol.Terminal.Session.Serializer do
       |> Enum.reduce_while({:ok, []}, fn {row, row_idx}, {:ok, acc} ->
         case safe_serialize_row(row, row_idx) do
           {:ok, serialized_row} ->
-            {:cont, {:ok, acc ++ [serialized_row]}}
+            {:cont, {:ok, [serialized_row | acc]}}
 
           {:error, reason} ->
             {:halt, {:error, {:row_serialization_failed, row_idx, reason}}}
@@ -284,7 +284,7 @@ defmodule Raxol.Terminal.Session.Serializer do
       end)
 
     case result do
-      {:ok, serialized} -> {:ok, serialized}
+      {:ok, serialized} -> {:ok, Enum.reverse(serialized)}
       error -> error
     end
   end

@@ -101,9 +101,8 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
       state = init_component(%{style: style})
       context = themed_context(theme)
       [_, bar_fill | _] = Progress.render(state, context)
-      # Style should be merged: fg from style, bg from theme, bold from style
-      assert bar_fill.attrs.fg == :green
-      assert bar_fill.attrs.bg == :black
+      assert bar_fill.style.fg == :green
+      assert bar_fill.style.bg == :black
     end
 
     test "theme prop overrides context theme, instance style overrides both" do
@@ -113,8 +112,8 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
       state = init_component(%{theme: theme_prop, style: style})
       context = themed_context(context_theme)
       [_, bar_fill | _] = Progress.render(state, context)
-      assert bar_fill.attrs.fg == :green
-      assert bar_fill.attrs.bg == :yellow
+      assert bar_fill.style.fg == :green
+      assert bar_fill.style.bg == :yellow
     end
   end
 
@@ -122,15 +121,15 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
     test "renders aria_label and tooltip as attributes on box" do
       state = init_component(%{aria_label: "foo", tooltip: "tip"})
       [box | _] = Progress.render(state, default_context())
-      assert box.attrs.aria_label == "foo"
-      assert box.attrs.tooltip == "tip"
+      assert box.aria_label == "foo"
+      assert box.tooltip == "tip"
     end
 
     test "does not include nil extra attributes" do
       state = init_component()
       [box | _] = Progress.render(state, default_context())
-      refute Map.has_key?(box.attrs, :aria_label)
-      refute Map.has_key?(box.attrs, :tooltip)
+      refute Map.has_key?(box, :aria_label)
+      refute Map.has_key?(box, :tooltip)
     end
   end
 
@@ -152,7 +151,7 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
       elements = Progress.render(state, context)
 
       assert Enum.any?(elements, fn el ->
-               el.type == :text and String.contains?(el.text, "%")
+               el.type == :text and String.contains?(el.content || "", "%")
              end)
     end
 
@@ -164,7 +163,7 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
 
       assert Enum.any?(elements, fn el ->
                is_map(el) and el.type == :text and
-                 String.contains?(el.text || "", "Downloading...")
+                 String.contains?(el.content || "", "Downloading...")
              end)
     end
 

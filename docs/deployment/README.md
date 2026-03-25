@@ -1,56 +1,40 @@
 # Deployment Guide
 
-Deploy Raxol applications to production environments.
+## Options
 
-## Deployment Options
+### [Fly.io](FLY_IO.md) -- Primary Production
 
-### [Fly.io](FLY_IO.md) - Primary Production Hosting
-Phoenix LiveView playground with full backend capabilities.
+Phoenix LiveView playground with full backend. Auto-scaling, WebSocket support, PostgreSQL.
 
 - **URL**: https://raxol.fly.dev
-- **Features**: Auto-scaling, WebSocket support, PostgreSQL
-- **Stack**: Phoenix, LiveView, Elixir/OTP
-- **Commands**: `flyctl deploy`
+- **Deploy**: `flyctl deploy`
 
-### [WASM](WASM.md) - Browser Deployment
-Compile Raxol to WebAssembly for client-side execution.
+### [WASM](WASM.md) -- Browser Deployment
 
-- **Use Cases**: Offline apps, embedded terminals, zero-server deployment
-- **Stack**: Elixir → BEAM → WASM
-- **Limitations**: Experimental, limited BEAM features
+Compile Raxol to WebAssembly for client-side execution. Experimental, with limited BEAM feature support. Useful for offline apps, embedded terminals, and zero-server deployment.
 
 ## Quick Start
 
-### Fly.io Deployment
+### Fly.io
 
 ```bash
-# Install Fly CLI
 brew install flyctl
-
-# Login
 flyctl auth login
-
-# Deploy
 flyctl deploy
-
-# Check status
 flyctl status --app raxol
 ```
 
-### WASM Build
+### WASM
 
 ```bash
-# Build WASM binary
 mix raxol.wasm.build
-
-# Serve locally
 mix raxol.wasm.serve
 ```
 
 ## Infrastructure
 
-- **Primary**: Fly.io (production)
+- **Primary**: Fly.io (production app)
 - **CDN**: Cloudflare Pages (static assets, optional)
 - **Metrics**: GitHub Pages (performance dashboard)
 
-See [FLY_IO.md](FLY_IO.md) for complete infrastructure details.
+See [FLY_IO.md](FLY_IO.md) for full infrastructure details.

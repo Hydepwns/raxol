@@ -92,20 +92,21 @@ defmodule Raxol.Terminal.DriverTestHelper do
         modifiers
       )
 
-    assert_receive {:"$gen_cast",
-                    {:dispatch,
-                     %Event{
-                       type: :key,
-                       data: %{
-                         char: ^char,
-                         key: ^key,
-                         shift: shift,
-                         ctrl: ctrl,
-                         alt: alt,
-                         meta: meta
-                       }
-                     }}},
-                   500
+    _ =
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           char: ^char,
+                           key: ^key,
+                           shift: shift,
+                           ctrl: ctrl,
+                           alt: alt,
+                           meta: meta
+                         }
+                       }}},
+                     500
 
     assert shift == modifiers.shift
     assert ctrl == modifiers.ctrl

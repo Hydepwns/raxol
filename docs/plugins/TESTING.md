@@ -1,14 +1,10 @@
 # Plugin Testing
 
-> [Documentation](../README.md) > [Plugins](README.md) > Testing
+Guide to testing Raxol plugins -- unit, integration, and property-based approaches.
 
-**Version**: v1.6.0 | **Target**: Plugin developers | **Level**: Intermediate
+## Setup
 
-Complete guide to testing Raxol plugins with unit, integration, and property-based strategies.
-
-## Testing Environment Setup
-
-### Required Dependencies
+### Dependencies
 
 ```elixir
 # In your plugin's mix.exs
@@ -31,15 +27,14 @@ config :logger, level: :warning
 
 config :raxol, :test_mode, true
 
-# Plugin-specific test config
 config :my_plugin,
   test_data_path: "test/fixtures",
   mock_external_services: true
 ```
 
-## Unit Testing Patterns
+## Unit Tests
 
-### Basic Plugin Structure Tests
+### Manifest and Structure
 
 ```elixir
 defmodule MyPluginTest do
@@ -51,24 +46,19 @@ defmodule MyPluginTest do
     test "returns valid manifest structure" do
       manifest = MyPlugin.manifest()
 
-      # Required fields
       assert is_binary(manifest.name)
       assert is_binary(manifest.version)
       assert is_binary(manifest.description)
       assert is_binary(manifest.author)
 
-      # Dependencies structure
       assert is_map(manifest.dependencies)
       assert Map.has_key?(manifest.dependencies, "raxol-core")
 
-      # Capabilities list
       assert is_list(manifest.capabilities)
       assert Enum.all?(manifest.capabilities, &is_atom/1)
 
-      # Trust level validation
       assert manifest.trust_level in [:trusted, :sandboxed, :untrusted]
 
-      # Config schema validation
       assert is_map(manifest.config_schema)
     end
 
@@ -76,7 +66,6 @@ defmodule MyPluginTest do
       manifest = MyPlugin.manifest()
       version = manifest.version
 
-      # Test semantic version format (major.minor.patch)
       assert Regex.match?(~r/^\d+\.\d+\.\d+(-[\w\d\.-]+)?$/, version)
     end
 
@@ -108,7 +97,6 @@ defmodule MyPluginTest do
 
       assert {:ok, state} = MyPlugin.init(config)
 
-      # State structure validation
       assert state.config == config
       assert is_boolean(state.enabled)
     end
@@ -117,19 +105,15 @@ defmodule MyPluginTest do
       config = %{enabled: true}
       {:ok, initial_state} = MyPlugin.init(config)
 
-      # Test enable
       assert {:ok, enabled_state} = MyPlugin.enable(initial_state)
       assert enabled_state.enabled == true
 
-      # Verify resources are initialized
       assert enabled_state.timers != []
       assert enabled_state.subscriptions != []
 
-      # Test disable
       assert {:ok, disabled_state} = MyPlugin.disable(enabled_state)
       assert disabled_state.enabled == false
 
-      # Verify resources are cleaned up
       assert disabled_state.timers == []
       assert disabled_state.subscriptions == []
     end
@@ -139,20 +123,16 @@ defmodule MyPluginTest do
       {:ok, state} = MyPlugin.init(config)
       {:ok, enabled_state} = MyPlugin.enable(state)
 
-      # Should not raise errors
       assert :ok = MyPlugin.terminate(:normal, enabled_state)
     end
 
     test "handles error conditions during lifecycle" do
-      # Test with invalid config
       invalid_config = %{required_field: nil}
 
       case MyPlugin.init(invalid_config) do
         {:ok, _state} ->
-          # Plugin should handle invalid config gracefully
           :ok
         {:error, reason} ->
-          # Error should be descriptive
           assert is_binary(reason) or is_atom(reason)
       end
     end
@@ -160,7 +140,7 @@ defmodule MyPluginTest do
 end
 ```
 
-### Command Handling Tests
+### Command Handling
 
 ```elixir
 defmodule MyPluginCommandTest do
@@ -186,14 +166,12 @@ defmodule MyPluginCommandTest do
 
       assert is_list(commands)
 
-      # Validate command structure
       Enum.each(commands, fn {name, function, arity} ->
         assert is_atom(name)
         assert is_atom(function)
         assert is_integer(arity)
-        assert arity >= 2  # Minimum: command, args, state
+        assert arity >= 2
 
-        # Verify function exists
         assert function_exported?(MyPlugin, function, arity)
       end)
     end
@@ -209,21 +187,16 @@ defmodule MyPluginCommandTest do
 
   describe "command execution" do
     test "handles valid commands", %{state: state} do
-      # Test each declared command
       commands = MyPlugin.get_commands()
 
       Enum.each(commands, fn {name, _, _} ->
         case MyPlugin.handle_command(name, [], state) do
           {:ok, new_state, result} ->
-            # State should be valid after command
             assert is_map(new_state)
-            # Result can be any term
             assert result != nil
 
           {:error, reason, error_state} ->
-            # Error should be descriptive
             assert is_binary(reason) or is_atom(reason)
-            # State should still be valid
             assert is_map(error_state)
         end
       end)
@@ -234,14 +207,11 @@ defmodule MyPluginCommandTest do
 
       Enum.each(invalid_commands, fn cmd ->
         result = MyPlugin.handle_command(cmd, [], state)
-
-        # Should return error for unknown commands
         assert match?({:error, _, _}, result)
       end)
     end
 
     test "handles command with arguments", %{state: state} do
-      # Test commands that accept arguments
       test_cases = [
         {:search, ["query", "term"]},
         {:set_config, [%{setting: "value"}]},
@@ -250,12 +220,8 @@ defmodule MyPluginCommandTest do
 
       Enum.each(test_cases, fn {command, args} ->
         case MyPlugin.handle_command(command, args, state) do
-          {:ok, _new_state, _result} ->
-            :ok  # Command handled successfully
-
-          {:error, _reason, _state} ->
-            # Command might not be implemented - that's OK for testing
-            :ok
+          {:ok, _new_state, _result} -> :ok
+          {:error, _reason, _state} -> :ok
         end
       end)
     end
@@ -263,7 +229,6 @@ defmodule MyPluginCommandTest do
 
   describe "command state management" do
     test "commands preserve state integrity", %{state: initial_state} do
-      # Execute a series of commands
       commands_sequence = [
         {:init_data, []},
         {:add_item, ["test_item"]},
@@ -279,13 +244,11 @@ defmodule MyPluginCommandTest do
           end
         end)
 
-      # Final state should still be valid
       assert is_map(final_state)
       assert Map.has_key?(final_state, :config)
     end
 
     test "commands handle concurrent access", %{state: state} do
-      # Simulate concurrent command execution
       tasks =
         1..10
         |> Enum.map(fn i ->
@@ -296,7 +259,6 @@ defmodule MyPluginCommandTest do
 
       results = Task.await_many(tasks, 5000)
 
-      # All commands should complete successfully
       Enum.each(results, fn result ->
         assert match?({:ok, _state, _result}, result) or
                match?({:error, _reason, _state}, result)
@@ -306,7 +268,7 @@ defmodule MyPluginCommandTest do
 end
 ```
 
-### Event Filtering Tests
+### Event Filtering
 
 ```elixir
 defmodule MyPluginEventTest do
@@ -331,18 +293,15 @@ defmodule MyPluginEventTest do
 
       Enum.each(unhandled_events, fn event ->
         result = MyPlugin.filter_event(event, state)
-
-        # Should pass through unchanged
         assert {:ok, ^event} = result
       end)
     end
 
     test "handles plugin-specific events", %{state: state} do
-      # Test events your plugin specifically handles
       plugin_events = [
-        {:key_press, "ctrl+p"},  # Command palette hotkey
-        {:key_press, "escape"},  # Close UI
-        {:file_change, "/path/to/file"}  # File watcher
+        {:key_press, "ctrl+p"},
+        {:key_press, "escape"},
+        {:file_change, "/path/to/file"}
       ]
 
       Enum.each(plugin_events, fn event ->
@@ -350,39 +309,26 @@ defmodule MyPluginEventTest do
 
         case result do
           {:ok, modified_event} ->
-            # Event was modified
             assert modified_event != event
-
           :halt ->
-            # Event was consumed
             :ok
-
           {:error, reason} ->
-            # Event caused error
             assert is_binary(reason)
         end
       end)
     end
 
     test "can halt event propagation", %{state: state} do
-      # Events that should be consumed by the plugin
       halt_events = [
-        {:key_press, "F12"},  # Plugin-specific hotkey
+        {:key_press, "F12"},
         {:plugin_internal_event, "data"}
       ]
 
       Enum.each(halt_events, fn event ->
         case MyPlugin.filter_event(event, state) do
-          :halt ->
-            # Event was properly consumed
-            :ok
-
-          {:ok, _modified_event} ->
-            # Event was modified but not consumed - also valid
-            :ok
-
-          other ->
-            flunk("Unexpected result for halt event: #{inspect(other)}")
+          :halt -> :ok
+          {:ok, _modified_event} -> :ok
+          other -> flunk("Unexpected result for halt event: #{inspect(other)}")
         end
       end)
     end
@@ -395,17 +341,15 @@ defmodule MyPluginEventTest do
         {:key_press, "escape"}
       ]
 
-      # Process events sequentially
       final_state =
         Enum.reduce(events, state, fn event, current_state ->
           case MyPlugin.filter_event(event, current_state) do
-            {:ok, _event} -> current_state  # State unchanged in basic filtering
+            {:ok, _event} -> current_state
             :halt -> current_state
             {:error, _reason} -> current_state
           end
         end)
 
-      # State should remain consistent
       assert final_state == state
     end
   end
@@ -414,16 +358,14 @@ defmodule MyPluginEventTest do
     test "event filtering is performant", %{state: state} do
       event = {:key_press, "a"}
 
-      # Time event filtering
       {time_microseconds, _result} =
         :timer.tc(fn ->
-          # Process many events
           Enum.each(1..1000, fn _ ->
             MyPlugin.filter_event(event, state)
           end)
         end)
 
-      # Should complete in reasonable time (< 10ms for 1000 events)
+      # 1000 events should complete in under 10ms
       assert time_microseconds < 10_000,
         "Event filtering too slow: #{time_microseconds} microseconds"
     end
@@ -437,7 +379,6 @@ defmodule MyPluginEventTest do
         {:scroll, :down}
       ]
 
-      # Should handle rapid events without issues
       Enum.each(high_freq_events, fn event ->
         assert {:ok, _} = MyPlugin.filter_event(event, state)
       end)
@@ -446,7 +387,7 @@ defmodule MyPluginEventTest do
 end
 ```
 
-## Integration Testing
+## Integration Tests
 
 ### Plugin System Integration
 
@@ -459,11 +400,9 @@ defmodule MyPluginIntegrationTest do
   @moduletag :integration
 
   setup do
-    # Start plugin system for testing
     {:ok, _pid} = PluginSystemV2.start_link(test_mode: true)
 
     on_exit(fn ->
-      # Clean up any loaded plugins
       try do
         PluginSystemV2.stop()
       catch
@@ -478,7 +417,6 @@ defmodule MyPluginIntegrationTest do
     test "plugin can be loaded into system" do
       plugin_manifest = MyPlugin.manifest()
 
-      # Test plugin loading
       result = PluginSystemV2.load_plugin("my-plugin", %{
         manifest: plugin_manifest,
         module: MyPlugin
@@ -486,22 +424,18 @@ defmodule MyPluginIntegrationTest do
 
       assert :ok = result
 
-      # Verify plugin status
       {:ok, status} = PluginSystemV2.get_plugin_status("my-plugin")
       assert status.status in [:loaded, :running]
     end
 
     test "plugin dependencies are resolved" do
-      # Test that dependencies are properly checked
       manifest = MyPlugin.manifest()
 
       case PluginSystemV2.resolve_dependencies(manifest) do
         {:ok, resolved} ->
-          # Dependencies should include raxol-core
           assert "raxol-core" in Map.keys(resolved)
 
         {:error, conflicts} ->
-          # If there are conflicts, they should be descriptive
           assert is_list(conflicts)
           Enum.each(conflicts, fn conflict ->
             assert is_map(conflict)
@@ -512,44 +446,34 @@ defmodule MyPluginIntegrationTest do
     end
 
     test "plugin hot reload works" do
-      # Load initial plugin
       assert :ok = PluginSystemV2.load_plugin("my-plugin")
 
-      # Get initial state
       {:ok, initial_status} = PluginSystemV2.get_plugin_status("my-plugin")
 
-      # Perform hot reload
       assert :ok = PluginSystemV2.hot_reload_plugin("my-plugin")
 
-      # Verify plugin is still functional
       {:ok, reloaded_status} = PluginSystemV2.get_plugin_status("my-plugin")
       assert reloaded_status.status == :running
-
-      # Version or timestamp should be updated
       assert reloaded_status.last_reload != initial_status.last_reload
     end
   end
 
   describe "command integration" do
     setup do
-      # Load plugin for command tests
       PluginSystemV2.load_plugin("my-plugin")
       :ok
     end
 
     test "plugin commands are registered" do
-      # Commands should be accessible through the system
       commands = MyPlugin.get_commands()
 
       Enum.each(commands, fn {name, _, _} ->
-        # Command should be callable through system
         command_name = "my-plugin:#{name}"
 
-        # This would depend on your command execution system
         case Raxol.Commands.execute(command_name) do
           {:ok, _result} -> :ok
           {:error, :not_found} -> flunk("Command not registered: #{command_name}")
-          {:error, _other} -> :ok  # Command exists but may have failed
+          {:error, _other} -> :ok
         end
       end)
     end
@@ -562,10 +486,8 @@ defmodule MyPluginIntegrationTest do
     end
 
     test "plugin performance is monitored" do
-      # Get performance metrics
       {:ok, status} = PluginSystemV2.get_plugin_status("my-plugin")
 
-      # Should have performance metrics
       assert is_map(status.performance_metrics)
 
       expected_metrics = [
@@ -582,18 +504,14 @@ defmodule MyPluginIntegrationTest do
     end
 
     test "plugin resource limits are enforced" do
-      # This would test sandbox limits if applicable
       manifest = MyPlugin.manifest()
 
       if manifest.trust_level != :trusted do
-        # Check that resource limits are enforced
         {:ok, status} = PluginSystemV2.get_plugin_status("my-plugin")
 
-        # Memory usage should be reasonable
         memory_mb = status.performance_metrics.memory_usage_mb
         assert memory_mb < 100, "Plugin using too much memory: #{memory_mb}MB"
 
-        # CPU usage should be reasonable
         cpu_percent = status.performance_metrics.cpu_usage_percent
         assert cpu_percent < 50, "Plugin using too much CPU: #{cpu_percent}%"
       end
@@ -602,7 +520,7 @@ defmodule MyPluginIntegrationTest do
 end
 ```
 
-### Terminal Integration Tests
+### Terminal Integration
 
 ```elixir
 defmodule MyPluginTerminalTest do
@@ -614,20 +532,15 @@ defmodule MyPluginTerminalTest do
 
   describe "terminal interaction" do
     test "plugin responds to terminal events" do
-      # This would require a test terminal emulator
-      # For now, test the event handling directly
-
       config = %{enabled: true}
       {:ok, state} = MyPlugin.init(config)
 
-      # Simulate terminal events
       terminal_events = [
         {:terminal_resize, {80, 24}},
         {:terminal_focus, true},
         {:terminal_focus, false}
       ]
 
-      # Plugin should handle terminal events without crashing
       Enum.each(terminal_events, fn event ->
         case MyPlugin.filter_event(event, state) do
           {:ok, _modified_event} -> :ok
@@ -639,21 +552,17 @@ defmodule MyPluginTerminalTest do
     end
 
     test "plugin UI renders correctly" do
-      # Test UI rendering if plugin has UI capabilities
       manifest = MyPlugin.manifest()
 
       if :ui_overlay in manifest.capabilities do
         config = %{enabled: true}
         {:ok, state} = MyPlugin.init(config)
 
-        # Test rendering
         case MyPlugin.render_overlay(state, 80, 24) do
           {:ok, lines} ->
-            # Should return list of rendered lines
             assert is_list(lines)
             assert length(lines) <= 24
 
-            # Each line should be properly formatted
             Enum.each(lines, fn line ->
               assert is_map(line)
               assert Map.has_key?(line, :text)
@@ -664,7 +573,6 @@ defmodule MyPluginTerminalTest do
             flunk("UI rendering failed: #{reason}")
 
           :not_implemented ->
-            # Plugin doesn't implement UI rendering - OK
             :ok
         end
       end
@@ -673,7 +581,7 @@ defmodule MyPluginTerminalTest do
 end
 ```
 
-## Test Utilities and Helpers
+## Test Helpers
 
 ### Plugin Test Helper Module
 
@@ -742,7 +650,6 @@ defmodule Raxol.PluginTestHelpers do
         "Field #{field} should be a string"
     end)
 
-    # Validate optional fields
     if Map.has_key?(manifest, :capabilities) do
       assert is_list(manifest.capabilities)
       Enum.each(manifest.capabilities, fn cap ->
@@ -767,7 +674,6 @@ defmodule Raxol.PluginTestMocks do
 
   use Mox
 
-  # Mock external dependencies
   defmock(MockHTTPoison, for: HTTPoisonBehaviour)
   defmock(MockFileSystem, for: FileSystemBehaviour)
 
@@ -802,7 +708,7 @@ defmodule Raxol.PluginTestMocks do
 end
 ```
 
-### Property-Based Testing
+## Property-Based Testing
 
 ```elixir
 defmodule MyPluginPropertyTest do
@@ -816,12 +722,10 @@ defmodule MyPluginPropertyTest do
       check all config <- config_generator() do
         case MyPlugin.init(config) do
           {:ok, state} ->
-            # Should always produce valid state
             assert is_map(state)
             assert Map.has_key?(state, :config)
 
           {:error, reason} ->
-            # Error should be descriptive
             assert is_binary(reason) or is_atom(reason)
         end
       end
@@ -834,15 +738,10 @@ defmodule MyPluginPropertyTest do
 
         case MyPlugin.filter_event(event, state) do
           {:ok, filtered_event} ->
-            # Filtered event should have similar structure
             assert is_tuple(filtered_event)
-
           :halt ->
-            # Event was consumed - OK
             :ok
-
           {:error, _reason} ->
-            # Error handling - OK
             :ok
         end
       end
@@ -853,11 +752,9 @@ defmodule MyPluginPropertyTest do
         config = %{enabled: true}
         {:ok, state} = MyPlugin.init(config)
 
-        # Should not raise exceptions
         case MyPlugin.handle_command(command, args, state) do
           {:ok, new_state, _result} ->
             assert is_map(new_state)
-
           {:error, _reason, error_state} ->
             assert is_map(error_state)
         end
@@ -898,57 +795,27 @@ defmodule MyPluginPropertyTest do
 end
 ```
 
-## Test Organization and Best Practices
-
-### Test File Structure
+## Test File Organization
 
 ```
 test/
-├── my_plugin_test.exs                 # Basic unit tests
-├── my_plugin_command_test.exs         # Command handling tests
-├── my_plugin_event_test.exs          # Event filtering tests
+├── my_plugin_test.exs                 # Unit tests
+├── my_plugin_command_test.exs         # Command handling
+├── my_plugin_event_test.exs           # Event filtering
 ├── my_plugin_integration_test.exs     # Integration tests
 ├── my_plugin_property_test.exs        # Property-based tests
 ├── support/
-│   ├── plugin_test_helpers.exs       # Test helpers
-│   ├── mocks.exs                     # Mock definitions
-│   └── fixtures/                     # Test fixtures
+│   ├── plugin_test_helpers.exs
+│   ├── mocks.exs
+│   └── fixtures/
 │       ├── sample_config.json
 │       ├── test_data.txt
 │       └── mock_responses/
 └── performance/
-    └── my_plugin_performance_test.exs # Performance tests
+    └── my_plugin_performance_test.exs
 ```
 
-### Test Documentation
-
-```elixir
-defmodule MyPluginTest do
-  @moduledoc """
-  Comprehensive test suite for MyPlugin.
-
-  This test suite covers:
-  - Plugin lifecycle management
-  - Command handling and validation
-  - Event filtering and modification
-  - Configuration validation
-  - Error handling and recovery
-  - Performance characteristics
-
-  Test Categories:
-  - Unit tests: Test individual functions and components
-  - Integration tests: Test plugin interaction with Raxol system
-  - Property tests: Test plugin behavior with random inputs
-  - Performance tests: Verify performance requirements
-  """
-
-  use ExUnit.Case, async: true
-
-  # Test setup and helpers...
-end
-```
-
-### Continuous Integration
+## CI Integration
 
 ```yaml
 # .github/workflows/plugin_tests.yml
@@ -983,5 +850,3 @@ jobs:
     - name: Check test coverage
       run: mix test --cover
 ```
-
-This comprehensive testing guide ensures that plugins are thoroughly tested at all levels, from individual functions to full system integration, providing confidence in plugin reliability and performance.

@@ -6,7 +6,7 @@ defmodule Raxol.UI.Components.Modal.Core do
   require Raxol.Core.Runtime.Log
 
   @doc "Initializes the Modal component state from props."
-  @spec init(map()) :: Raxol.UI.Components.Modal.t()
+  @spec init(map()) :: {:ok, Raxol.UI.Components.Modal.t()}
   def init(props) do
     state = %Raxol.UI.Components.Modal{
       id: Map.get(props, :id, nil),
@@ -23,7 +23,7 @@ defmodule Raxol.UI.Components.Modal.Core do
       "Modal init with props type: #{inspect(Map.get(props, :type, :alert))}, state type: #{inspect(state.type)}"
     )
 
-    initialize_form_state(state, props)
+    {:ok, initialize_form_state(state, props)}
   end
 
   # Helper to initialize form state based on props

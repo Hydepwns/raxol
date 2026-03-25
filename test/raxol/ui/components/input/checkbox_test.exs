@@ -73,81 +73,48 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
 
     test "renders unchecked checkbox" do
       {:ok, state} = Checkbox.init(label: "Option")
-      # Render requires state and context
-      hbox_element = Checkbox.render(state, default_context())
+      row_element = Checkbox.render(state, default_context())
 
-      # Check the hbox structure using struct field access
-      assert hbox_element.tag == :hbox
-      assert length(hbox_element.children) == 2
+      assert row_element.type == :row
+      assert length(row_element.children) == 2
 
-      # Check the checkmark text element using struct field access
-      check_element = Enum.at(hbox_element.children, 0)
-      assert check_element.tag == :text
-      # Access text from attributes
-      text_attr =
-        Enum.find(check_element.attributes, fn {key, _} -> key == :text end)
+      check_element = Enum.at(row_element.children, 0)
+      assert check_element.type == :text
+      assert check_element.content == "[ ]"
 
-      assert text_attr == {:text, "[ ]"}
-
-      # Check the label text element using struct field access
-      label_element = Enum.at(hbox_element.children, 1)
-      assert label_element.tag == :text
-      # Access text from attributes
-      text_attr =
-        Enum.find(label_element.attributes, fn {key, _} -> key == :text end)
-
-      assert text_attr == {:text, " Option"}
+      label_element = Enum.at(row_element.children, 1)
+      assert label_element.type == :text
+      assert label_element.content == " Option"
     end
 
     test "renders checked checkbox" do
       {:ok, state} = Checkbox.init(label: "Option", checked: true)
-      hbox_element = Checkbox.render(state, default_context())
+      row_element = Checkbox.render(state, default_context())
 
-      # Check the hbox structure using struct field access
-      assert hbox_element.tag == :hbox
-      assert length(hbox_element.children) == 2
+      assert row_element.type == :row
+      assert length(row_element.children) == 2
 
-      # Check the checkmark text element using struct field access
-      check_element = Enum.at(hbox_element.children, 0)
-      assert check_element.tag == :text
-      # Access text from attributes
-      text_attr =
-        Enum.find(check_element.attributes, fn {key, _} -> key == :text end)
+      check_element = Enum.at(row_element.children, 0)
+      assert check_element.type == :text
+      assert check_element.content == "[x]"
 
-      assert text_attr == {:text, "[x]"}
-
-      # Check the label text element using struct field access
-      label_element = Enum.at(hbox_element.children, 1)
-      assert label_element.tag == :text
-      # Access text from attributes
-      text_attr =
-        Enum.find(label_element.attributes, fn {key, _} -> key == :text end)
-
-      assert text_attr == {:text, " Option"}
+      label_element = Enum.at(row_element.children, 1)
+      assert label_element.type == :text
+      assert label_element.content == " Option"
     end
 
     test "renders disabled checkbox with disabled style" do
-      # Note: Now that render uses the theme, we expect the theme's
-      # disabled style (e.g., disabled_fg) to be applied.
       {:ok, state} =
         Checkbox.init(
           label: "Option",
           disabled: true
-          # No explicit style needed here unless overriding theme
         )
 
-      hbox_element = Checkbox.render(state, default_context())
+      row_element = Checkbox.render(state, default_context())
 
-      # Check basic structure using struct field access
-      assert hbox_element.tag == :hbox
-      assert length(hbox_element.children) == 2
-
-      # Check that the style applied to the hbox reflects the disabled state
-      # Access style from attributes
-      style_attr =
-        Enum.find(hbox_element.attributes, fn {key, _} -> key == :style end)
-
-      assert style_attr == {:style, %{fg: :gray, bg: :default}}
+      assert row_element.type == :row
+      assert length(row_element.children) == 2
+      assert row_element.style == %{fg: :gray, bg: :default}
     end
   end
 
@@ -287,8 +254,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "toggles state from unchecked to checked on click" do
       state = init_state(checked: false)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(click_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(click_event(), state, %{})
 
       assert new_state.checked == true
     end
@@ -296,8 +263,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "toggles state from checked to unchecked on click" do
       state = init_state(checked: true)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(click_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(click_event(), state, %{})
 
       assert new_state.checked == false
     end
@@ -305,8 +272,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "toggles state from unchecked to checked on space keypress" do
       state = init_state(checked: false)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(space_keypress_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(space_keypress_event(), state, %{})
 
       assert new_state.checked == true
     end
@@ -314,8 +281,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "toggles state from checked to unchecked on space keypress" do
       state = init_state(checked: true)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(space_keypress_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(space_keypress_event(), state, %{})
 
       assert new_state.checked == false
     end
@@ -323,15 +290,15 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "does not toggle state on other keypress" do
       state = init_state(checked: false)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(other_keypress_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(other_keypress_event(), state, %{})
 
       assert new_state.checked == false
 
       state_checked = init_state(checked: true)
 
-      {:noreply, new_state_checked, _cmds} =
-        Checkbox.handle_event(other_keypress_event(), %{}, state_checked)
+      {new_state_checked, _cmds} =
+        Checkbox.handle_event(other_keypress_event(), state_checked, %{})
 
       assert new_state_checked.checked == true
     end
@@ -339,8 +306,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "does not toggle when disabled (click)" do
       state = init_state(checked: false, disabled: true)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(click_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(click_event(), state, %{})
 
       assert new_state.checked == false
     end
@@ -348,8 +315,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "does not toggle when disabled (space keypress)" do
       state = init_state(checked: false, disabled: true)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(space_keypress_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(space_keypress_event(), state, %{})
 
       assert new_state.checked == false
     end
@@ -365,8 +332,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       # Reset tracker
       ProcessStore.put(:toggled_to, nil)
 
-      {:noreply, new_state, _cmds} =
-        Checkbox.handle_event(click_event(), %{}, state)
+      {new_state, _cmds} =
+        Checkbox.handle_event(click_event(), state, %{})
 
       assert new_state.checked == true
       assert ProcessStore.get(:toggled_to) == true
@@ -374,8 +341,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       # Reset tracker
       ProcessStore.put(:toggled_to, nil)
 
-      {:noreply, final_state, _cmds} =
-        Checkbox.handle_event(space_keypress_event(), %{}, new_state)
+      {final_state, _cmds} =
+        Checkbox.handle_event(space_keypress_event(), new_state, %{})
 
       assert final_state.checked == false
       assert ProcessStore.get(:toggled_to) == false
@@ -391,16 +358,16 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       # Reset tracker
       ProcessStore.put(:toggle_called, false)
 
-      {:noreply, _new_state, _cmds} =
-        Checkbox.handle_event(click_event(), %{}, state)
+      {_new_state, _cmds} =
+        Checkbox.handle_event(click_event(), state, %{})
 
       assert ProcessStore.get(:toggle_called) == false
 
       # Reset tracker
       ProcessStore.put(:toggle_called, false)
 
-      {:noreply, _final_state, _cmds} =
-        Checkbox.handle_event(other_keypress_event(), %{}, state)
+      {_final_state, _cmds} =
+        Checkbox.handle_event(other_keypress_event(), state, %{})
 
       assert ProcessStore.get(:toggle_called) == false
     end

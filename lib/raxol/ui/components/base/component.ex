@@ -11,8 +11,8 @@ defmodule Raxol.UI.Components.Base.Component do
   1. `init/1` - Initialize component state with props
   2. `mount/1` - Called when the component is first mounted
   3. `update/2` - Handle messages and update component state
-  4. `render/1` - Generate the visual representation of the component
-  5. `handle_event/2` - Handle UI events
+  4. `render/2` - Generate the visual representation (state, context)
+  5. `handle_event/3` - Handle UI events (event, state, context)
   6. `unmount/1` - Clean up resources when component is removed
 
   ## Example
@@ -32,7 +32,7 @@ defmodule Raxol.UI.Components.Base.Component do
           %{state | count: state.count + 1}
         end
 
-        def render(state) do
+        def render(state, _context) do
           row do
             button(label: "-", on_click: :decrement)
             text("Count: \#{state.count}")
@@ -40,11 +40,11 @@ defmodule Raxol.UI.Components.Base.Component do
           end
         end
 
-        def handle_event({:click, :increment}, state) do
+        def handle_event({:click, :increment}, state, _context) do
           {update(:increment, state), []}
         end
 
-        def handle_event({:click, :decrement}, state) do
+        def handle_event({:click, :decrement}, state, _context) do
           {%{state | count: state.count - 1}, []}
         end
       end
@@ -100,7 +100,13 @@ defmodule Raxol.UI.Components.Base.Component do
   The context map provides additional event details or UI state.
   Returns the potentially modified state and any commands to execute.
   """
-  @callback handle_event(event(), state(), context()) :: {state(), [command()]}
+  @callback handle_event(event(), state(), context()) ::
+              {state(), [command()]}
+              | {:ok, state()}
+              | {:update, state(), [command()]}
+              | {:noreply, state(), term()}
+              | {:handled, state()}
+              | :passthrough
 
   @doc """
   Called when the component is being removed from the UI.

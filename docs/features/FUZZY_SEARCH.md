@@ -1,7 +1,5 @@
 # Fuzzy Search
 
-> [Documentation](../README.md) > [Features](README.md) > Fuzzy Search
-
 Multi-mode search with fuzzy, exact, and regex matching.
 
 ## Usage
@@ -83,4 +81,4 @@ def handle_search(state, query) do
 end
 ```
 
-Performance: ~100μs for 1000-line buffer
+Performance: ~100us for 1000-line buffer

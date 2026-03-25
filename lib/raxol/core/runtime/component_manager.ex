@@ -250,7 +250,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     state =
       Enum.reduce(state.components, state, fn {component_id, component}, acc ->
         {new_state, commands} =
-          component.module.handle_event(event, component.state)
+          component.module.handle_event(event, component.state, %{})
 
         # Update component state
         acc = put_in(acc.components[component_id].state, new_state)

@@ -133,10 +133,9 @@ defmodule Raxol.Core.Events.EventManagerTest do
   end
 
   describe "dispatch/1" do
-    @tag :skip
     test "dispatches event to registered handlers" do
-      # Create a temporary process that will receive messages
       parent = self()
+      receiver_name = :"test_receiver_#{System.unique_integer([:positive])}"
 
       test_pid =
         spawn(fn ->
@@ -145,28 +144,24 @@ defmodule Raxol.Core.Events.EventManagerTest do
           end
         end)
 
-      # Define test module with handler
-      defmodule TestHandler do
-        def handle_test_event(event) do
-          send(Process.whereis(:test_receiver_136), event)
+      # Define handler module -- arity 2 because EventManager dispatches (event_type, event_data)
+      defmodule DispatchTestHandler do
+        def handle_test_event(event_type, event_data) do
+          send(Process.whereis(:dispatch_test_receiver), {event_type, event_data})
         end
       end
 
-      # Register test process
-      Process.register(test_pid, :test_receiver_136)
+      Process.register(test_pid, :dispatch_test_receiver)
 
-      # Register handler
       EventManager.register_handler(
         :test_event,
-        TestHandler,
+        DispatchTestHandler,
         :handle_test_event
       )
 
-      # Dispatch event
       event = {:test_event, %{data: "test"}}
       EventManager.dispatch(event)
 
-      # Wait for message
       assert_receive ^event, 100
     end
 

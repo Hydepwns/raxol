@@ -30,16 +30,6 @@ config :raxol, RaxolWeb.Endpoint,
   ],
   secret_key_base: secret_key_base
 
-# Configure your mailer
-config :raxol, Raxol.Mailer,
-  adapter: Swoosh.Adapters.SMTP,
-  relay: System.get_env("SMTP_RELAY"),
-  username: System.get_env("SMTP_USERNAME"),
-  password: System.get_env("SMTP_PASSWORD"),
-  tls: :always,
-  auth: :always,
-  port: 587
-
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.
 

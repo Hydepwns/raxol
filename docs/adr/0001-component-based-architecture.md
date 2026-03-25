@@ -4,19 +4,17 @@
 Accepted
 
 ## Context
-When building terminal applications, developers traditionally work with low-level primitives like cursor movements, ANSI escape codes, and character-by-character rendering. This approach is error-prone, difficult to maintain, and doesn't scale well for complex UIs.
-
-Modern web development has proven that component-based architectures provide better developer experience, maintainability, and reusability. Frameworks like React and Vue have shown that declarative UI programming is more productive than imperative approaches.
+Building terminal UIs with raw cursor movements and ANSI escape codes is tedious and error-prone. It doesn't scale to complex interfaces. Web frameworks like React and Phoenix LiveView have shown that declarative, component-based UI programming is more productive and maintainable than imperative approaches.
 
 ## Decision
-We will implement a component-based architecture for Raxol that mirrors modern web frameworks, specifically inspired by React and Phoenix LiveView.
+Raxol uses a component-based architecture modeled after React and Phoenix LiveView.
 
-Key architectural decisions:
-1. **Declarative Components**: Define UI as a function of state
-2. **Virtual Terminal**: Maintain a virtual representation before rendering
-3. **Lifecycle Hooks**: mount, update, render, unmount
-4. **Props and State**: Clear separation between component inputs and internal state
-5. **Event System**: Unified event handling for keyboard, mouse, and custom events
+The key pieces:
+1. **Declarative components** -- UI is a function of state
+2. **Virtual terminal** -- an in-memory representation of the screen, diffed before rendering
+3. **Lifecycle hooks** -- mount, update, render, unmount
+4. **Props and state** -- clear separation between component inputs and internal state
+5. **Unified event system** -- keyboard, mouse, and custom events all handled the same way
 
 ## Implementation
 
@@ -25,15 +23,15 @@ Key architectural decisions:
 defmodule MyComponent do
   use Raxol.Component
   import Raxol.LiveView, only: [assign: 2, assign: 3]
-  
+
   prop :title, :string, required: true
   prop :items, {:list, :map}, default: []
-  
+
   @impl true
   def mount(socket) do
     {:ok, assign(socket, selected: nil)}
   end
-  
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -47,33 +45,31 @@ end
 ```
 
 ### Virtual Terminal Benefits
-- **Efficient Rendering**: Only re-render changed portions
-- **Testing**: Test components without actual terminal
-- **Platform Independence**: Same code works in terminal and web
+- Only re-renders changed portions of the screen
+- Components are testable without an actual terminal
+- Same code works in terminal and web contexts
 
 ## Consequences
 
 ### Positive
-- **Developer Productivity**: Familiar component model for web developers
-- **Code Reusability**: Components can be shared and published
-- **Maintainability**: Clear separation of concerns
-- **Testing**: Components are easily unit testable
-- **Documentation**: Self-documenting component APIs
+- Familiar model for anyone coming from web development
+- Components are reusable and shareable
+- Clear separation of concerns
+- Easy to unit test
 
 ### Negative
-- **Learning Curve**: Developers need to learn the component model
-- **Performance Overhead**: Virtual terminal adds a layer of abstraction
-- **Memory Usage**: Maintaining virtual state requires additional memory
+- Adds a learning curve for the component model
+- Virtual terminal introduces abstraction overhead
+- Maintaining virtual state uses more memory
 
-### Mitigation Strategies
-- **Performance**: Implemented EmulatorLite for bypassing GenServer overhead
-- **Memory**: Implemented efficient diff algorithms and buffer pooling
-- **Learning**: Comprehensive documentation and examples
+### Mitigation
+- EmulatorLite bypasses GenServer overhead for performance-critical paths
+- Efficient diff algorithms and buffer pooling keep memory in check
 
 ## Metrics
-- Component render time: < 1ms for typical components
+- Component render time: < 1ms typical
 - Memory per component: < 1KB for simple components
-- Developer onboarding: Target 5 minutes to first component
+- Target onboarding time: 5 minutes to first component
 
 ## References
 - React Component Model: https://react.dev/learn/thinking-in-react

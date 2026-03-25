@@ -10,6 +10,7 @@ defmodule Termbox2LoadingTest do
   @moduletag :unix_only
 
   describe "NIF loading" do
+    @tag :docker
     test "termbox2_nif module is loaded" do
       # Check that the module exists
       assert Code.ensure_loaded?(:termbox2_nif)

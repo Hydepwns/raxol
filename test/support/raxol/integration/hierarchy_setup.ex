@@ -143,10 +143,11 @@ defmodule Raxol.Test.Integration.HierarchySetup do
                 }
 
                 # Immediately update the state in the ComponentManager
-                ComponentManager.set_component_state(
-                  child_id,
-                  updated_child_state
-                )
+                _ =
+                  ComponentManager.set_component_state(
+                    child_id,
+                    updated_child_state
+                  )
 
                 # Update parent's child_states map with the new child state
                 updated_parent_state =
@@ -293,10 +294,11 @@ defmodule Raxol.Test.Integration.HierarchySetup do
       )
 
     # Update parent component in ComponentManager with the new state
-    ComponentManager.set_component_state(
-      parent_struct.state.component_manager_id,
-      updated_parent_state
-    )
+    _ =
+      ComponentManager.set_component_state(
+        parent_struct.state.component_manager_id,
+        updated_parent_state
+      )
 
     # Get the updated parent from ComponentManager
     updated_parent_mounted =
@@ -435,15 +437,17 @@ defmodule Raxol.Test.Integration.HierarchySetup do
               Map.put(child_mounted.state, :component_manager_id, child_id)
 
             # Update the components in ComponentManager with the new states
-            ComponentManager.set_component_state(
-              parent_id,
-              updated_parent_state
-            )
+            _ =
+              ComponentManager.set_component_state(
+                parent_id,
+                updated_parent_state
+              )
 
-            ComponentManager.set_component_state(
-              child_id,
-              updated_child_state
-            )
+            _ =
+              ComponentManager.set_component_state(
+                child_id,
+                updated_child_state
+              )
 
             # Update the structs with the new states
             parent_struct = %{

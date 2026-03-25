@@ -451,7 +451,9 @@ defmodule Raxol.Benchmark.Config do
       _ -> "unknown"
     end
   rescue
-    _ -> "unknown"
+    e ->
+      Logger.warning("Failed to get git SHA: #{Exception.message(e)}")
+      "unknown"
   end
 
   defp check_statistical_significance(samples, target) when is_list(samples) do
@@ -604,7 +606,7 @@ defmodule Raxol.Benchmark.Config do
   defp terminal_app_content do
     """
     \e[?1049h\e[2J\e[H\e[?25l
-    \e[1;1H\e[37;44m Terminal Application v2.1.0 \e[0m\e[1;25H\e[37;44m [Help: F1] \e[0m
+    \e[1;1H\e[37;44m Terminal Application v2.2.0 \e[0m\e[1;25H\e[37;44m [Help: F1] \e[0m
     \e[3;1H\e[1mSystem Monitoring Dashboard\e[0m
     \e[5;1H\e[33mCPU Usage:\e[0m
     \e[6;3H\e[32m██████████████\e[37m░░░░░░░░░░░░░░░░\e[0m 47%

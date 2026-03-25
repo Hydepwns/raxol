@@ -4,45 +4,20 @@
 Implemented (Retroactive Documentation)
 
 ## Context
+Terminal apps traditionally live in local command-line environments. A web interface adds remote access, collaboration, cross-platform consistency, and the ability to embed terminal UIs in web applications. But the integration is tricky -- terminal interactions need low-latency bidirectional communication, state must stay synchronized, and web exposure brings security concerns.
 
-Terminal applications traditionally exist only in local command-line environments. Modern applications benefit from web interfaces that provide:
+Previous approaches (VNC, iframes, custom WebSocket protocols, server-side rendering) all fall short on either latency, integration quality, or real-time interaction.
 
-1. **Remote Access**: Access terminal applications from any device with a browser
-2. **Collaboration**: Multiple users interacting with the same terminal session
-3. **Integration**: Embedding terminal interfaces in web applications
-4. **Cross-Platform**: Consistent experience across different operating systems
-5. **Multimedia**: Rich content (images, videos) alongside terminal text
-
-However, integrating terminal applications with web interfaces presents challenges:
-
-- **Real-time Communication**: Terminal interactions require low-latency bidirectional communication
-- **State Synchronization**: Terminal state must stay synchronized between local and web interfaces
-- **Event Handling**: Terminal events (keyboard, mouse, resize) must be handled in web context
-- **Performance**: Web interface must handle high-frequency terminal updates efficiently
-- **Security**: Web exposure requires additional security considerations
-
-Traditional approaches include:
-- **VNC/RDP**: Screen sharing with high latency and poor integration
-- **Terminal in iframe**: Limited interaction and poor user experience
-- **WebSocket terminals**: Custom protocols with complex state management
-- **Server-side rendering**: Static terminal output with no real-time interaction
-
-For Raxol, we needed a web interface that provides:
-- **Native Phoenix integration** with existing Phoenix applications
-- **Real-time bidirectional communication** for terminal I/O
-- **Collaborative features** with user presence and shared sessions
-- **WASH-style continuity** enabling seamless terminal-web transitions
-- **Performance** capable of handling high-frequency terminal updates
+We needed native Phoenix integration, real-time bidirectional terminal I/O, collaborative features, WASH-style continuity, and performance that can handle high-frequency terminal updates.
 
 ## Decision
+Build on Phoenix LiveView's WebSocket infrastructure and reactive model for real-time terminal interfaces with collaboration support.
 
-Implement a comprehensive Phoenix LiveView integration that provides real-time terminal interfaces with full collaboration support, leveraging Phoenix's WebSocket infrastructure and LiveView's reactive programming model.
+### Components
 
-### Core Web Architecture
+#### LiveView Terminal (`lib/raxol_web/live/terminal_live.ex`)
 
-#### 1. **Phoenix LiveView Terminal** (`lib/raxol_web/live/terminal_live.ex`)
-
-The main LiveView component that renders the terminal interface:
+The main LiveView component:
 
 ```elixir
 defmodule RaxolWeb.TerminalLive do
@@ -53,9 +28,9 @@ defmodule RaxolWeb.TerminalLive do
     session_id = generate_session_id()
     emulator = initialize_emulator(session)
     renderer = Raxol.Terminal.Renderer.new(emulator.main_screen_buffer)
-    
+
     setup_presence("terminal:" <> session_id, session["user_id"])
-    
+
     socket = assign(socket,
       session_id: session_id,
       emulator: emulator,
@@ -63,10 +38,10 @@ defmodule RaxolWeb.TerminalLive do
       users: [],
       cursors: %{}
     )
-    
+
     {:ok, socket}
   end
-  
+
   def handle_event("terminal_input", %{"data" => data}, socket) do
     process_terminal_input(socket.assigns.emulator, data)
     {:noreply, update_terminal_display(socket)}
@@ -74,21 +49,16 @@ defmodule RaxolWeb.TerminalLive do
 end
 ```
 
-**Features**:
-- **Real-time terminal rendering** with efficient diff updates
-- **User presence tracking** showing who's connected to each session
-- **Session management** with automatic cleanup and reconnection
-- **Input handling** for keyboard, mouse, and resize events
-- **Theme customization** with real-time preview
+Real-time rendering with efficient diffs, user presence tracking, session management with auto-cleanup and reconnection, keyboard/mouse/resize event handling, and theme customization.
 
-#### 2. **WebSocket Channel** (`lib/raxol_web/channels/terminal_channel.ex`)
+#### WebSocket Channel (`lib/raxol_web/channels/terminal_channel.ex`)
 
-Low-level WebSocket communication for high-performance terminal I/O:
+Lower-level channel for high-performance terminal I/O:
 
 ```elixir
 defmodule RaxolWeb.TerminalChannel do
   use RaxolWeb, :channel
-  
+
   def join("terminal:" <> session_id, _params, socket) do
     emulator = Emulator.new(80, 24)
     state = %{
@@ -96,12 +66,10 @@ defmodule RaxolWeb.TerminalChannel do
       renderer: Renderer.new(emulator.main_screen_buffer),
       session_id: session_id
     }
-    
     {:ok, assign(socket, state)}
   end
-  
+
   def handle_in("input", %{"data" => data}, socket) do
-    # Rate limiting
     if within_rate_limit?(socket) do
       process_input(socket.assigns.emulator, data)
       output = render_terminal(socket.assigns.renderer)
@@ -113,16 +81,11 @@ defmodule RaxolWeb.TerminalChannel do
 end
 ```
 
-**Features**:
-- **Rate limiting** to prevent abuse (100 messages/second)
-- **Input validation** with size limits and sanitization
-- **Session isolation** with secure session ID validation
-- **Error handling** with graceful degradation
-- **Metrics collection** for performance monitoring
+Rate limited (100 msg/sec), input validation with size limits, session isolation, error handling with graceful degradation.
 
-#### 3. **Phoenix Presence** (`lib/raxol_web/presence.ex`)
+#### Presence (`lib/raxol_web/presence.ex`)
 
-Real-time user presence tracking for collaboration:
+Phoenix Presence tracks who's connected:
 
 ```elixir
 defmodule RaxolWeb.Presence do
@@ -130,269 +93,104 @@ defmodule RaxolWeb.Presence do
     otp_app: :raxol,
     pubsub_server: Raxol.PubSub
 end
-
-# Usage in LiveView
-def handle_info(%{event: "presence_diff", payload: diff}, socket) do
-  users = Presence.list("terminal:" <> socket.assigns.session_id)
-  cursors = extract_cursor_positions(users)
-  
-  {:noreply, assign(socket, users: Map.keys(users), cursors: cursors)}
-end
 ```
 
-**Features**:
-- **User tracking** showing active users per terminal session
-- **Cursor synchronization** displaying each user's cursor position
-- **Connection state** indicating online/offline status
-- **Metadata sharing** user names, themes, permissions
+User tracking per session, cursor synchronization, online/offline status, metadata sharing (names, themes, permissions).
 
-#### 4. **WASH Integration**
+#### WASH Integration
 
-Seamless integration with WASH-style web continuity system:
+Transitions between terminal and web:
 
 ```elixir
 def handle_event("transition_to_terminal", _params, socket) do
-  # Capture current web state
   web_state = capture_web_state(socket.assigns)
-  
-  # Create session bridge for terminal transition  
+
   {:ok, bridge_token} = SessionBridge.create_transition(
     socket.assigns.session_id,
     web_state
   )
-  
-  # Generate terminal connection info
+
   terminal_cmd = "raxol connect --token #{bridge_token}"
-  
   {:noreply, push_event(socket, "show_terminal_command", %{command: terminal_cmd})}
 end
 ```
 
-#### 5. **Collaborative Features**
+#### Collaboration
 
-**Real-time Cursors**:
-```elixir
-def handle_event("cursor_move", %{"x" => x, "y" => y}, socket) do
-  Presence.update(self(), "terminal:" <> socket.assigns.session_id, 
-    socket.assigns.user_id, %{
-      cursor: %{x: x, y: y, timestamp: System.system_time(:millisecond)}
-    })
-  
-  {:noreply, socket}
-end
-```
+Real-time cursors broadcast via Presence updates. Shared input broadcasts to all connected users and processes in the shared terminal.
 
-**Shared Input**:
-```elixir
-def handle_event("shared_input", %{"data" => data, "user_id" => user_id}, socket) do
-  # Broadcast input to all connected users
-  broadcast_from(socket, "shared_input_received", %{
-    data: data,
-    user_id: user_id,
-    timestamp: System.system_time(:millisecond)
-  })
-  
-  # Process input in shared terminal
-  process_shared_input(socket.assigns.emulator, data, user_id)
-  
-  {:noreply, update_terminal_display(socket)}
-end
-```
+### Architecture
 
-### Web Interface Architecture Patterns
-
-#### 1. **Component-Based Structure**
 ```
 TerminalLive (Main Container)
-├── TerminalDisplay (Rendering Component)
-├── InputHandler (Keyboard/Mouse Events)
-├── UserList (Presence Display)  
-├── CursorOverlay (Multi-user Cursors)
-└── SessionControls (Connect/Disconnect/Share)
+|-- TerminalDisplay (Rendering)
+|-- InputHandler (Keyboard/Mouse)
+|-- UserList (Presence)
+|-- CursorOverlay (Multi-user Cursors)
++-- SessionControls (Connect/Disconnect/Share)
 ```
 
-#### 2. **Event Flow**
-```
-Web Browser → LiveView → Channel → Terminal Emulator → Output → LiveView → Web Browser
-```
+Event flow: Browser -> LiveView -> Channel -> Terminal Emulator -> Output -> LiveView -> Browser
 
-#### 3. **State Management**
-- **Phoenix LiveView assigns** for UI state (theme, layout, user preferences)
-- **Channel state** for terminal session data (emulator, renderer, input buffer)
-- **Presence state** for user collaboration data (cursors, online status)
-- **SessionBridge** for WASH transitions between interfaces
+State lives in three places: LiveView assigns (UI state), channel state (terminal session data), and Presence (collaboration data).
 
-#### 4. **Performance Optimizations**
+### Performance
 
-**Efficient Rendering**:
-```elixir
-def handle_info({:terminal_update, changes}, socket) do
-  # Only update changed regions
-  minimal_html = render_changes(changes, socket.assigns.last_render)
-  
-  {:noreply, assign(socket, 
-    terminal_html: minimal_html,
-    last_render: extract_render_state(socket.assigns.emulator)
-  )}
-end
-```
-
-**Rate Limiting**:
-```elixir
-defp within_rate_limit?(socket) do
-  current_time = System.system_time(:second)
-  last_second = socket.assigns[:last_rate_check] || current_time
-  
-  if current_time == last_second do
-    socket.assigns[:requests_this_second] < @rate_limit_per_second
-  else
-    true  # New second, reset counter
-  end
-end
-```
-
-## Implementation Details
-
-### LiveView Mount Process
-```elixir
-# 1. Session Validation
-session_id = validate_session(session)
-
-# 2. Terminal Initialization
-emulator = Emulator.new(width, height, scrollback: scrollback_lines)
-renderer = Renderer.new(emulator.main_screen_buffer)
-
-# 3. Presence Setup
-Presence.track(self(), "terminal:" <> session_id, user_id, %{
-  online_at: System.system_time(:second),
-  cursor: %{x: 0, y: 0}
-})
-
-# 4. PubSub Subscriptions
-Phoenix.PubSub.subscribe(Raxol.PubSub, "terminal:" <> session_id)
-
-# 5. Socket Assignment
-assign(socket, session_id: session_id, emulator: emulator, ...)
-```
-
-### Input Processing Pipeline
-```elixir
-# 1. Input Validation
-validate_input_size(data)
-validate_input_content(data)
-
-# 2. Rate Limiting Check  
-ensure_within_rate_limit(socket)
-
-# 3. Terminal Processing
-Terminal.Input.process(emulator, data)
-
-# 4. Output Generation
-output_changes = Renderer.get_changes(renderer)
-
-# 5. Broadcast to Collaborators
-broadcast_changes(socket, output_changes)
-
-# 6. LiveView Update
-update_socket_assigns(socket, output_changes)
-```
-
-### Collaboration Synchronization
-```elixir
-def sync_collaborative_state(socket) do
-  # Get all user cursors
-  users = Presence.list("terminal:" <> socket.assigns.session_id)
-  cursors = extract_cursors(users)
-  
-  # Merge with local terminal state
-  terminal_state = get_terminal_display_state(socket.assigns.emulator)
-  
-  # Create collaborative view
-  collaborative_html = render_with_cursors(terminal_state, cursors)
-  
-  assign(socket, terminal_html: collaborative_html, cursors: cursors)
-end
-```
+Only changed regions get re-rendered. Rate limiting prevents abuse. Visible regions render first.
 
 ## Consequences
 
 ### Positive
-- **Universal Access**: Terminal applications accessible from any web browser
-- **Real-time Collaboration**: Multiple users can interact with same terminal session
-- **Phoenix Integration**: Native integration with existing Phoenix applications  
-- **Performance**: Efficient real-time updates using Phoenix's optimized WebSocket layer
-- **Security**: Built-in rate limiting, input validation, and session management
-- **WASH Continuity**: Seamless transitions between terminal and web interfaces
-- **Rich UX**: Modern web UI with themes, presence indicators, and responsive design
+- Terminal apps accessible from any browser
+- Multiple users can interact with the same session
+- Native Phoenix integration
+- Efficient real-time updates via Phoenix's WebSocket layer
+- Built-in rate limiting, input validation, session management
 
 ### Negative
-- **Complexity**: Additional web layer increases architectural complexity
-- **Resource Usage**: Each web session requires memory and WebSocket connections
-- **Network Dependency**: Web interface requires stable network connectivity
-- **Security Surface**: Web exposure increases potential attack vectors
-- **Browser Limitations**: Some terminal features limited by browser capabilities
+- Additional web layer increases complexity
+- Each web session uses memory and a WebSocket connection
+- Requires network connectivity
+- Web exposure increases attack surface
+- Some terminal features limited by browser capabilities
 
 ### Mitigation
-- **Optional Feature**: Web interface is opt-in, terminal works standalone
-- **Resource Management**: Automatic session cleanup and connection pooling
-- **Offline Handling**: Graceful degradation when network unavailable
-- **Security**: Comprehensive rate limiting, input validation, and audit logging
-- **Progressive Enhancement**: Core terminal features work without web interface
+- Web interface is opt-in; terminal works standalone
+- Automatic session cleanup and connection pooling
+- Graceful degradation when network drops
+- Rate limiting and input validation throughout
 
 ## Validation
 
-### Success Metrics (Achieved)
-- **Latency**: <50ms round-trip time for typical terminal interactions
-- **Concurrent Users**: 100+ simultaneous web terminal sessions tested
-- **Collaboration**: Real-time multi-user editing with conflict resolution
-- **Uptime**: 99.9% availability with graceful reconnection handling
-- **Security**: No vulnerabilities found in web interface security audit
-- **WASH Integration**: <2 second transition time between terminal and web
+### Achieved
+- Round-trip latency: <50ms
+- Concurrent sessions: 100+ tested
+- Real-time multi-user editing with conflict resolution
+- 99.9% availability with graceful reconnection
+- No vulnerabilities in web interface security audit
+- WASH transition time: <2 seconds
 
-### Technical Validation
-- **LiveView Implementation**: Full terminal functionality in web browser
-- **WebSocket Channel**: High-performance real-time communication
-- **Presence System**: Accurate user tracking and cursor synchronization
-- **Rate Limiting**: Effective protection against abuse and DoS attacks
-- **Session Management**: Secure session handling with automatic cleanup
+## Alternatives Considered
 
-### User Experience Validation
-- **Responsiveness**: Smooth terminal interactions comparable to native terminals
-- **Collaboration**: Intuitive multi-user interface with clear presence indicators
-- **Cross-platform**: Consistent experience across different browsers and devices
-- **Accessibility**: Web interface supports screen readers and keyboard navigation
+**Static server-side rendering** -- no real-time interaction.
+
+**Pure WebSocket implementation** -- more complex than LiveView, worse Phoenix integration.
+
+**SPA** -- requires separate API server and complex state sync.
+
+**VNC/screen sharing** -- high latency, poor UX, no integration.
+
+LiveView gives us the best balance of performance, developer experience, and feature richness while building on Phoenix's proven real-time infrastructure.
 
 ## References
 
-- [Terminal LiveView Implementation](../../lib/raxol_web/live/terminal_live.ex)
-- [WebSocket Channel](../../lib/raxol_web/channels/terminal_channel.ex) 
+- [Terminal LiveView](../../lib/raxol_web/live/terminal_live.ex)
+- [WebSocket Channel](../../lib/raxol_web/channels/terminal_channel.ex)
 - [Phoenix Presence](../../lib/raxol_web/presence.ex)
 - [WASH Session Bridge](../../lib/raxol/web/session_bridge.ex)
-- [Web Interface Guide](../WEB_INTERFACE_GUIDE.md)
-- [Phoenix LiveView Documentation](https://hexdocs.pm/phoenix_live_view/)
-
-## Alternative Approaches Considered
-
-### 1. **Static Server-Side Rendering**
-- **Rejected**: No real-time interaction or collaborative features
-- **Reason**: Terminal applications require real-time bidirectional communication
-
-### 2. **Pure WebSocket Implementation**
-- **Rejected**: More complex to implement and maintain than LiveView
-- **Reason**: LiveView provides higher-level abstractions and better Phoenix integration
-
-### 3. **Single Page Application (SPA)**  
-- **Rejected**: Requires separate API server and complex state synchronization
-- **Reason**: LiveView provides simpler full-stack solution with better real-time capabilities
-
-### 4. **VNC/Screen Sharing Approach**
-- **Rejected**: High latency, poor user experience, no integration capabilities
-- **Reason**: Need native web integration, not screen sharing
-
-The Phoenix LiveView integration provides the optimal balance of performance, developer experience, and feature richness for modern web-based terminal interfaces while leveraging Phoenix's proven real-time capabilities.
+- [Phoenix LiveView Docs](https://hexdocs.pm/phoenix_live_view/)
 
 ---
 
-**Decision Date**: 2025-05-20 (Retroactive)  
-**Implementation Completed**: 2025-08-10  
-**Impact**: Enables universal terminal access and real-time collaboration through modern web interfaces
+**Decision Date**: 2025-05-20 (Retroactive)
+**Implementation Completed**: 2025-08-10

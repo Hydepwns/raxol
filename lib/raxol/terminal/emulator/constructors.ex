@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
         Raxol.Terminal.Config.Manager.start_link(width: width, height: height)
       )
 
-    command_pid = get_pid(Raxol.Terminal.Command.Manager.start_link([]))
+    command_pid = get_pid(Raxol.Terminal.Commands.Manager.start_link([]))
     cursor_manager_pid = get_pid(Manager.start_link([]))
     window_manager_pid = get_pid(Raxol.Terminal.Window.Manager.start_link([]))
     mode_manager = ModeManager.new()
@@ -153,7 +153,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
         )
       )
 
-    command_pid = get_pid(Raxol.Terminal.Command.Manager.start_link(opts))
+    command_pid = get_pid(Raxol.Terminal.Commands.Manager.start_link(opts))
     cursor_manager_pid = get_pid(Manager.start_link(opts))
     window_manager_pid = get_pid(Raxol.Terminal.Window.Manager.start_link(opts))
     mode_manager = ModeManager.new()
