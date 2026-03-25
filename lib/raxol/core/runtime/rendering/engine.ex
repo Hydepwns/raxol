@@ -161,6 +161,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
          false <- is_nil(view),
          {:ok, positioned_elements} <- safe_apply_layout(view, state),
          :ok <- update_dispatcher_view_tree(state.dispatcher_pid, view),
+         :ok <- update_dispatcher_layout(state.dispatcher_pid, positioned_elements),
          :continue <- agent_short_circuit(state),
          {:ok, cells} <- safe_render_to_cells(positioned_elements, theme),
          {:ok, final_cells} <- safe_apply_plugin_transforms(cells, state),
@@ -675,6 +676,15 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   defp update_dispatcher_view_tree(_, _), do: :ok
+
+  # Send positioned elements to Dispatcher for mouse hit testing
+  defp update_dispatcher_layout(dispatcher_pid, positioned_elements)
+       when is_pid(dispatcher_pid) do
+    GenServer.cast(dispatcher_pid, {:update_layout, positioned_elements})
+    :ok
+  end
+
+  defp update_dispatcher_layout(_, _), do: :ok
 
   # Functional wrapper for dispatcher plugin manager updates
   defp update_plugin_manager_in_dispatcher(dispatcher_pid, updated_manager)

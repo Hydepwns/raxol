@@ -35,6 +35,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
               current_theme_id: :default,
               command_module: Raxol.Core.Runtime.Command,
               view_tree: nil,
+              layout: [],
               rendering_engine: nil
   end
 
@@ -112,7 +113,24 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   @doc """
   Handles an application-level event and updates the application state.
   """
+  def handle_event(
+        %Event{type: :mouse, data: %{action: :press, x: x, y: y}} = event,
+        %State{} = state
+      ) do
+    case hit_test(x, y, state.layout) do
+      {:click, message} ->
+        process_app_update(state, message, event)
+
+      :miss ->
+        do_handle_event(event, state)
+    end
+  end
+
   def handle_event(event, %State{} = state) do
+    do_handle_event(event, state)
+  end
+
+  defp do_handle_event(event, state) do
     case try_bubble_event(event, state) do
       {:handled, {:message, message}} ->
         process_app_update(state, message, event)
@@ -408,6 +426,11 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   @impl true
   def handle_manager_cast({:update_view_tree, view_tree}, state) do
     {:noreply, %{state | view_tree: view_tree}}
+  end
+
+  @impl true
+  def handle_manager_cast({:update_layout, positioned_elements}, state) do
+    {:noreply, %{state | layout: positioned_elements}}
   end
 
   def handle_manager_cast(msg, state) do
@@ -728,4 +751,27 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       end
     end)
   end
+
+  # --- Mouse hit testing ---
+
+  # Walk positioned elements (last drawn = topmost) looking for a clickable
+  # element whose bounding box contains (x, y).
+  defp hit_test(_x, _y, []), do: :miss
+
+  defp hit_test(x, y, elements) when is_list(elements) do
+    # Reverse so last-drawn (topmost) element is checked first
+    elements
+    |> Enum.reverse()
+    |> Enum.find_value(:miss, fn el ->
+      with %{x: ex, y: ey, width: ew, height: eh} <- el,
+           true <- x >= ex and x < ex + ew and y >= ey and y < ey + eh,
+           %{attrs: %{on_click: handler}} when not is_nil(handler) <- el do
+        {:click, handler}
+      else
+        _ -> nil
+      end
+    end)
+  end
+
+  defp hit_test(_x, _y, _), do: :miss
 end
