@@ -58,6 +58,10 @@ Working examples: `counter.exs`, `getting_started/todo_app.exs`, `apps/todo_app.
 
 Agent examples: `agents/code_review_agent.exs` (single agent with shell commands), `agents/agent_team.exs` (coordinator + worker team pattern).
 
+Sensor examples: `sensor_hud_demo.exs` (3 mock sensors with gauge, sparkline, threat HUD widgets).
+
+Adaptive examples: `adaptive_ui_demo.exs` (behavior tracking, layout recommendations, feedback loop).
+
 ### Development
 
 ```bash
@@ -117,6 +121,19 @@ lib/raxol/
 │   ├── renderer/    # Core rendering primitives (layout, views)
 │   ├── runtime/     # Plugin system, lifecycle, event management
 │   └── *_compat.ex  # Compatibility layers (Buffer, Renderer, Style, Box)
+├── adaptive/        # Self-evolving interface (behavior tracking, layout recommendations)
+│   ├── behavior_tracker.ex    # GenServer: pilot interaction recording + windowed aggregation
+│   ├── layout_recommender.ex  # GenServer: rule-based layout change recommendations
+│   ├── layout_transition.ex   # Pure functional layout interpolation (lerp + easing)
+│   ├── feedback_loop.ex       # GenServer: accept/reject tracking + accuracy computation
+│   └── supervisor.ex          # one_for_one: BehaviorTracker, LayoutRecommender, FeedbackLoop
+├── sensor/          # Sensor fusion and HUD rendering
+│   ├── behaviour.ex # Sensor behaviour + Reading struct
+│   ├── feed.ex      # GenServer: polling, buffering, error escalation
+│   ├── fusion.ex    # GenServer: batching, weighted averaging, thresholds
+│   ├── hud.ex       # Pure functional HUD widgets (gauge, sparkline, threat, minimap)
+│   └── supervisor.ex # rest_for_one: Registry + DynSup + Fusion
+├── swarm/           # Distributed subsystem (CRDTs, node monitoring, topology)
 ├── performance/     # Performance monitoring, profiling, caching
 ├── live_view/       # Phoenix LiveView integration (terminal + browser bridge)
 └── effects/         # Visual effects (CursorTrail, etc.)
@@ -252,7 +269,7 @@ mix usage_rules.docs Enum.zip/1
 
 ## Searching Documentation
 
-You should also consult the documentation of any tools you are using, early and often. The best
+You should also consult the documentation of any tools you are using, early and often. The best 
 way to accomplish this is to use the `usage_rules.search_docs` mix task. Once you have
 found what you are looking for, use the links in the search results to get more detail. For example:
 
