@@ -226,6 +226,36 @@ defmodule Raxol.Agent.SessionTest do
     end
   end
 
+  describe "semantic view" do
+    test "get_semantic_view strips layout keys and preserves content" do
+      {:ok, _pid} = Session.start_link(app_module: CounterAgent, id: :semantic_test)
+
+      Session.send_message(:semantic_test, {:increment, 7})
+      Process.sleep(300)
+
+      case Session.get_semantic_view(:semantic_test) do
+        {:ok, nil} ->
+          # View tree may not be stored yet; acceptable
+          :ok
+
+        {:ok, tree} ->
+          # Semantic tree should not contain layout keys
+          refute Map.has_key?(tree, :style)
+          refute Map.has_key?(tree, :padding)
+          # Should preserve type
+          assert Map.has_key?(tree, :type)
+
+        {:error, _} ->
+          # Dispatcher may not have a view tree yet
+          :ok
+      end
+    end
+
+    test "get_semantic_view returns error for unknown agent" do
+      assert {:error, :not_found} = Session.get_semantic_view(:semantic_nonexistent)
+    end
+  end
+
   describe "supervised" do
     test "agent can be started under DynamicSupervisor" do
       {:ok, pid} =

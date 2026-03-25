@@ -62,6 +62,14 @@ defmodule Raxol.Agent.Session do
     end
   end
 
+  @doc "Read the agent's view as a semantic tree (layout keys stripped)."
+  def get_semantic_view(agent_id) do
+    case Registry.lookup(Raxol.Agent.Registry, agent_id) do
+      [{pid, _}] -> GenServer.call(pid, :get_semantic_view)
+      [] -> {:error, :not_found}
+    end
+  end
+
   @impl true
   def init(opts) do
     app_module = Keyword.fetch!(opts, :app_module)
@@ -125,6 +133,26 @@ defmodule Raxol.Agent.Session do
       case get_dispatcher(state.lifecycle_pid) do
         nil -> {:error, :no_dispatcher}
         pid -> GenServer.call(pid, :get_view_tree)
+      end
+
+    {:reply, result, state}
+  end
+
+  @impl true
+  def handle_call(:get_semantic_view, _from, state) do
+    result =
+      case get_dispatcher(state.lifecycle_pid) do
+        nil ->
+          {:error, :no_dispatcher}
+
+        pid ->
+          case GenServer.call(pid, :get_view_tree) do
+            {:ok, tree} ->
+              {:ok, Raxol.Agent.SemanticTree.from_view_tree(tree)}
+
+            error ->
+              error
+          end
       end
 
     {:reply, result, state}

@@ -161,6 +161,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
          false <- is_nil(view),
          {:ok, positioned_elements} <- safe_apply_layout(view, state),
          :ok <- update_dispatcher_view_tree(state.dispatcher_pid, view),
+         :continue <- agent_short_circuit(state),
          {:ok, cells} <- safe_render_to_cells(positioned_elements, theme),
          {:ok, final_cells} <- safe_apply_plugin_transforms(cells, state),
          {:ok, new_state} <- safe_render_to_backend(final_cells, state) do
@@ -168,6 +169,10 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     else
       true ->
         # Headless agent -- no view/1, skip rendering
+        {:ok, state}
+
+      {:agent, :skip_cells} ->
+        # Agent environment -- view tree stored in Dispatcher, skip cell pipeline
         {:ok, state}
 
       {:error, reason} ->
@@ -181,6 +186,10 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         {:error, {:render_error, reason}, state}
     end
   end
+
+  # Agents only need the view tree in Dispatcher; skip the cell pipeline.
+  defp agent_short_circuit(%{environment: :agent}), do: {:agent, :skip_cells}
+  defp agent_short_circuit(_state), do: :continue
 
   # Safe view retrieval using functional error handling
   defp safe_get_view(app_module, model) do
