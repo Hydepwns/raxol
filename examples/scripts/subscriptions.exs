@@ -27,7 +27,10 @@ defmodule SubscriptionsExample do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       _ ->
@@ -39,7 +42,8 @@ defmodule SubscriptionsExample do
   def view(model) do
     column style: %{padding: 1, gap: 1} do
       [
-        box title: "Subscriptions Example", style: %{border: :single, padding: 1} do
+        box title: "Subscriptions Example",
+            style: %{border: :single, padding: 1} do
           column style: %{gap: 1} do
             [
               text("Little ticks (100ms): #{model.little_ticks}"),
@@ -64,6 +68,7 @@ end
 Raxol.Core.Runtime.Log.info("SubscriptionsExample: Starting...")
 {:ok, pid} = Raxol.start_link(SubscriptionsExample, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

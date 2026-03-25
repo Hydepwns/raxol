@@ -34,6 +34,7 @@ defmodule FormValidationExample do
       # Submit with Enter
       %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}} ->
         errors = validate(model)
+
         if errors == %{} do
           {%{model | submitted: true, errors: %{}}, []}
         else
@@ -49,18 +50,31 @@ defmodule FormValidationExample do
         {%{model | field => new_val, errors: new_errors, submitted: false}, []}
 
       # Type characters into active field
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "q", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}} when is_binary(ch) ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
+      when is_binary(ch) ->
         if String.printable?(ch) do
           field = model.active_field
           current = Map.get(model, field, "")
           new_errors = Map.delete(model.errors, field)
-          {%{model | field => current <> ch, errors: new_errors, submitted: false}, []}
+
+          {%{
+             model
+             | field => current <> ch,
+               errors: new_errors,
+               submitted: false
+           }, []}
         else
           {model, []}
         end
@@ -121,9 +135,14 @@ defmodule FormValidationExample do
 
     errors =
       cond do
-        String.trim(model.email) == "" -> Map.put(errors, :email, "required")
-        not String.contains?(model.email, "@") -> Map.put(errors, :email, "must contain @")
-        true -> errors
+        String.trim(model.email) == "" ->
+          Map.put(errors, :email, "required")
+
+        not String.contains?(model.email, "@") ->
+          Map.put(errors, :email, "must contain @")
+
+        true ->
+          errors
       end
 
     errors
@@ -133,6 +152,7 @@ end
 Raxol.Core.Runtime.Log.info("FormValidationExample: Starting...")
 {:ok, pid} = Raxol.start_link(FormValidationExample, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

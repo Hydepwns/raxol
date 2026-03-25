@@ -29,19 +29,29 @@ defmodule EditorExample do
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :delete}} ->
         {before, after_cursor} = String.split_at(model.text, model.cursor)
-        new_after = if after_cursor == "", do: "", else: String.slice(after_cursor, 1..-1//1)
+
+        new_after =
+          if after_cursor == "",
+            do: "",
+            else: String.slice(after_cursor, 1..-1//1)
+
         {%{model | text: before <> new_after}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :key_left}} ->
         {%{model | cursor: max(0, model.cursor - 1)}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :key_right}} ->
-        {%{model | cursor: min(String.length(model.text), model.cursor + 1)}, []}
+        {%{model | cursor: min(String.length(model.text), model.cursor + 1)},
+         []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}} when is_binary(ch) ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
+      when is_binary(ch) ->
         if String.printable?(ch) do
           {before, after_cursor} = String.split_at(model.text, model.cursor)
           new_text = before <> ch <> after_cursor
@@ -78,6 +88,7 @@ end
 Raxol.Core.Runtime.Log.info("EditorExample: Starting...")
 {:ok, pid} = Raxol.start_link(EditorExample, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

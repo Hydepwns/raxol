@@ -21,7 +21,10 @@ defmodule HelloWorld do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       _ ->
@@ -33,7 +36,12 @@ defmodule HelloWorld do
   def view(model) do
     column style: %{padding: 2, gap: 1, align_items: :center} do
       [
-        box style: %{border: :single, padding: 1, width: 30, justify_content: :center} do
+        box style: %{
+              border: :single,
+              padding: 1,
+              width: 30,
+              justify_content: :center
+            } do
           text(model.message, style: [:bold])
         end,
         text("Press 'q' to quit.")
@@ -48,6 +56,7 @@ end
 Raxol.Core.Runtime.Log.info("HelloWorld: Starting...")
 {:ok, pid} = Raxol.start_link(HelloWorld, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

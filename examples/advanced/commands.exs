@@ -31,7 +31,10 @@ defmodule CommandsExample do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       _ ->
@@ -44,7 +47,9 @@ defmodule CommandsExample do
     column style: %{padding: 1, gap: 1} do
       [
         text("Async Commands Demo", style: [:bold]),
-        text("Press 't' to start a background task | Pending: #{model.pending}"),
+        text(
+          "Press 't' to start a background task | Pending: #{model.pending}"
+        ),
         box title: "Results (last 10)", style: %{border: :single, padding: 1} do
           column do
             if model.results == [] do
@@ -71,6 +76,7 @@ end
 Raxol.Core.Runtime.Log.info("CommandsExample: Starting...")
 {:ok, pid} = Raxol.start_link(CommandsExample, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

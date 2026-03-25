@@ -19,7 +19,10 @@ defmodule AdvancedLayoutExample do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       _ ->
@@ -34,7 +37,8 @@ defmodule AdvancedLayoutExample do
         text("Advanced Layout Example", style: [:bold]),
         row style: %{gap: 2} do
           [
-            box title: "Sidebar", style: %{border: :single, padding: 1, width: 20} do
+            box title: "Sidebar",
+                style: %{border: :single, padding: 1, width: 20} do
               column style: %{gap: 1} do
                 [
                   button("Nav 1", on_click: :nav1),
@@ -74,6 +78,7 @@ end
 Raxol.Core.Runtime.Log.info("AdvancedLayoutExample: Starting...")
 {:ok, pid} = Raxol.start_link(AdvancedLayoutExample, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

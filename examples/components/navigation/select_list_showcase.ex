@@ -10,9 +10,21 @@ defmodule Raxol.Examples.SelectListShowcase do
   require Raxol.Core.Runtime.Log
 
   @fruits [
-    "Apple", "Banana", "Cherry", "Date", "Elderberry",
-    "Fig", "Grape", "Honeydew", "Imbe", "Jackfruit",
-    "Kiwi", "Lemon", "Mango", "Nectarine", "Orange"
+    "Apple",
+    "Banana",
+    "Cherry",
+    "Date",
+    "Elderberry",
+    "Fig",
+    "Grape",
+    "Honeydew",
+    "Imbe",
+    "Jackfruit",
+    "Kiwi",
+    "Lemon",
+    "Mango",
+    "Nectarine",
+    "Orange"
   ]
 
   @impl true
@@ -39,7 +51,10 @@ defmodule Raxol.Examples.SelectListShowcase do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       _ ->
@@ -57,7 +72,8 @@ defmodule Raxol.Examples.SelectListShowcase do
     column style: %{padding: 1, gap: 1} do
       [
         text("Select List Showcase", style: [:bold]),
-        box title: "Pick a fruit (Up/Down + Enter)", style: %{border: :single, padding: 1} do
+        box title: "Pick a fruit (Up/Down + Enter)",
+            style: %{border: :single, padding: 1} do
           column do
             Enum.map(visible_items, fn {fruit, idx} ->
               prefix = if idx == model.cursor, do: "> ", else: "  "

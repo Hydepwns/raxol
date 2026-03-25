@@ -33,7 +33,10 @@ defmodule DashboardExample do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       _ ->
@@ -50,7 +53,8 @@ defmodule DashboardExample do
         end,
         row do
           [
-            box title: "Nav", style: %{border: :single, width: 15, padding: 1} do
+            box title: "Nav",
+                style: %{border: :single, width: 15, padding: 1} do
               column style: %{gap: 1} do
                 [
                   text(indicator(:overview, model) <> "Overview"),
@@ -59,7 +63,8 @@ defmodule DashboardExample do
                 ]
               end
             end,
-            box title: panel_title(model.selected), style: %{border: :single, padding: 1} do
+            box title: panel_title(model.selected),
+                style: %{border: :single, padding: 1} do
               case model.selected do
                 :overview ->
                   column style: %{gap: 1} do
@@ -72,10 +77,13 @@ defmodule DashboardExample do
 
                 :stats ->
                   mem = :erlang.memory(:total)
+
                   column style: %{gap: 1} do
                     [
                       text("Memory: #{div(mem, 1_048_576)} MB"),
-                      text("Schedulers: #{:erlang.system_info(:schedulers_online)}"),
+                      text(
+                        "Schedulers: #{:erlang.system_info(:schedulers_online)}"
+                      ),
                       text("Tick: #{model.tick}")
                     ]
                   end
@@ -113,6 +121,7 @@ end
 Raxol.Core.Runtime.Log.info("DashboardExample: Starting...")
 {:ok, pid} = Raxol.start_link(DashboardExample, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

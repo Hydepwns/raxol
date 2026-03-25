@@ -36,7 +36,10 @@ defmodule SystemMonitor do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "s"}} ->
@@ -63,7 +66,9 @@ defmodule SystemMonitor do
   def view(model) do
     column style: %{padding: 1, gap: 1} do
       [
-        text("System Monitor | [s]overview [p]processes [m]memory [q]quit", style: [:bold]),
+        text("System Monitor | [s]overview [p]processes [m]memory [q]quit",
+          style: [:bold]
+        ),
         case model.view do
           :overview -> render_overview(model)
           :processes -> render_processes(model)
@@ -89,7 +94,9 @@ defmodule SystemMonitor do
     box title: "Overview", style: %{border: :single, padding: 1} do
       column style: %{gap: 1} do
         [
-          text("Memory:     #{format_bytes(total)} total | #{format_bytes(procs)} processes"),
+          text(
+            "Memory:     #{format_bytes(total)} total | #{format_bytes(procs)} processes"
+          ),
           text("Processes:  #{proc_count}"),
           text("Schedulers: #{schedulers}"),
           text("Tick:       #{model.tick}"),
@@ -104,13 +111,16 @@ defmodule SystemMonitor do
     procs =
       Process.list()
       |> Enum.map(fn pid ->
-        info = Process.info(pid, [:registered_name, :memory, :reductions, :status])
+        info =
+          Process.info(pid, [:registered_name, :memory, :reductions, :status])
+
         if info do
           name =
             case Keyword.get(info, :registered_name) do
               nil -> inspect(pid)
               n -> inspect(n)
             end
+
           %{
             name: name,
             memory: Keyword.get(info, :memory, 0),
@@ -124,21 +134,27 @@ defmodule SystemMonitor do
       |> Enum.drop(model.proc_offset)
       |> Enum.take(15)
 
-    box title: "Top Processes (by memory)", style: %{border: :single, padding: 1} do
+    box title: "Top Processes (by memory)",
+        style: %{border: :single, padding: 1} do
       column do
-        [text("Name                          Memory       Reds         Status", style: [:bold])] ++
-        Enum.map(procs, fn p ->
-          name = String.pad_trailing(String.slice(p.name, 0..28), 30)
-          mem = String.pad_trailing(format_bytes(p.memory), 13)
-          reds = String.pad_trailing(Integer.to_string(p.reductions), 13)
-          text("#{name}#{mem}#{reds}#{p.status}")
-        end)
+        [
+          text("Name                          Memory       Reds         Status",
+            style: [:bold]
+          )
+        ] ++
+          Enum.map(procs, fn p ->
+            name = String.pad_trailing(String.slice(p.name, 0..28), 30)
+            mem = String.pad_trailing(format_bytes(p.memory), 13)
+            reds = String.pad_trailing(Integer.to_string(p.reductions), 13)
+            text("#{name}#{mem}#{reds}#{p.status}")
+          end)
       end
     end
   end
 
   defp render_memory(model) do
     mem = :erlang.memory()
+
     items = [
       {"Total", Keyword.get(mem, :total, 0)},
       {"Processes", Keyword.get(mem, :processes, 0)},
@@ -168,15 +184,22 @@ defmodule SystemMonitor do
   defp spark_char(pct) when pct >= 12, do: Enum.at(@spark, 1)
   defp spark_char(_), do: Enum.at(@spark, 0)
 
-  defp format_bytes(bytes) when bytes >= 1_073_741_824, do: "#{Float.round(bytes / 1_073_741_824, 1)} GB"
-  defp format_bytes(bytes) when bytes >= 1_048_576, do: "#{Float.round(bytes / 1_048_576, 1)} MB"
-  defp format_bytes(bytes) when bytes >= 1024, do: "#{Float.round(bytes / 1024, 1)} KB"
+  defp format_bytes(bytes) when bytes >= 1_073_741_824,
+    do: "#{Float.round(bytes / 1_073_741_824, 1)} GB"
+
+  defp format_bytes(bytes) when bytes >= 1_048_576,
+    do: "#{Float.round(bytes / 1_048_576, 1)} MB"
+
+  defp format_bytes(bytes) when bytes >= 1024,
+    do: "#{Float.round(bytes / 1024, 1)} KB"
+
   defp format_bytes(bytes), do: "#{bytes} B"
 end
 
 Raxol.Core.Runtime.Log.info("SystemMonitor: Starting...")
 {:ok, pid} = Raxol.start_link(SystemMonitor, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

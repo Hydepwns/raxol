@@ -42,7 +42,10 @@ defmodule Raxol.Examples.ProgressBarDemo do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       _ ->
@@ -85,7 +88,10 @@ defmodule Raxol.Examples.ProgressBarDemo do
   defp render_bar(label, pct, filled_ch, empty_ch) do
     filled = trunc(pct / 100 * @bar_width)
     empty = @bar_width - filled
-    bar = String.duplicate(filled_ch, filled) <> String.duplicate(empty_ch, empty)
+
+    bar =
+      String.duplicate(filled_ch, filled) <> String.duplicate(empty_ch, empty)
+
     text("#{label} [#{bar}] #{pct}%")
   end
 end

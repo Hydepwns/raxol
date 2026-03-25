@@ -23,7 +23,10 @@ defmodule EventViewerExample do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       %Raxol.Core.Events.Event{} = event ->
@@ -42,7 +45,8 @@ defmodule EventViewerExample do
       [
         text("Event Viewer", style: [:bold]),
         text("Events received: #{model.count}"),
-        box title: "Recent Events (newest first)", style: %{border: :single, padding: 1} do
+        box title: "Recent Events (newest first)",
+            style: %{border: :single, padding: 1} do
           column do
             if model.events == [] do
               [text("Waiting for events... (press any key)")]
@@ -67,6 +71,7 @@ end
 Raxol.Core.Runtime.Log.info("EventViewerExample: Starting...")
 {:ok, pid} = Raxol.start_link(EventViewerExample, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

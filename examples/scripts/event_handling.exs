@@ -27,10 +27,14 @@ defmodule EventHandlingExample do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}} when is_binary(ch) ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
+      when is_binary(ch) ->
         {%{model | last_key: ch}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: key}} ->
@@ -74,6 +78,7 @@ end
 Raxol.Core.Runtime.Log.info("EventHandlingExample: Starting...")
 {:ok, pid} = Raxol.start_link(EventHandlingExample, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

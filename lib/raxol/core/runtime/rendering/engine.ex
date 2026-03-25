@@ -161,7 +161,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
          false <- is_nil(view),
          {:ok, positioned_elements} <- safe_apply_layout(view, state),
          :ok <- update_dispatcher_view_tree(state.dispatcher_pid, view),
-         :ok <- update_dispatcher_layout(state.dispatcher_pid, positioned_elements),
+         :ok <-
+           update_dispatcher_layout(state.dispatcher_pid, positioned_elements),
          :continue <- agent_short_circuit(state),
          {:ok, cells} <- safe_render_to_cells(positioned_elements, theme),
          {:ok, final_cells} <- safe_apply_plugin_transforms(cells, state),

@@ -41,14 +41,23 @@ defmodule Examples.Editor.NanoClone do
   def update(message, model) do
     case message do
       # Save
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "o", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "o", ctrl: true}
+      } ->
         {save_file(model), []}
 
       # Quit
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "x", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "x", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       # Navigation
@@ -71,7 +80,8 @@ defmodule Examples.Editor.NanoClone do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :backspace}} ->
         {delete_backward(model), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}} when is_binary(ch) ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
+      when is_binary(ch) ->
         if String.printable?(ch) do
           {insert_char(model, ch), []}
         else
@@ -100,6 +110,7 @@ defmodule Examples.Editor.NanoClone do
             |> Enum.with_index(model.scroll)
             |> Enum.map(fn {line, idx} ->
               num = String.pad_leading("#{idx + 1}", 4)
+
               cursor_marker =
                 if idx == model.row do
                   {before, after_c} = String.split_at(line, model.col)
@@ -107,6 +118,7 @@ defmodule Examples.Editor.NanoClone do
                 else
                   "#{num} #{line}"
                 end
+
               text(cursor_marker)
             end)
           end
@@ -124,6 +136,7 @@ defmodule Examples.Editor.NanoClone do
   defp move(model, :up) do
     new_row = max(0, model.row - 1)
     line = Enum.at(model.lines, new_row, "")
+
     %{model | row: new_row, col: min(model.col, String.length(line))}
     |> adjust_scroll()
   end
@@ -131,6 +144,7 @@ defmodule Examples.Editor.NanoClone do
   defp move(model, :down) do
     new_row = min(length(model.lines) - 1, model.row + 1)
     line = Enum.at(model.lines, new_row, "")
+
     %{model | row: new_row, col: min(model.col, String.length(line))}
     |> adjust_scroll()
   end
@@ -179,11 +193,19 @@ defmodule Examples.Editor.NanoClone do
       model.row > 0 ->
         prev = Enum.at(model.lines, model.row - 1, "")
         curr = Enum.at(model.lines, model.row, "")
+
         lines =
           model.lines
           |> List.replace_at(model.row - 1, prev <> curr)
           |> List.delete_at(model.row)
-        %{model | lines: lines, row: model.row - 1, col: String.length(prev), modified: true}
+
+        %{
+          model
+          | lines: lines,
+            row: model.row - 1,
+            col: String.length(prev),
+            modified: true
+        }
         |> adjust_scroll()
 
       true ->
@@ -207,9 +229,15 @@ defmodule Examples.Editor.NanoClone do
 
   defp save_file(model) do
     content = Enum.join(model.lines, "\n")
+
     case File.write(model.filename, content) do
       :ok ->
-        %{model | modified: false, status: "Saved #{model.filename} (#{byte_size(content)} bytes)"}
+        %{
+          model
+          | modified: false,
+            status: "Saved #{model.filename} (#{byte_size(content)} bytes)"
+        }
+
       {:error, reason} ->
         %{model | status: "Error: #{inspect(reason)}"}
     end
@@ -220,6 +248,7 @@ end
 Raxol.Core.Runtime.Log.info("NanoClone: Starting...")
 {:ok, pid} = Raxol.start_link(Examples.Editor.NanoClone, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

@@ -563,7 +563,10 @@ defmodule CockpitDemo do
   defp chaos_panel(model) do
     m = model.chaos
     in_crash = model.tick >= @crash_tick and model.tick < @recover_tick
-    flash = model.tick >= @crash_tick and model.tick < @crash_tick + @crash_flash_duration
+
+    flash =
+      model.tick >= @crash_tick and
+        model.tick < @crash_tick + @crash_flash_duration
 
     cond do
       flash ->

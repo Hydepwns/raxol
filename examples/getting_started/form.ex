@@ -23,15 +23,23 @@ defmodule Raxol.Examples.FormDemo do
         {%{model | form_data: new_data}, []}
 
       :submit ->
-        Raxol.Core.Runtime.Log.info("Form submitted: #{inspect(model.form_data)}")
+        Raxol.Core.Runtime.Log.info(
+          "Form submitted: #{inspect(model.form_data)}"
+        )
+
         {%{model | submitted: true}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
-        next = if model.active_field == :username, do: :password, else: :username
+        next =
+          if model.active_field == :username, do: :password, else: :username
+
         {%{model | active_field: next}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}} ->
-        Raxol.Core.Runtime.Log.info("Form submitted: #{inspect(model.form_data)}")
+        Raxol.Core.Runtime.Log.info(
+          "Form submitted: #{inspect(model.form_data)}"
+        )
+
         {%{model | submitted: true}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :backspace}} ->
@@ -41,14 +49,21 @@ defmodule Raxol.Examples.FormDemo do
         new_data = Map.put(model.form_data, field, new_val)
         {%{model | form_data: new_data, submitted: false}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}} when is_binary(ch) ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
+      when is_binary(ch) ->
         if String.printable?(ch) do
           field = model.active_field
           current = Map.get(model.form_data, field, "")
-          display = if field == :password, do: current <> ch, else: current <> ch
+
+          display =
+            if field == :password, do: current <> ch, else: current <> ch
+
           new_data = Map.put(model.form_data, field, display)
           {%{model | form_data: new_data, submitted: false}, []}
         else
@@ -86,7 +101,12 @@ defmodule Raxol.Examples.FormDemo do
   defp render_field(label, field, model) do
     active = model.active_field == field
     value = Map.get(model.form_data, field, "")
-    display = if field == :password, do: String.duplicate("*", String.length(value)), else: value
+
+    display =
+      if field == :password,
+        do: String.duplicate("*", String.length(value)),
+        else: value
+
     prefix = if active, do: "> ", else: "  "
     cursor = if active, do: "_", else: ""
 

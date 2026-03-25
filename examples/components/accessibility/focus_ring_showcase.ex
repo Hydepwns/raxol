@@ -47,7 +47,10 @@ defmodule Raxol.Examples.FocusRingShowcase do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       _ ->
@@ -62,7 +65,9 @@ defmodule Raxol.Examples.FocusRingShowcase do
     # Simulate focus ring with text characters
     ring = if model.high_contrast, do: "##", else: ">>"
     pulse = if rem(model.demo_tick, 2) == 0, do: ring, else: "  "
-    indicator = if model.reduced_motion or animation == :none, do: ring, else: pulse
+
+    indicator =
+      if model.reduced_motion or animation == :none, do: ring, else: pulse
 
     column style: %{padding: 1, gap: 1} do
       [

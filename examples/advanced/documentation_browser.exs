@@ -37,12 +37,24 @@ defmodule DocBrowser do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :key_up}} ->
         new_cursor = max(0, model.cursor - 1)
         content = fetch_docs(Enum.at(model.modules, new_cursor))
-        {%{model | cursor: new_cursor, scroll: 0, content_lines: String.split(content, "\n")}, []}
+
+        {%{
+           model
+           | cursor: new_cursor,
+             scroll: 0,
+             content_lines: String.split(content, "\n")
+         }, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :key_down}} ->
         new_cursor = min(length(model.modules) - 1, model.cursor + 1)
         content = fetch_docs(Enum.at(model.modules, new_cursor))
-        {%{model | cursor: new_cursor, scroll: 0, content_lines: String.split(content, "\n")}, []}
+
+        {%{
+           model
+           | cursor: new_cursor,
+             scroll: 0,
+             content_lines: String.split(content, "\n")
+         }, []}
 
       # Content scrolling
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}} ->
@@ -56,7 +68,10 @@ defmodule DocBrowser do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       # Resize
@@ -123,6 +138,7 @@ end
 Raxol.Core.Runtime.Log.info("DocBrowser: Starting...")
 {:ok, pid} = Raxol.start_link(DocBrowser, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

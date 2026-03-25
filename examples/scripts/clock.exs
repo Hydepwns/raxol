@@ -24,7 +24,10 @@ defmodule ClockExample do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
         {model, [command(:quit)]}
 
       _ ->
@@ -39,7 +42,13 @@ defmodule ClockExample do
 
     column style: %{padding: 2, gap: 1, align_items: :center} do
       [
-        box title: "Clock", style: %{border: :single, padding: 1, width: 30, justify_content: :center} do
+        box title: "Clock",
+            style: %{
+              border: :single,
+              padding: 1,
+              width: 30,
+              justify_content: :center
+            } do
           column style: %{gap: 1, align_items: :center} do
             [
               text(time_str, style: [:bold]),
@@ -61,6 +70,7 @@ end
 Raxol.Core.Runtime.Log.info("ClockExample: Starting...")
 {:ok, pid} = Raxol.start_link(ClockExample, [])
 ref = Process.monitor(pid)
+
 receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end
