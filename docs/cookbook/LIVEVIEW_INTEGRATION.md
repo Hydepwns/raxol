@@ -1,6 +1,6 @@
 # LiveView Integration
 
-Recipes for rendering terminals in Phoenix LiveView.
+There are two ways to put a terminal in a browser. The **TEA bridge** (`Raxol.LiveView.TEALive`) hosts a full TEA app -- same `init/update/view` as the terminal version, rendered to HTML via PubSub. The **raw Buffer** approach gives you direct control: build a `Buffer`, convert it to HTML, and push it to the LiveView yourself. Most of the recipes below use the raw approach since it's simpler to show in isolation.
 
 ## Basic Terminal Embedding
 
@@ -316,6 +316,12 @@ end
 ```
 
 ---
+
+## Examples
+
+- `examples/liveview/tea_counter_live.ex` -- TEA app rendered in the browser
+- `examples/liveview/basic_terminal_live.ex` -- Raw buffer approach
+- `examples/liveview/01_simple_terminal/` -- Step-by-step simple terminal
 
 ## Next Steps
 

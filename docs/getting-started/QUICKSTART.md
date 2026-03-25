@@ -1,6 +1,11 @@
 # Quickstart Guide
 
-Build a terminal UI app with Raxol in 5 minutes.
+Let's build a terminal UI app. By the end of this page you'll have a working counter in your terminal.
+
+What you'll learn:
+- The four callbacks every Raxol app implements
+- How to handle keyboard input and button clicks
+- How the View DSL builds layouts
 
 ## Install
 
@@ -93,6 +98,13 @@ receive do
   {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end
 ```
+
+**What's happening here?**
+
+- `init/1` returns a plain map -- that's your entire app state
+- `update/2` pattern-matches on messages and returns `{new_state, commands}` -- the empty list `[]` means "no side effects"
+- `view/1` builds the UI from state using the View DSL macros (`column`, `row`, `box`)
+- `command(:quit)` is a built-in command that tells the runtime to shut down
 
 Save as `lib/my_app.ex` and run:
 
@@ -202,3 +214,8 @@ iex -S mix run examples/dev/hot_reload_demo.exs
 ```bash
 mix run examples/components/process_component_demo.exs
 ```
+
+Working examples to study:
+- `examples/getting_started/counter.exs` -- the counter from this page
+- `examples/demo.exs` -- flagship demo with dashboard, sparklines, live stats
+- `examples/apps/todo_app.ex` -- a complete todo list app

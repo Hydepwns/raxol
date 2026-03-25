@@ -1,6 +1,10 @@
 # Building Apps
 
-Practical patterns for TEA applications beyond the basics.
+You've built a counter. Now let's look at patterns you'll reach for in real apps.
+
+> All code below assumes `use Raxol.Core.Runtime.Application`, which aliases
+> `Raxol.Core.Events.Event` as `Event`. You can write `%Event{...}` instead of
+> the full module path.
 
 ## State Design
 
@@ -34,9 +38,9 @@ def init(_ctx), do: %{mode: :browsing, items: [], selected: nil}
 
 def update(msg, %{mode: :browsing} = model) do
   case msg do
-    %{type: :key, data: %{key: :enter}} ->
+    %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}} ->
       {%{model | mode: :editing}, []}
-    %{type: :key, data: %{key: :char, char: "/"}} ->
+    %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "/"}} ->
       {%{model | mode: :searching, filter: ""}, []}
     _ -> {model, []}
   end
@@ -44,9 +48,9 @@ end
 
 def update(msg, %{mode: :searching} = model) do
   case msg do
-    %{type: :key, data: %{key: :escape}} ->
+    %Raxol.Core.Events.Event{type: :key, data: %{key: :escape}} ->
       {%{model | mode: :browsing, filter: ""}, []}
-    %{type: :key, data: %{key: :char, char: c}} ->
+    %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: c}} ->
       {%{model | filter: model.filter <> c}, []}
     _ -> {model, []}
   end
@@ -73,12 +77,12 @@ end
 
 def update(msg, model) do
   case msg do
-    %{type: :key, data: %{key: :down}} ->
+    %Raxol.Core.Events.Event{type: :key, data: %{key: :down}} ->
       new_cursor = min(model.cursor + 1, length(model.items) - 1)
       scroll = adjust_scroll(new_cursor, model.scroll_offset, model.visible_rows)
       {%{model | cursor: new_cursor, scroll_offset: scroll}, []}
 
-    %{type: :key, data: %{key: :up}} ->
+    %Raxol.Core.Events.Event{type: :key, data: %{key: :up}} ->
       new_cursor = max(model.cursor - 1, 0)
       scroll = adjust_scroll(new_cursor, model.scroll_offset, model.visible_rows)
       {%{model | cursor: new_cursor, scroll_offset: scroll}, []}
@@ -112,6 +116,8 @@ def view(model) do
   end
 end
 ```
+
+See `examples/apps/todo_app.ex` for a working scrollable list.
 
 ### Periodic data refresh
 
@@ -173,7 +179,7 @@ end
 ```elixir
 @panels [:files, :preview, :log]
 
-def update(%{type: :key, data: %{key: :tab}}, model) do
+def update(%Raxol.Core.Events.Event{type: :key, data: %{key: :tab}}, model) do
   current = Enum.find_index(@panels, &(&1 == model.panel))
   next = Enum.at(@panels, rem(current + 1, length(@panels)))
   {%{model | panel: next}, []}
@@ -228,6 +234,8 @@ end
 text("Memory: #{sparkline(model.memory_history)}", fg: :green)
 ```
 
+See `examples/demo.exs` for sparklines in action.
+
 ### Progress bar helper
 
 ```elixir
@@ -247,22 +255,22 @@ text("[#{progress_bar(75, 100, 30)}] 75%", fg: :cyan)
 ### Vim-style keybindings
 
 ```elixir
-def update(%{type: :key, data: %{key: :char, char: "j"}}, model) do
+def update(%Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}}, model) do
   # Down
   {%{model | cursor: min(model.cursor + 1, length(model.items) - 1)}, []}
 end
 
-def update(%{type: :key, data: %{key: :char, char: "k"}}, model) do
+def update(%Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}}, model) do
   # Up
   {%{model | cursor: max(model.cursor - 1, 0)}, []}
 end
 
-def update(%{type: :key, data: %{key: :char, char: "g", ctrl: false}}, model) do
+def update(%Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "g", ctrl: false}}, model) do
   # Go to top
   {%{model | cursor: 0}, []}
 end
 
-def update(%{type: :key, data: %{key: :char, char: "G"}}, model) do
+def update(%Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "G"}}, model) do
   # Go to bottom
   {%{model | cursor: length(model.items) - 1}, []}
 end
@@ -273,7 +281,7 @@ end
 Track a key buffer for multi-key commands:
 
 ```elixir
-def update(%{type: :key, data: %{key: :char, char: c}}, model) do
+def update(%Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: c}}, model) do
   chord = model.key_buffer <> c
 
   case chord do

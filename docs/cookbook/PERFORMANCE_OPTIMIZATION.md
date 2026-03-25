@@ -246,6 +246,10 @@ end
 
 ---
 
+## Benchmarks
+
+See `docs/bench/README.md` for the full benchmark suite comparing Raxol against Ratatui, Bubble Tea, and Textual.
+
 ## Next Steps
 
 - [LiveView Cookbook](./LIVEVIEW_INTEGRATION.md)

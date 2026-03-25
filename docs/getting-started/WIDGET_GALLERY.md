@@ -2,7 +2,11 @@
 
 Raxol ships with 23 widgets organized by category. All are available via the View DSL after `use Raxol.Core.Runtime.Application`.
 
+For a working starting point, see [`examples/getting_started/counter.exs`](../../examples/getting_started/counter.exs). For a full showcase of all widget categories, see [`examples/apps/showcase_app.exs`](../../examples/apps/showcase_app.exs). For a dashboard-style demo with live stats, see [`examples/demo.exs`](../../examples/demo.exs).
+
 ## Layout
+
+Layout widgets arrange things on screen. These are the building blocks of every Raxol UI.
 
 ### column
 
@@ -62,6 +66,8 @@ end
 
 ## Text & Display
 
+Widgets for showing information to the user.
+
 ### text
 
 Styled text content.
@@ -118,11 +124,15 @@ Component module: `Raxol.UI.Components.Display.Viewport`
 
 Hierarchical tree view with expand/collapse.
 
+Use the component module directly -- not available as a View DSL function.
+
 Component module: `Raxol.UI.Components.Display.Tree`
 
 ### status_bar
 
 Fixed status bar, typically at the bottom of the screen.
+
+Use the component module directly -- not available as a View DSL function.
 
 Component module: `Raxol.UI.Components.Display.StatusBar`
 
@@ -147,6 +157,8 @@ Renders markdown text with formatting.
 Component module: `Raxol.UI.Components.MarkdownRenderer`
 
 ## Input
+
+Widgets that accept user interaction.
 
 ### button
 
@@ -203,41 +215,62 @@ Component module: `Raxol.UI.Components.Input.MultiLineInput`
 
 Tab navigation component.
 
+```elixir
+tabs(items: ["Tab 1", "Tab 2"], selected: 0)
+```
+
 Component module: `Raxol.UI.Components.Input.Tabs`
 
 ### menu
 
 Dropdown or context menu.
 
+Use the component module directly -- not available as a View DSL function.
+
 Component module: `Raxol.UI.Components.Input.Menu`
 
 ## Overlay
+
+Widgets that float above the main content.
 
 ### modal
 
 Modal dialog with customizable content and actions.
 
+```elixir
+modal(visible: true, title: "Confirm", children: [text("Are you sure?")])
+```
+
 Component module: `Raxol.UI.Components.Modal`
 
 ## Progress
 
-### progress/bar
+Show how far along something is.
 
-Standard horizontal progress bar.
+The View DSL exposes a single `progress/1` function. The underlying component
+modules (`Progress.Bar`, `Progress.Spinner`, `Progress.Circular`) can also be
+used directly when you need more control.
 
-Component module: `Raxol.UI.Components.Progress.Bar`
+### progress
 
-### progress/spinner
+Standard horizontal progress bar. This is the DSL entry point.
 
-Animated spinner indicator.
+```elixir
+progress(value: 65, max: 100)
+```
 
-Component module: `Raxol.UI.Components.Progress.Spinner`
+See [`examples/components/displays/progress_bar_demo.ex`](../../examples/components/displays/progress_bar_demo.ex).
 
-### progress/circular
+### Progress.Bar, Progress.Spinner, Progress.Circular
 
-Circular progress indicator.
+These are component modules used directly -- they are **not** separate View DSL
+functions.
 
-Component module: `Raxol.UI.Components.Progress.Circular`
+| Module | Description |
+|---|---|
+| `Raxol.UI.Components.Progress.Bar` | Standard horizontal bar |
+| `Raxol.UI.Components.Progress.Spinner` | Animated spinner indicator |
+| `Raxol.UI.Components.Progress.Circular` | Circular progress indicator |
 
 ## Advanced
 
@@ -275,10 +308,17 @@ rendered = TextInput.render(state, context)
 ## Running Examples
 
 ```bash
+# Simple TEA counter (good starting point)
+mix run examples/getting_started/counter.exs
+
 # Showcase with all widget categories
 mix run examples/apps/showcase_app.exs
 
+# Dashboard demo with live stats (flagship demo)
+mix run examples/demo.exs
+
 # Individual widget demos
+mix run examples/components/displays/progress_bar_demo.ex
 mix run examples/components/displays/viewport_demo.exs
 mix run examples/components/displays/code_block_demo.exs
 mix run examples/components/displays/markdown_demo.exs

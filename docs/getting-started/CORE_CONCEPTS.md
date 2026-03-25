@@ -2,7 +2,24 @@
 
 The fundamentals of Raxol's architecture.
 
-## What is a Buffer?
+## The Elm Architecture (TEA)
+
+Most Raxol apps use TEA -- four callbacks that form a loop:
+
+- **`init/1`** -- Set up your initial state (the "model")
+- **`update/2`** -- Handle messages: keyboard events, button clicks, timers. Returns `{new_model, commands}`
+- **`view/1`** -- Build the UI from state. Called after every update
+- **`subscribe/1`** -- Set up recurring events (timers, data feeds)
+
+State flows one direction. Views are pure functions of state. Side effects go through commands. If you've used Elm, Redux, or Bubble Tea, this will feel familiar.
+
+See the [Quickstart](QUICKSTART.md) for a full walkthrough, or jump to `examples/getting_started/counter.exs` for the code.
+
+---
+
+## Buffers: The Canvas Underneath
+
+Most Raxol apps never touch buffers directly -- the View DSL and layout engine handle all of this for you. But understanding the layer underneath helps when debugging, optimizing, or building custom renderers.
 
 A buffer is a 2D grid of cells representing terminal content -- a canvas for text.
 
@@ -270,15 +287,15 @@ end
 
 ## Common Questions
 
-### Why buffers instead of direct rendering?
+### Why not just write ANSI codes directly?
 
 Buffers enable diffing. By maintaining the full state, we can calculate minimal updates instead of redrawing everything.
 
-### Why not use ANSI escape codes directly?
+### Can I skip buffers entirely?
 
 You can! Buffers are optional. But they give you automatic diffing, state inspection, HTML rendering, and testing utilities.
 
-### How does this compare to other TUI frameworks?
+### How does Raxol compare to ncurses, Bubble Tea, etc.?
 
 | Feature | Raxol | ncurses | blessed |
 |---------|-------|---------|---------|
@@ -287,7 +304,7 @@ You can! Buffers are optional. But they give you automatic diffing, state inspec
 | Web Support | Yes (LiveView) | No | No |
 | Dependencies | 0 (core) | System libs | Many |
 
-### Can I mix Raxol with other libraries?
+### Can I use Raxol alongside other libraries?
 
 Yes. Raxol.Core is just data structures:
 
@@ -303,7 +320,10 @@ MyCustomRenderer.render(output)
 
 ## Next Steps
 
+- [Quickstart](QUICKSTART.md) - Build your first app
 - [Migration Guide](./MIGRATION_FROM_DIY.md) - Integrate Raxol with existing code
 - [Cookbook](../cookbook/README.md) - Practical patterns and recipes
 - [API Reference](../core/BUFFER_API.md) - Complete function documentation
 - [Architecture](../core/ARCHITECTURE.md) - Implementation details
+
+For a full working example showing dashboard layout, live stats, and OTP differentiators, see `examples/demo.exs`.

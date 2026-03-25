@@ -1,6 +1,7 @@
 # SSH Deployment
 
 Serve Raxol apps over SSH. Each connection gets its own process -- one app, many users.
+This is one of the things that falls out naturally from running on the BEAM -- Erlang's SSH server does the heavy lifting.
 
 ## Quick Start
 
@@ -33,9 +34,9 @@ defmodule MySshApp do
     case msg do
       :increment -> {%{model | count: model.count + 1}, []}
       :decrement -> {%{model | count: model.count - 1}, []}
-      %{type: :key, data: %{key: :char, char: "q"}} -> {model, [command(:quit)]}
-      %{type: :key, data: %{key: :char, char: "+"}} -> update(:increment, model)
-      %{type: :key, data: %{key: :char, char: "-"}} -> update(:decrement, model)
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} -> {model, [command(:quit)]}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} -> update(:increment, model)
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}} -> update(:decrement, model)
       _ -> {model, []}
     end
   end
@@ -70,6 +71,8 @@ Run it:
 ```bash
 mix run lib/my_ssh_app.exs
 ```
+
+This is a simplified version of `examples/ssh/ssh_counter.exs`.
 
 ## How It Works
 
