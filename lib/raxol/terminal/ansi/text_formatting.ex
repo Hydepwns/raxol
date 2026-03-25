@@ -330,7 +330,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
     def reset_bold(style), do: %{style | bold: false, faint: false}
     def reset_faint(style), do: %{style | faint: false}
-    def reset_italic(style), do: %{style | italic: false}
+    def reset_italic(style), do: %{style | italic: false, fraktur: false}
 
     def reset_underline(style),
       do: %{style | underline: false, double_underline: false}

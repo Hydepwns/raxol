@@ -9,8 +9,8 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
   @doc """
   Renders the SelectList component.
   """
-  @spec render(SelectList.t(), map()) :: iolist()
-  def render(state, _context \\ %{}) do
+  @spec render(SelectList.t(), map()) :: map()
+  def render(state, context \\ %{}) do
     visible_options = get_visible_options(state)
 
     rendered_options =
@@ -34,8 +34,23 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         []
       end
 
-    (search_bar ++ rendered_options ++ pagination_info)
-    |> Enum.filter(&(&1 != nil))
+    children =
+      (search_bar ++ rendered_options ++ pagination_info)
+      |> Enum.filter(&(&1 != nil))
+
+    container_style =
+      if state.has_focus do
+        Raxol.UI.FocusHelper.focus_style(state.style || %{}, context)
+      else
+        state.style || %{}
+      end
+
+    %{
+      type: :container,
+      id: state[:id],
+      style: container_style,
+      children: children
+    }
   end
 
   # Private functions
@@ -71,12 +86,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         %{}
       end
 
-    %{
-      type: :text,
-      props: %{
-        content: apply_style("#{prefix}#{label}\n", style)
-      }
-    }
+    Raxol.View.Components.text(
+      content: apply_style("#{prefix}#{label}\n", style)
+    )
   end
 
   defp render_search_bar(state) do
@@ -94,12 +106,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
       ]
       |> IO.iodata_to_binary()
 
-    %{
-      type: :text,
-      props: %{
-        content: content
-      }
-    }
+    Raxol.View.Components.text(content: content)
   end
 
   defp render_pagination_info(state) do
@@ -118,12 +125,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
       ]
       |> IO.iodata_to_binary()
 
-    %{
-      type: :text,
-      props: %{
-        content: content
-      }
-    }
+    Raxol.View.Components.text(content: content)
   end
 
   defp get_option_label(option) when is_binary(option), do: option

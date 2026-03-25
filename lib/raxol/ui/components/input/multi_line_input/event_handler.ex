@@ -50,16 +50,16 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
 
       # Arrow keys with shift (selection)
       {:up, [:shift]} ->
-        {:update, {:select_and_move, :up}, state}
+        {:update, {:selection_move, :up}, state}
 
       {:down, [:shift]} ->
-        {:update, {:select_and_move, :down}, state}
+        {:update, {:selection_move, :down}, state}
 
       {:left, [:shift]} ->
-        {:update, {:select_and_move, :left}, state}
+        {:update, {:selection_move, :left}, state}
 
       {:right, [:shift]} ->
-        {:update, {:select_and_move, :right}, state}
+        {:update, {:selection_move, :right}, state}
 
       # Home/End
       {:home, []} ->
@@ -83,16 +83,16 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
 
       # Ctrl combinations
       {"a", [:ctrl]} ->
-        {:update, :select_all, state}
+        {:update, {:select_all}, state}
 
       {"c", [:ctrl]} ->
-        {:update, :copy, state}
+        {:update, {:copy}, state}
 
       {"v", [:ctrl]} ->
-        {:update, :paste, state}
+        {:update, {:paste}, state}
 
       {"x", [:ctrl]} ->
-        {:update, :cut, state}
+        {:update, {:cut}, state}
 
       {"z", [:ctrl]} ->
         {:update, :undo, state}
@@ -100,9 +100,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
       {"y", [:ctrl]} ->
         {:update, :redo, state}
 
-      # Tab
+      # Tab - insert tab character
       {:tab, []} ->
-        {:update, {:handle_tab}, state}
+        {:update, {:input, ?\t}, state}
 
       # Default case - no action for unknown key events
       _ ->

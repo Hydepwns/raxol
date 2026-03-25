@@ -17,7 +17,6 @@
 defmodule DocumentationBrowser do
   # Use correct behaviour and DSL
   use Raxol.Core.Runtime.Application
-  import Raxol.View.Elements
 
   alias Raxol.Core.Commands.Command
   alias Raxol.Core.Events.Event

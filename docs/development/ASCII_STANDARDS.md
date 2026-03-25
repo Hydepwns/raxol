@@ -1,71 +1,69 @@
 # ASCII Icon Standards
 
-Standardized ASCII replacements for emojis to maintain professional, terse tone.
+Bracketed ASCII tags replace emojis throughout the codebase. Keeps output professional and grep-friendly.
 
-## Icon Patterns
+## Patterns
 
-Use bracketed notation for consistency:
+### Status
+- `[OK]` -- success, completed
+- `[WARN]` -- warning
+- `[ERROR]` -- error
+- `[CRIT]` -- critical
+- `[INFO]` -- informational
 
-### Status Icons
-- `[OK]` - Success, completed
-- `[WARN]` - Warning condition
-- `[ERROR]` - Error condition
-- `[CRIT]` - Critical condition
-- `[INFO]` - Informational
+### Actions
+- `[EDIT]` -- edit
+- `[DEL]` -- delete
+- `[SAVE]` -- save
+- `[LOAD]` -- load
+- `[COPY]` -- copy
 
-### Action Icons
-- `[EDIT]` - Edit action
-- `[DEL]` - Delete action
-- `[SAVE]` - Save action
-- `[LOAD]` - Load action
-- `[COPY]` - Copy action
-
-### System Icons
-- `[SYS]` - System related
-- `[CPU]` - CPU related
-- `[MEM]` - Memory related
-- `[DISK]` - Disk related
-- `[NET]` - Network related
+### System
+- `[SYS]` -- system
+- `[CPU]` -- CPU
+- `[MEM]` -- memory
+- `[DISK]` -- disk
+- `[NET]` -- network
 
 ### UI Components
-- `[BTN]` - Button
-- `[FORM]` - Form
-- `[TEXT]` - Text
-- `[DATA]` - Data display
-- `[CHART]` - Chart/graph
-- `[NAV]` - Navigation
+- `[BTN]` -- button
+- `[FORM]` -- form
+- `[TEXT]` -- text
+- `[DATA]` -- data display
+- `[CHART]` -- chart/graph
+- `[NAV]` -- navigation
 
 ### Development
-- `[TEST]` - Testing related
-- `[BENCH]` - Benchmarking
-- `[PERF]` - Performance
-- `[BUILD]` - Build process
+- `[TEST]` -- testing
+- `[BENCH]` -- benchmarking
+- `[PERF]` -- performance
+- `[BUILD]` -- build process
 
-### Workflow/Process
-- `[ANALYSIS]` - Analysis process
-- `[REPORT]` - Report generation
-- `[REGR]` - Regression
-- `[IMPR]` - Improvement
+### Workflow
+- `[ANALYSIS]` -- analysis
+- `[REPORT]` -- report generation
+- `[REGR]` -- regression
+- `[IMPR]` -- improvement
 
-## Guidelines
+## Rules
 
-1. Always use uppercase within brackets
-2. Keep icons short (3-6 characters)
-3. Use descriptive but concise naming
-4. Maintain consistency across the codebase
-5. Prefer functional over decorative icons
+1. Uppercase inside brackets.
+2. Keep tags short: 3-6 characters.
+3. Descriptive but concise.
+4. Consistent across the codebase.
+5. Functional, not decorative.
 
-## Examples
+## Example
 
-### Before
+Before:
 ```
-🚀 Running benchmarks...
-✅ Tests passed
-⚠️ Warning: Memory usage high
-🔥 Performance critical
+[rocket] Running benchmarks...
+[check] Tests passed
+[warning] Warning: Memory usage high
+[fire] Performance critical
 ```
 
-### After
+After:
 ```
 [BENCH] Running benchmarks...
 [OK] Tests passed

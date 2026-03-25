@@ -101,7 +101,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       state = %{state | cursor_pos: 5}
 
       {_updated_state, _commands} =
-        TextInput.handle_event(state, Event.key("X"), %{})
+        TextInput.handle_event(Event.key("X"), state, %{})
 
       assert_receive {:callback, "HelloX"}
     end
@@ -110,7 +110,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       state = create_component_state()
 
       {updated_state, commands} =
-        TextInput.handle_event(state, %{type: :unknown_event}, %{})
+        TextInput.handle_event(%{type: :unknown_event}, state, %{})
 
       assert updated_state == state
       assert commands == []
@@ -120,7 +120,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       state = create_component_state()
 
       {updated_state, _commands} =
-        TextInput.handle_event(state, %{type: :focus}, %{})
+        TextInput.handle_event(%{type: :focus}, state, %{})
 
       assert updated_state.focused == true
     end
@@ -130,7 +130,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       state = %{state | focused: true}
 
       {updated_state, _commands} =
-        TextInput.handle_event(state, %{type: :blur}, %{})
+        TextInput.handle_event(%{type: :blur}, state, %{})
 
       assert updated_state.focused == false
     end
@@ -141,7 +141,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       state = %{state | cursor_pos: 5}
 
       {updated_state, _commands} =
-        TextInput.handle_event(state, Event.key("X"), %{})
+        TextInput.handle_event(Event.key("X"), state, %{})
 
       assert updated_state.value == "HelloX"
       assert updated_state.cursor_pos == 6
@@ -152,7 +152,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       state = %{state | cursor_pos: 5}
 
       {updated_state, _commands} =
-        TextInput.handle_event(state, Event.key(:backspace), %{})
+        TextInput.handle_event(Event.key(:backspace), state, %{})
 
       assert updated_state.value == "Hell"
       assert updated_state.cursor_pos == 4
@@ -163,7 +163,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       state = %{state | cursor_pos: 2}
 
       {updated_state, _commands} =
-        TextInput.handle_event(state, Event.key(:delete), %{})
+        TextInput.handle_event(Event.key(:delete), state, %{})
 
       assert updated_state.value == "Helo"
       # Cursor stays
@@ -173,19 +173,19 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
     test "handles cursor movement" do
       state = create_component_state(%{value: "Hello"})
       state = %{state | cursor_pos: 2}
-      {state_left, _} = TextInput.handle_event(state, Event.key(:left), %{})
+      {state_left, _} = TextInput.handle_event(Event.key(:left), state, %{})
       assert state_left.cursor_pos == 1
 
       {state_right, _} =
-        TextInput.handle_event(state_left, Event.key(:right), %{})
+        TextInput.handle_event(Event.key(:right), state_left, %{})
 
       assert state_right.cursor_pos == 2
 
       {state_home, _} =
-        TextInput.handle_event(state_right, Event.key(:home), %{})
+        TextInput.handle_event(Event.key(:home), state_right, %{})
 
       assert state_home.cursor_pos == 0
-      {state_end, _} = TextInput.handle_event(state_home, Event.key(:end), %{})
+      {state_end, _} = TextInput.handle_event(Event.key(:end), state_home, %{})
       # End of "Hello"
       assert state_end.cursor_pos == 5
     end
@@ -196,7 +196,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       state = create_component_state(%{value: "Submit me", on_submit: callback})
 
       {_updated_state, _commands} =
-        TextInput.handle_event(state, Event.key(:enter), %{})
+        TextInput.handle_event(Event.key(:enter), state, %{})
 
       assert_receive {:submitted, "Submit me"}
     end
@@ -206,7 +206,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       state = %{state | focused: true}
 
       {updated_state, _commands} =
-        TextInput.handle_event(state, Event.key(:escape), %{})
+        TextInput.handle_event(Event.key(:escape), state, %{})
 
       assert updated_state.focused == false
     end
@@ -216,7 +216,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       mouse_event = Event.mouse(:left, {0, 0})
 
       {updated_state, _commands} =
-        TextInput.handle_event(state, mouse_event, %{})
+        TextInput.handle_event(mouse_event, state, %{})
 
       assert updated_state.focused == true
     end
@@ -226,7 +226,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       state = %{state | cursor_pos: 5}
 
       {updated_state, _commands} =
-        TextInput.handle_event(state, Event.key("6"), %{})
+        TextInput.handle_event(Event.key("6"), state, %{})
 
       # Should not change
       assert updated_state.value == "12345"
@@ -237,13 +237,13 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       validate = fn value -> String.match?(value, ~r/^\d*$/) end
       state = create_component_state(%{value: "123", validator: validate})
       state = %{state | cursor_pos: 3}
-      {valid_state, _} = TextInput.handle_event(state, Event.key("4"), %{})
+      {valid_state, _} = TextInput.handle_event(Event.key("4"), state, %{})
       assert valid_state.value == "1234"
       # Pass the updated state to the next event
       valid_state = %{valid_state | cursor_pos: 4}
 
       {invalid_state, _} =
-        TextInput.handle_event(valid_state, Event.key("a"), %{})
+        TextInput.handle_event(Event.key("a"), valid_state, %{})
 
       # Should not change
       assert invalid_state.value == "1234"
@@ -254,20 +254,20 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
     test "renders input box with text" do
       state = create_component_state(%{value: "Hello"})
       elements = TextInput.render(state, %{})
-      assert elements.text == "Hello"
-      assert elements.type == :text_input
+      assert elements.content == "Hello"
+      assert elements.type == :text
     end
 
     test "renders placeholder when value is empty" do
       state = create_component_state(%{placeholder: "Type here"})
       elements = TextInput.render(state, %{})
-      assert elements.text == "Type here"
+      assert elements.content == "Type here"
     end
 
     test "renders password input as masked" do
       state = create_component_state(%{value: "secret", mask_char: "*"})
       elements = TextInput.render(state, %{})
-      assert elements.text == "******"
+      assert elements.content == "******"
     end
 
     test "renders cursor when focused" do

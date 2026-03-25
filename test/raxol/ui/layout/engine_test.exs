@@ -331,5 +331,76 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert dimensions.width == 100
       assert dimensions.height == 1
     end
+
+    test "measures button with new View DSL format (top-level :text key)" do
+      element = %{type: :button, text: "Click Me", id: nil, on_click: :click, style: []}
+      available_space = %{width: 80, height: 24}
+
+      dimensions = Engine.measure_element(element, available_space)
+
+      assert dimensions.width == String.length("Click Me") + 4
+      assert dimensions.height == 3
+    end
+
+    test "measures checkbox with new View DSL format (top-level :label key)" do
+      element = %{type: :checkbox, label: "Accept", checked: false, style: []}
+
+      dimensions = Engine.measure_element(element)
+
+      # checkbox width = 4 + label length
+      assert dimensions.width == 4 + String.length("Accept")
+      assert dimensions.height == 1
+    end
+
+    test "measures text_input with new View DSL format (top-level :value key)" do
+      element = %{type: :text_input, value: "hello", placeholder: "Type...", style: []}
+      available_space = %{width: 80, height: 24}
+
+      dimensions = Engine.measure_element(element, available_space)
+
+      assert dimensions.width == String.length("hello") + 4
+      assert dimensions.height == 3
+    end
+
+    test "measures text_input with empty value uses placeholder" do
+      element = %{type: :text_input, value: "", placeholder: "Search...", style: []}
+      available_space = %{width: 80, height: 24}
+
+      dimensions = Engine.measure_element(element, available_space)
+
+      assert dimensions.width == String.length("Search...") + 4
+      assert dimensions.height == 3
+    end
+
+    test "measures box with new View DSL format and explicit dimensions" do
+      element = %{
+        type: :box,
+        children: [%{type: :text, content: "child", style: %{}}],
+        width: 30,
+        height: 10,
+        style: []
+      }
+
+      dimensions = Engine.measure_element(element)
+
+      assert dimensions.width == 30
+      assert dimensions.height == 10
+    end
+
+    test "measures box with new View DSL format without explicit dimensions" do
+      element = %{
+        type: :box,
+        children: [%{type: :text, content: "child", style: %{}}],
+        padding: {1, 1, 1, 1},
+        border: :single,
+        style: []
+      }
+
+      dimensions = Engine.measure_element(element)
+
+      # Falls through to container measurement (column-like)
+      assert is_integer(dimensions.width)
+      assert is_integer(dimensions.height)
+    end
   end
 end

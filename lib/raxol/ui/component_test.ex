@@ -153,8 +153,9 @@ defmodule Raxol.UI.ComponentTest do
     state = result.state
 
     new_state =
-      if function_exported?(component, :handle_event, 2) do
-        case component.handle_event(event, state) do
+      if function_exported?(component, :handle_event, 3) do
+        case component.handle_event(event, state, %{}) do
+          {s, _commands} when is_map(s) -> s
           {:noreply, s} -> s
           {:reply, _msg, s} -> s
           s when is_map(s) -> s

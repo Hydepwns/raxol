@@ -44,117 +44,144 @@ defmodule Raxol.PubSub do
   @spec server_name() :: Raxol.PubSub
   def server_name, do: __MODULE__
 
-  @doc """
-  Subscribe to a topic on the Raxol PubSub server.
+  if Code.ensure_loaded?(Phoenix.PubSub) do
+    @doc """
+    Subscribe to a topic on the Raxol PubSub server.
 
-  This is a convenience wrapper around `Phoenix.PubSub.subscribe/2`.
+    This is a convenience wrapper around `Phoenix.PubSub.subscribe/2`.
 
-  ## Example
+    ## Example
 
-      Raxol.PubSub.subscribe("terminal:events")
-  """
-  @spec subscribe(String.t()) :: :ok
-  def subscribe(topic) when is_binary(topic) do
-    Phoenix.PubSub.subscribe(__MODULE__, topic)
-  end
+        Raxol.PubSub.subscribe("terminal:events")
+    """
+    @spec subscribe(String.t()) :: :ok
+    def subscribe(topic) when is_binary(topic) do
+      Phoenix.PubSub.subscribe(__MODULE__, topic)
+    end
 
-  @doc """
-  Subscribe to a topic with options.
+    @doc """
+    Subscribe to a topic with options.
 
-  ## Options
+    ## Options
 
-    - `:metadata` - Metadata to include with the subscription
+      - `:metadata` - Metadata to include with the subscription
 
-  ## Example
+    ## Example
 
-      Raxol.PubSub.subscribe("terminal:events", metadata: %{user_id: 123})
-  """
-  @spec subscribe(String.t(), keyword()) :: :ok
-  def subscribe(topic, opts) when is_binary(topic) and is_list(opts) do
-    Phoenix.PubSub.subscribe(__MODULE__, topic, opts)
-  end
+        Raxol.PubSub.subscribe("terminal:events", metadata: %{user_id: 123})
+    """
+    @spec subscribe(String.t(), keyword()) :: :ok
+    def subscribe(topic, opts) when is_binary(topic) and is_list(opts) do
+      Phoenix.PubSub.subscribe(__MODULE__, topic, opts)
+    end
 
-  @doc """
-  Unsubscribe from a topic.
+    @doc """
+    Unsubscribe from a topic.
 
-  ## Example
+    ## Example
 
-      Raxol.PubSub.unsubscribe("terminal:events")
-  """
-  @spec unsubscribe(String.t()) :: :ok
-  def unsubscribe(topic) when is_binary(topic) do
-    Phoenix.PubSub.unsubscribe(__MODULE__, topic)
-  end
+        Raxol.PubSub.unsubscribe("terminal:events")
+    """
+    @spec unsubscribe(String.t()) :: :ok
+    def unsubscribe(topic) when is_binary(topic) do
+      Phoenix.PubSub.unsubscribe(__MODULE__, topic)
+    end
 
-  @doc """
-  Broadcast a message to all subscribers of a topic.
+    @doc """
+    Broadcast a message to all subscribers of a topic.
 
-  ## Example
+    ## Example
 
-      Raxol.PubSub.broadcast("terminal:events", {:key_press, :enter})
-  """
-  @spec broadcast(String.t(), term()) :: :ok
-  def broadcast(topic, message) when is_binary(topic) do
-    Phoenix.PubSub.broadcast(__MODULE__, topic, message)
-  end
+        Raxol.PubSub.broadcast("terminal:events", {:key_press, :enter})
+    """
+    @spec broadcast(String.t(), term()) :: :ok
+    def broadcast(topic, message) when is_binary(topic) do
+      Phoenix.PubSub.broadcast(__MODULE__, topic, message)
+    end
 
-  @doc """
-  Broadcast a message to all subscribers except the sender.
+    @doc """
+    Broadcast a message to all subscribers except the sender.
 
-  ## Example
+    ## Example
 
-      Raxol.PubSub.broadcast_from(self(), "terminal:events", {:output, "Hello"})
-  """
-  @spec broadcast_from(pid(), String.t(), term()) :: :ok
-  def broadcast_from(from_pid, topic, message)
-      when is_pid(from_pid) and is_binary(topic) do
-    Phoenix.PubSub.broadcast_from(__MODULE__, from_pid, topic, message)
-  end
+        Raxol.PubSub.broadcast_from(self(), "terminal:events", {:output, "Hello"})
+    """
+    @spec broadcast_from(pid(), String.t(), term()) :: :ok
+    def broadcast_from(from_pid, topic, message)
+        when is_pid(from_pid) and is_binary(topic) do
+      Phoenix.PubSub.broadcast_from(__MODULE__, from_pid, topic, message)
+    end
 
-  @doc """
-  Broadcast a message locally (only to subscribers on this node).
+    @doc """
+    Broadcast a message locally (only to subscribers on this node).
 
-  ## Example
+    ## Example
 
-      Raxol.PubSub.local_broadcast("terminal:events", {:local_event, data})
-  """
-  @spec local_broadcast(String.t(), term()) :: :ok
-  def local_broadcast(topic, message) when is_binary(topic) do
-    Phoenix.PubSub.local_broadcast(__MODULE__, topic, message)
-  end
+        Raxol.PubSub.local_broadcast("terminal:events", {:local_event, data})
+    """
+    @spec local_broadcast(String.t(), term()) :: :ok
+    def local_broadcast(topic, message) when is_binary(topic) do
+      Phoenix.PubSub.local_broadcast(__MODULE__, topic, message)
+    end
 
-  @doc """
-  Broadcast a message locally except to the sender.
+    @doc """
+    Broadcast a message locally except to the sender.
 
-  ## Example
+    ## Example
 
-      Raxol.PubSub.local_broadcast_from(self(), "terminal:events", {:output, "data"})
-  """
-  @spec local_broadcast_from(pid(), String.t(), term()) :: :ok
-  def local_broadcast_from(from_pid, topic, message)
-      when is_pid(from_pid) and is_binary(topic) do
-    Phoenix.PubSub.local_broadcast_from(__MODULE__, from_pid, topic, message)
-  end
+        Raxol.PubSub.local_broadcast_from(self(), "terminal:events", {:output, "data"})
+    """
+    @spec local_broadcast_from(pid(), String.t(), term()) :: :ok
+    def local_broadcast_from(from_pid, topic, message)
+        when is_pid(from_pid) and is_binary(topic) do
+      Phoenix.PubSub.local_broadcast_from(__MODULE__, from_pid, topic, message)
+    end
 
-  @doc """
-  Get the child spec for starting the PubSub server.
+    @doc """
+    Get the child spec for starting the PubSub server.
 
-  This can be used in your application's supervision tree.
+    This can be used in your application's supervision tree.
 
-  ## Example
+    ## Example
 
-      children = [
-        Raxol.PubSub.child_spec([])
-      ]
+        children = [
+          Raxol.PubSub.child_spec([])
+        ]
 
-      Supervisor.start_link(children, strategy: :one_for_one)
-  """
-  @spec child_spec(keyword()) :: Supervisor.child_spec()
-  def child_spec(opts) do
-    %{
-      id: __MODULE__,
-      start: {Phoenix.PubSub, :start_link, [[name: __MODULE__] ++ opts]},
-      type: :supervisor
-    }
+        Supervisor.start_link(children, strategy: :one_for_one)
+    """
+    @spec child_spec(keyword()) :: Supervisor.child_spec()
+    def child_spec(opts) do
+      %{
+        id: __MODULE__,
+        start: {Phoenix.PubSub, :start_link, [[name: __MODULE__] ++ opts]},
+        type: :supervisor
+      }
+    end
+  else
+    def subscribe(_topic),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def subscribe(_topic, _opts),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def unsubscribe(_topic),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def broadcast(_topic, _message),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def broadcast_from(_from, _topic, _message),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def local_broadcast(_topic, _message),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def local_broadcast_from(_from, _topic, _message),
+      do: raise("Raxol.PubSub requires the :phoenix_pubsub dependency")
+
+    def child_spec(_opts) do
+      raise "Raxol.PubSub requires the :phoenix_pubsub dependency"
+    end
   end
 end

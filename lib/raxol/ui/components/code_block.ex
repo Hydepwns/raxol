@@ -2,8 +2,8 @@ defmodule Raxol.UI.Components.CodeBlock do
   @moduledoc """
   Renders a block of code with syntax highlighting.
 
-  Requires the `makeup_elixir` dependency (and potentially other lexers).
-  Uses HTML output from Makeup.
+  Uses Makeup for tokenization when available, with graceful fallback to
+  plain text when Makeup is not loaded.
   """
   use Raxol.UI.Components.Base.Component
 
@@ -12,77 +12,29 @@ defmodule Raxol.UI.Components.CodeBlock do
 
   Props:
     * `content` (required): The source code string.
-    * `language` (required): The language name (e.g., "elixir", "html").
-    * `style`: The Makeup HTML style module (e.g., `Makeup.Styles.GithubLight`). Defaults to `:github_light` style lookup.
-    * `class`: Optional CSS class for the outer `pre` tag.
+    * `language` (optional): The language name (e.g., "elixir"). Defaults to "text".
   """
   @spec render(map(), map()) :: any()
   @impl true
   def render(state, _context) do
-    _language = state[:language] || "text"
+    language = state[:language] || "text"
     code_content = state[:content] || ""
-    style_opt = state[:style]
-    # Unused for now
-    custom_class = state[:class]
-    _pre_class = Enum.join(Enum.filter(["highlight", custom_class], & &1), " ")
 
-    # Return element structure directly
-    case {Code.ensure_loaded?(Makeup),
-          Code.ensure_loaded?(Makeup.Lexers.ElixirLexer)} do
-      {true, true} ->
-        # Makeup and ElixirLexer are loaded
-        # Defaulting to PlainTextLexer as lexer_for seems unavailable/private
-        # lexer = case Makeup.Lexer.lexer_for(language) do
-        #           {:ok, l} -> l
-        #           _ -> Makeup.Lexers.PlainTextLexer
-        #         end
-        lexer = Makeup.Lexers.PlainTextLexer
+    if Code.ensure_loaded?(Makeup) do
+      lexer_opt = lexer_for_language(language)
+      opts = if lexer_opt, do: [lexer: lexer_opt], else: []
 
-        style = get_style(style_opt)
-
-        # Use Makeup.highlight/2 instead of highlight!/2
-        highlighted_html =
-          case Makeup.highlight(code_content, lexer: lexer, style: style) do
-            {:ok, html} -> html
-            # Fallback to raw code on error
-            {:error, _reason} -> code_content
-          end
-
-        # Render using text
-        Raxol.View.Components.text(content: highlighted_html)
-
-      {false, _} ->
-        # Makeup library not found
-        Raxol.View.Components.text(
-          content:
-            code_content <> "\n[CodeBlock Error: Makeup library not found.]"
-        )
-
-      {true, false} ->
-        # ElixirLexer (or potentially others) not found, but Makeup is.
-        # Try highlighting with PlainTextLexer as a fallback.
-        lexer = Makeup.Lexers.PlainTextLexer
-        # Use default style
-        style = Makeup.Styles.GithubLight
-
-        highlighted_html =
-          case Makeup.highlight(code_content, lexer: lexer, style: style) do
-            {:ok, html} -> html
-            {:error, _} -> code_content
-          end
-
-        Raxol.View.Components.text(
-          content:
-            highlighted_html <>
-              "\n[CodeBlock Warning: Language lexer not found, using plain text.]"
-        )
+      highlighted = Makeup.highlight_inner_html(code_content, opts)
+      Raxol.View.Components.text(content: strip_html_tags(highlighted))
+    else
+      Raxol.View.Components.text(content: code_content)
     end
   end
 
   @doc "Initializes the component state from props."
-  @spec init(map()) :: map()
+  @spec init(map()) :: {:ok, map()}
   @impl true
-  def init(props), do: props
+  def init(props), do: {:ok, props}
 
   @doc "Updates the component state. No updates are handled by default."
   @spec update(term(), map()) :: map()
@@ -110,19 +62,21 @@ defmodule Raxol.UI.Components.CodeBlock do
   @spec unmount(map()) :: map()
   def unmount(state), do: state
 
-  # Private helper functions
+  @lexer_map %{
+    "elixir" => Makeup.Lexers.ElixirLexer,
+    "ex" => Makeup.Lexers.ElixirLexer
+  }
 
-  defp get_style(style_opt) when is_atom(style_opt) do
-    case Code.ensure_loaded?(style_opt) do
-      true -> style_opt
-      false -> Makeup.Styles.GithubLight
-    end
+  defp lexer_for_language(language) do
+    Map.get(@lexer_map, String.downcase(language))
   end
 
-  defp get_style(_style_opt), do: Makeup.Styles.GithubLight
-
-  # Removed render_fallback/3 helper function
-
-  # Again, assumes raw_html exists in Raxol
-  # defp raw_html(assigns), do: # ... implementation depends on Raxol internals
+  defp strip_html_tags(html) do
+    html
+    |> String.replace(~r/<[^>]+>/, "")
+    |> String.replace("&lt;", "<")
+    |> String.replace("&gt;", ">")
+    |> String.replace("&amp;", "&")
+    |> String.replace("&quot;", "\"")
+  end
 end

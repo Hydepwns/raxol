@@ -5,12 +5,12 @@
 ### Testing Module Exports
 
 ```elixir
-# ✗ BAD - Can race with module compilation
+# BAD - Can race with module compilation
 test "defines function" do
   assert function_exported?(MyModule, :my_function, 1)
 end
 
-# ✓ GOOD - Ensures module is loaded first
+# GOOD - Ensures module is loaded first
 test "defines function" do
   Code.ensure_loaded!(MyModule)
   assert function_exported?(MyModule, :my_function, 1)
@@ -20,14 +20,14 @@ end
 ### Starting GenServers in Tests
 
 ```elixir
-# ✗ BAD - Manual cleanup, name conflicts
+# BAD - Manual cleanup, name conflicts
 setup do
   {:ok, pid} = MyServer.start_link(name: MyServer)
   on_exit(fn -> GenServer.stop(pid) end)
   :ok
 end
 
-# ✓ GOOD - ExUnit handles cleanup
+# GOOD - ExUnit handles cleanup
 setup do
   test_id = :erlang.unique_integer([:positive])
   start_supervised!({MyServer, name: :"MyServer_#{test_id}"})
@@ -38,12 +38,12 @@ end
 ### Testing with Dynamic Modules
 
 ```elixir
-# ✗ BAD - Modules persist across tests
+# BAD - Modules persist across tests
 test "loads plugin" do
   Code.compile_string("defmodule MyPlugin, do: ...")
 end
 
-# ✓ GOOD - Unique names and cleanup
+# GOOD - Unique names and cleanup
 setup do
   test_id = :erlang.unique_integer([:positive])
   module_name = :"TestPlugin#{test_id}"
@@ -60,7 +60,7 @@ end
 ### Async vs Sync Tests
 
 ```elixir
-# ✓ SAFE for async - Pure functions, no shared state
+# Safe for async - pure functions, no shared state
 defmodule MyPureModuleTest do
   use ExUnit.Case, async: true
 
@@ -69,7 +69,7 @@ defmodule MyPureModuleTest do
   end
 end
 
-# ✗ NOT SAFE for async - Uses named processes
+# NOT safe for async - uses named processes
 defmodule MyServerTest do
   use ExUnit.Case, async: false
 
@@ -79,9 +79,9 @@ defmodule MyServerTest do
 end
 ```
 
-## Quick Fixes Checklist
+## Flaky Test Checklist
 
-When you encounter flaky tests:
+When tests pass individually but fail in the suite:
 
 - [ ] Add `Code.ensure_loaded!` before `function_exported?` checks
 - [ ] Use unique process names: `:"ProcessName_#{:erlang.unique_integer([:positive])}"`
@@ -90,9 +90,10 @@ When you encounter flaky tests:
 - [ ] Clean up dynamic modules in `on_exit`
 - [ ] Check for shared ETS tables or registries
 
-## Common Test Smells
+## Warning Signs
 
-🚩 **Warning Signs:**
+Things that indicate isolation problems:
+
 - Tests pass individually but fail in suite
 - Failures only occur with certain seeds
 - "already_started" errors
@@ -100,13 +101,7 @@ When you encounter flaky tests:
 - Module redefinition warnings
 - Race conditions in `function_exported?` checks
 
-✅ **Good Practices:**
-- Each test is independent
-- No shared mutable state
-- Unique names for all processes
-- Explicit module loading
-- Use `start_supervised!` for process management
-- Clean up after tests
+The fix is almost always: unique names, `start_supervised!`, explicit module loading, and cleanup in `on_exit`.
 
 ## Commands
 

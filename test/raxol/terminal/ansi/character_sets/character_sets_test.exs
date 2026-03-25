@@ -103,7 +103,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
   end
 
   describe "translate_char/2" do
-    @tag :skip
     test ~c"translates character using active charset" do
       state = CharacterSets.new()
       # Test ASCII translation (no change)
@@ -122,7 +121,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
       assert value == 9472
     end
 
-    @tag :skip
     test ~c"handles single shift translation" do
       state = CharacterSets.new()
       # Set G2 to DEC Special Graphics for the test
@@ -141,7 +139,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
   end
 
   describe "translate_string/2" do
-    @tag :skip
     test ~c"translates string using active charset" do
       state = CharacterSets.new()
       # Test ASCII translation (no change)

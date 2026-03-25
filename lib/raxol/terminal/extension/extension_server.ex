@@ -7,6 +7,8 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
 
   alias Raxol.Terminal.Extension.ExtensionManager, as: Manager
 
+  @valid_extension_types [:theme, :plugin, :script, :tool, :custom]
+
   # Client API
 
   @doc """
@@ -168,61 +170,12 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
 
   @impl true
   def handle_manager_call({:load_extension, path, type, metadata}, _from, state) do
-    # Validate extension type
-    valid_types = [:theme, :plugin, :script, :tool, :custom]
-
-    if type in valid_types do
-      extension_id = generate_extension_id()
-
-      # Convert metadata to map if it's a keyword list
-      metadata_map =
-        case metadata do
-          map when is_map(map) -> map
-          list when is_list(list) -> Enum.into(list, %{})
-          _ -> %{}
-        end
-
-      # Validate dependencies if present
-      case Map.get(metadata_map, :dependencies) do
-        deps when is_binary(deps) ->
-          {:reply, {:error, :invalid_extension_dependencies}, state}
-
-        _ ->
-          # Provide default values for required fields only if not present
-          defaults = %{
-            version: "1.0.0",
-            description: "Extension loaded from #{path}",
-            author: "Unknown"
-          }
-
-          extension =
-            defaults
-            |> Map.merge(metadata_map)
-            |> Map.merge(%{
-              id: extension_id,
-              path: path,
-              type: type,
-              active: false,
-              config: %{}
-            })
-            |> Map.put_new(:hooks, [])
-
-          case Manager.load_extension(state.manager, extension) do
-            {:ok, updated_manager} ->
-              updated_state = %{
-                state
-                | manager: updated_manager,
-                  extensions: Map.put(state.extensions, extension_id, extension)
-              }
-
-              {:reply, {:ok, extension_id}, updated_state}
-
-            {:error, reason} ->
-              {:reply, {:error, reason}, state}
-          end
-      end
+    with :ok <- validate_extension_type(type),
+         metadata_map <- normalize_metadata(metadata),
+         :ok <- validate_dependencies(metadata_map) do
+      do_load_extension(path, type, metadata_map, state)
     else
-      {:reply, {:error, {:module_load_failed, :invalid_extension_type}}, state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
@@ -516,6 +469,57 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   end
 
   # Helper functions
+
+  defp validate_extension_type(type) when type in @valid_extension_types,
+    do: :ok
+
+  defp validate_extension_type(_type),
+    do: {:error, {:module_load_failed, :invalid_extension_type}}
+
+  defp normalize_metadata(map) when is_map(map), do: map
+  defp normalize_metadata(list) when is_list(list), do: Enum.into(list, %{})
+  defp normalize_metadata(_), do: %{}
+
+  defp validate_dependencies(metadata) do
+    case Map.get(metadata, :dependencies) do
+      deps when is_binary(deps) -> {:error, :invalid_extension_dependencies}
+      _ -> :ok
+    end
+  end
+
+  defp do_load_extension(path, type, metadata_map, state) do
+    extension_id = generate_extension_id()
+
+    extension =
+      %{
+        version: "1.0.0",
+        description: "Extension loaded from #{path}",
+        author: "Unknown"
+      }
+      |> Map.merge(metadata_map)
+      |> Map.merge(%{
+        id: extension_id,
+        path: path,
+        type: type,
+        active: false,
+        config: %{}
+      })
+      |> Map.put_new(:hooks, [])
+
+    case Manager.load_extension(state.manager, extension) do
+      {:ok, updated_manager} ->
+        updated_state = %{
+          state
+          | manager: updated_manager,
+            extensions: Map.put(state.extensions, extension_id, extension)
+        }
+
+        {:reply, {:ok, extension_id}, updated_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
 
   defp generate_extension_id do
     ("ext_" <> :crypto.strong_rand_bytes(8)) |> Base.encode16(case: :lower)

@@ -34,7 +34,6 @@ defmodule RaxolWeb.TerminalChannel do
 
   alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Emulator
-  alias Raxol.Web.SessionBridge
   alias RaxolWeb.Presence
 
   @max_messages_per_second 100
@@ -172,13 +171,9 @@ defmodule RaxolWeb.TerminalChannel do
     emulator = socket.assigns.emulator
     session_id = socket.assigns.session_id
 
-    case SessionBridge.create_transition(session_id, %{emulator: emulator}) do
-      {:ok, token} ->
-        {:reply, {:ok, %{token: token}}, socket}
-
-      {:error, reason} ->
-        {:reply, {:error, %{reason: inspect(reason)}}, socket}
-    end
+    # Session bridge not available
+    _ = {session_id, emulator}
+    {:reply, {:error, %{reason: "session bridge not available"}}, socket}
   end
 
   def handle_in("get_buffer", _params, socket) do
@@ -196,16 +191,8 @@ defmodule RaxolWeb.TerminalChannel do
     emulator = socket.assigns[:emulator]
 
     if session_id && emulator do
-      # Save session state on disconnect
-      case SessionBridge.restore_state(session_id, %{emulator: emulator}) do
-        :ok ->
-          Log.debug("[TerminalChannel] Saved session state for #{session_id}")
-
-        {:error, reason} ->
-          Log.warning(
-            "[TerminalChannel] Failed to save session: #{inspect(reason)}"
-          )
-      end
+      Log.debug("[TerminalChannel] Session #{session_id} disconnected")
+      _ = emulator
     end
 
     :ok
@@ -257,19 +244,8 @@ defmodule RaxolWeb.TerminalChannel do
     width = Map.get(params, "width", 80)
     height = Map.get(params, "height", 24)
 
-    # Try to restore from session bridge
-    case SessionBridge.capture_state(session_id) do
-      %{emulator: emulator} ->
-        # Resize if dimensions changed
-        if emulator.width != width or emulator.height != height do
-          Emulator.resize(emulator, width, height)
-        else
-          emulator
-        end
-
-      _ ->
-        Emulator.new(width, height)
-    end
+    _ = session_id
+    Emulator.new(width, height)
   end
 
   defp init_rate_limit do

@@ -10,7 +10,7 @@ defmodule Raxol.UI.Components.ModalTest do
   # --- Alert/Confirm Tests (Basic) ---
   test "init initializes alert modal" do
     props = Modal.alert(:my_alert, "Alert!", "Something happened")
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
     assert state.id == :my_alert
     assert state.title == "Alert!"
     assert state.content == "Something happened"
@@ -24,7 +24,7 @@ defmodule Raxol.UI.Components.ModalTest do
     props =
       Modal.confirm(:my_confirm, "Confirm?", "Are you sure?", :yes_msg, :no_msg)
 
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
     assert state.id == :my_confirm
     assert state.title == "Confirm?"
     assert state.content == "Are you sure?"
@@ -37,7 +37,7 @@ defmodule Raxol.UI.Components.ModalTest do
   test "update handles basic show/hide" do
     # Use Modal.init/1 with a props map to ensure all required fields are present
     props = Modal.alert(:my_alert, "Alert!", "X", visible: false)
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
 
     refute state.visible
 
@@ -59,7 +59,7 @@ defmodule Raxol.UI.Components.ModalTest do
 
   test "update handles simple button click" do
     props = Modal.alert(:my_alert, "Alert!", "X")
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
     assert state.visible
 
     {state, cmds} = Modal.update({:button_click, :ok}, state)
@@ -80,7 +80,7 @@ defmodule Raxol.UI.Components.ModalTest do
         default_value: "Test"
       )
 
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
 
     assert state.id == :my_prompt
     assert state.title == "Enter Value"
@@ -108,7 +108,7 @@ defmodule Raxol.UI.Components.ModalTest do
 
   test "prompt update handles :field_update" do
     props = Modal.prompt(:my_prompt, "Enter Value", "Your Name:")
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
 
     {new_state, commands} =
       Modal.update({:field_update, :prompt_input, "New Value"}, state)
@@ -121,7 +121,7 @@ defmodule Raxol.UI.Components.ModalTest do
     props =
       Modal.prompt(:my_prompt, "Enter Value", "Your Name:", :prompt_submit)
 
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
     # Simulate user typing
     {state, _} =
       Modal.update({:field_update, :prompt_input, "Entered Name"}, state)
@@ -129,7 +129,7 @@ defmodule Raxol.UI.Components.ModalTest do
     # Required by handle_event_component
     props_map = %{}
     enter_event = %{type: :key, data: %{key: "Enter"}}
-    {new_state, commands} = Modal.handle_event(enter_event, props_map, state)
+    {new_state, commands} = Modal.handle_event(enter_event, state, props_map)
 
     assert new_state.visible == false
     # Value from the single field
@@ -141,10 +141,10 @@ defmodule Raxol.UI.Components.ModalTest do
     props =
       Modal.prompt(:my_prompt, "Enter Value", "Name", :submit, :prompt_cancel)
 
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
     props_map = %{}
     escape_event = %{type: :key, data: %{key: "Escape"}}
-    {new_state, commands} = Modal.handle_event(escape_event, props_map, state)
+    {new_state, commands} = Modal.handle_event(escape_event, state, props_map)
     # Wait for modal to become hidden
     assert_receive {:modal_state_changed, :my_prompt, :visible, false}, 100
     assert new_state.visible == false
@@ -173,7 +173,7 @@ defmodule Raxol.UI.Components.ModalTest do
 
   test "form init initializes form modal state correctly" do
     props = default_form_props()
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
 
     assert state.id == :my_form
     assert state.title == "Test Form"
@@ -198,7 +198,7 @@ defmodule Raxol.UI.Components.ModalTest do
 
   test "form render generates form fields" do
     props = default_form_props()
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
     view = Modal.render(state, %{})
 
     # Correctly navigate the view structure
@@ -284,7 +284,7 @@ defmodule Raxol.UI.Components.ModalTest do
 
   test "form update handles :field_update for text_input" do
     props = default_form_props()
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
 
     {new_state, commands} =
       Modal.update({:field_update, :name, "New Name"}, state)
@@ -301,7 +301,7 @@ defmodule Raxol.UI.Components.ModalTest do
 
   test "form update handles :field_update for checkbox" do
     props = default_form_props()
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
     {new_state, commands} = Modal.update({:field_update, :agree, true}, state)
 
     assert commands == []
@@ -310,7 +310,7 @@ defmodule Raxol.UI.Components.ModalTest do
 
   test "form update handles :field_update for dropdown" do
     props = default_form_props()
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
     {new_state, commands} = Modal.update({:field_update, :option, "a"}, state)
 
     assert commands == []
@@ -319,7 +319,7 @@ defmodule Raxol.UI.Components.ModalTest do
 
   test "form update handles focus changes" do
     props = default_form_props()
-    initial_state = Modal.init(Map.new(props))
+    {:ok, initial_state} = Modal.init(Map.new(props))
     assert initial_state.form_state.focus_index == 0
 
     # Focus next (0 -> 1)
@@ -345,7 +345,7 @@ defmodule Raxol.UI.Components.ModalTest do
 
   test "form handle_event triggers focus changes on Tab/Shift+Tab" do
     props = default_form_props()
-    initial_state = Modal.init(Map.new(props))
+    {:ok, initial_state} = Modal.init(Map.new(props))
     # Props might be needed if handle_event uses them
     props_map = %{}
 
@@ -353,18 +353,18 @@ defmodule Raxol.UI.Components.ModalTest do
     tab_event = %{type: :key, data: %{key: "Tab", shift: false}}
 
     {state_1, commands_1} =
-      Modal.handle_event(tab_event, props_map, initial_state)
+      Modal.handle_event(tab_event, initial_state, props_map)
 
     assert state_1.form_state.focus_index == 1
     assert commands_1 == [{:set_focus, "my_form.agree"}]
 
     # Tab (1 -> 2)
-    {state_2, commands_2} = Modal.handle_event(tab_event, props_map, state_1)
+    {state_2, commands_2} = Modal.handle_event(tab_event, state_1, props_map)
     assert state_2.form_state.focus_index == 2
     assert commands_2 == [{:set_focus, "my_form.option"}]
 
     # Tab (2 -> 0, wrap)
-    {state_0, commands_0} = Modal.handle_event(tab_event, props_map, state_2)
+    {state_0, commands_0} = Modal.handle_event(tab_event, state_2, props_map)
     assert state_0.form_state.focus_index == 0
     assert commands_0 == [{:set_focus, "my_form.name"}]
 
@@ -372,7 +372,7 @@ defmodule Raxol.UI.Components.ModalTest do
     shift_tab_event = %{type: :key, data: %{key: "Tab", shift: true}}
 
     {state_prev, commands_prev} =
-      Modal.handle_event(shift_tab_event, props_map, state_0)
+      Modal.handle_event(shift_tab_event, state_0, props_map)
 
     assert state_prev.form_state.focus_index == 2
     assert commands_prev == [{:set_focus, "my_form.option"}]
@@ -387,11 +387,11 @@ defmodule Raxol.UI.Components.ModalTest do
     props =
       Modal.form(:my_form, "Test Form", fields, :form_submitted, :form_canceled)
 
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
 
     props_map = %{}
     enter_event = %{type: :key, data: %{key: "Enter"}}
-    {new_state, commands} = Modal.handle_event(enter_event, props_map, state)
+    {new_state, commands} = Modal.handle_event(enter_event, state, props_map)
 
     # Modal should hide on submit
     assert new_state.visible == false
@@ -402,10 +402,10 @@ defmodule Raxol.UI.Components.ModalTest do
 
   test "form handle_event cancels form on Escape" do
     props = default_form_props()
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
     props_map = %{}
     escape_event = %{type: :key, data: %{key: "Escape"}}
-    {new_state, commands} = Modal.handle_event(escape_event, props_map, state)
+    {new_state, commands} = Modal.handle_event(escape_event, state, props_map)
     # Wait for modal to become hidden
     assert_receive {:modal_state_changed, :my_form, :visible, false}, 100
     # Modal should hide on cancel
@@ -438,11 +438,11 @@ defmodule Raxol.UI.Components.ModalTest do
     props =
       Modal.form(:val_form, "Validation Test", fields, :submit_ok, :cancel_ok)
 
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
     props_map = %{}
     enter_event = %{type: :key, data: %{key: "Enter"}}
 
-    {new_state, commands} = Modal.handle_event(enter_event, props_map, state)
+    {new_state, commands} = Modal.handle_event(enter_event, state, props_map)
 
     # Should NOT hide
     assert new_state.visible == true
@@ -528,12 +528,12 @@ defmodule Raxol.UI.Components.ModalTest do
     props =
       Modal.form(:val_form, "Validation Test", fields, :submit_ok, :cancel_ok)
 
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
     props_map = %{}
     enter_event = %{type: :key, data: %{key: "Enter"}}
 
     # First attempt: submit invalid form
-    {state, _commands} = Modal.handle_event(enter_event, props_map, state)
+    {state, _commands} = Modal.handle_event(enter_event, state, props_map)
     assert state.visible == true
     assert state.form_state.fields |> hd() |> Map.get(:error) == "Invalid input"
 
@@ -545,7 +545,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert state.form_state.fields |> hd() |> Map.get(:error) == nil
 
     # Second attempt: submit valid form
-    {new_state, commands} = Modal.handle_event(enter_event, props_map, state)
+    {new_state, commands} = Modal.handle_event(enter_event, state, props_map)
 
     # Should hide now
     assert new_state.visible == false
@@ -559,7 +559,7 @@ defmodule Raxol.UI.Components.ModalTest do
     props =
       Modal.form(:no_fields_form, "No Fields", [], :submit_empty, :cancel_empty)
 
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
 
     assert state.form_state.fields == []
     assert state.form_state.focus_index == 0
@@ -567,7 +567,7 @@ defmodule Raxol.UI.Components.ModalTest do
     # Submit
     props_map = %{}
     enter_event = %{type: :key, data: %{key: "Enter"}}
-    {new_state, commands} = Modal.handle_event(enter_event, props_map, state)
+    {new_state, commands} = Modal.handle_event(enter_event, state, props_map)
 
     assert new_state.visible == false
     assert commands == [{:submit_empty, %{}}]
@@ -583,7 +583,7 @@ defmodule Raxol.UI.Components.ModalTest do
         :cancel
       )
 
-    state = Modal.init(Map.new(props))
+    {:ok, state} = Modal.init(Map.new(props))
 
     # Show sends focus command without prefix
     {_state, commands} = Modal.update(:show, state)

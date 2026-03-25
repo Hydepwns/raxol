@@ -97,11 +97,12 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
 
       # Fix: handle_event only takes one argument (the event)
       Mox.expect(ApplicationMock, :handle_event, fn ^event ->
-        {:key_press, :enter, []}
+        event
       end)
 
       # Fix: update takes message and model, returns {model, commands}
-      Mox.expect(ApplicationMock, :update, fn {:key_press, :enter, []}, model ->
+      # Events now arrive as raw %Event{} structs
+      Mox.expect(ApplicationMock, :update, fn %Event{type: :key, data: %{key: :enter}}, model ->
         {%{model | count: model.count + 1},
          [%Command{type: :system, data: {:test_cmd, []}}]}
       end)

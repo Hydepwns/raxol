@@ -1,7 +1,7 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "2.0.1"
+  @version "2.2.0"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
@@ -32,18 +32,13 @@ defmodule Raxol.MixProject do
           Termbox2Nif
         ]
       ],
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.detail": :test,
-        "coveralls.post": :test,
-        "coveralls.html": :test
-      ],
       make_cwd: "lib/termbox2_nif/c_src",
       make_targets: ["all"],
       make_clean: ["clean"],
       make_env: %{
         "MIX_APP_PATH" => "priv"
       },
+      usage_rules: usage_rules(),
       dialyzer: [
         # PLT Configuration for caching
         plt_core_path: "priv/plts/core.plt",
@@ -85,6 +80,17 @@ defmodule Raxol.MixProject do
     ]
   end
 
+  def cli do
+    [
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ]
+    ]
+  end
+
   # Platform-specific compilers
   # Only include :elixir_make on Unix (for termbox2 NIF)
   # Windows uses pure Elixir IOTerminal driver
@@ -117,7 +123,10 @@ defmodule Raxol.MixProject do
           :telemetry,
           :file_system,
           :mnesia,
-          :os_mon
+          :os_mon,
+          :ssh,
+          :public_key,
+          :crypto
         ] ++ test_applications()
     ]
   end
@@ -201,8 +210,8 @@ defmodule Raxol.MixProject do
       # Efficient circular buffer implementation
       {:circular_buffer, "~> 1.0"},
       # Plugin dependencies (optional - only needed for specific plugins)
-      {:req, "~> 0.5", optional: true},
-      {:oauth2, "~> 2.1", optional: true}
+      {:req, "~> 0.5", optional: true}
+      # {:oauth2, "~> 2.1", optional: true}  # Removed - unused
     ]
   end
 
@@ -210,7 +219,7 @@ defmodule Raxol.MixProject do
     [
       {:phoenix, "~> 1.8.1"},
       {:phoenix_pubsub, "~> 2.1"},
-      {:phoenix_ecto, "~> 4.4"},
+      {:phoenix_ecto, "~> 4.4", optional: true},
       {:phoenix_live_view, "~> 1.1.13"},
       {:phoenix_html, "~> 4.3"},
       {:plug_cowboy, "~> 2.7"},
@@ -221,27 +230,27 @@ defmodule Raxol.MixProject do
 
   defp database_deps do
     [
-      {:ecto_sql, "~> 3.12"},
-      {:postgrex, "~> 0.22.0", runtime: false},
-      # Password hashing
-      {:bcrypt_elixir, "~> 3.3"}
+      {:ecto_sql, "~> 3.12", optional: true},
+      {:postgrex, "~> 0.22.0", optional: true, runtime: false}
+      # Password hashing (removed - unused)
+      # {:bcrypt_elixir, "~> 3.3", optional: true}
     ]
   end
 
   defp visualization_deps do
     [
-      # Image processing
-      {:mogrify, "~> 0.9.3"},
+      # Image processing (for terminal image rendering)
+      {:mogrify, "~> 0.9.3", optional: true},
       # Charts and plots
-      {:contex, "~> 0.5.0"}
+      {:contex, "~> 0.5.0", optional: true}
     ]
   end
 
   defp development_deps do
     [
-      # Build tools
-      {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
-      {:dart_sass, "~> 0.7", runtime: Mix.env() == :dev},
+      # Build tools (web assets)
+      {:esbuild, "~> 0.10", only: :dev, runtime: false},
+      {:dart_sass, "~> 0.7", only: :dev, runtime: false},
       {:elixir_make, "~> 0.9", runtime: false},
 
       # Code quality
@@ -255,15 +264,13 @@ defmodule Raxol.MixProject do
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
 
       # AI development tools
-      {:tidewave, "~> 0.5", only: :dev},
-      {:usage_rules, "~> 0.1", only: :dev},
+      {:tidewave, "~> 0.5.4", only: :dev},
+      {:usage_rules, "~> 1.2", only: :dev},
 
       # Testing
       {:mox, "~> 1.2", only: :test},
-      {:muzak, "~> 1.1", only: :test, runtime: false},
       {:meck, "~> 1.0", only: :test},
       {:excoveralls, "~> 0.18", only: :test},
-      {:floki, ">= 0.30.0", only: :test},
       {:stream_data, "~> 1.1", only: [:dev, :test]},
       {:junit_formatter, "~> 3.4", only: :test},
 
@@ -284,8 +291,8 @@ defmodule Raxol.MixProject do
       {:toml, "~> 0.7"},
       # MIME type detection (removed - unused)
       # {:mimerl, "~> 1.4"},
-      # HTTP client
-      {:httpoison, "~> 2.2"},
+      # HTTP client (for optional integrations)
+      {:httpoison, "~> 2.2", optional: true},
       # Localization
       {:gettext, "~> 1.0"},
       # File system watching
@@ -302,11 +309,14 @@ defmodule Raxol.MixProject do
   end
 
   defp i18n_deps do
+    # ex_cldr deps removed - unused. Re-add when i18n is implemented.
+    []
+  end
+
+  defp usage_rules do
     [
-      {:ex_cldr, "~> 2.43.2"},
-      {:ex_cldr_numbers, "~> 2.35.2"},
-      {:ex_cldr_currencies, "~> 2.5"},
-      {:ex_cldr_dates_times, "~> 2.24.0"}
+      file: "CLAUDE.md",
+      usage_rules: [:elixir, :otp]
     ]
   end
 
@@ -324,10 +334,9 @@ defmodule Raxol.MixProject do
         "esbuild.install --if-missing",
         "sass.install --if-missing"
       ],
-      "assets.deploy": ["sass.deploy", "tailwind.deploy"],
+      "assets.deploy": ["sass.deploy"],
       "assets.build": [
-        "sass default",
-        "tailwind default"
+        "sass default"
       ],
       "explain.credo": ["run scripts/explain_credo_warning.exs"],
       lint: ["credo"],
@@ -347,15 +356,15 @@ defmodule Raxol.MixProject do
       "release.clean": ["run scripts/release.exs --clean"],
       "release.tag": ["run scripts/release.exs --tag"],
       # AI development tools
-      "usage_rules.update": [
-        "usage_rules.sync CLAUDE.md usage_rules:all phoenix ecto --inline usage_rules:all --link-to-folder deps --remove-missing --yes"
-      ]
+      "usage_rules.update": ["usage_rules.sync"]
     ]
   end
 
   defp description do
     """
-    Meta-package for Raxol terminal framework. Includes core buffer primitives, plugin system, and Phoenix LiveView integration. Build fast terminal UIs with React-style components.
+    Terminal UI framework for Elixir. 23 widgets, flexbox + CSS grid layout,
+    TEA architecture on OTP, hot code reload, crash isolation, LiveView bridge,
+    and SSH app serving. The missing TUI framework for the BEAM.
     """
   end
 
@@ -363,7 +372,8 @@ defmodule Raxol.MixProject do
     [
       name: "raxol",
       files:
-        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md docs examples .github/CONTRIBUTING.md),
+        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md),
+      exclude_patterns: [~r/\.so$/, ~r/\.o$/, ~r/\.dylib$/],
       maintainers: ["DROO AMOR"],
       licenses: ["MIT"],
       links: %{
@@ -374,81 +384,83 @@ defmodule Raxol.MixProject do
       },
       description: description(),
       source_url: @source_url,
-      homepage_url: "https://github.com/Hydepwns/raxol"
+      homepage_url: "https://github.com/Hydepwns/raxol",
+      build_tools: ["mix", "make"]
     ]
   end
 
   defp docs do
     [
-      main: "readme-1",
+      main: "readme",
       logo: "assets/logo.svg",
       extras: [
-        "README.md",
-        "CHANGELOG.md",
-        "LICENSE.md",
-        ".github/CONTRIBUTING.md",
-        "docs/getting-started/PACKAGES.md",
-        "docs/getting-started/QUICKSTART.md",
-        "docs/getting-started/CORE_CONCEPTS.md",
-        "docs/getting-started/MIGRATION_FROM_DIY.md",
-        "docs/core/BUFFER_API.md",
-        "docs/core/ARCHITECTURE.md",
-        "docs/core/GETTING_STARTED.md",
-        "docs/cookbook/README.md",
-        "docs/cookbook/LIVEVIEW_INTEGRATION.md",
-        "docs/cookbook/THEMING.md",
-        "docs/cookbook/COMMAND_SYSTEM.md",
-        "docs/cookbook/PERFORMANCE_OPTIMIZATION.md",
-        "docs/cookbook/VIM_NAVIGATION.md",
-        "docs/plugins/PLUGIN_DEVELOPMENT_GUIDE.md",
-        "docs/bench/README.md",
-        "docs/project/TODO.md",
-        "examples/core/README.md",
-        "apps/raxol_core/README.md",
-        "apps/raxol_liveview/README.md",
-        "apps/raxol_plugin/README.md"
+        {"README.md", [title: "Overview"]},
+        {"CHANGELOG.md", [title: "Changelog"]},
+        {"LICENSE.md", [title: "License"]},
+        {"ROADMAP.md", [title: "Roadmap"]},
+        {".github/CONTRIBUTING.md", [title: "Contributing"]},
+        {"docs/getting-started/PACKAGES.md", [title: "Packages"]},
+        {"docs/getting-started/QUICKSTART.md", [title: "Quickstart"]},
+        {"docs/getting-started/WIDGET_GALLERY.md", [title: "Widget Gallery"]},
+        {"docs/getting-started/CORE_CONCEPTS.md", [title: "Core Concepts"]},
+        {"docs/getting-started/MIGRATION_FROM_DIY.md",
+         [title: "Migration Guide"]},
+        {"docs/core/BUFFER_API.md", [title: "Buffer API"]},
+        {"docs/core/ARCHITECTURE.md", [title: "Architecture"]},
+        {"docs/cookbook/README.md", [title: "Cookbook", filename: "cookbook"]},
+        {"docs/cookbook/BUILDING_APPS.md", [title: "Building Apps"]},
+        {"docs/cookbook/SSH_DEPLOYMENT.md", [title: "SSH Deployment"]},
+        {"docs/cookbook/LIVEVIEW_INTEGRATION.md",
+         [title: "LiveView Integration"]},
+        {"docs/cookbook/THEMING.md", [title: "Theming"]},
+        {"docs/cookbook/PERFORMANCE_OPTIMIZATION.md", [title: "Performance"]},
+        {"docs/bench/README.md", [title: "Benchmarks", filename: "benchmarks"]},
+        {"docs/features/README.md", [title: "Features", filename: "features"]},
+        {"docs/features/VIM_NAVIGATION.md", [title: "Vim Navigation"]},
+        {"docs/features/COMMAND_PARSER.md", [title: "Command Parser"]},
+        {"docs/features/FUZZY_SEARCH.md", [title: "Fuzzy Search"]},
+        {"docs/features/FILESYSTEM.md", [title: "Virtual Filesystem"]},
+        {"docs/features/CURSOR_EFFECTS.md", [title: "Cursor Effects"]},
+        {"examples/core/README.md",
+         [title: "Core Examples", filename: "core-examples"]}
       ],
       groups_for_extras: [
-        "Getting Started": [
-          "README.md",
-          "docs/getting-started/PACKAGES.md",
-          "docs/getting-started/QUICKSTART.md",
-          "docs/getting-started/CORE_CONCEPTS.md",
-          "docs/getting-started/MIGRATION_FROM_DIY.md"
-        ],
-        "Core Concepts": [
-          "docs/core/BUFFER_API.md",
-          "docs/core/ARCHITECTURE.md",
-          "docs/core/GETTING_STARTED.md"
-        ],
-        Cookbook: [
-          "docs/cookbook/README.md",
-          "docs/cookbook/LIVEVIEW_INTEGRATION.md",
-          "docs/cookbook/THEMING.md",
-          "docs/cookbook/COMMAND_SYSTEM.md",
-          "docs/cookbook/PERFORMANCE_OPTIMIZATION.md",
-          "docs/cookbook/VIM_NAVIGATION.md"
-        ],
-        Plugins: [
-          "docs/plugins/PLUGIN_DEVELOPMENT_GUIDE.md"
-        ],
-        Packages: [
-          "apps/raxol_core/README.md",
-          "apps/raxol_liveview/README.md",
-          "apps/raxol_plugin/README.md"
-        ],
-        "Examples & Benchmarks": [
-          "examples/core/README.md",
-          "docs/bench/README.md"
-        ],
-        Project: [
-          "docs/project/TODO.md"
-        ],
-        "Project Info": [
-          "CHANGELOG.md",
-          "LICENSE.md",
-          ".github/CONTRIBUTING.md"
-        ]
+        "Getting Started": ~w(
+          README.md
+          docs/getting-started/QUICKSTART.md
+          docs/getting-started/CORE_CONCEPTS.md
+          docs/getting-started/WIDGET_GALLERY.md
+          docs/getting-started/PACKAGES.md
+          docs/getting-started/MIGRATION_FROM_DIY.md
+        ),
+        Architecture: ~w(
+          docs/core/ARCHITECTURE.md
+          docs/core/BUFFER_API.md
+          docs/bench/README.md
+        ),
+        Cookbook: ~w(
+          docs/cookbook/README.md
+          docs/cookbook/BUILDING_APPS.md
+          docs/cookbook/SSH_DEPLOYMENT.md
+          docs/cookbook/THEMING.md
+          docs/cookbook/LIVEVIEW_INTEGRATION.md
+          docs/cookbook/PERFORMANCE_OPTIMIZATION.md
+        ),
+        Features: ~w(
+          docs/features/README.md
+          docs/features/VIM_NAVIGATION.md
+          docs/features/COMMAND_PARSER.md
+          docs/features/FUZZY_SEARCH.md
+          docs/features/FILESYSTEM.md
+          docs/features/CURSOR_EFFECTS.md
+        ),
+        "Project Info": ~w(
+          CHANGELOG.md
+          ROADMAP.md
+          .github/CONTRIBUTING.md
+          LICENSE.md
+          examples/core/README.md
+        )
       ],
       groups_for_modules: [
         Core: [

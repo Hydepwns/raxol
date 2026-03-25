@@ -1,16 +1,12 @@
-# Plugin Templates and Examples
+# Plugin Templates
 
 **Version**: v1.6.0
-**Last Updated**: 2025-09-26
-**Target**: Plugin developers
 
-## Template Overview
-
-This document provides ready-to-use templates for common plugin types, based on the existing successful plugins in the Raxol ecosystem.
+Templates for common plugin types, based on existing plugins in the Raxol ecosystem.
 
 ## Basic Plugin Template
 
-### Minimal Plugin Structure
+The minimal structure for a Raxol plugin:
 
 ```elixir
 defmodule Raxol.Plugins.MyBasicPlugin do
@@ -103,7 +99,7 @@ end
 
 ## UI Plugin Template
 
-### Interactive UI Plugin
+For plugins that create interactive UI components:
 
 ```elixir
 defmodule Raxol.Plugins.MyUIPlugin do
@@ -165,17 +161,14 @@ defmodule Raxol.Plugins.MyUIPlugin do
   end
 
   def enable(state) do
-    # Register hotkey handler
     {:ok, %{state | visible: false}}
   end
 
   def disable(state) do
-    # Unregister hotkey handler
     {:ok, %{state | visible: false}}
   end
 
   def filter_event({:key_press, key}, %{visible: true} = state) do
-    # Handle keys when UI is visible
     new_state = case key do
       "escape" ->
         %{state | visible: false}
@@ -190,7 +183,6 @@ defmodule Raxol.Plugins.MyUIPlugin do
         move_selection(state, 1)
 
       char when byte_size(char) == 1 ->
-        # Add to search query
         new_query = state.search_query <> char
         %{state | search_query: new_query}
         |> update_filtered_items()
@@ -203,7 +195,6 @@ defmodule Raxol.Plugins.MyUIPlugin do
   end
 
   def filter_event({:key_press, hotkey}, %{config: %{hotkey: hotkey}} = state) do
-    # Toggle visibility on hotkey
     new_state = %{state | visible: not state.visible}
     |> load_items_if_needed()
 
@@ -211,7 +202,6 @@ defmodule Raxol.Plugins.MyUIPlugin do
   end
 
   def filter_event(event, _state) do
-    # Pass through other events
     {:ok, event}
   end
 
@@ -240,7 +230,7 @@ defmodule Raxol.Plugins.MyUIPlugin do
     ]
   end
 
-  # UI rendering (would be called by terminal renderer)
+  # UI rendering (called by terminal renderer)
   def render_overlay(%{visible: true} = state, width, height) do
     lines = [
       render_header(state, width),
@@ -269,14 +259,12 @@ defmodule Raxol.Plugins.MyUIPlugin do
       nil ->
         state
       item ->
-        # Execute the selected item
         Logger.info("Executing: #{inspect(item)}")
         %{state | visible: false}
     end
   end
 
   defp load_items_if_needed(%{visible: true, items: []} = state) do
-    # Load items when UI becomes visible
     items = load_available_items(state.config)
     %{state | items: items}
   end
@@ -284,7 +272,7 @@ defmodule Raxol.Plugins.MyUIPlugin do
   defp load_items_if_needed(state), do: state
 
   defp load_available_items(_config) do
-    # Implementation-specific: load your items here
+    # Replace with your actual item loading
     [
       %{name: "Item 1", action: :action1},
       %{name: "Item 2", action: :action2},
@@ -293,7 +281,6 @@ defmodule Raxol.Plugins.MyUIPlugin do
   end
 
   defp update_filtered_items(%{search_query: ""} = state) do
-    # Show all items when no search query
     items = load_available_items(state.config)
     %{state | items: items, selected_index: 0}
   end
@@ -359,7 +346,7 @@ end
 
 ## Background Task Plugin Template
 
-### Plugin with Periodic Updates
+For plugins that run periodic updates:
 
 ```elixir
 defmodule Raxol.Plugins.MyBackgroundPlugin do
@@ -432,13 +419,11 @@ defmodule Raxol.Plugins.MyBackgroundPlugin do
   end
 
   def enable(state) do
-    # Start background tasks
     {:ok, timer} = :timer.send_interval(
       state.config.update_interval_ms,
       :update_data
     )
 
-    # Perform initial update
     send(self(), :update_data)
 
     new_state = %{state |
@@ -451,7 +436,6 @@ defmodule Raxol.Plugins.MyBackgroundPlugin do
   end
 
   def disable(state) do
-    # Stop background tasks
     if state.update_timer do
       :timer.cancel(state.update_timer)
     end
@@ -519,7 +503,6 @@ defmodule Raxol.Plugins.MyBackgroundPlugin do
 
   @impl GenServer
   def handle_cast({:update_config, new_config}, state) do
-    # Handle config updates
     new_state = %{state | config: Map.merge(state.config, new_config)}
     {:noreply, new_state}
   end
@@ -536,7 +519,6 @@ defmodule Raxol.Plugins.MyBackgroundPlugin do
 
   # Private functions
   defp collect_data(config) do
-    # Implementation-specific data collection
     case File.stat(config.watch_path) do
       {:ok, stat} ->
         %{
@@ -579,7 +561,7 @@ end
 
 ## File System Plugin Template
 
-### Plugin that Monitors File Changes
+For plugins that monitor file changes:
 
 ```elixir
 defmodule Raxol.Plugins.MyFileSystemPlugin do
@@ -624,7 +606,6 @@ defmodule Raxol.Plugins.MyFileSystemPlugin do
     GenServer.start_link(__MODULE__, config, name: __MODULE__)
   end
 
-  # Plugin behaviour callbacks
   def init(config) do
     state = %__MODULE__{
       config: config,
@@ -637,7 +618,6 @@ defmodule Raxol.Plugins.MyFileSystemPlugin do
   end
 
   def terminate(_reason, state) do
-    # Stop all file watchers
     Enum.each(state.watchers, fn {_path, watcher} ->
       stop_file_watcher(watcher)
     end)
@@ -645,7 +625,6 @@ defmodule Raxol.Plugins.MyFileSystemPlugin do
   end
 
   def enable(state) do
-    # Start file watchers for configured directories
     watchers =
       state.config.watch_directories
       |> Enum.reduce(%{}, fn dir, acc ->
@@ -658,7 +637,6 @@ defmodule Raxol.Plugins.MyFileSystemPlugin do
         end
       end)
 
-    # Build initial file index
     file_index = build_file_index(state.config)
 
     new_state = %{state |
@@ -671,7 +649,6 @@ defmodule Raxol.Plugins.MyFileSystemPlugin do
   end
 
   def disable(state) do
-    # Stop all watchers
     Enum.each(state.watchers, fn {_path, watcher} ->
       stop_file_watcher(watcher)
     end)
@@ -707,7 +684,6 @@ defmodule Raxol.Plugins.MyFileSystemPlugin do
     ]
   end
 
-  # GenServer callbacks for file events
   @impl GenServer
   def handle_info({:file_event, path, events}, state) do
     new_state = process_file_events(path, events, state)
@@ -719,10 +695,7 @@ defmodule Raxol.Plugins.MyFileSystemPlugin do
     {:noreply, state}
   end
 
-  # File system operations
   defp start_file_watcher(path, config) do
-    # This would integrate with the actual file watching system
-    # For now, simulate with a process that sends periodic updates
     watcher = spawn_link(fn ->
       file_watcher_loop(path, config, self())
     end)
@@ -735,12 +708,10 @@ defmodule Raxol.Plugins.MyFileSystemPlugin do
   end
 
   defp file_watcher_loop(path, config, parent) do
-    # Simulate file change detection
     receive do
       :stop -> :ok
     after
       5000 ->
-        # Check for actual changes (simplified)
         case scan_directory(path, config) do
           {:changes, changes} ->
             Enum.each(changes, fn change ->
@@ -788,7 +759,6 @@ defmodule Raxol.Plugins.MyFileSystemPlugin do
 
   defp matches_patterns?(path, patterns) do
     Enum.any?(patterns, fn pattern ->
-      # Simple pattern matching - in practice you'd use a proper glob library
       String.contains?(path, String.replace(pattern, "*", ""))
     end)
   end
@@ -825,7 +795,6 @@ defmodule Raxol.Plugins.MyFileSystemPlugin do
       timestamp: DateTime.utc_now()
     }
 
-    # Update file index
     new_file_index = case :modified in events do
       true ->
         updated_entry = create_file_entry(path)
@@ -834,7 +803,6 @@ defmodule Raxol.Plugins.MyFileSystemPlugin do
         state.file_index
     end
 
-    # Add to recent changes (keep last 50)
     new_recent_changes =
       [change_entry | state.recent_changes]
       |> Enum.take(50)
@@ -864,8 +832,6 @@ end
 ```
 
 ## Testing Template
-
-### Comprehensive Plugin Tests
 
 ```elixir
 defmodule MyPluginTest do
@@ -905,11 +871,9 @@ defmodule MyPluginTest do
       config = %{enabled: true}
       {:ok, initial_state} = MyPlugin.init(config)
 
-      # Test enable
       assert {:ok, enabled_state} = MyPlugin.enable(initial_state)
       assert enabled_state.enabled == true
 
-      # Test disable
       assert {:ok, disabled_state} = MyPlugin.disable(enabled_state)
       assert disabled_state.enabled == false
     end
@@ -963,7 +927,6 @@ defmodule MyPluginTest do
     end
 
     test "can modify events", %{state: state} do
-      # This test would be specific to your plugin's event handling
       event = {:test_event, "data"}
       assert {:ok, filtered_event} = MyPlugin.filter_event(event, state)
       # Add assertions based on your plugin's behavior
@@ -978,23 +941,17 @@ defmodule MyPluginIntegrationTest do
   @moduletag :integration
 
   setup do
-    # Setup test environment
     config = %{enabled: true, debug: true}
     {:ok, config: config}
   end
 
   test "plugin integrates with plugin system", %{config: config} do
-    # Test plugin loading and integration
-    # This would require the actual plugin system to be running
-
-    # For now, just test that the plugin can be initialized
     assert {:ok, _state} = MyPlugin.init(config)
   end
 
   test "plugin commands are accessible" do
     commands = MyPlugin.get_commands()
 
-    # Verify commands are properly formatted
     Enum.each(commands, fn {name, function, arity} ->
       assert is_atom(name)
       assert is_atom(function)
@@ -1005,32 +962,17 @@ defmodule MyPluginIntegrationTest do
 end
 ```
 
-## Usage Examples
+## How to Use These Templates
 
-### Loading and Using Templates
+Pick the template that fits your needs:
 
-1. **Choose appropriate template** based on your plugin needs:
-   - Basic Plugin: Simple functionality without UI
-   - UI Plugin: Interactive overlays and panels
-   - Background Plugin: Periodic tasks and monitoring
-   - File System Plugin: File watching and directory operations
+- **Basic Plugin** -- Simple functionality, no UI
+- **UI Plugin** -- Interactive overlays and panels
+- **Background Plugin** -- Periodic tasks and monitoring
+- **File System Plugin** -- File watching and directory operations
 
-2. **Customize the template**:
-   - Replace placeholder names and descriptions
-   - Implement your specific functionality
-   - Add required dependencies to manifest
-   - Configure appropriate capabilities
+Then customize it: replace placeholder names, implement your logic, add dependencies to the manifest, and set the right capabilities.
 
-3. **Test thoroughly**:
-   - Use the provided test templates
-   - Test all lifecycle states
-   - Verify command handling
-   - Test event filtering if implemented
+Test everything. Use the test template as a starting point, cover all lifecycle states, verify command handling, and test event filtering if you implemented it.
 
-4. **Follow best practices**:
-   - Clean up resources in `terminate/2`
-   - Handle errors gracefully
-   - Use appropriate logging levels
-   - Document your plugin's functionality
-
-These templates provide a solid foundation for creating robust, well-structured plugins that integrate seamlessly with the Raxol plugin system.
+A few things to keep in mind: clean up resources in `terminate/2`, handle errors without crashing, use appropriate log levels, and document what your plugin does.

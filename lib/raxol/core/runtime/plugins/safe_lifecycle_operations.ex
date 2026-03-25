@@ -179,45 +179,14 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
 
   defp do_load_plugin(plugin_module, config, state)
        when is_atom(plugin_module) do
-    # Call the plugin's init function safely
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            plugin_module.init(config)
          end) do
       {:ok, {:ok, plugin_state}} ->
-        # Extract plugin metadata from the state
-        plugin_id = Map.get(plugin_state, :name, plugin_module |> to_string())
-
-        new_state =
-          Map.put(
-            state,
-            :plugins,
-            Map.put(state.plugins, plugin_id, %{
-              module: plugin_module,
-              config: config,
-              state: plugin_state,
-              loaded_at: DateTime.utc_now()
-            })
-          )
-
-        {:ok, new_state}
+        register_plugin(state, plugin_module, config, plugin_state)
 
       {:ok, plugin_state} when is_map(plugin_state) ->
-        # Handle case where init returns state directly without {:ok, state}
-        plugin_id = Map.get(plugin_state, :name, plugin_module |> to_string())
-
-        new_state =
-          Map.put(
-            state,
-            :plugins,
-            Map.put(state.plugins, plugin_id, %{
-              module: plugin_module,
-              config: config,
-              state: plugin_state,
-              loaded_at: DateTime.utc_now()
-            })
-          )
-
-        {:ok, new_state}
+        register_plugin(state, plugin_module, config, plugin_state)
 
       {:error, reason} ->
         {:error, "Plugin init crashed: #{inspect(reason)}"}
@@ -236,6 +205,20 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
       {:error, reason} ->
         {:error, "Failed to load plugin module: #{reason}"}
     end
+  end
+
+  defp register_plugin(state, plugin_module, config, plugin_state) do
+    plugin_id = Map.get(plugin_state, :name, to_string(plugin_module))
+
+    plugin_entry = %{
+      module: plugin_module,
+      config: config,
+      state: plugin_state,
+      loaded_at: DateTime.utc_now()
+    }
+
+    new_state = put_in(state, [:plugins, plugin_id], plugin_entry)
+    {:ok, new_state}
   end
 
   defp load_plugin_module(plugin_id) do

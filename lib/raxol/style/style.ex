@@ -9,7 +9,10 @@ defmodule Raxol.Style do
           color: Raxol.Style.Colors.Color.t() | nil,
           background: Raxol.Style.Colors.Color.t() | nil,
           text_decoration: list(:underline | :strikethrough | :bold | :italic),
-          decorations: list(atom)
+          decorations: list(atom),
+          responsive: list({term(), t()}),
+          component_specific: %{atom() => t()},
+          theme_variant: atom() | nil
         }
 
   defstruct layout: Raxol.Style.Layout.new(),
@@ -19,7 +22,10 @@ defmodule Raxol.Style do
             # Default background handled by renderer
             background: nil,
             text_decoration: [],
-            decorations: []
+            decorations: [],
+            responsive: [],
+            component_specific: %{},
+            theme_variant: nil
 
   alias Raxol.Style.{Borders, Colors, Layout}
 
@@ -105,7 +111,11 @@ defmodule Raxol.Style do
         |> Enum.uniq(),
       decorations:
         (style1.decorations ++ style2.decorations)
-        |> Enum.uniq()
+        |> Enum.uniq(),
+      responsive: style2.responsive ++ style1.responsive,
+      component_specific:
+        Map.merge(style1.component_specific, style2.component_specific),
+      theme_variant: style2.theme_variant || style1.theme_variant
     }
   end
 
@@ -166,9 +176,10 @@ defmodule Raxol.Style do
   @doc """
   Apply responsive styling based on terminal dimensions.
   """
-  def apply_responsive(style, width, height) do
+  def apply_responsive(%{responsive: responsive} = style, width, height)
+      when is_list(responsive) and responsive != [] do
     responsive_rules =
-      style.responsive
+      responsive
       |> Enum.filter(fn {constraint, _} ->
         evaluate_constraint(constraint, width, height)
       end)
@@ -177,20 +188,32 @@ defmodule Raxol.Style do
     Enum.reduce(responsive_rules, style, &merge/2)
   end
 
+  def apply_responsive(style, _width, _height), do: style
+
   @doc """
   Apply component-specific styling.
   """
-  def apply_component_specific(style, component_type) do
-    case Map.get(style.component_specific, component_type) do
+  def apply_component_specific(
+        %{component_specific: specific} = style,
+        component_type
+      )
+      when is_map(specific) and map_size(specific) > 0 do
+    case Map.get(specific, component_type) do
       nil -> style
       component_style -> merge(style, component_style)
     end
   end
 
+  def apply_component_specific(style, _component_type), do: style
+
   # Private helpers
 
+  defp apply_theme_variant(%{theme_variant: nil} = style, _theme), do: style
+
   defp apply_theme_variant(style, theme) do
-    case Map.get(theme.variants, style.theme_variant) do
+    variants = theme.variants || %{}
+
+    case Map.get(variants, style.theme_variant) do
       nil -> style
       variant -> merge(style, variant)
     end

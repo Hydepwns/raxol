@@ -106,7 +106,7 @@ defmodule Raxol.UI.Components.Display.Table do
   # --- Component Implementation ---
 
   @doc "Initializes the Table component state from props."
-  @spec init(props()) :: %__MODULE__{}
+  @spec init(props()) :: {:ok, %__MODULE__{}}
   @impl Raxol.UI.Components.Base.Component
   def init(attrs) do
     id = Map.get(attrs, :id) || Raxol.Core.ID.generate()
@@ -138,7 +138,7 @@ defmodule Raxol.UI.Components.Display.Table do
       disabled: Map.get(attrs, :disabled, false)
     }
 
-    internal_state
+    {:ok, internal_state}
   end
 
   @doc "Mounts the Table component, performing any setup needed."

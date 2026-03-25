@@ -10,7 +10,6 @@ defmodule Raxol.Terminal.TerminalRegistry do
   use Raxol.Core.Behaviours.BaseManager
 
   alias Raxol.Core.Runtime.Log
-  alias Raxol.Events.{TerminalClosedEvent, TerminalCreatedEvent}
 
   defstruct [
     :terminals,
@@ -277,19 +276,6 @@ defmodule Raxol.Terminal.TerminalRegistry do
   end
 
   @impl true
-  def handle_manager_info(:subscribe_to_events, state) do
-    # Subscribe to terminal events now that initialization is complete
-    Raxol.Architecture.EventSourcing.EventStore.subscribe(
-      Raxol.Architecture.EventSourcing.EventStore,
-      self(),
-      event_types: [TerminalCreatedEvent, TerminalClosedEvent]
-    )
-
-    Log.debug("Terminal registry subscribed to event store")
-    {:noreply, state}
-  end
-
-  @impl true
   def handle_manager_info({:DOWN, _ref, :process, pid, reason}, state) do
     case Map.get(state.monitors, pid) do
       nil ->
@@ -302,20 +288,6 @@ defmodule Raxol.Terminal.TerminalRegistry do
 
         new_state = do_unregister_terminal(terminal_id, pid, state)
         {:noreply, new_state}
-    end
-  end
-
-  @impl true
-  def handle_manager_info({:event_appended, _stream_name, event}, state) do
-    case event.data do
-      %TerminalCreatedEvent{} = created_event ->
-        handle_terminal_created_event(created_event, state)
-
-      %TerminalClosedEvent{} = closed_event ->
-        handle_terminal_closed_event(closed_event, state)
-
-      _ ->
-        {:noreply, state}
     end
   end
 
@@ -359,44 +331,6 @@ defmodule Raxol.Terminal.TerminalRegistry do
         terminal_metadata: new_terminal_metadata,
         user_terminals: new_user_terminals
     }
-  end
-
-  defp handle_terminal_created_event(event, state) do
-    # This event is fired when a terminal is created through the command system
-    # We might want to update registry metadata or perform additional bookkeeping
-    Log.debug("Terminal created event received for #{event.terminal_id}")
-    {:noreply, state}
-  end
-
-  defp handle_terminal_closed_event(event, state) do
-    # This event is fired when a terminal is closed through the command system
-    # The registry might still have the entry if the process hasn't died yet
-    Log.debug("Terminal closed event received for #{event.terminal_id}")
-
-    case Map.get(state.terminals, event.terminal_id) do
-      nil ->
-        # Already cleaned up
-        {:noreply, state}
-
-      _process ->
-        # Mark as closing in metadata but don't remove yet
-        # The process monitor will handle the actual cleanup
-        case get_in(state.terminal_metadata, [event.terminal_id]) do
-          nil ->
-            {:noreply, state}
-
-          metadata_info ->
-            updated_metadata = Map.put(metadata_info.metadata, :closing, true)
-            updated_info = %{metadata_info | metadata: updated_metadata}
-
-            new_terminal_metadata =
-              Map.put(state.terminal_metadata, event.terminal_id, updated_info)
-
-            new_state = %{state | terminal_metadata: new_terminal_metadata}
-
-            {:noreply, new_state}
-        end
-    end
   end
 
   defp get_memory_usage(state) do

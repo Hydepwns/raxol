@@ -23,6 +23,8 @@ defmodule Raxol.View.Components do
     %{
       type: :text,
       content: content,
+      fg: Map.get(opts, :fg),
+      bg: Map.get(opts, :bg),
       style: Map.get(opts, :style, %{}),
       id: Map.get(opts, :id)
     }
@@ -327,6 +329,22 @@ defmodule Raxol.View.Components do
       id: Map.get(opts, :id),
       on_change: Map.get(opts, :on_change)
     }
+  end
+
+  @doc """
+  Creates a split pane layout component.
+
+  ## Options
+
+    * `:direction` - `:horizontal` or `:vertical` (default `:horizontal`)
+    * `:ratio` - Tuple for space distribution (default `{1, 1}`)
+    * `:min_size` - Minimum pane dimension (default `5`)
+    * `:id` - Optional identifier
+    * `:children` - Child elements (one per pane)
+  """
+  @spec split_pane(keyword() | map()) :: map()
+  def split_pane(opts \\ []) do
+    Raxol.UI.Layout.SplitPane.new(opts)
   end
 
   @doc """

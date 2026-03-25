@@ -1,80 +1,60 @@
-# Enhanced Debug Mode
+# Debug Mode
 
-## Overview
-
-Raxol v1.4.1 introduces a comprehensive debug mode system with four levels of verbosity, performance monitoring, and detailed logging capabilities. Enhanced in v2.0 with BaseManager integration and improved timer management. The `Raxol.Debug` module provides runtime debugging tools for development and troubleshooting.
+`Raxol.Debug` provides runtime debugging with four verbosity levels, performance monitoring, and structured logging. It integrates with BaseManager and supports timer management.
 
 ## Debug Levels
 
-| Level | Description | Use Case |
-|-------|-------------|----------|
-| `:off` | No debug output | Production |
-| `:basic` | Essential debug logs | General development |
+| Level | What it does | When to use |
+|-------|-------------|-------------|
+| `:off` | Nothing | Production |
+| `:basic` | Essential logs | General dev work |
 | `:detailed` | Verbose logs with metadata | Troubleshooting |
-| `:verbose` | Everything including performance metrics | Performance analysis |
+| `:verbose` | Everything, including perf metrics | Performance analysis |
 
 ## Quick Start
 
-### Enabling Debug Mode
-
 ```elixir
-# Enable basic debugging
 Raxol.Debug.enable(:basic)
-
-# Enable detailed debugging with metadata
 Raxol.Debug.enable(:detailed)
-
-# Enable verbose debugging with performance monitoring
 Raxol.Debug.enable(:verbose)
-
-# Disable debugging
 Raxol.Debug.disable()
 ```
 
-### Component-Specific Debugging
+### Component-Specific
 
 ```elixir
-# Check if debugging is enabled for a component
 if Raxol.Debug.debug_enabled?(:terminal) do
   IO.inspect(state, label: "Terminal State")
 end
 
-# Components checked based on level:
+# Components by level:
 # :basic    -> [:terminal, :web]
 # :detailed -> [:terminal, :web, :benchmark, :parser]
-# :verbose  -> all components
+# :verbose  -> all
 ```
 
-## Logging Functions
+## Logging
 
-### Basic Debug Logging
+### Basic
 
 ```elixir
-# Simple debug log
 Raxol.Debug.debug_log(:terminal, "Processing input",
   context: %{key: key, modifiers: modifiers})
 
-# With metadata for filtering
 Raxol.Debug.debug_log(:parser, "ANSI sequence detected",
   context: %{sequence: sequence},
   metadata: [session_id: session_id])
 ```
 
-### Structured Logging
+### Structured
 
 ```elixir
-# Log terminal state
 Raxol.Debug.log_terminal_state(emulator, "State after input")
-
-# Log ANSI sequences
 Raxol.Debug.log_ansi_sequence(sequence, "Processing ESC sequence",
   metadata: [line: 42])
-
-# Log event flow
 Raxol.Debug.log_event_flow(:key_press, event_data, handler_result,
   metadata: [component: :input_handler])
 
-# Log render metrics
 Raxol.Debug.log_render_metrics(%{
   frame_time_us: 16_000,
   dirty_regions: 3,
@@ -83,124 +63,99 @@ Raxol.Debug.log_render_metrics(%{
 })
 ```
 
-## Performance Profiling
+## Profiling
 
-### Time Execution
+### Timing
 
 ```elixir
-# Time a function and log results in debug mode
 result = Raxol.Debug.time_debug(:terminal, "render", fn ->
   render_terminal(buffer)
 end)
-
-# Output in debug mode:
-# [DEBUG] terminal - render completed in 15.3ms
+# Output: [DEBUG] terminal - render completed in 15.3ms
 ```
 
-### Inspect Execution
+### Inspect
 
 ```elixir
-# Inspect input and output of a function
 result = Raxol.Debug.inspect_debug(:parser, "parse", input, fn ->
   parse_ansi(input)
 end)
-
-# Output in debug mode:
-# [DEBUG] parser - parse input: "\e[31mHello\e[0m"
-# [DEBUG] parser - parse output: [{:sgr, [31]}, {:text, "Hello"}, {:sgr, [0]}]
+# Logs both input and output of the function
 ```
 
-## Advanced Features
+## Advanced
 
-### Process State Dumping
+### Process State Dump
 
 ```elixir
-# Dump current process state
 Raxol.Debug.dump_process_state(:terminal)
-
-# Output includes:
-# - Process info (memory, reductions, message queue)
-# - Current stacktrace
-# - Process dictionary
-# - Linked processes
+# Shows: memory, reductions, message queue, stacktrace, linked processes
 ```
 
-### Debug Breakpoints
+### Breakpoints
 
 ```elixir
-# Conditional breakpoint (only in interactive mode)
 Raxol.Debug.debug_breakpoint(:terminal, "Before state mutation")
-
-# In IEx:
-# [DEBUG] Debug breakpoint hit: Before state mutation
-# Component: terminal
-# Process: #PID<0.123.0>
-# Press Enter to continue...
+# In IEx, pauses and waits for Enter
 ```
 
 ### Performance Monitoring
 
-When debug level is `:detailed` or `:verbose`, performance metrics are automatically collected every 100ms:
-
-```elixir
-# Automatic output in logs:
-# [DEBUG] Performance: memory=%{total: 104857600, processes: 52428800, ...}
-# [DEBUG] Performance: run_queue=0
+At `:detailed` or `:verbose` levels, metrics are collected every 100ms automatically:
+```
+[DEBUG] Performance: memory=%{total: 104857600, processes: 52428800, ...}
+[DEBUG] Performance: run_queue=0
 ```
 
-## Integration with GenServer
-
-### Debug Server Statistics
+### Stats and Export
 
 ```elixir
-# Get debug statistics
 stats = Raxol.Debug.stats()
-# => %{
-#   log_count: 1523,
-#   trace_count: 342,
-#   profile_count: 89,
-#   start_time: ~U[2024-01-15 10:00:00Z],
-#   current_level: :detailed
-# }
+# => %{log_count: 1523, trace_count: 342, profile_count: 89, ...}
 
-# Clear statistics
 Raxol.Debug.clear_stats()
-
-# Export debug data
 Raxol.Debug.export("debug_session.json")
 ```
 
-## Configuration Integration
+## Configuration
 
-### Via TOML Configuration
+### TOML
 
 ```toml
-# config/raxol.toml
 [debug]
-level = "detailed"        # off, basic, detailed, verbose
+level = "detailed"          # off, basic, detailed, verbose
 max_logs = 10000
 max_traces = 5000
-performance_sampling = 100  # milliseconds
+performance_sampling = 100  # ms
 export_on_error = true
 ```
 
-### Via Runtime Configuration
+### Runtime
 
 ```elixir
-# Set debug level from config
 level = Raxol.Config.get([:debug, :level], default: "off")
 |> String.to_atom()
 Raxol.Debug.enable(level)
 ```
 
-## Use Cases
+### Environment Variable
+
+```bash
+DEBUG_LEVEL=verbose iex -S mix
+```
+
+```elixir
+debug_level = System.get_env("DEBUG_LEVEL", "off") |> String.to_atom()
+Raxol.Debug.enable(debug_level)
+```
+
+## Usage Examples
 
 ### Development Workflow
 
 ```elixir
 defmodule MyModule do
   def process_input(input) do
-    # Only runs in debug mode
     Raxol.Debug.debug_log(:input, "Received input",
       context: %{input: input})
 
@@ -216,13 +171,11 @@ defmodule MyModule do
 end
 ```
 
-### Troubleshooting Terminal Issues
+### Terminal Troubleshooting
 
 ```elixir
-# Enable verbose debugging
 Raxol.Debug.enable(:verbose)
 
-# Process some input
 emulator
 |> process_input("\e[31mRed\e[0m")
 |> tap(fn state ->
@@ -230,38 +183,26 @@ emulator
   Raxol.Debug.log_ansi_sequence("\e[31m", "Color sequence")
 end)
 
-# Check what happened
-stats = Raxol.Debug.stats()
-IO.inspect(stats, label: "Debug Stats")
-
-# Export for analysis
 Raxol.Debug.export("terminal_debug.json")
 ```
 
 ### Performance Analysis
 
 ```elixir
-# Enable performance tracking
 Raxol.Debug.enable(:verbose)
 
-# Run operations
 for _ <- 1..100 do
   Raxol.Debug.time_debug(:benchmark, "render", fn ->
     render_frame(buffer)
   end)
 end
 
-# Analyze
 stats = Raxol.Debug.stats()
 IO.puts("Total profile count: #{stats.profile_count}")
-
-# Export detailed data
 Raxol.Debug.export("performance_analysis.json")
 ```
 
-## Conditional Compilation
-
-To completely remove debug code in production:
+## Removing Debug Code in Production
 
 ```elixir
 defmodule MyModule do
@@ -275,83 +216,7 @@ defmodule MyModule do
 end
 ```
 
-## Logger Integration
-
-Debug mode automatically configures Elixir's Logger:
-
-| Debug Level | Logger Level | Metadata |
-|-------------|-------------|----------|
-| `:off` | `:info` | Standard |
-| `:basic` | `:debug` | Standard |
-| `:detailed` | `:debug` | `[:module, :function, :line, :pid]` |
-| `:verbose` | `:debug` | All metadata |
-
-## Performance Impact
-
-| Level | Performance Impact | Memory Impact |
-|-------|-------------------|---------------|
-| `:off` | None | None |
-| `:basic` | ~1-2% | Minimal |
-| `:detailed` | ~5-10% | ~1MB for logs |
-| `:verbose` | ~15-20% | ~5MB for logs and traces |
-
-## Best Practices
-
-### 1. Use Appropriate Levels
-
-```elixir
-# Development
-Raxol.Debug.enable(:basic)
-
-# Troubleshooting specific issue
-Raxol.Debug.enable(:detailed)
-
-# Performance investigation
-Raxol.Debug.enable(:verbose)
-
-# Production
-Raxol.Debug.disable()
-```
-
-### 2. Component-Specific Debugging
-
-```elixir
-# Only log if actually debugging this component
-if Raxol.Debug.debug_enabled?(:my_component) do
-  expensive_debug_operation()
-end
-```
-
-### 3. Structured Context
-
-```elixir
-# Good - structured data
-Raxol.Debug.debug_log(:handler, "Event processed",
-  context: %{
-    event_type: :key_press,
-    key: "a",
-    modifiers: [:ctrl],
-    timestamp: DateTime.utc_now()
-  })
-
-# Bad - unstructured string
-Raxol.Debug.debug_log(:handler,
-  "Event processed: key_press a with ctrl at #{DateTime.utc_now()}")
-```
-
-### 4. Clean Up After Debugging
-
-```elixir
-# After debugging session
-Raxol.Debug.clear_stats()
-Raxol.Debug.disable()
-
-# Or export for later analysis
-Raxol.Debug.export("debug_#{Date.utc_today()}.json")
-Raxol.Debug.clear_stats()
-```
-
-### 5. Use Guards for Production
+Or with a module attribute:
 
 ```elixir
 defmodule MyModule do
@@ -367,51 +232,67 @@ defmodule MyModule do
 end
 ```
 
-## Troubleshooting
+## Logger Integration
 
-### Debug Server Not Started
+| Debug Level | Logger Level | Metadata |
+|-------------|-------------|----------|
+| `:off` | `:info` | Standard |
+| `:basic` | `:debug` | Standard |
+| `:detailed` | `:debug` | `[:module, :function, :line, :pid]` |
+| `:verbose` | `:debug` | All metadata |
 
+## Performance Impact
+
+| Level | CPU | Memory |
+|-------|-----|--------|
+| `:off` | None | None |
+| `:basic` | ~1-2% | Minimal |
+| `:detailed` | ~5-10% | ~1MB for logs |
+| `:verbose` | ~15-20% | ~5MB for logs and traces |
+
+## Best Practices
+
+Guard expensive debug operations behind level checks:
 ```elixir
-# Ensure it's in your application supervision tree
-children = [
-  {Raxol.Debug, []},
-  # other children...
-]
+if Raxol.Debug.debug_enabled?(:my_component) do
+  expensive_debug_operation()
+end
 ```
 
-### Too Many Logs
-
+Use structured context, not string interpolation:
 ```elixir
-# Limit log storage
-{Raxol.Debug, [max_logs: 1000, max_traces: 500]}
+# good
+Raxol.Debug.debug_log(:handler, "Event processed",
+  context: %{event_type: :key_press, key: "a", modifiers: [:ctrl]})
 
-# Or clear periodically
-Process.send_after(self(), :clear_debug, 60_000)
+# bad
+Raxol.Debug.debug_log(:handler,
+  "Event processed: key_press a with ctrl at #{DateTime.utc_now()}")
 ```
 
-### Performance Impact Too High
-
+Clean up after debugging:
 ```elixir
-# Use sampling for hot paths
-if :rand.uniform() < 0.1 do  # 10% sampling
+Raxol.Debug.export("debug_#{Date.utc_today()}.json")
+Raxol.Debug.clear_stats()
+Raxol.Debug.disable()
+```
+
+For hot paths, sample instead of logging everything:
+```elixir
+if :rand.uniform() < 0.1 do
   Raxol.Debug.debug_log(:hot_path, "Sampled execution")
 end
 ```
 
-## CLI Integration
+## Troubleshooting
 
-```bash
-# Enable debug mode via environment variable
-DEBUG_LEVEL=verbose iex -S mix
+**Debug server not started:** Add `{Raxol.Debug, []}` to your supervision tree.
 
-# Or in your app
-debug_level = System.get_env("DEBUG_LEVEL", "off") |> String.to_atom()
-Raxol.Debug.enable(debug_level)
-```
+**Too many logs:** Limit storage with `{Raxol.Debug, [max_logs: 1000, max_traces: 500]}` or clear periodically.
+
+**Performance impact too high:** Use sampling (see above) or drop to a lower debug level.
 
 ## Export Format
-
-Debug exports are JSON files containing:
 
 ```json
 {
@@ -426,12 +307,12 @@ Debug exports are JSON files containing:
     {
       "level": "detailed",
       "message": "Processing input",
-      "context": {...},
+      "context": {},
       "timestamp": "2024-01-15T10:00:01Z"
     }
   ],
-  "traces": [...],
-  "profiles": {...},
+  "traces": [],
+  "profiles": {},
   "exported_at": "2024-01-15T11:00:00Z"
 }
 ```

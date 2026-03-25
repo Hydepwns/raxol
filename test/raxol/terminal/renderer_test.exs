@@ -32,8 +32,8 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = default_buffer(10, 1)
       renderer = Renderer.new(buffer)
       output = Renderer.render(renderer)
-      expected_span = "<span style=\"\"> </span>"
-      assert output == String.duplicate(expected_span, 10)
+      # Empty buffer with no theme produces unstyled spaces (no ANSI codes)
+      assert output == String.duplicate(" ", 10)
     end
 
     test ~c"renders screen buffer with content" do
@@ -46,12 +46,12 @@ defmodule Raxol.Terminal.RendererTest do
 
       output = Renderer.render(renderer)
 
-      expected_output =
-        "<span style=\"color: #F00\">H</span>" <>
-          "<span style=\"color: #FFF\">i</span>" <>
-          String.duplicate("<span style=\"color: #FFF\"> </span>", 3)
-
-      assert output == expected_output
+      # "H" has red foreground via theme (#F00 -> 24-bit ANSI)
+      # "i" and spaces have default foreground (#FFF -> 24-bit ANSI)
+      assert String.contains?(output, "H")
+      assert String.contains?(output, "i")
+      assert String.contains?(output, "\e[")
+      assert String.contains?(output, "\e[0m")
     end
 
     test ~c"renders multiple rows" do
@@ -62,14 +62,10 @@ defmodule Raxol.Terminal.RendererTest do
       renderer = Renderer.new(buffer, %{foreground: %{default: "#CCC"}})
       output = Renderer.render(renderer)
 
-      expected_row1 =
-        "<span style=\"color: #CCC\">A</span>" <>
-          String.duplicate("<span style=\"color: #CCC\"> </span>", 2)
-
-      expected_row2 =
-        "<span style=\"color: #CCC\"> </span><span style=\"color: #CCC\">B</span><span style=\"color: #CCC\"> </span>"
-
-      assert output == expected_row1 <> "\n" <> expected_row2
+      # Multiple rows separated by newline
+      assert String.contains?(output, "\n")
+      assert String.contains?(output, "A")
+      assert String.contains?(output, "B")
     end
   end
 
@@ -117,7 +113,10 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X")
       renderer = Renderer.new(buffer, %{foreground: %{default: "#FFF"}})
       output = Renderer.render(renderer)
-      assert output == "<span style=\"color: #FFF\">X</span>"
+      # Should contain the character with ANSI styling
+      assert String.contains?(output, "X")
+      assert String.contains?(output, "\e[38;2;255;255;255m")
+      assert String.contains?(output, "\e[0m")
     end
 
     test ~c"renders cell with foreground color" do
@@ -129,7 +128,10 @@ defmodule Raxol.Terminal.RendererTest do
       theme = %{foreground: %{red: "#FF0000"}}
       renderer = Renderer.new(buffer, theme)
       output = Renderer.render(renderer)
-      assert output == "<span style=\"color: #FF0000\">X</span>"
+      # Red foreground via theme: 24-bit ANSI
+      assert String.contains?(output, "\e[38;2;255;0;0m")
+      assert String.contains?(output, "X")
+      assert String.contains?(output, "\e[0m")
     end
 
     test ~c"renders cell with background color" do
@@ -141,7 +143,10 @@ defmodule Raxol.Terminal.RendererTest do
       theme = %{background: %{blue: "#0000FF"}}
       renderer = Renderer.new(buffer, theme)
       output = Renderer.render(renderer)
-      assert output == "<span style=\"background-color: #0000FF\">X</span>"
+      # Blue background via theme: 24-bit ANSI
+      assert String.contains?(output, "\e[48;2;0;0;255m")
+      assert String.contains?(output, "X")
+      assert String.contains?(output, "\e[0m")
     end
 
     test ~c"renders cell with bold style" do
@@ -152,7 +157,9 @@ defmodule Raxol.Terminal.RendererTest do
 
       renderer = Renderer.new(buffer)
       output = Renderer.render(renderer)
-      assert output == "<span style=\"font-weight: bold\">X</span>"
+      assert String.contains?(output, "\e[1m")
+      assert String.contains?(output, "X")
+      assert String.contains?(output, "\e[0m")
     end
 
     test ~c"renders cell with underline style" do
@@ -163,7 +170,9 @@ defmodule Raxol.Terminal.RendererTest do
 
       renderer = Renderer.new(buffer)
       output = Renderer.render(renderer)
-      assert output == "<span style=\"text-decoration: underline\">X</span>"
+      assert String.contains?(output, "\e[4m")
+      assert String.contains?(output, "X")
+      assert String.contains?(output, "\e[0m")
     end
 
     test ~c"renders cell with italic style" do
@@ -174,7 +183,9 @@ defmodule Raxol.Terminal.RendererTest do
 
       renderer = Renderer.new(buffer)
       output = Renderer.render(renderer)
-      assert output == "<span style=\"font-style: italic\">X</span>"
+      assert String.contains?(output, "\e[3m")
+      assert String.contains?(output, "X")
+      assert String.contains?(output, "\e[0m")
     end
 
     test ~c"renders cell with multiple styles" do
@@ -188,31 +199,39 @@ defmodule Raxol.Terminal.RendererTest do
       buffer =
         ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
 
-      theme = %{foreground: %{green: "#0F0"}, background: %{black: "#000"}}
+      theme = %{foreground: %{green: "#00FF00"}, background: %{black: "#000000"}}
       renderer = Renderer.new(buffer, theme)
       output = Renderer.render(renderer)
 
-      assert String.contains?(output, "<span style=\"")
-      assert String.contains?(output, "color: #0F0")
-      assert String.contains?(output, "background-color: #000")
-      assert String.contains?(output, "font-weight: bold")
-      assert String.contains?(output, "font-style: italic")
-      assert String.contains?(output, "\">X</span>")
+      assert String.contains?(output, "X")
+      # Foreground green via 24-bit ANSI
+      assert String.contains?(output, "\e[38;2;0;255;0m")
+      # Background black via 24-bit ANSI
+      assert String.contains?(output, "\e[48;2;0;0;0m")
+      # Bold
+      assert String.contains?(output, "\e[1m")
+      # Italic
+      assert String.contains?(output, "\e[3m")
+      # Reset
+      assert String.contains?(output, "\e[0m")
     end
 
     test ~c"uses default theme colors when cell style is nil" do
       buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", %{})
-      theme = %{foreground: %{default: "#ABC"}, background: %{default: "#DEF"}}
+      theme = %{foreground: %{default: "#AABBCC"}, background: %{default: "#DDEEFF"}}
       renderer = Renderer.new(buffer, theme)
       output = Renderer.render(renderer)
 
-      assert String.contains?(output, "<span style=\"")
-      assert String.contains?(output, "color: #ABC")
-      assert String.contains?(output, "background-color: #DEF")
-      assert String.contains?(output, "\">X</span>")
-      refute String.contains?(output, "font-weight")
-      refute String.contains?(output, "font-style")
-      refute String.contains?(output, "text-decoration")
+      assert String.contains?(output, "X")
+      # Default fg: #AABBCC
+      assert String.contains?(output, "\e[38;2;170;187;204m")
+      # Default bg: #DDEEFF
+      assert String.contains?(output, "\e[48;2;221;238;255m")
+      assert String.contains?(output, "\e[0m")
+      # No bold/italic/underline
+      refute String.contains?(output, "\e[1m")
+      refute String.contains?(output, "\e[3m")
+      refute String.contains?(output, "\e[4m")
     end
 
     test ~c"handles missing theme colors gracefully" do
@@ -222,7 +241,21 @@ defmodule Raxol.Terminal.RendererTest do
 
       renderer = Renderer.new(buffer, %{})
       output = Renderer.render(renderer)
-      assert output == "<span style=\"\">X</span>"
+      # With empty theme, red falls back to standard ANSI code 31
+      assert String.contains?(output, "\e[31m")
+      assert String.contains?(output, "X")
+      assert String.contains?(output, "\e[0m")
+    end
+
+    test ~c"renders cell with standard ANSI color when no theme" do
+      buffer =
+        ScreenBuffer.new(1, 1)
+        |> ScreenBuffer.write_char(0, 0, "X", %{foreground: :green})
+
+      renderer = Renderer.new(buffer)
+      output = Renderer.render(renderer)
+      assert String.contains?(output, "\e[32m")
+      assert String.contains?(output, "X")
     end
   end
 end

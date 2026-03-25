@@ -132,7 +132,7 @@ jobs:
         uses: erlef/setup-beam@v1
         with:
           elixir-version: "1.19.0"
-          otp-version: "28.2"
+          otp-version: "27.2"
           install-hex: true
           install-rebar: true
 
@@ -195,7 +195,7 @@ jobs:
         uses: erlef/setup-beam@v1
         with:
           elixir-version: "1.19.0"
-          otp-version: "28.2"
+          otp-version: "27.2"
           install-hex: true
           install-rebar: true
 
@@ -206,9 +206,9 @@ jobs:
             deps
             _build
             priv/plts
-          key: plt-${{ runner.os }}-28.2-1.19.0-${{ hashFiles('**/mix.lock') }}
+          key: plt-${{ runner.os }}-27.2-1.19.0-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            plt-${{ runner.os }}-28.2-1.19.0-
+            plt-${{ runner.os }}-27.2-1.19.0-
 
       - name: Install dependencies
         run: |
@@ -264,7 +264,7 @@ jobs:
         uses: erlef/setup-beam@v1
         with:
           elixir-version: "1.19.0"
-          otp-version: "28.2"
+          otp-version: "27.2"
           install-hex: true
           install-rebar: true
 

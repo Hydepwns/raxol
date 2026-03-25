@@ -162,8 +162,10 @@ defmodule ConcurrentBufferTestHelper do
         Enum.each(1..fill_iterations, fn i ->
           x = rem(i, 8) * 10
           y = div(i, 8) * 3
-          cell = Cell.new("F", TextFormatting.new(foreground: :red))
-          ConcurrentBuffer.fill_region(pid, x, y, 10, 3, cell)
+
+          ConcurrentBuffer.fill_region(pid, x, y, 10, 3, "F", %{
+            foreground: :red
+          })
         end)
       end)
     ]

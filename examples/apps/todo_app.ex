@@ -1,360 +1,347 @@
-defmodule Raxol.Examples.TodoApp do
-  @moduledoc """
-  A fully-featured todo list application demonstrating Raxol's capabilities.
+# Advanced Todo App Example
+#
+# A fully-featured todo list demonstrating TEA patterns with
+# persistence, search, filtering, and keyboard shortcuts.
+#
+# Usage:
+#   mix run examples/apps/todo_app.ex
+#
+# Controls:
+#   Normal mode:  j/Down = down, k/Up = up, Enter/Space = toggle
+#                 a = add, e = edit, d = delete, s = save to disk
+#                 / = search, 1/2/3 = filter (all/active/done)
+#                 q/Ctrl+C = quit
+#   Input mode:   type text, Enter = submit, Escape = cancel
 
-  Features:
-  - Add, edit, and delete todos
-  - Mark todos as complete
-  - Filter by status (all, active, completed)
-  - Persist todos to disk
-  - Keyboard shortcuts
-  - Search functionality
-  """
-
+defmodule TodoApp do
   use Raxol.Core.Runtime.Application
-  import Raxol.LiveView, only: [assign: 2, assign: 3, update: 3]
 
   @storage_file Path.expand("~/.raxol_todos.json")
 
   @impl true
-  def mount(_params, socket) do
+  def init(_context) do
     todos = load_todos()
 
-    {:ok,
-     socket
-     |> assign(todos: todos)
-     |> assign(filter: :all)
-     |> assign(input: "")
-     |> assign(search: "")
-     |> assign(editing_id: nil)
-     |> assign(edit_text: "")
-     |> register_shortcuts([
-       {"ctrl+n", "new_todo"},
-       {"ctrl+d", "clear_completed"},
-       {"ctrl+s", "save_todos"},
-       {"ctrl+f", "focus_search"},
-       {"/", "focus_search"},
-       {"escape", "cancel_edit"}
-     ])}
+    %{
+      todos: todos,
+      next_id: next_id(todos),
+      cursor: 0,
+      mode: :normal,
+      input_buffer: "",
+      editing_id: nil,
+      filter: :all,
+      search: "",
+      message: nil
+    }
   end
 
   @impl true
-  def render(assigns) do
-    filtered_todos = filter_todos(assigns.todos, assigns.filter, assigns.search)
-    stats = calculate_stats(assigns.todos)
+  def update(message, model) do
+    case message do
+      # -- Quit --
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}}
+      when model.mode == :normal ->
+        {model, [command(:quit)]}
 
-    ~H"""
-    <Screen title="Todo List">
-      <Box padding={2}>
-        <!-- Header -->
-        <Stack direction="horizontal" justify="between" marginBottom={2}>
-          <Heading level={1}>[TODO] Todo List</Heading>
-          <Text color="gray">
-            <%= stats.active %> active, <%= stats.completed %> completed
-          </Text>
-        </Stack>
-        
-        <!-- Search Bar -->
-        <Box marginBottom={2}>
-          <TextInput
-            value={@search}
-            onChange="update_search"
-            placeholder="Search todos... (Ctrl+F or /)"
-            leftIcon="[SEARCH]"
-          />
-        </Box>
-        
-        <!-- New Todo Input -->
-        <Box marginBottom={2}>
-          <TextInput
-            value={@input}
-            onChange="update_input"
-            onSubmit="add_todo"
-            placeholder="What needs to be done? (Ctrl+N)"
-            autoFocus
-          />
-        </Box>
-        
-        <!-- Filter Tabs -->
-        <Tabs
-          value={@filter}
-          onChange="change_filter"
-          marginBottom={2}
-          tabs={[
-            %{id: :all, label: "All (#{length(filtered_todos)})"},
-            %{id: :active, label: "Active (#{stats.active})"},
-            %{id: :completed, label: "Completed (#{stats.completed})"}
-          ]}
-        />
-        
-        <!-- Todo List -->
-        <Box border="single" borderColor="gray.600" minHeight={20}>
-          <%= if length(filtered_todos) == 0 do %>
-            <Box padding={2}>
-              <Text color="gray" align="center">
-                <%= empty_message(@filter, @search) %>
-              </Text>
-            </Box>
-          <% else %>
-            <List>
-              <%= for todo <- filtered_todos do %>
-                <TodoItem
-                  todo={todo}
-                  editing={@editing_id == todo.id}
-                  editText={@edit_text}
-                  onToggle="toggle_todo"
-                  onEdit="start_edit"
-                  onUpdateEdit="update_edit"
-                  onSaveEdit="save_edit"
-                  onCancelEdit="cancel_edit"
-                  onDelete="delete_todo"
-                />
-              <% end %>
-            </List>
-          <% end %>
-        </Box>
-        
-        <!-- Footer Actions -->
-        <Stack direction="horizontal" justify="between" marginTop={2}>
-          <ButtonGroup size="small">
-            <Button onClick="mark_all_complete">
-              [OK] Mark All Complete
-            </Button>
-            <Button onClick="clear_completed" variant="danger">
-              Clear Completed
-            </Button>
-          </ButtonGroup>
-          
-          <Text color="gray" size="small">
-            Ctrl+S to save | Ctrl+D to clear completed
-          </Text>
-        </Stack>
-      </Box>
-    </Screen>
-    """
-  end
+      %Raxol.Core.Events.Event{
+        type: :key,
+        data: %{key: :char, char: "c", ctrl: true}
+      } ->
+        {model, [command(:quit)]}
 
-  # Event Handlers
+      # -- Normal mode --
+      %Raxol.Core.Events.Event{type: :key, data: data}
+      when model.mode == :normal ->
+        {handle_normal_key(data, model), []}
 
-  @impl true
-  def handle_event("update_input", %{"value" => value}, socket) do
-    {:noreply, assign(socket, input: value)}
-  end
+      # -- Input/Search mode --
+      %Raxol.Core.Events.Event{type: :key, data: data}
+      when model.mode in [:input, :edit, :search] ->
+        {handle_input_key(data, model), []}
 
-  @impl true
-  def handle_event("add_todo", _, socket) do
-    text = String.trim(socket.assigns.input)
-
-    if text != "" do
-      todo = %{
-        id: generate_id(),
-        text: text,
-        completed: false,
-        created_at: DateTime.utc_now(),
-        updated_at: DateTime.utc_now()
-      }
-
-      socket =
-        socket
-        |> update(:todos, &[todo | &1])
-        |> assign(input: "")
-        |> save_todos_to_disk()
-
-      {:noreply, socket}
-    else
-      {:noreply, socket}
+      _ ->
+        {model, []}
     end
   end
 
   @impl true
-  def handle_event("toggle_todo", %{"id" => id}, socket) do
-    todos =
-      Enum.map(socket.assigns.todos, fn todo ->
-        if todo.id == id do
-          %{todo | completed: !todo.completed, updated_at: DateTime.utc_now()}
-        else
-          todo
-        end
+  def view(model) do
+    filtered = filtered_todos(model)
+    done_count = Enum.count(model.todos, & &1.done)
+    total = length(model.todos)
+
+    column style: %{padding: 1, gap: 1} do
+      [
+        row style: %{gap: 2} do
+          [
+            text("Todo List", style: [:bold]),
+            text("#{done_count}/#{total} done", style: %{fg: :cyan})
+          ]
+        end,
+        filter_bar(model),
+        search_bar(model),
+        todo_list(model, filtered),
+        input_area(model),
+        status_bar(model)
+      ]
+    end
+  end
+
+  @impl true
+  def subscribe(_model), do: []
+
+  # -- Normal mode key handling --
+
+  defp handle_normal_key(%{key: :char, char: "j"}, m), do: move_cursor(m, 1)
+  defp handle_normal_key(%{key: :down}, m), do: move_cursor(m, 1)
+  defp handle_normal_key(%{key: :char, char: "k"}, m), do: move_cursor(m, -1)
+  defp handle_normal_key(%{key: :up}, m), do: move_cursor(m, -1)
+  defp handle_normal_key(%{key: :enter}, m), do: toggle_done(m)
+  defp handle_normal_key(%{key: :space}, m), do: toggle_done(m)
+
+  defp handle_normal_key(%{key: :char, char: "a"}, m),
+    do: %{m | mode: :input, input_buffer: "", message: nil}
+
+  defp handle_normal_key(%{key: :char, char: "e"}, m), do: start_edit(m)
+  defp handle_normal_key(%{key: :char, char: "d"}, m), do: delete_todo(m)
+
+  defp handle_normal_key(%{key: :char, char: "s"}, m) do
+    save_todos(m.todos)
+    %{m | message: "Saved #{length(m.todos)} todos to disk"}
+  end
+
+  defp handle_normal_key(%{key: :char, char: "/"}, m),
+    do: %{m | mode: :search, input_buffer: m.search, message: nil}
+
+  defp handle_normal_key(%{key: :char, char: "1"}, m),
+    do: %{m | filter: :all, cursor: 0}
+
+  defp handle_normal_key(%{key: :char, char: "2"}, m),
+    do: %{m | filter: :active, cursor: 0}
+
+  defp handle_normal_key(%{key: :char, char: "3"}, m),
+    do: %{m | filter: :done, cursor: 0}
+
+  defp handle_normal_key(_, m), do: m
+
+  # -- Input mode key handling --
+
+  defp handle_input_key(%{key: :enter}, %{mode: :input} = m), do: submit_todo(m)
+  defp handle_input_key(%{key: :enter}, %{mode: :edit} = m), do: save_edit(m)
+
+  defp handle_input_key(%{key: :enter}, %{mode: :search} = m),
+    do: %{m | mode: :normal, search: m.input_buffer, cursor: 0}
+
+  defp handle_input_key(%{key: :esc}, m),
+    do: %{m | mode: :normal, input_buffer: "", editing_id: nil}
+
+  defp handle_input_key(%{key: :backspace}, m),
+    do: %{m | input_buffer: String.slice(m.input_buffer, 0..-2//1)}
+
+  defp handle_input_key(%{key: :char, char: ch}, m) when is_binary(ch),
+    do: %{m | input_buffer: m.input_buffer <> ch}
+
+  defp handle_input_key(_, m), do: m
+
+  # -- View helpers --
+
+  defp filter_bar(model) do
+    labels = [
+      {:all, "1:All"},
+      {:active, "2:Active"},
+      {:done, "3:Done"}
+    ]
+
+    items =
+      Enum.map(labels, fn {filter, label} ->
+        style = if model.filter == filter, do: [:bold], else: %{fg: :white}
+        text(label, style: style)
       end)
 
-    socket =
-      socket
-      |> assign(todos: todos)
-      |> save_todos_to_disk()
-
-    {:noreply, socket}
+    row style: %{gap: 2} do
+      items
+    end
   end
 
-  @impl true
-  def handle_event("start_edit", %{"id" => id}, socket) do
-    todo = Enum.find(socket.assigns.todos, &(&1.id == id))
+  defp search_bar(%{search: ""}), do: text("")
 
-    socket =
-      socket
-      |> assign(editing_id: id)
-      |> assign(edit_text: todo.text)
+  defp search_bar(%{search: search}),
+    do: text("Search: #{search}", style: %{fg: :yellow})
 
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("update_edit", %{"value" => value}, socket) do
-    {:noreply, assign(socket, edit_text: value)}
-  end
-
-  @impl true
-  def handle_event("save_edit", _, socket) do
-    text = String.trim(socket.assigns.edit_text)
-
-    if text != "" do
-      todos =
-        Enum.map(socket.assigns.todos, fn todo ->
-          if todo.id == socket.assigns.editing_id do
-            %{todo | text: text, updated_at: DateTime.utc_now()}
-          else
-            todo
-          end
+  defp todo_list(model, filtered) do
+    if filtered == [] do
+      box style: %{padding: 1, border: :single, width: 50} do
+        text(empty_message(model), style: %{fg: :white})
+      end
+    else
+      items =
+        filtered
+        |> Enum.with_index()
+        |> Enum.map(fn {todo, idx} ->
+          prefix = if idx == model.cursor, do: "> ", else: "  "
+          check = if todo.done, do: "[x]", else: "[ ]"
+          style = if idx == model.cursor, do: [:bold], else: []
+          text("#{prefix}#{check} #{todo.text}", style: style)
         end)
 
-      socket =
-        socket
-        |> assign(todos: todos)
-        |> assign(editing_id: nil)
-        |> assign(edit_text: "")
-        |> save_todos_to_disk()
-
-      {:noreply, socket}
-    else
-      {:noreply, socket}
+      box style: %{padding: 1, border: :single, width: 50} do
+        column style: %{gap: 0} do
+          items
+        end
+      end
     end
   end
 
-  @impl true
-  def handle_event("cancel_edit", _, socket) do
-    socket =
-      socket
-      |> assign(editing_id: nil)
-      |> assign(edit_text: "")
+  defp input_area(%{mode: :input, input_buffer: buf}),
+    do: text("New: #{buf}_  [enter]submit [esc]cancel", style: %{fg: :green})
 
-    {:noreply, socket}
+  defp input_area(%{mode: :edit, input_buffer: buf}),
+    do: text("Edit: #{buf}_  [enter]save [esc]cancel", style: %{fg: :yellow})
+
+  defp input_area(%{mode: :search, input_buffer: buf}),
+    do: text("Search: #{buf}_  [enter]apply [esc]cancel", style: %{fg: :cyan})
+
+  defp input_area(_), do: text("")
+
+  defp status_bar(%{message: msg}) when is_binary(msg) do
+    text(msg, style: %{fg: :green})
   end
 
-  @impl true
-  def handle_event("delete_todo", %{"id" => id}, socket) do
-    todos = Enum.reject(socket.assigns.todos, &(&1.id == id))
-
-    socket =
-      socket
-      |> assign(todos: todos)
-      |> save_todos_to_disk()
-
-    {:noreply, socket}
+  defp status_bar(_) do
+    text("[a]dd [e]dit [d]el [s]ave [/]search [1-3]filter [q]uit")
   end
 
-  @impl true
-  def handle_event("change_filter", %{"value" => filter}, socket) do
-    {:noreply, assign(socket, filter: String.to_atom(filter))}
-  end
+  defp empty_message(%{search: s}) when s != "", do: "No todos match '#{s}'"
+  defp empty_message(%{filter: :active}), do: "No active todos"
+  defp empty_message(%{filter: :done}), do: "No completed todos"
+  defp empty_message(_), do: "No todos -- press 'a' to add one"
 
-  @impl true
-  def handle_event("update_search", %{"value" => value}, socket) do
-    {:noreply, assign(socket, search: value)}
-  end
+  # -- Model helpers --
 
-  @impl true
-  def handle_event("mark_all_complete", _, socket) do
-    todos =
-      Enum.map(socket.assigns.todos, fn todo ->
-        %{todo | completed: true, updated_at: DateTime.utc_now()}
-      end)
-
-    socket =
-      socket
-      |> assign(todos: todos)
-      |> save_todos_to_disk()
-
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("clear_completed", _, socket) do
-    todos = Enum.reject(socket.assigns.todos, & &1.completed)
-
-    socket =
-      socket
-      |> assign(todos: todos)
-      |> save_todos_to_disk()
-
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("new_todo", _, socket) do
-    # Focus the input field (implementation depends on focus management)
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("save_todos", _, socket) do
-    socket = save_todos_to_disk(socket)
-    Raxol.Toast.show("Todos saved!", type: :success)
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("focus_search", _, socket) do
-    # Focus the search field (implementation depends on focus management)
-    {:noreply, socket}
-  end
-
-  # Helper Functions
-
-  defp filter_todos(todos, filter, search) do
-    todos
-    |> filter_by_status(filter)
-    |> filter_by_search(search)
-    |> Enum.sort_by(& &1.created_at, {:desc, DateTime})
+  defp filtered_todos(model) do
+    model.todos
+    |> filter_by_status(model.filter)
+    |> filter_by_search(model.search)
   end
 
   defp filter_by_status(todos, :all), do: todos
-  defp filter_by_status(todos, :active), do: Enum.reject(todos, & &1.completed)
-
-  defp filter_by_status(todos, :completed),
-    do: Enum.filter(todos, & &1.completed)
+  defp filter_by_status(todos, :active), do: Enum.reject(todos, & &1.done)
+  defp filter_by_status(todos, :done), do: Enum.filter(todos, & &1.done)
 
   defp filter_by_search(todos, ""), do: todos
 
   defp filter_by_search(todos, search) do
-    search_term = String.downcase(search)
+    term = String.downcase(search)
 
-    Enum.filter(todos, fn todo ->
-      String.contains?(String.downcase(todo.text), search_term)
+    Enum.filter(todos, fn t ->
+      String.contains?(String.downcase(t.text), term)
     end)
   end
 
-  defp calculate_stats(todos) do
-    completed = Enum.count(todos, & &1.completed)
+  defp move_cursor(model, delta) do
+    filtered = filtered_todos(model)
+    len = length(filtered)
 
-    %{
-      total: length(todos),
-      active: length(todos) - completed,
-      completed: completed
-    }
+    if len == 0 do
+      model
+    else
+      new_cursor = max(0, min(model.cursor + delta, len - 1))
+      %{model | cursor: new_cursor}
+    end
   end
 
-  defp empty_message(:all, ""), do: "No todos yet. Add one above!"
-  defp empty_message(:all, _search), do: "No todos match your search."
-  defp empty_message(:active, _), do: "No active todos."
-  defp empty_message(:completed, _), do: "No completed todos yet."
+  defp toggle_done(model) do
+    case todo_at_cursor(model) do
+      nil ->
+        model
 
-  defp generate_id do
-    :crypto.strong_rand_bytes(16) |> Base.encode16()
+      todo ->
+        todos =
+          Enum.map(model.todos, fn t ->
+            if t.id == todo.id, do: %{t | done: not t.done}, else: t
+          end)
+
+        %{model | todos: todos}
+    end
   end
 
-  defp save_todos_to_disk(socket) do
-    todos_json = Jason.encode!(socket.assigns.todos, pretty: true)
-    File.write!(@storage_file, todos_json)
-    socket
+  defp delete_todo(model) do
+    case todo_at_cursor(model) do
+      nil ->
+        model
+
+      todo ->
+        todos = Enum.reject(model.todos, &(&1.id == todo.id))
+
+        filtered_len =
+          length(
+            filter_by_status(todos, model.filter)
+            |> filter_by_search(model.search)
+          )
+
+        new_cursor = min(model.cursor, max(filtered_len - 1, 0))
+        %{model | todos: todos, cursor: new_cursor}
+    end
+  end
+
+  defp start_edit(model) do
+    case todo_at_cursor(model) do
+      nil ->
+        model
+
+      todo ->
+        %{model | mode: :edit, editing_id: todo.id, input_buffer: todo.text}
+    end
+  end
+
+  defp save_edit(model) do
+    trimmed = String.trim(model.input_buffer)
+
+    if trimmed == "" do
+      %{model | mode: :normal, editing_id: nil, input_buffer: ""}
+    else
+      todos =
+        Enum.map(model.todos, fn t ->
+          if t.id == model.editing_id, do: %{t | text: trimmed}, else: t
+        end)
+
+      %{model | todos: todos, mode: :normal, editing_id: nil, input_buffer: ""}
+    end
+  end
+
+  defp submit_todo(model) do
+    trimmed = String.trim(model.input_buffer)
+
+    if trimmed == "" do
+      %{model | mode: :normal, input_buffer: ""}
+    else
+      new_todo = %{id: model.next_id, text: trimmed, done: false}
+
+      %{
+        model
+        | todos: model.todos ++ [new_todo],
+          next_id: model.next_id + 1,
+          mode: :normal,
+          input_buffer: ""
+      }
+    end
+  end
+
+  defp todo_at_cursor(model) do
+    filtered_todos(model) |> Enum.at(model.cursor)
+  end
+
+  # -- Persistence --
+
+  defp save_todos(todos) do
+    data =
+      Enum.map(todos, fn t ->
+        %{"id" => t.id, "text" => t.text, "done" => t.done}
+      end)
+
+    File.write!(@storage_file, Jason.encode!(data, pretty: true))
+  rescue
+    _ -> :ok
   end
 
   defp load_todos do
@@ -362,114 +349,35 @@ defmodule Raxol.Examples.TodoApp do
       @storage_file
       |> File.read!()
       |> Jason.decode!()
-      |> Enum.map(fn todo ->
+      |> Enum.map(fn item ->
         %{
-          "id" => id,
-          "text" => text,
-          "completed" => completed,
-          "created_at" => created_at,
-          "updated_at" => updated_at
-        } = todo
-
-        %{
-          id: id,
-          text: text,
-          completed: completed,
-          created_at: parse_datetime(created_at),
-          updated_at: parse_datetime(updated_at)
+          id: item["id"],
+          text: item["text"],
+          done: item["done"] || false
         }
       end)
     else
-      []
+      [
+        %{id: 1, text: "Learn Raxol", done: false},
+        %{id: 2, text: "Build a TUI app", done: false},
+        %{id: 3, text: "Read AGENTS.md", done: true}
+      ]
     end
   rescue
-    _ -> []
+    _ ->
+      [%{id: 1, text: "Welcome to TodoApp", done: false}]
   end
 
-  defp parse_datetime(nil), do: DateTime.utc_now()
+  defp next_id([]), do: 1
 
-  defp parse_datetime(string) when is_binary(string) do
-    case DateTime.from_iso8601(string) do
-      {:ok, datetime, _} -> datetime
-      _ -> DateTime.utc_now()
-    end
+  defp next_id(todos) do
+    todos |> Enum.map(& &1.id) |> Enum.max() |> Kernel.+(1)
   end
 end
 
-# TodoItem Component
-defmodule Raxol.Examples.TodoApp.TodoItem do
-  use Raxol.Component
+{:ok, pid} = Raxol.start_link(TodoApp, [])
+ref = Process.monitor(pid)
 
-  prop(:todo, :map, required: true)
-  prop(:editing, :boolean, default: false)
-  prop(:editText, :string, default: "")
-  prop(:onToggle, :string)
-  prop(:onEdit, :string)
-  prop(:onUpdateEdit, :string)
-  prop(:onSaveEdit, :string)
-  prop(:onCancelEdit, :string)
-  prop(:onDelete, :string)
-
-  @impl true
-  def render(assigns) do
-    ~H"""
-    <ListItem>
-      <Stack direction="horizontal" align="center" spacing={2}>
-        <!-- Checkbox -->
-        <Checkbox
-          checked={@todo.completed}
-          onChange={@onToggle}
-          params={%{id: @todo.id}}
-        />
-        
-        <!-- Todo Text or Edit Input -->
-        <%= if @editing do %>
-          <Box flex={1}>
-            <TextInput
-              value={@editText}
-              onChange={@onUpdateEdit}
-              onSubmit={@onSaveEdit}
-              onEscape={@onCancelEdit}
-              autoFocus
-            />
-          </Box>
-        <% else %>
-          <Box flex={1}>
-            <Text
-              strikethrough={@todo.completed}
-              color={if @todo.completed, do: "gray", else: "white"}
-              onDoubleClick={@onEdit}
-              params={%{id: @todo.id}}
-            >
-              <%= @todo.text %>
-            </Text>
-          </Box>
-        <% end %>
-        
-        <!-- Actions -->
-        <%= unless @editing do %>
-          <ButtonGroup size="small">
-            <Button
-              variant="ghost"
-              onClick={@onEdit}
-              params={%{id: @todo.id}}
-              title="Edit (double-click)"
-            >
-              [EDIT]
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={@onDelete}
-              params={%{id: @todo.id}}
-              title="Delete"
-              color="red"
-            >
-              [DEL]
-            </Button>
-          </ButtonGroup>
-        <% end %>
-      </Stack>
-    </ListItem>
-    """
-  end
+receive do
+  {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
 end

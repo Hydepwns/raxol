@@ -1,7 +1,5 @@
 # Virtual File System
 
-> [Documentation](../README.md) > [Features](README.md) > File System
-
 In-memory filesystem with Unix commands.
 
 ## Usage
@@ -94,4 +92,4 @@ def handle_command(state, "ls " <> path) do
 end
 ```
 
-Performance: ~10μs for directory listing
+Performance: ~10us for directory listing

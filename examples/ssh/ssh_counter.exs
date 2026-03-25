@@ -1,0 +1,64 @@
+# SSH Counter Example
+#
+# Serves the CounterExample TEA app over SSH.
+#
+# Usage:
+#   mix run examples/ssh/ssh_counter.exs
+#
+# Then in another terminal:
+#   ssh localhost -p 2222
+#
+# Each SSH connection gets its own counter instance with full
+# crash isolation. Press '+'/'-' to change count, 'q' to quit.
+
+defmodule SSHCounterExample do
+  use Raxol.Core.Runtime.Application
+
+  @impl true
+  def init(_context) do
+    %{count: 0}
+  end
+
+  @impl true
+  def update(message, model) do
+    case message do
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} ->
+        {%{model | count: model.count + 1}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}} ->
+        {%{model | count: model.count - 1}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+        {model, [command(:quit)]}
+
+      _ ->
+        {model, []}
+    end
+  end
+
+  @impl true
+  def view(model) do
+    column style: %{padding: 1, gap: 1, align_items: :center} do
+      [
+        text("SSH Counter (connected via SSH!)", style: [:bold]),
+        box style: %{
+              padding: 1,
+              border: :single,
+              width: 20,
+              justify_content: :center
+            } do
+          text("Count: #{model.count}", style: [:bold])
+        end,
+        text("Press '+'/'-' to change, 'q' to quit")
+      ]
+    end
+  end
+end
+
+IO.puts("Starting SSH server on port 2222...")
+IO.puts("Connect with: ssh localhost -p 2222")
+
+{:ok, _server} = Raxol.SSH.serve(SSHCounterExample, port: 2222)
+
+# Keep the script alive
+Process.sleep(:infinity)

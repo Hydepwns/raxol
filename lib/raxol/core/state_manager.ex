@@ -507,7 +507,15 @@ defmodule Raxol.Core.StateManager do
 
     case :ets.info(table) do
       :undefined ->
-        :ets.new(table, [:set, :public, :named_table, {:read_concurrency, true}])
+        _ =
+          :ets.new(table, [
+            :set,
+            :public,
+            :named_table,
+            {:read_concurrency, true}
+          ])
+
+        :ok
 
       _ ->
         :ok

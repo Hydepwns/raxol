@@ -1,22 +1,21 @@
 # Cookbook
 
-Practical guides for building terminal applications with Raxol.
+Practical recipes for building terminal applications with Raxol.
 
-## Integration Guides
+## Guides
 
-- [LiveView Integration](LIVEVIEW_INTEGRATION.md) - Render terminals in Phoenix LiveView
-- [Theming](THEMING.md) - Custom color schemes and styling
-- [Performance Optimization](PERFORMANCE_OPTIMIZATION.md) - 60fps techniques
-
-## Feature Guides
-
-See [Features](../features/README.md) for:
-- [VIM Navigation](../features/VIM_NAVIGATION.md)
-- [Command Parser](../features/COMMAND_PARSER.md)
-- [Fuzzy Search](../features/FUZZY_SEARCH.md)
-- [File System](../features/FILESYSTEM.md)
-- [Cursor Effects](../features/CURSOR_EFFECTS.md)
+- [Building Apps](BUILDING_APPS.md) -- TEA patterns, state machines, scrollable lists, key chords, testing
+- [SSH Deployment](SSH_DEPLOYMENT.md) -- Serve apps over SSH, production setup, Fly.io
+- [Theming](THEMING.md) -- Terminal colors, theme system, LiveView CSS, accessibility
+- [LiveView Integration](LIVEVIEW_INTEGRATION.md) -- Embed terminals in Phoenix LiveView
+- [Performance Optimization](PERFORMANCE_OPTIMIZATION.md) -- 60fps rendering, diffing, caching
 
 ## Examples
 
-Complete applications: `examples/` directory
+Complete applications are in the [`examples/`](../../examples/README.md) directory:
+
+- `examples/getting_started/counter.exs` -- Minimal TEA app
+- `examples/demo.exs` -- Live BEAM dashboard with sparklines
+- `examples/apps/file_browser.exs` -- File browser with tree navigation
+- `examples/apps/todo_app.ex` -- Todo list
+- `examples/ssh/ssh_counter.exs` -- SSH-served counter

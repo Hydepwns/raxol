@@ -19,17 +19,18 @@ defmodule Raxol.Test.SharedUtilities do
     module_name = String.to_atom("TestPlugin.#{name}")
 
     # Create a module with the given callbacks
-    Module.create(
-      module_name,
-      """
-      defmodule #{module_name} do
-        @behaviour Raxol.Plugins.Plugin
+    _ =
+      Module.create(
+        module_name,
+        """
+        defmodule #{module_name} do
+          @behaviour Raxol.Plugins.Plugin
 
-        #{generate_callback_implementations(callbacks)}
-      end
-      """,
-      Macro.Env.location(__ENV__)
-    )
+          #{generate_callback_implementations(callbacks)}
+        end
+        """,
+        Macro.Env.location(__ENV__)
+      )
 
     module_name
   end

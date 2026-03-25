@@ -594,6 +594,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+        submodules: recursive
 
     - name: Set up Elixir
       uses: erlef/setup-beam@v1
@@ -606,6 +609,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential gcc make
         echo "TMPDIR=/tmp" >> $GITHUB_ENV
+        echo "NIGHTLY_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
 
     - name: Install dependencies
       run: |
@@ -619,15 +623,15 @@ jobs:
 
     - name: Run comprehensive analysis
       run: |
-        mkdir -p regression/nightly/$(date +%Y-%m-%d)
+        mkdir -p regression/nightly/$NIGHTLY_DATE
 
         echo "Running comprehensive nightly analysis..."
 
         # Performance benchmarks
         if [ -f "bench/suites/core/performance_summary.exs" ]; then
-          mix run bench/suites/core/performance_summary.exs 2>&1 | tee regression/nightly/$(date +%Y-%m-%d)/performance_comprehensive.txt || true
+          mix run bench/suites/core/performance_summary.exs 2>&1 | tee regression/nightly/$NIGHTLY_DATE/performance_comprehensive.txt || true
         else
-          echo "Performance summary benchmark not found, skipping..." | tee regression/nightly/$(date +%Y-%m-%d)/performance_comprehensive.txt
+          echo "Performance summary benchmark not found, skipping..." | tee regression/nightly/$NIGHTLY_DATE/performance_comprehensive.txt
         fi
 
         # Memory analysis for all scenarios (if task exists)
@@ -638,7 +642,7 @@ jobs:
               --time 10 \
               --memory_time 5 \
               --with-dashboard \
-              --output regression/nightly/$(date +%Y-%m-%d)/${scenario}_comprehensive.json || true
+              --output regression/nightly/$NIGHTLY_DATE/${scenario}_comprehensive.json || true
           done
         else
           echo "Memory analysis task not found, skipping nightly memory tests..."
@@ -649,6 +653,6 @@ jobs:
     - name: Upload nightly analysis
       uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3
       with:
-        name: nightly-comprehensive-analysis-$(date +%Y-%m-%d)
+        name: nightly-comprehensive-analysis-${{ env.NIGHTLY_DATE }}
         path: regression/nightly/
         retention-days: 365

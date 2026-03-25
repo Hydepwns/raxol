@@ -403,37 +403,18 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   Gets text in region.
   """
   def get_text_in_region(buffer, x1, y1, x2, y2) do
-    # Extract text from the specified region
     case buffer.cells do
-      nil ->
-        ""
-
       cells when is_list(cells) ->
-        # Ensure coordinates are within bounds and properly ordered
         start_y = max(0, min(y1, y2))
         end_y = min(length(cells) - 1, max(y1, y2))
+        col_range = {max(0, min(x1, x2)), max(x1, x2)}
 
         if start_y > end_y do
           ""
         else
           cells
           |> Enum.slice(start_y..end_y)
-          |> Enum.map(fn line when is_list(line) ->
-            start_x = max(0, min(x1, x2))
-            end_x = min(length(line) - 1, max(x1, x2))
-
-            if start_x > end_x do
-              ""
-            else
-              line
-              |> Enum.slice(start_x..end_x)
-              |> Enum.map_join("", fn
-                %{char: char} -> char
-                _ -> " "
-              end)
-              |> String.trim_trailing()
-            end
-          end)
+          |> Enum.map(&extract_line_text(&1, col_range))
           |> Enum.reject(&(&1 == ""))
           |> Enum.join("\n")
         end
@@ -442,6 +423,24 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
         ""
     end
   end
+
+  defp extract_line_text(line, {start_x, max_x}) when is_list(line) do
+    end_x = min(length(line) - 1, max_x)
+
+    if start_x > end_x do
+      ""
+    else
+      line
+      |> Enum.slice(start_x..end_x)
+      |> Enum.map_join("", fn
+        %{char: char} -> char
+        _ -> " "
+      end)
+      |> String.trim_trailing()
+    end
+  end
+
+  defp extract_line_text(_line, _col_range), do: ""
 
   @doc """
   Checks if attribute is set (stub).

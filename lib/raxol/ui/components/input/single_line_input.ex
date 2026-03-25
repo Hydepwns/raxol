@@ -52,19 +52,20 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   @doc """
   Initializes the SingleLineInput component state from the given props.
   """
-  @spec init(map()) :: __MODULE__.t()
+  @spec init(map()) :: {:ok, __MODULE__.t()}
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
     # Initialize state from props
-    %__MODULE__{
-      id: props[:id],
-      value: props[:initial_value] || "",
-      placeholder: props[:placeholder] || "",
-      style: props[:style] || %{},
-      on_change: props[:on_change],
-      on_submit: props[:on_submit],
-      cursor_pos: String.length(props[:initial_value] || "")
-    }
+    {:ok,
+     %__MODULE__{
+       id: props[:id],
+       value: props[:initial_value] || "",
+       placeholder: props[:placeholder] || "",
+       style: props[:style] || %{},
+       on_change: props[:on_change],
+       on_submit: props[:on_submit],
+       cursor_pos: String.length(props[:initial_value] || "")
+     }}
   end
 
   @doc """
@@ -96,9 +97,9 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   @doc """
   Handles events for the SingleLineInput component, such as keypresses and mouse clicks.
   """
-  @spec handle_event(term(), map(), __MODULE__.t()) :: {__MODULE__.t(), list()}
+  @spec handle_event(term(), __MODULE__.t(), map()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
-  def handle_event(event, %{} = _props, state) do
+  def handle_event(event, state, %{} = _context) do
     # Handle keyboard events, mouse clicks (focus), etc.
     Raxol.Core.Runtime.Log.debug(
       "SingleLineInput #{state.id} received event: #{inspect(event)}"

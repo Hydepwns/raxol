@@ -1,48 +1,57 @@
 defmodule Raxol.Core.Performance do
   @moduledoc """
-  Core performance module for Raxol framework.
+  Performance monitoring facade for Raxol.Core.
 
-  This module provides basic performance monitoring and statistics functionality
-  with pure functional error handling patterns.
+  Provides a simple interface for performance initialization and statistics
+  gathering. This module serves as the entry point for performance monitoring
+  used by the Core module.
+
+  For detailed performance analysis, see the modules in `Raxol.Performance.*`:
+  - `Raxol.Performance.Profiler` - Detailed profiling
+  - `Raxol.Performance.MetricsCollector` - Metrics collection
+  - `Raxol.Performance.Analyzer` - Performance analysis
+  - `Raxol.Performance.JankDetector` - Frame timing issues
   """
+
+  @table __MODULE__
+
+  @typedoc "Performance statistics map"
+  @type stats :: %{
+          uptime_ms: number(),
+          frame_count: non_neg_integer(),
+          avg_frame_time_ms: float(),
+          fps: float(),
+          memory_mb: float(),
+          samples: non_neg_integer(),
+          initialized: boolean()
+        }
 
   @doc """
   Initializes the performance monitoring system.
 
-  ## Parameters
+  ## Options
 
-  * `options` - Configuration options for performance monitoring (optional)
+  - `:enabled` - Whether to enable performance monitoring (default: true)
+  - `:max_samples` - Maximum number of samples to keep (default: 100)
 
   ## Returns
 
-  * `:ok` - Performance system initialized successfully
-  * `{:error, reason}` - Failed to initialize performance system
+  - `:ok` on success
   """
+  @spec init(keyword()) :: :ok
   def init(options \\ []) do
-    with {:ok, _monitor} <- safe_start_monitor(options),
-         :ok <- initialize_collector(),
-         :ok <- initialize_jank_detector(options) do
-      :ok
-    else
-      {:error, reason} -> {:error, {:performance_init_failed, reason}}
-    end
-  end
+    # Create ETS table if it doesn't exist
+    _ =
+      if :ets.whereis(@table) == :undefined do
+        :ets.new(@table, [:named_table, :public, :set])
+      end
 
-  defp safe_start_monitor(_options) do
-    # Stub implementation - performance monitoring handled by dedicated modules
-    # See Raxol.Performance.MonitoringCoordinator for actual implementation
-    {:ok, nil}
-  end
+    :ets.insert(@table, {:start_time, System.monotonic_time(:millisecond)})
+    :ets.insert(@table, {:max_samples, Keyword.get(options, :max_samples, 100)})
+    :ets.insert(@table, {:frame_count, 0})
+    :ets.insert(@table, {:total_render_time, 0})
+    :ets.insert(@table, {:samples, []})
 
-  defp initialize_collector do
-    # Stub implementation - metrics collection handled by dedicated modules
-    # See Raxol.Core.Performance.MetricsCollector for actual implementation
-    :ok
-  end
-
-  defp initialize_jank_detector(_options) do
-    # Stub implementation - jank detection handled by dedicated modules
-    # See Raxol.Core.Performance.JankDetector for actual implementation
     :ok
   end
 
@@ -51,134 +60,131 @@ defmodule Raxol.Core.Performance do
 
   ## Returns
 
-  * `{:ok, stats}` - Performance statistics map
-  * `{:error, reason}` - Failed to get performance stats
-
-  ## Example
-
-  ```elixir
-  {:ok, stats} = Raxol.Core.Performance.get_stats()
-  # Returns: {:ok, %{cpu_usage: 15.2, memory_usage: 45.8, render_time: 120}}
-  ```
+  - `{:ok, stats}` where stats is a map containing:
+    - `:uptime_ms` - Time since initialization in milliseconds
+    - `:frame_count` - Total frames rendered
+    - `:avg_frame_time_ms` - Average frame render time
+    - `:fps` - Estimated frames per second
+    - `:memory_mb` - Current memory usage in MB
   """
+  @spec get_stats() :: {:ok, stats()}
   def get_stats do
-    with {:ok, monitor_metrics} <- safe_get_monitor_metrics(),
-         {:ok, collector_metrics} <- safe_get_collector_metrics(),
-         {:ok, combined_stats} <-
-           combine_stats(monitor_metrics, collector_metrics) do
-      {:ok, combined_stats}
-    else
-      {:error, reason} -> {:error, {:performance_stats_failed, reason}}
-    end
-  end
+    stats =
+      if :ets.whereis(@table) != :undefined do
+        calculate_stats()
+      else
+        default_stats()
+      end
 
-  defp safe_get_monitor_metrics do
-    # Stub implementation - returns empty metrics
-    # See Raxol.Performance.MonitoringCoordinator for actual metrics
-    {:ok, %{}}
-  end
-
-  defp safe_get_collector_metrics do
-    {:ok, collector} = safe_get_collector()
-    extract_collector_metrics(collector)
-  end
-
-  defp extract_collector_metrics(nil), do: {:ok, %{}}
-
-  defp safe_get_collector do
-    # Stub implementation - returns nil collector
-    # See Raxol.Core.Performance.Memoization.MemoizationServer for caching
-    {:ok, nil}
-  end
-
-  defp combine_stats(monitor_metrics, collector_metrics) do
-    stats = Map.merge(monitor_metrics, collector_metrics)
-
-    final_stats =
-      Map.merge(
-        stats,
-        %{
-          cpu_usage: get_cpu_usage(),
-          memory_usage: get_memory_usage(),
-          render_time: Map.get(stats, :avg_frame_time, 0),
-          frame_rate: Map.get(stats, :fps, 0),
-          jank_events: Map.get(stats, :jank_count, 0)
-        },
-        fn _key, _v1, v2 -> v2 end
-      )
-
-    {:ok, final_stats}
+    {:ok, stats}
   end
 
   @doc """
-  Records a performance measurement.
+  Records a frame render event.
 
   ## Parameters
 
-  * `name` - Measurement name
-  * `value` - Measurement value (typically time in milliseconds)
-  * `tags` - Optional tags as keyword list
-
-  ## Returns
-
-  * `:ok` - Measurement recorded successfully
-  * `{:error, reason}` - Failed to record measurement
+  - `render_time_us` - Render time in microseconds
   """
-  def record_measurement(name, value, _tags \\ []) do
-    with :ok <- record_to_collector(name, value),
-         :ok <- record_to_monitor(name, value) do
-      :ok
-    else
-      {:error, reason} -> {:error, {:performance_record_failed, reason}}
+  @spec record_frame(non_neg_integer()) :: :ok
+  def record_frame(render_time_us) do
+    if :ets.whereis(@table) != :undefined do
+      render_time_ms = render_time_us / 1000
+
+      # Update frame count
+      :ets.update_counter(@table, :frame_count, 1, {:frame_count, 0})
+
+      # Update total render time
+      current_total = get_value(:total_render_time, 0)
+      :ets.insert(@table, {:total_render_time, current_total + render_time_ms})
+
+      # Update samples (keep last N)
+      max_samples = get_value(:max_samples, 100)
+      samples = get_value(:samples, [])
+
+      new_samples =
+        [render_time_ms | samples]
+        |> Enum.take(max_samples)
+
+      :ets.insert(@table, {:samples, new_samples})
     end
-  end
 
-  defp record_to_collector(name, _value)
-       when name in ["render_time", "frame_time"] do
-    # Stub implementation - no-op for render/frame time recording
-    # See Raxol.Core.Performance.MetricsCollector.record_frame/2 for actual implementation
     :ok
   end
-
-  defp record_to_collector(_, _), do: :ok
-
-  defp record_to_monitor(name, _value)
-       when name in ["render_time", "frame_time"] do
-    # Stub implementation - no-op for render/frame time recording
-    # See Raxol.Performance.MonitoringCoordinator for actual implementation
-    :ok
-  end
-
-  defp record_to_monitor(_, _), do: :ok
 
   @doc """
-  Gets performance analysis results.
-
-  ## Returns
-
-  * `{:ok, analysis}` - Performance analysis results
-  * `{:error, reason}` - Failed to get analysis
+  Resets performance statistics.
   """
-  def get_analysis do
-    with {:ok, metrics} <- get_stats(),
-         {:ok, analysis} <- safe_analyze(metrics) do
-      {:ok, analysis}
-    else
-      {:error, reason} -> {:error, {:performance_analysis_failed, reason}}
+  @spec reset() :: :ok
+  def reset do
+    if :ets.whereis(@table) != :undefined do
+      :ets.insert(@table, {:start_time, System.monotonic_time(:millisecond)})
+      :ets.insert(@table, {:frame_count, 0})
+      :ets.insert(@table, {:total_render_time, 0})
+      :ets.insert(@table, {:samples, []})
+    end
+
+    :ok
+  end
+
+  # ==========================================================================
+  # Private Helpers
+  # ==========================================================================
+
+  defp get_value(key, default) do
+    case :ets.lookup(@table, key) do
+      [{^key, value}] -> value
+      [] -> default
     end
   end
 
-  defp safe_analyze(_metrics) do
-    # Stub implementation - returns not_implemented status
-    # See Raxol.Core.Performance.Analyzer.analyze/1 for actual implementation
-    {:ok, %{status: :not_implemented}}
+  defp calculate_stats do
+    now = System.monotonic_time(:millisecond)
+    start_time = get_value(:start_time, now)
+    uptime_ms = now - start_time
+    frame_count = get_value(:frame_count, 0)
+    total_render_time = get_value(:total_render_time, 0)
+
+    avg_frame_time =
+      if frame_count > 0 do
+        total_render_time / frame_count
+      else
+        0.0
+      end
+
+    fps =
+      if uptime_ms > 0 do
+        frame_count / (uptime_ms / 1000)
+      else
+        0.0
+      end
+
+    memory_info = :erlang.memory()
+    memory_mb = memory_info[:total] / (1024 * 1024)
+
+    %{
+      uptime_ms: uptime_ms,
+      frame_count: frame_count,
+      avg_frame_time_ms: Float.round(avg_frame_time, 2),
+      fps: Float.round(fps, 1),
+      memory_mb: Float.round(memory_mb, 2),
+      samples: length(get_value(:samples, [])),
+      initialized: true
+    }
   end
 
-  defp get_cpu_usage do
-    :rand.uniform() * 100
-  end
+  defp default_stats do
+    memory_info = :erlang.memory()
+    memory_mb = memory_info[:total] / (1024 * 1024)
 
-  defp get_memory_usage do
-    :rand.uniform() * 100
+    %{
+      uptime_ms: 0,
+      frame_count: 0,
+      avg_frame_time_ms: 0.0,
+      fps: 0.0,
+      memory_mb: Float.round(memory_mb, 2),
+      samples: 0,
+      initialized: false
+    }
   end
 end

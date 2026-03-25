@@ -29,7 +29,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
           scroll_offset: {integer(), integer()},
           selection_start: {integer(), integer()} | nil,
           selection_end: {integer(), integer()} | nil,
-          history: any(),
+          history: %{undo: list(), redo: list()},
           shift_held: boolean(),
           focused: boolean(),
           on_change: (String.t() -> any()) | nil,
@@ -51,7 +51,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
             scroll_offset: {0, 0},
             selection_start: nil,
             selection_end: nil,
-            history: nil,
+            history: %{undo: [], redo: []},
             shift_held: false,
             focused: false,
             on_change: nil,
@@ -61,7 +61,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
             lines: [""],
             desired_col: nil
 
-  @spec init(map()) :: __MODULE__.t()
+  @spec init(map()) :: {:ok, __MODULE__.t()}
   @impl true
   @doc """
   Initializes the MultiLineInput state, harmonizing style/theme/extra props and splitting lines for editing.
@@ -87,27 +87,28 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
         wrap
       )
 
-    %__MODULE__{
-      id: id,
-      value: value,
-      placeholder: placeholder,
-      width: width,
-      height: height,
-      theme: theme,
-      wrap: wrap,
-      cursor_pos: {0, 0},
-      scroll_offset: {0, 0},
-      selection_start: nil,
-      selection_end: nil,
-      history: nil,
-      shift_held: false,
-      focused: focused,
-      on_change: on_change,
-      on_submit: on_submit,
-      aria_label: aria_label,
-      tooltip: tooltip,
-      lines: lines
-    }
+    {:ok,
+     %__MODULE__{
+       id: id,
+       value: value,
+       placeholder: placeholder,
+       width: width,
+       height: height,
+       theme: theme,
+       wrap: wrap,
+       cursor_pos: {0, 0},
+       scroll_offset: {0, 0},
+       selection_start: nil,
+       selection_end: nil,
+       history: %{undo: [], redo: []},
+       shift_held: false,
+       focused: focused,
+       on_change: on_change,
+       on_submit: on_submit,
+       aria_label: aria_label,
+       tooltip: tooltip,
+       lines: lines
+     }}
   end
 
   @doc """
@@ -148,6 +149,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   def handle_input(char_codepoint, state) do
+    state = push_history(state)
+
     new_state =
       Raxol.UI.Components.Input.MultiLineInput.TextHelper.insert_char(
         state,
@@ -158,16 +161,19 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   def handle_backspace(state) do
+    state = push_history(state)
     new_state = process_backspace_with_selection_check(state)
     trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
   end
 
   def handle_delete(state) do
+    state = push_history(state)
     new_state = process_delete_with_selection_check(state)
     trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
   end
 
   def handle_enter(state) do
+    state = push_history(state)
     {state_after_delete, _} = handle_enter_selection_delete(state)
 
     new_state =
@@ -272,6 +278,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   def handle_clipboard_content(content, state) do
+    state = push_history(state)
     {start_pos, end_pos} = get_clipboard_position_range(state)
 
     updated_state =
@@ -359,6 +366,42 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     {:noreply, ensure_cursor_visible(new_state), nil}
   end
 
+  def handle_undo(state) do
+    case state.history.undo do
+      [] ->
+        {:noreply, state, nil}
+
+      [snapshot | rest] ->
+        redo_snapshot = %{value: state.value, cursor_pos: state.cursor_pos}
+
+        new_state =
+          restore_snapshot(state, snapshot, %{
+            undo: rest,
+            redo: [redo_snapshot | state.history.redo]
+          })
+
+        {:noreply, new_state, nil}
+    end
+  end
+
+  def handle_redo(state) do
+    case state.history.redo do
+      [] ->
+        {:noreply, state, nil}
+
+      [snapshot | rest] ->
+        undo_snapshot = %{value: state.value, cursor_pos: state.cursor_pos}
+
+        new_state =
+          restore_snapshot(state, snapshot, %{
+            undo: [undo_snapshot | state.history.undo],
+            redo: rest
+          })
+
+        {:noreply, new_state, nil}
+    end
+  end
+
   def handle_unknown_message(msg, state) do
     Raxol.Core.Runtime.Log.warning(
       "[MultiLineInput] Unhandled update message: #{inspect(msg)}"
@@ -371,7 +414,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   Handles events for the MultiLineInput component, such as keypresses, mouse events, and context changes.
   """
   @impl true
-  def handle_event(event, _context, state) do
+  def handle_event(event, state, _context) do
     # Delegate to the legacy EventHandler for translation
     case Raxol.UI.Components.Input.MultiLineInput.EventHandler.handle_event(
            event,
@@ -500,6 +543,12 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   """
   @impl true
   def render(state, context) do
+    state = %{
+      state
+      | focused:
+          Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused
+    }
+
     merged_theme = merge_themes(context, state)
     visible_lines = calculate_visible_lines(state)
 
@@ -744,6 +793,34 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
          line_elements
        ) do
     line_elements
+  end
+
+  @max_undo_history 100
+
+  @doc false
+  def push_history(state) do
+    snapshot = %{value: state.value, cursor_pos: state.cursor_pos}
+    undo_stack = [snapshot | state.history.undo] |> Enum.take(@max_undo_history)
+    %{state | history: %{undo: undo_stack, redo: []}}
+  end
+
+  defp restore_snapshot(state, snapshot, history) do
+    lines =
+      Raxol.UI.Components.Input.MultiLineInput.TextHelper.split_into_lines(
+        snapshot.value,
+        state.width,
+        state.wrap
+      )
+
+    %{
+      state
+      | value: snapshot.value,
+        cursor_pos: snapshot.cursor_pos,
+        lines: lines,
+        history: history,
+        selection_start: nil,
+        selection_end: nil
+    }
   end
 
   defp render_placeholder_if_conditions_met(state, merged_theme) do

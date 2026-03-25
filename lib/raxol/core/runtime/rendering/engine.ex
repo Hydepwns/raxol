@@ -29,7 +29,15 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
               # Default rendering target
               environment: :terminal,
               # For VSCode, etc.
-              stdio_interface_pid: nil
+              stdio_interface_pid: nil,
+              # PubSub topic for LiveView rendering
+              liveview_topic: nil,
+              # Writer function for SSH rendering
+              io_writer: nil,
+              # Registry of running process components {id => pid}
+              process_components: %{},
+              # Whether terminal supports Mode 2026 synchronized output
+              sync_output: false
   end
 
   # --- Public API ---
@@ -70,7 +78,12 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     state = struct!(State, initial_state_map)
     # Initialize buffer with initial dimensions
     initial_buffer = ScreenBuffer.new(state.width, state.height)
-    new_state = %{state | buffer: initial_buffer}
+
+    sync_supported =
+      state.environment == :terminal and
+        Raxol.Terminal.AdvancedFeatures.supports_synchronized_output?()
+
+    new_state = %{state | buffer: initial_buffer, sync_output: sync_supported}
 
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine init completed. State: #{inspect(new_state)}"
@@ -145,12 +158,18 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     )
 
     with {:ok, view} <- safe_get_view(state.app_module, model),
+         false <- is_nil(view),
          {:ok, positioned_elements} <- safe_apply_layout(view, state),
+         :ok <- update_dispatcher_view_tree(state.dispatcher_pid, view),
          {:ok, cells} <- safe_render_to_cells(positioned_elements, theme),
          {:ok, final_cells} <- safe_apply_plugin_transforms(cells, state),
          {:ok, new_state} <- safe_render_to_backend(final_cells, state) do
       {:ok, new_state}
     else
+      true ->
+        # Headless agent -- no view/1, skip rendering
+        {:ok, state}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Render error",
@@ -165,26 +184,32 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   # Safe view retrieval using functional error handling
   defp safe_get_view(app_module, model) do
-    Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine: Calling app_module.view(model)"
-    )
+    if not function_exported?(app_module, :view, 1) do
+      {:ok, nil}
+    else
+      Raxol.Core.Runtime.Log.debug(
+        "Rendering Engine: Calling app_module.view(model)"
+      )
 
-    Raxol.Core.ErrorHandling.safe_call(fn ->
-      case apply(app_module, :view, [model]) do
-        view when not is_nil(view) ->
-          Raxol.Core.Runtime.Log.debug(
-            "Rendering Engine: Got view: #{inspect(view)}"
-          )
+      Raxol.Core.ErrorHandling.safe_call(fn ->
+        case apply(app_module, :view, [model]) do
+          nil ->
+            {:ok, nil}
 
-          {:ok, view}
+          view ->
+            resolved = resolve_process_components(view)
 
-        _ ->
-          {:error, :invalid_view}
+            Raxol.Core.Runtime.Log.debug(
+              "Rendering Engine: Got view: #{inspect(resolved)}"
+            )
+
+            {:ok, resolved}
+        end
+      end)
+      |> case do
+        {:ok, result} -> result
+        {:error, reason} -> {:error, {:view_error, reason}}
       end
-    end)
-    |> case do
-      {:ok, result} -> result
-      {:error, reason} -> {:error, {:view_error, reason}}
     end
   end
 
@@ -257,6 +282,17 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       :vscode ->
         render_to_vscode(final_cells, state)
 
+      :liveview ->
+        render_to_liveview(final_cells, state)
+
+      :ssh ->
+        render_to_ssh(final_cells, state)
+
+      :agent ->
+        # Agent environment: buffer maintained for inspection, no output written
+        updated_buffer = apply_cells_to_buffer(final_cells, state)
+        {:ok, %{state | buffer: updated_buffer}}
+
       other ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Unknown rendering environment",
@@ -273,69 +309,28 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   defp render_to_terminal(cells, state) do
     Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine: Executing render_to_terminal. State: #{inspect(state)}"
+      "Rendering Engine: Executing render_to_terminal"
     )
 
-    # Get current buffer or create if not exists
-    screen_buffer =
-      state.buffer || ScreenBuffer.new(state.width, state.height)
+    updated_buffer = apply_cells_to_buffer(cells, state)
 
-    # Transform cells into format {x, y, %Cell{...}}
-    transformed_cells = transform_cells_for_update(cells)
-
-    # Apply cells to the buffer
-    updated_buffer =
-      Enum.reduce(transformed_cells, screen_buffer, fn {x, y, cell}, buffer ->
-        # Extract style from cell, handling both struct and map styles
-        style =
-          case Map.get(cell, :style) do
-            nil ->
-              %{
-                foreground: Map.get(cell, :foreground),
-                background: Map.get(cell, :background),
-                bold: Map.get(cell, :bold, false),
-                underline: Map.get(cell, :underline, false),
-                italic: Map.get(cell, :italic, false)
-              }
-
-            cell_style when is_map(cell_style) ->
-              cell_style
-
-            _ ->
-              nil
-          end
-
-        ScreenBuffer.write_char(buffer, x, y, cell.char || " ", style)
-      end)
-
-    # Render the buffer using the Terminal Renderer
-    output_string = Raxol.Terminal.Renderer.render(updated_buffer)
+    renderer = Raxol.Terminal.Renderer.new(updated_buffer)
+    output_string = Raxol.Terminal.Renderer.render(renderer)
 
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Terminal output generated (length: #{String.length(output_string)})"
     )
 
-    # Send rendered output (ANSI codes) to stdout
-    # This assumes the process running this code has direct access to the terminal stdout.
-    # In a more complex setup, this might involve sending to a dedicated IO process.
-    Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine: Writing output string to IO"
-    )
+    # Move cursor to top-left and clear screen before each frame
+    if state.sync_output do
+      IO.write("\e[?2026h")
+      IO.write("\e[H\e[2J" <> output_string)
+      IO.write("\e[?2026l")
+    else
+      IO.write("\e[H\e[2J" <> output_string)
+    end
 
-    IO.write(output_string)
-
-    Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine: Finished writing output string to IO"
-    )
-
-    # Return updated state with the new buffer
-    updated_state_with_buffer = Map.put(state, :buffer, updated_buffer)
-
-    Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine: render_to_terminal complete. New state: #{inspect(updated_state_with_buffer)}"
-    )
-
-    {:ok, updated_state_with_buffer}
+    {:ok, %{state | buffer: updated_buffer}}
   end
 
   defp render_to_vscode(cells, state) do
@@ -425,6 +420,113 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end)
   end
 
+  # --- LiveView Backend ---
+
+  defp render_to_liveview(cells, state) do
+    updated_buffer = apply_cells_to_buffer(cells, state)
+    html = Raxol.LiveView.TerminalBridge.buffer_to_html(updated_buffer)
+
+    if state.liveview_topic && Code.ensure_loaded?(Phoenix.PubSub) do
+      Phoenix.PubSub.broadcast(
+        Raxol.PubSub,
+        state.liveview_topic,
+        {:render_update, html}
+      )
+    end
+
+    {:ok, %{state | buffer: updated_buffer}}
+  end
+
+  # --- SSH Backend ---
+
+  defp render_to_ssh(cells, state) do
+    updated_buffer = apply_cells_to_buffer(cells, state)
+
+    renderer = Raxol.Terminal.Renderer.new(updated_buffer)
+    output_string = Raxol.Terminal.Renderer.render(renderer)
+
+    write_output(state.io_writer, output_string, state.sync_output)
+
+    {:ok, %{state | buffer: updated_buffer}}
+  end
+
+  defp write_output(writer, output, true) when is_function(writer, 1) do
+    writer.("\e[?2026h")
+    writer.(output)
+    writer.("\e[?2026l")
+  end
+
+  defp write_output(writer, output, _sync) when is_function(writer, 1) do
+    writer.(output)
+  end
+
+  defp write_output(_, _, _) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "SSH render: no io_writer configured",
+      %{}
+    )
+  end
+
+  # Shared helper: transforms raw cells and writes them into a fresh ScreenBuffer.
+  # A new buffer is created each frame so stale cells from previous views don't persist.
+  defp apply_cells_to_buffer(cells, state) do
+    screen_buffer = ScreenBuffer.new(state.width, state.height)
+    transformed_cells = transform_cells_for_update(cells)
+
+    Enum.reduce(transformed_cells, screen_buffer, fn {x, y, cell}, buffer ->
+      style = extract_cell_style(cell)
+      ScreenBuffer.write_char(buffer, x, y, cell.char || " ", style)
+    end)
+  end
+
+  defp extract_cell_style(cell) do
+    case Map.get(cell, :style) do
+      nil ->
+        %{
+          foreground: Map.get(cell, :foreground),
+          background: Map.get(cell, :background)
+        }
+
+      cell_style when is_map(cell_style) ->
+        cell_style
+
+      _ ->
+        nil
+    end
+  end
+
+  # --- Process Component Resolution ---
+
+  defp resolve_process_components(
+         %{type: :process_component, module: mod, props: props} = node
+       ) do
+    id = Map.get(node, :id, "pc-#{inspect(mod)}")
+
+    pid =
+      case DynamicSupervisor.start_child(
+             Raxol.DynamicSupervisor,
+             {Raxol.Core.Runtime.ProcessComponent,
+              [module: mod, props: props, id: id]}
+           ) do
+        {:ok, pid} -> pid
+        {:error, {:already_started, pid}} -> pid
+        _ -> nil
+      end
+
+    if pid do
+      Raxol.Core.Runtime.ProcessComponent.get_render_tree(pid, %{})
+    else
+      %{type: :text, content: "[#{id}: failed to start]", style: %{}}
+    end
+  end
+
+  defp resolve_process_components(%{children: children} = node)
+       when is_list(children) do
+    %{node | children: Enum.map(children, &resolve_process_components/1)}
+  end
+
+  defp resolve_process_components(node), do: node
+
   defp apply_plugin_transforms(cells, state) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Applying plugin transforms to #{length(cells)} cells"
@@ -432,7 +534,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
     # Get the plugin manager from the dispatcher
     case get_plugin_manager_from_dispatcher(state.dispatcher_pid) do
-      {:ok, plugin_manager} ->
+      {:ok, %Raxol.Plugins.Manager{} = plugin_manager} ->
         # Create emulator state context for plugins
         emulator_state = %{
           width: state.width,
@@ -464,6 +566,14 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         )
 
         processed_cells
+
+      {:ok, _non_struct_manager} ->
+        # Plugin manager is a PID or other non-struct value; skip cell processing
+        Raxol.Core.Runtime.Log.debug(
+          "Rendering Engine: Plugin manager is not a Manager struct, skipping cell processing"
+        )
+
+        cells
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning_with_context(
@@ -547,6 +657,15 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   defp execute_plugin_commands(_), do: :ok
+
+  # Send the view tree to Dispatcher for event bubbling
+  defp update_dispatcher_view_tree(dispatcher_pid, view)
+       when is_pid(dispatcher_pid) do
+    GenServer.cast(dispatcher_pid, {:update_view_tree, view})
+    :ok
+  end
+
+  defp update_dispatcher_view_tree(_, _), do: :ok
 
   # Functional wrapper for dispatcher plugin manager updates
   defp update_plugin_manager_in_dispatcher(dispatcher_pid, updated_manager)

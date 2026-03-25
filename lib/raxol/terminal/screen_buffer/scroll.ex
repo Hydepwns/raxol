@@ -1,251 +1,354 @@
 defmodule Raxol.Terminal.ScreenBuffer.Scroll do
   @moduledoc """
-  Scrolling and scrollback operations for the buffer.
-  Consolidates: Scroll, Scroller, ScrollRegion, Scrollback, and operations/scrolling.
+  Scroll operations for the screen buffer.
+
+  Handles scrolling content, scroll regions, scrollback buffer management,
+  and cursor index operations.
   """
 
   alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ScreenBuffer.Core
+
+  # ==========================================================================
+  # Scroll Region Management
+  # ==========================================================================
 
   @doc """
-  Sets the scroll region.
-  """
-  def set_scroll_region(buffer, nil, nil) do
-    %{buffer | scroll_region: nil}
-  end
+  Sets the scroll region boundaries.
 
+  The scroll region defines which portion of the screen participates in
+  scrolling operations. Lines outside the region remain fixed.
+  """
+  @spec set_scroll_region(Core.t(), non_neg_integer(), non_neg_integer()) ::
+          Core.t()
   def set_scroll_region(buffer, top, bottom)
       when is_integer(top) and is_integer(bottom) do
-    top = max(0, min(top, buffer.height - 1))
-    bottom = max(top, min(bottom, buffer.height - 1))
-    %{buffer | scroll_region: {top, bottom}}
-  end
+    top = max(0, top)
+    bottom = min(bottom, buffer.height - 1)
 
-  @doc """
-  Gets the effective scroll region.
-  """
-  def get_scroll_region(buffer) do
-    case buffer.scroll_region do
-      nil -> {0, buffer.height - 1}
-      {top, bottom} -> {top, bottom}
+    if top < bottom do
+      %{buffer | scroll_region: {top, bottom}}
+    else
+      buffer
     end
   end
 
   @doc """
-  Scrolls the buffer or scroll region up by n lines.
+  Gets the current scroll region.
+
+  Returns `nil` if no region is set (full screen scrolling).
   """
-  def scroll_up(buffer, n \\ 1) when n > 0 do
-    {top, bottom} = get_scroll_region(buffer)
-    scroll_region_up(buffer, top, bottom, n)
-  end
+  @spec get_scroll_region(Core.t()) ::
+          {non_neg_integer(), non_neg_integer()} | nil
+  def get_scroll_region(%{scroll_region: region}), do: region
+
+  # ==========================================================================
+  # Basic Scroll Operations
+  # ==========================================================================
 
   @doc """
-  Scrolls the buffer or scroll region down by n lines.
+  Scrolls the buffer up by one line.
   """
-  def scroll_down(buffer, n \\ 1) when n > 0 do
-    {top, bottom} = get_scroll_region(buffer)
-    scroll_region_down(buffer, top, bottom, n)
-  end
+  @spec scroll_up(Core.t()) :: Core.t()
+  def scroll_up(buffer), do: scroll_up(buffer, 1)
 
   @doc """
-  Scrolls the specified region up by n lines.
+  Scrolls the buffer up by n lines within the scroll region.
+
+  Lines scrolled out the top are optionally saved to scrollback.
+  New blank lines appear at the bottom of the scroll region.
   """
-  def scroll_up(buffer, top, bottom, lines) do
-    scroll_region_up(buffer, top, bottom, lines)
+  @spec scroll_up(Core.t(), non_neg_integer()) :: Core.t()
+  def scroll_up(buffer, n) when is_integer(n) and n > 0 do
+    {top, bottom} = get_effective_scroll_region(buffer)
+    do_scroll_up(buffer, n, top, bottom)
   end
 
+  def scroll_up(buffer, _), do: buffer
+
   @doc """
-  Scrolls the specified region down by n lines.
+  Scrolls the buffer down by one line.
   """
-  def scroll_down(buffer, top, bottom, lines) do
-    scroll_region_down(buffer, top, bottom, lines)
+  @spec scroll_down(Core.t()) :: Core.t()
+  def scroll_down(buffer), do: scroll_down(buffer, 1)
+
+  @doc """
+  Scrolls the buffer down by n lines within the scroll region.
+
+  Lines scrolled out the bottom are discarded.
+  New blank lines appear at the top of the scroll region.
+  """
+  @spec scroll_down(Core.t(), non_neg_integer()) :: Core.t()
+  def scroll_down(buffer, n) when is_integer(n) and n > 0 do
+    {top, bottom} = get_effective_scroll_region(buffer)
+    do_scroll_down(buffer, n, top, bottom)
   end
+
+  def scroll_down(buffer, _), do: buffer
 
   @doc """
   Scrolls up within a specific region.
   """
+  @spec scroll_region_up(
+          Core.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Core.t()
   def scroll_region_up(buffer, top, bottom, n) when n > 0 do
-    n = min(n, bottom - top + 1)
-
-    # Save lines that will be scrolled out to scrollback
-    buffer =
-      if top == 0 do
-        save_to_scrollback(buffer, Enum.take(buffer.cells, n))
-      else
-        buffer
-      end
-
-    # Shift lines up within the region
-    {before_region, region_and_after} = Enum.split(buffer.cells, top)
-    {region, after_region} = Enum.split(region_and_after, bottom - top + 1)
-
-    # Drop n lines from top of region and add n empty lines at bottom
-    new_region = Enum.drop(region, n) ++ create_empty_lines(n, buffer.width)
-
-    new_cells = before_region ++ new_region ++ after_region
-
-    %{
-      buffer
-      | cells: new_cells,
-        damage_regions: [{0, top, buffer.width - 1, bottom}]
-    }
+    do_scroll_up(buffer, n, top, bottom)
   end
+
+  def scroll_region_up(buffer, _, _, _), do: buffer
 
   @doc """
   Scrolls down within a specific region.
   """
+  @spec scroll_region_down(
+          Core.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) ::
+          Core.t()
   def scroll_region_down(buffer, top, bottom, n) when n > 0 do
-    n = min(n, bottom - top + 1)
+    do_scroll_down(buffer, n, top, bottom)
+  end
 
-    # Shift lines down within the region
-    {before_region, region_and_after} = Enum.split(buffer.cells, top)
-    {region, after_region} = Enum.split(region_and_after, bottom - top + 1)
+  def scroll_region_down(buffer, _, _, _), do: buffer
 
-    # Add n empty lines at top of region and drop n lines from bottom
-    new_region =
-      create_empty_lines(n, buffer.width) ++
-        Enum.take(region, length(region) - n)
+  # ==========================================================================
+  # Scrollback Buffer Management
+  # ==========================================================================
 
-    new_cells = before_region ++ new_region ++ after_region
+  @doc """
+  Saves lines to the scrollback buffer.
 
-    %{
-      buffer
-      | cells: new_cells,
-        damage_regions: [{0, top, buffer.width - 1, bottom}]
-    }
+  Lines are prepended to scrollback, with oldest lines trimmed if
+  scrollback_limit is exceeded.
+  """
+  @spec save_to_scrollback(Core.t(), list()) :: Core.t()
+  def save_to_scrollback(buffer, lines) when is_list(lines) do
+    scrollback = buffer.scrollback || []
+    limit = buffer.scrollback_limit || 1000
+
+    new_scrollback =
+      (lines ++ scrollback)
+      |> Enum.take(limit)
+
+    %{buffer | scrollback: new_scrollback}
   end
 
   @doc """
-  Saves lines to scrollback buffer.
+  Adds a single line to the scrollback buffer.
+
+  Unlike save_to_scrollback/2 which accepts multiple lines,
+  this function adds exactly one line.
   """
-  def save_to_scrollback(buffer, lines) do
-    new_scrollback = lines ++ buffer.scrollback
-    trimmed_scrollback = Enum.take(new_scrollback, buffer.scrollback_limit)
-    %{buffer | scrollback: trimmed_scrollback}
+  @spec add_to_scrollback(Core.t(), list()) :: Core.t()
+  def add_to_scrollback(buffer, line) when is_list(line) do
+    save_to_scrollback(buffer, [line])
   end
 
   @doc """
   Clears the scrollback buffer.
   """
+  @spec clear_scrollback(Core.t()) :: Core.t()
   def clear_scrollback(buffer) do
-    %{buffer | scrollback: []}
+    %{buffer | scrollback: [], scroll_position: 0}
   end
 
   @doc """
-  Gets scrollback lines.
+  Gets the entire scrollback buffer.
   """
-  def get_scrollback(buffer, limit \\ nil) do
-    case limit do
-      nil -> buffer.scrollback
-      n when is_integer(n) -> Enum.take(buffer.scrollback, n)
-    end
-  end
+  @spec get_scrollback(Core.t()) :: list()
+  def get_scrollback(buffer), do: buffer.scrollback || []
 
   @doc """
-  Adds a line to the scrollback buffer (alias for save_to_scrollback).
+  Gets the scrollback buffer, limited to n lines.
   """
-  def add_to_scrollback(buffer, line) do
-    save_to_scrollback(buffer, [line])
+  @spec get_scrollback(Core.t(), non_neg_integer()) :: list()
+  def get_scrollback(buffer, limit) when is_integer(limit) and limit >= 0 do
+    (buffer.scrollback || [])
+    |> Enum.take(limit)
   end
 
-  @doc """
-  Gets a specific line from the scrollback buffer.
-  """
-  def get_scrollback_line(buffer, index) do
-    Enum.at(buffer.scrollback, index)
-  end
+  # ==========================================================================
+  # Scroll Position Management
+  # ==========================================================================
 
   @doc """
-  Clears the scroll region (sets it to nil).
-  """
-  def clear_scroll_region(buffer) do
-    %{buffer | scroll_region: nil}
-  end
+  Sets the scroll position (for viewing scrollback).
 
-  @doc """
-  Sets the scroll position for viewing scrollback.
+  Position 0 means viewing the current screen (no scrollback visible).
+  Higher values scroll back through history.
   """
-  def set_scroll_position(buffer, position) do
-    max_position = length(buffer.scrollback)
-    position = max(0, min(position, max_position))
-    %{buffer | scroll_position: position}
+  @spec set_scroll_position(Core.t(), non_neg_integer()) :: Core.t()
+  def set_scroll_position(buffer, position)
+      when is_integer(position) and position >= 0 do
+    scrollback_length = length(buffer.scrollback || [])
+    clamped_position = min(position, scrollback_length)
+    %{buffer | scroll_position: clamped_position}
   end
 
   @doc """
   Gets the current scroll position.
   """
-  def get_scroll_position(buffer) do
-    buffer.scroll_position
-  end
+  @spec get_scroll_position(Core.t()) :: non_neg_integer()
+  def get_scroll_position(buffer), do: buffer.scroll_position || 0
 
   @doc """
-  Scrolls to the bottom (most recent content).
+  Scrolls to the bottom (current screen, no scrollback visible).
   """
+  @spec scroll_to_bottom(Core.t()) :: Core.t()
   def scroll_to_bottom(buffer) do
     %{buffer | scroll_position: 0}
   end
 
   @doc """
-  Scrolls to the top (oldest scrollback).
+  Scrolls to the top of the scrollback buffer.
   """
+  @spec scroll_to_top(Core.t()) :: Core.t()
   def scroll_to_top(buffer) do
-    %{buffer | scroll_position: length(buffer.scrollback)}
+    scrollback_length = length(buffer.scrollback || [])
+    %{buffer | scroll_position: scrollback_length}
   end
 
   @doc """
-  Gets visible lines including scrollback based on scroll position.
+  Gets the visible lines based on current scroll position.
+
+  When scroll_position is 0, returns the current screen.
+  When scrolled back, mixes scrollback lines with screen lines.
   """
+  @spec get_visible_lines(Core.t()) :: list()
   def get_visible_lines(buffer) do
-    if buffer.scroll_position == 0 do
-      # Normal view - just the current screen
-      buffer.cells
-    else
-      # Showing scrollback
-      scrollback_to_show = Enum.take(buffer.scrollback, buffer.scroll_position)
-      visible_from_current = buffer.height - length(scrollback_to_show)
+    scroll_pos = buffer.scroll_position || 0
 
-      if visible_from_current > 0 do
-        # Show some scrollback and some current screen
-        scrollback_to_show ++ Enum.take(buffer.cells, visible_from_current)
-      else
-        # Show only scrollback
-        Enum.take(scrollback_to_show, buffer.height)
-      end
+    if scroll_pos == 0 do
+      buffer.cells || []
+    else
+      scrollback = buffer.scrollback || []
+      cells = buffer.cells || []
+      height = buffer.height
+
+      # Take lines from scrollback and current buffer
+      scrollback_lines = Enum.slice(scrollback, 0, scroll_pos)
+      screen_lines = Enum.take(cells, height - scroll_pos)
+
+      scrollback_lines ++ screen_lines
     end
   end
 
-  @doc """
-  Performs a reverse index (scroll down if at top of scroll region).
-  """
-  def reverse_index(buffer) do
-    {_x, y} = buffer.cursor_position
-    {top, _bottom} = get_scroll_region(buffer)
-
-    if y == top do
-      scroll_down(buffer, 1)
-    else
-      buffer
-    end
-  end
+  # ==========================================================================
+  # Index Operations (VT100 IND/RI)
+  # ==========================================================================
 
   @doc """
-  Performs an index (scroll up if at bottom of scroll region).
+  Index operation (IND) - moves cursor down, scrolling if at bottom margin.
+
+  If cursor is at the bottom margin of the scroll region, scrolls content up.
+  Otherwise, moves cursor down one line.
   """
+  @spec index(Core.t()) :: Core.t()
   def index(buffer) do
-    {_x, y} = buffer.cursor_position
-    {_top, bottom} = get_scroll_region(buffer)
+    {cursor_x, cursor_y} = buffer.cursor_position
+    {_top, bottom} = get_effective_scroll_region(buffer)
 
-    if y == bottom do
+    if cursor_y >= bottom do
       scroll_up(buffer, 1)
     else
-      buffer
+      %{buffer | cursor_position: {cursor_x, cursor_y + 1}}
     end
   end
 
-  # Private helper functions
+  @doc """
+  Reverse index operation (RI) - moves cursor up, scrolling if at top margin.
 
-  defp create_empty_lines(n, width) do
-    for _ <- 1..n do
-      List.duplicate(Cell.empty(), width)
+  If cursor is at the top margin of the scroll region, scrolls content down.
+  Otherwise, moves cursor up one line.
+  """
+  @spec reverse_index(Core.t()) :: Core.t()
+  def reverse_index(buffer) do
+    {cursor_x, cursor_y} = buffer.cursor_position
+    {top, _bottom} = get_effective_scroll_region(buffer)
+
+    if cursor_y <= top do
+      scroll_down(buffer, 1)
+    else
+      %{buffer | cursor_position: {cursor_x, cursor_y - 1}}
     end
   end
+
+  # ==========================================================================
+  # Private Helpers
+  # ==========================================================================
+
+  defp get_effective_scroll_region(buffer) do
+    case buffer.scroll_region do
+      nil -> {0, buffer.height - 1}
+      {top, bottom} -> {max(0, top), min(bottom, buffer.height - 1)}
+    end
+  end
+
+  defp do_scroll_up(buffer, n, top, bottom) when top < bottom do
+    cells = buffer.cells || []
+    region_height = bottom - top + 1
+    lines_to_scroll = min(n, region_height)
+
+    # Split buffer into three parts
+    {before_region, region_and_after} = Enum.split(cells, top)
+    {region, after_region} = Enum.split(region_and_after, region_height)
+
+    # Lines that will be scrolled out (for potential scrollback)
+    scrolled_out = Enum.take(region, lines_to_scroll)
+
+    # Remove top lines, add empty lines at bottom
+    remaining_region = Enum.drop(region, lines_to_scroll)
+    empty_lines = create_empty_lines(buffer.width, lines_to_scroll)
+    new_region = remaining_region ++ empty_lines
+
+    # Reconstruct buffer
+    new_cells = before_region ++ new_region ++ after_region
+
+    # Save to scrollback if scrolling from the top of the screen
+    buffer =
+      if top == 0 do
+        save_to_scrollback(buffer, scrolled_out)
+      else
+        buffer
+      end
+
+    %{buffer | cells: new_cells}
+  end
+
+  defp do_scroll_up(buffer, _, _, _), do: buffer
+
+  defp do_scroll_down(buffer, n, top, bottom) when top < bottom do
+    cells = buffer.cells || []
+    region_height = bottom - top + 1
+    lines_to_scroll = min(n, region_height)
+
+    # Split buffer into three parts
+    {before_region, region_and_after} = Enum.split(cells, top)
+    {region, after_region} = Enum.split(region_and_after, region_height)
+
+    # Add empty lines at top, remove bottom lines
+    empty_lines = create_empty_lines(buffer.width, lines_to_scroll)
+    remaining_region = Enum.take(region, region_height - lines_to_scroll)
+    new_region = empty_lines ++ remaining_region
+
+    # Reconstruct buffer
+    new_cells = before_region ++ new_region ++ after_region
+
+    %{buffer | cells: new_cells}
+  end
+
+  defp do_scroll_down(buffer, _, _, _), do: buffer
+
+  defp create_empty_lines(width, count) when count > 0 do
+    empty_line = List.duplicate(Cell.empty(), width)
+    List.duplicate(empty_line, count)
+  end
+
+  defp create_empty_lines(_, _), do: []
 end

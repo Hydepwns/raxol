@@ -111,8 +111,8 @@ defmodule Raxol.Core.Supervisor do
        name: Raxol.Security.UserContext.ContextServer},
 
       # Performance Memoization Server - manages function memoization cache
-      {Raxol.Core.Performance.Memoization.MemoizationServer,
-       name: Raxol.Core.Performance.Memoization.MemoizationServer},
+      {Raxol.Performance.Memoization.MemoizationServer,
+       name: Raxol.Performance.Memoization.MemoizationServer},
 
       # UI State Management Server - handles store and hooks state
       {Raxol.UI.State.Management.StateManagementServer,
@@ -150,7 +150,7 @@ defmodule Raxol.Core.Supervisor do
       Raxol.Style.Colors.System.ColorSystemServer,
       Raxol.System.Updater.State.UpdaterServer,
       Raxol.Security.UserContext.ContextServer,
-      Raxol.Core.Performance.Memoization.MemoizationServer,
+      Raxol.Performance.Memoization.MemoizationServer,
       Raxol.UI.State.Management.StateManagementServer,
       Raxol.Animation.Gestures.GestureServer
     ]
@@ -190,7 +190,7 @@ defmodule Raxol.Core.Supervisor do
       {Raxol.Style.Colors.System.ColorSystemServer, "Color System"},
       {Raxol.System.Updater.State.UpdaterServer, "Updater State"},
       {Raxol.Security.UserContext.ContextServer, "Security User Context"},
-      {Raxol.Core.Performance.Memoization.MemoizationServer,
+      {Raxol.Performance.Memoization.MemoizationServer,
        "Performance Memoization"},
       {Raxol.UI.State.Management.StateManagementServer, "UI State Management"},
       {Raxol.Animation.Gestures.GestureServer, "Animation Gestures"}

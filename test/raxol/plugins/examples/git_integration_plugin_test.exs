@@ -378,45 +378,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPluginTest do
     end
   end
 
-  describe "integration tests" do
-    @tag :skip
-    test "full workflow in mock terminal" do
-      terminal = create_mock_terminal()
-
-      config = create_git_test_config(%{hotkey: "ctrl+g"})
-      {:ok, plugin} = load_plugin(terminal, GitIntegrationPlugin, config)
-
-      # Wait for async message processing
-      Process.sleep(50)
-
-      # Verify plugin loaded
-      assert_plugin_loaded(terminal, "git-integration")
-
-      # Simulate hotkey press to show panel
-      send_keypress(terminal, "ctrl+g")
-
-      # The panel should be visible (this would be implemented by the terminal)
-      # For now, just verify the plugin is responsive
-      assert Process.alive?(plugin)
-
-      # Test status line integration
-      status = GitIntegrationPlugin.get_status()
-      status_info = GitIntegrationPlugin.status_line_info(
-        %GitIntegrationPlugin{
-          repo_path: status.repo_path,
-          current_branch: status.current_branch,
-          staged_changes: [],
-          unstaged_changes: [],
-          untracked_files: []
-        }
-      )
-
-      # Status line should have some content if in git repo
-      if status.repo_path do
-        refute status_info == ""
-      end
-    end
-  end
+  # Removed: stub test "full workflow in mock terminal" (uses undefined helpers)
 
   describe "performance tests" do
     test "render performance is acceptable" do

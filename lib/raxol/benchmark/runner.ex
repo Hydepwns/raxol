@@ -298,26 +298,11 @@ defmodule Raxol.Benchmark.Runner do
     %{
       name: "Security Operations",
       benchmarks: %{
-        "Input validation" => fn input ->
-          Raxol.Security.Auditor.validate_input(input, :text)
-        end,
-        "Session create" => fn ->
-          Raxol.Security.SessionManager.create_session(123)
-        end,
         "Password hash" => fn ->
           hash_password("test_password_123")
-        end,
-        "SQL injection check" => fn query ->
-          Raxol.Security.Auditor.validate_sql_query(query)
         end
       },
-      options: [
-        inputs: %{
-          "safe input" => "Hello, World!",
-          "suspicious" => "'; DROP TABLE users; --",
-          "large input" => String.duplicate("a", 10_000)
-        }
-      ]
+      options: []
     }
   end
 

@@ -143,6 +143,10 @@ defmodule Raxol.Core.Runtime.Application do
       @behaviour Raxol.Core.Runtime.Application
 
       import Raxol.Core.Renderer.View, except: [view: 1]
+
+      import Raxol.Core.Focus,
+        only: [setup_focus: 1, focused?: 1, current_focus: 0]
+
       alias Raxol.Core.Events.Event
       alias Raxol.Core.Runtime.Command
       alias Raxol.Core.Runtime.Subscription
@@ -299,6 +303,9 @@ defmodule Raxol.Core.Runtime.Application do
     case result do
       {new_model, commands} when is_map(new_model) and is_list(commands) ->
         {:ok, {new_model, commands}}
+
+      {new_model, %Raxol.Core.Runtime.Command{} = cmd} when is_map(new_model) ->
+        {:ok, {new_model, [cmd]}}
 
       invalid_return ->
         log_invalid_update_result(

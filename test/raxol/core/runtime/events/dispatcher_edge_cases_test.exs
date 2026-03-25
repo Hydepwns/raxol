@@ -21,13 +21,14 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
     @impl Raxol.Core.Runtime.Application
     def update(msg, state) do
       case msg do
-        {:key_press, :crash, _} ->
+        %Raxol.Core.Events.Event{type: :key, data: %{key: :crash}} ->
           raise "Simulated crash in application update"
 
-        {:key_press, :error, _} ->
+        %Raxol.Core.Events.Event{type: :key, data: %{key: :error}} ->
           {:error, :simulated_error}
 
-        {:key_press, {:timeout, test_pid}, _modifiers} when is_pid(test_pid) ->
+        %Raxol.Core.Events.Event{type: :key, data: %{key: {:timeout, test_pid}}}
+        when is_pid(test_pid) ->
           # Simulate long computation with event-based approach
           timer_id = System.unique_integer([:positive])
           Process.send_after(self(), {:update_complete, timer_id}, 200)
@@ -141,12 +142,14 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
     # Start Mock Plugin Manager
     {:ok, mock_pm_pid} = MockPluginManager.start_link([])
 
-    # Start UserPreferences server for the test
-    {:ok, _user_prefs} =
-      Raxol.Core.UserPreferences.start_link(
-        name: Raxol.Core.UserPreferences,
-        test_mode?: true
-      )
+    # Start UserPreferences server for the test (may already be running from app)
+    case Raxol.Core.UserPreferences.start_link(
+           name: Raxol.Core.UserPreferences,
+           test_mode?: true
+         ) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
 
     # Define initial state for Dispatcher
     initial_state = %{
@@ -233,7 +236,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       # Verify the event passed through
       current_state = :sys.get_state(dispatcher)
       assert current_state.model.count == 1
-      assert current_state.model.last_event == {:key_press, :enter, []}
+      assert %Event{type: :key, data: %{key: :enter}} = current_state.model.last_event
 
       # Check that plugin manager was called with event
       events = GenServer.call(pm, :get_events)
@@ -424,8 +427,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       current_state = :sys.get_state(dispatcher)
       assert current_state.model.count == 1
 
-      assert current_state.model.last_event ==
-               {:key_press, {:timeout, self()}, []}
+      assert %Event{type: :key, data: %{key: {:timeout, _}}} = current_state.model.last_event
 
       # Verify the operation took at least the sleep time
       assert elapsed >= 200
@@ -446,7 +448,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       # Verify all events were processed
       current_state = :sys.get_state(dispatcher)
       assert current_state.model.count == 10
-      assert current_state.model.last_event == {:key_press, "key10", []}
+      assert %Event{type: :key, data: %{key: "key10"}} = current_state.model.last_event
     end
   end
 

@@ -577,9 +577,6 @@ defmodule Raxol.Animation.CSSTransitions do
     )
   end
 
-  defp parse_duration_value(duration_str, rest),
-    do: {300, [duration_str | rest]}
-
   defp parse_duration_by_suffix(true, duration_str, rest) do
     {duration_str |> String.trim_trailing("ms") |> String.to_integer(), rest}
   end
@@ -609,8 +606,6 @@ defmodule Raxol.Animation.CSSTransitions do
   defp parse_delay_value(delay_str, rest) when is_binary(delay_str) do
     parse_delay_by_suffix(String.ends_with?(delay_str, "ms"), delay_str, rest)
   end
-
-  defp parse_delay_value(delay_str, rest), do: {0, [delay_str | rest]}
 
   defp parse_delay_by_suffix(true, delay_str, rest) do
     {delay_str |> String.trim_trailing("ms") |> String.to_integer(), rest}

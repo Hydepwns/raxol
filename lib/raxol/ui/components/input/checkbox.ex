@@ -8,7 +8,6 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   """
 
   alias Raxol.Core.Events.Event
-  alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
 
   @behaviour Raxol.UI.Components.Base.Component
@@ -114,19 +113,19 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   @impl Raxol.UI.Components.Base.Component
   def handle_event(
         %Event{type: :mouse, data: %{action: :press}},
-        _context,
-        state
+        state,
+        _context
       )
       when not state.disabled do
     toggle_state(state)
   end
 
-  def handle_event(%Event{type: :key, data: %{key: :space}}, _context, state)
+  def handle_event(%Event{type: :key, data: %{key: :space}}, state, _context)
       when not state.disabled do
     toggle_state(state)
   end
 
-  def handle_event(_event, _context, state), do: {:noreply, state, []}
+  def handle_event(_event, state, _context), do: {state, []}
 
   defp toggle_state(state) do
     new_checked_state = !state.checked
@@ -134,7 +133,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
 
     commands = execute_toggle_callback(state.on_toggle, new_checked_state)
 
-    {:noreply, new_state, commands}
+    {new_state, commands}
   end
 
   defp execute_toggle_callback(on_toggle, new_checked_state)
@@ -151,8 +150,11 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   @impl Raxol.UI.Components.Base.Component
   @spec render(t(), map()) :: any()
   def render(state, context) do
+    focused = Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused
+    state = %{state | focused: focused}
+
     # Harmonize theme merging: context.theme < state.theme < state.style
-    theme = Map.merge(context.theme || %{}, state.theme || %{})
+    theme = Map.merge(context[:theme] || %{}, state.theme || %{})
     theme_style = Theme.component_style(theme, :checkbox)
     base_style = Map.merge(theme_style, state.style || %{})
 
@@ -175,14 +177,21 @@ defmodule Raxol.UI.Components.Input.Checkbox do
       |> Enum.reject(fn {_k, v} -> is_nil(v) or v == false end)
       |> Enum.into(%{})
 
-    Element.new(
-      :hbox,
-      Map.merge(%{style: attrs}, extra_attrs),
-      do: [
-        Element.new(:text, %{id: "#{state.id}-check", text: check_char}),
-        Element.new(:text, %{id: "#{state.id}-label", text: " " <> label_text})
+    %{
+      type: :row,
+      style: attrs,
+      children: [
+        Raxol.View.Components.text(
+          id: "#{state.id}-check",
+          content: check_char
+        ),
+        Raxol.View.Components.text(
+          id: "#{state.id}-label",
+          content: " " <> label_text
+        )
       ]
-    )
+    }
+    |> Map.merge(extra_attrs)
   end
 
   defp get_check_character(true), do: "[x]"

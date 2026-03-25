@@ -29,17 +29,14 @@ defmodule Raxol.Terminal.Supervisor do
            clipboard: %{max_size: 1 * 1024 * 1024},
            general: %{max_size: 19 * 1024 * 1024}
          }
-       ]},
-      # Event Sourcing & CQRS Components
-      {Raxol.Architecture.EventSourcing.EventStore, []},
-      {Raxol.Architecture.CQRS.CommandDispatcher, []}
+       ]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
   end
 
   @doc """
-  Starts a new terminal with the given configuration using CQRS.
+  Starts a new terminal with the given configuration.
   """
   def start_terminal(terminal_config) do
     case DynamicSupervisor.start_child(
@@ -63,7 +60,7 @@ defmodule Raxol.Terminal.Supervisor do
   end
 
   @doc """
-  Stops a terminal process using CQRS.
+  Stops a terminal process.
   """
   def stop_terminal(terminal_id) do
     case Raxol.Terminal.TerminalRegistry.lookup(terminal_id) do

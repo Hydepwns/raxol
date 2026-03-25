@@ -14,18 +14,19 @@ defmodule Raxol.Terminal.Driver do
   alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
 
+  require Logger
   require Raxol.Core.Runtime.Log
   # Import Bitwise for bitwise operations
   # import Bitwise
 
   alias Raxol.Core.Events.Event
+  alias Raxol.Terminal.ANSI.InputParser
   alias Raxol.Terminal.IOTerminal
 
   # Check if termbox2_nif is available at compile time
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
 
-  # Add import for real_tty? from TerminalUtils
-  import Raxol.Terminal.TerminalUtils, only: [real_tty?: 0]
+  import Raxol.Terminal.TerminalUtils, only: [has_terminal_device?: 0]
 
   # Constants for retry logic
   @max_init_retries 3
@@ -43,7 +44,9 @@ defmodule Raxol.Terminal.Driver do
               original_stty: nil,
               termbox_state: :uninitialized,
               init_retries: 0,
-              io_terminal_state: nil
+              io_terminal_state: nil,
+              input_buffer: <<>>,
+              flush_timer: nil
   end
 
   # --- Public API ---
@@ -82,12 +85,11 @@ defmodule Raxol.Terminal.Driver do
       "[#{__MODULE__}] init called with dispatcher: #{inspect(dispatcher_pid)}"
     )
 
-    # Get original terminal settings
+    # Get original terminal settings using Erlang IO (no subprocess needed)
     output =
-      case System.cmd("stty", ["size"]) do
-        {output, 0} -> String.trim(output)
-        # fallback to default size as a string
-        {_, _} -> "80 24"
+      case {:io.rows(), :io.columns()} do
+        {{:ok, rows}, {:ok, cols}} -> "#{rows} #{cols}"
+        _ -> "80 24"
       end
 
     state = %State{
@@ -97,8 +99,12 @@ defmodule Raxol.Terminal.Driver do
       init_retries: 0
     }
 
-    # Initialize terminal in raw mode only if attached to a TTY
-    case {Mix.env(), real_tty?(), dispatcher_pid} do
+    # Initialize terminal in raw mode only if attached to a TTY.
+    # Use has_terminal_device?() instead of real_tty?() because the latter
+    # relies on :io.columns() which fails in -noshell mode (mix run).
+    tty_detected = has_terminal_device?()
+
+    case {Mix.env(), tty_detected, dispatcher_pid} do
       {:test, _, nil} ->
         Raxol.Core.Runtime.Log.info(
           "[Driver] Test environment detected, sending driver_ready event"
@@ -127,19 +133,66 @@ defmodule Raxol.Terminal.Driver do
         state = %{state | termbox_state: :initialized}
         {:ok, state}
 
-      {_, true, _} ->
-        Raxol.Core.Runtime.Log.debug(
-          "[TerminalDriver] TTY detected, initializing terminal backend..."
+      {_, _, nil} ->
+        # No dispatcher — this is the Application supervisor's placeholder Driver.
+        # Don't set up the terminal; the Lifecycle's Driver will do that.
+        Raxol.Core.Runtime.Log.info(
+          "[TerminalDriver] No dispatcher, skipping terminal setup."
         )
 
-        {_terminal_init_result, io_terminal_state} =
-          if @termbox2_available do
-            {apply(:termbox2_nif, :tb_init, []), nil}
-          else
-            init_io_terminal()
+        {:ok, state}
+
+      {_, true, _} ->
+        Raxol.Core.Runtime.Log.info(
+          "[TerminalDriver] TTY detected, initializing ANSI terminal..."
+        )
+
+        # Save original TTY settings via /dev/tty (System.cmd pipes stdin,
+        # so we must redirect from /dev/tty for stty to affect the real terminal)
+        original_stty =
+          case :os.cmd(~c"stty -g < /dev/tty 2>/dev/null") do
+            settings when is_list(settings) ->
+              settings |> List.to_string() |> String.trim()
+
+            _ ->
+              nil
           end
 
-        state = %{state | io_terminal_state: io_terminal_state}
+        # Raw mode on the actual terminal: no echo, no line buffering, no signals
+        :os.cmd(~c"stty raw -echo -icanon -isig < /dev/tty 2>/dev/null")
+
+        # Suppress Logger console output so it doesn't corrupt the TUI
+        Logger.configure(level: :none)
+
+        # Enter alternate screen, hide cursor
+        IO.write("\e[?1049h\e[?25l")
+
+        # Explicitly disable mouse tracking (may be left over from a crashed session)
+        IO.write("\e[?1003l\e[?1006l\e[?1000l")
+
+        # Enable terminal modes: focus reporting, bracketed paste
+        IO.write("\e[?1004h\e[?2004h")
+
+        # Send initial resize event if we have a dispatcher
+        if dispatcher_pid, do: send_initial_resize_event(dispatcher_pid)
+
+        # Activate prim_tty reader for input. In -noshell mode, prim_tty
+        # was initialized with tty => false, so the reader gets no select
+        # notifications. start_stdin_reader triggers reinit with tty => true
+        # and sets up trace interception of the reader's output.
+        start_stdin_reader(self())
+
+        state = %{
+          state
+          | termbox_state: :initialized,
+            original_stty: original_stty,
+            io_terminal_state: %{
+              input_reader: Process.whereis(:user_drv_reader),
+              tty_fd: nil,
+              tty_port: nil
+            }
+        }
+
         {:ok, state}
 
       {_, false, _} ->
@@ -286,11 +339,109 @@ defmodule Raxol.Terminal.Driver do
   end
 
   @impl true
+  def handle_manager_info({:raw_input, data}, state) when is_binary(data) do
+    buffer = state.input_buffer <> data
+
+    _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
+
+    if incomplete_escape?(buffer) do
+      timer = Process.send_after(self(), :flush_input_buffer, 50)
+      {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
+    else
+      flush_buffer(%{state | input_buffer: buffer, flush_timer: nil})
+    end
+  end
+
+  # Trace messages from prim_tty reader — intercept input data
+  @impl true
+  def handle_manager_info(
+        {:trace, _reader, :send, {_ref, {:data, data}}, _to},
+        state
+      ) do
+    binary =
+      cond do
+        is_binary(data) -> data
+        is_list(data) -> IO.iodata_to_binary(data)
+        true -> <<>>
+      end
+
+    if byte_size(binary) > 0 do
+      buffer = state.input_buffer <> binary
+
+      _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
+
+      if incomplete_escape?(buffer) do
+        timer = Process.send_after(self(), :flush_input_buffer, 50)
+        {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
+      else
+        flush_buffer(%{state | input_buffer: buffer, flush_timer: nil})
+      end
+    else
+      {:noreply, state}
+    end
+  end
+
+  # Ignore other trace messages from the reader (signals, receives, etc.)
+  @impl true
+  def handle_manager_info({:trace, _pid, :send, _msg, _to}, state) do
+    {:noreply, state}
+  end
+
+  # Port data — accumulate and parse (buffering handles split escape sequences)
+  @impl true
+  def handle_manager_info({port, {:data, data}}, state) when is_port(port) do
+    buffer = state.input_buffer <> data
+
+    # Cancel any pending flush timer
+    _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
+
+    # If the buffer ends with an incomplete escape sequence, wait for more bytes.
+    # Otherwise, dispatch immediately.
+    if incomplete_escape?(buffer) do
+      timer = Process.send_after(self(), :flush_input_buffer, 50)
+      {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
+    else
+      flush_buffer(%{state | input_buffer: buffer, flush_timer: nil})
+    end
+  end
+
+  # Flush timer fired — dispatch whatever we have
+  @impl true
+  def handle_manager_info(:flush_input_buffer, state) do
+    flush_buffer(%{state | flush_timer: nil})
+  end
+
+  # Port closed
+  @impl true
+  def handle_manager_info({port, :eof}, state) when is_port(port) do
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_manager_info({port, {:exit_status, _status}}, state)
+      when is_port(port) do
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_manager_info(unhandled_message, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "#{__MODULE__} received unhandled message: #{inspect(unhandled_message)}",
       %{}
     )
+
+    {:noreply, state}
+  end
+
+  defp dispatch_raw_input(data, state) do
+    events = InputParser.parse(data)
+
+    Enum.each(events, fn event ->
+      case state.dispatcher_pid do
+        nil -> :ok
+        pid -> send_event_to_dispatcher(pid, event)
+      end
+    end)
 
     {:noreply, state}
   end
@@ -333,11 +484,40 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  def terminate(_reason, %{termbox_state: :initialized} = _state) do
+  def terminate(_reason, %{termbox_state: :initialized} = state) do
     Raxol.Core.Runtime.Log.info("Terminal Driver terminating.")
+
+    # Kill the stdin reader process
+    case get_in(state, [
+           Access.key(:io_terminal_state),
+           Access.key(:input_reader)
+         ]) do
+      pid when is_pid(pid) ->
+        Process.exit(pid, :shutdown)
+
+      _ ->
+        :ok
+    end
+
+    # Close tty port if open
+    case get_in(state, [
+           Access.key(:io_terminal_state),
+           Access.key(:tty_port)
+         ]) do
+      port when is_port(port) ->
+        try do
+          Port.close(port)
+        catch
+          _, _ -> :ok
+        end
+
+      _ ->
+        :ok
+    end
+
     # Only attempt shutdown if not in test environment
     _ =
-      case {Mix.env(), real_tty?()} do
+      case {Mix.env(), has_terminal_device?()} do
         {:test, _} ->
           :ok
 
@@ -345,12 +525,24 @@ defmodule Raxol.Terminal.Driver do
           :ok
 
         {_, true} ->
-          _ =
-            if @termbox2_available do
-              apply(:termbox2_nif, :tb_shutdown, [])
-            else
-              0
-            end
+          # Disable terminal modes before restoring
+          IO.write("\e[?1004l\e[?2004l")
+          # Restore terminal: show cursor, leave alternate screen
+          IO.write("\e[?25h\e[?1049l")
+          :io.setopts(:standard_io, echo: true)
+
+          # Restore original TTY settings (OS-level via /dev/tty)
+          case state.original_stty do
+            stty when is_binary(stty) and byte_size(stty) > 0 ->
+              :os.cmd(String.to_charlist("stty #{stty} < /dev/tty 2>/dev/null"))
+
+            _ ->
+              :os.cmd(~c"stty sane < /dev/tty 2>/dev/null")
+          end
+
+          # Restore Logger output
+          Logger.configure(level: :debug)
+          :ok
       end
 
     :ok
@@ -369,7 +561,7 @@ defmodule Raxol.Terminal.Driver do
   """
   def process_title_change(title, state) when is_binary(title) do
     _ =
-      case {Mix.env(), real_tty?()} do
+      case {Mix.env(), has_terminal_device?()} do
         {:test, _} ->
           :ok
 
@@ -379,7 +571,7 @@ defmodule Raxol.Terminal.Driver do
         {_, true} ->
           _ =
             if @termbox2_available do
-              apply(:termbox2_nif, :tb_set_title, [title])
+              :termbox2_nif.tb_set_title(title)
             else
               0
             end
@@ -394,7 +586,7 @@ defmodule Raxol.Terminal.Driver do
   def process_position_change(x, y, state)
       when is_integer(x) and is_integer(y) do
     _ =
-      case {Mix.env(), real_tty?()} do
+      case {Mix.env(), has_terminal_device?()} do
         {:test, _} ->
           :ok
 
@@ -404,7 +596,7 @@ defmodule Raxol.Terminal.Driver do
         {_, true} ->
           _ =
             if @termbox2_available do
-              apply(:termbox2_nif, :tb_set_position, [x, y])
+              :termbox2_nif.tb_set_position(x, y)
             else
               0
             end
@@ -413,53 +605,97 @@ defmodule Raxol.Terminal.Driver do
     {:noreply, state}
   end
 
+  # --- Input reader ---
+  # In -noshell mode (mix run), prim_tty is initialized with tty => false,
+  # so its reader process never receives select notifications. We trigger
+  # reinit via user_drv:start_shell, then trace-intercept the reader's
+  # data messages.
+  defp start_stdin_reader(_driver_pid) do
+    # In -noshell mode, user_drv initializes prim_tty with tty => false,
+    # so the NIF never sets up the terminal fd for select notifications.
+    # The reader process exists but is blocked waiting for events that
+    # never arrive.
+    #
+    # Fix: call user_drv:start_shell to trigger prim_tty:reinit with
+    # tty => true, which activates the terminal fd. Then trace the
+    # reader to intercept input data before it reaches user_drv.
+    reader = Process.whereis(:user_drv_reader)
+    user_drv = Process.whereis(:user_drv)
+
+    if user_drv do
+      # Activate the terminal fd by triggering prim_tty reinit.
+      try do
+        :gen_statem.call(
+          user_drv,
+          {:start_shell, %{initial_shell: {__MODULE__, :noop_shell, []}}}
+        )
+      catch
+        _, _ -> :ok
+      end
+    end
+
+    if reader do
+      # Trace the reader's sends to intercept data before user_drv
+      # forwards it. The reader sends {ref, {:data, bytes}} to user_drv.
+      :erlang.trace(reader, true, [:send])
+    end
+
+    # Return nil — no spawned reader pid to track. Input arrives via
+    # trace messages in handle_manager_info.
+    nil
+  end
+
+  @doc false
+  def noop_shell, do: :ok
+
+  # --- Input buffering ---
+  # Escape sequences may span multiple messages, so we buffer until complete.
+
+  # Returns true if the buffer contains an ESC that hasn't been completed yet.
+  defp incomplete_escape?(<<>>), do: false
+
+  defp incomplete_escape?(buffer) do
+    # Find the last ESC byte
+    case :binary.matches(buffer, <<27>>) do
+      [] ->
+        false
+
+      matches ->
+        {last_esc_pos, _} = List.last(matches)
+
+        tail =
+          binary_part(buffer, last_esc_pos, byte_size(buffer) - last_esc_pos)
+
+        # A bare ESC or ESC followed by [ but no terminal byte yet
+        incomplete_csi?(tail)
+    end
+  end
+
+  # ESC alone (more bytes expected)
+  defp incomplete_csi?(<<27>>), do: true
+  # ESC [ but no final byte (letters A-Z, a-z, ~)
+  defp incomplete_csi?(<<27, 91, rest::binary>>),
+    do: not has_csi_terminator?(rest)
+
+  # ESC O but no function key letter
+  defp incomplete_csi?(<<27, 79>>), do: true
+  defp incomplete_csi?(_), do: false
+
+  defp has_csi_terminator?(<<>>), do: false
+
+  defp has_csi_terminator?(data) do
+    # CSI terminates with a byte in 64..126 range (@A-Z[\]^_`a-z{|}~)
+    last = :binary.last(data)
+    last >= 64 and last <= 126
+  end
+
+  defp flush_buffer(%{input_buffer: <<>>} = state), do: {:noreply, state}
+
+  defp flush_buffer(state) do
+    dispatch_raw_input(state.input_buffer, %{state | input_buffer: <<>>})
+  end
+
   # --- Private Helpers ---
-
-  # defp init_test_environment(state, dispatcher_pid) do
-  #   Raxol.Core.Runtime.Log.info(
-  #     "[Driver] Test environment detected, sending driver_ready event"
-  #   )
-  #
-  #   case dispatcher_pid do
-  #     nil ->
-  #       Raxol.Core.Runtime.Log.warning_with_context(
-  #         "[Driver] No dispatcher_pid provided, skipping driver_ready and initial resize event",
-  #         %{}
-  #       )
-  #
-  #     pid ->
-  #       send(pid, {:driver_ready, self()})
-  #       # Send initial resize event for test environment
-  #       Raxol.Core.Runtime.Log.info(
-  #         "[Driver] Sending initial resize event to dispatcher_pid: #{inspect(pid)}"
-  #       )
-  #
-  #       send_initial_resize_event(pid)
-  #   end
-  #
-  #   # In test mode, set termbox_state to :initialized so we can handle test events
-  #   state = %{state | termbox_state: :initialized}
-  #   {:ok, state}
-  # end
-
-  # defp init_production_environment(state) do
-  #   case real_tty?() do
-  #     true ->
-  #       Raxol.Core.Runtime.Log.debug(
-  #         "[TerminalDriver] TTY detected, calling Termbox2Nif.tb_init()..."
-  #       )
-  #
-  #       _ = call_termbox_init()
-  #
-  #     false ->
-  #       Raxol.Core.Runtime.Log.warning_with_context(
-  #         "Not attached to TTY. Terminal features disabled.",
-  #         %{}
-  #       )
-  #   end
-  #
-  #   {:ok, state}
-  # end
 
   defp send_event_to_dispatcher(dispatcher_pid, event) do
     case Mix.env() do
@@ -492,13 +728,6 @@ defmodule Raxol.Terminal.Driver do
       0
     end
   end
-
-  # defp apply_termbox_function(function, args) do
-  #   case @termbox2_available do
-  #     true -> apply(:termbox2_nif, function, args)
-  #     false -> :ok
-  #   end
-  # end
 
   defp get_termbox_width do
     if @termbox2_available do
@@ -540,7 +769,7 @@ defmodule Raxol.Terminal.Driver do
   end
 
   defp determine_terminal_size do
-    case {Mix.env(), real_tty?()} do
+    case {Mix.env(), has_terminal_device?()} do
       {:test, _} -> {:ok, 80, 24}
       {_, true} -> get_termbox_size()
       {_, false} -> stty_size_fallback()
@@ -564,13 +793,32 @@ defmodule Raxol.Terminal.Driver do
   end
 
   defp stty_size_fallback do
-    case System.cmd("stty", ["size"]) do
-      {output, 0} ->
-        [height, width] = String.split(String.trim(output), " ")
-        {:ok, String.to_integer(width), String.to_integer(height)}
+    case {:io.columns(), :io.rows()} do
+      {{:ok, cols}, {:ok, rows}} ->
+        {:ok, cols, rows}
 
       _ ->
-        {:ok, 80, 24}
+        # In -noshell mode, :io.columns/rows fail. Use stty via /dev/tty.
+        case :os.cmd(~c"stty size < /dev/tty 2>/dev/null") do
+          result when is_list(result) ->
+            str = List.to_string(result) |> String.trim()
+
+            case String.split(str) do
+              [rows_s, cols_s] ->
+                rows = String.to_integer(rows_s)
+                cols = String.to_integer(cols_s)
+
+                if rows > 0 and cols > 0,
+                  do: {:ok, cols, rows},
+                  else: {:ok, 80, 24}
+
+              _ ->
+                {:ok, 80, 24}
+            end
+
+          _ ->
+            {:ok, 80, 24}
+        end
     end
   end
 
@@ -666,108 +914,14 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  # Helper for parsing test input
-  # This function translates simple string inputs from tests into Event structs.
-  # It's a simplified version for testing purposes.
   defp parse_test_input(input_data) when is_binary(input_data) do
-    # Basic parsing: assume simple characters or known ctrl sequences
-    # This is a simplified parser for test inputs.
     Raxol.Core.Runtime.Log.debug(
       "[TerminalDriver.parse_test_input] Parsing: #{inspect(input_data)}"
     )
 
-    case input_data do
-      # Ctrl+Q (ASCII 17)
-      <<17>> ->
-        %Event{
-          type: :key,
-          data: %{
-            key: :char,
-            char: <<17>>,
-            ctrl: true,
-            alt: false,
-            shift: false,
-            meta: false
-          }
-        }
-
-      # Ctrl+V (ASCII 22)
-      <<22>> ->
-        %Event{
-          type: :key,
-          data: %{
-            key: :char,
-            char: <<22>>,
-            ctrl: true,
-            alt: false,
-            shift: false,
-            meta: false
-          }
-        }
-
-      # Ctrl+X (ASCII 24)
-      <<24>> ->
-        %Event{
-          type: :key,
-          data: %{
-            key: :char,
-            char: <<24>>,
-            ctrl: true,
-            alt: false,
-            shift: false,
-            meta: false
-          }
-        }
-
-      # Ctrl+N (ASCII 14)
-      <<14>> ->
-        %Event{
-          type: :key,
-          data: %{
-            key: :char,
-            char: <<14>>,
-            ctrl: true,
-            alt: false,
-            shift: false,
-            meta: false
-          }
-        }
-
-      # Other ASCII characters (simplified)
-      <<char>> when char >= 32 and char <= 126 ->
-        %Event{
-          type: :key,
-          data: %{
-            key: :char,
-            char: <<char>>,
-            ctrl: false,
-            alt: false,
-            shift: false,
-            meta: false
-          }
-        }
-
-      _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[TerminalDriver.parse_test_input] Unhandled test input: #{inspect(input_data)}",
-          %{}
-        )
-
-        # Return a generic event or handle error as appropriate
-        %Event{type: :unknown_test_input, data: %{raw: input_data}}
-    end
-  end
-
-  @dialyzer {:nowarn_function, init_io_terminal: 0}
-  defp init_io_terminal do
-    # Use pure Elixir IOTerminal when NIF not available
-    Raxol.Core.Runtime.Log.info(
-      "[TerminalDriver] Using pure Elixir IOTerminal (NIF not available)"
-    )
-
-    case IOTerminal.init() do
-      {:ok, io_state} -> {0, io_state}
-      {:error, _reason} -> {-1, nil}
+    case InputParser.parse(input_data) do
+      [event | _] -> event
+      [] -> %Event{type: :unknown_test_input, data: %{raw: input_data}}
     end
   end
 

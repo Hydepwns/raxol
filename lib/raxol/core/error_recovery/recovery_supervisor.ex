@@ -496,6 +496,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
     end
   end
 
+  @spec escalate_to_parent(term(), term(), term()) :: no_return()
   defp escalate_to_parent(child_id, reason, _state) do
     Log.error("Escalating failure of #{child_id} to parent supervisor")
 

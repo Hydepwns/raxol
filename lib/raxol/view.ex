@@ -1,21 +1,14 @@
 defmodule Raxol.View do
   @moduledoc """
-  Main view module for Raxol that provides view macros and sigils.
+  Main view module for Raxol.
 
-  This module provides the `~V` sigil used in examples to define views
-  with Raxol's template syntax.
+  `use Raxol.View` imports the full View DSL from `Raxol.Core.Renderer.View`.
+
+  Also provides the `~V` sigil for template-based view definitions (experimental).
   """
 
   @doc """
-  Sigil for creating Raxol views with template syntax.
-
-  ## Examples
-
-      ~V\"""
-      <.panel title="Hello">
-        <.text>Hello, World!</.text>
-      </.panel>
-      \"""
+  Sigil for creating Raxol views with template syntax (experimental).
   """
   defmacro sigil_V(expr, opts) do
     case expr do
@@ -32,15 +25,8 @@ defmodule Raxol.View do
     end
   end
 
-  @doc """
-  Parse a template string into a Raxol view structure.
-  """
-
+  @doc false
   def parse_template(template, _opts \\ []) do
-    # For now, return the template as-is
-    # This is a simplified implementation
-    # In a full implementation, this would parse the template syntax
-    # and convert it to appropriate Raxol view structures
     %{
       type: :view,
       template: template,
@@ -48,14 +34,9 @@ defmodule Raxol.View do
     }
   end
 
-  @doc """
-  Import common view functions and macros.
-  """
   defmacro __using__(_opts) do
     quote do
-      import Raxol.View
-      import Raxol.View.Elements
-      import Raxol.View.Components
+      import Raxol.Core.Renderer.View, except: [view: 1]
     end
   end
 end

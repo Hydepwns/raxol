@@ -224,7 +224,10 @@ defmodule Raxol.UI.Theming.Theme do
           row_foreground: Color.from_hex("#FFFFFF"),
           selected_row_background: Color.from_hex("#4A9CD5"),
           selected_row_foreground: Color.from_hex("#FFFFFF")
-        }
+        },
+        focus: %{border: :single, border_fg: :cyan},
+        disabled: %{fg: :gray},
+        active: %{border: :double, border_fg: :white}
       }
     })
   end

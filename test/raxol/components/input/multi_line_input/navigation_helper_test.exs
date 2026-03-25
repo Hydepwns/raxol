@@ -241,6 +241,94 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
     end
   end
 
+  describe "desired_col persistence during vertical movement" do
+    test "moving down through a short line preserves desired_col" do
+      # Lines: "abcdefgh" (8), "hi" (2), "12345678" (8)
+      # Start at col 7 on line 0, move down twice
+      state = create_state(["abcdefgh", "hi", "12345678"], {0, 7})
+      state = NavigationHelper.move_cursor(state, :down)
+      # Clamped to end of "hi" (col 2), but desired_col remembers 7
+      assert state.cursor_pos == {1, 2}
+      assert state.desired_col == 7
+
+      state = NavigationHelper.move_cursor(state, :down)
+      # Restores to col 7 on the long line
+      assert state.cursor_pos == {2, 7}
+      assert state.desired_col == 7
+    end
+
+    test "moving up through a short line preserves desired_col" do
+      state = create_state(["12345678", "hi", "abcdefgh"], {2, 7})
+      state = NavigationHelper.move_cursor(state, :up)
+      assert state.cursor_pos == {1, 2}
+      assert state.desired_col == 7
+
+      state = NavigationHelper.move_cursor(state, :up)
+      assert state.cursor_pos == {0, 7}
+      assert state.desired_col == 7
+    end
+
+    test "horizontal movement clears desired_col" do
+      state = create_state(["abcdefgh", "hi", "12345678"], {0, 7})
+      state = NavigationHelper.move_cursor(state, :down)
+      assert state.desired_col == 7
+
+      # Moving left clears desired_col
+      state = NavigationHelper.move_cursor(state, :left)
+      assert state.cursor_pos == {1, 1}
+      assert state.desired_col == nil
+    end
+
+    test "line_start clears desired_col" do
+      state = create_state(["abcdefgh", "hi"], {0, 7})
+      state = NavigationHelper.move_cursor(state, :down)
+      assert state.desired_col == 7
+
+      state = NavigationHelper.move_cursor_line_start(state)
+      assert state.desired_col == nil
+    end
+
+    test "line_end clears desired_col" do
+      state = create_state(["abcdefgh", "hi"], {0, 7})
+      state = NavigationHelper.move_cursor(state, :down)
+      assert state.desired_col == 7
+
+      state = NavigationHelper.move_cursor_line_end(state)
+      assert state.desired_col == nil
+    end
+
+    test "doc_start clears desired_col" do
+      state = create_state(["abcdefgh", "hi"], {0, 7})
+      state = NavigationHelper.move_cursor(state, :down)
+      assert state.desired_col == 7
+
+      state = NavigationHelper.move_cursor_doc_start(state)
+      assert state.desired_col == nil
+    end
+
+    test "doc_end clears desired_col" do
+      state = create_state(["abcdefgh", "hi"], {0, 7})
+      state = NavigationHelper.move_cursor(state, :down)
+      assert state.desired_col == 7
+
+      state = NavigationHelper.move_cursor_doc_end(state)
+      assert state.desired_col == nil
+    end
+
+    test "page movement preserves desired_col" do
+      lines = Enum.map(0..10, fn
+        5 -> "hi"
+        _ -> "abcdefgh"
+      end)
+
+      state = create_state(lines, {0, 7}, {15, 5})
+      state = NavigationHelper.move_cursor_page(state, :down)
+      # Jumped to line 5 ("hi"), clamped to col 2
+      assert state.cursor_pos == {5, 2}
+      assert state.desired_col == 7
+    end
+  end
+
   describe "select_all/1" do
     test ~c"sets selection start to {0, 0} and end to end of document" do
       state = create_state(["hello", "world there"], {1, 2})

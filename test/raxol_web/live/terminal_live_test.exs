@@ -4,18 +4,7 @@ defmodule RaxolWeb.TerminalLiveTest do
   # Note: This is a unit test file for the TerminalLive module.
   # For full integration tests with LiveView, use Phoenix.LiveViewTest.
 
-  alias Raxol.Web.SessionBridge
-
   setup do
-    # Ensure SessionBridge is running
-    case GenServer.whereis(SessionBridge) do
-      nil ->
-        {:ok, _pid} = SessionBridge.start_link([])
-
-      _pid ->
-        :ok
-    end
-
     :ok
   end
 
@@ -260,72 +249,5 @@ defmodule RaxolWeb.TerminalLiveTest do
   end
 end
 
-defmodule RaxolWeb.TerminalLiveIntegrationTest do
-  @moduledoc """
-  Integration tests for TerminalLive.
-
-  These tests require a full Phoenix endpoint and use LiveViewTest.
-  They are tagged with :integration and can be run separately.
-  """
-  use ExUnit.Case, async: false
-
-  @moduletag :integration
-
-  describe "LiveView mount" do
-    @tag :skip
-    test "mounts successfully with default session" do
-      # Would use Phoenix.LiveViewTest.live/2
-    end
-
-    @tag :skip
-    test "mounts with provided session_id" do
-      # Would test session_id from params
-    end
-
-    @tag :skip
-    test "resumes session from bridge token" do
-      # Would test WASH session resumption
-    end
-  end
-
-  describe "keyboard handling" do
-    @tag :skip
-    test "handles regular character input" do
-      # Would test keydown events
-    end
-
-    @tag :skip
-    test "handles special keys" do
-      # Would test arrow keys, function keys
-    end
-
-    @tag :skip
-    test "handles Ctrl+key combinations" do
-      # Would test ctrl key modifiers
-    end
-  end
-
-  describe "terminal rendering" do
-    @tag :skip
-    test "renders initial buffer" do
-      # Would verify HTML output
-    end
-
-    @tag :skip
-    test "updates buffer on input" do
-      # Would test buffer updates
-    end
-  end
-
-  describe "collaboration" do
-    @tag :skip
-    test "tracks presence on join" do
-      # Would test presence tracking
-    end
-
-    @tag :skip
-    test "broadcasts cursor updates" do
-      # Would test cursor sync
-    end
-  end
-end
+# Note: TerminalLiveIntegrationTest was removed as it contained only empty stub tests.
+# Integration tests requiring full Phoenix endpoint should be implemented when needed.

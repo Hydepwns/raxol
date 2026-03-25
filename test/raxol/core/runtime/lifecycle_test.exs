@@ -48,7 +48,11 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
   end
 
   setup_all do
-    start_supervised!(Raxol.DynamicSupervisor)
+    case start_supervised(Raxol.DynamicSupervisor) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+      {:error, {{:already_started, _pid}, _}} -> :ok
+    end
 
     # Handle case where registry is already running from global test setup or supervisor
     case start_supervised(Raxol.Terminal.Registry) do
@@ -63,6 +67,12 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
 
       {:error, reason} ->
         raise "Failed to start Raxol.Terminal.Registry: #{inspect(reason)}"
+    end
+
+    # Ensure event subscriptions registry exists for Dispatcher
+    if Process.whereis(:raxol_event_subscriptions) == nil do
+      {:ok, _} =
+        Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions)
     end
 
     # Start UserPreferences which is required by the application lifecycle
@@ -82,9 +92,44 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
   end
 
   setup do
-    if pid = Process.whereis(:test_app), do: Process.exit(pid, :shutdown)
-    Process.sleep(100)
+    stop_registered_process(:test_app)
     :ok
+  end
+
+  defp stop_registered_process(name) do
+    case Process.whereis(name) do
+      nil ->
+        :ok
+
+      pid ->
+        ref = Process.monitor(pid)
+        Process.exit(pid, :shutdown)
+
+        receive do
+          {:DOWN, ^ref, :process, ^pid, _} -> :ok
+        after
+          1_000 ->
+            Process.exit(pid, :kill)
+
+            receive do
+              {:DOWN, ^ref, :process, ^pid, _} -> :ok
+            after
+              1_000 -> :ok
+            end
+        end
+
+        # Ensure the name is fully unregistered
+        wait_for_unregister(name, 10)
+    end
+  end
+
+  defp wait_for_unregister(_name, 0), do: :ok
+
+  defp wait_for_unregister(name, retries) do
+    case Process.whereis(name) do
+      nil -> :ok
+      _ -> Process.sleep(50) && wait_for_unregister(name, retries - 1)
+    end
   end
 
   describe "application lifecycle" do
