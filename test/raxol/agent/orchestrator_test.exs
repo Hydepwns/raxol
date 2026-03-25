@@ -18,7 +18,11 @@ defmodule Raxol.Agent.OrchestratorTest do
   setup do
     Raxol.Agent.ContextStore.init()
 
-    # Registry is already started by the application; just start DynSup
+    case Registry.start_link(keys: :unique, name: Raxol.Agent.Registry) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
     start_supervised!({DynamicSupervisor, name: Raxol.Agent.DynSup, strategy: :one_for_one})
 
     orch = start_supervised!(Orchestrator)
