@@ -187,7 +187,6 @@ defmodule Raxol.Core.Accessibility.Announcements do
     end)
   end
 
-  @spec send_to_alive_process(boolean(), pid(), term()) :: term()
   defp send_to_alive_process(false, _pid, _message), do: :ok
   defp send_to_alive_process(true, pid, message), do: send(pid, message)
 end

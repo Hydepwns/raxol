@@ -140,9 +140,8 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   defp convert_to_sixel(image_data, bounds) do
     # Decode and resize image to fit bounds
     with {:ok, image} <- decode_image(image_data),
-         resized_image <- resize_image(image, bounds),
-         sixel_data <- encode_sixel(resized_image) do
-      sixel_data
+         resized_image <- resize_image(image, bounds) do
+      encode_sixel(resized_image)
     else
       _ -> "Failed to convert image to sixel format"
     end

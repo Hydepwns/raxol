@@ -18,7 +18,7 @@ defmodule Raxol.SSH.IOAdapter do
   @spec make_writer(reference(), non_neg_integer()) :: (binary() -> :ok)
   def make_writer(connection_ref, channel_id) do
     fn data when is_binary(data) ->
-      :ssh_connection.send(connection_ref, channel_id, data)
+      _ = :ssh_connection.send(connection_ref, channel_id, data)
       :ok
     end
   end

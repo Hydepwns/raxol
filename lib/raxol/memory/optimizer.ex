@@ -110,11 +110,11 @@ defmodule Raxol.Memory.Optimizer do
     recommendations =
       []
       |> maybe_add(
-        length(long_queues) > 0,
+        long_queues != [],
         "Consider implementing backpressure for processes with long queues"
       )
       |> maybe_add(
-        length(large_heaps) > 0,
+        large_heaps != [],
         "Review processes with large heaps for memory optimization"
       )
 

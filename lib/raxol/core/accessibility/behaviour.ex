@@ -19,7 +19,7 @@ defmodule Raxol.Core.Accessibility.Behaviour do
   @callback get_focus_history() :: list(String.t() | nil)
 
   @callback enabled?() :: boolean
-  @callback announce(message :: String.t(), level :: :verbose | :normal) :: :ok
+  @callback announce(message :: String.t(), opts :: keyword()) :: :ok
   @callback get_option(key :: atom, default :: any) :: any
   @callback set_option(key :: atom, value :: any) :: :ok
   @callback get_component_hint(

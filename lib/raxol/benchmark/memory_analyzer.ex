@@ -158,7 +158,7 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
   defp analyze_sustained_memory(benchmark_results) do
     memory_values = extract_memory_values(benchmark_results)
 
-    if length(memory_values) > 0 do
+    if memory_values != [] do
       # Calculate sustained memory as the 75th percentile
       sorted = Enum.sort(memory_values)
       percentile_75_index = trunc(length(sorted) * 0.75)
@@ -382,7 +382,7 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
   defp calculate_variance(values), do: Statistics.calculate_variance(values)
 
   defp calculate_average_memory(memory_samples) do
-    if length(memory_samples) > 0 do
+    if memory_samples != [] do
       total_memory = Enum.sum(Enum.map(memory_samples, & &1.memory))
       total_memory / length(memory_samples)
     else

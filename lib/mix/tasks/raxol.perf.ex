@@ -96,7 +96,7 @@ defmodule Mix.Tasks.Raxol.Perf do
     Mix.shell().info("Memory: #{analysis.memory.total_mb}MB total")
     Mix.shell().info("Processes: #{analysis.processes.count}")
 
-    if length(analysis.memory.issues) > 0 do
+    if analysis.memory.issues != [] do
       Mix.shell().info("\n[WARN]  Issues detected:")
 
       Enum.each(
@@ -175,11 +175,12 @@ defmodule Mix.Tasks.Raxol.Perf do
 
     Mix.shell().info("Press Ctrl+C to stop")
 
-    Raxol.Performance.DevProfiler.start_continuous(
-      interval: interval,
-      duration: duration,
-      auto_hints: true
-    )
+    _ =
+      Raxol.Performance.DevProfiler.start_continuous(
+        interval: interval,
+        duration: duration,
+        auto_hints: true
+      )
 
     # Keep the task running
     receive do

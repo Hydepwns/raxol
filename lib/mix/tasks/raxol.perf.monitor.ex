@@ -494,7 +494,7 @@ defmodule Mix.Tasks.Raxol.Perf.Monitor do
   end
 
   defp print_recommendations(recommendations) do
-    case length(recommendations) > 0 do
+    case recommendations != [] do
       true ->
         Log.console("")
         Log.console("=== Optimization Recommendations ===")

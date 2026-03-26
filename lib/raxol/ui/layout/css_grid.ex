@@ -29,10 +29,10 @@ defmodule Raxol.UI.Layout.CSSGrid do
               Raxol.UI.Layout.CSSGrid.Positioning
             ]}
   alias Raxol.UI.Layout.CSSGrid.{
-    TrackParser,
     ItemPlacement,
+    Positioning,
     Sizing,
-    Positioning
+    TrackParser
   }
 
   # Grid track definition

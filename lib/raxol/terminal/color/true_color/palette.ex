@@ -38,9 +38,30 @@ defmodule Raxol.Terminal.Color.TrueColor.Palette do
     end
   end
 
+  @type color_name ::
+          :black
+          | :white
+          | :red
+          | :green
+          | :blue
+          | :yellow
+          | :magenta
+          | :cyan
+          | :orange
+          | :purple
+          | :pink
+          | :brown
+          | :gray
+          | :lime
+          | :navy
+          | :olive
+          | :silver
+          | :teal
+
   @doc """
   Returns the full map of named colors.
   """
-  @spec all() :: %{atom() => {0..255, 0..255, 0..255}}
+  @dialyzer {:nowarn_function, all: 0}
+  @spec all() :: %{color_name() => {0..255, 0..255, 0..255}}
   def all, do: @colors
 end

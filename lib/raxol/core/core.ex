@@ -472,7 +472,7 @@ defmodule Raxol.Core do
   :ok = Raxol.Core.set_accessibility_enabled(true)
   ```
   """
-  @spec set_accessibility_enabled(boolean()) :: :ok | {:error, term()}
+  @spec set_accessibility_enabled(boolean()) :: :ok
   def set_accessibility_enabled(enabled) do
     Accessibility.set_enabled(enabled)
   end

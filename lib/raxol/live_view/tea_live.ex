@@ -48,7 +48,7 @@ defmodule Raxol.LiveView.TEALive do
       topic = "tea_live:#{inspect(self())}"
 
       if connected?(socket) do
-        Phoenix.PubSub.subscribe(Raxol.PubSub, topic)
+        _ = Phoenix.PubSub.subscribe(Raxol.PubSub, topic)
 
         {:ok, lifecycle_pid} =
           Lifecycle.start_link(app_module,

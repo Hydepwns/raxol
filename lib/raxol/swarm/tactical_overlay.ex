@@ -455,14 +455,15 @@ defmodule Raxol.Swarm.TacticalOverlay do
   # -- Private: Scheduling --
 
   defp schedule_sync(%__MODULE__{} = state) do
-    if state.sync_ref, do: _ = Process.cancel_timer(state.sync_ref)
+    _ = if state.sync_ref, do: Process.cancel_timer(state.sync_ref)
     ref = Process.send_after(self(), :sync, state.sync_interval_ms)
     %__MODULE__{state | sync_ref: ref}
   end
 
   defp schedule_anti_entropy(%__MODULE__{} = state) do
-    if state.anti_entropy_ref,
-      do: _ = Process.cancel_timer(state.anti_entropy_ref)
+    _ =
+      if state.anti_entropy_ref,
+        do: Process.cancel_timer(state.anti_entropy_ref)
 
     ref =
       Process.send_after(self(), :anti_entropy, state.anti_entropy_interval_ms)

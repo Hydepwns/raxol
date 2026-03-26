@@ -86,7 +86,7 @@ defmodule Raxol.Dev.CodeReloader do
   def handle_info(:recompile, state) do
     Raxol.Core.Runtime.Log.info("[CodeReloader] Recompiling...")
 
-    result = IEx.Helpers.recompile()
+    result = apply(IEx.Helpers, :recompile, [])
 
     case result do
       :ok ->
@@ -121,14 +121,14 @@ defmodule Raxol.Dev.CodeReloader do
 
   @impl true
   def terminate(_reason, state) do
-    cancel_pending_timer(state)
+    _ = cancel_pending_timer(state)
     :ok
   end
 
   defp cancel_pending_timer(%{timer_ref: nil} = state), do: state
 
   defp cancel_pending_timer(%{timer_ref: ref} = state) do
-    Process.cancel_timer(ref)
+    _ = Process.cancel_timer(ref)
     %{state | timer_ref: nil}
   end
 end

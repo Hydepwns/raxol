@@ -276,9 +276,8 @@ defmodule Raxol.Core.Config.Store do
     config = get_all()
 
     with {:ok, json} <- Config.to_json(config),
-         :ok <- ensure_config_dir(),
-         :ok <- File.write(config_path(), json) do
-      :ok
+         :ok <- ensure_config_dir() do
+      File.write(config_path(), json)
     end
   end
 

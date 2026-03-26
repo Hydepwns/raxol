@@ -142,7 +142,7 @@ defmodule Raxol.Adaptive.BehaviorTracker do
 
   @impl true
   def handle_call(:disable, _from, %__MODULE__{} = state) do
-    if state.aggregate_ref, do: _ = Process.cancel_timer(state.aggregate_ref)
+    _ = if state.aggregate_ref, do: Process.cancel_timer(state.aggregate_ref)
 
     {:reply, :ok,
      %__MODULE__{state | tracking_enabled: false, aggregate_ref: nil}}
@@ -291,7 +291,7 @@ defmodule Raxol.Adaptive.BehaviorTracker do
   end
 
   defp schedule_aggregate(%__MODULE__{} = state) do
-    if state.aggregate_ref, do: _ = Process.cancel_timer(state.aggregate_ref)
+    _ = if state.aggregate_ref, do: Process.cancel_timer(state.aggregate_ref)
     ref = Process.send_after(self(), :aggregate_window, state.window_size_ms)
     %__MODULE__{state | aggregate_ref: ref}
   end

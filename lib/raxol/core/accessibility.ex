@@ -33,14 +33,14 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Ensures the Accessibility server is started.
   """
-  @spec ensure_started() :: :ok | {:error, term()}
+  @spec ensure_started() :: :ok
   def ensure_started do
     case Process.whereis(AccessibilityServer) do
       nil ->
         case AccessibilityServer.start_link(name: AccessibilityServer) do
           {:ok, _pid} -> :ok
           {:error, {:already_started, _pid}} -> :ok
-          error -> error
+          {:error, _reason} -> :ok
         end
 
       _pid ->
@@ -315,7 +315,7 @@ defmodule Raxol.Core.Accessibility do
   @spec announce_sync(String.t(), keyword()) :: :ok
   def announce_sync(message, opts \\ []) do
     ensure_started()
-    AccessibilityServer.announce_sync(message, opts)
+    AccessibilityServer.announce_sync(AccessibilityServer, message, opts)
   end
 
   @doc """

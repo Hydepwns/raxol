@@ -28,7 +28,7 @@ defmodule Raxol.Sensor.HUDTest do
 
     test "gauge with label" do
       cells = HUD.render_gauge({0, 0, 40, 1}, 50.0, label: "FUEL")
-      chars = Enum.map(cells, fn {_x, _y, c, _fg, _bg, _a} -> c end) |> Enum.join()
+      chars = Enum.map_join(cells, fn {_x, _y, c, _fg, _bg, _a} -> c end)
       assert String.contains?(chars, "FUEL")
     end
 
@@ -40,11 +40,11 @@ defmodule Raxol.Sensor.HUDTest do
 
     test "gauge clamps value to 0-100% range" do
       cells_neg = HUD.render_gauge({0, 0, 30, 1}, -10.0)
-      chars = Enum.map(cells_neg, fn {_x, _y, c, _fg, _bg, _a} -> c end) |> Enum.join()
+      chars = Enum.map_join(cells_neg, fn {_x, _y, c, _fg, _bg, _a} -> c end)
       assert String.contains?(chars, "0%")
 
       cells_over = HUD.render_gauge({0, 0, 30, 1}, 150.0)
-      chars2 = Enum.map(cells_over, fn {_x, _y, c, _fg, _bg, _a} -> c end) |> Enum.join()
+      chars2 = Enum.map_join(cells_over, fn {_x, _y, c, _fg, _bg, _a} -> c end)
       assert String.contains?(chars2, "100%")
     end
 
@@ -75,7 +75,7 @@ defmodule Raxol.Sensor.HUDTest do
 
     test "sparkline with label" do
       cells = HUD.render_sparkline({0, 0, 30, 1}, [1.0, 2.0], label: "CPU")
-      chars = Enum.map(cells, fn {_x, _y, c, _fg, _bg, _a} -> c end) |> Enum.join()
+      chars = Enum.map_join(cells, fn {_x, _y, c, _fg, _bg, _a} -> c end)
       assert String.starts_with?(chars, "CPU")
     end
 
@@ -115,7 +115,7 @@ defmodule Raxol.Sensor.HUDTest do
 
     test "bearing formatted as 3-digit" do
       cells = HUD.render_threat({0, 0, 40, 1}, :high, 5.0)
-      chars = Enum.map(cells, fn {_x, _y, c, _fg, _bg, _a} -> c end) |> Enum.join()
+      chars = Enum.map_join(cells, fn {_x, _y, c, _fg, _bg, _a} -> c end)
       assert String.contains?(chars, "005deg")
     end
 

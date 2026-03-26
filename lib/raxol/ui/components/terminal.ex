@@ -10,9 +10,9 @@ defmodule Raxol.UI.Components.Terminal do
 
   use Raxol.UI.Components.Base.Component
 
+  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.EmulatorLite
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
   alias Raxol.View.Components
 
   @type t :: %__MODULE__{

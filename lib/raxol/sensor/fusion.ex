@@ -231,7 +231,7 @@ defmodule Raxol.Sensor.Fusion do
   defp threshold_violated?(_v, _op, _t), do: false
 
   defp schedule_flush(%__MODULE__{} = state) do
-    cancel_timer(state.batch_ref)
+    _ = cancel_timer(state.batch_ref)
     ref = Process.send_after(self(), :flush_batch, state.batch_window_ms)
     %__MODULE__{state | batch_ref: ref}
   end

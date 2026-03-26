@@ -15,7 +15,7 @@ defmodule Raxol.SSH.ServerTest do
       refute File.exists?(Path.join(dir, "ssh_host_rsa_key"))
 
       # Generate key manually (same logic as server)
-      rsa_key = :public_key.generate_key({:rsa, 2048, 65537})
+      rsa_key = :public_key.generate_key({:rsa, 2048, 65_537})
 
       rsa_pem =
         :public_key.pem_encode([

@@ -248,7 +248,8 @@ defmodule Raxol.Terminal.ANSI.InputParser do
   defp tilde_key(24), do: :f12
   defp tilde_key(_), do: :unknown
 
-  # CSI letter to key mapping
+  # CSI letter to key mapping (catch-all kept intentionally for future CSI codes)
+  @dialyzer {:nowarn_function, csi_letter_to_key: 1}
   defp csi_letter_to_key(65), do: :up
   defp csi_letter_to_key(66), do: :down
   defp csi_letter_to_key(67), do: :right

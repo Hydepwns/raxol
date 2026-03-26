@@ -86,7 +86,7 @@ defmodule Mix.Tasks.Raxol.Flamegraph do
       opts[:function] ->
         profile_function(opts[:function], opts)
 
-      length(positional) > 0 ->
+      positional != [] ->
         [module_str | _] = positional
         profile_module(module_str, opts)
 

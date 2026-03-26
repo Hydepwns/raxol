@@ -194,7 +194,7 @@ defmodule Raxol.Performance.Profiler do
   end
 
   defp ensure_fprof(fun) do
-    Application.ensure_all_started(:tools)
+    _ = Application.ensure_all_started(:tools)
     fun.()
   rescue
     _ -> {:error, :fprof_unavailable}

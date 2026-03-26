@@ -294,7 +294,7 @@ defmodule Raxol.Core.ErrorTemplates do
     #{IO.ANSI.green()}Suggested Actions:#{IO.ANSI.reset()}
     #{format_action_list(template.suggested_actions)}
 
-    #{if length(template.related_tools) > 0 do
+    #{if template.related_tools != [] do
       IO.ANSI.cyan() <> "Related Tools:" <> IO.ANSI.reset() <> "\n" <> format_tool_list(template.related_tools) <> "\n"
     else
       ""

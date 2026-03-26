@@ -254,7 +254,7 @@ defmodule Raxol.Swarm.NodeMonitor do
   defp classify_status(_age_ms), do: :down
 
   defp schedule_ping(%__MODULE__{} = state) do
-    if state.ping_ref, do: _ = Process.cancel_timer(state.ping_ref)
+    _ = if state.ping_ref, do: Process.cancel_timer(state.ping_ref)
     ref = Process.send_after(self(), :ping, state.ping_interval_ms)
     %__MODULE__{state | ping_ref: ref}
   end

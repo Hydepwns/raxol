@@ -64,7 +64,7 @@ defmodule Raxol.Performance.FlameGraph do
   ## Examples
 
       FlameGraph.profile(fn ->
-        Enum.reduce(1..10000, 0, &(&1 + &2))
+        Enum.reduce(1..10_000, 0, &(&1 + &2))
       end)
 
       FlameGraph.profile(
@@ -333,7 +333,8 @@ defmodule Raxol.Performance.FlameGraph do
   # Private functions
 
   defp ensure_fprof do
-    Application.ensure_all_started(:tools)
+    _ = Application.ensure_all_started(:tools)
+    :ok
   end
 
   defp generate_svg(analysis_file, output, opts) do

@@ -95,9 +95,10 @@ defmodule Mix.Tasks.Raxol.Gen.Specs do
 
     with {:ok, content} <- File.read(file_path),
          {:ok, ast} <- Code.string_to_quoted(content),
-         specs <- analyze_ast(ast, opts),
-         :ok <- maybe_backup_file(file_path, opts),
-         updated_content <- insert_specs(content, specs, opts) do
+         :ok <- maybe_backup_file(file_path, opts) do
+      specs = analyze_ast(ast, opts)
+      updated_content = insert_specs(content, specs, opts)
+
       if opts[:dry_run] do
         show_dry_run_results(file_path, specs)
       else

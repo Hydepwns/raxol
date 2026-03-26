@@ -195,9 +195,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   # Safe view retrieval using functional error handling
   defp safe_get_view(app_module, model) do
-    if not function_exported?(app_module, :view, 1) do
-      {:ok, nil}
-    else
+    if function_exported?(app_module, :view, 1) do
       Raxol.Core.Runtime.Log.debug(
         "Rendering Engine: Calling app_module.view(model)"
       )
@@ -221,6 +219,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         {:ok, result} -> result
         {:error, reason} -> {:error, {:view_error, reason}}
       end
+    else
+      {:ok, nil}
     end
   end
 
@@ -437,13 +437,14 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     updated_buffer = apply_cells_to_buffer(cells, state)
     html = Raxol.LiveView.TerminalBridge.buffer_to_html(updated_buffer)
 
-    if state.liveview_topic && Code.ensure_loaded?(Phoenix.PubSub) do
-      Phoenix.PubSub.broadcast(
-        Raxol.PubSub,
-        state.liveview_topic,
-        {:render_update, html}
-      )
-    end
+    _ =
+      if state.liveview_topic && Code.ensure_loaded?(Phoenix.PubSub) do
+        Phoenix.PubSub.broadcast(
+          Raxol.PubSub,
+          state.liveview_topic,
+          {:render_update, html}
+        )
+      end
 
     {:ok, %{state | buffer: updated_buffer}}
   end
@@ -647,7 +648,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   # Helper function to execute plugin commands (like escape sequences)
   defp execute_plugin_commands(commands)
-       when is_list(commands) and length(commands) > 0 do
+       when is_list(commands) and commands != [] do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Executing #{length(commands)} plugin commands"
     )

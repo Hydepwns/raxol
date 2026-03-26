@@ -3,6 +3,10 @@ defmodule Raxol.Terminal.Driver.TerminalSize do
   Terminal size detection: termbox, stty, and fallback strategies.
   """
 
+  # Suppressed: @termbox2_available is false at compile time in test env,
+  # making NIF branches unreachable for dialyzer analysis.
+  @dialyzer :no_match
+
   alias Raxol.Terminal.IOTerminal
 
   import Raxol.Terminal.TerminalUtils, only: [has_terminal_device?: 0]

@@ -15,6 +15,7 @@ defmodule Raxol.Terminal.Driver.TermboxLifecycle do
   @doc """
   Initializes termbox. Returns :ok or {:error, reason}.
   """
+  @dialyzer {:nowarn_function, initialize: 0}
   def initialize do
     case call_termbox_init() do
       0 ->
@@ -43,6 +44,7 @@ defmodule Raxol.Terminal.Driver.TermboxLifecycle do
   Attempts recovery from a termbox error by shutting down and reinitializing.
   Returns {:noreply, state} or {:stop, reason, state}.
   """
+  @dialyzer {:nowarn_function, handle_recovery: 2}
   def handle_recovery(reason, state) do
     case terminate() do
       :ok ->
@@ -68,6 +70,7 @@ defmodule Raxol.Terminal.Driver.TermboxLifecycle do
   Cleans up terminal state during shutdown: kills stdin reader, closes tty port,
   restores terminal modes and original stty settings.
   """
+  @dialyzer {:nowarn_function, cleanup_terminal: 1}
   def cleanup_terminal(state) do
     # Kill the stdin reader process
     case get_in(state, [
@@ -111,16 +114,19 @@ defmodule Raxol.Terminal.Driver.TermboxLifecycle do
           IO.write("\e[?1000l\e[?1006l\e[?1004l\e[?2004l")
           # Restore terminal: show cursor, leave alternate screen
           IO.write("\e[?25h\e[?1049l")
-          :io.setopts(:standard_io, echo: true)
+          _ = :io.setopts(:standard_io, echo: true)
 
           # Restore original TTY settings (OS-level via /dev/tty)
-          case state.original_stty do
-            stty when is_binary(stty) and byte_size(stty) > 0 ->
-              :os.cmd(String.to_charlist("stty #{stty} < /dev/tty 2>/dev/null"))
+          _ =
+            case state.original_stty do
+              stty when is_binary(stty) and byte_size(stty) > 0 ->
+                :os.cmd(
+                  String.to_charlist("stty #{stty} < /dev/tty 2>/dev/null")
+                )
 
-            _ ->
-              :os.cmd(~c"stty sane < /dev/tty 2>/dev/null")
-          end
+              _ ->
+                :os.cmd(~c"stty sane < /dev/tty 2>/dev/null")
+            end
 
           # Restore Logger output
           Logger.configure(level: :debug)

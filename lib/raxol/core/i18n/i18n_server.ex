@@ -102,7 +102,7 @@ defmodule Raxol.Core.I18n.I18nServer do
 
   @impl true
   def init(config) when is_map(config) do
-    create_table()
+    _ = create_table()
 
     state = %{
       locale: Map.get(config, :default_locale, @default_locale),

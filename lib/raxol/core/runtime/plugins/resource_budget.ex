@@ -202,7 +202,7 @@ defmodule Raxol.Core.Runtime.Plugins.ResourceBudget do
 
   defp enforce_action(plugin_id, :kill, state) do
     Log.warning("[ResourceBudget] Killing over-budget plugin #{plugin_id}")
-    PluginLifecycle.unload(plugin_id)
+    _ = PluginLifecycle.unload(plugin_id)
     %{state | throttled: MapSet.delete(state.throttled, plugin_id)}
   end
 

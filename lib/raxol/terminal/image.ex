@@ -79,9 +79,8 @@ defmodule Raxol.Terminal.Image do
     protocol = Keyword.get(opts, :protocol) || detect_protocol()
 
     with {:ok, data} <- load_image(source),
-         {:ok, resized} <- maybe_resize(data, opts),
-         {:ok, sequence} <- encode(resized, protocol, opts) do
-      {:ok, sequence}
+         {:ok, resized} <- maybe_resize(data, opts) do
+      encode(resized, protocol, opts)
     end
   end
 
@@ -148,8 +147,8 @@ defmodule Raxol.Terminal.Image do
           |> Mogrify.save(path: output_path)
 
         result = File.read(output_path)
-        File.rm(input_path)
-        File.rm(output_path)
+        _ = File.rm(input_path)
+        _ = File.rm(output_path)
         result
       rescue
         e -> {:error, {:resize_failed, Exception.message(e)}}
@@ -196,11 +195,17 @@ defmodule Raxol.Terminal.Image do
     {:ok, sequence}
   end
 
-  defp encode(_data, :sixel, _opts) do
-    # Sixel encoding requires pixel-level color quantization.
-    # The existing SixelGraphics.from_image_data/3 is a stub.
-    # For now, return an error directing users to Kitty/iTerm2.
-    {:error, :sixel_not_yet_implemented}
+  defp encode(data, :sixel, _opts) do
+    alias Raxol.Terminal.ANSI.{SixelGraphics, SixelRenderer}
+
+    with {:ok, img} <-
+           SixelGraphics.from_image_data(data, :png, %{max_colors: 64}) do
+      SixelRenderer.render_image(%{
+        pixel_buffer: img.pixel_buffer,
+        palette: img.palette,
+        attributes: %{width: img.width, height: img.height}
+      })
+    end
   end
 
   defp encode(_data, :unsupported, _opts) do

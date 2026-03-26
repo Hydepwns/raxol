@@ -176,7 +176,7 @@ defmodule Raxol.Protocols.EventSystemIntegration do
       errors = Enum.filter(results, &match?({:error, _}, &1))
 
       cond do
-        length(errors) > 0 -> hd(errors)
+        errors != [] -> hd(errors)
         Enum.any?(results, &match?({:ok, _, _}, &1)) -> {:ok, :handled}
         true -> {:unhandled, :no_handlers}
       end

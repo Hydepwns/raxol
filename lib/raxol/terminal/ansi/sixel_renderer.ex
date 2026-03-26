@@ -213,6 +213,7 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
   end
 
   defp format_output_commands(0, _), do: []
+  defp format_output_commands(_, nil), do: []
   defp format_output_commands(1, char), do: [char]
 
   defp format_output_commands(count, char),
@@ -231,6 +232,8 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
   end
 
   defp format_band_output(nil, _, commands), do: commands
+  defp format_band_output("", _, commands), do: commands
+  defp format_band_output(char, 0, commands), do: [commands, char]
   defp format_band_output(char, 1, commands), do: [commands, char]
 
   defp format_band_output(char, count, commands),

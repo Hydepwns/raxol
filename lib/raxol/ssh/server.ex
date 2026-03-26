@@ -96,7 +96,7 @@ defmodule Raxol.SSH.Server do
   end
 
   defp generate_host_key(dir) do
-    rsa_key = :public_key.generate_key({:rsa, 2048, 65537})
+    rsa_key = :public_key.generate_key({:rsa, 2048, 65_537})
 
     rsa_pem =
       :public_key.pem_encode([

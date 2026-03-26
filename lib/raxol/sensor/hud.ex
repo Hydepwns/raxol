@@ -83,13 +83,11 @@ defmodule Raxol.Sensor.HUD do
     last_idx = length(@spark_chars) - 1
 
     spark_str =
-      display_values
-      |> Enum.map(fn v ->
+      Enum.map_join(display_values, fn v ->
         normalized = if range > 0, do: (v - data_min) / range, else: 0.5
         idx = clamp(round(normalized * last_idx), 0, last_idx)
         Enum.at(@spark_chars, idx)
       end)
-      |> Enum.join()
 
     line = prefix <> spark_str
     string_to_cells(line, x, y, :cyan, :default)

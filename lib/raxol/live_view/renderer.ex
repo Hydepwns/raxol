@@ -322,7 +322,7 @@ defmodule Raxol.LiveView.Renderer do
   end
 
   defp render_based_on_changes(buffer, current_lines, changed_lines, renderer)
-       when length(changed_lines) > 0 and
+       when changed_lines != [] and
               length(changed_lines) > div(length(current_lines), 3) do
     # More than 1/3 of lines changed - full render is faster
     render_full_buffer(buffer, renderer)

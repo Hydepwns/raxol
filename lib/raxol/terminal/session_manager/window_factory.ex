@@ -53,7 +53,7 @@ defmodule Raxol.Terminal.SessionManager.WindowFactory do
       status: :active,
       layout: layout,
       panes: panes,
-      active_pane: if(length(panes) > 0, do: List.first(panes).id, else: nil),
+      active_pane: if(panes != [], do: List.first(panes).id, else: nil),
       metadata: Map.get(config, :metadata, %{})
     }
   end

@@ -35,14 +35,15 @@ defmodule Raxol.Core.Runtime.Plugins.MissionProfile do
   """
   @spec init() :: :ok
   def init do
-    if :ets.whereis(@profiles_table) == :undefined do
-      :ets.new(@profiles_table, [
-        :named_table,
-        :public,
-        :set,
-        read_concurrency: true
-      ])
-    end
+    _ =
+      if :ets.whereis(@profiles_table) == :undefined do
+        :ets.new(@profiles_table, [
+          :named_table,
+          :public,
+          :set,
+          read_concurrency: true
+        ])
+      end
 
     :ok
   end

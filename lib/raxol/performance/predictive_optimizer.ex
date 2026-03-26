@@ -523,7 +523,7 @@ defmodule Raxol.Performance.PredictiveOptimizer do
       |> Enum.sort_by(fn {_, duration} -> -duration end)
       |> Enum.take(5)
 
-    format_performance_tips(length(slow_operations) > 0, slow_operations)
+    format_performance_tips(slow_operations != [], slow_operations)
   end
 
   defp format_performance_tips(false, _slow_operations) do

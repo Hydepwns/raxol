@@ -120,9 +120,15 @@ defmodule Raxol.Core.Runtime.Plugins.PluginSupervisorTest do
 
     test "maintains order of results" do
       funcs = [
-        fn -> Process.sleep(50); 1 end,
+        fn ->
+          Process.sleep(50)
+          1
+        end,
         fn -> 2 end,
-        fn -> Process.sleep(25); 3 end
+        fn ->
+          Process.sleep(25)
+          3
+        end
       ]
 
       results = PluginSupervisor.run_plugin_tasks_concurrent(:test_plugin, funcs)
@@ -147,7 +153,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginSupervisorTest do
     test "handles timeout for slow tasks" do
       funcs = [
         fn -> :fast end,
-        fn -> Process.sleep(1_000); :slow end
+        fn ->
+          Process.sleep(1_000)
+          :slow
+        end
       ]
 
       results = PluginSupervisor.run_plugin_tasks_concurrent(:test_plugin, funcs, timeout: 100)

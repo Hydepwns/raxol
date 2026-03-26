@@ -21,7 +21,7 @@ defmodule Raxol.Demo.GameOfLifeTest do
       high_pop = GameOfLife.population(high_density)
       low_pop = GameOfLife.population(low_density)
 
-      assert high_pop == 10000
+      assert high_pop == 10_000
       assert low_pop == 0
     end
   end

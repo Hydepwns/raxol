@@ -128,14 +128,15 @@ defmodule Mix.Raxol.Generator do
   defp git_init(path) do
     case System.cmd("git", ["init"], cd: path, stderr_to_stdout: true) do
       {_, 0} ->
-        System.cmd("git", ["add", "."], cd: path, stderr_to_stdout: true)
+        _ = System.cmd("git", ["add", "."], cd: path, stderr_to_stdout: true)
 
-        System.cmd(
-          "git",
-          ["commit", "-m", "Initial commit from mix raxol.new"],
-          cd: path,
-          stderr_to_stdout: true
-        )
+        _ =
+          System.cmd(
+            "git",
+            ["commit", "-m", "Initial commit from mix raxol.new"],
+            cd: path,
+            stderr_to_stdout: true
+          )
 
         Mix.shell().info([
           "  ",

@@ -171,7 +171,7 @@ defmodule Raxol.Effects.CursorTrail do
       enabled: config.enabled,
       tick: tick,
       average_opacity:
-        if Kernel.length(points) > 0 do
+        if points != [] do
           Enum.sum(Enum.map(points, & &1.opacity)) / Kernel.length(points)
         else
           0.0

@@ -11,10 +11,10 @@ defmodule Raxol.Utils.MemoryFormatter do
       iex> Raxol.Utils.MemoryFormatter.format_memory(1024)
       "1.00 KB"
 
-      iex> Raxol.Utils.MemoryFormatter.format_memory(1048576)
+      iex> Raxol.Utils.MemoryFormatter.format_memory(1_048_576)
       "1.00 MB"
 
-      iex> Raxol.Utils.MemoryFormatter.format_memory(1073741824)
+      iex> Raxol.Utils.MemoryFormatter.format_memory(1_073_741_824)
       "1.00 GB"
   """
   @spec format_memory(number()) :: String.t()

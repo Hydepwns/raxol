@@ -98,7 +98,7 @@ defmodule Raxol.Terminal.Output.Manager do
 
         # Increment format_applications if any formatting rules exist
         updated_manager =
-          case length(manager.format_rules) > 0 do
+          case manager.format_rules != [] do
             true ->
               %{
                 updated_manager

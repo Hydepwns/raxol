@@ -72,7 +72,7 @@ defmodule Raxol.Memory.Formatter do
       Mix.shell().info("  #{proc.name}: #{fmt(proc.memory)}")
     end)
 
-    if length(analysis.ets_analysis.top_consumers) > 0 do
+    if analysis.ets_analysis.top_consumers != [] do
       Mix.shell().info("\nLargest ETS Tables:")
 
       analysis.ets_analysis.top_consumers

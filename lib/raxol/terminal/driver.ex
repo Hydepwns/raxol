@@ -84,6 +84,8 @@ defmodule Raxol.Terminal.Driver do
 
   # --- BaseManager Callbacks ---
 
+  # Logger.configure(level: :none) works at runtime but :none isn't in Logger's typespec
+  @dialyzer {:nowarn_function, init_manager: 1}
   @impl true
   def init_manager(opts) do
     # Extract dispatcher_pid from opts - handle both keyword list and raw value
@@ -167,7 +169,7 @@ defmodule Raxol.Terminal.Driver do
           end
 
         # Raw mode on the actual terminal: no echo, no line buffering, no signals
-        :os.cmd(~c"stty raw -echo -icanon -isig < /dev/tty 2>/dev/null")
+        _ = :os.cmd(~c"stty raw -echo -icanon -isig < /dev/tty 2>/dev/null")
 
         # Suppress Logger console output so it doesn't corrupt the TUI
         Logger.configure(level: :none)

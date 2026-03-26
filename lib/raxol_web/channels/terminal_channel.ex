@@ -204,9 +204,7 @@ defmodule RaxolWeb.TerminalChannel do
 
   defp validate_join(session_id, params, socket) do
     # Validate session_id format
-    unless valid_session_id?(session_id) do
-      {:error, "invalid_session_id"}
-    else
+    if valid_session_id?(session_id) do
       # Validate auth token if provided
       case Map.get(params, "token") do
         nil ->
@@ -219,6 +217,8 @@ defmodule RaxolWeb.TerminalChannel do
             {:error, _} -> {:error, "invalid_token"}
           end
       end
+    else
+      {:error, "invalid_session_id"}
     end
   end
 

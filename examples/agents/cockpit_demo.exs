@@ -25,6 +25,10 @@ defmodule CockpitDemo.FileScanner do
     lib/raxol/core/runtime/lifecycle.ex
     lib/raxol/core/runtime/application.ex
     lib/raxol/core/runtime/events/dispatcher.ex
+    lib/raxol/terminal/driver.ex
+    lib/raxol/ui/components/base/component.ex
+    lib/raxol/core/focus_manager.ex
+    lib/raxol/sensor/fusion.ex
   )
 
   def init(_ctx) do
@@ -57,7 +61,7 @@ defmodule CockpitDemo.FileScanner do
     }
 
     case new_model.remaining do
-      [_ | _] -> {new_model, [Command.delay(:scan_next, 600)]}
+      [_ | _] -> {new_model, [Command.delay(:scan_next, 400)]}
       [] -> {%{new_model | current: nil, status: :done}, []}
     end
   end
@@ -87,6 +91,12 @@ defmodule CockpitDemo.CodeAnalyzer do
     lib/raxol/agent/comm.ex
     lib/raxol/core/runtime/command.ex
     lib/raxol/core/runtime/rendering/engine.ex
+    lib/raxol/terminal/driver.ex
+    lib/raxol/ui/components/base/component.ex
+    lib/raxol/core/focus_manager.ex
+    lib/raxol/sensor/fusion.ex
+    lib/raxol/sensor/feed.ex
+    lib/raxol/swarm/topology.ex
   )
 
   def init(_ctx) do
@@ -108,7 +118,7 @@ defmodule CockpitDemo.CodeAnalyzer do
     }
 
     case new_model.remaining do
-      [_ | _] -> {new_model, [Command.delay(:analyze_next, 800)]}
+      [_ | _] -> {new_model, [Command.delay(:analyze_next, 500)]}
       [] -> {%{new_model | current: nil, status: :done}, []}
     end
   end
@@ -132,7 +142,7 @@ defmodule CockpitDemo.SystemMonitor do
   use Raxol.Agent
 
   def init(_ctx) do
-    %{checks: 0, stats: %{}, status: :idle, history: []}
+    %{checks: 0, stats: %{}, status: :idle, history: [], proc_history: []}
   end
 
   def update({:agent_message, _from, :start}, model) do
@@ -144,17 +154,24 @@ defmodule CockpitDemo.SystemMonitor do
 
   defp do_check(model) do
     mem_mb = div(:erlang.memory(:total), 1_048_576)
+    proc_count = :erlang.system_info(:process_count)
 
     stats = %{
-      processes: :erlang.system_info(:process_count),
+      processes: proc_count,
       memory_mb: mem_mb,
       schedulers: :erlang.system_info(:schedulers_online)
     }
 
     history = Enum.take([mem_mb | model.history], 20)
+    proc_history = Enum.take([proc_count | model.proc_history], 20)
 
-    {%{model | checks: model.checks + 1, stats: stats, history: history},
-     [Command.delay(:tick, 600)]}
+    {%{
+       model
+       | checks: model.checks + 1,
+         stats: stats,
+         history: history,
+         proc_history: proc_history
+     }, [Command.delay(:tick, 600)]}
   end
 end
 
@@ -174,7 +191,7 @@ defmodule CockpitDemo.ChaosWorker do
 
   def update({:command_result, {:shell_result, _}}, model) do
     {%{model | tasks_done: model.tasks_done + 1},
-     [Command.delay(:next_task, 700)]}
+     [Command.delay(:next_task, 500)]}
   end
 
   def update(_msg, model), do: {model, []}
@@ -211,32 +228,44 @@ defmodule CockpitDemo do
   use Raxol.Core.Runtime.Application
 
   alias Raxol.Agent.Session
+  alias Raxol.Style.Colors.{Color, Gradient}
 
-  # Phase transitions (tick-driven, 200ms per tick)
-  #
-  # :title  --(12 ticks or space)--> :running
-  # :running --(all done + post_done_ticks)--> :summary
-  @title_ticks 12
-
-  # Agent boot stagger (ticks within :running phase)
+  # Agent boot stagger (ticks within :running phase, 200ms per tick)
   @boot_schedule [
-    {5, CockpitDemo.FileScanner, :scanner},
-    {10, CockpitDemo.CodeAnalyzer, :analyzer},
-    {15, CockpitDemo.SystemMonitor, :monitor},
-    {20, CockpitDemo.ChaosWorker, :chaos},
-    {25, CockpitDemo.DepChecker, :dep_checker}
+    {1, CockpitDemo.FileScanner, :scanner},
+    {3, CockpitDemo.CodeAnalyzer, :analyzer},
+    {5, CockpitDemo.SystemMonitor, :monitor},
+    {7, CockpitDemo.ChaosWorker, :chaos},
+    {9, CockpitDemo.DepChecker, :dep_checker}
   ]
 
   # Crash timeline
-  @warn_start 47
-  @crash_tick 55
-  @crash_flash_ticks 8
-  @recover_tick 70
-  @post_done_ticks 15
+  @warn_start 36
+  @warn_phase_2 41
+  @warn_phase_3 45
+  @crash_tick 49
+  @crash_flash_ticks 4
+  @recover_tick 58
+  @post_done_ticks 10
+
+  @header_gradient Gradient.linear(
+                     Color.from_hex("#00FFFF"),
+                     Color.from_hex("#FF00FF"),
+                     21
+                   )
+  @success_gradient Gradient.linear(
+                      Color.from_hex("#00FF00"),
+                      Color.from_hex("#00FFFF"),
+                      16
+                    )
+  @splash_ms 2000
 
   @sparks ~w(\u2581 \u2582 \u2583 \u2584 \u2585 \u2586 \u2587 \u2588)
   @bar_fill "\u2588"
   @bar_empty "\u2591"
+  @spinner_chars ["|", "/", "-", "\\"]
+  @heartbeat_normal ~w(. _ . - ^ - . _ .)
+  @heartbeat_erratic ~w(^ ! ^ _ ! ^ ! _ ^ !)
 
   # -- TEA Callbacks --
 
@@ -247,7 +276,8 @@ defmodule CockpitDemo do
     {w, h} = detect_size()
 
     %{
-      phase: :title,
+      phase: :splash,
+      splash_start: System.monotonic_time(:millisecond),
       tick: 0,
       width: w,
       height: h,
@@ -286,10 +316,6 @@ defmodule CockpitDemo do
       } ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :space}}
-      when model.phase == :title ->
-        {%{model | phase: :running, tick: 0}, []}
-
       %Raxol.Core.Events.Event{type: :resize, data: %{width: w, height: h}} ->
         {%{model | width: w, height: h}, []}
 
@@ -301,7 +327,7 @@ defmodule CockpitDemo do
   @impl true
   def view(model) do
     case model.phase do
-      :title -> title_view(model)
+      :splash -> splash_view(model)
       :running -> dashboard_view(model)
       :summary -> summary_view(model)
     end
@@ -311,11 +337,18 @@ defmodule CockpitDemo do
 
   defp handle_tick(model) do
     case model.phase do
-      :title when model.tick >= @title_ticks ->
-        {%{model | phase: :running, tick: 0}, []}
+      :splash ->
+        elapsed = System.monotonic_time(:millisecond) - model.splash_start
 
-      :title ->
-        {%{model | tick: model.tick + 1}, []}
+        if elapsed >= @splash_ms do
+          {%{
+             model
+             | phase: :running,
+               start_time: System.monotonic_time(:second)
+           }, []}
+        else
+          {model, []}
+        end
 
       :running ->
         new_model =
@@ -350,8 +383,8 @@ defmodule CockpitDemo do
     tick = model.tick
 
     cond do
-      tick < 5 -> :init
-      tick <= 26 -> :boot
+      tick < 1 -> :init
+      tick <= 10 -> :boot
       tick < @warn_start -> :working
       tick < @crash_tick -> :warning
       tick < @recover_tick -> :crash
@@ -362,58 +395,133 @@ defmodule CockpitDemo do
   end
 
   defp phase_display(:init), do: {"INITIALIZING", :yellow}
-  defp phase_display(:boot), do: {"AGENT BOOT", :cyan}
+  defp phase_display(:boot), do: {"BOOTING", :cyan}
   defp phase_display(:working), do: {"CONCURRENT WORK", :green}
   defp phase_display(:warning), do: {"!! WARNING !!", :yellow}
   defp phase_display(:crash), do: {"!! CRASH !!", :red}
-  defp phase_display(:recovery), do: {"RECOVERY", :green}
-  defp phase_display(:complete), do: {"COMPLETE", :cyan}
+  defp phase_display(:recovery), do: {"RECOVERING", :green}
+  defp phase_display(:complete), do: {"ALL CLEAR", :cyan}
+
+  # ============================================================
+  # Visual State (affects all panels during crash)
+  # ============================================================
+
+  defp visual_state(model) do
+    tick = model.tick
+
+    cond do
+      tick >= @warn_phase_3 and tick < @recover_tick ->
+        %{other_panels_dim: true, chaos_border: :red, chaos_fg: :red}
+
+      tick >= @warn_phase_2 and tick < @warn_phase_3 ->
+        %{other_panels_dim: false, chaos_border: :yellow, chaos_fg: :yellow}
+
+      tick >= @warn_start and tick < @warn_phase_2 ->
+        %{other_panels_dim: false, chaos_border: :yellow, chaos_fg: :yellow}
+
+      true ->
+        %{other_panels_dim: false, chaos_border: nil, chaos_fg: nil}
+    end
+  end
+
+  # ============================================================
+  # Helper Functions
+  # ============================================================
+
+  defp spinner_char(tick) do
+    Enum.at(@spinner_chars, rem(tick, length(@spinner_chars)))
+  end
+
+  defp mini_bar(current, total, width) when total > 0 do
+    filled = div(current * width, total)
+    empty = width - filled
+    String.duplicate(@bar_fill, filled) <> String.duplicate(@bar_empty, empty)
+  end
+
+  defp mini_bar(_current, _total, width) do
+    String.duplicate(@bar_empty, width)
+  end
+
+  defp heartbeat(tick, :normal) do
+    Enum.at(@heartbeat_normal, rem(tick, length(@heartbeat_normal)))
+  end
+
+  defp heartbeat(tick, :erratic) do
+    Enum.at(@heartbeat_erratic, rem(tick, length(@heartbeat_erratic)))
+  end
+
+  defp waiting_panel(title, tick) do
+    spin = spinner_char(tick)
+
+    agent_box(title, :idle, nil, [
+      text("  #{spin} waiting...", style: [:dim])
+    ])
+  end
 
   # ============================================================
   # Views
   # ============================================================
 
-  # -- Title View --
+  # -- Gradient helper --
 
-  defp title_view(model) do
-    dots = String.duplicate(".", min(rem(model.tick, 4) + 1, 3))
-    top_pad = max(1, div(model.height - 13, 3))
+  defp gradient_text(string, gradient) do
+    Gradient.apply_to_text(gradient, string)
+  end
+
+  # -- Logo element with fallback --
+
+  defp logo_element do
+    logo_path =
+      Path.join(:code.priv_dir(:raxol), "static/@static/static/images/logo.png")
+
+    if File.exists?(logo_path) and Raxol.Terminal.Image.supported?() do
+      image(src: logo_path, width: 30, height: 15)
+    else
+      ascii_logo()
+    end
+  end
+
+  defp ascii_logo do
+    art = """
+                          __
+     _________ __  ______  / /
+    / ___/ __ `/ |/_/ __ \\/ /
+    / /  / /_/ />  </ /_/ / /
+    /_/   \\__,_/_/|_/\\____/_/
+    """
+
+    column style: %{gap: 0} do
+      art
+      |> String.split("\n", trim: true)
+      |> Enum.map(fn line -> text(line, fg: :cyan, style: [:bold]) end)
+    end
+  end
+
+  # -- Splash View --
+
+  defp splash_view(model) do
+    elapsed = System.monotonic_time(:millisecond) - model.splash_start
+    progress = min(elapsed / @splash_ms, 1.0)
+    bar_width = 30
+    filled = round(progress * bar_width)
+    empty = bar_width - filled
+
+    bar =
+      String.duplicate(@bar_fill, filled) <> String.duplicate(@bar_empty, empty)
 
     column style: %{padding: 0, gap: 0} do
       [
-        spacer(size: top_pad),
-        text("                                  .__   ",
-          style: [:bold],
-          fg: :cyan
-        ),
-        text(" _______ _____  ___  ___  ____    |  |  ",
-          style: [:bold],
-          fg: :cyan
-        ),
-        text(" \\_  __ \\\\__  \\ \\  \\/  / /  _ \\   |  |  ",
-          style: [:bold],
-          fg: :cyan
-        ),
-        text("  |  | \\/ / __ \\_>    < (  <_> )  |  |__",
-          style: [:bold],
-          fg: :cyan
-        ),
-        text("  |__|   (____  /__/\\_ \\ \\____/   |____/",
-          style: [:bold],
-          fg: :cyan
-        ),
-        text("              \\/      \\/                 ",
-          style: [:bold],
-          fg: :cyan
+        spacer(size: max(1, div(model.height - 12, 3))),
+        logo_element(),
+        spacer(size: 1),
+        text(gradient_text("RAXOL AGENT COCKPIT", @header_gradient),
+          style: [:bold]
         ),
         spacer(size: 1),
-        text("  the terminal for agentic applications", style: [:dim]),
-        spacer(size: 1),
-        text("  OTP supervision * crash recovery * live metrics", fg: :yellow),
-        spacer(size: 2),
-        text("  initializing supervisor tree#{dots}", style: [:dim]),
-        spacer(size: 1),
-        text("  press space to skip", style: [:dim])
+        text("  Initializing agents...", style: [:dim]),
+        text("  #{bar}", fg: :cyan),
+        bottom_spacer(model.height, div(model.height - 12, 3) + 10),
+        text("  raxol.io", style: [:dim])
       ]
     end
   end
@@ -422,6 +530,7 @@ defmodule CockpitDemo do
 
   defp dashboard_view(model) do
     uptime = System.monotonic_time(:second) - model.start_time
+    vs = visual_state(model)
 
     column style: %{padding: 0, gap: 0} do
       [
@@ -429,14 +538,14 @@ defmodule CockpitDemo do
         spacer(size: 1),
         row style: %{gap: 1} do
           [
-            scanner_panel(model),
-            analyzer_panel(model)
+            scanner_panel(model, vs),
+            analyzer_panel(model, vs)
           ]
         end,
         spacer(size: 1),
         row style: %{gap: 1} do
           [
-            monitor_panel(model),
+            monitor_panel(model, vs),
             chaos_panel(model)
           ]
         end,
@@ -446,15 +555,9 @@ defmodule CockpitDemo do
             supervision_tree_panel(model),
             event_log_panel(model)
           ]
-        end
-        | recovery_proof(model) ++
-            [
-              bottom_spacer(
-                model.height,
-                if(show_recovery_proof?(model), do: 37, else: 31)
-              ),
-              key_bar()
-            ]
+        end,
+        bottom_spacer(model.height, 31),
+        key_bar()
       ]
     end
   end
@@ -484,24 +587,25 @@ defmodule CockpitDemo do
     column style: %{padding: 0, gap: 0} do
       [
         box style: %{border: :double, width: :fill, padding: 0} do
-          text("  MISSION COMPLETE", style: [:bold], fg: :green)
+          text("  " <> gradient_text("MISSION COMPLETE", @success_gradient),
+            style: [:bold]
+          )
         end,
+        spacer(size: 1),
+        logo_element(),
         spacer(size: 1),
         box style: %{border: :single, width: :fill, padding: 1} do
           column style: %{gap: 0} do
             [
-              text("  What just happened:", style: [:bold]),
-              spacer(size: 1),
-              text("    5 concurrent GenServers ran real shell commands"),
-              text("    #{old_pid} was Process.exit(:kill)'d mid-task",
-                fg: :red
-              ),
-              text("    OTP supervisor auto-restarted it as #{new_pid}",
-                fg: :green
-              ),
-              text("    Restarted agent resumed work. Zero data lost.",
-                style: [:bold]
-              )
+              row style: %{gap: 1} do
+                [
+                  text("  ", style: [:dim]),
+                  text(old_pid, fg: :red),
+                  text("->", style: [:dim]),
+                  text(new_pid, fg: :green, style: [:bold]),
+                  text("(auto-restarted, zero data loss)", style: [:bold])
+                ]
+              end
             ]
           end
         end,
@@ -509,20 +613,48 @@ defmodule CockpitDemo do
         box style: %{border: :single, width: :fill, padding: 1} do
           column style: %{gap: 0} do
             [
-              text("  Results:", style: [:bold]),
-              spacer(size: 1),
-              summary_row("Files scanned", "#{files_scanned}"),
-              summary_row("Lines counted", fmt(lines)),
-              summary_row("Doc coverage", "#{docs}/#{files_analyzed} modules"),
-              summary_row("Dependencies", "#{deps_ok} OK"),
-              summary_row("Agent crashes", "#{model.crashes}"),
-              summary_row_colored("Data loss", "zero", :green),
-              summary_row("Total uptime", "#{uptime}s")
+              row style: %{gap: 2} do
+                [
+                  text("  Files scanned  ", style: [:dim]),
+                  text("#{files_scanned}"),
+                  text("   Lines counted  ", style: [:dim]),
+                  text(fmt(lines))
+                ]
+              end,
+              row style: %{gap: 2} do
+                [
+                  text("  Doc coverage   ", style: [:dim]),
+                  text("#{docs}/#{files_analyzed}"),
+                  text("   Dependencies   ", style: [:dim]),
+                  text("#{deps_ok} OK")
+                ]
+              end,
+              row style: %{gap: 2} do
+                [
+                  text("  Crashes        ", style: [:dim]),
+                  text("#{model.crashes}"),
+                  text("   Data loss      ", style: [:dim]),
+                  text("zero", style: [:bold], fg: :green)
+                ]
+              end,
+              row style: %{gap: 2} do
+                [
+                  text("  Uptime         ", style: [:dim]),
+                  text("#{uptime}s")
+                ]
+              end
             ]
           end
         end,
         spacer(size: 1),
-        text("  Try doing this in Python, Go, or Rust.", style: [:bold]),
+        text(
+          "  " <>
+            gradient_text(
+              "5 GenServers, 1 killed, 0 data lost. OTP supervision.",
+              @header_gradient
+            ),
+          style: [:dim]
+        ),
         bottom_spacer(model.height, 24),
         key_bar()
       ]
@@ -539,7 +671,9 @@ defmodule CockpitDemo do
     box style: %{border: :double, width: :fill, padding: 0} do
       row style: %{justify_content: :space_between} do
         [
-          text("  RAXOL AGENT COCKPIT", style: [:bold], fg: :cyan),
+          text("  " <> gradient_text("RAXOL AGENT COCKPIT", @header_gradient),
+            style: [:bold]
+          ),
           text(">> #{label}", style: [:bold], fg: pfg),
           text("uptime #{fmt_uptime(uptime)}  ", style: [:bold])
         ]
@@ -547,145 +681,260 @@ defmodule CockpitDemo do
     end
   end
 
-  defp scanner_panel(model) do
+  # -- Scanner Panel: file ticker --
+
+  defp scanner_panel(model, vs) do
     m = model.scanner
+    title_style = if vs.other_panels_dim, do: [:dim], else: [:bold]
 
     if m do
       scanned = length(m.scanned)
       total = scanned + length(m.remaining)
-      current = if m.current, do: Path.basename(m.current), else: "---"
+
+      # Show last 3 completed files + active file with spinner
+      recent =
+        m.scanned
+        |> Enum.take(3)
+        |> Enum.map(fn {name, lines} ->
+          text("  [+] #{String.pad_trailing(name, 20)} #{lines} lines",
+            fg: :green
+          )
+        end)
+
+      active =
+        if m.current do
+          spin = spinner_char(model.tick)
+
+          [
+            text("  #{spin}  #{Path.basename(m.current)}...",
+              style: [:bold]
+            )
+          ]
+        else
+          []
+        end
+
+      bar = mini_bar(scanned, total, 14)
+      progress = text("  #{bar} #{scanned}/#{total}", style: [:dim])
+
+      content = active ++ recent ++ [progress]
 
       agent_box(
         "File Scanner",
         m.status,
         model.pids[:scanner],
-        [
-          progress_row(scanned, total, 14),
-          stat_line("Lines", fmt(m.total_lines)),
-          stat_line("Current", current)
-        ],
-        uptime: agent_uptime(model, :scanner)
+        content,
+        uptime: agent_uptime(model, :scanner),
+        title_style: title_style
       )
     else
-      agent_box("File Scanner", :idle, nil, [
-        text("  waiting...", style: [:dim])
-      ])
+      waiting_panel("File Scanner", model.tick)
     end
   end
 
-  defp analyzer_panel(model) do
+  # -- Analyzer Panel: checklist --
+
+  defp analyzer_panel(model, vs) do
     m = model.analyzer
+    title_style = if vs.other_panels_dim, do: [:dim], else: [:bold]
 
     if m do
       checked = length(m.results)
       total = checked + length(m.remaining)
+
+      # Show last 5 results as checklist
+      items =
+        m.results
+        |> Enum.take(5)
+        |> Enum.map(fn {name, has_docs} ->
+          {icon, fg} = if has_docs, do: {"[+]", :green}, else: {"[-]", :red}
+          text("  #{icon} #{name}", fg: fg)
+        end)
+
+      active =
+        if m.current do
+          spin = spinner_char(model.tick)
+          [text("  #{spin}  #{Path.basename(m.current)}...", style: [:bold])]
+        else
+          []
+        end
+
       docs = Enum.count(m.results, fn {_, d} -> d end)
-      current = if m.current, do: Path.basename(m.current), else: "---"
+
+      summary =
+        text("  #{docs}/#{checked} documented  #{checked}/#{total} checked",
+          style: [:dim]
+        )
+
+      content = active ++ items ++ [summary]
 
       agent_box(
         "Code Analyzer",
         m.status,
         model.pids[:analyzer],
-        [
-          progress_row(checked, total, 14),
-          stat_line("Docs", "#{docs}/#{checked}"),
-          stat_line("Current", current)
-        ],
-        uptime: agent_uptime(model, :analyzer)
+        content,
+        uptime: agent_uptime(model, :analyzer),
+        title_style: title_style
       )
     else
-      agent_box("Code Analyzer", :idle, nil, [
-        text("  waiting...", style: [:dim])
-      ])
+      waiting_panel("Code Analyzer", model.tick)
     end
   end
 
-  defp monitor_panel(model) do
+  # -- Monitor Panel: dual sparkline --
+
+  defp monitor_panel(model, vs) do
     m = model.monitor
+    title_style = if vs.other_panels_dim, do: [:dim], else: [:bold]
 
     if m && map_size(m.stats) > 0 do
       s = m.stats
+      mem_spark = sparkline(m.history)
+      proc_spark = sparkline(m.proc_history)
 
       agent_box(
         "System Monitor",
         :monitoring,
         model.pids[:monitor],
         [
-          stat_line("Procs", "#{s.processes}"),
-          memory_sparkline_row(s.memory_mb, m.history),
+          memory_sparkline_row(s.memory_mb, mem_spark),
+          proc_sparkline_row(s.processes, proc_spark),
           stat_line("Scheds", "#{s.schedulers}")
         ],
-        uptime: agent_uptime(model, :monitor)
+        uptime: agent_uptime(model, :monitor),
+        title_style: title_style
       )
     else
-      agent_box("System Monitor", :idle, nil, [
-        text("  waiting...", style: [:dim])
-      ])
+      waiting_panel("System Monitor", model.tick)
     end
   end
+
+  # -- Chaos Panel: heartbeat with escalation --
 
   defp chaos_panel(model) do
     m = model.chaos
     tick = model.tick
     in_flash = tick >= @crash_tick and tick < @crash_tick + @crash_flash_ticks
-
-    in_restart =
-      tick >= @crash_tick + @crash_flash_ticks and tick < @recover_tick
+    in_dead = tick >= @crash_tick + @crash_flash_ticks and tick < @recover_tick
 
     cond do
+      # Crash flash (0.8s)
       in_flash ->
         old_pid = fmt_pid(model.old_pids[:chaos] || model.pids[:chaos])
-        crash_box(old_pid, tick - @crash_tick)
+        crash_flash_box(old_pid, tick - @crash_tick)
 
-      in_restart ->
-        dots =
-          String.duplicate(
-            ".",
-            min(rem(tick - @crash_tick - @crash_flash_ticks, 4) + 1, 3)
-          )
+      # Dead panel (eerie silence)
+      in_dead ->
+        dot_count = min(rem(tick - @crash_tick - @crash_flash_ticks, 4) + 1, 3)
+        dots = String.duplicate(".", dot_count)
 
-        agent_box("Chaos Worker", :crashed, nil, [
-          text("  PROCESS TERMINATED", fg: :red, style: [:bold]),
-          stat_line("Crashes", "#{model.crashes}"),
-          text("  supervisor restarting#{dots}", fg: :yellow)
-        ])
-
-      m != nil ->
-        status_label =
-          cond do
-            m.status == :working and model.crashes > 0 -> "RECOVERED"
-            m.status == :working -> "working"
-            true -> "#{m.status}"
+        box style: %{border: :single, width: :fill, padding: 1} do
+          column style: %{gap: 0} do
+            [
+              text("x Chaos Worker", style: [:dim]),
+              divider(char: "-"),
+              text(""),
+              text("  restarting#{dots}", style: [:dim])
+            ]
           end
+        end
 
-        status_fg =
-          if m.status == :working and model.crashes > 0, do: :green, else: nil
+      # Warning phase 3: red border, CRITICAL
+      tick >= @warn_phase_3 and m != nil ->
+        hb = heartbeat(tick, :erratic)
 
-        content = [
-          stat_line("Tasks", "#{m.tasks_done}"),
-          stat_line("Crashes", "#{model.crashes}")
-        ]
-
-        content =
-          if status_fg do
-            content ++
-              [text("  #{status_label}", style: [:bold], fg: status_fg)]
-          else
-            content ++ [stat_line("Status", status_label)]
+        box style: %{border: :double, width: :fill, padding: 1} do
+          column style: %{gap: 0} do
+            [
+              row style: %{gap: 1} do
+                [
+                  text("!", fg: :red),
+                  text("Chaos Worker", style: [:bold], fg: :red),
+                  text("CRITICAL", style: [:bold], fg: :red)
+                ]
+              end,
+              divider(char: "="),
+              stat_line("Tasks", "#{m.tasks_done}"),
+              text("  heartbeat  #{hb} #{hb} #{hb}", fg: :red, style: [:bold])
+            ]
           end
+        end
+
+      # Warning phase 2: bold border, UNSTABLE
+      tick >= @warn_phase_2 and m != nil ->
+        hb = heartbeat(tick, :erratic)
+
+        box style: %{border: :double, width: :fill, padding: 1} do
+          column style: %{gap: 0} do
+            [
+              row style: %{gap: 1} do
+                [
+                  text("!", fg: :yellow),
+                  text("Chaos Worker", style: [:bold], fg: :yellow),
+                  text("UNSTABLE", style: [:bold], fg: :yellow)
+                ]
+              end,
+              divider(char: "-"),
+              stat_line("Tasks", "#{m.tasks_done}"),
+              text("  heartbeat  #{hb} #{hb} #{hb}", fg: :yellow)
+            ]
+          end
+        end
+
+      # Warning phase 1: yellow, PRESSURE
+      tick >= @warn_start and m != nil ->
+        hb = heartbeat(tick, :normal)
 
         agent_box(
           "Chaos Worker",
           m.status,
           model.pids[:chaos],
-          content,
+          [
+            stat_line("Tasks", "#{m.tasks_done}"),
+            text("  PRESSURE", fg: :yellow),
+            text("  heartbeat  #{hb} #{hb} #{hb}", fg: :yellow)
+          ],
+          uptime: agent_uptime(model, :chaos)
+        )
+
+      # Recovered state
+      m != nil and model.crashes > 0 and model.restarted ->
+        box style: %{border: :double, width: :fill, padding: 1} do
+          column style: %{gap: 0} do
+            [
+              row style: %{gap: 1} do
+                [
+                  text("*", fg: :green),
+                  text("Chaos Worker", style: [:bold], fg: :green),
+                  text("RECOVERED", style: [:bold], fg: :green),
+                  text(" #{short_pid(model.pids[:chaos])}", style: [:dim])
+                ]
+              end,
+              divider(char: "-"),
+              stat_line("Tasks", "#{m.tasks_done}"),
+              stat_line("Crashes", "#{model.crashes}"),
+              text("  new PID, work resumed", fg: :green)
+            ]
+          end
+        end
+
+      # Normal working state
+      m != nil ->
+        hb = heartbeat(tick, :normal)
+
+        agent_box(
+          "Chaos Worker",
+          m.status,
+          model.pids[:chaos],
+          [
+            stat_line("Tasks", "#{m.tasks_done}"),
+            text("  heartbeat  #{hb} #{hb} #{hb}", style: [:dim])
+          ],
           uptime: agent_uptime(model, :chaos)
         )
 
       true ->
-        agent_box("Chaos Worker", :idle, nil, [
-          text("  waiting...", style: [:dim])
-        ])
+        waiting_panel("Chaos Worker", model.tick)
     end
   end
 
@@ -718,7 +967,7 @@ defmodule CockpitDemo do
     end
   end
 
-  # -- Supervision Tree Panel (replaces Dep Checker panel) --
+  # -- Supervision Tree Panel --
 
   defp supervision_tree_panel(model) do
     in_crash = model.tick >= @crash_tick and model.tick < @recover_tick
@@ -736,17 +985,14 @@ defmodule CockpitDemo do
   end
 
   defp tree_nodes(model, in_crash) do
-    nodes =
-      List.flatten([
-        tree_node("Scanner  ", :scanner, model, false, in_crash),
-        tree_node("Analyzer ", :analyzer, model, false, in_crash),
-        tree_node("Monitor  ", :monitor, model, false, in_crash),
-        tree_node("Chaos    ", :chaos, model, false, in_crash),
-        tree_restart_node(model),
-        tree_node("DepCheck ", :dep_checker, model, true, in_crash)
-      ])
-
-    nodes
+    List.flatten([
+      tree_node("Scanner  ", :scanner, model, false, in_crash),
+      tree_node("Analyzer ", :analyzer, model, false, in_crash),
+      tree_node("Monitor  ", :monitor, model, false, in_crash),
+      tree_node("Chaos    ", :chaos, model, false, in_crash),
+      tree_restart_node(model),
+      tree_node("DepCheck ", :dep_checker, model, true, in_crash)
+    ])
   end
 
   defp tree_node(name, id, model, is_last, in_crash) do
@@ -803,50 +1049,6 @@ defmodule CockpitDemo do
     end
   end
 
-  # -- Recovery Proof --
-
-  defp show_recovery_proof?(model) do
-    model.restarted and model.old_pids[:chaos] != nil
-  end
-
-  defp recovery_proof(model) do
-    if show_recovery_proof?(model) do
-      old_pid = short_pid(model.old_pids[:chaos])
-
-      new_pid =
-        if model.pids[:chaos], do: short_pid(model.pids[:chaos]), else: "---"
-
-      bar = String.duplicate(@bar_fill, 32)
-
-      [
-        spacer(size: 1),
-        box style: %{border: :double, width: :fill, padding: 1} do
-          column style: %{gap: 0} do
-            [
-              row style: %{gap: 2} do
-                [
-                  text("RECOVERY PROOF", style: [:bold], fg: :green),
-                  text(old_pid, fg: :red),
-                  text("killed ->", style: [:dim]),
-                  text(new_pid, fg: :green, style: [:bold]),
-                  text("restarted", style: [:dim])
-                ]
-              end,
-              row style: %{gap: 1} do
-                [
-                  text(bar, fg: :green),
-                  text("New PID. Zero data lost.", style: [:bold])
-                ]
-              end
-            ]
-          end
-        end
-      ]
-    else
-      []
-    end
-  end
-
   defp key_bar do
     row style: %{gap: 2} do
       [
@@ -866,6 +1068,7 @@ defmodule CockpitDemo do
     pid_str = if pid, do: " #{short_pid(pid)}", else: ""
     uptime = Keyword.get(opts, :uptime)
     uptime_str = if uptime, do: " #{uptime}s", else: ""
+    title_style = Keyword.get(opts, :title_style, [:bold])
 
     box style: %{border: border, width: :fill, padding: 1} do
       column style: %{gap: 0} do
@@ -873,7 +1076,7 @@ defmodule CockpitDemo do
           row style: %{gap: 1} do
             [
               text(status_dot(status), fg: fg),
-              text(title, style: [:bold], fg: fg),
+              text(title, style: title_style, fg: fg),
               text(pid_str, style: [:dim]),
               text(uptime_str, style: [:dim])
             ]
@@ -885,8 +1088,8 @@ defmodule CockpitDemo do
     end
   end
 
-  defp crash_box(old_pid, flash_tick) do
-    alert = if rem(flash_tick, 2) == 0, do: "X X X", else: "! ! !"
+  defp crash_flash_box(old_pid, flash_tick) do
+    alert = if rem(flash_tick, 2) == 0, do: "KILLED", else: "X X X"
 
     box style: %{border: :double, width: :fill, padding: 1} do
       column style: %{gap: 0} do
@@ -895,40 +1098,15 @@ defmodule CockpitDemo do
             [
               text("X", fg: :red),
               text("Chaos Worker", style: [:bold], fg: :red),
-              text("CRASHED", style: [:bold], fg: :red)
+              text("KILLED", style: [:bold], fg: :red)
             ]
           end,
           divider(char: "="),
           text("    #{alert}", style: [:bold], fg: :red),
           text("    Process.exit(pid, :kill)", style: [:bold], fg: :red),
-          text("    PID #{old_pid} terminated", fg: :red),
-          text("    supervisor notified...", fg: :yellow)
+          text("    PID #{old_pid} terminated", fg: :red)
         ]
       end
-    end
-  end
-
-  defp progress_row(current, total, width) when total > 0 do
-    filled = div(current * width, total)
-    empty = width - filled
-    filled_str = String.duplicate(@bar_fill, filled)
-    empty_str = String.duplicate(@bar_empty, empty)
-
-    row style: %{gap: 1} do
-      [
-        text(filled_str, fg: :green),
-        text(empty_str, style: [:dim]),
-        text("#{current}/#{total}")
-      ]
-    end
-  end
-
-  defp progress_row(_current, _total, width) do
-    row style: %{gap: 1} do
-      [
-        text(String.duplicate(@bar_empty, width), style: [:dim]),
-        text("0/0")
-      ]
     end
   end
 
@@ -941,9 +1119,7 @@ defmodule CockpitDemo do
     end
   end
 
-  defp memory_sparkline_row(mem_mb, history) do
-    spark = sparkline(history)
-
+  defp memory_sparkline_row(mem_mb, spark) do
     row style: %{gap: 1} do
       [
         text("  #{String.pad_trailing("Memory", 8)}", style: [:dim]),
@@ -953,20 +1129,12 @@ defmodule CockpitDemo do
     end
   end
 
-  defp summary_row(label, value) do
+  defp proc_sparkline_row(count, spark) do
     row style: %{gap: 1} do
       [
-        text("  #{String.pad_trailing(label, 18)}", style: [:dim]),
-        text(value)
-      ]
-    end
-  end
-
-  defp summary_row_colored(label, value, color) do
-    row style: %{gap: 1} do
-      [
-        text("  #{String.pad_trailing(label, 18)}", style: [:dim]),
-        text(value, style: [:bold], fg: color)
+        text("  #{String.pad_trailing("Procs", 8)}", style: [:dim]),
+        text("#{count}", style: [:bold]),
+        text(spark, fg: :magenta)
       ]
     end
   end
@@ -1129,19 +1297,22 @@ defmodule CockpitDemo do
   defp handle_narration(model) do
     cond do
       model.tick == @warn_start ->
-        add_event(model, :warn, "Chaos Worker memory pressure rising...")
+        add_event(model, :warn, "Memory pressure on Chaos Worker")
 
-      model.tick == @warn_start + 4 ->
-        add_event(model, :warn, "Chaos Worker becoming unstable...")
+      model.tick == @warn_phase_2 ->
+        add_event(model, :warn, "Chaos Worker becoming unstable")
 
-      model.tick == @crash_tick + 2 ->
+      model.tick == @warn_phase_3 ->
+        add_event(model, :crit, "CRITICAL: Chaos Worker unresponsive")
+
+      model.tick == @crash_tick + 1 ->
         add_event(model, :warn, "Supervisor detected exit :killed")
 
       model.tick == @crash_tick + @crash_flash_ticks ->
         add_event(model, :warn, "Initiating automatic restart...")
 
       model.tick == @recover_tick + 2 ->
-        add_event(model, :info, "Chaos Worker resumed with new PID")
+        add_event(model, :info, "New PID assigned, work resumed")
 
       all_done?(model) and not MapSet.member?(model.done_logged, :all_done) ->
         model
@@ -1199,6 +1370,7 @@ defmodule CockpitDemo do
 
   defp tag_display(:boot), do: {"BOOT  ", :cyan}
   defp tag_display(:warn), do: {"WARN  ", :yellow}
+  defp tag_display(:crit), do: {"CRIT! ", :red}
   defp tag_display(:crash), do: {"CRASH!", :red}
   defp tag_display(:recover), do: {"RECOV.", :green}
   defp tag_display(:done), do: {"DONE  ", :green}

@@ -13,7 +13,7 @@ defmodule Raxol.UI.Components.Input.TextWrappingCached do
   Initializes the cache if not already present.
   """
   def ensure_cache do
-    unless :ets.whereis(@cache_name) != :undefined do
+    if :ets.whereis(@cache_name) == :undefined do
       :ets.new(@cache_name, [:set, :public, :named_table])
     end
   end

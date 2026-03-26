@@ -38,8 +38,7 @@ defmodule Raxol.Memory.LeakDetector do
       trend_analysis = analyze_growth_trend(measurements)
 
       %{
-        status:
-          if(length(leak_indicators) > 0, do: :leaks_detected, else: :no_leaks),
+        status: if(leak_indicators != [], do: :leaks_detected, else: :no_leaks),
         monitoring_duration: config.monitoring_duration,
         total_growth: total_growth,
         leak_indicators: leak_indicators,
@@ -147,7 +146,7 @@ defmodule Raxol.Memory.LeakDetector do
       end)
 
     avg_growth_rate =
-      if length(growth_rates) > 0 do
+      if growth_rates != [] do
         Enum.sum(growth_rates) / length(growth_rates)
       else
         0

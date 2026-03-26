@@ -621,41 +621,145 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   * `{:ok, sixel_image}` - Converted Sixel image
   * `{:error, reason}` - Conversion error
   """
-  def from_image_data(_image_data, format, options \\ %{}) do
-    # This would typically use an image processing library
-    # For now, return a placeholder implementation
-    case format do
-      format when format in [:png, :jpeg, :gif] ->
-        # Create a simple test pattern for demonstration
-        width = Map.get(options, :target_width, 64)
-        height = Map.get(options, :target_height, 64)
+  def from_image_data(image_data, format, options \\ %{})
 
-        image = %{
-          width: width,
-          height: height,
-          original_format: format,
-          palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette()
-        }
+  def from_image_data(image_data, :png, options) when is_binary(image_data) do
+    max_colors = Map.get(options, :max_colors, 64)
 
-        # Generate a simple test pattern
-        pixel_buffer = generate_test_pattern(width, height)
+    with {:ok, %{width: w, height: h, pixels: pixels}} <-
+           Raxol.Terminal.ANSI.PngDecoder.decode(image_data) do
+      {palette, indices} = quantize_colors(pixels, min(max_colors, @max_colors))
 
-        {:ok, Map.merge(image, %{pixel_buffer: pixel_buffer, data: <<>>})}
-
-      _ ->
-        {:error, {:unsupported_format, format}}
+      {:ok,
+       %__MODULE__{
+         width: w,
+         height: h,
+         data: <<>>,
+         palette: palette,
+         pixel_buffer: indices_to_pixel_buffer(indices, w),
+         original_format: :png,
+         attributes: %{width: w, height: h}
+       }}
     end
   end
 
-  defp generate_test_pattern(width, height) do
-    # Create a simple gradient test pattern
-    for x <- 0..(width - 1),
-        y <- 0..(height - 1),
-        into: %{} do
-      # Simple pattern using position to determine color
-      color_index = rem(x + y, 8)
-      {{x, y}, color_index}
+  def from_image_data(_image_data, format, _options)
+      when format in [:jpeg, :gif] do
+    {:error, {:format_requires_external_decoder, format}}
+  end
+
+  def from_image_data(_image_data, format, _options) do
+    {:error, {:unsupported_format, format}}
+  end
+
+  defp indices_to_pixel_buffer(indices, width) do
+    indices
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {color_idx, flat_idx}, acc ->
+      Map.put(acc, {rem(flat_idx, width), div(flat_idx, width)}, color_idx)
+    end)
+  end
+
+  # Median cut color quantization. Returns {%{index => {r,g,b}}, [index_per_pixel]}.
+  defp quantize_colors(pixels, max_colors) do
+    unique = pixels |> Enum.frequencies() |> Map.keys()
+
+    if length(unique) <= max_colors do
+      direct_palette(pixels, unique)
+    else
+      median_cut_palette(pixels, unique, max_colors)
     end
+  end
+
+  defp direct_palette(pixels, unique) do
+    color_to_idx = unique |> Enum.with_index() |> Map.new()
+    palette = Map.new(color_to_idx, fn {color, idx} -> {idx, color} end)
+    {palette, Enum.map(pixels, &Map.fetch!(color_to_idx, &1))}
+  end
+
+  defp median_cut_palette(pixels, unique, max_colors) do
+    boxes = median_cut_split([unique], max_colors)
+
+    {palette, color_to_idx} =
+      boxes
+      |> Enum.with_index()
+      |> Enum.reduce({%{}, %{}}, fn {box, idx}, {pal, c2i} ->
+        new_pal = Map.put(pal, idx, box_centroid(box))
+        new_c2i = Enum.reduce(box, c2i, &Map.put(&2, &1, idx))
+        {new_pal, new_c2i}
+      end)
+
+    {palette, Enum.map(pixels, &Map.fetch!(color_to_idx, &1))}
+  end
+
+  defp median_cut_split(boxes, max_colors) when length(boxes) >= max_colors do
+    Enum.take(boxes, max_colors)
+  end
+
+  defp median_cut_split(boxes, max_colors) do
+    # Find the box with the largest range on its widest channel
+    {target, rest} = pop_largest_box(boxes)
+
+    case split_box(target) do
+      {a, b} ->
+        median_cut_split([a, b | rest], max_colors)
+
+      :cannot_split ->
+        # This box can't be split further; try others or give up
+        median_cut_split(rest ++ [target], max_colors)
+    end
+  end
+
+  defp pop_largest_box(boxes) do
+    sorted =
+      Enum.sort_by(boxes, fn box ->
+        {r_range, g_range, b_range} = channel_ranges(box)
+        -max(r_range, max(g_range, b_range))
+      end)
+
+    {hd(sorted), tl(sorted)}
+  end
+
+  defp channel_ranges(box) do
+    {rs, gs, bs} = split_channels(box)
+
+    {Enum.max(rs) - Enum.min(rs), Enum.max(gs) - Enum.min(gs),
+     Enum.max(bs) - Enum.min(bs)}
+  end
+
+  defp split_channels(box) do
+    Enum.reduce(box, {[], [], []}, fn {r, g, b}, {ra, ga, ba} ->
+      {[r | ra], [g | ga], [b | ba]}
+    end)
+  end
+
+  defp split_box(box) when length(box) <= 1, do: :cannot_split
+
+  defp split_box(box) do
+    sorted = sort_by_widest_channel(box)
+    mid = div(length(sorted), 2)
+    {Enum.take(sorted, mid), Enum.drop(sorted, mid)}
+  end
+
+  defp sort_by_widest_channel(box) do
+    {r_range, g_range, b_range} = channel_ranges(box)
+    idx = widest_channel_index(r_range, g_range, b_range)
+    Enum.sort_by(box, &elem(&1, idx))
+  end
+
+  defp widest_channel_index(r, g, b) when r >= g and r >= b, do: 0
+  defp widest_channel_index(_r, g, b) when g >= b, do: 1
+  defp widest_channel_index(_r, _g, _b), do: 2
+
+  defp box_centroid(box) do
+    n = length(box)
+
+    {rs, gs, bs} =
+      Enum.reduce(box, {0, 0, 0}, fn {r, g, b}, {ra, ga, ba} ->
+        {ra + r, ga + g, ba + b}
+      end)
+
+    {div(rs, n), div(gs, n), div(bs, n)}
   end
 
   @doc """
@@ -700,19 +804,33 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   end
 
   defp apply_median_cut_quantization(image, max_colors) do
-    # Simplified median cut implementation
-    # In a real implementation, this would analyze color distribution
-    # and recursively split color space
+    pixels =
+      image.pixel_buffer
+      |> Map.values()
+      |> Enum.map(fn idx -> Map.get(image.palette, idx, {0, 0, 0}) end)
 
-    colors = Map.values(image.palette)
-    quantized = Enum.take(colors, max_colors)
+    {new_palette, _indices} = quantize_colors(pixels, max_colors)
 
-    new_palette =
-      quantized
-      |> Enum.with_index()
-      |> Map.new(fn {color, index} -> {index, color} end)
+    # Remap pixel buffer to new palette indices via nearest color
+    palette_list = Map.to_list(new_palette)
 
-    %{image | palette: new_palette}
+    new_pixel_buffer =
+      Map.new(image.pixel_buffer, fn {pos, old_idx} ->
+        color = Map.get(image.palette, old_idx, {0, 0, 0})
+        {new_idx, _} = nearest_color(color, palette_list)
+        {pos, new_idx}
+      end)
+
+    %{image | palette: new_palette, pixel_buffer: new_pixel_buffer}
+  end
+
+  defp nearest_color({r, g, b}, palette_list) do
+    Enum.min_by(palette_list, fn {_idx, {pr, pg, pb}} ->
+      dr = r - pr
+      dg = g - pg
+      db = b - pb
+      dr * dr + dg * dg + db * db
+    end)
   end
 
   defp apply_octree_quantization(image, max_colors) do

@@ -33,12 +33,10 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
          {:ok, driver_pid} <- maybe_start_driver(dispatcher_pid, environment),
          {:ok, rendering_engine_pid} <-
            start_rendering_engine(app_module, dispatcher_pid, options) do
-      if dispatcher_pid && rendering_engine_pid do
-        GenServer.cast(
-          dispatcher_pid,
-          {:set_rendering_engine, rendering_engine_pid}
-        )
-      end
+      GenServer.cast(
+        dispatcher_pid,
+        {:set_rendering_engine, rendering_engine_pid}
+      )
 
       {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid,
        driver_pid, rendering_engine_pid}
@@ -69,22 +67,17 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
         {cols, rows}
 
       _ ->
-        case :os.cmd(~c"stty size < /dev/tty 2>/dev/null") do
-          result when is_list(result) ->
-            str = List.to_string(result) |> String.trim()
+        result = :os.cmd(~c"stty size < /dev/tty 2>/dev/null")
+        str = List.to_string(result) |> String.trim()
 
-            case String.split(str) do
-              [rows_s, cols_s] ->
-                rows = String.to_integer(rows_s)
-                cols = String.to_integer(cols_s)
+        case String.split(str) do
+          [rows_s, cols_s] ->
+            rows = String.to_integer(rows_s)
+            cols = String.to_integer(cols_s)
 
-                if rows > 0 and cols > 0,
-                  do: {cols, rows},
-                  else: {default_w, default_h}
-
-              _ ->
-                {default_w, default_h}
-            end
+            if rows > 0 and cols > 0,
+              do: {cols, rows},
+              else: {default_w, default_h}
 
           _ ->
             {default_w, default_h}

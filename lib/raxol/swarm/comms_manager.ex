@@ -232,7 +232,7 @@ defmodule Raxol.Swarm.CommsManager do
   end
 
   defp schedule_flush(%__MODULE__{} = state) do
-    if state.flush_ref, do: _ = Process.cancel_timer(state.flush_ref)
+    _ = if state.flush_ref, do: Process.cancel_timer(state.flush_ref)
     ref = Process.send_after(self(), :flush, state.flush_interval_ms)
     %__MODULE__{state | flush_ref: ref}
   end

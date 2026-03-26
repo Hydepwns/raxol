@@ -567,7 +567,7 @@ defmodule Raxol.Performance.MetricsCollector do
   end
 
   defp get_average_event_time(timings)
-       when is_list(timings) and length(timings) > 0 do
+       when is_list(timings) and timings != [] do
     Enum.sum(timings) / length(timings)
   end
 

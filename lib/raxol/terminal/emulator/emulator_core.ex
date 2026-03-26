@@ -367,7 +367,7 @@ defmodule Raxol.Terminal.Emulator.Core do
   end
 
   defp update_scrollback_buffer(scrolled_buffer, scrolled_lines) do
-    has_lines = scrolled_lines != nil and length(scrolled_lines) > 0
+    has_lines = scrolled_lines != nil and scrolled_lines != []
     handle_scrollback_update(has_lines, scrolled_buffer, scrolled_lines)
   end
 
@@ -380,7 +380,7 @@ defmodule Raxol.Terminal.Emulator.Core do
     # Filter out lines that don't contain meaningful content
     meaningful_lines = Enum.filter(scrolled_lines, &has_meaningful_content?/1)
 
-    has_meaningful = length(meaningful_lines) > 0
+    has_meaningful = meaningful_lines != []
 
     handle_meaningful_lines_update(
       has_meaningful,

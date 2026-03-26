@@ -373,7 +373,7 @@ defmodule Raxol.Core.Renderer.View do
   defmacro ensure_keyword(opts) do
     quote do
       case unquote(opts) do
-        opts when is_list(opts) and length(opts) > 0 ->
+        opts when is_list(opts) and opts != [] ->
           Raxol.Core.Renderer.View.ensure_keyword_list(opts)
 
         _opts ->

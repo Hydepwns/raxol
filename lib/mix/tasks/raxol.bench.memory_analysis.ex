@@ -482,7 +482,7 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
   end
 
   defp print_recommendations(recommendations) do
-    if length(recommendations) > 0 do
+    if recommendations != [] do
       Mix.shell().info("\n=== Optimization Recommendations ===")
 
       for {recommendation, index} <- Enum.with_index(recommendations, 1) do

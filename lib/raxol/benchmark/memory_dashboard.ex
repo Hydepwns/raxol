@@ -474,7 +474,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     |> Enum.map(fn {value, index} -> %{x: index, y: value} end)
   end
 
-  defp calculate_median(values) when length(values) > 0 do
+  defp calculate_median(values) when values != [] do
     sorted = Enum.sort(values)
     length = length(sorted)
 
@@ -488,7 +488,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
 
   defp calculate_median(_), do: 0
 
-  defp calculate_percentiles(values) when length(values) > 0 do
+  defp calculate_percentiles(values) when values != [] do
     sorted = Enum.sort(values)
     length = length(sorted)
 

@@ -34,7 +34,7 @@ defmodule Raxol.UI.Layout.Flexbox do
 
   alias Raxol.UI.Layout.Engine
   alias Raxol.UI.Layout.LayoutUtils
-  alias Raxol.UI.Layout.Flexbox.{Distributor, Positioner, Wrapper, Calculator}
+  alias Raxol.UI.Layout.Flexbox.{Calculator, Distributor, Positioner, Wrapper}
 
   @type t :: %{
           type: :flexbox,

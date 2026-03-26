@@ -227,20 +227,20 @@ defmodule Raxol.Sensor.Feed do
     do: module.disconnect(sensor_state)
 
   defp schedule_poll(%__MODULE__{} = state) do
-    cancel_timer(state.poll_ref)
+    _ = cancel_timer(state.poll_ref)
     ref = Process.send_after(self(), :poll, state.sample_rate_ms)
     %__MODULE__{state | poll_ref: ref}
   end
 
   defp schedule_backoff(%__MODULE__{} = state) do
-    cancel_timer(state.backoff_ref)
+    _ = cancel_timer(state.backoff_ref)
     ref = Process.send_after(self(), :backoff_reconnect, @backoff_ms)
     %__MODULE__{state | backoff_ref: ref}
   end
 
   defp cancel_timers(%__MODULE__{} = state) do
-    cancel_timer(state.poll_ref)
-    cancel_timer(state.backoff_ref)
+    _ = cancel_timer(state.poll_ref)
+    _ = cancel_timer(state.backoff_ref)
     %__MODULE__{state | poll_ref: nil, backoff_ref: nil}
   end
 

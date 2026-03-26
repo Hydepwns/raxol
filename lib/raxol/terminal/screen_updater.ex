@@ -166,8 +166,6 @@ defmodule Raxol.Terminal.ScreenUpdater do
     render_change(change, options)
   end
 
-  defp apply_updates(_, _), do: :ok
-
   defp render_change(%{type: :full, cells: cells}, _options) do
     # Render full screen
     # Always use fallback since render_cells doesn't exist

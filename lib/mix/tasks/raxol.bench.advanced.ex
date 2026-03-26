@@ -180,7 +180,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
       output_regression_report(report, detection, opts)
 
       # Exit with error code if regressions found
-      if length(detection.regressions) > 0 do
+      if detection.regressions != [] do
         Mix.shell().error("[FAIL] Performance regressions detected!")
         System.halt(1)
       else
@@ -197,7 +197,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
 
     suite = opts[:suite] || "all"
 
-    Application.ensure_all_started(:tools)
+    _ = Application.ensure_all_started(:tools)
     _ = apply(:fprof, :start, [])
     _ = apply(:fprof, :trace, [[:start]])
 
@@ -497,7 +497,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
       detection =
         RegressionDetector.detect(results, baseline, threshold: threshold)
 
-      if length(detection.regressions) > 0 do
+      if detection.regressions != [] do
         print_regressions(detection.regressions)
       end
     end
@@ -549,7 +549,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
     Enum.each(analysis, fn {suite, data} ->
       outliers = get_in(data, [:statistics, :outliers, :outliers]) || []
 
-      if length(outliers) > 0 do
+      if outliers != [] do
         Mix.shell().warn(
           "  [WARN]  #{suite}: #{length(outliers)} outliers detected"
         )

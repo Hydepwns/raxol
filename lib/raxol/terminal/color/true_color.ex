@@ -40,10 +40,10 @@ defmodule Raxol.Terminal.Color.TrueColor do
   @compile {:no_warn_undefined, Raxol.Terminal.Color.TrueColor.AnsiCodes}
 
   alias Raxol.Terminal.Color.TrueColor.{
+    AnsiCodes,
     Conversion,
     Detection,
-    Palette,
-    AnsiCodes
+    Palette
   }
 
   defstruct [:r, :g, :b, :a]

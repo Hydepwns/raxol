@@ -162,7 +162,7 @@ defmodule Raxol.Core.ErrorReporter do
 
   @impl true
   def handle_call({:process_queue, opts}, _from, state) do
-    if length(state.report_queue) > 0 do
+    if state.report_queue != [] do
       report_config = merge_config(state.config, opts)
 
       batch_report =

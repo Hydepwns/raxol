@@ -322,7 +322,7 @@ defmodule Raxol.Benchmark.RegressionDetector do
       end)
 
     recommendations =
-      if length(critical_regressions) > 0 do
+      if critical_regressions != [] do
         [
           "CRITICAL: #{length(critical_regressions)} scenarios show critical performance regression (>50%)"
           | recommendations
@@ -359,7 +359,7 @@ defmodule Raxol.Benchmark.RegressionDetector do
       end)
 
     recommendations =
-      if length(high_volatility) > 0 do
+      if high_volatility != [] do
         [
           "INFO: #{length(high_volatility)} scenarios show high variance - consider increasing sample size"
           | recommendations

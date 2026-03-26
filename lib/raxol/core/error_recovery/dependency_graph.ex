@@ -143,7 +143,7 @@ defmodule Raxol.Core.ErrorRecovery.DependencyGraph do
   """
   def would_cascade?(graph, node_id) do
     dependents = get_dependents(graph, node_id)
-    length(dependents) > 0
+    dependents != []
   end
 
   @doc """

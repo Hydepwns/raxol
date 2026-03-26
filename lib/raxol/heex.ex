@@ -109,6 +109,7 @@ defmodule Raxol.HEEx do
     case Regex.run(~r/\A<(\w+)((?:\s+[^>]*?)?)\/>/s, html) do
       [full, tag, attrs_str] ->
         rest = String.slice(html, String.length(full)..-1//1)
+
         tokenize(rest, [{:self_closing, tag, parse_attributes(attrs_str)} | acc])
 
       nil ->

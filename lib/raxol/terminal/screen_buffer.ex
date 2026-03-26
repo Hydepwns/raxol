@@ -43,9 +43,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
               Raxol.Terminal.ScreenBuffer.LineOps
             ]}
 
+  alias Raxol.Core.Utils.Validation
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Cell
-  alias Raxol.Core.Utils.Validation
 
   alias Raxol.Terminal.ScreenBuffer.{
     Attributes,
