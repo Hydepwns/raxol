@@ -165,6 +165,8 @@ lib/raxol/
 
 **Agent Framework**: `use Raxol.Agent` creates TEA apps for AI agents. `Agent.Session` wraps Lifecycle with `environment: :agent` (skips terminal driver and plugin manager, uses anonymous Dispatcher to avoid singleton conflicts). Agents discover each other via `Raxol.Agent.Registry` (unique Registry). `Agent.Team` is an OTP Supervisor for coordinator/worker groups. Three agent-specific Command types: `:async` (streaming sender callback), `:shell` (Port-based execution), `:send_agent` (Registry-routed inter-agent messages arriving as `{:agent_message, from, payload}`). `view/1` is optional -- headless agents skip rendering entirely.
 
+**Time-Travel Debugging**: `Raxol.start_link(MyApp, time_travel: true)` enables snapshot recording of every `update/2` cycle. `Raxol.Debug.TimeTravel` stores `{message, model_before, model_after}` in a CircularBuffer. Navigate with `step_back/0`, `step_forward/0`, `jump_to/1`. `restore/0` sends the historical model to the Dispatcher for re-render. `Snapshot.diff/2` computes recursive map changes. Zero cost when disabled.
+
 **Phoenix as library only**: No active web server in core, Ecto.Repo explicitly disabled at runtime.
 
 ### Buffer/Renderer API
@@ -211,6 +213,8 @@ These namespaces have been consolidated -- avoid creating new top-level alternat
 - `Raxol.Terminal.Rendering.*` - All terminal rendering (not `terminal/render/` or `terminal/renderer/`)
 - `Raxol.Performance.*` - All performance tools (not `core/performance/`)
 - `Raxol.LiveView.*` - LiveView integration (not `liveview/`)
+- `Raxol.Debug.*` - Debugging tools (time-travel, snapshots)
+- `Raxol.Recording.*` - Session recording/replay (not `session/`)
 
 ## Environment Variables
 
