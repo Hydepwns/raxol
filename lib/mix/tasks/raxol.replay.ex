@@ -114,9 +114,7 @@ defmodule Mix.Tasks.Raxol.Replay do
       Mix.shell().info("  Command:   #{session.command}")
     end
 
-    if session.started_at do
-      Mix.shell().info("  Recorded:  #{DateTime.to_string(session.started_at)}")
-    end
+    Mix.shell().info("  Recorded:  #{DateTime.to_string(session.started_at)}")
 
     env_term = get_in(session.env, ["TERM"]) || "unknown"
     env_shell = get_in(session.env, ["SHELL"]) || "unknown"

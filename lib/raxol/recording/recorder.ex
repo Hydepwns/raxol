@@ -72,9 +72,7 @@ defmodule Raxol.Recording.Recorder do
     start_mono = System.monotonic_time(:microsecond)
     auto_save = Keyword.get(opts, :auto_save)
 
-    if auto_save do
-      schedule_flush()
-    end
+    if auto_save, do: schedule_flush()
 
     {:ok, %{session: session, start_mono: start_mono, auto_save: auto_save}}
   end
@@ -153,6 +151,7 @@ defmodule Raxol.Recording.Recorder do
   end
 
   defp schedule_flush do
-    Process.send_after(self(), :flush, @flush_interval_ms)
+    _ref = Process.send_after(self(), :flush, @flush_interval_ms)
+    :ok
   end
 end

@@ -173,11 +173,14 @@ defmodule Raxol.LiveView.CastPlayerComponent do
     end
 
     defp schedule_tick(socket) do
-      Process.send_after(
-        self(),
-        {:cast_player_tick, socket.assigns.id},
-        @tick_interval_ms
-      )
+      _ref =
+        Process.send_after(
+          self(),
+          {:cast_player_tick, socket.assigns.id},
+          @tick_interval_ms
+        )
+
+      :ok
     end
 
     defp advance_playback(socket) do
@@ -254,7 +257,7 @@ defmodule Raxol.LiveView.CastPlayerComponent do
             )
 
           Enum.reduce(rest, lines, fn line, acc ->
-            Enum.drop(acc, 1) ++ [escape_html(line)]
+            tl(acc) ++ [escape_html(line)]
           end)
       end
     end

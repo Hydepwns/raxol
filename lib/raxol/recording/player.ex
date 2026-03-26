@@ -115,11 +115,14 @@ defmodule Raxol.Recording.Player do
 
     enter_alt_screen(session)
     old_settings = set_raw_mode()
+    reader = start_input_reader()
 
     try do
       show_status_bar(state)
       loop(state)
     after
+      Process.unlink(reader)
+      Process.exit(reader, :kill)
       restore_terminal(old_settings)
       leave_alt_screen()
     end
@@ -232,11 +235,37 @@ defmodule Raxol.Recording.Player do
   end
 
   # -- Key reading --
+  #
+  # A linked reader process calls IO.getn (blocking) and sends bytes to us.
+  # We consume them via receive with a timeout, giving responsive key handling
+  # without an invalid IO.getn/3 timeout argument.
+
+  defp start_input_reader do
+    parent = self()
+    spawn_link(fn -> input_reader_loop(parent) end)
+  end
+
+  defp input_reader_loop(parent) do
+    case IO.getn("", 1) do
+      :eof ->
+        send(parent, {:input_byte, :eof})
+
+      <<byte>> ->
+        send(parent, {:input_byte, byte})
+        input_reader_loop(parent)
+
+      str when is_binary(str) and byte_size(str) > 0 ->
+        send(parent, {:input_byte, :binary.first(str)})
+        input_reader_loop(parent)
+
+      _ ->
+        input_reader_loop(parent)
+    end
+  end
 
   defp wait_with_input(0), do: :timeout
 
   defp wait_with_input(delay_ms) do
-    # Poll in 50ms chunks so keys are responsive
     chunk = min(delay_ms, 50)
 
     case read_key(chunk) do
@@ -247,25 +276,12 @@ defmodule Raxol.Recording.Player do
   end
 
   defp read_key(timeout_ms) do
-    case IO.getn("", 1, timeout_ms) do
-      :eof ->
-        :quit
-
-      {:error, _} ->
-        :none
-
-      "" ->
-        :none
-
-      <<char>> ->
-        parse_key(char)
-
-      # IO.getn may return a string on some platforms
-      str when is_binary(str) and byte_size(str) > 0 ->
-        parse_key(:binary.first(str))
-
-      _ ->
-        :none
+    receive do
+      {:input_byte, :eof} -> :quit
+      {:input_byte, <<char>>} -> parse_key(char)
+      {:input_byte, char} when is_integer(char) -> parse_key(char)
+    after
+      timeout_ms -> :none
     end
   end
 
@@ -370,16 +386,16 @@ defmodule Raxol.Recording.Player do
       |> elem(0)
       |> String.trim()
 
-    System.cmd("stty", ["raw", "-echo"], stderr_to_stdout: true)
+    _ = System.cmd("stty", ["raw", "-echo"], stderr_to_stdout: true)
     # Hide cursor
     IO.write("\e[?25l")
     old
   end
 
   defp restore_terminal(old_settings) do
-    # Show cursor
     IO.write("\e[?25h")
-    System.cmd("stty", [old_settings], stderr_to_stdout: true)
+    _ = System.cmd("stty", [old_settings], stderr_to_stdout: true)
+    :ok
   end
 
   # -- Screen management --
