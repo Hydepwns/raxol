@@ -134,7 +134,11 @@ defmodule Raxol.Recording.Recorder do
   end
 
   defp finalize_session(state) do
-    %{state.session | ended_at: DateTime.utc_now(), events: Enum.reverse(state.session.events)}
+    %{
+      state.session
+      | ended_at: DateTime.utc_now(),
+        events: Enum.reverse(state.session.events)
+    }
   end
 
   defp flush_to_disk(state) do

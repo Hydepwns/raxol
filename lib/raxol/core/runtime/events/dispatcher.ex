@@ -789,7 +789,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp maybe_record_input(_event), do: :ok
 
-  defp key_event_to_string(%{key: key}) when is_integer(key) and key in 32..126 do
+  defp key_event_to_string(%{key: key})
+       when is_integer(key) and key in 32..126 do
     <<key>>
   end
 

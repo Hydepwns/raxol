@@ -68,7 +68,11 @@ defmodule Mix.Tasks.Raxol.Record do
     Mix.shell().info("Press 'q' or Ctrl+C to stop recording.\n")
 
     recorder_opts =
-      [title: title, command: "mix raxol.record -m #{module_str}", auto_save: output]
+      [
+        title: title,
+        command: "mix raxol.record -m #{module_str}",
+        auto_save: output
+      ]
       |> maybe_add_opt(opts, :idle_time_limit)
 
     {:ok, _recorder} = Recorder.start_link(recorder_opts)

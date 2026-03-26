@@ -65,11 +65,13 @@ defmodule Raxol.LiveView.CastPlayerComponent do
 
     @impl true
     def update(assigns, socket) do
-      socket = assign(socket, Map.take(assigns, [:id, :speed, :controls, :autoplay]))
+      socket =
+        assign(socket, Map.take(assigns, [:id, :speed, :controls, :autoplay]))
 
       socket =
         cond do
-          Map.has_key?(assigns, :session) and assigns[:session] != socket.assigns.session ->
+          Map.has_key?(assigns, :session) and
+              assigns[:session] != socket.assigns.session ->
             load_session(socket, assigns.session)
 
           Map.has_key?(assigns, :cast_path) and is_nil(socket.assigns.session) ->
@@ -166,11 +168,16 @@ defmodule Raxol.LiveView.CastPlayerComponent do
     end
 
     defp schedule_tick(socket) do
-      Process.send_after(self(), {:cast_player_tick, socket.assigns.id}, @tick_interval_ms)
+      Process.send_after(
+        self(),
+        {:cast_player_tick, socket.assigns.id},
+        @tick_interval_ms
+      )
     end
 
     defp advance_playback(socket) do
-      %{events: events, index: idx, elapsed_us: elapsed_us, speed: speed} = socket.assigns
+      %{events: events, index: idx, elapsed_us: elapsed_us, speed: speed} =
+        socket.assigns
 
       if idx >= length(events) do
         assign(socket, playing: false)
@@ -207,7 +214,8 @@ defmodule Raxol.LiveView.CastPlayerComponent do
     defp render_events_up_to(events, idx, target_us, assigns) do
       events
       |> Enum.drop(idx)
-      |> Enum.reduce_while({idx, assigns.lines}, fn {event_us, type, data}, {i, acc_lines} ->
+      |> Enum.reduce_while({idx, assigns.lines}, fn {event_us, type, data},
+                                                    {i, acc_lines} ->
         cond do
           event_us > target_us ->
             {:halt, {i, acc_lines}}

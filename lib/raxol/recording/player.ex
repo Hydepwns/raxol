@@ -71,7 +71,12 @@ defmodule Raxol.Recording.Player do
 
   defp play_events_simple([], _prev_us, _speed, _max_delay), do: :ok
 
-  defp play_events_simple([{elapsed_us, :output, data} | rest], prev_us, speed, max_delay) do
+  defp play_events_simple(
+         [{elapsed_us, :output, data} | rest],
+         prev_us,
+         speed,
+         max_delay
+       ) do
     delay_us = elapsed_us - prev_us
     delay_ms = round(delay_us / 1_000 / speed)
     max_delay_ms = round(max_delay * 1_000)
@@ -241,13 +246,24 @@ defmodule Raxol.Recording.Player do
 
   defp read_key(timeout_ms) do
     case IO.getn("", 1, timeout_ms) do
-      :eof -> :quit
-      {:error, _} -> :none
-      "" -> :none
-      <<char>> -> parse_key(char)
+      :eof ->
+        :quit
+
+      {:error, _} ->
+        :none
+
+      "" ->
+        :none
+
+      <<char>> ->
+        parse_key(char)
+
       # IO.getn may return a string on some platforms
-      str when is_binary(str) and byte_size(str) > 0 -> parse_key(:binary.first(str))
-      _ -> :none
+      str when is_binary(str) and byte_size(str) > 0 ->
+        parse_key(:binary.first(str))
+
+      _ ->
+        :none
     end
   end
 
@@ -288,7 +304,11 @@ defmodule Raxol.Recording.Player do
     current_us = current_elapsed_us(state)
     current_s = Float.round(current_us / 1_000_000, 1)
     total_s = Float.round(state.total_us / 1_000_000, 1)
-    pct = if state.total_us > 0, do: round(current_us / state.total_us * 100), else: 0
+
+    pct =
+      if state.total_us > 0,
+        do: round(current_us / state.total_us * 100),
+        else: 0
 
     speed_label = format_speed(state.speed)
     pause_label = if state.paused, do: " [PAUSED]", else: ""
@@ -301,7 +321,9 @@ defmodule Raxol.Recording.Player do
     bar = String.slice(bar, 0, state.session.width)
 
     # Save cursor, move to status line, write inverted, restore cursor
-    IO.write("\e7\e[#{height};1H\e[7m#{String.pad_trailing(bar, state.session.width)}\e[0m\e8")
+    IO.write(
+      "\e7\e[#{height};1H\e[7m#{String.pad_trailing(bar, state.session.width)}\e[0m\e8"
+    )
   end
 
   defp format_speed(speed) when speed == round(speed), do: "#{round(speed)}x"
@@ -311,7 +333,8 @@ defmodule Raxol.Recording.Player do
 
   defp current_event(%{events: events, index: idx}), do: Enum.at(events, idx)
 
-  defp current_elapsed_us(%{index: idx, events: events}) when idx >= length(events) do
+  defp current_elapsed_us(%{index: idx, events: events})
+       when idx >= length(events) do
     case List.last(events) do
       {us, _, _} -> us
       nil -> 0
@@ -340,7 +363,11 @@ defmodule Raxol.Recording.Player do
   # -- Terminal mode --
 
   defp set_raw_mode do
-    old = System.cmd("stty", ["-g"], stderr_to_stdout: true) |> elem(0) |> String.trim()
+    old =
+      System.cmd("stty", ["-g"], stderr_to_stdout: true)
+      |> elem(0)
+      |> String.trim()
+
     System.cmd("stty", ["raw", "-echo"], stderr_to_stdout: true)
     # Hide cursor
     IO.write("\e[?25l")

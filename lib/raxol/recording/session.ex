@@ -20,7 +20,8 @@ defmodule Raxol.Recording.Session do
   ]
 
   @type event ::
-          {elapsed_us :: non_neg_integer(), type :: :output | :input, data :: binary()}
+          {elapsed_us :: non_neg_integer(), type :: :output | :input,
+           data :: binary()}
 
   @type t :: %__MODULE__{
           width: pos_integer(),

@@ -79,7 +79,11 @@ defmodule Mix.Tasks.Raxol.Replay do
 
     Process.sleep(500)
 
-    Player.play(path, speed: speed, max_delay: max_delay, interactive: interactive)
+    Player.play(path,
+      speed: speed,
+      max_delay: max_delay,
+      interactive: interactive
+    )
 
     Mix.shell().info([:green, "\nReplay complete.", :reset])
   end
@@ -119,9 +123,17 @@ defmodule Mix.Tasks.Raxol.Replay do
     Mix.shell().error("")
     Mix.shell().error("Options:")
     Mix.shell().error("  --speed FLOAT      Playback speed (default: 1.0)")
-    Mix.shell().error("  --max-delay SECS   Max pause between frames (default: 5.0)")
+
+    Mix.shell().error(
+      "  --max-delay SECS   Max pause between frames (default: 5.0)"
+    )
+
     Mix.shell().error("  --no-interactive   Disable keyboard controls")
-    Mix.shell().error("  --info             Print recording info without playing")
+
+    Mix.shell().error(
+      "  --info             Print recording info without playing"
+    )
+
     Mix.shell().error("")
     Mix.shell().error("Example: mix raxol.replay demo.cast --speed 2.0")
   end
