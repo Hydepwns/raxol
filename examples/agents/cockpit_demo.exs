@@ -214,11 +214,8 @@ defmodule CockpitDemo do
 
   # Phase transitions (tick-driven, 200ms per tick)
   #
-  # :title  ──(12 ticks or space)──> :running
-  # :running ──(all agents done + post_done_ticks elapsed)──> :summary
-  #
-  # Within :running, chaos crash/recovery is event-driven:
-  #   crash at tick 55, flash for 8 ticks, recover at tick 65
+  # :title  --(12 ticks or space)--> :running
+  # :running --(all done + post_done_ticks)--> :summary
   @title_ticks 12
 
   # Agent boot stagger (ticks within :running phase)
@@ -230,12 +227,11 @@ defmodule CockpitDemo do
     {25, CockpitDemo.DepChecker, :dep_checker}
   ]
 
-  # Chaos timing
+  # Crash timeline
+  @warn_start 47
   @crash_tick 55
-  @crash_flash_duration 8
-  @recover_tick 65
-
-  # How many ticks after all_done before transitioning to summary
+  @crash_flash_ticks 8
+  @recover_tick 70
   @post_done_ticks 15
 
   @sparks ~w(\u2581 \u2582 \u2583 \u2584 \u2585 \u2586 \u2587 \u2588)
@@ -340,8 +336,6 @@ defmodule CockpitDemo do
   end
 
   defp maybe_transition_to_summary(model) do
-    # Transition to summary when: all work agents done, crash recovered,
-    # and enough ticks have passed since all_done was logged.
     if model.restarted and MapSet.member?(model.done_logged, :all_done) and
          model.tick >= @recover_tick + @post_done_ticks do
       %{model | phase: :summary}
@@ -349,6 +343,31 @@ defmodule CockpitDemo do
       model
     end
   end
+
+  # -- Narrative phase (derived from tick state) --
+
+  defp narrative_phase(model) do
+    tick = model.tick
+
+    cond do
+      tick < 5 -> :init
+      tick <= 26 -> :boot
+      tick < @warn_start -> :working
+      tick < @crash_tick -> :warning
+      tick < @recover_tick -> :crash
+      not model.restarted -> :crash
+      not MapSet.member?(model.done_logged, :all_done) -> :recovery
+      true -> :complete
+    end
+  end
+
+  defp phase_display(:init), do: {"INITIALIZING", :yellow}
+  defp phase_display(:boot), do: {"AGENT BOOT", :cyan}
+  defp phase_display(:working), do: {"CONCURRENT WORK", :green}
+  defp phase_display(:warning), do: {"!! WARNING !!", :yellow}
+  defp phase_display(:crash), do: {"!! CRASH !!", :red}
+  defp phase_display(:recovery), do: {"RECOVERY", :green}
+  defp phase_display(:complete), do: {"COMPLETE", :cyan}
 
   # ============================================================
   # Views
@@ -358,7 +377,6 @@ defmodule CockpitDemo do
 
   defp title_view(model) do
     dots = String.duplicate(".", min(rem(model.tick, 4) + 1, 3))
-    # Title block is ~13 lines; center vertically in terminal
     top_pad = max(1, div(model.height - 13, 3))
 
     column style: %{padding: 0, gap: 0} do
@@ -407,7 +425,7 @@ defmodule CockpitDemo do
 
     column style: %{padding: 0, gap: 0} do
       [
-        header_bar(uptime),
+        header_bar(uptime, model),
         spacer(size: 1),
         row style: %{gap: 1} do
           [
@@ -425,15 +443,15 @@ defmodule CockpitDemo do
         spacer(size: 1),
         row style: %{gap: 1} do
           [
-            event_log_panel(model),
-            dep_checker_panel(model)
+            supervision_tree_panel(model),
+            event_log_panel(model)
           ]
         end
-        | inline_summary(model) ++
+        | recovery_proof(model) ++
             [
               bottom_spacer(
                 model.height,
-                if(show_inline_summary?(model), do: 36, else: 31)
+                if(show_recovery_proof?(model), do: 37, else: 31)
               ),
               key_bar()
             ]
@@ -455,39 +473,57 @@ defmodule CockpitDemo do
     deps_ok = (dep && dep.checked) || 0
     uptime = System.monotonic_time(:second) - model.start_time
 
-    old_chaos = fmt_pid(model.old_pids[:chaos])
-    new_chaos = fmt_pid(model.pids[:chaos])
+    old_pid =
+      if model.old_pids[:chaos],
+        do: inspect(model.old_pids[:chaos]),
+        else: "---"
+
+    new_pid =
+      if model.pids[:chaos], do: inspect(model.pids[:chaos]), else: "---"
 
     column style: %{padding: 0, gap: 0} do
       [
         box style: %{border: :double, width: :fill, padding: 0} do
-          text("  SUMMARY", style: [:bold], fg: :cyan)
+          text("  MISSION COMPLETE", style: [:bold], fg: :green)
         end,
         spacer(size: 1),
         box style: %{border: :single, width: :fill, padding: 1} do
           column style: %{gap: 0} do
             [
+              text("  What just happened:", style: [:bold]),
+              spacer(size: 1),
+              text("    5 concurrent GenServers ran real shell commands"),
+              text("    #{old_pid} was Process.exit(:kill)'d mid-task",
+                fg: :red
+              ),
+              text("    OTP supervisor auto-restarted it as #{new_pid}",
+                fg: :green
+              ),
+              text("    Restarted agent resumed work. Zero data lost.",
+                style: [:bold]
+              )
+            ]
+          end
+        end,
+        spacer(size: 1),
+        box style: %{border: :single, width: :fill, padding: 1} do
+          column style: %{gap: 0} do
+            [
+              text("  Results:", style: [:bold]),
+              spacer(size: 1),
               summary_row("Files scanned", "#{files_scanned}"),
               summary_row("Lines counted", fmt(lines)),
               summary_row("Doc coverage", "#{docs}/#{files_analyzed} modules"),
               summary_row("Dependencies", "#{deps_ok} OK"),
               summary_row("Agent crashes", "#{model.crashes}"),
               summary_row_colored("Data loss", "zero", :green),
-              summary_row(
-                "Crash recovery",
-                "#{old_chaos} -> #{new_chaos} (new PID proves restart)"
-              ),
               summary_row("Total uptime", "#{uptime}s")
             ]
           end
         end,
         spacer(size: 1),
-        text(
-          "  Demo complete. 5 agents supervised, crash recovered, work continued.",
-          style: [:bold]
-        ),
-        text("  No other terminal framework does this.", style: [:dim]),
-        bottom_spacer(model.height, 18),
+        text("  Try doing this in Python, Go, or Rust.", style: [:bold]),
+        bottom_spacer(model.height, 24),
         key_bar()
       ]
     end
@@ -497,11 +533,14 @@ defmodule CockpitDemo do
   # Panel Components
   # ============================================================
 
-  defp header_bar(uptime) do
+  defp header_bar(uptime, model) do
+    {label, pfg} = phase_display(narrative_phase(model))
+
     box style: %{border: :double, width: :fill, padding: 0} do
       row style: %{justify_content: :space_between} do
         [
           text("  RAXOL AGENT COCKPIT", style: [:bold], fg: :cyan),
+          text(">> #{label}", style: [:bold], fg: pfg),
           text("uptime #{fmt_uptime(uptime)}  ", style: [:bold])
         ]
       end
@@ -587,41 +626,59 @@ defmodule CockpitDemo do
 
   defp chaos_panel(model) do
     m = model.chaos
-    in_crash = model.tick >= @crash_tick and model.tick < @recover_tick
+    tick = model.tick
+    in_flash = tick >= @crash_tick and tick < @crash_tick + @crash_flash_ticks
 
-    flash =
-      model.tick >= @crash_tick and
-        model.tick < @crash_tick + @crash_flash_duration
+    in_restart =
+      tick >= @crash_tick + @crash_flash_ticks and tick < @recover_tick
 
     cond do
-      flash ->
+      in_flash ->
         old_pid = fmt_pid(model.old_pids[:chaos] || model.pids[:chaos])
-        crash_box(old_pid)
+        crash_box(old_pid, tick - @crash_tick)
 
-      in_crash ->
+      in_restart ->
+        dots =
+          String.duplicate(
+            ".",
+            min(rem(tick - @crash_tick - @crash_flash_ticks, 4) + 1, 3)
+          )
+
         agent_box("Chaos Worker", :crashed, nil, [
-          text("  Restarting...", fg: :yellow),
+          text("  PROCESS TERMINATED", fg: :red, style: [:bold]),
           stat_line("Crashes", "#{model.crashes}"),
-          stat_line("Status", "auto-restart")
+          text("  supervisor restarting#{dots}", fg: :yellow)
         ])
 
       m != nil ->
         status_label =
           cond do
+            m.status == :working and model.crashes > 0 -> "RECOVERED"
             m.status == :working -> "working"
-            model.crashes > 0 -> "recovered"
             true -> "#{m.status}"
+          end
+
+        status_fg =
+          if m.status == :working and model.crashes > 0, do: :green, else: nil
+
+        content = [
+          stat_line("Tasks", "#{m.tasks_done}"),
+          stat_line("Crashes", "#{model.crashes}")
+        ]
+
+        content =
+          if status_fg do
+            content ++
+              [text("  #{status_label}", style: [:bold], fg: status_fg)]
+          else
+            content ++ [stat_line("Status", status_label)]
           end
 
         agent_box(
           "Chaos Worker",
           m.status,
           model.pids[:chaos],
-          [
-            stat_line("Tasks", "#{m.tasks_done}"),
-            stat_line("Crashes", "#{model.crashes}"),
-            stat_line("Status", status_label)
-          ],
+          content,
           uptime: agent_uptime(model, :chaos)
         )
 
@@ -661,54 +718,126 @@ defmodule CockpitDemo do
     end
   end
 
-  defp dep_checker_panel(model) do
-    m = model.dep_checker
+  # -- Supervision Tree Panel (replaces Dep Checker panel) --
 
-    if m do
-      agent_box(
-        "Dep Checker",
-        m.status,
-        model.pids[:dep_checker],
+  defp supervision_tree_panel(model) do
+    in_crash = model.tick >= @crash_tick and model.tick < @recover_tick
+
+    box style: %{border: :single, width: :fill, padding: 1} do
+      column style: %{gap: 0} do
         [
-          stat_line("Deps OK", "#{m.checked}"),
-          stat_line("Status", "#{m.status}")
-        ],
-        uptime: agent_uptime(model, :dep_checker)
-      )
-    else
-      agent_box("Dep Checker", :idle, nil, [
-        text("  waiting...", style: [:dim])
-      ])
+          text("Process Tree", style: [:bold], fg: :cyan),
+          divider(char: "-"),
+          text("  DynamicSupervisor", style: [:bold])
+          | tree_nodes(model, in_crash)
+        ]
+      end
     end
   end
 
-  defp show_inline_summary?(model) do
-    MapSet.member?(model.done_logged, :all_done) and model.restarted
+  defp tree_nodes(model, in_crash) do
+    nodes =
+      List.flatten([
+        tree_node("Scanner  ", :scanner, model, false, in_crash),
+        tree_node("Analyzer ", :analyzer, model, false, in_crash),
+        tree_node("Monitor  ", :monitor, model, false, in_crash),
+        tree_node("Chaos    ", :chaos, model, false, in_crash),
+        tree_restart_node(model),
+        tree_node("DepCheck ", :dep_checker, model, true, in_crash)
+      ])
+
+    nodes
   end
 
-  defp inline_summary(model) do
-    if show_inline_summary?(model) do
-      scanner = model.scanner
-      analyzer = model.analyzer
-      dep = model.dep_checker
-      lines = (scanner && scanner.total_lines) || 0
-      files = (scanner && length(scanner.scanned)) || 0
-      docs = (analyzer && Enum.count(analyzer.results, fn {_, d} -> d end)) || 0
-      total_a = (analyzer && length(analyzer.results)) || 0
-      deps_ok = (dep && dep.checked) || 0
+  defp tree_node(name, id, model, is_last, in_crash) do
+    branch = if is_last, do: "  +-- ", else: "  |-- "
+    pid = model.pids[id]
+
+    {pid_str, dot, fg} =
+      cond do
+        id == :chaos and in_crash ->
+          old = model.old_pids[:chaos] || pid
+          pid_s = if old, do: short_pid(old), else: "---"
+          {pid_s, " X KILLED", :red}
+
+        pid != nil ->
+          {short_pid(pid), " *", :green}
+
+        MapSet.member?(model.booted, id) ->
+          {"---", " o", :yellow}
+
+        true ->
+          {"---", " -", :white}
+      end
+
+    row style: %{gap: 0} do
+      [
+        text(branch, style: [:dim]),
+        text(name, style: [:bold]),
+        text(pid_str, style: [:dim]),
+        text(dot, fg: fg)
+      ]
+    end
+  end
+
+  defp tree_restart_node(model) do
+    if model.restarted and model.old_pids[:chaos] do
+      old_pid = short_pid(model.old_pids[:chaos])
+
+      new_pid =
+        if model.pids[:chaos], do: short_pid(model.pids[:chaos]), else: "---"
+
+      [
+        row style: %{gap: 0} do
+          [
+            text("  |  +> ", style: [:dim]),
+            text(old_pid, fg: :red),
+            text(" -> ", style: [:dim]),
+            text(new_pid, fg: :green, style: [:bold]),
+            text(" restarted", style: [:dim])
+          ]
+        end
+      ]
+    else
+      []
+    end
+  end
+
+  # -- Recovery Proof --
+
+  defp show_recovery_proof?(model) do
+    model.restarted and model.old_pids[:chaos] != nil
+  end
+
+  defp recovery_proof(model) do
+    if show_recovery_proof?(model) do
+      old_pid = short_pid(model.old_pids[:chaos])
+
+      new_pid =
+        if model.pids[:chaos], do: short_pid(model.pids[:chaos]), else: "---"
+
+      bar = String.duplicate(@bar_fill, 32)
 
       [
         spacer(size: 1),
         box style: %{border: :double, width: :fill, padding: 1} do
-          row style: %{gap: 2} do
+          column style: %{gap: 0} do
             [
-              text("DONE", style: [:bold], fg: :green),
-              text("#{files} files", style: [:dim]),
-              text("#{fmt(lines)} lines", style: [:dim]),
-              text("#{docs}/#{total_a} docs", style: [:dim]),
-              text("#{deps_ok} deps", style: [:dim]),
-              text("#{model.crashes} crash", style: [:dim]),
-              text("0 data loss", style: [:bold], fg: :green)
+              row style: %{gap: 2} do
+                [
+                  text("RECOVERY PROOF", style: [:bold], fg: :green),
+                  text(old_pid, fg: :red),
+                  text("killed ->", style: [:dim]),
+                  text(new_pid, fg: :green, style: [:bold]),
+                  text("restarted", style: [:dim])
+                ]
+              end,
+              row style: %{gap: 1} do
+                [
+                  text(bar, fg: :green),
+                  text("New PID. Zero data lost.", style: [:bold])
+                ]
+              end
             ]
           end
         end
@@ -756,21 +885,24 @@ defmodule CockpitDemo do
     end
   end
 
-  defp crash_box(old_pid) do
+  defp crash_box(old_pid, flash_tick) do
+    alert = if rem(flash_tick, 2) == 0, do: "X X X", else: "! ! !"
+
     box style: %{border: :double, width: :fill, padding: 1} do
       column style: %{gap: 0} do
         [
           row style: %{gap: 1} do
             [
-              text("x", fg: :red),
-              text("Chaos Worker", style: [:bold], fg: :red)
+              text("X", fg: :red),
+              text("Chaos Worker", style: [:bold], fg: :red),
+              text("CRASHED", style: [:bold], fg: :red)
             ]
           end,
-          divider(char: "-"),
-          spacer(size: 1),
-          text("    X PROCESS KILLED X", style: [:bold], fg: :red),
+          divider(char: "="),
+          text("    #{alert}", style: [:bold], fg: :red),
+          text("    Process.exit(pid, :kill)", style: [:bold], fg: :red),
           text("    PID #{old_pid} terminated", fg: :red),
-          text("    Supervisor notified...", fg: :yellow)
+          text("    supervisor notified...", fg: :yellow)
         ]
       end
     end
@@ -844,7 +976,6 @@ defmodule CockpitDemo do
   # ============================================================
 
   defp bottom_spacer(terminal_height, content_rows) do
-    # Push key_bar to the bottom by filling remaining vertical space
     gap = max(1, terminal_height - content_rows - 1)
     spacer(size: gap)
   end
@@ -877,9 +1008,6 @@ defmodule CockpitDemo do
   end
 
   defp staggered_boot(model) do
-    # Each agent boots over 2 ticks: tick N spawns the process,
-    # tick N+1 sends :start (gives the GenServer time to register).
-
     Enum.reduce(@boot_schedule, model, fn {tick, mod, id}, st ->
       cond do
         model.tick == tick and not MapSet.member?(st.booted, id) ->
@@ -983,7 +1111,7 @@ defmodule CockpitDemo do
         )
         |> add_event(
           :recover,
-          "#{fmt_pid(old_pid)} -> #{fmt_pid(new_pid)} (restarted)"
+          "#{fmt_pid(old_pid)} -> #{fmt_pid(new_pid)} (new PID!)"
         )
 
       true ->
@@ -1000,11 +1128,20 @@ defmodule CockpitDemo do
 
   defp handle_narration(model) do
     cond do
-      model.tick == @crash_tick - 8 ->
+      model.tick == @warn_start ->
+        add_event(model, :warn, "Chaos Worker memory pressure rising...")
+
+      model.tick == @warn_start + 4 ->
         add_event(model, :warn, "Chaos Worker becoming unstable...")
 
       model.tick == @crash_tick + 2 ->
-        add_event(model, :warn, "Supervisor detected exit, restarting child...")
+        add_event(model, :warn, "Supervisor detected exit :killed")
+
+      model.tick == @crash_tick + @crash_flash_ticks ->
+        add_event(model, :warn, "Initiating automatic restart...")
+
+      model.tick == @recover_tick + 2 ->
+        add_event(model, :info, "Chaos Worker resumed with new PID")
 
       all_done?(model) and not MapSet.member?(model.done_logged, :all_done) ->
         model
