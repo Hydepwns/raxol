@@ -2,8 +2,6 @@ defmodule Raxol.Playground.Demos.LineChartDemo do
   @moduledoc false
   use Raxol.Core.Runtime.Application
 
-  alias Raxol.UI.Charts.{LineChart, ViewBridge}
-
   @impl true
   def init(_context) do
     %{tick: 0, show_legend: true, show_axes: false}
@@ -33,13 +31,15 @@ defmodule Raxol.Playground.Demos.LineChartDemo do
   def view(model) do
     series = build_series(model.tick)
 
-    cells =
-      LineChart.render({0, 0, 60, 15}, series,
+    chart_element =
+      line_chart(
+        series: series,
+        width: 60,
+        height: 15,
         show_legend: model.show_legend,
         show_axes: model.show_axes
       )
 
-    chart_element = ViewBridge.cells_to_view(cells)
     legend_label = if model.show_legend, do: "ON", else: "OFF"
     axes_label = if model.show_axes, do: "ON", else: "OFF"
 

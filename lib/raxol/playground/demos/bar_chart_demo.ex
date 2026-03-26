@@ -2,8 +2,6 @@ defmodule Raxol.Playground.Demos.BarChartDemo do
   @moduledoc false
   use Raxol.Core.Runtime.Application
 
-  alias Raxol.UI.Charts.{BarChart, ViewBridge}
-
   @labels ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
   @impl true
@@ -39,13 +37,15 @@ defmodule Raxol.Playground.Demos.BarChartDemo do
   def view(model) do
     series = [%{name: "Weekly", data: model.data, color: :cyan}]
 
-    cells =
-      BarChart.render({0, 0, 50, 12}, series,
+    chart_element =
+      bar_chart(
+        series: series,
+        width: 50,
+        height: 12,
         orientation: model.orientation,
         show_values: model.show_values
       )
 
-    chart_element = ViewBridge.cells_to_view(cells)
     values_label = if model.show_values, do: "ON", else: "OFF"
 
     labels_str =

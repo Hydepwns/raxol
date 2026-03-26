@@ -231,7 +231,7 @@ defmodule Raxol.Playground.Catalog do
       complexity: :intermediate,
       tags: ["chart", "line", "braille", "streaming"],
       code_snippet:
-        ~s'LineChart.render({0, 0, 60, 15}, series, show_legend: true)'
+        ~s'line_chart(series: series, width: 60, height: 15, show_legend: true)'
     },
     %{
       name: "BarChart",
@@ -241,7 +241,7 @@ defmodule Raxol.Playground.Catalog do
       complexity: :basic,
       tags: ["chart", "bar", "vertical", "horizontal"],
       code_snippet:
-        ~s'BarChart.render({0, 0, 50, 12}, series, orientation: :vertical)'
+        ~s'bar_chart(series: series, width: 50, height: 12, orientation: :vertical)'
     },
     %{
       name: "ScatterChart",
@@ -251,7 +251,7 @@ defmodule Raxol.Playground.Catalog do
       complexity: :intermediate,
       tags: ["chart", "scatter", "braille", "animation"],
       code_snippet:
-        ~s'ScatterChart.render({0, 0, 60, 15}, series, show_legend: true)'
+        ~s'scatter_chart(series: series, width: 60, height: 15, show_legend: true)'
     },
     %{
       name: "Heatmap",
@@ -260,7 +260,7 @@ defmodule Raxol.Playground.Catalog do
       description: "2D heatmap with color scale cycling",
       complexity: :basic,
       tags: ["chart", "heatmap", "color", "grid"],
-      code_snippet: ~s'Heatmap.render({0, 0, 48, 16}, grid, color_scale: :warm)'
+      code_snippet: ~s'heatmap(data: grid, width: 48, height: 16, color_scale: :warm)'
     }
   ]
 

@@ -2,8 +2,6 @@ defmodule Raxol.Playground.Demos.ScatterChartDemo do
   @moduledoc false
   use Raxol.Core.Runtime.Application
 
-  alias Raxol.UI.Charts.{ScatterChart, ViewBridge}
-
   @impl true
   def init(_context) do
     %{tick: 0, show_legend: true}
@@ -31,12 +29,14 @@ defmodule Raxol.Playground.Demos.ScatterChartDemo do
     series = build_series(model.tick)
     point_count = series |> Enum.map(fn s -> length(s.data) end) |> Enum.sum()
 
-    cells =
-      ScatterChart.render({0, 0, 60, 15}, series,
+    chart_element =
+      scatter_chart(
+        series: series,
+        width: 60,
+        height: 15,
         show_legend: model.show_legend
       )
 
-    chart_element = ViewBridge.cells_to_view(cells)
     legend_label = if model.show_legend, do: "ON", else: "OFF"
 
     column style: %{gap: 1} do

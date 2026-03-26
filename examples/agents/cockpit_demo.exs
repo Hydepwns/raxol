@@ -789,8 +789,8 @@ defmodule CockpitDemo do
 
     if m && map_size(m.stats) > 0 do
       s = m.stats
-      mem_spark = sparkline(m.history)
-      proc_spark = sparkline(m.proc_history)
+      mem_spark = spark_bar(m.history)
+      proc_spark = spark_bar(m.proc_history)
 
       agent_box(
         "System Monitor",
@@ -1381,9 +1381,9 @@ defmodule CockpitDemo do
   # Rendering Helpers
   # ============================================================
 
-  defp sparkline(history) when length(history) < 3, do: ""
+  defp spark_bar(history) when length(history) < 3, do: ""
 
-  defp sparkline(history) do
+  defp spark_bar(history) do
     values = Enum.reverse(Enum.take(history, 10))
     mn = Enum.min(values)
     mx = Enum.max(values)

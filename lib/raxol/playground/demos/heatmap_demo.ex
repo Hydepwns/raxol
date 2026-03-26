@@ -2,8 +2,6 @@ defmodule Raxol.Playground.Demos.HeatmapDemo do
   @moduledoc false
   use Raxol.Core.Runtime.Application
 
-  alias Raxol.UI.Charts.{Heatmap, ViewBridge}
-
   @scales [:warm, :cool, :diverging]
 
   @impl true
@@ -30,10 +28,13 @@ defmodule Raxol.Playground.Demos.HeatmapDemo do
     rows = length(model.grid)
     cols = length(hd(model.grid))
 
-    cells =
-      Heatmap.render({0, 0, 48, 16}, model.grid, color_scale: model.color_scale)
-
-    chart_element = ViewBridge.cells_to_view(cells)
+    chart_element =
+      heatmap(
+        data: model.grid,
+        width: 48,
+        height: 16,
+        color_scale: model.color_scale
+      )
 
     column style: %{gap: 1} do
       [

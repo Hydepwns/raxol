@@ -6,6 +6,13 @@ defmodule Raxol.View.Components do
   including text, boxes, rows, columns, and other layout elements.
   """
 
+  # Charts module may compile after this one
+  @compile {:no_warn_undefined, Raxol.UI.Charts.ViewBridge}
+  @compile {:no_warn_undefined, Raxol.UI.Charts.LineChart}
+  @compile {:no_warn_undefined, Raxol.UI.Charts.BarChart}
+  @compile {:no_warn_undefined, Raxol.UI.Charts.ScatterChart}
+  @compile {:no_warn_undefined, Raxol.UI.Charts.Heatmap}
+
   @doc """
   Creates a text component with the given content.
 
@@ -381,5 +388,191 @@ defmodule Raxol.View.Components do
   @spec span(binary(), keyword()) :: map()
   def span(content, opts \\ []) do
     text(Keyword.merge([content: content], opts))
+  end
+
+  # -- Chart Components --
+  # These render chart cell tuples and convert them to View DSL elements
+  # via ViewBridge, so they compose naturally in view/1 functions.
+
+  @doc """
+  Creates a braille line chart component.
+
+  ## Options
+  - `:series` - List of `%{name: string, data: list, color: atom}` (required)
+  - `:width` - Chart width in terminal columns (default: 40)
+  - `:height` - Chart height in terminal rows (default: 10)
+  - `:show_axes` - Show Y-axis labels (default: false)
+  - `:show_legend` - Show series legend (default: false)
+  - `:min` / `:max` - Y-axis range (default: :auto)
+  - `:style` - Box style for the wrapper
+  - `:id` - Optional component identifier
+  """
+  @spec line_chart(keyword() | map()) :: map()
+  def line_chart(opts \\ []) do
+    opts = if is_list(opts), do: Map.new(opts), else: opts
+    render_chart(:line, opts)
+  end
+
+  @doc """
+  Creates a block-character bar chart component.
+
+  ## Options
+  - `:series` - List of `%{name: string, data: list, color: atom}` (required)
+  - `:width` - Chart width in terminal columns (default: 40)
+  - `:height` - Chart height in terminal rows (default: 10)
+  - `:orientation` - `:vertical` or `:horizontal` (default: :vertical)
+  - `:show_axes` - Show axis labels (default: false)
+  - `:show_legend` - Show series legend (default: false)
+  - `:show_values` - Show value labels on bars (default: false)
+  - `:bar_gap` - Gap between bars within a group (default: 0)
+  - `:group_gap` - Gap between groups (default: 1)
+  - `:min` / `:max` - Value range (default: :auto)
+  - `:style` - Box style for the wrapper
+  - `:id` - Optional component identifier
+  """
+  @spec bar_chart(keyword() | map()) :: map()
+  def bar_chart(opts \\ []) do
+    opts = if is_list(opts), do: Map.new(opts), else: opts
+    render_chart(:bar, opts)
+  end
+
+  @doc """
+  Creates a braille scatter plot component.
+
+  ## Options
+  - `:series` - List of `%{name: string, data: [{x, y}], color: atom}` (required)
+  - `:width` - Chart width in terminal columns (default: 40)
+  - `:height` - Chart height in terminal rows (default: 10)
+  - `:show_axes` - Show axis labels (default: false)
+  - `:show_legend` - Show series legend (default: false)
+  - `:x_range` / `:y_range` - Axis ranges as `{min, max}` or `:auto` (default: :auto)
+  - `:style` - Box style for the wrapper
+  - `:id` - Optional component identifier
+  """
+  @spec scatter_chart(keyword() | map()) :: map()
+  def scatter_chart(opts \\ []) do
+    opts = if is_list(opts), do: Map.new(opts), else: opts
+    render_chart(:scatter, opts)
+  end
+
+  @doc """
+  Creates a heatmap component.
+
+  ## Options
+  - `:data` - 2D grid as `[[number]]` row-major (required)
+  - `:width` - Chart width in terminal columns (default: 40)
+  - `:height` - Chart height in terminal rows (default: 10)
+  - `:color_scale` - `:warm`, `:cool`, `:diverging`, or `fn/3` (default: :warm)
+  - `:show_values` - Show value labels in cells (default: false)
+  - `:min` / `:max` - Value range (default: :auto)
+  - `:style` - Box style for the wrapper
+  - `:id` - Optional component identifier
+  """
+  @spec heatmap(keyword() | map()) :: map()
+  def heatmap(opts \\ []) do
+    opts = if is_list(opts), do: Map.new(opts), else: opts
+    render_chart(:heatmap, opts)
+  end
+
+  @doc """
+  Creates a minimal sparkline (line chart with no axes or legend).
+
+  ## Options
+  - `:data` - List of numbers (required)
+  - `:width` - Width in terminal columns (default: 20)
+  - `:height` - Height in terminal rows (default: 3)
+  - `:color` - Line color (default: :cyan)
+  - `:min` / `:max` - Y-axis range (default: :auto)
+  - `:style` - Box style for the wrapper
+  - `:id` - Optional component identifier
+  """
+  @spec sparkline(keyword() | map()) :: map()
+  def sparkline(opts \\ []) do
+    opts = if is_list(opts), do: Map.new(opts), else: opts
+
+    data = Map.get(opts, :data, [])
+    color = Map.get(opts, :color, :cyan)
+    series = [%{name: "spark", data: data, color: color}]
+
+    chart_opts =
+      opts
+      |> Map.put(:series, series)
+      |> Map.put(:show_axes, false)
+      |> Map.put(:show_legend, false)
+
+    render_chart(:line, chart_opts)
+  end
+
+  # -- Chart rendering internals --
+
+  defp render_chart(chart_type, opts) do
+    w = Map.get(opts, :width, 40)
+    h = Map.get(opts, :height, 10)
+    style = Map.get(opts, :style, %{})
+    region = {0, 0, w, h}
+
+    chart_opts = chart_render_opts(chart_type, opts)
+
+    cells =
+      case chart_type do
+        :line ->
+          Raxol.UI.Charts.LineChart.render(region, Map.get(opts, :series, []), chart_opts)
+
+        :bar ->
+          Raxol.UI.Charts.BarChart.render(region, Map.get(opts, :series, []), chart_opts)
+
+        :scatter ->
+          Raxol.UI.Charts.ScatterChart.render(region, Map.get(opts, :series, []), chart_opts)
+
+        :heatmap ->
+          Raxol.UI.Charts.Heatmap.render(region, Map.get(opts, :data, []), chart_opts)
+      end
+
+    view = Raxol.UI.Charts.ViewBridge.cells_to_view(cells, style: style)
+
+    case Map.get(opts, :id) do
+      nil -> view
+      id -> Map.put(view, :id, id)
+    end
+  end
+
+  defp chart_render_opts(:line, opts) do
+    [
+      show_axes: Map.get(opts, :show_axes, false),
+      show_legend: Map.get(opts, :show_legend, false),
+      min: Map.get(opts, :min, :auto),
+      max: Map.get(opts, :max, :auto)
+    ]
+  end
+
+  defp chart_render_opts(:bar, opts) do
+    [
+      orientation: Map.get(opts, :orientation, :vertical),
+      show_axes: Map.get(opts, :show_axes, false),
+      show_legend: Map.get(opts, :show_legend, false),
+      show_values: Map.get(opts, :show_values, false),
+      bar_gap: Map.get(opts, :bar_gap, 0),
+      group_gap: Map.get(opts, :group_gap, 1),
+      min: Map.get(opts, :min, :auto),
+      max: Map.get(opts, :max, :auto)
+    ]
+  end
+
+  defp chart_render_opts(:scatter, opts) do
+    [
+      show_axes: Map.get(opts, :show_axes, false),
+      show_legend: Map.get(opts, :show_legend, false),
+      x_range: Map.get(opts, :x_range, :auto),
+      y_range: Map.get(opts, :y_range, :auto)
+    ]
+  end
+
+  defp chart_render_opts(:heatmap, opts) do
+    [
+      color_scale: Map.get(opts, :color_scale, :warm),
+      show_values: Map.get(opts, :show_values, false),
+      min: Map.get(opts, :min, :auto),
+      max: Map.get(opts, :max, :auto)
+    ]
   end
 end

@@ -362,6 +362,13 @@ defmodule Raxol.Core.Renderer.View do
   defdelegate tabs(opts \\ []), to: Raxol.View.Components
   defdelegate span(content, opts \\ []), to: Raxol.View.Components
 
+  # Chart components
+  defdelegate line_chart(opts \\ []), to: Raxol.View.Components
+  defdelegate bar_chart(opts \\ []), to: Raxol.View.Components
+  defdelegate scatter_chart(opts \\ []), to: Raxol.View.Components
+  defdelegate heatmap(opts \\ []), to: Raxol.View.Components
+  defdelegate sparkline(opts \\ []), to: Raxol.View.Components
+
   # Helper functions for keyword validation (public for macro usage)
 
   def validate_keyword_opts(opts, function_name) do

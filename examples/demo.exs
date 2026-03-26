@@ -193,7 +193,7 @@ defmodule RaxolDemo do
           text("  Used     #{mem.used} MB"),
           text("  Binary   #{mem.binary} MB"),
           spacer(size: 1),
-          text("  #{sparkline(model.mem_history)}", fg: :cyan),
+          text("  #{spark_bar(model.mem_history)}", fg: :cyan),
           spacer(size: 1),
           row style: %{gap: 1} do
             [
@@ -405,7 +405,7 @@ defmodule RaxolDemo do
 
   # -- Rendering Helpers --
 
-  defp sparkline(values) do
+  defp spark_bar(values) do
     max_val = Enum.max(values ++ [1])
 
     values
