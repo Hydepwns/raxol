@@ -33,7 +33,7 @@ defmodule Raxol.Terminal.ImageCache do
   def start do
     case :ets.whereis(@table) do
       :undefined ->
-        :ets.new(@table, [:set, :public, :named_table, read_concurrency: true])
+        _ = :ets.new(@table, [:set, :public, :named_table, read_concurrency: true])
         :ok
 
       _ref ->

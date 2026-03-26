@@ -5,7 +5,7 @@
   #
   # Only truly unfixable warnings are suppressed here. Each is documented.
   #
-  # Total suppressed: ~20 warnings
+  # Total suppressed: ~40 warnings
   # Last updated: 2026-03
   #
   # ================================================================================
@@ -54,5 +54,24 @@
   # ------------------------------------------------------------------------------
   # ExUnit.CaseTemplate macro expansion generates an unreachable false/true
   # branch. Cannot be fixed without removing the macro.
-  ~r"test_utils\.ex:\d+:pattern_match"
+  ~r"test_utils\.ex:\d+:pattern_match",
+
+  # ------------------------------------------------------------------------------
+  # PROTOCOL FALLBACK IMPLEMENTATIONS (core_protocols) -- 13 warnings
+  # ------------------------------------------------------------------------------
+  # @fallback_to_any protocol impls return only default/error values, but
+  # protocol specs describe the full contract for concrete implementations.
+  # Dialyzer correctly flags that Any impls never produce :ok/:error variants.
+  ~r"core_protocols\.ex:\d+:extra_range",
+  ~r"core_protocols\.ex:\d+:contract_supertype",
+
+  # ------------------------------------------------------------------------------
+  # BROAD PUBLIC API SPECS (contract_supertype) -- 5 warnings
+  # ------------------------------------------------------------------------------
+  # Dialyzer narrows return types beyond what the public API intends.
+  # e.g., t() vs exact struct literal, String.t() vs binary(), broad params
+  # vs specific matched patterns. Specs are intentionally broader.
+  ~r"app_templates\.ex:\d+:contract_supertype",
+  ~r"sixel_graphics\.ex:\d+:contract_supertype",
+  ~r"chart_utils\.ex:\d+:contract_supertype"
 ]

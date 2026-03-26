@@ -180,7 +180,8 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
       debug_mode:
         Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false)),
       plugin_manager: pm_pid,
-      command_registry_table: registry_table
+      command_registry_table: registry_table,
+      time_travel: Keyword.get(options, :time_travel_pid)
     }
 
     environment = Keyword.get(options, :environment, :terminal)

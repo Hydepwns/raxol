@@ -129,6 +129,14 @@ lib/raxol/
 │   ├── layout_transition.ex   # Pure functional layout interpolation (lerp + easing)
 │   ├── feedback_loop.ex       # GenServer: accept/reject tracking + accuracy computation
 │   └── supervisor.ex          # one_for_one: BehaviorTracker, LayoutRecommender, FeedbackLoop
+├── debug/           # Time-travel debugger (snapshot TEA state per update cycle)
+│   ├── snapshot.ex  # Snapshot struct + recursive map diff
+│   └── time_travel.ex # GenServer: CircularBuffer history, cursor nav, restore, export/import
+├── recording/       # Session recording & replay (Asciinema v2 format)
+│   ├── recorder.ex  # GenServer: captures output/input events with timestamps
+│   ├── session.ex   # Session data struct (dimensions, events, metadata)
+│   ├── player.ex    # Streaming replay with pause/seek/speed controls
+│   └── asciicast.ex # Asciinema v2 .cast file format I/O
 ├── sensor/          # Sensor fusion and HUD rendering
 │   ├── behaviour.ex # Sensor behaviour + Reading struct
 │   ├── feed.ex      # GenServer: polling, buffering, error escalation
@@ -239,7 +247,6 @@ Configuration: `fly.toml`, Dockerfile: `docker/Dockerfile.web`
 - Plugin docs: `docs/plugins/GUIDE.md`
 - `AGENTS.md` contains the improvement roadmap, competitive analysis, and implementation plan
 - HEEx terminal compilation (`compile_heex_for_terminal`) is experimental/naive
-- CQRS and EventSourcing remain entangled with core terminal code (too coupled to remove without core rewrite)
 
 <!-- usage-rules-start -->
 <!-- usage_rules-start -->

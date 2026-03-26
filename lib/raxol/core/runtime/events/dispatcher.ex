@@ -37,7 +37,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
               command_module: Raxol.Core.Runtime.Command,
               view_tree: nil,
               layout: [],
-              rendering_engine: nil
+              rendering_engine: nil,
+              time_travel: nil
   end
 
   # BaseManager provides start_link/1 and start_link/2 automatically
@@ -74,7 +75,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       command_registry_table: initial_state.command_registry_table,
       rendering_engine: Map.get(initial_state, :rendering_engine),
       current_theme_id: UserPreferences.get_theme_id(),
-      command_module: command_module
+      command_module: command_module,
+      time_travel: Map.get(initial_state, :time_travel)
     }
 
     send(runtime_pid, {:runtime_initialized, self()})
@@ -173,9 +175,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   defp process_app_update(state, message, event) do
+    old_model = state.model
+
     case Application.delegate_update(state.app_module, message, state.model) do
       {updated_model, commands}
       when is_map(updated_model) and is_list(commands) ->
+        maybe_record_time_travel(state.time_travel, message, old_model, updated_model)
         process_successful_update(state, updated_model, commands)
 
       {:error, reason} ->
@@ -425,6 +430,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         state
       ) do
     {:noreply, %{state | plugin_manager_struct: updated}}
+  end
+
+  @impl true
+  def handle_manager_cast({:restore_model, model}, state) when is_map(model) do
+    send(state.runtime_pid, :render_needed)
+    {:noreply, %{state | model: model}}
   end
 
   @impl true
@@ -782,6 +793,18 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   defp hit_test(_x, _y, _), do: :miss
+
+  # -- Time-travel debugging hook --
+
+  defp maybe_record_time_travel(nil, _message, _old, _new), do: :ok
+
+  defp maybe_record_time_travel(pid, message, old_model, new_model) when is_pid(pid) do
+    if Process.alive?(pid) do
+      Raxol.Debug.TimeTravel.record(pid, message, old_model, new_model)
+    end
+  end
+
+  defp maybe_record_time_travel(_other, _message, _old, _new), do: :ok
 
   # -- Session recording hook --
 

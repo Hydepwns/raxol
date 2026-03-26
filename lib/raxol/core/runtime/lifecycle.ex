@@ -36,6 +36,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
               driver_pid: nil,
               rendering_engine_pid: nil,
               code_reloader_pid: nil,
+              time_travel_pid: nil,
               model: %{},
               dispatcher_ready: false,
               plugin_manager_ready: false
@@ -79,9 +80,13 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       "[#{__MODULE__}] initializing for #{inspect(app_module)} with options: #{inspect(options)}"
     )
 
+    options = maybe_start_time_travel(options)
+
     case Initializer.initialize_all(app_module, options) do
       {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid,
        driver_pid, rendering_engine_pid} ->
+        maybe_set_time_travel_dispatcher(options, dispatcher_pid)
+
         state =
           build_initial_state(
             app_module,
@@ -117,6 +122,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
          rendering_engine_pid
        ) do
     code_reloader_pid = Initializer.maybe_start_code_reloader(self())
+    time_travel_pid = Keyword.get(options, :time_travel_pid)
 
     %State{
       app_module: app_module,
@@ -133,6 +139,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       driver_pid: driver_pid,
       rendering_engine_pid: rendering_engine_pid,
       code_reloader_pid: code_reloader_pid,
+      time_travel_pid: time_travel_pid,
       model: initialized_model,
       dispatcher_ready: false,
       plugin_manager_ready: pm_pid == nil
@@ -197,6 +204,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       "[#{__MODULE__}] Received :shutdown cast for #{inspect(state.app_name)}. Stopping dependent processes..."
     )
 
+    Shutdown.stop_process(state.time_travel_pid, "TimeTravel")
     Shutdown.stop_process(state.code_reloader_pid, "CodeReloader")
     Shutdown.stop_process(state.rendering_engine_pid, "Rendering Engine")
     Shutdown.stop_process(state.driver_pid, "Terminal Driver")
@@ -326,6 +334,56 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   defp trigger_initial_render(_state), do: :ok
+
+  # -- Time-travel debugging --
+
+  defp maybe_start_time_travel(options) do
+    case Keyword.get(options, :time_travel) do
+      nil ->
+        options
+
+      false ->
+        options
+
+      true ->
+        start_time_travel_server(options, [])
+
+      tt_opts when is_list(tt_opts) ->
+        start_time_travel_server(options, tt_opts)
+
+      _ ->
+        options
+    end
+  end
+
+  defp start_time_travel_server(options, tt_opts) do
+    case Raxol.Debug.TimeTravel.start_link(tt_opts) do
+      {:ok, pid} ->
+        Log.info_with_context("[#{__MODULE__}] TimeTravel debugger started: #{inspect(pid)}")
+        Keyword.put(options, :time_travel_pid, pid)
+
+      {:error, reason} ->
+        Log.warning_with_context(
+          "[#{__MODULE__}] TimeTravel failed to start: #{inspect(reason)}",
+          %{}
+        )
+
+        options
+    end
+  end
+
+  # The TimeTravel GenServer needs the dispatcher pid to send :restore_model,
+  # but the dispatcher is started after TimeTravel. Wire it up after both exist.
+  defp maybe_set_time_travel_dispatcher(options, dispatcher_pid) do
+    case Keyword.get(options, :time_travel_pid) do
+      pid when is_pid(pid) ->
+        # Update the TimeTravel server's internal dispatcher reference
+        GenServer.cast(pid, {:set_dispatcher, dispatcher_pid})
+
+      _ ->
+        :ok
+    end
+  end
 
   # Helper functions
 
