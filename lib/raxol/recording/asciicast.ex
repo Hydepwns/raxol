@@ -57,6 +57,9 @@ defmodule Raxol.Recording.Asciicast do
       height: header["height"],
       started_at: parse_timestamp(header["timestamp"]),
       title: header["title"],
+      command: header["command"],
+      idle_time_limit: header["idle_time_limit"],
+      theme: header["theme"],
       env: header["env"] || %{},
       events: events
     }
@@ -65,24 +68,24 @@ defmodule Raxol.Recording.Asciicast do
   # -- Private --
 
   defp encode_header(%Session{} = s) do
-    header = %{
+    %{
       "version" => 2,
       "width" => s.width,
       "height" => s.height,
       "timestamp" => DateTime.to_unix(s.started_at)
     }
-
-    header =
-      header
-      |> maybe_put("title", s.title)
-      |> maybe_put("env", if(s.env == %{}, do: nil, else: s.env))
-
-    Jason.encode!(header)
+    |> maybe_put("title", s.title)
+    |> maybe_put("command", s.command)
+    |> maybe_put("idle_time_limit", s.idle_time_limit)
+    |> maybe_put("theme", s.theme)
+    |> maybe_put("env", if(s.env == %{}, do: nil, else: s.env))
+    |> Jason.encode!()
   end
 
-  defp encode_event({elapsed_us, :output, data}) do
+  defp encode_event({elapsed_us, type, data}) do
     seconds = elapsed_us / 1_000_000
-    Jason.encode!([seconds, "o", data])
+    type_str = if type == :input, do: "i", else: "o"
+    Jason.encode!([seconds, type_str, data])
   end
 
   defp decode_event(line) do

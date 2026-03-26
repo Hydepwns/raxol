@@ -1,14 +1,18 @@
 defmodule Raxol.Recording.Recorder do
   @moduledoc """
-  GenServer that captures terminal output during a live Raxol session.
+  GenServer that captures terminal output and input during a live Raxol session.
 
   Registers itself as `Raxol.Recording.Recorder` so the rendering engine
-  can send output frames via `record_output/2`. Accumulates timestamped
-  events for later serialization.
+  can send output frames via `record_output/2` and the dispatcher can send
+  input events via `record_input/2`. Accumulates timestamped events for
+  later serialization.
+
+  When `:auto_save` is provided, periodically flushes the session to disk
+  so data is preserved if the app crashes.
 
   ## Usage
 
-      {:ok, pid} = Recorder.start_link(title: "My Demo")
+      {:ok, pid} = Recorder.start_link(title: "My Demo", auto_save: "demo.cast")
       # ... run app, output is captured automatically ...
       session = Recorder.stop(pid)
       Asciicast.write!(session, "demo.cast")
@@ -16,7 +20,9 @@ defmodule Raxol.Recording.Recorder do
 
   use GenServer
 
-  alias Raxol.Recording.Session
+  alias Raxol.Recording.{Asciicast, Session}
+
+  @flush_interval_ms 10_000
 
   # -- Client API --
 
@@ -30,6 +36,12 @@ defmodule Raxol.Recording.Recorder do
   @spec record_output(pid() | atom(), binary()) :: :ok
   def record_output(pid \\ __MODULE__, data) when is_binary(data) do
     GenServer.cast(pid, {:output, data})
+  end
+
+  @doc "Records an input event. Called by the event dispatcher."
+  @spec record_input(pid() | atom(), binary()) :: :ok
+  def record_input(pid \\ __MODULE__, data) when is_binary(data) do
+    GenServer.cast(pid, {:input, data})
   end
 
   @doc "Stops recording and returns the completed session."
@@ -56,26 +68,83 @@ defmodule Raxol.Recording.Recorder do
   def init(opts) do
     session = Session.new(opts)
     start_mono = System.monotonic_time(:microsecond)
+    auto_save = Keyword.get(opts, :auto_save)
 
-    {:ok, %{session: session, start_mono: start_mono}}
+    if auto_save do
+      schedule_flush()
+    end
+
+    {:ok, %{session: session, start_mono: start_mono, auto_save: auto_save}}
   end
 
   @impl true
   def handle_cast({:output, data}, state) do
-    elapsed = System.monotonic_time(:microsecond) - state.start_mono
-    event = {elapsed, :output, data}
-    session = %{state.session | events: state.session.events ++ [event]}
-    {:noreply, %{state | session: session}}
+    {:noreply, append_event(state, :output, data)}
+  end
+
+  @impl true
+  def handle_cast({:input, data}, state) do
+    {:noreply, append_event(state, :input, data)}
   end
 
   @impl true
   def handle_call(:get_session, _from, state) do
-    {:reply, state.session, state}
+    session = %{state.session | events: Enum.reverse(state.session.events)}
+    {:reply, session, state}
   end
 
   @impl true
   def handle_call(:stop, _from, state) do
-    session = %{state.session | ended_at: DateTime.utc_now()}
+    session = finalize_session(state)
+
+    if state.auto_save do
+      Asciicast.write!(session, state.auto_save)
+    end
+
     {:stop, :normal, session, state}
+  end
+
+  @impl true
+  def handle_info(:flush, state) do
+    if state.auto_save do
+      flush_to_disk(state)
+      schedule_flush()
+    end
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info(_msg, state), do: {:noreply, state}
+
+  @impl true
+  def terminate(_reason, state) do
+    if state.auto_save do
+      flush_to_disk(state)
+    end
+  end
+
+  # -- Private --
+
+  defp append_event(state, type, data) do
+    elapsed = System.monotonic_time(:microsecond) - state.start_mono
+    event = {elapsed, type, data}
+    session = %{state.session | events: [event | state.session.events]}
+    %{state | session: session}
+  end
+
+  defp finalize_session(state) do
+    %{state.session | ended_at: DateTime.utc_now(), events: Enum.reverse(state.session.events)}
+  end
+
+  defp flush_to_disk(state) do
+    session = %{state.session | events: Enum.reverse(state.session.events)}
+    Asciicast.write!(session, state.auto_save)
+  rescue
+    _ -> :ok
+  end
+
+  defp schedule_flush do
+    Process.send_after(self(), :flush, @flush_interval_ms)
   end
 end

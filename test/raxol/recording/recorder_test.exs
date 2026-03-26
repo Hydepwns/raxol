@@ -72,6 +72,35 @@ defmodule Raxol.Recording.RecorderTest do
     end
   end
 
+  describe "record_input/2" do
+    test "accumulates input events" do
+      {:ok, _pid} = Recorder.start_link()
+
+      Recorder.record_input("a")
+      Recorder.record_input("b")
+
+      session = Recorder.get_session()
+      assert length(session.events) == 2
+
+      types = Enum.map(session.events, fn {_t, type, _data} -> type end)
+      assert types == [:input, :input]
+    end
+
+    test "interleaves with output events in order" do
+      {:ok, _pid} = Recorder.start_link()
+
+      Recorder.record_output("frame 1")
+      Process.sleep(1)
+      Recorder.record_input("key")
+      Process.sleep(1)
+      Recorder.record_output("frame 2")
+
+      session = Recorder.get_session()
+      types = Enum.map(session.events, fn {_t, type, _data} -> type end)
+      assert types == [:output, :input, :output]
+    end
+  end
+
   describe "stop/1" do
     test "returns completed session with ended_at" do
       {:ok, _pid} = Recorder.start_link(title: "Stop Test")
@@ -87,6 +116,52 @@ defmodule Raxol.Recording.RecorderTest do
       {:ok, _pid} = Recorder.start_link()
       Recorder.stop()
       refute Recorder.active?()
+    end
+  end
+
+  describe "auto_save" do
+    @tag :tmp_dir
+    test "writes file on stop", %{tmp_dir: dir} do
+      path = Path.join(dir, "auto.cast")
+      {:ok, _pid} = Recorder.start_link(auto_save: path)
+      Recorder.record_output("hello")
+
+      Recorder.stop()
+
+      assert File.exists?(path)
+      content = File.read!(path)
+      assert content =~ "hello"
+    end
+
+    @tag :tmp_dir
+    test "flush writes partial session to disk", %{tmp_dir: dir} do
+      path = Path.join(dir, "flush.cast")
+      {:ok, pid} = Recorder.start_link(auto_save: path)
+      Recorder.record_output("partial")
+
+      # Trigger flush manually
+      send(pid, :flush)
+      # Sync with genserver to ensure flush processed
+      _ = Recorder.get_session()
+
+      assert File.exists?(path)
+      content = File.read!(path)
+      assert content =~ "partial"
+    end
+
+    @tag :tmp_dir
+    test "terminate flushes to disk", %{tmp_dir: dir} do
+      path = Path.join(dir, "terminate.cast")
+      {:ok, pid} = Recorder.start_link(auto_save: path)
+      Recorder.record_output("crash data")
+
+      # Unlink so :shutdown doesn't kill the test process
+      Process.unlink(pid)
+      GenServer.stop(pid, :shutdown)
+
+      assert File.exists?(path)
+      content = File.read!(path)
+      assert content =~ "crash data"
     end
   end
 end

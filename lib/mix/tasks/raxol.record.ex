@@ -29,7 +29,8 @@ defmodule Mix.Tasks.Raxol.Record do
   @switches [
     module: :string,
     output: :string,
-    title: :string
+    title: :string,
+    idle_time_limit: :float
   ]
 
   @aliases [
@@ -66,7 +67,11 @@ defmodule Mix.Tasks.Raxol.Record do
     Mix.shell().info("Output: #{output}")
     Mix.shell().info("Press 'q' or Ctrl+C to stop recording.\n")
 
-    {:ok, _recorder} = Recorder.start_link(title: title)
+    recorder_opts =
+      [title: title, command: "mix raxol.record -m #{module_str}", auto_save: output]
+      |> maybe_add_opt(opts, :idle_time_limit)
+
+    {:ok, _recorder} = Recorder.start_link(recorder_opts)
     {:ok, pid} = Raxol.start_link(module, [])
     ref = Process.monitor(pid)
 
@@ -96,6 +101,13 @@ defmodule Mix.Tasks.Raxol.Record do
     |> List.last()
     |> Macro.underscore()
     |> Kernel.<>(".cast")
+  end
+
+  defp maybe_add_opt(acc, opts, key) do
+    case Keyword.get(opts, key) do
+      nil -> acc
+      val -> Keyword.put(acc, key, val)
+    end
   end
 
   defp print_usage do

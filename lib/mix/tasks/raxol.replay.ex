@@ -7,7 +7,7 @@ defmodule Mix.Tasks.Raxol.Replay do
       mix raxol.replay demo.cast
       mix raxol.replay demo.cast --speed 2.0
       mix raxol.replay demo.cast --speed 0.5
-      mix raxol.replay demo.cast --max-delay 2.0
+      mix raxol.replay demo.cast --no-interactive
 
   ## Options
 
@@ -15,7 +15,16 @@ defmodule Mix.Tasks.Raxol.Replay do
       2.0 plays at double speed, 0.5 at half speed.
     * `--max-delay` - Maximum pause between frames in seconds (default: 5.0).
       Prevents long idle gaps from stalling replay.
+    * `--no-interactive` - Disable keyboard controls (simple playback).
     * `--info` - Print recording info without playing.
+
+  ## Controls (interactive mode)
+
+    * `space` - Pause / resume
+    * `+` / `-` - Increase / decrease speed
+    * `>` / `<` - Skip forward / backward 5 seconds
+    * `0`..`9` - Jump to 0%-90% of recording
+    * `q` / `ESC` - Quit
 
   Files are asciinema v2 format, compatible with `asciinema play`.
   """
@@ -29,7 +38,8 @@ defmodule Mix.Tasks.Raxol.Replay do
   @switches [
     speed: :float,
     max_delay: :float,
-    info: :boolean
+    info: :boolean,
+    interactive: :boolean
   ]
 
   @aliases [s: :speed]
@@ -56,14 +66,20 @@ defmodule Mix.Tasks.Raxol.Replay do
   defp replay(path, opts) do
     speed = Keyword.get(opts, :speed, 1.0)
     max_delay = Keyword.get(opts, :max_delay, 5.0)
+    interactive = Keyword.get(opts, :interactive, true)
 
     speed_label = if speed != 1.0, do: " (#{speed}x)", else: ""
     Mix.shell().info([:cyan, "Replaying #{path}#{speed_label}...", :reset])
-    Mix.shell().info("Press Ctrl+C to stop.\n")
+
+    if interactive do
+      Mix.shell().info("Controls: space=pause +/-=speed </>:seek q=quit\n")
+    else
+      Mix.shell().info("Press Ctrl+C to stop.\n")
+    end
 
     Process.sleep(500)
 
-    Player.play(path, speed: speed, max_delay: max_delay)
+    Player.play(path, speed: speed, max_delay: max_delay, interactive: interactive)
 
     Mix.shell().info([:green, "\nReplay complete.", :reset])
   end
@@ -72,37 +88,40 @@ defmodule Mix.Tasks.Raxol.Replay do
     session = Asciicast.read!(path)
 
     Mix.shell().info([:bright, "Recording: ", :reset, path])
-    Mix.shell().info("  Size:     #{session.width}x#{session.height}")
+    Mix.shell().info("  Size:      #{session.width}x#{session.height}")
 
     Mix.shell().info(
-      "  Duration: #{Float.round(Session.duration(session), 1)}s"
+      "  Duration:  #{Float.round(Session.duration(session), 1)}s"
     )
 
-    Mix.shell().info("  Events:   #{Session.event_count(session)}")
+    Mix.shell().info("  Events:    #{Session.event_count(session)}")
 
     if session.title do
-      Mix.shell().info("  Title:    #{session.title}")
+      Mix.shell().info("  Title:     #{session.title}")
+    end
+
+    if session.command do
+      Mix.shell().info("  Command:   #{session.command}")
     end
 
     if session.started_at do
-      Mix.shell().info("  Recorded: #{DateTime.to_string(session.started_at)}")
+      Mix.shell().info("  Recorded:  #{DateTime.to_string(session.started_at)}")
     end
 
     env_term = get_in(session.env, ["TERM"]) || "unknown"
+    env_shell = get_in(session.env, ["SHELL"]) || "unknown"
     Mix.shell().info("  Terminal:  #{env_term}")
+    Mix.shell().info("  Shell:     #{env_shell}")
   end
 
   defp print_usage do
     Mix.shell().error("Usage: mix raxol.replay FILE [options]")
     Mix.shell().error("")
     Mix.shell().error("Options:")
-    Mix.shell().error("  --speed FLOAT    Playback speed (default: 1.0)")
-
-    Mix.shell().error(
-      "  --max-delay SECS Max pause between frames (default: 5.0)"
-    )
-
-    Mix.shell().error("  --info           Print recording info without playing")
+    Mix.shell().error("  --speed FLOAT      Playback speed (default: 1.0)")
+    Mix.shell().error("  --max-delay SECS   Max pause between frames (default: 5.0)")
+    Mix.shell().error("  --no-interactive   Disable keyboard controls")
+    Mix.shell().error("  --info             Print recording info without playing")
     Mix.shell().error("")
     Mix.shell().error("Example: mix raxol.replay demo.cast --speed 2.0")
   end

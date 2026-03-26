@@ -343,6 +343,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       "[Dispatcher] handle_cast :dispatch event: #{inspect(event)}"
     )
 
+    # Record input events for session recording (zero-coupling)
+    maybe_record_input(event)
+
     # Delegate to the main event handling logic using do_dispatch_event
     case do_dispatch_event(event, state) do
       {:ok, new_state, _commands} ->
@@ -774,4 +777,29 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   defp hit_test(_x, _y, _), do: :miss
+
+  # -- Session recording hook --
+
+  defp maybe_record_input(%Event{type: :key, data: data}) do
+    if pid = Process.whereis(Raxol.Recording.Recorder) do
+      input_str = key_event_to_string(data)
+      Raxol.Recording.Recorder.record_input(pid, input_str)
+    end
+  end
+
+  defp maybe_record_input(_event), do: :ok
+
+  defp key_event_to_string(%{key: key}) when is_integer(key) and key in 32..126 do
+    <<key>>
+  end
+
+  defp key_event_to_string(%{key: key}) when is_atom(key) do
+    to_string(key)
+  end
+
+  defp key_event_to_string(%{key: key}) when is_integer(key) do
+    inspect(key)
+  end
+
+  defp key_event_to_string(_), do: ""
 end

@@ -3,6 +3,9 @@ defmodule Raxol.Recording.PlayerTest do
 
   alias Raxol.Recording.{Player, Session}
 
+  # Tests use non-interactive mode to avoid stty/raw terminal in CI
+  @play_opts [interactive: false]
+
   describe "play/2" do
     test "plays empty session without error" do
       session = %Session{
@@ -12,7 +15,7 @@ defmodule Raxol.Recording.PlayerTest do
         events: []
       }
 
-      assert :ok = Player.play(session)
+      assert :ok = Player.play(session, @play_opts)
     end
 
     test "plays session with events" do
@@ -26,7 +29,7 @@ defmodule Raxol.Recording.PlayerTest do
         ]
       }
 
-      assert :ok = Player.play(session, speed: 100.0)
+      assert :ok = Player.play(session, [speed: 100.0] ++ @play_opts)
     end
 
     @tag :tmp_dir
@@ -41,7 +44,7 @@ defmodule Raxol.Recording.PlayerTest do
 
       File.write!(path, content)
 
-      assert :ok = Player.play(path, speed: 100.0)
+      assert :ok = Player.play(path, [speed: 100.0] ++ @play_opts)
     end
 
     test "respects speed multiplier" do
@@ -56,7 +59,7 @@ defmodule Raxol.Recording.PlayerTest do
       }
 
       # At 100x speed, 100ms delay becomes 1ms
-      {time_us, :ok} = :timer.tc(fn -> Player.play(session, speed: 100.0) end)
+      {time_us, :ok} = :timer.tc(fn -> Player.play(session, [speed: 100.0] ++ @play_opts) end)
       assert time_us < 500_000
     end
   end

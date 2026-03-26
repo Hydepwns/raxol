@@ -3,7 +3,7 @@ defmodule Raxol.Recording.Session do
   Data structure for a recorded terminal session.
 
   Contains metadata (dimensions, timestamps, environment) and a list of
-  timestamped output events captured during recording.
+  timestamped output and input events captured during recording.
   """
 
   defstruct [
@@ -12,12 +12,15 @@ defmodule Raxol.Recording.Session do
     :started_at,
     :ended_at,
     :title,
+    :command,
+    :idle_time_limit,
+    :theme,
     :env,
     events: []
   ]
 
   @type event ::
-          {elapsed_us :: non_neg_integer(), type :: :output, data :: binary()}
+          {elapsed_us :: non_neg_integer(), type :: :output | :input, data :: binary()}
 
   @type t :: %__MODULE__{
           width: pos_integer(),
@@ -25,6 +28,9 @@ defmodule Raxol.Recording.Session do
           started_at: DateTime.t(),
           ended_at: DateTime.t() | nil,
           title: String.t() | nil,
+          command: String.t() | nil,
+          idle_time_limit: number() | nil,
+          theme: map() | nil,
           env: map(),
           events: [event()]
         }
@@ -39,7 +45,10 @@ defmodule Raxol.Recording.Session do
       height: Keyword.get(opts, :height, height),
       started_at: DateTime.utc_now(),
       title: Keyword.get(opts, :title),
-      env: %{"TERM" => System.get_env("TERM", "xterm-256color")},
+      command: Keyword.get(opts, :command),
+      idle_time_limit: Keyword.get(opts, :idle_time_limit),
+      theme: Keyword.get(opts, :theme),
+      env: build_env(opts),
       events: []
     }
   end
@@ -56,6 +65,18 @@ defmodule Raxol.Recording.Session do
   @doc "Returns event count."
   @spec event_count(t()) :: non_neg_integer()
   def event_count(%__MODULE__{events: events}), do: length(events)
+
+  defp build_env(opts) do
+    base = %{
+      "TERM" => System.get_env("TERM", "xterm-256color"),
+      "SHELL" => System.get_env("SHELL", "/bin/sh")
+    }
+
+    case Keyword.get(opts, :env) do
+      nil -> base
+      extra when is_map(extra) -> Map.merge(base, extra)
+    end
+  end
 
   defp detect_size do
     width =
