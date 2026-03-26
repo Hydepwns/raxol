@@ -6,6 +6,8 @@ defmodule Raxol.Memory.Collector do
   process info, ETS tables, binaries, atoms, and system info.
   """
 
+  require Logger
+
   @doc "Returns a comprehensive memory overview map."
   def analyze_memory_overview do
     memory = :erlang.memory()
@@ -243,7 +245,9 @@ defmodule Raxol.Memory.Collector do
         }
     end
   rescue
-    _ -> nil
+    e ->
+      Logger.debug("ETS table info unavailable for #{inspect(table)}: #{Exception.message(e)}")
+      nil
   end
 
   defp get_binary_count do

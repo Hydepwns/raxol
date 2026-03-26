@@ -531,11 +531,15 @@ defmodule Raxol.Core.ErrorExperience do
 
     Log.info("#{length(enhanced_error.recovery_options) + 1}. Exit")
 
-    choice = IO.gets("Select option: ") |> String.trim() |> String.to_integer()
+    raw = IO.gets("Select option: ") |> String.trim()
 
-    if choice <= length(enhanced_error.recovery_options) do
-      option = Enum.at(enhanced_error.recovery_options, choice - 1)
-      execute_recovery_option(option, enhanced_error)
+    case Integer.parse(raw) do
+      {choice, _} when choice >= 1 and choice <= length(enhanced_error.recovery_options) ->
+        option = Enum.at(enhanced_error.recovery_options, choice - 1)
+        execute_recovery_option(option, enhanced_error)
+
+      _ ->
+        :ok
     end
   end
 

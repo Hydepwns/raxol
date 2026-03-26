@@ -30,6 +30,8 @@ defmodule Raxol.LiveView.TEALive do
   if Code.ensure_loaded?(Phoenix.LiveView) do
     use Phoenix.LiveView
 
+    require Logger
+
     alias Raxol.Core.Runtime.Lifecycle
     alias Raxol.LiveView.InputAdapter
 
@@ -133,7 +135,9 @@ defmodule Raxol.LiveView.TEALive do
           :ok
       end
     rescue
-      _ -> :ok
+      e ->
+        Logger.debug("TEALive dispatch failed: #{Exception.message(e)}")
+        :ok
     end
   end
 end

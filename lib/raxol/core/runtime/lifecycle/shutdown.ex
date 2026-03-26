@@ -21,7 +21,9 @@ defmodule Raxol.Core.Runtime.Lifecycle.Shutdown do
       GenServer.stop(pid, :shutdown, 5_000)
     end
   rescue
-    _ -> :ok
+    e ->
+      Log.debug("[Shutdown] Failed to stop #{label}: #{Exception.message(e)}")
+      :ok
   end
 
   @doc """

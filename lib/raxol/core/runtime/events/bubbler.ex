@@ -1,4 +1,5 @@
 defmodule Raxol.Core.Runtime.Events.Bubbler do
+  require Logger
   @moduledoc """
   Implements capture and bubbling event dispatch through the view tree.
 
@@ -125,7 +126,9 @@ defmodule Raxol.Core.Runtime.Events.Bubbler do
       _ -> :passthrough
     end
   rescue
-    _ -> :passthrough
+    e ->
+      Logger.debug("Capture handler raised: #{Exception.message(e)}")
+      :passthrough
   end
 
   defp try_capture_handler(%Event{}, %{on_capture: handler}, _context)
@@ -253,7 +256,9 @@ defmodule Raxol.Core.Runtime.Events.Bubbler do
         end
     end
   rescue
-    _ -> :passthrough
+    e ->
+      Logger.debug("Component handle_event raised: #{Exception.message(e)}")
+      :passthrough
   end
 
   # Map element types to their component modules

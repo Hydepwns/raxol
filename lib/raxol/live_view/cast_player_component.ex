@@ -75,7 +75,10 @@ defmodule Raxol.LiveView.CastPlayerComponent do
             load_session(socket, assigns.session)
 
           Map.has_key?(assigns, :cast_path) and is_nil(socket.assigns.session) ->
-            load_session(socket, Asciicast.read!(assigns.cast_path))
+            case Asciicast.read(assigns.cast_path) do
+              {:ok, session} -> load_session(socket, session)
+              {:error, _reason} -> socket
+            end
 
           true ->
             socket
@@ -136,8 +139,10 @@ defmodule Raxol.LiveView.CastPlayerComponent do
 
     @impl true
     def handle_event("seek", %{"value" => value}, socket) do
-      target_us = String.to_integer(value)
-      {:noreply, seek_to(socket, target_us)}
+      case Integer.parse(value) do
+        {target_us, _} -> {:noreply, seek_to(socket, target_us)}
+        :error -> {:noreply, socket}
+      end
     end
 
     @impl true

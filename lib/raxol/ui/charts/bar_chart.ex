@@ -120,32 +120,10 @@ defmodule Raxol.UI.Charts.BarChart do
 
   # -- Private --
 
-  defp resolve_range([], opts) do
-    min_v = Keyword.get(opts, :min, :auto)
-    max_v = Keyword.get(opts, :max, :auto)
-
-    case {min_v, max_v} do
-      {:auto, :auto} -> {0.0, 1.0}
-      {:auto, m} -> {0.0, m}
-      {m, :auto} -> {m, m + 1.0}
-      {mn, mx} -> {mn, mx}
-    end
-  end
-
+  # Bars should include 0 in the range (unlike line/scatter charts)
   defp resolve_range(values, opts) do
-    auto_min = Enum.min(values)
-    auto_max = Enum.max(values)
-    # Bars should start from 0 unless data is all negative
-    effective_min = min(0, auto_min)
-    effective_max = max(0, auto_max)
-
-    min_v = Keyword.get(opts, :min, :auto)
-    max_v = Keyword.get(opts, :max, :auto)
-
-    {
-      if(min_v == :auto, do: effective_min, else: min_v),
-      if(max_v == :auto, do: effective_max, else: max_v)
-    }
+    {range_min, range_max} = ChartUtils.resolve_range(values, opts)
+    {min(0, range_min), max(0, range_max)}
   end
 
   defp render_vertical(

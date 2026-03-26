@@ -54,7 +54,9 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
       nil
     end
   rescue
-    _ -> nil
+    e ->
+      Log.debug("[Initializer] CodeReloader unavailable: #{Exception.message(e)}")
+      nil
   end
 
   @doc "Detects actual terminal size, falling back to options then 80x24."

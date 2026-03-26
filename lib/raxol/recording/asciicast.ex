@@ -18,10 +18,21 @@ defmodule Raxol.Recording.Asciicast do
     File.write!(path, content)
   end
 
-  @doc "Reads a .cast file into a session."
+  @doc "Reads a .cast file into a session. Returns `{:ok, session}` or `{:error, reason}`."
+  @spec read(Path.t()) :: {:ok, Session.t()} | {:error, term()}
+  def read(path) do
+    with {:ok, content} <- File.read(path) do
+      {:ok, decode(content)}
+    end
+  end
+
+  @doc "Reads a .cast file into a session. Raises on failure."
   @spec read!(Path.t()) :: Session.t()
   def read!(path) do
-    path |> File.read!() |> decode()
+    case read(path) do
+      {:ok, session} -> session
+      {:error, reason} -> raise "Failed to read #{path}: #{inspect(reason)}"
+    end
   end
 
   @doc "Encodes a session to asciicast v2 format string."
@@ -84,7 +95,13 @@ defmodule Raxol.Recording.Asciicast do
 
   defp encode_event({elapsed_us, type, data}) do
     seconds = elapsed_us / 1_000_000
-    type_str = if type == :input, do: "i", else: "o"
+
+    type_str =
+      case type do
+        :input -> "i"
+        _ -> "o"
+      end
+
     Jason.encode!([seconds, type_str, data])
   end
 

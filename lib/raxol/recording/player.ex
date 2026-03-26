@@ -42,8 +42,10 @@ defmodule Raxol.Recording.Player do
   def play(path_or_session, opts \\ [])
 
   def play(path, opts) when is_binary(path) do
-    session = Asciicast.read!(path)
-    play(session, opts)
+    case Asciicast.read(path) do
+      {:ok, session} -> play(session, opts)
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   def play(%Session{} = session, opts) do

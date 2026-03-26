@@ -89,13 +89,12 @@ defmodule Raxol.Core.ErrorPatternLearner.Persistence do
   defp load_patterns_from_disk do
     patterns_file = Path.join(@learning_storage, "patterns.json")
 
-    if File.exists?(patterns_file) do
-      case File.read!(patterns_file) |> Jason.decode() do
-        {:ok, data} -> parse_stored_patterns(data)
-        _ -> %{}
-      end
+    with true <- File.exists?(patterns_file),
+         {:ok, content} <- File.read(patterns_file),
+         {:ok, data} <- Jason.decode(content) do
+      parse_stored_patterns(data)
     else
-      %{}
+      _ -> %{}
     end
   end
 

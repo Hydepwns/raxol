@@ -6,6 +6,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   use Raxol.Core.Behaviours.BaseManager
 
+  require Logger
   require Raxol.Core.Runtime.Log
   require Raxol.Core.Events.Event
   require Raxol.Core.Runtime.Command
@@ -602,7 +603,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       event
     end
   rescue
-    _ -> event
+    e ->
+      Logger.debug("Plugin filter failed: #{Exception.message(e)}")
+      event
   end
 
   # --- Command Processing ---
@@ -652,7 +655,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         end
       end
     rescue
-      _ -> :ok
+      e ->
+        Logger.debug("Subscription setup failed: #{Exception.message(e)}")
+        :ok
     end
 
     state

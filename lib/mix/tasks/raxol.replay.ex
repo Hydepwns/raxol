@@ -89,7 +89,13 @@ defmodule Mix.Tasks.Raxol.Replay do
   end
 
   defp print_info(path) do
-    session = Asciicast.read!(path)
+    case Asciicast.read(path) do
+      {:ok, session} -> do_print_info(path, session)
+      {:error, reason} -> Mix.raise("Failed to read #{path}: #{inspect(reason)}")
+    end
+  end
+
+  defp do_print_info(path, session) do
 
     Mix.shell().info([:bright, "Recording: ", :reset, path])
     Mix.shell().info("  Size:      #{session.width}x#{session.height}")

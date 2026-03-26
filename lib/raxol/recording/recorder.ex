@@ -20,6 +20,8 @@ defmodule Raxol.Recording.Recorder do
 
   use GenServer
 
+  require Logger
+
   alias Raxol.Recording.{Asciicast, Session}
 
   @flush_interval_ms 10_000
@@ -145,7 +147,9 @@ defmodule Raxol.Recording.Recorder do
     session = %{state.session | events: Enum.reverse(state.session.events)}
     Asciicast.write!(session, state.auto_save)
   rescue
-    _ -> :ok
+    e ->
+      Logger.warning("Recorder auto-save failed: #{Exception.message(e)}")
+      :ok
   end
 
   defp schedule_flush do

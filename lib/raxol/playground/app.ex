@@ -401,12 +401,7 @@ defmodule Raxol.Playground.App do
   end
 
   defp forward_to_demo(model, event) do
-    case model.selected.module.update(event, model.demo_model) do
-      {new_demo_model, _commands} ->
-        {%{model | demo_model: new_demo_model}, []}
-
-      new_demo_model when is_map(new_demo_model) ->
-        {%{model | demo_model: new_demo_model}, []}
-    end
+    {new_demo_model, _commands} = model.selected.module.update(event, model.demo_model)
+    {%{model | demo_model: new_demo_model}, []}
   end
 end
