@@ -67,7 +67,7 @@ defmodule RaxolPlaygroundWeb do
     quote do
       import Phoenix.HTML
       import Phoenix.HTML.Form
-      import Phoenix.LiveView.Helpers
+      import Phoenix.Component
       import RaxolPlaygroundWeb.CoreComponents
       import RaxolPlaygroundWeb.Gettext
 

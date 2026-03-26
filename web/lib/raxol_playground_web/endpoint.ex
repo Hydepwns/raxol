@@ -17,12 +17,6 @@ defmodule RaxolPlaygroundWeb.Endpoint do
     websocket: [connect_info: [session: @session_options]],
     longpoll: [connect_info: [session: @session_options]]
 
-  if Mix.env() in [:dev, :test] do
-    plug Phoenix.LiveDashboard.RequestLogger,
-      param_key: "request_logger",
-      cookie_key: "request_logger"
-  end
-
   plug Plug.Static,
     at: "/",
     from: :raxol_playground,
@@ -33,7 +27,6 @@ defmodule RaxolPlaygroundWeb.Endpoint do
     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
-    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :raxol_playground
   end
 
   plug Plug.RequestId

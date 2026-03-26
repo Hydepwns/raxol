@@ -1,0 +1,478 @@
+defmodule Raxol.UI.Charts.BarChart do
+  @moduledoc """
+  Block-character bar chart with sub-character precision.
+
+  Uses `█▇▆▅▄▃▂▁` for 8 levels of fill per character height, giving
+  smooth bar rendering. Supports vertical and horizontal orientation,
+  grouped multi-series, and optional value labels.
+  """
+
+  alias Raxol.UI.Charts.ChartUtils
+
+  @type cell :: ChartUtils.cell()
+
+  @type series :: %{
+          name: String.t(),
+          data: list() | struct(),
+          color: atom()
+        }
+
+  @block_chars ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
+
+  @doc """
+  Renders a bar chart into cell tuples.
+
+  ## Options
+  - `orientation` -- `:vertical` or `:horizontal` (default: `:vertical`)
+  - `show_axes` -- render axis labels (default: false)
+  - `show_legend` -- render series legend (default: false)
+  - `show_values` -- render value labels above bars (default: false)
+  - `bar_gap` -- gap between bars in a group (default: 0)
+  - `group_gap` -- gap between groups (default: 1)
+  - `min` -- Y-axis minimum (default: `:auto`)
+  - `max` -- Y-axis maximum (default: `:auto`)
+  """
+  @spec render(
+          {non_neg_integer(), non_neg_integer(), pos_integer(), pos_integer()},
+          [series()],
+          keyword()
+        ) :: [cell()]
+  def render({x, y, w, h}, series, opts \\ []) do
+    orientation = Keyword.get(opts, :orientation, :vertical)
+    show_axes = Keyword.get(opts, :show_axes, false)
+    show_legend = Keyword.get(opts, :show_legend, false)
+    show_values = Keyword.get(opts, :show_values, false)
+    bar_gap = Keyword.get(opts, :bar_gap, 0)
+    group_gap = Keyword.get(opts, :group_gap, 1)
+
+    axes_space = if show_axes, do: 7, else: 0
+    legend_space = if show_legend, do: 1, else: 0
+    value_space = if show_values, do: 1, else: 0
+
+    normalized =
+      Enum.map(series, fn s ->
+        %{s | data: ChartUtils.normalize_data(s.data)}
+      end)
+
+    all_values = Enum.flat_map(normalized, & &1.data)
+    {val_min, val_max} = resolve_range(all_values, opts)
+
+    case orientation do
+      :vertical ->
+        plot_w = max(w - axes_space, 1)
+        plot_h = max(h - legend_space - value_space, 1)
+        plot_x = x + axes_space
+        plot_y = y + value_space
+
+        bar_cells =
+          render_vertical(
+            normalized,
+            {plot_x, plot_y, plot_w, plot_h},
+            val_min,
+            val_max,
+            bar_gap,
+            group_gap,
+            show_values
+          )
+
+        axes_cells =
+          if show_axes,
+            do:
+              ChartUtils.render_axes(
+                {x, y + value_space, axes_space, plot_h},
+                {val_min, val_max}
+              ),
+            else: []
+
+        legend_cells =
+          if show_legend,
+            do:
+              ChartUtils.render_legend(x, y + value_space + plot_h, normalized),
+            else: []
+
+        axes_cells ++ bar_cells ++ legend_cells
+
+      :horizontal ->
+        plot_w = max(w - axes_space, 1)
+        plot_h = max(h - legend_space, 1)
+        plot_x = x + axes_space
+        plot_y = y
+
+        bar_cells =
+          render_horizontal(
+            normalized,
+            {plot_x, plot_y, plot_w, plot_h},
+            val_min,
+            val_max,
+            bar_gap,
+            group_gap,
+            show_values
+          )
+
+        legend_cells =
+          if show_legend,
+            do: ChartUtils.render_legend(x, y + plot_h, normalized),
+            else: []
+
+        bar_cells ++ legend_cells
+    end
+  end
+
+  # -- Private --
+
+  defp resolve_range([], opts) do
+    min_v = Keyword.get(opts, :min, :auto)
+    max_v = Keyword.get(opts, :max, :auto)
+
+    case {min_v, max_v} do
+      {:auto, :auto} -> {0.0, 1.0}
+      {:auto, m} -> {0.0, m}
+      {m, :auto} -> {m, m + 1.0}
+      {mn, mx} -> {mn, mx}
+    end
+  end
+
+  defp resolve_range(values, opts) do
+    auto_min = Enum.min(values)
+    auto_max = Enum.max(values)
+    # Bars should start from 0 unless data is all negative
+    effective_min = min(0, auto_min)
+    effective_max = max(0, auto_max)
+
+    min_v = Keyword.get(opts, :min, :auto)
+    max_v = Keyword.get(opts, :max, :auto)
+
+    {
+      if(min_v == :auto, do: effective_min, else: min_v),
+      if(max_v == :auto, do: effective_max, else: max_v)
+    }
+  end
+
+  defp render_vertical(
+         [],
+         _region,
+         _val_min,
+         _val_max,
+         _bar_gap,
+         _group_gap,
+         _show_values
+       ), do: []
+
+  defp render_vertical(
+         series_list,
+         region,
+         val_min,
+         val_max,
+         bar_gap,
+         group_gap,
+         show_values
+       ) do
+    num_series = length(series_list)
+
+    num_groups =
+      series_list
+      |> Enum.map(fn s -> length(s.data) end)
+      |> Enum.max(fn -> 0 end)
+
+    if num_groups == 0 do
+      []
+    else
+      layout =
+        vertical_layout(num_series, num_groups, bar_gap, group_gap, region)
+
+      series_list
+      |> Enum.with_index()
+      |> Enum.flat_map(fn {%{data: data, color: color}, s_idx} ->
+        data
+        |> Enum.with_index()
+        |> Enum.flat_map(fn {value, g_idx} ->
+          render_single_vertical_bar(
+            layout,
+            value,
+            g_idx,
+            s_idx,
+            color,
+            val_min,
+            val_max,
+            show_values
+          )
+        end)
+      end)
+    end
+  end
+
+  defp vertical_layout(
+         num_series,
+         num_groups,
+         bar_gap,
+         group_gap,
+         {px, py, pw, ph}
+       ) do
+    group_width = bars_per_group_width(num_series, bar_gap, group_gap)
+    total_width = num_groups * group_width - group_gap
+    scale = if total_width > 0, do: pw / total_width, else: 1
+
+    %{
+      px: px,
+      py: py,
+      ph: ph,
+      group_width: group_width,
+      scale: scale,
+      bar_gap: bar_gap
+    }
+  end
+
+  defp render_single_vertical_bar(
+         layout,
+         value,
+         g_idx,
+         s_idx,
+         color,
+         val_min,
+         val_max,
+         show_values
+       ) do
+    bar_x =
+      layout.px +
+        round(
+          (g_idx * layout.group_width + s_idx * (1 + layout.bar_gap)) *
+            layout.scale
+        )
+
+    bar_w = max(round(layout.scale), 1)
+
+    normalized =
+      ChartUtils.scale_value(value, val_min, val_max, 0, layout.ph * 8)
+
+    sub_height =
+      round(normalized) |> ChartUtils.clamp(0, layout.ph * 8) |> trunc()
+
+    full_blocks = div(sub_height, 8)
+    remainder = rem(sub_height, 8)
+
+    bar_cells =
+      render_vertical_bar_cells(
+        bar_x,
+        layout.py,
+        bar_w,
+        layout.ph,
+        full_blocks,
+        remainder,
+        color
+      )
+
+    value_cells =
+      vertical_value_label(
+        show_values,
+        bar_x,
+        layout.py,
+        layout.ph,
+        bar_w,
+        full_blocks,
+        remainder,
+        value,
+        color
+      )
+
+    bar_cells ++ value_cells
+  end
+
+  defp vertical_value_label(false, _bx, _py, _ph, _bw, _fb, _rem, _val, _color),
+    do: []
+
+  defp vertical_value_label(
+         true,
+         bar_x,
+         py,
+         ph,
+         bar_w,
+         full_blocks,
+         remainder,
+         value,
+         color
+       ) do
+    partial_offset = if remainder > 0, do: 1, else: 0
+    label_y = py + ph - full_blocks - partial_offset - 1
+
+    if label_y >= py do
+      label = ChartUtils.format_number(value)
+
+      ChartUtils.string_to_cells(
+        String.slice(label, 0, bar_w),
+        bar_x,
+        label_y,
+        color,
+        :default
+      )
+    else
+      []
+    end
+  end
+
+  defp render_horizontal(
+         [],
+         _region,
+         _val_min,
+         _val_max,
+         _bar_gap,
+         _group_gap,
+         _show_values
+       ), do: []
+
+  defp render_horizontal(
+         series_list,
+         region,
+         val_min,
+         val_max,
+         bar_gap,
+         group_gap,
+         show_values
+       ) do
+    num_series = length(series_list)
+
+    num_groups =
+      series_list
+      |> Enum.map(fn s -> length(s.data) end)
+      |> Enum.max(fn -> 0 end)
+
+    if num_groups == 0 do
+      []
+    else
+      layout =
+        horizontal_layout(num_series, num_groups, bar_gap, group_gap, region)
+
+      series_list
+      |> Enum.with_index()
+      |> Enum.flat_map(fn {%{data: data, color: color}, s_idx} ->
+        data
+        |> Enum.with_index()
+        |> Enum.flat_map(fn {value, g_idx} ->
+          render_single_horizontal_bar(
+            layout,
+            value,
+            g_idx,
+            s_idx,
+            color,
+            val_min,
+            val_max,
+            show_values
+          )
+        end)
+      end)
+    end
+  end
+
+  defp horizontal_layout(
+         num_series,
+         num_groups,
+         bar_gap,
+         group_gap,
+         {px, py, pw, ph}
+       ) do
+    group_height = bars_per_group_width(num_series, bar_gap, group_gap)
+    total_height = num_groups * group_height - group_gap
+    scale = if total_height > 0, do: ph / total_height, else: 1
+
+    %{
+      px: px,
+      py: py,
+      pw: pw,
+      group_height: group_height,
+      scale: scale,
+      bar_gap: bar_gap
+    }
+  end
+
+  defp render_single_horizontal_bar(
+         layout,
+         value,
+         g_idx,
+         s_idx,
+         color,
+         val_min,
+         val_max,
+         show_values
+       ) do
+    bar_y =
+      layout.py +
+        round(
+          (g_idx * layout.group_height + s_idx * (1 + layout.bar_gap)) *
+            layout.scale
+        )
+
+    bar_h = max(round(layout.scale), 1)
+
+    normalized = ChartUtils.scale_value(value, val_min, val_max, 0, layout.pw)
+    bar_len = round(normalized) |> ChartUtils.clamp(0, layout.pw) |> trunc()
+
+    bar_cells =
+      for col <- 0..(bar_len - 1), row <- 0..(bar_h - 1), bar_len > 0 do
+        {layout.px + col, bar_y + row, "█", color, :default, %{}}
+      end
+
+    value_cells =
+      horizontal_value_label(
+        show_values,
+        layout.px,
+        bar_y,
+        layout.pw,
+        bar_len,
+        value,
+        color
+      )
+
+    bar_cells ++ value_cells
+  end
+
+  defp horizontal_value_label(false, _px, _by, _pw, _bl, _val, _color), do: []
+
+  defp horizontal_value_label(true, _px, _by, pw, bar_len, _val, _color)
+       when bar_len >= pw, do: []
+
+  defp horizontal_value_label(true, px, bar_y, pw, bar_len, value, color) do
+    label = " #{ChartUtils.format_number(value)}"
+
+    ChartUtils.string_to_cells(
+      String.slice(label, 0, pw - bar_len),
+      px + bar_len,
+      bar_y,
+      color,
+      :default
+    )
+  end
+
+  defp render_vertical_bar_cells(
+         bar_x,
+         region_y,
+         bar_w,
+         region_h,
+         full_blocks,
+         remainder,
+         color
+       ) do
+    # Full blocks from bottom
+    full_cells =
+      for row <- 0..(full_blocks - 1), col <- 0..(bar_w - 1), full_blocks > 0 do
+        {bar_x + col, region_y + region_h - 1 - row, "█", color, :default, %{}}
+      end
+
+    # Partial block
+    partial_cells =
+      if remainder > 0 do
+        char = Enum.at(@block_chars, remainder - 1)
+        partial_y = region_y + region_h - 1 - full_blocks
+
+        for col <- 0..(bar_w - 1) do
+          {bar_x + col, partial_y, char, color, :default, %{}}
+        end
+      else
+        []
+      end
+
+    full_cells ++ partial_cells
+  end
+
+  defp bars_per_group_width(num_series, bar_gap, group_gap) do
+    num_series + (num_series - 1) * bar_gap + group_gap
+  end
+end
