@@ -24,7 +24,6 @@ defmodule Raxol.Terminal.Emulator do
   * `new_minimal/2` - Basic only (8.8KB, <10ms startup)
   """
 
-  alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Emulator.BufferOps
   alias Raxol.Terminal.Emulator.Coordinator
   alias Raxol.Terminal.Emulator.CursorOps
