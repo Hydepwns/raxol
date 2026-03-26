@@ -47,8 +47,9 @@ defmodule Raxol.Adaptive.BehaviorTrackerTest do
 
   describe "aggregation" do
     test "computes aggregate and notifies subscribers" do
+      # Large window so timer never fires during setup; we trigger manually
       {:ok, pid} =
-        BehaviorTracker.start_link(name: nil, window_size_ms: 200)
+        BehaviorTracker.start_link(name: nil, window_size_ms: 60_000)
 
       BehaviorTracker.subscribe(pid)
 
@@ -66,8 +67,11 @@ defmodule Raxol.Adaptive.BehaviorTrackerTest do
       BehaviorTracker.record(pid, :command_issued, %{command: "status"})
       BehaviorTracker.record(pid, :command_issued, %{command: "deploy"})
 
-      # Ensure casts are processed before aggregate window fires
-      Process.sleep(20)
+      # Sync barrier: call ensures all prior casts are processed
+      _ = BehaviorTracker.get_recent_events(pid, 1)
+
+      # Manually trigger aggregation
+      send(pid, :aggregate_window)
 
       assert_receive {:behavior_aggregate, aggregate}, 500
 
@@ -80,14 +84,15 @@ defmodule Raxol.Adaptive.BehaviorTrackerTest do
 
     test "computes alert response average" do
       {:ok, pid} =
-        BehaviorTracker.start_link(name: nil, window_size_ms: 200)
+        BehaviorTracker.start_link(name: nil, window_size_ms: 60_000)
 
       BehaviorTracker.subscribe(pid)
 
       BehaviorTracker.record(pid, :alert_response, %{response_ms: 3000})
       BehaviorTracker.record(pid, :alert_response, %{response_ms: 7000})
 
-      Process.sleep(20)
+      _ = BehaviorTracker.get_recent_events(pid, 1)
+      send(pid, :aggregate_window)
 
       assert_receive {:behavior_aggregate, aggregate}, 500
 
@@ -96,11 +101,15 @@ defmodule Raxol.Adaptive.BehaviorTrackerTest do
 
     test "get_aggregates returns stored aggregates" do
       {:ok, pid} =
-        BehaviorTracker.start_link(name: nil, window_size_ms: 20)
+        BehaviorTracker.start_link(name: nil, window_size_ms: 60_000)
 
       BehaviorTracker.record(pid, :pane_dwell, %{pane_id: :x, dwell_ms: 100})
 
-      Process.sleep(50)
+      # Sync barrier + manual trigger
+      _ = BehaviorTracker.get_recent_events(pid, 1)
+      send(pid, :aggregate_window)
+      # Sync barrier to ensure aggregate is stored
+      Process.sleep(10)
 
       aggregates = BehaviorTracker.get_aggregates(pid, 5)
       assert [_ | _] = aggregates
