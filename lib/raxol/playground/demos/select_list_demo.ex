@@ -1,0 +1,81 @@
+defmodule Raxol.Playground.Demos.SelectListDemo do
+  @moduledoc false
+  use Raxol.Core.Runtime.Application
+
+  @impl true
+  def init(_context) do
+    %{
+      options: ["Elixir", "Rust", "Go", "Python", "TypeScript"],
+      selected: 0,
+      confirmed: nil,
+      open: false
+    }
+  end
+
+  @impl true
+  def update(message, model) do
+    case message do
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "o"}} ->
+        {%{model | open: not model.open}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}}
+      when model.open ->
+        {%{
+           model
+           | selected: min(model.selected + 1, length(model.options) - 1)
+         }, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}}
+      when model.open ->
+        {%{model | selected: max(model.selected - 1, 0)}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}}
+      when model.open ->
+        value = Enum.at(model.options, model.selected)
+        {%{model | confirmed: value, open: false}, []}
+
+      _ ->
+        {model, []}
+    end
+  end
+
+  @impl true
+  def view(model) do
+    current = Enum.at(model.options, model.selected)
+    arrow = if model.open, do: "v", else: ">"
+    display = model.confirmed || "Select a language..."
+
+    dropdown_items =
+      if model.open do
+        model.options
+        |> Enum.with_index()
+        |> Enum.map(fn {opt, i} ->
+          prefix = if i == model.selected, do: "> ", else: "  "
+          text("#{prefix}#{opt}")
+        end)
+      else
+        []
+      end
+
+    column style: %{gap: 1} do
+      [
+        text("SelectList Demo", style: [:bold]),
+        divider(),
+        text("Selected: #{display}", style: [:bold]),
+        box style: %{border: :single, padding: 1, width: 30} do
+          column style: %{gap: 0} do
+            [text("[#{arrow}] #{current}") | dropdown_items]
+          end
+        end,
+        confirmed_view(model.confirmed),
+        text("[o] open/close  [j/k] navigate  [enter] confirm", style: [:dim])
+      ]
+    end
+  end
+
+  defp confirmed_view(nil), do: text("")
+  defp confirmed_view(value), do: text("Confirmed: #{value}", style: [:bold])
+
+  @impl true
+  def subscribe(_model), do: []
+end

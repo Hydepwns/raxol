@@ -14,7 +14,7 @@ defmodule Raxol.Playground.AppTest do
   describe "init/1" do
     test "initializes with components and first selected" do
       model = App.init(nil)
-      assert length(model.components) == 6
+      assert length(model.components) == 23
       assert model.cursor == 0
       assert model.selected != nil
       assert model.focus == :sidebar

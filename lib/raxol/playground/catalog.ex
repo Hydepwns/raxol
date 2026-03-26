@@ -99,6 +99,168 @@ defmodule Raxol.Playground.Catalog do
         selected: model.selected
       )
       """
+    },
+    # --- Input widgets ---
+    %{
+      name: "Checkbox",
+      module: Demos.CheckboxDemo,
+      category: :input,
+      description: "Toggle checkboxes with keyboard navigation",
+      complexity: :basic,
+      tags: ["input", "form", "toggle"],
+      code_snippet: ~s'checkbox("Enable Feature", checked: true)'
+    },
+    %{
+      name: "TextArea",
+      module: Demos.TextAreaDemo,
+      category: :input,
+      description: "Multi-line text editor with insert/normal modes",
+      complexity: :intermediate,
+      tags: ["input", "form", "text", "multiline"],
+      code_snippet: ~s'textarea(value: model.text, rows: 5)'
+    },
+    %{
+      name: "SelectList",
+      module: Demos.SelectListDemo,
+      category: :input,
+      description: "Dropdown select list with keyboard navigation",
+      complexity: :intermediate,
+      tags: ["input", "form", "dropdown", "select"],
+      code_snippet: ~s'select(options: ["Elixir", "Rust", "Go"], selected: 0)'
+    },
+    %{
+      name: "RadioGroup",
+      module: Demos.RadioGroupDemo,
+      category: :input,
+      description: "Grouped radio buttons with tab switching",
+      complexity: :intermediate,
+      tags: ["input", "form", "radio", "group"],
+      code_snippet:
+        ~s'radio_group(options: ["Light", "Dark", "Auto"], selected: 0)'
+    },
+    %{
+      name: "PasswordField",
+      module: Demos.PasswordFieldDemo,
+      category: :input,
+      description: "Password input with visibility toggle and strength meter",
+      complexity: :basic,
+      tags: ["input", "form", "password", "security"],
+      code_snippet: ~s'text_input(value: model.password, type: :password)'
+    },
+    # --- Display widgets ---
+    %{
+      name: "Text",
+      module: Demos.TextDemo,
+      category: :display,
+      description: "Text rendering with style variations",
+      complexity: :basic,
+      tags: ["display", "text", "style"],
+      code_snippet: ~s'text("Hello", style: [:bold, :italic])'
+    },
+    %{
+      name: "Tree",
+      module: Demos.TreeDemo,
+      category: :display,
+      description: "Expandable tree view with keyboard navigation",
+      complexity: :intermediate,
+      tags: ["display", "tree", "hierarchy", "navigation"],
+      code_snippet: ~s'list(items: tree_nodes, style: %{indent: 2})'
+    },
+    %{
+      name: "StatusBar",
+      module: Demos.StatusBarDemo,
+      category: :display,
+      description: "Status bar with live-updating fields",
+      complexity: :basic,
+      tags: ["display", "status", "bar", "info"],
+      code_snippet:
+        ~s'row do [text(mode), spacer(), text(file), text(line)] end'
+    },
+    %{
+      name: "CodeBlock",
+      module: Demos.CodeBlockDemo,
+      category: :display,
+      description: "Code display with line numbers and language samples",
+      complexity: :basic,
+      tags: ["display", "code", "syntax"],
+      code_snippet: ~s'box style: %{border: :single} do text(code) end'
+    },
+    %{
+      name: "Markdown",
+      module: Demos.MarkdownDemo,
+      category: :display,
+      description: "Simple markdown rendering with raw toggle",
+      complexity: :intermediate,
+      tags: ["display", "markdown", "text", "rendering"],
+      code_snippet: ~s'text(render_markdown(content))'
+    },
+    # --- Navigation/Layout widgets ---
+    %{
+      name: "Tabs",
+      module: Demos.TabsDemo,
+      category: :navigation,
+      description: "Tab bar with keyboard switching and content panels",
+      complexity: :basic,
+      tags: ["navigation", "tabs", "panels"],
+      code_snippet: ~s'tabs(labels: ["Tab 1", "Tab 2"], active: model.tab)'
+    },
+    %{
+      name: "SplitPane",
+      module: Demos.SplitPaneDemo,
+      category: :layout,
+      description: "Resizable split pane with direction toggle",
+      complexity: :intermediate,
+      tags: ["layout", "split", "pane", "resize"],
+      code_snippet: ~s'row do [box(left_content), box(right_content)] end'
+    },
+    %{
+      name: "Container",
+      module: Demos.ContainerDemo,
+      category: :layout,
+      description: "Scrollable container with viewport controls",
+      complexity: :basic,
+      tags: ["layout", "container", "scroll", "viewport"],
+      code_snippet: ~s'container(children: items, scroll_offset: model.offset)'
+    },
+    # --- Chart/Visualization widgets ---
+    %{
+      name: "LineChart",
+      module: Demos.LineChartDemo,
+      category: :visualization,
+      description: "Streaming braille-resolution line chart",
+      complexity: :intermediate,
+      tags: ["chart", "line", "braille", "streaming"],
+      code_snippet:
+        ~s'LineChart.render({0, 0, 60, 15}, series, show_legend: true)'
+    },
+    %{
+      name: "BarChart",
+      module: Demos.BarChartDemo,
+      category: :visualization,
+      description: "Block-character bar chart with orientation toggle",
+      complexity: :basic,
+      tags: ["chart", "bar", "vertical", "horizontal"],
+      code_snippet:
+        ~s'BarChart.render({0, 0, 50, 12}, series, orientation: :vertical)'
+    },
+    %{
+      name: "ScatterChart",
+      module: Demos.ScatterChartDemo,
+      category: :visualization,
+      description: "Braille scatter plot with animated clusters",
+      complexity: :intermediate,
+      tags: ["chart", "scatter", "braille", "animation"],
+      code_snippet:
+        ~s'ScatterChart.render({0, 0, 60, 15}, series, show_legend: true)'
+    },
+    %{
+      name: "Heatmap",
+      module: Demos.HeatmapDemo,
+      category: :visualization,
+      description: "2D heatmap with color scale cycling",
+      complexity: :basic,
+      tags: ["chart", "heatmap", "color", "grid"],
+      code_snippet: ~s'Heatmap.render({0, 0, 48, 16}, grid, color_scale: :warm)'
     }
   ]
 

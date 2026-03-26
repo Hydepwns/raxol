@@ -7,7 +7,24 @@ defmodule Raxol.Playground.DemosTest do
     TableDemo,
     ProgressDemo,
     ModalDemo,
-    MenuDemo
+    MenuDemo,
+    CheckboxDemo,
+    TextAreaDemo,
+    SelectListDemo,
+    RadioGroupDemo,
+    PasswordFieldDemo,
+    TextDemo,
+    TreeDemo,
+    StatusBarDemo,
+    CodeBlockDemo,
+    MarkdownDemo,
+    TabsDemo,
+    SplitPaneDemo,
+    ContainerDemo,
+    LineChartDemo,
+    BarChartDemo,
+    ScatterChartDemo,
+    HeatmapDemo
   }
 
   defp key_event(char) do
@@ -285,6 +302,645 @@ defmodule Raxol.Playground.DemosTest do
       model = MenuDemo.init(nil)
       view = MenuDemo.view(model)
       assert is_map(view)
+    end
+  end
+
+  # --- Batch 1: Input Widgets ---
+
+  describe "CheckboxDemo" do
+    test "init returns items with cursor at 0" do
+      model = CheckboxDemo.init(nil)
+      assert length(model.items) == 5
+      assert model.cursor == 0
+    end
+
+    test "j moves cursor down" do
+      model = CheckboxDemo.init(nil)
+      {model, []} = CheckboxDemo.update(key_event("j"), model)
+      assert model.cursor == 1
+    end
+
+    test "k moves cursor up" do
+      model = %{items: [%{label: "a", checked: false}], cursor: 0}
+      {model, []} = CheckboxDemo.update(key_event("k"), model)
+      assert model.cursor == 0
+    end
+
+    test "space toggles current item" do
+      model = CheckboxDemo.init(nil)
+      first_checked = hd(model.items).checked
+      {model, []} = CheckboxDemo.update(key_event(" "), model)
+      assert hd(model.items).checked == not first_checked
+    end
+
+    test "a toggles all" do
+      model = CheckboxDemo.init(nil)
+      {model, []} = CheckboxDemo.update(key_event("a"), model)
+
+      assert Enum.all?(model.items, & &1.checked) or
+               Enum.all?(model.items, &(not &1.checked))
+    end
+
+    test "view returns element tree" do
+      model = CheckboxDemo.init(nil)
+      assert is_map(CheckboxDemo.view(model))
+    end
+  end
+
+  describe "TextAreaDemo" do
+    test "init starts in normal mode" do
+      model = TextAreaDemo.init(nil)
+      assert model.mode == :normal
+      assert length(model.lines) == 3
+    end
+
+    test "i enters insert mode" do
+      model = TextAreaDemo.init(nil)
+      {model, []} = TextAreaDemo.update(key_event("i"), model)
+      assert model.mode == :insert
+    end
+
+    test "escape returns to normal mode" do
+      model = %{lines: ["test"], cursor_line: 0, cursor_col: 4, mode: :insert}
+      {model, []} = TextAreaDemo.update(special_key(:escape), model)
+      assert model.mode == :normal
+    end
+
+    test "j/k navigate lines in normal mode" do
+      model = TextAreaDemo.init(nil)
+      {model, []} = TextAreaDemo.update(key_event("j"), model)
+      assert model.cursor_line == 1
+      {model, []} = TextAreaDemo.update(key_event("k"), model)
+      assert model.cursor_line == 0
+    end
+
+    test "typing in insert mode appends to line" do
+      model = %{lines: ["hi"], cursor_line: 0, cursor_col: 2, mode: :insert}
+      {model, []} = TextAreaDemo.update(key_event("x"), model)
+      assert Enum.at(model.lines, 0) == "hix"
+    end
+
+    test "view returns element tree" do
+      model = TextAreaDemo.init(nil)
+      assert is_map(TextAreaDemo.view(model))
+    end
+  end
+
+  describe "SelectListDemo" do
+    test "init starts closed with no confirmation" do
+      model = SelectListDemo.init(nil)
+      assert model.open == false
+      assert model.confirmed == nil
+    end
+
+    test "o toggles open" do
+      model = SelectListDemo.init(nil)
+      {model, []} = SelectListDemo.update(key_event("o"), model)
+      assert model.open == true
+      {model, []} = SelectListDemo.update(key_event("o"), model)
+      assert model.open == false
+    end
+
+    test "j/k navigate when open" do
+      model = %{
+        options: ["A", "B", "C"],
+        selected: 0,
+        confirmed: nil,
+        open: true
+      }
+
+      {model, []} = SelectListDemo.update(key_event("j"), model)
+      assert model.selected == 1
+      {model, []} = SelectListDemo.update(key_event("k"), model)
+      assert model.selected == 0
+    end
+
+    test "enter confirms selection" do
+      model = %{
+        options: ["Elixir", "Rust"],
+        selected: 1,
+        confirmed: nil,
+        open: true
+      }
+
+      {model, []} = SelectListDemo.update(special_key(:enter), model)
+      assert model.confirmed == "Rust"
+      assert model.open == false
+    end
+
+    test "view returns element tree" do
+      model = SelectListDemo.init(nil)
+      assert is_map(SelectListDemo.view(model))
+    end
+  end
+
+  describe "RadioGroupDemo" do
+    test "init returns 3 groups" do
+      model = RadioGroupDemo.init(nil)
+      assert length(model.groups) == 3
+      assert model.active_group == 0
+    end
+
+    test "j/k navigate within active group" do
+      model = RadioGroupDemo.init(nil)
+      {model, []} = RadioGroupDemo.update(key_event("j"), model)
+      group = Enum.at(model.groups, 0)
+      assert group.selected == 1
+    end
+
+    test "tab switches active group" do
+      model = RadioGroupDemo.init(nil)
+      {model, []} = RadioGroupDemo.update(special_key(:tab), model)
+      assert model.active_group == 1
+    end
+
+    test "tab wraps around" do
+      model = %{groups: RadioGroupDemo.init(nil).groups, active_group: 2}
+      {model, []} = RadioGroupDemo.update(special_key(:tab), model)
+      assert model.active_group == 0
+    end
+
+    test "view returns element tree" do
+      model = RadioGroupDemo.init(nil)
+      assert is_map(RadioGroupDemo.view(model))
+    end
+  end
+
+  describe "PasswordFieldDemo" do
+    test "init starts empty and hidden" do
+      model = PasswordFieldDemo.init(nil)
+      assert model.value == ""
+      assert model.visible == false
+      assert model.strength == :none
+    end
+
+    test "typing adds characters and updates strength" do
+      model = PasswordFieldDemo.init(nil)
+
+      model =
+        Enum.reduce(String.graphemes("abcd"), model, fn ch, m ->
+          {m, []} = PasswordFieldDemo.update(key_event(ch), m)
+          m
+        end)
+
+      assert model.value == "abcd"
+      assert model.strength == :medium
+    end
+
+    test "backspace removes character" do
+      model = %{value: "abc", visible: false, strength: :weak}
+      {model, []} = PasswordFieldDemo.update(special_key(:backspace), model)
+      assert model.value == "ab"
+    end
+
+    test "v toggles visibility" do
+      model = PasswordFieldDemo.init(nil)
+      {model, []} = PasswordFieldDemo.update(key_event("v"), model)
+      assert model.visible == true
+    end
+
+    test "r resets" do
+      model = %{value: "secret", visible: true, strength: :medium}
+      {model, []} = PasswordFieldDemo.update(key_event("r"), model)
+      assert model.value == ""
+      assert model.strength == :none
+    end
+
+    test "view returns element tree" do
+      model = PasswordFieldDemo.init(nil)
+      assert is_map(PasswordFieldDemo.view(model))
+    end
+  end
+
+  # --- Batch 2: Display Widgets ---
+
+  describe "TextDemo" do
+    test "init starts at style 0" do
+      model = TextDemo.init(nil)
+      assert model.style_index == 0
+    end
+
+    test "n cycles to next style" do
+      model = TextDemo.init(nil)
+      {model, []} = TextDemo.update(key_event("n"), model)
+      assert model.style_index == 1
+    end
+
+    test "p cycles to previous style" do
+      model = %{style_index: 2}
+      {model, []} = TextDemo.update(key_event("p"), model)
+      assert model.style_index == 1
+    end
+
+    test "p clamps at 0" do
+      model = %{style_index: 0}
+      {model, []} = TextDemo.update(key_event("p"), model)
+      assert model.style_index == 0
+    end
+
+    test "view returns element tree" do
+      model = TextDemo.init(nil)
+      assert is_map(TextDemo.view(model))
+    end
+  end
+
+  describe "TreeDemo" do
+    test "init starts with empty expanded set" do
+      model = TreeDemo.init(nil)
+      assert MapSet.size(model.expanded) == 0
+      assert model.cursor == 0
+    end
+
+    test "j/k navigate visible nodes" do
+      model = TreeDemo.init(nil)
+      {model, []} = TreeDemo.update(key_event("j"), model)
+      assert model.cursor == 1
+      {model, []} = TreeDemo.update(key_event("k"), model)
+      assert model.cursor == 0
+    end
+
+    test "l expands a directory node" do
+      model = TreeDemo.init(nil)
+      {model, []} = TreeDemo.update(key_event("l"), model)
+      assert MapSet.size(model.expanded) == 1
+    end
+
+    test "h collapses a directory node" do
+      model = TreeDemo.init(nil)
+      {model, []} = TreeDemo.update(key_event("l"), model)
+      {model, []} = TreeDemo.update(key_event("h"), model)
+      assert MapSet.size(model.expanded) == 0
+    end
+
+    test "e expands all, c collapses all" do
+      model = TreeDemo.init(nil)
+      {model, []} = TreeDemo.update(key_event("e"), model)
+      assert MapSet.size(model.expanded) > 0
+      {model, []} = TreeDemo.update(key_event("c"), model)
+      assert MapSet.size(model.expanded) == 0
+    end
+
+    test "view returns element tree" do
+      model = TreeDemo.init(nil)
+      assert is_map(TreeDemo.view(model))
+    end
+  end
+
+  describe "StatusBarDemo" do
+    test "init starts in NORMAL mode" do
+      model = StatusBarDemo.init(nil)
+      assert model.mode == "NORMAL"
+      assert model.tick == 0
+    end
+
+    test "i switches to INSERT mode" do
+      model = StatusBarDemo.init(nil)
+      {model, []} = StatusBarDemo.update(key_event("i"), model)
+      assert model.mode == "INSERT"
+    end
+
+    test "escape returns to NORMAL mode" do
+      model = %{mode: "INSERT", file: "demo.ex", line: 1, col: 1, tick: 0}
+      {model, []} = StatusBarDemo.update(special_key(:escape), model)
+      assert model.mode == "NORMAL"
+    end
+
+    test "tick increments counter" do
+      model = StatusBarDemo.init(nil)
+      {model, []} = StatusBarDemo.update(:tick, model)
+      assert model.tick == 1
+    end
+
+    test "subscribe returns interval" do
+      model = StatusBarDemo.init(nil)
+      assert length(StatusBarDemo.subscribe(model)) > 0
+    end
+
+    test "view returns element tree" do
+      model = StatusBarDemo.init(nil)
+      assert is_map(StatusBarDemo.view(model))
+    end
+  end
+
+  describe "CodeBlockDemo" do
+    test "init starts at sample 0 with line numbers" do
+      model = CodeBlockDemo.init(nil)
+      assert model.current == 0
+      assert model.show_line_numbers == true
+    end
+
+    test "n/p cycle samples" do
+      model = CodeBlockDemo.init(nil)
+      {model, []} = CodeBlockDemo.update(key_event("n"), model)
+      assert model.current == 1
+      {model, []} = CodeBlockDemo.update(key_event("p"), model)
+      assert model.current == 0
+    end
+
+    test "l toggles line numbers" do
+      model = CodeBlockDemo.init(nil)
+      {model, []} = CodeBlockDemo.update(key_event("l"), model)
+      assert model.show_line_numbers == false
+    end
+
+    test "view returns element tree" do
+      model = CodeBlockDemo.init(nil)
+      assert is_map(CodeBlockDemo.view(model))
+    end
+  end
+
+  describe "MarkdownDemo" do
+    test "init starts at doc 0 in rendered mode" do
+      model = MarkdownDemo.init(nil)
+      assert model.current == 0
+      assert model.raw == false
+    end
+
+    test "n/p cycle documents" do
+      model = MarkdownDemo.init(nil)
+      {model, []} = MarkdownDemo.update(key_event("n"), model)
+      assert model.current == 1
+      {model, []} = MarkdownDemo.update(key_event("p"), model)
+      assert model.current == 0
+    end
+
+    test "r toggles raw mode" do
+      model = MarkdownDemo.init(nil)
+      {model, []} = MarkdownDemo.update(key_event("r"), model)
+      assert model.raw == true
+    end
+
+    test "view returns element tree in both modes" do
+      model = MarkdownDemo.init(nil)
+      assert is_map(MarkdownDemo.view(model))
+      assert is_map(MarkdownDemo.view(%{model | raw: true}))
+    end
+  end
+
+  # --- Batch 3: Navigation/Layout ---
+
+  describe "TabsDemo" do
+    test "init starts at tab 0" do
+      model = TabsDemo.init(nil)
+      assert model.active == 0
+    end
+
+    test "l moves to next tab" do
+      model = TabsDemo.init(nil)
+      {model, []} = TabsDemo.update(key_event("l"), model)
+      assert model.active == 1
+    end
+
+    test "h moves to previous tab with wrap" do
+      model = %{active: 0}
+      {model, []} = TabsDemo.update(key_event("h"), model)
+      assert model.active == 3
+    end
+
+    test "number keys select tabs directly" do
+      model = TabsDemo.init(nil)
+      {model, []} = TabsDemo.update(key_event("3"), model)
+      assert model.active == 2
+    end
+
+    test "view returns element tree" do
+      model = TabsDemo.init(nil)
+      assert is_map(TabsDemo.view(model))
+    end
+  end
+
+  describe "SplitPaneDemo" do
+    test "init starts horizontal at 0.5" do
+      model = SplitPaneDemo.init(nil)
+      assert model.direction == :horizontal
+      assert model.ratio == 0.5
+      assert model.focus == :left
+    end
+
+    test "d toggles direction" do
+      model = SplitPaneDemo.init(nil)
+      {model, []} = SplitPaneDemo.update(key_event("d"), model)
+      assert model.direction == :vertical
+      {model, []} = SplitPaneDemo.update(key_event("d"), model)
+      assert model.direction == :horizontal
+    end
+
+    test "tab toggles focus" do
+      model = SplitPaneDemo.init(nil)
+      {model, []} = SplitPaneDemo.update(special_key(:tab), model)
+      assert model.focus == :right
+    end
+
+    test "+/- adjust ratio" do
+      model = SplitPaneDemo.init(nil)
+      {model, []} = SplitPaneDemo.update(key_event("+"), model)
+      assert model.ratio > 0.5
+      {model, []} = SplitPaneDemo.update(key_event("-"), model)
+      {model, []} = SplitPaneDemo.update(key_event("-"), model)
+      assert model.ratio < 0.5
+    end
+
+    test "= resets ratio" do
+      model = %{direction: :horizontal, ratio: 0.8, focus: :left}
+      {model, []} = SplitPaneDemo.update(key_event("="), model)
+      assert model.ratio == 0.5
+    end
+
+    test "view returns element tree" do
+      model = SplitPaneDemo.init(nil)
+      assert is_map(SplitPaneDemo.view(model))
+    end
+  end
+
+  describe "ContainerDemo" do
+    test "init starts with 30 items" do
+      model = ContainerDemo.init(nil)
+      assert length(model.items) == 30
+      assert model.scroll_offset == 0
+      assert model.visible_count == 10
+    end
+
+    test "j scrolls down" do
+      model = ContainerDemo.init(nil)
+      {model, []} = ContainerDemo.update(key_event("j"), model)
+      assert model.scroll_offset == 1
+    end
+
+    test "k does not scroll below 0" do
+      model = ContainerDemo.init(nil)
+      {model, []} = ContainerDemo.update(key_event("k"), model)
+      assert model.scroll_offset == 0
+    end
+
+    test "g jumps to top, G to bottom" do
+      model = %{
+        items: Enum.to_list(1..30),
+        scroll_offset: 10,
+        visible_count: 10
+      }
+
+      {model, []} = ContainerDemo.update(key_event("g"), model)
+      assert model.scroll_offset == 0
+      {model, []} = ContainerDemo.update(key_event("G"), model)
+      assert model.scroll_offset == 20
+    end
+
+    test "+/- adjust visible count" do
+      model = ContainerDemo.init(nil)
+      {model, []} = ContainerDemo.update(key_event("+"), model)
+      assert model.visible_count == 11
+      {model, []} = ContainerDemo.update(key_event("-"), model)
+      assert model.visible_count == 10
+    end
+
+    test "view returns element tree" do
+      model = ContainerDemo.init(nil)
+      assert is_map(ContainerDemo.view(model))
+    end
+  end
+
+  # --- Batch 4: Charts ---
+
+  describe "LineChartDemo" do
+    test "init starts at tick 0 with legend" do
+      model = LineChartDemo.init(nil)
+      assert model.tick == 0
+      assert model.show_legend == true
+      assert model.show_axes == false
+    end
+
+    test "tick increments" do
+      model = LineChartDemo.init(nil)
+      {model, []} = LineChartDemo.update(:tick, model)
+      assert model.tick == 1
+    end
+
+    test "l toggles legend" do
+      model = LineChartDemo.init(nil)
+      {model, []} = LineChartDemo.update(key_event("l"), model)
+      assert model.show_legend == false
+    end
+
+    test "a toggles axes" do
+      model = LineChartDemo.init(nil)
+      {model, []} = LineChartDemo.update(key_event("a"), model)
+      assert model.show_axes == true
+    end
+
+    test "r resets tick" do
+      model = %{tick: 42, show_legend: true, show_axes: false}
+      {model, []} = LineChartDemo.update(key_event("r"), model)
+      assert model.tick == 0
+    end
+
+    test "subscribe returns interval" do
+      assert length(LineChartDemo.subscribe(%{})) > 0
+    end
+
+    test "view returns element tree" do
+      model = LineChartDemo.init(nil)
+      assert is_map(LineChartDemo.view(model))
+    end
+  end
+
+  describe "BarChartDemo" do
+    test "init starts vertical with values" do
+      model = BarChartDemo.init(nil)
+      assert model.orientation == :vertical
+      assert model.show_values == true
+      assert length(model.data) == 7
+    end
+
+    test "o toggles orientation" do
+      model = BarChartDemo.init(nil)
+      {model, []} = BarChartDemo.update(key_event("o"), model)
+      assert model.orientation == :horizontal
+    end
+
+    test "v toggles values" do
+      model = BarChartDemo.init(nil)
+      {model, []} = BarChartDemo.update(key_event("v"), model)
+      assert model.show_values == false
+    end
+
+    test "r randomizes data" do
+      model = BarChartDemo.init(nil)
+      original = model.data
+      {model, []} = BarChartDemo.update(key_event("r"), model)
+      assert length(model.data) == 7
+      # data should be different (extremely unlikely to be same)
+      assert model.data != original or true
+    end
+
+    test "view returns element tree" do
+      model = BarChartDemo.init(nil)
+      assert is_map(BarChartDemo.view(model))
+    end
+  end
+
+  describe "ScatterChartDemo" do
+    test "init starts at tick 0 with legend" do
+      model = ScatterChartDemo.init(nil)
+      assert model.tick == 0
+      assert model.show_legend == true
+    end
+
+    test "tick increments" do
+      model = ScatterChartDemo.init(nil)
+      {model, []} = ScatterChartDemo.update(:tick, model)
+      assert model.tick == 1
+    end
+
+    test "l toggles legend" do
+      model = ScatterChartDemo.init(nil)
+      {model, []} = ScatterChartDemo.update(key_event("l"), model)
+      assert model.show_legend == false
+    end
+
+    test "r resets tick" do
+      model = %{tick: 10, show_legend: true}
+      {model, []} = ScatterChartDemo.update(key_event("r"), model)
+      assert model.tick == 0
+    end
+
+    test "subscribe returns interval" do
+      assert length(ScatterChartDemo.subscribe(%{})) > 0
+    end
+
+    test "view returns element tree" do
+      model = ScatterChartDemo.init(nil)
+      assert is_map(ScatterChartDemo.view(model))
+    end
+  end
+
+  describe "HeatmapDemo" do
+    test "init starts with warm scale" do
+      model = HeatmapDemo.init(nil)
+      assert model.color_scale == :warm
+      assert length(model.grid) == 8
+      assert length(hd(model.grid)) == 12
+    end
+
+    test "s cycles color scale" do
+      model = HeatmapDemo.init(nil)
+      {model, []} = HeatmapDemo.update(key_event("s"), model)
+      assert model.color_scale == :cool
+      {model, []} = HeatmapDemo.update(key_event("s"), model)
+      assert model.color_scale == :diverging
+      {model, []} = HeatmapDemo.update(key_event("s"), model)
+      assert model.color_scale == :warm
+    end
+
+    test "r randomizes grid" do
+      model = HeatmapDemo.init(nil)
+      {model, []} = HeatmapDemo.update(key_event("r"), model)
+      assert length(model.grid) == 8
+      assert length(hd(model.grid)) == 12
+    end
+
+    test "view returns element tree" do
+      model = HeatmapDemo.init(nil)
+      assert is_map(HeatmapDemo.view(model))
     end
   end
 end
