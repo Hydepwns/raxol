@@ -158,7 +158,7 @@ defmodule Raxol.Performance.TextWrappingCacheTest do
       lines = TextWrappingCached.wrap_to_pixel_width(text, 200, font_manager)
 
       assert is_list(lines)
-      assert length(lines) > 0
+      assert [_ | _] = lines
     end
   end
 end

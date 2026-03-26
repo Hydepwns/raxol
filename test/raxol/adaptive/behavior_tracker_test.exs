@@ -103,7 +103,7 @@ defmodule Raxol.Adaptive.BehaviorTrackerTest do
       Process.sleep(50)
 
       aggregates = BehaviorTracker.get_aggregates(pid, 5)
-      assert length(aggregates) >= 1
+      assert [_ | _] = aggregates
     end
   end
 

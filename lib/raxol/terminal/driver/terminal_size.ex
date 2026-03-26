@@ -75,25 +75,9 @@ defmodule Raxol.Terminal.Driver.TerminalSize do
 
       _ ->
         # In -noshell mode, :io.columns/rows fail. Use stty via /dev/tty.
-        case :os.cmd(~c"stty size < /dev/tty 2>/dev/null") do
-          result when is_list(result) ->
-            str = List.to_string(result) |> String.trim()
-
-            case String.split(str) do
-              [rows_s, cols_s] ->
-                rows = String.to_integer(rows_s)
-                cols = String.to_integer(cols_s)
-
-                if rows > 0 and cols > 0,
-                  do: {:ok, cols, rows},
-                  else: {:ok, 80, 24}
-
-              _ ->
-                {:ok, 80, 24}
-            end
-
-          _ ->
-            {:ok, 80, 24}
+        case Raxol.Terminal.Driver.Stty.size() do
+          {:ok, cols, rows} -> {:ok, cols, rows}
+          :error -> {:ok, 80, 24}
         end
     end
   end

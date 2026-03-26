@@ -309,7 +309,7 @@ defmodule Raxol.Navigation.Vim do
         command_buffer: ""
     }
 
-    if length(matches) > 0 do
+    if matches != [] do
       {:ok, %{new_state | cursor: hd(matches)}}
     else
       {:ok, new_state}

@@ -38,7 +38,7 @@ defmodule Raxol.Search.FuzzyTest do
     test "matches non-consecutive characters", %{buffer: buffer} do
       results = Fuzzy.search(buffer, "hlo", :fuzzy)
 
-      assert length(results) > 0
+      assert [_ | _] = results
       [match | _] = results
       assert match.position != nil
       assert match.score > 0
@@ -86,7 +86,7 @@ defmodule Raxol.Search.FuzzyTest do
     test "finds exact string matches", %{buffer: buffer} do
       results = Fuzzy.search(buffer, "Hello", :exact)
 
-      assert length(results) >= 1
+      assert [_ | _] = results
       [match | _] = results
       assert match.score == 1.0
     end
@@ -117,19 +117,19 @@ defmodule Raxol.Search.FuzzyTest do
     test "matches regex pattern", %{buffer: buffer} do
       results = Fuzzy.search(buffer, ~r/H\w+/, :regex)
 
-      assert length(results) >= 1
+      assert [_ | _] = results
     end
 
     test "matches complex patterns", %{buffer: buffer} do
       results = Fuzzy.search(buffer, ~r/[Hh]el+o/, :regex)
 
-      assert length(results) >= 1
+      assert [_ | _] = results
     end
 
     test "accepts string regex", %{buffer: buffer} do
       results = Fuzzy.search(buffer, "H\\w+", :regex)
 
-      assert length(results) >= 1
+      assert [_ | _] = results
     end
 
     test "handles invalid regex gracefully", %{buffer: buffer} do
@@ -145,7 +145,7 @@ defmodule Raxol.Search.FuzzyTest do
       search = Fuzzy.update_query(search, "hello")
 
       assert search.query == "hello"
-      assert length(search.matches) > 0
+      assert [_ | _] = search.matches
       assert search.current_index == 0
     end
 

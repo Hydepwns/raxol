@@ -17,7 +17,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       result = Engine.apply_layout(view, dimensions)
 
       assert is_list(result)
-      assert length(result) > 0
+      assert [_ | _] = result
 
       # The first element should be a text element
       text_element = Enum.find(result, fn elem -> elem.type == :text end)

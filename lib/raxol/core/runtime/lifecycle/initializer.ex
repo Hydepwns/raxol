@@ -67,20 +67,9 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
         {cols, rows}
 
       _ ->
-        result = :os.cmd(~c"stty size < /dev/tty 2>/dev/null")
-        str = List.to_string(result) |> String.trim()
-
-        case String.split(str) do
-          [rows_s, cols_s] ->
-            rows = String.to_integer(rows_s)
-            cols = String.to_integer(cols_s)
-
-            if rows > 0 and cols > 0,
-              do: {cols, rows},
-              else: {default_w, default_h}
-
-          _ ->
-            {default_w, default_h}
+        case Raxol.Terminal.Driver.Stty.size() do
+          {:ok, cols, rows} -> {cols, rows}
+          :error -> {default_w, default_h}
         end
     end
   end

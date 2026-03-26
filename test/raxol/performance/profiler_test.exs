@@ -124,7 +124,7 @@ defmodule Raxol.Performance.ProfilerTest do
 
       # Check that memory metrics were recorded
       report = Profiler.report(operations: [:memory_test])
-      assert length(report) > 0
+      assert [_ | _] = report
     end
   end
 

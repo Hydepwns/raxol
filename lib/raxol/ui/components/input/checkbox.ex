@@ -90,17 +90,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   @impl Raxol.UI.Components.Base.Component
   @spec update(map(), t()) :: {t(), list()}
   def update(props, state) when is_map(props) do
-    # Merge new props into state, with style/theme merged as in other components
-    merged_style = Map.merge(state.style || %{}, Map.get(props, :style, %{}))
-    merged_theme = Map.merge(state.theme || %{}, Map.get(props, :theme, %{}))
-
-    new_state =
-      state
-      |> Map.merge(props)
-      |> Map.put(:style, merged_style)
-      |> Map.put(:theme, merged_theme)
-
-    {new_state, []}
+    Raxol.UI.Components.Base.Component.merge_props(props, state)
   end
 
   @impl Raxol.UI.Components.Base.Component

@@ -37,7 +37,7 @@ defmodule Raxol.Sensor.HUDOverlayTest do
       send(pid, {:fused_update, fused})
 
       assert_receive {:hud_cells, cells}, 200
-      assert length(cells) > 0
+      assert [_ | _] = cells
       assert Enum.all?(cells, fn cell -> tuple_size(cell) == 6 end)
     end
 

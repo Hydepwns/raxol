@@ -455,7 +455,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
 
       # Staged changes section
       case state.staged_changes do
-        changes when is_list(changes) and length(changes) > 0 ->
+        [_ | _] = changes ->
           [render_section_header("Staged Changes", width)] ++
             Enum.map(changes, &render_file_line(&1, :staged, width))
 
@@ -465,7 +465,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
 
       # Unstaged changes section
       case state.unstaged_changes do
-        changes when is_list(changes) and length(changes) > 0 ->
+        [_ | _] = changes ->
           [render_section_header("Unstaged Changes", width)] ++
             Enum.map(changes, &render_file_line(&1, :unstaged, width))
 
@@ -475,7 +475,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
 
       # Untracked files section
       case state.untracked_files do
-        files when is_list(files) and length(files) > 0 ->
+        [_ | _] = files ->
           [render_section_header("Untracked Files", width)] ++
             Enum.map(files, &render_file_line(&1, :untracked, width))
 

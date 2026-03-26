@@ -121,7 +121,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
       new_frame_index = rem(state.frame_index + 1, length(state.frames))
 
       new_color_index =
-        if length(state.colors) > 0 do
+        if state.colors != [] do
           rem(state.color_index + 1, length(state.colors))
         else
           0

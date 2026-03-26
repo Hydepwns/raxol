@@ -314,7 +314,7 @@ defmodule Raxol.Terminal.CompatibilityTest do
       |> Enum.filter(fn {_, supported} -> !supported end)
       |> Enum.map(fn {feature, _} -> feature end)
 
-    if length(missing_features) > 0 do
+    if missing_features != [] do
       IO.puts("\nRecommendations:")
 
       case platform do

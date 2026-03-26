@@ -60,7 +60,7 @@ defmodule Raxol.Property.ParserTest do
         parsed = Parser.parse(sequence)
 
         # Should parse as cursor position command
-        assert length(parsed) > 0
+        assert [_ | _] = parsed
         assert Enum.any?(parsed, &is_map/1)
       end
     end
@@ -76,7 +76,7 @@ defmodule Raxol.Property.ParserTest do
 
         # Should parse the color sequence
         assert is_list(parsed)
-        assert length(parsed) > 0
+        assert [_ | _] = parsed
       end
     end
 
@@ -101,7 +101,7 @@ defmodule Raxol.Property.ParserTest do
 
         # Should parse the SGR sequence
         assert is_list(parsed)
-        assert length(parsed) > 0
+        assert [_ | _] = parsed
       end
     end
 

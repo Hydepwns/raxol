@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Commands.RegistryTest do
         aliases: ["t"],
         usage: "test [args]",
         completion: fn args ->
-          if length(args) > 0, do: :ok, else: {:error, :missing_args}
+          if args != [], do: :ok, else: {:error, :missing_args}
         end
       }
 

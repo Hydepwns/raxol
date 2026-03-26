@@ -55,16 +55,7 @@ defmodule Raxol.UI.Components.Input.Tabs do
   @impl true
   @spec update(map(), t()) :: {t(), list()}
   def update(props, state) when is_map(props) do
-    merged_style = Map.merge(state.style || %{}, Map.get(props, :style, %{}))
-    merged_theme = Map.merge(state.theme || %{}, Map.get(props, :theme, %{}))
-
-    new_state =
-      state
-      |> Map.merge(props)
-      |> Map.put(:style, merged_style)
-      |> Map.put(:theme, merged_theme)
-
-    {new_state, []}
+    Raxol.UI.Components.Base.Component.merge_props(props, state)
   end
 
   def update(_msg, state), do: {state, []}

@@ -72,7 +72,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
         # Should handle large parameters
         result = Parser.parse(sequence)
         assert is_list(result)
-        assert length(result) > 0
+        assert [_ | _] = result
       end
     end
 

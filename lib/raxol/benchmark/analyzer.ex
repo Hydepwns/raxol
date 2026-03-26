@@ -25,7 +25,7 @@ defmodule Raxol.Benchmark.Analyzer do
         timing_data = extract_timing_data(scenarios)
         analyze_timing_data(timing_data)
 
-      _ when is_list(results) and length(results) > 0 ->
+      [_ | _] = results ->
         # Check if it's a list of numbers
         if Enum.all?(results, &is_number/1) do
           analysis = StatisticalAnalyzer.analyze(results)

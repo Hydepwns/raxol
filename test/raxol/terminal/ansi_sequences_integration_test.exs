@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.ANSISequencesIntegrationTest do
         cell.style.foreground != :default
       end)
 
-      assert length(colored_cells) > 0
+      assert [_ | _] = colored_cells
     end
 
     test "processes git diff color sequences", %{emulator: emulator} do
@@ -74,7 +74,7 @@ defmodule Raxol.Terminal.ANSISequencesIntegrationTest do
       lines = state.main_screen_buffer.cells
 
       # Check that we have content
-      assert length(lines) > 0
+      assert [_ | _] = lines
 
       # Check for color application
       all_cells = List.flatten(lines)

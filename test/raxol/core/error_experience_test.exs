@@ -38,7 +38,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
 
       assert enhanced.category == :terminal_io
       assert enhanced.original_error == error
-      assert length(enhanced.suggestions) > 0
+      assert [_ | _] = enhanced.suggestions
       assert enhanced.performance_impact in [:none, :low, :medium, :high, :critical]
     end
 
@@ -61,7 +61,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
 
       assert enhanced.category == :performance
       assert enhanced.performance_impact in [:medium, :high, :critical]
-      assert length(enhanced.related_optimizations) > 0
+      assert [_ | _] = enhanced.related_optimizations
     end
 
     test "classifies component lifecycle errors correctly" do
@@ -132,7 +132,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
         String.contains?(suggestion.description, ["parser", "parsing", "performance"])
       end)
 
-      assert length(parser_suggestions) > 0
+      assert [_ | _] = parser_suggestions
     end
 
     test "recognizes memory pressure patterns" do
@@ -144,7 +144,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
       assert enhanced.performance_impact in [:medium, :high, :critical]
 
       # Check that suggestions are generated for performance errors
-      assert length(enhanced.suggestions) >= 0
+      assert is_list(enhanced.suggestions)
 
       # If memory suggestions are present, they should contain relevant keywords
       memory_suggestions = Enum.filter(enhanced.suggestions, fn suggestion ->
@@ -152,7 +152,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
       end)
 
       # Either have memory-specific suggestions or general performance suggestions
-      assert length(enhanced.suggestions) > 0 or length(memory_suggestions) >= 0
+      assert enhanced.suggestions != [] or is_list(memory_suggestions)
     end
 
     test "recognizes render batch failure patterns" do
@@ -169,7 +169,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
       end)
 
       # May not always have specific render suggestions
-      assert length(render_suggestions) >= 0
+      assert is_list(render_suggestions)
     end
   end
 
@@ -180,7 +180,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
 
       automatic_suggestions = Enum.filter(enhanced.suggestions, &(&1.type == :automatic))
 
-      assert length(automatic_suggestions) > 0
+      assert [_ | _] = automatic_suggestions
 
       auto_suggestion = List.first(automatic_suggestions)
       assert auto_suggestion.confidence > 0.0
@@ -194,7 +194,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
 
       guided_suggestions = Enum.filter(enhanced.suggestions, &(&1.type == :guided))
 
-      assert length(guided_suggestions) > 0
+      assert [_ | _] = guided_suggestions
 
       guided_suggestion = List.first(guided_suggestions)
       assert guided_suggestion.confidence > 0.0
@@ -207,7 +207,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
       enhanced = ErrorExperience.classify_and_enhance(error, %{})
 
       suggestion_with_tools = Enum.find(enhanced.suggestions, fn suggestion ->
-        length(suggestion.related_tools) > 0
+        suggestion.related_tools != []
       end)
 
       assert suggestion_with_tools != nil
@@ -247,7 +247,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
       error = %RuntimeError{message: "memory pressure detected"}
       enhanced = ErrorExperience.classify_and_enhance(error, %{})
 
-      assert length(enhanced.recovery_options) > 0
+      assert [_ | _] = enhanced.recovery_options
       assert :optimize in enhanced.recovery_options or
              :restart in enhanced.recovery_options or
              :debug in enhanced.recovery_options
@@ -257,7 +257,7 @@ defmodule Raxol.Core.ErrorExperienceTest do
       error = %RuntimeError{message: "render batch failure"}
       enhanced = ErrorExperience.classify_and_enhance(error, %{})
 
-      assert length(enhanced.recovery_options) > 0
+      assert [_ | _] = enhanced.recovery_options
       assert :retry in enhanced.recovery_options or
              :reduce_batch_size in enhanced.recovery_options or
              :debug in enhanced.recovery_options

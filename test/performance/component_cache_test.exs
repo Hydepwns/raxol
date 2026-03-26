@@ -28,7 +28,7 @@ defmodule Raxol.Performance.ComponentCacheTest do
       result2 = RendererCached.render_to_cells(element, theme)
 
       assert result1 == result2
-      assert length(result1) > 0
+      assert [_ | _] = result1
     end
 
     test "caches multiple elements with batch rendering" do
@@ -150,7 +150,7 @@ defmodule Raxol.Performance.ComponentCacheTest do
       result2 = RendererCached.render_tree(tree, theme)
 
       assert result1 == result2
-      assert length(result1) > 0
+      assert [_ | _] = result1
     end
 
     test "handles deep nesting with recursion limit" do

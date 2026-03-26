@@ -44,7 +44,7 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
              end)
 
       # Verify we have at least some segments
-      assert length(result) > 0
+      assert [_ | _] = result
     end
   end
 

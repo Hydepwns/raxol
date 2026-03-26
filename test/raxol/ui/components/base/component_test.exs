@@ -136,7 +136,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
 
       # Verify final state
       assert final_component.state.unmounted
-      assert length(events) > 0
+      assert [_ | _] = events
     end
 
     test "mount with initial props" do

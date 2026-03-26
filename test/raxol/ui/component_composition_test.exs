@@ -44,10 +44,10 @@ defmodule Raxol.UI.ComponentCompositionTest do
 
     # Should render both children
     child1_cells = Helper.get_cells_with_char(cells, "C")
-    assert length(child1_cells) > 0
+    assert [_ | _] = child1_cells
 
     child2_cells = Helper.get_cells_with_char(cells, "2")
-    assert length(child2_cells) > 0
+    assert [_ | _] = child2_cells
   end
 
   test "handles deep nesting of components" do
@@ -58,7 +58,7 @@ defmodule Raxol.UI.ComponentCompositionTest do
 
     # Should render grandchild
     grandchild_cells = Helper.get_cells_with_char(cells, "G")
-    assert length(grandchild_cells) > 0
+    assert [_ | _] = grandchild_cells
   end
 
   test "handles component inheritance" do
@@ -105,7 +105,7 @@ defmodule Raxol.UI.ComponentCompositionTest do
 
     # Should only render visible child
     visible_cells = Helper.get_cells_with_char(cells, "V")
-    assert length(visible_cells) > 0
+    assert [_ | _] = visible_cells
 
     hidden_cells = Helper.get_cells_with_char(cells, "H")
     assert Enum.empty?(hidden_cells)

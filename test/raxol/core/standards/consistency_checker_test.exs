@@ -179,7 +179,7 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
                ConsistencyChecker.check_directory("test_consistency_check")
 
       assert report.total_files == 2
-      assert length(report.issues) > 0
+      assert [_ | _] = report.issues
       assert Map.has_key?(report.summary, :missing_moduledoc)
     end
 

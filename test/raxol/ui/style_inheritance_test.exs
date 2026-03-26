@@ -126,7 +126,7 @@ defmodule Raxol.UI.StyleInheritanceTest do
       result = LayoutEngine.apply_layout(column, space)
 
       text_elements = Enum.filter(result, fn e -> e[:type] == :text end)
-      assert length(text_elements) > 0
+      assert [_ | _] = text_elements
 
       for elem <- text_elements do
         style = get_style(elem)
@@ -148,7 +148,7 @@ defmodule Raxol.UI.StyleInheritanceTest do
       result = LayoutEngine.apply_layout(row, space)
 
       text_elements = Enum.filter(result, fn e -> e[:type] == :text end)
-      assert length(text_elements) > 0
+      assert [_ | _] = text_elements
 
       for elem <- text_elements do
         style = get_style(elem)
@@ -159,7 +159,7 @@ defmodule Raxol.UI.StyleInheritanceTest do
       green_texts =
         Enum.filter(text_elements, fn e -> get_style(e)[:fg] == :green end)
 
-      assert length(green_texts) >= 1
+      assert [_ | _] = green_texts
     end
 
     test "child style takes precedence over parent" do
@@ -175,7 +175,7 @@ defmodule Raxol.UI.StyleInheritanceTest do
       result = LayoutEngine.apply_layout(column, space)
 
       text_elements = Enum.filter(result, fn e -> e[:type] == :text end)
-      assert length(text_elements) > 0
+      assert [_ | _] = text_elements
 
       elem = hd(text_elements)
       style = get_style(elem)
@@ -195,7 +195,7 @@ defmodule Raxol.UI.StyleInheritanceTest do
       result = LayoutEngine.apply_layout(column, space)
 
       text_elements = Enum.filter(result, fn e -> e[:type] == :text end)
-      assert length(text_elements) > 0
+      assert [_ | _] = text_elements
 
       elem = hd(text_elements)
       style = get_style(elem)
@@ -221,7 +221,7 @@ defmodule Raxol.UI.StyleInheritanceTest do
       result = LayoutEngine.apply_layout(tree, space)
 
       text_elements = Enum.filter(result, fn e -> e[:type] == :text end)
-      assert length(text_elements) > 0
+      assert [_ | _] = text_elements
 
       elem = hd(text_elements)
       style = get_style(elem)
@@ -243,7 +243,7 @@ defmodule Raxol.UI.StyleInheritanceTest do
       result = LayoutEngine.apply_layout(column, space)
 
       text_elements = Enum.filter(result, fn e -> e[:type] == :text end)
-      assert length(text_elements) > 0
+      assert [_ | _] = text_elements
 
       elem = hd(text_elements)
       style = get_style(elem)

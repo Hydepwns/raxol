@@ -189,7 +189,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       assert state.data == props.data
       assert state.border == props.border
       assert is_list(state.columns)
-      assert length(state.columns) > 0
+      assert [_ | _] = state.columns
       assert is_list(state.data)
     end
 

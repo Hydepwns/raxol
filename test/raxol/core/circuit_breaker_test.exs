@@ -185,7 +185,7 @@ defmodule Raxol.Core.CircuitBreakerTest do
 
       stats = CircuitBreaker.stats(name)
       state_changes = stats.metrics.state_changes
-      assert length(state_changes) >= 1
+      assert [_ | _] = state_changes
       assert hd(state_changes).state == :open
     end
   end

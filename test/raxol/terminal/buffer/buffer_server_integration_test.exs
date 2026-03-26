@@ -215,7 +215,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
 
       # Verify damage regions are tracked
       assert is_list(damage_regions)
-      assert length(damage_regions) > 0
+      assert [_ | _] = damage_regions
 
       # Clear damage regions
       :ok = BufferServer.clear_damage_regions(pid)

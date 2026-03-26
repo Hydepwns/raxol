@@ -81,7 +81,7 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   Checks if there are any saved states.
   """
   def has_saved_states?(%__MODULE__{} = state) do
-    length(state.saved_states) > 0
+    state.saved_states != []
   end
 
   @doc """

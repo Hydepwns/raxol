@@ -17,7 +17,7 @@ defmodule Raxol.Benchmark.RunnerTest do
         )
 
       assert result.scenarios
-      assert length(result.scenarios) > 0
+      assert [_ | _] = result.scenarios
 
       scenario = hd(result.scenarios)
       assert scenario.name == "test operation"

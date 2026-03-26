@@ -492,7 +492,7 @@ defmodule Raxol.UI.Theming.Theme do
   defp handle_missing_value(:component_styles, [:button | _]),
     do: %{background: "#000000"}
 
-  defp handle_missing_value(:colors, rest) when length(rest) > 0 do
+  defp handle_missing_value(:colors, [_ | _] = rest) do
     color_key = List.last(rest)
     get_color_fallback(color_key)
   end

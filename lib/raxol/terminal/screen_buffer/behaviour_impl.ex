@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.ScreenBuffer.BehaviourImpl do
 
   def handle_mode(buffer, _mode, _value), do: buffer
 
-  def has_saved_states?(buffer), do: length(buffer.saved_states || []) > 0
+  def has_saved_states?(buffer), do: (buffer.saved_states || []) != []
 
   def light_theme, do: %{}
 

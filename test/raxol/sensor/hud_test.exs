@@ -7,7 +7,7 @@ defmodule Raxol.Sensor.HUDTest do
     test "renders a gauge with correct cell format" do
       cells = HUD.render_gauge({0, 0, 30, 1}, 50.0)
 
-      assert length(cells) > 0
+      assert [_ | _] = cells
       assert Enum.all?(cells, fn cell -> tuple_size(cell) == 6 end)
     end
 
@@ -60,7 +60,7 @@ defmodule Raxol.Sensor.HUDTest do
       values = [1.0, 2.0, 3.0, 4.0, 5.0, 4.0, 3.0, 2.0]
       cells = HUD.render_sparkline({0, 0, 20, 1}, values)
 
-      assert length(cells) > 0
+      assert [_ | _] = cells
       assert Enum.all?(cells, fn cell -> tuple_size(cell) == 6 end)
     end
 
@@ -94,7 +94,7 @@ defmodule Raxol.Sensor.HUDTest do
     test "renders threat with correct cell format" do
       cells = HUD.render_threat({0, 0, 40, 1}, :high, 45.0)
 
-      assert length(cells) > 0
+      assert [_ | _] = cells
       assert Enum.all?(cells, fn cell -> tuple_size(cell) == 6 end)
     end
 
@@ -130,7 +130,7 @@ defmodule Raxol.Sensor.HUDTest do
       entities = [%{x: 0.5, y: 0.5}]
       cells = HUD.render_minimap({0, 0, 10, 8}, entities)
 
-      assert length(cells) > 0
+      assert [_ | _] = cells
       assert Enum.all?(cells, fn cell -> tuple_size(cell) == 6 end)
 
       # Should have border chars

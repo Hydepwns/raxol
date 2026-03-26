@@ -98,7 +98,7 @@ defmodule Raxol.Demo.CommandWhitelistTest do
       commands = CommandWhitelist.available_commands()
 
       assert is_list(commands)
-      assert length(commands) > 0
+      assert [_ | _] = commands
 
       Enum.each(commands, fn {name, description} ->
         assert is_binary(name)

@@ -92,7 +92,7 @@ defmodule Raxol.Test.Platform.ComponentRenderingTest do
 
       # Verify layout structure
       assert is_list(layout)
-      assert length(layout) > 0
+      assert [_ | _] = layout
 
       # Check for box border characters based on platform capability
       if Platform.supports_feature?(:unicode) do
@@ -180,7 +180,7 @@ defmodule Raxol.Test.Platform.ComponentRenderingTest do
 
       # Verify the rendered structure
       assert is_list(rendered)
-      assert length(rendered) > 0
+      assert [_ | _] = rendered
 
       # Check for appropriate progress indicators based on platform
       if Platform.supports_feature?(:unicode) do

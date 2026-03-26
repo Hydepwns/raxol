@@ -166,7 +166,7 @@ defmodule Raxol.Navigation.VimTest do
       {:ok, vim} = Vim.handle_key("Enter", vim)
 
       assert vim.mode == :normal
-      assert length(vim.search_matches) >= 0
+      assert is_list(vim.search_matches)
     end
 
     test "n navigates to next match when matches exist", %{vim: vim} do

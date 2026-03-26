@@ -7,7 +7,7 @@ defmodule Raxol.Demo.TextFormationTest do
     test "returns positions for each letter pixel" do
       positions = TextFormation.target_positions("R", 40, 12)
       assert is_list(positions)
-      assert length(positions) > 0
+      assert [_ | _] = positions
       assert Enum.all?(positions, fn {x, y} -> is_float(x) and is_float(y) end)
     end
 
@@ -28,7 +28,7 @@ defmodule Raxol.Demo.TextFormationTest do
   describe "create_formation_particles/5" do
     test "creates particles for each target position" do
       particles = TextFormation.create_formation_particles("R", 40, 12, 80, 24)
-      assert length(particles) > 0
+      assert [_ | _] = particles
 
       for p <- particles do
         assert Map.has_key?(p, :x)

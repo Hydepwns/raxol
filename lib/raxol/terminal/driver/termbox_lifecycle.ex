@@ -117,16 +117,7 @@ defmodule Raxol.Terminal.Driver.TermboxLifecycle do
           _ = :io.setopts(:standard_io, echo: true)
 
           # Restore original TTY settings (OS-level via /dev/tty)
-          _ =
-            case state.original_stty do
-              stty when is_binary(stty) and byte_size(stty) > 0 ->
-                :os.cmd(
-                  String.to_charlist("stty #{stty} < /dev/tty 2>/dev/null")
-                )
-
-              _ ->
-                :os.cmd(~c"stty sane < /dev/tty 2>/dev/null")
-            end
+          Raxol.Terminal.Driver.Stty.restore(state.original_stty)
 
           # Restore Logger output
           Logger.configure(level: :debug)

@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.ScreenBuffer.State do
   end
 
   def has_saved_states?(state) do
-    length(state.stack) > 0
+    state.stack != []
   end
 
   def get_saved_states_count(state) do

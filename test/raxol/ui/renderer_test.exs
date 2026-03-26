@@ -79,7 +79,7 @@ defmodule Raxol.UI.RendererTest do
         Renderer.render_to_cells([positioned_table], Theme.get(:test_theme))
 
       # Assert: Check the final character grid/cell list for correct padding/positioning
-      assert length(rendered_cells) > 0
+      assert [_ | _] = rendered_cells
 
       # Verify header cells (split: "H1" at (1,2) and (2,2), "H2" at (6,2) and (7,2))
       assert find_cell(rendered_cells, 1, 2) == {1, 2, "H", :cyan, :default, []}

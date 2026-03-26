@@ -159,17 +159,10 @@ defmodule Raxol.Terminal.Driver do
 
         # Save original TTY settings via /dev/tty (System.cmd pipes stdin,
         # so we must redirect from /dev/tty for stty to affect the real terminal)
-        original_stty =
-          case :os.cmd(~c"stty -g < /dev/tty 2>/dev/null") do
-            settings when is_list(settings) ->
-              settings |> List.to_string() |> String.trim()
-
-            _ ->
-              nil
-          end
+        original_stty = Raxol.Terminal.Driver.Stty.save()
 
         # Raw mode on the actual terminal: no echo, no line buffering, no signals
-        _ = :os.cmd(~c"stty raw -echo -icanon -isig < /dev/tty 2>/dev/null")
+        Raxol.Terminal.Driver.Stty.raw!()
 
         # Suppress Logger console output so it doesn't corrupt the TUI
         Logger.configure(level: :none)

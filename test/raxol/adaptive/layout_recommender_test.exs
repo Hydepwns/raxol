@@ -155,7 +155,7 @@ defmodule Raxol.Adaptive.LayoutRecommenderTest do
 
       rec = LayoutRecommender.get_last_recommendation(pid)
       assert rec != nil
-      assert length(rec.layout_changes) > 0
+      assert [_ | _] = rec.layout_changes
     end
   end
 end

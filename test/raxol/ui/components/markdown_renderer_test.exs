@@ -139,7 +139,7 @@ defmodule Raxol.UI.Components.MarkdownRendererTest do
       code_lines = Enum.filter(children(result), fn el ->
         el.style[:fg] == :yellow and el.content =~ "IO.puts"
       end)
-      assert length(code_lines) > 0
+      assert [_ | _] = code_lines
     end
 
     test "indents code lines" do

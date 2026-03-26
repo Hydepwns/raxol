@@ -16,7 +16,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     cells = Renderer.render_to_cells(element)
 
     # Should handle varying row lengths
-    assert length(cells) > 0
+    assert [_ | _] = cells
   end
 
   test "handles tables with empty data" do
@@ -26,7 +26,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     cells = Renderer.render_to_cells(element)
 
     # Should render headers only
-    assert length(cells) > 0
+    assert [_ | _] = cells
   end
 
   test "handles tables with empty headers" do
@@ -36,7 +36,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     cells = Renderer.render_to_cells(element)
 
     # Should handle empty headers
-    assert length(cells) > 0
+    assert [_ | _] = cells
   end
 
   test "handles tables with very long content" do
@@ -50,7 +50,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     cells = Renderer.render_to_cells(element)
 
     # Should handle long content
-    assert length(cells) > 0
+    assert [_ | _] = cells
   end
 
   test "handles tables with special characters" do
@@ -67,7 +67,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
 
     # Should handle special characters
     special_chars = Helper.get_cells_with_char(cells, "★")
-    assert length(special_chars) > 0
+    assert [_ | _] = special_chars
   end
 
   test "handles tables with custom column widths" do
@@ -82,7 +82,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     cells = Renderer.render_to_cells(element)
 
     # Should respect column widths
-    assert length(cells) > 0
+    assert [_ | _] = cells
   end
 
   test "handles tables with custom styles" do
@@ -123,6 +123,6 @@ defmodule Raxol.UI.SpecialComponentsTest do
     cells = Renderer.render_to_cells(element)
 
     # Should sort data
-    assert length(cells) > 0
+    assert [_ | _] = cells
   end
 end

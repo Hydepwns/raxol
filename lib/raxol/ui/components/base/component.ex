@@ -117,6 +117,25 @@ defmodule Raxol.UI.Components.Base.Component do
 
   @optional_callbacks [mount: 1, unmount: 1]
 
+  @doc """
+  Merges incoming props into component state, deep-merging `:style` and `:theme`.
+
+  Returns `{new_state, []}` suitable as an `update/2` return value.
+  """
+  @spec merge_props(map(), map()) :: {%{:style => map(), :theme => map(), optional(any()) => any()}, []}
+  def merge_props(props, state) when is_map(props) and is_map(state) do
+    merged_style = Map.merge(state.style || %{}, Map.get(props, :style, %{}))
+    merged_theme = Map.merge(state.theme || %{}, Map.get(props, :theme, %{}))
+
+    new_state =
+      state
+      |> Map.merge(props)
+      |> Map.put(:style, merged_style)
+      |> Map.put(:theme, merged_theme)
+
+    {new_state, []}
+  end
+
   defmacro __using__(_opts) do
     quote do
       @behaviour Raxol.UI.Components.Base.Component

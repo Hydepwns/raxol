@@ -19,7 +19,7 @@ defmodule Raxol.Swarm.OverlayRendererTest do
       }
 
       cells = OverlayRenderer.render_overlay(overlay, now: now, region: {0, 0, 80, 24})
-      assert length(cells) > 0
+      assert [_ | _] = cells
       # All cells should be {x, y, char, fg, bg, attrs} tuples
       assert Enum.all?(cells, fn cell -> tuple_size(cell) == 6 end)
     end
@@ -102,7 +102,7 @@ defmodule Raxol.Swarm.OverlayRendererTest do
       ]
 
       cells = OverlayRenderer.render_wingmate_summary({0, 0, 60, 5}, nodes, now: now)
-      assert length(cells) > 0
+      assert [_ | _] = cells
       # Second node should have yellow (stale)
       line2_cells = Enum.filter(cells, fn {_x, y, _c, _fg, _bg, _a} -> y == 1 end)
       assert Enum.any?(line2_cells, fn {_x, _y, _c, fg, _bg, _a} -> fg == :yellow end)
@@ -117,7 +117,7 @@ defmodule Raxol.Swarm.OverlayRendererTest do
       }
 
       cells = OverlayRenderer.render_comms_status({0, 0, 40, 5}, links)
-      assert length(cells) > 0
+      assert [_ | _] = cells
       # Should have both green and red cells
       colors = cells |> Enum.map(fn {_x, _y, _c, fg, _bg, _a} -> fg end) |> Enum.uniq()
       assert :green in colors

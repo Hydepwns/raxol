@@ -426,7 +426,7 @@ defmodule Raxol.Terminal.Input.Manager do
 
   defp handle_tab_with_completion(manager) do
     completions = manager.completion_callback.(manager.buffer.events)
-    apply_completion_if_available(length(completions) > 0, completions, manager)
+    apply_completion_if_available(completions != [], completions, manager)
   end
 
   defp handle_default_tab(manager) do

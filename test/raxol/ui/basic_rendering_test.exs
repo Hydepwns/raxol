@@ -59,7 +59,7 @@ defmodule Raxol.UI.BasicRenderingTest do
     cells = Renderer.render_to_cells(parent)
 
     text_cell = Helper.get_cells_with_char(cells, "t")
-    assert length(text_cell) > 0
+    assert [_ | _] = text_cell
   end
 
   test "handles non-ASCII characters in text" do
@@ -71,7 +71,7 @@ defmodule Raxol.UI.BasicRenderingTest do
         String.match?(char, ~r/[^\x00-\x7F]/u)
       end)
 
-    assert length(non_ascii_cells) > 0
+    assert [_ | _] = non_ascii_cells
   end
 
   test "handles very large elements" do
@@ -79,7 +79,7 @@ defmodule Raxol.UI.BasicRenderingTest do
     cells = Renderer.render_to_cells(element)
 
     # Should handle large elements without crashing
-    assert length(cells) > 0
+    assert [_ | _] = cells
   end
 
   test "handles elements with zero dimensions" do
@@ -97,6 +97,6 @@ defmodule Raxol.UI.BasicRenderingTest do
   test "handles elements with negative coordinates" do
     element = Helper.create_test_box(-5, -5, 10, 10)
     cells = Renderer.render_to_cells(element)
-    assert length(cells) > 0
+    assert [_ | _] = cells
   end
 end
