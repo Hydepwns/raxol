@@ -128,7 +128,13 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
       position: {0, 0},
       current_color: 0,
       attributes: %{width: :normal, height: :normal, size: :normal},
-      pixel_buffer: %{}
+      pixel_buffer: %{},
+      sixel_cursor_pos: {0, 0},
+      original_format: nil,
+      transparent_color: nil,
+      animation_frames: nil,
+      compression_enabled: true,
+      dithering_algorithm: :floyd_steinberg
     }
   end
 
@@ -157,7 +163,13 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
       position: {0, 0},
       current_color: 0,
       attributes: %{width: :normal, height: :normal, size: :normal},
-      pixel_buffer: %{}
+      pixel_buffer: %{},
+      sixel_cursor_pos: {0, 0},
+      original_format: nil,
+      transparent_color: nil,
+      animation_frames: nil,
+      compression_enabled: true,
+      dithering_algorithm: :floyd_steinberg
     }
   end
 
@@ -391,7 +403,10 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
     # Ensure palette is initialized
     state_with_palette =
       if map_size(state.palette) == 0 do
-        %{state | palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette()}
+        %{
+          state
+          | palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette()
+        }
       else
         state
       end
@@ -629,7 +644,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   * `{:ok, sixel_image}` - Converted Sixel image
   * `{:error, reason}` - Conversion error
   """
-  @spec from_image_data(binary(), image_format(), sixel_options()) ::
+  @spec from_image_data(binary(), :png | :jpeg | :gif | atom(), sixel_options()) ::
           {:ok, t()} | {:error, term()}
   def from_image_data(image_data, format, options \\ %{})
 

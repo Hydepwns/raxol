@@ -5,7 +5,7 @@
   #
   # Only truly unfixable warnings are suppressed here. Each is documented.
   #
-  # Total suppressed: ~40 warnings
+  # Total suppressed: ~39 warnings
   # Last updated: 2026-03
   #
   # ================================================================================
@@ -66,12 +66,15 @@
   ~r"core_protocols\.ex:\d+:contract_supertype",
 
   # ------------------------------------------------------------------------------
-  # BROAD PUBLIC API SPECS (contract_supertype) -- 5 warnings
+  # BROAD PUBLIC API SPECS (contract_supertype) -- 7 warnings
   # ------------------------------------------------------------------------------
   # Dialyzer narrows return types beyond what the public API intends.
   # e.g., t() vs exact struct literal, String.t() vs binary(), broad params
   # vs specific matched patterns. Specs are intentionally broader.
   ~r"app_templates\.ex:\d+:contract_supertype",
-  ~r"sixel_graphics\.ex:\d+:contract_supertype",
-  ~r"chart_utils\.ex:\d+:contract_supertype"
+  ~r"chart_utils\.ex:\d+:contract_supertype",
+  # handle_error returns {:stop, :normal, %{}} but spec says map() (equivalent in typespecs)
+  ~r"lifecycle\.ex:\d+:contract_supertype",
+  # Constructors return exact literal values; spec correctly uses t()
+  ~r"sixel_graphics\.ex:\d+:contract_supertype"
 ]

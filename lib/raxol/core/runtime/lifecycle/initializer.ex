@@ -16,6 +16,7 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
   or `{:error, reason, cleanup_fun}`.
   """
   def initialize_all(app_module, options) do
+    {:module, _} = Code.ensure_loaded(app_module)
     environment = Keyword.get(options, :environment, :terminal)
 
     with {:ok, registry_table} <- initialize_registry_table(app_module),
@@ -55,7 +56,10 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
     end
   rescue
     e ->
-      Log.debug("[Initializer] CodeReloader unavailable: #{Exception.message(e)}")
+      Log.debug(
+        "[Initializer] CodeReloader unavailable: #{Exception.message(e)}"
+      )
+
       nil
   end
 
@@ -181,7 +185,8 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
         Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false)),
       plugin_manager: pm_pid,
       command_registry_table: registry_table,
-      time_travel: Keyword.get(options, :time_travel_pid)
+      time_travel: Keyword.get(options, :time_travel_pid),
+      cycle_profiler: Keyword.get(options, :cycle_profiler_pid)
     }
 
     environment = Keyword.get(options, :environment, :terminal)
@@ -239,6 +244,10 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
       ]
       |> maybe_add_opt(:liveview_topic, Keyword.get(options, :liveview_topic))
       |> maybe_add_opt(:io_writer, Keyword.get(options, :io_writer))
+      |> maybe_add_opt(
+        :cycle_profiler,
+        Keyword.get(options, :cycle_profiler_pid)
+      )
 
     case Raxol.Core.Runtime.Rendering.Engine.start_link(engine_opts) do
       {:ok, engine_pid} ->

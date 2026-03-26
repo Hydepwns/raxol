@@ -6,6 +6,8 @@ defmodule Raxol.UI.Layout.CSSGrid.TrackParser do
   repeat() notation.
   """
 
+  @default_auto_repeat_count 5
+
   alias Raxol.UI.Layout.CSSGrid.Track
 
   @doc "Parse a track-list string into a list of Track structs."
@@ -57,10 +59,10 @@ defmodule Raxol.UI.Layout.CSSGrid.TrackParser do
   end
 
   def expand_by_count_type("auto-fit", pattern, _repeat_str),
-    do: List.duplicate(pattern, 5)
+    do: List.duplicate(pattern, @default_auto_repeat_count)
 
   def expand_by_count_type("auto-fill", pattern, _repeat_str),
-    do: List.duplicate(pattern, 5)
+    do: List.duplicate(pattern, @default_auto_repeat_count)
 
   def expand_by_count_type(count_str, pattern, repeat_str) do
     case Integer.parse(count_str) do

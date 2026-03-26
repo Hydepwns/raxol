@@ -9,6 +9,10 @@ defmodule Raxol.UI.Layout.Containers do
   * Gap and alignment handling
   """
 
+  @default_gap 1
+  @default_justify :start
+  @default_align :start
+
   alias Raxol.UI.Layout.Engine
 
   @doc """
@@ -29,19 +33,15 @@ defmodule Raxol.UI.Layout.Containers do
     # Get attrs with default empty map if not present
     attrs = Map.get(row, :attrs, %{})
 
-    # Calculate spacing between items
-    gap = Map.get(attrs, :gap, 1)
-    justify = Map.get(attrs, :justify, :start)
-    align = Map.get(attrs, :align, :start)
+    gap = Map.get(attrs, :gap, @default_gap)
+    justify = Map.get(attrs, :justify, @default_justify)
+    align = Map.get(attrs, :align, @default_align)
 
-    # Propagate inheritable styles (fg, bg, bold, etc.) to children
     children = inherit_styles(row, children)
 
-    # Skip if no children
     process_row_with_children(children, gap, justify, align, space, acc)
   end
 
-  # Catch-all clause for process_row
   def process_row(_, _space, acc), do: acc
 
   defp process_row_with_children([], _gap, _justify, _align, _space, acc),
@@ -137,15 +137,12 @@ defmodule Raxol.UI.Layout.Containers do
     # Get attrs with default empty map if not present
     attrs = Map.get(column, :attrs, %{})
 
-    # Calculate spacing between items
-    gap = Map.get(attrs, :gap, 1)
-    justify = Map.get(attrs, :justify, :start)
-    align = Map.get(attrs, :align, :start)
+    gap = Map.get(attrs, :gap, @default_gap)
+    justify = Map.get(attrs, :justify, @default_justify)
+    align = Map.get(attrs, :align, @default_align)
 
-    # Propagate inheritable styles (fg, bg, bold, etc.) to children
     children = inherit_styles(column, children)
 
-    # Skip if no children
     process_column_with_children(children, gap, justify, align, space, acc)
   end
 

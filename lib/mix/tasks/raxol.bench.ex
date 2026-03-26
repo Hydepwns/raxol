@@ -47,6 +47,7 @@ defmodule Mix.Tasks.Raxol.Bench do
   """
 
   use Mix.Task
+  require Logger
 
   @shortdoc "Run enhanced performance benchmarks"
 
@@ -60,45 +61,67 @@ defmodule Mix.Tasks.Raxol.Bench do
     compare: :boolean,
     dashboard: :boolean,
     regression: :boolean,
-    help: :boolean
+    help: :boolean,
+    format: :string,
+    output: :string,
+    suite: :string
   ]
 
   def run(args) do
     {opts, args, _} = OptionParser.parse(args, switches: @switches)
 
-    case {opts[:help], args} do
-      {true, _} ->
-        print_help()
-
-      {false, benchmark_args} ->
-        Mix.Task.run("app.start")
-        execute_benchmark(benchmark_args, opts)
+    if opts[:help] do
+      print_help()
+    else
+      Mix.Task.run("app.start")
+      execute_benchmark(args, opts)
     end
   end
 
   defp execute_benchmark(args, opts) do
-    case args do
-      [] ->
-        run_all_benchmarks(opts)
+    # Handle --suite flag as primary routing for new framework suites
+    if suite = opts[:suite] do
+      run_framework_suite(suite, opts)
+    else
+      case args do
+        [] ->
+          run_all_benchmarks(opts)
 
-      ["parser"] ->
-        run_parser_only(opts)
+        ["render"] ->
+          run_framework_suite("render", opts)
 
-      ["terminal"] ->
-        run_terminal_only(opts)
+        ["latency"] ->
+          run_framework_suite("latency", opts)
 
-      ["rendering"] ->
-        run_rendering_only(opts)
+        ["memory_widgets"] ->
+          run_framework_suite("memory_widgets", opts)
 
-      ["memory"] ->
-        run_memory_only(opts)
+        ["startup"] ->
+          run_framework_suite("startup", opts)
 
-      ["dashboard"] ->
-        run_dashboard_only(opts)
+        ["comparison"] ->
+          run_framework_suite("comparison", opts)
 
-      [benchmark] ->
-        Mix.shell().error("Unknown benchmark: #{benchmark}")
-        print_help()
+        # Legacy suites
+        ["parser"] ->
+          run_parser_only(opts)
+
+        ["terminal"] ->
+          run_terminal_only(opts)
+
+        ["rendering"] ->
+          run_rendering_only(opts)
+
+        ["memory"] ->
+          run_memory_only(opts)
+
+        ["dashboard"] ->
+          run_dashboard_only(opts)
+
+        [benchmark] ->
+          Mix.shell().error("Unknown benchmark: #{benchmark}")
+          print_help()
+      end
     end
   end
 
@@ -380,6 +403,121 @@ defmodule Mix.Tasks.Raxol.Bench do
     ]
   end
 
+  # -- Framework-level suites --
+
+  @compile {:no_warn_undefined, Raxol.Benchmark.Formatter}
+
+  defp run_framework_suite(suite, opts) do
+    quick = opts[:quick] || false
+
+    case resolve_suite(suite, quick) do
+      {:run, jobs, config} ->
+        prev_level = Logger.level()
+        if suite == "startup", do: Logger.configure(level: :error)
+
+        result = Benchee.run(jobs, config)
+
+        if suite == "startup", do: Logger.configure(level: prev_level)
+        maybe_write_output(result, suite, opts)
+
+      :skip ->
+        handle_non_benchee_suite(suite, opts)
+    end
+  end
+
+  defp resolve_suite(suite, quick) do
+    config = if quick, do: quick_config(), else: framework_config()
+
+    case suite do
+      "render" ->
+        {:run, Raxol.Benchmark.Suites.RenderThroughput.jobs(quick: quick),
+         config}
+
+      "latency" ->
+        {:run, Raxol.Benchmark.Suites.InputLatency.jobs(quick: quick), config}
+
+      "memory_widgets" ->
+        config = Keyword.put(config, :memory_time, 2)
+        {:run, Raxol.Benchmark.Suites.WidgetMemory.jobs(quick: quick), config}
+
+      "startup" ->
+        {:run, Raxol.Benchmark.Suites.Startup.jobs(quick: quick), config}
+
+      _ ->
+        :skip
+    end
+  end
+
+  defp handle_non_benchee_suite("comparison", _opts),
+    do: print_comparison_table()
+
+  defp handle_non_benchee_suite("all", opts), do: run_all_framework_suites(opts)
+
+  defp handle_non_benchee_suite(other, _opts) do
+    Mix.shell().error("Unknown suite: #{other}")
+  end
+
+  defp run_all_framework_suites(opts) do
+    for suite <- ~w(render latency memory_widgets startup) do
+      Mix.shell().info("\n--- Suite: #{suite} ---")
+      run_framework_suite(suite, opts)
+    end
+
+    print_comparison_table()
+  end
+
+  defp print_comparison_table do
+    Mix.shell().info("\n=== COMPETITOR COMPARISON (static reference) ===")
+
+    shell = Mix.shell()
+
+    Raxol.Benchmark.Suites.Comparison.comparison_table()
+    |> Enum.each(fn line -> shell.info(line) end)
+
+    Mix.shell().info(
+      "\nNote: Competitor numbers are published estimates. Raxol numbers are measured above."
+    )
+  end
+
+  defp maybe_write_output(result, suite, opts) do
+    case {opts[:format], opts[:output]} do
+      {nil, _} ->
+        :ok
+
+      {"json", path} when is_binary(path) ->
+        content =
+          Raxol.Benchmark.Formatter.json(%{suite => result},
+            include_system: true
+          )
+
+        :ok = Raxol.Benchmark.Formatter.write(content, path)
+        Mix.shell().info("JSON results written to #{path}")
+
+      {"markdown", path} when is_binary(path) ->
+        content = Raxol.Benchmark.Formatter.markdown(%{suite => result})
+        :ok = Raxol.Benchmark.Formatter.write(content, path)
+        Mix.shell().info("Markdown results written to #{path}")
+
+      {"json", nil} ->
+        IO.puts(Raxol.Benchmark.Formatter.json(%{suite => result}))
+
+      {"markdown", nil} ->
+        IO.puts(Raxol.Benchmark.Formatter.markdown(%{suite => result}))
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp framework_config do
+    [
+      time: 3,
+      memory_time: 1,
+      warmup: 0.5,
+      formatters: [Benchee.Formatters.Console]
+    ]
+  end
+
   defp print_help do
     Mix.shell().info("""
 
@@ -387,14 +525,22 @@ defmodule Mix.Tasks.Raxol.Bench do
 
     Usage:
       mix raxol.bench                    # Run all benchmarks
-      mix raxol.bench parser             # Run parser benchmarks only
-      mix raxol.bench terminal           # Run terminal component benchmarks
-      mix raxol.bench rendering          # Run rendering benchmarks
-      mix raxol.bench memory             # Run memory benchmarks
+      mix raxol.bench render             # Framework render throughput
+      mix raxol.bench latency            # Framework input latency
+      mix raxol.bench memory_widgets     # Widget memory profiling
+      mix raxol.bench startup            # Lifecycle startup timing
+      mix raxol.bench comparison         # Show competitor reference data
+      mix raxol.bench parser             # Legacy: parser benchmarks
+      mix raxol.bench terminal           # Legacy: terminal benchmarks
+      mix raxol.bench rendering          # Legacy: rendering benchmarks
+      mix raxol.bench memory             # Legacy: memory benchmarks
       mix raxol.bench dashboard          # Generate dashboard from latest results
 
     Options:
+      --suite NAME                       # Run a specific suite (render, latency, etc.)
       --quick                            # Quick benchmark run (reduced time)
+      --format FORMAT                    # Output format: json, markdown
+      --output PATH                      # Write formatted output to file
       --compare                          # Compare with previous results
       --dashboard                        # Generate full performance dashboard
       --regression                       # Check for performance regressions (5% threshold)
@@ -402,6 +548,8 @@ defmodule Mix.Tasks.Raxol.Bench do
 
     Examples:
       mix raxol.bench --quick            # Quick performance check
+      mix raxol.bench render             # Render throughput only
+      mix raxol.bench --suite render --format markdown --output BENCHMARKS.md
       mix raxol.bench parser --dashboard # Parser benchmarks + dashboard
       mix raxol.bench --regression       # Full benchmarks with regression detection
 

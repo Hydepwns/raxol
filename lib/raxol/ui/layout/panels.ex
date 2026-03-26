@@ -11,6 +11,12 @@ defmodule Raxol.UI.Layout.Panels do
 
   # All Kernel functions are now available
 
+  @border_thickness 1
+  @double_border 2 * @border_thickness
+  @title_x_offset 2
+  @min_panel_width 4
+  @min_panel_height 3
+
   alias Raxol.UI.Layout.Engine
   require Raxol.Core.Runtime.Log
 
@@ -76,7 +82,7 @@ defmodule Raxol.UI.Layout.Panels do
   defp create_title_element(title_text, attrs, space) do
     %{
       type: :text,
-      x: space.x + 2,
+      x: space.x + @title_x_offset,
       y: space.y,
       text: " #{title_text} ",
       attrs: Map.get(attrs, :title_attrs, %{})
@@ -85,10 +91,10 @@ defmodule Raxol.UI.Layout.Panels do
 
   defp calculate_inner_space(space, panel_dimensions) do
     %{
-      x: space.x + 1,
-      y: space.y + 1,
-      width: max(0, panel_dimensions.width - 2),
-      height: max(0, panel_dimensions.height - 2)
+      x: space.x + @border_thickness,
+      y: space.y + @border_thickness,
+      width: max(0, panel_dimensions.width - @double_border),
+      height: max(0, panel_dimensions.height - @double_border)
     }
   end
 
@@ -152,8 +158,8 @@ defmodule Raxol.UI.Layout.Panels do
   defp calculate_content_space(available_space) do
     %{
       available_space
-      | width: max(0, available_space.width - 2),
-        height: max(0, available_space.height - 2)
+      | width: max(0, available_space.width - @double_border),
+        height: max(0, available_space.height - @double_border)
     }
   end
 
@@ -183,8 +189,7 @@ defmodule Raxol.UI.Layout.Panels do
   end
 
   defp determine_base_width(children_size, _available_space, _explicit_width) do
-    # Add borders
-    children_size.width + 2
+    children_size.width + @double_border
   end
 
   defp determine_base_height(%{height: 0}, available_space, nil) do
@@ -192,18 +197,17 @@ defmodule Raxol.UI.Layout.Panels do
   end
 
   defp determine_base_height(children_size, _available_space, _explicit_height) do
-    # Add borders
-    children_size.height + 2
+    children_size.height + @double_border
   end
 
   defp apply_constraints(dimensions, available_space) do
-    min_width = 4
-    min_height = 3
-
     %{
-      width: dimensions.width |> max(min_width) |> min(available_space.width),
+      width:
+        dimensions.width |> max(@min_panel_width) |> min(available_space.width),
       height:
-        dimensions.height |> max(min_height) |> min(available_space.height)
+        dimensions.height
+        |> max(@min_panel_height)
+        |> min(available_space.height)
     }
   end
 

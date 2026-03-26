@@ -24,9 +24,19 @@ defmodule Raxol.Playground.App do
   @categories [nil] ++ Catalog.list_categories()
   @complexities [nil, :basic, :intermediate, :advanced]
 
+  @category_order %{
+    input: 0,
+    display: 1,
+    feedback: 2,
+    navigation: 3,
+    overlay: 4,
+    layout: 5,
+    visualization: 6
+  }
+
   @impl true
   def init(_context) do
-    components = Catalog.list_components()
+    components = Catalog.list_components() |> sort_by_category()
 
     %{
       components: components,
@@ -153,137 +163,132 @@ defmodule Raxol.Playground.App do
   @impl true
   def subscribe(_model), do: []
 
-  # -- Layout sections --
+  # -- Layout --
 
   defp main_view(model) do
     column style: %{gap: 0} do
       [
-        header(),
-        divider(),
+        header_bar(),
         row style: %{gap: 0} do
           [
-            sidebar(model),
-            divider(char: "|"),
-            demo_area(model)
+            sidebar_panel(model),
+            demo_panel(model)
           ]
         end,
-        divider(),
-        footer(model)
+        status_bar(model)
       ]
     end
   end
 
-  defp header do
-    row style: %{gap: 2} do
+  defp header_bar do
+    row style: %{gap: 0} do
       [
-        text("Raxol Playground", style: [:bold]),
+        text(" raxol", style: [:bold], fg: :magenta),
+        text(" playground ", style: [:bold], fg: :cyan),
         text("-- browse, interact, copy", style: [:dim])
       ]
     end
   end
 
-  defp sidebar(model) do
-    filter_line = filter_indicator(model)
-
-    items =
-      model.components
-      |> Enum.with_index()
-      |> Enum.map(fn {comp, idx} ->
-        prefix = if idx == model.cursor, do: "> ", else: "  "
-        style = if idx == model.cursor, do: [:bold], else: []
-        text(prefix <> comp.name, style: style)
-      end)
+  defp sidebar_panel(model) do
+    items = build_sidebar_items(model)
+    border_fg = if model.focus == :sidebar, do: :cyan, else: :white
 
     search_line =
       if model.focus == :search do
-        text("/ #{model.search || ""}_")
+        [text(" / #{model.search || ""}_", fg: :yellow)]
       else
-        text("")
+        []
       end
 
-    box style: %{width: 22, padding: 1} do
+    filter_lines = active_filters(model)
+
+    box style: %{border: :rounded, fg: border_fg, width: 28} do
       column style: %{gap: 0} do
-        [
-          text("Components", style: [:bold, :underline]),
-          filter_line,
-          search_line | items
-        ]
+        filter_lines ++ search_line ++ items
       end
     end
   end
 
-  defp filter_indicator(model) do
+  defp build_sidebar_items(model) do
+    {_last_cat, items_rev} =
+      model.components
+      |> Enum.with_index()
+      |> Enum.reduce({nil, []}, fn {comp, idx}, {last_cat, acc} ->
+        is_current = idx == model.cursor
+        marker = if is_current, do: " ▸ ", else: "   "
+        item_opts = if is_current, do: [style: [:bold], fg: :green], else: []
+        item = text(marker <> comp.name, item_opts)
+
+        if comp.category != last_cat do
+          hdr =
+            text("  #{category_label(comp.category)}", style: [:dim], fg: :blue)
+
+          {comp.category, [item, hdr | acc]}
+        else
+          {comp.category, [item | acc]}
+        end
+      end)
+
+    Enum.reverse(items_rev)
+  end
+
+  defp active_filters(model) do
     parts =
       [
-        if(model.category_filter, do: "cat:#{model.category_filter}"),
-        if(model.complexity_filter, do: "lvl:#{model.complexity_filter}")
+        if(model.category_filter, do: "#{model.category_filter}"),
+        if(model.complexity_filter, do: "#{model.complexity_filter}")
       ]
       |> Enum.reject(&is_nil/1)
 
     case parts do
-      [] -> text("")
-      _ -> text(Enum.join(parts, " "), style: [:dim])
+      [] -> []
+      _ -> [text(" [#{Enum.join(parts, " | ")}]", style: [:dim], fg: :yellow)]
     end
   end
 
-  defp demo_area(model) do
+  defp demo_panel(model) do
     case model.selected do
       nil ->
-        box style: %{padding: 2} do
-          text("Select a component from the sidebar.")
-        end
+        text("  Select a component from the sidebar.", style: [:dim])
 
       comp ->
-        column style: %{gap: 1, padding: 1} do
-          [
-            demo_header(comp),
-            divider(),
-            demo_content(model),
-            if model.show_code do
-              code_panel(comp)
-            else
-              text("")
-            end
-          ]
+        badge_fg = complexity_color(comp.complexity)
+
+        info =
+          text(
+            " #{comp.name} [#{comp.complexity}] #{comp.description}",
+            style: [:dim],
+            fg: badge_fg
+          )
+
+        children = [info, demo_content(model)]
+
+        children =
+          if model.show_code, do: children ++ [code_panel(comp)], else: children
+
+        column style: %{gap: 0} do
+          children
         end
     end
   end
 
-  defp demo_header(comp) do
-    complexity_label =
-      case comp.complexity do
-        :basic -> "basic"
-        :intermediate -> "intermediate"
-        :advanced -> "advanced"
-      end
-
-    row style: %{gap: 2} do
-      [
-        text(comp.name, style: [:bold]),
-        text("[#{complexity_label}]", style: [:dim]),
-        text(comp.description, style: [:dim])
-      ]
-    end
-  end
+  defp complexity_color(:basic), do: :green
+  defp complexity_color(:intermediate), do: :yellow
+  defp complexity_color(:advanced), do: :magenta
 
   defp demo_content(model) do
     case model.demo_model do
-      nil ->
-        text("(no demo loaded)")
-
-      demo_model ->
-        model.selected.module.view(demo_model)
+      nil -> text(" (no demo loaded)", style: [:dim])
+      demo_model -> model.selected.module.view(demo_model)
     end
   end
 
   defp code_panel(comp) do
     column style: %{gap: 0} do
       [
-        divider(),
-        text("Code:", style: [:bold]),
-        box style: %{border: :single, padding: 1} do
-          text(String.trim(comp.code_snippet))
-        end
+        text(" Code", style: [:bold], fg: :yellow),
+        text(" " <> String.trim(comp.code_snippet), fg: :yellow)
       ]
     end
   end
@@ -291,29 +296,41 @@ defmodule Raxol.Playground.App do
   defp help_overlay(model) do
     column style: %{gap: 0} do
       [
-        header(),
-        divider(),
-        box style: %{padding: 2, border: :single} do
-          column style: %{gap: 1} do
+        header_bar(),
+        text(""),
+        box style: %{border: :double, fg: :cyan} do
+          column style: %{gap: 0} do
             [
-              text("Keybindings", style: [:bold, :underline]),
               text(""),
-              text("  j / k / Up / Down   Navigate sidebar"),
-              text("  Enter               Select component"),
-              text("  Tab                 Cycle focus (sidebar / demo)"),
-              text("  /                   Search components"),
-              text("  f                   Cycle category filter"),
-              text("  x                   Cycle complexity filter"),
-              text("  c                   Toggle code snippet"),
-              text("  ?                   Toggle this help"),
-              text("  q / Ctrl+C          Quit"),
+              text("  KEYBINDINGS", style: [:bold, :underline], fg: :cyan),
+              text(""),
+              help_line("j / k / arrows", "Navigate sidebar"),
+              help_line("Enter", "Select component"),
+              help_line("Tab", "Cycle focus (sidebar / demo)"),
+              help_line("/", "Search components"),
+              help_line("f", "Cycle category filter"),
+              help_line("x", "Cycle complexity filter"),
+              help_line("c", "Toggle code snippet"),
+              help_line("?", "Toggle this help"),
+              help_line("q / Ctrl+C", "Quit"),
               text(""),
               filter_status(model),
               text(""),
-              text("Press ? or Escape to close.", style: [:dim])
+              text("  Press ? or Escape to close.", style: [:dim])
             ]
           end
         end
+      ]
+    end
+  end
+
+  defp help_line(key, desc) do
+    padded = String.pad_trailing(key, 18)
+
+    row style: %{gap: 0} do
+      [
+        text("  " <> padded, style: [:bold], fg: :yellow),
+        text(desc)
       ]
     end
   end
@@ -327,26 +344,41 @@ defmodule Raxol.Playground.App do
     text("  Filters: category=#{cat}  complexity=#{cplx}", style: [:dim])
   end
 
-  defp footer(model) do
-    focus_indicator =
+  defp status_bar(model) do
+    focus_label =
       case model.focus do
-        :sidebar -> "[sidebar]"
-        :demo -> "[demo]"
-        :search -> "[search]"
+        :sidebar -> " SIDEBAR "
+        :demo -> " DEMO "
+        :search -> " SEARCH "
       end
+
+    keys =
+      "j/k nav  ·  Tab focus  ·  f filter  ·  x level  ·  c code  ·  / search  ·  ? help  ·  q quit"
 
     row style: %{gap: 2} do
       [
-        text(focus_indicator, style: [:bold]),
-        text(
-          "[j/k] nav  [Tab] focus  [f] filter  [x] level  [c] code  [/] search  [?] help  [q] quit",
-          style: [:dim]
-        )
+        text(focus_label, style: [:bold, :reverse], fg: :cyan),
+        text(keys, style: [:dim])
       ]
     end
   end
 
+  defp category_label(:input), do: "INPUT"
+  defp category_label(:display), do: "DISPLAY"
+  defp category_label(:feedback), do: "FEEDBACK"
+  defp category_label(:navigation), do: "NAVIGATION"
+  defp category_label(:overlay), do: "OVERLAY"
+  defp category_label(:layout), do: "LAYOUT"
+  defp category_label(:visualization), do: "CHARTS"
+  defp category_label(cat), do: cat |> to_string() |> String.upcase()
+
   # -- State helpers --
+
+  defp sort_by_category(components) do
+    Enum.sort_by(components, fn c ->
+      Map.get(@category_order, c.category, 99)
+    end)
+  end
 
   defp init_demo(model) do
     case model.selected do
@@ -396,12 +428,15 @@ defmodule Raxol.Playground.App do
         complexity: model.complexity_filter,
         search: search
       )
+      |> sort_by_category()
 
     %{model | components: components, cursor: 0}
   end
 
   defp forward_to_demo(model, event) do
-    {new_demo_model, _commands} = model.selected.module.update(event, model.demo_model)
+    {new_demo_model, _commands} =
+      model.selected.module.update(event, model.demo_model)
+
     {%{model | demo_model: new_demo_model}, []}
   end
 end

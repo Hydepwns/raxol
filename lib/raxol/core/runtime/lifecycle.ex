@@ -23,6 +23,26 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   defmodule State do
     @moduledoc false
+    @type t :: %__MODULE__{
+            app_module: module() | nil,
+            options: keyword(),
+            app_name: atom() | nil,
+            width: non_neg_integer(),
+            height: non_neg_integer(),
+            debug_mode: boolean(),
+            plugin_manager: pid() | nil,
+            command_registry_table: atom() | nil,
+            initial_commands: list(),
+            dispatcher_pid: pid() | nil,
+            driver_pid: pid() | nil,
+            rendering_engine_pid: pid() | nil,
+            code_reloader_pid: pid() | nil,
+            time_travel_pid: pid() | nil,
+            cycle_profiler_pid: pid() | nil,
+            model: map(),
+            dispatcher_ready: boolean(),
+            plugin_manager_ready: boolean()
+          }
     defstruct app_module: nil,
               options: [],
               app_name: nil,
@@ -37,6 +57,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
               rendering_engine_pid: nil,
               code_reloader_pid: nil,
               time_travel_pid: nil,
+              cycle_profiler_pid: nil,
               model: %{},
               dispatcher_ready: false,
               plugin_manager_ready: false
@@ -80,7 +101,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       "[#{__MODULE__}] initializing for #{inspect(app_module)} with options: #{inspect(options)}"
     )
 
-    options = maybe_start_time_travel(options)
+    options =
+      options
+      |> maybe_start_time_travel()
+      |> maybe_start_cycle_profiler()
 
     case Initializer.initialize_all(app_module, options) do
       {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid,
@@ -123,6 +147,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
        ) do
     code_reloader_pid = Initializer.maybe_start_code_reloader(self())
     time_travel_pid = Keyword.get(options, :time_travel_pid)
+    cycle_profiler_pid = Keyword.get(options, :cycle_profiler_pid)
 
     %State{
       app_module: app_module,
@@ -140,6 +165,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       rendering_engine_pid: rendering_engine_pid,
       code_reloader_pid: code_reloader_pid,
       time_travel_pid: time_travel_pid,
+      cycle_profiler_pid: cycle_profiler_pid,
       model: initialized_model,
       dispatcher_ready: false,
       plugin_manager_ready: pm_pid == nil
@@ -204,6 +230,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       "[#{__MODULE__}] Received :shutdown cast for #{inspect(state.app_name)}. Stopping dependent processes..."
     )
 
+    Shutdown.stop_process(state.cycle_profiler_pid, "CycleProfiler")
     Shutdown.stop_process(state.time_travel_pid, "TimeTravel")
     Shutdown.stop_process(state.code_reloader_pid, "CodeReloader")
     Shutdown.stop_process(state.rendering_engine_pid, "Rendering Engine")
@@ -239,6 +266,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:reply, {:error, :unknown_call}, state}
   end
 
+  @spec terminate_manager(term(), State.t()) :: :ok
   def terminate_manager(reason, state) do
     Log.info_with_context(
       "[#{__MODULE__}] terminating for #{inspect(state.app_name)}. Reason: #{inspect(reason)}"
@@ -339,12 +367,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   defp maybe_start_time_travel(options) do
     case Keyword.get(options, :time_travel) do
-      nil ->
-        options
-
-      false ->
-        options
-
       true ->
         start_time_travel_server(options, [])
 
@@ -359,7 +381,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   defp start_time_travel_server(options, tt_opts) do
     case Raxol.Debug.TimeTravel.start_link(tt_opts) do
       {:ok, pid} ->
-        Log.info_with_context("[#{__MODULE__}] TimeTravel debugger started: #{inspect(pid)}")
+        Log.info_with_context(
+          "[#{__MODULE__}] TimeTravel debugger started: #{inspect(pid)}"
+        )
+
         Keyword.put(options, :time_travel_pid, pid)
 
       {:error, reason} ->
@@ -385,6 +410,35 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
+  # -- Cycle profiler --
+
+  defp maybe_start_cycle_profiler(options) do
+    case Keyword.get(options, :profiler) do
+      true -> start_cycle_profiler_server(options, [])
+      opts when is_list(opts) -> start_cycle_profiler_server(options, opts)
+      _ -> options
+    end
+  end
+
+  defp start_cycle_profiler_server(options, profiler_opts) do
+    case Raxol.Performance.CycleProfiler.start_link(profiler_opts) do
+      {:ok, pid} ->
+        Log.info_with_context(
+          "[#{__MODULE__}] CycleProfiler started: #{inspect(pid)}"
+        )
+
+        Keyword.put(options, :cycle_profiler_pid, pid)
+
+      {:error, reason} ->
+        Log.warning_with_context(
+          "[#{__MODULE__}] CycleProfiler failed to start: #{inspect(reason)}",
+          %{}
+        )
+
+        options
+    end
+  end
+
   # Helper functions
 
   defp get_app_name(app_module, options) do
@@ -404,6 +458,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   # === Compatibility Wrappers ===
 
   @doc "Initializes the runtime environment. (Stub for test compatibility)"
+  @spec initialize_environment(keyword()) :: keyword()
   def initialize_environment(options) do
     env_type = Keyword.get(options, :environment, :terminal)
 
@@ -425,11 +480,16 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   @doc "Starts a Raxol application (compatibility wrapper)."
+  @spec start_application(module(), keyword()) :: GenServer.on_start()
   def start_application(app, opts), do: start_link(app, opts)
 
   @doc "Stops a Raxol application (compatibility wrapper)."
+  @spec stop_application(GenServer.server()) :: :ok
   def stop_application(val), do: stop(val)
 
+  @doc "Looks up a registered app by ID."
+  @spec lookup_app(term()) ::
+          {:ok, term()} | {:error, :not_found | :app_not_found}
   def lookup_app(app_id) do
     case Application.get_env(:raxol, :apps) do
       nil -> {:error, :not_found}
@@ -444,6 +504,9 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
+  @spec handle_error(term(), term()) ::
+          {:stop, :normal, map()}
+          | {:ok, :continue | :reinitialize_resources | :restart_components}
   def handle_error(error, _context) do
     case error do
       {:application_error, reason} ->
@@ -472,6 +535,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
+  @spec handle_cleanup(map()) :: :ok | {:error, :cleanup_failed}
   def handle_cleanup(context) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            Log.info("[Lifecycle] Cleaning up for app: #{context.app_name}")

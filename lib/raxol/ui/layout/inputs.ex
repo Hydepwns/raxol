@@ -3,12 +3,15 @@ defmodule Raxol.UI.Layout.Inputs do
   Handles measurement of input elements like buttons and text inputs.
   """
 
+  @button_padding 4
+  @button_height 3
+  @input_padding 4
+  @input_height 3
+
   def measure(:button, attrs_map, available_space) do
     text = Map.get(attrs_map, :label, "Button")
-    padding = 4
-    width = min(String.length(text) + padding, available_space.width)
-    height = 3
-    %{width: width, height: height}
+    width = min(String.length(text) + @button_padding, available_space.width)
+    %{width: width, height: @button_height}
   end
 
   def measure(:text_input, attrs_map, available_space) do
@@ -21,9 +24,9 @@ defmodule Raxol.UI.Layout.Inputs do
         false -> value
       end
 
-    padding = 4
-    width = min(String.length(display_text) + padding, available_space.width)
-    height = 3
-    %{width: width, height: height}
+    width =
+      min(String.length(display_text) + @input_padding, available_space.width)
+
+    %{width: width, height: @input_height}
   end
 end

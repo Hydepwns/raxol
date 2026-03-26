@@ -79,24 +79,29 @@ defmodule Mix.Tasks.Raxol.Replay do
 
     Process.sleep(500)
 
-    Player.play(path,
-      speed: speed,
-      max_delay: max_delay,
-      interactive: interactive
-    )
+    case Player.play(path,
+           speed: speed,
+           max_delay: max_delay,
+           interactive: interactive
+         ) do
+      :ok -> :ok
+      {:error, reason} -> Mix.shell().error("Replay failed: #{inspect(reason)}")
+    end
 
     Mix.shell().info([:green, "\nReplay complete.", :reset])
   end
 
   defp print_info(path) do
     case Asciicast.read(path) do
-      {:ok, session} -> do_print_info(path, session)
-      {:error, reason} -> Mix.raise("Failed to read #{path}: #{inspect(reason)}")
+      {:ok, session} ->
+        do_print_info(path, session)
+
+      {:error, reason} ->
+        Mix.raise("Failed to read #{path}: #{inspect(reason)}")
     end
   end
 
   defp do_print_info(path, session) do
-
     Mix.shell().info([:bright, "Recording: ", :reset, path])
     Mix.shell().info("  Size:      #{session.width}x#{session.height}")
 

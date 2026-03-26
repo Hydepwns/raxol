@@ -14,6 +14,8 @@ defmodule Raxol.UI.Layout.Table do
   @default_row_height 1
   @header_height 1
   @border_width 1
+  @cell_padding 2
+  @fallback_available_width 80
 
   @doc """
   Measures a table element.
@@ -130,7 +132,8 @@ defmodule Raxol.UI.Layout.Table do
   # Private functions
 
   defp calculate_column_widths(columns, rows, available_space) do
-    available_width = Map.get(available_space, :width, 80)
+    available_width =
+      Map.get(available_space, :width, @fallback_available_width)
 
     # If no columns defined, infer from data with content-based sizing
     columns =
@@ -149,8 +152,7 @@ defmodule Raxol.UI.Layout.Table do
                 Enum.reduce(rows, 0, fn row, max ->
                   if is_list(row) and length(row) > col_idx do
                     cell = Enum.at(row, col_idx)
-                    # Add padding
-                    cell_width = String.length(to_string(cell)) + 2
+                    cell_width = String.length(to_string(cell)) + @cell_padding
                     max(max, cell_width)
                   else
                     max
@@ -267,8 +269,7 @@ defmodule Raxol.UI.Layout.Table do
               max(max, String.length(cell_content))
             end)
 
-          # Add padding (2 chars)
-          content_width + 2
+          content_width + @cell_padding
 
         _ ->
           # Not an auto column
@@ -280,15 +281,11 @@ defmodule Raxol.UI.Layout.Table do
   defp calculate_total_width(column_widths, show_borders) do
     base_width = Enum.sum(column_widths)
 
-    # Special case: if no columns, width should be 0
     case {length(column_widths), show_borders} do
       {0, _} -> 0
-      # Single column has no separators
       {1, true} -> base_width
-      # Two columns: 3 separators
-      {2, true} -> base_width + 3
-      # Three+ columns: 2 * col_count separators
-      {col_count, true} -> base_width + col_count * 2
+      {2, true} -> base_width + 2 * @border_width + @border_width
+      {col_count, true} -> base_width + col_count * 2 * @border_width
       {_, false} -> base_width
     end
   end
@@ -300,19 +297,33 @@ defmodule Raxol.UI.Layout.Table do
     # If no columns and no rows, height is always 0 regardless of header/border settings
     case {row_count, col_count, show_header, show_borders} do
       # No rows, no columns = 0 (special case)
-      {0, 0, _, _} -> 0
+      {0, 0, _, _} ->
+        0
+
       # No rows, no header, no borders = 0
-      {0, _, false, false} -> 0
-      # No rows but header + separator
-      {0, _, true, true} -> @header_height + 1
-      # No rows but header only
-      {0, _, true, false} -> @header_height
-      # No rows but separator only
-      {0, _, false, true} -> 1
-      {count, _, true, true} -> count * @default_row_height + @header_height + 1
-      {count, _, true, false} -> count * @default_row_height + @header_height
-      {count, _, false, true} -> count * @default_row_height + 1
-      {count, _, false, false} -> count * @default_row_height
+      {0, _, false, false} ->
+        0
+
+      {0, _, true, true} ->
+        @header_height + @border_width
+
+      {0, _, true, false} ->
+        @header_height
+
+      {0, _, false, true} ->
+        @border_width
+
+      {count, _, true, true} ->
+        count * @default_row_height + @header_height + @border_width
+
+      {count, _, true, false} ->
+        count * @default_row_height + @header_height
+
+      {count, _, false, true} ->
+        count * @default_row_height + @border_width
+
+      {count, _, false, false} ->
+        count * @default_row_height
     end
   end
 

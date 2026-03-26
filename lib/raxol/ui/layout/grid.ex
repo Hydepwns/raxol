@@ -3,6 +3,11 @@ defmodule Raxol.UI.Layout.Grid do
   Grid layout utility functions.
   """
 
+  @default_columns 1
+  @default_gap 1
+  @default_span 1
+  @min_cell_size 1
+
   @doc """
   Processes a grid element, calculating layout for it and its children.
 
@@ -23,11 +28,10 @@ defmodule Raxol.UI.Layout.Grid do
 
   def process(%{type: :grid, attrs: attrs, children: children}, space, acc)
       when is_list(children) do
-    # Get grid configuration
-    columns = Map.get(attrs, :columns, 1)
+    columns = Map.get(attrs, :columns, @default_columns)
     rows = Map.get(attrs, :rows, ceil(length(children) / columns))
-    gap_x = Map.get(attrs, :gap_x, 1)
-    gap_y = Map.get(attrs, :gap_y, 1)
+    gap_x = Map.get(attrs, :gap_x, @default_gap)
+    gap_y = Map.get(attrs, :gap_y, @default_gap)
 
     # Calculate cell dimensions
     available_width = space.width - gap_x * (columns - 1)
@@ -49,8 +53,8 @@ defmodule Raxol.UI.Layout.Grid do
         y = space.y + row * (cell_height + gap_y)
 
         # Account for column and row spans if specified
-        col_span = Map.get(child, :col_span, 1)
-        row_span = Map.get(child, :row_span, 1)
+        col_span = Map.get(child, :col_span, @default_span)
+        row_span = Map.get(child, :row_span, @default_span)
 
         # Calculate width and height with spans
         span_width = cell_width * col_span + gap_x * (col_span - 1)
@@ -101,11 +105,10 @@ defmodule Raxol.UI.Layout.Grid do
         %{type: :grid, attrs: attrs, children: children},
         available_space
       ) do
-    # Calculate dimensions based on children
-    columns = Map.get(attrs, :columns, 1)
+    columns = Map.get(attrs, :columns, @default_columns)
     rows = Map.get(attrs, :rows, ceil(length(children) / columns))
-    gap_x = Map.get(attrs, :gap_x, 1)
-    gap_y = Map.get(attrs, :gap_y, 1)
+    gap_x = Map.get(attrs, :gap_x, @default_gap)
+    gap_y = Map.get(attrs, :gap_y, @default_gap)
 
     # Get child dimensions
     child_dimensions =
@@ -152,19 +155,16 @@ defmodule Raxol.UI.Layout.Grid do
   A map containing cell dimensions and grid information.
   """
   def calculate_grid_cells(grid_attrs, space) do
-    # Get grid configuration
-    columns = Map.get(grid_attrs, :columns, 1)
-    rows = Map.get(grid_attrs, :rows, 1)
-    gap_x = Map.get(grid_attrs, :gap_x, 1)
-    gap_y = Map.get(grid_attrs, :gap_y, 1)
+    columns = Map.get(grid_attrs, :columns, @default_columns)
+    rows = Map.get(grid_attrs, :rows, @default_columns)
+    gap_x = Map.get(grid_attrs, :gap_x, @default_gap)
+    gap_y = Map.get(grid_attrs, :gap_y, @default_gap)
 
-    # Available space accounting for gaps
     available_width = space.width - gap_x * (columns - 1)
     available_height = space.height - gap_y * (rows - 1)
 
-    # Cell dimensions
-    cell_width = max(div(available_width, columns), 1)
-    cell_height = max(div(available_height, rows), 1)
+    cell_width = max(div(available_width, columns), @min_cell_size)
+    cell_height = max(div(available_height, rows), @min_cell_size)
 
     # Return grid cell information
     %{
@@ -219,8 +219,8 @@ defmodule Raxol.UI.Layout.Grid do
 
     %{
       type: :grid,
-      columns: Keyword.get(opts, :columns, 1),
-      rows: Keyword.get(opts, :rows, 1),
+      columns: Keyword.get(opts, :columns, @default_columns),
+      rows: Keyword.get(opts, :rows, @default_columns),
       gap: gap,
       gap_x: Keyword.get(opts, :gap_x, gap),
       gap_y: Keyword.get(opts, :gap_y, gap),
@@ -265,6 +265,15 @@ defmodule Raxol.UI.Layout.Grid do
   end
 
   defp position_children(grid) do
+    gap_x = Map.get(grid, :gap_x, grid.gap)
+    gap_y = Map.get(grid, :gap_y, grid.gap)
+    cell_width = Map.get(grid, :width) || 0
+    cell_height = Map.get(grid, :height) || 0
+
+    # Derive per-cell size from total grid dimensions
+    col_step = if grid.columns > 0, do: div(cell_width, grid.columns), else: 0
+    row_step = if grid.rows > 0, do: div(cell_height, grid.rows), else: 0
+
     grid.children
     |> Enum.with_index()
     |> Enum.map(fn {child, index} ->
@@ -274,10 +283,8 @@ defmodule Raxol.UI.Layout.Grid do
       Map.merge(child, %{
         grid_column: col,
         grid_row: row,
-        # Simplified positioning
-        x: col * 10,
-        # Simplified positioning
-        y: row * 10
+        x: col * (col_step + gap_x),
+        y: row * (row_step + gap_y)
       })
     end)
   end

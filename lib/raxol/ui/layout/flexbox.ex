@@ -32,6 +32,10 @@ defmodule Raxol.UI.Layout.Flexbox do
       }
   """
 
+  @default_gap 0
+  @default_padding 0
+  @default_order 0
+
   alias Raxol.UI.Layout.Engine
   alias Raxol.UI.Layout.LayoutUtils
   alias Raxol.UI.Layout.Flexbox.{Calculator, Distributor, Positioner, Wrapper}
@@ -126,7 +130,7 @@ defmodule Raxol.UI.Layout.Flexbox do
       justify: Keyword.get(opts, :justify, :flex_start),
       align: Keyword.get(opts, :align, :stretch),
       wrap: Keyword.get(opts, :wrap, :nowrap),
-      gap: Keyword.get(opts, :gap, 0),
+      gap: Keyword.get(opts, :gap, @default_gap),
       children: Keyword.get(opts, :children, []),
       width: Keyword.get(opts, :width),
       height: Keyword.get(opts, :height)
@@ -181,14 +185,14 @@ defmodule Raxol.UI.Layout.Flexbox do
       align_items: Map.get(attrs, :align_items, :stretch),
       align_content: Map.get(attrs, :align_content, :stretch),
       flex_wrap: Map.get(attrs, :flex_wrap, :nowrap),
-      gap: parse_gap(Map.get(attrs, :gap, 0)),
-      padding: parse_padding(Map.get(attrs, :padding, 0))
+      gap: parse_gap(Map.get(attrs, :gap, @default_gap)),
+      padding: parse_padding(Map.get(attrs, :padding, @default_padding))
     }
   end
 
   defp parse_gap(gap) when is_integer(gap), do: %{row: gap, column: gap}
   defp parse_gap(%{row: row, column: column}), do: %{row: row, column: column}
-  defp parse_gap(_), do: %{row: 0, column: 0}
+  defp parse_gap(_), do: %{row: @default_gap, column: @default_gap}
 
   defp parse_padding(padding), do: LayoutUtils.parse_padding(padding)
 
@@ -198,7 +202,7 @@ defmodule Raxol.UI.Layout.Flexbox do
   defp sort_children_by_order(children) do
     Enum.sort_by(children, fn child ->
       child_attrs = Map.get(child, :attrs, %{})
-      Map.get(child_attrs, :order, 0)
+      Map.get(child_attrs, :order, @default_order)
     end)
   end
 
