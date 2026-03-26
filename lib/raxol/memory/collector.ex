@@ -246,7 +246,10 @@ defmodule Raxol.Memory.Collector do
     end
   rescue
     e ->
-      Logger.debug("ETS table info unavailable for #{inspect(table)}: #{Exception.message(e)}")
+      Logger.debug(
+        "ETS table info unavailable for #{inspect(table)}: #{Exception.message(e)}"
+      )
+
       nil
   end
 

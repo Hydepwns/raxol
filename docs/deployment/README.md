@@ -9,26 +9,13 @@ Phoenix LiveView playground with full backend. Auto-scaling, WebSocket support, 
 - **URL**: https://raxol.fly.dev
 - **Deploy**: `flyctl deploy`
 
-### [WASM](WASM.md) -- Browser Deployment
-
-Compile Raxol to WebAssembly for client-side execution. Experimental, with limited BEAM feature support. Useful for offline apps, embedded terminals, and zero-server deployment.
-
 ## Quick Start
-
-### Fly.io
 
 ```bash
 brew install flyctl
 flyctl auth login
 flyctl deploy
 flyctl status --app raxol
-```
-
-### WASM
-
-```bash
-mix raxol.wasm.build
-mix raxol.wasm.serve
 ```
 
 ## Infrastructure

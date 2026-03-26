@@ -8,7 +8,7 @@ Terminal apps traditionally live in local command-line environments. A web inter
 
 Previous approaches (VNC, iframes, custom WebSocket protocols, server-side rendering) all fall short on either latency, integration quality, or real-time interaction.
 
-We needed native Phoenix integration, real-time bidirectional terminal I/O, collaborative features, WASH-style continuity, and performance that can handle high-frequency terminal updates.
+We needed native Phoenix integration, real-time bidirectional terminal I/O, and performance that can handle high-frequency terminal updates.
 
 ## Decision
 Build on Phoenix LiveView's WebSocket infrastructure and reactive model for real-time terminal interfaces with collaboration support.
@@ -97,24 +97,6 @@ end
 
 User tracking per session, cursor synchronization, online/offline status, metadata sharing (names, themes, permissions).
 
-#### WASH Integration
-
-Transitions between terminal and web:
-
-```elixir
-def handle_event("transition_to_terminal", _params, socket) do
-  web_state = capture_web_state(socket.assigns)
-
-  {:ok, bridge_token} = SessionBridge.create_transition(
-    socket.assigns.session_id,
-    web_state
-  )
-
-  terminal_cmd = "raxol connect --token #{bridge_token}"
-  {:noreply, push_event(socket, "show_terminal_command", %{command: terminal_cmd})}
-end
-```
-
 #### Collaboration
 
 Real-time cursors broadcast via Presence updates. Shared input broadcasts to all connected users and processes in the shared terminal.
@@ -168,7 +150,6 @@ Only changed regions get re-rendered. Rate limiting prevents abuse. Visible regi
 - Real-time multi-user editing with conflict resolution
 - 99.9% availability with graceful reconnection
 - No vulnerabilities in web interface security audit
-- WASH transition time: <2 seconds
 
 ## Alternatives Considered
 
@@ -184,10 +165,7 @@ LiveView gives us the best balance of performance, developer experience, and fea
 
 ## References
 
-- [Terminal LiveView](../../lib/raxol_web/live/terminal_live.ex)
-- [WebSocket Channel](../../lib/raxol_web/channels/terminal_channel.ex)
-- [Phoenix Presence](../../lib/raxol_web/presence.ex)
-- [WASH Session Bridge](../../lib/raxol/web/session_bridge.ex)
+- [TEALive Bridge](../../lib/raxol/live_view/tea_live.ex)
 - [Phoenix LiveView Docs](https://hexdocs.pm/phoenix_live_view/)
 
 ---

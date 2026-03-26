@@ -43,6 +43,46 @@ All 5 application layers + ecosystem tooling + charts are done. See git history 
 
 Hooks into Dispatcher's `process_app_update/3` to capture `{message, model_before, model_after}` at every `update/2` boundary. Lifecycle option `time_travel: true` starts the GenServer and wires it to the Dispatcher. `restore/0` sends the historical model back to the Dispatcher and triggers re-render. Zero cost when disabled.
 
+### Interactive Debugger UI -- DONE
+
+4 modules in `lib/raxol/debug/`, 1 mix task, 37 tests:
+
+| Module | LOC | Purpose |
+|--------|-----|---------|
+| Inspector | ~100 | Pure: flatten model to tree lines, expand/collapse via MapSet of paths |
+| DiffFormatter | ~80 | Pure: Snapshot changes to styled display lines (+/-/~ prefixes) |
+| DebuggerApp | ~380 | TEA app: 3-panel layout (timeline, diff, inspector), vim keybindings, polls TimeTravel |
+| Mix.Tasks.Raxol.Debugger | ~60 | Mix task: `--import PATH` for offline mode, connects to TimeTravel GenServer |
+
+Keybindings: `h/l` step, `j/k` scroll, `Tab` panel cycle, `Space` pause, `r` restore, `g`+digits+`Enter` jump, `q` quit. Polls TimeTravel at 500ms (recording) or 2000ms (paused).
+
+### Performance Cycle Profiler -- DONE
+
+2 modules in `lib/raxol/performance/`, 15 tests:
+
+| Module | LOC | Purpose |
+|--------|-----|---------|
+| CycleProfiler | ~280 | GenServer: CircularBuffer of UpdateTiming/RenderTiming, slow-cycle detection, subscriber notifications, export |
+| CycleProfiler.Stats | ~80 | Pure: min/max/avg/p50/p95/p99 computation, format_report, compute_multi |
+
+Hooks into Dispatcher's `process_app_update` (wraps `delegate_update` with timing + memory measurement) and Engine's `do_render_frame` (inline timing bindings between each `with` pipeline step). Lifecycle option `profiler: true` starts the GenServer and wires it to Dispatcher + Engine via Initializer. Zero cost when disabled (nil guard skips all recording).
+
+### Benchmark Suite -- DONE
+
+8 modules in `lib/raxol/benchmark/`, 28 tests:
+
+| Module | LOC | Purpose |
+|--------|-----|---------|
+| Apps | ~200 | 5 fixture TEA apps: Empty, SimpleText, Table100, NestedLayout, Dashboard |
+| Suites.RenderThroughput | ~35 | view -> layout -> cells (pure function calls, no GenServer) |
+| Suites.InputLatency | ~40 | update -> view -> layout -> cells |
+| Suites.WidgetMemory | ~45 | Per-widget memory with scale variants (10/50/100 texts) |
+| Suites.Startup | ~50 | Lifecycle start_link to first frame (environment: :agent) |
+| Suites.Comparison | ~80 | Static competitor reference data (Ratatui/BubbleTea/Textual) + comparison_table |
+| Formatter | ~180 | Console table, JSON (with metadata), Markdown output, file write |
+
+CLI: `mix raxol.bench [--suite NAME] [--format console|json|markdown] [--output PATH] [--quick]`. Default runs all framework suites.
+
 ### Future Nx Integration Points
 
 - `Sensor.Fusion.fuse_batch/2` -- replace rule-based weighted averaging with Nx model

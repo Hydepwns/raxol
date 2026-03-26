@@ -134,7 +134,8 @@ defmodule Raxol.UI.Charts.BarChart do
          _bar_gap,
          _group_gap,
          _show_values
-       ), do: []
+       ),
+       do: []
 
   defp render_vertical(
          series_list,
@@ -295,7 +296,8 @@ defmodule Raxol.UI.Charts.BarChart do
          _bar_gap,
          _group_gap,
          _show_values
-       ), do: []
+       ),
+       do: []
 
   defp render_horizontal(
          series_list,

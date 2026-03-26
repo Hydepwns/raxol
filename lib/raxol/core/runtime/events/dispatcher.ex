@@ -38,7 +38,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
               view_tree: nil,
               layout: [],
               rendering_engine: nil,
-              time_travel: nil
+              time_travel: nil,
+              cycle_profiler: nil
   end
 
   # BaseManager provides start_link/1 and start_link/2 automatically
@@ -76,7 +77,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       rendering_engine: Map.get(initial_state, :rendering_engine),
       current_theme_id: UserPreferences.get_theme_id(),
       command_module: command_module,
-      time_travel: Map.get(initial_state, :time_travel)
+      time_travel: Map.get(initial_state, :time_travel),
+      cycle_profiler: Map.get(initial_state, :cycle_profiler)
     }
 
     send(runtime_pid, {:runtime_initialized, self()})
@@ -177,10 +179,29 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp process_app_update(state, message, event) do
     old_model = state.model
 
-    case Application.delegate_update(state.app_module, message, state.model) do
+    {update_us, mem_before, mem_after, update_result} =
+      maybe_time_update(state.cycle_profiler, fn ->
+        Application.delegate_update(state.app_module, message, state.model)
+      end)
+
+    case update_result do
       {updated_model, commands}
       when is_map(updated_model) and is_list(commands) ->
-        maybe_record_time_travel(state.time_travel, message, old_model, updated_model)
+        maybe_record_time_travel(
+          state.time_travel,
+          message,
+          old_model,
+          updated_model
+        )
+
+        maybe_record_cycle_update(
+          state.cycle_profiler,
+          update_us,
+          mem_before,
+          mem_after,
+          message
+        )
+
         process_successful_update(state, updated_model, commands)
 
       {:error, reason} ->
@@ -448,6 +469,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:noreply, %{state | layout: positioned_elements}}
   end
 
+  @impl true
   def handle_manager_cast(msg, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Dispatcher received unhandled cast message",
@@ -798,13 +820,43 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp maybe_record_time_travel(nil, _message, _old, _new), do: :ok
 
-  defp maybe_record_time_travel(pid, message, old_model, new_model) when is_pid(pid) do
+  defp maybe_record_time_travel(pid, message, old_model, new_model)
+       when is_pid(pid) do
     if Process.alive?(pid) do
       Raxol.Debug.TimeTravel.record(pid, message, old_model, new_model)
     end
   end
 
   defp maybe_record_time_travel(_other, _message, _old, _new), do: :ok
+
+  # -- Cycle profiler hooks --
+
+  defp maybe_time_update(nil, fun), do: {0, 0, 0, fun.()}
+
+  defp maybe_time_update(_pid, fun) do
+    {:memory, mem_before} = Process.info(self(), :memory)
+    start = System.monotonic_time(:microsecond)
+    result = fun.()
+    elapsed = System.monotonic_time(:microsecond) - start
+    {:memory, mem_after} = Process.info(self(), :memory)
+    {elapsed, mem_before, mem_after, result}
+  end
+
+  defp maybe_record_cycle_update(nil, _us, _mem_b, _mem_a, _msg), do: :ok
+
+  defp maybe_record_cycle_update(pid, update_us, mem_before, mem_after, message)
+       when is_pid(pid) do
+    if Process.alive?(pid) do
+      Raxol.Performance.CycleProfiler.record_update(pid, %{
+        update_us: update_us,
+        message_summary: inspect(message, limit: 3, printable_limit: 40),
+        memory_before: mem_before,
+        memory_after: mem_after
+      })
+    end
+  end
+
+  defp maybe_record_cycle_update(_other, _us, _mem_b, _mem_a, _msg), do: :ok
 
   # -- Session recording hook --
 

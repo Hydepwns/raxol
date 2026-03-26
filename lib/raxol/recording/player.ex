@@ -38,7 +38,7 @@ defmodule Raxol.Recording.Player do
     * `:max_delay` - Cap on delay between events in seconds (default: 5.0).
     * `:interactive` - Enable keyboard controls (default: true).
   """
-  @spec play(Path.t() | Session.t(), keyword()) :: :ok
+  @spec play(Path.t() | Session.t(), keyword()) :: :ok | {:error, term()}
   def play(path_or_session, opts \\ [])
 
   def play(path, opts) when is_binary(path) do
@@ -105,6 +105,7 @@ defmodule Raxol.Recording.Player do
 
     state = %{
       events: events,
+      event_count: length(events),
       index: 0,
       speed: speed,
       max_delay: max_delay,
@@ -130,7 +131,7 @@ defmodule Raxol.Recording.Player do
     :ok
   end
 
-  defp loop(%{index: idx, events: events}) when idx >= length(events), do: :ok
+  defp loop(%{index: idx, event_count: count}) when idx >= count, do: :ok
 
   defp loop(%{paused: true} = state) do
     case read_key(100) do
@@ -151,53 +152,37 @@ defmodule Raxol.Recording.Player do
     case wait_with_input(actual_delay) do
       :timeout ->
         IO.write(data)
-        state = %{state | index: state.index + 1}
-        show_status_bar(state)
-        loop(state)
+        %{state | index: state.index + 1} |> continue()
 
       key ->
         handle_key(key, state)
     end
   end
 
-  defp handle_key(key, state) do
-    case key do
-      :quit ->
-        :ok
+  defp handle_key(:quit, _state), do: :ok
+  defp handle_key(:unknown, state), do: loop(state)
 
-      :pause ->
-        state = %{state | paused: !state.paused}
-        show_status_bar(state)
-        loop(state)
+  defp handle_key(:pause, state),
+    do: %{state | paused: !state.paused} |> continue()
 
-      :speed_up ->
-        state = %{state | speed: next_speed(state.speed)}
-        show_status_bar(state)
-        loop(state)
+  defp handle_key(:speed_up, state),
+    do: %{state | speed: next_speed(state.speed)} |> continue()
 
-      :speed_down ->
-        state = %{state | speed: prev_speed(state.speed)}
-        show_status_bar(state)
-        loop(state)
+  defp handle_key(:speed_down, state),
+    do: %{state | speed: prev_speed(state.speed)} |> continue()
 
-      :seek_forward ->
-        state = seek(state, @seek_step_us)
-        show_status_bar(state)
-        loop(state)
+  defp handle_key(:seek_forward, state),
+    do: seek(state, @seek_step_us) |> continue()
 
-      :seek_backward ->
-        state = seek(state, -@seek_step_us)
-        show_status_bar(state)
-        loop(state)
+  defp handle_key(:seek_backward, state),
+    do: seek(state, -@seek_step_us) |> continue()
 
-      {:jump, pct} ->
-        state = jump_to_percent(state, pct)
-        show_status_bar(state)
-        loop(state)
+  defp handle_key({:jump, pct}, state),
+    do: jump_to_percent(state, pct) |> continue()
 
-      :unknown ->
-        loop(state)
-    end
+  defp continue(state) do
+    show_status_bar(state)
+    loop(state)
   end
 
   # -- Seeking --
@@ -219,7 +204,7 @@ defmodule Raxol.Recording.Player do
     idx =
       Enum.find_index(state.events, fn {elapsed_us, _, _} ->
         elapsed_us >= target_us
-      end) || length(state.events)
+      end) || state.event_count
 
     # Replay all output up to idx to reconstruct screen state
     IO.write("\e[2J\e[H")
@@ -351,8 +336,8 @@ defmodule Raxol.Recording.Player do
 
   defp current_event(%{events: events, index: idx}), do: Enum.at(events, idx)
 
-  defp current_elapsed_us(%{index: idx, events: events})
-       when idx >= length(events) do
+  defp current_elapsed_us(%{index: idx, event_count: count, events: events})
+       when idx >= count do
     case List.last(events) do
       {us, _, _} -> us
       nil -> 0

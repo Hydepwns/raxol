@@ -51,11 +51,7 @@ defmodule Raxol.Demo.Dashboard do
         utils =
           Enum.zip(model.sched_prev, curr)
           |> Enum.map(fn {{_id, a1, t1}, {_id2, a2, t2}} ->
-            delta_total = t2 - t1
-
-            if delta_total > 0,
-              do: round((a2 - a1) / delta_total * 100),
-              else: 0
+            sched_utilization(a2 - a1, t2 - t1)
           end)
 
         mem_pct = mem_percent()
@@ -216,10 +212,7 @@ defmodule Raxol.Demo.Dashboard do
         end
       end)
 
-    avg =
-      if model.sched_utils == [],
-        do: 0,
-        else: round(Enum.sum(model.sched_utils) / length(model.sched_utils))
+    avg = avg_utilization(model.sched_utils)
 
     box style: %{border: panel_border(active), width: 28, padding: 1} do
       column style: %{gap: 0} do
@@ -410,6 +403,14 @@ defmodule Raxol.Demo.Dashboard do
     empty = width - filled
     String.duplicate(@bar_fill, filled) <> String.duplicate(@bar_empty, empty)
   end
+
+  defp sched_utilization(_active, delta_total) when delta_total <= 0, do: 0
+
+  defp sched_utilization(active, delta_total),
+    do: round(active / delta_total * 100)
+
+  defp avg_utilization([]), do: 0
+  defp avg_utilization(utils), do: round(Enum.sum(utils) / length(utils))
 
   defp bar_color(pct) when pct >= 80, do: :red
   defp bar_color(pct) when pct >= 60, do: :yellow

@@ -29,7 +29,10 @@ defmodule Raxol.MixProject do
         tool: ExCoveralls,
         ignore_modules: [
           :termbox2_nif,
-          Termbox2Nif
+          Termbox2Nif,
+          # OTP 26 cover tool crashes on this module's abstract code
+          # (Elixir 1.19 column-annotated forms + Logger macro expansion)
+          Raxol.Core.Runtime.Log
         ]
       ],
       make_cwd: "lib/termbox2_nif/c_src",

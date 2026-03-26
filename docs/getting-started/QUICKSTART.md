@@ -11,8 +11,9 @@ What you'll learn:
 
 Generate a new project:
 
+From the repo (Hex publish pending):
+
 ```bash
-mix archive.install hex raxol_new
 mix raxol.new my_app
 cd my_app
 mix deps.get
@@ -23,7 +24,7 @@ Or add to an existing project:
 ```elixir
 # mix.exs
 def deps do
-  [{:raxol, "~> 2.2"}]
+  [{:raxol, path: "../raxol"}]  # After Hex publish: {:raxol, "~> 2.2"}
 end
 ```
 

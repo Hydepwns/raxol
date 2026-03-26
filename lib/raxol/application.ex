@@ -318,7 +318,8 @@ defmodule Raxol.Application do
           val -> String.to_integer(val)
         end
 
-      host_keys_dir = System.get_env("RAXOL_SSH_HOST_KEYS_DIR") || "/app/ssh_keys"
+      host_keys_dir =
+        System.get_env("RAXOL_SSH_HOST_KEYS_DIR") || "/app/ssh_keys"
 
       {Raxol.SSH.Server,
        app_module: Raxol.Playground.App,

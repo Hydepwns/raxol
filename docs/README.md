@@ -3,8 +3,9 @@
 Complete guide to building terminal applications with Raxol.
 
 ## Essentials
-- [Getting Started](getting-started/QUICKSTART.md) - 5/10/15 minute tutorials
-- [Package Guide](getting-started/PACKAGES.md) - Choose your packages
+- [Getting Started](getting-started/QUICKSTART.md) - Build your first terminal app
+- [Core Concepts](getting-started/CORE_CONCEPTS.md) - Architecture and design
+- [Widget Gallery](getting-started/WIDGET_GALLERY.md) - All 23 widgets
 - [Development](DEVELOPMENT.md) - Setup, commands, troubleshooting
 
 ## Features
@@ -20,8 +21,8 @@ Complete guide to building terminal applications with Raxol.
 
 ## Guides
 - [Custom Components](guides/custom_components.md)
-- [Multi-Framework](guides/multi_framework_migration_guide.md)
 - [Accessibility](guides/accessibility_implementation_guide.md)
+- [Migration from DIY](getting-started/MIGRATION_FROM_DIY.md)
 
 ## Advanced
 - [Architecture Decisions](adr/)
@@ -30,7 +31,7 @@ Complete guide to building terminal applications with Raxol.
 
 ## Resources
 
-- **[HexDocs](https://hexdocs.pm/raxol)** - Complete API reference
+- **[API Docs](https://hexdocs.pm/raxol)** - HexDocs (after Hex publish)
 - **[GitHub](https://github.com/Hydepwns/raxol)** - Source code
 - **[ROADMAP](../ROADMAP.md)** - Development roadmap
 - **[Issues](https://github.com/Hydepwns/raxol/issues)** - Bug reports & features

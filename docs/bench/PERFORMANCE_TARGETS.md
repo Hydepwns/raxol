@@ -31,10 +31,8 @@ Current performance measurements and goals for Raxol.
 ## Running Benchmarks
 
 ```bash
-mix run benchmarks/parser_bench.exs    # Parser only
-mix run benchmarks/memory_bench.exs    # Memory only
-mix benchmark --all                    # Full suite
-mix benchmark --all --formatter html   # HTML report
+mix raxol.bench              # Full benchmark suite
+mix raxol.bench.memory       # Memory benchmarks
 ```
 
 ## Optimizations Applied
@@ -47,4 +45,4 @@ mix benchmark --all --formatter html   # HTML report
 
 ## Verification
 
-Benchmarks run in CI on every push. Also verified through property-based tests and load testing with 1000+ concurrent sessions.
+Verified through property-based tests and manual benchmarking.

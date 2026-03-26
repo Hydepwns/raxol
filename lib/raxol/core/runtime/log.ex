@@ -1,6 +1,4 @@
 defmodule Raxol.Core.Runtime.Log do
-  require Logger
-
   @moduledoc """
   Centralized logging system for Raxol with structured context, performance tracking,
   and consistent formatting across all modules.
@@ -92,12 +90,8 @@ defmodule Raxol.Core.Runtime.Log do
         _ -> "#{msg} | Context: #{inspect(context)}"
       end
 
-    case level do
-      :info -> Logger.info(message)
-      :debug -> Logger.debug(message)
-      :warn -> Logger.warning(message)
-      :error -> Logger.error(message)
-    end
+    level = if level == :warn, do: :warning, else: level
+    Logger.bare_log(level, message)
   end
 
   ## Enhanced Logging Functions
@@ -245,10 +239,16 @@ defmodule Raxol.Core.Runtime.Log do
 
   defp get_calling_module do
     case Process.info(self(), :current_stacktrace) do
-      {:current_stacktrace, [{_, _, _, _} | [{module, _, _, _} | _]]} -> module
-      _ -> __MODULE__
+      {:current_stacktrace, stack} when is_list(stack) ->
+        extract_caller_module(stack)
+
+      _ ->
+        __MODULE__
     end
   end
+
+  defp extract_caller_module([_current | [{module, _, _, _} | _]]), do: module
+  defp extract_caller_module(_), do: __MODULE__
 
   defp normalize_context(nil), do: %{}
   defp normalize_context(context) when is_map(context), do: context
@@ -294,14 +294,8 @@ defmodule Raxol.Core.Runtime.Log do
     metadata = Map.to_list(context)
     Logger.metadata(metadata)
 
-    case level do
-      :info -> Logger.info(msg)
-      :debug -> Logger.debug(msg)
-      :warn -> Logger.warning(msg)
-      :error -> Logger.error(msg)
-    end
-
-    # Clear metadata to avoid pollution
+    level = if level == :warn, do: :warning, else: level
+    Logger.bare_log(level, msg)
     Logger.reset_metadata()
   end
 

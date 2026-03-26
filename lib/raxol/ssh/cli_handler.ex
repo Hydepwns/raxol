@@ -4,7 +4,13 @@ defmodule Raxol.SSH.CLIHandler do
 
   require Raxol.Core.Runtime.Log
 
-  defstruct [:app_module, :session_pid, :channel_id, :connection_ref, registered: false]
+  defstruct [
+    :app_module,
+    :session_pid,
+    :channel_id,
+    :connection_ref,
+    registered: false
+  ]
 
   @impl true
   def init(opts) do
@@ -16,10 +22,22 @@ defmodule Raxol.SSH.CLIHandler do
   def handle_msg({:ssh_channel_up, channel_id, connection_ref}, state) do
     case Raxol.SSH.Server.register_connection() do
       :ok ->
-        {:ok, %{state | channel_id: channel_id, connection_ref: connection_ref, registered: true}}
+        {:ok,
+         %{
+           state
+           | channel_id: channel_id,
+             connection_ref: connection_ref,
+             registered: true
+         }}
 
       {:error, :max_connections} ->
-        _ = :ssh_connection.send(connection_ref, channel_id, "Connection limit reached. Try again later.\r\n")
+        _ =
+          :ssh_connection.send(
+            connection_ref,
+            channel_id,
+            "Connection limit reached. Try again later.\r\n"
+          )
+
         _ = :ssh_connection.close(connection_ref, channel_id)
         {:ok, state}
     end

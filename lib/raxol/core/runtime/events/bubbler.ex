@@ -1,5 +1,6 @@
 defmodule Raxol.Core.Runtime.Events.Bubbler do
   require Logger
+
   @moduledoc """
   Implements capture and bubbling event dispatch through the view tree.
 

@@ -288,7 +288,7 @@ end
 
 **Zero dependencies (core).** Raxol.Core has no runtime dependencies. Minimal install size, no conflicts, works everywhere Elixir runs.
 
-**Incremental adoption.** Use what you need -- `raxol_core` for buffers, add `raxol_liveview` for web, or `raxol` for the full framework.
+**Incremental adoption.** Use what you need -- buffers and rendering for scripts, add the View DSL for interactive apps, or the full framework with LiveView and SSH.
 
 ---
 

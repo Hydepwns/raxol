@@ -27,19 +27,6 @@ defmodule Raxol.SSH.Session do
     GenServer.start_link(__MODULE__, opts)
   end
 
-  @spec run(module()) :: :ok
-  def run(app_module) do
-    receive do
-      {:ssh_data, _data} -> :ok
-    after
-      30_000 -> :ok
-    end
-
-    Raxol.Core.Runtime.Log.info(
-      "[SSH.Session] Shell process for #{inspect(app_module)} exiting"
-    )
-  end
-
   @impl true
   def init(opts) do
     app_module = Keyword.fetch!(opts, :app_module)

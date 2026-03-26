@@ -2,7 +2,7 @@
 
 Already built your own terminal rendering? This guide shows how to integrate or migrate to Raxol.
 
-New to Raxol? See the [Package Guide](./PACKAGES.md) first.
+New to Raxol? See the [Quickstart](./QUICKSTART.md) first.
 
 ## Why Migrate?
 
@@ -139,11 +139,11 @@ Adapters add overhead. Benchmark both paths -- if the adapter is > 2x slower, co
 
 ## Incremental Migration
 
-**Phase 1:** Add `{:raxol_core, "~> 2.0"}` to deps. Run tests, ensure no conflicts.
+**Phase 1:** Add `{:raxol, "~> 2.0"}` to deps (or `path: "../raxol"` before Hex publish). Run tests, ensure no conflicts.
 
 **Phase 2:** Create adapters. Write round-trip tests to verify conversions preserve data.
 
-**Phase 3:** If you're using Phoenix, add `{:raxol_liveview, "~> 2.0"}` and use `Raxol.LiveView.TerminalComponent` for web rendering. Keep your buffer code, convert via adapter.
+**Phase 3:** If you're using Phoenix, use `Raxol.LiveView.TerminalComponent` for web rendering. Keep your buffer code, convert via adapter.
 
 **Phase 4:** Gradually replace custom components -- box drawing, text rendering, diffing -- with Raxol equivalents.
 

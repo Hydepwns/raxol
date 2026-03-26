@@ -114,9 +114,10 @@ lib/raxol/
 │   ├── rendering/   # Terminal rendering (backend, GPU, styles)
 │   └── driver.ex    # Platform-specific backend selection
 ├── ui/              # Multi-framework UI
-│   ├── components/  # ~12 real widgets (TextInput, Table, Button, Modal, etc.)
+│   ├── components/  # Widgets: TextInput, Table, Button, Modal, SelectList, Checkbox, Tree, etc.
+│   ├── charts/      # Streaming charts: LineChart, ScatterChart, BarChart, Heatmap, BrailleCanvas
 │   ├── layout/      # Flexbox and CSS grid layout engines
-│   ├── rendering/   # UI rendering pipeline (pipeline.ex is 834-line GenServer)
+│   ├── rendering/   # UI rendering (TreeDiffer, Composer, Painter, DamageTracker, etc.)
 │   └── theming/
 ├── core/            # Services and utilities
 │   ├── behaviours/  # BaseManager pattern for GenServers
@@ -144,6 +145,10 @@ lib/raxol/
 │   ├── hud.ex       # Pure functional HUD widgets (gauge, sparkline, threat, minimap)
 │   └── supervisor.ex # rest_for_one: Registry + DynSup + Fusion
 ├── swarm/           # Distributed subsystem (CRDTs, node monitoring, topology)
+├── playground/      # Interactive widget catalog (23 demos, 7 categories)
+│   ├── catalog.ex   # Demo registry with metadata (category, complexity, description)
+│   ├── app.ex       # TEA app: search, filter by category/complexity, help overlay
+│   └── demos/       # Self-contained TEA demo apps (one per widget/chart)
 ├── performance/     # Performance monitoring, profiling, caching
 ├── live_view/       # Phoenix LiveView integration (terminal + browser bridge)
 └── effects/         # Visual effects (CursorTrail, etc.)
@@ -182,7 +187,7 @@ IO.write(Renderer.apply_diff(diff))  # NOT Enum.each(diff, &IO.write/1)
 
 ### Render Pipeline
 
-The render pipeline at `lib/raxol/ui/rendering/pipeline.ex` is a working GenServer with most stages implemented. Only stage 5 (render/paint) has stubs. The flow is: element tree -> layout engine -> positioned cells -> buffer write -> terminal output.
+The render pipeline lives in `lib/raxol/ui/rendering/` (10 modules: TreeDiffer, Layouter, Composer, Painter, DamageTracker, ComponentCache, RenderBatcher, TimerServer, Renderer, LayouterCached). The flow is: element tree -> layout engine -> positioned cells -> buffer write -> terminal output.
 
 ### Testing Patterns
 

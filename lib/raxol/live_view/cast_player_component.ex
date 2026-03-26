@@ -242,23 +242,15 @@ defmodule Raxol.LiveView.CastPlayerComponent do
 
       case output_lines do
         [single] ->
-          last_idx = length(lines) - 1
-          updated = (Enum.at(lines, last_idx) || "") <> escape_html(single)
-          List.replace_at(lines, last_idx, updated)
+          {leading, [last]} = Enum.split(lines, -1)
+          leading ++ [last <> escape_html(single)]
 
         [first | rest] ->
-          last_idx = length(lines) - 1
-
-          lines =
-            List.replace_at(
-              lines,
-              last_idx,
-              (Enum.at(lines, last_idx) || "") <> escape_html(first)
-            )
-
-          Enum.reduce(rest, lines, fn line, acc ->
-            tl(acc) ++ [escape_html(line)]
-          end)
+          {leading, [last]} = Enum.split(lines, -1)
+          new_lines = Enum.map(rest, &escape_html/1)
+          # Scroll: drop oldest lines to make room, append new ones
+          (leading ++ [last <> escape_html(first)] ++ new_lines)
+          |> Enum.take(-length(lines))
       end
     end
 

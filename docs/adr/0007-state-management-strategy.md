@@ -146,16 +146,6 @@ User Actions -> Action Creators -> Store Dispatch -> Reducers -> New State -> Co
 - Global state for shared app data (user info, todos, settings)
 - Context for configuration and theming
 
-### WASH Integration
-
-State management integrates with web continuity:
-
-```elixir
-state_snapshot = StateManager.capture_snapshot()
-StateManager.restore_snapshot(state_snapshot)
-StateSynchronizer.sync_state(local_state, remote_state)
-```
-
 ## Consequences
 
 ### Positive
@@ -199,11 +189,7 @@ The multi-layered approach gives the right tool for each scenario while keeping 
 
 ## References
 
-- [Global Store](../../lib/raxol/ui/state/store.ex)
-- [Context API](../../lib/raxol/ui/state/context.ex)
-- [Hooks System](../../lib/raxol/ui/state/hooks.ex)
-- [Reactive Streams](../../lib/raxol/ui/state/streams.ex)
-- [WASH State Synchronizer](../../lib/raxol/web/state_synchronizer.ex)
+- [Unified State Manager](../../lib/raxol/core/unified_state_manager.ex)
 
 ---
 

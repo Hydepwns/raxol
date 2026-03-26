@@ -86,9 +86,8 @@ defmodule Raxol.Debug.Snapshot do
     end)
   end
 
-  defp diff_maps(a, b, path) do
-    if a === b, do: [], else: [{:changed, Enum.reverse(path), a, b}]
-  end
+  defp diff_maps(same, same, _path), do: []
+  defp diff_maps(a, b, path), do: [{:changed, Enum.reverse(path), a, b}]
 
   defp diff_key(true, true, key, a, b, path) do
     va = Map.get(a, key)
@@ -97,7 +96,7 @@ defmodule Raxol.Debug.Snapshot do
     if is_map(va) and is_map(vb) and not is_struct(va) and not is_struct(vb) do
       diff_maps(va, vb, [key | path])
     else
-      if va === vb, do: [], else: [{:changed, Enum.reverse([key | path]), va, vb}]
+      leaf_diff(va, vb, [key | path])
     end
   end
 
@@ -109,7 +108,12 @@ defmodule Raxol.Debug.Snapshot do
     [{:added, Enum.reverse([key | path]), Map.get(b, key)}]
   end
 
-  defp map_keys(%{__struct__: _} = map), do: MapSet.new(Map.keys(Map.from_struct(map)))
+  defp leaf_diff(same, same, _path), do: []
+  defp leaf_diff(old, new, path), do: [{:changed, Enum.reverse(path), old, new}]
+
+  defp map_keys(%{__struct__: _} = map),
+    do: MapSet.new(Map.keys(Map.from_struct(map)))
+
   defp map_keys(map), do: MapSet.new(Map.keys(map))
 
   defp inspect_short(term, max_len) do

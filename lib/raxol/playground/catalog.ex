@@ -260,7 +260,8 @@ defmodule Raxol.Playground.Catalog do
       description: "2D heatmap with color scale cycling",
       complexity: :basic,
       tags: ["chart", "heatmap", "color", "grid"],
-      code_snippet: ~s'heatmap(data: grid, width: 48, height: 16, color_scale: :warm)'
+      code_snippet:
+        ~s'heatmap(data: grid, width: 48, height: 16, color_scale: :warm)'
     }
   ]
 

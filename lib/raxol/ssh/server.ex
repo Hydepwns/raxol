@@ -22,7 +22,14 @@ defmodule Raxol.SSH.Server do
 
   require Raxol.Core.Runtime.Log
 
-  defstruct [:daemon_ref, :app_module, :port, :host_keys_dir, :max_connections, connections: 0]
+  defstruct [
+    :daemon_ref,
+    :app_module,
+    :port,
+    :host_keys_dir,
+    :max_connections,
+    connections: 0
+  ]
 
   @default_port 2222
   @default_max_connections 50
@@ -33,7 +40,8 @@ defmodule Raxol.SSH.Server do
       app_module: app_module,
       port: Keyword.get(opts, :port, @default_port),
       host_keys_dir: Keyword.get(opts, :host_keys_dir, "/tmp/raxol_ssh_keys"),
-      max_connections: Keyword.get(opts, :max_connections, @default_max_connections)
+      max_connections:
+        Keyword.get(opts, :max_connections, @default_max_connections)
     )
   end
 
@@ -50,7 +58,8 @@ defmodule Raxol.SSH.Server do
   end
 
   @doc "Registers a new connection. Returns :ok or {:error, :max_connections}."
-  @spec register_connection(GenServer.server()) :: :ok | {:error, :max_connections}
+  @spec register_connection(GenServer.server()) ::
+          :ok | {:error, :max_connections}
   def register_connection(server \\ __MODULE__) do
     GenServer.call(server, :register_connection)
   end
@@ -66,7 +75,9 @@ defmodule Raxol.SSH.Server do
     app_module = Keyword.fetch!(opts, :app_module)
     port = Keyword.get(opts, :port, @default_port)
     host_keys_dir = Keyword.get(opts, :host_keys_dir, "/tmp/raxol_ssh_keys")
-    max_connections = Keyword.get(opts, :max_connections, @default_max_connections)
+
+    max_connections =
+      Keyword.get(opts, :max_connections, @default_max_connections)
 
     ensure_host_keys(host_keys_dir)
 
@@ -102,22 +113,28 @@ defmodule Raxol.SSH.Server do
   end
 
   @impl true
+  def handle_call(
+        :register_connection,
+        _from,
+        %__MODULE__{connections: c, max_connections: m} = state
+      )
+      when c >= m do
+    Raxol.Core.Runtime.Log.warning(
+      "[SSH.Server] Connection rejected: #{c}/#{m}"
+    )
+
+    {:reply, {:error, :max_connections}, state}
+  end
+
+  @impl true
   def handle_call(:register_connection, _from, %__MODULE__{} = state) do
-    if state.connections >= state.max_connections do
-      Raxol.Core.Runtime.Log.warning(
-        "[SSH.Server] Connection rejected: #{state.connections}/#{state.max_connections}"
-      )
+    new_count = state.connections + 1
 
-      {:reply, {:error, :max_connections}, state}
-    else
-      new_count = state.connections + 1
+    Raxol.Core.Runtime.Log.info(
+      "[SSH.Server] Connection accepted (#{new_count}/#{state.max_connections})"
+    )
 
-      Raxol.Core.Runtime.Log.info(
-        "[SSH.Server] Connection accepted (#{new_count}/#{state.max_connections})"
-      )
-
-      {:reply, :ok, %{state | connections: new_count}}
-    end
+    {:reply, :ok, %{state | connections: new_count}}
   end
 
   @impl true

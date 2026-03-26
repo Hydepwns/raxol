@@ -1,7 +1,5 @@
 # Raxol
 
-[![Hex.pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
-[![Documentation](https://img.shields.io/badge/docs-hexdocs-purple.svg)](https://hexdocs.pm/raxol)
 [![CI](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml/badge.svg?branch=master)](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml)
 
 Terminal apps for Elixir, built on OTP.
@@ -13,16 +11,15 @@ Your app is a GenServer. Components can crash and restart without taking down th
 ## Install
 
 ```elixir
-# mix.exs
+# mix.exs -- after Hex publish: {:raxol, "~> 2.2"}
 def deps do
-  [{:raxol, "~> 2.2"}]
+  [{:raxol, path: "../raxol"}]
 end
 ```
 
 Or generate a new project:
 
 ```bash
-mix archive.install hex raxol_new
 mix raxol.new my_app
 ```
 

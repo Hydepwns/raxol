@@ -37,7 +37,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
               # Registry of running process components {id => pid}
               process_components: %{},
               # Whether terminal supports Mode 2026 synchronized output
-              sync_output: false
+              sync_output: false,
+              # Cycle profiler pid (nil when disabled)
+              cycle_profiler: nil
   end
 
   # --- Public API ---
@@ -157,24 +159,41 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       "Rendering Engine executing do_render_frame. Model=#{inspect(model)}, Theme=#{inspect(theme)}, State=#{inspect(state)}"
     )
 
+    mem_before = profiler_memory(state.cycle_profiler)
+    t0 = profiler_now(state.cycle_profiler)
+
     with {:ok, view} <- safe_get_view(state.app_module, model),
          false <- is_nil(view),
+         t1 <- profiler_now(state.cycle_profiler),
          {:ok, positioned_elements} <- safe_apply_layout(view, state),
+         t2 <- profiler_now(state.cycle_profiler),
          :ok <- update_dispatcher_view_tree(state.dispatcher_pid, view),
          :ok <-
            update_dispatcher_layout(state.dispatcher_pid, positioned_elements),
          :continue <- agent_short_circuit(state),
          {:ok, cells} <- safe_render_to_cells(positioned_elements, theme),
+         t3 <- profiler_now(state.cycle_profiler),
          {:ok, final_cells} <- safe_apply_plugin_transforms(cells, state),
-         {:ok, new_state} <- safe_render_to_backend(final_cells, state) do
+         t4 <- profiler_now(state.cycle_profiler),
+         {:ok, new_state} <- safe_render_to_backend(final_cells, state),
+         t5 <- profiler_now(state.cycle_profiler) do
+      maybe_record_cycle_render(
+        state.cycle_profiler,
+        t0,
+        t1,
+        t2,
+        t3,
+        t4,
+        t5,
+        mem_before
+      )
+
       {:ok, new_state}
     else
       true ->
-        # Headless agent -- no view/1, skip rendering
         {:ok, state}
 
       {:agent, :skip_cells} ->
-        # Agent environment -- view tree stored in Dispatcher, skip cell pipeline
         {:ok, state}
 
       {:error, reason} ->
@@ -189,6 +208,42 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
+  # -- Cycle profiler hooks --
+
+  defp profiler_now(nil), do: 0
+  defp profiler_now(_pid), do: System.monotonic_time(:microsecond)
+
+  defp profiler_memory(nil), do: 0
+
+  defp profiler_memory(_pid) do
+    {:memory, mem} = Process.info(self(), :memory)
+    mem
+  end
+
+  defp maybe_record_cycle_render(nil, _t0, _t1, _t2, _t3, _t4, _t5, _mem_b),
+    do: :ok
+
+  defp maybe_record_cycle_render(pid, t0, t1, t2, t3, t4, t5, mem_before)
+       when is_pid(pid) do
+    if Process.alive?(pid) do
+      {:memory, mem_after} = Process.info(self(), :memory)
+
+      Raxol.Performance.CycleProfiler.record_render(pid, %{
+        view_us: t1 - t0,
+        layout_us: t2 - t1,
+        render_us: t3 - t2,
+        plugin_us: t4 - t3,
+        backend_us: t5 - t4,
+        total_us: t5 - t0,
+        memory_before: mem_before,
+        memory_after: mem_after
+      })
+    end
+  end
+
+  defp maybe_record_cycle_render(_other, _t0, _t1, _t2, _t3, _t4, _t5, _mem_b),
+    do: :ok
+
   # Agents only need the view tree in Dispatcher; skip the cell pipeline.
   defp agent_short_circuit(%{environment: :agent}), do: {:agent, :skip_cells}
   defp agent_short_circuit(_state), do: :continue
@@ -201,7 +256,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       )
 
       Raxol.Core.ErrorHandling.safe_call(fn ->
-        case apply(app_module, :view, [model]) do
+        case app_module.view(model) do
           nil ->
             {:ok, nil}
 
@@ -660,18 +715,15 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       "Rendering Engine: Executing #{length(commands)} plugin commands"
     )
 
-    Enum.each(commands, fn command ->
-      case is_binary(command) do
-        true ->
-          # Write escape sequences or other commands directly to output
-          IO.write(command)
+    Enum.each(commands, fn
+      command when is_binary(command) ->
+        IO.write(command)
 
-        false ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "Rendering Engine: Unknown plugin command format",
-            %{command: command}
-          )
-      end
+      command ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Rendering Engine: Unknown plugin command format",
+          %{command: command}
+        )
     end)
   end
 

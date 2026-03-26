@@ -140,7 +140,8 @@ defmodule Raxol.Debug.TimeTravel do
   end
 
   @doc "Imports snapshots from a file."
-  @spec import_file(pid() | atom(), Path.t()) :: {:ok, non_neg_integer()} | {:error, term()}
+  @spec import_file(pid() | atom(), Path.t()) ::
+          {:ok, non_neg_integer()} | {:error, term()}
   def import_file(pid \\ __MODULE__, path) do
     GenServer.call(pid, {:import, path})
   end
@@ -165,16 +166,29 @@ defmodule Raxol.Debug.TimeTravel do
   end
 
   @impl true
-  def handle_cast({:record, _message, _before, _after}, %State{paused: true} = state) do
+  def handle_cast(
+        {:record, _message, _before, _after},
+        %State{paused: true} = state
+      ) do
     {:noreply, state}
   end
 
-  def handle_cast({:record, message, model_before, model_after}, %State{} = state) do
-    snapshot = Snapshot.new(state.next_index, message, model_before, model_after)
+  def handle_cast(
+        {:record, message, model_before, model_after},
+        %State{} = state
+      ) do
+    snapshot =
+      Snapshot.new(state.next_index, message, model_before, model_after)
+
     buffer = CircularBuffer.insert(state.buffer, snapshot)
 
     {:noreply,
-     %{state | buffer: buffer, next_index: state.next_index + 1, cursor: state.next_index}}
+     %{
+       state
+       | buffer: buffer,
+         next_index: state.next_index + 1,
+         cursor: state.next_index
+     }}
   end
 
   def handle_cast(:resume, state) do
@@ -191,7 +205,12 @@ defmodule Raxol.Debug.TimeTravel do
 
   def handle_cast(:clear, state) do
     {:noreply,
-     %{state | buffer: CircularBuffer.new(state.max_snapshots), cursor: nil, next_index: 0}}
+     %{
+       state
+       | buffer: CircularBuffer.new(state.max_snapshots),
+         cursor: nil,
+         next_index: 0
+     }}
   end
 
   @impl true
@@ -297,7 +316,8 @@ defmodule Raxol.Debug.TimeTravel do
     with {:ok, binary} <- File.read(path),
          snapshots when is_list(snapshots) <- safe_binary_to_term(binary) do
       buffer =
-        Enum.reduce(snapshots, CircularBuffer.new(state.max_snapshots), fn snap, buf ->
+        Enum.reduce(snapshots, CircularBuffer.new(state.max_snapshots), fn snap,
+                                                                           buf ->
           CircularBuffer.insert(buf, snap)
         end)
 

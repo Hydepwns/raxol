@@ -516,16 +516,32 @@ defmodule Raxol.View.Components do
     cells =
       case chart_type do
         :line ->
-          Raxol.UI.Charts.LineChart.render(region, Map.get(opts, :series, []), chart_opts)
+          Raxol.UI.Charts.LineChart.render(
+            region,
+            Map.get(opts, :series, []),
+            chart_opts
+          )
 
         :bar ->
-          Raxol.UI.Charts.BarChart.render(region, Map.get(opts, :series, []), chart_opts)
+          Raxol.UI.Charts.BarChart.render(
+            region,
+            Map.get(opts, :series, []),
+            chart_opts
+          )
 
         :scatter ->
-          Raxol.UI.Charts.ScatterChart.render(region, Map.get(opts, :series, []), chart_opts)
+          Raxol.UI.Charts.ScatterChart.render(
+            region,
+            Map.get(opts, :series, []),
+            chart_opts
+          )
 
         :heatmap ->
-          Raxol.UI.Charts.Heatmap.render(region, Map.get(opts, :data, []), chart_opts)
+          Raxol.UI.Charts.Heatmap.render(
+            region,
+            Map.get(opts, :data, []),
+            chart_opts
+          )
       end
 
     view = Raxol.UI.Charts.ViewBridge.cells_to_view(cells, style: style)
