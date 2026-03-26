@@ -51,6 +51,7 @@ raxol-*/
 
 # Temporary files, for example, from tests.
 .tmp/
+/tmp/
 !/tmp/.gitkeep
 test/fixtures/scripts/exported.ex.json
 
