@@ -89,23 +89,41 @@ defmodule Raxol.Agent.SessionTest do
   end
 
   setup do
-    # Ensure required processes exist (may have been stopped by another test's cleanup)
-    case Registry.start_link(keys: :unique, name: Raxol.Agent.Registry) do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-    end
+    # These are started by Application in test mode. If missing (e.g. app
+    # supervisor restarted), start them unlinked so they survive test exits.
+    ensure_running(
+      Raxol.Agent.Registry,
+      fn -> Registry.start_link(keys: :unique, name: Raxol.Agent.Registry) end
+    )
 
-    case Raxol.Core.UserPreferences.start_link(name: Raxol.Core.UserPreferences) do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-    end
+    ensure_running(
+      Raxol.Core.UserPreferences,
+      fn -> Raxol.Core.UserPreferences.start_link(name: Raxol.Core.UserPreferences) end
+    )
 
-    case DynamicSupervisor.start_link(name: Raxol.DynamicSupervisor, strategy: :one_for_one) do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-    end
+    ensure_running(
+      Raxol.DynamicSupervisor,
+      fn -> DynamicSupervisor.start_link(name: Raxol.DynamicSupervisor, strategy: :one_for_one) end
+    )
 
     :ok
+  end
+
+  defp ensure_running(name, start_fn) do
+    case Process.whereis(name) do
+      pid when is_pid(pid) ->
+        if Process.alive?(pid), do: :ok, else: do_start_unlinked(start_fn)
+
+      nil ->
+        do_start_unlinked(start_fn)
+    end
+  end
+
+  defp do_start_unlinked(start_fn) do
+    case start_fn.() do
+      {:ok, pid} -> Process.unlink(pid); :ok
+      {:error, {:already_started, _}} -> :ok
+    end
   end
 
   describe "lifecycle" do
