@@ -1,211 +1,110 @@
 defmodule RaxolPlaygroundWeb.PlaygroundLive do
   @moduledoc """
-  LiveView for the Raxol Component Playground.
-  Provides interactive demos and code examples for Raxol UI components.
-
-  ## Multi-User Features
-
-  When multiple users are connected, they can:
-  - See who else is viewing the playground
-  - See which component others are viewing
-  - Optionally sync demo state across sessions
+  Main playground LiveView. Sidebar with Catalog components, TEALive-hosted
+  demo rendering, code snippets, theme selector, and multi-user presence.
   """
 
   use RaxolPlaygroundWeb, :live_view
 
-  import Raxol.HEEx.Components
+  require Logger
 
-  alias RaxolPlaygroundWeb.Playground.{
-    CodeExamples,
-    CodeExecutor,
-    DemoComponents,
-    Helpers,
-    TerminalView
-  }
-
+  alias Raxol.Playground.Catalog
+  alias Raxol.Core.Runtime.Lifecycle
+  alias RaxolPlaygroundWeb.Playground.Helpers
   alias RaxolPlaygroundWeb.Presence, as: PlaygroundPresence
 
+  @themes [
+    {:dracula, "Dracula", "#282a36"},
+    {:nord, "Nord", "#2e3440"},
+    {:monokai, "Monokai", "#272822"},
+    {:solarized_dark, "Solarized Dark", "#002b36"},
+    {:synthwave84, "Synthwave '84", "#241b2f"},
+    {:gruvbox_dark, "Gruvbox Dark", "#282828"},
+    {:one_dark, "One Dark", "#282c34"},
+    {:tokyo_night, "Tokyo Night", "#1a1b26"},
+    {:catppuccin, "Catppuccin", "#1e1e2e"}
+  ]
+
+  # =========================================================================
+  # Mount
+  # =========================================================================
+
   @impl true
-  def mount(_params, _session, socket) do
-    components = CodeExamples.list_components()
-    first_component = List.first(components)
+  def mount(params, _session, socket) do
+    components = Catalog.list_components()
 
-    # Use streams for efficient component list rendering
-    # Each component needs a unique DOM ID for stream management
-    components_with_ids =
-      components
-      |> Enum.with_index()
-      |> Enum.map(fn {component, idx} ->
-        Map.put(component, :dom_id, "component-#{idx}-#{component.name}")
-      end)
+    initial_name = params["component"]
+    selected = (initial_name && Catalog.get_component(initial_name)) || List.first(components)
 
-    # Initialize multi-user presence tracking
-    {socket, user_id} =
-      if connected?(socket) do
-        PlaygroundPresence.subscribe()
-
-        {:ok, user_id, user_meta} = PlaygroundPresence.track_user(socket)
-
-        # Update component on initial mount
-        if first_component do
-          PlaygroundPresence.update_component(user_id, first_component.name)
-        end
-
-        online_users = PlaygroundPresence.list_users()
-
-        socket =
-          socket
-          |> assign(:user_id, user_id)
-          |> assign(:user_meta, user_meta)
-          |> assign(:online_users, online_users)
-          |> assign(:show_users_panel, false)
-          |> assign(:sync_enabled, false)
-
-        {socket, user_id}
-      else
-        socket =
-          socket
-          |> assign(:user_id, nil)
-          |> assign(:user_meta, %{})
-          |> assign(:online_users, [])
-          |> assign(:show_users_panel, false)
-          |> assign(:sync_enabled, false)
-
-        {socket, nil}
-      end
+    {socket, user_id} = init_presence(socket, selected)
 
     socket =
       socket
-      |> assign(:all_components, components_with_ids)
-      |> stream(:components, components_with_ids)
-      |> assign(:selected_component, first_component)
-      |> assign(:component_code, CodeExamples.get_code(first_component))
-      |> assign(:preview_output, "")
-      |> assign(:error_message, nil)
+      |> assign(:components, components)
+      |> assign(:selected, selected)
       |> assign(:search_query, "")
-      |> assign(:selected_framework, "universal")
-      |> assign(:auto_run, true)
+      |> assign(:terminal_html, "")
+      |> assign(:lifecycle_pid, nil)
+      |> assign(:topic, nil)
+      |> assign(:show_code, false)
       |> assign(:show_shortcuts, false)
-      |> assign(:is_running, false)
-      |> assign(:view_mode, :demo)
+      |> assign(:show_users_panel, false)
+      |> assign(:sync_enabled, false)
       |> assign(:sidebar_collapsed, false)
-      |> assign(:demo_state, Helpers.initial_demo_state())
-      |> assign(:terminal_theme, :dracula)
+      |> assign(:terminal_theme, :synthwave84)
       |> assign(:current_user_id, user_id)
+      |> start_demo()
 
     {:ok, socket}
   end
 
-  # ===========================================================================
-  # Event Handlers - Component Selection
-  # ===========================================================================
+  # =========================================================================
+  # Event Handlers
+  # =========================================================================
 
   @impl true
-  def handle_event("select_component", %{"component" => component_name}, socket) do
-    component = Enum.find(socket.assigns.all_components, &(&1.name == component_name))
-    code = CodeExamples.get_code(component)
+  def handle_event("select_component", %{"component" => name}, socket) do
+    component = Catalog.get_component(name)
 
-    # Update presence to show current component
-    if socket.assigns.user_id do
-      PlaygroundPresence.update_component(socket.assigns.user_id, component_name)
+    if component do
+      if socket.assigns.user_id do
+        PlaygroundPresence.update_component(socket.assigns.user_id, name)
+      end
+
+      if socket.assigns.sync_enabled do
+        PlaygroundPresence.broadcast_event_from(self(), :component_selected, %{
+          component: name,
+          user_id: socket.assigns.user_id
+        })
+      end
+
+      {:noreply, switch_demo(socket, component)}
+    else
+      {:noreply, socket}
     end
-
-    # Broadcast to other users if sync enabled
-    if socket.assigns.sync_enabled do
-      PlaygroundPresence.broadcast_event_from(
-        self(),
-        :component_selected,
-        %{component: component_name, user_id: socket.assigns.user_id}
-      )
-    end
-
-    socket =
-      socket
-      |> assign(:selected_component, component)
-      |> assign(:component_code, code)
-      |> assign(:error_message, nil)
-      |> run_if_auto_run()
-
-    {:noreply, socket}
-  end
-
-  def handle_event("select_framework", %{"framework" => framework}, socket) do
-    code = CodeExamples.get_code_for_framework(socket.assigns.selected_component, framework)
-
-    socket =
-      socket
-      |> assign(:selected_framework, framework)
-      |> assign(:component_code, code)
-      |> run_if_auto_run()
-
-    {:noreply, socket}
   end
 
   def handle_event("search_components", %{"query" => query}, socket) do
-    filtered = Helpers.filter_components(socket.assigns.all_components, query)
+    search = if query == "", do: nil, else: query
+    components = Catalog.filter(search: search)
 
-    # Use stream_reset for efficient DOM updates when filtering
-    socket =
-      socket
-      |> assign(:search_query, query)
-      |> stream(:components, filtered, reset: true)
-
-    {:noreply, socket}
+    {:noreply, socket |> assign(:search_query, query) |> assign(:components, components)}
   end
 
-  # ===========================================================================
-  # Event Handlers - Code Execution
-  # ===========================================================================
-
-  def handle_event("update_code", %{"code" => code}, socket) do
-    socket =
-      socket
-      |> assign(:component_code, code)
-      |> assign(:error_message, nil)
-      |> run_if_auto_run()
-
-    {:noreply, socket}
+  def handle_event("toggle_code", _params, socket) do
+    {:noreply, assign(socket, :show_code, !socket.assigns.show_code)}
   end
-
-  def handle_event("run_component", _params, socket) do
-    socket = assign(socket, :is_running, true)
-
-    case CodeExecutor.execute(socket.assigns.component_code, socket.assigns.selected_component) do
-      {:ok, output} ->
-        {:noreply,
-         socket
-         |> assign(:preview_output, output)
-         |> assign(:error_message, nil)
-         |> assign(:is_running, false)}
-
-      {:error, error} ->
-        {:noreply,
-         socket
-         |> assign(:error_message, error)
-         |> assign(:preview_output, "")
-         |> assign(:is_running, false)}
-    end
-  end
-
-  def handle_event("toggle_auto_run", _params, socket) do
-    {:noreply, assign(socket, :auto_run, !socket.assigns.auto_run)}
-  end
-
-  # ===========================================================================
-  # Event Handlers - UI State
-  # ===========================================================================
 
   def handle_event("toggle_shortcuts", _params, socket) do
     {:noreply, assign(socket, :show_shortcuts, !socket.assigns.show_shortcuts)}
   end
 
-  def handle_event("toggle_view_mode", _params, socket) do
-    new_mode = if socket.assigns.view_mode == :demo, do: :edit, else: :demo
-    {:noreply, assign(socket, :view_mode, new_mode)}
+  def handle_event("toggle_users_panel", _params, socket) do
+    {:noreply, assign(socket, :show_users_panel, !socket.assigns.show_users_panel)}
   end
 
-  def handle_event("set_view_mode", %{"mode" => mode}, socket) do
-    {:noreply, assign(socket, :view_mode, String.to_existing_atom(mode))}
+  def handle_event("toggle_sync", _params, socket) do
+    {:noreply, assign(socket, :sync_enabled, !socket.assigns.sync_enabled)}
   end
 
   def handle_event("toggle_sidebar", _params, socket) do
@@ -216,296 +115,236 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     {:noreply, assign(socket, :terminal_theme, String.to_existing_atom(theme))}
   end
 
-  # ===========================================================================
-  # Event Handlers - Demo Interactions
-  # ===========================================================================
-
-  def handle_event("demo_button_click", _params, socket) do
-    demo_state = socket.assigns.demo_state
-    new_demo_state = %{demo_state | button_clicks: demo_state.button_clicks + 1}
-
-    socket = assign(socket, :demo_state, new_demo_state)
-    broadcast_demo_state_if_enabled(socket, new_demo_state)
+  def handle_event("keydown", params, socket) do
+    if socket.assigns[:lifecycle_pid] do
+      event = Raxol.LiveView.InputAdapter.translate_key_event(params)
+      dispatch_to_lifecycle(socket.assigns.lifecycle_pid, event)
+    end
 
     {:noreply, socket}
   end
 
-  def handle_event("demo_input_change", params, socket) do
-    demo_state = socket.assigns.demo_state
+  def handle_event(_event, _params, socket), do: {:noreply, socket}
 
-    new_value =
-      case params do
-        %{"value" => v} when is_binary(v) -> v
-        %{"target" => %{"value" => v}} -> v
-        _ -> demo_state.input_value
-      end
-
-    new_demo_state = %{demo_state | input_value: new_value}
-    socket = assign(socket, :demo_state, new_demo_state)
-    broadcast_demo_state_if_enabled(socket, new_demo_state)
-
-    {:noreply, socket}
-  end
-
-  def handle_event("demo_progress_change", %{"value" => value}, socket) do
-    progress = String.to_integer(value)
-    demo_state = socket.assigns.demo_state
-    new_demo_state = %{demo_state | progress_value: progress}
-
-    socket = assign(socket, :demo_state, new_demo_state)
-    broadcast_demo_state_if_enabled(socket, new_demo_state)
-
-    {:noreply, socket}
-  end
-
-  def handle_event("demo_checkbox_toggle", _params, socket) do
-    demo_state = socket.assigns.demo_state
-    new_demo_state = %{demo_state | checkbox_checked: !demo_state.checkbox_checked}
-
-    socket = assign(socket, :demo_state, new_demo_state)
-    broadcast_demo_state_if_enabled(socket, new_demo_state)
-
-    {:noreply, socket}
-  end
-
-  def handle_event("demo_menu_select", %{"item" => item}, socket) do
-    demo_state = socket.assigns.demo_state
-    new_demo_state = %{demo_state | selected_menu_item: item}
-
-    socket = assign(socket, :demo_state, new_demo_state)
-    broadcast_demo_state_if_enabled(socket, new_demo_state)
-
-    {:noreply, socket}
-  end
-
-  def handle_event("demo_modal_toggle", _params, socket) do
-    demo_state = socket.assigns.demo_state
-    new_demo_state = %{demo_state | modal_open: !demo_state.modal_open}
-
-    socket = assign(socket, :demo_state, new_demo_state)
-    broadcast_demo_state_if_enabled(socket, new_demo_state)
-
-    {:noreply, socket}
-  end
-
-  def handle_event("demo_table_sort", %{"column" => column}, socket) do
-    demo_state = socket.assigns.demo_state
-
-    {new_column, new_direction} =
-      if demo_state.table_sort_column == column do
-        {column, if(demo_state.table_sort_direction == :asc, do: :desc, else: :asc)}
-      else
-        {column, :asc}
-      end
-
-    new_demo_state = %{
-      demo_state
-      | table_sort_column: new_column,
-        table_sort_direction: new_direction
-    }
-
-    socket = assign(socket, :demo_state, new_demo_state)
-    broadcast_demo_state_if_enabled(socket, new_demo_state)
-
-    {:noreply, socket}
-  end
-
-  def handle_event("demo_reset", _params, socket) do
-    new_demo_state = Helpers.initial_demo_state()
-    socket = assign(socket, :demo_state, new_demo_state)
-    broadcast_demo_state_if_enabled(socket, new_demo_state)
-
-    {:noreply, socket}
-  end
-
-  # ===========================================================================
-  # Event Handlers - Multi-User Features
-  # ===========================================================================
-
-  def handle_event("toggle_users_panel", _params, socket) do
-    {:noreply, assign(socket, :show_users_panel, !socket.assigns.show_users_panel)}
-  end
-
-  def handle_event("toggle_sync", _params, socket) do
-    {:noreply, assign(socket, :sync_enabled, !socket.assigns.sync_enabled)}
-  end
-
-  # ===========================================================================
-  # Handle Info - Presence & PubSub
-  # ===========================================================================
+  # =========================================================================
+  # Handle Info
+  # =========================================================================
 
   @impl true
-  def handle_info(%Phoenix.Socket.Broadcast{event: "presence_diff", payload: diff}, socket) do
-    # Update online users list when presence changes
-    online_users = PlaygroundPresence.list_users()
-    {:noreply, assign(socket, :online_users, online_users)}
+  def handle_info({:render_update, html}, socket) do
+    {:noreply, assign(socket, :terminal_html, html)}
   end
 
-  @impl true
-  def handle_info({:playground_event, :component_selected, %{component: component_name, user_id: from_user}}, socket) do
-    # Another user selected a component - update if sync is enabled
-    if socket.assigns.sync_enabled and from_user != socket.assigns.user_id do
-      component = Enum.find(socket.assigns.all_components, &(&1.name == component_name))
+  def handle_info(
+        %Phoenix.Socket.Broadcast{event: "presence_diff"},
+        socket
+      ) do
+    {:noreply, assign(socket, :online_users, PlaygroundPresence.list_users())}
+  end
 
-      if component do
-        code = CodeExamples.get_code(component)
-
-        socket =
-          socket
-          |> assign(:selected_component, component)
-          |> assign(:component_code, code)
-          |> run_if_auto_run()
-
-        {:noreply, socket}
-      else
-        {:noreply, socket}
+  def handle_info(
+        {:playground_event, :component_selected, %{component: name, user_id: from}},
+        socket
+      ) do
+    if socket.assigns.sync_enabled and from != socket.assigns.user_id do
+      case Catalog.get_component(name) do
+        nil -> {:noreply, socket}
+        comp -> {:noreply, switch_demo(socket, comp)}
       end
     else
       {:noreply, socket}
     end
   end
 
-  @impl true
-  def handle_info({:playground_event, :demo_state_changed, %{state: new_state, user_id: from_user}}, socket) do
-    # Another user changed demo state - update if sync is enabled
-    if socket.assigns.sync_enabled and from_user != socket.assigns.user_id do
-      {:noreply, assign(socket, :demo_state, new_state)}
-    else
-      {:noreply, socket}
-    end
-  end
+  def handle_info(_msg, socket), do: {:noreply, socket}
 
   @impl true
-  def handle_info(_msg, socket) do
-    {:noreply, socket}
+  def terminate(_reason, socket) do
+    stop_demo(socket)
+    :ok
   end
 
-  # ===========================================================================
+  # =========================================================================
   # Render
-  # ===========================================================================
+  # =========================================================================
 
   @impl true
   def render(assigns) do
+    theme_bg =
+      Enum.find_value(@themes, "#241b2f", fn {key, _name, bg} ->
+        if key == assigns.terminal_theme, do: bg
+      end)
+
+    assigns = assign(assigns, :theme_bg, theme_bg)
+
     ~H"""
     <div class="playground-container h-screen flex flex-col bg-gray-50">
-      <!-- Hero Header -->
-      <div class="hero-section">
-        <h1 class="hero-title">Raxol Component Playground</h1>
-        <p class="hero-subtitle">Build terminal UIs with any framework - React, LiveView, or Raw</p>
+      <!-- Header -->
+      <div class="bg-white shadow-sm border-b px-6 py-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <h1 class="text-xl font-bold text-gray-900">Raxol Playground</h1>
+            <span class="text-sm text-gray-500">
+              <a href="/gallery" class="hover:underline">Gallery</a>
+              <span class="mx-2">|</span>
+              <a href="/demos" class="hover:underline">Demos</a>
+            </span>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <!-- SSH Callout -->
+            <span class="text-xs text-gray-500 font-mono hidden lg:block">
+              ssh playground@raxol.io
+            </span>
+
+            <!-- Users Button -->
+            <button
+              phx-click="toggle_users_panel"
+              class={"flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm #{if @show_users_panel, do: "bg-blue-50 border-blue-300 text-blue-600", else: "border-gray-300 hover:bg-gray-100"}"}
+            >
+              <span><%= length(@online_users) %> online</span>
+              <%= if length(@online_users) > 1 do %>
+                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+              <% end %>
+            </button>
+
+            <button
+              phx-click="toggle_shortcuts"
+              class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm"
+            >
+              ?
+            </button>
+          </div>
+        </div>
       </div>
 
-      <!-- Main Playground Area -->
+      <!-- Main Area -->
       <div class="flex-1 flex overflow-hidden">
-        <!-- Component Sidebar -->
-        <%= render_sidebar(assigns) %>
+        <!-- Sidebar -->
+        <.sidebar {assigns} />
 
-        <!-- Main Content -->
-        <div class="main-content flex-1 flex flex-col bg-white">
+        <!-- Content -->
+        <div class="flex-1 flex flex-col">
           <!-- Toolbar -->
-          <%= render_toolbar(assigns) %>
+          <.toolbar {assigns} />
 
-          <!-- Content Area -->
-          <div class="content flex-1 flex overflow-hidden">
-            <%= if @view_mode == :demo do %>
-              <%= render_demo_mode(assigns) %>
-            <% else %>
-              <%= render_edit_mode(assigns) %>
+          <!-- Demo + Code -->
+          <div class="flex-1 flex overflow-hidden">
+            <!-- Terminal Preview -->
+            <div class="flex-1 flex flex-col">
+              <div class="bg-gray-800 px-4 py-2 flex items-center space-x-2 border-b border-gray-700">
+                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span class="text-gray-400 text-sm ml-4">
+                  <%= if @selected, do: @selected.name <> " Demo", else: "Terminal" %>
+                </span>
+              </div>
+              <div
+                id="playground-terminal"
+                phx-hook="RaxolTerminal"
+                phx-window-keydown="keydown"
+                class="flex-1 overflow-auto p-4 font-mono text-sm"
+                style={"background: #{@theme_bg}; color: #e0e0e0;"}
+                tabindex="0"
+              >
+                <%= if @terminal_html != "" do %>
+                  <%= Phoenix.HTML.raw(@terminal_html) %>
+                <% else %>
+                  <div class="text-gray-500 py-8 text-center">
+                    <%= if @selected do %>
+                      <p class="mb-2 text-gray-400"><%= @selected.description %></p>
+                    <% end %>
+                    <p class="mb-4">For the full interactive experience:</p>
+                    <p class="text-green-400">$ mix raxol.playground</p>
+                    <p class="text-green-400 mt-1">$ ssh playground@raxol.io</p>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Code Panel -->
+            <%= if @show_code && @selected do %>
+              <div class="w-1/3 border-l bg-gray-900 flex flex-col">
+                <div class="px-4 py-2 bg-gray-800 text-gray-300 text-sm font-medium border-b border-gray-700">
+                  Code Snippet
+                </div>
+                <div class="flex-1 overflow-auto p-4">
+                  <pre class="text-green-400 font-mono text-sm whitespace-pre-wrap"><%= String.trim(@selected.code_snippet) %></pre>
+                </div>
+              </div>
             <% end %>
           </div>
         </div>
       </div>
 
-      <!-- Keyboard Shortcuts Overlay -->
+      <!-- Shortcuts Overlay -->
       <%= if @show_shortcuts do %>
-        <%= render_shortcuts_overlay(assigns) %>
+        <.shortcuts_overlay {assigns} />
       <% end %>
 
-      <!-- Online Users Panel -->
+      <!-- Users Panel -->
       <%= if @show_users_panel do %>
-        <%= render_users_panel(assigns) %>
+        <.users_panel {assigns} />
       <% end %>
     </div>
     """
   end
 
-  # ===========================================================================
-  # Render Helpers
-  # ===========================================================================
+  # =========================================================================
+  # Render Components
+  # =========================================================================
 
-  defp render_sidebar(assigns) do
+  defp sidebar(assigns) do
     ~H"""
-    <div class={"sidebar bg-white border-r overflow-y-auto shadow-lg transition-all duration-200 #{if @sidebar_collapsed, do: "w-16", else: "w-80"}"}>
-      <div class="p-4">
-        <!-- Sidebar Header with Collapse Button -->
-        <div class="flex items-center justify-between mb-4">
+    <div class={"bg-white border-r overflow-y-auto shadow-sm transition-all duration-200 #{if @sidebar_collapsed, do: "w-16", else: "w-72"}"}>
+      <div class="p-3">
+        <div class="flex items-center justify-between mb-3">
           <%= if not @sidebar_collapsed do %>
-            <h2 class="text-xl font-bold text-gray-800">Components</h2>
+            <h2 class="text-lg font-bold text-gray-800">Components</h2>
           <% end %>
           <button
             phx-click="toggle_sidebar"
-            class="p-2 rounded hover:bg-gray-100 text-gray-600"
-            title={if @sidebar_collapsed, do: "Expand sidebar", else: "Collapse sidebar"}
+            class="p-1.5 rounded hover:bg-gray-100 text-gray-600"
           >
-            <%= if @sidebar_collapsed do %>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-              </svg>
-            <% else %>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              </svg>
-            <% end %>
+            <%= if @sidebar_collapsed, do: ">>", else: "<<" %>
           </button>
         </div>
 
         <%= if not @sidebar_collapsed do %>
-          <!-- Search -->
-          <div class="mb-4">
+          <form phx-change="search_components" id="sidebar-search" class="mb-3">
             <input
               type="text"
-              placeholder="Search components..."
+              name="query"
+              placeholder="Search..."
               value={@search_query}
-              phx-keyup="search_components"
               phx-debounce="300"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
+          </form>
 
-          <!-- Component List using Streams for efficient updates -->
-          <div id="component-list" phx-update="stream" class="component-stream-container">
-            <%= for {dom_id, component} <- @streams.components do %>
-              <div id={dom_id} class="component-category-item">
-                <div
-                  class={"component-item p-3 rounded-lg cursor-pointer border mb-2 #{if @selected_component && @selected_component.name == component.name, do: "bg-blue-50 border-blue-300 shadow-sm", else: "bg-gray-50 hover:bg-gray-100 border-transparent"}"}
-                  phx-click="select_component"
-                  phx-value-component={component.name}
-                >
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="text-xs text-gray-500 uppercase font-semibold"><%= component.category %></span>
-                  </div>
-                  <div class="font-medium text-sm text-gray-900"><%= component.name %></div>
-                  <div class="text-xs text-gray-600 mt-1"><%= component.description %></div>
-                  <div class="flex flex-wrap gap-1 mt-2">
-                    <%= for tag <- component.tags do %>
-                      <span class="px-2 py-1 text-xs bg-white border border-gray-200 rounded"><%= tag %></span>
-                    <% end %>
-                  </div>
-                </div>
+          <div class="space-y-1">
+            <%= for comp <- @components do %>
+              <div
+                class={"p-2 rounded cursor-pointer text-sm #{if @selected && @selected.name == comp.name, do: "bg-blue-50 border border-blue-200", else: "hover:bg-gray-50"}"}
+                phx-click="select_component"
+                phx-value-component={comp.name}
+              >
+                <div class="font-medium text-gray-900"><%= comp.name %></div>
+                <div class="text-xs text-gray-500"><%= comp.description %></div>
               </div>
             <% end %>
           </div>
         <% else %>
-          <!-- Collapsed: Show only component icons/initials (also using streams) -->
-          <div id="component-list-collapsed" phx-update="stream" class="space-y-2">
-            <%= for {dom_id, component} <- @streams.components do %>
+          <div class="space-y-1">
+            <%= for comp <- @components do %>
               <div
-                id={"collapsed-#{dom_id}"}
-                class={"p-2 rounded-lg cursor-pointer text-center #{if @selected_component && @selected_component.name == component.name, do: "bg-blue-50 border border-blue-300", else: "hover:bg-gray-100"}"}
+                class={"p-2 rounded cursor-pointer text-center #{if @selected && @selected.name == comp.name, do: "bg-blue-50 border border-blue-200", else: "hover:bg-gray-50"}"}
                 phx-click="select_component"
-                phx-value-component={component.name}
-                title={component.name}
+                phx-value-component={comp.name}
+                title={comp.name}
               >
-                <div class="font-bold text-sm text-gray-700"><%= String.first(component.name) %></div>
+                <span class="font-bold text-sm text-gray-700"><%= String.first(comp.name) %></span>
               </div>
             <% end %>
           </div>
@@ -515,301 +354,110 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     """
   end
 
-  defp render_toolbar(assigns) do
+  defp toolbar(assigns) do
     ~H"""
-    <div class="border-b bg-gray-50 p-4">
+    <div class="border-b bg-gray-50 px-4 py-2">
       <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div>
-            <%= if @selected_component do %>
-              <h2 class="text-lg font-bold text-gray-900"><%= @selected_component.name %></h2>
-              <p class="text-sm text-gray-600"><%= @selected_component.description %></p>
-            <% end %>
-          </div>
-
-          <!-- View Mode Toggle -->
-          <div class="flex bg-gray-200 rounded-lg p-1">
-            <button
-              phx-click="set_view_mode"
-              phx-value-mode="demo"
-              class={"px-4 py-1.5 rounded-md text-sm font-medium transition-colors #{if @view_mode == :demo, do: "bg-white shadow text-blue-600", else: "text-gray-600 hover:text-gray-800"}"}
-            >
-              Demo
-            </button>
-            <button
-              phx-click="set_view_mode"
-              phx-value-mode="edit"
-              class={"px-4 py-1.5 rounded-md text-sm font-medium transition-colors #{if @view_mode == :edit, do: "bg-white shadow text-blue-600", else: "text-gray-600 hover:text-gray-800"}"}
-            >
-              Edit Code
-            </button>
-          </div>
-
-          <!-- Framework Selector (only in edit mode) -->
-          <%= if @view_mode == :edit do %>
-            <div class="framework-tabs">
-              <%= for framework <- ["universal", "react", "liveview", "raw"] do %>
-                <div
-                  class={"framework-tab #{if @selected_framework == framework, do: "active", else: ""}"}
-                  phx-click="select_framework"
-                  phx-value-framework={framework}
-                >
-                  <%= String.capitalize(framework) %>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
-
         <div class="flex items-center gap-3">
-          <%= if @view_mode == :demo do %>
-            <button
-              phx-click="demo_reset"
-              class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm"
-            >
-              Reset
-            </button>
-          <% else %>
-            <label class="auto-run-indicator flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={@auto_run}
-                phx-click="toggle_auto_run"
-                class="rounded text-blue-600 focus:ring-blue-500"
-              />
-              <span class="text-sm">Auto-run</span>
-              <%= if @auto_run do %>
-                <div class="auto-run-dot"></div>
-              <% end %>
-            </label>
-
-            <button
-              phx-click="run_component"
-              disabled={@is_running}
-              class="btn-run px-6 py-2 text-white rounded-lg hover:bg-blue-700 font-medium shadow-md"
-            >
-              <%= if @is_running do %>
-                <span class="flex items-center gap-2">
-                  <div class="loading-spinner"></div>
-                  Running...
-                </span>
-              <% else %>
-                Run (Cmd+Enter)
-              <% end %>
-            </button>
+          <%= if @selected do %>
+            <span class="font-semibold text-gray-900"><%= @selected.name %></span>
+            <span class={"px-2 py-0.5 text-xs font-medium rounded-full #{Helpers.complexity_class(@selected.complexity)}"}>
+              <%= Helpers.complexity_label(@selected.complexity) %>
+            </span>
+            <span class="text-xs text-gray-500"><%= Helpers.category_label(@selected.category) %></span>
           <% end %>
-
-          <!-- Online Users Button -->
-          <button
-            phx-click="toggle_users_panel"
-            class={"flex items-center gap-2 px-3 py-2 border rounded-lg #{if @show_users_panel, do: "bg-blue-50 border-blue-300 text-blue-600", else: "border-gray-300 hover:bg-gray-100"}"}
-            title="Online users"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-            <span class="text-sm font-medium"><%= length(@online_users) %></span>
-            <%= if length(@online_users) > 1 do %>
-              <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            <% end %>
-          </button>
-
-          <button
-            phx-click="toggle_shortcuts"
-            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
-          >
-            ?
-          </button>
         </div>
-      </div>
-    </div>
-    """
-  end
 
-  defp render_demo_mode(assigns) do
-    ~H"""
-    <div class="demo-area flex-1 flex flex-col lg:flex-row">
-      <!-- Interactive Component Preview -->
-      <div class="interactive-preview flex-1 flex flex-col border-r">
-        <div class="p-3 bg-gray-50 border-b">
-          <h3 class="font-medium text-gray-800">Interactive Component</h3>
-        </div>
-        <div class="flex-1 p-6 overflow-auto bg-white">
-          <%= DemoComponents.render_interactive_demo(assigns) %>
-        </div>
-      </div>
-
-      <!-- Terminal View -->
-      <div class="terminal-preview flex-1 flex flex-col">
-        <div class="p-3 bg-gray-800 text-gray-200 border-b border-gray-700 flex justify-between items-center">
-          <h3 class="font-medium">Terminal View</h3>
-          <form phx-change="select_theme">
+        <div class="flex items-center gap-2">
+          <form phx-change="select_theme" id="theme-selector">
             <select
               name="theme"
-              class="bg-gray-700 text-gray-200 text-sm rounded px-2 py-1 border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="border border-gray-300 rounded px-2 py-1 text-xs"
             >
-              <option value="dracula" selected={@terminal_theme == :dracula}>Dracula</option>
-              <option value="nord" selected={@terminal_theme == :nord}>Nord</option>
-              <option value="monokai" selected={@terminal_theme == :monokai}>Monokai</option>
-              <option value="solarized_dark" selected={@terminal_theme == :solarized_dark}>Solarized Dark</option>
-              <option value="solarized_light" selected={@terminal_theme == :solarized_light}>Solarized Light</option>
-              <option value="synthwave84" selected={@terminal_theme == :synthwave84}>Synthwave '84</option>
-              <option value="gruvbox_dark" selected={@terminal_theme == :gruvbox_dark}>Gruvbox Dark</option>
-              <option value="one_dark" selected={@terminal_theme == :one_dark}>One Dark</option>
-              <option value="tokyo_night" selected={@terminal_theme == :tokyo_night}>Tokyo Night</option>
-              <option value="catppuccin" selected={@terminal_theme == :catppuccin}>Catppuccin</option>
+              <%= for {key, label, _bg} <- @themes do %>
+                <option value={key} selected={@terminal_theme == key}><%= label %></option>
+              <% end %>
             </select>
           </form>
-        </div>
-        <div class={"flex-1 overflow-auto p-4 #{theme_bg(@terminal_theme)}"}>
-          <%= TerminalView.render_terminal_demo(assigns) %>
-        </div>
-      </div>
-    </div>
-    """
-  end
 
-  defp theme_bg(:dracula), do: "bg-[#282a36]"
-  defp theme_bg(:nord), do: "bg-[#2e3440]"
-  defp theme_bg(:monokai), do: "bg-[#272822]"
-  defp theme_bg(:solarized_dark), do: "bg-[#002b36]"
-  defp theme_bg(:solarized_light), do: "bg-[#fdf6e3]"
-  defp theme_bg(:synthwave84), do: "bg-[#241b2f]"
-  defp theme_bg(:gruvbox_dark), do: "bg-[#282828]"
-  defp theme_bg(:one_dark), do: "bg-[#282c34]"
-  defp theme_bg(:tokyo_night), do: "bg-[#1a1b26]"
-  defp theme_bg(:catppuccin), do: "bg-[#1e1e2e]"
-  defp theme_bg(_), do: "bg-gray-900"
-
-  defp render_edit_mode(assigns) do
-    ~H"""
-    <!-- Code Editor -->
-    <div class="editor-panel w-1/2 flex flex-col border-r">
-      <div class="editor-header p-3 text-white">
-        <h3 class="font-medium">Component Code</h3>
-      </div>
-
-      <div class="editor flex-1 relative overflow-hidden">
-        <textarea
-          id="code-editor"
-          phx-hook="CodeEditor"
-          name="code"
-          class="w-full h-full p-4 font-mono text-sm resize-none border-none outline-none"
-          phx-blur="update_code"
-        ><%= @component_code %></textarea>
-      </div>
-
-      <%= if @error_message do %>
-        <div class="error-panel p-3 text-red-300 text-sm">
-          <div class="font-bold mb-1">Error:</div>
-          <div class="font-mono"><%= @error_message %></div>
-        </div>
-      <% end %>
-    </div>
-
-    <!-- Preview Panel -->
-    <div class="preview-panel w-1/2 flex flex-col">
-      <div class="preview-header p-3 bg-gray-50 border-b">
-        <h3 class="font-medium text-gray-800">Live Preview</h3>
-      </div>
-
-      <div class="preview flex-1 overflow-auto relative">
-        <div class="terminal-output p-4 whitespace-pre-wrap"><%= @preview_output %></div>
-      </div>
-
-      <%= if @selected_component do %>
-        <div class="component-info p-4 bg-gray-50 border-t">
-          <div class="text-sm space-y-2">
-            <div class="flex items-center gap-2">
-              <span class="font-medium text-gray-700">Framework:</span>
-              <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                <%= @selected_component.framework %>
-              </span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="font-medium text-gray-700">Complexity:</span>
-              <span class={"px-2 py-1 rounded text-xs font-medium #{Helpers.complexity_class(@selected_component.complexity)}"}>
-                <%= @selected_component.complexity %>
-              </span>
-            </div>
-            <div>
-              <span class="font-medium text-gray-700">API:</span>
-              <a href="#" class="text-blue-600 hover:underline ml-1">View Docs -></a>
-            </div>
-          </div>
-        </div>
-      <% end %>
-    </div>
-    """
-  end
-
-  defp render_shortcuts_overlay(assigns) do
-    ~H"""
-    <div class="shortcuts-hint">
-      <div class="text-white font-bold mb-2">Keyboard Shortcuts</div>
-      <div class="space-y-1">
-        <div class="flex items-center justify-between gap-4">
-          <span>Run component</span>
-          <div class="shortcut-combo">
-            <span class="shortcut-key">Cmd</span>
-            <span>+</span>
-            <span class="shortcut-key">Enter</span>
-          </div>
-        </div>
-        <div class="flex items-center justify-between gap-4">
-          <span>Search</span>
-          <div class="shortcut-combo">
-            <span class="shortcut-key">Cmd</span>
-            <span>+</span>
-            <span class="shortcut-key">K</span>
-          </div>
-        </div>
-        <div class="flex items-center justify-between gap-4">
-          <span>Toggle shortcuts</span>
-          <div class="shortcut-combo">
-            <span class="shortcut-key">?</span>
-          </div>
+          <button
+            phx-click="toggle_code"
+            class={"px-3 py-1 border rounded text-xs #{if @show_code, do: "bg-blue-50 border-blue-300 text-blue-600", else: "border-gray-300 hover:bg-gray-100"}"}
+          >
+            Code
+          </button>
         </div>
       </div>
     </div>
     """
   end
 
-  defp render_users_panel(assigns) do
+  defp shortcuts_overlay(assigns) do
     ~H"""
-    <div class="fixed right-4 top-20 w-72 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
-      <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-        <h3 class="font-semibold text-gray-800">Online Users (<%= length(@online_users) %>)</h3>
-        <button
-          phx-click="toggle_users_panel"
-          class="text-gray-400 hover:text-gray-600"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+    <div
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="toggle_shortcuts"
+    >
+      <div class="bg-white rounded-lg shadow-xl p-6 max-w-md">
+        <h3 class="text-lg font-bold mb-4">Keyboard Shortcuts</h3>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between gap-8">
+            <span>Navigate components</span>
+            <span class="font-mono text-gray-600">j / k</span>
+          </div>
+          <div class="flex justify-between gap-8">
+            <span>Select component</span>
+            <span class="font-mono text-gray-600">Enter</span>
+          </div>
+          <div class="flex justify-between gap-8">
+            <span>Toggle code panel</span>
+            <span class="font-mono text-gray-600">c</span>
+          </div>
+          <div class="flex justify-between gap-8">
+            <span>Search</span>
+            <span class="font-mono text-gray-600">/</span>
+          </div>
+          <div class="flex justify-between gap-8">
+            <span>Toggle shortcuts</span>
+            <span class="font-mono text-gray-600">?</span>
+          </div>
+        </div>
+        <div class="mt-4 pt-4 border-t text-xs text-gray-500">
+          Click anywhere to close
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  defp users_panel(assigns) do
+    ~H"""
+    <div class="fixed right-4 top-16 w-72 bg-white rounded-lg shadow-xl border z-50">
+      <div class="p-4 border-b flex justify-between items-center">
+        <h3 class="font-semibold text-gray-800">Online (<%= length(@online_users) %>)</h3>
+        <button phx-click="toggle_users_panel" class="text-gray-400 hover:text-gray-600">
+          &times;
         </button>
       </div>
 
-      <div class="p-4 border-b border-gray-100">
+      <div class="p-3 border-b">
         <label class="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
             checked={@sync_enabled}
             phx-click="toggle_sync"
-            class="rounded text-blue-600 focus:ring-blue-500"
+            class="rounded text-blue-600"
           />
           <span class="text-sm text-gray-700">Sync with others</span>
         </label>
         <p class="text-xs text-gray-500 mt-1">
-          When enabled, component selections will sync across sessions
+          Selections sync across sessions when enabled
         </p>
       </div>
 
       <div class="max-h-64 overflow-y-auto">
-        <%= if length(@online_users) == 0 do %>
-          <div class="p-4 text-center text-gray-500 text-sm">
-            No other users online
-          </div>
+        <%= if @online_users == [] do %>
+          <div class="p-4 text-center text-gray-500 text-sm">No other users online</div>
         <% else %>
           <ul class="divide-y divide-gray-100">
             <%= for user <- @online_users do %>
@@ -821,21 +469,17 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
                   <%= String.first(user.name) %>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2">
-                    <span class={"text-sm font-medium #{if user.user_id == @user_id, do: "text-blue-600", else: "text-gray-800"}"}>
-                      <%= user.name %>
-                      <%= if user.user_id == @user_id do %>
-                        <span class="text-xs text-gray-400">(you)</span>
-                      <% end %>
-                    </span>
-                  </div>
+                  <span class={"text-sm font-medium #{if user.user_id == @user_id, do: "text-blue-600", else: "text-gray-800"}"}>
+                    <%= user.name %>
+                    <%= if user.user_id == @user_id, do: "(you)" %>
+                  </span>
                   <%= if user.current_component do %>
                     <div class="text-xs text-gray-500 truncate">
                       Viewing: <%= user.current_component %>
                     </div>
                   <% end %>
                 </div>
-                <div class="w-2 h-2 rounded-full bg-green-400" title="Online"></div>
+                <div class="w-2 h-2 rounded-full bg-green-400"></div>
               </li>
             <% end %>
           </ul>
@@ -845,35 +489,102 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     """
   end
 
-  # ===========================================================================
+  # =========================================================================
   # Private Helpers
-  # ===========================================================================
+  # =========================================================================
 
-  defp broadcast_demo_state_if_enabled(socket, new_state) do
-    if socket.assigns.sync_enabled do
-      PlaygroundPresence.broadcast_event_from(
-        self(),
-        :demo_state_changed,
-        %{state: new_state, user_id: socket.assigns.user_id}
-      )
+  defp init_presence(socket, selected) do
+    if connected?(socket) do
+      PlaygroundPresence.subscribe()
+      {:ok, user_id, user_meta} = PlaygroundPresence.track_user(socket)
+
+      if selected do
+        PlaygroundPresence.update_component(user_id, selected.name)
+      end
+
+      socket =
+        socket
+        |> assign(:user_id, user_id)
+        |> assign(:user_meta, user_meta)
+        |> assign(:online_users, PlaygroundPresence.list_users())
+
+      {socket, user_id}
+    else
+      socket =
+        socket
+        |> assign(:user_id, nil)
+        |> assign(:user_meta, %{})
+        |> assign(:online_users, [])
+
+      {socket, nil}
     end
   end
 
-  defp run_if_auto_run(socket) do
-    if socket.assigns.auto_run do
-      case CodeExecutor.execute(socket.assigns.component_code, socket.assigns.selected_component) do
-        {:ok, output} ->
-          socket
-          |> assign(:preview_output, output)
-          |> assign(:error_message, nil)
+  defp switch_demo(socket, comp) do
+    socket
+    |> stop_demo()
+    |> assign(:selected, comp)
+    |> assign(:terminal_html, "")
+    |> start_demo()
+  end
 
-        {:error, error} ->
+  defp start_demo(socket) do
+    comp = socket.assigns.selected
+
+    if comp && connected?(socket) do
+      topic = "playground:#{inspect(self())}:#{System.unique_integer([:positive])}"
+
+      try do
+        Phoenix.PubSub.subscribe(Raxol.PubSub, topic)
+
+        {:ok, pid} =
+          Lifecycle.start_link(comp.module,
+            environment: :liveview,
+            liveview_topic: topic,
+            width: 80,
+            height: 24
+          )
+
+        assign(socket, lifecycle_pid: pid, topic: topic)
+      rescue
+        e ->
+          Logger.debug("Playground lifecycle failed: #{Exception.message(e)}")
           socket
-          |> assign(:error_message, error)
-          |> assign(:preview_output, "")
+      catch
+        :exit, reason ->
+          Logger.debug("Playground lifecycle exit: #{inspect(reason)}")
+          socket
       end
     else
       socket
     end
+  end
+
+  defp stop_demo(socket) do
+    if socket.assigns[:lifecycle_pid] do
+      try do
+        Lifecycle.stop(socket.assigns.lifecycle_pid)
+      catch
+        :exit, _ -> :ok
+      end
+    end
+
+    if socket.assigns[:topic] do
+      Phoenix.PubSub.unsubscribe(Raxol.PubSub, socket.assigns.topic)
+    end
+
+    assign(socket, lifecycle_pid: nil, topic: nil)
+  end
+
+  defp dispatch_to_lifecycle(pid, event) do
+    case GenServer.call(pid, :get_full_state) do
+      %{dispatcher_pid: dpid} when is_pid(dpid) ->
+        GenServer.cast(dpid, {:dispatch, event})
+
+      _ ->
+        :ok
+    end
+  rescue
+    _ -> :ok
   end
 end

@@ -1,113 +1,125 @@
 defmodule RaxolPlaygroundWeb.DemoLive do
+  @moduledoc """
+  Individual component demo page with TEALive-hosted rendering.
+  Each demo runs the real Catalog demo app through the Lifecycle bridge.
+  """
+
   use RaxolPlaygroundWeb, :live_view
 
+  require Logger
+
+  alias Raxol.Playground.Catalog
+  alias Raxol.Core.Runtime.Lifecycle
+  alias RaxolPlaygroundWeb.Playground.Helpers
+
+  @themes %{
+    synthwave84: "#241b2f",
+    dracula: "#282a36",
+    nord: "#2e3440",
+    monokai: "#272822",
+    tokyo_night: "#1a1b26",
+    catppuccin: "#1e1e2e"
+  }
+
+  # Index: list all demos
   @impl true
-  def mount(%{"demo" => demo_name}, _session, socket) do
-    demo = get_demo(demo_name)
+  def mount(%{"demo" => name}, _session, socket) do
+    component = Catalog.get_component(name)
 
     socket =
       socket
-      |> assign(:demo, demo)
-      |> assign(:terminal_output, get_initial_output(demo))
-      |> assign(:command_history, [])
-      |> assign(:current_command, "")
-      |> assign(:is_running, false)
+      |> assign(:component, component)
+      |> assign(:terminal_html, "")
+      |> assign(:lifecycle_pid, nil)
+      |> assign(:topic, nil)
+      |> assign(:terminal_theme, :synthwave84)
+      |> assign(:show_code, false)
+      |> start_demo()
 
     {:ok, socket}
   end
 
   def mount(_params, _session, socket) do
-    demos = list_demos()
-
     socket =
       socket
-      |> assign(:demos, demos)
-      |> assign(:selected_demo, nil)
+      |> assign(:component, nil)
+      |> assign(:components, Catalog.list_components())
 
     {:ok, socket}
   end
 
-  @impl true
-  def handle_event("run_command", %{"command" => command}, socket) do
-    # Simulate command execution
-    new_output = execute_demo_command(socket.assigns.demo, command)
+  # -- Events --
 
-    socket =
-      socket
-      |> assign(:terminal_output, socket.assigns.terminal_output <> new_output)
-      |> assign(:command_history, [command | socket.assigns.command_history])
-      |> assign(:current_command, "")
+  @impl true
+  def handle_event("select_theme", %{"theme" => theme}, socket) do
+    {:noreply, assign(socket, :terminal_theme, String.to_existing_atom(theme))}
+  end
+
+  def handle_event("toggle_code", _params, socket) do
+    {:noreply, assign(socket, :show_code, !socket.assigns.show_code)}
+  end
+
+  def handle_event("keydown", params, socket) do
+    if socket.assigns[:lifecycle_pid] do
+      event = Raxol.LiveView.InputAdapter.translate_key_event(params)
+      dispatch_to_lifecycle(socket.assigns.lifecycle_pid, event)
+    end
 
     {:noreply, socket}
   end
 
-  def handle_event("update_command", %{"value" => command}, socket) do
-    {:noreply, assign(socket, :current_command, command)}
-  end
-
-  def handle_event("select_demo", %{"demo" => demo_name}, socket) do
-    {:noreply, push_navigate(socket, to: ~p"/demos/#{demo_name}")}
-  end
-
-  def handle_event("clear_terminal", _params, socket) do
-    initial_output = get_initial_output(socket.assigns.demo)
-    {:noreply, assign(socket, :terminal_output, initial_output)}
-  end
+  def handle_event(_event, _params, socket), do: {:noreply, socket}
 
   @impl true
-  def render(%{demo: nil} = assigns) do
+  def handle_info({:render_update, html}, socket) do
+    {:noreply, assign(socket, :terminal_html, html)}
+  end
+
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
+  @impl true
+  def terminate(_reason, socket) do
+    stop_demo(socket)
+    :ok
+  end
+
+  # -- Render: Index --
+
+  @impl true
+  def render(%{component: nil} = assigns) do
     ~H"""
-    <div class="demo-index min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-gray-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="text-center mb-12">
+        <div class="text-center mb-8">
           <h1 class="text-4xl font-bold text-gray-900 mb-4">Interactive Demos</h1>
           <p class="text-xl text-gray-600">
-            Experience Raxol components in realistic terminal scenarios
+            23 real Raxol widget demos -- click to try
           </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <%= for demo <- @demos do %>
-            <div
-              class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-              phx-click="select_demo"
-              phx-value-demo={demo.slug}
+        <!-- SSH Callout -->
+        <div class="bg-gray-900 text-green-400 rounded-lg p-4 font-mono text-sm mb-8">
+          Try the real terminal experience:
+          <span class="text-white ml-2">ssh playground@raxol.io</span>
+          <span class="text-gray-500 mx-2">|</span>
+          <span class="text-white">mix raxol.playground</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <%= for comp <- @components do %>
+            <a
+              href={"/demos/#{comp.name}"}
+              class="block bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow duration-200 p-4"
             >
-              <!-- Terminal Preview -->
-              <div class="bg-gray-900 rounded-t-lg p-4 h-48 overflow-hidden">
-                <div class="bg-gray-800 rounded p-2 h-full">
-                  <div class="flex items-center space-x-2 mb-2">
-                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span class="text-gray-400 text-sm ml-2">Terminal</span>
-                  </div>
-                  <div class="text-green-400 font-mono text-xs">
-                    <div class="text-gray-400">$ raxol demo <%= demo.slug %></div>
-                    <div class="mt-1">
-                      <%= raw(demo.preview) %>
-                    </div>
-                  </div>
-                </div>
+              <div class="flex items-start justify-between mb-2">
+                <h3 class="text-lg font-semibold text-gray-900"><%= comp.name %></h3>
+                <span class={"px-2 py-1 text-xs font-medium rounded-full #{Helpers.complexity_class(comp.complexity)}"}>
+                  <%= Helpers.complexity_label(comp.complexity) %>
+                </span>
               </div>
-
-              <!-- Content -->
-              <div class="p-6">
-                <h3 class="text-xl font-semibold text-gray-900 mb-2"><%= demo.title %></h3>
-                <p class="text-gray-600 mb-4"><%= demo.description %></p>
-
-                <div class="flex items-center justify-between">
-                  <div class="flex space-x-2">
-                    <%= for tag <- demo.tags do %>
-                      <span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                        <%= tag %>
-                      </span>
-                    <% end %>
-                  </div>
-                  <span class="text-sm text-gray-500"><%= demo.difficulty %></span>
-                </div>
-              </div>
-            </div>
+              <p class="text-gray-600 text-sm mb-2"><%= comp.description %></p>
+              <span class="text-xs text-gray-400"><%= Helpers.category_label(comp.category) %></span>
+            </a>
           <% end %>
         </div>
       </div>
@@ -115,277 +127,165 @@ defmodule RaxolPlaygroundWeb.DemoLive do
     """
   end
 
+  # -- Render: Show --
+
   def render(assigns) do
+    bg = Map.get(@themes, assigns.terminal_theme, "#241b2f")
+    assigns = assign(assigns, :theme_bg, bg)
+
     ~H"""
     <div class="demo-container h-screen flex flex-col bg-gray-100">
       <!-- Header -->
       <div class="bg-white shadow-sm border-b px-6 py-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
-            <button
-              phx-click={JS.navigate(~p"/demos")}
-              class="text-gray-600 hover:text-gray-900"
-            >
-              ← Back to Demos
-            </button>
+            <a href="/demos" class="text-gray-600 hover:text-gray-900">&larr; All Demos</a>
             <div>
-              <h1 class="text-2xl font-bold text-gray-900"><%= @demo.title %></h1>
-              <p class="text-gray-600"><%= @demo.description %></p>
+              <h1 class="text-2xl font-bold text-gray-900"><%= @component.name %></h1>
+              <p class="text-gray-600"><%= @component.description %></p>
             </div>
+            <span class={"px-2 py-1 text-xs font-medium rounded-full #{Helpers.complexity_class(@component.complexity)}"}>
+              <%= Helpers.complexity_label(@component.complexity) %>
+            </span>
           </div>
 
-          <div class="flex space-x-2">
+          <div class="flex items-center space-x-3">
+            <form phx-change="select_theme" id="theme-select">
+              <select
+                name="theme"
+                class="border border-gray-300 rounded px-3 py-1 text-sm"
+              >
+                <%= for {name, _bg} <- @themes do %>
+                  <option value={name} selected={@terminal_theme == name}>
+                    <%= name |> to_string() |> String.replace("_", " ") |> String.capitalize() %>
+                  </option>
+                <% end %>
+              </select>
+            </form>
+
             <button
-              phx-click="clear_terminal"
-              class="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+              phx-click="toggle_code"
+              class={"px-4 py-2 border rounded-lg text-sm #{if @show_code, do: "bg-blue-50 border-blue-300 text-blue-600", else: "border-gray-300 hover:bg-gray-100"}"}
             >
-              Clear
-            </button>
-            <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-              Share Demo
+              Code
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Terminal -->
-      <div class="flex-1 p-6">
-        <div class="h-full bg-gray-900 rounded-lg shadow-lg">
-          <!-- Terminal Header -->
-          <div class="bg-gray-800 rounded-t-lg px-4 py-3 flex items-center space-x-2">
+      <!-- Terminal + Code -->
+      <div class="flex-1 flex overflow-hidden">
+        <!-- Terminal -->
+        <div class="flex-1 flex flex-col">
+          <div class="bg-gray-800 px-4 py-2 flex items-center space-x-2 border-b border-gray-700">
             <div class="w-3 h-3 bg-red-500 rounded-full"></div>
             <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
             <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span class="text-gray-400 text-sm ml-4">Raxol Demo - <%= @demo.title %></span>
+            <span class="text-gray-400 text-sm ml-4"><%= @component.name %> Demo</span>
           </div>
-
-          <!-- Terminal Body -->
-          <div class="flex flex-col h-full">
-            <!-- Output Area -->
-            <div class="flex-1 p-4 overflow-y-auto">
-              <div class="text-green-400 font-mono text-sm whitespace-pre-wrap">
-                <%= raw(@terminal_output) %>
+          <div
+            id="demo-terminal"
+            phx-hook="RaxolTerminal"
+            phx-window-keydown="keydown"
+            class="flex-1 overflow-auto p-4 font-mono text-sm"
+            style={"background: #{@theme_bg}; color: #e0e0e0;"}
+            tabindex="0"
+          >
+            <%= if @terminal_html != "" do %>
+              <%= Phoenix.HTML.raw(@terminal_html) %>
+            <% else %>
+              <div class="text-gray-500 py-8 text-center">
+                <p class="mb-4">For the full interactive experience:</p>
+                <p class="text-green-400">$ mix raxol.playground</p>
+                <p class="text-green-400 mt-1">$ ssh playground@raxol.io</p>
               </div>
-            </div>
-
-            <!-- Input Area -->
-            <div class="border-t border-gray-700 p-4">
-              <form phx-submit="run_command" class="flex items-center space-x-2">
-                <span class="text-green-400 font-mono">$</span>
-                <input
-                  type="text"
-                  name="command"
-                  value={@current_command}
-                  phx-change="update_command"
-                  placeholder="Type a command..."
-                  class="flex-1 bg-transparent text-green-400 font-mono outline-none placeholder-gray-500"
-                  autocomplete="off"
-                />
-              </form>
-            </div>
+            <% end %>
           </div>
         </div>
+
+        <!-- Code Panel -->
+        <%= if @show_code do %>
+          <div class="w-1/3 border-l bg-gray-900 flex flex-col">
+            <div class="px-4 py-2 bg-gray-800 text-gray-300 text-sm font-medium border-b border-gray-700">
+              Code Snippet
+            </div>
+            <div class="flex-1 overflow-auto p-4">
+              <pre class="text-green-400 font-mono text-sm whitespace-pre-wrap"><%= String.trim(@component.code_snippet) %></pre>
+            </div>
+          </div>
+        <% end %>
       </div>
 
-      <!-- Demo Info Sidebar -->
-      <div class="fixed right-0 top-20 bottom-0 w-80 bg-white shadow-lg border-l transform translate-x-full transition-transform duration-300"
-           id="demo-sidebar">
-        <div class="p-6">
-          <h3 class="text-lg font-semibold mb-4">Demo Information</h3>
-
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Available Commands</label>
-              <div class="space-y-1">
-                <%= for command <- @demo.commands do %>
-                  <div class="bg-gray-100 p-2 rounded text-sm font-mono">
-                    <code><%= command.name %></code>
-                    <p class="text-gray-600 text-xs mt-1"><%= command.description %></p>
-                  </div>
-                <% end %>
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Technologies</label>
-              <div class="flex flex-wrap gap-1">
-                <%= for tech <- @demo.technologies do %>
-                  <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                    <%= tech %>
-                  </span>
-                <% end %>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- SSH Callout -->
+      <div class="bg-gray-900 text-green-400 px-6 py-3 font-mono text-sm border-t border-gray-700">
+        Try the real terminal:
+        <span class="text-white ml-2">ssh playground@raxol.io</span>
+        <span class="text-gray-500 mx-2">|</span>
+        <span class="text-white">mix raxol.playground</span>
       </div>
     </div>
     """
   end
 
-  # Helper functions
-  defp list_demos do
-    [
-      %{
-        slug: "file-browser",
-        title: "File Browser",
-        description: "Navigate files and directories with a TUI file manager",
-        difficulty: "Intermediate",
-        tags: ["navigation", "filesystem", "tree"],
-        preview: "[DIR] Documents/\n[DIR] Downloads/\n[FILE] README.md\n[FILE] package.json",
-        technologies: ["Raxol.UI", "File System"],
-        commands: [
-          %{name: "ls", description: "List directory contents"},
-          %{name: "cd <dir>", description: "Change directory"},
-          %{name: "mkdir <name>", description: "Create new directory"},
-          %{name: "touch <name>", description: "Create new file"}
-        ]
-      },
-      %{
-        slug: "task-dashboard",
-        title: "Task Dashboard",
-        description: "Real-time task management with progress tracking",
-        difficulty: "Advanced",
-        tags: ["dashboard", "realtime", "progress"],
-        preview: "+-- Active Tasks --------+\n| ########-- Deploy    |\n| ######---- Testing   |\n| ####------ Docs      |\n+------------------------+",
-        technologies: ["Raxol.UI", "Phoenix PubSub", "Charts"],
-        commands: [
-          %{name: "task add <name>", description: "Add new task"},
-          %{name: "task complete <id>", description: "Mark task as complete"},
-          %{name: "task status", description: "Show all task statuses"},
-          %{name: "dashboard refresh", description: "Refresh dashboard data"}
-        ]
-      },
-      %{
-        slug: "chat-interface",
-        title: "Chat Interface",
-        description: "Multi-user chat with emoji reactions and threading",
-        difficulty: "Advanced",
-        tags: ["chat", "realtime", "social"],
-        preview: "Alice: Hello everyone!\nBob: Hey Alice, how's the demo?\nYou: Looking great!",
-        technologies: ["Raxol.UI", "Phoenix Channels", "Presence"],
-        commands: [
-          %{name: "say <message>", description: "Send a message"},
-          %{name: "react <symbol>", description: "React to last message"},
-          %{name: "users", description: "List online users"},
-          %{name: "history", description: "Show chat history"}
-        ]
-      },
-      %{
-        slug: "system-monitor",
-        title: "System Monitor",
-        description: "Live system metrics with graphs and alerts",
-        difficulty: "Intermediate",
-        tags: ["monitoring", "metrics", "graphs"],
-        preview: "CPU: ████████░░ 80%\nRAM: ██████░░░░ 60%\nDisk: ███░░░░░░░ 30%\nNetwork: ↑1.2MB ↓850KB",
-        technologies: ["Raxol.UI", "Telemetry", "Charts"],
-        commands: [
-          %{name: "top", description: "Show top processes"},
-          %{name: "disk", description: "Show disk usage"},
-          %{name: "network", description: "Show network stats"},
-          %{name: "alerts", description: "View system alerts"}
-        ]
-      }
-    ]
+  # -- Lifecycle management --
+
+  defp start_demo(socket) do
+    comp = socket.assigns.component
+
+    if comp && connected?(socket) do
+      topic = "demo:#{inspect(self())}:#{System.unique_integer([:positive])}"
+
+      try do
+        Phoenix.PubSub.subscribe(Raxol.PubSub, topic)
+
+        {:ok, pid} =
+          Lifecycle.start_link(comp.module,
+            environment: :liveview,
+            liveview_topic: topic,
+            width: 80,
+            height: 24
+          )
+
+        assign(socket, lifecycle_pid: pid, topic: topic)
+      rescue
+        e ->
+          Logger.debug("Demo lifecycle failed to start: #{Exception.message(e)}")
+          socket
+      catch
+        :exit, reason ->
+          Logger.debug("Demo lifecycle exit: #{inspect(reason)}")
+          socket
+      end
+    else
+      socket
+    end
   end
 
-  defp get_demo(slug) do
-    Enum.find(list_demos(), &(&1.slug == slug))
+  defp stop_demo(socket) do
+    if socket.assigns[:lifecycle_pid] do
+      try do
+        Lifecycle.stop(socket.assigns.lifecycle_pid)
+      catch
+        :exit, _ -> :ok
+      end
+    end
+
+    if socket.assigns[:topic] do
+      Phoenix.PubSub.unsubscribe(Raxol.PubSub, socket.assigns.topic)
+    end
+
+    :ok
   end
 
-  defp get_initial_output(demo) do
-    """
-    Welcome to the #{demo.title} Demo!
-    #{demo.description}
-
-    Available commands: #{Enum.map_join(demo.commands, ", ", & &1.name)}
-    Type 'help' for more information.
-
-    >
-    """
-  end
-
-  defp execute_demo_command(demo, command) do
-    case {demo.slug, command} do
-      {"file-browser", "ls"} ->
-        """
-
-        [DIR] Documents/       4.2 KB   Sep 26 2025 10.30
-        [DIR] Downloads/       1.8 KB   Sep 26 2025 09.15
-        [DIR] Pictures/        2.1 KB   Sep 25 2025 14.22
-        [FILE] README.md       1.2 KB   Sep 26 2025 11.45
-        [FILE] package.json      890 B   Sep 26 2025 10.20
-        [FILE] index.html      3.4 KB   Sep 26 2025 12.00
-
-        >
-        """
-
-      {"file-browser", "cd " <> dir} ->
-        """
-
-        Changed to directory: #{dir}
-        >
-        """
-
-      {"task-dashboard", "task status"} ->
-        """
-
-        +-- Task Status ----------------------------+
-        | ID | Task        | Progress | Status      |
-        |----+-------------+----------+-------------|
-        | 1  | Deploy      | ########-- 80%         |
-        | 2  | Testing     | ######---- 60%         |
-        | 3  | Docs        | ####------ 40%         |
-        | 4  | Review      | ##-------- 20%         |
-        +----+-------------+----------+-------------+
-
-        >
-        """
-
-      {"chat-interface", "users"} ->
-        """
-
-        Online Users: 3
-        * Alice     - Admin      - ONLINE Active
-        * Bob       - Developer  - ONLINE Active
-        * Charlie   - Designer   - AWAY   Away
-
-        >
-        """
-
-      {"system-monitor", "top"} ->
-        """
-
-        +-- Top Processes ---------------------------+
-        | PID   | NAME        | CPU  | MEMORY       |
-        |-------+-------------+------+-------------|
-        | 1234  | raxol       | 12%  | 156.2 MB    |
-        | 5678  | phoenix     |  8%  | 89.4 MB     |
-        | 9012  | postgres    |  3%  | 234.1 MB    |
-        | 3456  | redis       |  1%  | 23.8 MB     |
-        +-------+-------------+------+--------------+
-
-        >
-        """
-
-      {_, "help"} ->
-        """
-
-        Available commands for #{demo.title}:
-        #{Enum.map_join(demo.commands, "\n", fn cmd -> "  #{cmd.name} - #{cmd.description}" end)}
-
-        >
-        """
-
-      {_, "clear"} ->
-        get_initial_output(demo)
+  defp dispatch_to_lifecycle(pid, event) do
+    case GenServer.call(pid, :get_full_state) do
+      %{dispatcher_pid: dpid} when is_pid(dpid) ->
+        GenServer.cast(dpid, {:dispatch, event})
 
       _ ->
-        """
-
-        Command '#{command}' not recognized. Type 'help' for available commands.
-        >
-        """
+        :ok
     end
+  rescue
+    _ -> :ok
   end
 end
