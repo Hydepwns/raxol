@@ -1,0 +1,109 @@
+defmodule Mix.Tasks.Raxol.Replay do
+  @moduledoc """
+  Replays a recorded Raxol session from an asciicast (.cast) file.
+
+  ## Usage
+
+      mix raxol.replay demo.cast
+      mix raxol.replay demo.cast --speed 2.0
+      mix raxol.replay demo.cast --speed 0.5
+      mix raxol.replay demo.cast --max-delay 2.0
+
+  ## Options
+
+    * `--speed` / `-s` - Playback speed multiplier (default: 1.0).
+      2.0 plays at double speed, 0.5 at half speed.
+    * `--max-delay` - Maximum pause between frames in seconds (default: 5.0).
+      Prevents long idle gaps from stalling replay.
+    * `--info` - Print recording info without playing.
+
+  Files are asciinema v2 format, compatible with `asciinema play`.
+  """
+
+  use Mix.Task
+
+  alias Raxol.Recording.{Asciicast, Player, Session}
+
+  @shortdoc "Replay a recorded .cast session"
+
+  @switches [
+    speed: :float,
+    max_delay: :float,
+    info: :boolean
+  ]
+
+  @aliases [s: :speed]
+
+  @impl Mix.Task
+  def run(args) do
+    case OptionParser.parse(args, strict: @switches, aliases: @aliases) do
+      {opts, [path], _} ->
+        unless File.exists?(path) do
+          Mix.raise("File not found: #{path}")
+        end
+
+        if Keyword.get(opts, :info, false) do
+          print_info(path)
+        else
+          replay(path, opts)
+        end
+
+      _ ->
+        print_usage()
+    end
+  end
+
+  defp replay(path, opts) do
+    speed = Keyword.get(opts, :speed, 1.0)
+    max_delay = Keyword.get(opts, :max_delay, 5.0)
+
+    speed_label = if speed != 1.0, do: " (#{speed}x)", else: ""
+    Mix.shell().info([:cyan, "Replaying #{path}#{speed_label}...", :reset])
+    Mix.shell().info("Press Ctrl+C to stop.\n")
+
+    Process.sleep(500)
+
+    Player.play(path, speed: speed, max_delay: max_delay)
+
+    Mix.shell().info([:green, "\nReplay complete.", :reset])
+  end
+
+  defp print_info(path) do
+    session = Asciicast.read!(path)
+
+    Mix.shell().info([:bright, "Recording: ", :reset, path])
+    Mix.shell().info("  Size:     #{session.width}x#{session.height}")
+
+    Mix.shell().info(
+      "  Duration: #{Float.round(Session.duration(session), 1)}s"
+    )
+
+    Mix.shell().info("  Events:   #{Session.event_count(session)}")
+
+    if session.title do
+      Mix.shell().info("  Title:    #{session.title}")
+    end
+
+    if session.started_at do
+      Mix.shell().info("  Recorded: #{DateTime.to_string(session.started_at)}")
+    end
+
+    env_term = get_in(session.env, ["TERM"]) || "unknown"
+    Mix.shell().info("  Terminal:  #{env_term}")
+  end
+
+  defp print_usage do
+    Mix.shell().error("Usage: mix raxol.replay FILE [options]")
+    Mix.shell().error("")
+    Mix.shell().error("Options:")
+    Mix.shell().error("  --speed FLOAT    Playback speed (default: 1.0)")
+
+    Mix.shell().error(
+      "  --max-delay SECS Max pause between frames (default: 5.0)"
+    )
+
+    Mix.shell().error("  --info           Print recording info without playing")
+    Mix.shell().error("")
+    Mix.shell().error("Example: mix raxol.replay demo.cast --speed 2.0")
+  end
+end

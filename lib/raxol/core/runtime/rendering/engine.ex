@@ -333,12 +333,19 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     )
 
     # Move cursor to top-left and clear screen before each frame
+    frame = "\e[H\e[2J" <> output_string
+
     if state.sync_output do
       IO.write("\e[?2026h")
-      IO.write("\e[H\e[2J" <> output_string)
+      IO.write(frame)
       IO.write("\e[?2026l")
     else
-      IO.write("\e[H\e[2J" <> output_string)
+      IO.write(frame)
+    end
+
+    # Send frame to recorder if active
+    if pid = Process.whereis(Raxol.Recording.Recorder) do
+      Raxol.Recording.Recorder.record_output(pid, frame)
     end
 
     {:ok, %{state | buffer: updated_buffer}}
