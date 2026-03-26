@@ -165,6 +165,124 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     end
   end
 
+  describe "apply_dithering/2" do
+    setup do
+      # 4x4 image with a gradient-like pixel buffer and a 4-color palette
+      palette = %{
+        0 => {0, 0, 0},
+        1 => {255, 0, 0},
+        2 => {0, 255, 0},
+        3 => {0, 0, 255}
+      }
+
+      pixel_buffer =
+        for y <- 0..3, x <- 0..3, into: %{} do
+          {{x, y}, rem(x + y, 4)}
+        end
+
+      image = %SixelGraphics{
+        width: 4,
+        height: 4,
+        palette: palette,
+        pixel_buffer: pixel_buffer
+      }
+
+      %{image: image}
+    end
+
+    test ":none returns image unchanged", %{image: image} do
+      result = SixelGraphics.apply_dithering(image, :none)
+      assert result.pixel_buffer == image.pixel_buffer
+    end
+
+    test ":floyd_steinberg modifies pixel_buffer", %{image: image} do
+      result = SixelGraphics.apply_dithering(image, :floyd_steinberg)
+      assert result.dithering_algorithm == :floyd_steinberg
+      assert map_size(result.pixel_buffer) == map_size(image.pixel_buffer)
+
+      # All indices should still be valid palette entries
+      for {_pos, idx} <- result.pixel_buffer do
+        assert Map.has_key?(result.palette, idx)
+      end
+    end
+
+    test ":ordered modifies pixel_buffer", %{image: image} do
+      result = SixelGraphics.apply_dithering(image, :ordered)
+      assert result.dithering_algorithm == :ordered
+      assert map_size(result.pixel_buffer) == map_size(image.pixel_buffer)
+
+      for {_pos, idx} <- result.pixel_buffer do
+        assert Map.has_key?(result.palette, idx)
+      end
+    end
+
+    test ":random modifies pixel_buffer", %{image: image} do
+      result = SixelGraphics.apply_dithering(image, :random)
+      assert result.dithering_algorithm == :random
+      assert map_size(result.pixel_buffer) == map_size(image.pixel_buffer)
+
+      for {_pos, idx} <- result.pixel_buffer do
+        assert Map.has_key?(result.palette, idx)
+      end
+    end
+
+    test "empty image is a no-op" do
+      empty = %SixelGraphics{pixel_buffer: %{}, palette: %{}}
+      result = SixelGraphics.apply_dithering(empty, :floyd_steinberg)
+      assert result.pixel_buffer == %{}
+      assert result.dithering_algorithm == :floyd_steinberg
+    end
+
+    test "floyd_steinberg preserves pixel_buffer size for larger image" do
+      # 8x6 image with 2-color palette (forces error diffusion)
+      palette = %{0 => {0, 0, 0}, 1 => {255, 255, 255}}
+
+      pixel_buffer =
+        for y <- 0..5, x <- 0..7, into: %{} do
+          # Alternating pattern
+          {{x, y}, rem(x + y, 2)}
+        end
+
+      image = %SixelGraphics{
+        width: 8,
+        height: 6,
+        palette: palette,
+        pixel_buffer: pixel_buffer
+      }
+
+      result = SixelGraphics.apply_dithering(image, :floyd_steinberg)
+      assert map_size(result.pixel_buffer) == 48
+
+      for {_pos, idx} <- result.pixel_buffer do
+        assert idx in [0, 1]
+      end
+    end
+  end
+
+  describe "encode/1" do
+    test "returns empty string for empty pixel_buffer" do
+      image = SixelGraphics.new(10, 10)
+      assert SixelGraphics.encode(image) == ""
+    end
+
+    test "encodes pixel_buffer to sixel escape sequence" do
+      image = SixelGraphics.new(2, 6)
+
+      pixel_buffer =
+        for y <- 0..5, x <- 0..1, into: %{} do
+          {{x, y}, 1}
+        end
+
+      image = %{image | pixel_buffer: pixel_buffer}
+      encoded = SixelGraphics.encode(image)
+
+      assert String.starts_with?(encoded, "\e[?8452h\ePq")
+      assert String.ends_with?(encoded, "\e\\")
+      # Should contain a color reference
+      assert String.contains?(encoded, "#1")
+    end
+  end
+
   describe "internal parsing functions" do
     test "consume_integer_params extracts parameters correctly" do
       assert SixelParser.consume_integer_params("1;2;3rest") ==

@@ -23,6 +23,7 @@ defmodule Raxol.Terminal.Image do
   """
 
   alias Raxol.Terminal.ANSI.KittyGraphics
+  alias Raxol.Terminal.ImageCache
 
   @type protocol :: :kitty | :iterm2 | :sixel | :unsupported
 
@@ -78,10 +79,18 @@ defmodule Raxol.Terminal.Image do
   def display(source, opts \\ []) do
     protocol = Keyword.get(opts, :protocol) || detect_protocol()
 
-    with {:ok, data} <- load_image(source),
-         {:ok, resized} <- maybe_resize(data, opts) do
-      encode(resized, protocol, opts)
-    end
+    cache_opts = %{
+      protocol: protocol,
+      width: opts[:width],
+      height: opts[:height]
+    }
+
+    ImageCache.fetch(source, cache_opts, fn ->
+      with {:ok, data} <- load_image(source),
+           {:ok, resized} <- maybe_resize(data, opts) do
+        encode(resized, protocol, opts)
+      end
+    end)
   end
 
   # -- Protocol detection --

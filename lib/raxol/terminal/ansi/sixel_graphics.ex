@@ -467,7 +467,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
       max_x =
         image.pixel_buffer
         |> Map.keys()
-        |> Enum.map_join(&elem(&1, 0))
+        |> Enum.map(&elem(&1, 0))
         |> Enum.max(fn -> 0 end)
 
       max_y =
@@ -625,21 +625,23 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   def from_image_data(image_data, :png, options) when is_binary(image_data) do
     max_colors = Map.get(options, :max_colors, 64)
+    dithering = Map.get(options, :dithering, :none)
 
     with {:ok, %{width: w, height: h, pixels: pixels}} <-
            Raxol.Terminal.ANSI.PngDecoder.decode(image_data) do
       {palette, indices} = quantize_colors(pixels, min(max_colors, @max_colors))
 
-      {:ok,
-       %__MODULE__{
-         width: w,
-         height: h,
-         data: <<>>,
-         palette: palette,
-         pixel_buffer: indices_to_pixel_buffer(indices, w),
-         original_format: :png,
-         attributes: %{width: w, height: h}
-       }}
+      image = %__MODULE__{
+        width: w,
+        height: h,
+        data: <<>>,
+        palette: palette,
+        pixel_buffer: indices_to_pixel_buffer(indices, w),
+        original_format: :png,
+        attributes: %{width: w, height: h}
+      }
+
+      {:ok, apply_dithering(image, dithering)}
     end
   end
 
@@ -844,39 +846,19 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   @doc """
   Applies dithering to reduce color banding when quantizing colors.
 
+  Delegates to `Raxol.Terminal.ANSI.SixelDithering` which implements
+  Floyd-Steinberg error diffusion, ordered (Bayer 4x4), and random noise.
+
   ## Parameters
 
-  * `image` - The Sixel image
-  * `algorithm` - Dithering algorithm (:floyd_steinberg, :ordered, :none)
+  * `image` - The Sixel image (must have pixel_buffer and palette)
+  * `algorithm` - Dithering algorithm (:floyd_steinberg, :ordered, :random, :none)
 
   ## Returns
 
-  * `t()` - Image with dithering applied
+  * `t()` - Image with dithering applied to pixel_buffer
   """
   def apply_dithering(image, algorithm \\ :floyd_steinberg) do
-    case algorithm do
-      :none -> image
-      :floyd_steinberg -> apply_floyd_steinberg_dithering(image)
-      :ordered -> apply_ordered_dithering(image)
-      :random -> apply_random_dithering(image)
-      _ -> image
-    end
-  end
-
-  defp apply_floyd_steinberg_dithering(image) do
-    # Simplified Floyd-Steinberg dithering implementation
-    # In a real implementation, this would propagate quantization errors
-    # to neighboring pixels
-    %{image | dithering_algorithm: :floyd_steinberg}
-  end
-
-  defp apply_ordered_dithering(image) do
-    # Apply ordered (Bayer matrix) dithering
-    %{image | dithering_algorithm: :ordered}
-  end
-
-  defp apply_random_dithering(image) do
-    # Apply random noise dithering
-    %{image | dithering_algorithm: :random}
+    Raxol.Terminal.ANSI.SixelDithering.apply(image, algorithm)
   end
 end
