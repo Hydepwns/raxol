@@ -397,7 +397,7 @@ defmodule Raxol.Terminal.ANSISequencesIntegrationTest do
 
       # Should handle 10000 formatted numbers in reasonable time
       # Note: Debug logging and parallel test load can make this slower
-      assert time < 30_000_000  # 30 seconds - generous for CI/debug/parallel load
+      assert time < 60_000_000  # 60 seconds - generous for CI/debug/parallel load
       assert state != nil
     end
   end

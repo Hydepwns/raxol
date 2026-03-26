@@ -12,8 +12,10 @@ defmodule Raxol.Terminal.Tab.TabServerTest do
     {:ok, pid} = TabServer.start_link(name: TabServer)
 
     on_exit(fn ->
-      if Process.alive?(pid) do
+      try do
         GenServer.stop(pid)
+      catch
+        :exit, _ -> :ok
       end
     end)
 
