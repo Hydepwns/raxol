@@ -78,10 +78,10 @@ defmodule Raxol.Debug do
   """
   @spec debug_log(binary() | atom(), any(), keyword()) :: :ok
   def debug_log(component, message, opts \\ []) when is_atom(component) do
-    with true <- debug_enabled?(component),
-         context <- Keyword.get(opts, :context, %{}),
-         metadata <- Keyword.get(opts, :metadata, []),
-         formatted_message <- format_debug_message(component, message, context) do
+    with true <- debug_enabled?(component) do
+      context = Keyword.get(opts, :context, %{})
+      metadata = Keyword.get(opts, :metadata, [])
+      formatted_message = format_debug_message(component, message, context)
       Log.debug(formatted_message, metadata)
     end
 
@@ -113,10 +113,11 @@ defmodule Raxol.Debug do
   """
   @spec log_terminal_state(map(), keyword()) :: :ok
   def log_terminal_state(state, opts \\ []) do
-    with true <- debug_enabled?(:terminal),
-         cursor_pos <- get_in(state, [:cursor, :position]) || {0, 0},
-         dimensions <- get_in(state, [:dimensions]) || {80, 24},
-         mode <- get_in(state, [:mode]) || :normal do
+    with true <- debug_enabled?(:terminal) do
+      cursor_pos = get_in(state, [:cursor, :position]) || {0, 0}
+      dimensions = get_in(state, [:dimensions]) || {80, 24}
+      mode = get_in(state, [:mode]) || :normal
+
       debug_log(:terminal, "Terminal State",
         context: %{
           cursor_position: cursor_pos,
@@ -218,8 +219,9 @@ defmodule Raxol.Debug do
   """
   @spec dump_process_state(atom()) :: :ok
   def dump_process_state(component) do
-    with true <- debug_enabled?(component),
-         process_info <- Process.info(self()) do
+    with true <- debug_enabled?(component) do
+      process_info = Process.info(self())
+
       debug_log(component, "Process State Dump",
         context: %{
           pid: inspect(self()),
@@ -240,29 +242,7 @@ defmodule Raxol.Debug do
   """
   @spec enable_debug(atom()) :: :ok
   def enable_debug(component) do
-    case component do
-      :terminal ->
-        terminal_config = Application.get_env(:raxol, :terminal, [])
-
-        Application.put_env(
-          :raxol,
-          :terminal,
-          Keyword.put(terminal_config, :debug_mode, true)
-        )
-
-      :web ->
-        web_config = Application.get_env(:raxol, :web, [])
-
-        Application.put_env(
-          :raxol,
-          :web,
-          Keyword.put(web_config, :debug_mode, true)
-        )
-
-      _ ->
-        Application.put_env(:raxol, :debug_mode, true)
-    end
-
+    set_component_debug(component, true)
     Log.info("Debug mode enabled for #{component}")
     :ok
   end
@@ -272,31 +252,24 @@ defmodule Raxol.Debug do
   """
   @spec disable_debug(atom()) :: :ok
   def disable_debug(component) do
-    case component do
-      :terminal ->
-        terminal_config = Application.get_env(:raxol, :terminal, [])
-
-        Application.put_env(
-          :raxol,
-          :terminal,
-          Keyword.put(terminal_config, :debug_mode, false)
-        )
-
-      :web ->
-        web_config = Application.get_env(:raxol, :web, [])
-
-        Application.put_env(
-          :raxol,
-          :web,
-          Keyword.put(web_config, :debug_mode, false)
-        )
-
-      _ ->
-        Application.put_env(:raxol, :debug_mode, false)
-    end
-
+    set_component_debug(component, false)
     Log.info("Debug mode disabled for #{component}")
     :ok
+  end
+
+  defp set_component_debug(component, enabled)
+       when component in [:terminal, :web] do
+    config = Application.get_env(:raxol, component, [])
+
+    Application.put_env(
+      :raxol,
+      component,
+      Keyword.put(config, :debug_mode, enabled)
+    )
+  end
+
+  defp set_component_debug(_component, enabled) do
+    Application.put_env(:raxol, :debug_mode, enabled)
   end
 
   @doc """

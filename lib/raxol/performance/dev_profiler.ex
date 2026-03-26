@@ -81,19 +81,19 @@ defmodule Raxol.Performance.DevProfiler do
     if Mix.env() != :dev do
       Log.warning("DevProfiler: development mode only")
       fun.()
+    else
+      do_profile(Keyword.merge(@default_opts, opts), fun)
     end
+  end
 
-    opts = Keyword.merge(@default_opts, opts)
-
+  defp do_profile(opts, fun) do
     Log.info("Starting profiling")
 
     start_time = System.monotonic_time(:microsecond)
     memory_before = if opts[:memory], do: get_memory_info(), else: nil
 
-    # Start profiling tools
     profiling_ref = start_profiling_tools(opts)
 
-    # Execute the function
     result =
       try do
         fun.()
@@ -103,14 +103,12 @@ defmodule Raxol.Performance.DevProfiler do
           :erlang.raise(kind, error, __STACKTRACE__)
       end
 
-    # Stop profiling and collect data
     profile_data = stop_profiling_tools(profiling_ref)
 
     end_time = System.monotonic_time(:microsecond)
     duration = end_time - start_time
     memory_after = if opts[:memory], do: get_memory_info(), else: nil
 
-    # Generate report
     report =
       generate_report(%{
         duration: duration,
@@ -143,15 +141,15 @@ defmodule Raxol.Performance.DevProfiler do
     if Mix.env() != :dev do
       Log.warning("Continuous profiling: development only")
       :ignored
+    else
+      interval = Keyword.get(opts, :interval, 30_000)
+      duration = Keyword.get(opts, :duration, 5_000)
+      auto_hints = Keyword.get(opts, :auto_hints, true)
+
+      spawn_link(fn ->
+        continuous_profiling_loop(interval, duration, auto_hints)
+      end)
     end
-
-    interval = Keyword.get(opts, :interval, 30_000)
-    duration = Keyword.get(opts, :duration, 5_000)
-    auto_hints = Keyword.get(opts, :auto_hints, true)
-
-    spawn_link(fn ->
-      continuous_profiling_loop(interval, duration, auto_hints)
-    end)
   end
 
   @doc """
@@ -191,10 +189,9 @@ defmodule Raxol.Performance.DevProfiler do
   defp start_profiling_tools(opts) do
     tools = %{}
 
-    # Start :fprof if available
     tools =
       if opts[:call_graph] do
-        Application.ensure_all_started(:tools)
+        _ = Application.ensure_all_started(:tools)
         _ = apply(:fprof, :start, [])
         _ = apply(:fprof, :trace, [:start])
         Map.put(tools, :fprof, true)
@@ -202,47 +199,40 @@ defmodule Raxol.Performance.DevProfiler do
         tools
       end
 
-    # Start process monitoring
-    tools =
-      if opts[:processes] do
-        Map.put(tools, :process_monitor, spawn_process_monitor())
-      else
-        tools
-      end
-
-    tools
+    if opts[:processes] do
+      Map.put(tools, :process_monitor, spawn_process_monitor())
+    else
+      tools
+    end
   end
 
   defp stop_profiling_tools(tools) do
     profile_data = %{}
+    profile_data = stop_fprof(profile_data, Map.get(tools, :fprof))
+    stop_process_monitor(profile_data, Map.get(tools, :process_monitor))
+  end
 
-    # Stop :fprof
-    profile_data =
-      if Map.get(tools, :fprof) do
-        _ = apply(:fprof, :trace, [:stop])
-        _ = apply(:fprof, :profile, [])
-        fprof_data = capture_fprof_analysis()
-        _ = apply(:fprof, :stop, [])
-        Map.put(profile_data, :fprof, fprof_data)
-      else
-        profile_data
-      end
+  defp stop_fprof(profile_data, nil), do: profile_data
+  defp stop_fprof(profile_data, false), do: profile_data
 
-    # Stop process monitor
-    profile_data =
-      if monitor_pid = Map.get(tools, :process_monitor) do
-        send(monitor_pid, :stop)
+  defp stop_fprof(profile_data, true) do
+    _ = apply(:fprof, :trace, [:stop])
+    _ = apply(:fprof, :profile, [])
+    fprof_data = capture_fprof_analysis()
+    _ = apply(:fprof, :stop, [])
+    Map.put(profile_data, :fprof, fprof_data)
+  end
 
-        receive do
-          {:process_data, data} -> Map.put(profile_data, :processes, data)
-        after
-          1000 -> profile_data
-        end
-      else
-        profile_data
-      end
+  defp stop_process_monitor(profile_data, nil), do: profile_data
 
-    profile_data
+  defp stop_process_monitor(profile_data, monitor_pid) do
+    send(monitor_pid, :stop)
+
+    receive do
+      {:process_data, data} -> Map.put(profile_data, :processes, data)
+    after
+      1000 -> profile_data
+    end
   end
 
   defp capture_fprof_analysis do
@@ -322,7 +312,7 @@ defmodule Raxol.Performance.DevProfiler do
           nil
         end
       end)
-      |> Enum.filter(&(&1 != nil))
+      |> Enum.reject(&is_nil/1)
 
     %{
       count: length(processes),
@@ -362,36 +352,25 @@ defmodule Raxol.Performance.DevProfiler do
           }
       end
     end)
-    |> Enum.filter(&(&1 != nil))
+    |> Enum.reject(&is_nil/1)
     |> Enum.sort_by(& &1.memory, :desc)
     |> Enum.take(count)
   end
 
   defp analyze_memory(memory_info) do
     total_mb = memory_info.total / (1024 * 1024)
-
-    issues = []
-
-    # Check for high memory usage
-    issues =
-      if total_mb > 100 do
-        ["High total memory usage: #{Float.round(total_mb, 1)}MB" | issues]
-      else
-        issues
-      end
-
-    # Check binary memory
     binary_percent = memory_info.binary / memory_info.total * 100
 
     issues =
-      if binary_percent > 30 do
-        [
-          "High binary memory usage: #{Float.round(binary_percent, 1)}%"
-          | issues
-        ]
-      else
-        issues
-      end
+      []
+      |> maybe_add(
+        total_mb > 100,
+        "High total memory usage: #{Float.round(total_mb, 1)}MB"
+      )
+      |> maybe_add(
+        binary_percent > 30,
+        "High binary memory usage: #{Float.round(binary_percent, 1)}%"
+      )
 
     %{
       total_mb: Float.round(total_mb, 2),
@@ -401,26 +380,19 @@ defmodule Raxol.Performance.DevProfiler do
   end
 
   defp analyze_processes(process_info) do
-    issues = []
-
-    # Check process count
-    issues =
-      if process_info.count > 1000 do
-        ["High process count: #{process_info.count}" | issues]
-      else
-        issues
-      end
-
-    # Check for memory-heavy processes
-    heavy_processes =
-      Enum.filter(process_info.top_by_memory, &(&1.memory > 10 * 1024 * 1024))
+    heavy_count =
+      Enum.count(process_info.top_by_memory, &(&1.memory > 10 * 1024 * 1024))
 
     issues =
-      if length(heavy_processes) > 0 do
-        ["#{length(heavy_processes)} processes using >10MB memory" | issues]
-      else
-        issues
-      end
+      []
+      |> maybe_add(
+        process_info.count > 1000,
+        "High process count: #{process_info.count}"
+      )
+      |> maybe_add(
+        heavy_count > 0,
+        "#{heavy_count} processes using >10MB memory"
+      )
 
     %{
       count: process_info.count,
@@ -430,17 +402,14 @@ defmodule Raxol.Performance.DevProfiler do
   end
 
   defp analyze_system(system_info) do
-    issues = []
-
-    # Check atom usage
     atom_usage_percent = system_info.atom_count / system_info.atom_limit * 100
 
     issues =
-      if atom_usage_percent > 80 do
-        ["High atom usage: #{Float.round(atom_usage_percent, 1)}%" | issues]
-      else
-        issues
-      end
+      maybe_add(
+        [],
+        atom_usage_percent > 80,
+        "High atom usage: #{Float.round(atom_usage_percent, 1)}%"
+      )
 
     %{
       issues: issues,
@@ -450,25 +419,18 @@ defmodule Raxol.Performance.DevProfiler do
   end
 
   defp generate_performance_hints(analysis) do
-    hints = []
+    hints =
+      Enum.map(analysis.memory.issues, &"Memory: #{&1}") ++
+        Enum.map(analysis.processes.issues, &"Process: #{&1}") ++
+        Enum.map(analysis.system.issues, &"System: #{&1}")
 
-    # Memory hints
-    hints = (hints ++ analysis.memory.issues) |> Enum.map(&"Memory: #{&1}")
+    case hints do
+      [] ->
+        Log.info("No issues detected")
 
-    # Process hints
-    hints = (hints ++ analysis.processes.issues) |> Enum.map(&"Process: #{&1}")
-
-    # System hints
-    hints = (hints ++ analysis.system.issues) |> Enum.map(&"System: #{&1}")
-
-    if length(hints) > 0 do
-      Log.warning("Analysis hints:")
-
-      Enum.each(hints, fn hint ->
-        Log.warning("  • #{hint}")
-      end)
-    else
-      Log.info("No issues detected")
+      _ ->
+        Log.warning("Analysis hints:")
+        Enum.each(hints, &Log.warning("  * #{&1}"))
     end
 
     hints
@@ -506,7 +468,7 @@ defmodule Raxol.Performance.DevProfiler do
     # Add optimization suggestions
     suggestions = generate_optimization_suggestions(data)
 
-    if length(suggestions) > 0 do
+    if suggestions != [] do
       report <>
         """
 
@@ -519,40 +481,26 @@ defmodule Raxol.Performance.DevProfiler do
   end
 
   defp generate_optimization_suggestions(data) do
-    suggestions = []
     duration_ms = data.duration / 1000
+    memory_growth = memory_growth(data)
 
-    # Suggest optimizations based on execution time
-    suggestions =
-      if duration_ms > 1000 do
-        [
-          "Consider async execution or breaking into smaller operations (#{Float.round(duration_ms, 1)}ms)"
-          | suggestions
-        ]
-      else
-        suggestions
-      end
-
-    # Memory-based suggestions
-    suggestions =
-      if data.memory_before && data.memory_after do
-        memory_growth = data.memory_after.total - data.memory_before.total
-
-        # 50MB growth
-        if memory_growth > 50 * 1024 * 1024 do
-          [
-            "High memory allocation detected - consider memory pooling or streaming"
-            | suggestions
-          ]
-        else
-          suggestions
-        end
-      else
-        suggestions
-      end
-
-    suggestions
+    []
+    |> maybe_add(
+      duration_ms > 1000,
+      "Consider async execution or breaking into smaller operations (#{Float.round(duration_ms, 1)}ms)"
+    )
+    |> maybe_add(
+      memory_growth > 50 * 1024 * 1024,
+      "High memory allocation detected - consider memory pooling or streaming"
+    )
   end
+
+  defp memory_growth(%{memory_before: before, memory_after: after_mem})
+       when not is_nil(before) and not is_nil(after_mem) do
+    after_mem.total - before.total
+  end
+
+  defp memory_growth(_), do: 0
 
   defp output_report(report, format) do
     case format do
@@ -648,4 +596,7 @@ defmodule Raxol.Performance.DevProfiler do
 
     samples
   end
+
+  defp maybe_add(list, true, item), do: [item | list]
+  defp maybe_add(list, false, _item), do: list
 end

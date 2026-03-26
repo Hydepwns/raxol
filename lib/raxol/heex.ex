@@ -97,30 +97,54 @@ defmodule Raxol.HEEx do
   defp tokenize("", acc), do: Enum.reverse(acc)
 
   defp tokenize(html, acc) do
-    cond do
-      # Self-closing tag: <input ... />
-      match = Regex.run(~r/\A<(\w+)((?:\s+[^>]*?)?)\/>/s, html) ->
-        [full, tag, attrs_str] = match
-        rest = String.slice(html, String.length(full)..-1//1)
-        attrs = parse_attributes(attrs_str)
-        tokenize(rest, [{:self_closing, tag, attrs} | acc])
+    html
+    |> try_self_closing(acc)
+    |> try_open_tag(acc)
+    |> try_close_tag(acc)
+    |> try_text(acc)
+    |> skip_char(acc)
+  end
 
-      # Opening tag: <tag ...>
-      match = Regex.run(~r/\A<(\w+)((?:\s+[^>]*?)?)>/s, html) ->
-        [full, tag, attrs_str] = match
+  defp try_self_closing(html, acc) do
+    case Regex.run(~r/\A<(\w+)((?:\s+[^>]*?)?)\/>/s, html) do
+      [full, tag, attrs_str] ->
         rest = String.slice(html, String.length(full)..-1//1)
-        attrs = parse_attributes(attrs_str)
-        tokenize(rest, [{:open, tag, attrs} | acc])
+        tokenize(rest, [{:self_closing, tag, parse_attributes(attrs_str)} | acc])
 
-      # Closing tag: </tag>
-      match = Regex.run(~r/\A<\/(\w+)\s*>/s, html) ->
-        [full, tag] = match
+      nil ->
+        {:continue, html}
+    end
+  end
+
+  defp try_open_tag({:continue, html}, acc) do
+    case Regex.run(~r/\A<(\w+)((?:\s+[^>]*?)?)>/s, html) do
+      [full, tag, attrs_str] ->
+        rest = String.slice(html, String.length(full)..-1//1)
+        tokenize(rest, [{:open, tag, parse_attributes(attrs_str)} | acc])
+
+      nil ->
+        {:continue, html}
+    end
+  end
+
+  defp try_open_tag(result, _acc), do: result
+
+  defp try_close_tag({:continue, html}, acc) do
+    case Regex.run(~r/\A<\/(\w+)\s*>/s, html) do
+      [full, tag] ->
         rest = String.slice(html, String.length(full)..-1//1)
         tokenize(rest, [{:close, tag} | acc])
 
-      # Text content
-      match = Regex.run(~r/\A([^<]+)/s, html) ->
-        [full, text] = match
+      nil ->
+        {:continue, html}
+    end
+  end
+
+  defp try_close_tag(result, _acc), do: result
+
+  defp try_text({:continue, html}, acc) do
+    case Regex.run(~r/\A([^<]+)/s, html) do
+      [full, text] ->
         rest = String.slice(html, String.length(full)..-1//1)
         trimmed = String.trim(text)
 
@@ -130,11 +154,18 @@ defmodule Raxol.HEEx do
           tokenize(rest, [{:text, trimmed} | acc])
         end
 
-      # Fallback: skip one character
-      true ->
-        tokenize(String.slice(html, 1..-1//1), acc)
+      nil ->
+        {:continue, html}
     end
   end
+
+  defp try_text(result, _acc), do: result
+
+  defp skip_char({:continue, html}, acc) do
+    tokenize(String.slice(html, 1..-1//1), acc)
+  end
+
+  defp skip_char(result, _acc), do: result
 
   # Parse HTML attributes from a string
   defp parse_attributes(attrs_str) do
@@ -341,8 +372,6 @@ defmodule Raxol.HEEx do
       {:ok, map} -> map
       _ -> %{}
     end
-  rescue
-    _ -> %{}
   end
 
   defp decode_style(_), do: %{}
@@ -371,11 +400,9 @@ defmodule Raxol.HEEx do
   defp parse_color_attr(nil), do: :default
 
   defp parse_color_attr(color) when is_binary(color) do
-    try do
-      String.to_existing_atom(color)
-    rescue
-      _ -> :default
-    end
+    String.to_existing_atom(color)
+  rescue
+    ArgumentError -> :default
   end
 
   defp parse_color_attr(_), do: :default

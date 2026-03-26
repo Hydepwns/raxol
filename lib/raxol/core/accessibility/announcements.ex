@@ -5,22 +5,25 @@ defmodule Raxol.Core.Accessibility.Announcements do
   Handles screen reader announcements and announcement queue management.
   """
 
-  alias Raxol.Core.Events.EventManager, as: EventManager
-  # require Raxol.Core.Runtime.Log  # Commented out due to missing module
+  alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
+  alias Raxol.Core.Events.EventManager
 
-  # Start the Agent for global subscription storage
+  @spec start_link(keyword()) :: Agent.on_start()
   def start_link(_opts) do
     Agent.start_link(fn -> %{} end, name: __MODULE__.Subscriptions)
   end
 
+  @spec add_subscription(reference(), pid()) :: :ok
   def add_subscription(ref, pid) do
     Agent.update(__MODULE__.Subscriptions, &Map.put(&1, ref, pid))
   end
 
+  @spec remove_subscription(reference()) :: :ok
   def remove_subscription(ref) do
     Agent.update(__MODULE__.Subscriptions, &Map.delete(&1, ref))
   end
 
+  @spec get_subscriptions() :: %{reference() => pid()}
   def get_subscriptions do
     Agent.get(__MODULE__.Subscriptions, & &1)
   end
@@ -47,6 +50,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
       iex> Announcements.announce("Error occurred", priority: :high, interrupt: true)
       :ok
   """
+  @spec announce(String.t(), keyword(), atom() | pid() | nil) :: :ok
   def announce(message, opts \\ [], user_preferences_pid_or_name \\ nil)
       when is_binary(message) do
     validate_user_preferences(user_preferences_pid_or_name)
@@ -87,19 +91,13 @@ defmodule Raxol.Core.Accessibility.Announcements do
     process_announcement(message, opts, user_preferences_pid_or_name)
   end
 
-  @spec should_announce?(term()) :: boolean()
+  @spec should_announce?(atom() | pid()) :: boolean()
   defp should_announce?(user_preferences_pid_or_name) do
-    # Delegate to the GenServer for state checking
-    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.should_announce?(user_preferences_pid_or_name)
   end
 
-  @spec process_announcement(String.t(), keyword(), String.t() | integer()) ::
-          :ok
+  @spec process_announcement(String.t(), keyword(), atom() | pid()) :: :ok
   defp process_announcement(message, opts, user_preferences_pid_or_name) do
-    # Delegate to the GenServer for announcement processing
-    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
-
     announcement = %{
       message: message,
       priority: Keyword.get(opts, :priority, :normal),
@@ -126,9 +124,8 @@ defmodule Raxol.Core.Accessibility.Announcements do
       iex> Announcements.get_next_announcement(:user1)
       "Button clicked"
   """
+  @spec get_next_announcement(atom() | pid()) :: String.t() | nil
   def get_next_announcement(user_preferences_pid_or_name) do
-    # Delegate to the GenServer for queue management
-    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.get_next_announcement(user_preferences_pid_or_name)
   end
 
@@ -140,9 +137,8 @@ defmodule Raxol.Core.Accessibility.Announcements do
       iex> Announcements.clear_announcements()
       :ok
   """
+  @spec clear_announcements() :: :ok
   def clear_announcements do
-    # Delegate to the GenServer for clearing all announcements
-    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.clear_all_announcements()
 
     # Send announcements_cleared messages to subscribers
@@ -158,9 +154,8 @@ defmodule Raxol.Core.Accessibility.Announcements do
       iex> Announcements.clear_announcements(:user_prefs)
       :ok
   """
+  @spec clear_announcements(atom() | pid()) :: :ok
   def clear_announcements(user_preferences_pid_or_name) do
-    # Delegate to the GenServer for clearing user-specific announcements
-    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.clear_announcements(user_preferences_pid_or_name)
     :ok
   end
@@ -192,13 +187,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
     end)
   end
 
-  @spec send_to_alive_process(any(), String.t() | integer(), String.t()) ::
-          any()
+  @spec send_to_alive_process(boolean(), pid(), term()) :: term()
   defp send_to_alive_process(false, _pid, _message), do: :ok
-
-  @spec send_to_alive_process(any(), String.t() | integer(), String.t()) ::
-          any()
-  defp send_to_alive_process(true, pid, message) do
-    send(pid, message)
-  end
+  defp send_to_alive_process(true, pid, message), do: send(pid, message)
 end

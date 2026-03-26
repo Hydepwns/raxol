@@ -14,6 +14,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Starts the UnifiedExtension server.
   """
+  @spec start_extension_manager(keyword()) :: GenServer.on_start()
   def start_extension_manager(opts \\ []) do
     start_link([{:name, __MODULE__} | opts])
   end
@@ -21,6 +22,8 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Loads an extension from the specified path.
   """
+  @spec load_extension(String.t(), atom(), map() | keyword()) ::
+          {:ok, String.t()} | {:error, term()}
   def load_extension(path, type, metadata) do
     GenServer.call(__MODULE__, {:load_extension, path, type, metadata})
   end
@@ -28,6 +31,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Unloads an extension by ID.
   """
+  @spec unload_extension(String.t()) :: :ok | {:error, term()}
   def unload_extension(extension_id) do
     GenServer.call(__MODULE__, {:unload_extension, extension_id})
   end
@@ -35,6 +39,8 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Gets the state of a specific extension.
   """
+  @spec get_extension_state(String.t()) ::
+          {:ok, map()} | {:error, :extension_not_found}
   def get_extension_state(extension_id) do
     GenServer.call(__MODULE__, {:get_extension_state, extension_id})
   end
@@ -42,6 +48,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Activates an extension.
   """
+  @spec activate_extension(String.t()) :: :ok | {:error, term()}
   def activate_extension(extension_id) do
     GenServer.call(__MODULE__, {:activate_extension, extension_id})
   end
@@ -49,6 +56,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Deactivates an extension.
   """
+  @spec deactivate_extension(String.t()) :: :ok | {:error, term()}
   def deactivate_extension(extension_id) do
     GenServer.call(__MODULE__, {:deactivate_extension, extension_id})
   end
@@ -56,6 +64,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Configures an extension.
   """
+  @spec configure_extension(String.t(), map()) :: :ok | {:error, term()}
   def configure_extension(extension_id, config) do
     GenServer.call(__MODULE__, {:configure_extension, extension_id, config})
   end
@@ -63,6 +72,8 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Gets the configuration of an extension.
   """
+  @spec get_extension_config(String.t()) ::
+          {:ok, map()} | {:error, :extension_not_found}
   def get_extension_config(extension_id) do
     GenServer.call(__MODULE__, {:get_extension_config, extension_id})
   end
@@ -70,6 +81,8 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Executes a command for an extension.
   """
+  @spec execute_command(String.t(), String.t(), list()) ::
+          {:ok, term()} | {:error, term()}
   def execute_command(extension_id, command) do
     GenServer.call(__MODULE__, {:execute_command, extension_id, command, []})
   end
@@ -81,6 +94,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Lists all loaded extensions with optional filters.
   """
+  @spec list_extensions(keyword()) :: {:ok, [map()]}
   def list_extensions(filters \\ []) do
     GenServer.call(__MODULE__, {:list_extensions, filters})
   end
@@ -88,6 +102,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Exports an extension to a specified path.
   """
+  @spec export_extension(String.t(), String.t()) :: :ok | {:error, term()}
   def export_extension(extension_id, path) do
     GenServer.call(__MODULE__, {:export_extension, extension_id, path})
   end
@@ -95,6 +110,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Imports an extension from a specified path.
   """
+  @spec import_extension(String.t()) :: {:ok, String.t()} | {:error, term()}
   def import_extension(path) do
     GenServer.call(__MODULE__, {:import_extension, path})
   end
@@ -102,6 +118,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Registers a hook for an extension.
   """
+  @spec register_hook(String.t(), atom(), function()) :: :ok | {:error, term()}
   def register_hook(extension_id, hook_name, callback) do
     GenServer.call(
       __MODULE__,
@@ -112,6 +129,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Unregisters a hook for an extension.
   """
+  @spec unregister_hook(String.t(), atom()) :: :ok | {:error, term()}
   def unregister_hook(extension_id, hook_name) do
     GenServer.call(__MODULE__, {:unregister_hook, extension_id, hook_name})
   end
@@ -119,6 +137,8 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Triggers a hook for an extension.
   """
+  @spec trigger_hook(String.t(), atom(), list()) ::
+          {:ok, term()} | {:error, term()}
   def trigger_hook(extension_id, hook_name, args \\ []) do
     GenServer.call(__MODULE__, {:trigger_hook, extension_id, hook_name, args})
   end
@@ -126,6 +146,8 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Gets all hooks for an extension.
   """
+  @spec get_extension_hooks(String.t()) ::
+          {:ok, [atom()]} | {:error, :extension_not_found}
   def get_extension_hooks(extension_id) do
     GenServer.call(__MODULE__, {:get_extension_hooks, extension_id})
   end
@@ -133,6 +155,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Gets all extensions, optionally filtered.
   """
+  @spec get_extensions(keyword()) :: {:ok, [map()]}
   def get_extensions(filters \\ []) do
     list_extensions(filters)
   end
@@ -140,6 +163,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @doc """
   Updates the configuration for an extension.
   """
+  @spec update_extension_config(String.t(), map()) :: :ok | {:error, term()}
   def update_extension_config(extension_id, config) do
     configure_extension(extension_id, config)
   end
@@ -171,7 +195,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   @impl true
   def handle_manager_call({:load_extension, path, type, metadata}, _from, state) do
     with :ok <- validate_extension_type(type),
-         metadata_map <- normalize_metadata(metadata),
+         metadata_map = normalize_metadata(metadata),
          :ok <- validate_dependencies(metadata_map) do
       do_load_extension(path, type, metadata_map, state)
     else
@@ -219,22 +243,20 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
       nil ->
         {:reply, {:error, :extension_not_found}, state}
 
+      %{active: true} ->
+        {:reply, {:error, :invalid_extension_state}, state}
+
       extension ->
-        if extension.active do
-          {:reply, {:error, :invalid_extension_state}, state}
-        else
-          updated_extension = Map.put(extension, :active, true)
+        updated_extension = Map.put(extension, :active, true)
 
-          updated_state = %{
-            state
-            | extensions:
-                Map.put(state.extensions, extension_id, updated_extension),
-              active_extensions:
-                MapSet.put(state.active_extensions, extension_id)
-          }
+        updated_state = %{
+          state
+          | extensions:
+              Map.put(state.extensions, extension_id, updated_extension),
+            active_extensions: MapSet.put(state.active_extensions, extension_id)
+        }
 
-          {:reply, :ok, updated_state}
-        end
+        {:reply, :ok, updated_state}
     end
   end
 
@@ -243,22 +265,21 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
       nil ->
         {:reply, {:error, :extension_not_found}, state}
 
+      %{active: false} ->
+        {:reply, {:error, :invalid_extension_state}, state}
+
       extension ->
-        if extension.active do
-          updated_extension = Map.put(extension, :active, false)
+        updated_extension = Map.put(extension, :active, false)
 
-          updated_state = %{
-            state
-            | extensions:
-                Map.put(state.extensions, extension_id, updated_extension),
-              active_extensions:
-                MapSet.delete(state.active_extensions, extension_id)
-          }
+        updated_state = %{
+          state
+          | extensions:
+              Map.put(state.extensions, extension_id, updated_extension),
+            active_extensions:
+              MapSet.delete(state.active_extensions, extension_id)
+        }
 
-          {:reply, :ok, updated_state}
-        else
-          {:reply, {:error, :invalid_extension_state}, state}
-        end
+        {:reply, :ok, updated_state}
     end
   end
 
@@ -266,29 +287,31 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
         {:configure_extension, extension_id, config},
         _from,
         state
-      ) do
+      )
+      when is_map(config) do
     case Map.get(state.extensions, extension_id) do
       nil ->
         {:reply, {:error, :extension_not_found}, state}
 
       extension ->
-        # Validate config is a map
-        case config do
-          map when is_map(map) ->
-            updated_extension = Map.put(extension, :config, config)
+        updated_extension = Map.put(extension, :config, config)
 
-            updated_state = %{
-              state
-              | extensions:
-                  Map.put(state.extensions, extension_id, updated_extension)
-            }
+        updated_state = %{
+          state
+          | extensions:
+              Map.put(state.extensions, extension_id, updated_extension)
+        }
 
-            {:reply, :ok, updated_state}
-
-          _ ->
-            {:reply, {:error, :invalid_extension_config}, state}
-        end
+        {:reply, :ok, updated_state}
     end
+  end
+
+  def handle_manager_call(
+        {:configure_extension, _extension_id, _config},
+        _from,
+        state
+      ) do
+    {:reply, {:error, :invalid_extension_config}, state}
   end
 
   def handle_manager_call({:get_extension_config, extension_id}, _from, state) do
@@ -380,29 +403,7 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
         {:reply, {:error, :extension_not_found}, state}
 
       extension ->
-        # Validate that the hook name is in the extension's allowed hooks
-        allowed_hooks = Map.get(extension, :hooks, %{})
-
-        allowed_hook_names =
-          case allowed_hooks do
-            list when is_list(list) -> list
-            map when is_map(map) -> Map.keys(map)
-            _ -> []
-          end
-
-        if hook_name in allowed_hook_names do
-          hooks = Map.get(state.hooks, extension_id, %{})
-          updated_hooks = Map.put(hooks, hook_name, callback)
-
-          updated_state = %{
-            state
-            | hooks: Map.put(state.hooks, extension_id, updated_hooks)
-          }
-
-          {:reply, :ok, updated_state}
-        else
-          {:reply, {:error, :hook_not_found}, state}
-        end
+        do_register_hook(extension, extension_id, hook_name, callback, state)
     end
   end
 
@@ -469,6 +470,30 @@ defmodule Raxol.Terminal.Extension.ExtensionServer do
   end
 
   # Helper functions
+
+  defp do_register_hook(extension, extension_id, hook_name, callback, state) do
+    if hook_name in allowed_hook_names(extension) do
+      hooks = Map.get(state.hooks, extension_id, %{})
+      updated_hooks = Map.put(hooks, hook_name, callback)
+
+      updated_state = %{
+        state
+        | hooks: Map.put(state.hooks, extension_id, updated_hooks)
+      }
+
+      {:reply, :ok, updated_state}
+    else
+      {:reply, {:error, :hook_not_found}, state}
+    end
+  end
+
+  defp allowed_hook_names(extension) do
+    case Map.get(extension, :hooks, %{}) do
+      list when is_list(list) -> list
+      map when is_map(map) -> Map.keys(map)
+      _ -> []
+    end
+  end
 
   defp validate_extension_type(type) when type in @valid_extension_types,
     do: :ok
