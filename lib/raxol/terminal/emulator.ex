@@ -555,11 +555,7 @@ defmodule Raxol.Terminal.Emulator do
 
   @doc "Gets output from the emulator."
   @spec get_output(t()) :: String.t()
-  def get_output(emulator) do
-    case get_output_buffer(emulator) do
-      {:ok, buffer} when is_list(buffer) -> Enum.join(buffer, "")
-    end
-  end
+  def get_output(_emulator), do: ""
 
   @doc "Renders the emulator screen."
   @spec render_screen(t()) :: String.t()

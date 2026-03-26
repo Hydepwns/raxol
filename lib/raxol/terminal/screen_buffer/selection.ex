@@ -16,13 +16,18 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Starts a new selection at the specified position.
   """
+  @spec start_selection(Core.t(), non_neg_integer(), non_neg_integer()) ::
+          Core.t()
   def start_selection(buffer, x, y) do
     %{buffer | selection: {x, y, x, y}}
   end
 
   @doc """
   Extends the selection to the specified position.
+  Starts a new selection if none exists.
   """
+  @spec extend_selection(Core.t(), non_neg_integer(), non_neg_integer()) ::
+          Core.t()
   def extend_selection(buffer, x, y) do
     case buffer.selection do
       {start_x, start_y, _, _} ->
@@ -36,6 +41,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Clears the current selection.
   """
+  @spec clear_selection(Core.t()) :: Core.t()
   def clear_selection(buffer) do
     %{buffer | selection: nil}
   end
@@ -43,6 +49,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Gets the current selection boundaries, normalized so start <= end.
   """
+  @spec get_selection(Core.t()) :: selection()
   def get_selection(buffer) do
     case buffer.selection do
       nil -> nil
@@ -53,13 +60,15 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Checks if there is an active selection.
   """
-  def has_selection(buffer) do
+  @spec has_selection?(Core.t()) :: boolean()
+  def has_selection?(buffer) do
     buffer.selection != nil
   end
 
   @doc """
   Checks if the specified position is within the current selection.
   """
+  @spec selected?(Core.t(), integer(), integer()) :: boolean()
   def selected?(buffer, x, y) do
     case get_selection(buffer) do
       nil ->
@@ -79,33 +88,15 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
 
   @doc """
   Checks if a position is within the current selection.
+  Delegates to `selected?/3`.
   """
-  def position_in_selection?(buffer, x, y) do
-    case get_selection(buffer) do
-      nil ->
-        false
-
-      {start_x, start_y, end_x, end_y} ->
-        if start_y == end_y do
-          # Single line selection
-          y == start_y and x >= start_x and x <= end_x
-        else
-          # Multi-line selection
-          position_in_multiline_selection?(
-            x,
-            y,
-            start_x,
-            start_y,
-            end_x,
-            end_y
-          )
-        end
-    end
-  end
+  @spec position_in_selection?(Core.t(), integer(), integer()) :: boolean()
+  def position_in_selection?(buffer, x, y), do: selected?(buffer, x, y)
 
   @doc """
   Gets the selected text as a string.
   """
+  @spec get_selected_text(Core.t()) :: String.t()
   def get_selected_text(buffer) do
     case get_selection(buffer) do
       nil ->
@@ -119,6 +110,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Gets the selected text as lines.
   """
+  @spec get_selected_lines(Core.t()) :: [String.t()]
   def get_selected_lines(buffer) do
     case get_selection(buffer) do
       nil ->
@@ -132,6 +124,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Selects an entire line.
   """
+  @spec select_line(Core.t(), integer()) :: Core.t()
   def select_line(buffer, y) when y >= 0 and y < buffer.height do
     %{buffer | selection: {0, y, buffer.width - 1, y}}
   end
@@ -141,6 +134,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Selects multiple lines.
   """
+  @spec select_lines(Core.t(), integer(), integer()) :: Core.t()
   def select_lines(buffer, start_y, end_y) do
     start_y = max(0, min(start_y, buffer.height - 1))
     end_y = max(0, min(end_y, buffer.height - 1))
@@ -150,6 +144,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Selects all content in the buffer.
   """
+  @spec select_all(Core.t()) :: Core.t()
   def select_all(buffer) do
     %{buffer | selection: {0, 0, buffer.width - 1, buffer.height - 1}}
   end
@@ -157,6 +152,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Selects a word at the given position.
   """
+  @spec select_word(Core.t(), integer(), integer()) :: Core.t()
   def select_word(buffer, x, y) when x >= 0 and y >= 0 and y < buffer.height do
     line = Core.get_line(buffer, y)
 
@@ -171,6 +167,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   @doc """
   Expands selection to word boundaries.
   """
+  @spec expand_selection_to_word(Core.t()) :: Core.t()
   def expand_selection_to_word(buffer) do
     case buffer.selection do
       {x1, y1, x2, y2} ->
@@ -189,6 +186,12 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
 
   # === Functions moved from main ScreenBuffer module ===
 
+  @doc """
+  Updates the selection endpoint. Returns buffer unchanged if no selection exists.
+  Unlike `extend_selection/3`, does not start a new selection on nil.
+  """
+  @spec update_selection(Core.t(), non_neg_integer(), non_neg_integer()) ::
+          Core.t()
   def update_selection(buffer, x, y) do
     case buffer.selection do
       {sx, sy, _, _} -> %{buffer | selection: {sx, sy, x, y}}
@@ -196,6 +199,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
     end
   end
 
+  @spec get_selection_boundaries(Core.t()) ::
+          {{non_neg_integer(), non_neg_integer()},
+           {non_neg_integer(), non_neg_integer()}}
+          | nil
   def get_selection_boundaries(buffer) do
     case buffer.selection do
       {sx, sy, ex, ey} -> {{sx, sy}, {ex, ey}}
@@ -203,8 +210,12 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
     end
   end
 
-  def selection_active?(buffer), do: buffer.selection != nil
+  @doc "Delegates to `has_selection?/1`."
+  @spec selection_active?(Core.t()) :: boolean()
+  def selection_active?(buffer), do: has_selection?(buffer)
 
+  @spec get_selection_start(Core.t()) ::
+          {non_neg_integer(), non_neg_integer()} | nil
   def get_selection_start(buffer) do
     case buffer.selection do
       {sx, sy, _, _} -> {sx, sy}
@@ -212,6 +223,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
     end
   end
 
+  @spec get_selection_end(Core.t()) ::
+          {non_neg_integer(), non_neg_integer()} | nil
   def get_selection_end(buffer) do
     case buffer.selection do
       {sx, sy, sx, sy} -> nil
@@ -298,17 +311,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
 
   defp word_char?(char) do
     String.match?(char, ~r/[a-zA-Z0-9_]/)
-  end
-
-  defp position_in_multiline_selection?(x, y, start_x, start_y, end_x, end_y) do
-    cond do
-      y < start_y -> false
-      y > end_y -> false
-      y == start_y -> x >= start_x
-      y == end_y -> x <= end_x
-      # Middle lines are fully selected
-      true -> true
-    end
   end
 
   defp check_word_start_char(cell, i) do

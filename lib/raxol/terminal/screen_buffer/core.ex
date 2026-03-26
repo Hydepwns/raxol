@@ -30,7 +30,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
           cells: list(list(Cell.t())),
           scrollback: list(list(Cell.t())),
           scrollback_limit: non_neg_integer(),
-          selection: nil | map(),
+          selection:
+            nil
+            | {non_neg_integer(), non_neg_integer(), non_neg_integer(),
+               non_neg_integer()},
           scroll_region: nil | {non_neg_integer(), non_neg_integer()},
           scroll_position: non_neg_integer(),
           width: non_neg_integer(),

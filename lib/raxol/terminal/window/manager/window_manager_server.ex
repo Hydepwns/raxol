@@ -255,12 +255,12 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
 
   # BaseManager Callbacks
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def init_manager(_opts) do
     {:ok, @default_state}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:create_window, config}, _from, state) do
     window_id = "window_#{state.next_window_id}"
     window = StateOps.build_window(config, window_id)
@@ -285,7 +285,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     {:reply, {:ok, window}, new_state}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:get_window, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil -> {:reply, {:error, :not_found}, state}
@@ -293,7 +293,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:destroy_window, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -323,12 +323,12 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(:list_windows, _from, state) do
     {:reply, {:ok, Map.values(state.windows)}, state}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:set_active_window, window_id}, _from, state) do
     StateOps.apply_set_active_window(
       Map.has_key?(state.windows, window_id),
@@ -337,7 +337,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     )
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(:get_active_window, _from, state) do
     case state.active_window do
       nil ->
@@ -351,12 +351,12 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:set_window_state, state_value}, _from, state) do
     {:reply, :ok, %{state | window_state: state_value}}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(
         {:set_window_state_by_id, window_id, state_value},
         _from,
@@ -375,17 +375,17 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(:get_window_state, _from, state) do
     {:reply, state.window_state, state}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:set_window_size, width, height}, _from, state) do
     {:reply, :ok, %{state | window_size: {width, height}}}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(
         {:set_window_size_by_id, window_id, width, height},
         _from,
@@ -402,17 +402,17 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(:get_window_size, _from, state) do
     {:reply, state.window_size, state}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:set_window_title, title}, _from, state) do
     {:reply, :ok, %{state | window_title: title}}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(
         {:set_window_title_by_id, window_id, title},
         _from,
@@ -427,17 +427,17 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:set_icon_name, icon_name}, _from, state) do
     {:reply, :ok, %{state | icon_name: icon_name}}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:set_icon_title, icon_title}, _from, state) do
     {:reply, :ok, %{state | icon_title: icon_title}}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:move_window_to_front, window_id}, _from, state) do
     StateOps.apply_move_to_front(
       Map.has_key?(state.windows, window_id),
@@ -446,7 +446,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     )
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:move_window_to_back, window_id}, _from, state) do
     StateOps.apply_move_to_back(
       Map.has_key?(state.windows, window_id),
@@ -455,7 +455,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     )
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:set_window_position, window_id, x, y}, _from, state) do
     case StateOps.update_window_by_id(
            state,
@@ -470,7 +470,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(
         {:create_child_window, parent_id, config},
         _from,
@@ -501,7 +501,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:get_child_windows, parent_id}, _from, state) do
     case Map.get(state.windows, parent_id) do
       nil ->
@@ -517,7 +517,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:get_parent_window, child_id}, _from, state) do
     case Map.get(state.windows, child_id) do
       nil ->
@@ -537,7 +537,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(
         {:register_window_position, window_id, x, y, width, height},
         _from,
@@ -556,7 +556,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     {:reply, :ok, new_state}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(
         {:define_navigation_path, from_id, direction, to_id},
         _from,
@@ -568,12 +568,12 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     {:reply, :ok, new_state}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(:get_state, _from, state) do
     {:reply, StateOps.build_legacy_state(state), state}
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:split_window, window_id, direction}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -610,13 +610,16 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(:reset, _from, _state) do
     {:reply, :ok, @default_state}
   end
 
-  @impl true
+  @configurable_keys ~w(window_size window_title icon_name icon_title)a
+
+  @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:update_config, config}, _from, state) do
-    {:reply, :ok, Map.merge(state, config)}
+    filtered = Map.take(config, @configurable_keys)
+    {:reply, :ok, Map.merge(state, filtered)}
   end
 end

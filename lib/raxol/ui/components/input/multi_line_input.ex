@@ -74,51 +74,20 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   @spec init(map()) :: {:ok, __MODULE__.t()}
   @impl true
   @doc """
-  Initializes the MultiLineInput state, harmonizing style/theme/extra props and splitting lines for editing.
+  Initializes the MultiLineInput state, splitting value into lines for editing.
   """
   def init(props) do
-    id = props[:id] || Raxol.Core.ID.generate()
-    value = props[:value] || ""
-    width = props[:width] || @default_width
-    height = props[:height] || @default_height
-    wrap = props[:wrap] || :word
-    placeholder = props[:placeholder] || ""
-    theme = props[:theme] || %{}
-    aria_label = props[:aria_label]
-    tooltip = props[:tooltip]
-    on_change = props[:on_change]
-    on_submit = props[:on_submit]
-    focused = props[:focused] || false
-    # Use the canonical helper for line splitting
+    props = Map.put_new_lazy(props, :id, &Raxol.Core.ID.generate/0)
+    state = struct(__MODULE__, props)
+
     lines =
       Raxol.UI.Components.Input.MultiLineInput.TextHelper.split_into_lines(
-        value,
-        width,
-        wrap
+        state.value,
+        state.width,
+        state.wrap
       )
 
-    {:ok,
-     %__MODULE__{
-       id: id,
-       value: value,
-       placeholder: placeholder,
-       width: width,
-       height: height,
-       theme: theme,
-       wrap: wrap,
-       cursor_pos: {0, 0},
-       scroll_offset: {0, 0},
-       selection_start: nil,
-       selection_end: nil,
-       history: %{undo: [], redo: []},
-       shift_held: false,
-       focused: focused,
-       on_change: on_change,
-       on_submit: on_submit,
-       aria_label: aria_label,
-       tooltip: tooltip,
-       lines: lines
-     }}
+    {:ok, %{state | lines: lines}}
   end
 
   @doc """
@@ -152,73 +121,32 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   # --- Delegated to CursorMovement ---
-  def handle_move_cursor(direction, state),
-    do: CursorMovement.handle_move_cursor(direction, state)
-
-  def handle_move_cursor_line_start(state),
-    do: CursorMovement.handle_move_cursor_line_start(state)
-
-  def handle_move_cursor_line_end(state),
-    do: CursorMovement.handle_move_cursor_line_end(state)
-
-  def handle_move_cursor_page(direction, state),
-    do: CursorMovement.handle_move_cursor_page(direction, state)
-
-  def handle_move_cursor_doc_start(state),
-    do: CursorMovement.handle_move_cursor_doc_start(state)
-
-  def handle_move_cursor_doc_end(state),
-    do: CursorMovement.handle_move_cursor_doc_end(state)
-
-  def handle_move_cursor_to(pos, state),
-    do: CursorMovement.handle_move_cursor_to(pos, state)
-
-  def handle_move_cursor_word_left(state),
-    do: CursorMovement.handle_move_cursor_word_left(state)
-
-  def handle_move_cursor_word_right(state),
-    do: CursorMovement.handle_move_cursor_word_right(state)
-
-  def handle_selection_move(state, direction),
-    do: CursorMovement.handle_selection_move(state, direction)
+  defdelegate handle_move_cursor(direction, state), to: CursorMovement
+  defdelegate handle_move_cursor_line_start(state), to: CursorMovement
+  defdelegate handle_move_cursor_line_end(state), to: CursorMovement
+  defdelegate handle_move_cursor_page(direction, state), to: CursorMovement
+  defdelegate handle_move_cursor_doc_start(state), to: CursorMovement
+  defdelegate handle_move_cursor_doc_end(state), to: CursorMovement
+  defdelegate handle_move_cursor_to(pos, state), to: CursorMovement
+  defdelegate handle_move_cursor_word_left(state), to: CursorMovement
+  defdelegate handle_move_cursor_word_right(state), to: CursorMovement
+  defdelegate handle_selection_move(state, direction), to: CursorMovement
 
   # --- Delegated to SelectionOps ---
-  def handle_select_all(state),
-    do: SelectionOps.handle_select_all(state)
-
-  def handle_copy(state),
-    do: SelectionOps.handle_copy(state)
-
-  def handle_cut(state),
-    do: SelectionOps.handle_cut(state)
-
-  def handle_paste(state),
-    do: SelectionOps.handle_paste(state)
-
-  def handle_clipboard_content(content, state),
-    do: SelectionOps.handle_clipboard_content(content, state)
-
-  def handle_delete_selection(direction, state),
-    do: SelectionOps.handle_delete_selection(direction, state)
-
-  def handle_copy_selection(state),
-    do: SelectionOps.handle_copy_selection(state)
-
-  def handle_select_to(pos, state),
-    do: SelectionOps.handle_select_to(pos, state)
+  defdelegate handle_select_all(state), to: SelectionOps
+  defdelegate handle_copy(state), to: SelectionOps
+  defdelegate handle_cut(state), to: SelectionOps
+  defdelegate handle_paste(state), to: SelectionOps
+  defdelegate handle_clipboard_content(content, state), to: SelectionOps
+  defdelegate handle_delete_selection(direction, state), to: SelectionOps
+  defdelegate handle_copy_selection(state), to: SelectionOps
+  defdelegate handle_select_to(pos, state), to: SelectionOps
 
   # --- Delegated to EditOps ---
-  def handle_input(char_codepoint, state),
-    do: EditOps.handle_input(char_codepoint, state)
-
-  def handle_backspace(state),
-    do: EditOps.handle_backspace(state)
-
-  def handle_delete(state),
-    do: EditOps.handle_delete(state)
-
-  def handle_enter(state),
-    do: EditOps.handle_enter(state)
+  defdelegate handle_input(char_codepoint, state), to: EditOps
+  defdelegate handle_backspace(state), to: EditOps
+  defdelegate handle_delete(state), to: EditOps
+  defdelegate handle_enter(state), to: EditOps
 
   # --- Message handlers (kept in main module) ---
   def handle_update_props(new_props, state) do
@@ -400,9 +328,18 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     end)
   end
 
-  defp render_placeholder(state, merged_theme) do
-    render_placeholder_if_conditions_met(state, merged_theme)
+  defp render_placeholder(
+         %__MODULE__{value: "", focused: false, placeholder: placeholder},
+         merged_theme
+       )
+       when placeholder != "" do
+    Raxol.View.Elements.label(
+      content: placeholder,
+      style: [color: merged_theme[:placeholder_color] || :gray]
+    )
   end
+
+  defp render_placeholder(%__MODULE__{}, _merged_theme), do: nil
 
   defp build_root_props(state, merged_theme) do
     %{
@@ -410,8 +347,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
       aria_label: state.aria_label,
       tooltip: state.tooltip
     }
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-    |> Enum.into(%{})
+    |> Map.reject(fn {_k, v} -> is_nil(v) end)
   end
 
   defp calculate_scroll_row(cursor_row, scroll_row, _height)
@@ -444,27 +380,18 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   defp trigger_change_if_value_changed(new_state, old_state, existing_cmd) do
-    do_trigger_change(
-      new_state.value != old_state.value and
-        is_function(new_state.on_change, 1),
-      new_state,
-      existing_cmd
-    )
-  end
+    if new_state.value != old_state.value and
+         is_function(new_state.on_change, 1) do
+      cmd = {:component_event, new_state.id, {:change, new_state.value}}
 
-  defp do_trigger_change(false, new_state, existing_cmd),
-    do: {:noreply, new_state, existing_cmd}
+      Raxol.Core.Runtime.Log.debug(
+        "Value changed for #{new_state.id}, queueing :change event."
+      )
 
-  # existing_cmd is always nil in current call sites
-  defp do_trigger_change(true, new_state, _existing_cmd) do
-    change_event_cmd =
-      {:component_event, new_state.id, {:change, new_state.value}}
-
-    Raxol.Core.Runtime.Log.debug(
-      "Value changed for #{new_state.id}, queueing :change event."
-    )
-
-    {:noreply, new_state, [change_event_cmd]}
+      {:noreply, new_state, [cmd]}
+    else
+      {:noreply, new_state, existing_cmd}
+    end
   end
 
   defp choose_children_content(
@@ -472,46 +399,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
          visible_lines,
          line_elements
        ) do
-    do_choose_children_content(
-      placeholder_element != nil and visible_lines == [""],
-      placeholder_element,
-      visible_lines,
+    if placeholder_element != nil and visible_lines == [""] do
+      [placeholder_element]
+    else
       line_elements
-    )
-  end
-
-  defp do_choose_children_content(
-         true,
-         placeholder_element,
-         _visible_lines,
-         _line_elements
-       ) do
-    [placeholder_element]
-  end
-
-  defp do_choose_children_content(
-         false,
-         _placeholder_element,
-         _visible_lines,
-         line_elements
-       ) do
-    line_elements
-  end
-
-  defp render_placeholder_if_conditions_met(state, merged_theme) do
-    do_render_placeholder(
-      state.value == "" and not state.focused and state.placeholder != "",
-      state,
-      merged_theme
-    )
-  end
-
-  defp do_render_placeholder(false, _state, _merged_theme), do: nil
-
-  defp do_render_placeholder(true, state, merged_theme) do
-    Raxol.View.Elements.label(
-      content: state.placeholder,
-      style: [color: merged_theme[:placeholder_color] || :gray]
-    )
+    end
   end
 end
