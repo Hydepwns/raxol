@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.TabsDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: tab bar with keyboard switching and content panels."
   use Raxol.Core.Runtime.Application
 
   @tab_labels ["Overview", "Details", "Settings", "Help"]

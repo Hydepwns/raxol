@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.RadioGroupDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: grouped radio buttons with tab switching."
   use Raxol.Core.Runtime.Application
 
   @impl true

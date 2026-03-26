@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.TextInputDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: single-line text input with character counting."
   use Raxol.Core.Runtime.Application
 
   @impl true

@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.CheckboxDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: toggle checkboxes with keyboard navigation."
   use Raxol.Core.Runtime.Application
 
   @impl true

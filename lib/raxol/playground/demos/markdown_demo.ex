@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.MarkdownDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: markdown rendering with raw toggle."
   use Raxol.Core.Runtime.Application
 
   @documents [

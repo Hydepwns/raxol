@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.TableDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: data table with sortable columns and row selection."
   use Raxol.Core.Runtime.Application
 
   @headers ["#", "Framework", "Language", "Stars"]
@@ -108,10 +108,11 @@ defmodule Raxol.Playground.Demos.TableDemo do
 
   defp sorted_data(%{sort_col: nil}), do: @data
 
-  defp sorted_data(%{sort_col: col, sort_dir: dir}) do
-    sorted = Enum.sort_by(@data, &Enum.at(&1, col))
-    if dir == :desc, do: Enum.reverse(sorted), else: sorted
-  end
+  defp sorted_data(%{sort_col: col, sort_dir: :desc}),
+    do: Enum.sort_by(@data, &Enum.at(&1, col)) |> Enum.reverse()
+
+  defp sorted_data(%{sort_col: col}),
+    do: Enum.sort_by(@data, &Enum.at(&1, col))
 
   defp cycle_sort(%{sort_col: nil} = model) do
     {%{model | sort_col: 1, sort_dir: :asc}, []}
@@ -122,12 +123,9 @@ defmodule Raxol.Playground.Demos.TableDemo do
   end
 
   defp cycle_sort(%{sort_col: col} = model) do
-    next_col = rem(col + 1, length(@headers))
-
-    if next_col == 0 do
-      {%{model | sort_col: nil, sort_dir: :asc}, []}
-    else
-      {%{model | sort_col: next_col, sort_dir: :asc}, []}
+    case rem(col + 1, length(@headers)) do
+      0 -> {%{model | sort_col: nil, sort_dir: :asc}, []}
+      next_col -> {%{model | sort_col: next_col, sort_dir: :asc}, []}
     end
   end
 end

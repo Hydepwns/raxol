@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.PasswordFieldDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: password input with visibility toggle and strength meter."
   use Raxol.Core.Runtime.Application
 
   @impl true

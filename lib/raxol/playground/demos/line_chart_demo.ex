@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.LineChartDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: streaming braille-resolution line chart."
   use Raxol.Core.Runtime.Application
 
   @impl true

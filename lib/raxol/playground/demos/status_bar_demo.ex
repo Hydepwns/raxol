@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.StatusBarDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: status bar with live-updating fields."
   use Raxol.Core.Runtime.Application
 
   @impl true

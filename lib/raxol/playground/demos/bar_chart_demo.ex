@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.BarChartDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: block-character bar chart with orientation toggle."
   use Raxol.Core.Runtime.Application
 
   @labels ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]

@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.TextAreaDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: multi-line text editor with insert and normal modes."
   use Raxol.Core.Runtime.Application
 
   @impl true

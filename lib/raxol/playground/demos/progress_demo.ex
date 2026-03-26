@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.ProgressDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: progress bar with value tracking."
   use Raxol.Core.Runtime.Application
 
   @impl true

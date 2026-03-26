@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.CodeBlockDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: code display with line numbers and language samples."
   use Raxol.Core.Runtime.Application
 
   @samples [

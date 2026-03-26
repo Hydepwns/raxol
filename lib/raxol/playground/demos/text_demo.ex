@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.TextDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: text rendering with style variations."
   use Raxol.Core.Runtime.Application
 
   @styles [

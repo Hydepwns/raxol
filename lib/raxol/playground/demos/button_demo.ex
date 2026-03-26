@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.ButtonDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: interactive button with click handling."
   use Raxol.Core.Runtime.Application
 
   @impl true

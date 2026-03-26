@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.ModalDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: modal dialog with confirm and cancel actions."
   use Raxol.Core.Runtime.Application
 
   @impl true

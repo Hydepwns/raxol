@@ -42,12 +42,9 @@ defmodule Mix.Tasks.Raxol.Record do
   def run(args) do
     case OptionParser.parse(args, strict: @switches, aliases: @aliases) do
       {opts, _, _} ->
-        module_str = Keyword.get(opts, :module)
-
-        if is_nil(module_str) do
-          print_usage()
-        else
-          record(module_str, opts)
+        case Keyword.fetch(opts, :module) do
+          {:ok, module_str} -> record(module_str, opts)
+          :error -> print_usage()
         end
     end
   end

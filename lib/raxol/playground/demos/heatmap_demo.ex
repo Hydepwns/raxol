@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.HeatmapDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: 2D heatmap with color scale cycling."
   use Raxol.Core.Runtime.Application
 
   @scales [:warm, :cool, :diverging]
@@ -26,7 +26,12 @@ defmodule Raxol.Playground.Demos.HeatmapDemo do
   @impl true
   def view(model) do
     rows = length(model.grid)
-    cols = length(hd(model.grid))
+
+    cols =
+      case model.grid do
+        [first_row | _] -> length(first_row)
+        [] -> 0
+      end
 
     chart_element =
       heatmap(

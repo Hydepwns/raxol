@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.ScatterChartDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: braille scatter plot with animated clusters."
   use Raxol.Core.Runtime.Application
 
   @impl true

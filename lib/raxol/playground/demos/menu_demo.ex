@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.MenuDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: selectable menu with keyboard navigation."
   use Raxol.Core.Runtime.Application
 
   @items ["File", "Edit", "View", "Tools", "Help"]

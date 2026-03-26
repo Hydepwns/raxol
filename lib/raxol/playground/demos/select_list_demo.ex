@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.SelectListDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: dropdown select list with keyboard navigation."
   use Raxol.Core.Runtime.Application
 
   @impl true

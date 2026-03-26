@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.ContainerDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: scrollable container with viewport controls."
   use Raxol.Core.Runtime.Application
 
   @total 30

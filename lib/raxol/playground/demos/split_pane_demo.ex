@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.SplitPaneDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: resizable split pane with direction toggle."
   use Raxol.Core.Runtime.Application
 
   @impl true

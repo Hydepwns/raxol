@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.TreeDemo do
-  @moduledoc false
+  @moduledoc "Playground demo: expandable tree view with keyboard navigation."
   use Raxol.Core.Runtime.Application
 
   @tree [

@@ -84,25 +84,23 @@ defmodule Raxol.UI.Charts.ScatterChart do
   # -- Private --
 
   defp resolve_ranges([], opts) do
-    x_range = Keyword.get(opts, :x_range, :auto)
-    y_range = Keyword.get(opts, :y_range, :auto)
-
     {
-      if(x_range == :auto, do: {0.0, 1.0}, else: x_range),
-      if(y_range == :auto, do: {0.0, 1.0}, else: y_range)
+      resolve_or_auto(Keyword.get(opts, :x_range, :auto), {0.0, 1.0}),
+      resolve_or_auto(Keyword.get(opts, :y_range, :auto), {0.0, 1.0})
     }
   end
 
   defp resolve_ranges(points, opts) do
     {auto_x, auto_y} = ChartUtils.auto_range_2d(points)
-    x_range = Keyword.get(opts, :x_range, :auto)
-    y_range = Keyword.get(opts, :y_range, :auto)
 
     {
-      if(x_range == :auto, do: auto_x, else: x_range),
-      if(y_range == :auto, do: auto_y, else: y_range)
+      resolve_or_auto(Keyword.get(opts, :x_range, :auto), auto_x),
+      resolve_or_auto(Keyword.get(opts, :y_range, :auto), auto_y)
     }
   end
+
+  defp resolve_or_auto(:auto, computed), do: computed
+  defp resolve_or_auto(explicit, _computed), do: explicit
 
   defp place_dots(
          canvas,
