@@ -189,7 +189,9 @@ defmodule Raxol.Application do
       # Rate limiting
       maybe_add_rate_limiting(),
       # Development performance tools
-      maybe_add_dev_performance_tools()
+      maybe_add_dev_performance_tools(),
+      # SSH playground (enabled via RAXOL_SSH_PLAYGROUND=true)
+      maybe_add_ssh_playground()
     ]
   end
 
@@ -299,6 +301,30 @@ defmodule Raxol.Application do
       ]
     else
       []
+    end
+  end
+
+  defp maybe_add_ssh_playground do
+    if System.get_env("RAXOL_SSH_PLAYGROUND") == "true" do
+      port =
+        case System.get_env("RAXOL_SSH_PORT") do
+          nil -> 2222
+          val -> String.to_integer(val)
+        end
+
+      max_connections =
+        case System.get_env("RAXOL_SSH_MAX_CONNECTIONS") do
+          nil -> 50
+          val -> String.to_integer(val)
+        end
+
+      host_keys_dir = System.get_env("RAXOL_SSH_HOST_KEYS_DIR") || "/app/ssh_keys"
+
+      {Raxol.SSH.Server,
+       app_module: Raxol.Playground.App,
+       port: port,
+       host_keys_dir: host_keys_dir,
+       max_connections: max_connections}
     end
   end
 

@@ -22,10 +22,12 @@ defmodule Raxol.SSH.Session do
     :height
   ]
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
   end
 
+  @spec run(module()) :: :ok
   def run(app_module) do
     receive do
       {:ssh_data, _data} -> :ok

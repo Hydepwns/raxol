@@ -10,44 +10,68 @@ defmodule Raxol.SSH.Server do
       Raxol.SSH.serve(CounterExample, port: 2222)
 
   Then connect: `ssh localhost -p 2222`
+
+  ## Options
+
+    * `:port` - Port to listen on (default: 2222)
+    * `:host_keys_dir` - Directory for SSH host keys (default: "/tmp/raxol_ssh_keys")
+    * `:max_connections` - Maximum concurrent connections (default: 50)
   """
 
   use GenServer
 
   require Raxol.Core.Runtime.Log
 
-  defstruct [:daemon_ref, :app_module, :port, :host_keys_dir]
+  defstruct [:daemon_ref, :app_module, :port, :host_keys_dir, :max_connections, connections: 0]
 
-  @doc """
-  Starts an SSH server that serves the given TEA app module.
+  @default_port 2222
+  @default_max_connections 50
 
-  ## Options
-    * `:port` - Port to listen on (default: 2222)
-    * `:host_keys_dir` - Directory for SSH host keys (default: "/tmp/raxol_ssh_keys")
-  """
+  @spec serve(module(), keyword()) :: GenServer.on_start()
   def serve(app_module, opts \\ []) do
     start_link(
       app_module: app_module,
-      port: Keyword.get(opts, :port, 2222),
-      host_keys_dir: Keyword.get(opts, :host_keys_dir, "/tmp/raxol_ssh_keys")
+      port: Keyword.get(opts, :port, @default_port),
+      host_keys_dir: Keyword.get(opts, :host_keys_dir, "/tmp/raxol_ssh_keys"),
+      max_connections: Keyword.get(opts, :max_connections, @default_max_connections)
     )
   end
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
+  end
+
+  @doc "Returns the current number of active connections."
+  @spec connection_count(GenServer.server()) :: non_neg_integer()
+  def connection_count(server \\ __MODULE__) do
+    GenServer.call(server, :connection_count)
+  end
+
+  @doc "Registers a new connection. Returns :ok or {:error, :max_connections}."
+  @spec register_connection(GenServer.server()) :: :ok | {:error, :max_connections}
+  def register_connection(server \\ __MODULE__) do
+    GenServer.call(server, :register_connection)
+  end
+
+  @doc "Unregisters a connection when it closes."
+  @spec unregister_connection(GenServer.server()) :: :ok
+  def unregister_connection(server \\ __MODULE__) do
+    GenServer.cast(server, :unregister_connection)
   end
 
   @impl true
   def init(opts) do
     app_module = Keyword.fetch!(opts, :app_module)
-    port = Keyword.get(opts, :port, 2222)
+    port = Keyword.get(opts, :port, @default_port)
     host_keys_dir = Keyword.get(opts, :host_keys_dir, "/tmp/raxol_ssh_keys")
+    max_connections = Keyword.get(opts, :max_connections, @default_max_connections)
 
     ensure_host_keys(host_keys_dir)
 
     daemon_opts = [
       system_dir: String.to_charlist(host_keys_dir),
-      shell: &spawn_session(app_module, &1, &2, &3),
       ssh_cli: {Raxol.SSH.CLIHandler, [app_module: app_module]},
       no_auth_needed: true
     ]
@@ -55,7 +79,7 @@ defmodule Raxol.SSH.Server do
     case :ssh.daemon(port, daemon_opts) do
       {:ok, daemon_ref} ->
         Raxol.Core.Runtime.Log.info(
-          "[SSH.Server] Listening on port #{port} for #{inspect(app_module)}"
+          "[SSH.Server] Listening on port #{port} for #{inspect(app_module)} (max #{max_connections} connections)"
         )
 
         {:ok,
@@ -63,12 +87,43 @@ defmodule Raxol.SSH.Server do
            daemon_ref: daemon_ref,
            app_module: app_module,
            port: port,
-           host_keys_dir: host_keys_dir
+           host_keys_dir: host_keys_dir,
+           max_connections: max_connections
          }}
 
       {:error, reason} ->
         {:stop, {:ssh_daemon_failed, reason}}
     end
+  end
+
+  @impl true
+  def handle_call(:connection_count, _from, state) do
+    {:reply, state.connections, state}
+  end
+
+  @impl true
+  def handle_call(:register_connection, _from, %__MODULE__{} = state) do
+    if state.connections >= state.max_connections do
+      Raxol.Core.Runtime.Log.warning(
+        "[SSH.Server] Connection rejected: #{state.connections}/#{state.max_connections}"
+      )
+
+      {:reply, {:error, :max_connections}, state}
+    else
+      new_count = state.connections + 1
+
+      Raxol.Core.Runtime.Log.info(
+        "[SSH.Server] Connection accepted (#{new_count}/#{state.max_connections})"
+      )
+
+      {:reply, :ok, %{state | connections: new_count}}
+    end
+  end
+
+  @impl true
+  def handle_cast(:unregister_connection, %__MODULE__{} = state) do
+    new_count = max(0, state.connections - 1)
+    {:noreply, %{state | connections: new_count}}
   end
 
   @impl true
@@ -78,12 +133,6 @@ defmodule Raxol.SSH.Server do
   end
 
   def terminate(_reason, _state), do: :ok
-
-  defp spawn_session(app_module, _user, _peer, _channel_info) do
-    spawn(fn ->
-      Raxol.SSH.Session.run(app_module)
-    end)
-  end
 
   defp ensure_host_keys(dir) do
     File.mkdir_p!(dir)

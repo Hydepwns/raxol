@@ -62,7 +62,7 @@ Sensor examples: `sensor_hud_demo.exs` (3 mock sensors with gauge, sparkline, th
 
 Adaptive examples: `adaptive_ui_demo.exs` (behavior tracking, layout recommendations, feedback loop).
 
-Playground: `mix raxol.playground` -- interactive widget catalog with 23 demos across 7 categories (input, display, feedback, navigation, overlay, layout, visualization). Demos are self-contained TEA apps in `lib/raxol/playground/demos/`. Chart demos use `ViewBridge.cells_to_view` for real braille/block rendering.
+Playground: `mix raxol.playground` -- interactive widget catalog with 23 demos across 7 categories (input, display, feedback, navigation, overlay, layout, visualization). Demos are self-contained TEA apps in `lib/raxol/playground/demos/`. Chart demos use View DSL functions directly. SSH mode: `mix raxol.playground --ssh` serves the playground over SSH (port 2222 by default). Production SSH enabled via `RAXOL_SSH_PLAYGROUND=true` env var in fly.toml.
 
 ### Development
 
