@@ -519,21 +519,12 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:get_parent_window, child_id}, _from, state) do
-    case Map.get(state.windows, child_id) do
-      nil ->
-        {:reply, {:error, :not_found}, state}
-
-      child ->
-        case child.parent do
-          nil ->
-            {:reply, {:error, :no_parent}, state}
-
-          parent_id ->
-            case Map.get(state.windows, parent_id) do
-              nil -> {:reply, {:error, :parent_not_found}, state}
-              parent -> {:reply, {:ok, parent}, state}
-            end
-        end
+    with {:ok, child} <- fetch_window(state, child_id),
+         {:ok, parent_id} <- fetch_parent_id(child),
+         {:ok, parent} <- fetch_window(state, parent_id, :parent_not_found) do
+      {:reply, {:ok, parent}, state}
+    else
+      {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
@@ -622,4 +613,16 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     filtered = Map.take(config, @configurable_keys)
     {:reply, :ok, Map.merge(state, filtered)}
   end
+
+  # Private helpers
+
+  defp fetch_window(state, window_id, error \\ :not_found) do
+    case Map.get(state.windows, window_id) do
+      nil -> {:error, error}
+      window -> {:ok, window}
+    end
+  end
+
+  defp fetch_parent_id(%{parent: nil}), do: {:error, :no_parent}
+  defp fetch_parent_id(%{parent: parent_id}), do: {:ok, parent_id}
 end

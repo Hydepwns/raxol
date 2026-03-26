@@ -241,35 +241,30 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
   end
 
   defp extract_lines_region(buffer, start_x, start_y, end_x, end_y) do
-    if start_y == end_y do
-      # Single line selection
-      line = Core.get_line(buffer, start_y)
+    for y <- start_y..end_y do
+      line = Core.get_line(buffer, y)
+
+      {from, to} =
+        line_slice_range(y, start_x, start_y, end_x, end_y, buffer.width)
 
       text =
         line
-        |> Enum.slice(start_x..end_x)
-        |> Enum.map_join("", &cell_to_char/1)
-
-      [text]
-    else
-      # Multi-line selection
-      for y <- start_y..end_y do
-        line = Core.get_line(buffer, y)
-
-        {from, to} =
-          cond do
-            y == start_y -> {start_x, buffer.width - 1}
-            y == end_y -> {0, end_x}
-            true -> {0, buffer.width - 1}
-          end
-
-        line
         |> Enum.slice(from..to)
         |> Enum.map_join("", &cell_to_char/1)
-        |> String.trim_trailing()
-      end
+
+      if start_y == end_y, do: text, else: String.trim_trailing(text)
     end
   end
+
+  defp line_slice_range(y, start_x, y, end_x, y, _width), do: {start_x, end_x}
+
+  defp line_slice_range(y, start_x, y, _end_x, _end_y, width),
+    do: {start_x, width - 1}
+
+  defp line_slice_range(y, _start_x, _start_y, end_x, y, _width), do: {0, end_x}
+
+  defp line_slice_range(_y, _start_x, _start_y, _end_x, _end_y, width),
+    do: {0, width - 1}
 
   defp cell_to_char(%Cell{char: char}) when is_binary(char), do: char
   defp cell_to_char(_), do: " "

@@ -9,16 +9,16 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
 
   alias Raxol.UI.Components.Base.Component
   alias Raxol.UI.Components.Input.MultiLineInput.CursorMovement
-  alias Raxol.UI.Components.Input.MultiLineInput.SelectionOps
   alias Raxol.UI.Components.Input.MultiLineInput.EditOps
+  alias Raxol.UI.Components.Input.MultiLineInput.SelectionOps
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
 
   @compile {:no_warn_undefined,
             [
               Raxol.UI.Components.Input.MultiLineInput.CursorMovement,
-              Raxol.UI.Components.Input.MultiLineInput.SelectionOps,
-              Raxol.UI.Components.Input.MultiLineInput.EditOps
+              Raxol.UI.Components.Input.MultiLineInput.EditOps,
+              Raxol.UI.Components.Input.MultiLineInput.SelectionOps
             ]}
 
   @behaviour Component
@@ -342,12 +342,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   defp render_placeholder(%__MODULE__{}, _merged_theme), do: nil
 
   defp build_root_props(state, merged_theme) do
-    %{
-      style: merged_theme,
-      aria_label: state.aria_label,
-      tooltip: state.tooltip
-    }
-    |> Map.reject(fn {_k, v} -> is_nil(v) end)
+    [style: merged_theme, aria_label: state.aria_label, tooltip: state.tooltip]
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
   end
 
   defp calculate_scroll_row(cursor_row, scroll_row, _height)
