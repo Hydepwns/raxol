@@ -20,6 +20,13 @@ defmodule Raxol.Playground.AppTest do
       assert model.focus == :sidebar
       assert model.demo_model != nil
     end
+
+    test "initializes with filter state" do
+      model = App.init(nil)
+      assert model.category_filter == nil
+      assert model.complexity_filter == nil
+      assert model.show_help == false
+    end
   end
 
   describe "sidebar navigation" do
@@ -108,6 +115,21 @@ defmodule Raxol.Playground.AppTest do
       {model, []} = App.update(special_key(:backspace), model)
       assert model.search == "a"
     end
+
+    test "search respects active category filter" do
+      model = App.init(nil)
+      # Set category to :input
+      {model, []} = App.update(key_event("f"), model)
+      assert model.category_filter == :input
+      # Enter search and search for "check"
+      {model, []} = App.update(key_event("/"), model)
+      {model, []} = App.update(key_event("c"), model)
+      {model, []} = App.update(key_event("h"), model)
+      {model, []} = App.update(key_event("e"), model)
+      {model, []} = App.update(key_event("c"), model)
+      {model, []} = App.update(key_event("k"), model)
+      assert Enum.all?(model.components, &(&1.category == :input))
+    end
   end
 
   describe "code panel" do
@@ -118,6 +140,145 @@ defmodule Raxol.Playground.AppTest do
       assert model.show_code == true
       {model, []} = App.update(key_event("c"), model)
       assert model.show_code == false
+    end
+  end
+
+  describe "category filter" do
+    test "f cycles through categories" do
+      model = App.init(nil)
+      assert model.category_filter == nil
+
+      {model, []} = App.update(key_event("f"), model)
+      assert model.category_filter == :input
+
+      {model, []} = App.update(key_event("f"), model)
+      assert model.category_filter == :display
+    end
+
+    test "f filters component list" do
+      model = App.init(nil)
+      {model, []} = App.update(key_event("f"), model)
+      assert model.category_filter == :input
+      assert Enum.all?(model.components, &(&1.category == :input))
+    end
+
+    test "f wraps back to nil (all)" do
+      model = App.init(nil)
+      categories = Raxol.Playground.Catalog.list_categories()
+
+      model =
+        Enum.reduce(categories, model, fn _cat, acc ->
+          {acc, []} = App.update(key_event("f"), acc)
+          acc
+        end)
+
+      # After cycling through all categories, next press returns to nil
+      {model, []} = App.update(key_event("f"), model)
+      assert model.category_filter == nil
+      assert length(model.components) == 23
+    end
+
+    test "f resets cursor to 0" do
+      model = App.init(nil)
+      {model, []} = App.update(key_event("j"), model)
+      assert model.cursor == 1
+      {model, []} = App.update(key_event("f"), model)
+      assert model.cursor == 0
+    end
+
+    test "f does not activate during search" do
+      model = App.init(nil)
+      {model, []} = App.update(key_event("/"), model)
+      {model, []} = App.update(key_event("f"), model)
+      # "f" was typed as search character, not filter
+      assert model.search == "f"
+      assert model.category_filter == nil
+    end
+  end
+
+  describe "complexity filter" do
+    test "x cycles through complexities" do
+      model = App.init(nil)
+      assert model.complexity_filter == nil
+
+      {model, []} = App.update(key_event("x"), model)
+      assert model.complexity_filter == :basic
+
+      {model, []} = App.update(key_event("x"), model)
+      assert model.complexity_filter == :intermediate
+
+      {model, []} = App.update(key_event("x"), model)
+      assert model.complexity_filter == :advanced
+
+      {model, []} = App.update(key_event("x"), model)
+      assert model.complexity_filter == nil
+    end
+
+    test "x filters component list" do
+      model = App.init(nil)
+      {model, []} = App.update(key_event("x"), model)
+      assert model.complexity_filter == :basic
+      assert Enum.all?(model.components, &(&1.complexity == :basic))
+    end
+
+    test "category and complexity filters combine" do
+      model = App.init(nil)
+      # Filter to :input category
+      {model, []} = App.update(key_event("f"), model)
+      assert model.category_filter == :input
+      # Filter to :basic complexity
+      {model, []} = App.update(key_event("x"), model)
+      assert model.complexity_filter == :basic
+
+      assert Enum.all?(model.components, fn c ->
+               c.category == :input and c.complexity == :basic
+             end)
+
+      assert length(model.components) >= 1
+    end
+  end
+
+  describe "help overlay" do
+    test "? opens help overlay" do
+      model = App.init(nil)
+      {model, []} = App.update(key_event("?"), model)
+      assert model.show_help == true
+    end
+
+    test "? closes help overlay" do
+      model = App.init(nil)
+      {model, []} = App.update(key_event("?"), model)
+      assert model.show_help == true
+      {model, []} = App.update(key_event("?"), model)
+      assert model.show_help == false
+    end
+
+    test "escape closes help overlay" do
+      model = App.init(nil)
+      {model, []} = App.update(key_event("?"), model)
+      {model, []} = App.update(special_key(:escape), model)
+      assert model.show_help == false
+    end
+
+    test "other keys are swallowed when help is shown" do
+      model = App.init(nil)
+      {model, []} = App.update(key_event("?"), model)
+      original = model
+
+      # j, q, etc should be no-ops
+      {model, []} = App.update(key_event("j"), model)
+      assert model == original
+      {model, commands} = App.update(key_event("q"), model)
+      assert commands == []
+      assert model == original
+    end
+
+    test "? does not activate during search" do
+      model = App.init(nil)
+      {model, []} = App.update(key_event("/"), model)
+      {model, []} = App.update(key_event("?"), model)
+      assert model.search == "?"
+      assert model.show_help == false
     end
   end
 
@@ -177,6 +338,21 @@ defmodule Raxol.Playground.AppTest do
     test "renders with no selection" do
       model = App.init(nil)
       model = %{model | selected: nil, demo_model: nil}
+      view = App.view(model)
+      assert is_map(view)
+    end
+
+    test "renders help overlay" do
+      model = App.init(nil)
+      model = %{model | show_help: true}
+      view = App.view(model)
+      assert is_map(view)
+    end
+
+    test "renders with active filters" do
+      model = App.init(nil)
+      {model, []} = App.update(key_event("f"), model)
+      {model, []} = App.update(key_event("x"), model)
       view = App.view(model)
       assert is_map(view)
     end

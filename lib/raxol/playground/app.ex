@@ -10,13 +10,19 @@ defmodule Raxol.Playground.App do
     Enter          Select component
     Tab            Cycle focus (sidebar / demo)
     /              Search components
-    c              Copy code snippet
+    f              Cycle category filter
+    x              Cycle complexity filter
+    c              Toggle code snippet
+    ?              Help overlay
     q or Ctrl+C    Quit
   """
 
   use Raxol.Core.Runtime.Application
 
   alias Raxol.Playground.Catalog
+
+  @categories [nil] ++ Catalog.list_categories()
+  @complexities [nil, :basic, :intermediate, :advanced]
 
   @impl true
   def init(_context) do
@@ -30,7 +36,10 @@ defmodule Raxol.Playground.App do
       search: nil,
       show_code: false,
       demo_model: nil,
-      copied: false
+      copied: false,
+      category_filter: nil,
+      complexity_filter: nil,
+      show_help: false
     }
     |> init_demo()
   end
@@ -38,6 +47,18 @@ defmodule Raxol.Playground.App do
   @impl true
   def update(message, model) do
     case message do
+      # Help overlay: ? or Escape dismisses, everything else swallowed
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "?"}}
+      when model.show_help ->
+        {%{model | show_help: false}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :escape}}
+      when model.show_help ->
+        {%{model | show_help: false}, []}
+
+      _ when model.show_help ->
+        {model, []}
+
       # Quit
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}}
       when model.focus != :search ->
@@ -74,6 +95,21 @@ defmodule Raxol.Playground.App do
       when model.focus != :search ->
         {%{model | show_code: not model.show_code, copied: false}, []}
 
+      # Toggle help overlay
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "?"}}
+      when model.focus != :search ->
+        {%{model | show_help: true}, []}
+
+      # Category filter
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "f"}}
+      when model.focus != :search ->
+        {cycle_filter(model, :category_filter, @categories), []}
+
+      # Complexity filter
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "x"}}
+      when model.focus != :search ->
+        {cycle_filter(model, :complexity_filter, @complexities), []}
+
       # Search mode
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "/"}}
       when model.focus != :search ->
@@ -83,20 +119,13 @@ defmodule Raxol.Playground.App do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
       when model.focus == :search ->
         new_search = (model.search || "") <> ch
-        filtered = Catalog.filter(search: new_search)
-        {%{model | search: new_search, components: filtered, cursor: 0}, []}
+        {refilter(%{model | search: new_search}), []}
 
       # Search: backspace
       %Raxol.Core.Events.Event{type: :key, data: %{key: :backspace}}
       when model.focus == :search ->
         new_search = String.slice(model.search || "", 0..-2//1)
-
-        filtered =
-          if new_search == "",
-            do: Catalog.list_components(),
-            else: Catalog.filter(search: new_search)
-
-        {%{model | search: new_search, components: filtered, cursor: 0}, []}
+        {refilter(%{model | search: new_search}), []}
 
       # Search: escape or enter exits search
       %Raxol.Core.Events.Event{type: :key, data: %{key: key}}
@@ -114,6 +143,19 @@ defmodule Raxol.Playground.App do
 
   @impl true
   def view(model) do
+    if model.show_help do
+      help_overlay(model)
+    else
+      main_view(model)
+    end
+  end
+
+  @impl true
+  def subscribe(_model), do: []
+
+  # -- Layout sections --
+
+  defp main_view(model) do
     column style: %{gap: 0} do
       [
         header(),
@@ -131,11 +173,6 @@ defmodule Raxol.Playground.App do
     end
   end
 
-  @impl true
-  def subscribe(_model), do: []
-
-  # -- Layout sections --
-
   defp header do
     row style: %{gap: 2} do
       [
@@ -146,6 +183,8 @@ defmodule Raxol.Playground.App do
   end
 
   defp sidebar(model) do
+    filter_line = filter_indicator(model)
+
     items =
       model.components
       |> Enum.with_index()
@@ -166,9 +205,24 @@ defmodule Raxol.Playground.App do
       column style: %{gap: 0} do
         [
           text("Components", style: [:bold, :underline]),
+          filter_line,
           search_line | items
         ]
       end
+    end
+  end
+
+  defp filter_indicator(model) do
+    parts =
+      [
+        if(model.category_filter, do: "cat:#{model.category_filter}"),
+        if(model.complexity_filter, do: "lvl:#{model.complexity_filter}")
+      ]
+      |> Enum.reject(&is_nil/1)
+
+    case parts do
+      [] -> text("")
+      _ -> text(Enum.join(parts, " "), style: [:dim])
     end
   end
 
@@ -234,6 +288,45 @@ defmodule Raxol.Playground.App do
     end
   end
 
+  defp help_overlay(model) do
+    column style: %{gap: 0} do
+      [
+        header(),
+        divider(),
+        box style: %{padding: 2, border: :single} do
+          column style: %{gap: 1} do
+            [
+              text("Keybindings", style: [:bold, :underline]),
+              text(""),
+              text("  j / k / Up / Down   Navigate sidebar"),
+              text("  Enter               Select component"),
+              text("  Tab                 Cycle focus (sidebar / demo)"),
+              text("  /                   Search components"),
+              text("  f                   Cycle category filter"),
+              text("  x                   Cycle complexity filter"),
+              text("  c                   Toggle code snippet"),
+              text("  ?                   Toggle this help"),
+              text("  q / Ctrl+C          Quit"),
+              text(""),
+              filter_status(model),
+              text(""),
+              text("Press ? or Escape to close.", style: [:dim])
+            ]
+          end
+        end
+      ]
+    end
+  end
+
+  defp filter_status(model) do
+    cat = if model.category_filter, do: "#{model.category_filter}", else: "all"
+
+    cplx =
+      if model.complexity_filter, do: "#{model.complexity_filter}", else: "all"
+
+    text("  Filters: category=#{cat}  complexity=#{cplx}", style: [:dim])
+  end
+
   defp footer(model) do
     focus_indicator =
       case model.focus do
@@ -246,7 +339,7 @@ defmodule Raxol.Playground.App do
       [
         text(focus_indicator, style: [:bold]),
         text(
-          "[j/k] nav  [Enter] select  [Tab] focus  [c] code  [/] search  [q] quit",
+          "[j/k] nav  [Tab] focus  [f] filter  [x] level  [c] code  [/] search  [?] help  [q] quit",
           style: [:dim]
         )
       ]
@@ -286,6 +379,26 @@ defmodule Raxol.Playground.App do
   defp cycle_focus(%{focus: :sidebar} = model), do: %{model | focus: :demo}
   defp cycle_focus(%{focus: :demo} = model), do: %{model | focus: :sidebar}
   defp cycle_focus(%{focus: :search} = model), do: %{model | focus: :sidebar}
+
+  defp cycle_filter(model, field, values) do
+    current = Map.get(model, field)
+    idx = Enum.find_index(values, &(&1 == current)) || 0
+    next = Enum.at(values, rem(idx + 1, length(values)))
+    refilter(%{model | field => next})
+  end
+
+  defp refilter(model) do
+    search = if model.search == "", do: nil, else: model.search
+
+    components =
+      Catalog.filter(
+        category: model.category_filter,
+        complexity: model.complexity_filter,
+        search: search
+      )
+
+    %{model | components: components, cursor: 0}
+  end
 
   defp forward_to_demo(model, event) do
     case model.selected.module.update(event, model.demo_model) do
