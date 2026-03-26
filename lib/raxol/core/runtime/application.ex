@@ -131,7 +131,14 @@ defmodule Raxol.Core.Runtime.Application do
   """
   @callback subscribe(state()) :: [subscription()]
 
-  @optional_callbacks [subscribe: 1]
+  @optional_callbacks [
+    subscribe: 1,
+    subscriptions: 1,
+    terminate: 2,
+    handle_event: 1,
+    handle_tick: 1,
+    handle_message: 2
+  ]
 
   # Placeholder for model type, user application should define this
   # Or we rely on Dialyzer inference
