@@ -182,9 +182,14 @@ defmodule Raxol.Benchmark.Apps do
   end
 
   @doc "Returns all benchmark app modules."
-  @spec all :: nonempty_list(
-          Empty | SimpleText | Table100 | NestedLayout | Dashboard
-        )
+  @spec all ::
+          nonempty_list(
+            Empty
+            | SimpleText
+            | Table100
+            | NestedLayout
+            | Dashboard
+          )
   def all do
     [Empty, SimpleText, Table100, NestedLayout, Dashboard]
   end
