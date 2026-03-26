@@ -43,6 +43,8 @@ defmodule Raxol.Terminal.Emulator do
 
   @behaviour Raxol.Terminal.EmulatorBehaviour
 
+  # Terminal emulator state requires many fields (modes, buffers, managers, cursor, etc.)
+  # credo:disable-for-next-line Credo.Check.Warning.StructFieldAmount
   defstruct state: nil,
             event: nil,
             buffer: nil,

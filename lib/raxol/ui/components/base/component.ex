@@ -122,7 +122,12 @@ defmodule Raxol.UI.Components.Base.Component do
 
   Returns `{new_state, []}` suitable as an `update/2` return value.
   """
-  @spec merge_props(map(), map()) :: {%{:style => map(), :theme => map(), optional(any()) => any()}, []}
+  @spec merge_props(map(), %{
+          :style => false | nil | map(),
+          :theme => false | nil | map(),
+          optional(any()) => any()
+        }) ::
+          {%{:style => map(), :theme => map(), optional(any()) => any()}, []}
   def merge_props(props, state) when is_map(props) and is_map(state) do
     merged_style = Map.merge(state.style || %{}, Map.get(props, :style, %{}))
     merged_theme = Map.merge(state.theme || %{}, Map.get(props, :theme, %{}))

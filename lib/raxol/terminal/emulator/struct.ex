@@ -45,6 +45,8 @@ defmodule Raxol.Terminal.Emulator.Struct do
     Raxol.Terminal.Cursor.Manager.move_to_column(cursor, column, width, height)
   end
 
+  # Subset of Emulator fields for serialization/construction -- mirrors parent struct
+  # credo:disable-for-next-line Credo.Check.Warning.StructFieldAmount
   defstruct [
     :active_buffer,
     :active_buffer_type,
