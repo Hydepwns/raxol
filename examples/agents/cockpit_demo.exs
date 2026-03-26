@@ -266,6 +266,7 @@ defmodule CockpitDemo do
       dep_checker: nil,
       pids: %{},
       old_pids: %{},
+      uptimes: %{},
       booted: MapSet.new(),
       done_logged: MapSet.new()
     }
@@ -427,9 +428,15 @@ defmodule CockpitDemo do
             event_log_panel(model),
             dep_checker_panel(model)
           ]
-        end,
-        bottom_spacer(model.height, 31),
-        key_bar()
+        end
+        | inline_summary(model) ++
+            [
+              bottom_spacer(
+                model.height,
+                if(show_inline_summary?(model), do: 36, else: 31)
+              ),
+              key_bar()
+            ]
       ]
     end
   end
@@ -509,11 +516,17 @@ defmodule CockpitDemo do
       total = scanned + length(m.remaining)
       current = if m.current, do: Path.basename(m.current), else: "---"
 
-      agent_box("File Scanner", m.status, model.pids[:scanner], [
-        progress_row(scanned, total, 14),
-        stat_line("Lines", fmt(m.total_lines)),
-        stat_line("Current", current)
-      ])
+      agent_box(
+        "File Scanner",
+        m.status,
+        model.pids[:scanner],
+        [
+          progress_row(scanned, total, 14),
+          stat_line("Lines", fmt(m.total_lines)),
+          stat_line("Current", current)
+        ],
+        uptime: agent_uptime(model, :scanner)
+      )
     else
       agent_box("File Scanner", :idle, nil, [
         text("  waiting...", style: [:dim])
@@ -530,11 +543,17 @@ defmodule CockpitDemo do
       docs = Enum.count(m.results, fn {_, d} -> d end)
       current = if m.current, do: Path.basename(m.current), else: "---"
 
-      agent_box("Code Analyzer", m.status, model.pids[:analyzer], [
-        progress_row(checked, total, 14),
-        stat_line("Docs", "#{docs}/#{checked}"),
-        stat_line("Current", current)
-      ])
+      agent_box(
+        "Code Analyzer",
+        m.status,
+        model.pids[:analyzer],
+        [
+          progress_row(checked, total, 14),
+          stat_line("Docs", "#{docs}/#{checked}"),
+          stat_line("Current", current)
+        ],
+        uptime: agent_uptime(model, :analyzer)
+      )
     else
       agent_box("Code Analyzer", :idle, nil, [
         text("  waiting...", style: [:dim])
@@ -548,11 +567,17 @@ defmodule CockpitDemo do
     if m && map_size(m.stats) > 0 do
       s = m.stats
 
-      agent_box("System Monitor", :monitoring, model.pids[:monitor], [
-        stat_line("Procs", "#{s.processes}"),
-        memory_sparkline_row(s.memory_mb, m.history),
-        stat_line("Scheds", "#{s.schedulers}")
-      ])
+      agent_box(
+        "System Monitor",
+        :monitoring,
+        model.pids[:monitor],
+        [
+          stat_line("Procs", "#{s.processes}"),
+          memory_sparkline_row(s.memory_mb, m.history),
+          stat_line("Scheds", "#{s.schedulers}")
+        ],
+        uptime: agent_uptime(model, :monitor)
+      )
     else
       agent_box("System Monitor", :idle, nil, [
         text("  waiting...", style: [:dim])
@@ -588,11 +613,17 @@ defmodule CockpitDemo do
             true -> "#{m.status}"
           end
 
-        agent_box("Chaos Worker", m.status, model.pids[:chaos], [
-          stat_line("Tasks", "#{m.tasks_done}"),
-          stat_line("Crashes", "#{model.crashes}"),
-          stat_line("Status", status_label)
-        ])
+        agent_box(
+          "Chaos Worker",
+          m.status,
+          model.pids[:chaos],
+          [
+            stat_line("Tasks", "#{m.tasks_done}"),
+            stat_line("Crashes", "#{model.crashes}"),
+            stat_line("Status", status_label)
+          ],
+          uptime: agent_uptime(model, :chaos)
+        )
 
       true ->
         agent_box("Chaos Worker", :idle, nil, [
@@ -634,14 +665,56 @@ defmodule CockpitDemo do
     m = model.dep_checker
 
     if m do
-      agent_box("Dep Checker", m.status, model.pids[:dep_checker], [
-        stat_line("Deps OK", "#{m.checked}"),
-        stat_line("Status", "#{m.status}")
-      ])
+      agent_box(
+        "Dep Checker",
+        m.status,
+        model.pids[:dep_checker],
+        [
+          stat_line("Deps OK", "#{m.checked}"),
+          stat_line("Status", "#{m.status}")
+        ],
+        uptime: agent_uptime(model, :dep_checker)
+      )
     else
       agent_box("Dep Checker", :idle, nil, [
         text("  waiting...", style: [:dim])
       ])
+    end
+  end
+
+  defp show_inline_summary?(model) do
+    MapSet.member?(model.done_logged, :all_done) and model.restarted
+  end
+
+  defp inline_summary(model) do
+    if show_inline_summary?(model) do
+      scanner = model.scanner
+      analyzer = model.analyzer
+      dep = model.dep_checker
+      lines = (scanner && scanner.total_lines) || 0
+      files = (scanner && length(scanner.scanned)) || 0
+      docs = (analyzer && Enum.count(analyzer.results, fn {_, d} -> d end)) || 0
+      total_a = (analyzer && length(analyzer.results)) || 0
+      deps_ok = (dep && dep.checked) || 0
+
+      [
+        spacer(size: 1),
+        box style: %{border: :double, width: :fill, padding: 1} do
+          row style: %{gap: 2} do
+            [
+              text("DONE", style: [:bold], fg: :green),
+              text("#{files} files", style: [:dim]),
+              text("#{fmt(lines)} lines", style: [:dim]),
+              text("#{docs}/#{total_a} docs", style: [:dim]),
+              text("#{deps_ok} deps", style: [:dim]),
+              text("#{model.crashes} crash", style: [:dim]),
+              text("0 data loss", style: [:bold], fg: :green)
+            ]
+          end
+        end
+      ]
+    else
+      []
     end
   end
 
@@ -658,10 +731,12 @@ defmodule CockpitDemo do
   # Reusable View Helpers
   # ============================================================
 
-  defp agent_box(title, status, pid, content_rows) do
+  defp agent_box(title, status, pid, content_rows, opts \\ []) do
     border = if status in [:done, :crashed], do: :double, else: :single
     fg = status_fg(status)
     pid_str = if pid, do: " #{short_pid(pid)}", else: ""
+    uptime = Keyword.get(opts, :uptime)
+    uptime_str = if uptime, do: " #{uptime}s", else: ""
 
     box style: %{border: border, width: :fill, padding: 1} do
       column style: %{gap: 0} do
@@ -670,7 +745,8 @@ defmodule CockpitDemo do
             [
               text(status_dot(status), fg: fg),
               text(title, style: [:bold], fg: fg),
-              text(pid_str, style: [:dim])
+              text(pid_str, style: [:dim]),
+              text(uptime_str, style: [:dim])
             ]
           end,
           divider(char: "-")
@@ -812,7 +888,12 @@ defmodule CockpitDemo do
             {Session, app_module: mod, id: id}
           )
 
-          Map.put(st, :booted, MapSet.put(st.booted, id))
+          st
+          |> Map.put(:booted, MapSet.put(st.booted, id))
+          |> Map.update!(
+            :uptimes,
+            &Map.put(&1, id, System.monotonic_time(:second))
+          )
 
         model.tick == tick + 1 and MapSet.member?(st.booted, id) and
             not MapSet.member?(st.done_logged, {:started, id}) ->
@@ -896,6 +977,10 @@ defmodule CockpitDemo do
 
         model
         |> Map.put(:restarted, true)
+        |> Map.update!(
+          :uptimes,
+          &Map.put(&1, :chaos, System.monotonic_time(:second))
+        )
         |> add_event(
           :recover,
           "#{fmt_pid(old_pid)} -> #{fmt_pid(new_pid)} (restarted)"
@@ -1047,6 +1132,13 @@ defmodule CockpitDemo do
 
   defp fmt_pid(nil), do: "---"
   defp fmt_pid(pid) when is_pid(pid), do: inspect(pid)
+
+  defp agent_uptime(model, id) do
+    case model.uptimes[id] do
+      nil -> nil
+      boot -> System.monotonic_time(:second) - boot
+    end
+  end
 
   defp short_pid(pid) when is_pid(pid) do
     pid |> inspect() |> String.replace("PID", "")

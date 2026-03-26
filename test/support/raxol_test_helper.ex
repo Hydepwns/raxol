@@ -190,5 +190,4 @@ defmodule Raxol.Test.TestHelper do
   def cleanup_temp_dir(dir) do
     File.rm_rf!(dir)
   end
-
 end
