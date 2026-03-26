@@ -1,6 +1,6 @@
 # Raxol Documentation
 
-Complete guide to building terminal applications with Raxol.
+Complete guide to Raxol -- the AGI-ready terminal framework for Elixir.
 
 ## Essentials
 - [Getting Started](getting-started/QUICKSTART.md) - Build your first terminal app

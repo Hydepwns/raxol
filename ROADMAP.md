@@ -1,6 +1,6 @@
 # Raxol Roadmap
 
-Planned features and direction for Raxol.
+Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 
 ## Current Version: v2.2.0
 
@@ -22,6 +22,10 @@ Planned features and direction for Raxol.
 - **Phase 6.2: Web Refactor** -- All LiveViews use Playground.Catalog, TEALive lifecycle integration
 - **Phase 6.3: SSH Playground** -- `mix raxol.playground --ssh`, connection tracking, Fly.io TCP service
 - **Time-Travel Debugging** -- Snapshot every update/2 cycle, cursor navigation, restore, export/import. Zero cost when disabled
+- **Agent Framework** -- TEA-based AI agents with OTP supervision, inter-agent messaging, coordinator/worker teams, shell/async commands
+- **Sensor Fusion HUD** -- Sensor behaviour, polling feeds, weighted averaging, threshold alerts, gauge/sparkline/threat/minimap widgets
+- **Distributed Swarm** -- CRDTs (LWW registers, OR-sets), node monitoring, seniority-based topology election, tactical overlay sync
+- **Self-Evolving Interface** -- Behavior tracking, rule-based layout recommendations, animated transitions, feedback loop
 
 ---
 
@@ -35,9 +39,10 @@ Planned features and direction for Raxol.
 
 ### Longer Term
 
-- VS Code extension for component previews
+- Nx-backed layout learning (replace rule engine with trained model)
+- Multi-node cockpit (swarm coordination across physical terminals)
 - Plugin marketplace
-- Collaborative sessions (see IDEAS.md)
+- VS Code extension for component previews
 
 ---
 

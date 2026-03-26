@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml/badge.svg?branch=master)](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml)
 
-Terminal apps for Elixir, built on OTP.
+Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 
-Raxol gives you a component model, layout engine, and render pipeline for building terminal UIs -- the kind of thing you'd reach for Ratatui, Bubble Tea, or Textual to do, but in Elixir with all the OTP batteries included.
+Raxol is a component-based terminal framework with an agent runtime, sensor fusion, distributed swarm coordination, and time-travel debugging -- all on OTP. Your app is a GenServer. Components crash and restart without taking down the UI. Hot-reload your view function while it's running. The same code renders to a terminal, a browser via LiveView, or over SSH.
 
-Your app is a GenServer. Components can crash and restart without taking down the UI. You can hot-reload your view function while the app is running. The same code renders to a terminal, a browser via LiveView, or over SSH. No other TUI framework does all of that.
+Build a dashboard, build an AI agent team, build the cockpit for your mech. No other TUI framework does all of that.
 
 ## Install
 
@@ -74,15 +74,23 @@ mix run examples/getting_started/counter.exs
 
 These aren't bolted on -- they fall out naturally from running on the BEAM:
 
+**AI agents as TEA apps** -- An agent is just a TEA app where input comes from LLMs and tools instead of a keyboard. `use Raxol.Agent`, implement `init/update/view`, and you get OTP supervision, crash isolation, and inter-agent messaging for free. Coordinate agent teams with a supervisor -- no agent framework needed, just processes.
+
+**Sensor fusion HUD** -- Poll hardware sensors, fuse readings with weighted averaging and thresholds, render gauges and sparklines. Built for cockpit displays.
+
+**Distributed swarm** -- CRDTs (LWW registers, OR-sets), node monitoring, topology election, tactical overlay sync. Multiple nodes, shared state, no central coordinator.
+
+**Self-evolving interface** -- Track pilot behavior, recommend layout changes, animate transitions. The UI adapts to how you use it.
+
+**Time-travel debugging** -- Snapshot every `update/2` cycle. Step back, step forward, jump to any point, restore historical state. Interactive debugger UI included. Zero cost when disabled.
+
 **Crash isolation** -- Wrap any widget in `process_component/2` and it runs in its own process. If it crashes, it restarts. The rest of your UI doesn't blink.
 
-**Hot code reload** -- Change your `view/1` function, save the file, and the running app updates. No restart. Powered by `Raxol.Dev.CodeReloader` watching the filesystem.
+**Hot code reload** -- Change your `view/1` function, save the file, and the running app updates. No restart.
 
 **SSH serving** -- `Raxol.SSH.serve(MyApp, port: 2222)` and anyone can `ssh localhost -p 2222` into your app. Each connection gets its own supervised process.
 
-**LiveView bridge** -- The same TEA app can render to a Phoenix LiveView. Terminal and browser, same codebase, same state model.
-
-**AI agents as TEA apps** -- An agent is just a TEA app where input comes from LLMs and tools instead of a keyboard. `use Raxol.Agent`, implement `init/update/view`, and you get OTP supervision, crash isolation, and inter-agent messaging for free. Coordinate agent teams with a supervisor -- no agent framework needed, just processes.
+**LiveView bridge** -- The same TEA app renders to a Phoenix LiveView. Terminal and browser, same codebase, same state model.
 
 ```elixir
 defmodule MyAgent do

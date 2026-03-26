@@ -84,7 +84,7 @@ mix docs                      # Generate documentation
 
 ## Architecture
 
-Raxol is a terminal application framework supporting multiple UI paradigms (React, LiveView, HEEx, Raw).
+Raxol is an AGI-ready terminal framework for Elixir -- component model, agent runtime, sensor fusion, distributed swarm, and time-travel debugging on OTP. Supports multiple UI paradigms (React, LiveView, HEEx, Raw).
 
 ### Application Model
 
