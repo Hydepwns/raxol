@@ -251,6 +251,11 @@ defmodule Raxol.Animation.EasingTest do
       # Test each function with multiple inputs
       test_inputs = [0.0, 0.25, 0.5, 0.75, 1.0]
 
+      # Warmup: ensure module is loaded and JIT-compiled before timing
+      for function <- easing_functions, input <- test_inputs do
+        apply(Easing, function, [input])
+      end
+
       for function <- easing_functions do
         start_time = System.monotonic_time(:microsecond)
 
