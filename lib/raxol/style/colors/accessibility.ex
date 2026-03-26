@@ -3,10 +3,11 @@ defmodule Raxol.Style.Colors.Accessibility do
   Provides utilities for color accessibility, focusing on WCAG contrast.
   """
 
-  @compile {:no_warn_undefined, [
-    Raxol.Style.Colors.Accessibility.Suggester,
-    Raxol.Style.Colors.Accessibility.PaletteGenerator
-  ]}
+  @compile {:no_warn_undefined,
+            [
+              Raxol.Style.Colors.Accessibility.Suggester,
+              Raxol.Style.Colors.Accessibility.PaletteGenerator
+            ]}
 
   alias Raxol.Style.Colors.Color
   alias Raxol.Style.Colors.Accessibility.Suggester
@@ -224,10 +225,12 @@ defmodule Raxol.Style.Colors.Accessibility do
 
   @spec lighten_until_contrast(Color.t(), Color.t(), number()) ::
           Color.t() | nil
-  defdelegate lighten_until_contrast(color, background, target_ratio), to: Suggester
+  defdelegate lighten_until_contrast(color, background, target_ratio),
+    to: Suggester
 
   @spec darken_until_contrast(Color.t(), Color.t(), number()) :: Color.t() | nil
-  defdelegate darken_until_contrast(color, background, target_ratio), to: Suggester
+  defdelegate darken_until_contrast(color, background, target_ratio),
+    to: Suggester
 
   # --- Delegations to PaletteGenerator ---
 
@@ -235,7 +238,8 @@ defmodule Raxol.Style.Colors.Accessibility do
           Color.t() | String.t(),
           Color.t() | String.t() | Keyword.t()
         ) :: map()
-  defdelegate generate_accessible_palette(base_color, opts), to: PaletteGenerator
+  defdelegate generate_accessible_palette(base_color, opts),
+    to: PaletteGenerator
 
   @spec validate_colors(map(), Color.t() | String.t() | Keyword.t()) ::
           {:ok, map()} | {:error, Keyword.t()}

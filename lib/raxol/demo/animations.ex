@@ -4,9 +4,16 @@ defmodule Raxol.Demo.Animations do
   Supports both SSH (direct IO) and web (message-based) output.
   """
 
-  alias Raxol.Demo.{Effects, GameOfLife, LegacyAnimations, Particles, TextFormation}
+  alias Raxol.Demo.{
+    Effects,
+    GameOfLife,
+    LegacyAnimations,
+    Particles,
+    TextFormation
+  }
 
-  @compile {:no_warn_undefined, [Raxol.Demo.Effects, Raxol.Demo.LegacyAnimations]}
+  @compile {:no_warn_undefined,
+            [Raxol.Demo.Effects, Raxol.Demo.LegacyAnimations]}
 
   @spinner_dots ~w(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
   @spinner_circle ~w(◐ ◓ ◑ ◒)

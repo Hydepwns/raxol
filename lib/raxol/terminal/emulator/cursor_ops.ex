@@ -25,7 +25,8 @@ defmodule Raxol.Terminal.Emulator.CursorOps do
     do: Raxol.Terminal.Emulator.Helpers.get_cursor_position_struct(emulator)
 
   def get_mode_manager_cursor_visible(emulator),
-    do: Raxol.Terminal.Emulator.Helpers.get_mode_manager_cursor_visible(emulator)
+    do:
+      Raxol.Terminal.Emulator.Helpers.get_mode_manager_cursor_visible(emulator)
 
   def set_cursor_visibility(emulator, visible),
     do: CursorOperations.set_cursor_visibility(emulator, visible)

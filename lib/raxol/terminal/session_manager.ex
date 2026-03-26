@@ -62,160 +62,21 @@ defmodule Raxol.Terminal.SessionManager do
 
   alias Raxol.Terminal.SessionManager.{
     Cleanup,
+    Helpers,
     Persistence,
+    Session,
     StateQueries,
+    Window,
     WindowFactory
   }
 
   @compile {:no_warn_undefined, Raxol.Terminal.SessionManager.Cleanup}
+  @compile {:no_warn_undefined, Raxol.Terminal.SessionManager.Helpers}
   @compile {:no_warn_undefined, Raxol.Terminal.SessionManager.Persistence}
+  @compile {:no_warn_undefined, Raxol.Terminal.SessionManager.Session}
   @compile {:no_warn_undefined, Raxol.Terminal.SessionManager.StateQueries}
+  @compile {:no_warn_undefined, Raxol.Terminal.SessionManager.Window}
   @compile {:no_warn_undefined, Raxol.Terminal.SessionManager.WindowFactory}
-
-  defmodule Session do
-    @moduledoc """
-    Terminal session structure.
-
-    Represents a terminal multiplexing session with multiple windows, clients,
-    and lifecycle management.
-    """
-    @enforce_keys [:id, :name, :created_at]
-    defstruct [
-      :id,
-      :name,
-      :created_at,
-      :last_activity,
-      :status,
-      :metadata,
-      :windows,
-      :active_window,
-      :clients,
-      :persistence_config,
-      :resource_limits,
-      :hooks
-    ]
-
-    @type t :: %__MODULE__{
-            id: String.t(),
-            name: String.t(),
-            created_at: integer(),
-            last_activity: integer(),
-            status: :active | :inactive | :detached,
-            metadata: map(),
-            windows: [term()],
-            active_window: String.t() | nil,
-            clients: [term()],
-            persistence_config: map(),
-            resource_limits: map(),
-            hooks: map()
-          }
-  end
-
-  defmodule Window do
-    @moduledoc """
-    Terminal window within a session.
-
-    Represents an individual window/pane within a terminal session,
-    containing an emulator and associated metadata.
-    """
-    @enforce_keys [:id, :session_id, :name]
-    defstruct [
-      :id,
-      :session_id,
-      :name,
-      :created_at,
-      :status,
-      :layout,
-      :panes,
-      :active_pane,
-      :metadata
-    ]
-
-    @type layout_type ::
-            :main_horizontal
-            | :main_vertical
-            | :even_horizontal
-            | :even_vertical
-            | :tiled
-    @type t :: %__MODULE__{
-            id: String.t(),
-            session_id: String.t(),
-            name: String.t(),
-            created_at: integer(),
-            status: :active | :inactive,
-            layout: layout_type(),
-            panes: [term()],
-            active_pane: String.t() | nil,
-            metadata: map()
-          }
-  end
-
-  defmodule Pane do
-    @moduledoc """
-    Terminal pane within a window.
-
-    Represents an individual pane/split within a window, containing
-    a terminal process and configuration.
-    """
-    @enforce_keys [:id, :window_id, :terminal]
-    defstruct [
-      :id,
-      :window_id,
-      :terminal,
-      :position,
-      :size,
-      :command,
-      :working_directory,
-      :environment,
-      :status,
-      :created_at
-    ]
-
-    @type t :: %__MODULE__{
-            id: String.t(),
-            window_id: String.t(),
-            terminal: pid(),
-            position: {integer(), integer()},
-            size: {integer(), integer()},
-            command: String.t() | nil,
-            working_directory: String.t(),
-            environment: map(),
-            status: :running | :stopped | :finished,
-            created_at: integer()
-          }
-  end
-
-  defmodule Client do
-    @moduledoc """
-    Client connection to a session.
-
-    Represents a client connected to a terminal session, tracking connection
-    type, activity, terminal size, and capabilities.
-    """
-    @enforce_keys [:id, :session_id]
-    defstruct [
-      :id,
-      :session_id,
-      :connection_type,
-      :connected_at,
-      :last_activity,
-      :terminal_size,
-      :capabilities,
-      :metadata
-    ]
-
-    @type connection_type :: :local | :remote | :shared
-    @type t :: %__MODULE__{
-            id: String.t(),
-            session_id: String.t(),
-            connection_type: connection_type(),
-            connected_at: integer(),
-            last_activity: integer(),
-            terminal_size: {integer(), integer()},
-            capabilities: [atom()],
-            metadata: map()
-          }
-  end
 
   defstruct [
     :sessions,
@@ -424,7 +285,10 @@ defmodule Raxol.Terminal.SessionManager do
 
     # Initialize network server for remote sessions
     network_server =
-      init_network_server(config.enable_session_sharing, config.network_port)
+      Helpers.init_network_server(
+        config.enable_session_sharing,
+        config.network_port
+      )
 
     state = %__MODULE__{
       sessions: %{},
@@ -451,9 +315,9 @@ defmodule Raxol.Terminal.SessionManager do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:create_session, name, config}, _from, state) do
-    session_id = generate_session_id(name)
+    session_id = Helpers.generate_session_id(name)
 
-    case create_new_session(session_id, name, config, state) do
+    case check_session_limit_and_create(session_id, name, config, state) do
       {:ok, session, new_state} ->
         Log.info("Created session '#{name}' (#{session_id})")
         {:reply, {:ok, session}, new_state}
@@ -505,8 +369,8 @@ defmodule Raxol.Terminal.SessionManager do
         {:reply, {:error, :session_not_found}, state}
 
       session ->
-        client_id = generate_client_id()
-        client = create_client(client_id, session_id, client_config)
+        client_id = Helpers.generate_client_id()
+        client = Helpers.create_client(client_id, session_id, client_config)
 
         # Add client to session and global client registry
         updated_session = %{session | clients: [client | session.clients]}
@@ -599,7 +463,7 @@ defmodule Raxol.Terminal.SessionManager do
     case StateQueries.find_pane(state, session_id, window_id, pane_id) do
       {:ok, _session, _window, pane} ->
         # Send input to the pane's terminal process
-        case send_to_terminal(pane.terminal, input) do
+        case Helpers.send_to_terminal(pane.terminal, input) do
           :ok -> {:reply, :ok, state}
           {:error, reason} -> {:reply, {:error, reason}, state}
         end
@@ -651,58 +515,6 @@ defmodule Raxol.Terminal.SessionManager do
   end
 
   ## Private Implementation
-
-  defp create_new_session(session_id, name, config, state) do
-    check_session_limit_and_create(session_id, name, config, state)
-  end
-
-  defp create_client(client_id, session_id, config) do
-    %Client{
-      id: client_id,
-      session_id: session_id,
-      connection_type: Map.get(config, :connection_type, :local),
-      connected_at: System.monotonic_time(:millisecond),
-      last_activity: System.monotonic_time(:millisecond),
-      terminal_size: Map.get(config, :terminal_size, {80, 24}),
-      capabilities: Map.get(config, :capabilities, [:resize, :color, :mouse]),
-      metadata: Map.get(config, :metadata, %{})
-    }
-  end
-
-  defp send_to_terminal(terminal_pid, input) do
-    send_input_if_alive(terminal_pid, input)
-  end
-
-  ## Network Server
-
-  defp start_network_server(port) do
-    # Placeholder for network server to enable remote sessions
-    # In practice, would start a TCP/WebSocket server
-    Log.info("Session sharing server started on port #{port}")
-    %{port: port, enabled: true}
-  end
-
-  defp generate_session_id(name) do
-    timestamp = System.unique_integer([:positive, :monotonic])
-
-    Base.encode16(:crypto.hash(:sha256, "#{name}-#{timestamp}"))
-    |> String.slice(0, 16)
-  end
-
-  defp generate_client_id do
-    "client_" <> Base.encode16(:crypto.strong_rand_bytes(4))
-  end
-
-  defp init_network_server(false, _port), do: nil
-  defp init_network_server(true, port), do: start_network_server(port)
-
-  defp send_input_if_alive(terminal_pid, input) do
-    if Process.alive?(terminal_pid) do
-      GenServer.call(terminal_pid, {:send_input, input})
-    else
-      {:error, :terminal_dead}
-    end
-  end
 
   defp handle_pane_splitting(
          window,

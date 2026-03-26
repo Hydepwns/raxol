@@ -568,19 +568,6 @@ defmodule Raxol.Test.TestUtils do
     do_wait_for_state(condition_fun, start, timeout_ms)
   end
 
-  @doc """
-  Starts a test event source.
-  """
-  def start_test_event_source(args \\ %{}, context \\ %{pid: self()}) do
-    case Raxol.Core.Runtime.EventSourceTest.TestEventSource.start_link(
-           args: args,
-           context: context
-         ) do
-      {:ok, pid} -> pid
-      other -> other
-    end
-  end
-
   # =============================================================================
   # PRIVATE HELPER FUNCTIONS
   # =============================================================================

@@ -187,6 +187,39 @@ defmodule Raxol.Terminal.ScreenBuffer.Selection do
     end
   end
 
+  # === Functions moved from main ScreenBuffer module ===
+
+  def update_selection(buffer, x, y) do
+    case buffer.selection do
+      {sx, sy, _, _} -> %{buffer | selection: {sx, sy, x, y}}
+      nil -> buffer
+    end
+  end
+
+  def get_selection_boundaries(buffer) do
+    case buffer.selection do
+      {sx, sy, ex, ey} -> {{sx, sy}, {ex, ey}}
+      nil -> nil
+    end
+  end
+
+  def selection_active?(buffer), do: buffer.selection != nil
+
+  def get_selection_start(buffer) do
+    case buffer.selection do
+      {sx, sy, _, _} -> {sx, sy}
+      nil -> nil
+    end
+  end
+
+  def get_selection_end(buffer) do
+    case buffer.selection do
+      {sx, sy, sx, sy} -> nil
+      {_, _, ex, ey} -> {ex, ey}
+      nil -> nil
+    end
+  end
+
   # Private helper functions
 
   defp extract_text_region(buffer, start_x, start_y, end_x, end_y) do

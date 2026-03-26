@@ -8,8 +8,18 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   """
 
   alias Raxol.UI.Components.Base.Component
+  alias Raxol.UI.Components.Input.MultiLineInput.CursorMovement
+  alias Raxol.UI.Components.Input.MultiLineInput.SelectionOps
+  alias Raxol.UI.Components.Input.MultiLineInput.EditOps
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
+
+  @compile {:no_warn_undefined,
+            [
+              Raxol.UI.Components.Input.MultiLineInput.CursorMovement,
+              Raxol.UI.Components.Input.MultiLineInput.SelectionOps,
+              Raxol.UI.Components.Input.MultiLineInput.EditOps
+            ]}
 
   @behaviour Component
 
@@ -141,171 +151,80 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     end
   end
 
-  # --- Message handlers ---
+  # --- Delegated to CursorMovement ---
+  def handle_move_cursor(direction, state),
+    do: CursorMovement.handle_move_cursor(direction, state)
+
+  def handle_move_cursor_line_start(state),
+    do: CursorMovement.handle_move_cursor_line_start(state)
+
+  def handle_move_cursor_line_end(state),
+    do: CursorMovement.handle_move_cursor_line_end(state)
+
+  def handle_move_cursor_page(direction, state),
+    do: CursorMovement.handle_move_cursor_page(direction, state)
+
+  def handle_move_cursor_doc_start(state),
+    do: CursorMovement.handle_move_cursor_doc_start(state)
+
+  def handle_move_cursor_doc_end(state),
+    do: CursorMovement.handle_move_cursor_doc_end(state)
+
+  def handle_move_cursor_to(pos, state),
+    do: CursorMovement.handle_move_cursor_to(pos, state)
+
+  def handle_move_cursor_word_left(state),
+    do: CursorMovement.handle_move_cursor_word_left(state)
+
+  def handle_move_cursor_word_right(state),
+    do: CursorMovement.handle_move_cursor_word_right(state)
+
+  def handle_selection_move(state, direction),
+    do: CursorMovement.handle_selection_move(state, direction)
+
+  # --- Delegated to SelectionOps ---
+  def handle_select_all(state),
+    do: SelectionOps.handle_select_all(state)
+
+  def handle_copy(state),
+    do: SelectionOps.handle_copy(state)
+
+  def handle_cut(state),
+    do: SelectionOps.handle_cut(state)
+
+  def handle_paste(state),
+    do: SelectionOps.handle_paste(state)
+
+  def handle_clipboard_content(content, state),
+    do: SelectionOps.handle_clipboard_content(content, state)
+
+  def handle_delete_selection(direction, state),
+    do: SelectionOps.handle_delete_selection(direction, state)
+
+  def handle_copy_selection(state),
+    do: SelectionOps.handle_copy_selection(state)
+
+  def handle_select_to(pos, state),
+    do: SelectionOps.handle_select_to(pos, state)
+
+  # --- Delegated to EditOps ---
+  def handle_input(char_codepoint, state),
+    do: EditOps.handle_input(char_codepoint, state)
+
+  def handle_backspace(state),
+    do: EditOps.handle_backspace(state)
+
+  def handle_delete(state),
+    do: EditOps.handle_delete(state)
+
+  def handle_enter(state),
+    do: EditOps.handle_enter(state)
+
+  # --- Message handlers (kept in main module) ---
   def handle_update_props(new_props, state) do
     new_state = Map.merge(state, new_props)
     new_state = ensure_cursor_visible(new_state)
     {:noreply, new_state, nil}
-  end
-
-  def handle_input(char_codepoint, state) do
-    state = push_history(state)
-
-    new_state =
-      Raxol.UI.Components.Input.MultiLineInput.TextHelper.insert_char(
-        state,
-        char_codepoint
-      )
-
-    trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
-  end
-
-  def handle_backspace(state) do
-    state = push_history(state)
-    new_state = process_backspace_with_selection_check(state)
-    trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
-  end
-
-  def handle_delete(state) do
-    state = push_history(state)
-    new_state = process_delete_with_selection_check(state)
-    trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
-  end
-
-  def handle_enter(state) do
-    state = push_history(state)
-    {state_after_delete, _} = handle_enter_selection_delete(state)
-
-    new_state =
-      Raxol.UI.Components.Input.MultiLineInput.TextHelper.insert_char(
-        state_after_delete,
-        10
-      )
-
-    trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
-  end
-
-  def handle_move_cursor(direction, state) do
-    new_state =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor(
-        state,
-        direction
-      )
-      |> Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.clear_selection()
-
-    {:noreply, ensure_cursor_visible(new_state), nil}
-  end
-
-  def handle_move_cursor_line_start(state) do
-    new_state =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor_line_start(
-        state
-      )
-      |> Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.clear_selection()
-
-    {:noreply, ensure_cursor_visible(new_state), nil}
-  end
-
-  def handle_move_cursor_line_end(state) do
-    new_state =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor_line_end(
-        state
-      )
-      |> Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.clear_selection()
-
-    {:noreply, ensure_cursor_visible(new_state), nil}
-  end
-
-  def handle_move_cursor_page(direction, state) do
-    new_state =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor_page(
-        state,
-        direction
-      )
-      |> Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.clear_selection()
-
-    {:noreply, ensure_cursor_visible(new_state), nil}
-  end
-
-  def handle_move_cursor_doc_start(state) do
-    new_state =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor_doc_start(
-        state
-      )
-      |> Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.clear_selection()
-
-    {:noreply, ensure_cursor_visible(new_state), nil}
-  end
-
-  def handle_move_cursor_doc_end(state) do
-    new_state =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor_doc_end(
-        state
-      )
-      |> Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.clear_selection()
-
-    {:noreply, ensure_cursor_visible(new_state), nil}
-  end
-
-  def handle_move_cursor_to({row, col}, state) do
-    new_state =
-      %{state | cursor_pos: {row, col}}
-      |> Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.clear_selection()
-
-    {:noreply, ensure_cursor_visible(new_state), nil}
-  end
-
-  def handle_select_all(state) do
-    new_state =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.select_all(
-        state
-      )
-
-    {:noreply, new_state, nil}
-  end
-
-  def handle_copy(state) do
-    _result = handle_copy_if_selection_exists(state)
-    {:noreply, state, nil}
-  end
-
-  def handle_cut(state) do
-    handle_cut_with_selection_check(state)
-  end
-
-  def handle_paste(state) do
-    Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper.paste(state)
-  end
-
-  def handle_clipboard_content(content, state) do
-    state = push_history(state)
-    {start_pos, end_pos} = get_clipboard_position_range(state)
-
-    updated_state =
-      Raxol.UI.Components.Input.MultiLineInput.TextHelper.replace_text_range(
-        state,
-        start_pos,
-        end_pos,
-        content
-      )
-
-    {start_row, start_col} = start_pos
-
-    {new_row, new_col} =
-      Raxol.UI.Components.Input.MultiLineInput.TextHelper.calculate_new_position(
-        state,
-        content,
-        {start_row, start_col}
-      )
-
-    new_state = %{
-      updated_state
-      | cursor_pos: {new_row, new_col},
-        selection_start: nil,
-        selection_end: nil
-    }
-
-    trigger_on_change({:noreply, new_state, nil}, state)
   end
 
   def handle_focus(state) do
@@ -319,51 +238,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
 
   def handle_set_shift_held(held, state) do
     {:noreply, %{state | shift_held: held}, nil}
-  end
-
-  def handle_delete_selection(_direction, state) do
-    handle_delete_selection_if_exists(state)
-  end
-
-  def handle_copy_selection(state) do
-    _ = handle_copy_if_selection_exists(state)
-    {:noreply, state}
-  end
-
-  def handle_move_cursor_word_left(state) do
-    new_state =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor(
-        state,
-        :word_left
-      )
-      |> Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.clear_selection()
-
-    {:noreply, ensure_cursor_visible(new_state), nil}
-  end
-
-  def handle_move_cursor_word_right(state) do
-    new_state =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor(
-        state,
-        :word_right
-      )
-      |> Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.clear_selection()
-
-    {:noreply, ensure_cursor_visible(new_state), nil}
-  end
-
-  def handle_select_to({row, col}, state) do
-    original_cursor_pos = state.cursor_pos
-    selection_start = state.selection_start || original_cursor_pos
-
-    new_state = %{
-      state
-      | selection_start: selection_start,
-        selection_end: {row, col},
-        cursor_pos: {row, col}
-    }
-
-    {:noreply, ensure_cursor_visible(new_state), nil}
   end
 
   def handle_undo(state) do
@@ -433,8 +307,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     end
   end
 
-  # --- Internal Helpers ---
-  defp ensure_cursor_visible(state) do
+  # --- Public helpers (used by sub-modules) ---
+  def ensure_cursor_visible(state) do
     {cursor_row, _cursor_col} = state.cursor_pos
     {scroll_row, scroll_col} = state.scroll_offset
     height = state.height
@@ -453,91 +327,20 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     %{state | scroll_offset: {new_scroll_row, new_scroll_col}, lines: new_lines}
   end
 
-  defp trigger_on_change({:noreply, new_state, existing_cmd}, old_state) do
+  def trigger_on_change({:noreply, new_state, existing_cmd}, old_state) do
     trigger_change_if_value_changed(new_state, old_state, existing_cmd)
   end
 
-  def handle_selection_move(state, direction) do
-    original_cursor_pos = state.cursor_pos
-    moved_state = move_cursor_by_direction(state, direction)
-    new_cursor_pos = moved_state.cursor_pos
-    selection_start = state.selection_start || original_cursor_pos
+  @max_undo_history 100
 
-    final_state = %{
-      moved_state
-      | selection_start: selection_start,
-        selection_end: new_cursor_pos
-    }
-
-    {:noreply, ensure_cursor_visible(final_state), nil}
+  @doc false
+  def push_history(state) do
+    snapshot = %{value: state.value, cursor_pos: state.cursor_pos}
+    undo_stack = [snapshot | state.history.undo] |> Enum.take(@max_undo_history)
+    %{state | history: %{undo: undo_stack, redo: []}}
   end
 
-  defp move_cursor_by_direction(state, direction) do
-    direction_handlers = %{
-      :left => fn ->
-        Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor(
-          state,
-          :left
-        )
-      end,
-      :right => fn ->
-        Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor(
-          state,
-          :right
-        )
-      end,
-      :up => fn ->
-        Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor(
-          state,
-          :up
-        )
-      end,
-      :down => fn ->
-        Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor(
-          state,
-          :down
-        )
-      end,
-      :line_start => fn ->
-        Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor_line_start(
-          state
-        )
-      end,
-      :line_end => fn ->
-        Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor_line_end(
-          state
-        )
-      end,
-      :page_up => fn ->
-        Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor_page(
-          state,
-          :up
-        )
-      end,
-      :page_down => fn ->
-        Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor_page(
-          state,
-          :down
-        )
-      end,
-      :doc_start => fn ->
-        Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor_doc_start(
-          state
-        )
-      end,
-      :doc_end => fn ->
-        Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.move_cursor_doc_end(
-          state
-        )
-      end
-    }
-
-    case Map.get(direction_handlers, direction) do
-      nil -> state
-      handler -> handler.()
-    end
-  end
-
+  # --- Render ---
   @doc """
   Renders the MultiLineInput component using the current state and context.
   """
@@ -621,123 +424,23 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
 
   defp calculate_scroll_row(_cursor_row, scroll_row, _height), do: scroll_row
 
-  # Helper functions to eliminate if statements
-
-  defp process_backspace_with_selection_check(state) do
-    selection_result =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-        state
+  defp restore_snapshot(state, snapshot, history) do
+    lines =
+      Raxol.UI.Components.Input.MultiLineInput.TextHelper.split_into_lines(
+        snapshot.value,
+        state.width,
+        state.wrap
       )
 
-    do_backspace_with_selection(elem(selection_result, 0), state)
-  end
-
-  defp do_backspace_with_selection(nil, state) do
-    Raxol.UI.Components.Input.MultiLineInput.TextHelper.handle_backspace_no_selection(
+    %{
       state
-    )
-  end
-
-  defp do_backspace_with_selection(_selection, state) do
-    Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(state)
-  end
-
-  defp process_delete_with_selection_check(state) do
-    selection_result =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-        state
-      )
-
-    do_delete_with_selection(elem(selection_result, 0), state)
-  end
-
-  defp do_delete_with_selection(nil, state) do
-    Raxol.UI.Components.Input.MultiLineInput.TextHelper.handle_delete_no_selection(
-      state
-    )
-  end
-
-  defp do_delete_with_selection(_selection, state) do
-    Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(state)
-  end
-
-  defp handle_enter_selection_delete(state) do
-    selection_result =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-        state
-      )
-
-    do_enter_selection_delete(elem(selection_result, 0), state)
-  end
-
-  defp do_enter_selection_delete(nil, state), do: {state, ""}
-
-  defp do_enter_selection_delete(_selection, state) do
-    Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(state)
-  end
-
-  defp handle_copy_if_selection_exists(state) do
-    selection_result =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-        state
-      )
-
-    do_copy_if_selection_exists(elem(selection_result, 0), state)
-  end
-
-  defp do_copy_if_selection_exists(nil, _state), do: :ok
-
-  defp do_copy_if_selection_exists(_selection, state) do
-    Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper.copy_selection(
-      state
-    )
-  end
-
-  defp handle_cut_with_selection_check(state) do
-    selection_result =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-        state
-      )
-
-    do_cut_with_selection(elem(selection_result, 0), state)
-  end
-
-  defp do_cut_with_selection(nil, state), do: {:noreply, state, nil}
-
-  defp do_cut_with_selection(_selection, state) do
-    new_state =
-      Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper.cut_selection(
-        state
-      )
-
-    trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
-  end
-
-  defp get_clipboard_position_range(%{selection_start: nil} = state),
-    do: {state.cursor_pos, state.cursor_pos}
-
-  defp get_clipboard_position_range(%{selection_end: nil} = state),
-    do: {state.cursor_pos, state.cursor_pos}
-
-  defp get_clipboard_position_range(state) do
-    Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-      state
-    )
-  end
-
-  defp handle_delete_selection_if_exists(state) do
-    selection_result =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-        state
-      )
-
-    do_delete_selection_if_exists(elem(selection_result, 0), state)
-  end
-
-  defp do_delete_selection_if_exists(nil, state), do: {:noreply, state}
-
-  defp do_delete_selection_if_exists(_selection, state) do
-    Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(state)
+      | value: snapshot.value,
+        cursor_pos: snapshot.cursor_pos,
+        lines: lines,
+        history: history,
+        selection_start: nil,
+        selection_end: nil
+    }
   end
 
   defp trigger_change_if_value_changed(new_state, old_state, existing_cmd) do
@@ -793,34 +496,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
          line_elements
        ) do
     line_elements
-  end
-
-  @max_undo_history 100
-
-  @doc false
-  def push_history(state) do
-    snapshot = %{value: state.value, cursor_pos: state.cursor_pos}
-    undo_stack = [snapshot | state.history.undo] |> Enum.take(@max_undo_history)
-    %{state | history: %{undo: undo_stack, redo: []}}
-  end
-
-  defp restore_snapshot(state, snapshot, history) do
-    lines =
-      Raxol.UI.Components.Input.MultiLineInput.TextHelper.split_into_lines(
-        snapshot.value,
-        state.width,
-        state.wrap
-      )
-
-    %{
-      state
-      | value: snapshot.value,
-        cursor_pos: snapshot.cursor_pos,
-        lines: lines,
-        history: history,
-        selection_start: nil,
-        selection_end: nil
-    }
   end
 
   defp render_placeholder_if_conditions_met(state, merged_theme) do

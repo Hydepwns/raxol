@@ -185,7 +185,8 @@ defmodule Raxol.Terminal.Driver do
         IO.write("\e[?1004h\e[?2004h")
 
         # Send initial resize event if we have a dispatcher
-        if dispatcher_pid, do: Dispatch.send_initial_resize_event(dispatcher_pid)
+        if dispatcher_pid,
+          do: Dispatch.send_initial_resize_event(dispatcher_pid)
 
         # Activate prim_tty reader for input. In -noshell mode, prim_tty
         # was initialized with tty => false, so the reader gets no select
@@ -584,5 +585,4 @@ defmodule Raxol.Terminal.Driver do
   defp flush_buffer(state) do
     dispatch_raw_input(state.input_buffer, %{state | input_buffer: <<>>})
   end
-
 end

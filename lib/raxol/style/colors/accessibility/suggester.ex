@@ -39,7 +39,12 @@ defmodule Raxol.Style.Colors.Accessibility.Suggester do
 
   def suggest_contrast_color(%Color{} = color) do
     complement = Color.complement(color)
-    select_contrast_color(Accessibility.readable?(color, complement, :aa), complement, color)
+
+    select_contrast_color(
+      Accessibility.readable?(color, complement, :aa),
+      complement,
+      color
+    )
   end
 
   defp select_contrast_color(true, complement, _color), do: complement
@@ -278,10 +283,14 @@ defmodule Raxol.Style.Colors.Accessibility.Suggester do
   end
 
   defp luminance_changed?(orig, adjusted, :lighter),
-    do: Accessibility.relative_luminance(adjusted) > Accessibility.relative_luminance(orig)
+    do:
+      Accessibility.relative_luminance(adjusted) >
+        Accessibility.relative_luminance(orig)
 
   defp luminance_changed?(orig, adjusted, :darker),
-    do: Accessibility.relative_luminance(adjusted) < Accessibility.relative_luminance(orig)
+    do:
+      Accessibility.relative_luminance(adjusted) <
+        Accessibility.relative_luminance(orig)
 
   defp adjust_until_contrast(
          color,

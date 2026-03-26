@@ -4,6 +4,48 @@ defmodule Raxol.Terminal.ScreenBuffer.WriteOps do
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.Buffer.Writer
 
+  def resize(buffer, new_width, new_height) do
+    default_cell = %Cell{
+      char: " ",
+      style: nil,
+      dirty: nil,
+      wide_placeholder: false
+    }
+
+    new_cells =
+      List.duplicate(List.duplicate(default_cell, new_width), new_height)
+
+    cells = buffer.cells || []
+
+    new_cells =
+      Enum.reduce(0..min(buffer.height - 1, new_height - 1), new_cells, fn row,
+                                                                           acc ->
+        row_data = Enum.at(cells, row, [])
+
+        Enum.reduce(0..min(buffer.width - 1, new_width - 1), acc, fn col,
+                                                                     row_acc ->
+          existing_cell =
+            Enum.at(row_data, col) || default_cell
+
+          current_row =
+            Enum.at(row_acc, row, List.duplicate(default_cell, new_width))
+
+          updated_row = List.replace_at(current_row, col, existing_cell)
+
+          List.replace_at(row_acc, row, updated_row)
+        end)
+      end)
+
+    %{
+      buffer
+      | width: new_width,
+        height: new_height,
+        cells: new_cells,
+        selection: nil,
+        scroll_region: nil
+    }
+  end
+
   def write_char(buffer, x, y, char) do
     write_char(buffer, x, y, char, buffer.default_style)
   end

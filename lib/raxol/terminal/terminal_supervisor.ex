@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Supervisor do
   """
 
   use Supervisor
-  alias Raxol.Core.Runtime.Log
 
   def start_link(init_arg) do
     Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
@@ -13,10 +12,8 @@ defmodule Raxol.Terminal.Supervisor do
   def init(_init_arg) do
     children = [
       {Registry, keys: :unique, name: Raxol.Terminal.SessionRegistry},
-      {Raxol.Terminal.TerminalRegistry, []},
       {DynamicSupervisor,
        name: Raxol.Terminal.DynamicSupervisor, strategy: :one_for_one},
-      {Raxol.Terminal.Manager, []},
       {Raxol.Terminal.Cache.System,
        [
          max_size: 100 * 1024 * 1024,
@@ -33,56 +30,5 @@ defmodule Raxol.Terminal.Supervisor do
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
-  end
-
-  @doc """
-  Starts a new terminal with the given configuration.
-  """
-  def start_terminal(terminal_config) do
-    case DynamicSupervisor.start_child(
-           Raxol.Terminal.DynamicSupervisor,
-           {Raxol.Terminal.TerminalProcess, terminal_config}
-         ) do
-      {:ok, pid} ->
-        Log.info(
-          "Started terminal #{terminal_config.terminal_id} with pid #{inspect(pid)}"
-        )
-
-        {:ok, pid}
-
-      {:error, reason} ->
-        Log.error(
-          "Failed to start terminal #{terminal_config.terminal_id}: #{inspect(reason)}"
-        )
-
-        {:error, reason}
-    end
-  end
-
-  @doc """
-  Stops a terminal process.
-  """
-  def stop_terminal(terminal_id) do
-    case Raxol.Terminal.TerminalRegistry.lookup(terminal_id) do
-      {:ok, pid} ->
-        case DynamicSupervisor.terminate_child(
-               Raxol.Terminal.DynamicSupervisor,
-               pid
-             ) do
-          :ok ->
-            Log.info("Stopped terminal #{terminal_id}")
-            :ok
-
-          {:error, reason} ->
-            Log.error(
-              "Failed to stop terminal #{terminal_id}: #{inspect(reason)}"
-            )
-
-            {:error, reason}
-        end
-
-      {:error, :not_found} ->
-        {:error, :terminal_not_found}
-    end
   end
 end

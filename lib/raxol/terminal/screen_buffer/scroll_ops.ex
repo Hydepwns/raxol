@@ -48,4 +48,24 @@ defmodule Raxol.Terminal.ScreenBuffer.ScrollOps do
   def get_scroll_position(buffer) do
     buffer.scroll_position || 0
   end
+
+  def get_scroll_region(buffer), do: Operations.get_region(buffer)
+
+  def shift_region_to_line(buffer, region, target_line) do
+    Operations.shift_region_to_line(buffer, region, target_line)
+  end
+
+  def scroll_down_with_count(buffer, lines, count)
+      when is_integer(lines) and is_integer(count) do
+    Raxol.Terminal.Commands.Scrolling.scroll_down(
+      buffer,
+      lines,
+      buffer.scroll_region,
+      %{}
+    )
+  end
+
+  def scroll_down_with_count(buffer, _lines, count) when is_integer(count) do
+    Raxol.Terminal.ScreenBuffer.Scrolling.scroll_down(buffer, count)
+  end
 end

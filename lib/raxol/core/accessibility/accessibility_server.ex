@@ -25,11 +25,22 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
 
   use Raxol.Core.Behaviours.BaseManager
   require Logger
-  alias Raxol.Core.Accessibility.{AnnouncementQueue, FocusManager, MetadataRegistry, PreferenceManager}
+
+  alias Raxol.Core.Accessibility.{
+    AnnouncementQueue,
+    FocusManager,
+    MetadataRegistry,
+    PreferenceManager
+  }
+
   alias Raxol.Core.Events.EventManager
   alias Raxol.Core.Runtime.Log
 
-  @compile {:no_warn_undefined, [Raxol.Core.Accessibility.MetadataRegistry, Raxol.Core.Accessibility.FocusManager]}
+  @compile {:no_warn_undefined,
+            [
+              Raxol.Core.Accessibility.MetadataRegistry,
+              Raxol.Core.Accessibility.FocusManager
+            ]}
 
   @default_preferences %{
     screen_reader: true,
@@ -64,21 +75,15 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
 
   @doc "Disables accessibility features."
   @spec disable(GenServer.server()) :: :ok
-  def disable(server \\ __MODULE__) do
-    GenServer.call(server, :disable)
-  end
+  def disable(server \\ __MODULE__), do: GenServer.call(server, :disable)
 
   @doc "Resets the accessibility server to its default state (for test isolation)."
   @spec reset(GenServer.server()) :: :ok
-  def reset(server \\ __MODULE__) do
-    GenServer.call(server, :reset)
-  end
+  def reset(server \\ __MODULE__), do: GenServer.call(server, :reset)
 
   @doc "Checks if accessibility is enabled."
   @spec enabled?(GenServer.server()) :: boolean()
-  def enabled?(server \\ __MODULE__) do
-    GenServer.call(server, :is_enabled)
-  end
+  def enabled?(server \\ __MODULE__), do: GenServer.call(server, :is_enabled)
 
   @doc """
   Makes an announcement for screen readers.
@@ -108,9 +113,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
 
   @doc "Gets high contrast mode status."
   @spec high_contrast?(GenServer.server()) :: boolean()
-  def high_contrast?(server \\ __MODULE__) do
-    GenServer.call(server, {:get_preference, :high_contrast})
-  end
+  def high_contrast?(server \\ __MODULE__),
+    do: GenServer.call(server, {:get_preference, :high_contrast})
 
   @doc "Sets reduced motion mode."
   @spec set_reduced_motion(GenServer.server(), boolean()) :: :ok
@@ -121,9 +125,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
 
   @doc "Gets reduced motion mode status."
   @spec reduced_motion?(GenServer.server()) :: boolean()
-  def reduced_motion?(server \\ __MODULE__) do
-    GenServer.call(server, {:get_preference, :reduced_motion})
-  end
+  def reduced_motion?(server \\ __MODULE__),
+    do: GenServer.call(server, {:get_preference, :reduced_motion})
 
   @doc "Sets large text mode."
   @spec set_large_text(GenServer.server(), boolean()) :: :ok
@@ -145,165 +148,130 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
 
   @doc "Gets large text mode status."
   @spec large_text?(GenServer.server()) :: boolean()
-  def large_text?(server \\ __MODULE__) do
-    GenServer.call(server, {:get_preference, :large_text})
-  end
+  def large_text?(server \\ __MODULE__),
+    do: GenServer.call(server, {:get_preference, :large_text})
 
   @doc "Sets screen reader support."
   @spec set_screen_reader(GenServer.server(), boolean()) :: :ok
-  def set_screen_reader(server \\ __MODULE__, enabled)
-      when is_boolean(enabled) do
-    GenServer.call(server, {:set_preference, :screen_reader, enabled})
-  end
+  def set_screen_reader(server \\ __MODULE__, enabled) when is_boolean(enabled),
+    do: GenServer.call(server, {:set_preference, :screen_reader, enabled})
 
   @doc "Gets screen reader support status."
   @spec screen_reader?(GenServer.server()) :: boolean()
-  def screen_reader?(server \\ __MODULE__) do
-    GenServer.call(server, {:get_preference, :screen_reader})
-  end
+  def screen_reader?(server \\ __MODULE__),
+    do: GenServer.call(server, {:get_preference, :screen_reader})
 
   @doc "Sets keyboard focus indicators."
   @spec set_keyboard_focus(GenServer.server(), boolean()) :: :ok
   def set_keyboard_focus(server \\ __MODULE__, enabled)
-      when is_boolean(enabled) do
-    GenServer.call(server, {:set_preference, :keyboard_focus, enabled})
-  end
+      when is_boolean(enabled),
+      do: GenServer.call(server, {:set_preference, :keyboard_focus, enabled})
 
   @doc "Sets accessibility metadata for a component."
-  def set_metadata(server \\ __MODULE__, component_id, metadata) do
-    GenServer.call(server, {:set_metadata, component_id, metadata})
-  end
+  def set_metadata(server \\ __MODULE__, component_id, metadata),
+    do: GenServer.call(server, {:set_metadata, component_id, metadata})
 
   @doc "Registers element metadata for a component."
-  def register_element_metadata(element_id, metadata) do
-    register_element_metadata(__MODULE__, element_id, metadata)
-  end
-
-  def register_element_metadata(server, element_id, metadata) do
-    GenServer.call(server, {:register_metadata, element_id, metadata})
-  end
+  def register_element_metadata(server \\ __MODULE__, element_id, metadata),
+    do: GenServer.call(server, {:register_metadata, element_id, metadata})
 
   @doc "Gets element metadata for a component."
-  def get_element_metadata(element_id) do
-    get_element_metadata(__MODULE__, element_id)
-  end
-
-  def get_element_metadata(server, element_id) do
-    GenServer.call(server, {:get_metadata, element_id})
-  end
+  def get_element_metadata(server \\ __MODULE__, element_id),
+    do: GenServer.call(server, {:get_metadata, element_id})
 
   @doc "Gets accessibility metadata for a component."
-  def get_metadata(server \\ __MODULE__, component_id) do
-    GenServer.call(server, {:get_metadata, component_id})
-  end
+  def get_metadata(server \\ __MODULE__, component_id),
+    do: GenServer.call(server, {:get_metadata, component_id})
 
   @doc "Removes metadata for a component."
-  def remove_metadata(server \\ __MODULE__, component_id) do
-    GenServer.call(server, {:remove_metadata, component_id})
-  end
+  def remove_metadata(server \\ __MODULE__, component_id),
+    do: GenServer.call(server, {:remove_metadata, component_id})
 
   @doc "Gets all current preferences."
   @spec get_preferences(GenServer.server()) :: map()
-  def get_preferences(server \\ __MODULE__) do
-    GenServer.call(server, :get_preferences)
-  end
+  def get_preferences(server \\ __MODULE__),
+    do: GenServer.call(server, :get_preferences)
 
   @doc "Adds an announcement to the queue."
-  def add_announcement(announcement, user_preferences_pid_or_name \\ nil) do
-    add_announcement(__MODULE__, announcement, user_preferences_pid_or_name)
-  end
+  def add_announcement(announcement, user_preferences_pid_or_name \\ nil),
+    do: add_announcement(__MODULE__, announcement, user_preferences_pid_or_name)
 
-  def add_announcement(server, announcement, _user_preferences_pid_or_name) do
-    GenServer.cast(server, {:announce, announcement, []})
-  end
+  def add_announcement(server, announcement, _user_preferences_pid_or_name),
+    do: GenServer.cast(server, {:announce, announcement, []})
 
   @doc "Gets the next announcement from the queue."
-  def get_next_announcement(user_preferences_pid_or_name \\ nil) do
-    get_next_announcement(__MODULE__, user_preferences_pid_or_name)
-  end
+  def get_next_announcement(user_preferences_pid_or_name \\ nil),
+    do: get_next_announcement(__MODULE__, user_preferences_pid_or_name)
 
-  def get_next_announcement(server, _user_preferences_pid_or_name) do
-    GenServer.call(server, :get_next_announcement)
-  end
+  def get_next_announcement(server, _user_preferences_pid_or_name),
+    do: GenServer.call(server, :get_next_announcement)
 
   @doc "Clears all announcements from the queue."
-  def clear_all_announcements do
-    clear_all_announcements(__MODULE__)
-  end
+  def clear_all_announcements, do: clear_all_announcements(__MODULE__)
 
-  def clear_all_announcements(server) do
-    GenServer.call(server, :clear_all_announcements)
-  end
+  def clear_all_announcements(server),
+    do: GenServer.call(server, :clear_all_announcements)
 
   @doc "Clears announcements for a specific user."
-  def clear_announcements(user_preferences_pid_or_name) do
-    clear_announcements(__MODULE__, user_preferences_pid_or_name)
-  end
+  def clear_announcements(user_preferences_pid_or_name),
+    do: clear_announcements(__MODULE__, user_preferences_pid_or_name)
 
-  def clear_announcements(server, _user_preferences_pid_or_name) do
-    GenServer.call(server, :clear_all_announcements)
-  end
+  def clear_announcements(server, _user_preferences_pid_or_name),
+    do: GenServer.call(server, :clear_all_announcements)
 
   @doc "Gets announcement history."
-  def get_announcement_history(server \\ __MODULE__, limit \\ nil) do
-    GenServer.call(server, {:get_announcement_history, limit})
-  end
+  def get_announcement_history(server \\ __MODULE__, limit \\ nil),
+    do: GenServer.call(server, {:get_announcement_history, limit})
 
   @doc "Clears announcement history."
-  def clear_announcement_history(server \\ __MODULE__) do
-    GenServer.call(server, :clear_announcement_history)
-  end
+  def clear_announcement_history(server \\ __MODULE__),
+    do: GenServer.call(server, :clear_announcement_history)
 
   @doc "Sets the announcement callback function."
   def set_announcement_callback(server \\ __MODULE__, callback)
-      when is_function(callback, 1) do
-    GenServer.call(server, {:set_announcement_callback, callback})
-  end
+      when is_function(callback, 1),
+      do: GenServer.call(server, {:set_announcement_callback, callback})
 
   @doc "Gets the current state (for debugging/testing)."
-  def get_state(server \\ __MODULE__) do
-    GenServer.call(server, :get_state)
-  end
+  def get_state(server \\ __MODULE__), do: GenServer.call(server, :get_state)
 
   @doc "Checks if announcements should be made."
   @spec should_announce?(atom() | pid() | nil) :: boolean()
-  def should_announce?(user_preferences_pid_or_name \\ nil) do
-    case user_preferences_pid_or_name do
-      nil ->
-        true
+  def should_announce?(nil), do: true
 
-      prefs ->
-        try do
-          screen_reader =
-            Raxol.Core.UserPreferences.get(
-              [:accessibility, :screen_reader],
-              prefs
-            )
+  def should_announce?(prefs) do
+    screen_reader =
+      Raxol.Core.UserPreferences.get([:accessibility, :screen_reader], prefs)
 
-          silence =
-            Raxol.Core.UserPreferences.get(
-              [:accessibility, :silence_announcements],
-              prefs
-            )
+    silence =
+      Raxol.Core.UserPreferences.get(
+        [:accessibility, :silence_announcements],
+        prefs
+      )
 
-          screen_reader != false and silence != true
-        rescue
-          _ -> true
-        catch
-          :exit, _ -> true
-        end
-    end
+    screen_reader != false and silence != true
+  rescue
+    error ->
+      Log.warning(
+        "should_announce? failed, defaulting to true: #{inspect(error)}"
+      )
+
+      true
+  catch
+    :exit, reason ->
+      Log.warning(
+        "should_announce? process exit, defaulting to true: #{inspect(reason)}"
+      )
+
+      true
   end
 
   @doc "Handles focus change events."
-  def handle_focus_change(server \\ __MODULE__, old_focus, new_focus) do
-    GenServer.cast(server, {:handle_focus_change, old_focus, new_focus})
-  end
+  def handle_focus_change(server \\ __MODULE__, old_focus, new_focus),
+    do: GenServer.cast(server, {:handle_focus_change, old_focus, new_focus})
 
   @doc "Gets an option value."
-  def get_option(key, default \\ nil) do
-    get_option(__MODULE__, key, default)
-  end
+  def get_option(key, default \\ nil), do: get_option(__MODULE__, key, default)
 
   def get_option(server, key, default) do
     case GenServer.call(server, {:get_preference, key}) do
@@ -313,18 +281,14 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   end
 
   @doc "Sets an option value."
-  def set_option(key, value) do
-    set_option(__MODULE__, key, value)
-  end
+  def set_option(key, value), do: set_option(__MODULE__, key, value)
 
-  def set_option(server, key, value) do
-    GenServer.call(server, {:set_preference, key, value})
-  end
+  def set_option(server, key, value),
+    do: GenServer.call(server, {:set_preference, key, value})
 
   @doc "Gets a component hint."
-  def get_component_hint(component_id, hint_level \\ :normal) do
-    get_component_hint(__MODULE__, component_id, hint_level)
-  end
+  def get_component_hint(component_id, hint_level \\ :normal),
+    do: get_component_hint(__MODULE__, component_id, hint_level)
 
   def get_component_hint(server, component_id, _hint_level) do
     case GenServer.call(server, {:get_metadata, component_id}) do
@@ -334,49 +298,37 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   end
 
   @doc "Registers component style."
-  def register_component_style(component_type, style) do
-    register_component_style(__MODULE__, component_type, style)
-  end
+  def register_component_style(component_type, style),
+    do: register_component_style(__MODULE__, component_type, style)
 
-  def register_component_style(server, component_type, style) do
-    GenServer.call(server, {:register_component_style, component_type, style})
-  end
+  def register_component_style(server, component_type, style),
+    do:
+      GenServer.call(server, {:register_component_style, component_type, style})
 
   @doc "Gets component style."
-  def get_component_style(component_type) do
-    get_component_style(__MODULE__, component_type)
-  end
+  def get_component_style(component_type),
+    do: get_component_style(__MODULE__, component_type)
 
-  def get_component_style(server, component_type) do
-    GenServer.call(server, {:get_component_style, component_type})
-  end
+  def get_component_style(server, component_type),
+    do: GenServer.call(server, {:get_component_style, component_type})
 
   @doc "Unregisters component style."
-  def unregister_component_style(component_type) do
-    unregister_component_style(__MODULE__, component_type)
-  end
+  def unregister_component_style(component_type),
+    do: unregister_component_style(__MODULE__, component_type)
 
-  def unregister_component_style(server, component_type) do
-    GenServer.call(server, {:unregister_component_style, component_type})
-  end
+  def unregister_component_style(server, component_type),
+    do: GenServer.call(server, {:unregister_component_style, component_type})
 
   @doc "Unregisters element metadata."
-  def unregister_element_metadata(element_id) do
-    unregister_element_metadata(__MODULE__, element_id)
-  end
+  def unregister_element_metadata(element_id),
+    do: unregister_element_metadata(__MODULE__, element_id)
 
-  def unregister_element_metadata(server, element_id) do
-    GenServer.call(server, {:remove_metadata, element_id})
-  end
+  def unregister_element_metadata(server, element_id),
+    do: GenServer.call(server, {:remove_metadata, element_id})
 
   @doc "Gets focus history."
-  def get_focus_history do
-    get_focus_history(__MODULE__)
-  end
-
-  def get_focus_history(server) do
-    GenServer.call(server, :get_focus_history)
-  end
+  def get_focus_history, do: get_focus_history(__MODULE__)
+  def get_focus_history(server), do: GenServer.call(server, :get_focus_history)
 
   # BaseManager Callbacks
 
@@ -559,7 +511,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
         _from,
         state
       ) do
-    {:reply, :ok, MetadataRegistry.register_component_style(state, component_type, style)}
+    {:reply, :ok,
+     MetadataRegistry.register_component_style(state, component_type, style)}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
@@ -573,7 +526,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
         _from,
         state
       ) do
-    {:reply, :ok, MetadataRegistry.unregister_component_style(state, component_type)}
+    {:reply, :ok,
+     MetadataRegistry.unregister_component_style(state, component_type)}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
@@ -616,53 +570,45 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
 
   def handle_focus_change_event(:focus_change) do
     Log.warning(
-      "AccessibilityServer.handle_focus_change_event/1 called with just event type, this is a known issue with EventManager dispatch"
+      "AccessibilityServer.handle_focus_change_event/1 called with just event type"
     )
 
     :ok
   end
 
-  def handle_focus_change_event({:focus_change, old_focus, new_focus}) do
-    handle_focus_change(__MODULE__, old_focus, new_focus)
-  end
+  def handle_focus_change_event({:focus_change, old, new}),
+    do: handle_focus_change(__MODULE__, old, new)
 
-  def handle_focus_change_event(unexpected_arg) do
+  def handle_focus_change_event(unexpected) do
     Log.warning(
-      "AccessibilityServer.handle_focus_change_event/1 called with unexpected argument: #{inspect(unexpected_arg)}"
+      "AccessibilityServer.handle_focus_change_event/1 unexpected: #{inspect(unexpected)}"
     )
 
     :ok
   end
 
-  def handle_focus_change_event(
-        {:focus_change, old_focus, new_focus},
-        _metadata
-      ) do
-    handle_focus_change(__MODULE__, old_focus, new_focus)
+  def handle_focus_change_event({:focus_change, old, new}, _metadata),
+    do: handle_focus_change(__MODULE__, old, new)
+
+  def handle_focus_change_event(:focus_change, event_data) do
+    {old, new} = AnnouncementQueue.parse_focus_change_event_data(event_data)
+    handle_focus_change(__MODULE__, old, new)
   end
 
-  def handle_focus_change_event(event_type, event_data)
-      when event_type == :focus_change do
-    {old_focus, new_focus} =
-      AnnouncementQueue.parse_focus_change_event_data(event_data)
-
-    handle_focus_change(__MODULE__, old_focus, new_focus)
-  end
-
-  def handle_focus_change_event(old_focus, new_focus) do
-    handle_focus_change(__MODULE__, old_focus, new_focus)
-  end
+  def handle_focus_change_event(old, new),
+    do: handle_focus_change(__MODULE__, old, new)
 
   def handle_focus_change_event(_event_name, _measurements, metadata, _config)
       when is_map(metadata) do
-    old_focus = Map.get(metadata, :old_focus, nil)
-    new_focus = Map.get(metadata, :new_focus, nil)
-
     Log.debug(
       "AccessibilityServer telemetry handler called with metadata: #{inspect(metadata)}"
     )
 
-    handle_focus_change(__MODULE__, old_focus, new_focus)
+    handle_focus_change(
+      __MODULE__,
+      Map.get(metadata, :old_focus),
+      Map.get(metadata, :new_focus)
+    )
   end
 
   def handle_preference_changed_event({:preference_changed, _key, _value}),

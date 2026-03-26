@@ -32,6 +32,9 @@ defmodule Raxol.Core.Accessibility.MetadataRegistry do
 
   @doc "Unregisters a component style."
   def unregister_component_style(state, component_type) do
-    %{state | metadata: Map.delete(state.metadata, {:component_style, component_type})}
+    %{
+      state
+      | metadata: Map.delete(state.metadata, {:component_style, component_type})
+    }
   end
 end

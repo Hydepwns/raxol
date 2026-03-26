@@ -19,9 +19,6 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   """
   def new(width, height) do
     # Initialize all required managers and processes
-    state_pid =
-      get_pid(Raxol.Terminal.State.TerminalStateManager.start_link([]))
-
     event_pid = get_pid(Raxol.Terminal.Event.Handler.start_link([]))
 
     buffer_pid =
@@ -59,7 +56,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
 
     %Raxol.Terminal.Emulator{
       # Core managers
-      state: state_pid,
+      state: %{modes: %{}, attributes: %{}, state_stack: []},
       event: event_pid,
       buffer: buffer_pid,
       config: config_pid,
@@ -134,9 +131,6 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   Creates a new terminal emulator instance with given width, height, and options.
   """
   def new(width, height, opts) do
-    state_pid =
-      get_pid(Raxol.Terminal.State.TerminalStateManager.start_link(opts))
-
     event_pid = get_pid(Raxol.Terminal.Event.Handler.start_link(opts))
 
     buffer_pid =
@@ -178,7 +172,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
 
     %Raxol.Terminal.Emulator{
       # Core managers
-      state: state_pid,
+      state: %{modes: %{}, attributes: %{}, state_stack: []},
       event: event_pid,
       buffer: buffer_pid,
       config: config_pid,

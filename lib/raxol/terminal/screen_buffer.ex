@@ -35,24 +35,29 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   @behaviour Raxol.Terminal.ScreenBufferBehaviour
 
+  @compile {:no_warn_undefined,
+            [
+              Raxol.Terminal.ScreenBuffer.WriteOps,
+              Raxol.Terminal.ScreenBuffer.ScrollOps,
+              Raxol.Terminal.ScreenBuffer.EraseOps,
+              Raxol.Terminal.ScreenBuffer.LineOps
+            ]}
+
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Cell
-
-  alias Raxol.Terminal.Buffer.{
-    CharEditor,
-    Writer
-  }
-
   alias Raxol.Core.Utils.Validation
 
   alias Raxol.Terminal.ScreenBuffer.{
     Attributes,
     BehaviourImpl,
-    EraseOperations,
+    EraseOps,
+    LineOps,
     Operations,
     RegionOperations,
+    ScrollOps,
     Scrolling,
-    Selection
+    Selection,
+    WriteOps
   }
 
   defstruct [
@@ -102,9 +107,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def new(width, height, scrollback_limit \\ 1000) do
-    width = validate_dimension(width, 80)
-    height = validate_dimension(height, 24)
-    scrollback_limit = validate_dimension(scrollback_limit, 1000)
+    width = Validation.validate_dimension(width, 80)
+    height = Validation.validate_dimension(height, 24)
+    scrollback_limit = Validation.validate_dimension(scrollback_limit, 1000)
 
     %__MODULE__{
       cells: create_empty_grid(width, height),
@@ -124,208 +129,52 @@ defmodule Raxol.Terminal.ScreenBuffer do
     }
   end
 
-  defp validate_dimension(dimension, default) do
-    Validation.validate_dimension(dimension, default)
+  def new do
+    new(80, 24)
   end
 
-  defp create_empty_grid(width, height) when width > 0 and height > 0 do
-    for _y <- 0..(height - 1) do
-      for _x <- 0..(width - 1) do
-        Cell.new()
-      end
-    end
-  end
-
-  defp create_empty_grid(_width, _height) do
-    []
+  def new(size) when is_integer(size) and size > 0 do
+    new(size, size)
   end
 
   def resize(buffer, new_width, new_height) do
     validate_positive_dimensions!(new_width, new_height)
-
-    # Create a new ScreenBuffer with the new dimensions
-    default_cell = %Raxol.Terminal.Cell{
-      char: " ",
-      style: nil,
-      dirty: nil,
-      wide_placeholder: false
-    }
-
-    # Create new cells array with the new dimensions
-    new_cells =
-      List.duplicate(List.duplicate(default_cell, new_width), new_height)
-
-    # Copy existing content, truncating or padding as needed
-    # Handle case where buffer.cells might be nil or corrupted
-    cells = buffer.cells || []
-
-    new_cells =
-      Enum.reduce(0..min(buffer.height - 1, new_height - 1), new_cells, fn row,
-                                                                           acc ->
-        row_data = Enum.at(cells, row, [])
-
-        Enum.reduce(0..min(buffer.width - 1, new_width - 1), acc, fn col,
-                                                                     row_acc ->
-          existing_cell =
-            Enum.at(row_data, col) || default_cell
-
-          current_row =
-            Enum.at(row_acc, row, List.duplicate(default_cell, new_width))
-
-          updated_row = List.replace_at(current_row, col, existing_cell)
-
-          List.replace_at(row_acc, row, updated_row)
-        end)
-      end)
-
-    # Clear selection and scroll region after resize
-    %{
-      buffer
-      | width: new_width,
-        height: new_height,
-        cells: new_cells,
-        selection: nil,
-        scroll_region: nil
-    }
+    WriteOps.resize(buffer, new_width, new_height)
   end
 
-  @doc """
-  Gets all lines from the buffer as a list of lines.
-  """
   def get_lines(%__MODULE__{cells: cells}), do: cells
   def get_lines(_), do: []
 
-  # === Content Operations ===
+  # === Content Operations (WriteOps) ===
 
-  def write_char(buffer, x, y, char) do
-    write_char(buffer, x, y, char, buffer.default_style)
-  end
+  def write_char(buffer, x, y, char),
+    do: WriteOps.write_char(buffer, x, y, char)
 
-  @doc """
-  Writes a character at the specified position with optional styling.
-  """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def write_char(buffer, x, y, char, style) when x >= 0 and y >= 0 do
-    case {x < buffer.width, y < buffer.height} do
-      {true, true} ->
-        # Use Writer module to handle wide characters properly
-        Writer.write_char(buffer, x, y, char, style)
-
-      _ ->
-        buffer
-    end
-  end
+  def write_char(buffer, x, y, char, style),
+    do: WriteOps.write_char(buffer, x, y, char, style)
 
   def write_string(buffer, x, y, string),
-    do: write_string(buffer, x, y, string, nil)
-
-  @doc """
-  Writes a string starting at the specified position.
-  """
-  @impl Raxol.Terminal.ScreenBufferBehaviour
-  def write_string(buffer, x, y, string, style) when x >= 0 and y >= 0 do
-    case {x < buffer.width, y < buffer.height} do
-      {true, true} ->
-        # Use the Writer module which properly handles wide characters
-        Writer.write_string(buffer, x, y, string, style)
-
-      _ ->
-        buffer
-    end
-  end
+    do: WriteOps.write_string(buffer, x, y, string)
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def get_char(buffer, x, y) do
-    case {x >= 0 and x < buffer.width, y >= 0 and y < buffer.height} do
-      {true, true} ->
-        row = Enum.at(buffer.cells, y, [])
-        cell = Enum.at(row, x)
+  def write_string(buffer, x, y, string, style),
+    do: WriteOps.write_string(buffer, x, y, string, style)
 
-        case cell do
-          %{char: char} -> char
-          _ -> " "
-        end
-
-      _ ->
-        " "
-    end
-  end
-
-  @doc """
-  Gets a specific cell from the buffer.
-  """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
-    cell =
-      if x < buffer.width and y < buffer.height do
-        case buffer.cells do
-          nil ->
-            Cell.new()
+  def get_char(buffer, x, y), do: WriteOps.get_char(buffer, x, y)
 
-          cells ->
-            cells
-            |> Enum.at(y, [])
-            |> Enum.at(x, Cell.new())
-        end
-      else
-        Cell.new()
-      end
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  def get_cell(buffer, x, y) when x >= 0 and y >= 0,
+    do: WriteOps.get_cell(buffer, x, y)
 
-    # Convert Cell struct to map for behaviour compliance
-    Map.from_struct(cell)
-  end
+  def get_cell(_, _, _), do: WriteOps.get_cell(nil, -1, -1)
 
-  def get_cell(_, _, _), do: Map.from_struct(Cell.new())
+  def get_content(buffer), do: WriteOps.get_content(buffer)
 
-  @doc """
-  Gets the content of the buffer as a string representation.
-  """
-  def get_content(buffer) do
-    # Convert cells to string representation for compatibility with tests
-    case buffer.cells do
-      nil ->
-        ""
+  def put_line(buffer, y, line), do: WriteOps.put_line(buffer, y, line)
 
-      cells when is_list(cells) ->
-        cells
-        |> Enum.map(fn line when is_list(line) ->
-          line
-          |> Enum.map_join("", fn
-            %Cell{char: char} ->
-              char
-
-            cell ->
-              case Map.get(cell, :char) do
-                nil -> " "
-                char -> char
-              end
-          end)
-          |> String.trim_trailing()
-        end)
-        |> Enum.reverse()
-        |> Enum.drop_while(&(&1 == ""))
-        |> Enum.reverse()
-        |> case do
-          [] -> ""
-          lines -> Enum.join(lines, "\n")
-        end
-
-      _ ->
-        ""
-    end
-  end
-
-  @doc """
-  Puts a line of cells at the specified y position.
-  """
-  def put_line(buffer, y, line) when y >= 0 and y < buffer.height do
-    new_cells = List.replace_at(buffer.cells || [], y, line)
-    %{buffer | cells: new_cells}
-  end
-
-  def put_line(buffer, _, _), do: buffer
-
-  # === Eraser Operations ===
+  # === Eraser Operations (delegated) ===
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate clear_line(buffer, line), to: Operations
@@ -336,12 +185,11 @@ defmodule Raxol.Terminal.ScreenBuffer do
   defdelegate erase_line(buffer, mode), to: Operations
   defdelegate erase_line(buffer, line, mode), to: Operations
 
-  # === Line Operations ===
+  # === Line Operations (delegated) ===
 
   defdelegate insert_lines(buffer, count), to: Operations
   defdelegate delete_lines(buffer, count), to: Operations
 
-  # This delegation doesn't exist in Operations yet, keeping original
   defdelegate delete_lines_in_region(buffer, lines, y, top, bottom),
     to: Raxol.Terminal.Buffer.LineOperations
 
@@ -351,102 +199,68 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   # === Scroll Operations ===
 
-  @doc """
-  Scrolls the buffer content up by the specified number of lines.
-  Returns {buffer, scrolled_lines} where scrolled_lines are the lines that were scrolled out.
-  """
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def scroll_up(buffer, lines), do: Scrolling.scroll_up(buffer, lines)
 
-  @doc """
-  Scrolls the buffer content down by the specified number of lines.
-  """
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def scroll_down(buffer, lines), do: Scrolling.scroll_down(buffer, lines)
 
-  # Additional scroll functions for ScrollOperations
   def scroll_up(buffer, top, bottom, lines),
     do: Scrolling.scroll_up(buffer, top, bottom, lines)
 
   def scroll_down(buffer, top, bottom, lines),
     do: Scrolling.scroll_down(buffer, top, bottom, lines)
 
-  def scroll_to(buffer, top, bottom, line) do
-    # This needs to be implemented or delegated elsewhere
-    Operations.scroll_to(buffer, top, bottom, line)
-  end
+  def scroll_to(buffer, top, bottom, line),
+    do: ScrollOps.scroll_to(buffer, top, bottom, line)
 
-  def reset_scroll_region(buffer) do
-    clear_scroll_region(buffer)
-  end
+  def reset_scroll_region(buffer),
+    do: ScrollOps.reset_scroll_region(buffer)
 
-  @doc """
-  Gets the top boundary of the scroll region.
-  """
-  def get_scroll_top(buffer) do
-    case buffer.scroll_region do
-      nil -> 0
-      {top, _} -> top
-    end
-  end
+  def get_scroll_top(buffer),
+    do: ScrollOps.get_scroll_top(buffer)
 
-  @doc """
-  Gets the bottom boundary of the scroll region.
-  """
-  def get_scroll_bottom(buffer) do
-    case buffer.scroll_region do
-      nil -> buffer.height - 1
-      {_, bottom} -> bottom
-    end
-  end
+  def get_scroll_bottom(buffer),
+    do: ScrollOps.get_scroll_bottom(buffer)
 
-  def set_scroll_region(buffer, {top, bottom}) do
-    Operations.set_region(buffer, top, bottom)
-  end
+  def set_scroll_region(buffer, {top, bottom}),
+    do: ScrollOps.set_scroll_region(buffer, {top, bottom})
 
-  @doc """
-  Sets the scroll region with individual top and bottom parameters.
-  """
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def set_scroll_region(buffer, top, bottom)
-      when is_integer(top) and is_integer(bottom) do
-    Operations.set_region(buffer, top, bottom)
-  end
+      when is_integer(top) and is_integer(bottom),
+      do: ScrollOps.set_scroll_region(buffer, top, bottom)
+
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  def clear_scroll_region(buffer),
+    do: ScrollOps.clear_scroll_region(buffer)
+
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  def get_scroll_region_boundaries(buffer),
+    do: ScrollOps.get_scroll_region_boundaries(buffer)
+
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  def get_scroll_position(buffer),
+    do: ScrollOps.get_scroll_position(buffer)
 
   # === Dimension Operations ===
 
-  @doc """
-  Gets the dimensions of the buffer.
-  """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def get_dimensions(buffer) do
-    {buffer.width, buffer.height}
-  end
+  def get_dimensions(buffer), do: {buffer.width, buffer.height}
 
-  @doc """
-  Gets the width of the buffer.
-  """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def get_width(buffer) do
-    buffer.width
-  end
+  def get_width(buffer), do: buffer.width
 
-  @doc """
-  Gets the height of the buffer.
-  """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def get_height(buffer) do
-    buffer.height
-  end
+  def get_height(buffer), do: buffer.height
+
+  def set_dimensions(buffer, width, height), do: resize(buffer, width, height)
 
   # === Cursor Operations ===
 
   defdelegate set_cursor_position(buffer, x, y), to: Attributes
   defdelegate get_cursor_position(buffer), to: Attributes
-
-  defdelegate set_cursor_visibility(buffer, visible),
-    to: Attributes
-
+  defdelegate set_cursor_visibility(buffer, visible), to: Attributes
   defdelegate cursor_visible?(buffer), to: Attributes
   defdelegate set_cursor_style(buffer, style), to: Attributes
   defdelegate get_cursor_style(buffer), to: Attributes
@@ -456,13 +270,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
   # === Charset Operations ===
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  defdelegate designate_charset(buffer, slot, charset),
-    to: Attributes
-
+  defdelegate designate_charset(buffer, slot, charset), to: Attributes
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  defdelegate get_designated_charset(buffer, slot),
-    to: Attributes
-
+  defdelegate get_designated_charset(buffer, slot), to: Attributes
   @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate invoke_g_set(buffer, slot), to: Attributes
   @impl Raxol.Terminal.ScreenBufferBehaviour
@@ -503,91 +313,87 @@ defmodule Raxol.Terminal.ScreenBuffer do
   defdelegate start_selection(buffer, x, y), to: Selection
   defdelegate clear_selection(buffer), to: Selection
   defdelegate get_selected_text(buffer), to: Selection
-
-  def update_selection(buffer, x, y) do
-    case buffer.selection do
-      {sx, sy, _, _} -> %{buffer | selection: {sx, sy, x, y}}
-      nil -> buffer
-    end
-  end
+  defdelegate update_selection(buffer, x, y), to: Selection
+  defdelegate get_selection_boundaries(buffer), to: Selection
+  defdelegate selection_active?(buffer), to: Selection
+  defdelegate get_selection_start(buffer), to: Selection
+  defdelegate get_selection_end(buffer), to: Selection
 
   def get_selection(buffer), do: get_selected_text(buffer)
-
   def in_selection?(buffer, x, y), do: Selection.selected?(buffer, x, y)
-
-  def get_selection_boundaries(buffer) do
-    case buffer.selection do
-      {sx, sy, ex, ey} -> {{sx, sy}, {ex, ey}}
-      nil -> nil
-    end
-  end
 
   defdelegate get_text_in_region(buffer, start_x, start_y, end_x, end_y),
     to: Attributes
 
-  def selection_active?(buffer), do: buffer.selection != nil
+  # === Erase Operations (EraseOps) ===
 
-  def get_selection_start(buffer) do
-    case buffer.selection do
-      {sx, sy, _, _} -> {sx, sy}
-      nil -> nil
-    end
-  end
+  def clear(buffer, style \\ nil), do: EraseOps.clear(buffer, style)
 
-  def get_selection_end(buffer) do
-    case buffer.selection do
-      {sx, sy, sx, sy} -> nil
-      {_, _, ex, ey} -> {ex, ey}
-      nil -> nil
-    end
-  end
+  def erase_from_cursor_to_end(buffer, x, y, top, bottom),
+    do: EraseOps.erase_from_cursor_to_end(buffer, x, y, top, bottom)
 
-  # === Scroll Region Operations ===
+  def erase_from_start_to_cursor(buffer, x, y, top, bottom),
+    do: EraseOps.erase_from_start_to_cursor(buffer, x, y, top, bottom)
 
-  @doc """
-  Clears the scroll region, resetting to full screen.
-  """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def clear_scroll_region(buffer) do
-    %{buffer | scroll_region: nil}
-  end
+  def erase_all(buffer), do: EraseOps.erase_all(buffer)
 
-  @doc """
-  Gets the current scroll region boundaries.
-  Returns {0, height-1} if no region is set.
-  """
+  def clear_region(buffer, x, y, width, height),
+    do: EraseOps.clear_region(buffer, x, y, width, height)
+
+  def erase_display(buffer, mode, cursor, min_row, max_row),
+    do: EraseOps.erase_display(buffer, mode, cursor, min_row, max_row)
+
+  def erase_screen(buffer), do: EraseOps.erase_screen(buffer)
+
+  def erase_line(buffer, mode, cursor, min_col, max_col),
+    do: EraseOps.erase_line(buffer, mode, cursor, min_col, max_col)
+
+  def erase_in_line(buffer, position, type),
+    do: EraseOps.erase_in_line(buffer, position, type)
+
+  def erase_in_display(buffer, position, type),
+    do: EraseOps.erase_in_display(buffer, position, type)
+
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def get_scroll_region_boundaries(buffer) do
-    case buffer.scroll_region do
-      nil -> {0, buffer.height - 1}
-      {top, bottom} -> {top, bottom}
-    end
-  end
+  def erase_from_cursor_to_end(buffer),
+    do: EraseOps.erase_from_cursor_to_end(buffer)
+
+  def delete_chars(buffer, count, cursor, max_col),
+    do: EraseOps.delete_chars(buffer, count, cursor, max_col)
+
+  def insert_chars(buffer, count, cursor, max_col),
+    do: EraseOps.insert_chars(buffer, count, cursor, max_col)
+
+  def delete_characters(buffer, row, col, count, default_style),
+    do: EraseOps.delete_characters(buffer, row, col, count, default_style)
+
+  # === Line Operations (LineOps) ===
+
+  def insert_lines(buffer, y, count, style),
+    do: LineOps.insert_lines(buffer, y, count, style)
+
+  def insert_lines(buffer, y, count, style, {top, bottom}),
+    do: LineOps.insert_lines(buffer, y, count, style, {top, bottom})
+
+  def insert_lines(buffer, lines, y, top, bottom),
+    do: LineOps.insert_lines_in_region(buffer, lines, y, top, bottom)
+
+  def delete_lines(buffer, y, count, style, {top, bottom}),
+    do: LineOps.delete_lines(buffer, y, count, style, {top, bottom})
+
+  def delete_lines(buffer, lines, y, top, bottom),
+    do: LineOps.delete_lines_in_region(buffer, lines, y, top, bottom)
+
+  def pop_bottom_lines(buffer, count),
+    do: LineOps.pop_bottom_lines(buffer, count)
+
+  def get_line(buffer, y), do: LineOps.get_line(buffer, y)
+
+  def get_cell_at(buffer, x, y), do: LineOps.get_cell_at(buffer, x, y)
 
   # === Query Operations ===
 
-  @doc """
-  Gets a specific line from the buffer.
-  """
-  def get_line(buffer, y) when y >= 0 and y < buffer.height do
-    case buffer.cells do
-      nil -> []
-      cells -> Enum.at(cells, y, [])
-    end
-  end
-
-  def get_line(_, _), do: []
-
-  @doc """
-  Gets the cell at the specified position in the buffer.
-  """
-  def get_cell_at(buffer, x, y) do
-    get_cell(buffer, x, y)
-  end
-
-  @doc """
-  Checks if the buffer is empty.
-  """
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def empty?(buffer) do
     case buffer.cells do
@@ -601,303 +407,40 @@ defmodule Raxol.Terminal.ScreenBuffer do
     end
   end
 
-  # === Scrollback Operations ===
-
-  @doc """
-  Gets the current scroll position within the scrollback.
-  """
-  @impl Raxol.Terminal.ScreenBufferBehaviour
-  def get_scroll_position(buffer) do
-    buffer.scroll_position || 0
-  end
-
-  # === Cleanup ===
-
   def cleanup(_buffer), do: :ok
 
-  # Higher-arity insert_lines for command handlers
-  @doc """
-  Inserts blank lines at a specific position with style.
-  """
-  def insert_lines(buffer, y, count, style) do
-    Operations.insert_lines(buffer, y, count, style)
-  end
-
-  @doc """
-  Inserts lines at a specific position within a scroll region.
-
-  ## Parameters
-  - y: position to insert at
-  - count: number of lines to insert
-  - style: style for the blank lines
-  - {top, bottom}: scroll region boundaries
-  """
-  def insert_lines(buffer, y, count, style, {top, bottom}) do
-    Operations.insert_lines(buffer, y, count, style, {top, bottom})
-  end
-
-  # Higher-arity insert_lines for region (legacy interface)
-  def insert_lines(buffer, lines, y, top, bottom) do
-    Operations.insert_lines(buffer, lines, y, top, bottom)
-  end
-
-  # Higher-arity delete_lines for command handlers
-  @doc """
-  Deletes lines at a specific position.
-
-  ## Parameters
-  - For command handlers: y, count, style, and region boundaries
-  - For region operations: lines, y, top, and bottom positions
-  """
-  def delete_lines(buffer, y, count, style, {top, bottom}) do
-    Operations.delete_lines(
-      buffer,
-      y,
-      count,
-      style,
-      {top, bottom}
-    )
-  end
-
-  # Higher-arity delete_lines for region
-  def delete_lines(buffer, lines, y, top, bottom) do
-    Operations.delete_lines(buffer, lines, y, top, bottom)
-  end
-
-  # === Screen Operations ===
-
-  def clear(buffer, _style \\ nil) do
-    # Clear the entire buffer by setting all cells to empty
-    # Use Cell.new() to match the default cell structure
-    new_cells = create_empty_grid(buffer.width, buffer.height)
-    %{buffer | cells: new_cells}
-  end
-
-  def erase_from_cursor_to_end(buffer, x, y, top, bottom) do
-    EraseOperations.erase_from_cursor_to_end(buffer, x, y, top, bottom)
-  rescue
-    e ->
-      Logger.warning(
-        "Failed to erase from cursor to end at (#{x},#{y}): #{Exception.message(e)}"
-      )
-
-      buffer
-  end
-
-  def erase_from_start_to_cursor(buffer, x, y, top, bottom) do
-    EraseOperations.erase_from_start_to_cursor(buffer, x, y, top, bottom)
-  rescue
-    e ->
-      Logger.warning(
-        "Failed to erase from start to cursor at (#{x},#{y}): #{Exception.message(e)}"
-      )
-
-      buffer
-  end
-
-  @impl Raxol.Terminal.ScreenBufferBehaviour
-  def erase_all(buffer) do
-    EraseOperations.erase_all(buffer)
-  rescue
-    e ->
-      Logger.warning(
-        "Failed to erase all buffer content: #{Exception.message(e)}"
-      )
-
-      buffer
-  end
-
-  def clear_region(buffer, x, y, width, height) do
-    EraseOperations.clear_region(buffer, x, y, width, height)
-  rescue
-    e ->
-      Logger.warning(
-        "Failed to clear region at (#{x},#{y}) size #{width}x#{height}: #{Exception.message(e)}"
-      )
-
-      buffer
-  end
-
   def mark_damaged(buffer, x, y, width, height, _reason) do
-    # Add the new damage region to the existing list
     new_region = {x, y, width, height}
     updated_damage_regions = [new_region | buffer.damage_regions || []]
     %{buffer | damage_regions: updated_damage_regions}
   end
 
-  def pop_bottom_lines(buffer, count) do
-    # Remove count lines from bottom and return {buffer, removed_lines}
-    cells = buffer.cells || []
-    cells_count = length(cells)
-    lines_to_remove = min(count, cells_count)
+  # === Scrollback Operations ===
 
-    {removed_lines, remaining_cells} = Enum.split(cells, -lines_to_remove)
-    new_buffer = %{buffer | cells: remaining_cells}
-    {new_buffer, removed_lines}
-  end
+  def get_scrollback(buffer), do: buffer.scrollback || []
 
-  def erase_display(buffer, mode, _cursor, _min_row, _max_row) do
-    # Simple implementation for erase display
-    case mode do
-      0 -> erase_from_cursor_to_end(buffer)
-      1 -> erase_from_start_to_cursor(buffer)
-      2 -> clear(buffer)
-      _ -> buffer
-    end
-  end
+  def set_scrollback(buffer, scrollback),
+    do: %{buffer | scrollback: scrollback}
 
-  @doc """
-  Erases the entire screen.
-  """
-  def erase_screen(buffer) do
-    # EraseOperations.erase_all always returns %__MODULE__{}
-    EraseOperations.erase_all(buffer)
-  end
+  def get_damaged_regions(buffer), do: buffer.damage_regions || []
 
-  def erase_line(buffer, mode, cursor, _min_col, _max_col) do
-    # Use EraseOperations.erase_in_line which actually exists
-    {cursor_x, cursor_y} = {elem(cursor, 0), elem(cursor, 1)}
+  def clear_damaged_regions(buffer), do: %{buffer | damage_regions: []}
 
-    case mode do
-      0 ->
-        EraseOperations.erase_in_line(buffer, {cursor_x, cursor_y}, :to_end)
+  def get_scroll_region(buffer),
+    do: ScrollOps.get_scroll_region(buffer)
 
-      1 ->
-        EraseOperations.erase_in_line(
-          buffer,
-          {cursor_x, cursor_y},
-          :to_beginning
-        )
+  def shift_region_to_line(buffer, region, target_line),
+    do: ScrollOps.shift_region_to_line(buffer, region, target_line)
 
-      2 ->
-        EraseOperations.erase_in_line(buffer, {cursor_x, cursor_y}, :all)
-
-      _ ->
-        buffer
-    end
-  end
-
-  def delete_chars(buffer, count, cursor, _max_col) do
-    # Simple implementation for delete chars
-    {cursor_x, cursor_y} = cursor
-
-    CharEditor.delete_characters(
-      buffer,
-      cursor_y,
-      cursor_x,
-      count,
-      buffer.default_style
-    )
-  end
-
-  def insert_chars(buffer, _count, _cursor, _max_col) do
-    # Simple implementation for insert chars - just return buffer for now
-    buffer
-  end
-
-  def set_dimensions(buffer, width, height) do
-    resize(buffer, width, height)
-  end
-
-  def get_scrollback(buffer) do
-    buffer.scrollback || []
-  end
-
-  def set_scrollback(buffer, scrollback) do
-    %{buffer | scrollback: scrollback}
-  end
-
-  def get_damaged_regions(buffer) do
-    buffer.damage_regions || []
-  end
-
-  def clear_damaged_regions(buffer) do
-    %{buffer | damage_regions: []}
-  end
-
-  def get_scroll_region(buffer) do
-    Operations.get_region(buffer)
-  end
-
-  def shift_region_to_line(buffer, region, target_line) do
-    Operations.shift_region_to_line(buffer, region, target_line)
-  rescue
-    e ->
-      Logger.warning(
-        "Failed to shift region to line #{target_line}: #{Exception.message(e)}"
-      )
-
-      buffer
-  end
-
-  @doc """
-  Gets the estimated memory usage of the screen buffer.
-  """
-  def erase_in_line(buffer, position, type) do
-    EraseOperations.erase_in_line(buffer, position, type)
-  rescue
-    e ->
-      Logger.warning(
-        "Failed to erase in line at #{inspect(position)} type #{type}: #{Exception.message(e)}"
-      )
-
-      buffer
-  end
-
-  def erase_in_display(buffer, position, type) do
-    EraseOperations.erase_in_display(buffer, position, type)
-  end
-
-  @impl Raxol.Terminal.ScreenBufferBehaviour
-  def erase_from_cursor_to_end(buffer) do
-    EraseOperations.erase_from_cursor_to_end(buffer)
-  rescue
-    e ->
-      Logger.warning(
-        "Failed to erase from cursor to end: #{Exception.message(e)}"
-      )
-
-      buffer
-  end
-
-  # Higher-arity delete_characters for command handlers
-  @doc """
-  Deletes a specified number of characters starting from the given position in the buffer.
-  Delegates to CharEditor.delete_characters/5.
-  """
-  def delete_characters(buffer, row, col, count, default_style) do
-    CharEditor.delete_characters(buffer, row, col, count, default_style)
-  end
-
-  @doc """
-  Scrolls the buffer down by the specified number of lines with additional parameters.
-  """
   def scroll_down(buffer, lines, count)
-      when is_integer(lines) and is_integer(count) do
-    # scroll_down returns a map directly, not a tuple
-    Raxol.Terminal.Commands.Scrolling.scroll_down(
-      buffer,
-      lines,
-      buffer.scroll_region,
-      %{}
-    )
-  rescue
-    e ->
-      Logger.warning(
-        "Failed to scroll down #{lines} lines: #{Exception.message(e)}"
-      )
+      when is_integer(lines) and is_integer(count),
+      do: ScrollOps.scroll_down_with_count(buffer, lines, count)
 
-      buffer
-  end
-
-  # Handle case where lines parameter is a list (from tests)
-  def scroll_down(buffer, _lines, count) when is_integer(count) do
-    scroll_down(buffer, count)
-  end
+  def scroll_down(buffer, lines, count) when is_integer(count),
+    do: ScrollOps.scroll_down_with_count(buffer, lines, count)
 
   # === Behaviour Callback Implementations ===
 
-  # All behaviour implementations delegated to BehaviourImpl
   @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate cleanup_file_watching(buffer), to: BehaviourImpl
   @impl Raxol.Terminal.ScreenBufferBehaviour
@@ -989,21 +532,17 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate write(buffer, data), to: BehaviourImpl
 
-  # Overloaded write for compatibility with legacy code
   def write(buffer, string, opts) when is_map(buffer) and is_binary(string) do
-    # Merge opts into the buffer or use separately
     write_string(buffer, 0, 0, string, opts[:style] || nil)
   end
 
-  # === Scroll Operations ===
+  # === Region Operations ===
 
   defdelegate fill_region(buffer, x, y, width, height, cell),
     to: RegionOperations
 
   def update(buffer, changes) when is_map(changes) do
-    Enum.reduce(changes, buffer, fn {key, value}, acc ->
-      Map.put(acc, key, value)
-    end)
+    Map.merge(buffer, changes)
   end
 
   defdelegate handle_single_line_replacement(
@@ -1015,6 +554,33 @@ defmodule Raxol.Terminal.ScreenBuffer do
               ),
               to: RegionOperations
 
+  # === Compatibility Functions ===
+
+  def scroll(buffer, lines) when lines > 0, do: scroll_up(buffer, lines)
+
+  def scroll(buffer, lines) when lines < 0,
+    do: {scroll_down(buffer, -lines), []}
+
+  def scroll(buffer, 0), do: {buffer, []}
+
+  def write(buffer, x, y, content) when is_binary(content),
+    do: write_string(buffer, x, y, content)
+
+  def write(buffer, x, y, content),
+    do: write_char(buffer, x, y, to_string(content))
+
+  # === Private Helpers ===
+
+  defp create_empty_grid(width, height) when width > 0 and height > 0 do
+    for _y <- 0..(height - 1) do
+      for _x <- 0..(width - 1) do
+        Cell.new()
+      end
+    end
+  end
+
+  defp create_empty_grid(_width, _height), do: []
+
   defp validate_positive_dimensions!(width, height)
        when width <= 0 or height <= 0 do
     raise ArgumentError,
@@ -1022,48 +588,4 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   defp validate_positive_dimensions!(_width, _height), do: :ok
-
-  # Functions for compatibility
-  @doc """
-  Creates a new buffer with default dimensions.
-  """
-  def new do
-    new(80, 24)
-  end
-
-  @doc """
-  Creates a new buffer with a single dimension parameter.
-  Creates a square buffer.
-  """
-  def new(size) when is_integer(size) and size > 0 do
-    new(size, size)
-  end
-
-  # Additional compatibility functions for tests and legacy code
-  @doc """
-  Scrolls the buffer content.
-  Returns {buffer, scrolled_lines}.
-  """
-  def scroll(buffer, lines) when lines > 0 do
-    scroll_up(buffer, lines)
-  end
-
-  def scroll(buffer, lines) when lines < 0 do
-    # scroll_down doesn't return scrolled_lines, so we return empty list
-    {scroll_down(buffer, -lines), []}
-  end
-
-  def scroll(buffer, 0), do: {buffer, []}
-
-  @doc """
-  Writes content to the buffer at the specified position.
-  This is a convenience function for write_string.
-  """
-  def write(buffer, x, y, content) when is_binary(content) do
-    write_string(buffer, x, y, content)
-  end
-
-  def write(buffer, x, y, content) do
-    write_char(buffer, x, y, to_string(content))
-  end
 end

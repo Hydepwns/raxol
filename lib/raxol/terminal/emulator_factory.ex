@@ -27,7 +27,7 @@ defmodule Raxol.Terminal.EmulatorFactory do
       plugin_manager: opts[:plugin_manager] || Raxol.Core.new(),
       session_id: opts[:session_id],
       client_options: opts[:client_options] || %{},
-      state: Raxol.Terminal.State.TerminalStateManager.new(),
+      state: %{modes: %{}, attributes: %{}, state_stack: []},
       command: Command.Manager.new(),
       window_title: nil,
       state_stack: [],

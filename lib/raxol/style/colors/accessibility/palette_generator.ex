@@ -23,25 +23,48 @@ defmodule Raxol.Style.Colors.Accessibility.PaletteGenerator do
       )
 
     secondary =
-      Suggester.suggest_accessible_color(base.hex, background: bg.hex, level: level)
+      Suggester.suggest_accessible_color(base.hex,
+        background: bg.hex,
+        level: level
+      )
 
     rotated = Raxol.Style.Colors.HSL.rotate_hue(base, 180)
 
     accent =
-      Suggester.suggest_accessible_color(rotated.hex, background: bg.hex, level: level)
+      Suggester.suggest_accessible_color(rotated.hex,
+        background: bg.hex,
+        level: level
+      )
 
-    link = Suggester.suggest_accessible_color("#0066CC", background: bg.hex, level: level)
+    link =
+      Suggester.suggest_accessible_color("#0066CC",
+        background: bg.hex,
+        level: level
+      )
 
     success =
-      Suggester.suggest_accessible_color("#28A745", background: bg.hex, level: level)
+      Suggester.suggest_accessible_color("#28A745",
+        background: bg.hex,
+        level: level
+      )
 
     warning =
-      Suggester.suggest_accessible_color("#FFC107", background: bg.hex, level: level)
+      Suggester.suggest_accessible_color("#FFC107",
+        background: bg.hex,
+        level: level
+      )
 
     error =
-      Suggester.suggest_accessible_color("#DC3545", background: bg.hex, level: level)
+      Suggester.suggest_accessible_color("#DC3545",
+        background: bg.hex,
+        level: level
+      )
 
-    info = Suggester.suggest_accessible_color("#17A2B8", background: bg.hex, level: level)
+    info =
+      Suggester.suggest_accessible_color("#17A2B8",
+        background: bg.hex,
+        level: level
+      )
 
     colors = %{
       primary: base.hex,
@@ -155,7 +178,8 @@ defmodule Raxol.Style.Colors.Accessibility.PaletteGenerator do
   defp adjust_color_by_key(true, key, color, _bg_hex), do: {key, color}
 
   defp adjust_color_by_key(false, key, color, bg_hex) do
-    {key, Suggester.suggest_accessible_color(color, background: bg_hex, level: :aa)}
+    {key,
+     Suggester.suggest_accessible_color(color, background: bg_hex, level: :aa)}
   end
 
   defp fallback_colors(colors, bg) do
@@ -167,5 +191,7 @@ defmodule Raxol.Style.Colors.Accessibility.PaletteGenerator do
   end
 
   defp set_fallback_color(true, key, bg), do: {key, bg.hex}
-  defp set_fallback_color(false, key, bg), do: {key, Suggester.get_optimal_text_color(bg)}
+
+  defp set_fallback_color(false, key, bg),
+    do: {key, Suggester.get_optimal_text_color(bg)}
 end

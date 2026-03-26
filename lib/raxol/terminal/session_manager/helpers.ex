@@ -166,4 +166,61 @@ defmodule Raxol.Terminal.SessionManager.Helpers do
   end
 
   defp format_timestamp(_), do: "unknown"
+
+  @doc """
+  Creates a Client struct from an id, session_id, and config map.
+  """
+  def create_client(client_id, session_id, config) do
+    alias Raxol.Terminal.SessionManager.Client
+
+    %Client{
+      id: client_id,
+      session_id: session_id,
+      connection_type: Map.get(config, :connection_type, :local),
+      connected_at: System.monotonic_time(:millisecond),
+      last_activity: System.monotonic_time(:millisecond),
+      terminal_size: Map.get(config, :terminal_size, {80, 24}),
+      capabilities: Map.get(config, :capabilities, [:resize, :color, :mouse]),
+      metadata: Map.get(config, :metadata, %{})
+    }
+  end
+
+  @doc """
+  Generates a unique session ID based on name and timestamp.
+  """
+  def generate_session_id(name) do
+    timestamp = System.unique_integer([:positive, :monotonic])
+
+    Base.encode16(:crypto.hash(:sha256, "#{name}-#{timestamp}"))
+    |> String.slice(0, 16)
+  end
+
+  @doc """
+  Generates a unique client ID.
+  """
+  def generate_client_id do
+    "client_" <> Base.encode16(:crypto.strong_rand_bytes(4))
+  end
+
+  @doc """
+  Sends input to a terminal process if it is alive.
+  """
+  def send_to_terminal(terminal_pid, input) do
+    if Process.alive?(terminal_pid) do
+      GenServer.call(terminal_pid, {:send_input, input})
+    else
+      {:error, :terminal_dead}
+    end
+  end
+
+  @doc """
+  Initializes the network server for session sharing.
+  """
+  def init_network_server(false, _port), do: nil
+
+  def init_network_server(true, port) do
+    alias Raxol.Core.Runtime.Log
+    Log.info("Session sharing server started on port #{port}")
+    %{port: port, enabled: true}
+  end
 end

@@ -36,11 +36,14 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
 
   require Logger
 
-  alias Raxol.Core.NavigationUtils
   alias Raxol.Terminal.{Config, Window}
-  alias Raxol.Terminal.Window.Manager.StateOps
+  alias Raxol.Terminal.Window.Manager.{NavigationOps, StateOps}
 
-  @compile {:no_warn_undefined, Raxol.Terminal.Window.Manager.StateOps}
+  @compile {:no_warn_undefined,
+            [
+              Raxol.Terminal.Window.Manager.StateOps,
+              Raxol.Terminal.Window.Manager.NavigationOps
+            ]}
 
   @default_state %{
     windows: %{},
@@ -540,20 +543,15 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
         _from,
         state
       ) do
-    position_data = %{
-      id: window_id,
-      x: x,
-      y: y,
-      width: width,
-      height: height,
-      center_x: x + div(width, 2),
-      center_y: y + div(height, 2)
-    }
-
-    new_state = %{
-      state
-      | spatial_map: Map.put(state.spatial_map, window_id, position_data)
-    }
+    new_state =
+      NavigationOps.register_window_position(
+        state,
+        window_id,
+        x,
+        y,
+        width,
+        height
+      )
 
     {:reply, :ok, new_state}
   end
@@ -565,7 +563,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
         state
       ) do
     new_state =
-      NavigationUtils.define_navigation_path(state, from_id, direction, to_id)
+      NavigationOps.define_navigation_path(state, from_id, direction, to_id)
 
     {:reply, :ok, new_state}
   end
