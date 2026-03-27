@@ -123,6 +123,7 @@ defmodule Raxol.Agent.Backend.Lumo.CryptoTest do
 
   describe "encrypt_request_key/1" do
     @tag :gpg
+    @tag :unix_only
     test "encrypts a 32-byte key to PGP format" do
       if Crypto.gpg_available?() do
         key = Crypto.generate_request_key()

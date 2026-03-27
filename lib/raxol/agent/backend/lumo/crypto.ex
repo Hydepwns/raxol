@@ -185,9 +185,6 @@ defmodule Raxol.Agent.Backend.Lumo.Crypto do
       input_path = Path.join(tmpdir, "key.bin")
       output_path = Path.join(tmpdir, "key.bin.gpg")
 
-      # GPG --homedir requires native path separators on Windows
-      gpg_homedir = native_path(tmpdir)
-
       File.write!(pubkey_path, @lumo_pub_key)
       File.write!(input_path, raw_key)
       File.chmod!(input_path, 0o600)
@@ -198,11 +195,11 @@ defmodule Raxol.Agent.Backend.Lumo.Crypto do
           "gpg",
           [
             "--homedir",
-            gpg_homedir,
+            tmpdir,
             "--batch",
             "--quiet",
             "--import",
-            native_path(pubkey_path)
+            pubkey_path
           ],
           stderr_to_stdout: true
         )
@@ -213,7 +210,7 @@ defmodule Raxol.Agent.Backend.Lumo.Crypto do
           "gpg",
           [
             "--homedir",
-            gpg_homedir,
+            tmpdir,
             "--batch",
             "--quiet",
             "--yes",
@@ -223,8 +220,8 @@ defmodule Raxol.Agent.Backend.Lumo.Crypto do
             "--recipient",
             "F032A1169DDFF8EDA728E59A9A74C3EF61514A2A",
             "--output",
-            native_path(output_path),
-            native_path(input_path)
+            output_path,
+            input_path
           ],
           stderr_to_stdout: true
         )
@@ -249,14 +246,5 @@ defmodule Raxol.Agent.Backend.Lumo.Crypto do
     end
   rescue
     ErlangError -> false
-  end
-
-  # GPG on Windows requires backslash path separators in --homedir and file args.
-  # Elixir's Path module uses forward slashes on all platforms.
-  defp native_path(path) do
-    case :os.type() do
-      {:win32, _} -> String.replace(path, "/", "\\")
-      _ -> path
-    end
   end
 end

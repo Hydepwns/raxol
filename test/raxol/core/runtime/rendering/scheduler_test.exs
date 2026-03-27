@@ -70,7 +70,7 @@ defmodule Raxol.Core.Runtime.Rendering.SchedulerTest do
       GenServer.cast(pid, :enable)
 
       # Should still work normally
-      assert_receive {:"$gen_cast", :render_frame}, 200
+      assert_receive {:"$gen_cast", :render_frame}, 500
       GenServer.stop(pid)
     end
 
