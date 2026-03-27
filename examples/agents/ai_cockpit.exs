@@ -5,6 +5,9 @@
 # follow-up questions, and demonstrates the full agent + cockpit stack.
 #
 # Default: mock streaming (no API key needed, runs instantly)
+# Lumo:    PROTON_UID=... PROTON_ACCESS_TOKEN=... mix run ...  (direct Proton Lumo with U2L encryption)
+# Lumo:    LUMO_TAMER_URL=http://localhost:3000 mix run ...    (via lumo-tamer proxy)
+# Kimi:    KIMI_API_KEY=... mix run ...                        (Moonshot AI, $0.60/M input)
 # Free AI: FREE_AI=true mix run examples/agents/ai_cockpit.exs  (LLM7.io, no key needed)
 # Ollama:  OLLAMA_MODEL=llama3 mix run examples/agents/ai_cockpit.exs
 # Groq:    AI_API_KEY=gsk_... AI_BASE_URL=https://api.groq.com/openai AI_MODEL=llama-3.3-70b-versatile mix run ...
@@ -28,12 +31,26 @@ defmodule AICockpit.Config do
 
   def detect_backend do
     cond do
+      System.get_env("PROTON_UID") && System.get_env("PROTON_ACCESS_TOKEN") ->
+        {:lumo, []}
+
+      System.get_env("LUMO_TAMER_URL") ->
+        {:lumo, []}
+
       key = System.get_env("ANTHROPIC_API_KEY") ->
         {:http,
          provider: :anthropic,
          api_key: key,
          base_url: "https://api.anthropic.com",
          model: System.get_env("ANTHROPIC_MODEL") || "claude-haiku-3-5-20241022",
+         max_tokens: 512}
+
+      key = System.get_env("KIMI_API_KEY") ->
+        {:http,
+         provider: :kimi,
+         api_key: key,
+         base_url: "https://api.moonshot.ai",
+         model: System.get_env("KIMI_MODEL") || "kimi-k2.5",
          max_tokens: 512}
 
       key = System.get_env("AI_API_KEY") ->
@@ -64,6 +81,7 @@ defmodule AICockpit.Config do
     end
   end
 
+  def backend_label({:lumo, _}), do: "lumo:proton"
   def backend_label({:http, opts}), do: "#{opts[:provider]}:#{opts[:model]}"
   def backend_label({:mock, _}), do: "mock (set API key for real AI)"
 end
@@ -305,26 +323,31 @@ defmodule AICockpit.Analyst do
     end
   end
 
+  defp stream_with_backend(backend, messages, opts, sender) do
+    case backend.stream(messages, opts) do
+      {:ok, stream} ->
+        Enum.each(stream, fn event -> sender.(event) end)
+
+      {:error, _} ->
+        case backend.complete(messages, opts) do
+          {:ok, resp} ->
+            sender.({:chunk, resp.content})
+            sender.({:done, resp})
+
+          {:error, reason} ->
+            sender.({:error, reason})
+        end
+    end
+  end
+
   defp call_backend(messages) do
     Command.async(fn sender ->
       case AICockpit.Config.detect_backend() do
         {:http, opts} ->
-          backend = Raxol.Agent.Backend.HTTP
+          stream_with_backend(Raxol.Agent.Backend.HTTP, messages, opts, sender)
 
-          case backend.stream(messages, opts) do
-            {:ok, stream} ->
-              Enum.each(stream, fn event -> sender.(event) end)
-
-            {:error, _} ->
-              case backend.complete(messages, opts) do
-                {:ok, resp} ->
-                  sender.({:chunk, resp.content})
-                  sender.({:done, resp})
-
-                {:error, reason} ->
-                  sender.({:error, reason})
-              end
-          end
+        {:lumo, opts} ->
+          stream_with_backend(Raxol.Agent.Backend.Lumo, messages, opts, sender)
 
         {:mock, _} ->
           AICockpit.MockStream.stream_response(
@@ -727,8 +750,8 @@ defmodule AICockpit.Dashboard do
     end
   end
 
-  defp get_in_safe(model, :analyst, field) do
-    case model.analyst do
+  defp get_in_safe(model, key, field) do
+    case Map.get(model, key) do
       nil -> nil
       m -> Map.get(m, field)
     end
