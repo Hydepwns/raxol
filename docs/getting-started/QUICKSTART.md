@@ -24,7 +24,7 @@ Or add to an existing project:
 ```elixir
 # mix.exs
 def deps do
-  [{:raxol, path: "../raxol"}]  # After Hex publish: {:raxol, "~> 2.2"}
+  [{:raxol, "~> 2.3"}]
 end
 ```
 

@@ -1,3 +1,19 @@
+## [2.3.0] - 2026-03-27
+
+### Added
+
+- Ink (React/Node.js) column to README comparison table
+- Flexbox & CSS Grid layout row to comparison table (Raxol, Textual, Ink)
+- Inline images (Kitty/Sixel) row to comparison table (Raxol, Ratatui)
+- CODE_OF_CONDUCT.md (Contributor Covenant v2.1)
+- SECURITY.md (vulnerability reporting policy)
+- REPL example in README examples section
+
+### Changed
+
+- Bubble Tea SSH column: `--` -> `via lib` (Wish library)
+- Install section now shows Hex dependency instead of path dep
+
 ## [2.2.0] - 2026-03-22
 
 ### Added
@@ -93,7 +109,6 @@
   - Documentation: `docs/project/CI_ROOT_CAUSE_ANALYSIS.md` (comprehensive technical analysis)
 
 ### Changed
-
 
 ## [2.0.1] - 2025-12-04
 
@@ -251,12 +266,14 @@ documentation overhaul, package split, and feature additions.
 ### Package Structure
 
 Four independent packages now available:
+
 - `raxol_core` (v2.0.0): Buffer primitives, zero dependencies, <100KB
 - `raxol_liveview` (v2.0.0): Phoenix LiveView integration
 - `raxol_plugin` (v2.0.0): Plugin framework with behavior API
 - `raxol` (v2.0.0): Meta-package including all packages
 
 ### Phase 1: Core Modules
+
 - Raxol.Core.Buffer: Terminal buffer operations (<1ms for 80x24)
 - Raxol.Core.Renderer: Pure functional rendering with diff calculation
 - Raxol.Core.Box: Box drawing with multiple border styles (single, double, rounded, heavy, dashed)
@@ -266,6 +283,7 @@ Four independent packages now available:
 - Examples: hello_buffer, box_drawing
 
 ### Phase 2: LiveView Integration
+
 - Raxol.LiveView.TerminalBridge: Buffer to HTML conversion with caching
 - Raxol.LiveView.TerminalComponent: LiveComponent for embedding terminals
 - Event handling: keyboard, mouse, paste, focus/blur
@@ -275,6 +293,7 @@ Four independent packages now available:
 - Complete test coverage (31/31 tests passing)
 
 ### Phase 3: Spotify Plugin Showcase
+
 - Full Spotify Web API integration with OAuth 2.0
 - Six operational modes: auth, main, playlists, devices, search, volume
 - Complete keyboard controls and modal navigation
@@ -284,6 +303,7 @@ Four independent packages now available:
 - Four working examples with integration patterns
 
 ### Phase 4: Documentation Overhaul
+
 - Getting Started: QUICKSTART.md (5/10/15 min tutorials)
 - Core Concepts: CORE_CONCEPTS.md, MIGRATION_FROM_DIY.md
 - Cookbook: 5 practical guides (LiveView, VIM, Performance, Commands, Theming)
@@ -292,6 +312,7 @@ Four independent packages now available:
 - Beginner-friendly with clear migration paths
 
 ### Phase 5: Modular Package Split
+
 - Independent packages with clear dependency boundaries
 - Path-based dependencies for monorepo development
 - Each package fully documented with README, LICENSE, CHANGELOG
@@ -299,6 +320,7 @@ Four independent packages now available:
 - Ready for Hex.pm publishing
 
 ### Phase 6: Feature Additions
+
 - VIM Navigation: hjkl movement, gg/G jumps, search (/ ?), word movement (w b e), visual mode
 - Command Parser: tokenization, tab completion, history navigation, aliases, fuzzy search
 - Fuzzy Search: fzf-style matching with scoring, highlighting, case-sensitive/insensitive modes
@@ -307,12 +329,14 @@ Four independent packages now available:
 - Complete test coverage (180/180 feature tests passing)
 
 ### Test Results
+
 - Total: 2147 tests (2147 passing, 0 failing, 49 skipped)
 - Test pass rate: 100%
 - Property tests: 58/58 passing
 - Zero compilation warnings with --warnings-as-errors
 
 ### Performance
+
 - Parser: 0.17-1.25μs (Phase 0 baseline maintained)
 - Core buffer operations: <1ms for 80x24 buffers
 - LiveView rendering: 1.24ms avg (60fps achieved)
@@ -323,12 +347,14 @@ Four independent packages now available:
 - Cursor effects: ~7μs per update
 
 ### Breaking Changes
+
 - None - v2.0 packages are additive
 - Existing v1.x code continues to work with root package
 - New modular packages available for incremental adoption
 - See MIGRATION_FROM_DIY.md for upgrade strategies
 
 ### Migration Path
+
 - Current v1.x users: No changes required, continue using root package
 - New v2.0 users: Choose packages based on needs
   - Minimal: `{:raxol_core, "~> 2.0"}` (just buffers)
@@ -336,6 +362,7 @@ Four independent packages now available:
   - Full: `{:raxol, "~> 2.0"}` (everything included)
 
 ### Documentation Added
+
 - Core: BUFFER_API.md, GETTING_STARTED.md, ARCHITECTURE.md, PHASE1_COMPLETION.md
 - Getting Started: QUICKSTART.md, CORE_CONCEPTS.md, MIGRATION_FROM_DIY.md
 - Cookbook: LIVEVIEW_INTEGRATION.md, VIM_NAVIGATION.md, PERFORMANCE_OPTIMIZATION.md,
@@ -345,11 +372,13 @@ Four independent packages now available:
 - Plugins: SPOTIFY.md with OAuth setup guide
 
 ### Examples Added
+
 - Core: 01_hello_buffer/, 02_box_drawing/
 - LiveView: 01_simple_terminal/ with event handling
 - Plugins: counter.exs, 4 Spotify examples with integration patterns
 
 ### Benchmarks Added
+
 - Core: buffer, renderer, style, box, comprehensive
 - Features: vim, parser, fuzzy, filesystem, cursor, comprehensive
 - LiveView: rendering benchmark with 60fps validation
@@ -357,6 +386,7 @@ Four independent packages now available:
 ## [1.19.0] - 2025-10-01
 
 ### Added
+
 - **Distributed Session Support**: Complete multi-node session management system
   - DistributedSessionRegistry with consistent hashing for optimal session distribution
   - Session affinity support (cpu_bound, memory_bound, io_bound, network_bound)
@@ -377,6 +407,7 @@ Four independent packages now available:
   - Comprehensive test framework with 50+ test scenarios and fault injection
 
 ### Performance
+
 - Session location: < 1ms (consistent hashing)
 - Hot migration time: < 500ms for typical sessions
 - Replication sync: < 5ms (vector clock-based)
@@ -385,6 +416,7 @@ Four independent packages now available:
 - Memory overhead: < 5MB for 10,000+ sessions across cluster
 
 ### Technical Components
+
 - DistributedSessionRegistry: Session location with consistent hashing
 - SessionReplicator: Multi-node replication with vector clocks
 - SessionMigrator: Live migration with 99.9% availability preservation
@@ -394,6 +426,7 @@ Four independent packages now available:
 ## [1.18.0] - 2025-09-29
 
 ### Added
+
 - **Enhanced Error Recovery**: Comprehensive self-healing system
   - RecoverySupervisor with adaptive restart strategies
   - ContextManager with TTL-based state preservation (< 1ms access)
@@ -402,6 +435,7 @@ Four independent packages now available:
   - RecoveryWrapper for transparent process enhancement
 
 ### Performance
+
 - Context retrieval: < 1ms (ETS-backed)
 - Recovery decision time: < 5ms (pattern-based)
 - Graceful degradation: < 100ms activation
@@ -410,6 +444,7 @@ Four independent packages now available:
 ## [1.17.0] - 2025-09-25
 
 ### Changed
+
 - **IO.puts/inspect Migration**: Migrated 524+ raw IO calls to structured logging
   - 37 files migrated to centralized logging system
   - Context-aware replacement strategies by module type
@@ -417,6 +452,7 @@ Four independent packages now available:
   - Zero compilation errors maintained
 
 ### Added
+
 - Automated migration tools for systematic conversion
 - Log.console for debug/test modules
 - Log.log_inspect with label support
@@ -424,6 +460,7 @@ Four independent packages now available:
 ## [1.16.0] - 2025-09-20
 
 ### Changed
+
 - **Logger Standardization**: Centralized logging across 144 files
   - 733 Logger calls standardized with enhanced functionality
   - Module-aware logging with automatic context detection
@@ -431,6 +468,7 @@ Four independent packages now available:
   - Environment-aware console logging
 
 ### Added
+
 - Bulk Logger Migrator tool
 - Alias Syntax Fixer for import conflicts
 - Structured context with metadata enrichment
@@ -438,12 +476,14 @@ Four independent packages now available:
 ## [1.15.2] - 2025-09-15
 
 ### Changed
+
 - **Module Naming Cleanup**: Removed "unified"/"comprehensive" qualifiers
   - 25 files renamed with descriptive, specific names
   - Updated all imports, aliases, and references across 170+ files
   - Zero breaking changes, all functionality preserved
 
 ### Examples
+
 - `unified_registry.ex` → `global_registry.ex`
 - `unified_config_manager.ex` → `config_server.ex`
 - `unified_collector.ex` → `metrics_collector.ex`
@@ -451,6 +491,7 @@ Four independent packages now available:
 ## [1.15.0] - 2025-09-10
 
 ### Added
+
 - **BaseManager Migration Complete**: 170 modules migrated (100%)
   - SSH Session module (final migration)
   - Standardized error handling and supervision
@@ -458,6 +499,7 @@ Four independent packages now available:
   - Zero compilation warnings achieved
 
 ### Summary
+
 - Wave 1-22 completed across versions v1.7.5 to v1.15.0
 - Better OTP supervision tree integration
 - Reduced boilerplate significantly
@@ -623,6 +665,7 @@ Four independent packages now available:
   - Clarified module responsibilities with enhanced documentation
 
 ### Summary
+
 - **Total Lines Reduced**: 900+ lines eliminated through consolidation
 - **Code Quality**: All compilation warnings resolved, critical performance issues fixed
 - **Test Coverage**: 98.7% maintained with enhanced test infrastructure
@@ -633,7 +676,7 @@ Four independent packages now available:
 ### Code Quality Sprint (Phase 6-7) - COMPLETE
 
 - **Critical Issues Fixed**: All compilation errors and warnings resolved
-  - Fixed syntax error in `examples/snippets/advanced/commands.exs` 
+  - Fixed syntax error in `examples/snippets/advanced/commands.exs`
   - Resolved TypeScript import errors across `examples/snippets/typescript/`
   - Achieved zero compilation warnings status
   - Fixed all high-priority Credo issues
@@ -657,7 +700,7 @@ Four independent packages now available:
 
 - **Linter Analysis Results**:
   - Critical Issues: [FIXED] All fixed
-  - High Priority Performance: [FIXED] 15+ fixed  
+  - High Priority Performance: [FIXED] 15+ fixed
   - Code Duplication: [FIXED] 5 patterns eliminated
   - Remaining: 700+ minor optimizations (low impact, deferred)
 
@@ -750,7 +793,7 @@ Four independent packages now available:
 
 - **Major Test Issues Resolved**: Fixed all remaining Sprint 25 test failures (13/13 complete)
   - ColorSystem high contrast accessibility integration
-  - Mouse input integration tests (click/selection modes)  
+  - Mouse input integration tests (click/selection modes)
   - UI rendering pipeline parameter validation fixes
   - Interlacing mode CSI handler mappings
   - InputBuffer module functionality complete
@@ -779,7 +822,7 @@ Four independent packages now available:
 
 - **GenServer Delegation Corrections**: Fixed parameter passing issues in FocusManager and KeyboardShortcuts modules
   - Fixed all 16 FocusManager API functions to properly pass server parameter to GenServer calls
-  - Fixed all 14 KeyboardShortcuts API functions to properly pass server parameter to GenServer calls  
+  - Fixed all 14 KeyboardShortcuts API functions to properly pass server parameter to GenServer calls
   - Resolves `GenServer.whereis/1` errors where component IDs were being interpreted as server names
   - Restores intended functionality for focus management and keyboard shortcuts in production
 
@@ -794,7 +837,7 @@ Four independent packages now available:
 # Check for duplicate filenames
 mix raxol.check.duplicates
 
-# With rename suggestions  
+# With rename suggestions
 mix raxol.check.duplicates --suggest-fixes
 
 # Strict mode (fails on duplicates)
@@ -808,13 +851,14 @@ mix credo
 
 - **Test Suite Excellence**: 100% of major test issues resolved across all sprints
 - **Code Quality**: Comprehensive naming conventions and organization standards
-- **Repository Health**: Clean structure with archived historical artifacts  
+- **Repository Health**: Clean structure with archived historical artifacts
 - **Developer Experience**: Clear documentation and development guidelines
 - **Technical Debt**: Systematic cleanup of backlog items for maintainability
 
 ## [1.0.1] - 2025-08-11
 
 ### Changed
+
 - **[SECURE] Security Validation Complete**: Zero vulnerabilities confirmed via Snyk security scanning
 - **[DOCS] Documentation Links Fixed**: Updated README with correct paths to generated docs and HexDocs
 - **[PERF] Performance Documentation Updated**: Confirmed all targets exceeded with 3.3μs parser operations
@@ -825,8 +869,9 @@ mix credo
 - Enhanced NIF loading reliability
 
 ### v1.0 Launch Milestones Achieved
+
 - [SECURE] **Zero Security Vulnerabilities**: Comprehensive security scan passed
-- [DOCS] **All Documentation Links Working**: README and docs fully functional  
+- [DOCS] **All Documentation Links Working**: README and docs fully functional
 - [FAST] **Performance Targets Exceeded**: 30x better than target (3.3μs vs 100μs)
 - [ARCH] **Multi-Framework Architecture**: Terminal UI framework supporting React, Svelte, LiveView, HEEx, and raw terminal
 
@@ -869,7 +914,7 @@ mix credo
   - Phoenix LiveView integration for real-time updates
   - HEEx templates for server-side rendering
   - Raw terminal control for maximum performance
-  
+
 - **Universal Features Across All Frameworks**
   - Actions system works with any framework
   - Transitions and animations unified across paradigms
@@ -1114,7 +1159,7 @@ mix credo
   - Simplified `burrito.exs` configuration (127→98 lines, 23% reduction)
   - Added standardized mix aliases for release tasks:
     - `mix release.dev` - Development builds
-    - `mix release.prod` - Production builds  
+    - `mix release.prod` - Production builds
     - `mix release.all` - All platform builds
     - `mix release.clean` - Clean build directories
     - `mix release.tag` - Create version tags
@@ -1147,7 +1192,7 @@ mix credo
 ### Impact
 
 - 23% reduction in release configuration complexity
-- Unified release workflow across all platforms (macOS, Linux, Windows)  
+- Unified release workflow across all platforms (macOS, Linux, Windows)
 - Enhanced artifact tracking and build management
 - Safer and more reliable version tagging process
 - Improved developer experience with clear, standardized commands
@@ -1157,7 +1202,6 @@ mix credo
 ### Added
 
 - **Refactored Buffer Server Architecture:**
-
   - Introduced `BufferServerRefactored` with modular, high-performance design
   - Added `ConcurrentBuffer`, `MetricsTracker`, `OperationProcessor`, and `OperationQueue` modules
   - Improved buffer management, batch operations, and performance metrics
@@ -1171,7 +1215,6 @@ mix credo
 ### Fixed
 
 - **Event Handler and State Restoration:**
-
   - Fixed event handler to properly pass emulator to handlers
   - Corrected terminal state restoration logic and fixed KeyError
   - Added cursor-only restoration for DEC mode 1048
@@ -1202,7 +1245,6 @@ mix credo
 ### Added
 
 - **Terminal Buffer Management Refactoring:**
-
   - Split `manager.ex` into specialized modules:
     - `State` - Buffer initialization and state management
     - `Cursor` - Cursor position and movement
@@ -1217,7 +1259,6 @@ mix credo
   - Clearer interfaces
 
 - **Plugin System Improvements:**
-
   - Implemented Tarjan's algorithm for dependency resolution
   - Enhanced version constraint handling
   - Added detailed dependency chain reporting
@@ -1225,7 +1266,6 @@ mix credo
   - Optimized dependency graph operations
 
 - **Component System Enhancements:**
-
   - Harmonized API for all input components
   - Improved theme and style prop support
   - Enhanced lifecycle hooks
@@ -1233,7 +1273,6 @@ mix credo
   - Comprehensive test coverage
 
 - **Performance Infrastructure:**
-
   - New `Raxol.Test.PerformanceHelper` module
   - Performance test suite for terminal manager
   - Event processing benchmarks
@@ -1250,7 +1289,6 @@ mix credo
 ### Changed
 
 - **Test Infrastructure:**
-
   - Replaced `Process.sleep` with event-based synchronization
   - Enhanced plugin test fixtures
   - Improved error handling
@@ -1258,7 +1296,6 @@ mix credo
   - Clear test boundaries
 
 - **Terminal Command Handling:**
-
   - Standardized error/result tuples
   - Improved error propagation
   - Enhanced command handler organization
@@ -1287,13 +1324,11 @@ mix credo
 ### Fixed
 
 - **SelectList Mouse Focus Bug:**
-
   - Fixed focus update on mouse clicks
   - Improved test coverage
   - Enhanced mouse interaction handling
 
 - **Accessibility Tests:**
-
   - Fixed color suggestion tests
   - Improved test reliability
   - Enhanced accessibility coverage
@@ -1326,7 +1361,6 @@ mix credo
 ### Added
 
 - **Progress Component:**
-
   - New `Raxol.UI.Components.Progress` module with multiple progress indicators:
     - Progress bars with customizable styles and labels
     - Spinner animations with multiple animation types
@@ -1336,20 +1370,17 @@ mix credo
   - Full documentation with examples and usage guidelines
 
 - **Documentation Overhaul:**
-
   - Major updates to all component documentation in `docs/components/`
   - Improved structure, navigation, and cross-references
   - Added mermaid diagrams and comprehensive API references
   - Expanded best practices and common pitfalls sections
 
 - **Test Suite Improvements:**
-
   - Enhanced test coverage and organization
   - Updated test fixtures and support files
   - Improved reliability and maintainability
 
 - **Code Style and Formatting:**
-
   - Applied consistent formatting across all Elixir source files
   - Improved code readability and maintainability
 
@@ -1376,7 +1407,6 @@ mix credo
 ### Added
 
 - **Comprehensive Documentation Renderer:**
-
   - Markdown to HTML conversion with Earmark integration
   - Table of contents generation with anchor links
   - Search index creation with metadata extraction
@@ -1385,7 +1415,6 @@ mix credo
   - Graceful fallbacks when dependencies aren't available
 
 - **Window Event Handling:**
-
   - Complete window event processing in terminal driver
   - Resize event handling with dimension updates
   - Title and icon name change processing
@@ -1403,14 +1432,12 @@ mix credo
 ### Changed
 
 - **Major Code Quality Improvements:**
-
   - Eliminated all duplicate code across the codebase
   - Reduced software design suggestions from 44 to 0
   - Improved modularity and maintainability
   - Enhanced code organization and structure
 
 - **Refactored Components:**
-
   - Removed duplicate character operations in favor of char_editor
   - Extracted shared event handling in button component
   - Unified scroll region logic into single helper
@@ -1447,7 +1474,6 @@ mix credo
 ### Added
 
 - **Enhanced Demo Runner:**
-
   - **Command Line Interface**: Added comprehensive command line argument support to `scripts/bin/demo.exs`
     - `--list`: List all available demos with descriptions
     - `--help`: Show detailed usage information and examples
@@ -1494,7 +1520,6 @@ mix credo
 ### Added
 
 - **Terminal System Major Enhancements:**
-
   - Comprehensive refactoring of terminal buffer, ANSI, plugin, and rendering subsystems
   - Enhanced ANSI state machine with improved escape sequence handling
   - Better sixel graphics support and parsing
@@ -1504,7 +1529,6 @@ mix credo
   - Comprehensive test coverage for all terminal subsystems
 
 - **Core System Improvements:**
-
   - Enhanced metrics aggregation and visualization
   - Improved performance monitoring and system utilities
   - Better UX refinement with accessibility integration
@@ -1512,7 +1536,6 @@ mix credo
   - Improved application lifecycle management
 
 - **UI Component Updates:**
-
   - Updated base component lifecycle management
   - Enhanced input field components (multi-line, password, select)
   - Improved progress spinner and layout engine
@@ -1520,7 +1543,6 @@ mix credo
   - Enhanced test coverage for UI components
 
 - **Testing Infrastructure:**
-
   - Expanded test suite with improved coverage
   - Enhanced test fixtures and support scripts
   - Better plugin test organization and reliability
@@ -1537,7 +1559,6 @@ mix credo
 ### Changed
 
 - **Code Quality:**
-
   - Applied consistent formatting across all Elixir source files
   - Improved code readability and maintainability
   - Enhanced error handling and validation
@@ -1553,7 +1574,6 @@ mix credo
 ### Fixed
 
 - **Terminal Operations:**
-
   - Fixed ANSI sequence parsing edge cases
   - Improved buffer scroll region handling
   - Enhanced cursor positioning accuracy
@@ -1577,7 +1597,6 @@ mix credo
 ### Added
 
 - **Enhanced Buffer Manager Compression:**
-
   - Implemented comprehensive buffer compression in `Raxol.Terminal.Buffer.EnhancedManager`
   - Added multiple compression algorithms:
     - Simple compression for empty cell optimization
@@ -1589,7 +1608,6 @@ mix credo
   - Automatic compression state updates and optimization
 
 - **Buffer Compression Features:**
-
   - Cell-level compression with empty cell detection
   - Style attribute optimization (removes default attributes)
   - Run-length encoding for identical consecutive cells

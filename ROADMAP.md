@@ -2,7 +2,7 @@
 
 Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 
-## Current Version: v2.2.0
+## Current Version: v2.3.0
 
 ### What's Done
 
@@ -36,13 +36,14 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 
 ### Ship It
 
-| Task | Description | Effort |
-|------|-------------|--------|
-| Publish to Hex | `mix hex.publish` -- build succeeds, docs clean, zero warnings | Small |
+| Task           | Description                                                    | Effort |
+| -------------- | -------------------------------------------------------------- | ------ |
+| Publish to Hex | `mix hex.publish` -- build succeeds, docs clean, zero warnings | Small  |
 
 ### AI Backend Providers
 
 Supported now:
+
 - **Mock** (default) -- instant offline demo, no API key
 - **Proton Lumo** (`PROTON_UID=... PROTON_ACCESS_TOKEN=...`) -- zero-access encrypted AI, full U2L encryption via `Backend.Lumo`
 - **Proton Lumo via lumo-tamer** (`LUMO_TAMER_URL=http://localhost:3000`) -- OpenAI-compatible proxy fallback
@@ -54,6 +55,7 @@ Supported now:
 - **Anthropic** (`ANTHROPIC_API_KEY=...`) -- Claude Haiku/Sonnet/Opus
 
 Future providers:
+
 - **LocalAI** -- self-hosted OpenAI-compatible (similar to Ollama)
 
 ### Longer Term

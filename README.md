@@ -10,17 +10,19 @@ Your app is a GenServer. Components crash and restart without taking down the UI
 
 Every feature below comes from the BEAM, not a library bolted on top:
 
-| Capability | Raxol | Ratatui | Bubble Tea | Textual |
-|------------|:-----:|:-------:|:----------:|:-------:|
-| Crash isolation per component | yes | -- | -- | -- |
-| Hot code reload (no restart) | yes | -- | -- | -- |
-| Same app in terminal + browser | yes | -- | -- | partial |
-| Built-in SSH serving | yes | -- | -- | -- |
-| AI agent runtime | yes | -- | -- | -- |
-| Distributed clustering (CRDTs) | yes | -- | -- | -- |
-| Time-travel debugging | yes | -- | -- | -- |
-| Session recording (asciinema) | yes | -- | -- | yes |
-| Self-adapting layout | yes | -- | -- | -- |
+| Capability                     | Raxol | Ratatui | Bubble Tea | Textual | Ink |
+| ------------------------------ | :---: | :-----: | :--------: | :-----: | :-: |
+| Crash isolation per component  |  yes  |   --    |     --     |   --    | --  |
+| Hot code reload (no restart)   |  yes  |   --    |     --     |   --    | --  |
+| Same app in terminal + browser |  yes  |   --    |     --     | partial | --  |
+| Built-in SSH serving           |  yes  |   --    |  via lib   |   --    | --  |
+| AI agent runtime               |  yes  |   --    |     --     |   --    | --  |
+| Distributed clustering (CRDTs) |  yes  |   --    |     --     |   --    | --  |
+| Time-travel debugging          |  yes  |   --    |     --     |   --    | --  |
+| Session recording (asciinema)  |  yes  |   --    |     --     |   yes   | --  |
+| Self-adapting layout           |  yes  |   --    |     --     |   --    | --  |
+| Flexbox & CSS Grid layout      |  yes  |   --    |     --     |   yes   | yes |
+| Inline images (Kitty/Sixel)    |  yes  |   yes   |     --     |   --    | --  |
 
 The mapping is natural: GenServer = Elm update loop, process = component with crash isolation, supervisor = restart strategy, `:ssh` = SSH serving without deps, `libcluster` = node discovery.
 
@@ -119,9 +121,9 @@ Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
 ## Install
 
 ```elixir
-# mix.exs -- after Hex publish: {:raxol, "~> 2.2"}
+# mix.exs
 def deps do
-  [{:raxol, path: "../raxol"}]
+  [{:raxol, "~> 2.3"}]
 end
 ```
 
@@ -152,6 +154,7 @@ mix run examples/agents/agent_team.exs           # Coordinator + worker agents
 mix run examples/agents/ai_cockpit.exs           # Multi-agent AI cockpit (mock)
 FREE_AI=true mix run examples/agents/ai_cockpit.exs  # Real AI via LLM7.io (free)
 mix run examples/swarm/cluster_demo.exs          # CRDT state sync demo
+mix raxol.repl                                    # Sandboxed REPL (--sandbox strict)
 mix phx.server                                    # LiveView counter at /counter
 ```
 
@@ -159,12 +162,12 @@ mix phx.server                                    # LiveView counter at /counter
 
 Full frame in 2.1ms on Apple M1 Pro (Elixir 1.19 / OTP 26). That's 13% of the 60fps budget -- components crash and restart in microseconds without affecting the UI.
 
-| What | Time |
-|------|------|
-| Full frame (create + fill + diff) | 2.1 ms |
-| Tree diff (100 nodes) | 4 us |
-| Cell write | 0.97 us |
-| ANSI parse | 38 us |
+| What                              | Time    |
+| --------------------------------- | ------- |
+| Full frame (create + fill + diff) | 2.1 ms  |
+| Tree diff (100 nodes)             | 4 us    |
+| Cell write                        | 0.97 us |
+| ANSI parse                        | 38 us   |
 
 Raxol is slower per-operation than Rust or Go (expected for a managed runtime). The tradeoff: crash isolation, hot reload, distribution, and SSH serving that those frameworks don't have. See the [benchmark suite](docs/bench/README.md) for details.
 

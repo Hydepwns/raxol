@@ -139,7 +139,7 @@ defmodule Raxol do
 
   ```elixir
   Raxol.version()
-  # => "2.2.0"
+  # => "2.3.0"
   ```
   """
   def version do
