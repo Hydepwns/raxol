@@ -1,0 +1,161 @@
+defmodule Raxol.REPL.Sandbox do
+  @moduledoc """
+  AST-based safety checker for REPL code evaluation.
+
+  Scans Elixir code for potentially dangerous operations before evaluation.
+  Three strictness levels:
+
+  - `:none` -- allow everything (local terminal use)
+  - `:standard` -- deny destructive system/file/network ops (default)
+  - `:strict` -- whitelist-only (SSH/web use)
+
+      iex> Sandbox.check("Enum.map([1,2], & &1 * 2)")
+      :ok
+
+      iex> Sandbox.check("System.cmd(\\"rm\\", [\\"-rf\\", \\"/\\"])")
+      {:error, ["System.cmd is not allowed (system command execution)"]}
+  """
+
+  @type level :: :none | :standard | :strict
+
+  @denied_standard [
+    {System, :cmd, "system command execution"},
+    {System, :shell, "shell command execution"},
+    {System, :halt, "system halt"},
+    {System, :stop, "system stop"},
+    {Port, :open, "port execution"},
+    {Port, :command, "port command"},
+    {File, :rm, "file deletion"},
+    {File, :rm!, "file deletion"},
+    {File, :rm_rf, "recursive file deletion"},
+    {File, :rm_rf!, "recursive file deletion"},
+    {File, :write, "file write"},
+    {File, :write!, "file write"},
+    {File, :rename, "file rename"},
+    {File, :rename!, "file rename"},
+    {File, :chmod, "file permission change"},
+    {File, :chmod!, "file permission change"},
+    {File, :chown, "file ownership change"},
+    {File, :chown!, "file ownership change"},
+    {Code, :eval_string, "dynamic code evaluation"},
+    {Code, :eval_file, "file code evaluation"},
+    {Code, :eval_quoted, "dynamic code evaluation"},
+    {Code, :compile_string, "dynamic code compilation"},
+    {Code, :compile_file, "dynamic code compilation"},
+    {:os, :cmd, "OS command execution"},
+    {:erlang, :halt, "VM halt"},
+    {:erlang, :open_port, "port execution"},
+    {:init, :stop, "VM stop"}
+  ]
+
+  @allowed_strict_modules [
+    Enum,
+    Stream,
+    Map,
+    Keyword,
+    List,
+    Tuple,
+    MapSet,
+    String,
+    Integer,
+    Float,
+    Atom,
+    IO,
+    Kernel,
+    Range,
+    Regex,
+    Date,
+    Time,
+    DateTime,
+    NaiveDateTime,
+    Calendar,
+    Access,
+    Base,
+    URI,
+    Jason,
+    Inspect
+  ]
+
+  @doc """
+  Checks code for safety violations at the given strictness level.
+
+  Returns `:ok` if safe, or `{:error, [violation_message]}` if violations found.
+  """
+  @spec check(String.t(), level()) :: :ok | {:error, [String.t()]}
+  def check(code, level \\ :standard)
+  def check(_code, :none), do: :ok
+
+  def check(code, level) do
+    case Code.string_to_quoted(code) do
+      {:ok, ast} ->
+        violations = scan(ast, level)
+        if violations == [], do: :ok, else: {:error, Enum.uniq(violations)}
+
+      {:error, {_meta, message, _token}} ->
+        {:error, ["Syntax error: #{message}"]}
+    end
+  end
+
+  defp scan(ast, level) do
+    {_ast, violations} =
+      Macro.prewalk(ast, [], fn node, acc ->
+        new_violations = check_node(node, level)
+        {node, new_violations ++ acc}
+      end)
+
+    Enum.reverse(violations)
+  end
+
+  defp check_node(
+         {{:., _, [{:__aliases__, _, mod_parts}, func]}, _, _args},
+         :standard
+       ) do
+    module = Module.concat(mod_parts)
+    check_denied_call(module, func)
+  end
+
+  defp check_node({{:., _, [mod, func]}, _, _args}, :standard)
+       when is_atom(mod) do
+    check_denied_call(mod, func)
+  end
+
+  defp check_node(
+         {{:., _, [{:__aliases__, _, mod_parts}, func]}, _, _args},
+         :strict
+       ) do
+    module = Module.concat(mod_parts)
+
+    if module in @allowed_strict_modules do
+      check_denied_call(module, func)
+    else
+      ["#{inspect(module)}.#{func} is not allowed (module not in whitelist)"]
+    end
+  end
+
+  defp check_node({{:., _, [mod, func]}, _, _args}, :strict)
+       when is_atom(mod) do
+    if mod in @allowed_strict_modules do
+      check_denied_call(mod, func)
+    else
+      ["#{inspect(mod)}.#{func} is not allowed (module not in whitelist)"]
+    end
+  end
+
+  defp check_node({:!, _, _}, :strict) do
+    ["Shell command via ! is not allowed"]
+  end
+
+  defp check_node(_node, _level), do: []
+
+  defp check_denied_call(module, func) do
+    case Enum.find(@denied_standard, fn {m, f, _} ->
+           m == module and f == func
+         end) do
+      {_, _, reason} ->
+        ["#{inspect(module)}.#{func} is not allowed (#{reason})"]
+
+      nil ->
+        []
+    end
+  end
+end

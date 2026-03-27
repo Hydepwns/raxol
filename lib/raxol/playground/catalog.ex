@@ -301,6 +301,20 @@ defmodule Raxol.Playground.Catalog do
       complexity: :basic,
       tags: ["effects", "focus", "ring", "accessibility"],
       code_snippet: ~s'FocusRing.render(content, FocusRing.init(style: :solid))'
+    },
+    # --- REPL ---
+    %{
+      name: "REPL",
+      module: Demos.ReplDemo,
+      category: :input,
+      description: "Interactive Elixir REPL with sandboxed evaluation",
+      complexity: :advanced,
+      tags: ["input", "repl", "eval", "elixir", "interactive"],
+      code_snippet: """
+      evaluator = Evaluator.new()
+      {:ok, result, evaluator} = Evaluator.eval(evaluator, "1 + 2")
+      result.value  #=> 3
+      """
     }
   ]
 
