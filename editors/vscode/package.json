@@ -7,11 +7,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/axol-io/raxol.git"
+    "url": "https://github.com/Hydepwns/raxol.git"
   },
   "homepage": "https://raxol.io",
   "bugs": {
-    "url": "https://github.com/axol-io/raxol/issues"
+    "url": "https://github.com/Hydepwns/raxol/issues"
   },
   "keywords": [
     "raxol",
@@ -38,8 +38,14 @@
     "languages": [
       {
         "id": "raxol-elixir",
-        "aliases": ["Raxol Elixir", "raxol"],
-        "extensions": [".ex", ".exs"],
+        "aliases": [
+          "Raxol Elixir",
+          "raxol"
+        ],
+        "extensions": [
+          ".ex",
+          ".exs"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -64,7 +70,7 @@
       },
       {
         "command": "raxol.restartLSP",
-        "title": "Restart Raxol LSP Server", 
+        "title": "Restart Raxol LSP Server",
         "category": "Raxol"
       },
       {
@@ -85,7 +91,7 @@
           "when": "workspaceContains:mix.exs"
         },
         {
-          "command": "raxol.openPlayground", 
+          "command": "raxol.openPlayground",
           "when": "workspaceContains:mix.exs"
         }
       ],
@@ -107,13 +113,16 @@
           "description": "Enable Raxol Language Server Protocol support"
         },
         "raxol.lsp.path": {
-          "type": "string", 
+          "type": "string",
           "default": "mix",
           "description": "Path to mix command for starting LSP server"
         },
         "raxol.lsp.args": {
           "type": "array",
-          "default": ["raxol.lsp", "--stdio"],
+          "default": [
+            "raxol.lsp",
+            "--stdio"
+          ],
           "description": "Arguments to pass to LSP server"
         },
         "raxol.completion.enabled": {

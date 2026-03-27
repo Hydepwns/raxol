@@ -31,21 +31,21 @@ local default_config = {
 -- Setup function
 function M.setup(opts)
   opts = vim.tbl_deep_extend('force', default_config, opts or {})
-  
+
   -- Configure LSP server
   if opts.lsp.enabled then
     M.setup_lsp(opts.lsp)
   end
-  
+
   -- Configure treesitter
   if opts.treesitter.enabled then
     M.setup_treesitter(opts.treesitter)
   end
-  
+
   -- Setup autocommands and keymaps
   M.setup_autocommands()
   M.setup_keymaps()
-  
+
   -- Setup user commands
   M.setup_commands()
 end
@@ -77,7 +77,7 @@ function M.setup_lsp(lsp_opts)
       }
     }
   end
-  
+
   -- Setup the LSP client
   lspconfig.raxol.setup({
     on_attach = M.on_attach,
@@ -91,14 +91,14 @@ function M.setup_lsp(lsp_opts)
   })
 end
 
--- Treesitter Configuration  
+-- Treesitter Configuration
 function M.setup_treesitter(ts_opts)
   local status_ok, ts_configs = pcall(require, 'nvim-treesitter.configs')
   if not status_ok then
     vim.notify('nvim-treesitter not found, skipping treesitter setup', vim.log.levels.WARN)
     return
   end
-  
+
   -- Extend Elixir treesitter for Raxol-specific patterns
   ts_configs.setup({
     highlight = {
@@ -167,7 +167,7 @@ function M.on_attach(client, bufnr)
   vim.bo[bufnr].omnifunc = 'v:lua.vim.lsp.omnifunc'
 
   local opts = { buffer = bufnr, silent = true }
-  
+
   -- LSP keymaps
   vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
   vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
@@ -186,7 +186,7 @@ function M.on_attach(client, bufnr)
   vim.keymap.set('n', '<space>f', function()
     vim.lsp.buf.format({ async = true })
   end, opts)
-  
+
   -- Raxol-specific keymaps
   vim.keymap.set('n', '<space>rc', M.generate_component, opts)
   vim.keymap.set('n', '<space>rp', M.open_playground, opts)
@@ -196,26 +196,26 @@ end
 -- Get LSP capabilities
 function M.get_capabilities()
   local capabilities = vim.lsp.protocol.make_client_capabilities()
-  
+
   -- Add completion capabilities if nvim-cmp is available
   local status_ok, cmp_nvim_lsp = pcall(require, 'cmp_nvim_lsp')
   if status_ok then
     capabilities = cmp_nvim_lsp.default_capabilities(capabilities)
   end
-  
+
   -- Add snippet capabilities
   capabilities.textDocument.completion.completionItem.snippetSupport = true
   capabilities.textDocument.completion.completionItem.resolveSupport = {
     properties = { 'documentation', 'detail', 'additionalTextEdits' }
   }
-  
+
   return capabilities
 end
 
 -- Setup autocommands
 function M.setup_autocommands()
   local group = vim.api.nvim_create_augroup('RaxolPlugin', { clear = true })
-  
+
   -- Auto-detect Raxol projects
   vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
     group = group,
@@ -232,7 +232,7 @@ function M.setup_autocommands()
       end
     end
   })
-  
+
   -- Template insertion for new component files
   vim.api.nvim_create_autocmd('BufNewFile', {
     group = group,
@@ -241,7 +241,7 @@ function M.setup_autocommands()
       M.insert_component_template()
     end
   })
-  
+
   -- Highlight Raxol-specific patterns
   vim.api.nvim_create_autocmd('Syntax', {
     group = group,
@@ -268,13 +268,13 @@ function M.setup_commands()
   vim.api.nvim_create_user_command('RaxolGenerateComponent', function(opts)
     M.generate_component(opts.args)
   end, { nargs = '?', desc = 'Generate a new Raxol component' })
-  
-  vim.api.nvim_create_user_command('RaxolPlayground', M.open_playground, 
+
+  vim.api.nvim_create_user_command('RaxolPlayground', M.open_playground,
     { desc = 'Open Raxol component playground' })
-  
+
   vim.api.nvim_create_user_command('RaxolTest', M.run_tests,
     { desc = 'Run Raxol tests' })
-  
+
   vim.api.nvim_create_user_command('RaxolRestartLSP', M.restart_lsp,
     { desc = 'Restart Raxol LSP server' })
 end
@@ -284,7 +284,7 @@ function M.insert_component_template()
   local filename = vim.fn.expand('%:t:r')
   local component_name = filename:gsub('_(%w)', function(c) return c:upper() end)
   component_name = component_name:sub(1, 1):upper() .. component_name:sub(2)
-  
+
   local template = {
     'defmodule ' .. component_name .. ' do',
     '  @moduledoc """',
@@ -317,7 +317,7 @@ function M.insert_component_template()
     '  end',
     'end'
   }
-  
+
   vim.api.nvim_buf_set_lines(0, 0, -1, false, template)
   -- Position cursor at the render function
   vim.api.nvim_win_set_cursor(0, { 20, 4 })
@@ -329,7 +329,7 @@ function M.setup_syntax_highlighting()
     syntax match RaxolComponent /\<\u\w*\>/ contained
     syntax match RaxolLifecycle /\<\(init\|mount\|update\|render\|handle_event\|unmount\)\>/ contained
     syntax match RaxolEvent /\<on_\w\+\>/ contained
-    
+
     highlight link RaxolComponent Type
     highlight link RaxolLifecycle Function
     highlight link RaxolEvent Constant
@@ -341,7 +341,7 @@ function M.generate_component(name)
   if not name or name == '' then
     name = vim.fn.input('Component name: ')
   end
-  
+
   if name and name ~= '' then
     vim.cmd('terminal mix raxol.gen.component ' .. name)
   end

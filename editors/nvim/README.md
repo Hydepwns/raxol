@@ -53,6 +53,7 @@ use {
 ### Manual Installation
 
 1. Clone or copy the plugin to your Neovim configuration:
+
 ```bash
 # For Neovim data directory
 mkdir -p ~/.local/share/nvim/site/pack/raxol/start/
@@ -60,6 +61,7 @@ cp -r /path/to/raxol/editors/nvim ~/.local/share/nvim/site/pack/raxol/start/raxo
 ```
 
 2. Add to your `init.lua`:
+
 ```lua
 require('raxol').setup()
 ```
@@ -106,7 +108,7 @@ require('raxol').setup({
 Default keymaps (can be customized):
 
 - `<leader>rc` - Generate component
-- `<leader>rp` - Open playground  
+- `<leader>rp` - Open playground
 - `<leader>rt` - Run tests
 - `<leader>rl` - Restart LSP
 
@@ -143,6 +145,7 @@ When creating new files in `**/components/**/*.ex`, the plugin automatically off
 ### Syntax Highlighting
 
 Enhanced syntax highlighting for:
+
 - Raxol component definitions
 - Lifecycle methods (`init`, `mount`, `update`, `render`, `handle_event`)
 - Event handlers (`on_click`, `on_change`, etc.)
@@ -168,11 +171,13 @@ Enhanced syntax highlighting for:
 ### LSP Server Not Starting
 
 1. Ensure the Raxol LSP server is available:
+
 ```bash
 mix raxol.lsp --help
 ```
 
 2. Check LSP logs:
+
 ```vim
 :lua vim.lsp.set_log_level("debug")
 :LspLog
@@ -183,11 +188,13 @@ mix raxol.lsp --help
 ### Treesitter Issues
 
 1. Ensure Elixir parser is installed:
+
 ```vim
 :TSInstall elixir
 ```
 
 2. Check treesitter status:
+
 ```vim
 :TSModuleInfo
 ```
