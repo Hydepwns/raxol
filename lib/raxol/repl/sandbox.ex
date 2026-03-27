@@ -12,7 +12,7 @@ defmodule Raxol.REPL.Sandbox do
       iex> Sandbox.check("Enum.map([1,2], & &1 * 2)")
       :ok
 
-      iex> Sandbox.check("System.cmd(\\"rm\\", [\\"-rf\\", \\"/\\"])")
+      iex> Sandbox.check(~s[System.cmd("rm", ["-rf", "/"])])
       {:error, ["System.cmd is not allowed (system command execution)"]}
   """
 
@@ -45,7 +45,14 @@ defmodule Raxol.REPL.Sandbox do
     {:os, :cmd, "OS command execution"},
     {:erlang, :halt, "VM halt"},
     {:erlang, :open_port, "port execution"},
-    {:init, :stop, "VM stop"}
+    {:init, :stop, "VM stop"},
+    {Process, :exit, "process termination"},
+    {Node, :spawn, "remote code execution"},
+    {Node, :spawn_link, "remote code execution"},
+    {Node, :connect, "node connection"},
+    {GenServer, :call, "arbitrary GenServer interaction"},
+    {GenServer, :cast, "arbitrary GenServer interaction"},
+    {Kernel, :apply, "dynamic function application"}
   ]
 
   @allowed_strict_modules [
@@ -75,6 +82,8 @@ defmodule Raxol.REPL.Sandbox do
     Jason,
     Inspect
   ]
+
+  @denied_erlang_modules [:file, :net_adm, :gen_tcp, :gen_udp, :httpc, :ssl]
 
   @doc """
   Checks code for safety violations at the given strictness level.
@@ -116,7 +125,11 @@ defmodule Raxol.REPL.Sandbox do
 
   defp check_node({{:., _, [mod, func]}, _, _args}, :standard)
        when is_atom(mod) do
-    check_denied_call(mod, func)
+    if mod in @denied_erlang_modules do
+      ["#{inspect(mod)}.#{func} is not allowed (dangerous erlang module)"]
+    else
+      check_denied_call(mod, func)
+    end
   end
 
   defp check_node(
@@ -141,8 +154,17 @@ defmodule Raxol.REPL.Sandbox do
     end
   end
 
-  defp check_node({:!, _, _}, :strict) do
-    ["Shell command via ! is not allowed"]
+  defp check_node({:apply, _, args}, _level) when is_list(args) do
+    ["apply is not allowed (dynamic function application)"]
+  end
+
+  defp check_node({:send, _, args}, _level) when is_list(args) do
+    ["send is not allowed (message sending to arbitrary processes)"]
+  end
+
+  defp check_node({kind, _, _}, _level)
+       when kind in [:defmodule, :defprotocol, :defimpl] do
+    ["#{kind} is not allowed (runtime module definition)"]
   end
 
   defp check_node(_node, _level), do: []

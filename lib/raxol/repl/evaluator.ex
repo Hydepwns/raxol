@@ -12,6 +12,7 @@ defmodule Raxol.REPL.Evaluator do
   """
 
   @default_timeout 5_000
+  @default_max_history 100
 
   @type t :: %__MODULE__{
           bindings: keyword(),
@@ -61,7 +62,9 @@ defmodule Raxol.REPL.Evaluator do
         formatted = inspect(value, pretty: true, width: 80, limit: 50)
 
         result = %{value: value, output: output, formatted: formatted}
-        history = [{code, result} | evaluator.history]
+
+        history =
+          Enum.take([{code, result} | evaluator.history], @default_max_history)
 
         new_eval = %{evaluator | bindings: new_bindings, history: history}
         {:ok, result, new_eval}
