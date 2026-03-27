@@ -4,14 +4,14 @@ Techniques for achieving 60fps terminal rendering.
 
 ## Performance Targets
 
-| Operation | Budget | Typical | Excellent |
-|-----------|--------|---------|-----------|
-| Buffer create | < 1ms | 0.3ms | 0.1ms |
-| write_at (single) | < 100us | 50us | 20us |
-| draw_box | < 500us | 240us | 150us |
-| render_diff | < 2ms | 1.2ms | 0.5ms |
-| Full render | < 16ms | 8ms | 4ms |
-| LiveView update | < 16ms | 5ms | 2ms |
+| Operation         | Budget  | Typical | Excellent |
+| ----------------- | ------- | ------- | --------- |
+| Buffer create     | < 1ms   | 0.3ms   | 0.1ms     |
+| write_at (single) | < 100us | 50us    | 20us      |
+| draw_box          | < 500us | 240us   | 150us     |
+| render_diff       | < 2ms   | 1.2ms   | 0.5ms     |
+| Full render       | < 16ms  | 8ms     | 4ms       |
+| LiveView update   | < 16ms  | 5ms     | 2ms       |
 
 16ms per frame = 60fps.
 
@@ -80,15 +80,13 @@ defp message_style(_), do: %{}
 Cache static parts of the UI:
 
 ```elixir
-# Cache the static frame
-frame = BufferCache.get_or_create(:main_frame, fn ->
-  Buffer.create_blank_buffer(80, 24)
-  |> Box.draw_box(0, 0, 80, 24, :double)
-  |> Buffer.write_at(10, 1, "My Application", %{bold: true})
-end)
+# Cache the static frame in a module attribute or process state
+@main_frame Buffer.create_blank_buffer(80, 24)
+            |> Box.draw_box(0, 0, 80, 24, :double)
+            |> Buffer.write_at(10, 1, "My Application", %{bold: true})
 
-# Only update dynamic content
-frame |> Buffer.write_at(10, 10, "Time: #{Time.utc_now()}")
+# Only update dynamic content per render
+@main_frame |> Buffer.write_at(10, 10, "Time: #{Time.utc_now()}")
 ```
 
 ---

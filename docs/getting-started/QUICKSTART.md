@@ -3,13 +3,12 @@
 Let's build a terminal UI app. By the end of this page you'll have a working counter in your terminal.
 
 What you'll learn:
+
 - The four callbacks every Raxol app implements
 - How to handle keyboard input and button clicks
 - How the View DSL builds layouts
 
 ## Install
-
-Generate a new project:
 
 Generate a new project:
 
@@ -190,6 +189,8 @@ mix run --no-halt
 
 That counter is a complete Raxol app -- `init/update/view` is the whole API. Everything else builds on this loop.
 
+Try `mix raxol.playground` for an interactive catalog of 28 widget demos you can browse, search, and filter -- it's the fastest way to see what's available.
+
 **Next steps:**
 
 - [Widget Gallery](WIDGET_GALLERY.md) -- All widgets with examples
@@ -221,6 +222,7 @@ mix run examples/components/process_component_demo.exs
 ```
 
 Working examples to study:
+
 - `examples/getting_started/counter.exs` -- the counter from this page
 - `examples/demo.exs` -- flagship demo with dashboard, sparklines, live stats
 - `examples/apps/todo_app.ex` -- a complete todo list app

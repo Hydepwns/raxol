@@ -1,11 +1,24 @@
-defmodule LineChartDemo do
-  @moduledoc """
-  Live braille line chart with 3 sine waves at different frequencies.
-  200ms tick. Multicolor braille rendering with auto-scaling Y.
-  """
+# Line Chart Demo
+#
+# Live braille line chart with 3 sine waves at different frequencies.
+#
+# What you'll learn:
+#   - LineChart.render/3 takes bounds and series data, returns cell tuples
+#   - ViewBridge.cells_to_view/1 converts raw cells into View DSL elements
+#   - Braille rendering: each terminal cell encodes a 2x4 dot grid,
+#     giving 2x vertical and 2x horizontal resolution vs normal chars
+#
+# Usage:
+#   mix run examples/charts/line_chart_demo.exs
+#
+# Controls:
+#   q = quit
 
+defmodule LineChartDemo do
   use Raxol.Core.Runtime.Application
 
+  # LineChart renders to raw cell tuples; ViewBridge converts them
+  # into View DSL elements so they can be composed with text/box/column.
   alias Raxol.UI.Charts.{LineChart, ViewBridge}
 
   @max_points 80
@@ -48,6 +61,8 @@ defmodule LineChartDemo do
       %{name: "Gamma", data: Enum.reverse(model.series_c), color: :yellow}
     ]
 
+    # render/3 takes {x, y, width, height} bounds and a list of series.
+    # Returns raw cell tuples that ViewBridge converts to View DSL elements.
     cells = LineChart.render({1, 2, 78, 20}, series, show_legend: true)
 
     column style: %{padding: 1} do

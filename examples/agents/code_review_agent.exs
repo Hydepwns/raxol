@@ -1,14 +1,26 @@
 # Code Review Agent Example
 #
-# Demonstrates: `use Raxol.Agent`, shell commands to read files,
-# async processing (simulated LLM call), structured findings in model,
-# and view rendering for status display.
+# A headless AI agent that reads files via shell commands, simulates
+# an LLM analysis pass, then prints findings and exits.
 #
-# Run with: mix run examples/agents/code_review_agent.exs
+# What you'll learn:
+#   - `use Raxol.Agent` gives you TEA + agent-specific commands
+#   - Agents receive {:agent_message, from, payload} for inter-agent comms
+#   - Command.shell(cmd) runs a shell command; result arrives as
+#     {:command_result, {:shell_result, %{output: ..., exit_status: ...}}}
+#   - Command.async(fn sender -> ... end) runs async work; the sender
+#     callback delivers results back to update/2
+#   - Agents are TEA apps where input comes from tools/messages, not keyboard
+#
+# Usage:
+#   mix run examples/agents/code_review_agent.exs
 
 Logger.configure(level: :warning)
 
 defmodule CodeReviewAgent do
+  # `use Raxol.Agent` imports everything from Raxol.Core.Runtime.Application
+  # plus agent-specific helpers: Command.shell/1, Command.async/1,
+  # Command.send_agent/2, Command.quit/0.
   use Raxol.Agent
 
   @impl true
@@ -23,6 +35,8 @@ defmodule CodeReviewAgent do
     }
   end
 
+  # {:agent_message, from, payload} is how agents receive messages from
+  # other agents or from external code via Session.send_message/2.
   @impl true
   def update({:agent_message, _from, :start_review}, model) do
     case model.files do
@@ -35,6 +49,8 @@ defmodule CodeReviewAgent do
     end
   end
 
+  # Shell command results arrive wrapped in {:command_result, {:shell_result, ...}}.
+  # The result map contains :output (stdout string) and :exit_status (integer).
   @impl true
   def update({:command_result, {:shell_result, result}}, model) do
     finding = %{
@@ -51,7 +67,9 @@ defmodule CodeReviewAgent do
          [Command.shell("wc -l < #{next}")]}
 
       [] ->
-        # Simulate async LLM analysis
+        # Command.async runs a function in a spawned process. The sender
+        # callback delivers results back to this agent's update/2 as
+        # {:command_result, whatever_you_pass_to_sender}.
         {%{new_model | status: :analyzing},
          [
            Command.async(fn sender ->
@@ -84,6 +102,8 @@ defmodule CodeReviewAgent do
     {model, []}
   end
 
+  # view/1 is optional for agents. Headless agents can skip it entirely.
+  # This one renders a simple status display.
   @impl true
   def view(model) do
     column do
@@ -97,14 +117,18 @@ defmodule CodeReviewAgent do
   end
 end
 
-# Start the agent
+# -- Boot --
+# Agent.Session wraps Lifecycle with environment: :agent (skips terminal
+# driver and plugin manager). Agents discover each other via the unique
+# Raxol.Agent.Registry, keyed by :id.
 {:ok, _pid} =
   Raxol.Agent.Session.start_link(
     app_module: CodeReviewAgent,
     id: :code_reviewer
   )
 
-# Kick off the review
+# send_message/2 delivers a message that arrives in update/2 as
+# {:agent_message, from, :start_review}
 Raxol.Agent.Session.send_message(:code_reviewer, :start_review)
 
 # Wait for it to finish

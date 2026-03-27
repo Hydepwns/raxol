@@ -624,12 +624,9 @@ defmodule MyApp.FocusManager do
   end
 
   defp focus_element(element_id) do
-    Raxol.Terminal.send_command({:focus, element_id})
-
-    Raxol.Core.Accessibility.Announcer.announce(
-      "Focused #{element_id}",
-      priority: :polite
-    )
+    # NOTE: Focus management is application-specific.
+    # Update your model's :focused field and re-render.
+    Logger.debug("Focusing element: #{element_id}")
   end
 
   def render_skip_links(assigns) do

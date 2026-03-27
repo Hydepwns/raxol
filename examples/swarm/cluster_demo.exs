@@ -1,12 +1,15 @@
 # Swarm Cluster Demo
 #
 # Demonstrates the distributed swarm subsystem running on a single node.
-# Starts the full swarm supervisor, creates CRDT-backed entities and
-# waypoints, subscribes to overlay changes, and prints state updates.
+# In production, nodes discover each other via libcluster and sync
+# automatically. This demo shows the APIs without requiring a cluster.
 #
-# In a real deployment, multiple BEAM nodes would discover each other
-# via libcluster (gossip, epmd, DNS, or Tailscale) and sync automatically.
-# This demo shows the APIs without requiring a cluster.
+# What you'll learn:
+#   - TacticalOverlay: CRDT-backed shared state for entities and waypoints
+#   - LWWRegister: Last-Writer-Wins semantics -- latest timestamp wins on merge
+#   - ORSet: Observed-Remove Set -- add-wins semantics across nodes
+#   - Topology: seniority-based commander election, role management
+#   - Overlay events: subscribe to state changes for reactive updates
 #
 # Usage:
 #   mix run examples/swarm/cluster_demo.exs
@@ -125,10 +128,13 @@ for wp <- waypoints do
 end
 
 # ---- 9. Show pure CRDT operations ----
+# CRDTs are pure data structures (no GenServer). They can be created,
+# modified, and merged without any process coordination.
 
 IO.puts("\n--- Pure CRDT Demo ---")
 
-# LWW Register: last writer wins
+# LWW Register: last writer wins -- when two nodes write concurrently,
+# the one with the later timestamp is kept after merge.
 reg_a = LWWRegister.new("node_a_says_hello")
 Process.sleep(1)
 reg_b = LWWRegister.new("node_b_says_goodbye")
@@ -139,7 +145,8 @@ IO.puts(
   "LWW merge: #{inspect(LWWRegister.value(merged))} (latest timestamp wins)"
 )
 
-# OR-Set: add-wins semantics
+# OR-Set: add-wins semantics. If one node adds "bravo" while another
+# removes it, the add wins after merge. Each add gets a unique tag.
 set = ORSet.new()
 set = ORSet.add(set, "alpha")
 set = ORSet.add(set, "bravo")

@@ -2,7 +2,7 @@
 
 Raxol works on Windows through a pure Elixir terminal driver. No native compilation required.
 
-**Status**: Supported (v1.7.0+)
+**Status**: Supported (v2.0+)
 **Backend**: Pure Elixir (IOTerminal) using OTP 28+ raw mode
 **Requirements**: Windows 10+ with VT100 terminal emulation
 **Performance**: ~500us per frame (plenty for 60fps)
@@ -21,7 +21,7 @@ No configuration needed. It just works.
 - **Windows 10 or later** (for VT100 support)
 - Windows Terminal (recommended), PowerShell 7+, or Windows PowerShell 5.1+
 - **Erlang/OTP 28+** (for raw terminal mode)
-- **Elixir 1.17+**
+- **Elixir 1.19+**
 
 Windows 10+ has built-in VT100/ANSI escape sequence support, enabled by default in Windows Terminal, PowerShell, and cmd.exe.
 
@@ -31,7 +31,7 @@ Standard installation, nothing special for Windows:
 
 ```powershell
 # Add to mix.exs
-{:raxol, "~> 1.7"}
+{:raxol, "~> 2.3"}
 
 # Install dependencies
 mix deps.get
@@ -71,12 +71,12 @@ Everything works the same on Windows:
 
 ## Performance
 
-| Operation | Windows (IOTerminal) | Unix (termbox2 NIF) |
-|-----------|---------------------|---------------------|
-| Frame render | ~500us | ~50us |
-| Screen clear | <100us | <10us |
-| Set cursor | <50us | <5us |
-| Set cell | <100us | <10us |
+| Operation    | Windows (IOTerminal) | Unix (termbox2 NIF) |
+| ------------ | -------------------- | ------------------- |
+| Frame render | ~500us               | ~50us               |
+| Screen clear | <100us               | <10us               |
+| Set cursor   | <50us                | <5us                |
+| Set cell     | <100us               | <10us               |
 
 This is more than enough for 60fps terminal UIs (16ms frame budget), interactive apps, text editors, and dashboards.
 
@@ -95,6 +95,7 @@ winget install Microsoft.WindowsTerminal
 Both PowerShell 7+ (pwsh.exe) and Windows PowerShell 5.1 (powershell.exe) work well.
 
 Enable ANSI colors if they're not already on:
+
 ```powershell
 Get-ItemProperty HKCU:\Console VirtualTerminalLevel
 
@@ -129,11 +130,12 @@ reg add HKCU\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f
 - Use Windows Terminal (GPU-accelerated)
 - Reduce UI complexity
 - Batch rendering operations
-- Profile with `mix raxol.profile`
+- Profile with `mix raxol.perf`
 
 ### `:termbox2_nif` Errors on Windows
 
 This is expected. Windows uses IOTerminal, not the NIF. Just make sure:
+
 - `mix compile` completes without NIF build errors
 - IOTerminal module is available
 - No C compilation errors during `mix deps.compile`
@@ -169,6 +171,7 @@ Logger.info("IOTerminal available: #{Code.ensure_loaded?(Raxol.Terminal.IOTermin
 Located in `lib/raxol/terminal/io_terminal.ex`. Uses OTP 28+ raw terminal mode via `:shell.start_interactive/1`, ANSI escape sequences via `IO.ANSI`, and cross-platform terminal size detection via `:io.columns/0` and `:io.rows/0`. Supports 256 colors and unicode.
 
 API:
+
 ```elixir
 IOTerminal.init()
 IOTerminal.shutdown()
@@ -202,16 +205,16 @@ The Driver (`lib/raxol/terminal/driver.ex`) handles this automatically:
 
 ## Windows vs Unix Comparison
 
-| Feature | Windows (IOTerminal) | Unix (termbox2 NIF) |
-|---------|---------------------|---------------------|
-| Backend | Pure Elixir | Native C NIF |
-| OTP Version | 28+ required | 26+ supported |
+| Feature     | Windows (IOTerminal) | Unix (termbox2 NIF) |
+| ----------- | -------------------- | ------------------- |
+| Backend     | Pure Elixir          | Native C NIF        |
+| OTP Version | 28+ required         | 26+ supported       |
 | Compilation | No C compiler needed | Requires C compiler |
-| Performance | Good (~500us) | Excellent (~50us) |
-| Unicode | Full support | Full support |
-| Colors | 256 colors | 256 colors |
-| Mouse | Supported | Supported |
-| API | Identical | Identical |
+| Performance | Good (~500us)        | Excellent (~50us)   |
+| Unicode     | Full support         | Full support        |
+| Colors      | 256 colors           | 256 colors          |
+| Mouse       | Supported            | Supported           |
+| API         | Identical            | Identical           |
 
 ## Future Work
 

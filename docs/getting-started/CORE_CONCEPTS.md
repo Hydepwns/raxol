@@ -15,7 +15,7 @@ State flows one direction. Views are pure functions of the model. Commands are h
 
 Everything that arrives in `update/2` is a "message" -- that includes application atoms like `:increment`, timer ticks like `:tick`, and Raxol events like `%Event{type: :key, data: %{key: :enter}}`. They're all just inputs to the same function.
 
-See the [Quickstart](QUICKSTART.md) for a full walkthrough, or jump to `examples/getting_started/counter.exs` for the code.
+See the [Quickstart](QUICKSTART.md) for a full walkthrough, or browse the [Examples Learning Path](../../examples/README.md) for annotated examples from beginner to advanced.
 
 ---
 
@@ -240,13 +240,13 @@ Good for web applications, dashboards, remote terminals.
 
 ### Targets
 
-| Operation | Target | Typical |
-|-----------|--------|---------|
-| Buffer create | < 1ms | 0.3ms |
-| write_at (single) | < 100us | 50us |
-| draw_box | < 500us | 240us |
-| render_diff | < 2ms | 1.2ms |
-| Full render | < 16ms | 8ms |
+| Operation         | Target  | Typical |
+| ----------------- | ------- | ------- |
+| Buffer create     | < 1ms   | 0.3ms   |
+| write_at (single) | < 100us | 50us    |
+| draw_box          | < 500us | 240us   |
+| render_diff       | < 2ms   | 1.2ms   |
+| Full render       | < 16ms  | 8ms     |
 
 60 FPS = 16ms frame budget.
 
@@ -304,12 +304,12 @@ You can! Buffers are optional. But they give you automatic diffing, state inspec
 
 ### How does Raxol compare to ncurses, Bubble Tea, etc.?
 
-| Feature | Raxol | ncurses | blessed |
-|---------|-------|---------|---------|
-| Language | Elixir | C | Node.js |
-| Paradigm | Functional | Imperative | Imperative |
-| Web Support | Yes (LiveView) | No | No |
-| Dependencies | 0 (core) | System libs | Many |
+| Feature      | Raxol          | ncurses     | blessed    |
+| ------------ | -------------- | ----------- | ---------- |
+| Language     | Elixir         | C           | Node.js    |
+| Paradigm     | Functional     | Imperative  | Imperative |
+| Web Support  | Yes (LiveView) | No          | No         |
+| Dependencies | 0 (core)       | System libs | Many       |
 
 ### Can I use Raxol alongside other libraries?
 

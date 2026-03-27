@@ -2,8 +2,20 @@
 #
 # Demonstrates handling keyboard events, button clicks, and text input.
 #
+# What you'll learn:
+#   - Event struct shapes: named char, special key, modifier
+#   - Pattern matching order: specific clauses before catch-all
+#   - `is_binary(ch)` guard separates printable chars from special keys
+#   - Button on_click atoms vs keyboard Event structs in the same update/2
+#
 # Usage:
 #   mix run examples/scripts/event_handling.exs
+#
+# Controls:
+#   Any key  = display in "Last Key" box
+#   q        = quit
+#   Ctrl+C   = quit
+#   (or click the +/- buttons)
 
 defmodule EventHandlingExample do
   use Raxol.Core.Runtime.Application
@@ -18,25 +30,33 @@ defmodule EventHandlingExample do
   @impl true
   def update(message, model) do
     case message do
+      # Atoms from button on_click (no Event struct wrapper)
       :increment ->
         {%{model | count: model.count + 1}, []}
 
       :decrement ->
         {%{model | count: model.count - 1}, []}
 
+      # Named character: data.key is :char and data.char is a binary string
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
+      # Modifier key: ctrl: true appears in the data map
       %Raxol.Core.Events.Event{
         type: :key,
         data: %{key: :char, char: "c", ctrl: true}
       } ->
         {model, [command(:quit)]}
 
+      # Any printable character: `is_binary(ch)` guard ensures ch is text,
+      # not an atom like :enter or :esc. Order matters -- this must come
+      # after the specific "q" and "c" matches above.
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
       when is_binary(ch) ->
         {%{model | last_key: ch}, []}
 
+      # Special keys: :enter, :esc, :tab, :up, :down, :backspace, etc.
+      # data.key is an atom, not :char
       %Raxol.Core.Events.Event{type: :key, data: %{key: key}} ->
         {%{model | last_key: inspect(key)}, []}
 

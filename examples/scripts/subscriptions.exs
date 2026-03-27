@@ -1,9 +1,19 @@
 # Subscriptions
 #
-# Demonstrates time-based subscriptions with two different tick intervals.
+# Demonstrates multiple independent subscriptions running at
+# different intervals, each sending its own distinct atom.
+#
+# What you'll learn:
+#   - Multiple subscriptions run independently (not synchronized)
+#   - Each subscription sends its own atom to update/2
+#   - Different intervals for different update cadences
 #
 # Usage:
 #   mix run examples/scripts/subscriptions.exs
+#
+# Controls:
+#   q       = quit
+#   Ctrl+C  = quit
 
 defmodule SubscriptionsExample do
   use Raxol.Core.Runtime.Application
@@ -56,6 +66,9 @@ defmodule SubscriptionsExample do
     end
   end
 
+  # Each subscription is independent: :little_tick fires 10x per second,
+  # :big_tick fires once per second. Both arrive in update/2 interleaved
+  # with any keyboard events.
   @impl true
   def subscribe(_model) do
     [

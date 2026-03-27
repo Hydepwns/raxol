@@ -10,8 +10,7 @@ Guide to testing Raxol plugins -- unit, integration, and property-based approach
 # In your plugin's mix.exs
 defp deps do
   [
-    {:raxol, "~> 1.5", only: [:dev, :test]},
-    {:ex_unit, "~> 1.15", only: :test},
+    {:raxol, "~> 2.3", only: [:dev, :test]},
     {:mox, "~> 1.0", only: :test}  # For mocking
   ]
 end
@@ -395,16 +394,16 @@ end
 defmodule MyPluginIntegrationTest do
   use ExUnit.Case
 
-  alias Raxol.Plugins.PluginSystemV2
+  alias Raxol.Core.Runtime.Plugins.PluginManager
 
   @moduletag :integration
 
   setup do
-    {:ok, _pid} = PluginSystemV2.start_link(test_mode: true)
+    {:ok, _pid} = PluginManager.start_link(test_mode: true)
 
     on_exit(fn ->
       try do
-        PluginSystemV2.stop()
+        PluginManager.stop()
       catch
         :exit, _ -> :ok
       end
@@ -417,21 +416,21 @@ defmodule MyPluginIntegrationTest do
     test "plugin can be loaded into system" do
       plugin_manifest = MyPlugin.manifest()
 
-      result = PluginSystemV2.load_plugin("my-plugin", %{
+      result = PluginManager.load_plugin("my-plugin", %{
         manifest: plugin_manifest,
         module: MyPlugin
       })
 
       assert :ok = result
 
-      {:ok, status} = PluginSystemV2.get_plugin_status("my-plugin")
+      {:ok, status} = PluginManager.get_plugin_status("my-plugin")
       assert status.status in [:loaded, :running]
     end
 
     test "plugin dependencies are resolved" do
       manifest = MyPlugin.manifest()
 
-      case PluginSystemV2.resolve_dependencies(manifest) do
+      case PluginManager.resolve_dependencies(manifest) do
         {:ok, resolved} ->
           assert "raxol-core" in Map.keys(resolved)
 
@@ -446,13 +445,13 @@ defmodule MyPluginIntegrationTest do
     end
 
     test "plugin hot reload works" do
-      assert :ok = PluginSystemV2.load_plugin("my-plugin")
+      assert :ok = PluginManager.load_plugin("my-plugin")
 
-      {:ok, initial_status} = PluginSystemV2.get_plugin_status("my-plugin")
+      {:ok, initial_status} = PluginManager.get_plugin_status("my-plugin")
 
-      assert :ok = PluginSystemV2.hot_reload_plugin("my-plugin")
+      assert :ok = PluginManager.hot_reload_plugin("my-plugin")
 
-      {:ok, reloaded_status} = PluginSystemV2.get_plugin_status("my-plugin")
+      {:ok, reloaded_status} = PluginManager.get_plugin_status("my-plugin")
       assert reloaded_status.status == :running
       assert reloaded_status.last_reload != initial_status.last_reload
     end
@@ -460,7 +459,7 @@ defmodule MyPluginIntegrationTest do
 
   describe "command integration" do
     setup do
-      PluginSystemV2.load_plugin("my-plugin")
+      PluginManager.load_plugin("my-plugin")
       :ok
     end
 
@@ -481,12 +480,12 @@ defmodule MyPluginIntegrationTest do
 
   describe "performance monitoring" do
     setup do
-      PluginSystemV2.load_plugin("my-plugin")
+      PluginManager.load_plugin("my-plugin")
       :ok
     end
 
     test "plugin performance is monitored" do
-      {:ok, status} = PluginSystemV2.get_plugin_status("my-plugin")
+      {:ok, status} = PluginManager.get_plugin_status("my-plugin")
 
       assert is_map(status.performance_metrics)
 
@@ -507,7 +506,7 @@ defmodule MyPluginIntegrationTest do
       manifest = MyPlugin.manifest()
 
       if manifest.trust_level != :trusted do
-        {:ok, status} = PluginSystemV2.get_plugin_status("my-plugin")
+        {:ok, status} = PluginManager.get_plugin_status("my-plugin")
 
         memory_mb = status.performance_metrics.memory_usage_mb
         assert memory_mb < 100, "Plugin using too much memory: #{memory_mb}MB"
@@ -828,25 +827,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Elixir
-      uses: erlef/setup-beam@v1
-      with:
-        elixir-version: '1.15'
-        otp-version: '26'
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.15"
+          otp-version: "26"
 
-    - name: Install dependencies
-      run: mix deps.get
+      - name: Install dependencies
+        run: mix deps.get
 
-    - name: Run plugin tests
-      run: |
-        TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true mix test test/plugins/
+      - name: Run plugin tests
+        run: |
+          TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true mix test test/plugins/
 
-    - name: Run integration tests
-      run: |
-        TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true mix test --only integration
+      - name: Run integration tests
+        run: |
+          TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true mix test --only integration
 
-    - name: Check test coverage
-      run: mix test --cover
+      - name: Check test coverage
+        run: mix test --cover
 ```

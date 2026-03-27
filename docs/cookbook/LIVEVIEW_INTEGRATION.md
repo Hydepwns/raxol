@@ -150,7 +150,7 @@ defmodule MyAppWeb.CounterLive do
     {:noreply, socket |> update(:count, &(&1 + 1)) |> update_display()}
   end
 
-  def handle_info({:key, "+"}, socket) do
+  def handle_info({:keypress, "+"}, socket) do
     handle_event("increment", nil, socket)
   end
 
@@ -233,7 +233,7 @@ end
 Catch rendering errors without crashing:
 
 ```elixir
-def handle_info({:key, key}, socket) do
+def handle_info({:keypress, key}, socket) do
   case safe_update(socket, key) do
     {:ok, buffer} ->
       {:noreply, assign(socket, buffer: buffer, error: nil)}
@@ -279,7 +279,7 @@ Avoid excessive re-renders:
 ```elixir
 @debounce_ms 300
 
-def handle_info({:key, key}, socket) do
+def handle_info({:keypress, key}, socket) do
   if socket.assigns.timer_ref do
     Process.cancel_timer(socket.assigns.timer_ref)
   end

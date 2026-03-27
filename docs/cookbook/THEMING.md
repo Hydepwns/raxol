@@ -41,7 +41,7 @@ Raxol auto-detects terminal color support and downsamples:
 - **16-color**: Mapped to the closest ANSI color
 - **Mono**: All colors stripped, styling preserved (bold, underline)
 
-`Raxol.Core.ColorSystem.Adaptive.adapt_color_safe/1` handles this transparently.
+`Raxol.Style.Colors.Adaptive.adapt_color_safe/1` handles this transparently.
 
 ### Synthwave '84 palette example
 
@@ -147,7 +147,7 @@ Themes are stored as JSON in `priv/themes/`:
 
 ```bash
 ls priv/themes/
-# default.json, nord.json, dracula.json, ...
+# Default.json
 ```
 
 ---
@@ -165,9 +165,11 @@ When using the LiveView bridge, themes apply via CSS classes:
 />
 ```
 
-Built-in LiveView themes: `:nord`, `:dracula`, `:solarized_dark`, `:solarized_light`, `:monokai`.
+Built-in LiveView themes: `:synthwave84`, `:nord`, `:dracula`, `:solarized_dark`, `:solarized_light`, `:monokai`.
 
 ### Custom CSS theme
+
+I maintain a [zed theme plugin](https://github.com/Hydepwns/synthwave84-zed/) name `Synthwave84`. This is a snippet of it as a custom CSS theme for raxol:
 
 ```css
 .terminal.theme-custom {
@@ -175,11 +177,21 @@ Built-in LiveView themes: `:nord`, `:dracula`, `:solarized_dark`, `:solarized_li
   color: #e0e0e0;
 }
 
-.terminal.theme-custom .fg-cyan { color: #40c4ff; }
-.terminal.theme-custom .fg-magenta { color: #ff6bae; }
-.terminal.theme-custom .fg-green { color: #00ff9d; }
-.terminal.theme-custom .fg-yellow { color: #ffd700; }
-.terminal.theme-custom .fg-red { color: #ff5555; }
+.terminal.theme-custom .fg-cyan {
+  color: #40c4ff;
+}
+.terminal.theme-custom .fg-magenta {
+  color: #ff6bae;
+}
+.terminal.theme-custom .fg-green {
+  color: #00ff9d;
+}
+.terminal.theme-custom .fg-yellow {
+  color: #ffd700;
+}
+.terminal.theme-custom .fg-red {
+  color: #ff5555;
+}
 
 .terminal.theme-custom .cursor {
   background-color: #40c4ff;
@@ -201,15 +213,19 @@ end
 Popular palettes mapped to ANSI for quick reference:
 
 ### Nord
+
 `red: #bf616a, green: #a3be8c, yellow: #ebcb8b, blue: #81a1c1, magenta: #b48ead, cyan: #88c0d0`
 
 ### Dracula
+
 `red: #ff5555, green: #50fa7b, yellow: #f1fa8c, blue: #bd93f9, magenta: #ff79c6, cyan: #8be9fd`
 
 ### Tokyo Night
+
 `red: #f7768e, green: #9ece6a, yellow: #e0af68, blue: #7aa2f7, magenta: #ad8ee6, cyan: #449dab`
 
 ### Catppuccin Mocha
+
 `red: #f38ba8, green: #a6e3a1, yellow: #f9e2af, blue: #89b4fa, magenta: #f5c2e7, cyan: #94e2d5`
 
 ---

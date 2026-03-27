@@ -4,11 +4,20 @@
 # Streams LLM responses in real time, supports pilot takeover to ask
 # follow-up questions, and demonstrates the full agent + cockpit stack.
 #
+# What you'll learn:
+#   - Tiered backend detection: checks env vars in priority order
+#     (Lumo > Anthropic > Kimi > OpenAI > Ollama > LLM7 > Mock)
+#   - Agent + Dashboard pattern: headless agents do work, a TEA app
+#     polls their models for display (analyst + summarizer + dashboard)
+#   - Streaming via Command.async: sender callback delivers {:chunk, text}
+#     incrementally, then {:done, response} when complete
+#   - Pilot takeover: dashboard captures keyboard input and forwards
+#     user questions to the analyst agent for follow-up
+#
 # Default: mock streaming (no API key needed, runs instantly)
-# Lumo:    PROTON_UID=... PROTON_ACCESS_TOKEN=... mix run ...  (direct Proton Lumo with U2L encryption)
-# Lumo:    LUMO_TAMER_URL=http://localhost:3000 mix run ...    (via lumo-tamer proxy)
-# Kimi:    KIMI_API_KEY=... mix run ...                        (Moonshot AI, $0.60/M input)
-# Free AI: FREE_AI=true mix run examples/agents/ai_cockpit.exs  (LLM7.io, no key needed)
+# Lumo:    PROTON_UID=... PROTON_ACCESS_TOKEN=... mix run ...
+# Kimi:    KIMI_API_KEY=... mix run ...
+# Free AI: FREE_AI=true mix run examples/agents/ai_cockpit.exs
 # Ollama:  OLLAMA_MODEL=llama3 mix run examples/agents/ai_cockpit.exs
 # Groq:    AI_API_KEY=gsk_... AI_BASE_URL=https://api.groq.com/openai AI_MODEL=llama-3.3-70b-versatile mix run ...
 # OpenAI:  AI_API_KEY=sk-... AI_MODEL=gpt-4o-mini mix run ...
@@ -25,6 +34,8 @@
 Logger.configure(level: :warning)
 
 # -- Backend Configuration ---------------------------------------------------
+# Tiered detection: first env var match wins. This lets the same example
+# work with any provider or fall back to mock mode with zero config.
 
 defmodule AICockpit.Config do
   @moduledoc false
@@ -248,10 +259,14 @@ defmodule AICockpit.Analyst do
      [call_backend(messages)]}
   end
 
+  # Streaming: each {:chunk, text} appends to the output buffer.
+  # The dashboard polls this model to show incremental rendering.
   def update({:command_result, {:chunk, text}}, model) do
     {%{model | output: model.output <> text, status: :streaming}, []}
   end
 
+  # {:done, response} signals the stream is complete. response contains
+  # the full content, usage stats, and provider metadata.
   def update({:command_result, {:done, response}}, model) do
     finding = %{
       file: model.current_file || "question",
@@ -764,6 +779,10 @@ defmodule AICockpit.Dashboard do
 end
 
 # -- Boot ---------------------------------------------------------------------
+# Architecture: two headless agents (analyst, summarizer) + one TEA dashboard.
+# The dashboard polls agent models every 200ms for display. Agents communicate
+# via Command.send_agent -- when the analyst finishes a file, it sends the
+# finding to the summarizer.
 
 # Ensure agent registry
 case Registry.start_link(keys: :unique, name: Raxol.Agent.Registry) do

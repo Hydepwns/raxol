@@ -1,8 +1,8 @@
 # Virtual File System
 
-In-memory filesystem with Unix commands.
+> **Note**: This feature is planned but not yet implemented. The `Raxol.Commands.FileSystem` module does not exist in the current codebase. This page describes the intended design.
 
-## Usage
+## Planned Usage
 
 ```elixir
 alias Raxol.Commands.FileSystem

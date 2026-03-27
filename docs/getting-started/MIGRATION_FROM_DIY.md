@@ -139,7 +139,7 @@ Adapters add overhead. Benchmark both paths -- if the adapter is > 2x slower, co
 
 ## Incremental Migration
 
-**Phase 1:** Add `{:raxol, "~> 2.0"}` to deps (or `path: "../raxol"` before Hex publish). Run tests, ensure no conflicts.
+**Phase 1:** Add `{:raxol, "~> 2.3"}` to deps. Run tests, ensure no conflicts.
 
 **Phase 2:** Create adapters. Write round-trip tests to verify conversions preserve data.
 
@@ -176,7 +176,7 @@ If something's missing, open a GitHub issue.
 
 **What if Raxol is missing a feature I need?** Keep that part of your code, extend Raxol with a plugin, or open a GitHub issue.
 
-**Can I contribute my adapter back?** Yes. Open a PR with your adapter in `lib/raxol/adapters/`.
+**Can I contribute my adapter back?** Yes. Open a PR on [GitHub](https://github.com/Hydepwns/raxol).
 
 ---
 

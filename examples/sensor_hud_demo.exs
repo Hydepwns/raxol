@@ -3,7 +3,17 @@
 # Starts 3 mock sensors (temperature, pressure, proximity),
 # fuses their data, and renders HUD widgets.
 #
-# Run: mix run examples/sensor_hud_demo.exs
+# What you'll learn:
+#   - Feed: GenServer that polls a sensor module at a fixed rate,
+#     forwards readings to Fusion
+#   - Fusion: batches readings within a time window, computes
+#     weighted averages, notifies subscribers
+#   - HUD widgets: pure functions (bounds, data, opts) -> cell tuples,
+#     no state -- gauge, sparkline, threat indicator
+#   - Cell tuples: {x, y, char, fg, bg, attrs} -- the raw render unit
+#
+# Usage:
+#   mix run examples/sensor_hud_demo.exs
 
 defmodule SensorHUDDemo do
   alias Raxol.Sensor.{MockSensor, Feed, Fusion, HUD}
@@ -14,11 +24,14 @@ defmodule SensorHUDDemo do
   def run do
     IO.puts("=== Sensor Fusion HUD Demo ===\n")
 
-    # Start Fusion
+    # Fusion batches readings from all feeds within a 200ms window,
+    # computes weighted averages, then broadcasts {:fused_update, data}
+    # to subscribers.
     {:ok, fusion} = Fusion.start_link(name: nil, batch_window_ms: 200)
     Fusion.subscribe(fusion)
 
-    # Start feeds
+    # Each Feed is a GenServer that calls MockSensor.read/1 at the given
+    # sample_rate_ms and forwards readings to the Fusion process.
     {:ok, _temp} =
       Feed.start_link(
         sensor_id: :temperature,
@@ -78,7 +91,8 @@ defmodule SensorHUDDemo do
     IO.puts("Sensor Fusion HUD  [#{elapsed}ms]")
     IO.puts(String.duplicate("─", @width))
 
-    # Temperature gauge
+    # HUD widgets are pure functions: (bounds, data, opts) -> cell tuples.
+    # No GenServer, no state -- just data in, cells out.
     temp_val = get_in(fused, [:sensors, :temperature, :values, :value]) || 0.0
     temp_pct = (temp_val + 1.0) / 2.0 * 100
     gauge_cells = HUD.render_gauge({0, 0, @width, 1}, temp_pct, label: "TEMP")

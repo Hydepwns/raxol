@@ -4,15 +4,15 @@ How Raxol works, from application model to terminal output.
 
 ## The Big Picture
 
-```
-Your App (TEA)          Raxol Framework              Terminal
-┌─────────────┐    ┌──────────────────────┐    ┌─────────────┐
-│ init/1       │    │ Lifecycle (GenServer) │    │ termbox2 NIF│
-│ update/2     │───>│ Rendering Engine      │───>│ or          │
-│ view/1       │    │ Layout Engine         │    │ IOTerminal  │
-│ subscribe/1  │    │ Event Dispatcher      │    │ or          │
-└─────────────┘    └──────────────────────┘    │ LiveView    │
-                                                └─────────────┘
+```elixir
+Your App (TEA)          Raxol (Framework)           Terminal
+┌─────────────┐    ┌───────────────────────┐    ┌─────────────┐
+│ init/1      │    │ Lifecycle (GenServer) │    │ termbox2 NIF│
+│ update/2    │───>│ Rendering Engine      │───>│ or          │
+│ view/1      │    │ Layout Engine         │    │ IOTerminal  │
+│ subscribe/1 │    │ Event Dispatcher      │    │ or          │
+│             │    │                       │    │ LiveView    │
+└─────────────┘    └───────────────────────┘    └─────────────┘
 ```
 
 Your app provides pure functions. Raxol manages the runtime loop, layout, rendering, and I/O. You never write ANSI escape codes.
@@ -59,9 +59,9 @@ Produces: `%{type: :column, children: [%{type: :text, ...}, %{type: :row, ...}],
 - **CSS Grid**: `grid` with `template_columns`, `template_rows`
 - **Box model**: `padding`, `border`, `margin`, `width`, `height`
 
-### 3. UIRenderer -> Cell Grid
+### 3. Composer -> Cell Grid
 
-`Raxol.UI.UIRenderer` walks the positioned tree and produces cell tuples:
+`Raxol.UI.Rendering.Composer` walks the positioned tree and produces cell tuples:
 
 ```elixir
 {x, y, char, fg_color, bg_color, attrs}
@@ -132,27 +132,27 @@ The component gets its own GenServer under a DynamicSupervisor. If it crashes, i
 - **ETS for reads**: Theme, i18n, config, and metrics use ETS tables. Reads bypass GenServer serialization entirely.
 - **Synchronized output**: Uses DEC mode 2026 (`\e[?2026h`) to batch terminal writes, preventing flicker.
 - **Damage tracking**: `DamageTracker` computes rectangular dirty regions. `RenderBatcher` coalesces rapid updates into single frames at 60fps.
-- **Color downsampling**: `Raxol.Core.ColorSystem.Adaptive` detects terminal capabilities and maps 24-bit colors to 256 or 16 colors automatically.
+- **Color downsampling**: `Raxol.Style.Colors.Adaptive` detects terminal capabilities and maps 24-bit colors to 256 or 16 colors automatically.
 
 ## Terminal Compatibility
 
-- **Unicode width**: `Raxol.Terminal.Emulator.CharWidth` handles double-width CJK, combining characters, emoji
+- **Unicode width**: The terminal emulator handles double-width CJK, combining characters, emoji
 - **Border fallback**: Box drawing uses ASCII (`+-|`) when Unicode isn't supported
 - **Color detection**: `COLORTERM`, `TERM`, capability queries for truecolor/256/16/mono
 
 ## Key Modules
 
-| Module | Role |
-|--------|------|
-| `Raxol.Core.Runtime.Lifecycle` | TEA loop GenServer |
-| `Raxol.Core.Runtime.Events.Dispatcher` | Event routing + bubbling |
-| `Raxol.Core.Runtime.Rendering.Engine` | view -> layout -> render |
-| `Raxol.UI.Layout.Engine` | Flexbox/Grid layout computation |
-| `Raxol.UI.UIRenderer` | Element tree -> cell grid |
-| `Raxol.Terminal.ScreenBuffer` | Double-buffered cell storage |
-| `Raxol.Terminal.Renderer` | Cell grid -> ANSI string |
-| `Raxol.Terminal.Driver` | Platform backend selection |
-| `Raxol.Core.Renderer.View` | View DSL macros |
+| Module                                 | Role                            |
+| -------------------------------------- | ------------------------------- |
+| `Raxol.Core.Runtime.Lifecycle`         | TEA loop GenServer              |
+| `Raxol.Core.Runtime.Events.Dispatcher` | Event routing + bubbling        |
+| `Raxol.Core.Runtime.Rendering.Engine`  | view -> layout -> render        |
+| `Raxol.UI.Layout.Engine`               | Flexbox/Grid layout computation |
+| `Raxol.UI.Rendering.Composer`          | Element tree -> cell grid       |
+| `Raxol.Terminal.ScreenBuffer`          | Double-buffered cell storage    |
+| `Raxol.Terminal.Renderer`              | Cell grid -> ANSI string        |
+| `Raxol.Terminal.Driver`                | Platform backend selection      |
+| `Raxol.Core.Renderer.View`             | View DSL macros                 |
 
 ## References
 

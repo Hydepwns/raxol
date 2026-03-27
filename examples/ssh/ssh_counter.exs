@@ -1,6 +1,13 @@
 # SSH Counter Example
 #
-# Serves the CounterExample TEA app over SSH.
+# Serves a TEA app over SSH. Each connection gets its own process.
+#
+# What you'll learn:
+#   - Raxol.SSH.serve/2 wraps :ssh.daemon and auto-generates host keys
+#   - Each SSH connection spawns a separate Lifecycle process
+#     (environment: :ssh) with full crash isolation
+#   - The app module is an ordinary TEA app -- no SSH-specific code needed
+#   - SSH channel I/O is translated to Raxol events automatically
 #
 # Usage:
 #   mix run examples/ssh/ssh_counter.exs
@@ -8,8 +15,10 @@
 # Then in another terminal:
 #   ssh localhost -p 2222
 #
-# Each SSH connection gets its own counter instance with full
-# crash isolation. Press '+'/'-' to change count, 'q' to quit.
+# Controls:
+#   +   = increment
+#   -   = decrement
+#   q   = quit (closes SSH session)
 
 defmodule SSHCounterExample do
   use Raxol.Core.Runtime.Application
@@ -58,6 +67,10 @@ end
 IO.puts("Starting SSH server on port 2222...")
 IO.puts("Connect with: ssh localhost -p 2222")
 
+# Raxol.SSH.serve/2 starts an SSH daemon. For each incoming connection,
+# it spawns a new Lifecycle running SSHCounterExample. The SSH channel
+# data is translated to Raxol keyboard events, and rendered output is
+# sent back over the channel.
 {:ok, _server} = Raxol.SSH.serve(SSHCounterExample, port: 2222)
 
 # Keep the script alive

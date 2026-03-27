@@ -1,6 +1,12 @@
 # Todo List Example
 #
-# A simple todo list demonstrating keyboard-driven TEA patterns.
+# A keyboard-driven todo list with two modes: normal and input.
+#
+# What you'll learn:
+#   - State machine pattern: model.mode gates which keys are active
+#   - Guard clauses on pattern matches (when model.mode == :normal)
+#   - View decomposition: extracting helpers to keep view/1 readable
+#   - Model helpers: pure functions for state transitions
 #
 # Usage:
 #   mix run examples/getting_started/todo_app.exs
@@ -35,6 +41,11 @@ defmodule TodoExample do
   @impl true
   def update(message, model) do
     case message do
+      # Guards on model.mode create a state machine: the same physical key
+      # does different things depending on the current mode. "q" quits in
+      # :normal mode but types the letter "q" in :input mode (caught by
+      # the printable character clause below).
+
       # -- Quit --
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}}
       when model.mode == :normal ->
@@ -78,6 +89,8 @@ defmodule TodoExample do
         {delete_todo(model), []}
 
       # -- Normal mode: enter input mode --
+      # Mode transition: switch from :normal to :input.
+      # This changes which key handlers are active on the next update.
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "a"}}
       when model.mode == :normal ->
         {%{model | mode: :input, input_buffer: ""}, []}
@@ -99,6 +112,8 @@ defmodule TodoExample do
         {%{model | input_buffer: buf}, []}
 
       # -- Input mode: printable character --
+      # `is_binary(ch)` guard filters to actual text characters.
+      # Special keys like :enter/:esc have atom values, not binaries.
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
       when model.mode == :input and is_binary(ch) ->
         {%{model | input_buffer: model.input_buffer <> ch}, []}
@@ -113,6 +128,9 @@ defmodule TodoExample do
     done_count = Enum.count(model.todos, & &1.done)
     total = length(model.todos)
 
+    # View decomposition: todo_list_box/1 and help_text/1 are private
+    # helper functions that return element trees. This keeps view/1
+    # readable even as the UI grows complex.
     column style: %{padding: 1, gap: 1} do
       [
         text("Todo List", style: [:bold]),
@@ -170,6 +188,8 @@ defmodule TodoExample do
   end
 
   # -- Model helpers --
+  # Pure functions extracted from update/2. Each takes the model and
+  # returns a new model. No side effects, easy to test in isolation.
 
   defp move_cursor(model, delta) do
     len = length(model.todos)

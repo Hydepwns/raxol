@@ -1,1055 +1,318 @@
 # Custom Components
 
-## Component Fundamentals
+Raxol provides two levels for building reusable UI:
+
+1. **View helpers** -- Private functions in your TEA app that return element trees. Start here.
+2. **Component behaviour** -- `Raxol.UI.Components.Base.Component` for stateful, reusable widgets with lifecycle hooks.
+
+Most apps only need view helpers. Use the component behaviour when you need internal state, event handling, or want to publish a reusable widget.
+
+---
+
+## View Helpers (Recommended Start)
+
+Extract parts of your `view/1` into private functions. These are plain Elixir -- no special framework support needed.
 
 ```elixir
-defmodule MyApp.Components.MyComponent do
-  @moduledoc """
-  A reusable component that demonstrates best practices.
-
-  ## Example
-      MyComponent
-        title: "Hello World",
-        items: [1, 2, 3],
-        on_click: &handle_click/1
-  """
-
-  use Raxol.UI.Component
-
-  prop :title, :string, required: true
-  prop :items, :list, default: []
-  prop :on_click, :function, default: nil
-  prop :disabled, :boolean, default: false
-
-  defstruct [:selected_index, :hover_index]
+defmodule MyApp do
+  use Raxol.Core.Runtime.Application
 
   @impl true
-  def init(props) do
-    %__MODULE__{
-      selected_index: 0,
-      hover_index: nil
-    }
-  end
+  def init(_context), do: %{items: ["Milk", "Eggs", "Bread"], cursor: 0}
 
   @impl true
-  def render(state, props) do
-    div class: "my-component",
-        style: [disabled: props.disabled] do
-
-      h2 do
-        props.title
-      end
-
-      ul do
-        props.items
-        |> Enum.with_index()
-        |> Enum.map(fn {item, index} ->
-          render_item(item, index, state, props)
-        end)
-      end
+  def update(message, model) do
+    case message do
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}} ->
+        {%{model | cursor: min(model.cursor + 1, length(model.items) - 1)}, []}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}} ->
+        {%{model | cursor: max(model.cursor - 1, 0)}, []}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+        {model, [command(:quit)]}
+      _ -> {model, []}
     end
   end
 
   @impl true
-  def handle_event(state, props, {:click, index}) do
-    new_state = %{state | selected_index: index}
-
-    if props.on_click do
-      props.on_click.(index)
-    end
-
-    new_state
-  end
-
-  defp render_item(item, index, state, props) do
-    selected = index == state.selected_index
-
-    li style: [bg: if(selected, do: :blue, else: :default)],
-       on_click: {:click, index} do
-      "#{item}"
-    end
-  end
-end
-```
-
-### Props
-
-Declare props with types, defaults, and doc strings:
-
-```elixir
-defmodule MyApp.Components.DataTable do
-  use Raxol.UI.Component
-
-  # Required props
-  prop :data, :list, required: true,
-    doc: "List of maps representing table rows"
-
-  prop :columns, :list, required: true,
-    doc: "Column definitions with :key, :label, :width"
-
-  # Optional props with defaults
-  prop :sortable, :boolean, default: true,
-    doc: "Whether columns can be sorted"
-
-  prop :paginated, :boolean, default: false,
-    doc: "Enable pagination"
-
-  prop :page_size, :integer, default: 50,
-    doc: "Items per page when paginated"
-
-  # Event callbacks
-  prop :on_row_click, :function, default: nil,
-    doc: "Called when a row is clicked: (row_data) -> any()"
-
-  prop :on_sort, :function, default: nil,
-    doc: "Called when column is sorted: (column, direction) -> any()"
-
-  # Style
-  prop :theme, :atom, default: :default,
-    options: [:default, :dark, :minimal],
-    doc: "Visual theme"
-
-  prop :striped, :boolean, default: true,
-    doc: "Alternating row colors"
-end
-```
-
-### Lifecycle
-
-Components have `init/1`, `update/3`, `handle_info/3`, and `cleanup/2` callbacks. `update/3` fires when props change -- use it to restart timers or reset derived state:
-
-```elixir
-defmodule MyApp.Components.AnimatedCounter do
-  use Raxol.UI.Component
-
-  prop :target_value, :integer, required: true
-  prop :duration_ms, :integer, default: 1000
-
-  defstruct [:current_value, :start_time, :timer_ref]
-
-  @impl true
-  def init(props) do
-    state = %__MODULE__{
-      current_value: 0,
-      start_time: System.monotonic_time(:millisecond)
-    }
-
-    start_animation(state, props)
-  end
-
-  @impl true
-  def update(state, props, changes) do
-    if :target_value in changes do
-      cancel_animation(state)
-      start_animation(%{state | start_time: System.monotonic_time(:millisecond)}, props)
-    else
-      state
+  def view(model) do
+    column style: %{padding: 1, gap: 1} do
+      [
+        header("Shopping List"),
+        item_list(model.items, model.cursor),
+        footer()
+      ]
     end
   end
 
   @impl true
-  def handle_info(state, props, :animate) do
-    now = System.monotonic_time(:millisecond)
-    elapsed = now - state.start_time
+  def subscribe(_model), do: []
 
-    if elapsed >= props.duration_ms do
-      %{state | current_value: props.target_value, timer_ref: nil}
-    else
-      progress = elapsed / props.duration_ms
-      new_value = ease_out_cubic(progress) * props.target_value
+  # -- View helpers --
+  # These are just functions returning element trees.
+  # No special behaviour, no lifecycle -- plain Elixir.
 
-      timer_ref = Process.send_after(self(), :animate, 16)  # ~60fps
-
-      %{state | current_value: round(new_value), timer_ref: timer_ref}
+  defp header(title) do
+    box style: %{border: :double, width: :fill, padding: 0} do
+      text(title, style: [:bold], fg: :cyan)
     end
   end
 
-  @impl true
-  def cleanup(state, _props) do
-    cancel_animation(state)
-    :ok
-  end
-
-  defp start_animation(state, props) do
-    timer_ref = Process.send_after(self(), :animate, 16)
-    %{state | timer_ref: timer_ref}
-  end
-
-  defp cancel_animation(%{timer_ref: nil}), do: :ok
-  defp cancel_animation(%{timer_ref: ref}), do: Process.cancel_timer(ref)
-
-  defp ease_out_cubic(t), do: 1 - :math.pow(1 - t, 3)
-end
-```
-
-## Component Types
-
-### Stateless
-
-If a component has no internal state, omit `init/1` and just implement `render/2`:
-
-```elixir
-defmodule MyApp.Components.Badge do
-  use Raxol.UI.Component
-
-  prop :text, :string, required: true
-  prop :type, :atom, default: :info,
-    options: [:info, :success, :warning, :error]
-
-  def render(_state, props) do
-    span class: "badge badge-#{props.type}" do
-      props.text
-    end
-  end
-end
-```
-
-### Stateful
-
-```elixir
-defmodule MyApp.Components.Accordion do
-  use Raxol.UI.Component
-
-  prop :sections, :list, required: true
-  prop :allow_multiple, :boolean, default: false
-
-  defstruct [:expanded_sections]
-
-  def init(props) do
-    %__MODULE__{expanded_sections: MapSet.new()}
-  end
-
-  def render(state, props) do
-    div class: "accordion" do
-      props.sections
+  defp item_list(items, cursor) do
+    rows =
+      items
       |> Enum.with_index()
-      |> Enum.map(fn {section, index} ->
-        expanded = MapSet.member?(state.expanded_sections, index)
-
-        div class: "section" do
-          div class: "header",
-              on_click: {:toggle, index} do
-            section.title
-            span class: "icon" do
-              if expanded, do: "-", else: "+"
-            end
-          end
-
-          if expanded do
-            div class: "content" do
-              section.content
-            end
-          end
-        end
+      |> Enum.map(fn {item, idx} ->
+        prefix = if idx == cursor, do: "> ", else: "  "
+        style = if idx == cursor, do: [:bold], else: []
+        text("#{prefix}#{item}", style: style)
       end)
+
+    box style: %{border: :single, padding: 1, width: 30} do
+      column style: %{gap: 0} do
+        rows
+      end
     end
   end
 
-  def handle_event(state, props, {:toggle, index}) do
-    if props.allow_multiple do
-      new_sections = if MapSet.member?(state.expanded_sections, index) do
-        MapSet.delete(state.expanded_sections, index)
-      else
-        MapSet.put(state.expanded_sections, index)
-      end
-
-      %{state | expanded_sections: new_sections}
-    else
-      new_sections = if MapSet.member?(state.expanded_sections, index) do
-        MapSet.new()
-      else
-        MapSet.new([index])
-      end
-
-      %{state | expanded_sections: new_sections}
-    end
+  defp footer do
+    text("[j/k] navigate  [q] quit", style: [:dim])
   end
 end
 ```
 
-### Container Components
+View helpers are composable, testable (call them and inspect the return value), and require zero boilerplate. Use them for panels, status bars, formatted tables, help text -- anything that's a pure function of data.
 
-`DataProvider` fetches data in `init/1` and passes the result to children via render props:
+---
 
-```elixir
-defmodule MyApp.Components.DataProvider do
-  use Raxol.UI.Component
+## Component Behaviour
 
-  prop :url, :string, required: true
-  prop :children, :function, required: true
-  prop :loading_component, :function, default: &default_loading/1
-  prop :error_component, :function, default: &default_error/1
+For widgets that need their own state and event handling, use the component behaviour. Built-in widgets like `Button`, `TextInput`, `Checkbox`, `Table`, `SelectList`, and `Modal` all use this pattern.
 
-  defstruct [:data, :loading, :error]
+### The Behaviour
 
-  def init(props) do
-    state = %__MODULE__{loading: true}
+`Raxol.UI.Components.Base.Component` defines these callbacks:
 
-    Task.async(fn ->
-      case HTTPoison.get(props.url) do
-        {:ok, response} -> {:data, Jason.decode!(response.body)}
-        {:error, error} -> {:error, error}
-      end
-    end)
+| Callback | Required? | Purpose |
+|----------|-----------|---------|
+| `init/1` | Yes | Initialize state from props. Return `{:ok, state}` or just `state`. |
+| `render/2` | Yes | Render state to an element tree. `render(state, context)` |
+| `handle_event/3` | Yes | Handle UI events. `handle_event(event, state, context)` |
+| `update/2` | Yes | Handle messages. `update(message, state)` |
+| `mount/1` | No | Setup after init (subscriptions, etc). Default: `{state, []}` |
+| `unmount/1` | No | Cleanup on removal. Default: `state` |
 
-    state
-  end
-
-  def handle_info(state, _props, {_ref, {:data, data}}) do
-    %{state | data: data, loading: false}
-  end
-
-  def handle_info(state, _props, {_ref, {:error, error}}) do
-    %{state | error: error, loading: false}
-  end
-
-  def render(state, props) do
-    cond do
-      state.loading ->
-        props.loading_component.(state)
-      state.error ->
-        props.error_component.(state.error)
-      true ->
-        props.children.(state.data)
-    end
-  end
-
-  defp default_loading(_state) do
-    div class: "loading" do
-      "Loading..."
-    end
-  end
-
-  defp default_error(error) do
-    div class: "error" do
-      "Error: #{inspect(error)}"
-    end
-  end
-end
-
-# Usage
-DataProvider url: "/api/users" do
-  fn users ->
-    UserList users: users
-  end
-end
-```
-
-### Higher-Order Components
-
-Wrap a component to add cross-cutting behavior:
-
-```elixir
-defmodule MyApp.Components.WithErrorBoundary do
-  use Raxol.UI.Component
-
-  prop :fallback, :function, required: true
-  prop :children, :function, required: true
-
-  defstruct [:error, :error_info]
-
-  def init(_props) do
-    %__MODULE__{error: nil, error_info: nil}
-  end
-
-  def render(state, props) do
-    if state.error do
-      props.fallback.(state.error, state.error_info)
-    else
-      try do
-        props.children.()
-      rescue
-        error ->
-          error_info = __STACKTRACE__
-          new_state = %{state | error: error, error_info: error_info}
-
-          Logger.error("Component error: #{inspect(error)}", error_info)
-
-          props.fallback.(error, error_info)
-      end
-    end
-  end
-
-  def handle_event(state, props, :reset_error) do
-    %{state | error: nil, error_info: nil}
-  end
-end
-
-# Usage
-WithErrorBoundary fallback: &error_fallback/2 do
-  fn ->
-    MyRiskyComponent data: data
-  end
-end
-```
-
-## State Management
-
-### Local State
+### Minimal Example
 
 ```elixir
 defmodule MyApp.Components.Counter do
-  use Raxol.UI.Component
+  use Raxol.UI.Components.Base.Component
 
-  prop :initial_value, :integer, default: 0
-
-  defstruct [:count]
-
+  @impl true
   def init(props) do
-    %__MODULE__{count: props.initial_value}
+    {:ok, %{
+      id: Map.get(props, :id, "counter"),
+      count: Map.get(props, :initial, 0),
+      on_change: Map.get(props, :on_change),
+      style: Map.get(props, :style, %{}),
+      theme: Map.get(props, :theme, %{})
+    }}
   end
 
-  def render(state, _props) do
-    div do
-      "Count: #{state.count}"
-      button on_click: :increment do
-        "+"
-      end
-      button on_click: :decrement do
-        "-"
-      end
-    end
+  @impl true
+  def update(:increment, state) do
+    new_state = %{state | count: state.count + 1}
+    notify(new_state)
+    new_state
   end
 
-  def handle_event(state, _props, :increment) do
-    %{state | count: state.count + 1}
+  def update(:decrement, state) do
+    new_state = %{state | count: state.count - 1}
+    notify(new_state)
+    new_state
   end
 
-  def handle_event(state, _props, :decrement) do
-    %{state | count: state.count - 1}
-  end
-end
-```
-
-### Shared State with Context
-
-When multiple components need to read from the same state — themes, current user, feature flags — context avoids prop-drilling:
-
-```elixir
-defmodule MyApp.Context.Theme do
-  use Raxol.UI.Context
-
-  defstruct [:colors, :fonts, :spacing]
-
-  def create_context(theme_name \\ :default) do
-    case theme_name do
-      :default ->
-        %__MODULE__{
-          colors: %{primary: :blue, secondary: :gray},
-          fonts: %{body: "monospace", heading: "sans-serif"},
-          spacing: %{small: 1, medium: 2, large: 4}
-        }
-
-      :dark ->
-        %__MODULE__{
-          colors: %{primary: :cyan, secondary: :white},
-          fonts: %{body: "monospace", heading: "sans-serif"},
-          spacing: %{small: 1, medium: 2, large: 4}
-        }
-    end
-  end
-end
-
-defmodule MyApp.Components.ThemedButton do
-  use Raxol.UI.Component
-  use MyApp.Context.Theme
-
-  prop :text, :string, required: true
-  prop :variant, :atom, default: :primary
-
-  def render(_state, props) do
-    theme = use_context(Theme)
-
-    button style: [
-      fg: theme.colors[props.variant],
-      font: theme.fonts.body,
-      padding: theme.spacing.medium
-    ] do
-      props.text
-    end
-  end
-end
-
-# Usage
-ThemeProvider theme: :dark do
-  ThemedButton text: "Click me", variant: :primary
-end
-```
-
-### External State
-
-For app-wide state, use a GenServer store with a pub/sub pattern:
-
-```elixir
-defmodule MyApp.Store.AppState do
-  use GenServer
-
-  def start_link(initial_state) do
-    GenServer.start_link(__MODULE__, initial_state, name: __MODULE__)
-  end
-
-  def get_state do
-    GenServer.call(__MODULE__, :get_state)
-  end
-
-  def dispatch(action) do
-    GenServer.cast(__MODULE__, {:dispatch, action})
-  end
-
-  def subscribe(pid) do
-    GenServer.cast(__MODULE__, {:subscribe, pid})
-  end
-
-  def reduce(state, {:increment, amount}) do
-    %{state | count: state.count + amount}
-  end
-
-  def reduce(state, {:set_user, user}) do
-    %{state | current_user: user}
-  end
-
-  def handle_cast({:dispatch, action}, {state, subscribers}) do
-    new_state = reduce(state, action)
-
-    Enum.each(subscribers, fn pid ->
-      send(pid, {:state_changed, new_state})
-    end)
-
-    {:noreply, {new_state, subscribers}}
-  end
-end
-
-defmodule MyApp.Components.ConnectedComponent do
-  use Raxol.UI.Component
-
-  defstruct [:app_state]
-
-  def init(_props) do
-    MyApp.Store.AppState.subscribe(self())
-
-    %__MODULE__{
-      app_state: MyApp.Store.AppState.get_state()
-    }
-  end
-
-  def handle_info(state, _props, {:state_changed, new_app_state}) do
-    %{state | app_state: new_app_state}
-  end
-
-  def render(state, _props) do
-    div do
-      "Count: #{state.app_state.count}"
-
-      if state.app_state.current_user do
-        "User: #{state.app_state.current_user.name}"
-      end
-    end
-  end
-end
-```
-
-## Event Handling
-
-### Basics
-
-```elixir
-defmodule MyApp.Components.InteractiveList do
-  use Raxol.UI.Component
-
-  prop :items, :list, required: true
-  prop :on_item_click, :function, default: nil
-
-  def render(_state, props) do
-    ul do
-      props.items
-      |> Enum.with_index()
-      |> Enum.map(fn {item, index} ->
-        li on_click: {:item_click, index},
-           on_hover: {:item_hover, index} do
-          item.name
-        end
-      end)
-    end
-  end
-
-  def handle_event(state, props, {:item_click, index}) do
-    item = Enum.at(props.items, index)
-
-    if props.on_item_click do
-      props.on_item_click.(item, index)
-    end
-
-    state
-  end
-
-  def handle_event(state, _props, {:item_hover, index}) do
-    state
-  end
-end
-```
-
-### Custom Event System
-
-If you need middleware or want to decouple handlers from the component, you can build a small event system:
-
-```elixir
-defmodule MyApp.Events do
-  @moduledoc "Custom event system for components"
-
-  defstruct [:handlers, :middleware]
-
-  def new do
-    %__MODULE__{
-      handlers: %{},
-      middleware: []
-    }
-  end
-
-  def on(events, event_type, handler) do
-    handlers = Map.update(events.handlers, event_type, [handler], &[handler | &1])
-    %{events | handlers: handlers}
-  end
-
-  def emit(events, event_type, data \\ nil) do
-    processed_data = Enum.reduce(events.middleware, data, fn middleware, acc ->
-      middleware.(event_type, acc)
-    end)
-
-    case Map.get(events.handlers, event_type) do
-      nil -> :ok
-      handlers ->
-        Enum.each(handlers, fn handler ->
-          handler.(processed_data)
-        end)
-    end
-  end
-
-  def middleware(events, middleware_fn) do
-    %{events | middleware: [middleware_fn | events.middleware]}
-  end
-end
-
-defmodule MyApp.Components.EventDrivenComponent do
-  use Raxol.UI.Component
-
-  defstruct [:events]
-
-  def init(_props) do
-    events = MyApp.Events.new()
-             |> MyApp.Events.on(:click, &handle_click/1)
-             |> MyApp.Events.on(:double_click, &handle_double_click/1)
-             |> MyApp.Events.middleware(&log_events/2)
-
-    %__MODULE__{events: events}
-  end
-
-  def render(state, props) do
-    div on_click: :click,
-        on_double_click: :double_click do
-      "Click me!"
-    end
-  end
-
-  def handle_event(state, _props, event_type) do
-    MyApp.Events.emit(state.events, event_type)
-    state
-  end
-
-  defp handle_click(_data) do
-    IO.puts("Single click!")
-  end
-
-  defp handle_double_click(_data) do
-    IO.puts("Double click!")
-  end
-
-  defp log_events(event_type, data) do
-    Logger.debug("Event: #{event_type}, Data: #{inspect(data)}")
-    data
-  end
-end
-```
-
-## Advanced Patterns
-
-### Render Props
-
-`Virtualized` handles scroll math and only calls your render function for visible items:
-
-```elixir
-defmodule MyApp.Components.Virtualized do
-  use Raxol.UI.Component
-
-  prop :items, :list, required: true
-  prop :item_height, :integer, required: true
-  prop :height, :integer, required: true
-  prop :render_item, :function, required: true
-
-  defstruct [:scroll_top, :visible_start, :visible_end]
-
-  def render(state, props) do
-    visible_start = div(state.scroll_top, props.item_height)
-    visible_count = div(props.height, props.item_height) + 2
-    visible_end = min(visible_start + visible_count, length(props.items))
-
-    div class: "virtualized",
-        style: [height: props.height],
-        on_scroll: :scroll do
-
-      if visible_start > 0 do
-        div style: [height: visible_start * props.item_height]
-      end
-
-      props.items
-      |> Enum.slice(visible_start..visible_end)
-      |> Enum.with_index(visible_start)
-      |> Enum.map(fn {item, index} ->
-        props.render_item.(item, index)
-      end)
-
-      remaining = length(props.items) - visible_end
-      if remaining > 0 do
-        div style: [height: remaining * props.item_height]
-      end
-    end
-  end
-end
-
-# Usage
-Virtualized
-  items: large_list,
-  item_height: 30,
-  height: 300,
-  render_item: fn item, index ->
-    div style: [height: 30] do
-      "Item #{index}: #{item.name}"
-    end
-  end
-```
-
-### Compound Components
-
-Tabs, accordions, and menus are naturally made of cooperating parts:
-
-```elixir
-defmodule MyApp.Components.Tabs do
-  use Raxol.UI.Component
-
-  prop :active_tab, :string, default: nil
-  prop :on_tab_change, :function, default: nil
-  prop :children, :list, required: true
-
-  def render(_state, props) do
-    {tab_list, tab_panels} = separate_children(props.children)
-
-    div class: "tabs" do
-      render_child(tab_list, %{
-        active_tab: props.active_tab,
-        on_tab_change: props.on_tab_change
-      })
-
-      render_child(tab_panels, %{
-        active_tab: props.active_tab
-      })
-    end
-  end
-
-  defp separate_children(children) do
-    Enum.reduce(children, {nil, nil}, fn
-      %TabList{} = tab_list, {_old, panels} ->
-        {tab_list, panels}
-      %TabPanels{} = tab_panels, {list, _old} ->
-        {list, tab_panels}
-      _, acc -> acc
-    end)
-  end
-end
-
-defmodule MyApp.Components.Tab do
-  use Raxol.UI.Component
-
-  prop :id, :string, required: true
-  prop :children, :any, required: true
-
-  def render(_state, props, context) do
-    active = props.id == context.active_tab
-
-    button class: "tab",
-           style: [active: active],
-           on_click: {:select_tab, props.id} do
-      props.children
-    end
-  end
-
-  def handle_event(_state, props, {:select_tab, tab_id}, context) do
-    if context.on_tab_change do
-      context.on_tab_change.(tab_id)
-    end
-  end
-end
-
-# Usage
-Tabs active_tab: "tab1", on_tab_change: &set_active_tab/1 do
-  [
-    TabList do
+  def update(_msg, state), do: state
+
+  @impl true
+  def render(state, _context) do
+    row style: %{gap: 1} do
       [
-        Tab(id: "tab1") { "First Tab" },
-        Tab(id: "tab2") { "Second Tab" }
-      ]
-    end,
-
-    TabPanels do
-      [
-        TabPanel(id: "tab1") { "First Panel Content" },
-        TabPanel(id: "tab2") { "Second Panel Content" }
+        button("-", on_click: {:click, :decrement}),
+        text("#{state.count}", style: [:bold]),
+        button("+", on_click: {:click, :increment})
       ]
     end
-  ]
+  end
+
+  @impl true
+  def handle_event({:click, action}, state, _context) do
+    {update(action, state), []}
+  end
+
+  def handle_event(_event, state, _context) do
+    {state, []}
+  end
+
+  defp notify(%{on_change: nil}), do: :ok
+  defp notify(%{on_change: callback, count: count}), do: callback.(count)
 end
 ```
 
-### Composition
+### Using a Component
 
-Break large components into focused pieces:
+Components are used via their module's `init/1`, `handle_event/3`, and `render/2`:
 
 ```elixir
-defmodule MyApp.Components.Card do
-  use Raxol.UI.Component
+# In your TEA app's init/1:
+{:ok, counter_state} = MyApp.Components.Counter.init(%{initial: 10})
+model = %{counter: counter_state}
 
-  prop :children, :any, required: true
-  prop :elevated, :boolean, default: false
+# In update/2, forward events:
+counter = MyApp.Components.Counter.update(:increment, model.counter)
+{%{model | counter: counter}, []}
 
-  def render(_state, props) do
-    div class: "card",
-        style: [elevated: props.elevated] do
-      props.children
-    end
-  end
-end
-
-defmodule MyApp.Components.CardHeader do
-  use Raxol.UI.Component
-
-  prop :title, :string, required: true
-  prop :subtitle, :string, default: nil
-  prop :actions, :any, default: nil
-
-  def render(_state, props) do
-    div class: "card-header" do
-      div class: "titles" do
-        h3 do
-          props.title
-        end
-
-        if props.subtitle do
-          p class: "subtitle" do
-            props.subtitle
-          end
-        end
-      end
-
-      if props.actions do
-        div class: "actions" do
-          props.actions
-        end
-      end
-    end
-  end
-end
-
-defmodule MyApp.Components.CardContent do
-  use Raxol.UI.Component
-
-  prop :children, :any, required: true
-
-  def render(_state, props) do
-    div class: "card-content" do
-      props.children
-    end
-  end
-end
-
-# Usage
-Card elevated: true do
-  [
-    CardHeader(
-      title: "User Profile",
-      subtitle: "Manage your account",
-      actions: [
-        Button(text: "Edit", on_click: &edit_profile/0),
-        Button(text: "Delete", variant: :danger, on_click: &delete_profile/0)
-      ]
-    ),
-
-    CardContent do
-      UserProfile user: current_user
-    end
-  ]
-end
+# In view/1:
+MyApp.Components.Counter.render(model.counter, %{})
 ```
 
-## Testing Components
+### Real-World Pattern: Checkbox
 
-### Unit Tests
+Here's how the built-in Checkbox is structured (simplified):
 
 ```elixir
-defmodule MyApp.Components.CounterTest do
-  use ExUnit.Case
-  use Raxol.UI.ComponentTest
+defmodule Raxol.UI.Components.Input.Checkbox do
+  @behaviour Raxol.UI.Components.Base.Component
 
-  alias MyApp.Components.Counter
+  @impl true
+  def init(props) do
+    {:ok, %{
+      id: Keyword.get(props, :id, "checkbox-#{:erlang.unique_integer([:positive])}"),
+      checked: Keyword.get(props, :checked, false),
+      disabled: Keyword.get(props, :disabled, false),
+      label: Keyword.get(props, :label, ""),
+      on_toggle: Keyword.get(props, :on_toggle),
+      style: Keyword.get(props, :style, %{}),
+      theme: Keyword.get(props, :theme, %{}),
+      focused: false
+    }}
+  end
 
-  describe "Counter component" do
-    test "renders initial value" do
-      result = render(Counter, initial_value: 5)
-
-      assert result =~ "Count: 5"
-      assert has_button?(result, "+")
-      assert has_button?(result, "-")
-    end
-
-    test "increments on + button click" do
-      {component, _html} = render_component(Counter, initial_value: 0)
-
-      new_component = handle_event(component, :increment)
-      html = render(new_component)
-
-      assert html =~ "Count: 1"
-    end
-
-    test "decrements on - button click" do
-      {component, _html} = render_component(Counter, initial_value: 5)
-
-      new_component = handle_event(component, :decrement)
-      html = render(new_component)
-
-      assert html =~ "Count: 4"
+  @impl true
+  def handle_event(%Event{type: :key, data: %{key: :space}}, state, _ctx) do
+    if state.disabled do
+      {state, []}
+    else
+      new_state = %{state | checked: not state.checked}
+      if state.on_toggle, do: state.on_toggle.(new_state.checked)
+      {new_state, []}
     end
   end
+
+  def handle_event(_event, state, _ctx), do: {state, []}
+
+  @impl true
+  def render(state, _context) do
+    mark = if state.checked, do: "[x]", else: "[ ]"
+    style = if state.focused, do: [:bold], else: []
+    text("#{mark} #{state.label}", style: style)
+  end
+
+  # update/2 handles prop changes
+  @impl true
+  def update(props, state) when is_map(props) do
+    Raxol.UI.Components.Base.Component.merge_props(props, state)
+  end
+
+  def update(_msg, state), do: state
 end
 ```
 
-### Integration Tests
+Key patterns:
+- `init/1` takes a keyword list or map, returns `{:ok, state}`
+- State is a flat map with `:id`, `:style`, `:theme` (standard keys)
+- `handle_event/3` pattern-matches on `%Event{}` structs
+- Disabled state is checked before acting
+- Callbacks (`:on_toggle`) are optional and nil-checked
+- `merge_props/2` handles style/theme deep-merging when props update
+
+---
+
+## Guidelines
+
+### State Shape
+
+All components should include these standard keys:
 
 ```elixir
-defmodule MyApp.Components.DataTableTest do
-  use ExUnit.Case
-  use Raxol.UI.IntegrationTest
-
-  alias MyApp.Components.DataTable
-
-  describe "DataTable integration" do
-    test "renders table with data" do
-      data = [
-        %{name: "Alice", age: 30},
-        %{name: "Bob", age: 25}
-      ]
-
-      columns = [
-        %{key: :name, label: "Name"},
-        %{key: :age, label: "Age"}
-      ]
-
-      {:ok, view, html} = live_isolated(DataTable,
-        data: data,
-        columns: columns
-      )
-
-      assert html =~ "Alice"
-      assert html =~ "Bob"
-      assert html =~ "30"
-      assert html =~ "25"
-    end
-
-    test "handles row click events" do
-      data = [%{name: "Alice", age: 30}]
-      columns = [%{key: :name, label: "Name"}]
-
-      parent = self()
-      on_click = fn row -> send(parent, {:row_clicked, row}) end
-
-      {:ok, view, html} = live_isolated(DataTable,
-        data: data,
-        columns: columns,
-        on_row_click: on_click
-      )
-
-      html |> element("tr:first-child") |> render_click()
-
-      assert_received {:row_clicked, %{name: "Alice", age: 30}}
-    end
-
-    test "sorts columns when clicked" do
-      data = [
-        %{name: "Bob", age: 25},
-        %{name: "Alice", age: 30}
-      ]
-
-      columns = [%{key: :name, label: "Name", sortable: true}]
-
-      {:ok, view, html} = live_isolated(DataTable,
-        data: data,
-        columns: columns
-      )
-
-      html |> element("th[data-column='name']") |> render_click()
-
-      updated_html = render(view)
-      rows = updated_html |> Floki.find("tr") |> tl()
-      first_row = hd(rows) |> Floki.text()
-
-      assert first_row =~ "Alice"
-    end
-  end
-end
+%{
+  id: "unique-id",       # Required for the rendering pipeline
+  style: %{},            # Layout/visual overrides
+  theme: %{},            # Theme tokens
+  focused: false,        # Focus state (for keyboard navigation)
+  disabled: false         # Disabled state (skip event handling)
+}
 ```
 
-### Performance Tests
+Add component-specific keys alongside these.
+
+### Event Handling
+
+Events arrive as `%Raxol.Core.Events.Event{}` structs:
 
 ```elixir
-defmodule MyApp.Components.PerformanceTest do
-  use ExUnit.Case
-  use Raxol.UI.PerformanceTest
+def handle_event(%Event{type: :key, data: %{key: :enter}}, state, _ctx) do
+  # Handle enter key
+  {state, []}
+end
 
-  alias MyApp.Components.VirtualList
-
-  describe "VirtualList performance" do
-    test "renders large lists efficiently" do
-      items = for i <- 1..10_000, do: %{id: i, name: "Item #{i}"}
-
-      {render_time, _result} = :timer.tc(fn ->
-        render(VirtualList, items: items, item_height: 30, height: 300)
-      end)
-
-      # Should render in under 10ms regardless of item count
-      assert render_time < 10_000
-    end
-
-    test "memory usage stays constant with large datasets" do
-      base_items = for i <- 1..100, do: %{id: i, name: "Item #{i}"}
-      large_items = for i <- 1..10_000, do: %{id: i, name: "Item #{i}"}
-
-      base_memory = measure_memory(fn ->
-        render(VirtualList, items: base_items, item_height: 30, height: 300)
-      end)
-
-      large_memory = measure_memory(fn ->
-        render(VirtualList, items: large_items, item_height: 30, height: 300)
-      end)
-
-      ratio = large_memory / base_memory
-      assert ratio < 2.0, "Memory usage grew by #{ratio}x"
-    end
-  end
+def handle_event(%Event{type: :key, data: %{key: :char, char: ch}}, state, _ctx) do
+  # Handle printable character
+  {%{state | buffer: state.buffer <> ch}, []}
 end
 ```
 
-## Best Practices
+Return `{new_state, commands}` or `:passthrough` to let the event bubble up.
 
-Keep each component focused on one thing. Compose small components rather than growing one to handle every case.
+### Testing
 
-Props are a public API -- changes to names or types break callers. Required props should be things the component can't function without; everything else needs a sensible default.
+Components are plain modules -- test them directly:
 
-Add error boundaries around components that touch external data. Clean up timers and subscriptions in `cleanup/2` -- leaking them causes subtle bugs in long-running sessions.
+```elixir
+test "checkbox toggles on space" do
+  {:ok, state} = Checkbox.init(checked: false, label: "Agree")
 
-Unit-test state transitions and event handling. Integration-test interactions. Cover edge cases: empty lists, nil callbacks, rapid re-renders.
+  space = %Raxol.Core.Events.Event{type: :key, data: %{key: :space}}
+  {new_state, []} = Checkbox.handle_event(space, state, %{})
+
+  assert new_state.checked == true
+end
+
+test "disabled checkbox ignores events" do
+  {:ok, state} = Checkbox.init(checked: false, disabled: true)
+
+  space = %Raxol.Core.Events.Event{type: :key, data: %{key: :space}}
+  {new_state, []} = Checkbox.handle_event(space, state, %{})
+
+  assert new_state.checked == false
+end
+```
+
+### When to Use What
+
+| Need | Approach |
+|------|----------|
+| Panel, section, formatted output | View helper (private function) |
+| Reusable widget with internal state | Component behaviour |
+| One-off stateful widget in your app | Keep state in your TEA model |
+| Crash-isolated widget | `process_component(MyWidget, props)` |
+
+Start with view helpers. Graduate to the component behaviour when you find yourself passing state and event handlers around manually.
+
+---
+
+## Further Reading
+
+- [Widget Gallery](../getting-started/WIDGET_GALLERY.md) -- All built-in widgets with examples
+- [Building Apps](../cookbook/BUILDING_APPS.md) -- TEA patterns and recipes
+- [Examples](../../examples/README.md) -- Runnable examples from beginner to advanced
+- Built-in components to study: `lib/raxol/ui/components/input/` and `lib/raxol/ui/components/display/`

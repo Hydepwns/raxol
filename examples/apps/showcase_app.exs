@@ -2,6 +2,12 @@
 #
 # Interactive component showcase demonstrating Raxol's View DSL.
 #
+# What you'll learn:
+#   - Tab navigation: model.tab index drives which section renders
+#   - View dispatch by pattern matching on model state (section_content/1)
+#   - Conditional key handling: guards scope keys to specific tabs
+#   - Multiple widget types: text, box, button, checkbox, progress, list
+#
 # Usage:
 #   mix run examples/apps/showcase_app.exs
 #
@@ -143,6 +149,8 @@ defmodule Raxol.Examples.Showcase do
   end
 
   # -- Section views --
+  # Pattern matching on model.tab dispatches to the right section.
+  # Each section is an independent view helper returning an element tree.
 
   defp section_content(%{tab: 0}), do: section_text_layout()
   defp section_content(%{tab: 1} = m), do: section_form_inputs(m)

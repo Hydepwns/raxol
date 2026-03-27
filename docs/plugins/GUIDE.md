@@ -146,8 +146,10 @@ end
 
 ### Event Types
 
-- **Input**: `{:key_press, key}`, `{:mouse_click, x, y}`
-- **Terminal**: `{:terminal_resize, {w, h}}`, `{:terminal_focus, bool}`
+Events arrive as `%Raxol.Core.Events.Event{}` structs:
+
+- **Keyboard**: `%Event{type: :key, data: %{key: :char, char: "q"}}`, `%Event{type: :key, data: %{key: :enter}}`
+- **Terminal**: `%Event{type: :resize, data: %{width: 80, height: 24}}`
 - **System**: `{:file_change, path}`, `{:process_exit, pid, reason}`
 - **Plugin**: `{:plugin_loaded, name}`, `{:plugin_unloaded, name}`
 
@@ -164,12 +166,14 @@ System Event -> filter_event/2 (priority order) -> Core Processing
 Implement `filter_event/2` to intercept, modify, or block events:
 
 ```elixir
+alias Raxol.Core.Events.Event
+
 # Block events (stops propagation)
-def filter_event({:key_press, "F12"}, _state), do: :halt
+def filter_event(%Event{type: :key, data: %{key: :f12}}, _state), do: :halt
 
 # Modify events
-def filter_event({:key_press, "j"}, _state) do
-  {:ok, {:key_press, :arrow_down}}
+def filter_event(%Event{type: :key, data: %{key: :char, char: "j"}} = event, _state) do
+  {:ok, %{event | data: %{key: :down}}}
 end
 
 # Pass through unchanged
@@ -273,12 +277,12 @@ Raxol automatically analyzes plugin BEAM bytecode to detect security-sensitive o
 
 ### Detected Capabilities
 
-| Capability | Detected Operations |
-|------------|---------------------|
-| `:file_access` | `File.*`, `:file.*`, `Path.*` |
-| `:network_access` | `:gen_tcp.*`, `:ssl.*`, `Req.*`, `HTTPoison.*` |
-| `:code_injection` | `Code.eval_*`, `Module.create`, `:erl_eval.*` |
-| `:system_commands` | `System.cmd`, `Port.open`, `:os.cmd` |
+| Capability         | Detected Operations                            |
+| ------------------ | ---------------------------------------------- |
+| `:file_access`     | `File.*`, `:file.*`, `Path.*`                  |
+| `:network_access`  | `:gen_tcp.*`, `:ssl.*`, `Req.*`, `HTTPoison.*` |
+| `:code_injection`  | `Code.eval_*`, `Module.create`, `:erl_eval.*`  |
+| `:system_commands` | `System.cmd`, `Port.open`, `:os.cmd`           |
 
 ### Security Policies
 

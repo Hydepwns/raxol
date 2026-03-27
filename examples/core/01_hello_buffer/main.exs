@@ -1,7 +1,16 @@
 #!/usr/bin/env elixir
 
-# Example: Basic Buffer Usage
-# Demonstrates creating, writing to, and rendering a buffer
+# Basic Buffer Usage
+#
+# The buffer is the 2D grid of cells underneath the View DSL.
+# Most apps never touch it directly, but understanding this layer
+# helps when debugging or building custom renderers.
+#
+# What you'll learn:
+#   - Buffer = 2D grid of cells, the canvas underneath the View DSL
+#   - Coordinates: (x, y), 0-indexed, (0,0) at top-left
+#   - Immutable: write_at returns a new buffer (pipe-friendly)
+#   - Operations: create, write_at, get_cell, resize, clear, to_string
 
 # Add the lib directory to the code path
 Code.prepend_path("_build/dev/lib/raxol/ebin")

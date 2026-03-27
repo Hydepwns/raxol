@@ -4,6 +4,14 @@
 # real-time scheduler utilization, memory sparklines, process table,
 # color theming, and keyboard-driven navigation.
 #
+# What you'll learn:
+#   - BEAM introspection: :erlang.system_flag, :erlang.statistics,
+#     :erlang.memory, Process.info
+#   - Scheduler utilization: delta active/total wall time between samples
+#   - Sparkline rendering: Unicode block chars normalized to max value
+#   - Panel cycling via module attribute list and index arithmetic
+#   - Multi-panel layouts with active/inactive border styling
+#
 # Palette: Synthwave '84 Soft (mapped to ANSI)
 #   cyan    -> accents, active titles
 #   magenta -> highlights, key hints
@@ -13,6 +21,12 @@
 #
 # Usage:
 #   mix run examples/demo.exs
+#
+# Controls:
+#   Tab/h/l  = switch panels
+#   j/k      = scroll process table
+#   Space    = pause/resume
+#   q        = quit
 
 defmodule RaxolDemo do
   use Raxol.Core.Runtime.Application
@@ -28,6 +42,9 @@ defmodule RaxolDemo do
 
   @impl true
   def init(_context) do
+    # Enable BEAM scheduler wall time tracking. This lets us measure
+    # how busy each scheduler is by comparing active vs total time
+    # between consecutive samples.
     :erlang.system_flag(:scheduler_wall_time, true)
 
     %{
@@ -54,6 +71,9 @@ defmodule RaxolDemo do
         {model, []}
 
       :tick ->
+        # Sample scheduler wall time: each entry is {id, active, total}.
+        # By comparing with the previous sample, we get utilization as
+        # delta_active / delta_total * 100 for each scheduler.
         curr = :erlang.statistics(:scheduler_wall_time) |> Enum.sort()
 
         utils =
@@ -405,6 +425,9 @@ defmodule RaxolDemo do
 
   # -- Rendering Helpers --
 
+  # Sparkline: maps each value to a Unicode block character (▁▂▃▄▅▆▇█).
+  # Values are normalized to the max in the window so the tallest bar
+  # always uses the full-height character.
   defp spark_bar(values) do
     max_val = Enum.max(values ++ [1])
 
@@ -416,6 +439,7 @@ defmodule RaxolDemo do
     |> Enum.join()
   end
 
+  # Bar chart: filled (█) and empty (░) segments from a percentage.
   defp bar(pct, width) do
     filled = round(pct / 100 * width)
     empty = width - filled
@@ -450,6 +474,7 @@ defmodule RaxolDemo do
   defp panel_title(title, false), do: "   #{title}   "
 
   # -- Navigation --
+  # Cycle through @panels using modular arithmetic on the index.
 
   defp next_panel(current) do
     idx = Enum.find_index(@panels, &(&1 == current))

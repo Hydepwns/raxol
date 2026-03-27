@@ -3,7 +3,17 @@
 # Simulates pilot behavior, generates layout recommendations,
 # and demonstrates the accept/reject feedback loop.
 #
-# Run: mix run examples/adaptive_ui_demo.exs
+# What you'll learn:
+#   - BehaviorTracker: GenServer recording pane dwells, commands, alerts
+#     within a sliding time window, then broadcasting aggregates
+#   - LayoutRecommender: rule-based engine that suggests layout changes
+#     (enlarge heavily used panes, collapse unused ones)
+#   - FeedbackLoop: tracks accept/reject decisions to measure accuracy
+#     and trigger retraining when it drops
+#   - The three components form a closed loop: track -> recommend -> feedback
+#
+# Usage:
+#   mix run examples/adaptive_ui_demo.exs
 
 defmodule AdaptiveUIDemo do
   alias Raxol.Adaptive.{BehaviorTracker, LayoutRecommender, FeedbackLoop}
@@ -103,6 +113,11 @@ defmodule AdaptiveUIDemo do
   end
 
   defp simulate_behavior(tracker) do
+    # Record events that the BehaviorTracker aggregates. In a real app
+    # these would come from actual user interaction. The tracker
+    # computes dwell percentages, command frequency, and alert response
+    # times within its configured time window.
+
     # Scout pane barely used (2%)
     BehaviorTracker.record(tracker, :pane_dwell, %{
       pane_id: :scout,

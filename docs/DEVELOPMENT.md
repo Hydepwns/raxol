@@ -39,32 +39,27 @@ mix test --cover
 ```bash
 mix format                    # Format code
 mix credo                     # Style check
-mix raxol.dialyzer           # Enhanced type check with PLT caching
-mix raxol.dialyzer --setup   # Build PLT files from scratch
-mix raxol.dialyzer --check   # Quick type check
-mix docs                     # Generate docs
-mix raxol.pre_commit         # Run all checks
+mix dialyzer                  # Type checking (PLT cached in priv/plts/)
+mix docs                      # Generate docs
+mix raxol.check               # Run all checks (format, compile, credo, dialyzer, test)
+mix raxol.check --quick       # Skip dialyzer
 ```
 
 ### Development
 ```bash
-mix raxol.tutorial     # Interactive tutorial
-mix raxol.playground   # Component playground
+mix raxol.playground   # Component playground (28 widget demos)
+mix raxol.repl         # Interactive REPL with sandboxing
 iex -S mix            # Interactive shell
 ```
 
 ## Dialyzer
 
-Raxol has an enhanced Dialyzer setup with PLT caching for faster type checking.
+PLT cached in `priv/plts/` for faster reruns.
 
 ### Commands
 ```bash
-mix raxol.dialyzer           # Run analysis (builds PLT if needed)
-mix raxol.dialyzer --check   # Quick check (uses existing PLT)
-mix raxol.dialyzer --setup   # Build PLT from scratch
-mix raxol.dialyzer --clean   # Clean PLT cache
-mix raxol.dialyzer --stats   # Show statistics
-mix raxol.dialyzer --profile # Performance profiling
+mix dialyzer                  # Run analysis (builds PLT if needed)
+mix dialyzer --format short   # Compact output
 ```
 
 You can also use the dev script:
@@ -141,10 +136,9 @@ MIX_ENV=test mix compile
 ```
 
 **Performance Issues**
-```elixir
-Raxol.Profiler.enable()
-# Run operation
-Raxol.Profiler.report()
+```bash
+mix raxol.perf                # Performance monitoring
+mix raxol.flamegraph          # Generate flame graph
 ```
 
 ## Architecture
@@ -179,16 +173,16 @@ end
 ## Performance
 
 ### Profiling
-```elixir
-{result, stats} = Raxol.Profiler.profile do
-  expensive_operation()
-end
-IO.inspect(stats)
+```bash
+mix raxol.perf                # Performance monitoring
+mix raxol.perf.monitor        # Live performance monitor
+mix raxol.flamegraph          # Generate flame graph
 ```
 
 ### Benchmarking
 ```bash
-mix run bench/parser_profiling.exs
+mix raxol.bench               # Run benchmark suite
+mix run bench/core/buffer_benchmark.exs  # Specific benchmark
 ```
 
 ### Optimization Tips
@@ -199,13 +193,9 @@ mix run bench/parser_profiling.exs
 
 ## Contributing
 
-### Pre-commit Hooks
+### Pre-commit Checks
 ```bash
-cp .git-hooks/pre-commit .git/hooks/
-chmod +x .git/hooks/pre-commit
-
-# Or
-mix raxol.install_hooks
+mix raxol.check               # Run all quality checks before committing
 ```
 
 ### Code Standards
@@ -219,7 +209,6 @@ mix raxol.install_hooks
 ### Precompilation
 ```bash
 MIX_ENV=prod mix compile
-mix raxol.precompile
 ```
 
 ### Release
@@ -229,29 +218,52 @@ MIX_ENV=prod mix release
 
 ## Quick Reference
 
-### Common Patterns
+### TEA App
 
-**Terminal**
 ```elixir
-{:ok, t} = Raxol.Terminal.start(width: 80, height: 24)
-Raxol.Terminal.write(t, "Hello \e[32mWorld\e[0m")
+defmodule MyApp do
+  use Raxol.Core.Runtime.Application
+
+  @impl true
+  def init(_context), do: %{count: 0}
+
+  @impl true
+  def update(message, model) do
+    case message do
+      :increment -> {%{model | count: model.count + 1}, []}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+        {model, [command(:quit)]}
+      _ -> {model, []}
+    end
+  end
+
+  @impl true
+  def view(model) do
+    column style: %{padding: 1} do
+      [text("Count: #{model.count}"), button("+", on_click: :increment)]
+    end
+  end
+
+  @impl true
+  def subscribe(_model), do: []
+end
+
+{:ok, pid} = Raxol.start_link(MyApp, [])
 ```
 
-**Components**
-```elixir
-defmodule MyComponent do
-  use Raxol.Component
-  def init(props), do: %{text: props[:text]}
-  def render(state, _), do: text(state.text)
-end
-```
+### Keyboard Event Shapes
 
-**Error Handling**
 ```elixir
-case safe_call(fn -> risky() end) do
-  {:ok, result} -> result
-  {:error, _} -> default
-end
+# Printable character
+%Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}}
+
+# Modifier key
+%Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}}
+
+# Special key
+%Raxol.Core.Events.Event{type: :key, data: %{key: :enter}}
+%Raxol.Core.Events.Event{type: :key, data: %{key: :escape}}
+%Raxol.Core.Events.Event{type: :key, data: %{key: :tab}}
 ```
 
 ### ANSI Codes
@@ -261,14 +273,6 @@ end
 \e[31m       Red text
 \e[1m        Bold
 \e[?25l      Hide cursor
-```
-
-### Keyboard Events
-```elixir
-{:key, :enter}
-{:key, :escape}
-{:key, "j", [:ctrl]}
-{:mouse, :click, row, col}
 ```
 
 ## Resources

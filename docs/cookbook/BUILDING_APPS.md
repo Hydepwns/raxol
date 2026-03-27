@@ -119,7 +119,7 @@ def view(model) do
 end
 ```
 
-See `examples/apps/todo_app.ex` for a working scrollable list.
+See `examples/getting_started/todo_app.exs` for a working scrollable list.
 
 ### Periodic data refresh
 

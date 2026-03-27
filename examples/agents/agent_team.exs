@@ -1,9 +1,16 @@
 # Agent Team Example
 #
-# Demonstrates: Team supervision, inter-agent communication via
-# Command.send_agent, coordinator/worker pattern, and OTP crash isolation.
+# A coordinator dispatches files to worker agents for analysis.
+# Workers report back via inter-agent messaging.
 #
-# Run with: mix run examples/agents/agent_team.exs
+# What you'll learn:
+#   - Agent.Team is an OTP Supervisor for agent groups (crash isolation)
+#   - Command.send_agent(target, msg) routes messages via Registry
+#   - Coordinator/worker pattern: coordinator assigns, workers report back
+#   - Each agent is a separate process with its own TEA loop
+#
+# Usage:
+#   mix run examples/agents/agent_team.exs
 
 Logger.configure(level: :warning)
 
@@ -14,6 +21,8 @@ defmodule FileAnalyzer do
   @impl true
   def init(_context), do: %{analyzed: 0}
 
+  # Worker receives work assignment with a reply_to address.
+  # Uses Command.async to do file I/O off the TEA loop.
   @impl true
   def update({:agent_message, _from, {:analyze, file, reply_to}}, model) do
     {%{model | analyzed: model.analyzed + 1},
@@ -39,6 +48,8 @@ defmodule FileAnalyzer do
      ]}
   end
 
+  # When async work completes, send the report to the coordinator.
+  # Command.send_agent routes through the Registry by agent :id.
   @impl true
   def update({:command_result, {:report_to, reply_to, report}}, model) do
     {model, [Command.send_agent(reply_to, {:file_report, report})]}
@@ -122,7 +133,9 @@ defmodule ReviewCoordinator do
   def update(_msg, model), do: {model, []}
 end
 
-# Start a team with one coordinator and two file analyzer workers
+# -- Boot --
+# Agent.Team is an OTP Supervisor. If a worker crashes, the supervisor
+# restarts it without affecting the coordinator or other workers.
 {:ok, _team_pid} =
   Raxol.Agent.Team.start_link(
     team_id: :review_team,
