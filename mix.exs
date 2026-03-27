@@ -369,9 +369,9 @@ defmodule Raxol.MixProject do
 
   defp description do
     """
-    Terminal UI framework for Elixir. 30+ widgets, flexbox + CSS grid layout,
-    TEA architecture on OTP, hot code reload, crash isolation, LiveView bridge,
-    and SSH app serving. The missing TUI framework for the BEAM.
+    AGI-ready terminal framework for Elixir. 30+ widgets, flexbox + CSS grid,
+    TEA on OTP, AI agent runtime, distributed swarm with CRDTs, time-travel
+    debugging, session recording, sandboxed REPL, and SSH serving.
     """
   end
 
@@ -391,7 +391,7 @@ defmodule Raxol.MixProject do
       },
       description: description(),
       source_url: @source_url,
-      homepage_url: "https://github.com/Hydepwns/raxol",
+      homepage_url: "https://raxol.io",
       build_tools: ["mix", "make"]
     ]
   end
@@ -491,33 +491,51 @@ defmodule Raxol.MixProject do
           Raxol.Component,
           Raxol.Minimal
         ],
+        "Core Runtime": [
+          ~r/^Raxol\.Core\..*/
+        ],
         "Terminal Emulation": [
           ~r/^Raxol\.Terminal\..*/
         ],
         "UI Components": [
           ~r/^Raxol\.UI\..*/
         ],
-        "State Management": [
-          ~r/^Raxol\.UI\.State\..*/
+        "AI Agents": [
+          ~r/^Raxol\.Agent.*/
         ],
-        Performance: [
-          ~r/^Raxol\.Benchmarks\..*/,
-          ~r/^Raxol\.Metrics.*/
+        "Distributed Swarm": [
+          ~r/^Raxol\.Swarm\..*/
         ],
-        "Security & Audit": [
-          ~r/^Raxol\.Security\..*/,
-          ~r/^Raxol\.Audit.*/
+        "Sensor Fusion": [
+          ~r/^Raxol\.Sensor\..*/
+        ],
+        "Adaptive UI": [
+          ~r/^Raxol\.Adaptive\..*/
+        ],
+        "Debugging & Recording": [
+          ~r/^Raxol\.Debug\..*/,
+          ~r/^Raxol\.Recording\..*/
+        ],
+        REPL: [
+          ~r/^Raxol\.REPL\..*/
+        ],
+        SSH: [
+          ~r/^Raxol\.SSH\..*/
+        ],
+        Playground: [
+          ~r/^Raxol\.Playground\..*/
         ],
         Plugins: [
           ~r/^Raxol\.Plugin.*/
         ],
-        "Events & Architecture": [
-          ~r/^Raxol\.Events.*/,
-          ~r/^Raxol\.Architecture\..*/
+        Performance: [
+          ~r/^Raxol\.Performance\..*/
         ],
-        "Web & Cloud": [
-          ~r/^Raxol\.Web\..*/,
-          ~r/^Raxol\.Cloud\..*/,
+        Security: [
+          ~r/^Raxol\.Security\..*/
+        ],
+        "LiveView & Web": [
+          ~r/^Raxol\.LiveView\..*/,
           ~r/^RaxolWeb\..*/
         ]
       ],
@@ -526,11 +544,21 @@ defmodule Raxol.MixProject do
       formatters: ["html"],
       api_reference: true,
       nest_modules_by_prefix: [
+        Raxol.Core,
         Raxol.Terminal,
         Raxol.UI,
+        Raxol.Agent,
+        Raxol.Swarm,
+        Raxol.Sensor,
+        Raxol.Adaptive,
+        Raxol.Debug,
+        Raxol.Recording,
+        Raxol.REPL,
+        Raxol.SSH,
+        Raxol.Playground,
         Raxol.Security,
-        Raxol.Audit,
-        Raxol.Architecture
+        Raxol.Performance,
+        Raxol.LiveView
       ]
     ]
   end

@@ -96,7 +96,7 @@ Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
 
 **Sensor fusion** -- Poll sensors, fuse readings with weighted averaging and thresholds, render gauges and sparklines.
 
-**Self-adapting layout** -- Track how the UI is used, recommend layout changes, animate transitions. The interface evolves.
+**Self-adapting layout** -- Track how the UI is used, recommend layout changes, animate transitions. Optional Nx/Axon ML backend for vectorized fusion and Axon MLP recommendations. The interface evolves.
 
 **Time-travel debugging** -- Snapshot every `update/2` cycle. Step back, forward, jump to any point, restore state. Zero cost when disabled.
 
@@ -116,7 +116,7 @@ Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
 
 **Terminal compatibility** -- Works in Ghostty, Kitty, WezTerm, iTerm2, Alacritty, Terminal.app, Windows Terminal, and anything with basic ANSI support. Auto-detects Kitty graphics protocol for inline images (Ghostty, Kitty, WezTerm). Falls back to Sixel or iTerm2 protocol where available.
 
-**Interactive playground** -- `mix raxol.playground` opens live demos across all categories. Browse, search, filter by complexity. Works over SSH too.
+**Interactive playground** -- `mix raxol.playground` opens 28 live demos across 8 categories (input, display, feedback, navigation, overlay, layout, visualization, effects). Browse, search, filter by complexity. Works over SSH with `--ssh`.
 
 ## Install
 
@@ -160,7 +160,7 @@ mix phx.server                                    # LiveView counter at /counter
 
 ## Performance
 
-Full frame in 2.1ms on Apple M1 Pro (Elixir 1.19 / OTP 26). That's 13% of the 60fps budget -- components crash and restart in microseconds without affecting the UI.
+Full frame in 2.1ms on Apple M1 Pro (Elixir 1.19 / OTP 27). That's 13% of the 60fps budget -- components crash and restart in microseconds without affecting the UI.
 
 | What                              | Time    |
 | --------------------------------- | ------- |
@@ -188,6 +188,9 @@ git clone --recursive https://github.com/Hydepwns/raxol.git
 cd raxol
 mix deps.get
 MIX_ENV=test mix test --exclude slow --exclude integration --exclude docker
+mix raxol.check              # format, compile, credo, dialyzer, security, test
+mix raxol.check --quick      # skip dialyzer
+mix raxol.demo               # run built-in demos
 ```
 
 The termbox2 NIF requires a git submodule. If you cloned without `--recursive`:

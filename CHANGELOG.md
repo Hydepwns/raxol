@@ -1,18 +1,47 @@
 ## [2.3.0] - 2026-03-27
 
+182 commits, 1,030 files changed, net -39K LOC (89,793 insertions, 129,283 deletions).
+
 ### Added
 
-- Ink (React/Node.js) column to README comparison table
-- Flexbox & CSS Grid layout row to comparison table (Raxol, Textual, Ink)
-- Inline images (Kitty/Sixel) row to comparison table (Raxol, Ratatui)
-- CODE_OF_CONDUCT.md (Contributor Covenant v2.1)
-- SECURITY.md (vulnerability reporting policy)
-- REPL example in README examples section
+- **Distributed swarm subsystem** -- libcluster integration with gossip, EPMD, DNS, and custom Tailscale strategy. CRDTs (LWW-Register, OR-Set) for shared state. Node health monitoring, seniority-based leader election, bandwidth-aware message routing. 11 modules, 2,100+ lines.
+- **AI agent framework** -- `use Raxol.Agent` for TEA-based agents with OTP supervision. Agent discovery via Registry, typed inter-agent messaging, headless or rendered. Three command types: async (SSE streaming), shell (Port), inter-agent. Team supervision via `Agent.Team`. Backend.HTTP streams across Anthropic, OpenAI, Ollama, Kimi, and Lumo (U2L encryption). Tiered fallback detection.
+- **Interactive playground** -- 28 demos across 8 categories (input, display, feedback, navigation, overlay, layout, visualization, effects). Search, filter by category/complexity, help overlay. Charts as View DSL widgets. SSH serving with `mix raxol.playground --ssh`.
+- **Time-travel debugging** -- `Raxol.start_link(MyApp, time_travel: true)` snapshots every `update/2` cycle into a circular buffer. Step back/forward, jump to any point, restore state. Recursive map diffing. Zero cost when disabled.
+- **Session recording and replay** -- Asciinema v2 format. Capture with timestamps, replay with pause/seek/speed controls. Stream replay.
+- **Sandboxed REPL** -- `Code.eval_string` with spawn_monitor timeout, IO capture via group_leader swap, persistent bindings. Three sandbox levels: unrestricted, standard, strict (whitelist-only, safe for SSH). Available as `mix raxol.repl`.
+- **Nx/Axon adaptive ML** -- Optional Nx vectorized fusion, Axon MLP recommender for layout, FeedbackLoop training. Gated behind `Code.ensure_loaded?`.
+- **Plugin system** -- Phase 1 mission plugin system (4 modules) with lifecycle management
+- **AGI Cockpit Console** -- Phase 2 cockpit with uptime panel, dependency checker, crash recovery, state machine
+- **`mix raxol.new`** -- Project generator with 4 templates (basic, phoenix, ssh, agent)
+- **`mix raxol.demo`** -- 4 built-in runnable demos
+- **`mix raxol.check`** -- Unified quality gate (format, compile, credo, dialyzer, security, test)
+- **Benchmark suite** -- Comparative benchmarks against Ratatui, BubbleTea, and Textual
+- **746+ new tests** across 21 modules (357 for core, 233 for runtime, 156 for plugins, 84 for converter/keyboard/engine/shutdown/initializer/scheduler)
+- Mouse click hit testing for buttons
+- Agent semantic view tree
+- Unified image facade + View DSL `image/1`
+- Event capture phase (W3C-style dispatch), event bubbling, style inheritance through component tree
+- HEEx parser for terminal compilation
+- Sixel real dithering + image cache
+- CODE_OF_CONDUCT.md, SECURITY.md
+
+### Fixed
+
+- 3 real bugs found via test coverage: converter pipe BadMapError, keyboard CaseClauseError on quit/debug, unreachable ctrl_c/ctrl_q clauses
+- 6 flaky CI tests (Registry race conditions, ETS cleanup, JIT warmup timing, behavior_tracker race)
+- Windows CI (GPG path separators, IOTerminal backend)
+- Input parser multi-byte sequences + mouse tracking
+- REPL sandbox hardening, capped eval history
 
 ### Changed
 
-- Bubble Tea SSH column: `--` -> `via lib` (Wish library)
-- Install section now shows Hex dependency instead of path dep
+- Deleted ~35K lines of dead code (CQRS, EventSourcing, Pipeline, stale stubs)
+- Phoenix is now an optional dependency
+- All examples modernized to TEA pattern
+- Zero credo warnings, zero dialyzer regressions
+- Refactored large files into focused submodules (CSI handlers, sensor, adaptive, orchestrator)
+- 6,484 tests passing, 0 failures, 74 excluded by environment
 
 ## [2.2.0] - 2026-03-22
 
@@ -70,7 +99,7 @@
   - 4669 tests passing with 0 failures
   - Removed ~750 lines of orphaned test code
 
-## [Unreleased]
+## [2.0.1] - 2025-12-04
 
 ### Added
 
@@ -78,39 +107,19 @@
   - Implemented `create_sixel_cells_from_buffer/2` to bridge plugin and terminal Sixel rendering
   - Integrated with `Raxol.Terminal.ANSI.SixelGraphics.process_sequence/2` for native processing
   - Added pixel buffer to Cell grid conversion with palette-to-RGB color mapping
-  - Created comprehensive test suite: 8 tests covering all integration paths
-  - Supports both pre-encoded Sixel sequences and image data conversion
-  - All tests passing with zero compilation warnings
-  - Files modified: `lib/raxol/plugins/visualization/image_renderer.ex`, `test/raxol/plugins/visualization/image_renderer_test.exs`
 
-- **CI Root Cause Analysis Documentation** - Comprehensive investigation findings (2025-12-06)
-  - Created `docs/project/CI_ROOT_CAUSE_ANALYSIS.md` with detailed failure analysis
-  - Documented three distinct root causes affecting nightly builds
-  - Provided ready-to-apply solutions for each category of failure
-  - Includes investigation commands, reproduction steps, and fix implementations
-  - Maps current 43% success rate to projected 93% with all fixes applied
+- **CI Root Cause Analysis Documentation** (2025-12-06)
+  - Documented three distinct root causes affecting nightly builds with ready-to-apply solutions
 
 ### Fixed
 
-- **Test Type Warnings** - Removed unreachable pattern matching clauses
-  - Fixed Dialyzer warnings in `test/raxol/terminal/commands/dcs_handlers_test.exs`
-  - Removed unreachable `%Emulator{} = emu -> emu` patterns at lines 178 and 350
-  - DCS handlers always return tuples `{:ok, emu}` or `{:error, reason, emu}`, never bare structs
-  - All 10 DCS handler tests passing after fix
-  - Zero compilation warnings maintained
-
-- **Nightly Build CI/CD Pipeline Stabilization** (2025-12-06) - Phase 2A/2B Complete
+- **Test Type Warnings** - Removed unreachable pattern matching clauses in DCS handler tests
+- **Nightly Build CI/CD Pipeline Stabilization** (2025-12-06)
   - Fixed Erlang :cover module crashes on NIF beam files (OTP 27.2/28.2)
-  - Fixed Hex archive OTP version conflicts (cleared ~/.mix/archives/ before install)
-  - Fixed macOS performance test timing issues (tagged with :skip_on_ci)
-  - Fixed Elixir 1.19.0 LiveComponent lifecycle (proper mount before update)
-  - Result: 6/14 jobs passing → 13/14 jobs passing (43% → 93% success rate)
-  - Files: `.github/workflows/nightly.yml`, `test/raxol/terminal/manager_performance_test.exs`, `test/raxol/liveview/terminal_component_test.exs`
-  - Documentation: `docs/project/CI_ROOT_CAUSE_ANALYSIS.md` (comprehensive technical analysis)
-
-### Changed
-
-## [2.0.1] - 2025-12-04
+  - Fixed Hex archive OTP version conflicts
+  - Fixed macOS performance test timing issues
+  - Fixed Elixir 1.19.0 LiveComponent lifecycle
+  - Result: 43% -> 93% CI success rate
 
 ### CI/CD Workflow Fixes
 

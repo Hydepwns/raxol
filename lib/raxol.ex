@@ -37,6 +37,12 @@ defmodule Raxol do
   * `Raxol.Terminal.ScreenBuffer` - Screen buffer and cell management
   * `Raxol.SSH.Server` - Serve apps over SSH
   * `Raxol.UI.Theming.ThemeManager` - Runtime theme switching
+  * `Raxol.Agent` - AI agents as TEA apps with OTP supervision
+  * `Raxol.Swarm.Discovery` - Distributed node discovery (libcluster + Tailscale)
+  * `Raxol.Debug.TimeTravel` - Snapshot-based time-travel debugging
+  * `Raxol.Recording.Recorder` - Session recording in Asciinema v2 format
+  * `Raxol.REPL.Evaluator` - Sandboxed code evaluation with persistent bindings
+  * `Raxol.Sensor.Fusion` - Sensor polling, batching, and weighted averaging
 
   ## OTP Features
 
@@ -44,6 +50,9 @@ defmodule Raxol do
   * **Hot code reload** - `Raxol.Dev.CodeReloader` updates running apps on file save
   * **SSH serving** - `Raxol.SSH.serve(MyApp, port: 2222)` for remote access
   * **LiveView bridge** - Same app renders to terminal and browser
+  * **AI agent runtime** - TEA agents with inter-agent messaging and team supervision
+  * **Distributed swarm** - CRDTs, node monitoring, leader election via libcluster
+  * **Time-travel debugging** - Snapshot every update cycle, step back/forward, restore
   """
 
   alias Raxol.Core.Runtime.Application

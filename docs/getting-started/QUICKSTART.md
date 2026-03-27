@@ -11,7 +11,7 @@ What you'll learn:
 
 Generate a new project:
 
-From the repo (Hex publish pending):
+Generate a new project:
 
 ```bash
 mix raxol.new my_app
