@@ -74,11 +74,11 @@ mix run examples/getting_started/counter.exs
 
 These aren't bolted on -- they fall out naturally from running on the BEAM:
 
-**AI agents as TEA apps** -- An agent is just a TEA app where input comes from LLMs and tools instead of a keyboard. `use Raxol.Agent`, implement `init/update/view`, and you get OTP supervision, crash isolation, and inter-agent messaging for free. Coordinate agent teams with a supervisor -- no agent framework needed, just processes.
+**AI agents as TEA apps** -- An agent is just a TEA app where input comes from LLMs and tools instead of a keyboard. `use Raxol.Agent`, implement `init/update/view`, and you get OTP supervision, crash isolation, and inter-agent messaging for free. Coordinate agent teams with a supervisor -- no agent framework needed, just processes. Real SSE streaming to Anthropic, OpenAI, Ollama, Groq, or any OpenAI-compatible endpoint. Free tier via LLM7.io (no API key).
 
 **Sensor fusion HUD** -- Poll hardware sensors, fuse readings with weighted averaging and thresholds, render gauges and sparklines. Built for cockpit displays.
 
-**Distributed swarm** -- CRDTs (LWW registers, OR-sets), node monitoring, topology election, tactical overlay sync. Multiple nodes, shared state, no central coordinator.
+**Distributed swarm** -- CRDTs (LWW registers, OR-sets), node monitoring, topology election, tactical overlay sync. Automatic node discovery via libcluster (gossip, epmd, DNS, Tailscale). Tag-filtered Tailscale mesh for zero-config encrypted clustering.
 
 **Self-evolving interface** -- Track pilot behavior, recommend layout changes, animate transitions. The UI adapts to how you use it.
 
@@ -129,6 +129,8 @@ mix run examples/apps/file_browser.exs           # File browser with tree nav
 mix run examples/apps/todo_app.ex                # Todo list
 mix run examples/agents/code_review_agent.exs    # AI agent analyzing files
 mix run examples/agents/agent_team.exs           # Coordinator + worker agents
+mix run examples/agents/ai_cockpit.exs           # Multi-agent AI cockpit (mock)
+FREE_AI=true mix run examples/agents/ai_cockpit.exs  # Real AI via LLM7.io (free)
 ```
 
 ## Performance

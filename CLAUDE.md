@@ -56,7 +56,7 @@ mix run examples/getting_started/counter.exs  # Known working example (TEA model
 Working examples: `counter.exs`, `getting_started/todo_app.exs`, `apps/todo_app.ex`, `apps/showcase_app.exs`, `demo.exs` (all TEA pattern).
 `demo.exs` is the flagship demo showing dashboard layout, live stats, and OTP differentiators.
 
-Agent examples: `agents/code_review_agent.exs` (single agent with shell commands), `agents/agent_team.exs` (coordinator + worker team pattern).
+Agent examples: `agents/code_review_agent.exs` (single agent with shell commands), `agents/agent_team.exs` (coordinator + worker team pattern), `agents/ai_cockpit.exs` (multi-agent AI cockpit with real LLM streaming -- mock by default, `FREE_AI=true` for LLM7.io, supports Anthropic/OpenAI/Ollama/Groq).
 
 Sensor examples: `sensor_hud_demo.exs` (3 mock sensors with gauge, sparkline, threat HUD widgets).
 
@@ -145,6 +145,13 @@ lib/raxol/
 │   ├── hud.ex       # Pure functional HUD widgets (gauge, sparkline, threat, minimap)
 │   └── supervisor.ex # rest_for_one: Registry + DynSup + Fusion
 ├── swarm/           # Distributed subsystem (CRDTs, node monitoring, topology)
+│   ├── discovery.ex   # libcluster wrapper with strategy presets
+│   ├── strategy/      # Custom libcluster strategies (Tailscale)
+│   ├── node_monitor.ex # Health/RTT tracking, :net_kernel.monitor_nodes
+│   ├── topology.ex    # Seniority-based election, role management
+│   ├── comms_manager.ex # Bandwidth-aware message routing
+│   ├── tactical_overlay.ex # CRDT-backed shared state sync
+│   └── crdt/          # LWWRegister, ORSet (pure functional)
 ├── playground/      # Interactive widget catalog (27 demos, 8 categories)
 │   ├── catalog.ex   # Demo registry with metadata (category, complexity, description)
 │   ├── app.ex       # TEA app: search, filter by category/complexity, help overlay
@@ -169,6 +176,10 @@ lib/raxol/
 **Configuration**: TOML-based (`config/raxol.example.toml` as template) with environment overrides in `config/environments/`
 
 **Agent Framework**: `use Raxol.Agent` creates TEA apps for AI agents. `Agent.Session` wraps Lifecycle with `environment: :agent` (skips terminal driver and plugin manager, uses anonymous Dispatcher to avoid singleton conflicts). Agents discover each other via `Raxol.Agent.Registry` (unique Registry). `Agent.Team` is an OTP Supervisor for coordinator/worker groups. Three agent-specific Command types: `:async` (streaming sender callback), `:shell` (Port-based execution), `:send_agent` (Registry-routed inter-agent messages arriving as `{:agent_message, from, payload}`). `view/1` is optional -- headless agents skip rendering entirely.
+
+**Swarm Discovery**: `Raxol.Swarm.Discovery` wraps libcluster (optional dep) with strategy presets: `:gossip` (LAN multicast), `:epmd` (static hosts), `:dns` (Fly.io/K8s), `:tailscale` (mesh via `tailscale status --json`, tag-filtered). NodeMonitor auto-wires `:nodeup`/`:nodedown` events to Topology (elections) and TacticalOverlay (peer sync). Custom strategy: `Raxol.Swarm.Strategy.Tailscale`.
+
+**AI Backend Streaming**: `Raxol.Agent.Backend.HTTP.stream/2` provides real SSE streaming for Anthropic, OpenAI, and Ollama APIs. Uses `Stream.resource/3` + `spawn_link` + message passing. Three SSE formats: Anthropic (content_block_delta), OpenAI (data chunks + `[DONE]`), Ollama (NDJSON). Tiered backend detection: Mock -> LLM7.io -> Ollama -> OpenAI -> Anthropic.
 
 **Time-Travel Debugging**: `Raxol.start_link(MyApp, time_travel: true)` enables snapshot recording of every `update/2` cycle. `Raxol.Debug.TimeTravel` stores `{message, model_before, model_after}` in a CircularBuffer. Navigate with `step_back/0`, `step_forward/0`, `jump_to/1`. `restore/0` sends the historical model to the Dispatcher for re-render. `Snapshot.diff/2` computes recursive map changes. Zero cost when disabled.
 
@@ -220,6 +231,8 @@ These namespaces have been consolidated -- avoid creating new top-level alternat
 - `Raxol.LiveView.*` - LiveView integration (not `liveview/`)
 - `Raxol.Debug.*` - Debugging tools (time-travel, snapshots)
 - `Raxol.Recording.*` - Session recording/replay (not `session/`)
+- `Raxol.Swarm.*` - Distributed swarm (CRDTs, discovery, topology)
+- `Raxol.Swarm.Strategy.*` - Custom libcluster strategies (Tailscale)
 
 ## Environment Variables
 
