@@ -12,6 +12,7 @@ defmodule Raxol.Adaptive.FeedbackLoop do
   require Logger
 
   @default_accuracy_window 100
+  @max_training_examples 500
 
   @type feedback :: %{
           recommendation_id: binary(),
@@ -22,12 +23,14 @@ defmodule Raxol.Adaptive.FeedbackLoop do
   @type t :: %__MODULE__{
           feedback_history: [feedback()],
           pending_recommendations: %{binary() => map()},
-          accuracy_window: pos_integer()
+          accuracy_window: pos_integer(),
+          training_examples: [{term(), term()}]
         }
 
   defstruct feedback_history: [],
             pending_recommendations: %{},
-            accuracy_window: @default_accuracy_window
+            accuracy_window: @default_accuracy_window,
+            training_examples: []
 
   # -- Public API --
 
@@ -62,9 +65,12 @@ defmodule Raxol.Adaptive.FeedbackLoop do
     GenServer.call(server, {:get_history, count})
   end
 
-  @spec force_retrain(GenServer.server()) :: {:ok, :rule_based_mode}
+  @spec force_retrain(GenServer.server()) ::
+          {:ok, :rule_based_mode}
+          | {:ok, :trained, map()}
+          | {:ok, :insufficient_data}
   def force_retrain(server \\ __MODULE__) do
-    GenServer.call(server, :force_retrain)
+    GenServer.call(server, :force_retrain, 120_000)
   end
 
   # -- Callbacks --
@@ -100,8 +106,24 @@ defmodule Raxol.Adaptive.FeedbackLoop do
 
   @impl true
   def handle_call(:force_retrain, _from, %__MODULE__{} = state) do
-    Logger.info("FeedbackLoop: rule-based mode, no model to train")
-    {:reply, {:ok, :rule_based_mode}, state}
+    if Code.ensure_loaded?(Raxol.Adaptive.NxModel) do
+      case state.training_examples do
+        [_, _, _, _, _ | _] = examples ->
+          Logger.info(
+            "FeedbackLoop: training Nx model on #{length(examples)} examples"
+          )
+
+          params = Raxol.Adaptive.NxModel.train(examples)
+          {:reply, {:ok, :trained, params}, state}
+
+        _ ->
+          Logger.info("FeedbackLoop: insufficient training data")
+          {:reply, {:ok, :insufficient_data}, state}
+      end
+    else
+      Logger.info("FeedbackLoop: rule-based mode, no model to train")
+      {:reply, {:ok, :rule_based_mode}, state}
+    end
   end
 
   @impl true
@@ -123,7 +145,7 @@ defmodule Raxol.Adaptive.FeedbackLoop do
       {nil, _} ->
         {:reply, {:error, :not_found}, state}
 
-      {_rec, pending} ->
+      {rec, pending} ->
         feedback = %{
           recommendation_id: rec_id,
           decision: decision,
@@ -134,13 +156,37 @@ defmodule Raxol.Adaptive.FeedbackLoop do
           [feedback | state.feedback_history]
           |> Enum.take(state.accuracy_window)
 
+        training_examples =
+          maybe_add_training_example(
+            state.training_examples,
+            rec,
+            decision
+          )
+          |> Enum.take(@max_training_examples)
+
         state = %__MODULE__{
           state
           | feedback_history: history,
-            pending_recommendations: pending
+            pending_recommendations: pending,
+            training_examples: training_examples
         }
 
         {:reply, :ok, state}
+    end
+  end
+
+  defp maybe_add_training_example(examples, rec, decision) do
+    with true <- Code.ensure_loaded?(Raxol.Adaptive.NxModel),
+         features when not is_nil(features) <- Map.get(rec, :features) do
+      action =
+        if decision == :accepted,
+          do: rec.layout_changes |> List.first() |> Map.get(:action, :none),
+          else: :none
+
+      label = Raxol.Adaptive.NxModel.action_to_one_hot(action)
+      [{features, label} | examples]
+    else
+      _ -> examples
     end
   end
 

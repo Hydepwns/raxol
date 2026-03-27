@@ -38,7 +38,8 @@ defmodule Raxol.Adaptive.LayoutRecommender do
           last_recommendation_at: integer() | nil,
           last_recommendation: recommendation() | nil,
           subscribers: MapSet.t(pid()),
-          pane_ids: [atom()]
+          pane_ids: [atom()],
+          model_params: map() | nil
         }
 
   defstruct confidence_threshold: @default_confidence_threshold,
@@ -46,7 +47,8 @@ defmodule Raxol.Adaptive.LayoutRecommender do
             last_recommendation_at: nil,
             last_recommendation: nil,
             subscribers: MapSet.new(),
-            pane_ids: []
+            pane_ids: [],
+            model_params: nil
 
   # -- Public API --
 
@@ -64,6 +66,11 @@ defmodule Raxol.Adaptive.LayoutRecommender do
   @spec set_pane_ids(GenServer.server(), [atom()]) :: :ok
   def set_pane_ids(server \\ __MODULE__, pane_ids) do
     GenServer.cast(server, {:set_pane_ids, pane_ids})
+  end
+
+  @spec set_model_params(GenServer.server(), map()) :: :ok
+  def set_model_params(server \\ __MODULE__, params) do
+    GenServer.cast(server, {:set_model_params, params})
   end
 
   @spec subscribe(GenServer.server()) :: :ok
@@ -105,6 +112,11 @@ defmodule Raxol.Adaptive.LayoutRecommender do
   end
 
   @impl true
+  def handle_cast({:set_model_params, params}, %__MODULE__{} = state) do
+    {:noreply, %__MODULE__{state | model_params: params}}
+  end
+
+  @impl true
   def handle_info({:behavior_aggregate, aggregate}, %__MODULE__{} = state) do
     now = System.monotonic_time(:millisecond)
 
@@ -114,13 +126,15 @@ defmodule Raxol.Adaptive.LayoutRecommender do
       case apply_rules(aggregate, state) do
         {:recommend, changes, confidence, reasoning}
         when confidence >= state.confidence_threshold ->
-          rec = %{
-            id: generate_id(),
-            layout_changes: changes,
-            confidence: confidence,
-            reasoning: reasoning,
-            timestamp: now
-          }
+          rec =
+            %{
+              id: generate_id(),
+              layout_changes: changes,
+              confidence: confidence,
+              reasoning: reasoning,
+              timestamp: now
+            }
+            |> maybe_attach_features(aggregate, state)
 
           Enum.each(state.subscribers, fn pid ->
             send(pid, {:layout_recommendation, rec})
@@ -161,20 +175,58 @@ defmodule Raxol.Adaptive.LayoutRecommender do
            reasoning: String.t()
          }
 
-  defp apply_rules(aggregate, _state) do
+  defp apply_rules(aggregate, state) do
     dwell_times = aggregate.pane_dwell_times
     total_dwell = dwell_times |> Map.values() |> Enum.sum()
 
     if total_dwell == 0 do
       :no_recommendation
     else
-      case find_best_candidate(dwell_times, total_dwell, aggregate) do
-        nil ->
-          :no_recommendation
-
-        %{change: change, confidence: confidence, reasoning: reasoning} ->
-          {:recommend, [change], confidence, reasoning}
+      case apply_nx_model(aggregate, state) do
+        {:recommend, _, _, _} = result -> result
+        _ -> apply_rule_heuristics(dwell_times, total_dwell, aggregate)
       end
+    end
+  end
+
+  defp apply_nx_model(aggregate, %__MODULE__{
+         model_params: params,
+         pane_ids: pane_ids
+       })
+       when not is_nil(params) and pane_ids != [] do
+    if Code.ensure_loaded?(Raxol.Adaptive.NxModel) do
+      {features, ids} =
+        Raxol.Adaptive.NxModel.extract_features(aggregate, pane_ids)
+
+      predictions = Raxol.Adaptive.NxModel.predict(params, features)
+
+      case Raxol.Adaptive.NxModel.interpret_predictions(predictions, ids) do
+        [{pane_id, action, confidence} | _] ->
+          change = %{
+            pane_id: pane_id,
+            action: action,
+            params: %{source: :nx_model}
+          }
+
+          {:recommend, [change], confidence, "Nx model: #{action} #{pane_id}"}
+
+        [] ->
+          :no_recommendation
+      end
+    else
+      :no_recommendation
+    end
+  end
+
+  defp apply_nx_model(_aggregate, _state), do: :no_recommendation
+
+  defp apply_rule_heuristics(dwell_times, total_dwell, aggregate) do
+    case find_best_candidate(dwell_times, total_dwell, aggregate) do
+      nil ->
+        :no_recommendation
+
+      %{change: change, confidence: confidence, reasoning: reasoning} ->
+        {:recommend, [change], confidence, reasoning}
     end
   end
 
@@ -267,4 +319,18 @@ defmodule Raxol.Adaptive.LayoutRecommender do
   defp generate_id do
     :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
   end
+
+  defp maybe_attach_features(rec, aggregate, %__MODULE__{pane_ids: pane_ids})
+       when pane_ids != [] do
+    if Code.ensure_loaded?(Raxol.Adaptive.NxModel) do
+      {features, _ids} =
+        Raxol.Adaptive.NxModel.extract_features(aggregate, pane_ids)
+
+      Map.put(rec, :features, features)
+    else
+      rec
+    end
+  end
+
+  defp maybe_attach_features(rec, _aggregate, _state), do: rec
 end

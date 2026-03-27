@@ -302,6 +302,10 @@ defmodule Raxol.MixProject do
       {:file_system, "~> 1.1"},
       # Automatic cluster node discovery (optional, for Swarm)
       {:libcluster, "~> 3.4", optional: true},
+      # Numerical computing (optional, for adaptive ML)
+      {:nx, "~> 0.9", optional: true},
+      # Neural network training (optional, for adaptive ML)
+      {:axon, "~> 0.7", optional: true},
 
       # Telemetry & monitoring
       {:telemetry, "~> 1.3"},
@@ -365,7 +369,7 @@ defmodule Raxol.MixProject do
 
   defp description do
     """
-    Terminal UI framework for Elixir. 23 widgets, flexbox + CSS grid layout,
+    Terminal UI framework for Elixir. 30+ widgets, flexbox + CSS grid layout,
     TEA architecture on OTP, hot code reload, crash isolation, LiveView bridge,
     and SSH app serving. The missing TUI framework for the BEAM.
     """
@@ -402,7 +406,6 @@ defmodule Raxol.MixProject do
         {"LICENSE.md", [title: "License"]},
         {"ROADMAP.md", [title: "Roadmap"]},
         {".github/CONTRIBUTING.md", [title: "Contributing"]},
-        {"docs/getting-started/PACKAGES.md", [title: "Packages"]},
         {"docs/getting-started/QUICKSTART.md", [title: "Quickstart"]},
         {"docs/getting-started/WIDGET_GALLERY.md", [title: "Widget Gallery"]},
         {"docs/getting-started/CORE_CONCEPTS.md", [title: "Core Concepts"]},
@@ -433,7 +436,6 @@ defmodule Raxol.MixProject do
           docs/getting-started/QUICKSTART.md
           docs/getting-started/CORE_CONCEPTS.md
           docs/getting-started/WIDGET_GALLERY.md
-          docs/getting-started/PACKAGES.md
           docs/getting-started/MIGRATION_FROM_DIY.md
         ),
         Architecture: ~w(
