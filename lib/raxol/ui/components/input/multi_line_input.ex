@@ -121,31 +121,53 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   # --- Delegated to CursorMovement ---
+  @doc false
   defdelegate handle_move_cursor(direction, state), to: CursorMovement
+  @doc false
   defdelegate handle_move_cursor_line_start(state), to: CursorMovement
+  @doc false
   defdelegate handle_move_cursor_line_end(state), to: CursorMovement
+  @doc false
   defdelegate handle_move_cursor_page(direction, state), to: CursorMovement
+  @doc false
   defdelegate handle_move_cursor_doc_start(state), to: CursorMovement
+  @doc false
   defdelegate handle_move_cursor_doc_end(state), to: CursorMovement
+  @doc false
   defdelegate handle_move_cursor_to(pos, state), to: CursorMovement
+  @doc false
   defdelegate handle_move_cursor_word_left(state), to: CursorMovement
+  @doc false
   defdelegate handle_move_cursor_word_right(state), to: CursorMovement
+  @doc false
   defdelegate handle_selection_move(state, direction), to: CursorMovement
 
   # --- Delegated to SelectionOps ---
+  @doc false
   defdelegate handle_select_all(state), to: SelectionOps
+  @doc false
   defdelegate handle_copy(state), to: SelectionOps
+  @doc false
   defdelegate handle_cut(state), to: SelectionOps
+  @doc false
   defdelegate handle_paste(state), to: SelectionOps
+  @doc false
   defdelegate handle_clipboard_content(content, state), to: SelectionOps
+  @doc false
   defdelegate handle_delete_selection(direction, state), to: SelectionOps
+  @doc false
   defdelegate handle_copy_selection(state), to: SelectionOps
+  @doc false
   defdelegate handle_select_to(pos, state), to: SelectionOps
 
   # --- Delegated to EditOps ---
+  @doc false
   defdelegate handle_input(char_codepoint, state), to: EditOps
+  @doc false
   defdelegate handle_backspace(state), to: EditOps
+  @doc false
   defdelegate handle_delete(state), to: EditOps
+  @doc false
   defdelegate handle_enter(state), to: EditOps
 
   # --- Message handlers (kept in main module) ---

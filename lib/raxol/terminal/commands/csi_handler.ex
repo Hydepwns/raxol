@@ -210,6 +210,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   defp restore_cursor_position(emulator),
     do: CursorUtils.restore_cursor_position(emulator)
 
+  @doc false
   defdelegate handle_device_command(
                 emulator,
                 params,
@@ -433,6 +434,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     {:ok, %{emulator | cursor: home_cursor, scroll_region: scroll_region}}
   end
 
+  @doc false
   defdelegate handle_sequence(emulator, params),
     to: Raxol.Terminal.Commands.CSIHandler.SequenceRouter
 
@@ -459,15 +461,19 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     {:ok, updated_emulator}
   end
 
+  @doc false
   defdelegate handle_save_restore_cursor(emulator, command),
     to: Raxol.Terminal.Commands.CSIHandler.SequenceRouter
 
+  @doc false
   defdelegate handle_screen_clear(emulator, params),
     to: Raxol.Terminal.Commands.CSIHandler.SequenceRouter
 
+  @doc false
   defdelegate handle_line_clear(emulator, params),
     to: Raxol.Terminal.Commands.CSIHandler.SequenceRouter
 
+  @doc false
   defdelegate handle_device_status(emulator, params),
     to: Raxol.Terminal.Commands.CSIHandler.DeviceOps
 

@@ -427,6 +427,15 @@ defmodule Raxol.MixProject do
         {"docs/features/FUZZY_SEARCH.md", [title: "Fuzzy Search"]},
         {"docs/features/FILESYSTEM.md", [title: "Virtual Filesystem"]},
         {"docs/features/CURSOR_EFFECTS.md", [title: "Cursor Effects"]},
+        {"docs/features/AGENT_FRAMEWORK.md", [title: "Agent Framework"]},
+        {"docs/features/SENSOR_FUSION.md", [title: "Sensor Fusion"]},
+        {"docs/features/DISTRIBUTED_SWARM.md", [title: "Distributed Swarm"]},
+        {"docs/features/ADAPTIVE_UI.md", [title: "Adaptive UI"]},
+        {"docs/features/RECORDING_REPLAY.md", [title: "Recording & Replay"]},
+        {"docs/features/REPL.md", [title: "REPL"]},
+        {"docs/features/TIME_TRAVEL_DEBUGGING.md",
+         [title: "Time-Travel Debugging"]},
+        {"docs/WHY_OTP.md", [title: "Why OTP"]},
         {"examples/core/README.md",
          [title: "Core Examples", filename: "core-examples"]}
       ],
@@ -458,6 +467,14 @@ defmodule Raxol.MixProject do
           docs/features/FUZZY_SEARCH.md
           docs/features/FILESYSTEM.md
           docs/features/CURSOR_EFFECTS.md
+          docs/features/AGENT_FRAMEWORK.md
+          docs/features/SENSOR_FUSION.md
+          docs/features/DISTRIBUTED_SWARM.md
+          docs/features/ADAPTIVE_UI.md
+          docs/features/RECORDING_REPLAY.md
+          docs/features/REPL.md
+          docs/features/TIME_TRAVEL_DEBUGGING.md
+          docs/WHY_OTP.md
         ),
         "Project Info": ~w(
           CHANGELOG.md

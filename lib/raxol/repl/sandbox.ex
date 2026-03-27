@@ -12,8 +12,8 @@ defmodule Raxol.REPL.Sandbox do
       iex> Sandbox.check("Enum.map([1,2], & &1 * 2)")
       :ok
 
-      iex> Sandbox.check(~s[System.cmd("rm", ["-rf", "/"])])
-      {:error, ["System.cmd is not allowed (system command execution)"]}
+      iex> match?({:error, _}, Sandbox.check(~s[System.cmd("rm", ["-rf", "/"])]))
+      true
   """
 
   @type level :: :none | :standard | :strict

@@ -63,7 +63,7 @@ Sensors implement `Raxol.Sensor.Behaviour`:
 `Raxol.Sensor.Feed` manages a single sensor -- connecting, polling on a timer, buffering in a circular buffer, and forwarding readings to fusion.
 
 ```elixir
-# Start a feed (usually via Supervisor.start_feed/2)
+# Start a feed (usually via Raxol.Sensor.Supervisor.start_feed/2)
 {:ok, pid} = Raxol.Sensor.Feed.start_link(
   sensor_id: :temp,
   module: TempSensor,
@@ -82,7 +82,7 @@ status = Raxol.Sensor.Feed.get_status(pid)  # :running | :connecting | :error | 
 Raxol.Sensor.Feed.reconnect(pid)
 ```
 
-When started via `Supervisor.start_feed/2`, the feed automatically forwards readings to the Fusion process.
+When started via `Raxol.Sensor.Supervisor.start_feed/2`, the feed automatically forwards readings to the Fusion process.
 
 ## Fusion API
 
