@@ -262,6 +262,45 @@ defmodule Raxol.Playground.Catalog do
       tags: ["chart", "heatmap", "color", "grid"],
       code_snippet:
         ~s'heatmap(data: grid, width: 48, height: 16, color_scale: :warm)'
+    },
+    # --- Effects widgets ---
+    %{
+      name: "Cursor Trail",
+      module: Demos.CursorTrailDemo,
+      category: :effects,
+      description: "Animated cursor trail with presets",
+      complexity: :intermediate,
+      tags: ["effects", "cursor", "trail", "animation"],
+      code_snippet:
+        ~s'trail = CursorTrail.rainbow() |> CursorTrail.update({x, y})'
+    },
+    %{
+      name: "Panel Highlights",
+      module: Demos.PanelHighlightsDemo,
+      category: :effects,
+      description: "Panel focus highlighting with border styles",
+      complexity: :basic,
+      tags: ["effects", "panel", "focus", "border"],
+      code_snippet:
+        ~s'box style: %{border: :rounded, fg: :cyan} do text(content) end'
+    },
+    %{
+      name: "Easing Functions",
+      module: Demos.EasingDemo,
+      category: :effects,
+      description: "Animated easing function showcase",
+      complexity: :intermediate,
+      tags: ["effects", "easing", "animation", "curve"],
+      code_snippet: ~s'Easing.calculate_value(:ease_out_bounce, progress)'
+    },
+    %{
+      name: "Focus Ring",
+      module: Demos.FocusRingDemo,
+      category: :effects,
+      description: "Accessibility focus ring indicators",
+      complexity: :basic,
+      tags: ["effects", "focus", "ring", "accessibility"],
+      code_snippet: ~s'FocusRing.render(content, FocusRing.init(style: :solid))'
     }
   ]
 

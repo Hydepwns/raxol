@@ -1,0 +1,92 @@
+defmodule Raxol.Playground.Demos.FocusRingDemo do
+  @moduledoc "Playground demo: accessibility focus ring indicators."
+  use Raxol.Core.Runtime.Application
+
+  alias Raxol.UI.Components.FocusRing
+
+  @items ["Save File", "Open Project", "Run Tests", "Deploy", "Settings"]
+  @styles [:solid, :double, :rounded, :dots]
+
+  @impl true
+  def init(_context) do
+    %{
+      focused: 0,
+      style: :solid,
+      ring_config: FocusRing.init(style: :solid, color: :cyan)
+    }
+  end
+
+  @impl true
+  def update(message, model) do
+    case message do
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab, shift: true}} ->
+        new_focused =
+          if model.focused == 0, do: length(@items) - 1, else: model.focused - 1
+
+        {%{model | focused: new_focused}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
+        new_focused = rem(model.focused + 1, length(@items))
+        {%{model | focused: new_focused}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :up}} ->
+        new_focused = max(0, model.focused - 1)
+        {%{model | focused: new_focused}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :down}} ->
+        new_focused = min(length(@items) - 1, model.focused + 1)
+        {%{model | focused: new_focused}, []}
+
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "s"}} ->
+        {cycle_style(model), []}
+
+      _ ->
+        {model, []}
+    end
+  end
+
+  @impl true
+  def view(model) do
+    style_label = model.style |> to_string() |> String.upcase()
+
+    column style: %{gap: 1} do
+      [
+        text("Focus Ring Demo", style: [:bold]),
+        text("Style: #{style_label}", fg: :cyan),
+        text(""),
+        render_items(model),
+        text(""),
+        text("[Tab/arrows] navigate  [s] cycle style", style: [:dim])
+      ]
+    end
+  end
+
+  @impl true
+  def subscribe(_model), do: []
+
+  defp render_items(model) do
+    items =
+      @items
+      |> Enum.with_index()
+      |> Enum.map(fn {label, idx} ->
+        if idx == model.focused do
+          rendered = FocusRing.render(label, model.ring_config)
+          text(rendered, fg: :cyan)
+        else
+          text("  #{label}  ", style: [:dim])
+        end
+      end)
+
+    column style: %{gap: 0} do
+      items
+    end
+  end
+
+  defp cycle_style(model) do
+    current_idx = Enum.find_index(@styles, &(&1 == model.style))
+    next_idx = rem(current_idx + 1, length(@styles))
+    new_style = Enum.at(@styles, next_idx)
+    new_config = FocusRing.set_style(model.ring_config, new_style)
+    %{model | style: new_style, ring_config: new_config}
+  end
+end

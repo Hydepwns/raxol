@@ -14,7 +14,7 @@ defmodule Raxol.Playground.AppTest do
   describe "init/1" do
     test "initializes with components and first selected" do
       model = App.init(nil)
-      assert length(model.components) == 23
+      assert length(model.components) == 27
       assert model.cursor == 0
       assert model.selected != nil
       assert model.focus == :sidebar
@@ -175,7 +175,7 @@ defmodule Raxol.Playground.AppTest do
       # After cycling through all categories, next press returns to nil
       {model, []} = App.update(key_event("f"), model)
       assert model.category_filter == nil
-      assert length(model.components) == 23
+      assert length(model.components) == 27
     end
 
     test "f resets cursor to 0" do

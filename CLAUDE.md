@@ -62,7 +62,7 @@ Sensor examples: `sensor_hud_demo.exs` (3 mock sensors with gauge, sparkline, th
 
 Adaptive examples: `adaptive_ui_demo.exs` (behavior tracking, layout recommendations, feedback loop).
 
-Playground: `mix raxol.playground` -- interactive widget catalog with 23 demos across 7 categories (input, display, feedback, navigation, overlay, layout, visualization). Demos are self-contained TEA apps in `lib/raxol/playground/demos/`. Chart demos use View DSL functions directly. SSH mode: `mix raxol.playground --ssh` serves the playground over SSH (port 2222 by default). Production SSH enabled via `RAXOL_SSH_PLAYGROUND=true` env var in fly.toml.
+Playground: `mix raxol.playground` -- interactive widget catalog with 27 demos across 8 categories (input, display, feedback, navigation, overlay, layout, visualization, effects). Demos are self-contained TEA apps in `lib/raxol/playground/demos/`. Chart demos use View DSL functions directly. SSH mode: `mix raxol.playground --ssh` serves the playground over SSH (port 2222 by default). Production SSH enabled via `RAXOL_SSH_PLAYGROUND=true` env var in fly.toml.
 
 ### Development
 
@@ -145,7 +145,7 @@ lib/raxol/
 │   ├── hud.ex       # Pure functional HUD widgets (gauge, sparkline, threat, minimap)
 │   └── supervisor.ex # rest_for_one: Registry + DynSup + Fusion
 ├── swarm/           # Distributed subsystem (CRDTs, node monitoring, topology)
-├── playground/      # Interactive widget catalog (23 demos, 7 categories)
+├── playground/      # Interactive widget catalog (27 demos, 8 categories)
 │   ├── catalog.ex   # Demo registry with metadata (category, complexity, description)
 │   ├── app.ex       # TEA app: search, filter by category/complexity, help overlay
 │   └── demos/       # Self-contained TEA demo apps (one per widget/chart)
@@ -234,7 +234,7 @@ These namespaces have been consolidated -- avoid creating new top-level alternat
 ## Dialyzer
 
 - PLT cached in `priv/plts/` for faster reruns
-- `.dialyzer_ignore.exs` contains ~53 documented intentional suppressions
+- `.dialyzer_ignore.exs` contains ~39 documented intentional suppressions (15 patterns)
 - Mix aliases: `mix dialyzer.setup`, `mix dialyzer.check`, `mix dialyzer.clean`
 
 ## Deployment

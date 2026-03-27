@@ -6,7 +6,7 @@ defmodule Raxol.Playground.CatalogTest do
   describe "list_components/0" do
     test "returns all registered components" do
       components = Catalog.list_components()
-      assert length(components) == 23
+      assert length(components) == 27
       assert Enum.all?(components, &is_map/1)
     end
 
@@ -22,7 +22,8 @@ defmodule Raxol.Playground.CatalogTest do
                  :navigation,
                  :overlay,
                  :layout,
-                 :visualization
+                 :visualization,
+                 :effects
                ]
 
         assert is_binary(comp.description)
