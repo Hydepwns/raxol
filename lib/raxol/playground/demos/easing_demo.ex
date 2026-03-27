@@ -31,15 +31,15 @@ defmodule Raxol.Playground.Demos.EasingDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :left}} ->
+      key_match(:left) ->
         idx = max(0, model.easing_index - 1)
         {%{model | easing_index: idx, progress: 0.0, tick: 0}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :right}} ->
+      key_match(:right) ->
         idx = min(length(@easings) - 1, model.easing_index + 1)
         {%{model | easing_index: idx, progress: 0.0, tick: 0}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "r"}} ->
+      key_match("r") ->
         {%{model | progress: 0.0, tick: 0}, []}
 
       :tick ->

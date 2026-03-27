@@ -22,19 +22,19 @@ defmodule Raxol.Playground.Demos.TableDemo do
     max_row = length(@data) - 1
 
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}} ->
+      key_match("j") ->
         {%{model | cursor: min(model.cursor + 1, max_row)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :down}} ->
+      key_match(:down) ->
         {%{model | cursor: min(model.cursor + 1, max_row)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}} ->
+      key_match("k") ->
         {%{model | cursor: max(model.cursor - 1, 0)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :up}} ->
+      key_match(:up) ->
         {%{model | cursor: max(model.cursor - 1, 0)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "s"}} ->
+      key_match("s") ->
         cycle_sort(model)
 
       _ ->

@@ -95,7 +95,7 @@ defmodule Raxol.Playground.AppTest do
       {model, []} = App.update(key_event("u"), model)
       {model, []} = App.update(key_event("t"), model)
       assert model.search == "but"
-      assert length(model.components) >= 1
+      assert model.components != []
       assert Enum.any?(model.components, &(&1.name == "Button"))
     end
 
@@ -234,7 +234,7 @@ defmodule Raxol.Playground.AppTest do
                c.category == :input and c.complexity == :basic
              end)
 
-      assert length(model.components) >= 1
+      assert model.components != []
     end
   end
 

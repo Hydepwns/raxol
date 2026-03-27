@@ -19,25 +19,25 @@ defmodule Raxol.Playground.Demos.FocusRingDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab, shift: true}} ->
+      key_match(:tab, shift: true) ->
         new_focused =
           if model.focused == 0, do: length(@items) - 1, else: model.focused - 1
 
         {%{model | focused: new_focused}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
+      key_match(:tab) ->
         new_focused = rem(model.focused + 1, length(@items))
         {%{model | focused: new_focused}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :up}} ->
+      key_match(:up) ->
         new_focused = max(0, model.focused - 1)
         {%{model | focused: new_focused}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :down}} ->
+      key_match(:down) ->
         new_focused = min(length(@items) - 1, model.focused + 1)
         {%{model | focused: new_focused}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "s"}} ->
+      key_match("s") ->
         {cycle_style(model), []}
 
       _ ->

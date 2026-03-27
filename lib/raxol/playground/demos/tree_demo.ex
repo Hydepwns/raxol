@@ -37,28 +37,28 @@ defmodule Raxol.Playground.Demos.TreeDemo do
     max_idx = max(length(visible) - 1, 0)
 
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}} ->
+      key_match("j") ->
         {%{model | cursor: min(model.cursor + 1, max_idx)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}} ->
+      key_match("k") ->
         {%{model | cursor: max(model.cursor - 1, 0)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "l"}} ->
+      key_match("l") ->
         {expand_current(model, visible), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :right}} ->
+      key_match(:right) ->
         {expand_current(model, visible), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "h"}} ->
+      key_match("h") ->
         {collapse_current(model, visible), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :left}} ->
+      key_match(:left) ->
         {collapse_current(model, visible), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "e"}} ->
+      key_match("e") ->
         {%{model | expanded: all_dir_names(@tree)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c"}} ->
+      key_match("c") ->
         {%{model | expanded: MapSet.new(), cursor: 0}, []}
 
       _ ->

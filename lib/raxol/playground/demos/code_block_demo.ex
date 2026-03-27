@@ -31,13 +31,13 @@ defmodule Raxol.Playground.Demos.CodeBlockDemo do
     max_idx = length(@samples) - 1
 
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "n"}} ->
+      key_match("n") ->
         {%{model | current: min(model.current + 1, max_idx)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "p"}} ->
+      key_match("p") ->
         {%{model | current: max(model.current - 1, 0)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "l"}} ->
+      key_match("l") ->
         {%{model | show_line_numbers: not model.show_line_numbers}, []}
 
       _ ->

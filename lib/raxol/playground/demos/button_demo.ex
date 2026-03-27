@@ -19,13 +19,13 @@ defmodule Raxol.Playground.Demos.ButtonDemo do
       :danger ->
         {%{model | clicks: 0, last_action: "reset"}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "1"}} ->
+      key_match("1") ->
         {%{model | clicks: model.clicks + 1, last_action: "primary"}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "2"}} ->
+      key_match("2") ->
         {%{model | clicks: model.clicks + 1, last_action: "secondary"}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "r"}} ->
+      key_match("r") ->
         {%{model | clicks: 0, last_action: "reset"}, []}
 
       _ ->

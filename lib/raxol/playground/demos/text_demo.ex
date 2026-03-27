@@ -21,10 +21,10 @@ defmodule Raxol.Playground.Demos.TextDemo do
     max_idx = length(@styles) - 1
 
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "n"}} ->
+      key_match("n") ->
         {%{model | style_index: min(model.style_index + 1, max_idx)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "p"}} ->
+      key_match("p") ->
         {%{model | style_index: max(model.style_index - 1, 0)}, []}
 
       _ ->

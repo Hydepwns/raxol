@@ -15,29 +15,26 @@ defmodule Raxol.Playground.Demos.TextAreaDemo do
   @impl true
   def update(message, model) do
     case {model.mode, message} do
-      {:normal,
-       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "i"}}} ->
+      {:normal, key_match("i")} ->
         {%{
            model
            | mode: :insert,
              cursor_col: String.length(current_line(model))
          }, []}
 
-      {:normal,
-       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}}} ->
+      {:normal, key_match("j")} ->
         {%{
            model
            | cursor_line: min(model.cursor_line + 1, length(model.lines) - 1)
          }, []}
 
-      {:normal,
-       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}}} ->
+      {:normal, key_match("k")} ->
         {%{model | cursor_line: max(model.cursor_line - 1, 0)}, []}
 
-      {:insert, %Raxol.Core.Events.Event{type: :key, data: %{key: :escape}}} ->
+      {:insert, key_match(:escape)} ->
         {%{model | mode: :normal}, []}
 
-      {:insert, %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}}} ->
+      {:insert, key_match(:enter)} ->
         lines = List.insert_at(model.lines, model.cursor_line + 1, "")
 
         {%{
@@ -47,14 +44,13 @@ defmodule Raxol.Playground.Demos.TextAreaDemo do
              cursor_col: 0
          }, []}
 
-      {:insert, %Raxol.Core.Events.Event{type: :key, data: %{key: :backspace}}} ->
+      {:insert, key_match(:backspace)} ->
         line = current_line(model)
         new_line = String.slice(line, 0..-2//1)
         lines = List.replace_at(model.lines, model.cursor_line, new_line)
         {%{model | lines: lines, cursor_col: max(model.cursor_col - 1, 0)}, []}
 
-      {:insert,
-       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}}
+      {:insert, key_match(:char, char: ch)}
       when byte_size(ch) == 1 ->
         line = current_line(model) <> ch
         lines = List.replace_at(model.lines, model.cursor_line, line)

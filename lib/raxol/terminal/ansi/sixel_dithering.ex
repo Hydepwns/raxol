@@ -168,13 +168,8 @@ defmodule Raxol.Terminal.ANSI.SixelDithering do
     end
   end
 
-  defp nearest_color({r, g, b}, palette_list) do
-    Enum.min_by(palette_list, fn {_idx, {pr, pg, pb}} ->
-      dr = r - pr
-      dg = g - pg
-      db = b - pb
-      dr * dr + dg * dg + db * db
-    end)
+  defp nearest_color(rgb, palette_list) do
+    Raxol.Terminal.ANSI.SixelPalette.nearest_color(rgb, palette_list)
   end
 
   defp clamp(v) when v < 0, do: 0

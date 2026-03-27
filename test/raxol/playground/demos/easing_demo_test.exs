@@ -76,7 +76,7 @@ defmodule Raxol.Playground.Demos.EasingDemoTest do
   describe "subscribe/1" do
     test "returns interval subscription" do
       model = EasingDemo.init(nil)
-      assert length(EasingDemo.subscribe(model)) > 0
+      assert EasingDemo.subscribe(model) != []
     end
   end
 

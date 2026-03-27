@@ -154,6 +154,7 @@ defmodule Raxol.Core.Runtime.Application do
       import Raxol.Core.Focus,
         only: [setup_focus: 1, focused?: 1, current_focus: 0]
 
+      import Raxol.Core.Events.Event, only: [key_match: 1, key_match: 2]
       alias Raxol.Core.Events.Event
       alias Raxol.Core.Runtime.Command
       alias Raxol.Core.Runtime.Subscription

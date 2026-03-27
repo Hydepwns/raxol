@@ -154,7 +154,7 @@ defmodule Raxol.Sensor.Fusion do
         qualities = Enum.map(sensor_readings, & &1.quality)
         latest = List.last(sensor_readings)
 
-        fused_values = weighted_average(values, qualities)
+        fused_values = do_weighted_average(values, qualities)
 
         alerts =
           check_thresholds(
@@ -173,6 +173,14 @@ defmodule Raxol.Sensor.Fusion do
       end)
 
     %{sensors: sensors, fused_at: System.monotonic_time(:millisecond)}
+  end
+
+  defp do_weighted_average(values_list, qualities) do
+    if Code.ensure_loaded?(Raxol.Sensor.Fusion.NxBackend) do
+      Raxol.Sensor.Fusion.NxBackend.weighted_average(values_list, qualities)
+    else
+      weighted_average(values_list, qualities)
+    end
   end
 
   @epsilon 1.0e-10

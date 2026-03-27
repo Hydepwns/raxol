@@ -10,23 +10,23 @@ defmodule Raxol.Playground.Demos.SplitPaneDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "d"}} ->
+      key_match("d") ->
         dir =
           if model.direction == :horizontal, do: :vertical, else: :horizontal
 
         {%{model | direction: dir}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
+      key_match(:tab) ->
         focus = if model.focus == :left, do: :right, else: :left
         {%{model | focus: focus}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} ->
+      key_match("+") ->
         {%{model | ratio: min(model.ratio + 0.1, 0.9)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}} ->
+      key_match("-") ->
         {%{model | ratio: max(model.ratio - 0.1, 0.1)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "="}} ->
+      key_match("=") ->
         {%{model | ratio: 0.5}, []}
 
       _ ->

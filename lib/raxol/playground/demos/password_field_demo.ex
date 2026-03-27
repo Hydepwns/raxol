@@ -10,17 +10,17 @@ defmodule Raxol.Playground.Demos.PasswordFieldDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "v"}} ->
+      key_match("v") ->
         {%{model | visible: not model.visible}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "r"}} ->
+      key_match("r") ->
         {%{model | value: "", strength: :none}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :backspace}} ->
+      key_match(:backspace) ->
         new_value = String.slice(model.value, 0..-2//1)
         {%{model | value: new_value, strength: strength(new_value)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
+      key_match(:char, char: ch)
       when byte_size(ch) == 1 and ch not in ["v", "r"] ->
         new_value = model.value <> ch
         {%{model | value: new_value, strength: strength(new_value)}, []}

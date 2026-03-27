@@ -15,21 +15,21 @@ defmodule Raxol.Playground.Demos.SelectListDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "o"}} ->
+      key_match("o") ->
         {%{model | open: not model.open}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}}
+      key_match("j")
       when model.open ->
         {%{
            model
            | selected: min(model.selected + 1, length(model.options) - 1)
          }, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}}
+      key_match("k")
       when model.open ->
         {%{model | selected: max(model.selected - 1, 0)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}}
+      key_match(:enter)
       when model.open ->
         value = Enum.at(model.options, model.selected)
         {%{model | confirmed: value, open: false}, []}

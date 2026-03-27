@@ -147,34 +147,9 @@ defmodule Raxol.UI.Layout.Engine do
   end
 
   def process_element(%{type: :button, attrs: attrs} = _element, space, acc) do
-    # Create a button element composed of a box and text
     text = Map.get(attrs, :label, "Button")
-    # Keep original attributes like :disabled, :focused if present
     component_attrs = Map.put(attrs, :component_type, :button)
-
-    button_elements = [
-      # Button box
-      %{
-        type: :box,
-        x: space.x,
-        y: space.y,
-        width: min(String.length(text) + 4, space.width),
-        height: 3,
-        # Pass attributes, Renderer will use theme + component_type
-        attrs: component_attrs
-      },
-      # Button text
-      %{
-        type: :text,
-        x: space.x + 2,
-        y: space.y + 1,
-        text: text,
-        # Pass attributes, Renderer will use theme + component_type
-        attrs: component_attrs
-      }
-    ]
-
-    button_elements ++ acc
+    build_button_elements(text, component_attrs, space) ++ acc
   end
 
   def process_element(%{type: :text_input, attrs: attrs} = _element, space, acc) do
@@ -289,25 +264,7 @@ defmodule Raxol.UI.Layout.Engine do
       style: Map.get(button, :style, %{})
     }
 
-    button_elements = [
-      %{
-        type: :box,
-        x: space.x,
-        y: space.y,
-        width: min(String.length(text) + 4, space.width),
-        height: 3,
-        attrs: component_attrs
-      },
-      %{
-        type: :text,
-        x: space.x + 2,
-        y: space.y + 1,
-        text: text,
-        attrs: component_attrs
-      }
-    ]
-
-    button_elements ++ acc
+    build_button_elements(text, component_attrs, space) ++ acc
   end
 
   def process_element(%{type: :split_pane} = split, space, acc) do
@@ -385,6 +342,26 @@ defmodule Raxol.UI.Layout.Engine do
     )
 
     acc
+  end
+
+  defp build_button_elements(text, component_attrs, space) do
+    [
+      %{
+        type: :box,
+        x: space.x,
+        y: space.y,
+        width: min(String.length(text) + 4, space.width),
+        height: 3,
+        attrs: component_attrs
+      },
+      %{
+        type: :text,
+        x: space.x + 2,
+        y: space.y + 1,
+        text: text,
+        attrs: component_attrs
+      }
+    ]
   end
 
   # Process children of a container element (Helper)

@@ -67,19 +67,19 @@ defmodule Raxol.Playground.CatalogTest do
   describe "filter/1" do
     test "filters by category" do
       input_components = Catalog.filter(category: :input)
-      assert length(input_components) >= 1
+      assert input_components != []
       assert Enum.all?(input_components, &(&1.category == :input))
     end
 
     test "filters by complexity" do
       basic = Catalog.filter(complexity: :basic)
-      assert length(basic) >= 1
+      assert basic != []
       assert Enum.all?(basic, &(&1.complexity == :basic))
     end
 
     test "filters by search query" do
       results = Catalog.filter(search: "button")
-      assert length(results) >= 1
+      assert results != []
       assert Enum.any?(results, &(&1.name == "Button"))
     end
 

@@ -10,22 +10,22 @@ defmodule Raxol.Playground.Demos.StatusBarDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "i"}} ->
+      key_match("i") ->
         {%{model | mode: "INSERT"}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :escape}} ->
+      key_match(:escape) ->
         {%{model | mode: "NORMAL"}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}} ->
+      key_match("j") ->
         {%{model | line: model.line + 1}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}} ->
+      key_match("k") ->
         {%{model | line: max(model.line - 1, 1)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "h"}} ->
+      key_match("h") ->
         {%{model | col: max(model.col - 1, 1)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "l"}} ->
+      key_match("l") ->
         {%{model | col: model.col + 1}, []}
 
       :tick ->

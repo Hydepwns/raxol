@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
   alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Commands.CSIHandler.{Cursor, CursorMovementHandler}
+  alias Raxol.Terminal.Commands.CursorUtils
   alias Raxol.Terminal.Commands.WindowHandler
   alias Raxol.Terminal.ModeManager
 
@@ -203,63 +204,11 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     end
   end
 
-  defp save_cursor_position(emulator) do
-    cursor = emulator.cursor
+  defp save_cursor_position(emulator),
+    do: CursorUtils.save_cursor_position(emulator)
 
-    # Save position in cursor fields
-    updated_cursor = %{
-      cursor
-      | saved_row: cursor.row,
-        saved_col: cursor.col,
-        saved_position: {cursor.row, cursor.col}
-    }
-
-    # Also save the full cursor structure in emulator.saved_cursor
-    saved_cursor = cursor
-
-    %{emulator | cursor: updated_cursor, saved_cursor: saved_cursor}
-  end
-
-  defp restore_cursor_position(emulator) do
-    # Try to restore from emulator.saved_cursor first (newer style)
-    case Map.get(emulator, :saved_cursor) do
-      nil ->
-        # Fall back to cursor saved fields
-        cursor = emulator.cursor
-
-        {new_row, new_col} =
-          case {cursor.saved_row, cursor.saved_col} do
-            # Don't move if nothing saved
-            {nil, nil} -> {cursor.row, cursor.col}
-            {row, col} -> {row, col}
-          end
-
-        updated_cursor = %{
-          cursor
-          | row: new_row,
-            col: new_col,
-            position: {new_row, new_col}
-        }
-
-        %{emulator | cursor: updated_cursor}
-
-      saved_cursor ->
-        # Restore from saved_cursor structure
-        row = saved_cursor.row
-        col = saved_cursor.col
-
-        updated_cursor = %{
-          emulator.cursor
-          | row: row,
-            col: col,
-            position: {row, col},
-            shape: Map.get(saved_cursor, :shape, emulator.cursor.shape),
-            visible: Map.get(saved_cursor, :visible, emulator.cursor.visible)
-        }
-
-        %{emulator | cursor: updated_cursor}
-    end
-  end
+  defp restore_cursor_position(emulator),
+    do: CursorUtils.restore_cursor_position(emulator)
 
   defdelegate handle_device_command(
                 emulator,

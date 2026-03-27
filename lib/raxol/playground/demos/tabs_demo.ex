@@ -19,7 +19,7 @@ defmodule Raxol.Playground.Demos.TabsDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: c}}
+      key_match(:char, char: c)
       when c in ["1", "2", "3", "4"] ->
         {%{model | active: String.to_integer(c) - 1}, []}
 
@@ -27,13 +27,13 @@ defmodule Raxol.Playground.Demos.TabsDemo do
       when k in [:left] ->
         {%{model | active: rem(model.active - 1 + 4, 4)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "h"}} ->
+      key_match("h") ->
         {%{model | active: rem(model.active - 1 + 4, 4)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :right}} ->
+      key_match(:right) ->
         {%{model | active: rem(model.active + 1, 4)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "l"}} ->
+      key_match("l") ->
         {%{model | active: rem(model.active + 1, 4)}, []}
 
       _ ->

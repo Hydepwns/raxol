@@ -24,22 +24,22 @@ defmodule Raxol.Playground.Demos.CursorTrailDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :up}} ->
+      key_match(:up) ->
         {move_cursor(model, 0, -1), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :down}} ->
+      key_match(:down) ->
         {move_cursor(model, 0, 1), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :left}} ->
+      key_match(:left) ->
         {move_cursor(model, -1, 0), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :right}} ->
+      key_match(:right) ->
         {move_cursor(model, 1, 0), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: " "}} ->
+      key_match(" ") ->
         {toggle_mode(model), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
+      key_match(:char, char: ch)
       when ch in ["1", "2", "3"] ->
         {switch_preset(model, ch), []}
 

@@ -57,100 +57,102 @@ defmodule Raxol.Playground.App do
 
   @impl true
   def update(message, model) do
+    cond do
+      model.show_help -> handle_help(message, model)
+      model.focus == :search -> handle_search(message, model)
+      true -> handle_normal(message, model)
+    end
+  end
+
+  defp handle_help(message, model) do
     case message do
-      # Help overlay: ? or Escape dismisses, everything else swallowed
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "?"}}
-      when model.show_help ->
-        {%{model | show_help: false}, []}
+      key_match("?") -> {%{model | show_help: false}, []}
+      key_match(:escape) -> {%{model | show_help: false}, []}
+      _ -> {model, []}
+    end
+  end
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :escape}}
-      when model.show_help ->
-        {%{model | show_help: false}, []}
-
-      _ when model.show_help ->
-        {model, []}
-
-      # Quit
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}}
-      when model.focus != :search ->
+  defp handle_search(message, model) do
+    case message do
+      key_match("c", ctrl: true) ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{
-        type: :key,
-        data: %{key: :char, char: "c", ctrl: true}
-      } ->
-        {model, [command(:quit)]}
-
-      # Tab: cycle focus
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
-        {cycle_focus(model), []}
-
-      # Sidebar navigation
-      %Raxol.Core.Events.Event{type: :key, data: %{key: key}}
-      when key in [:up, :down] and model.focus == :sidebar ->
-        delta = if key == :up, do: -1, else: 1
-        {move_cursor(model, delta), []}
-
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
-      when ch in ["j", "k"] and model.focus == :sidebar ->
-        delta = if ch == "k", do: -1, else: 1
-        {move_cursor(model, delta), []}
-
-      # Enter: select component
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}}
-      when model.focus == :sidebar ->
-        {select_current(model), []}
-
-      # Toggle code panel
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c"}}
-      when model.focus != :search ->
-        {%{model | show_code: not model.show_code, copied: false}, []}
-
-      # Toggle help overlay
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "?"}}
-      when model.focus != :search ->
-        {%{model | show_help: true}, []}
-
-      # Category filter
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "f"}}
-      when model.focus != :search ->
-        {cycle_filter(model, :category_filter, @categories), []}
-
-      # Complexity filter
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "x"}}
-      when model.focus != :search ->
-        {cycle_filter(model, :complexity_filter, @complexities), []}
-
-      # Search mode
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "/"}}
-      when model.focus != :search ->
-        {%{model | focus: :search, search: ""}, []}
-
-      # Search: type characters
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
-      when model.focus == :search ->
+      key_match(:char, char: ch) ->
         new_search = (model.search || "") <> ch
         {refilter(%{model | search: new_search}), []}
 
-      # Search: backspace
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :backspace}}
-      when model.focus == :search ->
+      key_match(:backspace) ->
         new_search = String.slice(model.search || "", 0..-2//1)
         {refilter(%{model | search: new_search}), []}
 
-      # Search: escape or enter exits search
       %Raxol.Core.Events.Event{type: :key, data: %{key: key}}
-      when key in [:escape, :enter] and model.focus == :search ->
+      when key in [:escape, :enter] ->
         {%{model | focus: :sidebar}, []}
-
-      # Forward events to demo when focused
-      event when model.focus == :demo and model.selected != nil ->
-        forward_to_demo(model, event)
 
       _ ->
         {model, []}
     end
   end
+
+  defp handle_normal(message, model) do
+    case message do
+      key_match("q") ->
+        {model, [command(:quit)]}
+
+      key_match("c", ctrl: true) ->
+        {model, [command(:quit)]}
+
+      key_match(:tab) ->
+        {cycle_focus(model), []}
+
+      key_match("?") ->
+        {%{model | show_help: true}, []}
+
+      key_match("c") ->
+        {%{model | show_code: not model.show_code, copied: false}, []}
+
+      key_match("f") ->
+        {cycle_filter(model, :category_filter, @categories), []}
+
+      key_match("x") ->
+        {cycle_filter(model, :complexity_filter, @complexities), []}
+
+      key_match("/") ->
+        {%{model | focus: :search, search: ""}, []}
+
+      _ ->
+        handle_focus_specific(message, model)
+    end
+  end
+
+  defp handle_focus_specific(message, %{focus: :sidebar} = model) do
+    case message do
+      %Raxol.Core.Events.Event{type: :key, data: %{key: key}}
+      when key in [:up, :down] ->
+        delta = if key == :up, do: -1, else: 1
+        {move_cursor(model, delta), []}
+
+      key_match(:char, char: ch) when ch in ["j", "k"] ->
+        delta = if ch == "k", do: -1, else: 1
+        {move_cursor(model, delta), []}
+
+      key_match(:enter) ->
+        {select_current(model), []}
+
+      _ ->
+        {model, []}
+    end
+  end
+
+  defp handle_focus_specific(
+         message,
+         %{focus: :demo, selected: selected} = model
+       )
+       when selected != nil do
+    forward_to_demo(model, message)
+  end
+
+  defp handle_focus_specific(_message, model), do: {model, []}
 
   @impl true
   def view(model) do

@@ -10,11 +10,11 @@ defmodule Raxol.Playground.Demos.TextInputDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :backspace}} ->
+      key_match(:backspace) ->
         new_value = String.slice(model.value, 0..-2//1)
         {%{model | value: new_value, char_count: String.length(new_value)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
+      key_match(:char, char: ch)
       when byte_size(ch) == 1 ->
         new_value = model.value <> ch
         {%{model | value: new_value, char_count: String.length(new_value)}, []}

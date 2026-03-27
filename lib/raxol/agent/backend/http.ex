@@ -2,7 +2,7 @@ defmodule Raxol.Agent.Backend.HTTP do
   @moduledoc """
   HTTP-based AI backend using Req.
 
-  Supports Claude (Anthropic), GPT (OpenAI-compatible), and Ollama APIs.
+  Supports Claude (Anthropic), GPT (OpenAI-compatible), Ollama, and Kimi APIs.
   The provider is auto-detected from the base URL or can be set explicitly.
 
   ## Configuration
@@ -11,7 +11,7 @@ defmodule Raxol.Agent.Backend.HTTP do
         api_key: "sk-...",
         base_url: "https://api.anthropic.com",
         model: "claude-sonnet-4-20250514",
-        provider: :anthropic,  # or :openai, :ollama (auto-detected if omitted)
+        provider: :anthropic,  # or :openai, :ollama, :kimi (auto-detected if omitted)
         timeout: 30_000
       ]
   """
@@ -54,9 +54,7 @@ defmodule Raxol.Agent.Backend.HTTP do
 
   @impl true
   def stream(messages, opts \\ []) do
-    if not available?() do
-      {:error, :req_not_available}
-    else
+    if available?() do
       provider = detect_provider(opts)
       timeout = Keyword.get(opts, :timeout, @default_timeout)
       {url, headers, body} = build_request(provider, messages, opts)
@@ -89,6 +87,8 @@ defmodule Raxol.Agent.Backend.HTTP do
         )
 
       {:ok, stream}
+    else
+      {:error, :req_not_available}
     end
   end
 
@@ -183,7 +183,7 @@ defmodule Raxol.Agent.Backend.HTTP do
     {events, buffer}
   end
 
-  defp parse_sse(raw, provider) when provider in [:anthropic, :openai] do
+  defp parse_sse(raw, provider) when provider in [:anthropic, :openai, :kimi] do
     parts = String.split(raw, "\n\n")
 
     case parts do
@@ -225,27 +225,32 @@ defmodule Raxol.Agent.Backend.HTTP do
     end
   end
 
+  defp parse_sse_event(event_text, :kimi),
+    do: parse_sse_event(event_text, :openai)
+
   defp parse_sse_event(event_text, :openai) do
     data_line =
       event_text
       |> String.split("\n")
       |> Enum.find(&String.starts_with?(&1, "data: "))
 
-    with "data: " <> data <- data_line do
-      if data == "[DONE]" do
-        [{:usage, %{}}]
-      else
-        case Jason.decode(data) do
-          {:ok, %{"choices" => [%{"delta" => %{"content" => text}} | _]}}
-          when is_binary(text) ->
-            [{:text_delta, text}]
+    case data_line do
+      "data: " <> data ->
+        if data == "[DONE]" do
+          [{:usage, %{}}]
+        else
+          case Jason.decode(data) do
+            {:ok, %{"choices" => [%{"delta" => %{"content" => text}} | _]}}
+            when is_binary(text) ->
+              [{:text_delta, text}]
 
-          _ ->
-            []
+            _ ->
+              []
+          end
         end
-      end
-    else
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
@@ -283,6 +288,27 @@ defmodule Raxol.Agent.Backend.HTTP do
     base_url = Keyword.get(opts, :base_url, "https://api.openai.com")
     api_key = Keyword.fetch!(opts, :api_key)
     model = Keyword.get(opts, :model, "gpt-4o")
+
+    url = "#{base_url}/v1/chat/completions"
+
+    headers = [
+      {"authorization", "Bearer #{api_key}"},
+      {"content-type", "application/json"}
+    ]
+
+    body = %{
+      model: model,
+      messages: Enum.map(messages, &format_message/1),
+      max_tokens: Keyword.get(opts, :max_tokens, @default_max_tokens)
+    }
+
+    {url, headers, body}
+  end
+
+  defp build_request(:kimi, messages, opts) do
+    base_url = Keyword.get(opts, :base_url, "https://api.moonshot.ai")
+    api_key = Keyword.fetch!(opts, :api_key)
+    model = Keyword.get(opts, :model, "kimi-k2.5")
 
     url = "#{base_url}/v1/chat/completions"
 
@@ -349,6 +375,8 @@ defmodule Raxol.Agent.Backend.HTTP do
     }
   end
 
+  defp parse_response(:kimi, body), do: parse_response(:openai, body)
+
   defp parse_response(:ollama, %{"message" => %{"content" => text}} = body) do
     %{
       content: text,
@@ -401,6 +429,9 @@ defmodule Raxol.Agent.Backend.HTTP do
           String.contains?(base_url, "ollama") or
               String.contains?(base_url, @default_ollama_port) ->
             :ollama
+
+          String.contains?(base_url, "moonshot") ->
+            :kimi
 
           true ->
             :openai

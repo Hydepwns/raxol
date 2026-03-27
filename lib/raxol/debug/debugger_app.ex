@@ -63,86 +63,85 @@ defmodule Raxol.Debug.DebuggerApp do
   end
 
   @impl true
+  def update(:refresh, model), do: {refresh(model), []}
+
   def update(message, model) do
+    if model.jump_mode do
+      handle_jump_mode(message, model)
+    else
+      handle_normal_mode(message, model)
+    end
+  end
+
+  defp handle_jump_mode(message, model) do
     case message do
-      :refresh ->
-        {refresh(model), []}
-
-      # Quit
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}}
-      when not model.jump_mode ->
+      key_match("c", ctrl: true) ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{
-        type: :key,
-        data: %{key: :char, char: "c", ctrl: true}
-      } ->
+      key_match(:char, char: ch) when ch in ~w(0 1 2 3 4 5 6 7 8 9) ->
+        {%{model | jump_buffer: model.jump_buffer <> ch}, []}
+
+      key_match(:enter) ->
+        {jump_to(model), []}
+
+      key_match(:escape) ->
+        {%{model | jump_mode: false, jump_buffer: ""}, []}
+
+      _ ->
+        {model, []}
+    end
+  end
+
+  defp handle_normal_mode(message, model) do
+    case message do
+      key_match("q") ->
         {model, [command(:quit)]}
 
-      # Step back/forward
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "h"}}
-      when not model.jump_mode ->
+      key_match("c", ctrl: true) ->
+        {model, [command(:quit)]}
+
+      key_match("h") ->
         step(model, :back)
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "l"}}
-      when not model.jump_mode ->
+      key_match("l") ->
         step(model, :forward)
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :left}}
-      when not model.jump_mode ->
+      key_match(:left) ->
         step(model, :back)
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :right}}
-      when not model.jump_mode ->
+      key_match(:right) ->
         step(model, :forward)
 
-      # Scroll within current panel
+      key_match(:tab) ->
+        {cycle_panel(model), []}
+
+      key_match(" ") ->
+        {toggle_pause(model), []}
+
+      key_match("r") ->
+        {restore(model), []}
+
+      key_match("g") ->
+        {%{model | jump_mode: true, jump_buffer: ""}, []}
+
+      key_match(:enter) when model.panel == :inspector ->
+        {toggle_inspector_node(model), []}
+
+      _ ->
+        handle_scroll(message, model)
+    end
+  end
+
+  defp handle_scroll(message, model) do
+    case message do
       %Raxol.Core.Events.Event{type: :key, data: %{key: key}}
-      when key in [:up, :down] and not model.jump_mode ->
+      when key in [:up, :down] ->
         delta = if key == :up, do: -1, else: 1
         {scroll_panel(model, delta), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
-      when ch in ["j", "k"] and not model.jump_mode ->
+      key_match(:char, char: ch) when ch in ["j", "k"] ->
         delta = if ch == "k", do: -1, else: 1
         {scroll_panel(model, delta), []}
-
-      # Tab: cycle panel
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}}
-      when not model.jump_mode ->
-        {cycle_panel(model), []}
-
-      # Space: pause/resume
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: " "}}
-      when not model.jump_mode ->
-        {toggle_pause(model), []}
-
-      # Restore
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "r"}}
-      when not model.jump_mode ->
-        {restore(model), []}
-
-      # Jump mode: g to enter, digits to type, Enter to jump, Escape to cancel
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "g"}}
-      when not model.jump_mode ->
-        {%{model | jump_mode: true, jump_buffer: ""}, []}
-
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
-      when model.jump_mode and ch in ~w(0 1 2 3 4 5 6 7 8 9) ->
-        {%{model | jump_buffer: model.jump_buffer <> ch}, []}
-
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}}
-      when model.jump_mode ->
-        {jump_to(model), []}
-
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :escape}}
-      when model.jump_mode ->
-        {%{model | jump_mode: false, jump_buffer: ""}, []}
-
-      # Expand/collapse in inspector
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}}
-      when model.panel == :inspector and not model.jump_mode ->
-        {toggle_inspector_node(model), []}
 
       _ ->
         {model, []}
@@ -305,16 +304,16 @@ defmodule Raxol.Debug.DebuggerApp do
   # -- State helpers --
 
   defp refresh(model) do
-    if not model.connected do
-      connected = tt_ref_alive?(model.tt_ref)
-      if connected, do: refresh(%{model | connected: true}), else: model
-    else
+    if model.connected do
       entries = safe_list_entries(model.tt_ref)
       count = length(entries)
 
       %{model | entries: entries, count: count}
       |> maybe_advance_cursor()
       |> load_current_snapshot()
+    else
+      connected = tt_ref_alive?(model.tt_ref)
+      if connected, do: refresh(%{model | connected: true}), else: model
     end
   end
 

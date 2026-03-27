@@ -311,4 +311,90 @@ defmodule Raxol.Core.Events.Event do
       position: position
     })
   end
+
+  # -- Pattern-matching macros for concise event matching in update/2 --
+
+  @doc """
+  Match macro for key events. Works in pattern match positions (case/function heads).
+
+  ## Examples
+
+      # Match a character key:
+      key_match("q") -> ...
+
+      # Match a special key:
+      key_match(:tab) -> ...
+
+      # Match with extra data fields:
+      key_match(:tab, shift: true) -> ...
+  """
+  defmacro key_match(char_or_key) do
+    case char_or_key do
+      {val, _, _} when is_atom(val) ->
+        # Variable or atom literal -- treat as special key
+        quote do
+          %Raxol.Core.Events.Event{
+            type: :key,
+            data: %{key: unquote(char_or_key)}
+          }
+        end
+
+      val when is_atom(val) ->
+        # Literal atom like :tab, :up, :down
+        quote do
+          %Raxol.Core.Events.Event{
+            type: :key,
+            data: %{key: unquote(val)}
+          }
+        end
+
+      val when is_binary(val) ->
+        # String literal like "q", "1"
+        quote do
+          %Raxol.Core.Events.Event{
+            type: :key,
+            data: %{key: :char, char: unquote(val)}
+          }
+        end
+
+      _ ->
+        quote do
+          %Raxol.Core.Events.Event{
+            type: :key,
+            data: %{key: unquote(char_or_key)}
+          }
+        end
+    end
+  end
+
+  @doc """
+  Match macro for key events with additional data fields.
+
+  ## Examples
+
+      key_match(:tab, shift: true) -> ...
+  """
+  defmacro key_match(key, extra) do
+    extra_pairs =
+      case extra do
+        pairs when is_list(pairs) ->
+          Enum.map(pairs, fn {k, v} -> {k, v} end)
+
+        _ ->
+          []
+      end
+
+    base_pairs =
+      if is_binary(key) do
+        [{:key, :char}, {:char, key} | extra_pairs]
+      else
+        [{:key, key} | extra_pairs]
+      end
+
+    data_pattern = {:%{}, [], base_pairs}
+
+    quote do
+      %Raxol.Core.Events.Event{type: :key, data: unquote(data_pattern)}
+    end
+  end
 end

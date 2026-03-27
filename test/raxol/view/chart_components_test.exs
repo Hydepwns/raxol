@@ -36,7 +36,7 @@ defmodule Raxol.View.ChartComponentsTest do
         )
 
       assert view.type == :box
-      assert length(view.children) > 0
+      assert view.children != []
     end
 
     test "returns empty box for empty series" do

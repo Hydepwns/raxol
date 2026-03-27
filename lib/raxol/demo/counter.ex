@@ -24,19 +24,16 @@ defmodule Raxol.Demo.Counter do
       :reset ->
         {%{model | count: 0}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} ->
+      key_match("+") ->
         {%{model | count: model.count + 1}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}} ->
+      key_match("-") ->
         {%{model | count: model.count - 1}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+      key_match("q") ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{
-        type: :key,
-        data: %{key: :char, char: "c", ctrl: true}
-      } ->
+      key_match("c", ctrl: true) ->
         {model, [command(:quit)]}
 
       _ ->

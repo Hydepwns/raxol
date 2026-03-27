@@ -19,22 +19,22 @@ defmodule Raxol.Playground.Demos.ModalDemo do
       :cancel ->
         {%{model | show: false, cancelled: model.cancelled + 1}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "o"}} ->
+      key_match("o") ->
         {%{model | show: true}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}}
+      key_match(:enter)
       when model.show ->
         {%{model | show: false, confirmed: model.confirmed + 1}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :escape}}
+      key_match(:escape)
       when model.show ->
         {%{model | show: false, cancelled: model.cancelled + 1}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "y"}}
+      key_match("y")
       when model.show ->
         {%{model | show: false, confirmed: model.confirmed + 1}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "n"}}
+      key_match("n")
       when model.show ->
         {%{model | show: false, cancelled: model.cancelled + 1}, []}
 

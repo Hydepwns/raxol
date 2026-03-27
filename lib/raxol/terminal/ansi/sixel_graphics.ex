@@ -852,13 +852,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
     %{image | palette: new_palette, pixel_buffer: new_pixel_buffer}
   end
 
-  defp nearest_color({r, g, b}, palette_list) do
-    Enum.min_by(palette_list, fn {_idx, {pr, pg, pb}} ->
-      dr = r - pr
-      dg = g - pg
-      db = b - pb
-      dr * dr + dg * dg + db * db
-    end)
+  defp nearest_color(rgb, palette_list) do
+    Raxol.Terminal.ANSI.SixelPalette.nearest_color(rgb, palette_list)
   end
 
   defp apply_octree_quantization(image, max_colors) do

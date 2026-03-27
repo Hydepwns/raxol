@@ -30,13 +30,13 @@ defmodule Raxol.Playground.Demos.MarkdownDemo do
     max_idx = length(@documents) - 1
 
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "n"}} ->
+      key_match("n") ->
         {%{model | current: min(model.current + 1, max_idx)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "p"}} ->
+      key_match("p") ->
         {%{model | current: max(model.current - 1, 0)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "r"}} ->
+      key_match("r") ->
         {%{model | raw: not model.raw}, []}
 
       _ ->

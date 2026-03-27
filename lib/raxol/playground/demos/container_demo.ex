@@ -20,28 +20,28 @@ defmodule Raxol.Playground.Demos.ContainerDemo do
     max_offset = length(model.items) - model.visible_count
 
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}} ->
+      key_match("j") ->
         {%{model | scroll_offset: min(model.scroll_offset + 1, max_offset)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :down}} ->
+      key_match(:down) ->
         {%{model | scroll_offset: min(model.scroll_offset + 1, max_offset)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}} ->
+      key_match("k") ->
         {%{model | scroll_offset: max(model.scroll_offset - 1, 0)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :up}} ->
+      key_match(:up) ->
         {%{model | scroll_offset: max(model.scroll_offset - 1, 0)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "g"}} ->
+      key_match("g") ->
         {%{model | scroll_offset: 0}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "G"}} ->
+      key_match("G") ->
         {%{model | scroll_offset: max_offset}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} ->
+      key_match("+") ->
         {%{model | visible_count: min(model.visible_count + 1, 20)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}} ->
+      key_match("-") ->
         {%{model | visible_count: max(model.visible_count - 1, 3)}, []}
 
       _ ->

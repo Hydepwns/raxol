@@ -44,49 +44,46 @@ defmodule Raxol.Demo.Showcase do
   def update(message, model) do
     case message do
       # Quit
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+      key_match("q") ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{
-        type: :key,
-        data: %{key: :char, char: "c", ctrl: true}
-      } ->
+      key_match("c", ctrl: true) ->
         {model, [command(:quit)]}
 
       # Tab switching: number keys
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: n}}
+      key_match(:char, char: n)
       when n in ["1", "2", "3", "4", "5"] ->
         {%{model | tab: String.to_integer(n) - 1}, []}
 
       # Tab switching: Tab key
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
+      key_match(:tab) ->
         {%{model | tab: rem(model.tab + 1, @tab_count)}, []}
 
       # Section 2: Space toggles checkbox
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :space}}
+      key_match(:space)
       when model.tab == 1 ->
         {%{model | checkbox_checked: not model.checkbox_checked}, []}
 
       # Section 3: j/k navigate table
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}}
+      key_match("j")
       when model.tab == 2 ->
         max_row = length(@sample_table_rows) - 1
         {%{model | table_cursor: min(model.table_cursor + 1, max_row)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}}
+      key_match("k")
       when model.tab == 2 ->
         {%{model | table_cursor: max(model.table_cursor - 1, 0)}, []}
 
       # Section 4: +/-/r for counter
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}}
+      key_match("+")
       when model.tab == 3 ->
         {%{model | counter: model.counter + 1}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}}
+      key_match("-")
       when model.tab == 3 ->
         {%{model | counter: model.counter - 1}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "r"}}
+      key_match("r")
       when model.tab == 3 ->
         {%{model | counter: 0}, []}
 

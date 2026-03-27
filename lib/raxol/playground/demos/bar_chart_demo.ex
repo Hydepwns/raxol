@@ -16,16 +16,16 @@ defmodule Raxol.Playground.Demos.BarChartDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "o"}} ->
+      key_match("o") ->
         new_orient =
           if model.orientation == :vertical, do: :horizontal, else: :vertical
 
         {%{model | orientation: new_orient}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "v"}} ->
+      key_match("v") ->
         {%{model | show_values: not model.show_values}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "r"}} ->
+      key_match("r") ->
         {%{model | data: Enum.map(1..7, fn _ -> :rand.uniform(100) end)}, []}
 
       _ ->

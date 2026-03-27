@@ -347,16 +347,7 @@ defmodule Raxol.Terminal.Driver do
 
   @impl true
   def handle_manager_info({:raw_input, data}, state) when is_binary(data) do
-    buffer = state.input_buffer <> data
-
-    _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
-
-    if InputBuffer.incomplete_escape?(buffer) do
-      timer = Process.send_after(self(), :flush_input_buffer, 50)
-      {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
-    else
-      flush_buffer(%{state | input_buffer: buffer, flush_timer: nil})
-    end
+    buffer_and_dispatch(data, state)
   end
 
   # Trace messages from prim_tty reader — intercept input data
@@ -373,16 +364,7 @@ defmodule Raxol.Terminal.Driver do
       end
 
     if byte_size(binary) > 0 do
-      buffer = state.input_buffer <> binary
-
-      _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
-
-      if InputBuffer.incomplete_escape?(buffer) do
-        timer = Process.send_after(self(), :flush_input_buffer, 50)
-        {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
-      else
-        flush_buffer(%{state | input_buffer: buffer, flush_timer: nil})
-      end
+      buffer_and_dispatch(binary, state)
     else
       {:noreply, state}
     end
@@ -397,19 +379,7 @@ defmodule Raxol.Terminal.Driver do
   # Port data — accumulate and parse (buffering handles split escape sequences)
   @impl true
   def handle_manager_info({port, {:data, data}}, state) when is_port(port) do
-    buffer = state.input_buffer <> data
-
-    # Cancel any pending flush timer
-    _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
-
-    # If the buffer ends with an incomplete escape sequence, wait for more bytes.
-    # Otherwise, dispatch immediately.
-    if InputBuffer.incomplete_escape?(buffer) do
-      timer = Process.send_after(self(), :flush_input_buffer, 50)
-      {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
-    else
-      flush_buffer(%{state | input_buffer: buffer, flush_timer: nil})
-    end
+    buffer_and_dispatch(data, state)
   end
 
   # Flush timer fired — dispatch whatever we have
@@ -438,6 +408,18 @@ defmodule Raxol.Terminal.Driver do
     )
 
     {:noreply, state}
+  end
+
+  defp buffer_and_dispatch(data, state) do
+    buffer = state.input_buffer <> data
+    _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
+
+    if InputBuffer.incomplete_escape?(buffer) do
+      timer = Process.send_after(self(), :flush_input_buffer, 50)
+      {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
+    else
+      flush_buffer(%{state | input_buffer: buffer, flush_timer: nil})
+    end
   end
 
   defp dispatch_raw_input(data, state) do

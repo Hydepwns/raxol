@@ -84,7 +84,7 @@ defmodule Mix.Tasks.Raxol.DemoTest do
       model = Raxol.Demo.Dashboard.init(%{})
       {model, []} = Raxol.Demo.Dashboard.update(:tick, model)
       assert model.tick == 1
-      assert length(model.log) > 0
+      assert model.log != []
     end
 
     test "dashboard panel navigation" do

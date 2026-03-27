@@ -1,6 +1,6 @@
 defmodule Raxol.Demo.Todo do
   @moduledoc """
-  Todo list demo for `mix raxol.demo todo`.
+  Task list demo for `mix raxol.demo todo`.
 
   Demonstrates keyboard-driven TEA patterns with input modes,
   list navigation, and CRUD operations.
@@ -29,70 +29,42 @@ defmodule Raxol.Demo.Todo do
   end
 
   @impl true
-  def update(message, model) do
+  def update(key_match("c", ctrl: true), model), do: {model, [command(:quit)]}
+
+  def update(message, %{mode: :input} = model), do: handle_input(message, model)
+  def update(message, model), do: handle_normal(message, model)
+
+  defp handle_normal(message, model) do
     case message do
-      # Quit
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}}
-      when model.mode == :normal ->
-        {model, [command(:quit)]}
+      key_match("q") -> {model, [command(:quit)]}
+      key_match(:down) -> {move_cursor(model, 1), []}
+      key_match("j") -> {move_cursor(model, 1), []}
+      key_match(:up) -> {move_cursor(model, -1), []}
+      key_match("k") -> {move_cursor(model, -1), []}
+      key_match(:enter) -> {toggle_done(model), []}
+      key_match(:space) -> {toggle_done(model), []}
+      key_match("d") -> {delete_todo(model), []}
+      key_match("a") -> {%{model | mode: :input, input_buffer: ""}, []}
+      _ -> {model, []}
+    end
+  end
 
-      %Raxol.Core.Events.Event{
-        type: :key,
-        data: %{key: :char, char: "c", ctrl: true}
-      } ->
-        {model, [command(:quit)]}
-
-      # Normal: navigation
-      %Raxol.Core.Events.Event{type: :key, data: %{key: key}}
-      when key in [:down] and model.mode == :normal ->
-        {move_cursor(model, 1), []}
-
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}}
-      when model.mode == :normal ->
-        {move_cursor(model, 1), []}
-
-      %Raxol.Core.Events.Event{type: :key, data: %{key: key}}
-      when key in [:up] and model.mode == :normal ->
-        {move_cursor(model, -1), []}
-
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}}
-      when model.mode == :normal ->
-        {move_cursor(model, -1), []}
-
-      # Normal: toggle done
-      %Raxol.Core.Events.Event{type: :key, data: %{key: key}}
-      when key in [:enter, :space] and model.mode == :normal ->
-        {toggle_done(model), []}
-
-      # Normal: delete
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "d"}}
-      when model.mode == :normal ->
-        {delete_todo(model), []}
-
-      # Normal: start input
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "a"}}
-      when model.mode == :normal ->
-        {%{model | mode: :input, input_buffer: ""}, []}
-
-      # Input: submit
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}}
-      when model.mode == :input ->
+  defp handle_input(message, model) do
+    case message do
+      key_match(:enter) ->
         {submit_todo(model), []}
 
-      # Input: cancel
-      %Raxol.Core.Events.Event{type: :key, data: %{key: key}}
-      when key in [:esc, :escape] and model.mode == :input ->
+      key_match(:escape) ->
         {%{model | mode: :normal, input_buffer: ""}, []}
 
-      # Input: backspace
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :backspace}}
-      when model.mode == :input ->
+      key_match(:esc) ->
+        {%{model | mode: :normal, input_buffer: ""}, []}
+
+      key_match(:backspace) ->
         buf = String.slice(model.input_buffer, 0..-2//1)
         {%{model | input_buffer: buf}, []}
 
-      # Input: printable character
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: ch}}
-      when model.mode == :input and is_binary(ch) ->
+      key_match(:char, char: ch) when is_binary(ch) ->
         {%{model | input_buffer: model.input_buffer <> ch}, []}
 
       _ ->

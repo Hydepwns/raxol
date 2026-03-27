@@ -20,19 +20,19 @@ defmodule Raxol.Playground.Demos.MenuDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "h"}} ->
+      key_match("h") ->
         {move_menu(model, -1), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :left}} ->
+      key_match(:left) ->
         {move_menu(model, -1), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "l"}} ->
+      key_match("l") ->
         {move_menu(model, 1), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :right}} ->
+      key_match(:right) ->
         {move_menu(model, 1), []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}}
+      key_match("j")
       when model.expanded ->
         items = current_sub_items(model)
 
@@ -41,7 +41,7 @@ defmodule Raxol.Playground.Demos.MenuDemo do
            | sub_selected: min(model.sub_selected + 1, length(items) - 1)
          }, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :down}}
+      key_match(:down)
       when model.expanded ->
         items = current_sub_items(model)
 
@@ -50,18 +50,18 @@ defmodule Raxol.Playground.Demos.MenuDemo do
            | sub_selected: min(model.sub_selected + 1, length(items) - 1)
          }, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}}
+      key_match("k")
       when model.expanded ->
         {%{model | sub_selected: max(model.sub_selected - 1, 0)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :up}}
+      key_match(:up)
       when model.expanded ->
         {%{model | sub_selected: max(model.sub_selected - 1, 0)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :enter}} ->
+      key_match(:enter) ->
         {%{model | expanded: not model.expanded, sub_selected: 0}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :escape}} ->
+      key_match(:escape) ->
         {%{model | expanded: false}, []}
 
       _ ->

@@ -10,13 +10,13 @@ defmodule Raxol.Playground.Demos.LineChartDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "l"}} ->
+      key_match("l") ->
         {%{model | show_legend: not model.show_legend}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "a"}} ->
+      key_match("a") ->
         {%{model | show_axes: not model.show_axes}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "r"}} ->
+      key_match("r") ->
         {%{model | tick: 0}, []}
 
       :tick ->

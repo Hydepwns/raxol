@@ -12,10 +12,10 @@ defmodule Raxol.Playground.Demos.HeatmapDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "s"}} ->
+      key_match("s") ->
         {%{model | color_scale: next_scale(model.color_scale)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "r"}} ->
+      key_match("r") ->
         {%{model | grid: random_grid()}, []}
 
       _ ->

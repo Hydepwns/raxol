@@ -11,12 +11,11 @@ defmodule Raxol.Benchmark.Formatter do
   @spec console(map()) :: String.t()
   def console(results) when is_map(results) do
     results
-    |> Enum.map(fn {suite, data} ->
+    |> Enum.map_join("\n", fn {suite, data} ->
       header = "\n=== #{String.upcase(to_string(suite))} ===\n"
       body = format_suite_console(data)
       header <> body
     end)
-    |> Enum.join("\n")
   end
 
   @doc """
@@ -61,10 +60,9 @@ defmodule Raxol.Benchmark.Formatter do
 
     body =
       results
-      |> Enum.map(fn {suite, data} ->
+      |> Enum.map_join("\n", fn {suite, data} ->
         "## #{format_suite_name(suite)}\n\n#{format_suite_markdown(data)}\n"
       end)
-      |> Enum.join("\n")
 
     header <> body
   end
@@ -80,7 +78,7 @@ defmodule Raxol.Benchmark.Formatter do
 
   defp format_suite_console(%Benchee.Suite{scenarios: scenarios}) do
     scenarios
-    |> Enum.map(fn scenario ->
+    |> Enum.map_join("\n", fn scenario ->
       name = scenario.name
       avg = format_time(scenario.run_time_data.statistics.average)
       min = format_time(Enum.min(scenario.run_time_data.samples))
@@ -89,15 +87,13 @@ defmodule Raxol.Benchmark.Formatter do
 
       "  #{String.pad_trailing(name, 30)} avg=#{avg}  min=#{min}  max=#{max}  (#{ips} ips)"
     end)
-    |> Enum.join("\n")
   end
 
   defp format_suite_console(data) when is_map(data) do
     data
-    |> Enum.map(fn {name, timing} ->
+    |> Enum.map_join("\n", fn {name, timing} ->
       "  #{String.pad_trailing(to_string(name), 30)} #{inspect(timing)}"
     end)
-    |> Enum.join("\n")
   end
 
   defp format_suite_console(_), do: "  (no data)"

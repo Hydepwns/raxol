@@ -19,16 +19,16 @@ defmodule Raxol.Playground.Demos.PanelHighlightsDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :left}} ->
+      key_match(:left) ->
         {%{model | focused: navigate(model.focused, :left)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :right}} ->
+      key_match(:right) ->
         {%{model | focused: navigate(model.focused, :right)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :up}} ->
+      key_match(:up) ->
         {%{model | focused: navigate(model.focused, :up)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :down}} ->
+      key_match(:down) ->
         {%{model | focused: navigate(model.focused, :down)}, []}
 
       _ ->

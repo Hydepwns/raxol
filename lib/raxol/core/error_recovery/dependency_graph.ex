@@ -315,17 +315,13 @@ defmodule Raxol.Core.ErrorRecovery.DependencyGraph do
     dependencies = Map.get(graph.edges, current_node, [])
 
     Enum.find_value(dependencies, fn dep ->
-      cond do
-        dep in visited ->
-          # Found a cycle
-          cycle_start_index = Enum.find_index(path, &(&1 == dep))
-          Enum.drop(path, cycle_start_index) ++ [dep]
-
-        true ->
-          # Continue searching
-          new_visited = MapSet.put(visited, dep)
-          new_path = path ++ [dep]
-          find_cycle(graph, dep, new_path, new_visited)
+      if dep in visited do
+        cycle_start_index = Enum.find_index(path, &(&1 == dep))
+        Enum.drop(path, cycle_start_index) ++ [dep]
+      else
+        new_visited = MapSet.put(visited, dep)
+        new_path = path ++ [dep]
+        find_cycle(graph, dep, new_path, new_visited)
       end
     end)
   end

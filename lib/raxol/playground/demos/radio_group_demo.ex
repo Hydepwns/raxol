@@ -17,20 +17,20 @@ defmodule Raxol.Playground.Demos.RadioGroupDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}} ->
+      key_match("j") ->
         group = Enum.at(model.groups, model.active_group)
         max_idx = length(group.options) - 1
         new_group = %{group | selected: min(group.selected + 1, max_idx)}
         groups = List.replace_at(model.groups, model.active_group, new_group)
         {%{model | groups: groups}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}} ->
+      key_match("k") ->
         group = Enum.at(model.groups, model.active_group)
         new_group = %{group | selected: max(group.selected - 1, 0)}
         groups = List.replace_at(model.groups, model.active_group, new_group)
         {%{model | groups: groups}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
+      key_match(:tab) ->
         next = rem(model.active_group + 1, length(model.groups))
         {%{model | active_group: next}, []}
 
@@ -64,8 +64,9 @@ defmodule Raxol.Playground.Demos.RadioGroupDemo do
 
     summary =
       model.groups
-      |> Enum.map(fn g -> "#{g.name}: #{Enum.at(g.options, g.selected)}" end)
-      |> Enum.join("  ")
+      |> Enum.map_join("  ", fn g ->
+        "#{g.name}: #{Enum.at(g.options, g.selected)}"
+      end)
 
     column style: %{gap: 1} do
       [

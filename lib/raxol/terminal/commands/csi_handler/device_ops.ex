@@ -1,5 +1,6 @@
 defmodule Raxol.Terminal.Commands.CSIHandler.DeviceOps do
   @moduledoc false
+  alias Raxol.Terminal.Commands.CursorUtils
 
   def handle_device_command(emulator, params, intermediates, final_byte) do
     case final_byte do
@@ -65,54 +66,9 @@ defmodule Raxol.Terminal.Commands.CSIHandler.DeviceOps do
     end
   end
 
-  defp save_cursor_position(emulator) do
-    cursor = emulator.cursor
+  defp save_cursor_position(emulator),
+    do: CursorUtils.save_cursor_position(emulator)
 
-    updated_cursor = %{
-      cursor
-      | saved_row: cursor.row,
-        saved_col: cursor.col,
-        saved_position: {cursor.row, cursor.col}
-    }
-
-    saved_cursor = cursor
-    %{emulator | cursor: updated_cursor, saved_cursor: saved_cursor}
-  end
-
-  defp restore_cursor_position(emulator) do
-    case Map.get(emulator, :saved_cursor) do
-      nil ->
-        cursor = emulator.cursor
-
-        {new_row, new_col} =
-          case {cursor.saved_row, cursor.saved_col} do
-            {nil, nil} -> {cursor.row, cursor.col}
-            {row, col} -> {row, col}
-          end
-
-        updated_cursor = %{
-          cursor
-          | row: new_row,
-            col: new_col,
-            position: {new_row, new_col}
-        }
-
-        %{emulator | cursor: updated_cursor}
-
-      saved_cursor ->
-        row = saved_cursor.row
-        col = saved_cursor.col
-
-        updated_cursor = %{
-          emulator.cursor
-          | row: row,
-            col: col,
-            position: {row, col},
-            shape: Map.get(saved_cursor, :shape, emulator.cursor.shape),
-            visible: Map.get(saved_cursor, :visible, emulator.cursor.visible)
-        }
-
-        %{emulator | cursor: updated_cursor}
-    end
-  end
+  defp restore_cursor_position(emulator),
+    do: CursorUtils.restore_cursor_position(emulator)
 end

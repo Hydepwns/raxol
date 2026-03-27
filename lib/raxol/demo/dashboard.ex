@@ -70,36 +70,33 @@ defmodule Raxol.Demo.Dashboard do
          }, []}
 
       # Navigation
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :tab}} ->
+      key_match(:tab) ->
         {%{model | panel: next_panel(model.panel)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "l"}} ->
+      key_match("l") ->
         {%{model | panel: next_panel(model.panel)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "h"}} ->
+      key_match("h") ->
         {%{model | panel: prev_panel(model.panel)}, []}
 
       # Process table scroll
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}} ->
+      key_match("j") ->
         {%{model | proc_offset: min(model.proc_offset + 1, 20)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}} ->
+      key_match("k") ->
         {%{model | proc_offset: max(model.proc_offset - 1, 0)}, []}
 
       # Pause / Resume
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: " "}} ->
+      key_match(" ") ->
         log_msg = if model.paused, do: "Resumed", else: "Paused"
         log = [{ts(), log_msg} | model.log] |> Enum.take(12)
         {%{model | paused: !model.paused, log: log}, []}
 
       # Quit
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
+      key_match("q") ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{
-        type: :key,
-        data: %{key: :char, char: "c", ctrl: true}
-      } ->
+      key_match("c", ctrl: true) ->
         {model, [command(:quit)]}
 
       _ ->
@@ -391,11 +388,10 @@ defmodule Raxol.Demo.Dashboard do
     max_val = Enum.max(values ++ [1])
 
     values
-    |> Enum.map(fn v ->
+    |> Enum.map_join(fn v ->
       idx = if max_val > 0, do: round(v / max_val * 7), else: 0
       Enum.at(@spark, min(idx, 7))
     end)
-    |> Enum.join()
   end
 
   defp bar(pct, width) do

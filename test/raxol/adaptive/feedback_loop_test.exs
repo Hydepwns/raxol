@@ -93,8 +93,14 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
   end
 
   describe "force_retrain" do
-    test "returns rule_based_mode stub", %{loop: pid} do
-      assert {:ok, :rule_based_mode} = FeedbackLoop.force_retrain(pid)
+    test "returns insufficient_data or rule_based_mode with no history", %{loop: pid} do
+      result = FeedbackLoop.force_retrain(pid)
+
+      if Code.ensure_loaded?(Raxol.Adaptive.NxModel) do
+        assert {:ok, :insufficient_data} = result
+      else
+        assert {:ok, :rule_based_mode} = result
+      end
     end
   end
 end

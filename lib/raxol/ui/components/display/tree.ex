@@ -262,20 +262,18 @@ defmodule Raxol.UI.Components.Display.Tree do
   end
 
   defp handle_collapse_or_parent(state) do
-    cond do
-      MapSet.member?(state.expanded, state.cursor) ->
-        new_expanded = MapSet.delete(state.expanded, state.cursor)
-        fire_callback(state.on_collapse, state.cursor)
-        {%{state | expanded: new_expanded}, []}
+    if MapSet.member?(state.expanded, state.cursor) do
+      new_expanded = MapSet.delete(state.expanded, state.cursor)
+      fire_callback(state.on_collapse, state.cursor)
+      {%{state | expanded: new_expanded}, []}
+    else
+      parent = find_parent(state.nodes, state.cursor)
 
-      true ->
-        parent = find_parent(state.nodes, state.cursor)
-
-        if parent do
-          {%{state | cursor: parent.id}, []}
-        else
-          {state, []}
-        end
+      if parent do
+        {%{state | cursor: parent.id}, []}
+      else
+        {state, []}
+      end
     end
   end
 

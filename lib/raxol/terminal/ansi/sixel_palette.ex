@@ -65,6 +65,22 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
   def max_colors, do: 255
 
   @doc """
+  Finds the palette entry closest to the given RGB color by Euclidean distance.
+  """
+  @spec nearest_color(
+          {integer(), integer(), integer()},
+          [{non_neg_integer(), {integer(), integer(), integer()}}]
+        ) :: {non_neg_integer(), {integer(), integer(), integer()}}
+  def nearest_color({r, g, b}, palette_list) do
+    Enum.min_by(palette_list, fn {_idx, {pr, pg, pb}} ->
+      dr = r - pr
+      dg = g - pg
+      db = b - pb
+      dr * dr + dg * dg + db * db
+    end)
+  end
+
+  @doc """
   Defines a custom color in the palette using the Sixel "#" command format.
 
   ## Parameters

@@ -19,17 +19,17 @@ defmodule Raxol.Playground.Demos.CheckboxDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}} ->
+      key_match("j") ->
         {%{model | cursor: min(model.cursor + 1, length(model.items) - 1)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}} ->
+      key_match("k") ->
         {%{model | cursor: max(model.cursor - 1, 0)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: " "}} ->
+      key_match(" ") ->
         items = List.update_at(model.items, model.cursor, &toggle/1)
         {%{model | items: items}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "a"}} ->
+      key_match("a") ->
         all_checked? = Enum.all?(model.items, & &1.checked)
         items = Enum.map(model.items, &%{&1 | checked: not all_checked?})
         {%{model | items: items}, []}

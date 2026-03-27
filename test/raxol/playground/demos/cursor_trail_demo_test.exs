@@ -50,7 +50,7 @@ defmodule Raxol.Playground.Demos.CursorTrailDemoTest do
     test "movement adds trail points" do
       model = CursorTrailDemo.init(nil)
       {model, []} = CursorTrailDemo.update(special_key(:right), model)
-      assert length(model.trail.points) > 0
+      assert model.trail.points != []
     end
   end
 
@@ -101,7 +101,7 @@ defmodule Raxol.Playground.Demos.CursorTrailDemoTest do
   describe "subscribe/1" do
     test "returns interval subscription" do
       model = CursorTrailDemo.init(nil)
-      assert length(CursorTrailDemo.subscribe(model)) > 0
+      assert CursorTrailDemo.subscribe(model) != []
     end
   end
 

@@ -121,7 +121,9 @@ defmodule Raxol.Agent.SessionTest do
 
   defp do_start_unlinked(start_fn) do
     case start_fn.() do
-      {:ok, pid} -> Process.unlink(pid); :ok
+      {:ok, pid} ->
+        Process.unlink(pid)
+        :ok
       {:error, {:already_started, _}} -> :ok
     end
   end

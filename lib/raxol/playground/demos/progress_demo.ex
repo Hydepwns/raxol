@@ -10,16 +10,16 @@ defmodule Raxol.Playground.Demos.ProgressDemo do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} ->
+      key_match("+") ->
         {%{model | value: min(model.value + 5, 100)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}} ->
+      key_match("-") ->
         {%{model | value: max(model.value - 5, 0)}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "a"}} ->
+      key_match("a") ->
         {%{model | auto: not model.auto}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "r"}} ->
+      key_match("r") ->
         {%{model | value: 0}, []}
 
       :tick when model.auto ->
