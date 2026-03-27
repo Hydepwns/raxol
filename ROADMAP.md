@@ -42,8 +42,11 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 
 ### AI Backend Providers
 
-Supported now (via `Backend.HTTP` + env vars):
+Supported now:
 - **Mock** (default) -- instant offline demo, no API key
+- **Proton Lumo** (`PROTON_UID=... PROTON_ACCESS_TOKEN=...`) -- zero-access encrypted AI, full U2L encryption via `Backend.Lumo`
+- **Proton Lumo via lumo-tamer** (`LUMO_TAMER_URL=http://localhost:3000`) -- OpenAI-compatible proxy fallback
+- **Kimi K2.5** (`KIMI_API_KEY=...`) -- Moonshot AI, $0.60/M input, 256K context, named `:kimi` provider
 - **LLM7.io** (`FREE_AI=true`) -- free, OpenAI-compatible, no key needed, 40 req/min
 - **Ollama** (`OLLAMA_MODEL=...`) -- free local inference, OpenAI-compatible
 - **Groq** (`AI_API_KEY=... AI_BASE_URL=https://api.groq.com/openai`) -- fast free tier
@@ -51,9 +54,7 @@ Supported now (via `Backend.HTTP` + env vars):
 - **Anthropic** (`ANTHROPIC_API_KEY=...`) -- Claude Haiku/Sonnet/Opus
 
 Future providers:
-- **Proton Lumo** -- waiting for public API (currently internal to Proton Mail)
 - **LocalAI** -- self-hosted OpenAI-compatible (similar to Ollama)
-- **Kimi K2.5** (Moonshot AI) -- low-cost agent swarm API (~$0.60/M input tokens)
 
 ### Longer Term
 

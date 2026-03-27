@@ -20,7 +20,7 @@ assert cell.char == "e"
 
 **Performance optimizations.** Diff rendering (50x faster updates), benchmarking suite, memory profiling, automated regression detection.
 
-Raxol is designed for incremental adoption -- your existing code keeps working.
+You can adopt Raxol incrementally -- your existing code keeps working.
 
 ---
 
@@ -95,7 +95,7 @@ Minimal code changes. Keep your existing API.
 
 ### Strategy 4: Clean Break
 
-Rewrite from scratch using Raxol. Simplest long-term, but highest risk and requires comprehensive testing. Best for small codebases or greenfield projects.
+Rewrite from scratch using Raxol. Simplest long-term, but highest risk. Best for small codebases or greenfield projects.
 
 ---
 

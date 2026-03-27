@@ -1,6 +1,6 @@
 # IDE Integration
 
-Raxol provides comprehensive IDE integration through Language Server Protocol (LSP) support and editor-specific plugins.
+LSP support and editor-specific plugins for Raxol development.
 
 ## Language Server Protocol (LSP)
 

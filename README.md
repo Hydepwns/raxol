@@ -60,7 +60,7 @@ mix run examples/getting_started/counter.exs
 
 ## What You Get
 
-**23 widgets** -- Button, TextInput, Table, Tree, Modal, SelectList, Checkbox, Sparkline, and more. All keyboard-navigable with focus management.
+**30+ widgets** -- Button, TextInput, Table, Tree, Modal, SelectList, Checkbox, Sparkline, Charts, and more. All keyboard-navigable with focus management.
 
 **Layout engine** -- Flexbox (`row`/`column` with `flex`, `gap`, `align_items`) and CSS Grid (`template_columns`, `template_rows`). Nested freely.
 

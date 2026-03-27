@@ -1,6 +1,6 @@
 # LiveView Integration
 
-There are two ways to put a terminal in a browser. The **TEA bridge** (`Raxol.LiveView.TEALive`) hosts a full TEA app -- same `init/update/view` as the terminal version, rendered to HTML via PubSub. The **raw Buffer** approach gives you direct control: build a `Buffer`, convert it to HTML, and push it to the LiveView yourself. Most of the recipes below use the raw approach since it's simpler to show in isolation.
+Two approaches: the **TEA bridge** (`Raxol.LiveView.TEALive`) runs a full TEA app rendered to HTML via PubSub, and the **raw Buffer** approach where you build a `Buffer` and push it to the LiveView yourself. Most recipes below use the raw approach since it's simpler to show in isolation.
 
 ## Basic Terminal Embedding
 
@@ -257,7 +257,7 @@ end
 
 ## Performance: Diff Rendering
 
-Only update changed parts of the buffer. The TerminalComponent handles this automatically, but you can also calculate diffs manually:
+TerminalComponent diffs automatically. You can also calculate diffs manually:
 
 ```elixir
 def handle_info(:tick, socket) do

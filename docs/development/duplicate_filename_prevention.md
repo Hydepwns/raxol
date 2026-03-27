@@ -1,21 +1,8 @@
-# Duplicate Filename Prevention System
+# Duplicate Filename Prevention
 
-**Version:** v1.2.0  
-**Date:** 2025-01-09  
-**Purpose:** Maintain code organization and prevent navigation issues caused by duplicate filenames
+Tooling to detect and prevent duplicate filenames across `lib/` and `test/`.
 
-## Overview
-
-The Raxol project includes comprehensive tooling to detect and prevent duplicate filenames that can cause navigation issues and reduce code maintainability.
-
-## The Problem
-
-Having multiple files with identical names creates several issues:
-- **Navigation difficulties** in IDEs and editors
-- **Ambiguous search results** when looking for specific functionality  
-- **Code review confusion** when discussing files
-- **Reduced discoverability** of related modules
-- **Maintenance overhead** when updating or debugging
+Multiple files named `manager.ex` or `handler.ex` break IDE navigation, produce ambiguous search results, and make code review confusing.
 
 ### Example Problematic Pattern
 
@@ -214,58 +201,10 @@ Scanning directories: lib, test
   • lib/raxol/terminal/config/schema.ex
 ```
 
-## Benefits
+## Status
 
-### Immediate Benefits
-- **Improved navigation** - Unique filenames in search results
-- **Clearer context** - File names indicate their purpose
-- **Better IDE experience** - Autocomplete and quick-open work better
-- **Reduced confusion** - Less ambiguity in code discussions
+Standalone script, mix task, and Credo integration all implemented. Historical duplicates being resolved gradually.
 
-### Long-term Benefits
-- **Maintainability** - Easier to locate and update specific functionality
-- **Onboarding** - New developers can understand the codebase structure faster
-- **Code quality** - Forces thoughtful naming and organization
-- **Scalability** - System remains navigable as codebase grows
+False positives: add files to `exclude_files`. Legacy code: use `--exclude` while refactoring.
 
-## Implementation Status
-
-As of v1.2.0:
-- [OK] Standalone script implemented
-- [OK] Mix task created
-- [OK] Credo integration complete
-- [OK] Documentation written
-- [WAIT] Historical duplicates being resolved gradually
-
-## Troubleshooting
-
-### Common Issues
-
-1. **False positives** - Add files to `exclude_files` list
-2. **Performance concerns** - Large codebases may take longer to scan
-3. **Legacy code** - Use `--exclude` option while refactoring
-
-### Debugging
-
-Enable verbose output:
-```bash
-mix raxol.check.duplicates --suggest-fixes
-```
-
-This will show all duplicates with contextual rename suggestions.
-
-## Contributing
-
-When adding new files:
-1. Check if similar functionality exists
-2. Use descriptive, contextual names
-3. Run duplicate check before committing
-4. Consider the navigation impact on other developers
-
-## Future Enhancements
-
-Planned improvements:
-- **Auto-fixing** - Automated renaming with reference updates
-- **IDE plugins** - Real-time duplicate detection in editors
-- **Metrics tracking** - Monitor duplicate reduction over time
-- **Smart suggestions** - ML-based naming recommendations
+When adding new files: use descriptive, contextual names and run `mix raxol.check.duplicates` before committing.

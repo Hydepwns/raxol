@@ -2,8 +2,6 @@
 
 ## Component Fundamentals
 
-A basic Raxol component looks like this:
-
 ```elixir
 defmodule MyApp.Components.MyComponent do
   @moduledoc """
@@ -76,7 +74,7 @@ end
 
 ### Props
 
-Props are your component's public interface. Declare them with types, defaults, and doc strings so they're self-describing:
+Declare props with types, defaults, and doc strings:
 
 ```elixir
 defmodule MyApp.Components.DataTable do
@@ -118,7 +116,7 @@ end
 
 ### Lifecycle
 
-Components have `init/1`, `update/3`, `handle_info/3`, and `cleanup/2` callbacks — implement only what you need. The `update/3` callback fires when props change, which is useful for restarting timers or resetting derived state:
+Components have `init/1`, `update/3`, `handle_info/3`, and `cleanup/2` callbacks. `update/3` fires when props change -- use it to restart timers or reset derived state:
 
 ```elixir
 defmodule MyApp.Components.AnimatedCounter do
@@ -271,7 +269,7 @@ end
 
 ### Container Components
 
-Container components fetch or manage data and delegate rendering to their children via render props. `DataProvider` below kicks off an async fetch in `init/1` and passes the result down once it arrives:
+`DataProvider` fetches data in `init/1` and passes the result to children via render props:
 
 ```elixir
 defmodule MyApp.Components.DataProvider do
@@ -339,7 +337,7 @@ end
 
 ### Higher-Order Components
 
-Wrap a component to add cross-cutting behavior. Error boundaries are the most common case:
+Wrap a component to add cross-cutting behavior:
 
 ```elixir
 defmodule MyApp.Components.WithErrorBoundary do
@@ -676,7 +674,7 @@ end
 
 ### Render Props
 
-Pass rendering logic as a prop to make components flexible without prescribing structure. `Virtualized` handles scroll math and only calls your render function for visible items:
+`Virtualized` handles scroll math and only calls your render function for visible items:
 
 ```elixir
 defmodule MyApp.Components.Virtualized do
@@ -731,7 +729,7 @@ Virtualized
 
 ### Compound Components
 
-Some UI patterns are naturally made of cooperating parts — tabs, accordions, menus. Compound components let you express that relationship explicitly:
+Tabs, accordions, and menus are naturally made of cooperating parts:
 
 ```elixir
 defmodule MyApp.Components.Tabs do
@@ -812,7 +810,7 @@ end
 
 ### Composition
 
-Rather than building one large component, break it into focused pieces and compose them:
+Break large components into focused pieces:
 
 ```elixir
 defmodule MyApp.Components.Card do
@@ -1048,10 +1046,10 @@ end
 
 ## Best Practices
 
-Keep each component focused on one thing. It's tempting to add "just one more feature" to a component that's already working, but that's how you end up with components that are hard to test and harder to reuse. Prefer composing small, focused components over growing a single one to handle every case.
+Keep each component focused on one thing. Compose small components rather than growing one to handle every case.
 
-Treat props like a public API. Changes to prop names or types are breaking changes for callers, so design them deliberately. Required props should be things the component genuinely can't function without; everything else should have a sensible default.
+Props are a public API -- changes to names or types break callers. Required props should be things the component can't function without; everything else needs a sensible default.
 
-Error boundaries are worth adding around any component that touches external data or does non-trivial work. They prevent a single failure from taking down the whole UI and give you a place to log errors with context. Clean up timers and subscriptions in `cleanup/2` — leaking them causes subtle bugs in long-running sessions and under test.
+Add error boundaries around components that touch external data. Clean up timers and subscriptions in `cleanup/2` -- leaking them causes subtle bugs in long-running sessions.
 
-For testing, unit-test the behavior (state transitions, event handling) and integration-test the interactions. Don't skip the edge cases: empty lists, nil callbacks, rapid re-renders. If a component has visual states that matter, snapshot tests catch regressions that logic tests miss.
+Unit-test state transitions and event handling. Integration-test interactions. Cover edge cases: empty lists, nil callbacks, rapid re-renders.

@@ -546,4 +546,4 @@ defmodule MyPluginLifecycleTest do
 end
 ```
 
-This comprehensive lifecycle and hooks reference provides plugin developers with deep understanding of how plugins interact with the Raxol system throughout their entire lifecycle.
+This reference covers how plugins interact with the Raxol system throughout their lifecycle.

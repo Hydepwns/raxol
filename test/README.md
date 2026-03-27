@@ -82,7 +82,7 @@ Configuration is in `config/test.exs`. Key settings:
 
 ---
 
-## 🩺 Troubleshooting
+## Troubleshooting
 
 - **Flaky Tests:**
   Replace `Process.sleep` with event-based sync, ensure cleanup, use unique state.

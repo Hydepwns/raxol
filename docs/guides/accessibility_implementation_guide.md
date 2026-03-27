@@ -1,6 +1,6 @@
 # Accessibility Implementation Guide
 
-How to build accessible terminal and web interfaces in Raxol, covering screen readers, keyboard navigation, theming, and platform-specific integration.
+Screen readers, keyboard navigation, theming, and platform integration for terminal and web apps.
 
 ## Principles
 
@@ -13,7 +13,7 @@ The WCAG POUR principles apply:
 
 ## Screen Reader Support
 
-Use ARIA labels and roles on interactive components. Icon-only buttons need a visually-hidden label so screen readers have something to announce:
+ARIA labels and roles on interactive components. Icon-only buttons need a visually-hidden label:
 
 ```elixir
 defmodule MyApp.AccessibleComponents do
@@ -81,7 +81,7 @@ end
 
 ## Keyboard Navigation
 
-Terminal apps need explicit keyboard handling. Tab/Shift-Tab move between elements sequentially; arrow keys handle grid navigation; Enter/Space activate; Escape exits focus traps. Announce focus changes so screen readers stay in sync:
+Tab/Shift-Tab for sequential focus, arrow keys for grids, Enter/Space to activate, Escape to exit focus traps. Focus changes trigger screen reader announcements:
 
 ```elixir
 defmodule MyApp.KeyboardNavigation do
@@ -192,7 +192,7 @@ end
 
 ## High Contrast and Theming
 
-The theme system carries pre-built contrast ratios. `calculate_contrast_ratio/2` uses the WCAG relative luminance formula (gamma-corrected RGB weighted by `0.2126 R + 0.7152 G + 0.0722 B`), giving you a number you can compare against the 4.5:1 AA threshold:
+`calculate_contrast_ratio/2` uses the WCAG relative luminance formula. Compare the result against the 4.5:1 AA threshold:
 
 ```elixir
 defmodule MyApp.AccessibilityTheme do
@@ -302,7 +302,7 @@ end
 
 ## Screen Reader Announcements
 
-The announcer is a GenServer that queues announcements and routes them to the platform's screen reader. Assertive announcements interrupt; polite ones wait their turn. On macOS it calls VoiceOver via AppleScript; on Linux it targets Orca; on Windows it calls NVDA's CLI. If none are detected it falls back to a terminal bell + printed message:
+GenServer that queues announcements and routes them to the platform's screen reader (VoiceOver on macOS, Orca on Linux, NVDA on Windows). Assertive announcements interrupt; polite ones wait. Falls back to terminal bell + printed message:
 
 ```elixir
 defmodule Raxol.Core.Accessibility.Announcer do
@@ -501,7 +501,7 @@ end
 
 ## Focus Management
 
-Modals need a focus trap so keyboard users can't tab out. The FocusManager uses a stack so nested components can restore focus correctly when dismissed. Skip links let keyboard users jump past repeated navigation:
+FocusManager traps focus in modals and uses a stack to restore focus when nested components are dismissed. Skip links jump past repeated navigation:
 
 ```elixir
 defmodule MyApp.FocusManager do
@@ -779,7 +779,7 @@ end
 
 ### Manual Testing Checklist
 
-This module drives interactive manual test sessions. Run it for a given category and it walks you through each check, collecting pass/fail/skip and printing a report:
+Interactive manual test runner. Walks through checks per category, collects pass/fail/skip, prints a report:
 
 ```elixir
 defmodule MyApp.AccessibilityChecklist do
@@ -910,7 +910,7 @@ end
 
 ## User Preferences
 
-Per-user preferences are stored persistently and broadcast via PubSub when they change, so components can react without polling. The preference map covers visual, audio, motor, and cognitive categories:
+Per-user preferences stored persistently, broadcast via PubSub on change. Covers visual, audio, motor, and cognitive categories:
 
 ```elixir
 defmodule MyApp.AccessibilityPreferences do
@@ -1050,7 +1050,7 @@ end
 
 ### macOS (VoiceOver)
 
-On macOS, VoiceOver is controlled via AppleScript. Assertive announcements pass `with interrupt`; polite ones don't. The accessibility permission check uses `System Events` as a proxy -- if it succeeds, the app has the necessary access:
+VoiceOver controlled via AppleScript. Assertive announcements pass `with interrupt`. Permission check uses `System Events` as a proxy:
 
 ```elixir
 defmodule MyApp.MacOSAccessibility do
@@ -1117,7 +1117,7 @@ end
 
 ### Windows (NVDA/JAWS)
 
-On Windows, screen reader detection checks environment variables first, then falls back to `tasklist`. JAWS is integrated via a temp file since it lacks a straightforward CLI; NVDA exposes `nvda-speak` directly:
+Screen reader detection checks environment variables first, falls back to `tasklist`. NVDA uses `nvda-speak`; JAWS uses a temp file:
 
 ```elixir
 defmodule MyApp.WindowsAccessibility do
