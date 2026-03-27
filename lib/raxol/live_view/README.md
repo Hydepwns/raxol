@@ -8,7 +8,7 @@ High-performance Phoenix LiveView components for rendering terminal buffers in w
 - **Smart Caching**: Virtual DOM-style diffing with character-level caching
 - **7 Built-in Themes**: synthwave84, nord, dracula, monokai, gruvbox, solarized, tokyo_night
 - **Full VT100 Support**: All ANSI styles (bold, italic, underline, reverse, colors)
-- **Telemetry Integration**: Comprehensive performance monitoring
+- **Telemetry Integration**: Performance monitoring via `:telemetry`
 - **Accessibility**: ARIA attributes, screen reader support, keyboard navigation
 - **CRT Effects**: Optional scanline and flicker effects for retro aesthetic
 
@@ -218,7 +218,7 @@ Emitted when rendering fails.
 
 ### Unit Tests
 
-All modules have comprehensive test coverage:
+Test coverage by module:
 
 - **Renderer**: 31 tests covering rendering, caching, styles, edge cases
 - **Themes**: 20 tests for all built-in themes and validation
@@ -336,7 +336,7 @@ All functionality remains identical.
 Follow Raxol coding standards:
 - Functional patterns (pattern matching, guards, pipes)
 - No imperative loops or nested conditionals
-- Comprehensive error handling with logging
+- Error handling with logging at boundaries
 - Full @spec annotations
 
 ## License
