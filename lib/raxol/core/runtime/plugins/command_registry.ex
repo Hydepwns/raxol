@@ -2,111 +2,113 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @moduledoc """
   Manages command registration and execution for plugins.
 
-  REFACTORED: All try/rescue/catch blocks replaced with functional patterns.
+  Commands are stored in a plain map keyed by namespace (module) with lists of
+  `{name, {module, function, arity}, metadata}` tuples as values.
   """
-
-  # Removed undefined @behaviour Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
 
   require Raxol.Core.Runtime.Log
 
   @type command_name :: String.t()
-  @type command_handler :: function()
+  @type command_handler :: (list(), map() -> term())
   @type command_metadata :: %{
           optional(:description) => String.t(),
           optional(:usage) => String.t(),
           optional(:aliases) => [String.t()],
-          optional(:timeout) => non_neg_integer()
+          optional(:timeout) => pos_integer()
         }
-  @type command :: {command_name(), command_handler(), command_metadata()}
+  @type command_entry ::
+          {command_name(), {module(), atom(), non_neg_integer()},
+           command_metadata()}
+  @type command_table :: %{optional(module()) => [command_entry()]}
 
-  # Removed @impl for undefined behaviour
-  def new do
-    :command_registry_table
+  @doc """
+  Returns the default table name atom for ETS-backed registries.
+  """
+  @spec new() :: atom()
+  def new, do: :command_registry_table
+
+  @doc """
+  Registers a command under a namespace in the command table.
+
+  Returns the updated table map, or `{:error, :invalid_table}` if
+  `table` is not a map.
+  """
+  @spec register_command(
+          command_table() | term(),
+          module(),
+          String.t(),
+          module(),
+          atom(),
+          non_neg_integer()
+        ) ::
+          command_table() | {:error, :invalid_table}
+  def register_command(table, namespace, command_name, module, function, arity)
+      when is_map(table) do
+    entry = {command_name, {module, function, arity}, %{}}
+    existing = Map.get(table, namespace, [])
+    Map.put(table, namespace, [entry | existing])
   end
 
-  # Removed @impl for undefined behaviour
   def register_command(
-        table_name,
-        namespace,
-        command_name,
-        module,
-        function,
-        arity
+        _not_a_map,
+        _namespace,
+        _command_name,
+        _module,
+        _function,
+        _arity
       ) do
-    handler = {module, function, arity}
-    metadata = %{}
-
-    # Store the command in the table
-    case table_name do
-      table when is_map(table) ->
-        # If table is a map, store commands by namespace
-        namespace_commands = Map.get(table, namespace, [])
-
-        updated_commands = [
-          {command_name, handler, metadata} | namespace_commands
-        ]
-
-        updated_table = Map.put(table, namespace, updated_commands)
-        updated_table
-
-      _ ->
-        # If table is not a map, return error
-        {:error, :already_registered}
-    end
-  end
-
-  # Removed @impl for undefined behaviour
-  def unregister_command(table_name, namespace, command_name) do
-    case table_name do
-      table when is_map(table) ->
-        namespace_commands = Map.get(table, namespace, [])
-
-        updated_commands =
-          Enum.reject(namespace_commands, fn {name, _, _} ->
-            name == command_name
-          end)
-
-        case updated_commands == namespace_commands do
-          true ->
-            :ok
-
-          false ->
-            _updated_table = Map.put(table, namespace, updated_commands)
-            :ok
-        end
-
-      _ ->
-        :ok
-    end
-  end
-
-  # Removed @impl for undefined behaviour
-  def lookup_command(table_name, namespace, command_name) do
-    case table_name do
-      table when is_map(table) ->
-        namespace_commands = Map.get(table, namespace, [])
-        find_and_create_handler(namespace_commands, command_name)
-
-      _ ->
-        {:error, :invalid_table}
-    end
-  end
-
-  # Removed @impl for undefined behaviour
-  def unregister_commands_by_module(table_name, module) do
-    case table_name do
-      table when is_map(table) ->
-        # Remove all commands for this module
-        Map.delete(table, module)
-
-      _ ->
-        table_name
-    end
+    {:error, :invalid_table}
   end
 
   @doc """
-  Registers commands for a plugin.
+  Removes a single command from a namespace. Returns the updated table,
+  or the input unchanged if `table` is not a map.
   """
+  @spec unregister_command(command_table() | term(), module(), String.t()) ::
+          command_table() | term()
+  def unregister_command(table, namespace, command_name) when is_map(table) do
+    commands = Map.get(table, namespace, [])
+    updated = Enum.reject(commands, fn {name, _, _} -> name == command_name end)
+    Map.put(table, namespace, updated)
+  end
+
+  def unregister_command(table, _namespace, _command_name), do: table
+
+  @doc """
+  Looks up a command by namespace and name. Returns a handler function
+  wrapping `apply(module, function, ...)`.
+  """
+  @spec lookup_command(command_table() | term(), module(), String.t()) ::
+          {:ok, {module(), command_handler(), non_neg_integer()}}
+          | {:error, :not_found | :invalid_table}
+  def lookup_command(table, namespace, command_name) when is_map(table) do
+    table
+    |> Map.get(namespace, [])
+    |> find_and_create_handler(command_name)
+  end
+
+  def lookup_command(_not_a_map, _namespace, _command_name),
+    do: {:error, :invalid_table}
+
+  @doc """
+  Removes all commands for a module from the table.
+  """
+  @spec unregister_commands_by_module(command_table() | term(), module()) ::
+          command_table() | term()
+  def unregister_commands_by_module(table, module) when is_map(table) do
+    Map.delete(table, module)
+  end
+
+  def unregister_commands_by_module(table, _module), do: table
+
+  @doc """
+  Registers commands from a plugin module's `commands/0` callback.
+
+  Validates handlers and metadata, checks for name conflicts against
+  existing commands in the table.
+  """
+  @spec register_plugin_commands(module(), map(), command_table()) ::
+          {:ok, command_table()} | {:error, term()}
   def register_plugin_commands(plugin_module, plugin_state, command_table) do
     with {:ok, commands} <- get_plugin_commands(plugin_module),
          :ok <- validate_commands(commands),
@@ -116,18 +118,22 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   end
 
   @doc """
-  Unregisters all commands for a plugin.
+  Unregisters all commands for a plugin module.
   """
+  @spec unregister_plugin_commands(module(), command_table()) ::
+          {:ok, command_table()} | :ok
   def unregister_plugin_commands(plugin_module, command_table) do
     case Map.get(command_table, plugin_module) do
       nil -> :ok
-      commands -> unregister_commands(commands, command_table, plugin_module)
+      _commands -> {:ok, Map.delete(command_table, plugin_module)}
     end
   end
 
   @doc """
-  Executes a command with proper error handling and timeout.
+  Finds and executes a command by name with timeout support.
   """
+  @spec execute_command(String.t(), list(), command_table()) ::
+          term() | {:error, term()}
   def execute_command(command_name, args, command_table) do
     case find_command(command_name, command_table) do
       {:ok, {handler, metadata}} ->
@@ -143,32 +149,40 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   end
 
   @doc """
-  Looks up the handler for a command name and namespace (plugin module).
-  Returns {:ok, {module, function, arity}} or {:error, :not_found}.
+  Searches all namespaces for a command by name.
   """
+  @spec find_command(String.t(), command_table()) ::
+          {:ok, {term(), command_metadata()}} | {:error, :not_found}
   def find_command(command_name, command_table) do
-    command_table
-    |> Enum.find_value({:error, :not_found}, fn {_namespace, commands} ->
-      commands
-      |> Enum.find(fn {name, _handler, _metadata} -> name == command_name end)
-      |> case do
-        nil -> nil
-        {_name, handler, metadata} -> {:ok, {handler, metadata}}
-      end
+    Enum.find_value(command_table, {:error, :not_found}, fn {_namespace,
+                                                             commands} ->
+      find_in_namespace(commands, command_name)
     end)
   end
+
+  defp find_in_namespace(commands, command_name) do
+    case Enum.find(commands, fn {name, _, _} -> name == command_name end) do
+      nil -> nil
+      {_name, handler, metadata} -> {:ok, {handler, metadata}}
+    end
+  end
+
+  # --- Private ---
 
   defp check_command_conflicts(commands, command_table) do
-    Enum.reduce_while(commands, :ok, fn {name, _, _}, :ok ->
-      case command_exists?(name, command_table) do
-        true ->
-          {:halt, {:error, {:command_exists, name}}}
+    Enum.reduce_while(commands, :ok, fn command, :ok ->
+      name = extract_command_name(command)
 
-        false ->
-          {:cont, :ok}
+      if command_exists?(name, command_table) do
+        {:halt, {:error, {:command_exists, name}}}
+      else
+        {:cont, :ok}
       end
     end)
   end
+
+  defp extract_command_name(%{name: name}), do: name
+  defp extract_command_name({name, _, _}), do: name
 
   defp command_exists?(name, command_table) do
     Enum.any?(command_table, fn {_, commands} ->
@@ -177,112 +191,31 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   end
 
   defp register_commands(commands, plugin_module, plugin_state, command_table) do
-    case safe_map_commands(commands, plugin_state) do
-      {:ok, new_commands} ->
-        updated_table = Map.put(command_table, plugin_module, new_commands)
-        {:ok, updated_table}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error(
-          "Failed to register commands: #{inspect(reason)}"
-        )
-
-        {:error, :registration_failed}
-    end
-  end
-
-  defp safe_map_commands(commands, plugin_state) do
-    # Use Task to safely map commands with error isolation
-    task =
-      Task.async(fn ->
-        Enum.map(commands, fn {name, handler, metadata} ->
-          wrapped_handler = wrap_handler(handler, plugin_state)
-          {name, wrapped_handler, metadata}
-        end)
+    new_commands =
+      Enum.map(commands, fn command ->
+        {name, handler, metadata} = extract_command_parts(command)
+        {name, wrap_handler(handler, plugin_state), metadata}
       end)
 
-    case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, new_commands} -> {:ok, new_commands}
-      nil -> {:error, :mapping_timeout}
-      {:exit, reason} -> {:error, {:mapping_failed, reason}}
-    end
+    {:ok, Map.put(command_table, plugin_module, new_commands)}
   end
 
-  defp unregister_commands(_commands, command_table, plugin_module) do
-    # Use functional approach for safe deletion
-    task =
-      Task.async(fn ->
-        Map.delete(command_table, plugin_module)
-      end)
+  defp extract_command_parts(%{
+         name: name,
+         handler: handler,
+         metadata: metadata
+       }),
+       do: {name, handler, metadata}
 
-    case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
-      {:ok, updated_table} ->
-        {:ok, updated_table}
+  defp extract_command_parts(%{name: name, handler: handler}),
+    do: {name, handler, %{}}
 
-      nil ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Failed to unregister commands - timeout",
-          :timeout,
-          nil,
-          %{plugin_module: plugin_module, module: __MODULE__}
-        )
-
-        {:error, :unregistration_failed}
-
-      {:exit, reason} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Failed to unregister commands",
-          reason,
-          nil,
-          %{plugin_module: plugin_module, module: __MODULE__}
-        )
-
-        {:error, :unregistration_failed}
-    end
-  end
+  defp extract_command_parts({name, handler, metadata}),
+    do: {name, handler, metadata}
 
   defp wrap_handler(handler, plugin_state) do
     fn args, context ->
-      safe_execute_handler(
-        handler,
-        args,
-        Map.put(context, :plugin_state, plugin_state)
-      )
-    end
-  end
-
-  defp safe_execute_handler(handler, args, context) do
-    # Use Task for safe execution with error isolation
-    task =
-      Task.async(fn ->
-        handler.(args, context)
-      end)
-
-    case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, result} ->
-        result
-
-      nil ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Command execution timeout",
-          :timeout,
-          nil,
-          %{plugin_state: context.plugin_state, module: __MODULE__}
-        )
-
-        {:error, {:execution_failed, "Command execution timeout"}}
-
-      {:exit, reason} ->
-        error_msg = format_error_message(reason)
-
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Command execution failed",
-          reason,
-          nil,
-          %{plugin_state: context.plugin_state, module: __MODULE__}
-        )
-
-        {:error, {:execution_failed, error_msg}}
+      handler.(args, Map.put(context, :plugin_state, plugin_state))
     end
   end
 
@@ -308,35 +241,24 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @spec validate_command_handler(any()) ::
-          :ok | {:error, :invalid_command_handler}
-  defp validate_command_handler(handler) do
-    case is_function(handler, 2) do
-      true -> :ok
-      false -> {:error, :invalid_command_handler}
-    end
+  defp validate_command_handler(handler) when is_function(handler, 2), do: :ok
+  defp validate_command_handler(_), do: {:error, :invalid_command_handler}
+
+  defp validate_command_metadata(metadata) when is_map(metadata) do
+    if valid_metadata_fields?(metadata),
+      do: :ok,
+      else: {:error, :invalid_metadata_fields}
   end
 
-  @spec validate_command_metadata(any()) ::
-          :ok | {:error, :invalid_metadata_fields}
-  defp validate_command_metadata(metadata) do
-    with true <- is_map(metadata),
-         true <- valid_metadata_fields?(metadata) do
-      :ok
-    else
-      false -> {:error, :invalid_metadata_fields}
-    end
-  end
+  defp validate_command_metadata(_), do: {:error, :invalid_metadata_fields}
 
   defp valid_metadata_fields?(metadata) do
-    Enum.all?(metadata, fn {key, value} ->
-      case key do
-        :description -> is_binary(value)
-        :usage -> is_binary(value)
-        :aliases -> is_list(value) and Enum.all?(value, &is_binary/1)
-        :timeout -> is_integer(value) and value > 0
-        _ -> false
-      end
+    Enum.all?(metadata, fn
+      {:description, value} -> is_binary(value)
+      {:usage, value} -> is_binary(value)
+      {:aliases, value} -> is_list(value) and Enum.all?(value, &is_binary/1)
+      {:timeout, value} -> is_integer(value) and value > 0
+      _ -> false
     end)
   end
 
@@ -348,7 +270,6 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
       metadata: metadata
     }
 
-    # Use Task.async/yield instead of Task.await with try/catch
     task = Task.async(fn -> handler.(args, context) end)
 
     case Task.yield(task, timeout) || Task.shutdown(task, :brutal_kill) do
@@ -356,13 +277,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
         result
 
       nil ->
-        # Timeout occurred
         {:error, :command_timeout}
 
       {:exit, reason} ->
-        # Task crashed
-        error_msg = format_error_message(reason)
-
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Command execution failed in Task",
           reason,
@@ -370,7 +287,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
           %{args: args, module: __MODULE__}
         )
 
-        {:error, {:execution_failed, error_msg}}
+        {:error, {:execution_failed, format_error_message(reason)}}
     end
   end
 
@@ -379,24 +296,14 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   defp format_error_message({:timeout, _}), do: "Command execution timeout"
   defp format_error_message(reason), do: inspect(reason)
 
-  defp find_and_create_handler(namespace_commands, command_name) do
-    case Enum.find(namespace_commands, fn {name, _, _} ->
-           name == command_name
-         end) do
+  defp find_and_create_handler(commands, command_name) do
+    case Enum.find(commands, fn {name, _, _} -> name == command_name end) do
       nil ->
         {:error, :not_found}
 
-      found_command ->
-        create_command_handler(found_command)
+      {_name, {module, function, arity}, _metadata} ->
+        handler = fn args, state -> apply(module, function, [args, state]) end
+        {:ok, {module, handler, arity}}
     end
-  end
-
-  defp create_command_handler({_name, {module, function, arity}, _metadata}) do
-    # Create a function that calls the module function
-    handler = fn args, state ->
-      apply(module, function, [args, state])
-    end
-
-    {:ok, {module, handler, arity}}
   end
 end

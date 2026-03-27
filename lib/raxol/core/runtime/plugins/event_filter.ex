@@ -13,6 +13,7 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
   Filters an event through registered plugin filters.
   Returns the filtered event or :halt if the event should be stopped.
   """
+  @spec filter_event(map(), map()) :: map() | :halt
   def filter_event(plugin_manager_state, event) do
     Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] filter_event called for: #{inspect(event.type)}"
@@ -44,19 +45,16 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
   # --- Private Helpers ---
 
   # Get list of enabled plugins in load order
-  @spec get_enabled_plugins(map()) :: any() | nil
+  @spec get_enabled_plugins(map()) :: [atom()]
   defp get_enabled_plugins(state) do
-    state.load_order
-    |> Enum.filter(fn plugin_id ->
-      case Map.get(state.metadata, plugin_id) do
-        %{enabled: true} -> true
-        _ -> false
-      end
+    Enum.filter(state.load_order, fn plugin_id ->
+      match?(%{enabled: true}, Map.get(state.metadata, plugin_id))
     end)
   end
 
   # Apply a single plugin's filter to the event
-  @spec apply_plugin_filter(String.t() | integer(), any(), map()) :: any()
+  @spec apply_plugin_filter(atom(), map(), map()) ::
+          {:ok, map()} | :halt | {:error, term()}
   defp apply_plugin_filter(plugin_id, event, state) do
     case Map.get(state.plugins, plugin_id) do
       nil ->

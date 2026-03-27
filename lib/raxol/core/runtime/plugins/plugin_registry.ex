@@ -28,8 +28,6 @@ defmodule Raxol.Core.Runtime.Plugins.PluginRegistry do
       PluginRegistry.registered?(:my_plugin)
   """
 
-  require Logger
-
   @table_name :raxol_plugin_registry
   @commands_table :raxol_plugin_commands
 
@@ -323,29 +321,26 @@ defmodule Raxol.Core.Runtime.Plugins.PluginRegistry do
   end
 
   defp normalize_id(id) when is_atom(id), do: id
-  defp normalize_id(id) when is_binary(id), do: String.to_atom(id)
+
+  defp normalize_id(id) when is_binary(id) do
+    String.to_existing_atom(id)
+  rescue
+    ArgumentError -> String.to_atom(id)
+  end
 
   defp register_commands(plugin_id, module) do
     id = normalize_id(plugin_id)
 
-    # Try to get commands from the plugin module
     commands =
       if function_exported?(module, :commands, 0) do
-        try do
-          module.commands()
-        rescue
-          e ->
-            Logger.warning(
-              "Failed to get commands from plugin #{module}: #{Exception.message(e)}"
-            )
-
-            []
+        case Raxol.Core.ErrorHandling.safe_call(fn -> module.commands() end) do
+          {:ok, cmds} when is_list(cmds) -> cmds
+          _ -> []
         end
       else
         []
       end
 
-    # Register each command
     Enum.each(commands, fn cmd ->
       :ets.insert(@commands_table, {cmd, id})
     end)

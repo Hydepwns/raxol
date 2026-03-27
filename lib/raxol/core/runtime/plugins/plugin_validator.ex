@@ -2,11 +2,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   @moduledoc """
   Comprehensive validation system for plugins before loading.
 
-  This module provides extensive validation checks including security,
-  compatibility, performance, and structural validation to ensure
-  plugins are safe and properly implemented.
-
-  REFACTORED: All try/catch blocks replaced with functional patterns using with statements.
+  Validates security, compatibility, performance, and structural
+  correctness to ensure plugins are safe and properly implemented.
   """
 
   alias Raxol.Core.Runtime.Plugins.Loader
@@ -38,11 +35,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
          :ok <- validate_metadata(plugin_module),
          :ok <- validate_security(plugin_module, options),
          :ok <- validate_compatibility(plugin_module),
-         :ok <- validate_performance(plugin_module),
-         :ok <- validate_dependencies(plugin_module, plugins) do
-      :ok
-    else
-      error -> error
+         :ok <- validate_performance(plugin_module) do
+      validate_dependencies(plugin_module, plugins)
     end
   end
 
@@ -52,7 +46,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   @spec validate_not_loaded(String.t(), map()) ::
           :ok | {:error, :already_loaded}
   def validate_not_loaded(plugin_id, plugins) do
-    check_plugin_loaded_status(plugins, plugin_id)
+    if Map.has_key?(plugins, plugin_id),
+      do: {:error, :already_loaded},
+      else: :ok
   end
 
   @doc """
@@ -65,12 +61,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
              | :invalid_plugin_behaviour
              | {:missing_callbacks, [atom()]}}
   def validate_behaviour(plugin_module) do
-    with :ok <- validate_module_exists(plugin_module),
-         :ok <- validate_plugin_behaviour(plugin_module),
-         :ok <- validate_required_callbacks(plugin_module) do
-      :ok
-    else
-      error -> error
+    with :ok <- check_module_loaded(plugin_module),
+         :ok <- check_plugin_behaviour(plugin_module) do
+      check_required_callbacks(plugin_module)
     end
   end
 
@@ -91,11 +84,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
       {:ok, metadata} ->
         with :ok <- validate_required_fields(metadata),
              :ok <- validate_version_format(metadata.version),
-             :ok <- validate_api_version(metadata.api_version),
-             :ok <- validate_name_format(metadata.name) do
-          :ok
-        else
-          error -> error
+             :ok <- validate_api_version(metadata.api_version) do
+          validate_name_format(metadata.name)
         end
 
       {:error, :no_metadata} ->
@@ -109,13 +99,12 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   @doc """
   Validates plugin security aspects.
   """
-  @spec validate_security(module(), map()) :: :ok
+  @spec validate_security(module(), map()) :: :ok | {:error, term()}
   def validate_security(plugin_module, options \\ %{}) do
-    :ok = validate_file_access(plugin_module, options)
-    :ok = validate_network_access(plugin_module, options)
-    :ok = validate_code_injection(plugin_module)
-    :ok = validate_resource_limits(plugin_module)
-    :ok
+    with :ok <- validate_file_access(plugin_module, options),
+         :ok <- validate_network_access(plugin_module, options) do
+      validate_code_injection(plugin_module)
+    end
   end
 
   @doc """
@@ -126,13 +115,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
           | {:error,
              {:elixir_version_too_old, String.t(), String.t()}
              | {:otp_version_too_old, String.t(), String.t()}}
-  def validate_compatibility(plugin_module) do
-    with :ok <- validate_elixir_version(plugin_module),
-         :ok <- validate_otp_version(plugin_module),
-         :ok <- validate_platform_support(plugin_module) do
-      :ok
-    else
-      error -> error
+  def validate_compatibility(_plugin_module) do
+    with :ok <- validate_elixir_version() do
+      validate_otp_version()
     end
   end
 
@@ -147,12 +132,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
              | {:plugin_too_large, non_neg_integer(), non_neg_integer()}
              | {:size_check_failed, term()}}
   def validate_performance(plugin_module) do
-    with :ok <- validate_memory_usage(plugin_module),
-         :ok <- validate_initialization_time(plugin_module),
-         :ok <- validate_plugin_size(plugin_module) do
-      :ok
-    else
-      error -> error
+    with :ok <- validate_initialization_time(plugin_module) do
+      validate_plugin_size(plugin_module)
     end
   end
 
@@ -161,16 +142,27 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   """
   @spec validate_dependencies(module(), map()) :: validation_result()
   def validate_dependencies(plugin_module, loaded_plugins) do
-    case get_plugin_dependencies(plugin_module) do
-      {:ok, dependencies} ->
-        validate_dependency_list(dependencies, loaded_plugins)
-
-      {:error, :no_dependencies} ->
-        :ok
-
-      error ->
-        error
+    case get_dependencies(plugin_module) do
+      :none -> :ok
+      {:ok, deps} -> check_missing_deps(deps, loaded_plugins)
+      {:error, _} -> {:error, :invalid_dependencies}
     end
+  end
+
+  defp get_dependencies(plugin_module) do
+    if function_exported?(plugin_module, :dependencies, 0) do
+      case safe_call_plugin(fn -> plugin_module.dependencies() end, 1000) do
+        {:ok, deps} when is_list(deps) -> {:ok, deps}
+        _ -> {:error, :invalid_dependencies}
+      end
+    else
+      :none
+    end
+  end
+
+  defp check_missing_deps(deps, loaded_plugins) do
+    missing = Enum.reject(deps, &Map.has_key?(loaded_plugins, &1))
+    if missing == [], do: :ok, else: {:error, {:missing_dependencies, missing}}
   end
 
   @doc """
@@ -179,361 +171,171 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   @spec resolve_plugin_identity(String.t() | module()) ::
           {:ok, {String.t(), module()}} | {:error, term()}
   def resolve_plugin_identity(id) when is_binary(id) do
-    case Raxol.Core.Runtime.Plugins.Loader.load_code(id) do
-      {:ok, module} ->
-        {:ok, {id, module}}
-
-      {:error, :module_not_found} ->
-        {:error, :module_not_found}
-
-      {:error, reason} ->
-        {:error, reason}
+    case Loader.load_code(id) do
+      {:ok, module} -> {:ok, {id, module}}
+      {:error, reason} -> {:error, reason}
     end
   end
 
   def resolve_plugin_identity(module) when is_atom(module) do
-    resolve_module_identity(module)
-  end
-
-  # Private validation functions
-
-  defp validate_module_exists(plugin_module) do
-    check_module_loaded(plugin_module)
-  end
-
-  defp validate_plugin_behaviour(plugin_module) do
-    check_plugin_behaviour_implementation(plugin_module)
-  end
-
-  defp validate_required_callbacks(plugin_module) do
-    available_callbacks = plugin_module.__info__(:functions)
-
-    missing_callbacks =
-      @required_callbacks
-      |> Enum.filter(fn callback ->
-        not Enum.any?(available_callbacks, fn {name, _arity} ->
-          name == callback
-        end)
-      end)
-
-    validate_callbacks_present(missing_callbacks)
-  end
-
-  defp get_plugin_metadata(plugin_module) do
-    with {:exported?, true} <-
-           {:exported?, function_exported?(plugin_module, :metadata, 0)},
-         {:ok, metadata} <- safe_call_metadata(plugin_module) do
-      {:ok, metadata}
+    if Code.ensure_loaded?(module) do
+      id = module |> Atom.to_string() |> String.replace("Elixir.", "")
+      {:ok, {id, module}}
     else
-      {:exported?, false} -> {:error, :no_metadata}
-      {:error, _reason} -> {:error, :invalid_metadata}
+      {:error, :module_not_found}
     end
   end
 
-  defp safe_call_metadata(plugin_module) do
-    # Use Task for timeout and error isolation
-    task = Task.async(fn -> plugin_module.metadata() end)
+  # --- Private ---
 
-    case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, metadata} when is_map(metadata) -> {:ok, metadata}
-      {:ok, _} -> {:error, :invalid_metadata_format}
-      nil -> {:error, :metadata_timeout}
-      {:exit, _reason} -> {:error, :metadata_crashed}
+  defp check_module_loaded(plugin_module) do
+    if Code.ensure_loaded?(plugin_module),
+      do: :ok,
+      else: {:error, :module_not_found}
+  end
+
+  defp check_plugin_behaviour(plugin_module) do
+    if Loader.behaviour_implemented?(
+         plugin_module,
+         Raxol.Core.Runtime.Plugins.Plugin
+       ),
+       do: :ok,
+       else: {:error, :invalid_plugin_behaviour}
+  end
+
+  defp check_required_callbacks(plugin_module) do
+    available = plugin_module.__info__(:functions)
+
+    missing =
+      Enum.reject(@required_callbacks, fn callback ->
+        Enum.any?(available, fn {name, _arity} -> name == callback end)
+      end)
+
+    if missing == [], do: :ok, else: {:error, {:missing_callbacks, missing}}
+  end
+
+  defp get_plugin_metadata(plugin_module) do
+    if function_exported?(plugin_module, :metadata, 0) do
+      case safe_call_plugin(fn -> plugin_module.metadata() end, 1000) do
+        {:ok, metadata} when is_map(metadata) -> {:ok, metadata}
+        {:ok, _} -> {:error, :invalid_metadata}
+        {:error, _reason} -> {:error, :invalid_metadata}
+      end
+    else
+      {:error, :no_metadata}
     end
   end
 
   defp validate_required_fields(metadata) do
-    required_fields = [:name, :version, :author, :api_version]
+    required = [:name, :version, :author, :api_version]
+    missing = Enum.reject(required, &Map.has_key?(metadata, &1))
 
-    missing_fields =
-      required_fields
-      |> Enum.filter(fn field -> not Map.has_key?(metadata, field) end)
-
-    validate_metadata_fields_present(missing_fields)
+    if missing == [],
+      do: :ok,
+      else: {:error, {:missing_metadata_fields, missing}}
   end
 
   defp validate_version_format(version) do
-    case Regex.match?(~r/^\d+\.\d+(\.\d+)?(-\w+)?$/, version) do
-      true -> :ok
-      false -> {:error, :invalid_version_format}
-    end
+    if Regex.match?(~r/^\d+\.\d+(\.\d+)?(-\w+)?$/, version),
+      do: :ok,
+      else: {:error, :invalid_version_format}
   end
 
   defp validate_api_version(api_version) do
-    check_api_version_supported(api_version)
+    if api_version in @supported_api_versions,
+      do: :ok,
+      else: {:error, {:unsupported_api_version, api_version}}
   end
 
   defp validate_name_format(name) do
-    case Regex.match?(~r/^[a-zA-Z][a-zA-Z0-9_]*$/, name) do
-      true -> :ok
-      false -> {:error, :invalid_plugin_name}
-    end
+    if Regex.match?(~r/^[a-zA-Z][a-zA-Z0-9_]*$/, name),
+      do: :ok,
+      else: {:error, :invalid_plugin_name}
   end
 
-  defp validate_file_access(plugin_module, options) do
-    # Check if plugin attempts to access restricted files
-    restricted_access = Map.get(options, :restrict_file_access, true)
-
-    validate_file_access_restrictions(restricted_access, plugin_module)
+  defp validate_file_access(plugin_module, %{restrict_file_access: true}) do
+    if BeamAnalyzer.has_file_access?(plugin_module),
+      do: {:error, :file_access_detected},
+      else: :ok
   end
 
-  defp validate_network_access(plugin_module, options) do
-    # Check if plugin attempts network operations
-    restricted_network = Map.get(options, :restrict_network_access, true)
+  defp validate_file_access(_plugin_module, _options), do: :ok
 
-    validate_network_access_restrictions(restricted_network, plugin_module)
+  defp validate_network_access(plugin_module, %{restrict_network_access: true}) do
+    if BeamAnalyzer.has_network_access?(plugin_module),
+      do: {:error, :network_access_detected},
+      else: :ok
   end
+
+  defp validate_network_access(_plugin_module, _options), do: :ok
 
   defp validate_code_injection(plugin_module) do
-    # Check for potential code injection vulnerabilities
-    check_code_injection_safety(plugin_module)
+    if BeamAnalyzer.has_code_injection_risk?(plugin_module),
+      do: {:error, :code_injection_risk_detected},
+      else: :ok
   end
 
-  defp validate_resource_limits(plugin_module) do
-    # Validate that plugin doesn't exceed resource limits
-    check_resource_usage(plugin_module)
+  defp validate_elixir_version do
+    current = System.version()
+    min = "1.12.0"
+
+    if Version.compare(current, min) in [:eq, :gt],
+      do: :ok,
+      else: {:error, {:elixir_version_too_old, current, min}}
   end
 
-  defp validate_elixir_version(_plugin_module) do
-    # Check minimum Elixir version requirements
-    current_version = System.version()
-    min_version = "1.12.0"
+  defp validate_otp_version do
+    current = System.otp_release()
+    min = "24"
 
-    validate_version_compatibility(current_version, min_version, :elixir)
-  end
-
-  defp validate_otp_version(_plugin_module) do
-    # Check minimum OTP version requirements
-    current_version = System.otp_release()
-    min_version = "24"
-
-    validate_otp_version_compatibility(current_version, min_version)
-  end
-
-  defp validate_platform_support(_plugin_module) do
-    # Validate platform compatibility
-    :ok
-  end
-
-  defp validate_memory_usage(_plugin_module) do
-    # Check estimated memory usage
-    :ok
+    if String.to_integer(current) >= String.to_integer(min),
+      do: :ok,
+      else: {:error, {:otp_version_too_old, current, min}}
   end
 
   defp validate_initialization_time(plugin_module) do
-    # Measure plugin initialization time using functional approach
-    case safe_measure_init_time(plugin_module) do
-      {:ok, time} ->
-        # 5 seconds in microseconds
-        max_init_time = 5_000_000
+    max_init_time = 5_000_000
 
-        validate_initialization_time_limit(time, max_init_time)
+    case safe_call_plugin(
+           fn -> :timer.tc(fn -> plugin_module.init(%{}) end) end,
+           6000
+         ) do
+      {:ok, {time, _result}} when time > max_init_time ->
+        {:error, {:initialization_too_slow, time}}
+
+      {:ok, {_time, _result}} ->
+        :ok
 
       {:error, reason} ->
         {:error, {:initialization_failed, reason}}
     end
   end
 
-  defp safe_measure_init_time(plugin_module) do
-    task =
-      Task.async(fn ->
-        :timer.tc(fn -> plugin_module.init(%{}) end)
-      end)
-
-    case Task.yield(task, 6000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, {time, _result}} -> {:ok, time}
-      nil -> {:error, :init_timeout}
-      {:exit, reason} -> {:error, {:init_crashed, reason}}
-    end
-  end
-
   defp validate_plugin_size(plugin_module) do
-    # Check plugin file size
-    case get_module_size(plugin_module) do
-      {:ok, size} when size > @max_plugin_size ->
-        {:error, {:plugin_too_large, size, @max_plugin_size}}
-
-      {:ok, _size} ->
-        :ok
-
-      {:error, reason} ->
-        {:error, {:size_check_failed, reason}}
-    end
-  end
-
-  defp get_plugin_dependencies(plugin_module) do
-    with {:exported?, true} <-
-           {:exported?, function_exported?(plugin_module, :dependencies, 0)},
-         {:ok, deps} <- safe_call_dependencies(plugin_module) do
-      {:ok, deps}
-    else
-      {:exported?, false} -> {:error, :no_dependencies}
-      {:error, _reason} -> {:error, :invalid_dependencies}
-    end
-  end
-
-  defp safe_call_dependencies(plugin_module) do
-    task = Task.async(fn -> plugin_module.dependencies() end)
-
-    case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, deps} when is_list(deps) -> {:ok, deps}
-      {:ok, _} -> {:error, :invalid_dependencies_format}
-      nil -> {:error, :dependencies_timeout}
-      {:exit, _reason} -> {:error, :dependencies_crashed}
-    end
-  end
-
-  defp validate_dependency_list(dependencies, loaded_plugins) do
-    missing_deps =
-      dependencies
-      |> Enum.filter(fn dep -> not Map.has_key?(loaded_plugins, dep) end)
-
-    validate_dependencies_available(missing_deps)
-  end
-
-  # Security analysis helpers using BeamAnalyzer
-
-  defp has_file_system_access?(plugin_module) do
-    BeamAnalyzer.has_file_access?(plugin_module)
-  end
-
-  defp has_network_access?(plugin_module) do
-    BeamAnalyzer.has_network_access?(plugin_module)
-  end
-
-  defp has_code_injection_risk?(plugin_module) do
-    BeamAnalyzer.has_code_injection_risk?(plugin_module)
-  end
-
-  defp check_resource_usage(_plugin_module) do
-    # Check resource usage patterns
-    :ok
-  end
-
-  defp get_module_size(plugin_module) do
-    with {:ok, path} <- safe_get_module_path(plugin_module),
+    with {:ok, path} <- get_module_path(plugin_module),
          {:ok, stat} <- File.stat(path) do
-      {:ok, stat.size}
+      if stat.size > @max_plugin_size,
+        do: {:error, {:plugin_too_large, stat.size, @max_plugin_size}},
+        else: :ok
     else
-      {:error, reason} -> {:error, reason}
+      {:error, reason} -> {:error, {:size_check_failed, reason}}
     end
   end
 
-  defp safe_get_module_path(plugin_module) do
-    task = Task.async(fn -> :code.which(plugin_module) end)
-
-    case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
-      {:ok, path} when is_list(path) -> {:ok, path}
-      {:ok, _} -> {:error, :module_path_not_found}
-      _ -> {:error, :which_failed}
+  defp get_module_path(plugin_module) do
+    case :code.which(plugin_module) do
+      path when is_list(path) -> {:ok, path}
+      _ -> {:error, :module_path_not_found}
     end
   end
 
-  ## Pattern matching helper functions for if statement elimination
+  defp safe_call_plugin(fun, timeout) do
+    task = Task.async(fun)
 
-  defp check_plugin_loaded_status(plugins, plugin_id) do
-    case Map.has_key?(plugins, plugin_id) do
-      true -> {:error, :already_loaded}
-      false -> :ok
+    case Task.yield(task, timeout) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> {:ok, result}
+      nil -> {:error, :timeout}
+      {:exit, reason} -> {:error, {:crashed, reason}}
     end
-  end
-
-  defp resolve_module_identity(module) do
-    case Code.ensure_loaded?(module) do
-      true ->
-        id = module |> Atom.to_string() |> String.replace("Elixir.", "")
-        {:ok, {id, module}}
-
-      false ->
-        {:error, :module_not_found}
-    end
-  end
-
-  defp check_module_loaded(plugin_module) do
-    case Code.ensure_loaded?(plugin_module) do
-      true -> :ok
-      false -> {:error, :module_not_found}
-    end
-  end
-
-  defp check_plugin_behaviour_implementation(plugin_module) do
-    case Loader.behaviour_implemented?(
-           plugin_module,
-           Raxol.Core.Runtime.Plugins.Plugin
-         ) do
-      true -> :ok
-      false -> {:error, :invalid_plugin_behaviour}
-    end
-  end
-
-  defp validate_callbacks_present([]), do: :ok
-
-  defp validate_callbacks_present(missing_callbacks) do
-    {:error, {:missing_callbacks, missing_callbacks}}
-  end
-
-  defp validate_metadata_fields_present([]), do: :ok
-
-  defp validate_metadata_fields_present(missing_fields) do
-    {:error, {:missing_metadata_fields, missing_fields}}
-  end
-
-  defp check_api_version_supported(api_version) do
-    case api_version in @supported_api_versions do
-      true -> :ok
-      false -> {:error, {:unsupported_api_version, api_version}}
-    end
-  end
-
-  defp validate_file_access_restrictions(true, plugin_module) do
-    case has_file_system_access?(plugin_module) do
-      true -> {:error, :file_access_detected}
-      false -> :ok
-    end
-  end
-
-  defp validate_file_access_restrictions(false, _plugin_module), do: :ok
-
-  defp validate_network_access_restrictions(true, plugin_module) do
-    case has_network_access?(plugin_module) do
-      true -> {:error, :network_access_detected}
-      false -> :ok
-    end
-  end
-
-  defp validate_network_access_restrictions(false, _plugin_module), do: :ok
-
-  defp check_code_injection_safety(plugin_module) do
-    case has_code_injection_risk?(plugin_module) do
-      true -> {:error, :code_injection_risk_detected}
-      false -> :ok
-    end
-  end
-
-  defp validate_version_compatibility(current_version, min_version, :elixir) do
-    case Version.compare(current_version, min_version) in [:eq, :gt] do
-      true -> :ok
-      false -> {:error, {:elixir_version_too_old, current_version, min_version}}
-    end
-  end
-
-  defp validate_otp_version_compatibility(current_version, min_version) do
-    case String.to_integer(current_version) >= String.to_integer(min_version) do
-      true -> :ok
-      false -> {:error, {:otp_version_too_old, current_version, min_version}}
-    end
-  end
-
-  defp validate_initialization_time_limit(time, max_init_time)
-       when time > max_init_time do
-    {:error, {:initialization_too_slow, time}}
-  end
-
-  defp validate_initialization_time_limit(_time, _max_init_time), do: :ok
-
-  defp validate_dependencies_available([]), do: :ok
-
-  defp validate_dependencies_available(missing_deps) do
-    {:error, {:missing_dependencies, missing_deps}}
   end
 end

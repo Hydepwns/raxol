@@ -13,6 +13,7 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
   @doc """
   Cancels an existing timer using the centralized TimerManager.
   """
+  @spec cancel_existing_timer(map()) :: map()
   def cancel_existing_timer(state) do
     case state.file_event_timer do
       nil ->
@@ -32,6 +33,7 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
   @doc """
   Cancels a periodic tick timer using the centralized TimerManager.
   """
+  @spec cancel_periodic_tick(map()) :: {:ok, map()}
   def cancel_periodic_tick(state) do
     case state.tick_timer do
       nil ->
@@ -51,6 +53,7 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
   @doc """
   Starts a periodic tick timer using the centralized TimerManager.
   """
+  @spec start_periodic_tick(map(), pos_integer()) :: map()
   def start_periodic_tick(state, interval \\ 5000) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Starting periodic tick timer",
@@ -64,6 +67,8 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
   @doc """
   Schedules a file event timer using the centralized TimerManager.
   """
+  @spec schedule_file_event_timer(map(), atom(), String.t(), pos_integer()) ::
+          map()
   def schedule_file_event_timer(state, plugin_id, path, interval \\ 1000) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Scheduling file event timer",
