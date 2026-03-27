@@ -20,6 +20,7 @@ defmodule Raxol.Benchmark.SuitesTest do
 
     test "each app has init/1, update/2, view/1" do
       for mod <- Apps.all() do
+        Code.ensure_loaded!(mod)
         assert function_exported?(mod, :init, 1), "#{mod} missing init/1"
         assert function_exported?(mod, :update, 2), "#{mod} missing update/2"
         assert function_exported?(mod, :view, 1), "#{mod} missing view/1"

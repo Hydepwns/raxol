@@ -28,13 +28,9 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     key = key_data.key
     modifiers = key_data.modifiers || []
 
-    # Check for system key combinations (quit, debug toggle)
     case check_system_key_combinations(key, modifiers, state) do
-      :not_system ->
-        {:application, event, state}
-        # Note: Currently all system key combinations return :not_system
-        # This suggests quit_keys may be empty or debug keys are never triggered
-        # Keeping this simple to avoid unreachable clause warnings
+      {:system, _command, _new_state} = result -> result
+      :not_system -> {:application, event, state}
     end
   end
 
@@ -121,17 +117,17 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
   defp matches_quit_key(quit_key, key, modifiers) do
     case quit_key do
-      key_val when is_atom(key_val) or is_integer(key_val) ->
-        key == key_val
-
-      {key_val, mods} when is_list(mods) ->
-        key == key_val and modifiers_match?(modifiers, mods)
-
       :ctrl_c ->
         key == ?c and Keyword.get(modifiers, :ctrl, false)
 
       :ctrl_q ->
         key == ?q and Keyword.get(modifiers, :ctrl, false)
+
+      {key_val, mods} when is_list(mods) ->
+        key == key_val and modifiers_match?(modifiers, mods)
+
+      key_val when is_atom(key_val) or is_integer(key_val) ->
+        key == key_val
 
       {:unrecognized, other} ->
         log_unknown_quit_key(other)

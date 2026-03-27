@@ -204,12 +204,11 @@ defmodule Raxol.Core.Runtime.Events.Converter do
   }
 
   defp convert_vscode_key_to_value(key) do
-    case key do
-      k when is_binary(k) and byte_size(k) == 1 -> :binary.first(k)
-      k when is_binary(k) -> k
-      _ -> key
+    case Map.get(@vscode_key_map, key) do
+      nil when is_binary(key) and byte_size(key) == 1 -> :binary.first(key)
+      nil -> key
+      mapped -> mapped
     end
-    |> Map.get(@vscode_key_map, key)
   end
 
   @vscode_button_map %{
