@@ -192,7 +192,7 @@ That counter is a complete Raxol app -- `init/update/view` is the whole API. Eve
 
 **Next steps:**
 
-- [Widget Gallery](WIDGET_GALLERY.md) -- All 23 widgets with examples
+- [Widget Gallery](WIDGET_GALLERY.md) -- All widgets with examples
 - [Core Concepts](CORE_CONCEPTS.md) -- Buffers, rendering pipeline, and how it all fits together
 - [Building Apps](../cookbook/BUILDING_APPS.md) -- Patterns for real apps (state machines, scrollable lists, keyboard shortcuts)
 

@@ -122,6 +122,23 @@ end
 
 This prevents terminal initialization in CI pipelines, Docker containers without a TTY, and piped IEx sessions.
 
+## Terminal Emulator Compatibility
+
+Raxol works with any terminal that supports basic ANSI escape sequences. Advanced features like inline images are auto-detected per-emulator.
+
+| Emulator | ANSI | Kitty Graphics | Notes |
+|----------|:----:|:--------------:|-------|
+| Ghostty | yes | yes | GPU-accelerated, full Kitty protocol |
+| Kitty | yes | yes | Reference implementation |
+| WezTerm | yes | yes | Cross-platform |
+| iTerm2 | yes | partial | Uses iTerm2 image protocol instead |
+| Alacritty | yes | no | Fast, no image support |
+| Terminal.app | yes | no | macOS built-in |
+| Windows Terminal | yes | no | Needs VT100 enabled |
+| xterm | yes | no | Sixel support available |
+
+Detection uses `TERM_PROGRAM` and `TERM` environment variables. See `Raxol.Terminal.Image.detect_protocol/0` and `Raxol.Terminal.ANSI.KittyGraphics.detect_support/0`.
+
 ## Graceful Degradation
 
 When no TTY is available:

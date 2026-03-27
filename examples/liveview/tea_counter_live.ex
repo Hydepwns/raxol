@@ -1,37 +1,85 @@
 # TEA Counter in LiveView
 #
-# Runs the CounterExample TEA app in the browser via Phoenix LiveView.
+# Runs the same CounterExample module that works in the terminal,
+# but hosted in a Phoenix LiveView via Raxol.LiveView.TEALive.
 #
-# Setup:
-#   1. Add to your router:
+# This is the proof of the multi-target claim: one TEA app, three targets.
 #
-#      live "/counter", Raxol.LiveView.TEALive,
-#        session: %{"app_module" => "Elixir.CounterExample"}
+# == Setup ==
 #
-#   2. Or create a dedicated LiveView:
+# 1. Define the shared TEA module (this file includes a minimal one):
 #
-#      defmodule MyAppWeb.CounterLive do
-#        use Phoenix.LiveView
+#      defmodule CounterExample do
+#        use Raxol.Core.Runtime.Application
 #
-#        @impl true
-#        def mount(params, session, socket) do
-#          Raxol.LiveView.TEALive.mount(params, session, socket,
-#            app_module: CounterExample
-#          )
+#        def init(_ctx), do: %{count: 0}
+#        def update(:inc, model), do: {%{model | count: model.count + 1}, []}
+#        def update(:dec, model), do: {%{model | count: model.count - 1}, []}
+#        def update(_, model), do: {model, []}
+#
+#        def view(model) do
+#          column do
+#            [text("Count: #{model.count}"), row(do: [button("+", on_click: :inc), button("-", on_click: :dec)])]
+#          end
 #        end
 #
-#        @impl true
-#        defdelegate handle_event(event, params, socket), to: Raxol.LiveView.TEALive
-#
-#        @impl true
-#        defdelegate handle_info(msg, socket), to: Raxol.LiveView.TEALive
-#
-#        @impl true
-#        defdelegate render(assigns), to: Raxol.LiveView.TEALive
+#        def subscribe(_), do: []
 #      end
 #
-#   3. Start Phoenix: mix phx.server
-#   4. Visit http://localhost:4000/counter
+# 2. Add the LiveView to your router (lib/raxol_web/router.ex):
 #
-# The same CounterExample module that runs in the terminal now runs
-# in the browser -- same init/1, update/2, view/1 callbacks.
+#      scope "/", RaxolWeb do
+#        pipe_through(:browser)
+#        live "/counter", CounterLive
+#      end
+#
+# 3. Start Phoenix:
+#
+#      mix phx.server
+#
+# 4. Visit http://localhost:4000/counter
+#
+# The same module also runs in a terminal:
+#
+#      Raxol.start_link(CounterExample, [])
+#
+# And over SSH:
+#
+#      Raxol.SSH.serve(CounterExample, port: 2222)
+
+defmodule CounterLive do
+  @moduledoc """
+  LiveView wrapper that hosts CounterExample via `Raxol.LiveView.TEALive`.
+
+  All LiveView callbacks delegate to TEALive, which starts a Lifecycle
+  process for the TEA app and renders its output as HTML. Browser keydown
+  events are translated to `Raxol.Core.Events.Event` structs via
+  `InputAdapter`, so the TEA module's `update/2` receives the same events
+  it would in a terminal.
+
+  This module is ~15 lines because TEALive does the heavy lifting.
+  """
+
+  if Code.ensure_loaded?(Phoenix.LiveView) do
+    use Phoenix.LiveView
+
+    @impl true
+    def mount(params, session, socket) do
+      Raxol.LiveView.TEALive.mount(params, session, socket,
+        app_module: CounterExample
+      )
+    end
+
+    @impl true
+    defdelegate handle_event(event, params, socket), to: Raxol.LiveView.TEALive
+
+    @impl true
+    defdelegate handle_info(msg, socket), to: Raxol.LiveView.TEALive
+
+    @impl true
+    defdelegate render(assigns), to: Raxol.LiveView.TEALive
+
+    @impl true
+    defdelegate terminate(reason, socket), to: Raxol.LiveView.TEALive
+  end
+end

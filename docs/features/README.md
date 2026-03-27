@@ -1,8 +1,31 @@
 # Features
 
-Terminal interface features: navigation, parsing, search, filesystem, and visual effects.
+Terminal interface features and framework capabilities.
 
-## Features
+## Framework Features
+
+### [Agent Framework](AGENT_FRAMEWORK.md)
+AI agents as TEA apps with OTP supervision, crash isolation, and inter-agent messaging.
+
+### [Sensor Fusion](SENSOR_FUSION.md)
+Poll sensors, fuse readings with weighted averaging and thresholds, render HUD widgets.
+
+### [Distributed Swarm](DISTRIBUTED_SWARM.md)
+CRDTs, node monitoring, topology election, tactical overlay. Automatic discovery via libcluster.
+
+### [Adaptive UI](ADAPTIVE_UI.md)
+Track pilot behavior, recommend layout changes, animate transitions with a feedback loop.
+
+### [Recording & Replay](RECORDING_REPLAY.md)
+Capture terminal sessions as asciinema v2 `.cast` files. Replay with interactive controls.
+
+### [REPL](REPL.md)
+Sandboxed interactive Elixir REPL with three safety levels and persistent bindings.
+
+### [Time-Travel Debugging](TIME_TRAVEL_DEBUGGING.md)
+Snapshot every `update/2` cycle. Step back, step forward, restore historical state.
+
+## Terminal Features
 
 ### [VIM Navigation](VIM_NAVIGATION.md)
 VIM-style keybindings: h/j/k/l, gg/G, w/b/e, search, visual mode.

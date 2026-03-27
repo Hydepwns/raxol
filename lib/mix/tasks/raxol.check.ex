@@ -44,8 +44,8 @@ defmodule Mix.Tasks.Raxol.Check do
 
   @shortdoc "Run comprehensive quality checks"
 
-  @all_checks [:compile, :format, :credo, :dialyzer, :security, :test]
-  @quick_checks [:compile, :format, :credo, :test]
+  @all_checks [:compile, :format, :credo, :dialyzer, :security, :docs, :test]
+  @quick_checks [:compile, :format, :credo, :docs, :test]
 
   @impl Mix.Task
   def run(args) do
@@ -249,6 +249,30 @@ defmodule Mix.Tasks.Raxol.Check do
       false ->
         Mix.shell().info("    " <> Colors.format_skip("Sobelow not available"))
         {:security, :skipped}
+    end
+  end
+
+  defp run_check(:docs) do
+    Mix.shell().info(Colors.subsection_header("Documentation audit"))
+
+    case Mix.shell().cmd("mix raxol.check_docs") do
+      0 ->
+        Mix.shell().info(
+          "    " <> Colors.format_success("Documentation counts are current")
+        )
+
+        {:docs, :ok}
+
+      _ ->
+        Mix.shell().info(
+          "    " <> Colors.format_warning("Documentation drift detected")
+        )
+
+        Mix.shell().info(
+          "    " <> Colors.format_fix("Fix", "Update counts in docs to match catalog")
+        )
+
+        {:docs, :warning}
     end
   end
 

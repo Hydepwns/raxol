@@ -400,4 +400,4 @@ end
 - [SSH Deployment](./SSH_DEPLOYMENT.md) -- Serve apps over SSH
 - [Theming](./THEMING.md) -- Custom color schemes
 - [Performance](./PERFORMANCE_OPTIMIZATION.md) -- 60fps techniques
-- [Widget Gallery](../getting-started/WIDGET_GALLERY.md) -- All 23 widgets
+- [Widget Gallery](../getting-started/WIDGET_GALLERY.md) -- All widgets with examples

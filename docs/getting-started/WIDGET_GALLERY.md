@@ -2,7 +2,7 @@
 
 All widgets are available via the View DSL after `use Raxol.Core.Runtime.Application`. Layout containers (`column`, `row`, `box`) use `do` block syntax. Everything else is a plain function call.
 
-To see them all running: `mix raxol.playground` (23 interactive demos across 7 categories).
+To see them all running: `mix raxol.playground` (interactive demos across all categories).
 
 ---
 
@@ -709,7 +709,7 @@ All component module paths are under `Raxol.UI.Components.*`.
 ## Running Examples
 
 ```bash
-# Interactive playground with all 23 demos
+# Interactive playground with all demos
 mix raxol.playground
 
 # Flagship demo (dashboard, sparklines, live stats)

@@ -18,7 +18,7 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 - **Phase 5.6: Showcase** -- Flagship demo (live BEAM dashboard), file browser example, benchmark suite vs Ratatui/Bubble Tea/Textual
 - **Phase 5.7: Session Recording & Replay** -- Asciinema v2 format (.cast), `mix raxol.record` / `mix raxol.replay`, streaming player with pause/seek/speed
 - **Phase 6.0: Streaming Charts** -- 7 chart modules (LineChart, ScatterChart, BarChart, Heatmap, BrailleCanvas, ChartUtils, ViewBridge), multi-series, braille rendering
-- **Phase 6.1: Playground** -- Interactive widget catalog (23 demos across 7 categories), terminal app + mix task, search/filter/help overlay
+- **Phase 6.1: Playground** -- Interactive widget catalog (terminal app + mix task, search/filter/help overlay)
 - **Phase 6.2: Web Refactor** -- All LiveViews use Playground.Catalog, TEALive lifecycle integration
 - **Phase 6.3: SSH Playground** -- `mix raxol.playground --ssh`, connection tracking, Fly.io TCP service
 - **Time-Travel Debugging** -- Snapshot every update/2 cycle, cursor navigation, restore, export/import. Zero cost when disabled

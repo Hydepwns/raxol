@@ -62,7 +62,7 @@ Sensor examples: `sensor_hud_demo.exs` (3 mock sensors with gauge, sparkline, th
 
 Adaptive examples: `adaptive_ui_demo.exs` (behavior tracking, layout recommendations, feedback loop).
 
-Playground: `mix raxol.playground` -- interactive widget catalog with 27 demos across 8 categories (input, display, feedback, navigation, overlay, layout, visualization, effects). Demos are self-contained TEA apps in `lib/raxol/playground/demos/`. Chart demos use View DSL functions directly. SSH mode: `mix raxol.playground --ssh` serves the playground over SSH (port 2222 by default). Production SSH enabled via `RAXOL_SSH_PLAYGROUND=true` env var in fly.toml.
+Playground: `mix raxol.playground` -- interactive widget catalog with 28 demos across 8 categories (input, display, feedback, navigation, overlay, layout, visualization, effects). Demos are self-contained TEA apps in `lib/raxol/playground/demos/`. Chart demos use View DSL functions directly. SSH mode: `mix raxol.playground --ssh` serves the playground over SSH (port 2222 by default). Production SSH enabled via `RAXOL_SSH_PLAYGROUND=true` env var in fly.toml.
 
 ### Development
 
@@ -152,10 +152,18 @@ lib/raxol/
 │   ├── comms_manager.ex # Bandwidth-aware message routing
 │   ├── tactical_overlay.ex # CRDT-backed shared state sync
 │   └── crdt/          # LWWRegister, ORSet (pure functional)
-├── playground/      # Interactive widget catalog (27 demos, 8 categories)
+├── playground/      # Interactive widget catalog (28 demos, 8 categories)
 │   ├── catalog.ex   # Demo registry with metadata (category, complexity, description)
 │   ├── app.ex       # TEA app: search, filter by category/complexity, help overlay
 │   └── demos/       # Self-contained TEA demo apps (one per widget/chart)
+├── ssh/             # SSH serving
+│   ├── server.ex    # :ssh.daemon wrapper, host key management
+│   ├── session.ex   # Per-connection Lifecycle wrapper
+│   ├── cli_handler.ex # SSH channel <-> Raxol event translation
+│   └── io_adapter.ex  # IO stream adapter for SSH channels
+├── repl/            # Interactive REPL
+│   ├── evaluator.ex # Code.eval_string with timeout, IO capture, persistent bindings
+│   └── sandbox.ex   # AST-based safety checker (3 levels: none/standard/strict)
 ├── performance/     # Performance monitoring, profiling, caching
 ├── live_view/       # Phoenix LiveView integration (terminal + browser bridge)
 └── effects/         # Visual effects (CursorTrail, etc.)
@@ -182,6 +190,10 @@ lib/raxol/
 **AI Backend Streaming**: `Raxol.Agent.Backend.HTTP.stream/2` provides real SSE streaming for Anthropic, OpenAI, Ollama, and Kimi APIs. Uses `Stream.resource/3` + `spawn_link` + message passing. Four SSE formats: Anthropic (content_block_delta), OpenAI/Kimi (data chunks + `[DONE]`), Ollama (NDJSON), Lumo (data: JSON per line with U2L decryption). `Raxol.Agent.Backend.Lumo` implements Proton Lumo's full U2L encryption protocol (per-request AES-256-GCM + PGP key delivery via gpg) with lumo-tamer OpenAI-compatible proxy as fallback. Tiered backend detection: Lumo -> Anthropic -> Kimi -> OpenAI -> Ollama -> LLM7 -> Mock.
 
 **Time-Travel Debugging**: `Raxol.start_link(MyApp, time_travel: true)` enables snapshot recording of every `update/2` cycle. `Raxol.Debug.TimeTravel` stores `{message, model_before, model_after}` in a CircularBuffer. Navigate with `step_back/0`, `step_forward/0`, `jump_to/1`. `restore/0` sends the historical model to the Dispatcher for re-render. `Snapshot.diff/2` computes recursive map changes. Zero cost when disabled.
+
+**SSH Architecture**: `Raxol.SSH.Server` wraps `:ssh.daemon` with auto-generated host keys. Each connection spawns a `Raxol.SSH.Session` running a Lifecycle with `environment: :ssh`. `CLI_Handler` translates SSH channel data to Raxol events. `IO_Adapter` bridges SSH channel I/O to the terminal rendering pipeline.
+
+**REPL Architecture**: `Raxol.REPL.Evaluator` wraps `Code.eval_string` with `spawn_monitor` timeout, `StringIO` IO capture via group_leader swap, and persistent bindings across evaluations. `Raxol.REPL.Sandbox` scans ASTs via `Macro.prewalk` at three levels: `:none` (unrestricted), `:standard` (blocks System.cmd/File.rm/Port.open/etc), `:strict` (whitelist-only, safe for SSH exposure).
 
 **Phoenix as library only**: No active web server in core, Ecto.Repo explicitly disabled at runtime.
 

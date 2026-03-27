@@ -25,6 +25,7 @@ defmodule RaxolWeb.Router do
 
     live("/", DemoLive)
     live("/demo", DemoLive)
+    live("/counter", CounterLive)
   end
 
   scope "/api", RaxolWeb do
