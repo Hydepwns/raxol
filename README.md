@@ -2,13 +2,34 @@
 
 [![CI](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml/badge.svg?branch=master)](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml)
 
-OTP-native terminal framework for Elixir. Same app runs in a terminal, a browser via LiveView, or over SSH.
+[OTP](https://en.wikipedia.org/wiki/Open_Telecom_Platform)-native terminal framework for Elixir.
+Same app runs in a terminal, a browser via LiveView, or over SSH.
 
-Your app is a GenServer. Components crash and restart without taking down the UI. Hot-reload your view function while it's running. Coordinate AI agent teams with OTP supervisors. Cluster nodes with CRDTs and automatic discovery. No other TUI framework does any of that -- Raxol gets it from the runtime.
+Your app is a [GenServer](https://hexdocs.pm/elixir/GenServer.html).
+Components can crash and restart without taking down the UI.
+Hot-reload your view function while it's running.
 
-## Why OTP Changes Everything
+Coordinate AI agent teams with OTP supervisors.
+Cluster nodes with CRDTs and automatic discovery.
+No other TUI framework does any of that -- Raxol inherits it _from the runtime_.
 
-Every feature below comes from the BEAM, not a library bolted on top:
+## Origin Vision
+
+> Raxol started as two converging ideas: a terminal for AGI, where AI agents
+> interact with a real terminal emulator the same way humans do;
+> and an interface for the cockpit of a Gundam Wing Suit, where fault isolation,
+> real-time, responsiveness, and sensor fusion are survival-critical.
+
+## Key Architectural Differentiators
+
+1. **Real VT100 Erlang Emulator**: AI agents interact with structured buffers, not raw escape codes
+2. **Multi-Agent Architecture**: Each agent is a supervised OTP process with crash isolation
+3. **BEAM VM Strengths**: Soft real-time, per-subsystem isolation, multi-node distribution, hot code reload
+4. **Three-Surface Rendering**: Same [TEA app](https://guide.elm-lang.org/architecture/) in terminal, browser ('TEALive', as a liveview adapter), and SSH
+
+## Why OTP-first
+
+Every feature below comes from the [BEAM VM](<https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine)>), not library or dependency:
 
 | Capability                     | Raxol | Ratatui | Bubble Tea | Textual | Ink |
 | ------------------------------ | :---: | :-----: | :--------: | :-----: | :-: |
@@ -63,11 +84,11 @@ That counter works in a terminal. The same module renders in Phoenix LiveView. T
 
 ## What Makes It Different
 
-**Crash isolation** -- Wrap any widget in `process_component/2` and it runs in its own process. It crashes, it restarts. The rest of your UI doesn't blink.
+**Crash isolation**: Wrap any widget in `process_component/2` and it runs in its own process. It crashes, it restarts. The rest of your UI doesn't blink.
 
-**Hot code reload** -- Change your `view/1` function, save, and the running app updates. No restart, no reconnect.
+**Hot code reload**: Change your `view/1` function, save, and the running app updates. No restart, no reconnect.
 
-**AI agents as TEA apps** -- An agent is a TEA app where input comes from LLMs instead of a keyboard. `use Raxol.Agent`, implement `init/update/view`, and you get supervised, crash-isolated agents with inter-agent messaging. Real SSE streaming to Anthropic, OpenAI, Ollama, Groq. Free tier via LLM7.io.
+**AI agents as TEA apps**: An agent is a TEA app where input comes from LLMs instead of a keyboard. `use Raxol.Agent`, implement `init/update/view`, and you get supervised, crash-isolated agents with inter-agent messaging. Real SSE streaming to Anthropic, OpenAI, Ollama, Groq. Free tier via LLM7.io.
 
 ```elixir
 defmodule MyAgent do
@@ -88,35 +109,35 @@ end
 Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
 ```
 
-**SSH serving** -- `Raxol.SSH.serve(MyApp, port: 2222)` and anyone can SSH into your app. Each connection gets its own supervised process.
+**SSH serving**: `Raxol.SSH.serve(MyApp, port: 2222)` and anyone can SSH into your app. Each connection gets its own supervised process.
 
-**LiveView bridge** -- The same TEA app renders to a Phoenix LiveView. Terminal and browser, same codebase, same state model. See `examples/liveview/tea_counter_live.ex`.
+**LiveView bridge**: The same TEA app renders to a Phoenix LiveView. Terminal and browser, same codebase, same state model. See `examples/liveview/tea_counter_live.ex`.
 
-**Distributed swarm** -- CRDTs (LWW registers, OR-sets), node monitoring, seniority-based election, tactical overlay sync. Automatic discovery via libcluster (gossip, epmd, DNS, Tailscale).
+**Distributed swarm**: CRDTs (LWW registers, OR-sets), node monitoring, seniority-based election, tactical overlay sync. Automatic discovery via libcluster (gossip, epmd, DNS, Tailscale).
 
-**Sensor fusion** -- Poll sensors, fuse readings with weighted averaging and thresholds, render gauges and sparklines.
+**Sensor fusion**: Poll sensors, fuse readings with weighted averaging and thresholds, render gauges and sparklines.
 
-**Self-adapting layout** -- Track how the UI is used, recommend layout changes, animate transitions. Optional Nx/Axon ML backend for vectorized fusion and Axon MLP recommendations. The interface evolves.
+**Self-adapting layout**: Track how the UI is used, recommend layout changes, animate transitions. Optional Nx/Axon ML backend for vectorized fusion and Axon MLP recommendations. The interface evolves.
 
-**Time-travel debugging** -- Snapshot every `update/2` cycle. Step back, forward, jump to any point, restore state. Zero cost when disabled.
+**Time-travel debugging**: Snapshot every `update/2` cycle. Step back, forward, jump to any point, restore state. Zero cost when disabled.
 
-**Session recording** -- Capture sessions as asciinema v2 `.cast` files. Replay with pause, seek, speed control. Auto-save on crash.
+**Session recording**: Capture sessions as asciinema v2 `.cast` files. Replay with pause, seek, speed control. Auto-save on crash.
 
-**Sandboxed REPL** -- `mix raxol.repl` with three safety levels. AST-based scanner blocks dangerous operations. Safe for SSH in strict mode.
+**Sandboxed REPL**: `mix raxol.repl` with three safety levels. AST-based scanner blocks dangerous operations. Safe for SSH in strict mode.
 
 ## What You Get
 
-**Rich widget set** -- Button, TextInput, Table, Tree, Modal, SelectList, Checkbox, Sparkline, Charts, and more. All keyboard-navigable with focus management.
+**Rich widget set**: Button, TextInput, Table, Tree, Modal, SelectList, Checkbox, Sparkline, Charts, and more. All keyboard-navigable with focus management.
 
-**Layout engine** -- Flexbox (`row`/`column` with `flex`, `gap`, `align_items`) and CSS Grid (`template_columns`, `template_rows`). Nested freely.
+**Layout engine**: Flexbox (`row`/`column` with `flex`, `gap`, `align_items`) and CSS Grid (`template_columns`, `template_rows`). Nested freely.
 
-**60fps rendering** -- Virtual DOM diffing, damage tracking, synchronized terminal output. Full frame in ~2ms -- that's 13% of the 60fps budget, leaving 87% for your code.
+**60fps rendering**: Virtual DOM diffing, damage tracking, synchronized terminal output. Full frame in ~2ms -- that's 13% of the 60fps budget, leaving 87% for your code.
 
-**Theming** -- Named colors, RGB, 256-color, hex strings. Auto-downsample to whatever the terminal supports.
+**Theming**: Named colors, RGB, 256-color, hex strings. Auto-downsample to whatever the terminal supports.
 
-**Terminal compatibility** -- Works in Ghostty, Kitty, WezTerm, iTerm2, Alacritty, Terminal.app, Windows Terminal, and anything with basic ANSI support. Auto-detects Kitty graphics protocol for inline images (Ghostty, Kitty, WezTerm). Falls back to Sixel or iTerm2 protocol where available.
+**Terminal compatibility**: Works in Ghostty, Kitty, WezTerm, iTerm2, Alacritty, Terminal.app, Windows Terminal, and anything with basic ANSI support. Auto-detects Kitty graphics protocol for inline images (Ghostty, Kitty, WezTerm). Falls back to Sixel or iTerm2 protocol where available.
 
-**Interactive playground** -- `mix raxol.playground` opens 28 live demos across 8 categories (input, display, feedback, navigation, overlay, layout, visualization, effects). Browse, search, filter by complexity. Works over SSH with `--ssh`.
+**Interactive playground**: `mix raxol.playground` opens 28 live demos across 8 categories (input, display, feedback, navigation, overlay, layout, visualization, effects). Browse, search, filter by complexity. Works over SSH with `--ssh`.
 
 ## Install
 

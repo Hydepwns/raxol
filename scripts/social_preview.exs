@@ -137,70 +137,80 @@ html = """
   }
   .container {
     display: flex;
+    flex-direction: column;
     width: 1280px;
     height: 640px;
+    overflow: hidden;
+  }
+  .chart-wrapper {
+    width: 1280px;
+    height: 310px;
+    display: flex;
     align-items: center;
+    justify-content: center;
     overflow: hidden;
   }
   .chart {
-    width: 780px;
-    flex-shrink: 0;
-    padding: 30px 20px 30px 40px;
     font-family: 'Monaspace Neon', 'JetBrains Mono', 'Fira Code', monospace;
     font-size: 16.5px;
     line-height: 1.15;
     white-space: pre;
     letter-spacing: 0.5px;
+    transform: scale(0.62);
+    transform-origin: center center;
   }
   .wordmark {
-    flex: 1;
-    padding: 0 60px 0 0;
+    width: 1280px;
+    height: 330px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
   }
   .title {
     font-family: 'Monaspace Neon', 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 76px;
+    font-size: 100px;
     font-weight: 700;
-    letter-spacing: 10px;
+    letter-spacing: 14px;
     color: #f0eff1;
     text-shadow:
       0 0 10px #ff7edb,
       0 0 30px #ff7edb,
       0 0 60px #ff7edb,
-      0 0 100px #ff7edb44;
-    margin-bottom: 32px;
+      0 0 80px #ff7edb44;
+    margin-bottom: 16px;
   }
   .tagline {
     font-family: 'Monaspace Neon', 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 23px;
+    font-size: 32px;
     font-weight: 400;
-    line-height: 1.7;
+    line-height: 1.4;
     color: #72f1b8;
     text-shadow:
-      0 0 8px #72f1b866,
-      0 0 20px #72f1b844;
-    letter-spacing: 1px;
+      0 0 8px #72f1b8,
+      0 0 20px #72f1b888;
+    letter-spacing: 2px;
   }
   .tagline .accent {
     color: #fede5d;
     text-shadow:
-      0 0 8px #fede5d66,
-      0 0 20px #fede5d44;
+      0 0 8px #fede5d,
+      0 0 20px #fede5d88;
   }
 </style>
 </head>
 <body>
 <div class="container">
-  <div class="chart">
+  <div class="chart-wrapper">
+    <div class="chart">
 #{chart_html}
+    </div>
   </div>
   <div class="wordmark">
     <div class="title">RAXOL</div>
     <div class="tagline">
-      <span class="accent">OTP</span>-native<br>
-      terminal<br>
-      framework<br>
-      for <span class="accent">Elixir</span>
+      <span class="accent">OTP</span>-native terminal framework for <span class="accent">Elixir</span>
     </div>
   </div>
 </div>
