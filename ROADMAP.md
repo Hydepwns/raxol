@@ -26,6 +26,7 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 - **Sensor Fusion HUD** -- Sensor behaviour, polling feeds, weighted averaging, threshold alerts, gauge/sparkline/threat/minimap widgets
 - **Distributed Swarm** -- CRDTs (LWW registers, OR-sets), node monitoring, seniority-based topology election, tactical overlay sync
 - **Self-Evolving Interface** -- Behavior tracking, rule-based layout recommendations, animated transitions, feedback loop
+- **AI Cockpit + Streaming** -- Real AI agents analyzing codebases in multi-pane terminal dashboard. Backend.HTTP streaming (SSE) for Anthropic/OpenAI/Ollama. Pilot takeover for follow-up questions. Free tier via LLM7.io (no API key). Mock fallback for offline use.
 
 ---
 
@@ -36,6 +37,21 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 | Task | Description | Effort |
 |------|-------------|--------|
 | Publish to Hex | `mix hex.publish` -- build succeeds, docs clean, zero warnings | Small |
+
+### AI Backend Providers
+
+Supported now (via `Backend.HTTP` + env vars):
+- **Mock** (default) -- instant offline demo, no API key
+- **LLM7.io** (`FREE_AI=true`) -- free, OpenAI-compatible, no key needed, 40 req/min
+- **Ollama** (`OLLAMA_MODEL=...`) -- free local inference, OpenAI-compatible
+- **Groq** (`AI_API_KEY=... AI_BASE_URL=https://api.groq.com/openai`) -- fast free tier
+- **OpenAI** (`AI_API_KEY=...`) -- GPT-4o-mini and up
+- **Anthropic** (`ANTHROPIC_API_KEY=...`) -- Claude Haiku/Sonnet/Opus
+
+Future providers:
+- **Proton Lumo** -- waiting for public API (currently internal to Proton Mail)
+- **LocalAI** -- self-hosted OpenAI-compatible (similar to Ollama)
+- **Kimi K2.5** (Moonshot AI) -- low-cost agent swarm API (~$0.60/M input tokens)
 
 ### Longer Term
 

@@ -50,7 +50,204 @@ defmodule Raxol.Agent.Backend.HTTP do
   def name, do: "HTTP Backend"
 
   @impl true
-  def capabilities, do: [:completion]
+  def capabilities, do: [:completion, :streaming]
+
+  @impl true
+  def stream(messages, opts \\ []) do
+    if not available?() do
+      {:error, :req_not_available}
+    else
+      provider = detect_provider(opts)
+      timeout = Keyword.get(opts, :timeout, @default_timeout)
+      {url, headers, body} = build_request(provider, messages, opts)
+      body = Map.put(body, :stream, true)
+
+      caller = self()
+      ref = make_ref()
+
+      task_pid =
+        spawn_link(fn ->
+          stream_request(url, headers, body, timeout, caller, ref)
+        end)
+
+      stream =
+        Stream.resource(
+          fn ->
+            %{
+              ref: ref,
+              task_pid: task_pid,
+              buffer: "",
+              provider: provider,
+              content: "",
+              usage: %{}
+            }
+          end,
+          &stream_next/1,
+          fn %{task_pid: pid} ->
+            if Process.alive?(pid), do: Process.exit(pid, :normal)
+          end
+        )
+
+      {:ok, stream}
+    end
+  end
+
+  defp stream_request(url, headers, body, timeout, caller, ref) do
+    try do
+      case Req.post(url,
+             json: body,
+             headers: headers,
+             receive_timeout: timeout,
+             into: fn {:data, data}, {req, resp} ->
+               send(caller, {:sse_data, ref, data})
+               {:cont, {req, resp}}
+             end
+           ) do
+        {:ok, %{status: status}} when status in 200..299 ->
+          :ok
+
+        {:ok, %{status: status}} ->
+          send(caller, {:sse_error, ref, "HTTP #{status}"})
+
+        {:error, reason} ->
+          send(caller, {:sse_error, ref, inspect(reason)})
+      end
+    rescue
+      e -> send(caller, {:sse_error, ref, Exception.message(e)})
+    end
+
+    send(caller, {:sse_done, ref})
+  end
+
+  defp stream_next(%{buffer: :halt} = state), do: {:halt, state}
+
+  defp stream_next(%{ref: ref, buffer: buffer, provider: provider} = state) do
+    receive do
+      {:sse_data, ^ref, data} ->
+        {events, new_buffer} = parse_sse(buffer <> data, provider)
+
+        chunks = for {:text_delta, text} <- events, do: {:chunk, text}
+
+        new_content =
+          state.content <> Enum.map_join(chunks, "", fn {:chunk, t} -> t end)
+
+        new_usage =
+          case Enum.find(events, &match?({:usage, _}, &1)) do
+            {:usage, u} -> u
+            nil -> state.usage
+          end
+
+        {chunks,
+         %{state | buffer: new_buffer, content: new_content, usage: new_usage}}
+
+      {:sse_error, ^ref, error} ->
+        {[{:error, error}], %{state | buffer: :halt}}
+
+      {:sse_done, ^ref} ->
+        done =
+          {:done,
+           %{
+             content: state.content,
+             usage: state.usage,
+             metadata: %{
+               backend: :http,
+               provider: state.provider,
+               streamed: true
+             }
+           }}
+
+        {[done], %{state | buffer: :halt}}
+    after
+      60_000 ->
+        {:halt, state}
+    end
+  end
+
+  # -- SSE parsing -------------------------------------------------------------
+
+  defp parse_sse(raw, :ollama) do
+    lines = String.split(raw, "\n")
+    {complete, [buffer]} = Enum.split(lines, -1)
+
+    events =
+      complete
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.flat_map(fn line ->
+        case Jason.decode(line) do
+          {:ok, %{"done" => true}} -> [{:usage, %{}}]
+          {:ok, %{"message" => %{"content" => text}}} -> [{:text_delta, text}]
+          _ -> []
+        end
+      end)
+
+    {events, buffer}
+  end
+
+  defp parse_sse(raw, provider) when provider in [:anthropic, :openai] do
+    parts = String.split(raw, "\n\n")
+
+    case parts do
+      [single] ->
+        {[], single}
+
+      multiple ->
+        {complete, [buffer]} = Enum.split(multiple, -1)
+
+        events =
+          complete
+          |> Enum.reject(&(&1 == ""))
+          |> Enum.flat_map(&parse_sse_event(&1, provider))
+
+        {events, buffer}
+    end
+  end
+
+  defp parse_sse_event(event_text, :anthropic) do
+    data_line =
+      event_text
+      |> String.split("\n")
+      |> Enum.find(&String.starts_with?(&1, "data: "))
+
+    with "data: " <> json <- data_line,
+         {:ok, parsed} <- Jason.decode(json) do
+      case parsed do
+        %{"type" => "content_block_delta", "delta" => %{"text" => text}} ->
+          [{:text_delta, text}]
+
+        %{"type" => "message_delta", "usage" => usage} ->
+          [{:usage, usage}]
+
+        _ ->
+          []
+      end
+    else
+      _ -> []
+    end
+  end
+
+  defp parse_sse_event(event_text, :openai) do
+    data_line =
+      event_text
+      |> String.split("\n")
+      |> Enum.find(&String.starts_with?(&1, "data: "))
+
+    with "data: " <> data <- data_line do
+      if data == "[DONE]" do
+        [{:usage, %{}}]
+      else
+        case Jason.decode(data) do
+          {:ok, %{"choices" => [%{"delta" => %{"content" => text}} | _]}}
+          when is_binary(text) ->
+            [{:text_delta, text}]
+
+          _ ->
+            []
+        end
+      end
+    else
+      _ -> []
+    end
+  end
 
   # -- Request building -------------------------------------------------------
 
