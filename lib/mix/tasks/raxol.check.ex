@@ -269,7 +269,8 @@ defmodule Mix.Tasks.Raxol.Check do
         )
 
         Mix.shell().info(
-          "    " <> Colors.format_fix("Fix", "Update counts in docs to match catalog")
+          "    " <>
+            Colors.format_fix("Fix", "Update counts in docs to match catalog")
         )
 
         {:docs, :warning}

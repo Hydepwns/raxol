@@ -80,7 +80,9 @@ IO.puts("\n--- Current State ---")
 IO.puts("Entities (#{length(entities)}):")
 
 for entity <- entities do
-  IO.puts("  #{entity.id}: position=#{inspect(entity.position)}, status=#{entity.status}")
+  IO.puts(
+    "  #{entity.id}: position=#{inspect(entity.position)}, status=#{entity.status}"
+  )
 end
 
 IO.puts("Waypoints (#{length(waypoints)}):")
@@ -111,7 +113,9 @@ IO.puts("\n--- Updated State ---")
 IO.puts("Entities (#{length(entities)}):")
 
 for entity <- entities do
-  IO.puts("  #{entity.id}: position=#{inspect(entity.position)}, status=#{entity.status}")
+  IO.puts(
+    "  #{entity.id}: position=#{inspect(entity.position)}, status=#{entity.status}"
+  )
 end
 
 IO.puts("Waypoints (#{length(waypoints)}):")
@@ -130,7 +134,10 @@ Process.sleep(1)
 reg_b = LWWRegister.new("node_b_says_goodbye")
 
 merged = LWWRegister.merge(reg_a, reg_b)
-IO.puts("LWW merge: #{inspect(LWWRegister.value(merged))} (latest timestamp wins)")
+
+IO.puts(
+  "LWW merge: #{inspect(LWWRegister.value(merged))} (latest timestamp wins)"
+)
 
 # OR-Set: add-wins semantics
 set = ORSet.new()
@@ -139,7 +146,9 @@ set = ORSet.add(set, "bravo")
 set = ORSet.add(set, "charlie")
 set = ORSet.remove(set, "bravo")
 
-IO.puts("OR-Set members: #{inspect(ORSet.to_list(set))} (size: #{ORSet.size(set)})")
+IO.puts(
+  "OR-Set members: #{inspect(ORSet.to_list(set))} (size: #{ORSet.size(set)})"
+)
 
 # Simulate merge from another node
 remote_set = ORSet.new() |> ORSet.add("delta") |> ORSet.add("bravo")

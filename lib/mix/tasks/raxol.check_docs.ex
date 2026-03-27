@@ -47,7 +47,9 @@ defmodule Mix.Tasks.Raxol.CheckDocs do
 
     case errors do
       [] ->
-        Mix.shell().info("Docs OK: #{catalog_count} demos, #{category_count} categories")
+        Mix.shell().info(
+          "Docs OK: #{catalog_count} demos, #{category_count} categories"
+        )
 
       _ ->
         Enum.each(errors, &Mix.shell().error("  #{&1}"))
@@ -62,10 +64,16 @@ defmodule Mix.Tasks.Raxol.CheckDocs do
 
         # Check playground line has correct demo count
         errors =
-          if String.contains?(content, "#{expected_demos} demos across #{expected_categories} categories") do
+          if String.contains?(
+               content,
+               "#{expected_demos} demos across #{expected_categories} categories"
+             ) do
             errors
           else
-            ["CLAUDE.md: playground description should say '#{expected_demos} demos across #{expected_categories} categories'" | errors]
+            [
+              "CLAUDE.md: playground description should say '#{expected_demos} demos across #{expected_categories} categories'"
+              | errors
+            ]
           end
 
         errors
