@@ -4,16 +4,16 @@ Most TUI frameworks fight their runtime. They implement crash recovery with try/
 
 ## The Natural Mapping
 
-| OTP concept | TUI equivalent | What you get |
-|-------------|---------------|-------------|
-| GenServer | Elm update loop | `init/1 -> update/2 -> view/1`, managed by the runtime |
-| Process | Component | Each widget can run in its own process |
-| Supervisor | Crash recovery | A widget crashes, it restarts. The rest of the UI doesn't notice |
-| Hot code swap | Live reload | Change `view/1`, save, running app updates. No restart |
-| `:ssh` | SSH serving | Built into Erlang. No dep, no daemon, just `:ssh.daemon` |
-| `libcluster` | Node discovery | Gossip, DNS, Tailscale. Nodes find each other automatically |
-| `send/2` | Inter-component messaging | No event bus library. Just processes sending messages |
-| ETS | State management | Fast shared state without serialization overhead |
+| OTP concept   | TUI equivalent            | What you get                                                     |
+| ------------- | ------------------------- | ---------------------------------------------------------------- |
+| GenServer     | Elm update loop           | `init/1 -> update/2 -> view/1`, managed by the runtime           |
+| Process       | Component                 | Each widget can run in its own process                           |
+| Supervisor    | Crash recovery            | A widget crashes, it restarts. The rest of the UI doesn't notice |
+| Hot code swap | Live reload               | Change `view/1`, save, running app updates. No restart           |
+| `:ssh`        | SSH serving               | Built into Erlang. No dep, no daemon, just `:ssh.daemon`         |
+| `libcluster`  | Node discovery            | Gossip, DNS, Tailscale. Nodes find each other automatically      |
+| `send/2`      | Inter-component messaging | No event bus library. Just processes sending messages            |
+| ETS           | State management          | Fast shared state without serialization overhead                 |
 
 This isn't an analogy. These are the actual implementations.
 

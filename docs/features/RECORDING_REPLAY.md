@@ -37,15 +37,15 @@ Raxol.Recording.Player.play(session, interactive: true)
 
 Keyboard controls during playback:
 
-| Key | Action |
-|-----|--------|
-| `space` | Pause / resume |
-| `+` / `=` | Speed up (1x -> 2x -> 4x -> 8x) |
-| `-` | Slow down |
-| `>` / `.` | Skip forward 5s |
-| `<` / `,` | Skip backward 5s |
-| `0`-`9` | Jump to 0%-90% |
-| `q` / `ESC` | Quit |
+| Key         | Action                          |
+| ----------- | ------------------------------- |
+| `space`     | Pause / resume                  |
+| `+` / `=`   | Speed up (1x -> 2x -> 4x -> 8x) |
+| `-`         | Slow down                       |
+| `>` / `.`   | Skip forward 5s                 |
+| `<` / `,`   | Skip backward 5s                |
+| `0`-`9`     | Jump to 0%-90%                  |
+| `q` / `ESC` | Quit                            |
 
 Options: `:speed` (default 1.0), `:max_delay` (default 5.0s cap between events), `:interactive` (default true).
 
@@ -67,6 +67,7 @@ session = Asciicast.decode(cast_string)
 ```
 
 The format is a JSON header followed by newline-delimited event arrays:
+
 ```
 {"version": 2, "width": 80, "height": 24, "timestamp": 1234567890}
 [0.5, "o", "Hello"]

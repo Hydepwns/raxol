@@ -63,13 +63,13 @@ end
 
 ## Platform Support
 
-| Platform       | Primary Backend | Fallback           | Performance |
-|----------------|----------------|--------------------|-------------|
-| Linux          | termbox2_nif   | IOTerminal         | ~50us/frame |
-| macOS          | termbox2_nif   | IOTerminal         | ~50us/frame |
-| Windows 10+    | IOTerminal     | (primary)          | ~500us/frame|
-| FreeBSD/OpenBSD| termbox2_nif   | IOTerminal         | ~50us/frame |
-| CI/Docker      | IOTerminal     | (no TTY detection) | N/A         |
+| Platform        | Primary Backend | Fallback           | Performance  |
+| --------------- | --------------- | ------------------ | ------------ |
+| Linux           | termbox2_nif    | IOTerminal         | ~50us/frame  |
+| macOS           | termbox2_nif    | IOTerminal         | ~50us/frame  |
+| Windows 10+     | IOTerminal      | (primary)          | ~500us/frame |
+| FreeBSD/OpenBSD | termbox2_nif    | IOTerminal         | ~50us/frame  |
+| CI/Docker       | IOTerminal      | (no TTY detection) | N/A          |
 
 ## IOTerminal (Pure Elixir Backend)
 
@@ -81,19 +81,19 @@ When the NIF is unavailable, `IOTerminal` provides terminal support using:
 
 ### Feature Comparison
 
-| Feature              | termbox2_nif | IOTerminal |
-|---------------------|--------------|------------|
-| Cursor positioning  | Yes          | Yes        |
-| 256-color support   | Yes          | Yes        |
-| Terminal size       | Yes          | Yes        |
-| Hide/show cursor    | Yes          | Yes        |
-| Clear screen        | Yes          | Yes        |
-| Raw key input       | Yes          | Yes*       |
-| Mouse events        | Yes          | Limited**  |
-| Window title        | Yes          | Yes        |
+| Feature            | termbox2_nif | IOTerminal  |
+| ------------------ | ------------ | ----------- |
+| Cursor positioning | Yes          | Yes         |
+| 256-color support  | Yes          | Yes         |
+| Terminal size      | Yes          | Yes         |
+| Hide/show cursor   | Yes          | Yes         |
+| Clear screen       | Yes          | Yes         |
+| Raw key input      | Yes          | Yes\*       |
+| Mouse events       | Yes          | Limited\*\* |
+| Window title       | Yes          | Yes         |
 
-*Key input in IOTerminal uses `IO.getn/2` which may buffer differently.
-**Mouse support depends on terminal emulator ANSI support.
+\*Key input in IOTerminal uses `IO.getn/2` which may buffer differently.
+\*\*Mouse support depends on terminal emulator ANSI support.
 
 ### Example Usage
 
@@ -126,16 +126,16 @@ This prevents terminal initialization in CI pipelines, Docker containers without
 
 Raxol works with any terminal that supports basic ANSI escape sequences. Advanced features like inline images are auto-detected per-emulator.
 
-| Emulator | ANSI | Kitty Graphics | Notes |
-|----------|:----:|:--------------:|-------|
-| Ghostty | yes | yes | GPU-accelerated, full Kitty protocol |
-| Kitty | yes | yes | Reference implementation |
-| WezTerm | yes | yes | Cross-platform |
-| iTerm2 | yes | partial | Uses iTerm2 image protocol instead |
-| Alacritty | yes | no | Fast, no image support |
-| Terminal.app | yes | no | macOS built-in |
-| Windows Terminal | yes | no | Needs VT100 enabled |
-| xterm | yes | no | Sixel support available |
+| Emulator         | ANSI | Kitty Graphics | Notes                                |
+| ---------------- | :--: | :------------: | ------------------------------------ |
+| Ghostty          | yes  |      yes       | GPU-accelerated, full Kitty protocol |
+| Kitty            | yes  |      yes       | Reference implementation             |
+| WezTerm          | yes  |      yes       | Cross-platform                       |
+| iTerm2           | yes  |    partial     | Uses iTerm2 image protocol instead   |
+| Alacritty        | yes  |       no       | Fast, no image support               |
+| Terminal.app     | yes  |       no       | macOS built-in                       |
+| Windows Terminal | yes  |       no       | Needs VT100 enabled                  |
+| xterm            | yes  |       no       | Sixel support available              |
 
 Detection uses `TERM_PROGRAM` and `TERM` environment variables. See `Raxol.Terminal.Image.detect_protocol/0` and `Raxol.Terminal.ANSI.KittyGraphics.detect_support/0`.
 
@@ -176,12 +176,14 @@ Application.put_env(:raxol, :terminal_backend, :io_terminal)
 If termbox2_nif fails to load:
 
 1. Check you have a C toolchain:
+
    ```bash
    gcc --version
    make --version
    ```
 
 2. On macOS in nix-shell, make sure TMPDIR is set:
+
    ```bash
    export TMPDIR=/tmp
    mix compile
@@ -196,11 +198,13 @@ If termbox2_nif fails to load:
 ### IOTerminal Issues
 
 **No color output** -- make sure ANSI is enabled:
+
 ```elixir
 Application.put_env(:elixir, :ansi_enabled, true)
 ```
 
 **Windows issues** -- needs Windows 10+ with VT100 support enabled:
+
 ```
 reg add HKCU\Console /v VirtualTerminalLevel /t REG_DWORD /d 1
 ```
@@ -222,13 +226,13 @@ iex> Raxol.Terminal.Driver.backend()
 
 ## Performance
 
-| Operation          | termbox2_nif | IOTerminal | Notes |
-|--------------------|--------------|------------|-------|
-| Initialize         | ~1ms         | ~2ms       |       |
-| Set cell           | ~1us         | ~10us      | Per cell |
-| Full redraw (80x24)| ~50us        | ~500us     | 1920 cells |
-| Get terminal size  | ~1us         | ~5us       |       |
-| Read keypress      | ~1us         | ~10us      |       |
+| Operation           | termbox2_nif | IOTerminal | Notes      |
+| ------------------- | ------------ | ---------- | ---------- |
+| Initialize          | ~1ms         | ~2ms       |            |
+| Set cell            | ~1us         | ~10us      | Per cell   |
+| Full redraw (80x24) | ~50us        | ~500us     | 1920 cells |
+| Get terminal size   | ~1us         | ~5us       |            |
+| Read keypress       | ~1us         | ~10us      |            |
 
 For most applications, IOTerminal performance is fine. The difference only matters with very high refresh rates (>30 fps), large terminals (>200x60), or intensive cell-by-cell updates.
 

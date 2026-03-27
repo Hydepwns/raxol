@@ -17,6 +17,7 @@ IO.puts(Buffer.to_string(buffer))
 ```
 
 Output:
+
 ```
 ╔══════════════════════════════════════╗
 ║                                      ║

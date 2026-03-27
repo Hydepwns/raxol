@@ -8,6 +8,7 @@
 ## Protocol Overview
 
 Kitty Graphics Protocol enables pixel-level graphics rendering in terminals with features superior to Sixel:
+
 - **Base Format**: `<ESC>_G<control data>;<payload><ESC>\` (APC sequence, NOT DCS)
 - **Control Data**: Comma-separated key=value pairs
 - **Payload**: Base64 encoded binary data
@@ -30,13 +31,13 @@ ImageRenderer        -> Plugin integration (create_kitty_cells)
 
 ### Completed Modules
 
-| Module | File | Status |
-|--------|------|--------|
-| KittyParser | `lib/raxol/terminal/ansi/kitty_parser.ex` | Implemented |
-| KittyGraphics | `lib/raxol/terminal/ansi/kitty_graphics.ex` | Implemented |
-| KittyAnimation | `lib/raxol/terminal/ansi/kitty_animation.ex` | Implemented |
-| KittyGraphics Behaviour | `lib/raxol/terminal/ansi/behaviours.ex` | Implemented |
-| APC Handler | `lib/raxol/terminal/input/control_sequence_handler.ex` | Implemented |
+| Module                  | File                                                   | Status      |
+| ----------------------- | ------------------------------------------------------ | ----------- |
+| KittyParser             | `lib/raxol/terminal/ansi/kitty_parser.ex`              | Implemented |
+| KittyGraphics           | `lib/raxol/terminal/ansi/kitty_graphics.ex`            | Implemented |
+| KittyAnimation          | `lib/raxol/terminal/ansi/kitty_animation.ex`           | Implemented |
+| KittyGraphics Behaviour | `lib/raxol/terminal/ansi/behaviours.ex`                | Implemented |
+| APC Handler             | `lib/raxol/terminal/input/control_sequence_handler.ex` | Implemented |
 
 ### Key Technical Notes
 
@@ -96,6 +97,7 @@ end
 ```
 
 **Key Control Data Parameters**:
+
 - `a` - Action: t (transmit), T (transmit+display), p (display), d (delete), q (query)
 - `f` - Format: 24 (RGB), 32 (RGBA), 100 (PNG)
 - `o` - Compression: z (zlib)
@@ -221,12 +223,14 @@ end
 ## Testing (Pending)
 
 **Files to Create**:
+
 - `test/raxol/terminal/ansi/kitty_parser_test.exs`
 - `test/raxol/terminal/ansi/kitty_graphics_test.exs`
 - `test/raxol/terminal/ansi/kitty_animation_test.exs`
 - `test/raxol/terminal/integration/kitty_integration_test.exs`
 
 **Test Coverage**:
+
 - Control data parsing (key=value extraction)
 - Base64 payload decoding
 - Chunked transmission accumulation

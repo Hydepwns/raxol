@@ -15,12 +15,12 @@ vim = Vim.new(buffer)
 
 ## Commands
 
-| Key | Action | Key | Action |
-|-----|--------|-----|--------|
+| Key     | Action             | Key   | Action            |
+| ------- | ------------------ | ----- | ----------------- |
 | h/j/k/l | Left/Down/Up/Right | w/b/e | Word fwd/back/end |
-| gg/G | Top/Bottom | 0/$ | Line start/end |
-| / | Search forward | ? | Search backward |
-| n/N | Next/Prev match | v | Visual mode |
+| gg/G    | Top/Bottom         | 0/$   | Line start/end    |
+| /       | Search forward     | ?     | Search backward   |
+| n/N     | Next/Prev match    | v     | Visual mode       |
 
 ## Configuration
 

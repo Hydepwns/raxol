@@ -25,7 +25,7 @@ Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
 
 ## How It Works
 
-```
+```elixir
 use Raxol.Agent
     |
     v
@@ -114,11 +114,11 @@ Coordinator starts first. With `:rest_for_one`, a coordinator crash restarts all
 
 Commands returned from `update/2` are processed by Lifecycle:
 
-| Command | Helper | Result in update/2 |
-|---------|--------|-------------------|
-| Async | `async(fn sender -> ... end)` | `{:command_result, {:async_result, value}}` |
-| Shell | `shell("ls -la")` | `{:command_result, {:shell_result, %{output: ..., exit_code: ...}}}` |
-| Send Agent | `send_agent(:target, msg)` | Delivered to target as `{:agent_message, from, msg}` |
+| Command    | Helper                        | Result in update/2                                                   |
+| ---------- | ----------------------------- | -------------------------------------------------------------------- |
+| Async      | `async(fn sender -> ... end)` | `{:command_result, {:async_result, value}}`                          |
+| Shell      | `shell("ls -la")`             | `{:command_result, {:shell_result, %{output: ..., exit_code: ...}}}` |
+| Send Agent | `send_agent(:target, msg)`    | Delivered to target as `{:agent_message, from, msg}`                 |
 
 ## Headless Agents
 
@@ -142,7 +142,8 @@ When `view/1` returns `nil` (the default), no rendering happens. The agent is a 
 # {:error, "message"}
 ```
 
-Supports Anthropic, OpenAI, Ollama, and Kimi. Provider is auto-detected from `:base_url` or set via `:provider`.
+Supports Anthropic, OpenAI, Ollama, Grok, Protons's Lumo, and Kimi 2.5/moonshot.
+Provider is auto-detected from `:base_url` or set via `:provider`.
 
 Backend detection tries each in order: Lumo -> Anthropic -> Kimi -> OpenAI -> Ollama -> LLM7 -> Mock. Set `FREE_AI=true` to hit LLM7.io with no API key.
 

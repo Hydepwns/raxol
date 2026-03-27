@@ -132,6 +132,7 @@ Renders buffer to plain ASCII string (no ANSI codes). < 1ms for 80x24 buffer.
 ```
 
 Calculates minimal updates between two buffers. Returns a list of operation tuples:
+
 - `{:move, x, y}` - Move cursor to position
 - `{:write, text, style}` - Write text with style
 - `{:clear_line, y}` - Clear line at y
@@ -195,6 +196,7 @@ Box drawing and area fill utilities.
 ```
 
 Box styles:
+
 - `:single` - Single line
 - `:double` - Double line
 - `:rounded` - Rounded corners
@@ -222,15 +224,15 @@ Performance: ~44us for 10x10, ~1.3ms for full 80x24.
 
 All operations designed for < 1ms on standard 80x24 buffers:
 
-| Operation | Target | Actual (avg) |
-|-----------|--------|--------------|
-| create_blank_buffer | < 1ms | ~0.5ms |
-| write_at | < 1ms | ~0.1ms |
-| get_cell | < 1ms | ~0.001ms |
-| set_cell | < 1ms | ~0.1ms |
-| render_diff | < 2ms | ~2ms |
-| draw_box | < 1ms | 0.04-0.6ms |
-| fill_area (small) | < 1ms | 0.04ms |
+| Operation           | Target | Actual (avg) |
+| ------------------- | ------ | ------------ |
+| create_blank_buffer | < 1ms  | ~0.5ms       |
+| write_at            | < 1ms  | ~0.1ms       |
+| get_cell            | < 1ms  | ~0.001ms     |
+| set_cell            | < 1ms  | ~0.1ms       |
+| render_diff         | < 2ms  | ~2ms         |
+| draw_box            | < 1ms  | 0.04-0.6ms   |
+| fill_area (small)   | < 1ms  | 0.04ms       |
 
 See `bench/core/` for detailed benchmarks.
 

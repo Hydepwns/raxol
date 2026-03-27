@@ -4,7 +4,7 @@ The adaptive subsystem watches how you interact with the interface -- which pane
 
 ## Architecture
 
-```
+```elixir
 BehaviorTracker (records interactions)
     |
     v

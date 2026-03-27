@@ -4,7 +4,7 @@ Raxol uses TOML files for configuration, managed by `Raxol.Config` (backed by Un
 
 ## File Structure
 
-```
+```bash
 config/
 ├── raxol.toml                    # Main config
 ├── raxol.example.toml           # All options documented
@@ -303,6 +303,7 @@ end
 ## Validation Rules
 
 Built-in validation covers:
+
 - Terminal dimensions -- must be positive integers
 - Performance settings -- cache size, worker pool size must be positive
 - Security settings -- session timeout, max sessions must be positive
@@ -314,6 +315,7 @@ Extend validation by modifying `validate_config/1` in `Raxol.Config`.
 **Keep env-specific values out of the main config.** Put them in `environments/*.toml`.
 
 **Document options.** Maintain `raxol.example.toml` with comments:
+
 ```toml
 # Frame rate target for rendering
 # Higher values = smoother animation but more CPU
@@ -322,11 +324,13 @@ fps_target = 60
 ```
 
 **Always provide defaults in code:**
+
 ```elixir
 timeout = Raxol.Config.get([:network, :timeout], default: 5000)
 ```
 
 **Group related settings** with nested tables:
+
 ```toml
 [network]
 timeout = 5000
@@ -340,16 +344,19 @@ overflow = 5
 ## Migrating from Application.get_env
 
 Before:
+
 ```elixir
 width = Application.get_env(:raxol, :terminal_width, 80)
 ```
 
 After:
+
 ```elixir
 width = Raxol.Config.get([:terminal, :width], default: 80)
 ```
 
 Before (`config/config.exs`):
+
 ```elixir
 config :raxol,
   terminal_width: 80,
@@ -357,6 +364,7 @@ config :raxol,
 ```
 
 After (`config/raxol.toml`):
+
 ```toml
 [terminal]
 width = 80
@@ -368,11 +376,13 @@ height = 24
 **Config server not started:** Make sure `{Raxol.Config, []}` is in your supervision tree.
 
 **Invalid TOML syntax:**
+
 ```bash
 mix run -e "File.read!('config/raxol.toml') |> Toml.decode!()"
 ```
 
 **Missing config values:** Always use defaults:
+
 ```elixir
 value = Raxol.Config.get([:section, :key], default: "fallback")
 ```

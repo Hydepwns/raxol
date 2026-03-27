@@ -20,12 +20,12 @@ Cluster BEAM nodes with automatic discovery, track their health, elect a command
 
 `Raxol.Swarm.Discovery` wraps libcluster with preset strategies:
 
-| Strategy | Use Case | Key Options |
-|----------|----------|-------------|
-| `:gossip` | LAN multicast, zero config | -- |
-| `:epmd` | Static node list | `hosts: [:"app@host1", :"app@host2"]` |
-| `:dns` | Fly.io, Kubernetes | `query: "app.internal", node_basename: "app"` |
-| `:tailscale` | Mesh VPN, encrypted | `node_basename: "app", tag_filter: "tag:raxol"` |
+| Strategy     | Use Case                   | Key Options                                     |
+| ------------ | -------------------------- | ----------------------------------------------- |
+| `:gossip`    | LAN multicast, zero config | --                                              |
+| `:epmd`      | Static node list           | `hosts: [:"app@host1", :"app@host2"]`           |
+| `:dns`       | Fly.io, Kubernetes         | `query: "app.internal", node_basename: "app"`   |
+| `:tailscale` | Mesh VPN, encrypted        | `node_basename: "app", tag_filter: "tag:raxol"` |
 
 ```elixir
 Raxol.Swarm.Discovery.available?()  # => true if libcluster is loaded

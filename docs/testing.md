@@ -233,18 +233,18 @@ jobs:
       MIX_ENV: test
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: erlef/setup-beam@v1
-      with:
-        elixir-version: '1.15.7'
-        otp-version: '26.0'
+      - uses: actions/checkout@v2
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.15.7"
+          otp-version: "26.0"
 
-    - run: mix deps.get
-    - run: mix compile --warnings-as-errors
-    - run: mix format --check-formatted
-    - run: mix credo
-    - run: mix test --cover
-    - run: mix dialyzer
+      - run: mix deps.get
+      - run: mix compile --warnings-as-errors
+      - run: mix format --check-formatted
+      - run: mix credo
+      - run: mix test --cover
+      - run: mix dialyzer
 ```
 
 ## Test Configuration

@@ -131,24 +131,29 @@ end
 ## Controls
 
 ### Playback
+
 - `SPACE` -- Play/pause
 - `n` -- Next track
 - `p` -- Previous track
 
 ### Volume
+
 - `+` -- Increase volume by 10%
 - `-` -- Decrease volume by 10%
 
 ### Modes
+
 - `s` -- Toggle shuffle
 - `r` -- Cycle repeat mode (off -> context -> track -> off)
 
 ### Navigation
+
 - `l` -- View playlists
 - `d` -- View devices
 - `/` -- Search
 
 ### General
+
 - `q` -- Quit plugin
 - `ESC` -- Go back (from submenus)
 

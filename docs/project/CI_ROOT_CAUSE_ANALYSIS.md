@@ -16,6 +16,7 @@
 **Error**: `MatchError in cover.erl:2158` - NIF beam files return `:error` atom instead of expected tuple
 
 **Solution**: Removed `--cover` flag (coverage tracked via ExCoveralls elsewhere)
+
 - Commit: 4d3b3f2c
 - Result: 10/10 → 7/10 failures
 
@@ -26,6 +27,7 @@
 **Error**: `Hex.State` module missing on OTP 28.2 - cached archives compiled with OTP 27
 
 **Solution**: Clear `~/.mix/archives/` before Hex installation
+
 - Commits: ff5a4b1d, 1bf6d578, 333c3f8c (attempts), b022b53b (final)
 - Affected: 2/14 jobs (Ubuntu OTP 28.2)
 
@@ -34,16 +36,20 @@
 ## Issue 3: Platform-Specific Failures ✅
 
 ### macOS Performance Test (4 jobs)
+
 **Error**: Concurrent operations took 13ms, expected < 10ms
 
 **Solution**: Tagged `@tag :skip_on_ci`, excluded in nightly workflow
+
 - Test: `test/raxol/terminal/manager_performance_test.exs:66`
 - Timing tests unsuitable for virtualized CI
 
 ### Elixir 1.19.0 LiveComponent (1 job)
+
 **Error**: `BadMapError` - nil map access in LiveComponent tests
 
 **Solution**: Fixed test lifecycle - proper `mount` before `update`
+
 - Test: `test/raxol/liveview/terminal_component_test.exs`
 - Split helper: `make_raw_socket` and `make_socket`
 - Used defensive `Map.get/3` pattern

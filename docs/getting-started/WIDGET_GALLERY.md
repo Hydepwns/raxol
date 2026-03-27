@@ -519,11 +519,11 @@ alias Raxol.UI.Components.Progress.Spinner
 frame = Spinner.spinner(:tick, 0, style: :dots, text: "Loading...")
 ```
 
-| Module | Use case |
-|--------|----------|
-| `Progress.Bar` | Determinate progress with known completion |
-| `Progress.Spinner` | Indeterminate -- something is happening, unknown duration |
-| `Progress.Circular` | Circular/ring-style progress indicator |
+| Module              | Use case                                                  |
+| ------------------- | --------------------------------------------------------- |
+| `Progress.Bar`      | Determinate progress with known completion                |
+| `Progress.Spinner`  | Indeterminate -- something is happening, unknown duration |
+| `Progress.Circular` | Circular/ring-style progress indicator                    |
 
 ---
 
@@ -666,41 +666,41 @@ All component modules follow the same pattern: `init/1` -> `handle_event/3` -> `
 
 ## Quick Reference
 
-| Widget | DSL function | Component module | Interactive? |
-|--------|-------------|-----------------|-------------|
-| column | `column do` | -- | No |
-| row | `row do` | -- | No |
-| box | `box do` | -- | No |
-| spacer | `spacer/1` | -- | No |
-| divider | `divider/1` | -- | No |
-| split_pane | `split_pane/1` | `UI.Layout.SplitPane` | No |
-| text | `text/1` | -- | No |
-| label | `label/1` | -- | No |
-| list | `list/1` | -- | No |
-| progress | `progress/1` | `Display.Progress` | No |
-| table | `table/1` | `Display.Table` | Yes |
-| tree | -- | `Display.Tree` | Yes |
-| viewport | -- | `Display.Viewport` | Yes |
-| status_bar | -- | `Display.StatusBar` | No |
-| code_block | -- | `CodeBlock` | No |
-| markdown | -- | `MarkdownRenderer` | No |
-| image | `image/1` | -- | No |
-| button | `button/1` | `Input.Button` | Yes |
-| text_input | `text_input/1` | `Input.TextInput` | Yes |
-| textarea | `textarea/1` | `Input.MultiLineInput` | Yes |
-| checkbox | `checkbox/1` | `Input.Checkbox` | Yes |
-| radio_group | `radio_group/1` | -- | Yes |
-| select | `select/1` | `Input.SelectList` | Yes |
-| tabs | `tabs/1` | `Input.Tabs` | Yes |
-| menu | -- | `Input.Menu` | Yes |
-| modal | `modal/1` | `Modal` | Yes |
-| sparkline | `sparkline/1` | -- | No |
-| line_chart | `line_chart/1` | -- | No |
-| bar_chart | `bar_chart/1` | -- | No |
-| scatter_chart | `scatter_chart/1` | -- | No |
-| heatmap | `heatmap/1` | -- | No |
-| spinner | -- | `Progress.Spinner` | No |
-| focus_ring | -- | `FocusRing` | No |
+| Widget        | DSL function      | Component module       | Interactive? |
+| ------------- | ----------------- | ---------------------- | ------------ |
+| column        | `column do`       | --                     | No           |
+| row           | `row do`          | --                     | No           |
+| box           | `box do`          | --                     | No           |
+| spacer        | `spacer/1`        | --                     | No           |
+| divider       | `divider/1`       | --                     | No           |
+| split_pane    | `split_pane/1`    | `UI.Layout.SplitPane`  | No           |
+| text          | `text/1`          | --                     | No           |
+| label         | `label/1`         | --                     | No           |
+| list          | `list/1`          | --                     | No           |
+| progress      | `progress/1`      | `Display.Progress`     | No           |
+| table         | `table/1`         | `Display.Table`        | Yes          |
+| tree          | --                | `Display.Tree`         | Yes          |
+| viewport      | --                | `Display.Viewport`     | Yes          |
+| status_bar    | --                | `Display.StatusBar`    | No           |
+| code_block    | --                | `CodeBlock`            | No           |
+| markdown      | --                | `MarkdownRenderer`     | No           |
+| image         | `image/1`         | --                     | No           |
+| button        | `button/1`        | `Input.Button`         | Yes          |
+| text_input    | `text_input/1`    | `Input.TextInput`      | Yes          |
+| textarea      | `textarea/1`      | `Input.MultiLineInput` | Yes          |
+| checkbox      | `checkbox/1`      | `Input.Checkbox`       | Yes          |
+| radio_group   | `radio_group/1`   | --                     | Yes          |
+| select        | `select/1`        | `Input.SelectList`     | Yes          |
+| tabs          | `tabs/1`          | `Input.Tabs`           | Yes          |
+| menu          | --                | `Input.Menu`           | Yes          |
+| modal         | `modal/1`         | `Modal`                | Yes          |
+| sparkline     | `sparkline/1`     | --                     | No           |
+| line_chart    | `line_chart/1`    | --                     | No           |
+| bar_chart     | `bar_chart/1`     | --                     | No           |
+| scatter_chart | `scatter_chart/1` | --                     | No           |
+| heatmap       | `heatmap/1`       | --                     | No           |
+| spinner       | --                | `Progress.Spinner`     | No           |
+| focus_ring    | --                | `FocusRing`            | No           |
 
 All component module paths are under `Raxol.UI.Components.*`.
 

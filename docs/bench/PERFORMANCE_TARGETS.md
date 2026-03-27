@@ -4,15 +4,15 @@ Current performance measurements and goals for Raxol.
 
 ## Measured Results
 
-| Metric | Target | Measured | Status |
-|--------|--------|----------|--------|
-| Parser throughput | < 5 us/op | 0.17-1.25 us/op | Exceeded |
-| Render frame time | < 1ms | 265-283 us | Exceeded |
-| Memory per session | < 3MB | ~2.8MB | Met |
-| Startup time | < 10ms | < 10ms | Met |
-| Response latency | < 2ms P99 | < 2ms | Met |
-| Frame rate | 60 FPS | 60+ FPS | Met |
-| Plugin load time | < 15ms | ~10ms | Met |
+| Metric             | Target    | Measured        | Status   |
+| ------------------ | --------- | --------------- | -------- |
+| Parser throughput  | < 5 us/op | 0.17-1.25 us/op | Exceeded |
+| Render frame time  | < 1ms     | 265-283 us      | Exceeded |
+| Memory per session | < 3MB     | ~2.8MB          | Met      |
+| Startup time       | < 10ms    | < 10ms          | Met      |
+| Response latency   | < 2ms P99 | < 2ms           | Met      |
+| Frame rate         | 60 FPS    | 60+ FPS         | Met      |
+| Plugin load time   | < 15ms    | ~10ms           | Met      |
 
 ## Details
 

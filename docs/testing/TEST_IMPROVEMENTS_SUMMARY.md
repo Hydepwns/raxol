@@ -75,16 +75,19 @@ env TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix compile
 See `docs/testing/TEST_ISOLATION_GUIDE.md` for the full plan.
 
 ### High priority
+
 - [ ] Refactor plugin tests to use unique module names
 - [ ] Move global processes from test_helper.exs to per-test setup
 - [ ] Use `start_supervised!` consistently across all tests
 
 ### Medium priority
+
 - [ ] Create test helper utilities for common setups
 - [ ] Add test isolation enforcement in CI
 - [ ] Audit and fix other tests with similar patterns
 
 ### Low priority
+
 - [ ] Enable `async: true` for safe tests
 - [ ] Add module cleanup in plugin tests
 - [ ] Create test stability monitoring
@@ -92,6 +95,7 @@ See `docs/testing/TEST_ISOLATION_GUIDE.md` for the full plan.
 ## Next Steps
 
 1. Run the full suite 5 times to verify stability:
+
    ```bash
    for i in {1..5}; do
      echo "Run $i"
