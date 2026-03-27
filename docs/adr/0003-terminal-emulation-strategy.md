@@ -1,12 +1,15 @@
 # ADR-0003: Terminal Emulation Strategy
 
 ## Status
+
 Accepted
 
 ## Context
+
 Raxol needs terminal emulation that also supports web deployment via Phoenix LiveView, sixel graphics, mouse input, true color, and Unicode/emoji. Traditional terminal emulators are tightly coupled to system TTY interfaces, which makes them hard to test, impossible to deploy to the web, and difficult to extend.
 
 ## Decision
+
 A layered architecture that separates emulation from I/O and rendering.
 
 1. **Core Emulator** -- pure Elixir VT100/ANSI/xterm implementation
@@ -17,6 +20,7 @@ A layered architecture that separates emulation from I/O and rendering.
 ## Implementation
 
 ### Layers
+
 ```
 +-------------------------------------+
 |         Application Layer           |
@@ -34,6 +38,7 @@ A layered architecture that separates emulation from I/O and rendering.
 ```
 
 ### Driver Behaviour
+
 ```elixir
 defmodule Raxol.Terminal.Driver.Behaviour do
   @callback start_link(dispatcher_pid :: pid()) :: {:ok, pid()}
@@ -45,6 +50,7 @@ end
 ```
 
 ### Backends
+
 ```elixir
 # Native terminal (uses termbox2_nif when available)
 defmodule Raxol.Terminal.Driver do
@@ -83,22 +89,26 @@ end
 ## Consequences
 
 ### Positive
+
 - Same code runs in terminal, browser, and tests
 - Full test coverage without needing a TTY
 - Adding new backends is straightforward
 - Sixel, true color, and Unicode work everywhere
 
 ### Negative
+
 - Multiple layers to understand
 - Abstraction adds some overhead
 - Some terminal-specific features may not translate to all backends
 
 ### Mitigation
+
 - Clear layer boundaries with focused responsibilities
 - EmulatorLite handles performance-critical paths
 - Feature detection with graceful degradation
 
 ## Validation
+
 ```elixir
 mix test                # works without a terminal
 mix raxol.run           # native terminal
@@ -106,11 +116,13 @@ iex> Raxol.Web.start()  # browser
 ```
 
 ## Metrics
+
 - Test coverage: 100% without requiring TTY
 - Web feature parity: 100%
 - Performance overhead: < 5% vs native terminals
 
 ## References
+
 - XTerm Control Sequences: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
 - VT100 User Guide: https://vt100.net/docs/vt100-ug/
 - Sixel Graphics: https://github.com/saitoha/libsixel

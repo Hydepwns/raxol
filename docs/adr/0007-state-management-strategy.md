@@ -1,14 +1,17 @@
 # ADR-0007: State Management Strategy
 
 ## Status
+
 Implemented (Retroactive Documentation)
 
 ## Context
+
 A terminal UI framework with component trees, cross-component communication, web continuity, and real-time collaboration needs something more than "each component holds its own state." But OTP processes are too heavy for individual UI components, and a single mutable global state invites race conditions.
 
 We needed state management that handles component lifecycles, shared state between distant components, efficient re-renders, terminal-web continuity, multi-user collaboration, and time-travel debugging -- while feeling familiar to developers coming from React.
 
 ## Decision
+
 Multi-layered state management combining React-style patterns (Context API, Hooks, Redux store) with terminal-specific additions for continuity and collaboration.
 
 ### 1. Component State (Local)
@@ -149,6 +152,7 @@ User Actions -> Action Creators -> Store Dispatch -> Reducers -> New State -> Co
 ## Consequences
 
 ### Positive
+
 - Familiar React patterns reduce learning curve
 - Fine-grained reactivity minimizes unnecessary re-renders
 - Clear separation between local and global state
@@ -156,12 +160,14 @@ User Actions -> Action Creators -> Store Dispatch -> Reducers -> New State -> Co
 - State synchronization supports multi-user interactions
 
 ### Negative
+
 - More sophisticated than simple component state
 - Hook state and subscriptions use memory
 - Multiple state patterns to learn
 - Complex state flow needs performance monitoring
 
 ### Mitigation
+
 - Start with simple component state, add complexity as needed
 - Built-in debugging and profiling tools
 - Testing utilities for stateful components and hooks
@@ -169,6 +175,7 @@ User Actions -> Action Creators -> Store Dispatch -> Reducers -> New State -> Co
 ## Validation
 
 ### Achieved
+
 - Average re-render time: <2ms
 - Memory overhead: <50KB per active component
 - Tested with 1000+ concurrent components

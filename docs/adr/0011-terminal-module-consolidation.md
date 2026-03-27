@@ -1,6 +1,7 @@
 # ADR-0011: Terminal Module Consolidation
 
 ## Status
+
 Implemented
 
 ## Context
@@ -68,6 +69,7 @@ The audit confirmed existing GenServers (ConfigServer, MetricsCollector) already
 ## Consequences
 
 ### Positive
+
 - One module per concern, no more guessing
 - 16 fewer modules to maintain
 - Clearer architecture for new contributors
@@ -75,10 +77,12 @@ The audit confirmed existing GenServers (ConfigServer, MetricsCollector) already
 - Fewer code paths means more focused tests
 
 ### Negative
+
 - Callers of deprecated modules need updates
 - Must maintain deprecated modules until v3.0
 
 ### Mitigation
+
 - Old modules continue to work during transition
 - Deprecation warnings guide users to replacements
 - Migration paths documented in module docs

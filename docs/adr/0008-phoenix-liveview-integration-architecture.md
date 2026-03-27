@@ -1,9 +1,11 @@
 # ADR-0008: Phoenix LiveView Integration Architecture
 
 ## Status
+
 Implemented (Retroactive Documentation)
 
 ## Context
+
 Terminal apps traditionally live in local command-line environments. A web interface adds remote access, collaboration, cross-platform consistency, and the ability to embed terminal UIs in web applications. But the integration is tricky -- terminal interactions need low-latency bidirectional communication, state must stay synchronized, and web exposure brings security concerns.
 
 Previous approaches (VNC, iframes, custom WebSocket protocols, server-side rendering) all fall short on either latency, integration quality, or real-time interaction.
@@ -11,6 +13,7 @@ Previous approaches (VNC, iframes, custom WebSocket protocols, server-side rende
 We needed native Phoenix integration, real-time bidirectional terminal I/O, and performance that can handle high-frequency terminal updates.
 
 ## Decision
+
 Build on Phoenix LiveView's WebSocket infrastructure and reactive model for real-time terminal interfaces with collaboration support.
 
 ### Components
@@ -123,6 +126,7 @@ Only changed regions get re-rendered. Rate limiting prevents abuse. Visible regi
 ## Consequences
 
 ### Positive
+
 - Terminal apps accessible from any browser
 - Multiple users can interact with the same session
 - Native Phoenix integration
@@ -130,6 +134,7 @@ Only changed regions get re-rendered. Rate limiting prevents abuse. Visible regi
 - Built-in rate limiting, input validation, session management
 
 ### Negative
+
 - Additional web layer increases complexity
 - Each web session uses memory and a WebSocket connection
 - Requires network connectivity
@@ -137,6 +142,7 @@ Only changed regions get re-rendered. Rate limiting prevents abuse. Visible regi
 - Some terminal features limited by browser capabilities
 
 ### Mitigation
+
 - Web interface is opt-in; terminal works standalone
 - Automatic session cleanup and connection pooling
 - Graceful degradation when network drops
@@ -145,6 +151,7 @@ Only changed regions get re-rendered. Rate limiting prevents abuse. Visible regi
 ## Validation
 
 ### Achieved
+
 - Round-trip latency: <50ms
 - Concurrent sessions: 100+ tested
 - Real-time multi-user editing with conflict resolution

@@ -1,9 +1,11 @@
 # ADR-0005: Runtime Plugin System Architecture
 
 ## Status
+
 Implemented (Retroactive Documentation)
 
 ## Context
+
 A terminal framework needs extensibility without bloating the core. The usual approaches all have problems:
 
 - **Static libraries** require recompilation and can't be updated independently
@@ -14,6 +16,7 @@ A terminal framework needs extensibility without bloating the core. The usual ap
 We needed plugins that can be loaded and unloaded at runtime, have full system access within security boundaries, preserve state across reloads, manage dependencies between each other, and support file watching for development-time auto-reload.
 
 ## Decision
+
 Build a runtime plugin system on Elixir's native code loading with lifecycle management and security boundaries.
 
 ### Architecture
@@ -21,6 +24,7 @@ Build a runtime plugin system on Elixir's native code loading with lifecycle man
 **Plugin Manager** (`lib/raxol/core/runtime/plugins/manager.ex`) -- central coordinator for plugin lifecycle. Maintains state, metadata, and dependency graphs. Handles hot loading/unloading.
 
 **Plugin Behaviour** (`lib/raxol/core/runtime/plugins/plugin.ex`):
+
 ```elixir
 @callback init(config :: config()) :: {:ok, state()} | {:error, any()}
 @callback terminate(reason :: any(), state :: state()) :: any()
@@ -41,6 +45,7 @@ Build a runtime plugin system on Elixir's native code loading with lifecycle man
 **Security** -- BEAM bytecode analysis detects security-sensitive operations (file access, network access, code injection, system commands). Configurable policies validate plugins before loading. Capability-based permissions with audit logging.
 
 ### Writing a Plugin
+
 ```elixir
 defmodule MyPlugin do
   use Raxol.Plugin
@@ -69,6 +74,7 @@ Raxol.Plugins.reload("my_plugin")
 ```
 
 ### Hot Reloading Flow
+
 1. File watcher detects changes
 2. Snapshot current plugin state
 3. Gracefully disable and clean up
@@ -77,6 +83,7 @@ Raxol.Plugins.reload("my_plugin")
 6. Re-enable with preserved/migrated state
 
 ### Plugin Operations
+
 ```elixir
 plugins = Raxol.Plugins.discover("/path/to/plugins")
 Raxol.Plugins.load_batch(plugins)
@@ -89,6 +96,7 @@ Raxol.Plugins.unload("plugin_name")
 ## Consequences
 
 ### Positive
+
 - New functionality without core changes
 - Hot reloading for rapid plugin development
 - Clear separation between core and extensions
@@ -96,12 +104,14 @@ Raxol.Plugins.unload("plugin_name")
 - Minimal overhead when plugins aren't active
 
 ### Negative
+
 - More complex than static linking
 - Plugin manager and state isolation use memory
 - Plugin API increases the attack surface
 - API must be maintained and versioned
 
 ### Mitigation
+
 - Plugin system is optional; core works without it
 - Security-first API design with BEAM bytecode analysis
 - Built-in metrics for monitoring plugin impact
@@ -109,6 +119,7 @@ Raxol.Plugins.unload("plugin_name")
 ## Validation
 
 ### Achieved
+
 - Hot reload time: <500ms with state preservation
 - Plugin failures don't affect core stability
 - Event processing overhead: <1ms

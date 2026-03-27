@@ -1,15 +1,19 @@
 # ADR-0001: Component-Based Architecture
 
 ## Status
+
 Accepted
 
 ## Context
+
 Building terminal UIs with raw cursor movements and ANSI escape codes is tedious and error-prone. It doesn't scale to complex interfaces. Web frameworks like React and Phoenix LiveView have shown that declarative, component-based UI programming is more productive and maintainable than imperative approaches.
 
 ## Decision
+
 Raxol uses a component-based architecture modeled after React and Phoenix LiveView.
 
 The key pieces:
+
 1. **Declarative components** -- UI is a function of state
 2. **Virtual terminal** -- an in-memory representation of the screen, diffed before rendering
 3. **Lifecycle hooks** -- mount, update, render, unmount
@@ -19,6 +23,7 @@ The key pieces:
 ## Implementation
 
 ### Component Structure
+
 ```elixir
 defmodule MyComponent do
   use Raxol.Component
@@ -45,6 +50,7 @@ end
 ```
 
 ### Virtual Terminal Benefits
+
 - Only re-renders changed portions of the screen
 - Components are testable without an actual terminal
 - Same code works in terminal and web contexts
@@ -52,26 +58,31 @@ end
 ## Consequences
 
 ### Positive
+
 - Familiar model for anyone coming from web development
 - Components are reusable and shareable
 - Clear separation of concerns
 - Easy to unit test
 
 ### Negative
+
 - Adds a learning curve for the component model
 - Virtual terminal introduces abstraction overhead
 - Maintaining virtual state uses more memory
 
 ### Mitigation
+
 - EmulatorLite bypasses GenServer overhead for performance-critical paths
 - Efficient diff algorithms and buffer pooling keep memory in check
 
 ## Metrics
+
 - Component render time: < 1ms typical
 - Memory per component: < 1KB for simple components
 - Target onboarding time: 5 minutes to first component
 
 ## References
+
 - React Component Model: https://react.dev/learn/thinking-in-react
 - Phoenix LiveView: https://hexdocs.pm/phoenix_live_view
 - Elm Architecture: https://guide.elm-lang.org/architecture/

@@ -1,14 +1,17 @@
 # ADR-0009: High-Performance Buffer Management
 
 ## Status
+
 Implemented (Retroactive Documentation)
 
 ## Context
+
 Terminal emulators deal with thousands of character updates per second, concurrent access from multiple components (renderer, parser, input handler), large scrollback buffers, and the need to only re-render what changed. The original Raxol buffer was a monolithic GenServer that became a bottleneck as complexity grew.
 
 Problems with monolithic buffers: blocking synchronous operations, full-screen redraws on every change, inefficient memory for sparse content, and linear performance degradation with buffer size.
 
 ## Decision
+
 Modular buffer architecture with specialized modules for each concern. This achieved a 42,000x performance improvement over the original implementation.
 
 ### Architecture
@@ -106,6 +109,7 @@ Telemetry-based metrics for operation latency and memory consumption via `:telem
 ## Consequences
 
 ### Positive
+
 - 42,000x faster batch operations than original
 - Thread-safe concurrent access with minimal blocking
 - Memory usage optimized with configurable limits
@@ -114,11 +118,13 @@ Telemetry-based metrics for operation latency and memory consumption via `:telem
 - Performance scales with actual changes, not buffer size
 
 ### Negative
+
 - More complex than a single-module buffer
 - Damage tracking and operation queues use extra memory
 - Multiple interacting modules need thorough testing
 
 ### Mitigation
+
 - Built-in benchmarking tools validate optimizations
 - Backwards-compatible API during transition
 - Debugging and profiling tools for buffer operations
@@ -126,6 +132,7 @@ Telemetry-based metrics for operation latency and memory consumption via `:telem
 ## Validation
 
 ### Achieved
+
 - 42,000x faster batch operations
 - Operation latency: <100us typical
 - 60% memory reduction for typical terminal content
