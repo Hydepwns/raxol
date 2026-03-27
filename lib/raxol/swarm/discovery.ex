@@ -17,6 +17,10 @@ defmodule Raxol.Swarm.Discovery do
       # DNS polling (Fly.io, Kubernetes)
       Discovery.start_link(strategy: :dns, query: "raxol.internal", node_basename: "raxol")
 
+      # Tailscale mesh (automatic peer discovery via tailnet)
+      Discovery.start_link(strategy: :tailscale, node_basename: "raxol")
+      Discovery.start_link(strategy: :tailscale, node_basename: "raxol", tag_filter: "tag:raxol")
+
       # Custom libcluster topology
       Discovery.start_link(topologies: [my_cluster: [strategy: Cluster.Strategy.Gossip]])
 
@@ -31,7 +35,7 @@ defmodule Raxol.Swarm.Discovery do
 
   require Logger
 
-  @type preset :: :gossip | :epmd | :dns
+  @type preset :: :gossip | :epmd | :dns | :tailscale
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
@@ -101,6 +105,7 @@ defmodule Raxol.Swarm.Discovery do
       :gossip -> gossip_topology(opts)
       :epmd -> epmd_topology(opts)
       :dns -> dns_topology(opts)
+      :tailscale -> tailscale_topology(opts)
     end
   end
 
@@ -150,6 +155,31 @@ defmodule Raxol.Swarm.Discovery do
           ]
         ]
       ]
+    end
+  end
+
+  defp tailscale_topology(opts) do
+    node_basename = Keyword.get(opts, :node_basename, "raxol")
+    poll_interval = Keyword.get(opts, :poll_interval, 5_000)
+
+    config =
+      [node_basename: node_basename, poll_interval: poll_interval]
+      |> maybe_add(opts, :tag_filter)
+      |> maybe_add(opts, :use_dns_names)
+      |> maybe_add(opts, :tailscale_cli)
+
+    [
+      raxol_tailscale: [
+        strategy: Raxol.Swarm.Strategy.Tailscale,
+        config: config
+      ]
+    ]
+  end
+
+  defp maybe_add(config, opts, key) do
+    case Keyword.get(opts, key) do
+      nil -> config
+      value -> Keyword.put(config, key, value)
     end
   end
 end
