@@ -95,6 +95,13 @@ defmodule Raxol.Swarm.Topology do
     quorum_size = Keyword.get(opts, :quorum_size, 1)
     node_monitor = Keyword.get(opts, :node_monitor, Raxol.Swarm.NodeMonitor)
 
+    # Subscribe to NodeMonitor for automatic node tracking
+    try do
+      Raxol.Swarm.NodeMonitor.subscribe(node_monitor)
+    catch
+      :exit, _ -> :ok
+    end
+
     now = System.monotonic_time(:millisecond)
 
     self_info = %{role: :wingmate, joined_at: now}
@@ -195,6 +202,39 @@ defmodule Raxol.Swarm.Topology do
 
     {:noreply, state}
   end
+
+  @impl true
+  def handle_info({:swarm_event, {:node_up, node}}, %__MODULE__{} = state) do
+    if Map.has_key?(state.nodes, node) do
+      {:noreply, state}
+    else
+      now = System.monotonic_time(:millisecond)
+      info = %{role: :wingmate, joined_at: now}
+      state = %__MODULE__{state | nodes: Map.put(state.nodes, node, info)}
+      Logger.info("Swarm topology: node joined via discovery: #{node}")
+      state = run_election(state)
+      {:noreply, state}
+    end
+  end
+
+  @impl true
+  def handle_info({:swarm_event, {:node_down, node}}, %__MODULE__{} = state) do
+    state = %__MODULE__{state | nodes: Map.delete(state.nodes, node)}
+    Logger.info("Swarm topology: node left via discovery: #{node}")
+
+    state =
+      if state.commander == node do
+        Logger.info("Swarm topology: commander lost, re-electing")
+        run_election(state)
+      else
+        state
+      end
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({:swarm_event, _}, state), do: {:noreply, state}
 
   @impl true
   def handle_info(msg, state) do

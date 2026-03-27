@@ -153,6 +153,44 @@ defmodule Raxol.Swarm.TacticalOverlayTest do
     end
   end
 
+  describe "auto-discovery via NodeMonitor events" do
+    test "adds peer on :node_up swarm event", %{overlay: overlay, pid: pid} do
+      send(pid, {:swarm_event, {:node_up, :new_peer@host}})
+      Process.sleep(10)
+
+      state = TacticalOverlay.get_overlay_state(overlay)
+      assert :new_peer@host in state.peers
+    end
+
+    test "removes peer on :node_down swarm event", %{overlay: overlay, pid: pid} do
+      send(pid, {:swarm_event, {:node_up, :temp_peer@host}})
+      Process.sleep(10)
+
+      send(pid, {:swarm_event, {:node_down, :temp_peer@host}})
+      Process.sleep(10)
+
+      state = TacticalOverlay.get_overlay_state(overlay)
+      refute :temp_peer@host in state.peers
+    end
+
+    test "duplicate node_up does not create duplicate peer", %{pid: pid, overlay: overlay} do
+      send(pid, {:swarm_event, {:node_up, :dup_peer@host}})
+      send(pid, {:swarm_event, {:node_up, :dup_peer@host}})
+      Process.sleep(10)
+
+      state = TacticalOverlay.get_overlay_state(overlay)
+      assert Enum.count(state.peers, &(&1 == :dup_peer@host)) == 1
+    end
+
+    test "ignores unrelated swarm events", %{pid: pid, overlay: overlay} do
+      send(pid, {:swarm_event, {:status_change, :x@host, :healthy, :suspect}})
+      Process.sleep(10)
+
+      state = TacticalOverlay.get_overlay_state(overlay)
+      assert state.peers == []
+    end
+  end
+
   describe "delta receive" do
     test "merges remote entity updates", %{overlay: overlay} do
       alias Raxol.Swarm.CRDT.LWWRegister

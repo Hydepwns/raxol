@@ -300,8 +300,8 @@ defmodule Raxol.MixProject do
       {:gettext, "~> 1.0"},
       # File system watching
       {:file_system, "~> 1.1"},
-      # DNS clustering (removed - unused)
-      # {:dns_cluster, "~> 0.1"},
+      # Automatic cluster node discovery (optional, for Swarm)
+      {:libcluster, "~> 3.4", optional: true},
 
       # Telemetry & monitoring
       {:telemetry, "~> 1.3"},

@@ -152,6 +152,14 @@ defmodule Raxol.Swarm.TacticalOverlay do
 
     comms_manager = Keyword.get(opts, :comms_manager, Raxol.Swarm.CommsManager)
     peers = Keyword.get(opts, :peers, [])
+    node_monitor = Keyword.get(opts, :node_monitor, Raxol.Swarm.NodeMonitor)
+
+    # Subscribe to NodeMonitor for automatic peer tracking
+    try do
+      Raxol.Swarm.NodeMonitor.subscribe(node_monitor)
+    catch
+      :exit, _ -> :ok
+    end
 
     state = %__MODULE__{
       node_id: node_id,
@@ -333,6 +341,25 @@ defmodule Raxol.Swarm.TacticalOverlay do
     {:noreply,
      %__MODULE__{state | subscribers: List.delete(state.subscribers, pid)}}
   end
+
+  @impl true
+  def handle_info({:swarm_event, {:node_up, node}}, %__MODULE__{} = state) do
+    if node in state.peers do
+      {:noreply, state}
+    else
+      Logger.info("Swarm overlay: peer added via discovery: #{node}")
+      {:noreply, %__MODULE__{state | peers: [node | state.peers]}}
+    end
+  end
+
+  @impl true
+  def handle_info({:swarm_event, {:node_down, node}}, %__MODULE__{} = state) do
+    Logger.info("Swarm overlay: peer removed via discovery: #{node}")
+    {:noreply, %__MODULE__{state | peers: List.delete(state.peers, node)}}
+  end
+
+  @impl true
+  def handle_info({:swarm_event, _}, state), do: {:noreply, state}
 
   @impl true
   def handle_info(msg, state) do

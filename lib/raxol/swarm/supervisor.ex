@@ -3,10 +3,11 @@ defmodule Raxol.Swarm.Supervisor do
   Supervisor for the distributed swarm subsystem.
 
   Start order matters:
-  1. NodeMonitor -- provides health data
-  2. CommsManager -- uses health data
-  3. Topology -- uses comms
-  4. TacticalOverlay -- uses all three
+  1. Discovery -- auto-connects nodes via libcluster (optional)
+  2. NodeMonitor -- provides health data
+  3. CommsManager -- uses health data
+  4. Topology -- subscribes to NodeMonitor, runs elections
+  5. TacticalOverlay -- subscribes to NodeMonitor, syncs CRDTs to peers
 
   Strategy: one_for_one. Each module can crash and restart independently.
   NodeMonitor re-discovers nodes on restart. CommsManager re-probes links.
@@ -23,18 +24,24 @@ defmodule Raxol.Swarm.Supervisor do
 
   @impl true
   def init(opts) do
+    discovery_opts = Keyword.get(opts, :discovery, [])
     node_monitor_opts = Keyword.get(opts, :node_monitor, [])
     comms_opts = Keyword.get(opts, :comms_manager, [])
     topology_opts = Keyword.get(opts, :topology, [])
     overlay_opts = Keyword.get(opts, :tactical_overlay, [])
 
-    children = [
-      {Raxol.Swarm.NodeMonitor, node_monitor_opts},
-      {Raxol.Swarm.CommsManager, comms_opts},
-      {Raxol.Swarm.Topology, topology_opts},
-      {Raxol.Swarm.TacticalOverlay, overlay_opts}
-    ]
+    children =
+      maybe_discovery(discovery_opts) ++
+        [
+          {Raxol.Swarm.NodeMonitor, node_monitor_opts},
+          {Raxol.Swarm.CommsManager, comms_opts},
+          {Raxol.Swarm.Topology, topology_opts},
+          {Raxol.Swarm.TacticalOverlay, overlay_opts}
+        ]
 
     Supervisor.init(children, strategy: :one_for_one)
   end
+
+  defp maybe_discovery([]), do: []
+  defp maybe_discovery(opts), do: [{Raxol.Swarm.Discovery, opts}]
 end

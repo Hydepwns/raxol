@@ -27,6 +27,7 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 - **Distributed Swarm** -- CRDTs (LWW registers, OR-sets), node monitoring, seniority-based topology election, tactical overlay sync
 - **Self-Evolving Interface** -- Behavior tracking, rule-based layout recommendations, animated transitions, feedback loop
 - **AI Cockpit + Streaming** -- Real AI agents analyzing codebases in multi-pane terminal dashboard. Backend.HTTP streaming (SSE) for Anthropic/OpenAI/Ollama. Pilot takeover for follow-up questions. Free tier via LLM7.io (no API key). Mock fallback for offline use.
+- **libcluster Discovery** -- Automatic node discovery for Swarm via libcluster (optional dep). Strategy presets: gossip (LAN multicast), epmd (static hosts), dns (Fly.io/K8s). NodeMonitor events auto-wire to Topology (elections) and TacticalOverlay (peer sync).
 
 ---
 
@@ -59,6 +60,7 @@ Future providers:
 - Multi-node cockpit (swarm coordination across physical terminals)
 - Plugin marketplace
 - VS Code extension for component previews
+- Burrito packaging (single standalone binary)
 
 ---
 
