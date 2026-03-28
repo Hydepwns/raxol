@@ -75,7 +75,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       plugin_manager_struct: Raxol.Plugins.Manager.new(),
       command_registry_table: initial_state.command_registry_table,
       rendering_engine: Map.get(initial_state, :rendering_engine),
-      current_theme_id: UserPreferences.get_theme_id(),
+      current_theme_id: safe_get_theme_id(),
       command_module: command_module,
       time_travel: Map.get(initial_state, :time_travel),
       cycle_profiler: Map.get(initial_state, :cycle_profiler)
@@ -645,6 +645,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # --- Helper Functions for Pattern Matching ---
 
+  defp safe_get_theme_id do
+    UserPreferences.get_theme_id()
+  catch
+    :exit, _ -> :default
+  end
+
   defp send_test_ready_message(:test),
     do: send(self(), {:dispatcher_ready, self()})
 
@@ -655,7 +661,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   defp apply_theme_update(false, state, updated_model, new_theme_id) do
-    :ok = UserPreferences.set("theme.active_id", new_theme_id)
+    try do
+      UserPreferences.set("theme.active_id", new_theme_id)
+    catch
+      :exit, _ -> :ok
+    end
+
     %{state | model: updated_model, current_theme_id: new_theme_id}
   end
 
