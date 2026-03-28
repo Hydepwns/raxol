@@ -12,7 +12,6 @@ defmodule Raxol.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       elixirc_options: [
         warnings_as_errors: Mix.env() == :prod,
-        ignore_module_conflict: true,
         compile_order: [:cell, :operations]
       ],
       compilers: compilers(),
