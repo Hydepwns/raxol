@@ -15,8 +15,8 @@ alias Raxol.UI.Charts.BrailleCanvas
 sigma = 10.0
 rho = 28.0
 beta = 8.0 / 3.0
-dt = 0.005
-steps = 40_000
+dt = 0.003
+steps = 100_000
 
 {points, _} =
   Enum.reduce(1..steps, {[{1.0, 1.0, 1.0}], {1.0, 1.0, 1.0}}, fn _,
@@ -33,8 +33,8 @@ steps = 40_000
 
 # -- Canvas setup --
 
-canvas_w = 80
-canvas_h = 25
+canvas_w = 140
+canvas_h = 40
 canvas = BrailleCanvas.new(canvas_w, canvas_h)
 
 {dot_w, dot_h} = BrailleCanvas.get_dimensions(canvas)
@@ -63,19 +63,37 @@ end
 
 # -- Plot two projections onto BrailleCanvas layers --
 
-# Layer 0 (cyan): x vs z projection
+# Oblique rotation angle for depth layer
+angle = :math.pi() / 7.0
+cos_a = :math.cos(angle)
+sin_a = :math.sin(angle)
+
+# Compute rotated bounds for layer 1
+rotated =
+  Enum.map(points, fn {x, y, _z} ->
+    cos_a * x + sin_a * y
+  end)
+
+r_min = Enum.min(rotated)
+r_max = Enum.max(rotated)
+
+# Layer 0 (cyan): x vs y — top-down butterfly showing both wings
 canvas =
-  Enum.reduce(points, canvas, fn {x, _y, z}, c ->
+  Enum.reduce(points, canvas, fn {x, y, _z}, c ->
     dx = scale.(x, x_min, x_max, dot_w)
-    dy = scale.(z, z_min, z_max, dot_h)
+    dy = scale.(y, y_min, y_max, dot_h)
     BrailleCanvas.put_dot(c, dx, dy, 0)
   end)
 
-# Layer 1 (magenta): y vs z projection, slight offset for visual depth
+# Layer 1 (magenta): oblique rotation vs z — depth/shadow with real offset
+# Plot every 3rd point for a lighter, more ethereal depth layer
 canvas =
-  Enum.reduce(points, canvas, fn {_x, y, z}, c ->
-    dx = scale.(y, y_min, y_max, dot_w) + 3
-    dy = scale.(z, z_min, z_max, dot_h) + 2
+  points
+  |> Enum.take_every(3)
+  |> Enum.reduce(canvas, fn {x, y, z}, c ->
+    rx = cos_a * x + sin_a * y
+    dx = scale.(rx, r_min, r_max, dot_w) + 10
+    dy = scale.(z, z_min, z_max, dot_h) + 6
     BrailleCanvas.put_dot(c, dx, dy, 1)
   end)
 
@@ -145,15 +163,15 @@ html = """
   }
   .chart {
     position: absolute;
-    top: 65%;
+    top: 62%;
     left: 50%;
-    transform: translate(-50%, -50%) scale(1.25);
+    transform: translate(-50%, -50%) scale(1.0);
     padding-bottom: 200px;
     font-family: 'Monaspace Neon', 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 16.5px;
-    line-height: 1.15;
+    font-size: 11px;
+    line-height: 1.1;
     white-space: pre;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
   }
   .wordmark {
     position: absolute;
@@ -216,9 +234,9 @@ html = """
 </html>
 """
 
-output_path = Path.join([__DIR__, "social_preview.html"])
+output_path = Path.join([System.tmp_dir!(), "raxol_social_preview.html"])
 File.write!(output_path, html)
-IO.puts("Wrote #{output_path}")
+IO.puts("Wrote #{output_path} (temp)")
 
 # Attempt headless Chrome screenshot
 project_root = Path.dirname(__DIR__)
@@ -252,6 +270,7 @@ if chrome do
 
   case System.cmd(chrome, args, stderr_to_stdout: true) do
     {_output, 0} ->
+      File.rm(output_path)
       IO.puts("Wrote #{png_path}")
 
     {output, code} ->
