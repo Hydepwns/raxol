@@ -128,11 +128,10 @@ defmodule Raxol.MixProject do
     do: [
       "lib",
       "test/support",
-      "examples/demos",
-      "lib/raxol/terminal/buffer/cell.ex"
+      "examples/demos"
     ]
 
-  defp elixirc_paths(_), do: ["lib", "lib/raxol/terminal/buffer/cell.ex"]
+  defp elixirc_paths(_), do: ["lib"]
 
   defp test_applications do
     if Mix.env() == :test do

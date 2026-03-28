@@ -97,73 +97,63 @@ use Raxol.UI, framework: :heex       # Phoenix templates
 use Raxol.UI, framework: :raw        # Direct terminal control
 ```
 
-### Core Layers
+### Extracted Packages
+
+The codebase is decomposed into focused packages under `packages/`:
+
+```
+packages/
+├── raxol_core/      # Behaviours, utils, events, config, accessibility, plugins
+├── raxol_terminal/  # Terminal emulation (VT100/ANSI), termbox2 NIF, screen buffer
+├── raxol_sensor/    # Sensor fusion (zero Raxol deps)
+└── raxol_agent/     # AI agent framework (depends on main raxol)
+```
+
+**Dependency graph** (arrows = "depends on"):
+
+```
+raxol (main) --> raxol_core, raxol_terminal, raxol_sensor
+raxol_terminal --> raxol_core
+raxol_agent --> raxol (main does NOT depend on raxol_agent)
+raxol_core --> telemetry (only external dep)
+raxol_sensor --> (none)
+```
+
+Cross-package references use `@compile {:no_warn_undefined, Module}` and `Code.ensure_loaded?/1` guards. Struct patterns across package boundaries use map patterns (`%{field: x}`) instead of struct patterns (`%Struct{field: x}`).
+
+**Package test commands:**
+
+```bash
+cd packages/raxol_core && MIX_ENV=test mix test       # 765 tests
+cd packages/raxol_terminal && MIX_ENV=test mix test    # 1874 tests
+cd packages/raxol_sensor && MIX_ENV=test mix test      # 55 tests
+cd packages/raxol_agent && MIX_ENV=test mix test       # 131 tests
+```
+
+### Core Layers (main raxol)
 
 ```
 lib/raxol/
-├── agent/           # AI agent framework (TEA-based)
-│   ├── session.ex   # GenServer wrapping Lifecycle (environment: :agent)
-│   ├── team.ex      # OTP Supervisor for agent groups
-│   └── comm.ex      # Inter-agent messaging primitives
-├── agent.ex         # `use Raxol.Agent` macro
-├── terminal/        # Terminal emulation (VT100/ANSI)
-│   ├── ansi/        # ANSI sequence parsing
-│   ├── buffer/      # Screen buffer management
-│   ├── commands/    # Command processing (CSI/OSC/DCS handlers, executor)
-│   ├── emulator/    # Terminal emulator
-│   ├── rendering/   # Terminal rendering (backend, GPU, styles)
-│   └── driver.ex    # Platform-specific backend selection
 ├── ui/              # Multi-framework UI
 │   ├── components/  # Widgets: TextInput, Table, Button, Modal, SelectList, Checkbox, Tree, etc.
 │   ├── charts/      # Streaming charts: LineChart, ScatterChart, BarChart, Heatmap, BrailleCanvas
 │   ├── layout/      # Flexbox and CSS grid layout engines
 │   ├── rendering/   # UI rendering (TreeDiffer, Composer, Painter, DamageTracker, etc.)
 │   └── theming/
-├── core/            # Services and utilities
-│   ├── behaviours/  # BaseManager pattern for GenServers
+├── core/            # Services and utilities (runtime stays here; behaviours/events/config in raxol_core)
 │   ├── renderer/    # Core rendering primitives (layout, views)
 │   ├── runtime/     # Plugin system, lifecycle, event management
 │   └── *_compat.ex  # Compatibility layers (Buffer, Renderer, Style, Box)
 ├── adaptive/        # Self-evolving interface (behavior tracking, layout recommendations)
-│   ├── behavior_tracker.ex    # GenServer: pilot interaction recording + windowed aggregation
-│   ├── layout_recommender.ex  # GenServer: rule-based layout change recommendations
-│   ├── layout_transition.ex   # Pure functional layout interpolation (lerp + easing)
-│   ├── feedback_loop.ex       # GenServer: accept/reject tracking + accuracy computation
-│   └── supervisor.ex          # one_for_one: BehaviorTracker, LayoutRecommender, FeedbackLoop
 ├── debug/           # Time-travel debugger (snapshot TEA state per update cycle)
-│   ├── snapshot.ex  # Snapshot struct + recursive map diff
-│   └── time_travel.ex # GenServer: CircularBuffer history, cursor nav, restore, export/import
 ├── recording/       # Session recording & replay (Asciinema v2 format)
-│   ├── recorder.ex  # GenServer: captures output/input events with timestamps
-│   ├── session.ex   # Session data struct (dimensions, events, metadata)
-│   ├── player.ex    # Streaming replay with pause/seek/speed controls
-│   └── asciicast.ex # Asciinema v2 .cast file format I/O
-├── sensor/          # Sensor fusion and HUD rendering
-│   ├── behaviour.ex # Sensor behaviour + Reading struct
-│   ├── feed.ex      # GenServer: polling, buffering, error escalation
-│   ├── fusion.ex    # GenServer: batching, weighted averaging, thresholds
-│   ├── hud.ex       # Pure functional HUD widgets (gauge, sparkline, threat, minimap)
-│   └── supervisor.ex # rest_for_one: Registry + DynSup + Fusion
 ├── swarm/           # Distributed subsystem (CRDTs, node monitoring, topology)
 │   ├── discovery.ex   # libcluster wrapper with strategy presets
 │   ├── strategy/      # Custom libcluster strategies (Tailscale)
-│   ├── node_monitor.ex # Health/RTT tracking, :net_kernel.monitor_nodes
-│   ├── topology.ex    # Seniority-based election, role management
-│   ├── comms_manager.ex # Bandwidth-aware message routing
-│   ├── tactical_overlay.ex # CRDT-backed shared state sync
 │   └── crdt/          # LWWRegister, ORSet (pure functional)
 ├── playground/      # Interactive widget catalog (28 demos, 8 categories)
-│   ├── catalog.ex   # Demo registry with metadata (category, complexity, description)
-│   ├── app.ex       # TEA app: search, filter by category/complexity, help overlay
-│   └── demos/       # Self-contained TEA demo apps (one per widget/chart)
 ├── ssh/             # SSH serving
-│   ├── server.ex    # :ssh.daemon wrapper, host key management
-│   ├── session.ex   # Per-connection Lifecycle wrapper
-│   ├── cli_handler.ex # SSH channel <-> Raxol event translation
-│   └── io_adapter.ex  # IO stream adapter for SSH channels
 ├── repl/            # Interactive REPL
-│   ├── evaluator.ex # Code.eval_string with timeout, IO capture, persistent bindings
-│   └── sandbox.ex   # AST-based safety checker (3 levels: none/standard/strict)
 ├── performance/     # Performance monitoring, profiling, caching
 ├── live_view/       # Phoenix LiveView integration (terminal + browser bridge)
 └── effects/         # Visual effects (CursorTrail, etc.)
@@ -171,12 +161,12 @@ lib/raxol/
 
 ### Key Architectural Decisions
 
-**Terminal Backend**: Automatic platform detection in `lib/raxol/terminal/driver.ex`
+**Terminal Backend**: Automatic platform detection in `packages/raxol_terminal/lib/raxol/terminal/driver.ex`
 
-- Unix/macOS: Native termbox2 NIF (`lib/termbox2_nif/c_src/`)
-- Windows: Pure Elixir IOTerminal (`lib/raxol/terminal/io_terminal.ex`)
+- Unix/macOS: Native termbox2 NIF (`packages/raxol_terminal/lib/termbox2_nif/c_src/`)
+- Windows: Pure Elixir IOTerminal (`packages/raxol_terminal/lib/raxol/terminal/io_terminal.ex`)
 
-**Compat Layer**: The `lib/raxol/core/*_compat.ex` files provide the public `Raxol.Core.*` API (Buffer, Renderer, Style, Box). These override modules from deps via `ignore_module_conflict: true` in mix.exs.
+**Compat Layer**: The `lib/raxol/core/*_compat.ex` files provide the public `Raxol.Core.*` API (Buffer, Renderer, Style, Box).
 
 **BaseManager Pattern**: GenServers use `use Raxol.Core.Behaviours.BaseManager` for consistent lifecycle management.
 
@@ -184,7 +174,7 @@ lib/raxol/
 
 **Configuration**: TOML-based (`config/raxol.example.toml` as template) with environment overrides in `config/environments/`
 
-**Agent Framework**: `use Raxol.Agent` creates TEA apps for AI agents. `Agent.Session` wraps Lifecycle with `environment: :agent` (skips terminal driver and plugin manager, uses anonymous Dispatcher to avoid singleton conflicts). Agents discover each other via `Raxol.Agent.Registry` (unique Registry). `Agent.Team` is an OTP Supervisor for coordinator/worker groups. Three agent-specific Command types: `:async` (streaming sender callback), `:shell` (Port-based execution), `:send_agent` (Registry-routed inter-agent messages arriving as `{:agent_message, from, payload}`). `view/1` is optional -- headless agents skip rendering entirely.
+**Agent Framework** (in `packages/raxol_agent/`): `use Raxol.Agent` creates TEA apps for AI agents. `Agent.Session` wraps Lifecycle with `environment: :agent` (skips terminal driver and plugin manager, uses anonymous Dispatcher to avoid singleton conflicts). Agents discover each other via `Raxol.Agent.Registry` (unique Registry). `Agent.Team` is an OTP Supervisor for coordinator/worker groups. Three agent-specific Command types: `:async` (streaming sender callback), `:shell` (Port-based execution), `:send_agent` (Registry-routed inter-agent messages arriving as `{:agent_message, from, payload}`). `view/1` is optional -- headless agents skip rendering entirely. Note: raxol_agent depends on main raxol, not the other way around.
 
 **Swarm Discovery**: `Raxol.Swarm.Discovery` wraps libcluster (optional dep) with strategy presets: `:gossip` (LAN multicast), `:epmd` (static hosts), `:dns` (Fly.io/K8s), `:tailscale` (mesh via `tailscale status --json`, tag-filtered). NodeMonitor auto-wires `:nodeup`/`:nodedown` events to Topology (elections) and TacticalOverlay (peer sync). Custom strategy: `Raxol.Swarm.Strategy.Tailscale`.
 
@@ -241,8 +231,8 @@ The render pipeline lives in `lib/raxol/ui/rendering/` (10 modules: TreeDiffer, 
 
 These namespaces have been consolidated -- avoid creating new top-level alternatives:
 
-- `Raxol.Terminal.Commands.*` - All command processing (not `terminal/command/` or `command_processor.ex`)
-- `Raxol.Terminal.Rendering.*` - All terminal rendering (not `terminal/render/` or `terminal/renderer/`)
+- `Raxol.Terminal.Commands.*` - All command processing, in raxol_terminal package
+- `Raxol.Terminal.Rendering.*` - All terminal rendering, in raxol_terminal package
 - `Raxol.Performance.*` - All performance tools (not `core/performance/`)
 - `Raxol.LiveView.*` - LiveView integration (not `liveview/`)
 - `Raxol.Debug.*` - Debugging tools (time-travel, snapshots)
