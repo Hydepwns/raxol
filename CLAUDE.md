@@ -103,7 +103,9 @@ packages/
 ├── raxol_core/      # Behaviours, utils, events, config, accessibility, plugins
 ├── raxol_terminal/  # Terminal emulation (VT100/ANSI), termbox2 NIF, screen buffer
 ├── raxol_sensor/    # Sensor fusion (zero Raxol deps)
-└── raxol_agent/     # AI agent framework (depends on main raxol)
+├── raxol_agent/     # AI agent framework (depends on main raxol)
+├── raxol_liveview/  # (scaffold) LiveView bridge -- not yet wired
+└── raxol_plugin/    # (scaffold) Plugin SDK -- not yet wired
 ```
 
 **Dependency graph** (arrows = "depends on"):
