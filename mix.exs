@@ -183,19 +183,10 @@ defmodule Raxol.MixProject do
   end
 
   defp modular_packages do
-    # Disabled: causes duplicate module definitions in production
-    # The apps/ subdirectories contain duplicate code from lib/
-    # For now, use only lib/ modules in all environments
-    []
-
-    # TODO: Properly implement monorepo structure or remove apps/ entirely
-    # if Mix.env() == :prod or System.get_env("HEX_BUILD") do
-    #   [{:raxol_core, "~> 2.0"}, {:raxol_plugin, "~> 2.0"}, {:raxol_liveview, "~> 2.0"}]
-    # else
-    #   [{:raxol_core, path: "apps/raxol_core", override: true},
-    #    {:raxol_plugin, path: "apps/raxol_plugin", override: true},
-    #    {:raxol_liveview, path: "apps/raxol_liveview", override: true}]
-    # end
+    [
+      {:raxol_core, path: "packages/raxol_core", override: true},
+      {:raxol_sensor, path: "packages/raxol_sensor", override: true}
+    ]
   end
 
   defp core_deps do

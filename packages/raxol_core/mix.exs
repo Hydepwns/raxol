@@ -8,9 +8,10 @@ defmodule RaxolCore.MixProject do
     [
       app: :raxol_core,
       version: @version,
-      elixir: "~> 1.16 or ~> 1.17",
+      elixir: "~> 1.16 or ~> 1.17 or ~> 1.18 or ~> 1.19",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      elixirc_paths: elixirc_paths(Mix.env()),
       description: description(),
       package: package(),
       docs: docs(),
@@ -21,26 +22,32 @@ defmodule RaxolCore.MixProject do
 
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :mnesia]
     ]
   end
 
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
   defp deps do
     [
-      # ZERO runtime dependencies - pure functional buffer operations
+      # Telemetry (used by events and plugin infrastructure)
+      {:telemetry, "~> 1.3"},
 
       # Dev/test only
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:mox, "~> 1.2", only: :test}
     ]
   end
 
   defp description do
     """
-    Lightweight terminal buffer primitives for Elixir. Pure functional operations
-    for creating, manipulating, and rendering terminal buffers. Zero dependencies,
-    < 100KB compiled. Perfect for CLI tools, terminal UIs, and LiveView integration.
+    Core behaviours, utilities, events, config, accessibility, and plugin
+    infrastructure for Raxol. Zero external runtime dependencies. Provides
+    BaseManager, event system, plugin lifecycle, keyboard/focus management,
+    and accessibility primitives.
     """
   end
 
@@ -64,14 +71,7 @@ defmodule RaxolCore.MixProject do
       source_url: @source_url,
       source_ref: "v#{@version}",
       extras: [
-        "README.md",
-        "../../docs/core/GETTING_STARTED.md",
-        "../../docs/core/BUFFER_API.md",
-        "../../docs/core/ARCHITECTURE.md"
-      ],
-      groups_for_extras: [
-        "Getting Started": Path.wildcard("../../docs/getting-started/*.md"),
-        "Core Documentation": Path.wildcard("../../docs/core/*.md")
+        "README.md"
       ]
     ]
   end

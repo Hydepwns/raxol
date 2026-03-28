@@ -1,48 +1,40 @@
 # Raxol Core
 
-Terminal buffer primitives. Zero dependencies, < 100KB.
+Core behaviours, utilities, events, config, accessibility, and plugin infrastructure for Raxol. One runtime dependency (telemetry).
 
 ## Install
 
 ```elixir
-{:raxol_core, "~> 2.0"}
+{:raxol_core, "~> 2.3"}
 ```
 
-## Quick Start
+## What's Included
+
+- **Behaviours** -- BaseManager, BaseRegistry, BaseServer, Lifecycle, Metrics, StateManager
+- **Runtime.Log** -- Centralized structured logging with context, timing, and module detection
+- **Utils** -- Debounce, ErrorPatterns, GenServerHelpers, TimerManager, TimerUtils, Validation
+- **Events** -- EventManager, subscriptions, telemetry adapter
+- **Config** -- Config, ConfigServer, ConfigStore
+- **Accessibility** -- Screen reader support, announcements, focus management, metadata registry
+- **Focus/Keyboard** -- FocusManager, KeyboardShortcuts, KeyboardNavigator
+- **Standards** -- CodeGenerator, CodeStyle, ConsistencyChecker
+- **Preferences** -- UserPreferences with debounced persistence
+- **Plugin Infrastructure** -- Plugin lifecycle, registry, supervisor, security (BEAM analyzer, capability detector), command system, dependency resolution, event filtering
+- **Error Handling** -- ErrorHandler (macros), ErrorHandling (safe_call), ErrorRecovery (circuit breaker, retry, cleanup)
+- **I18n** -- Internationalization server
+- **Telemetry** -- TraceContext
+
+## Usage
+
+GenServers defined here are started by the parent application's supervision tree. This package does not auto-start any processes.
 
 ```elixir
-alias Raxol.Core.{Buffer, Box}
-
-buffer = Buffer.create_blank_buffer(40, 10)
-buffer = Box.draw_box(buffer, 0, 0, 40, 10, :double)
-buffer = Buffer.write_at(buffer, 5, 4, "Hello!")
-IO.puts(Buffer.to_string(buffer))
+# In your Application supervisor
+children = [
+  Raxol.Core.Events.EventManager,
+  {Raxol.Core.UserPreferences, [name: Raxol.Core.UserPreferences]},
+  Raxol.Core.Runtime.Plugins.PluginSupervisor
+]
 ```
 
-## Core APIs
-
-### Buffer
-- `create_blank_buffer(width, height)` - Create buffer
-- `write_at(buffer, x, y, text)` - Write text
-- `get_cell(buffer, x, y)` - Read cell
-- `set_cell(buffer, x, y, char, style)` - Write cell
-- `to_string(buffer)` - Render to string
-
-### Renderer
-- `render(buffer)` - Convert to ANSI output
-
-### Box
-- `draw_box(buffer, x, y, width, height, style)` - Draw box
-- Styles: `:single`, `:double`, `:rounded`, `:bold`
-
-### Style
-- `apply_style(buffer, x, y, style)` - Apply styling
-- Properties: `fg_color`, `bg_color`, `bold`, `italic`, `underline`
-
-## Performance
-
-- Buffer operations: < 1ms
-- Render: ~264μs average
-- Memory: < 100KB compiled
-
-See [main docs](../../README.md) for examples and guides.
+See [main docs](../../README.md) for the full Raxol framework.
