@@ -76,7 +76,7 @@ defmodule Raxol.Benchmark.Formatter do
 
   # -- Console formatting --
 
-  defp format_suite_console(%Benchee.Suite{scenarios: scenarios}) do
+  defp format_suite_console(%{scenarios: scenarios}) when is_list(scenarios) do
     scenarios
     |> Enum.map_join("\n", fn scenario ->
       name = scenario.name
@@ -100,7 +100,7 @@ defmodule Raxol.Benchmark.Formatter do
 
   # -- Markdown formatting --
 
-  defp format_suite_markdown(%Benchee.Suite{scenarios: scenarios}) do
+  defp format_suite_markdown(%{scenarios: scenarios}) when is_list(scenarios) do
     header = "| Benchmark | Average | Min | Max | IPS |"
     separator = "|---|---|---|---|---|"
 
@@ -138,7 +138,7 @@ defmodule Raxol.Benchmark.Formatter do
     end)
   end
 
-  defp serialize_suite(%Benchee.Suite{scenarios: scenarios}) do
+  defp serialize_suite(%{scenarios: scenarios}) when is_list(scenarios) do
     Enum.map(scenarios, fn s ->
       %{
         name: s.name,

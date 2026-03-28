@@ -27,7 +27,8 @@ defmodule Raxol.Style.Colors.Color do
 
   alias Raxol.Style.Colors.Formats
 
-  @derive Jason.Encoder
+  if Code.ensure_loaded?(Jason.Encoder), do: @derive(Jason.Encoder)
+
   defstruct [
     # RGB components (0-255)
     :r,
