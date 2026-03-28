@@ -117,7 +117,6 @@ defmodule Raxol.Application do
     # Tests can start their own processes as needed
     [
       {Raxol.Performance.ETSCacheManager, []},
-      {Registry, keys: :unique, name: Raxol.Agent.Registry},
       {Registry, keys: :duplicate, name: :raxol_event_subscriptions},
       {Raxol.DynamicSupervisor, []},
       {Raxol.Core.UserPreferences, [name: Raxol.Core.UserPreferences]}
@@ -163,7 +162,7 @@ defmodule Raxol.Application do
       {Raxol.Core.UserPreferences, [name: Raxol.Core.UserPreferences]},
       {Raxol.DynamicSupervisor, []},
       {Raxol.Terminal.Supervisor, []},
-      {Registry, keys: :unique, name: Raxol.Agent.Registry},
+      maybe_add_agent_supervisor(),
       {Registry, keys: :duplicate, name: :raxol_event_subscriptions},
 
       # Configuration and Debug services
@@ -254,6 +253,12 @@ defmodule Raxol.Application do
       [{Raxol.Demo.SessionManager, []}]
     else
       []
+    end
+  end
+
+  defp maybe_add_agent_supervisor do
+    if module_available?(Raxol.Agent.Supervisor) do
+      {Raxol.Agent.Supervisor, []}
     end
   end
 

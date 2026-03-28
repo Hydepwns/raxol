@@ -1,31 +1,14 @@
 defmodule Raxol.UI do
   @moduledoc """
-  Unified UI framework adapter for Raxol.
+  Internal multi-framework adapter layer.
 
-  Provides a consistent interface across different UI paradigms:
-  - React-style components
-  - Svelte-style reactive components
-  - Phoenix LiveView components
-  - HEEx templates
-  - Raw terminal buffer operations
+  Most apps should use `use Raxol.Core.Runtime.Application` (TEA pattern).
+  See the [Quickstart](docs/getting-started/QUICKSTART.md) for the recommended approach.
 
-  ## Usage
+  This module provides an alternative adapter for advanced use cases where you need
+  to mix Phoenix LiveView, HEEx, or raw terminal buffer access within a Raxol app.
 
-      # Choose your preferred framework
-      use Raxol.UI, framework: :react
-      use Raxol.UI, framework: :svelte
-      use Raxol.UI, framework: :liveview
-      use Raxol.UI, framework: :heex
-      use Raxol.UI, framework: :raw
-
-  ## Universal Features
-
-  Regardless of framework choice, you get:
-  - Actions system (use: directive)
-  - Transitions and animations
-  - Context API
-  - Slot system
-  - Theme support
+  Supported adapters: `:react`, `:liveview`, `:heex`, `:universal`, `:raw`.
   """
 
   defmacro __using__(opts) do
@@ -87,36 +70,5 @@ defmodule Raxol.UI do
         unquote(opts[:body] || quote(do: nil))
       end
     end
-  end
-
-  @doc """
-  Convert between different UI frameworks at runtime.
-  """
-  def convert_component(source_framework, target_framework, component_ast) do
-    case {source_framework, target_framework} do
-      {:react, :svelte} -> convert_react_to_svelte(component_ast)
-      {:svelte, :react} -> convert_svelte_to_react(component_ast)
-      {:liveview, :react} -> convert_liveview_to_react(component_ast)
-      # Add more conversions as needed
-      _ -> {:error, "Conversion not supported"}
-    end
-  end
-
-  # Framework conversion helpers (simplified implementations)
-
-  defp convert_react_to_svelte(ast) do
-    # Convert React patterns to Svelte patterns
-    # This would be much more complex in reality
-    ast
-  end
-
-  defp convert_svelte_to_react(ast) do
-    # Convert Svelte patterns to React patterns
-    ast
-  end
-
-  defp convert_liveview_to_react(ast) do
-    # Convert LiveView patterns to React patterns
-    ast
   end
 end

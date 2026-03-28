@@ -374,15 +374,24 @@ defmodule Raxol.Core.Runtime.Command do
   defp execute_command_type(:send_agent, {target_id, message}, context) do
     _source_id = Map.get(context, :agent_id, :unknown)
 
-    case Registry.lookup(Raxol.Agent.Registry, target_id) do
-      [{pid, _}] ->
-        GenServer.cast(pid, {:send_message, message})
-
-      [] ->
+    case Process.whereis(Raxol.Agent.Registry) do
+      nil ->
         send(
           context.pid,
           {:command_result, {:send_agent_error, :not_found, target_id}}
         )
+
+      _pid ->
+        case Registry.lookup(Raxol.Agent.Registry, target_id) do
+          [{pid, _}] ->
+            GenServer.cast(pid, {:send_message, message})
+
+          [] ->
+            send(
+              context.pid,
+              {:command_result, {:send_agent_error, :not_found, target_id}}
+            )
+        end
     end
   end
 
