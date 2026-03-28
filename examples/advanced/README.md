@@ -34,9 +34,6 @@ Advanced text editor implementation patterns.
 ### `snake.exs`
 Game development patterns and real-time updates.
 
-### `multi_framework_demo.ex`
-Advanced demonstration of using multiple UI frameworks (React, Svelte, LiveView, HEEx) together.
-
 ## Topics Covered
 
 These examples demonstrate:

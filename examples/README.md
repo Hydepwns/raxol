@@ -63,7 +63,6 @@ mix raxol.playground --ssh          # SSH mode (port 2222)
 - `ssh/` -- Serving apps over SSH
 - `swarm/` -- Distributed CRDTs, discovery, topology
 - `components/` -- Individual widget demos
-- `frameworks/` -- Framework integrations (Svelte, React)
 - `advanced/` -- Advanced patterns
 
 ## Related
