@@ -20,16 +20,15 @@ No other TUI framework does any of that -- Raxol inherits it _from the runtime_.
 > and an interface for the cockpit of a Gundam Wing Suit, where fault isolation,
 > real-time, responsiveness, and sensor fusion are survival-critical.
 
-## Key Architectural Differentiators
+## Architecture
 
-1. **Real VT100 Erlang Emulator**: AI agents interact with structured buffers, not raw escape codes
-2. **Multi-Agent Architecture**: Each agent is a supervised OTP process with crash isolation
-3. **BEAM VM Strengths**: Soft real-time, per-subsystem isolation, multi-node distribution, hot code reload
-4. **Three-Surface Rendering**: Same [TEA app](https://guide.elm-lang.org/architecture/) in terminal, browser ('TEALive', as a liveview adapter), and SSH
+Your app is a GenServer running [The Elm Architecture](https://guide.elm-lang.org/architecture/). The terminal backend is a real VT100 emulator -- not raw escape codes -- so AI agents can interact with structured screen buffers the same way they'd interact with a browser DOM. Each component can run in its own OTP process. Crash one, the rest keep going, the supervisor restarts it.
 
-## Why OTP-first
+The same TEA app renders to three targets: terminal (termbox2 NIF on Unix, pure Elixir on Windows), Phoenix LiveView in a browser, and SSH. You write it once.
 
-Every feature below comes from the [BEAM VM](<https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine)>), not library or dependency:
+## Why OTP
+
+Every capability below comes from the [BEAM VM](<https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine)>), not a library:
 
 | Capability                     | Raxol | Ratatui | Bubble Tea | Textual | Ink |
 | ------------------------------ | :---: | :-----: | :--------: | :-----: | :-: |
@@ -40,12 +39,10 @@ Every feature below comes from the [BEAM VM](<https://en.wikipedia.org/wiki/BEAM
 | AI agent runtime               |  yes  |   --    |     --     |   --    | --  |
 | Distributed clustering (CRDTs) |  yes  |   --    |     --     |   --    | --  |
 | Time-travel debugging          |  yes  |   --    |     --     |   --    | --  |
-| Session recording (asciinema)  |  yes  |   --    |     --     |   yes   | --  |
-| Self-adapting layout           |  yes  |   --    |     --     |   --    | --  |
-| Flexbox & CSS Grid layout      |  yes  |   --    |     --     |   yes   | yes |
-| Inline images (Kitty/Sixel)    |  yes  |   yes   |     --     |   --    | --  |
 
-The mapping is natural: GenServer = Elm update loop, process = component with crash isolation, supervisor = restart strategy, `:ssh` = SSH serving without deps, `libcluster` = node discovery.
+The other frameworks are good at what they do -- Ratatui and Bubble Tea have excellent rendering and large ecosystems. The difference is that Raxol gets crash isolation, hot reload, distribution, and SSH for free from OTP. Those aren't features we built; they're properties of the runtime.
+
+GenServer = Elm update loop. Process = component with crash isolation. Supervisor = restart strategy. `:ssh` = SSH serving without deps. `libcluster` = node discovery.
 
 ## Hello World
 
@@ -82,13 +79,15 @@ mix run examples/getting_started/counter.exs
 
 That counter works in a terminal. The same module renders in Phoenix LiveView. The same module serves over SSH. One codebase, three targets.
 
-## What Makes It Different
+## Features
 
-**Crash isolation**: Wrap any widget in `process_component/2` and it runs in its own process. It crashes, it restarts. The rest of your UI doesn't blink.
+The big stuff first.
 
-**Hot code reload**: Change your `view/1` function, save, and the running app updates. No restart, no reconnect.
+**Crash isolation** -- wrap any widget in `process_component/2` and it runs in its own process. It crashes, it restarts. The rest of your UI doesn't blink.
 
-**AI agents as TEA apps**: An agent is a TEA app where input comes from LLMs instead of a keyboard. `use Raxol.Agent`, implement `init/update/view`, and you get supervised, crash-isolated agents with inter-agent messaging. Real SSE streaming to Anthropic, OpenAI, Ollama, Groq. Free tier via LLM7.io.
+**Hot code reload** -- change your `view/1` function, save, and the running app updates. No restart, no reconnect.
+
+**AI agents as TEA apps** -- an agent is just a TEA app where input comes from LLMs instead of a keyboard. `use Raxol.Agent`, implement `init/update/view`, and you get supervised, crash-isolated agents with inter-agent messaging. Real SSE streaming to Anthropic, OpenAI, Ollama, Groq. Free tier via LLM7.io.
 
 ```elixir
 defmodule MyAgent do
@@ -109,35 +108,23 @@ end
 Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
 ```
 
-**SSH serving**: `Raxol.SSH.serve(MyApp, port: 2222)` and anyone can SSH into your app. Each connection gets its own supervised process.
+**SSH serving** -- `Raxol.SSH.serve(MyApp, port: 2222)` and anyone can SSH into your app. Each connection gets its own supervised process.
 
-**LiveView bridge**: The same TEA app renders to a Phoenix LiveView. Terminal and browser, same codebase, same state model. See `examples/liveview/tea_counter_live.ex`.
+Beyond those, here's what else is in the box.
 
-**Distributed swarm**: CRDTs (LWW registers, OR-sets), node monitoring, seniority-based election, tactical overlay sync. Automatic discovery via libcluster (gossip, epmd, DNS, Tailscale).
+**LiveView bridge.** The same TEA app renders to a Phoenix LiveView -- terminal and browser, same codebase, same state model. See `examples/liveview/tea_counter_live.ex`.
 
-**Sensor fusion**: Poll sensors, fuse readings with weighted averaging and thresholds, render gauges and sparklines.
+**Distributed swarm.** CRDTs (LWW registers, OR-sets), node monitoring, seniority-based election, tactical overlay sync. Discovery via libcluster: gossip, epmd, DNS, or Tailscale.
 
-**Self-adapting layout**: Track how the UI is used, recommend layout changes, animate transitions. Optional Nx/Axon ML backend for vectorized fusion and Axon MLP recommendations. The interface evolves.
+**Widgets and layout.** Button, TextInput, Table, Tree, Modal, SelectList, Checkbox, Sparkline, Charts, and more. All keyboard-navigable with focus management. Layout uses flexbox (`row`/`column` with `flex`, `gap`, `align_items`) and CSS Grid (`template_columns`, `template_rows`), nested freely.
 
-**Time-travel debugging**: Snapshot every `update/2` cycle. Step back, forward, jump to any point, restore state. Zero cost when disabled.
+Rendering is virtual DOM diffing with damage tracking -- full frame in ~2ms, which is 13% of the 60fps budget.
 
-**Session recording**: Capture sessions as asciinema v2 `.cast` files. Replay with pause, seek, speed control. Auto-save on crash.
+Sensor fusion polls sensors, fuses readings with weighted averaging and thresholds, renders gauges and sparklines. Self-adapting layout tracks usage patterns and recommends layout changes (optional Nx/Axon ML backend). Time-travel debugging snapshots every `update/2` cycle -- step back, forward, jump, restore, zero cost when disabled. Session recording captures to asciinema v2 `.cast` files with pause, seek, speed control, and auto-save on crash.
 
-**Sandboxed REPL**: `mix raxol.repl` with three safety levels. AST-based scanner blocks dangerous operations. Safe for SSH in strict mode.
+Theming supports named colors, RGB, 256-color, and hex strings, auto-downsampled to whatever the terminal supports. Works in Ghostty, Kitty, WezTerm, iTerm2, Alacritty, Terminal.app, Windows Terminal, and anything with basic ANSI. Inline images via Kitty graphics protocol (Ghostty, Kitty, WezTerm), with Sixel and iTerm2 protocol fallbacks.
 
-## What You Get
-
-**Rich widget set**: Button, TextInput, Table, Tree, Modal, SelectList, Checkbox, Sparkline, Charts, and more. All keyboard-navigable with focus management.
-
-**Layout engine**: Flexbox (`row`/`column` with `flex`, `gap`, `align_items`) and CSS Grid (`template_columns`, `template_rows`). Nested freely.
-
-**60fps rendering**: Virtual DOM diffing, damage tracking, synchronized terminal output. Full frame in ~2ms -- that's 13% of the 60fps budget, leaving 87% for your code.
-
-**Theming**: Named colors, RGB, 256-color, hex strings. Auto-downsample to whatever the terminal supports.
-
-**Terminal compatibility**: Works in Ghostty, Kitty, WezTerm, iTerm2, Alacritty, Terminal.app, Windows Terminal, and anything with basic ANSI support. Auto-detects Kitty graphics protocol for inline images (Ghostty, Kitty, WezTerm). Falls back to Sixel or iTerm2 protocol where available.
-
-**Interactive playground**: 28 live demos across 8 categories. See [Try It](#try-it) above.
+`mix raxol.repl` gives you a sandboxed REPL with three safety levels -- AST-based scanner blocks dangerous operations, safe for SSH in strict mode. The interactive playground has 28 live demos across 8 categories; see [Try It](#try-it).
 
 ## Install
 
