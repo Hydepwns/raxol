@@ -1,0 +1,7 @@
+{
+  "name": "Test Theme",
+  "version": "1.0.0",
+  "description": "Test theme for plugin loading tests",
+  "author": "Test Author",
+  "dependencies": []
+}

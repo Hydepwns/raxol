@@ -34,12 +34,8 @@ defmodule Raxol.MixProject do
           Raxol.Core.Runtime.Log
         ]
       ],
-      make_cwd: "lib/termbox2_nif/c_src",
-      make_targets: ["all"],
-      make_clean: ["clean"],
-      make_env: %{
-        "MIX_APP_PATH" => "priv"
-      },
+      # NIF compilation moved to packages/raxol_terminal
+
       usage_rules: usage_rules(),
       dialyzer: [
         # PLT Configuration for caching
@@ -93,14 +89,9 @@ defmodule Raxol.MixProject do
     ]
   end
 
-  # Platform-specific compilers
-  # Only include :elixir_make on Unix (for termbox2 NIF)
-  # Windows uses pure Elixir IOTerminal driver
+  # NIF compilation now handled by raxol_terminal package
   defp compilers do
-    case :os.type() do
-      {:unix, _} -> Mix.compilers() ++ [:elixir_make]
-      {:win32, _} -> Mix.compilers()
-    end
+    Mix.compilers()
   end
 
   # Raxol is primarily a library/toolkit; applications using it define their own OTP app.
@@ -184,6 +175,7 @@ defmodule Raxol.MixProject do
   defp modular_packages do
     [
       {:raxol_core, path: "packages/raxol_core", override: true},
+      {:raxol_terminal, path: "packages/raxol_terminal", override: true},
       {:raxol_sensor, path: "packages/raxol_sensor", override: true}
     ]
   end

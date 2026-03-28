@@ -1,0 +1,44 @@
+{
+  "name": "Light Theme",
+  "version": "1.0.0",
+  "description": "A light theme for the Raxol terminal emulator",
+  "author": "Raxol Team",
+  "license": "MIT",
+  "colors": {
+    "background": "#ffffff",
+    "foreground": "#000000",
+    "cursor": "#000000",
+    "selection": "#cccccc",
+    "black": "#000000",
+    "red": "#ff0000",
+    "green": "#00ff00",
+    "yellow": "#ffff00",
+    "blue": "#0000ff",
+    "magenta": "#ff00ff",
+    "cyan": "#00ffff",
+    "white": "#ffffff",
+    "bright_black": "#666666",
+    "bright_red": "#ff6666",
+    "bright_green": "#66ff66",
+    "bright_yellow": "#ffff66",
+    "bright_blue": "#6666ff",
+    "bright_magenta": "#ff66ff",
+    "bright_cyan": "#66ffff",
+    "bright_white": "#ffffff"
+  },
+  "font": {
+    "family": "monospace",
+    "size": 12,
+    "weight": "normal",
+    "style": "normal"
+  },
+  "cursor": {
+    "style": "block",
+    "blink": true,
+    "color": "#000000"
+  },
+  "padding": {
+    "x": 10,
+    "y": 10
+  }
+}
