@@ -137,7 +137,7 @@ Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
 
 **Terminal compatibility**: Works in Ghostty, Kitty, WezTerm, iTerm2, Alacritty, Terminal.app, Windows Terminal, and anything with basic ANSI support. Auto-detects Kitty graphics protocol for inline images (Ghostty, Kitty, WezTerm). Falls back to Sixel or iTerm2 protocol where available.
 
-**Interactive playground**: `mix raxol.playground` opens 28 live demos across 8 categories (input, display, feedback, navigation, overlay, layout, visualization, effects). Browse, search, filter by complexity. Works over SSH with `--ssh`.
+**Interactive playground**: 28 live demos across 8 categories. See [Try It](#try-it) above.
 
 ## Install
 
@@ -154,13 +154,18 @@ Or generate a new project:
 mix raxol.new my_app
 ```
 
-## Try the Demo
-
-The flagship demo is a live BEAM dashboard -- scheduler utilization, memory sparklines, process table, all updating in real time:
+## Try It
 
 ```bash
 git clone --recursive https://github.com/Hydepwns/raxol.git
 cd raxol && mix deps.get
+mix raxol.playground          # 28 live demos, browse/search/filter
+mix raxol.playground --ssh    # same thing, served over SSH (port 2222)
+```
+
+The flagship demo is a live BEAM dashboard -- scheduler utilization, memory sparklines, process table, all updating in real time:
+
+```bash
 mix run examples/demo.exs
 ```
 
@@ -190,7 +195,7 @@ Full frame in 2.1ms on Apple M1 Pro (Elixir 1.19 / OTP 27). That's 13% of the 60
 | Cell write                        | 0.97 us |
 | ANSI parse                        | 38 us   |
 
-Raxol is slower per-operation than Rust or Go (expected for a managed runtime). The tradeoff: crash isolation, hot reload, distribution, and SSH serving that those frameworks don't have. See the [benchmark suite](docs/bench/README.md) for details.
+Raxol is slower per-operation than Rust or Go (expected for a managed runtime). The tradeoff: crash isolation, hot reload, distribution, and SSH serving that those frameworks don't have. Windows uses a pure Elixir terminal driver (~10x slower than the Unix/macOS termbox2 NIF) -- functional but not performance-optimized. See the [benchmark suite](docs/bench/README.md) for details.
 
 ## Documentation
 
@@ -201,6 +206,8 @@ Raxol is slower per-operation than Rust or Go (expected for a managed runtime). 
 **Reference** -- [Architecture](docs/core/ARCHITECTURE.md) / [Buffer API](docs/core/BUFFER_API.md) / [Benchmarks](docs/bench/README.md) / [API Docs](https://hexdocs.pm/raxol)
 
 **Advanced** -- [Agent Framework](docs/features/AGENT_FRAMEWORK.md) / [Sensor Fusion](docs/features/SENSOR_FUSION.md) / [Distributed Swarm](docs/features/DISTRIBUTED_SWARM.md) / [Recording & Replay](docs/features/RECORDING_REPLAY.md) / [Why OTP for TUIs](docs/WHY_OTP.md)
+
+**Standalone packages** -- [`raxol_core`](packages/raxol_core/) (buffer primitives), [`raxol_agent`](packages/raxol_agent/) (AI agent framework), [`raxol_sensor`](packages/raxol_sensor/) (sensor fusion). Use these if you want just one subsystem without the full framework.
 
 ## Development
 
@@ -219,6 +226,10 @@ The termbox2 NIF requires a git submodule. If you cloned without `--recursive`:
 ```bash
 git submodule update --init --recursive
 ```
+
+## Accessibility
+
+Screen reader support and semantic annotations are not yet implemented. This is tracked as a roadmap item. Contributions welcome.
 
 ## License
 

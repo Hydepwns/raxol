@@ -16,66 +16,49 @@ The WCAG POUR principles apply:
 ARIA labels and roles on interactive components. Icon-only buttons need a visually-hidden label:
 
 ```elixir
-defmodule MyApp.AccessibleComponents do
+defmodule MyApp.AccessibleCounter do
   @moduledoc """
-  Components with built-in screen reader support.
+  TEA app demonstrating accessible components with ARIA labels and roles.
   """
 
-  use Raxol.UI, framework: :liveview
-  import Raxol.LiveView, only: [assign: 2, assign: 3, assign_new: 2, update: 3]
+  use Raxol.Core.Runtime.Application
 
-  def accessible_button(assigns) do
-    assigns =
-      assigns
-      |> assign_new(:aria_label, fn -> nil end)
-      |> assign_new(:aria_describedby, fn -> nil end)
-      |> assign_new(:disabled, fn -> false end)
-      |> assign(:button_attrs, build_button_attrs(assigns))
-
-    ~H"""
-    <button
-      type="button"
-      {@button_attrs}
-      class="accessible-button"
-    >
-      <%= if assigns[:icon_only] do %>
-        <span class="sr-only"><%= @aria_label || render_slot(@inner_block) %></span>
-        <.icon name={@icon} />
-      <% else %>
-        <%= render_slot(@inner_block) %>
-      <% end %>
-    </button>
-    """
+  def init(_ctx) do
+    %{count: 0, focused: :increment}
   end
 
-  defp build_button_attrs(assigns) do
-    base_attrs = [
-      role: "button",
-      tabindex: "0"
-    ]
+  def update(:inc, model), do: {%{model | count: model.count + 1}, []}
+  def update(:dec, model), do: {%{model | count: model.count - 1}, []}
+  def update(_, model), do: {model, []}
 
-    aria_attrs = []
-
-    aria_attrs = if assigns[:aria_label] do
-      [{"aria-label", assigns.aria_label} | aria_attrs]
-    else
-      aria_attrs
+  def view(model) do
+    column style: %{padding: 1, gap: 1} do
+      [
+        text("Count: #{model.count}",
+          style: [:bold],
+          aria_label: "Current count is #{model.count}",
+          role: "status",
+          aria_live: "polite"
+        ),
+        row style: %{gap: 1} do
+          [
+            button("+",
+              on_click: :inc,
+              aria_label: "Increment counter",
+              role: "button"
+            ),
+            button("-",
+              on_click: :dec,
+              aria_label: "Decrement counter",
+              role: "button"
+            )
+          ]
+        end
+      ]
     end
-
-    aria_attrs = if assigns[:aria_describedby] do
-      [{"aria-describedby", assigns.aria_describedby} | aria_attrs]
-    else
-      aria_attrs
-    end
-
-    aria_attrs = if assigns[:disabled] do
-      [{"aria-disabled", "true"} | aria_attrs]
-    else
-      aria_attrs
-    end
-
-    base_attrs ++ aria_attrs ++ (assigns[:rest] || [])
   end
+
+  def subscribe(_model), do: []
 end
 ```
 
@@ -84,109 +67,61 @@ end
 Tab/Shift-Tab for sequential focus, arrow keys for grids, Enter/Space to activate, Escape to exit focus traps. Focus changes trigger screen reader announcements:
 
 ```elixir
-defmodule MyApp.KeyboardNavigation do
+defmodule MyApp.KeyboardNav do
   @moduledoc """
-  Keyboard navigation support for terminal applications.
+  TEA app demonstrating keyboard navigation with focus management.
+  Tab/Shift-Tab cycles focus, Enter activates, Escape dismisses.
   """
 
-  use Raxol.UI, framework: :raw
+  use Raxol.Core.Runtime.Application
 
-  defstruct [
-    :focus_index,
-    :focusable_elements,
-    :navigation_mode,
-    :shortcuts,
-    :focus_trap
-  ]
+  @items ["Save", "Load", "Settings", "Quit"]
 
-  def new(opts \\ []) do
-    %__MODULE__{
-      focus_index: 0,
-      focusable_elements: [],
-      navigation_mode: Keyword.get(opts, :mode, :sequential),
-      shortcuts: Keyword.get(opts, :shortcuts, %{}),
-      focus_trap: Keyword.get(opts, :focus_trap, false)
-    }
+  def init(_ctx) do
+    %{focused: 0, message: "Use Tab/Enter to navigate"}
   end
 
-  def handle_keypress(nav_state, key) do
-    case key do
-      :tab -> move_focus(nav_state, :next)
-      {:shift, :tab} -> move_focus(nav_state, :previous)
+  def update({:key, %{key: :tab, shift: true}}, model) do
+    index = rem(model.focused - 1 + length(@items), length(@items))
+    {%{model | focused: index}, []}
+  end
 
-      :up -> move_focus(nav_state, :up)
-      :down -> move_focus(nav_state, :down)
-      :left -> move_focus(nav_state, :left)
-      :right -> move_focus(nav_state, :right)
+  def update({:key, %{key: :tab}}, model) do
+    index = rem(model.focused + 1, length(@items))
+    {%{model | focused: index}, []}
+  end
 
-      :enter -> activate_focused_element(nav_state)
-      :space -> activate_focused_element(nav_state)
+  def update({:key, %{key: :enter}}, model) do
+    item = Enum.at(@items, model.focused)
+    {%{model | message: "Activated: #{item}"}, []}
+  end
 
-      :escape -> handle_escape(nav_state)
+  def update(_, model), do: {model, []}
 
-      shortcut when is_map_key(nav_state.shortcuts, shortcut) ->
-        execute_shortcut(nav_state, shortcut)
+  def view(model) do
+    column style: %{padding: 1, gap: 1} do
+      [
+        text(model.message, role: "status", aria_live: "polite"),
+        column style: %{gap: 0} do
+          @items
+          |> Enum.with_index()
+          |> Enum.map(fn {label, i} ->
+            focused? = i == model.focused
+            prefix = if focused?, do: "> ", else: "  "
 
-      _ ->
-        {:unhandled, nav_state}
+            text(prefix <> label,
+              style: if(focused?, do: [:bold, :underline], else: []),
+              role: "menuitem",
+              aria_label: label,
+              tabindex: if(focused?, do: "0", else: "-1")
+            )
+          end)
+        end
+      ]
     end
   end
 
-  defp move_focus(nav_state, direction) do
-    new_index = calculate_new_focus_index(
-      nav_state.focus_index,
-      length(nav_state.focusable_elements),
-      direction,
-      nav_state.navigation_mode
-    )
-
-    new_state = %{nav_state | focus_index: new_index}
-
-    element = Enum.at(nav_state.focusable_elements, new_index)
-    announce_focus_change(element)
-
-    {:focus_moved, new_state}
-  end
-
-  defp calculate_new_focus_index(current, total, direction, mode) do
-    case {direction, mode} do
-      {:next, :sequential} ->
-        rem(current + 1, total)
-
-      {:previous, :sequential} ->
-        rem(current - 1 + total, total)
-
-      {:up, :grid} ->
-        grid_navigate(current, total, :up)
-
-      {:down, :grid} ->
-        grid_navigate(current, total, :down)
-
-      _ ->
-        current
-    end
-  end
-
-  defp announce_focus_change(element) do
-    announcement = build_focus_announcement(element)
-    Raxol.Core.Accessibility.announce(announcement, :polite)
-  end
-
-  defp build_focus_announcement(element) do
-    case element do
-      %{type: :button, label: label} ->
-        "#{label}, button"
-
-      %{type: :input, label: label, value: value} ->
-        "#{label}, edit box, #{value}"
-
-      %{type: :link, text: text} ->
-        "#{text}, link"
-
-      _ ->
-        "Focusable element"
-    end
-  end
+  def subscribe(_model), do: []
 end
 ```
 

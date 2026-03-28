@@ -61,15 +61,9 @@ Multi-mode search: fuzzy (fzf-style), exact, regex with highlighting.
 results = Fuzzy.search(buffer, "hlo", :fuzzy)  # Matches "hello"
 ```
 
-### [File System](FILESYSTEM.md)
+### [File System](FILESYSTEM.md) -- PLANNED
 
-Virtual filesystem: ls, cat, cd, pwd, mkdir, rm with path resolution.
-
-```elixir
-fs = FileSystem.new()
-{:ok, fs} = FileSystem.mkdir(fs, "/docs")
-{:ok, files, _} = FileSystem.ls(fs, "/")
-```
+Virtual filesystem (not yet implemented). See the feature page for planned API.
 
 ### [Cursor Effects](CURSOR_EFFECTS.md)
 
@@ -89,7 +83,7 @@ buffer = CursorTrail.apply(trail, buffer)
 defmodule Terminal do
   alias Raxol.Effects.CursorTrail
 
-  defstruct [:buffer, :vim, :parser, :search, :fs, :trail]
+  defstruct [:buffer, :vim, :parser, :search, :trail]
 
   def new do
     buffer = Buffer.create_blank_buffer(80, 24)
@@ -98,7 +92,6 @@ defmodule Terminal do
       vim: Vim.new(buffer),
       parser: Parser.new(),
       search: Fuzzy.new(buffer),
-      fs: FileSystem.new(),
       trail: CursorTrail.rainbow()
     }
   end
@@ -118,7 +111,6 @@ end
 | VIM        | Movement     | < 1us  |
 | Parser     | Execute      | ~5us   |
 | Search     | 1000 lines   | ~100us |
-| FileSystem | List dir     | ~10us  |
 | Trail      | Update+apply | ~7us   |
 
-Total: < 150us per frame (60fps = 16ms budget)
+Total: < 120us per frame (60fps = 16ms budget)

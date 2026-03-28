@@ -2,6 +2,49 @@
 
 See [Test Commands](_includes/test-commands.md) for standard testing patterns.
 
+## Testing TEA Apps
+
+TEA apps have pure `update/2` and `view/1` functions, so they can be tested directly without rendering infrastructure:
+
+```elixir
+defmodule MyAppTest do
+  use ExUnit.Case
+
+  test "init returns default model" do
+    model = MyApp.init(%{})
+    assert model.count == 0
+  end
+
+  test "update increments count" do
+    model = MyApp.init(%{})
+    {model, _cmds} = MyApp.update(:inc, model)
+    assert model.count == 1
+  end
+
+  test "update returns no commands for simple actions" do
+    model = %{count: 5}
+    {_model, cmds} = MyApp.update(:inc, model)
+    assert cmds == []
+  end
+
+  test "view returns element tree" do
+    model = %{count: 42}
+    tree = MyApp.view(model)
+    assert tree.type == :column
+  end
+end
+```
+
+For apps that return commands from `update/2`, assert the command list directly:
+
+```elixir
+test "search dispatches async command" do
+  model = %{query: "hello"}
+  {_model, cmds} = MyApp.update({:search, "hello"}, model)
+  assert [{:async, _fun}] = cmds
+end
+```
+
 ## Test Helpers
 
 ### Terminal Testing

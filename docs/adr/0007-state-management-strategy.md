@@ -12,7 +12,7 @@ We needed state management that handles component lifecycles, shared state betwe
 
 ## Decision
 
-Multi-layered state management combining React-style patterns (Context API, Hooks, Redux store) with terminal-specific additions for continuity and collaboration.
+Multi-layered state management combining TEA (The Elm Architecture) as the canonical app model with React-style patterns (Context API, Redux store) and terminal-specific additions for continuity and collaboration.
 
 ### 1. Component State (Local)
 
@@ -56,39 +56,7 @@ theme = Context.use_context(context, :theme_context)
 
 Supports provider/consumer pattern, automatic re-rendering on change, and nested contexts with proper resolution.
 
-### 3. Hooks (`lib/raxol/ui/state/hooks.ex`)
-
-React-style hooks for stateful functional components:
-
-```elixir
-defmodule MyComponent do
-  import Raxol.UI.State.Hooks
-
-  def render(props, context) do
-    {count, set_count} = use_state(0)
-
-    use_effect(fn ->
-      IO.puts("Count: #{count}")
-      fn -> IO.puts("Cleanup") end
-    end, [count])
-
-    theme = use_context(:theme_context)
-
-    expensive_value = use_memo(fn ->
-      expensive_calculation(count)
-    end, [count])
-
-    button(
-      label: "Count: #{count}",
-      on_click: fn -> set_count.(count + 1) end
-    )
-  end
-end
-```
-
-Available hooks: `use_state/1`, `use_effect/2`, `use_context/1`, `use_reducer/3`, `use_memo/2`, `use_callback/2`, `use_ref/1`.
-
-### 4. Global Store (`lib/raxol/ui/state/store.ex`)
+### 3. Global Store (`lib/raxol/ui/state/store.ex`)
 
 Redux-inspired global state:
 
@@ -120,7 +88,7 @@ todos = Store.get_state([:todos])
 
 Immutable updates, action-based changes, middleware support (logging, persistence, time-travel), reactive subscriptions with fine-grained updates, and optimistic UI updates.
 
-### 5. Reactive Streams (`lib/raxol/ui/state/streams.ex`)
+### 4. Reactive Streams (`lib/raxol/ui/state/streams.ex`)
 
 For complex state flow:
 
@@ -153,7 +121,8 @@ User Actions -> Action Creators -> Store Dispatch -> Reducers -> New State -> Co
 
 ### Positive
 
-- Familiar React patterns reduce learning curve
+- TEA provides predictable, testable state transitions as the default
+- Familiar patterns (Context, Store) reduce learning curve for shared state
 - Fine-grained reactivity minimizes unnecessary re-renders
 - Clear separation between local and global state
 - Time-travel debugging and state inspection
@@ -162,15 +131,15 @@ User Actions -> Action Creators -> Store Dispatch -> Reducers -> New State -> Co
 ### Negative
 
 - More sophisticated than simple component state
-- Hook state and subscriptions use memory
+- Subscriptions use memory
 - Multiple state patterns to learn
 - Complex state flow needs performance monitoring
 
 ### Mitigation
 
-- Start with simple component state, add complexity as needed
+- Start with TEA (`init/update/view`) for most apps, add Context/Store as needed
 - Built-in debugging and profiling tools
-- Testing utilities for stateful components and hooks
+- Testing utilities for stateful components
 
 ## Validation
 

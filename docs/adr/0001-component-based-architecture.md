@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Accepted -- Revised
+
+> **Note:** The code examples below reflect the original design proposal. The implemented API uses `Raxol.UI.Components.Base.Component` -- see [Custom Components](../guides/custom_components.md) for current usage.
 
 ## Context
 
@@ -26,25 +28,30 @@ The key pieces:
 
 ```elixir
 defmodule MyComponent do
-  use Raxol.Component
-  import Raxol.LiveView, only: [assign: 2, assign: 3]
+  use Raxol.UI.Components.Base.Component
 
-  prop :title, :string, required: true
-  prop :items, {:list, :map}, default: []
-
-  @impl true
-  def mount(socket) do
-    {:ok, assign(socket, selected: nil)}
+  def init(props) do
+    Map.merge(%{count: 0}, props)
   end
 
-  @impl true
-  def render(assigns) do
-    ~H"""
-    <Box>
-      <Heading><%= @title %></Heading>
-      <List items={@items} />
-    </Box>
-    """
+  def mount(state) do
+    {state, []}
+  end
+
+  def update(:increment, state) do
+    %{state | count: state.count + 1}
+  end
+
+  def render(state, _context) do
+    row do
+      button(label: "-", on_click: :decrement)
+      text("Count: #{state.count}")
+      button(label: "+", on_click: :increment)
+    end
+  end
+
+  def handle_event({:click, :increment}, state, _context) do
+    {update(:increment, state), []}
   end
 end
 ```

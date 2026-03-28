@@ -1,8 +1,7 @@
 ## Installation
 
 ```elixir
-# Add to mix.exs deps -- after Hex publish: {:raxol, "~> 2.0"}
-{:raxol, path: "../raxol"}
+{:raxol, "~> 2.3"}
 ```
 
 ```bash
