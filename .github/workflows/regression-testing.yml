@@ -65,7 +65,6 @@ jobs:
       uses: actions/checkout@v5
       with:
         fetch-depth: 0
-        submodules: recursive
 
     - name: Set up Elixir
       uses: erlef/setup-beam@v1
@@ -236,7 +235,6 @@ jobs:
       uses: actions/checkout@v5
       with:
         fetch-depth: 0
-        submodules: recursive
 
     - name: Set up Elixir
       uses: erlef/setup-beam@v1
@@ -596,7 +594,6 @@ jobs:
       uses: actions/checkout@v5
       with:
         fetch-depth: 0
-        submodules: recursive
 
     - name: Set up Elixir
       uses: erlef/setup-beam@v1

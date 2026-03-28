@@ -297,8 +297,15 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
       # Clean up on exit
       on_exit(fn ->
         case GenServer.whereis(Raxol.Core.FocusManager.FocusServer) do
-          nil -> :ok
-          pid when is_pid(pid) -> GenServer.stop(pid, :normal, 1000)
+          nil ->
+            :ok
+
+          pid when is_pid(pid) ->
+            try do
+              GenServer.stop(pid, :normal, 1000)
+            catch
+              :exit, _ -> :ok
+            end
         end
       end)
 

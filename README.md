@@ -157,7 +157,7 @@ mix raxol.new my_app
 ## Try It
 
 ```bash
-git clone --recursive https://github.com/Hydepwns/raxol.git
+git clone https://github.com/Hydepwns/raxol.git
 cd raxol && mix deps.get
 mix raxol.playground          # 28 live demos, browse/search/filter
 mix raxol.playground --ssh    # same thing, served over SSH (port 2222)
@@ -207,24 +207,18 @@ Raxol is slower per-operation than Rust or Go (expected for a managed runtime). 
 
 **Advanced** -- [Agent Framework](docs/features/AGENT_FRAMEWORK.md) / [Sensor Fusion](docs/features/SENSOR_FUSION.md) / [Distributed Swarm](docs/features/DISTRIBUTED_SWARM.md) / [Recording & Replay](docs/features/RECORDING_REPLAY.md) / [Why OTP for TUIs](docs/WHY_OTP.md)
 
-**Standalone packages** -- [`raxol_core`](packages/raxol_core/) (buffer primitives), [`raxol_agent`](packages/raxol_agent/) (AI agent framework), [`raxol_sensor`](packages/raxol_sensor/) (sensor fusion). Use these if you want just one subsystem without the full framework.
+**Standalone packages** -- [`raxol_core`](packages/raxol_core/) (behaviours, events, config, plugins), [`raxol_terminal`](packages/raxol_terminal/) (terminal emulation, termbox2 NIF), [`raxol_agent`](packages/raxol_agent/) (AI agent framework), [`raxol_sensor`](packages/raxol_sensor/) (sensor fusion). Use these if you want just one subsystem without the full framework.
 
 ## Development
 
 ```bash
-git clone --recursive https://github.com/Hydepwns/raxol.git
+git clone https://github.com/Hydepwns/raxol.git
 cd raxol
 mix deps.get
 MIX_ENV=test mix test --exclude slow --exclude integration --exclude docker
 mix raxol.check              # format, compile, credo, dialyzer, security, test
 mix raxol.check --quick      # skip dialyzer
 mix raxol.demo               # run built-in demos
-```
-
-The termbox2 NIF requires a git submodule. If you cloned without `--recursive`:
-
-```bash
-git submodule update --init --recursive
 ```
 
 ## Accessibility

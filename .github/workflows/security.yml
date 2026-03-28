@@ -32,8 +32,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
 
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
@@ -70,8 +68,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
 
       - name: Setup Elixir
         uses: erlef/setup-beam@v1

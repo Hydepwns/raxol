@@ -6,14 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Initial Setup
 
-The termbox2 NIF requires a git submodule. After cloning, run:
-
 ```bash
-git submodule update --init --recursive
 mix deps.get
 ```
 
-Or clone with `git clone --recursive` to fetch submodules automatically.
+The termbox2 NIF source (in `packages/raxol_terminal/lib/termbox2_nif/c_src/`) is vendored directly in the repo -- no git submodules needed.
 
 ### Building & Compilation
 

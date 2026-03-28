@@ -1,3 +1,0 @@
-[submodule "lib/termbox2_nif/c_src/termbox2"]
-	path = lib/termbox2_nif/c_src/termbox2
-	url = https://github.com/termbox/termbox2.git

@@ -45,7 +45,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          submodules: recursive
           fetch-depth: 0  # Need full history for change detection
       
       - name: Detect changed files
@@ -108,8 +107,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -141,8 +138,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -177,8 +172,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -230,8 +223,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -272,8 +263,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -313,8 +302,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -343,8 +330,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -383,8 +368,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -430,8 +413,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
       
       - name: Set TMPDIR (Unix)
         if: runner.os != 'Windows'
@@ -526,8 +507,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1

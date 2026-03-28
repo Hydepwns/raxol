@@ -8,9 +8,9 @@ on:
   push:
     branches: [main, master]
     paths:
-      - 'lib/raxol/terminal/ansi/parser.ex'
-      - 'lib/raxol/terminal/buffer/**'
-      - 'lib/raxol/terminal/emulator/**'
+      - 'packages/raxol_terminal/lib/raxol/terminal/ansi/parser.ex'
+      - 'packages/raxol_terminal/lib/raxol/terminal/buffer/**'
+      - 'packages/raxol_terminal/lib/raxol/terminal/emulator/**'
       - 'lib/raxol/ui/rendering/**'
       - 'lib/raxol/core/performance/**'
       - 'bench/**'
@@ -19,9 +19,9 @@ on:
   pull_request:
     branches: [main, master]
     paths:
-      - 'lib/raxol/terminal/ansi/parser.ex'
-      - 'lib/raxol/terminal/buffer/**'
-      - 'lib/raxol/terminal/emulator/**'
+      - 'packages/raxol_terminal/lib/raxol/terminal/ansi/parser.ex'
+      - 'packages/raxol_terminal/lib/raxol/terminal/buffer/**'
+      - 'packages/raxol_terminal/lib/raxol/terminal/emulator/**'
       - 'lib/raxol/ui/rendering/**'
       - 'lib/raxol/core/performance/**'
       - 'bench/**'
@@ -57,9 +57,9 @@ jobs:
         with:
           filters: |
             performance:
-              - 'lib/raxol/terminal/ansi/parser.ex'
-              - 'lib/raxol/terminal/buffer/**'
-              - 'lib/raxol/terminal/emulator/**'
+              - 'packages/raxol_terminal/lib/raxol/terminal/ansi/parser.ex'
+              - 'packages/raxol_terminal/lib/raxol/terminal/buffer/**'
+              - 'packages/raxol_terminal/lib/raxol/terminal/emulator/**'
               - 'lib/raxol/ui/rendering/**'
               - 'lib/raxol/core/performance/**'
               - 'bench/**'
@@ -74,8 +74,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
 
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -158,8 +156,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
 
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
