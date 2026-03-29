@@ -19,6 +19,12 @@ on:
       - '*.md'
       - '.github/**'
       - '!.github/workflows/**'
+  workflow_call:
+    inputs:
+      skip_heavy_checks:
+        description: 'Skip heavy checks (Dialyzer, full test suite)'
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       skip_heavy_checks:
@@ -65,7 +71,7 @@ jobs:
         id: check-changes
         run: |
           # Check if we should run heavy checks
-          if [ "${{ github.event.inputs.skip_heavy_checks }}" == "true" ]; then
+          if [ "${{ inputs.skip_heavy_checks }}" == "true" ]; then
             echo "should-run-heavy=false" >> $GITHUB_OUTPUT
           elif [ "${{ github.event_name }}" == "push" ]; then
             echo "should-run-heavy=true" >> $GITHUB_OUTPUT
