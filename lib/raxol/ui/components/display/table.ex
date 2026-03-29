@@ -302,7 +302,9 @@ defmodule Raxol.UI.Components.Display.Table do
   defp calculate_header_widths([]), do: []
 
   defp calculate_header_widths(columns) when is_list(columns) do
-    Enum.map(columns, fn col -> String.length(Map.get(col, :header, "")) end)
+    Enum.map(columns, fn col ->
+      Raxol.UI.TextMeasure.display_width(Map.get(col, :header, ""))
+    end)
   end
 
   defp calculate_header_widths(_), do: []
@@ -315,7 +317,7 @@ defmodule Raxol.UI.Components.Display.Table do
     Enum.reduce(data, List.duplicate(0, length(columns)), fn row, acc ->
       Enum.zip_with(acc, columns, fn max_width, col ->
         value = Map.get(row, Map.get(col, :key))
-        max(max_width, String.length(to_string(value)))
+        max(max_width, Raxol.UI.TextMeasure.display_width(to_string(value)))
       end)
     end)
   end

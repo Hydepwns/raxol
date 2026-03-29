@@ -157,7 +157,7 @@ defmodule Raxol.UI.ElementRenderer do
 
   defp get_max_column_width(column_content) do
     Enum.reduce(column_content, 0, fn cell, max_width ->
-      cell_width = String.graphemes(to_string(cell)) |> length()
+      cell_width = Raxol.UI.TextMeasure.display_width(to_string(cell))
       max(cell_width, max_width)
     end)
   end
@@ -178,10 +178,12 @@ defmodule Raxol.UI.ElementRenderer do
     cell_bg = Map.get(style, :background, Map.get(style, :bg, :black))
 
     String.graphemes(cell_text)
-    |> Enum.with_index()
-    |> Enum.map(fn {char, char_index} ->
-      {x + char_index, y, char, cell_fg, cell_bg, []}
+    |> Enum.reduce({[], x}, fn char, {cells, cur_x} ->
+      w = Raxol.UI.TextMeasure.char_display_width(char)
+      {[{cur_x, y, char, cell_fg, cell_bg, []} | cells], cur_x + w}
     end)
+    |> elem(0)
+    |> Enum.reverse()
   end
 
   ## Pattern matching helper functions for if statement elimination
@@ -251,13 +253,15 @@ defmodule Raxol.UI.ElementRenderer do
     fg = Map.get(style, :fg) || Map.get(style, :foreground, :white)
     bg = Map.get(style, :bg) || Map.get(style, :background, :black)
 
-    # Simple text rendering - one character per cell
+    # Width-aware text rendering - CJK/fullwidth chars advance x by 2
     text
     |> String.graphemes()
-    |> Enum.with_index()
-    |> Enum.map(fn {char, index} ->
-      {x + index, y, char, fg, bg, []}
+    |> Enum.reduce({[], x}, fn char, {cells, cur_x} ->
+      w = Raxol.UI.TextMeasure.char_display_width(char)
+      {[{cur_x, y, char, fg, bg, []} | cells], cur_x + w}
     end)
+    |> elem(0)
+    |> Enum.reverse()
   end
 
   defp add_headers_if_present(cells, [], _x, _y, _col_widths, _header_style),

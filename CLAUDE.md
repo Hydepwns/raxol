@@ -136,8 +136,9 @@ lib/raxol/
 ├── ui/              # Multi-framework UI
 │   ├── components/  # Widgets: TextInput, Table, Button, Modal, SelectList, Checkbox, Tree, etc.
 │   ├── charts/      # Streaming charts: LineChart, ScatterChart, BarChart, Heatmap, BrailleCanvas
-│   ├── layout/      # Flexbox and CSS grid layout engines
+│   ├── layout/      # Flexbox/CSS grid engines, Preparer (two-phase), ScrollContent (lazy scroll)
 │   ├── rendering/   # UI rendering (TreeDiffer, Composer, Painter, DamageTracker, etc.)
+│   ├── text_measure.ex  # Unicode display width facade (single source of truth)
 │   └── theming/
 ├── core/            # Services and utilities (runtime stays here; behaviours/events/config in raxol_core)
 │   ├── renderer/    # Core rendering primitives (layout, views)
@@ -201,7 +202,17 @@ IO.write(Renderer.apply_diff(diff))  # NOT Enum.each(diff, &IO.write/1)
 
 ### Render Pipeline
 
-The render pipeline lives in `lib/raxol/ui/rendering/` (10 modules: TreeDiffer, Layouter, Composer, Painter, DamageTracker, ComponentCache, RenderBatcher, TimerServer, Renderer, LayouterCached). The flow is: element tree -> layout engine -> positioned cells -> buffer write -> terminal output.
+The render pipeline lives in `lib/raxol/ui/rendering/` (10 modules: TreeDiffer, Layouter, Composer, Painter, DamageTracker, ComponentCache, RenderBatcher, TimerServer, Renderer, LayouterCached) plus `lib/raxol/ui/layout/` (Preparer, PreparedElement, ScrollContent). The flow is:
+
+1. `view(model)` -> element tree
+2. `Preparer.prepare_incremental` -> PreparedElement tree (cached text measurements)
+3. `LayoutEngine.apply_layout` -> positioned elements (arithmetic only)
+4. `UIRenderer.render_to_cells` -> cell tuples `{x, y, char, fg, bg, attrs}`
+5. `ScreenBuffer` -> diff -> `Terminal.Renderer` -> ANSI output
+
+**Text measurement**: All display-width-sensitive code uses `Raxol.UI.TextMeasure` (facade in `lib/raxol/ui/text_measure.ex`), which delegates to `Raxol.Terminal.CharacterHandling` for correct CJK/Unicode width. Never use `String.length` for display width.
+
+**Scrollable containers**: `Raxol.UI.Layout.ScrollContent` behaviour enables lazy content sourcing for Viewport. `ListScrollContent` wraps lists, `StreamScrollContent` wraps fetch functions with a sliding cache window.
 
 ### Testing Patterns
 
@@ -238,6 +249,8 @@ These namespaces have been consolidated -- avoid creating new top-level alternat
 - `Raxol.Recording.*` - Session recording/replay (not `session/`)
 - `Raxol.Swarm.*` - Distributed swarm (CRDTs, discovery, topology)
 - `Raxol.Swarm.Strategy.*` - Custom libcluster strategies (Tailscale)
+- `Raxol.UI.TextMeasure` - Single facade for display width measurement (not `String.length`)
+- `Raxol.UI.Layout.ScrollContent` - Cursor-based lazy scroll behaviour + adapters
 
 ## Environment Variables
 

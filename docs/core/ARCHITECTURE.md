@@ -51,15 +51,23 @@ end
 
 Produces: `%{type: :column, children: [%{type: :text, ...}, %{type: :row, ...}], ...}`
 
-### 2. Layout Engine -> Positioned Elements
+### 2. Preparer -> Measured Element Tree
 
-`Raxol.UI.Layout.Engine` takes the element tree and computes `{x, y, width, height}` for every node. Supports:
+`Raxol.UI.Layout.Preparer` walks the element tree and pre-measures all text nodes via `Raxol.UI.TextMeasure`, producing a `PreparedElement` tree with cached display widths. This is the "prepare" phase of a two-phase prepare/layout architecture (inspired by [Pretext](https://github.com/nicklockwood/Pretext)):
+
+- Text measurement handles CJK double-width characters, fullwidth symbols, and combining characters correctly via `Raxol.Terminal.CharacterHandling`
+- On terminal resize, only the layout phase re-runs -- text measurements are cached and reused when content hasn't changed
+- `prepare_incremental/2` compares content hashes to skip re-measurement of unchanged nodes
+
+### 3. Layout Engine -> Positioned Elements
+
+`Raxol.UI.Layout.Engine` takes the element tree and computes `{x, y, width, height}` for every node. Uses cached measurements from the Preparer when available. Supports:
 
 - **Flexbox**: `row`/`column` with `flex`, `gap`, `align_items`, `justify_content`
 - **CSS Grid**: `grid` with `template_columns`, `template_rows`
 - **Box model**: `padding`, `border`, `margin`, `width`, `height`
 
-### 3. Composer -> Cell Grid
+### 4. Composer -> Cell Grid
 
 `Raxol.UI.Rendering.Composer` walks the positioned tree and produces cell tuples:
 
@@ -67,13 +75,13 @@ Produces: `%{type: :column, children: [%{type: :text, ...}, %{type: :row, ...}],
 {x, y, char, fg_color, bg_color, attrs}
 ```
 
-Each cell is one character at one position with its styling.
+Each cell is one character at one position with its styling. Cell x-positions account for character display width -- CJK characters advance x by 2, not 1.
 
-### 4. Screen Buffer -> Diff
+### 5. Screen Buffer -> Diff
 
 `Raxol.Terminal.ScreenBuffer` holds the current and previous frame. Only changed cells produce output.
 
-### 5. Terminal Backend -> Output
+### 6. Terminal Backend -> Output
 
 Platform-detected backend writes ANSI escape sequences:
 
@@ -128,31 +136,37 @@ The component gets its own GenServer under a DynamicSupervisor. If it crashes, i
 
 ## Performance Design
 
+- **Two-phase rendering**: Text measurement (expensive, Unicode-aware) is cached separately from layout (cheap arithmetic). On resize, only layout re-runs.
 - **Buffer diff**: Only changed cells are written. ~2ms for 80x24.
 - **ETS for reads**: Theme, i18n, config, and metrics use ETS tables. Reads bypass GenServer serialization entirely.
 - **Synchronized output**: Uses DEC mode 2026 (`\e[?2026h`) to batch terminal writes, preventing flicker.
 - **Damage tracking**: `DamageTracker` computes rectangular dirty regions. `RenderBatcher` coalesces rapid updates into single frames at 60fps.
 - **Color downsampling**: `Raxol.Style.Colors.Adaptive` detects terminal capabilities and maps 24-bit colors to 256 or 16 colors automatically.
+- **Lazy scroll content**: `ScrollContent` behaviour enables cursor-based streaming for large datasets in `Viewport` -- only the visible slice is materialized.
 
 ## Terminal Compatibility
 
-- **Unicode width**: The terminal emulator handles double-width CJK, combining characters, emoji
+- **Unicode width**: `TextMeasure` delegates to `CharacterHandling` for correct CJK double-width, combining characters, fullwidth symbols, and emoji width calculation across layout, rendering, and text wrapping
 - **Border fallback**: Box drawing uses ASCII (`+-|`) when Unicode isn't supported
 - **Color detection**: `COLORTERM`, `TERM`, capability queries for truecolor/256/16/mono
 
 ## Key Modules
 
-| Module                                 | Role                            |
-| -------------------------------------- | ------------------------------- |
-| `Raxol.Core.Runtime.Lifecycle`         | TEA loop GenServer              |
-| `Raxol.Core.Runtime.Events.Dispatcher` | Event routing + bubbling        |
-| `Raxol.Core.Runtime.Rendering.Engine`  | view -> layout -> render        |
-| `Raxol.UI.Layout.Engine`               | Flexbox/Grid layout computation |
-| `Raxol.UI.Rendering.Composer`          | Element tree -> cell grid       |
-| `Raxol.Terminal.ScreenBuffer`          | Double-buffered cell storage    |
-| `Raxol.Terminal.Renderer`              | Cell grid -> ANSI string        |
-| `Raxol.Terminal.Driver`                | Platform backend selection      |
-| `Raxol.Core.Renderer.View`             | View DSL macros                 |
+| Module                                 | Role                                |
+| -------------------------------------- | ----------------------------------- |
+| `Raxol.Core.Runtime.Lifecycle`         | TEA loop GenServer                  |
+| `Raxol.Core.Runtime.Events.Dispatcher` | Event routing + bubbling            |
+| `Raxol.Core.Runtime.Rendering.Engine`  | view -> prepare -> layout -> render |
+| `Raxol.UI.TextMeasure`                 | Unicode display width (facade)      |
+| `Raxol.UI.Layout.Preparer`            | Pre-measure text, cache widths      |
+| `Raxol.UI.Layout.Engine`               | Flexbox/Grid layout computation     |
+| `Raxol.UI.Layout.ScrollContent`       | Cursor-based lazy scroll behaviour  |
+| `Raxol.UI.Rendering.Composer`          | Element tree -> cell grid           |
+| `Raxol.Terminal.ScreenBuffer`          | Double-buffered cell storage        |
+| `Raxol.Terminal.CharacterHandling`     | CJK/Unicode width (wcwidth)         |
+| `Raxol.Terminal.Renderer`              | Cell grid -> ANSI string            |
+| `Raxol.Terminal.Driver`                | Platform backend selection          |
+| `Raxol.Core.Renderer.View`             | View DSL macros                     |
 
 ## References
 

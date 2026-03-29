@@ -71,19 +71,19 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
 
     text
     |> String.graphemes()
-    |> Enum.with_index()
-    |> Enum.reduce(buffer, fn {char, index}, acc ->
-      write_x = x + index
+    |> Enum.reduce({buffer, x}, fn char, {acc, cur_x} ->
+      char_w = Raxol.Terminal.CharacterHandling.get_char_width(char)
 
       # Handle line wrapping
-      if write_x >= acc.width do
-        write_y = y + div(write_x, acc.width)
-        write_x = rem(write_x, acc.width)
-        write_char(acc, write_x, write_y, char, style)
+      if cur_x >= acc.width do
+        write_y = y + div(cur_x, acc.width)
+        write_x = rem(cur_x, acc.width)
+        {write_char(acc, write_x, write_y, char, style), cur_x + char_w}
       else
-        write_char(acc, write_x, y, char, style)
+        {write_char(acc, cur_x, y, char, style), cur_x + char_w}
       end
     end)
+    |> elem(0)
   end
 
   @doc """

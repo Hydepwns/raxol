@@ -17,6 +17,7 @@ defmodule Raxol.UI.Components.Display.Viewport do
   @type t :: %{
           id: any(),
           children: list(map()),
+          content_source: struct() | nil,
           scroll_top: non_neg_integer(),
           scroll_left: non_neg_integer(),
           visible_height: pos_integer(),
@@ -33,16 +34,25 @@ defmodule Raxol.UI.Components.Display.Viewport do
   def init(props) do
     props = if Keyword.keyword?(props), do: Map.new(props), else: props
     children = Map.get(props, :children, [])
+    content_source = Map.get(props, :content_source)
+
+    content_height =
+      if content_source do
+        content_source.__struct__.total_count(content_source)
+      else
+        length(children)
+      end
 
     state = %{
       id:
         Map.get(props, :id, "viewport-#{:erlang.unique_integer([:positive])}"),
       children: children,
+      content_source: content_source,
       scroll_top: Map.get(props, :scroll_top, 0),
       scroll_left: Map.get(props, :scroll_left, 0),
       visible_height: Map.get(props, :visible_height, 10),
       visible_width: Map.get(props, :visible_width, nil),
-      content_height: length(children),
+      content_height: content_height,
       style: Map.get(props, :style, %{}),
       theme: Map.get(props, :theme, %{}),
       show_scrollbar: Map.get(props, :show_scrollbar, true),
@@ -102,7 +112,16 @@ defmodule Raxol.UI.Components.Display.Viewport do
       |> maybe_update(:style, props)
       |> maybe_update(:theme, props)
 
-    new_state = %{new_state | content_height: length(new_state.children)}
+    content_height =
+      if new_state.content_source do
+        new_state.content_source.__struct__.total_count(
+          new_state.content_source
+        )
+      else
+        length(new_state.children)
+      end
+
+    new_state = %{new_state | content_height: content_height}
 
     scroll_top =
       clamp_scroll(
@@ -163,7 +182,15 @@ defmodule Raxol.UI.Components.Display.Viewport do
     }
 
     visible_children =
-      Enum.slice(state.children, state.scroll_top, state.visible_height)
+      if state.content_source do
+        state.content_source.__struct__.slice(
+          state.content_source,
+          state.scroll_top,
+          state.visible_height
+        )
+      else
+        Enum.slice(state.children, state.scroll_top, state.visible_height)
+      end
 
     content_column = %{
       type: :column,

@@ -310,9 +310,16 @@ defmodule Raxol.UI.Components.Input.Button do
     available_label_width = max(max_width - padding, 1)
 
     truncated_label =
-      case String.length(base_label) > available_label_width do
+      case Raxol.UI.TextMeasure.display_width(base_label) >
+             available_label_width do
         true ->
-          String.slice(base_label, 0, available_label_width)
+          {truncated, _} =
+            Raxol.UI.TextMeasure.split_at_display_width(
+              base_label,
+              available_label_width
+            )
+
+          truncated
 
         false ->
           base_label
@@ -322,7 +329,7 @@ defmodule Raxol.UI.Components.Input.Button do
     button = Map.put(button, :_truncated_label, truncated_label)
 
     button.width ||
-      (String.length(truncated_label) + padding)
+      (Raxol.UI.TextMeasure.display_width(truncated_label) + padding)
       |> min(max_width)
   end
 

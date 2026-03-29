@@ -1,7 +1,7 @@
 defmodule RaxolCore.MixProject do
   use Mix.Project
 
-  @version "2.3.0"
+  @version "2.3.1"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do

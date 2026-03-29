@@ -167,7 +167,8 @@ defmodule Raxol.UI.Layout.Engine do
         type: :box,
         x: space.x,
         y: space.y,
-        width: min(String.length(display_text) + 4, space.width),
+        width:
+          min(Raxol.UI.TextMeasure.display_width(display_text) + 4, space.width),
         height: 3,
         attrs: component_attrs
       },
@@ -350,7 +351,7 @@ defmodule Raxol.UI.Layout.Engine do
         type: :box,
         x: space.x,
         y: space.y,
-        width: min(String.length(text) + 4, space.width),
+        width: min(Raxol.UI.TextMeasure.display_width(text) + 4, space.width),
         height: 3,
         attrs: component_attrs
       },
@@ -441,7 +442,12 @@ defmodule Raxol.UI.Layout.Engine do
   def measure_element(%{type: :text, content: content}, _available_space)
       when is_binary(content) do
     lines = String.split(content, "\n")
-    width = lines |> Enum.map(&String.length/1) |> Enum.max(fn -> 0 end)
+
+    width =
+      lines
+      |> Enum.map(&Raxol.UI.TextMeasure.display_width/1)
+      |> Enum.max(fn -> 0 end)
+
     %{width: width, height: length(lines)}
   end
 

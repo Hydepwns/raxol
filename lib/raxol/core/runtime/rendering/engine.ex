@@ -39,7 +39,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
               # Whether terminal supports Mode 2026 synchronized output
               sync_output: false,
               # Cycle profiler pid (nil when disabled)
-              cycle_profiler: nil
+              cycle_profiler: nil,
+              # Cached prepared element tree (Pretext-inspired two-phase)
+              prepared_tree: nil
   end
 
   # --- Public API ---
@@ -164,6 +166,11 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
     with {:ok, view} <- safe_get_view(state.app_module, model),
          false <- is_nil(view),
+         prepared_tree <-
+           Raxol.UI.Layout.Preparer.prepare_incremental(
+             view,
+             state.prepared_tree
+           ),
          t1 <- profiler_now(state.cycle_profiler),
          {:ok, positioned_elements} <- safe_apply_layout(view, state),
          t2 <- profiler_now(state.cycle_profiler),
@@ -188,7 +195,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         mem_before
       )
 
-      {:ok, new_state}
+      {:ok, %{new_state | prepared_tree: prepared_tree}}
     else
       true ->
         {:ok, state}

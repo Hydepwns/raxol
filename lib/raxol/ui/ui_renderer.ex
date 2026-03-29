@@ -111,7 +111,9 @@ defmodule Raxol.UI.Renderer do
   end
 
   defp get_text_width(%{width: width}, _text), do: width
-  defp get_text_width(_element, text), do: String.length(text)
+
+  defp get_text_width(_element, text),
+    do: Raxol.UI.TextMeasure.display_width(text)
 
   defp get_text_height(%{height: height}), do: height
   defp get_text_height(_element), do: 1

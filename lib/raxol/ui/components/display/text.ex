@@ -122,8 +122,9 @@ defmodule Raxol.UI.Components.Display.Text do
   end
 
   defp truncate_line(text, width) do
-    if String.length(text) > width do
-      String.slice(text, 0, width - 3) <> "..."
+    if Raxol.UI.TextMeasure.display_width(text) > width do
+      {left, _} = Raxol.UI.TextMeasure.split_at_display_width(text, width - 3)
+      left <> "..."
     else
       text
     end
@@ -136,14 +137,14 @@ defmodule Raxol.UI.Components.Display.Text do
 
   defp align_lines(lines, width, :right) do
     Enum.map(lines, fn line ->
-      pad = max(width - String.length(line), 0)
+      pad = max(width - Raxol.UI.TextMeasure.display_width(line), 0)
       String.duplicate(" ", pad) <> line
     end)
   end
 
   defp align_lines(lines, width, :center) do
     Enum.map(lines, fn line ->
-      total_pad = max(width - String.length(line), 0)
+      total_pad = max(width - Raxol.UI.TextMeasure.display_width(line), 0)
       left_pad = div(total_pad, 2)
       right_pad = total_pad - left_pad
 

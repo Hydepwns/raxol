@@ -255,7 +255,7 @@ defmodule Raxol.UI.Components.Input.TextWrappingCached do
     new_text =
       if current_line == [], do: word, else: current_text <> " " <> word
 
-    if String.length(new_text) <= width do
+    if Raxol.UI.TextMeasure.display_width(new_text) <= width do
       wrap_words(rest, width, [word | current_line], lines)
     else
       # Start new line with the word
@@ -268,7 +268,7 @@ defmodule Raxol.UI.Components.Input.TextWrappingCached do
         if completed_line != "", do: [completed_line | lines], else: lines
 
       # Handle very long words that exceed width
-      if String.length(word) > width do
+      if Raxol.UI.TextMeasure.display_width(word) > width do
         # Break long word into chunks
         word_chunks = break_long_word(word, width)
 
@@ -299,37 +299,18 @@ defmodule Raxol.UI.Components.Input.TextWrappingCached do
   end
 
   defp chunk_graphemes([char | rest], width, current_chunk, chunks) do
-    if length(current_chunk) >= width do
-      completed_chunk = Enum.join(Enum.reverse(current_chunk), "")
-      chunk_graphemes([char | rest], width, [], [completed_chunk | chunks])
+    current_text = Enum.join(Enum.reverse(current_chunk), "")
+    char_w = Raxol.UI.TextMeasure.char_display_width(char)
+
+    if Raxol.UI.TextMeasure.display_width(current_text) + char_w > width do
+      chunk_graphemes([char | rest], width, [], [current_text | chunks])
     else
       chunk_graphemes(rest, width, [char | current_chunk], chunks)
     end
   end
 
   defp calculate_visual_width(text) do
-    # Simple implementation: count graphemes, with wider characters counting as 2
-    graphemes = String.graphemes(text)
-
-    Enum.reduce(graphemes, 0, fn char, acc ->
-      # CJK characters and some symbols take 2 columns
-      codepoint = String.to_charlist(char) |> List.first()
-
-      cond do
-        # CJK Unified Ideographs
-        codepoint >= 0x4E00 and codepoint <= 0x9FFF -> acc + 2
-        # CJK Symbols and Punctuation
-        codepoint >= 0x3000 and codepoint <= 0x303F -> acc + 2
-        # Hiragana
-        codepoint >= 0x3040 and codepoint <= 0x309F -> acc + 2
-        # Katakana
-        codepoint >= 0x30A0 and codepoint <= 0x30FF -> acc + 2
-        # Fullwidth Forms
-        codepoint >= 0xFF00 and codepoint <= 0xFFEF -> acc + 2
-        # Most other characters take 1 column
-        true -> acc + 1
-      end
-    end)
+    Raxol.UI.TextMeasure.display_width(text)
   end
 
   defp estimate_char_width_from_pixels(pixel_width, font_manager) do
