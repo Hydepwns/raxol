@@ -17,4 +17,19 @@ defmodule RaxolPlaygroundWeb.Playground.Helpers do
 
   @doc "Returns a human-readable label for a category atom."
   def category_label(cat), do: cat |> to_string() |> String.capitalize()
+
+  @doc "Canonical theme list as `[{key, label, bg_color}]` tuples."
+  def themes do
+    [
+      {:dracula, "Dracula", "#282a36"},
+      {:nord, "Nord", "#2e3440"},
+      {:monokai, "Monokai", "#272822"},
+      {:solarized_dark, "Solarized Dark", "#002b36"},
+      {:synthwave84, "Synthwave '84", "#241b2f"},
+      {:gruvbox_dark, "Gruvbox Dark", "#282828"},
+      {:one_dark, "One Dark", "#282c34"},
+      {:tokyo_night, "Tokyo Night", "#1a1b26"},
+      {:catppuccin, "Catppuccin", "#1e1e2e"}
+    ]
+  end
 end

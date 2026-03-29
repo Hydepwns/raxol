@@ -23,23 +23,27 @@ defmodule RaxolPlaygroundWeb.LandingLive do
   <span style="color:#bb9af7">defmodule</span> <span style="color:#7aa2f7">Counter</span> <span style="color:#bb9af7">do</span>
     <span style="color:#bb9af7">use</span> <span style="color:#7aa2f7">Raxol.Core.Runtime.Application</span>
 
+    <span style="color:#9ece6a">@impl true</span>
     <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">init</span>(<span style="color:#a9b1d6">_ctx</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">%{</span><span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">0}</span>
 
-    <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#7dcfff">:inc</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{%{model |</span> <span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">model.count + 1}, []}</span>
-    <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#7dcfff">:dec</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{%{model |</span> <span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">model.count - 1}, []}</span>
+    <span style="color:#9ece6a">@impl true</span>
+    <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#7dcfff">:increment</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{%{model |</span> <span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">model.count + 1}, []}</span>
+    <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#7dcfff">:decrement</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{%{model |</span> <span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">model.count - 1}, []}</span>
     <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#a9b1d6">_</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{model, []}</span>
 
+    <span style="color:#9ece6a">@impl true</span>
     <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">view</span>(<span style="color:#a9b1d6">model</span>) <span style="color:#bb9af7">do</span>
       <span style="color:#7aa2f7">column</span> <span style="color:#7dcfff">style:</span> <span style="color:#a9b1d6">%{</span><span style="color:#7dcfff">padding:</span> <span style="color:#a9b1d6">1,</span> <span style="color:#7dcfff">gap:</span> <span style="color:#a9b1d6">1}</span> <span style="color:#bb9af7">do</span>
         <span style="color:#a9b1d6">[</span>
           <span style="color:#7aa2f7">text</span>(<span style="color:#9ece6a">"Count: &#35;{model.count}"</span>, <span style="color:#7dcfff">style:</span> <span style="color:#a9b1d6">[</span><span style="color:#7dcfff">:bold</span><span style="color:#a9b1d6">]</span>),
           <span style="color:#7aa2f7">row</span> <span style="color:#7dcfff">style:</span> <span style="color:#a9b1d6">%{</span><span style="color:#7dcfff">gap:</span> <span style="color:#a9b1d6">1}</span> <span style="color:#bb9af7">do</span>
-            <span style="color:#a9b1d6">[</span><span style="color:#7aa2f7">button</span>(<span style="color:#9ece6a">"+"</span>, <span style="color:#7dcfff">on_click:</span> <span style="color:#7dcfff">:inc</span>), <span style="color:#7aa2f7">button</span>(<span style="color:#9ece6a">"-"</span>, <span style="color:#7dcfff">on_click:</span> <span style="color:#7dcfff">:dec</span>)<span style="color:#a9b1d6">]</span>
+            <span style="color:#a9b1d6">[</span><span style="color:#7aa2f7">button</span>(<span style="color:#9ece6a">"Increment"</span>, <span style="color:#7dcfff">on_click:</span> <span style="color:#7dcfff">:increment</span>), <span style="color:#7aa2f7">button</span>(<span style="color:#9ece6a">"Decrement"</span>, <span style="color:#7dcfff">on_click:</span> <span style="color:#7dcfff">:decrement</span>)<span style="color:#a9b1d6">]</span>
           <span style="color:#bb9af7">end</span>
         <span style="color:#a9b1d6">]</span>
       <span style="color:#bb9af7">end</span>
     <span style="color:#bb9af7">end</span>
 
+    <span style="color:#9ece6a">@impl true</span>
     <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">subscribe</span>(<span style="color:#a9b1d6">_model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">[]</span>
   <span style="color:#bb9af7">end</span>
   """)
@@ -307,6 +311,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
       <p class="text-gray-400 mb-6">
         That counter works in a terminal. The same module renders in Phoenix LiveView.
         The same module serves over SSH. One codebase, three targets.
+        See the full example with keyboard handling:
       </p>
 
       <div class="bg-gray-900 border border-gray-800 rounded-lg px-5 py-3 font-mono text-sm text-green-400">
@@ -351,7 +356,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
           description="Snapshot every update/2 cycle. Step back, forward, jump, restore."
         />
         <.feature_card
-          title="30+ Widgets"
+          title="28 Widgets"
           description="Buttons, tables, trees, charts, sparklines. Flexbox + CSS Grid layout."
         />
       </div>

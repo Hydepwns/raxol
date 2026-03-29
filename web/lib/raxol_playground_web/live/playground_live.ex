@@ -13,17 +13,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   alias RaxolPlaygroundWeb.Playground.Helpers
   alias RaxolPlaygroundWeb.Presence, as: PlaygroundPresence
 
-  @themes [
-    {:dracula, "Dracula", "#282a36"},
-    {:nord, "Nord", "#2e3440"},
-    {:monokai, "Monokai", "#272822"},
-    {:solarized_dark, "Solarized Dark", "#002b36"},
-    {:synthwave84, "Synthwave '84", "#241b2f"},
-    {:gruvbox_dark, "Gruvbox Dark", "#282828"},
-    {:one_dark, "One Dark", "#282c34"},
-    {:tokyo_night, "Tokyo Night", "#1a1b26"},
-    {:catppuccin, "Catppuccin", "#1e1e2e"}
-  ]
+  @themes Helpers.themes()
 
   # =========================================================================
   # Mount

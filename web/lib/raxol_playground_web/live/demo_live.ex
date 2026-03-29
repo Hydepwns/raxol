@@ -12,15 +12,6 @@ defmodule RaxolPlaygroundWeb.DemoLive do
   alias Raxol.Core.Runtime.Lifecycle
   alias RaxolPlaygroundWeb.Playground.Helpers
 
-  @themes %{
-    synthwave84: "#241b2f",
-    dracula: "#282a36",
-    nord: "#2e3440",
-    monokai: "#272822",
-    tokyo_night: "#1a1b26",
-    catppuccin: "#1e1e2e"
-  }
-
   # Index: list all demos
   @impl true
   def mount(%{"demo" => name}, _session, socket) do
@@ -33,6 +24,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
       |> assign(:lifecycle_pid, nil)
       |> assign(:topic, nil)
       |> assign(:terminal_theme, :synthwave84)
+      |> assign(:themes, Helpers.themes())
       |> assign(:show_code, false)
       |> start_demo()
 
@@ -40,10 +32,13 @@ defmodule RaxolPlaygroundWeb.DemoLive do
   end
 
   def mount(_params, _session, socket) do
+    components = Catalog.list_components()
+
     socket =
       socket
       |> assign(:component, nil)
-      |> assign(:components, Catalog.list_components())
+      |> assign(:components, components)
+      |> assign(:total_count, length(components))
 
     {:ok, socket}
   end
@@ -88,19 +83,19 @@ defmodule RaxolPlaygroundWeb.DemoLive do
   @impl true
   def render(%{component: nil} = assigns) do
     ~H"""
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-gray-950 text-gray-100">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="text-center mb-8">
-          <h1 class="text-4xl font-bold text-gray-900 mb-4">
-            <a href="/" class="hover:text-gray-600 transition-colors">Raxol</a> Interactive Demos
+          <h1 class="text-4xl font-bold text-gray-100 mb-4">
+            <a href="/" class="hover:text-blue-400 transition-colors">Raxol</a> Interactive Demos
           </h1>
-          <p class="text-xl text-gray-600">
-            23 real Raxol widget demos -- click to try
+          <p class="text-xl text-gray-400">
+            <%= @total_count %> real Raxol widget demos -- click to try
           </p>
         </div>
 
         <!-- SSH Callout -->
-        <div class="bg-gray-900 text-green-400 rounded-lg p-4 font-mono text-sm mb-8">
+        <div class="bg-gray-900 border border-gray-800 text-green-400 rounded-lg p-4 font-mono text-sm mb-8">
           Try the real terminal experience:
           <span class="text-white ml-2">ssh playground@raxol.io</span>
           <span class="text-gray-500 mx-2">|</span>
@@ -111,16 +106,16 @@ defmodule RaxolPlaygroundWeb.DemoLive do
           <%= for comp <- @components do %>
             <a
               href={"/demos/#{comp.name}"}
-              class="block bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow duration-200 p-4"
+              class="block bg-gray-900 rounded-lg border border-gray-800 hover:border-gray-700 transition-colors duration-200 p-4"
             >
               <div class="flex items-start justify-between mb-2">
-                <h3 class="text-lg font-semibold text-gray-900"><%= comp.name %></h3>
+                <h3 class="text-lg font-semibold text-gray-100"><%= comp.name %></h3>
                 <span class={"px-2 py-1 text-xs font-medium rounded-full #{Helpers.complexity_class(comp.complexity)}"}>
                   <%= Helpers.complexity_label(comp.complexity) %>
                 </span>
               </div>
-              <p class="text-gray-600 text-sm mb-2"><%= comp.description %></p>
-              <span class="text-xs text-gray-400"><%= Helpers.category_label(comp.category) %></span>
+              <p class="text-gray-400 text-sm mb-2"><%= comp.description %></p>
+              <span class="text-xs text-gray-500"><%= Helpers.category_label(comp.category) %></span>
             </a>
           <% end %>
         </div>
@@ -132,19 +127,23 @@ defmodule RaxolPlaygroundWeb.DemoLive do
   # -- Render: Show --
 
   def render(assigns) do
-    bg = Map.get(@themes, assigns.terminal_theme, "#241b2f")
-    assigns = assign(assigns, :theme_bg, bg)
+    theme_bg =
+      Enum.find_value(assigns.themes, "#241b2f", fn {key, _name, bg} ->
+        if key == assigns.terminal_theme, do: bg
+      end)
+
+    assigns = assign(assigns, :theme_bg, theme_bg)
 
     ~H"""
-    <div class="demo-container h-screen flex flex-col bg-gray-100">
+    <div class="demo-container h-screen flex flex-col bg-gray-950">
       <!-- Header -->
-      <div class="bg-white shadow-sm border-b px-6 py-4">
+      <div class="bg-gray-900 border-b border-gray-800 px-6 py-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
-            <a href="/demos" class="text-gray-600 hover:text-gray-900">&larr; All Demos</a>
+            <a href="/demos" class="text-gray-400 hover:text-gray-100">&larr; All Demos</a>
             <div>
-              <h1 class="text-2xl font-bold text-gray-900"><%= @component.name %></h1>
-              <p class="text-gray-600"><%= @component.description %></p>
+              <h1 class="text-2xl font-bold text-gray-100"><%= @component.name %></h1>
+              <p class="text-gray-400"><%= @component.description %></p>
             </div>
             <span class={"px-2 py-1 text-xs font-medium rounded-full #{Helpers.complexity_class(@component.complexity)}"}>
               <%= Helpers.complexity_label(@component.complexity) %>
@@ -155,11 +154,11 @@ defmodule RaxolPlaygroundWeb.DemoLive do
             <form phx-change="select_theme" id="theme-select">
               <select
                 name="theme"
-                class="border border-gray-300 rounded px-3 py-1 text-sm"
+                class="bg-gray-800 border border-gray-700 text-gray-100 rounded px-3 py-1 text-sm"
               >
-                <%= for {name, _bg} <- @themes do %>
-                  <option value={name} selected={@terminal_theme == name}>
-                    <%= name |> to_string() |> String.replace("_", " ") |> String.capitalize() %>
+                <%= for {key, label, _bg} <- @themes do %>
+                  <option value={key} selected={@terminal_theme == key}>
+                    <%= label %>
                   </option>
                 <% end %>
               </select>
@@ -167,7 +166,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
 
             <button
               phx-click="toggle_code"
-              class={"px-4 py-2 border rounded-lg text-sm #{if @show_code, do: "bg-blue-50 border-blue-300 text-blue-600", else: "border-gray-300 hover:bg-gray-100"}"}
+              class={"px-4 py-2 border rounded-lg text-sm #{if @show_code, do: "bg-blue-900/50 border-blue-700 text-blue-300", else: "border-gray-700 text-gray-300 hover:bg-gray-800"}"}
             >
               Code
             </button>

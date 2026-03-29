@@ -19,11 +19,11 @@ defmodule RaxolPlaygroundWeb.ReplLive do
         <h1 class="text-4xl font-bold mb-4">Try the Real Terminal</h1>
         <p class="text-xl text-gray-400 mb-12">
           The best way to experience Raxol is in an actual terminal.
-          23 interactive widget demos, all running natively.
+          28 interactive widget demos, all running natively.
         </p>
 
         <div class="bg-gray-800 rounded-lg p-8 font-mono text-left mb-8">
-          <div class="text-gray-400 mb-4"># Local -- browse all 23 widgets</div>
+          <div class="text-gray-400 mb-4"># Local -- browse all 28 widgets</div>
           <div class="text-green-400 text-lg mb-6">$ mix raxol.playground</div>
 
           <div class="text-gray-400 mb-4"># Remote -- try it right now, no install needed</div>
@@ -37,7 +37,7 @@ defmodule RaxolPlaygroundWeb.ReplLive do
           <a href="/gallery" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
             Browse Gallery
           </a>
-          <a href="/" class="px-6 py-3 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-800 transition-colors">
+          <a href="/playground" class="px-6 py-3 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-800 transition-colors">
             Open Playground
           </a>
         </div>
