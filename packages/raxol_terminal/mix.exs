@@ -26,8 +26,7 @@ defmodule RaxolTerminal.MixProject do
           compilers: Mix.compilers() ++ [:elixir_make],
           make_cwd: "lib/termbox2_nif/c_src",
           make_targets: ["all"],
-          make_clean: ["clean"],
-          make_env: %{"MIX_APP_PATH" => "priv"}
+          make_clean: ["clean"]
         )
 
       {:win32, _} ->

@@ -61,10 +61,10 @@ $(TARGET): $(OBJ)
 	$(CC) $(LDFLAGS) $(ERL_LDFLAGS) $^ -o $@
 	mkdir -p ../priv
 	cp $(TARGET) ../priv/
-	# Also copy to main app priv directory if MIX_APP_PATH is set
+	# Copy to build output priv directory (set by elixir_make)
 	@if [ -n "$(MIX_APP_PATH)" ]; then \
-		mkdir -p ../../../$(MIX_APP_PATH); \
-		cp $(TARGET) ../../../$(MIX_APP_PATH)/; \
+		mkdir -p $(MIX_APP_PATH)/priv; \
+		cp $(TARGET) $(MIX_APP_PATH)/priv/; \
 	fi
 
 # Clean build artifacts

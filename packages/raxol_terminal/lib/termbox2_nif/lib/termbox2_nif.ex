@@ -12,31 +12,45 @@ defmodule :termbox2_nif do
         :ok
 
       {:unix, _} ->
-        load_unix_nif()
+        case load_unix_nif() do
+          :ok ->
+            :ok
+
+          {:error, reason} ->
+            IO.puts(:stderr, "[termbox2_nif] NIF load failed: #{inspect(reason)}")
+            # Return :ok so module loads with stubs (web/SSH deployments don't need NIF)
+            :ok
+        end
     end
   end
 
   defp load_unix_nif do
-    # Try raxol app's priv directory first (since termbox2_nif is part of raxol)
+    # Try raxol_terminal's priv directory first (NIF lives in this package)
     priv_dir =
-      case :code.priv_dir(:raxol) do
+      case :code.priv_dir(:raxol_terminal) do
         {:error, _} ->
-          # Fallback to termbox2_nif app priv directory
-          case :code.priv_dir(:termbox2_nif) do
+          # Fallback to raxol app's priv directory
+          case :code.priv_dir(:raxol) do
             {:error, _} ->
-              # Final fallback: construct path relative to current module
-              case :code.which(__MODULE__) do
-                :non_existing ->
-                  # Development fallback
-                  Path.join([File.cwd!(), "priv"])
+              # Fallback to termbox2_nif app priv directory
+              case :code.priv_dir(:termbox2_nif) do
+                {:error, _} ->
+                  # Final fallback: construct path relative to current module
+                  case :code.which(__MODULE__) do
+                    :non_existing ->
+                      Path.join([File.cwd!(), "priv"])
 
-                path ->
-                  path
-                  |> List.to_string()
-                  |> Path.dirname()
-                  |> Path.dirname()
-                  |> Path.dirname()
-                  |> Path.join("priv")
+                    path ->
+                      path
+                      |> List.to_string()
+                      |> Path.dirname()
+                      |> Path.dirname()
+                      |> Path.dirname()
+                      |> Path.join("priv")
+                  end
+
+                dir ->
+                  List.to_string(dir)
               end
 
             dir ->
