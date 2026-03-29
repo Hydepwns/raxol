@@ -91,7 +91,9 @@ defmodule RaxolPlaygroundWeb.DemoLive do
     <div class="min-h-screen bg-gray-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="text-center mb-8">
-          <h1 class="text-4xl font-bold text-gray-900 mb-4">Interactive Demos</h1>
+          <h1 class="text-4xl font-bold text-gray-900 mb-4">
+            <a href="/" class="hover:text-gray-600 transition-colors">Raxol</a> Interactive Demos
+          </h1>
           <p class="text-xl text-gray-600">
             23 real Raxol widget demos -- click to try
           </p>

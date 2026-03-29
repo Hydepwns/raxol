@@ -5,6 +5,12 @@ defmodule RaxolPlaygroundWeb.LandingLive do
 
   use RaxolPlaygroundWeb, :live_view
 
+  @package_test_counts %{main: 3657, core: 765, terminal: 1874, agent: 131, sensor: 55}
+  @total_tests (
+    total = @package_test_counts |> Map.values() |> Enum.sum()
+    total |> Integer.to_string() |> String.replace(~r/(\d)(?=(\d{3})+$)/, "\\1,")
+  )
+
   @raxol_version (case :application.get_key(:raxol, :vsn) do
                     {:ok, vsn} ->
                       vsn |> to_string() |> String.split(".") |> Enum.take(2) |> Enum.join(".")
@@ -44,15 +50,22 @@ defmodule RaxolPlaygroundWeb.LandingLive do
      assign(socket,
        page_title: "Raxol",
        counter_code: @counter_code_html,
-       raxol_version: @raxol_version
+       raxol_version: @raxol_version,
+       total_tests: @total_tests,
+       mobile_menu_open: false
      )}
+  end
+
+  @impl true
+  def handle_event("toggle_mobile_menu", _params, socket) do
+    {:noreply, assign(socket, :mobile_menu_open, !socket.assigns.mobile_menu_open)}
   end
 
   @impl true
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gray-950 text-gray-100">
-      <.nav_bar />
+      <.nav_bar mobile_menu_open={@mobile_menu_open} />
       <.hero_section />
       <.comparison_section />
       <.code_example_section counter_code={@counter_code} />
@@ -60,7 +73,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
       <.performance_section />
       <.packages_section />
       <.playground_section />
-      <.footer_section />
+      <.footer_section total_tests={@total_tests} />
     </div>
     """
   end
@@ -69,6 +82,8 @@ defmodule RaxolPlaygroundWeb.LandingLive do
   # Sections
   # ===========================================================================
 
+  attr :mobile_menu_open, :boolean, required: true
+
   defp nav_bar(assigns) do
     ~H"""
     <nav class="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-sm border-b border-gray-800/50">
@@ -76,14 +91,35 @@ defmodule RaxolPlaygroundWeb.LandingLive do
         <a href="/" class="text-lg font-bold text-blue-400">
           raxol
         </a>
-        <div class="flex items-center gap-6 text-sm text-gray-400">
+        <!-- Desktop links -->
+        <div class="hidden md:flex items-center gap-6 text-sm text-gray-400">
           <a href="/playground" class="hover:text-gray-200 transition-colors">Playground</a>
           <a href="/gallery" class="hover:text-gray-200 transition-colors">Gallery</a>
           <a href="/demos" class="hover:text-gray-200 transition-colors">Demos</a>
           <a href="https://hexdocs.pm/raxol" class="hover:text-gray-200 transition-colors">Docs</a>
           <a href="https://github.com/Hydepwns/raxol" class="hover:text-gray-200 transition-colors">GitHub</a>
         </div>
+        <!-- Mobile hamburger -->
+        <button phx-click="toggle_mobile_menu" class="md:hidden text-gray-400 hover:text-gray-200 p-1">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <%= if @mobile_menu_open do %>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            <% else %>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            <% end %>
+          </svg>
+        </button>
       </div>
+      <!-- Mobile menu -->
+      <%= if @mobile_menu_open do %>
+        <div class="md:hidden border-t border-gray-800/50 px-6 py-4 flex flex-col gap-4 text-sm text-gray-400">
+          <a href="/playground" class="hover:text-gray-200 transition-colors">Playground</a>
+          <a href="/gallery" class="hover:text-gray-200 transition-colors">Gallery</a>
+          <a href="/demos" class="hover:text-gray-200 transition-colors">Demos</a>
+          <a href="https://hexdocs.pm/raxol" class="hover:text-gray-200 transition-colors">Docs</a>
+          <a href="https://github.com/Hydepwns/raxol" class="hover:text-gray-200 transition-colors">GitHub</a>
+        </div>
+      <% end %>
     </nav>
     """
   end
@@ -358,15 +394,15 @@ defmodule RaxolPlaygroundWeb.LandingLive do
             </tr>
             <tr>
               <td class="py-3 pr-4 text-gray-300">Tree diff (100 nodes)</td>
-              <td class="py-3 text-right text-gray-100 font-mono">4 us</td>
+              <td class="py-3 text-right text-gray-100 font-mono">4 \u03BCs</td>
             </tr>
             <tr>
               <td class="py-3 pr-4 text-gray-300">Cell write</td>
-              <td class="py-3 text-right text-gray-100 font-mono">0.97 us</td>
+              <td class="py-3 text-right text-gray-100 font-mono">0.97 \u03BCs</td>
             </tr>
             <tr>
               <td class="py-3 pr-4 text-gray-300">ANSI parse</td>
-              <td class="py-3 text-right text-gray-100 font-mono">38 us</td>
+              <td class="py-3 text-right text-gray-100 font-mono">38 \u03BCs</td>
             </tr>
           </tbody>
         </table>
@@ -464,6 +500,8 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     """
   end
 
+  attr :total_tests, :string, required: true
+
   defp footer_section(assigns) do
     ~H"""
     <footer class="px-6 py-16 border-t border-gray-800">
@@ -483,7 +521,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
         </blockquote>
 
         <div class="flex items-center justify-between text-sm text-gray-600">
-          <span>6,482 tests across 5 packages</span>
+          <span><%= @total_tests %> tests across 5 packages</span>
           <span>Made by <a href="https://axol.io" class="text-gray-500 hover:text-gray-300 transition-colors">axol.io</a></span>
         </div>
       </div>

@@ -71,7 +71,9 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="text-3xl font-bold text-gray-900">Raxol Component Gallery</h1>
+              <h1 class="text-3xl font-bold text-gray-900">
+                <a href="/" class="hover:text-gray-600 transition-colors">Raxol</a> Component Gallery
+              </h1>
               <p class="mt-2 text-gray-600">
                 23 interactive terminal UI components --
                 <a href="/playground" class="text-blue-600 hover:underline">open playground</a>
