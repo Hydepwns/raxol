@@ -6,7 +6,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
   use RaxolPlaygroundWeb, :live_view
 
   @package_test_counts %{
-    main: 3657,
+    main: 3695,
     core: 765,
     terminal: 1874,
     agent: 131,
