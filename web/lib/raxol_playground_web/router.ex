@@ -13,7 +13,8 @@ defmodule RaxolPlaygroundWeb.Router do
   scope "/", RaxolPlaygroundWeb do
     pipe_through :browser
 
-    live "/", PlaygroundLive, :index
+    live "/", LandingLive, :index
+    live "/playground", PlaygroundLive, :index
     live "/gallery", GalleryLive, :index
     live "/demos", DemoLive, :index
     live "/demos/:demo", DemoLive, :show

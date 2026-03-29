@@ -185,6 +185,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
           <div class="flex items-center gap-4">
             <h1 class="text-xl font-bold text-gray-900">Raxol Playground</h1>
             <span class="text-sm text-gray-500">
+              <a href="/" class="hover:underline">Home</a>
+              <span class="mx-2">|</span>
               <a href="/gallery" class="hover:underline">Gallery</a>
               <span class="mx-2">|</span>
               <a href="/demos" class="hover:underline">Demos</a>

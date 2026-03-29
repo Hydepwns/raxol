@@ -74,7 +74,7 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
               <h1 class="text-3xl font-bold text-gray-900">Raxol Component Gallery</h1>
               <p class="mt-2 text-gray-600">
                 23 interactive terminal UI components --
-                <a href="/" class="text-blue-600 hover:underline">open playground</a>
+                <a href="/playground" class="text-blue-600 hover:underline">open playground</a>
               </p>
             </div>
 
@@ -213,7 +213,7 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
             Try Live
           </a>
           <a
-            href={"/?component=#{@component.name}"}
+            href={"/playground?component=#{@component.name}"}
             class="px-3 py-2 border border-gray-300 text-gray-700 text-sm rounded hover:bg-gray-50 transition-colors"
           >
             Code
@@ -250,7 +250,7 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
               Try Live
             </a>
             <a
-              href={"/?component=#{@component.name}"}
+              href={"/playground?component=#{@component.name}"}
               class="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded hover:bg-gray-50 transition-colors"
             >
               View Code
