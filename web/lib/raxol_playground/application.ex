@@ -11,9 +11,13 @@ defmodule RaxolPlayground.Application do
   def start(_type, _args) do
     children = [
       RaxolPlaygroundWeb.Telemetry,
-      {DNSCluster, query: Application.get_env(:raxol_playground, :dns_cluster_query) || :ignore},
+      {DNSCluster,
+       query:
+         Application.get_env(:raxol_playground, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: RaxolPlayground.PubSub},
-      {Phoenix.PubSub, name: Raxol.PubSub},
+      Supervisor.child_spec({Phoenix.PubSub, name: Raxol.PubSub},
+        id: :raxol_pubsub
+      ),
       RaxolPlaygroundWeb.Presence,
       RaxolPlaygroundWeb.Endpoint
     ]
