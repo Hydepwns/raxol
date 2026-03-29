@@ -5,48 +5,61 @@ defmodule RaxolPlaygroundWeb.LandingLive do
 
   use RaxolPlaygroundWeb, :live_view
 
-  @package_test_counts %{main: 3657, core: 765, terminal: 1874, agent: 131, sensor: 55}
+  @package_test_counts %{
+    main: 3657,
+    core: 765,
+    terminal: 1874,
+    agent: 131,
+    sensor: 55
+  }
   @total_tests (
-    total = @package_test_counts |> Map.values() |> Enum.sum()
-    total |> Integer.to_string() |> String.replace(~r/(\d)(?=(\d{3})+$)/, "\\1,")
-  )
+                 total = @package_test_counts |> Map.values() |> Enum.sum()
+
+                 total
+                 |> Integer.to_string()
+                 |> String.replace(~r/(\d)(?=(\d{3})+$)/, "\\1,")
+               )
 
   @raxol_version (case :application.get_key(:raxol, :vsn) do
                     {:ok, vsn} ->
-                      vsn |> to_string() |> String.split(".") |> Enum.take(2) |> Enum.join(".")
+                      vsn
+                      |> to_string()
+                      |> String.split(".")
+                      |> Enum.take(2)
+                      |> Enum.join(".")
 
                     _ ->
                       "2.3"
                   end)
 
   @counter_code_html String.trim_leading(~S"""
-  <span style="color:#bb9af7">defmodule</span> <span style="color:#7aa2f7">Counter</span> <span style="color:#bb9af7">do</span>
-    <span style="color:#bb9af7">use</span> <span style="color:#7aa2f7">Raxol.Core.Runtime.Application</span>
+                     <span style="color:#bb9af7">defmodule</span> <span style="color:#7aa2f7">Counter</span> <span style="color:#bb9af7">do</span>
+                       <span style="color:#bb9af7">use</span> <span style="color:#7aa2f7">Raxol.Core.Runtime.Application</span>
 
-    <span style="color:#9ece6a">@impl true</span>
-    <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">init</span>(<span style="color:#a9b1d6">_ctx</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">%{</span><span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">0}</span>
+                       <span style="color:#9ece6a">@impl true</span>
+                       <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">init</span>(<span style="color:#a9b1d6">_ctx</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">%{</span><span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">0}</span>
 
-    <span style="color:#9ece6a">@impl true</span>
-    <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#7dcfff">:increment</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{%{model |</span> <span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">model.count + 1}, []}</span>
-    <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#7dcfff">:decrement</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{%{model |</span> <span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">model.count - 1}, []}</span>
-    <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#a9b1d6">_</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{model, []}</span>
+                       <span style="color:#9ece6a">@impl true</span>
+                       <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#7dcfff">:increment</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{%{model |</span> <span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">model.count + 1}, []}</span>
+                       <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#7dcfff">:decrement</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{%{model |</span> <span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">model.count - 1}, []}</span>
+                       <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#a9b1d6">_</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{model, []}</span>
 
-    <span style="color:#9ece6a">@impl true</span>
-    <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">view</span>(<span style="color:#a9b1d6">model</span>) <span style="color:#bb9af7">do</span>
-      <span style="color:#7aa2f7">column</span> <span style="color:#7dcfff">style:</span> <span style="color:#a9b1d6">%{</span><span style="color:#7dcfff">padding:</span> <span style="color:#a9b1d6">1,</span> <span style="color:#7dcfff">gap:</span> <span style="color:#a9b1d6">1}</span> <span style="color:#bb9af7">do</span>
-        <span style="color:#a9b1d6">[</span>
-          <span style="color:#7aa2f7">text</span>(<span style="color:#9ece6a">"Count: &#35;{model.count}"</span>, <span style="color:#7dcfff">style:</span> <span style="color:#a9b1d6">[</span><span style="color:#7dcfff">:bold</span><span style="color:#a9b1d6">]</span>),
-          <span style="color:#7aa2f7">row</span> <span style="color:#7dcfff">style:</span> <span style="color:#a9b1d6">%{</span><span style="color:#7dcfff">gap:</span> <span style="color:#a9b1d6">1}</span> <span style="color:#bb9af7">do</span>
-            <span style="color:#a9b1d6">[</span><span style="color:#7aa2f7">button</span>(<span style="color:#9ece6a">"Increment"</span>, <span style="color:#7dcfff">on_click:</span> <span style="color:#7dcfff">:increment</span>), <span style="color:#7aa2f7">button</span>(<span style="color:#9ece6a">"Decrement"</span>, <span style="color:#7dcfff">on_click:</span> <span style="color:#7dcfff">:decrement</span>)<span style="color:#a9b1d6">]</span>
-          <span style="color:#bb9af7">end</span>
-        <span style="color:#a9b1d6">]</span>
-      <span style="color:#bb9af7">end</span>
-    <span style="color:#bb9af7">end</span>
+                       <span style="color:#9ece6a">@impl true</span>
+                       <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">view</span>(<span style="color:#a9b1d6">model</span>) <span style="color:#bb9af7">do</span>
+                         <span style="color:#7aa2f7">column</span> <span style="color:#7dcfff">style:</span> <span style="color:#a9b1d6">%{</span><span style="color:#7dcfff">padding:</span> <span style="color:#a9b1d6">1,</span> <span style="color:#7dcfff">gap:</span> <span style="color:#a9b1d6">1}</span> <span style="color:#bb9af7">do</span>
+                           <span style="color:#a9b1d6">[</span>
+                             <span style="color:#7aa2f7">text</span>(<span style="color:#9ece6a">"Count: &#35;{model.count}"</span>, <span style="color:#7dcfff">style:</span> <span style="color:#a9b1d6">[</span><span style="color:#7dcfff">:bold</span><span style="color:#a9b1d6">]</span>),
+                             <span style="color:#7aa2f7">row</span> <span style="color:#7dcfff">style:</span> <span style="color:#a9b1d6">%{</span><span style="color:#7dcfff">gap:</span> <span style="color:#a9b1d6">1}</span> <span style="color:#bb9af7">do</span>
+                               <span style="color:#a9b1d6">[</span><span style="color:#7aa2f7">button</span>(<span style="color:#9ece6a">"Increment"</span>, <span style="color:#7dcfff">on_click:</span> <span style="color:#7dcfff">:increment</span>), <span style="color:#7aa2f7">button</span>(<span style="color:#9ece6a">"Decrement"</span>, <span style="color:#7dcfff">on_click:</span> <span style="color:#7dcfff">:decrement</span>)<span style="color:#a9b1d6">]</span>
+                             <span style="color:#bb9af7">end</span>
+                           <span style="color:#a9b1d6">]</span>
+                         <span style="color:#bb9af7">end</span>
+                       <span style="color:#bb9af7">end</span>
 
-    <span style="color:#9ece6a">@impl true</span>
-    <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">subscribe</span>(<span style="color:#a9b1d6">_model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">[]</span>
-  <span style="color:#bb9af7">end</span>
-  """)
+                       <span style="color:#9ece6a">@impl true</span>
+                       <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">subscribe</span>(<span style="color:#a9b1d6">_model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">[]</span>
+                     <span style="color:#bb9af7">end</span>
+                     """)
 
   @impl true
   def mount(_params, _session, socket) do
@@ -62,7 +75,8 @@ defmodule RaxolPlaygroundWeb.LandingLive do
 
   @impl true
   def handle_event("toggle_mobile_menu", _params, socket) do
-    {:noreply, assign(socket, :mobile_menu_open, !socket.assigns.mobile_menu_open)}
+    {:noreply,
+     assign(socket, :mobile_menu_open, !socket.assigns.mobile_menu_open)}
   end
 
   @impl true
@@ -70,7 +84,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     ~H"""
     <div class="min-h-screen bg-gray-950 text-gray-100">
       <.nav_bar mobile_menu_open={@mobile_menu_open} />
-      <.hero_section />
+      <.hero_section raxol_version={@raxol_version} />
       <.comparison_section />
       <.code_example_section counter_code={@counter_code} />
       <.features_section />
