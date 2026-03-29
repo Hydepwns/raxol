@@ -3,8 +3,22 @@ name: Security Scanning
 on:
   push:
     branches: [main, master]
+    paths-ignore:
+      - 'web/**'
+      - 'docs/**'
+      - 'assets/**'
+      - '*.md'
+      - '.github/**'
+      - '!.github/workflows/**'
   pull_request:
     branches: [main, master]
+    paths-ignore:
+      - 'web/**'
+      - 'docs/**'
+      - 'assets/**'
+      - '*.md'
+      - '.github/**'
+      - '!.github/workflows/**'
   schedule:
     # Run security scan daily at 3 AM UTC
     - cron: '0 3 * * *'

@@ -3,8 +3,22 @@ name: Unified CI Pipeline
 on:
   push:
     branches: [main, master, develop]
+    paths-ignore:
+      - 'web/**'
+      - 'docs/**'
+      - 'assets/**'
+      - '*.md'
+      - '.github/**'
+      - '!.github/workflows/**'
   pull_request:
     branches: [main, master, develop]
+    paths-ignore:
+      - 'web/**'
+      - 'docs/**'
+      - 'assets/**'
+      - '*.md'
+      - '.github/**'
+      - '!.github/workflows/**'
   workflow_dispatch:
     inputs:
       skip_heavy_checks:
