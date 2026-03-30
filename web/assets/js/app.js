@@ -61,6 +61,22 @@ Hooks.TerminalOutput = {
   }
 }
 
+// Raxol Terminal Hook - renders demo output and captures keyboard input
+Hooks.RaxolTerminal = {
+  mounted() {
+    this.el.focus()
+    this.scrollToBottom()
+  },
+
+  updated() {
+    this.scrollToBottom()
+  },
+
+  scrollToBottom() {
+    this.el.scrollTop = this.el.scrollHeight
+  }
+}
+
 // Initialize LiveSocket
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
