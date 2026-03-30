@@ -544,7 +544,7 @@ jobs:
           mix coveralls.json --import-cover cover/**/*.coverdata
       
       - name: Upload to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./cover/excoveralls.json
