@@ -97,7 +97,8 @@ defmodule RaxolPlaygroundWeb.DemoLive do
 
   def handle_info({:DOWN, _ref, :process, pid, reason}, socket) do
     if pid == socket.assigns[:lifecycle_pid] do
-      Logger.warning("Demo #{socket.assigns.component.name} crashed: #{inspect(reason)}")
+      name = if socket.assigns[:component], do: socket.assigns.component.name, else: "unknown"
+      Logger.warning("Demo #{name} crashed: #{inspect(reason)}")
       {:noreply, assign(socket, lifecycle_pid: nil, demo_error: "Demo crashed: #{format_error(reason)}")}
     else
       {:noreply, socket}
@@ -221,7 +222,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
           <div
             id="demo-terminal"
             phx-hook="RaxolTerminal"
-            phx-window-keydown="keydown"
+            phx-keydown="keydown"
             class="flex-1 overflow-auto p-4 font-mono text-sm"
             style={"background: #{@theme_bg}; color: #e0e0e0;"}
             tabindex="0"

@@ -268,7 +268,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
               <div
                 id="playground-terminal"
                 phx-hook="RaxolTerminal"
-                phx-window-keydown="keydown"
+                phx-keydown="keydown"
                 class="flex-1 overflow-auto p-4 font-mono text-sm"
                 style={"background: #{@theme_bg}; color: #e0e0e0;"}
                 tabindex="0"
@@ -535,27 +535,23 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   defp init_presence(socket, selected) do
     if connected?(socket) do
       PlaygroundPresence.subscribe()
-      {:ok, user_id, user_meta} = PlaygroundPresence.track_user(socket)
 
-      if selected do
-        PlaygroundPresence.update_component(user_id, selected.name)
+      case PlaygroundPresence.track_user(socket) do
+        {:ok, user_id, _user_meta} ->
+          if selected, do: PlaygroundPresence.update_component(user_id, selected.name)
+
+          socket =
+            socket
+            |> assign(:user_id, user_id)
+            |> assign(:online_users, PlaygroundPresence.list_users())
+
+          {socket, user_id}
+
+        {:error, _reason} ->
+          {assign(socket, user_id: nil, online_users: []), nil}
       end
-
-      socket =
-        socket
-        |> assign(:user_id, user_id)
-        |> assign(:user_meta, user_meta)
-        |> assign(:online_users, PlaygroundPresence.list_users())
-
-      {socket, user_id}
     else
-      socket =
-        socket
-        |> assign(:user_id, nil)
-        |> assign(:user_meta, %{})
-        |> assign(:online_users, [])
-
-      {socket, nil}
+      {assign(socket, user_id: nil, online_users: []), nil}
     end
   end
 
