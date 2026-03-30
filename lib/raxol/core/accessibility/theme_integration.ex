@@ -61,7 +61,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       :ok
   """
   def cleanup do
-    handle_test_cleanup(Mix.env() == :test)
+    handle_test_cleanup(test_env?())
 
     # Wrap handler cleanup in try-catch to handle cases where
     # EventManager may have been stopped
@@ -348,4 +348,6 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
 
   defp get_text_scale_factor(true), do: 1.5
   defp get_text_scale_factor(false), do: 1.0
+
+  defp test_env?, do: Code.ensure_loaded?(Mix) and Mix.env() == :test
 end
