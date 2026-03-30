@@ -337,16 +337,20 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       "[#{__MODULE__}] Broadcasting on topic "
     )
 
-    # Find subscribers for the topic
-    subscribers = Registry.lookup(@registry_name, topic)
+    # Find subscribers for the topic (registry may not exist in web-only deployments)
+    case Registry.lookup(@registry_name, topic) do
+      subscribers when is_list(subscribers) ->
+        Enum.each(subscribers, fn {pid, _value} ->
+          send(pid, {:event, topic, payload})
+        end)
 
-    # Send the message to each subscriber
-    # Consider async send vs. send for backpressure/ordering needs
-    Enum.each(subscribers, fn {pid, _value} ->
-      send(pid, {:event, topic, payload})
-    end)
+      _ ->
+        :ok
+    end
 
     :ok
+  rescue
+    ArgumentError -> :ok
   end
 
   # --- BaseManager Callbacks ---
