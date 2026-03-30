@@ -33,6 +33,8 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
 
   def handle_event("filter_category", %{"category" => category}, socket) do
     {:noreply, refilter(assign(socket, :active_category, String.to_existing_atom(category)))}
+  rescue
+    ArgumentError -> {:noreply, socket}
   end
 
   def handle_event("search", %{"query" => query}, socket) do
@@ -49,6 +51,8 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
 
   def handle_event("filter_complexity", %{"level" => level}, socket) do
     {:noreply, refilter(assign(socket, :complexity_filter, String.to_existing_atom(level)))}
+  rescue
+    ArgumentError -> {:noreply, socket}
   end
 
   defp refilter(socket) do

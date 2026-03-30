@@ -44,7 +44,6 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       |> assign(:sidebar_collapsed, false)
       |> assign(:terminal_theme, :synthwave84)
       |> assign(:themes, @themes)
-      |> assign(:current_user_id, user_id)
       |> assign(:demo_error, nil)
       |> assign(:demo_timer, nil)
       |> start_demo()

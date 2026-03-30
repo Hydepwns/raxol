@@ -61,6 +61,20 @@ Hooks.TerminalOutput = {
   }
 }
 
+// Flash Hook - auto-dismiss flash messages
+Hooks.Flash = {
+  mounted() {
+    // Auto-dismiss after 5 seconds
+    this.timer = setTimeout(() => {
+      this.pushEvent("lv:clear-flash", {})
+    }, 5000)
+  },
+
+  destroyed() {
+    if (this.timer) clearTimeout(this.timer)
+  }
+}
+
 // Raxol Terminal Hook - renders demo output and captures keyboard input
 Hooks.RaxolTerminal = {
   mounted() {
@@ -90,20 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cmd+K or Ctrl+K for search
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault()
-      const searchInput = document.querySelector('input[placeholder="Search components..."]')
+      const searchInput = document.querySelector('input[placeholder="Search..."]') ||
+        document.querySelector('input[placeholder="Search components..."]')
       if (searchInput) {
         searchInput.focus()
       }
-    }
-
-    // ? for shortcuts overlay
-    if (e.key === '?' && !e.target.matches('input, textarea')) {
-      e.preventDefault()
-      liveSocket.executePush({
-        event: 'toggle_shortcuts',
-        payload: {},
-        target: null
-      })
     }
   })
 })
