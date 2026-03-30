@@ -70,7 +70,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
       false
   """
   def get_option(key, user_preferences_pid_or_name \\ nil, default \\ nil) do
-    case Mix.env() do
+    case (Code.ensure_loaded?(Mix) and Mix.env()) || :prod do
       :test ->
         get_option_test(key, user_preferences_pid_or_name, default)
 
@@ -263,7 +263,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
   def get_text_scale(user_preferences_pid_or_name \\ nil) do
     # Calculate based on the :large_text preference directly
     # Explicitly handle test environment to ensure consistent behavior
-    case Mix.env() do
+    case (Code.ensure_loaded?(Mix) and Mix.env()) || :prod do
       :test ->
         target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
 

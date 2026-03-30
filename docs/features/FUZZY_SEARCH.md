@@ -81,4 +81,4 @@ def handle_search(state, query) do
 end
 ```
 
-Performance: ~100us for 1000-line buffer
+See [benchmarks](../bench/README.md) for current numbers.

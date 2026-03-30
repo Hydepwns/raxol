@@ -1,6 +1,6 @@
 # Time-Travel Debugging
 
-Every `update/2` call gets snapshotted -- the message, the model before, the model after. Step backwards and forwards through your app's history, diff any two points, restore old state into the live app. Disabled by default, zero overhead when off.
+Every `update/2` call gets snapshotted: the message, the model before, the model after. Step backwards and forwards through your app's history, diff any two points, restore old state into the live app. Disabled by default, zero overhead when off.
 
 ## Enabling
 
@@ -54,7 +54,7 @@ Pick any two snapshots and see exactly what changed between them:
 # {:removed, [:path, :to, :key], value}
 ```
 
-You can also diff arbitrary maps directly with `Snapshot.diff/2` -- it does recursive comparison and tracks the key path:
+You can also diff arbitrary maps directly with `Snapshot.diff/2`, which does recursive comparison and tracks the key path:
 
 ```elixir
 alias Raxol.Debug.Snapshot
@@ -93,4 +93,4 @@ Uses Erlang's binary term format.
 TimeTravel.record(message, model_before, model_after)
 ```
 
-Snapshots live in a CircularBuffer -- old ones get evicted when it's full, so memory stays bounded.
+Snapshots live in a CircularBuffer. Old ones get evicted when it's full, so memory stays bounded.

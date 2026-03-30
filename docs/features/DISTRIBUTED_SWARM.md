@@ -49,7 +49,7 @@ Raxol.Swarm.Discovery.start_link(
 Raxol.Swarm.Discovery.start_link(
   strategy: :tailscale,
   node_basename: "raxol",
-  tag_filter: "tag:raxol",    # optional -- only nodes with this tag
+  tag_filter: "tag:raxol",    # optional, only nodes with this tag
   use_dns_names: true,         # MagicDNS names instead of IPs
   poll_interval: 5_000         # ms between polls
 )
@@ -80,7 +80,7 @@ A node goes `:suspect` after 5s without a ping response, `:down` after 30s. RTT 
 
 ## Topology & Election
 
-`Raxol.Swarm.Topology` assigns roles to nodes and runs seniority-based commander election -- the longest-running node wins.
+`Raxol.Swarm.Topology` assigns roles to nodes and runs seniority-based commander election. The longest-running node wins.
 
 ```elixir
 {:ok, _} = Raxol.Swarm.Topology.start_link(quorum_size: 2)

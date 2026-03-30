@@ -1,4 +1,5 @@
 defmodule Raxol.Performance.DevProfiler do
+  @mix_env Mix.env()
   alias Raxol.Core.Runtime.Log
 
   @moduledoc """
@@ -78,7 +79,7 @@ defmodule Raxol.Performance.DevProfiler do
   end
 
   def profile(opts, fun) when is_list(opts) and is_function(fun) do
-    if Mix.env() != :dev do
+    if @mix_env != :dev do
       Log.warning("DevProfiler: development mode only")
       fun.()
     else
@@ -138,7 +139,7 @@ defmodule Raxol.Performance.DevProfiler do
       DevProfiler.start_continuous(interval: 30_000, duration: 5_000)
   """
   def start_continuous(opts \\ []) do
-    if Mix.env() != :dev do
+    if @mix_env != :dev do
       Log.warning("Continuous profiling: development only")
       :ignored
     else

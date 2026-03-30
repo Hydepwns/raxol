@@ -12,6 +12,7 @@ defmodule Raxol.Config do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+  @mix_env Mix.env()
   @default_config_file "config/raxol.toml"
   @env_config_dir "config/environments"
 
@@ -103,7 +104,7 @@ defmodule Raxol.Config do
   @impl Raxol.Core.Behaviours.BaseManager
   def init_manager(opts) do
     config_file = opts[:config_file] || @default_config_file
-    env = opts[:env] || Mix.env()
+    env = opts[:env] || @mix_env
 
     initial_state = %{
       config: %{},

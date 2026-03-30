@@ -37,7 +37,7 @@ defmodule RaxolPlaygroundWeb.Presence do
   @doc """
   Track a user in the playground.
   """
-  def track_user(socket, user_id \\ nil, metadata \\ %{}) do
+  def track_user(_socket, user_id \\ nil, metadata \\ %{}) do
     user_id = user_id || generate_user_id()
 
     default_meta = %{

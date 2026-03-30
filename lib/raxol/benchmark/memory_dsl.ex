@@ -25,6 +25,8 @@ defmodule Raxol.Benchmark.MemoryDSL do
     end
   """
 
+  @compile {:no_warn_undefined, Benchee}
+
   alias Raxol.Benchmark.MemoryAnalyzer
 
   @type assertion_result :: {:ok, term()} | {:error, String.t()}

@@ -84,7 +84,7 @@ defmodule Raxol.Application do
       Application.get_env(:raxol, :startup_mode) ->
         Application.get_env(:raxol, :startup_mode)
 
-      Mix.env() == :test ->
+      mix_env() == :test ->
         :test
 
       true ->
@@ -300,7 +300,7 @@ defmodule Raxol.Application do
   end
 
   defp maybe_add_dev_performance_tools do
-    if Mix.env() == :dev and feature_enabled?(:performance_monitoring) do
+    if mix_env() == :dev and feature_enabled?(:performance_monitoring) do
       [
         {Raxol.Performance.DevHints, []}
       ]
@@ -395,7 +395,7 @@ defmodule Raxol.Application do
       telemetry: true,
       plugins: false,
       audit: false,
-      dev_performance_hints: Mix.env() == :dev
+      dev_performance_hints: mix_env() == :dev
     }
   end
 
@@ -614,4 +614,6 @@ defmodule Raxol.Application do
       :ok
     end
   end
+
+  defp mix_env, do: if(Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod)
 end

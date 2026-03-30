@@ -357,8 +357,4 @@ end
 
 ## Examples
 
-- [Command Palette](../../lib/raxol/plugins/examples/command_palette_plugin.ex)
-- [Status Line](../../lib/raxol/plugins/examples/status_line_plugin.ex)
-- [File Browser](../../lib/raxol/plugins/examples/file_browser_plugin.ex)
-- [Git Integration](../../lib/raxol/plugins/examples/git_integration_plugin.ex)
-- [Spotify](examples/SPOTIFY.md)
+- [Spotify Plugin](examples/SPOTIFY.md): sample plugin with OAuth, state management, and API integration

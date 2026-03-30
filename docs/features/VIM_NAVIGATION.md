@@ -65,4 +65,4 @@ def handle_input(state, key) do
 end
 ```
 
-Performance: < 1us per movement
+See [benchmarks](../bench/README.md) for current numbers.

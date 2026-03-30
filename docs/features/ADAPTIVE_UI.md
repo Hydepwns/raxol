@@ -1,6 +1,6 @@
 # Adaptive UI
 
-The adaptive subsystem watches how you interact with the interface -- which panes you focus on, what commands you run, how long you dwell -- and suggests layout changes based on patterns. Accept or reject its suggestions, and it gets better over time.
+The adaptive subsystem watches how you interact with the interface (which panes you focus on, what commands you run, how long you dwell) and suggests layout changes based on patterns. Accept or reject its suggestions, and it gets better over time.
 
 ## Architecture
 
@@ -36,7 +36,7 @@ Raxol.Adaptive.FeedbackLoop.reject(recommendation_id)
 
 ## Behavior Tracking
 
-`Raxol.Adaptive.BehaviorTracker` logs timestamped events and computes windowed aggregates -- pane dwell times, command frequency, that sort of thing.
+`Raxol.Adaptive.BehaviorTracker` logs timestamped events and computes windowed aggregates: pane dwell times, command frequency, that sort of thing.
 
 ```elixir
 BehaviorTracker.record(:pane_focus, %{pane: :metrics})
@@ -96,7 +96,7 @@ history = FeedbackLoop.get_history(20)
 
 ## Layout Transitions
 
-`Raxol.Adaptive.LayoutTransition` animates between layouts with easing. Pure functions, no GenServer -- call `tick/2` each frame.
+`Raxol.Adaptive.LayoutTransition` animates between layouts with easing. Pure functions, no GenServer. Call `tick/2` each frame.
 
 ```elixir
 alias Raxol.Adaptive.LayoutTransition

@@ -46,7 +46,7 @@ evaluator = Evaluator.clear_history(evaluator)    # clears history, keeps bindin
 
 ## Sandbox Levels
 
-`Raxol.REPL.Sandbox` walks the AST with `Macro.prewalk` and rejects code that calls blocked modules or functions -- before it ever runs.
+`Raxol.REPL.Sandbox` walks the AST with `Macro.prewalk` and rejects code that calls blocked modules or functions, before it ever runs.
 
 ```elixir
 alias Raxol.REPL.Sandbox

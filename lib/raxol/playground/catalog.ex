@@ -224,6 +224,16 @@ defmodule Raxol.Playground.Catalog do
     },
     # --- Chart/Visualization widgets ---
     %{
+      name: "Sparkline",
+      module: Demos.SparklineDemo,
+      category: :visualization,
+      description: "Compact sparkline for inline data trends",
+      complexity: :basic,
+      tags: ["chart", "sparkline", "inline", "streaming"],
+      code_snippet:
+        ~s'sparkline(data: [10, 30, 50, 40, 60], width: 40, height: 5, color: :cyan)'
+    },
+    %{
       name: "LineChart",
       module: Demos.LineChartDemo,
       category: :visualization,

@@ -76,4 +76,4 @@ def render(state, cursor) do
 end
 ```
 
-Performance: ~7us per update + apply
+See [benchmarks](../bench/README.md) for current numbers.

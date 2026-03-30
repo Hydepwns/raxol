@@ -18,6 +18,8 @@ defmodule Raxol.Terminal.Session do
 
   require Raxol.Core.Runtime.Log
 
+  @mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
+
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
   alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
@@ -275,7 +277,7 @@ defmodule Raxol.Terminal.Session do
 
   # Helper functions for if-statement elimination
   defp execute_save_by_environment(pid) do
-    handle_save_by_env(Mix.env(), pid)
+    handle_save_by_env(@mix_env, pid)
   end
 
   defp handle_save_by_env(:test, pid) do

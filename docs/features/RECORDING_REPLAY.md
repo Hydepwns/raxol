@@ -89,4 +89,4 @@ Raxol.Recording.Asciicast.write!(session, "debug_session.cast")
 Raxol.Recording.Player.play("debug_session.cast")
 ```
 
-On crash, the current session is saved automatically -- no explicit stop needed for post-mortem.
+On crash, the current session is saved automatically. No explicit stop needed for post-mortem.

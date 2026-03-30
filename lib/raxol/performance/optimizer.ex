@@ -11,6 +11,8 @@ defmodule Raxol.Performance.Optimizer do
   of Process dictionary, providing better fault tolerance and monitoring.
   """
 
+  @compile {:no_warn_undefined, :poolboy}
+
   import Raxol.Performance.Profiler
   alias Raxol.Core.Runtime.Log
 

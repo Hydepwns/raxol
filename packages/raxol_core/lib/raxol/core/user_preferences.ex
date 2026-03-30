@@ -282,7 +282,8 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   defp send_notification_if_test({caller_pid, _}) do
-    execute_test_notification(Mix.env() == :test, caller_pid)
+    is_test = Code.ensure_loaded?(Mix) and Mix.env() == :test
+    execute_test_notification(is_test, caller_pid)
   end
 
   defp execute_test_notification(false, _caller_pid), do: :ok

@@ -13,6 +13,8 @@ defmodule Raxol.Adaptive.LayoutRecommender do
 
   use GenServer
 
+  @compile {:no_warn_undefined, Raxol.Adaptive.NxModel}
+
   require Logger
 
   @default_confidence_threshold 0.7

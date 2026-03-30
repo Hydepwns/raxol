@@ -3,8 +3,6 @@ defmodule RaxolPlayground.Release do
   Used for executing tasks in production releases.
   """
 
-  @app :raxol_playground
-
   def migrate do
     # No database migrations needed for this app
     # This is just a placeholder for the release command
@@ -12,7 +10,7 @@ defmodule RaxolPlayground.Release do
     :ok
   end
 
-  def rollback(version) do
+  def rollback(_version) do
     # No database to rollback
     IO.puts("No rollback available for Raxol Playground")
     :ok

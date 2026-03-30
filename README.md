@@ -6,12 +6,9 @@
 Same app runs in a terminal, a browser via LiveView, or over SSH.
 
 Your app is a [GenServer](https://hexdocs.pm/elixir/GenServer.html).
-Components can crash and restart without taking down the UI.
-Hot-reload your view function while it's running.
-
-Coordinate AI agent teams with OTP supervisors.
-Cluster nodes with CRDTs and automatic discovery.
-No other TUI framework does any of that -- Raxol inherits it _from the runtime_.
+Components crash and restart without taking down the UI.
+You can hot-reload your view function while it's running.
+No other TUI framework does this; Raxol inherits it from the runtime.
 
 ## Origin Vision
 
@@ -22,9 +19,9 @@ No other TUI framework does any of that -- Raxol inherits it _from the runtime_.
 
 ## Architecture
 
-Your app is a GenServer running [The Elm Architecture](https://guide.elm-lang.org/architecture/). The terminal backend is a real VT100 emulator -- not raw escape codes -- so AI agents can interact with structured screen buffers the same way they'd interact with a browser DOM. Each component can run in its own OTP process. Crash one, the rest keep going, the supervisor restarts it.
+Your app is a GenServer running [The Elm Architecture](https://guide.elm-lang.org/architecture/). The terminal backend is a real VT100 emulator, not raw escape codes, so agents can interact with structured screen buffers the way they would with a browser DOM. Each component can run in its own OTP process. Crash one, the rest keep going.
 
-The same TEA app renders to three targets: terminal (termbox2 NIF on Unix, pure Elixir on Windows), Phoenix LiveView in a browser, and SSH. You write it once.
+The same TEA app renders to terminal (termbox2 NIF on Unix, pure Elixir on Windows), Phoenix LiveView, and SSH. One codebase, three targets.
 
 ## Why OTP
 
@@ -40,13 +37,13 @@ Every capability below comes from the [BEAM VM](<https://en.wikipedia.org/wiki/B
 | Distributed clustering (CRDTs) |  yes  |   --    |     --     |   --    | --  |
 | Time-travel debugging          |  yes  |   --    |     --     |   --    | --  |
 
-The other frameworks are good at what they do -- Ratatui and Bubble Tea have excellent rendering and large ecosystems. The difference is that Raxol gets crash isolation, hot reload, distribution, and SSH for free from OTP. Those aren't features we built; they're properties of the runtime.
+Ratatui and Bubble Tea have excellent rendering and large ecosystems. Raxol's advantage is structural: these capabilities come from OTP, not application code.
 
-GenServer = Elm update loop. Process = component with crash isolation. Supervisor = restart strategy. `:ssh` = SSH serving without deps. `libcluster` = node discovery.
+GenServer = Elm update loop. Process = component boundary. Supervisor = restart strategy. `:ssh` = SSH serving. `libcluster` = node discovery.
 
 ## Hello World
 
-Every Raxol app follows [The Elm Architecture](https://guide.elm-lang.org/architecture/) -- `init`, `update`, `view`:
+Every Raxol app follows [The Elm Architecture](https://guide.elm-lang.org/architecture/): `init`, `update`, `view`.
 
 ```elixir
 defmodule Counter do
@@ -77,17 +74,15 @@ end
 mix run examples/getting_started/counter.exs
 ```
 
-That counter works in a terminal. The same module renders in Phoenix LiveView. The same module serves over SSH. One codebase, three targets.
+That counter works in a terminal. Same module renders in Phoenix LiveView or serves over SSH.
 
 ## Features
 
-The big stuff first.
+**Process isolation.** Wrap any widget in `process_component/2` and it runs in its own process. Crashes restart cleanly; the rest of the UI keeps going.
 
-**Crash isolation** -- wrap any widget in `process_component/2` and it runs in its own process. It crashes, it restarts. The rest of your UI doesn't blink.
+**Hot code reload.** Change your `view/1`, save, the running app picks it up. No restart.
 
-**Hot code reload** -- change your `view/1` function, save, and the running app updates. No restart, no reconnect.
-
-**AI agents as TEA apps** -- an agent is just a TEA app where input comes from LLMs instead of a keyboard. `use Raxol.Agent`, implement `init/update/view`, and you get supervised, crash-isolated agents with inter-agent messaging. Real SSE streaming to Anthropic, OpenAI, Ollama, Groq. Free tier via LLM7.io.
+**AI agents.** An agent is a TEA app where input comes from LLMs instead of a keyboard. `use Raxol.Agent`, implement `init/update/view`, and you get supervised agents with inter-agent messaging. SSE streaming to Anthropic, OpenAI, Ollama, Groq. Free tier via LLM7.io.
 
 ```elixir
 defmodule MyAgent do
@@ -108,23 +103,21 @@ end
 Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
 ```
 
-**SSH serving** -- `Raxol.SSH.serve(MyApp, port: 2222)` and anyone can SSH into your app. Each connection gets its own supervised process.
+**SSH serving.** `Raxol.SSH.serve(MyApp, port: 2222)`. Each connection gets its own supervised process.
 
-Beyond those, here's what else is in the box.
+**LiveView bridge.** Same TEA app renders in Phoenix LiveView, sharing the state model. See `examples/liveview/tea_counter_live.ex`.
 
-**LiveView bridge.** The same TEA app renders to a Phoenix LiveView -- terminal and browser, same codebase, same state model. See `examples/liveview/tea_counter_live.ex`.
+**Distributed swarm.** CRDTs (LWW registers, OR-sets), node monitoring, seniority-based election. Discovery via libcluster with gossip, epmd, DNS, or Tailscale.
 
-**Distributed swarm.** CRDTs (LWW registers, OR-sets), node monitoring, seniority-based election, tactical overlay sync. Discovery via libcluster: gossip, epmd, DNS, or Tailscale.
+**Widgets and layout.** Button, TextInput, Table, Tree, Modal, SelectList, Checkbox, Sparkline, Charts. Keyboard-navigable with focus management. Flexbox (`row`/`column` with `flex`, `gap`, `align_items`) and CSS Grid (`template_columns`, `template_rows`), nested freely. Rendering is virtual DOM diffing with damage tracking; full frame in ~2ms.
 
-**Widgets and layout.** Button, TextInput, Table, Tree, Modal, SelectList, Checkbox, Sparkline, Charts, and more. All keyboard-navigable with focus management. Layout uses flexbox (`row`/`column` with `flex`, `gap`, `align_items`) and CSS Grid (`template_columns`, `template_rows`), nested freely.
+**Sensor fusion** polls sensors, fuses readings with weighted averaging, renders gauges and sparklines. Self-adapting layout tracks usage and recommends changes (optional Nx/Axon ML backend).
 
-Rendering is virtual DOM diffing with damage tracking -- full frame in ~2ms, which is 13% of the 60fps budget.
+**Time-travel debugging** snapshots every `update/2` cycle: step back, forward, jump, restore. Zero cost when disabled. **Session recording** captures to asciinema v2 `.cast` files with pause, seek, speed control, and auto-save on crash.
 
-Sensor fusion polls sensors, fuses readings with weighted averaging and thresholds, renders gauges and sparklines. Self-adapting layout tracks usage patterns and recommends layout changes (optional Nx/Axon ML backend). Time-travel debugging snapshots every `update/2` cycle -- step back, forward, jump, restore, zero cost when disabled. Session recording captures to asciinema v2 `.cast` files with pause, seek, speed control, and auto-save on crash.
+**Theming** supports named colors, RGB, 256-color, and hex, downsampled to the terminal's capability. Inline images via Kitty graphics protocol, with Sixel and iTerm2 fallbacks.
 
-Theming supports named colors, RGB, 256-color, and hex strings, auto-downsampled to whatever the terminal supports. Works in Ghostty, Kitty, WezTerm, iTerm2, Alacritty, Terminal.app, Windows Terminal, and anything with basic ANSI. Inline images via Kitty graphics protocol (Ghostty, Kitty, WezTerm), with Sixel and iTerm2 protocol fallbacks.
-
-`mix raxol.repl` gives you a sandboxed REPL with three safety levels -- AST-based scanner blocks dangerous operations, safe for SSH in strict mode. The interactive playground has 28 live demos across 8 categories; see [Try It](#try-it).
+`mix raxol.repl` is a sandboxed REPL with three safety levels. AST-based scanning blocks dangerous operations; safe for SSH in strict mode. The playground has 29 live demos across 8 categories (see [Try It](#try-it)).
 
 ## Install
 
@@ -146,11 +139,11 @@ mix raxol.new my_app
 ```bash
 git clone https://github.com/Hydepwns/raxol.git
 cd raxol && mix deps.get
-mix raxol.playground          # 28 live demos, browse/search/filter
+mix raxol.playground          # 29 live demos, browse/search/filter
 mix raxol.playground --ssh    # same thing, served over SSH (port 2222)
 ```
 
-The flagship demo is a live BEAM dashboard -- scheduler utilization, memory sparklines, process table, all updating in real time:
+The flagship demo is a live BEAM dashboard: scheduler utilization, memory sparklines, process table, all updating in real time.
 
 ```bash
 mix run examples/demo.exs
@@ -173,7 +166,7 @@ mix phx.server                                    # LiveView counter at /counter
 
 ## Performance
 
-Full frame in 2.1ms on Apple M1 Pro (Elixir 1.19 / OTP 27). That's 13% of the 60fps budget -- components crash and restart in microseconds without affecting the UI.
+Full frame in 2.1ms on Apple M1 Pro (Elixir 1.19 / OTP 27), which is 13% of the 60fps budget.
 
 | What                              | Time    |
 | --------------------------------- | ------- |
@@ -182,19 +175,19 @@ Full frame in 2.1ms on Apple M1 Pro (Elixir 1.19 / OTP 27). That's 13% of the 60
 | Cell write                        | 0.97 us |
 | ANSI parse                        | 38 us   |
 
-Raxol is slower per-operation than Rust or Go (expected for a managed runtime). The tradeoff: crash isolation, hot reload, distribution, and SSH serving that those frameworks don't have. Windows uses a pure Elixir terminal driver (~10x slower than the Unix/macOS termbox2 NIF) -- functional but not performance-optimized. See the [benchmark suite](docs/bench/README.md) for details.
+Raxol is slower per-operation than Rust or Go, as you'd expect from a managed runtime. The tradeoff is everything in the table above. Windows uses a pure Elixir terminal driver (~10x slower than the Unix/macOS termbox2 NIF), usable but not tuned for speed. See the [benchmark suite](docs/bench/README.md) for details.
 
 ## Documentation
 
-**Start here** -- [Quickstart](docs/getting-started/QUICKSTART.md) / [Core Concepts](docs/getting-started/CORE_CONCEPTS.md) / [Widget Gallery](docs/getting-started/WIDGET_GALLERY.md)
+**Start here:** [Quickstart](docs/getting-started/QUICKSTART.md) / [Core Concepts](docs/getting-started/CORE_CONCEPTS.md) / [Widget Gallery](docs/getting-started/WIDGET_GALLERY.md)
 
-**Cookbook** -- [Building Apps](docs/cookbook/BUILDING_APPS.md) / [SSH Deployment](docs/cookbook/SSH_DEPLOYMENT.md) / [Theming](docs/cookbook/THEMING.md) / [LiveView](docs/cookbook/LIVEVIEW_INTEGRATION.md) / [Performance](docs/cookbook/PERFORMANCE_OPTIMIZATION.md)
+**Cookbook:** [Building Apps](docs/cookbook/BUILDING_APPS.md) / [SSH Deployment](docs/cookbook/SSH_DEPLOYMENT.md) / [Theming](docs/cookbook/THEMING.md) / [LiveView](docs/cookbook/LIVEVIEW_INTEGRATION.md) / [Performance](docs/cookbook/PERFORMANCE_OPTIMIZATION.md)
 
-**Reference** -- [Architecture](docs/core/ARCHITECTURE.md) / [Buffer API](docs/core/BUFFER_API.md) / [Benchmarks](docs/bench/README.md) / [API Docs](https://hexdocs.pm/raxol)
+**Reference:** [Architecture](docs/core/ARCHITECTURE.md) / [Buffer API](docs/core/BUFFER_API.md) / [Benchmarks](docs/bench/README.md) / [API Docs](https://hexdocs.pm/raxol)
 
-**Advanced** -- [Agent Framework](docs/features/AGENT_FRAMEWORK.md) / [Sensor Fusion](docs/features/SENSOR_FUSION.md) / [Distributed Swarm](docs/features/DISTRIBUTED_SWARM.md) / [Recording & Replay](docs/features/RECORDING_REPLAY.md) / [Why OTP for TUIs](docs/WHY_OTP.md)
+**Advanced:** [Agent Framework](docs/features/AGENT_FRAMEWORK.md) / [Sensor Fusion](docs/features/SENSOR_FUSION.md) / [Distributed Swarm](docs/features/DISTRIBUTED_SWARM.md) / [Recording & Replay](docs/features/RECORDING_REPLAY.md) / [Why OTP for TUIs](docs/WHY_OTP.md)
 
-**Standalone packages** -- [`raxol_core`](packages/raxol_core/) (behaviours, events, config, plugins), [`raxol_terminal`](packages/raxol_terminal/) (terminal emulation, termbox2 NIF), [`raxol_agent`](packages/raxol_agent/) (AI agent framework), [`raxol_sensor`](packages/raxol_sensor/) (sensor fusion). Use these if you want just one subsystem without the full framework.
+**Standalone packages:** [`raxol_core`](packages/raxol_core/) (behaviours, events, config, plugins), [`raxol_terminal`](packages/raxol_terminal/) (terminal emulation, termbox2 NIF), [`raxol_agent`](packages/raxol_agent/) (AI agent framework), [`raxol_sensor`](packages/raxol_sensor/) (sensor fusion). Use these if you want just one subsystem without the full framework.
 
 ## Development
 
@@ -214,4 +207,4 @@ Screen reader support and semantic annotations are not yet implemented. This is 
 
 ## License
 
-MIT -- see [LICENSE.md](LICENSE.md)
+MIT. See [LICENSE.md](LICENSE.md).

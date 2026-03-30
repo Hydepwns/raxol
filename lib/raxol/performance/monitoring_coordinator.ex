@@ -14,6 +14,9 @@ defmodule Raxol.Performance.MonitoringCoordinator do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
+  @compile {:no_warn_undefined, DeepMerge}
+
   alias Raxol.Core.Runtime.Log
   alias Raxol.Performance.AdaptiveOptimizer
   alias Raxol.Performance.AlertManager
@@ -288,8 +291,11 @@ defmodule Raxol.Performance.MonitoringCoordinator do
   end
 
   defp merge_user_config(base_config, user_config) do
-    # Deep merge user config with base config
-    DeepMerge.deep_merge(base_config, user_config)
+    if Code.ensure_loaded?(DeepMerge) do
+      DeepMerge.deep_merge(base_config, user_config)
+    else
+      Map.merge(base_config, user_config)
+    end
   end
 
   defp start_all_components(config) do

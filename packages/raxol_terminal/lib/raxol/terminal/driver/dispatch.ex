@@ -9,11 +9,13 @@ defmodule Raxol.Terminal.Driver.Dispatch do
   alias Raxol.Terminal.ANSI.InputParser
   alias Raxol.Terminal.Driver.TerminalSize
 
+  @mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
+
   @doc """
   Sends an event to the dispatcher pid, using direct send in test mode.
   """
   def send_event_to_dispatcher(dispatcher_pid, event) do
-    case Mix.env() do
+    case @mix_env do
       :test ->
         Log.debug(
           "[Driver] Sending event in test mode: #{inspect(event)} to #{inspect(dispatcher_pid)}"
@@ -34,7 +36,7 @@ defmodule Raxol.Terminal.Driver.Dispatch do
     Log.info("Initial terminal size: #{width}x#{height}")
     event = %Event{type: :resize, data: %{width: width, height: height}}
 
-    case Mix.env() do
+    case @mix_env do
       :test ->
         Log.info("[Driver] Sending resize event in test mode: #{inspect(event)}")
 

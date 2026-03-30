@@ -85,7 +85,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
     send(runtime_pid, {:plugin_manager_ready, initial_state.plugin_manager})
 
-    _ = send_test_ready_message(Mix.env())
+    if test_env?(), do: send(self(), {:dispatcher_ready, self()})
 
     # Start app subscriptions (timers, event sources)
     state = setup_subscriptions(state)
@@ -651,11 +651,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     :exit, _ -> :default
   end
 
-  defp send_test_ready_message(:test),
-    do: send(self(), {:dispatcher_ready, self()})
-
-  defp send_test_ready_message(_env), do: :ok
-
   defp apply_theme_update(true, state, updated_model, _new_theme_id) do
     %{state | model: updated_model}
   end
@@ -894,4 +889,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   defp key_event_to_string(_), do: ""
+
+  defp test_env?, do: Code.ensure_loaded?(Mix) and Mix.env() == :test
 end

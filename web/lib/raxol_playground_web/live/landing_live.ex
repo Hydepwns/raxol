@@ -142,6 +142,8 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     """
   end
 
+  attr :raxol_version, :string, required: true
+
   defp hero_section(assigns) do
     ~H"""
     <section class="px-6 py-24 md:py-32 max-w-4xl mx-auto text-center">
@@ -158,12 +160,6 @@ defmodule RaxolPlaygroundWeb.LandingLive do
 
       <p class="text-xl md:text-2xl text-gray-300 font-medium mb-4">
         OTP-native terminal framework for Elixir
-      </p>
-
-      <p class="text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-        Your app is a GenServer. Components crash and restart without taking down the UI.
-        Hot-reload your view function while it's running.
-        Same app in terminal, browser, and SSH.
       </p>
 
       <pre class="bg-gray-900 border border-gray-800 rounded-lg inline-block px-6 py-3 mb-10 font-mono text-sm text-gray-300"><code><%= raw("{:raxol, \"~> #{@raxol_version}\"}") %></code></pre>
@@ -370,7 +366,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
           description="Snapshot every update/2 cycle. Step back, forward, jump, restore."
         />
         <.feature_card
-          title="28 Widgets"
+          title="29 Widgets"
           description="Buttons, tables, trees, charts, sparklines. Flexbox + CSS Grid layout."
         />
       </div>
@@ -487,7 +483,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
         <div class="bg-gray-900 border border-gray-800 rounded-lg px-5 py-3 font-mono text-sm">
           <span class="text-gray-500">$</span>
           <span class="text-green-400 ml-2">mix raxol.playground</span>
-          <span class="text-gray-600 ml-4"># 28 demos across 8 categories</span>
+          <span class="text-gray-600 ml-4"># 29 demos across 8 categories</span>
         </div>
         <div class="bg-gray-900 border border-gray-800 rounded-lg px-5 py-3 font-mono text-sm">
           <span class="text-gray-500">$</span>

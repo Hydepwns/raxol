@@ -102,6 +102,7 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
   end
 
   defp start_plugin_manager(_options, :agent), do: {:ok, nil}
+  defp start_plugin_manager(_options, :liveview), do: {:ok, nil}
 
   defp start_plugin_manager(options, _environment) do
     plugin_manager_opts = Keyword.get(options, :plugin_manager_opts, [])
@@ -190,7 +191,9 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
     }
 
     environment = Keyword.get(options, :environment, :terminal)
-    dispatcher_opts = if environment == :agent, do: [name: nil], else: []
+
+    dispatcher_opts =
+      if environment in [:agent, :liveview], do: [name: nil], else: []
 
     case Dispatcher.start_link(
            self(),

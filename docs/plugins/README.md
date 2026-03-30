@@ -24,14 +24,7 @@ Testing strategies: unit and integration tests, event filtering tests, property-
 
 ## Example Plugins
 
-The codebase includes several working examples in `lib/raxol/plugins/examples/`:
-
-- **[Command Palette](../../lib/raxol/plugins/examples/command_palette_plugin.ex)** - VS Code-style command execution with fuzzy search
-- **[Status Line](../../lib/raxol/plugins/examples/status_line_plugin.ex)** - System info, git status, customizable status bar
-- **[File Browser](../../lib/raxol/plugins/examples/file_browser_plugin.ex)** - Tree-style navigation with file operations
-- **[Terminal Multiplexer](../../lib/raxol/plugins/examples/terminal_multiplexer_plugin.ex)** - tmux-like panes and window management
-- **[Git Integration](../../lib/raxol/plugins/examples/git_integration_plugin.ex)** - Git operations and visualization
-- **[Rainbow Theme](../../lib/raxol/plugins/examples/rainbow_theme_plugin.ex)** - Theme demonstration
+- **[Spotify Plugin](examples/SPOTIFY.md)** - Sample plugin with OAuth, state management, and API integration
 
 ## Plugin System Architecture
 

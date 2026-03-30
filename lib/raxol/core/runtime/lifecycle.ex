@@ -77,9 +77,18 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   """
   def start_link(app_module, options \\ [])
       when is_atom(app_module) and is_list(options) do
-    name_option = Keyword.get(options, :name, derive_process_name(app_module))
+    environment = Keyword.get(options, :environment, :terminal)
+
+    name_option =
+      if environment in [:liveview, :agent] do
+        Keyword.get(options, :name)
+      else
+        Keyword.get(options, :name, derive_process_name(app_module))
+      end
+
     opts = [app_module: app_module] ++ options
-    GenServer.start_link(__MODULE__, opts, name: name_option)
+    server_opts = if name_option, do: [name: name_option], else: []
+    GenServer.start_link(__MODULE__, opts, server_opts)
   end
 
   defp derive_process_name(app_module) do

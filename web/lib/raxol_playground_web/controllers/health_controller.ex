@@ -7,7 +7,6 @@ defmodule RaxolPlaygroundWeb.HealthController do
       version: Application.spec(:raxol_playground, :vsn) |> to_string(),
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
       checks: %{
-        database: "ok",
         raxol_core: check_raxol_core(),
         memory: check_memory()
       }

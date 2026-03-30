@@ -41,7 +41,7 @@ kill_signal = 'SIGTERM'
     interval = "30s"
     method = "GET"
     timeout = "5s"
-    path = "/"
+    path = "/health"
 
 [[services]]
   internal_port = 2222

@@ -14,9 +14,9 @@ Control Spotify playback from your terminal.
 
 ## Prerequisites
 
-1. **Spotify Premium Account** -- required for playback control via API
-2. **Spotify Developer Account** -- free at [developer.spotify.com](https://developer.spotify.com)
-3. **Elixir Dependencies** -- `req` and `oauth2` packages
+1. **Spotify Premium Account**: required for playback control via API
+2. **Spotify Developer Account**: free at [developer.spotify.com](https://developer.spotify.com)
+3. **Elixir Dependencies**: `req` and `oauth2` packages
 
 ## Setup
 
@@ -132,30 +132,30 @@ end
 
 ### Playback
 
-- `SPACE` -- Play/pause
-- `n` -- Next track
-- `p` -- Previous track
+- `SPACE`: Play/pause
+- `n`: Next track
+- `p`: Previous track
 
 ### Volume
 
-- `+` -- Increase volume by 10%
-- `-` -- Decrease volume by 10%
+- `+`: Increase volume by 10%
+- `-`: Decrease volume by 10%
 
 ### Modes
 
-- `s` -- Toggle shuffle
-- `r` -- Cycle repeat mode (off -> context -> track -> off)
+- `s`: Toggle shuffle
+- `r`: Cycle repeat mode (off -> context -> track -> off)
 
 ### Navigation
 
-- `l` -- View playlists
-- `d` -- View devices
-- `/` -- Search
+- `l`: View playlists
+- `d`: View devices
+- `/`: Search
 
 ### General
 
-- `q` -- Quit plugin
-- `ESC` -- Go back (from submenus)
+- `q`: Quit plugin
+- `ESC`: Go back (from submenus)
 
 ## API Usage
 
@@ -274,29 +274,16 @@ Full list of scopes: [Spotify Authorization Scopes](https://developer.spotify.co
 
 ## Troubleshooting
 
-**"Invalid client" error** -- Double-check your `client_id` and `client_secret`. Make sure the redirect URI in your config matches the one in your Spotify app settings exactly.
+**"Invalid client" error.** Double-check your `client_id` and `client_secret`. Make sure the redirect URI in your config matches the one in your Spotify app settings exactly.
 
-**"Premium required" error** -- The Spotify Web API requires a Premium account for playback control. Reading playback state works with free accounts.
+**"Premium required" error.** The Spotify Web API requires a Premium account for playback control. Reading playback state works with free accounts.
 
-**Token expired** -- Implement refresh token logic (see Advanced Usage). Tokens expire after 1 hour.
+**Token expired.** Implement refresh token logic (see Advanced Usage). Tokens expire after 1 hour.
 
-**No devices available** -- Spotify needs to be open on at least one device, and the device must have been recently active.
+**No devices available.** Spotify needs to be open on at least one device, and the device must have been recently active.
 
-**Rate limiting** -- The Spotify API has rate limits (typically 1000 requests/hour). Use caching and batch requests where possible.
-
-## Examples
-
-See `examples/plugins/spotify/` for:
-
-- `01_simple_playback.exs` -- Basic play/pause control
-- `02_playlist_browser.exs` -- Browse and play playlists
-- `03_search_and_play.exs` -- Search and play tracks
-- `04_device_switcher.exs` -- Switch between devices
-
-## Credits
-
-Inspired by the implementation in [droodotfoo](https://droodotfoo.foo).
+**Rate limiting.** The Spotify API has rate limits (typically 1000 requests/hour). Use caching and batch requests where possible.
 
 ## License
 
-MIT License -- See LICENSE file.
+MIT License. See LICENSE file.

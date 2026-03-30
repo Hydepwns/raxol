@@ -4,16 +4,16 @@ The fundamentals of Raxol's architecture.
 
 ## The Elm Architecture (TEA)
 
-Most Raxol apps use TEA -- four callbacks that form a loop:
+Most Raxol apps use TEA, four callbacks that form a loop:
 
-- **`init/1`** -- Set up your initial state (the "model")
-- **`update/2`** -- Handle messages: keyboard events, button clicks, timers. Returns `{new_model, commands}`
-- **`view/1`** -- Build the UI from state. Called after every update
-- **`subscribe/1`** -- Set up recurring events (timers, data feeds)
+- **`init/1`**: Set up your initial state (the "model")
+- **`update/2`**: Handle messages: keyboard events, button clicks, timers. Returns `{new_model, commands}`
+- **`view/1`**: Build the UI from state. Called after every update
+- **`subscribe/1`**: Set up recurring events (timers, data feeds)
 
 State flows one direction. Views are pure functions of the model. Commands are how you request side effects (quitting, async work). If you've used Elm, Redux, or Bubble Tea, this will feel familiar.
 
-Everything that arrives in `update/2` is a "message" -- that includes application atoms like `:increment`, timer ticks like `:tick`, and Raxol events like `%Event{type: :key, data: %{key: :enter}}`. They're all just inputs to the same function.
+Everything that arrives in `update/2` is a "message." That includes application atoms like `:increment`, timer ticks like `:tick`, and Raxol events like `%Event{type: :key, data: %{key: :enter}}`. They're all just inputs to the same function.
 
 See the [Quickstart](QUICKSTART.md) for a full walkthrough, or browse the [Examples Learning Path](../../examples/README.md) for annotated examples from beginner to advanced.
 
@@ -21,9 +21,9 @@ See the [Quickstart](QUICKSTART.md) for a full walkthrough, or browse the [Examp
 
 ## Buffers: The Canvas Underneath
 
-Most Raxol apps never touch buffers directly -- the View DSL and layout engine handle all of this for you. But understanding the layer underneath helps when debugging, optimizing, or building custom renderers.
+Most Raxol apps never touch buffers directly. The View DSL and layout engine handle all of this for you. But understanding the layer underneath helps when debugging, optimizing, or building custom renderers.
 
-A buffer is a 2D grid of cells representing terminal content -- a canvas for text.
+A buffer is a 2D grid of cells representing terminal content, a canvas for text.
 
 ### Buffer Structure
 
@@ -102,7 +102,7 @@ diff = Renderer.render_diff(old_buffer, new_buffer)
 # ]
 ```
 
-Without diffing you'd clear and redraw everything (~100ms for 80x24). With diffing, you only update changed cells (~2ms for typical updates). That's 50x faster.
+Without diffing you'd clear and redraw everything. With diffing, only changed cells are written, bringing typical updates to ~2ms.
 
 ### Stage 3: Output Generation
 
@@ -144,10 +144,10 @@ html = TerminalBridge.buffer_to_html(buffer)
 
 Raxol supports multiple patterns depending on your needs:
 
-- **TEA / `Raxol.start_link`** -- Most apps. Interactive TUIs with keyboard input, subscriptions, and the View DSL. Start here.
-- **Pure Functional** -- One-off renders, scripts, testing. No loop, no process.
-- **GenServer** -- Multi-user apps, servers, distributed state. Wrap a buffer in a supervised process.
-- **Phoenix LiveView** -- Web apps. Render a buffer to HTML in the browser.
+- **TEA / `Raxol.start_link`**: Most apps. Interactive TUIs with keyboard input, subscriptions, and the View DSL. Start here.
+- **Pure Functional**: One-off renders, scripts, testing. No loop, no process.
+- **GenServer**: Multi-user apps, servers, distributed state. Wrap a buffer in a supervised process.
+- **Phoenix LiveView**: Web apps. Render a buffer to HTML in the browser.
 
 ### Pure Functional (simplest)
 
@@ -252,13 +252,13 @@ Good for web applications, dashboards, remote terminals.
 
 ### Optimization Tips
 
-**Pipeline operations** instead of intermediate variables -- Elixir optimizes pipelines better.
+**Pipeline operations** instead of intermediate variables. Elixir optimizes pipelines better.
 
-**Use diff rendering** -- 50x faster for typical updates.
+**Use diff rendering.** Typical updates drop to ~2ms.
 
-**Reuse style references** -- avoid allocating duplicate style maps.
+**Reuse style references.** Avoid allocating duplicate style maps.
 
-**Use `fill_area`** instead of looping `set_cell` -- 10x faster for area fills.
+**Use `fill_area`** instead of looping `set_cell`. Significantly faster for area fills.
 
 ### Memory
 
@@ -288,7 +288,7 @@ end
 
 **Zero dependencies (core).** Raxol.Core has no runtime dependencies. Minimal install size, no conflicts, works everywhere Elixir runs.
 
-**Incremental adoption.** Use what you need -- buffers and rendering for scripts, add the View DSL for interactive apps, or the full framework with LiveView and SSH.
+**Incremental adoption.** Use what you need. Buffers and rendering for scripts, the View DSL for interactive apps, or the full framework with LiveView and SSH.
 
 ---
 

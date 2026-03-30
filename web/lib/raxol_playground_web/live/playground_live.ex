@@ -14,6 +14,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   alias RaxolPlaygroundWeb.Presence, as: PlaygroundPresence
 
   @themes Helpers.themes()
+  @demo_timeout_ms :timer.minutes(30)
 
   # =========================================================================
   # Mount
@@ -43,6 +44,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       |> assign(:sidebar_collapsed, false)
       |> assign(:terminal_theme, :synthwave84)
       |> assign(:current_user_id, user_id)
+      |> assign(:demo_error, nil)
+      |> assign(:demo_timer, nil)
       |> start_demo()
 
     {:ok, socket}
@@ -102,7 +105,21 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_event("select_theme", %{"theme" => theme}, socket) do
-    {:noreply, assign(socket, :terminal_theme, String.to_existing_atom(theme))}
+    atom = String.to_existing_atom(theme)
+    {:noreply, assign(socket, :terminal_theme, atom)}
+  rescue
+    ArgumentError -> {:noreply, socket}
+  end
+
+  def handle_event("retry_demo", _params, socket) do
+    socket =
+      socket
+      |> stop_demo()
+      |> assign(:demo_error, nil)
+      |> assign(:terminal_html, "")
+      |> start_demo()
+
+    {:noreply, socket}
   end
 
   def handle_event("keydown", params, socket) do
@@ -141,6 +158,22 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
         nil -> {:noreply, socket}
         comp -> {:noreply, switch_demo(socket, comp)}
       end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(:demo_timeout, socket) do
+    Logger.info("Playground session timed out after #{div(@demo_timeout_ms, 60_000)} minutes")
+    socket = stop_demo(socket)
+    {:noreply, assign(socket, demo_error: "Session timed out -- click Retry to restart")}
+  end
+
+  def handle_info({:DOWN, _ref, :process, pid, reason}, socket) do
+    if pid == socket.assigns[:lifecycle_pid] do
+      name = if socket.assigns[:selected], do: socket.assigns.selected.name, else: "unknown"
+      Logger.warning("Playground demo #{name} crashed: #{inspect(reason)}")
+      {:noreply, assign(socket, lifecycle_pid: nil, demo_error: "Demo crashed -- click Retry")}
     else
       {:noreply, socket}
     end
@@ -240,17 +273,30 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
                 style={"background: #{@theme_bg}; color: #e0e0e0;"}
                 tabindex="0"
               >
-                <%= if @terminal_html != "" do %>
-                  <%= Phoenix.HTML.raw(@terminal_html) %>
-                <% else %>
-                  <div class="text-gray-500 py-8 text-center">
-                    <%= if @selected do %>
-                      <p class="mb-2 text-gray-400"><%= @selected.description %></p>
-                    <% end %>
-                    <p class="mb-4">For the full interactive experience:</p>
-                    <p class="text-green-400">$ mix raxol.playground</p>
-                    <p class="text-green-400 mt-1">$ ssh playground@raxol.io</p>
+                <%= if @demo_error do %>
+                  <div class="text-gray-400 py-8 text-center">
+                    <p class="text-red-400 mb-4"><%= @demo_error %></p>
+                    <button
+                      phx-click="retry_demo"
+                      class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm"
+                    >
+                      Retry
+                    </button>
+                    <p class="mt-4 text-gray-500 text-sm">Or try: ssh playground@raxol.io</p>
                   </div>
+                <% else %>
+                  <%= if @terminal_html != "" do %>
+                    <%= Phoenix.HTML.raw(@terminal_html) %>
+                  <% else %>
+                    <div class="text-gray-500 py-8 text-center">
+                      <%= if @selected do %>
+                        <p class="mb-2 text-gray-400"><%= @selected.description %></p>
+                      <% end %>
+                      <p class="mb-4">For the full interactive experience:</p>
+                      <p class="text-green-400">$ mix raxol.playground</p>
+                      <p class="text-green-400 mt-1">$ ssh playground@raxol.io</p>
+                    </div>
+                  <% end %>
                 <% end %>
               </div>
             </div>
@@ -517,6 +563,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     |> stop_demo()
     |> assign(:selected, comp)
     |> assign(:terminal_html, "")
+    |> assign(:demo_error, nil)
     |> start_demo()
   end
 
@@ -529,23 +576,29 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       try do
         Phoenix.PubSub.subscribe(Raxol.PubSub, topic)
 
-        {:ok, pid} =
-          Lifecycle.start_link(comp.module,
-            environment: :liveview,
-            liveview_topic: topic,
-            width: 80,
-            height: 24
-          )
+        case Lifecycle.start_link(comp.module,
+               environment: :liveview,
+               liveview_topic: topic,
+               width: 80,
+               height: 24
+             ) do
+          {:ok, pid} ->
+            Process.monitor(pid)
+            timer = Process.send_after(self(), :demo_timeout, @demo_timeout_ms)
+            assign(socket, lifecycle_pid: pid, topic: topic, demo_timer: timer)
 
-        assign(socket, lifecycle_pid: pid, topic: topic)
+          {:error, reason} ->
+            Logger.warning("Playground demo #{comp.name} failed: #{inspect(reason)}")
+            assign(socket, demo_error: "Failed to start demo")
+        end
       rescue
         e ->
-          Logger.debug("Playground lifecycle failed: #{Exception.message(e)}")
-          socket
+          Logger.warning("Playground demo #{comp.name} failed: #{Exception.message(e)}")
+          assign(socket, demo_error: "Failed to start demo")
       catch
         :exit, reason ->
-          Logger.debug("Playground lifecycle exit: #{inspect(reason)}")
-          socket
+          Logger.warning("Playground demo #{comp.name} exit: #{inspect(reason)}")
+          assign(socket, demo_error: "Failed to start demo")
       end
     else
       socket
@@ -553,6 +606,10 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   defp stop_demo(socket) do
+    if socket.assigns[:demo_timer] do
+      Process.cancel_timer(socket.assigns.demo_timer)
+    end
+
     if socket.assigns[:lifecycle_pid] do
       try do
         Lifecycle.stop(socket.assigns.lifecycle_pid)
@@ -565,7 +622,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       Phoenix.PubSub.unsubscribe(Raxol.PubSub, socket.assigns.topic)
     end
 
-    assign(socket, lifecycle_pid: nil, topic: nil)
+    assign(socket, lifecycle_pid: nil, topic: nil, demo_timer: nil)
   end
 
   defp dispatch_to_lifecycle(pid, event) do

@@ -7,6 +7,8 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
 
   alias Raxol.Terminal.Buffer
 
+  @mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
+
   defstruct [
     :buffer,
     :screen,
@@ -202,13 +204,13 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
 
   def handle_call({:cleanup, _state}, _from, renderer) do
     # Cleanup termbox only if not in test mode
-    cleanup_termbox(Mix.env())
+    cleanup_termbox(@mix_env)
     {:reply, :ok, renderer}
   end
 
   def handle_call({:resize, width, height}, _from, renderer) do
     # Resize termbox only if not in test mode
-    resize_termbox(Mix.env(), width, height)
+    resize_termbox(@mix_env, width, height)
 
     # Update screen buffer with new dimensions
     new_screen = Map.put(renderer.screen || %{}, :width, width)
@@ -218,13 +220,13 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
   end
 
   def handle_call({:set_cursor_visibility, visible}, _from, renderer) do
-    set_cursor_in_terminal(Mix.env(), visible, renderer.buffer)
+    set_cursor_in_terminal(@mix_env, visible, renderer.buffer)
     {:reply, :ok, %{renderer | cursor_visible: visible}}
   end
 
   def handle_call({:set_title, title}, _from, renderer) do
     # Set window title only if not in test mode
-    set_title_in_terminal(Mix.env())
+    set_title_in_terminal(@mix_env)
     {:reply, :ok, %{renderer | title: title}}
   end
 
@@ -234,13 +236,13 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
 
   def handle_call(:init_terminal, _from, renderer) do
     # Initialize termbox only if not in test mode
-    init_termbox(Mix.env())
+    init_termbox(@mix_env)
     {:reply, :ok, %{renderer | termbox_initialized: true}}
   end
 
   def handle_call(:shutdown_terminal, _from, renderer) do
     # Shutdown termbox only if not in test mode
-    shutdown_termbox(Mix.env())
+    shutdown_termbox(@mix_env)
     {:reply, :ok, %{renderer | termbox_initialized: false}}
   end
 
@@ -270,7 +272,7 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
   # Private functions
 
   defp render_cell(col, row, cell) do
-    render_cell_in_terminal(Mix.env(), col, row, cell)
+    render_cell_in_terminal(@mix_env, col, row, cell)
   end
 
   defp render_to_terminal(state) do
@@ -300,7 +302,7 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
   end
 
   defp handle_render_request(true, state, renderer) do
-    render_to_terminal_if_not_test(Mix.env(), state)
+    render_to_terminal_if_not_test(@mix_env, state)
     {:reply, :ok, renderer}
   end
 

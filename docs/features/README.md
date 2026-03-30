@@ -61,10 +61,6 @@ Multi-mode search: fuzzy (fzf-style), exact, regex with highlighting.
 results = Fuzzy.search(buffer, "hlo", :fuzzy)  # Matches "hello"
 ```
 
-### [File System](FILESYSTEM.md) -- PLANNED
-
-Virtual filesystem (not yet implemented). See the feature page for planned API.
-
 ### [Cursor Effects](CURSOR_EFFECTS.md)
 
 Visual trails and glow: configurable colors, presets, smooth interpolation.
@@ -106,11 +102,4 @@ end
 
 ## Performance
 
-| Feature    | Operation    | Time   |
-| ---------- | ------------ | ------ |
-| VIM        | Movement     | < 1us  |
-| Parser     | Execute      | ~5us   |
-| Search     | 1000 lines   | ~100us |
-| Trail      | Update+apply | ~7us   |
-
-Total: < 120us per frame (60fps = 16ms budget)
+All operations are well within the 16ms frame budget (60fps). See [benchmarks](../bench/README.md) for methodology and current numbers.

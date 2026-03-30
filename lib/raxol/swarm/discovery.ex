@@ -33,6 +33,8 @@ defmodule Raxol.Swarm.Discovery do
 
   use GenServer
 
+  @compile {:no_warn_undefined, Cluster.Supervisor}
+
   require Logger
 
   @type preset :: :gossip | :epmd | :dns | :tailscale

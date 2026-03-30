@@ -1,4 +1,6 @@
 defmodule Mix.Tasks.Raxol.Bench.Memory do
+  @compile {:no_warn_undefined, Benchee}
+
   @moduledoc """
   Enhanced memory benchmarking task for Raxol terminal emulator.
 

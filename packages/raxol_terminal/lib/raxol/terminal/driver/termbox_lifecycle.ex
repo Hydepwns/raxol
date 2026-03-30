@@ -11,6 +11,7 @@ defmodule Raxol.Terminal.Driver.TermboxLifecycle do
   import Raxol.Terminal.TerminalUtils, only: [has_terminal_device?: 0]
 
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
+  @mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
 
   @doc """
   Initializes termbox. Returns :ok or {:error, reason}.
@@ -100,7 +101,7 @@ defmodule Raxol.Terminal.Driver.TermboxLifecycle do
 
     # Only attempt shutdown if not in test environment
     _ =
-      case {Mix.env(), has_terminal_device?()} do
+      case {@mix_env, has_terminal_device?()} do
         {:test, _} ->
           :ok
 

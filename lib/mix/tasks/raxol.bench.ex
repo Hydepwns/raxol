@@ -53,6 +53,7 @@ defmodule Mix.Tasks.Raxol.Bench do
 
   @compile {:no_warn_undefined, Raxol.Bench.Dashboard}
   @compile {:no_warn_undefined, Raxol.Bench.TestData}
+  @compile {:no_warn_undefined, Benchee}
 
   alias Raxol.Bench.{Dashboard, TestData}
 

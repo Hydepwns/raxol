@@ -58,7 +58,7 @@ Measured on Apple M1 Pro, Elixir 1.19.0 / OTP 26.
 
 All values in microseconds unless noted. Lower is better.
 
-**Raxol**: measured on this hardware. **Others**: published/estimated benchmarks.
+**Raxol**: measured on this hardware. **Others**: published/estimated benchmarks. Cross-framework numbers are approximate, from published benchmarks on different hardware. Direct comparison requires same-machine measurement.
 
 ### Interpretation
 
@@ -67,9 +67,9 @@ Raxol's per-operation latency is higher than Rust/Go (expected for a managed run
 - **Full frame at 2.1ms** leaves 87% of the 60fps budget for application logic
 - **Tree diff at 4us** is competitive with Ratatui's immediate-mode approach and 25x faster than Textual
 - **Million+ cell writes/sec** is more than enough for any terminal UI
-- **Real advantage**: OTP gives you crash isolation, hot reload, and distribution -- things no Rust/Go/Python TUI framework offers
+- **OTP benefits**: crash isolation, hot reload, and distribution come built in to the runtime
 
-The BEAM isn't the fastest runtime, but it's fast enough for 60fps terminal rendering while providing guarantees that compiled languages can't match without significant additional infrastructure.
+The BEAM is fast enough for 60fps terminal rendering while also providing fault tolerance and distribution primitives that would require significant additional infrastructure in compiled languages.
 
 ## Suites
 
@@ -99,11 +99,11 @@ mix raxol.bench --compare       # Compare with previous run
 
 | Operation             | Target         | Status         |
 | --------------------- | -------------- | -------------- |
-| Full frame render     | < 16ms (60fps) | 2.1ms -- pass  |
-| Buffer operations     | < 1ms          | 0.97us -- pass |
-| Tree diff (100 nodes) | < 1ms          | 4us -- pass    |
-| ANSI parse (simple)   | < 100us        | 38us -- pass   |
-| Memory per buffer     | < 500 KB       | 216 KB -- pass |
+| Full frame render     | < 16ms (60fps) | 2.1ms (pass)   |
+| Buffer operations     | < 1ms          | 0.97us (pass)  |
+| Tree diff (100 nodes) | < 1ms          | 4us (pass)     |
+| ANSI parse (simple)   | < 100us        | 38us (pass)    |
+| Memory per buffer     | < 500 KB       | 216 KB (pass)  |
 
 ## Tips
 

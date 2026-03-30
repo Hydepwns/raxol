@@ -34,8 +34,10 @@ defmodule Raxol.Performance.DevHints do
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
 
+  @mix_env Mix.env()
+
   @default_config %{
-    enabled: Mix.env() == :dev,
+    enabled: @mix_env == :dev,
     thresholds: %{
       # Terminal operations (microseconds)
       terminal_parse: 100,

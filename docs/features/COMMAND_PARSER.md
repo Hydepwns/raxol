@@ -78,4 +78,4 @@ def handle_key(state, key) do
 end
 ```
 
-Performance: ~5us per command
+See [benchmarks](../bench/README.md) for current numbers.

@@ -36,7 +36,7 @@ defmodule PerformantRenderer do
 end
 ```
 
-Without diffing: ~15ms for 80x24 buffer (clear + full redraw). With diffing: ~0.3ms for typical updates. 50x faster.
+Without diffing: ~15ms for 80x24 buffer (clear + full redraw). Diff rendering brings typical updates to ~2ms.
 
 ### Smart Diffing
 
@@ -136,13 +136,13 @@ end
 
 ## 60fps Checklist
 
-- [ ] Use diff rendering -- don't redraw everything
-- [ ] Cache static content -- reuse unchanged buffers
-- [ ] Minimize allocations -- reuse style maps
-- [ ] Batch updates -- group operations
-- [ ] Lazy render -- only render visible content
-- [ ] Profile regularly -- measure before optimizing
-- [ ] Set frame budget -- warn if > 16ms
+- [ ] Use diff rendering. Don't redraw everything
+- [ ] Cache static content. Reuse unchanged buffers
+- [ ] Minimize allocations. Reuse style maps
+- [ ] Batch updates. Group operations
+- [ ] Lazy render. Only render visible content
+- [ ] Profile regularly. Measure before optimizing
+- [ ] Set frame budget. Warn if > 16ms
 - [ ] Test on slow hardware
 
 ### Frame Budget Monitor
@@ -196,7 +196,7 @@ diff = Renderer.render_diff(old_buffer, new_buffer)
 IO.write(Renderer.apply_diff(diff))
 ```
 
-50x faster.
+Diff rendering brings typical updates to ~2ms.
 
 ### Blocking in render loop
 

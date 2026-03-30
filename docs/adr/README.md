@@ -1,17 +1,15 @@
 # Architecture Decision Records
 
-ADRs for the Raxol project. Each one captures a single architectural decision -- why it was made, not just what was decided.
+ADRs for the Raxol project. Each one captures a single architectural decision: why it was made, not just what was decided.
 
 ## ADR Index
 
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
-| [0001](0001-component-based-architecture.md) | Component-Based Architecture | Accepted -- Revised | 2025-01-27 |
+| [0001](0001-component-based-architecture.md) | Component-Based Architecture | Accepted (Revised) | 2025-01-27 |
 | [0002](0002-parser-performance-optimization.md) | Parser Performance Optimization | Implemented | 2025-01-27 |
 | [0003](0003-terminal-emulation-strategy.md) | Terminal Emulation Strategy | Accepted | 2025-01-27 |
-| [0004](0004-withdrawn.md) | Withdrawn | Withdrawn | -- |
 | [0005](0005-runtime-plugin-system-architecture.md) | Runtime Plugin System Architecture | Implemented | 2025-06-20 |
-| [0006](0006-withdrawn.md) | Withdrawn | Withdrawn | -- |
 | [0007](0007-state-management-strategy.md) | State Management Strategy | Implemented | 2025-05-15 |
 | [0008](0008-phoenix-liveview-integration-architecture.md) | Phoenix LiveView Integration Architecture | Implemented | 2025-05-20 |
 | [0009](0009-high-performance-buffer-management.md) | High-Performance Buffer Management | Implemented | 2025-04-20 |
@@ -88,4 +86,4 @@ They preserve context for why decisions were made, help new contributors underst
 
 ## Coverage
 
-11 ADRs covering all major architectural areas: core framework, performance, web integration, extensibility, state management, and code quality. Two numbers (0004, 0006) were withdrawn before acceptance. New architectural decisions follow the same ADR workflow.
+9 ADRs covering core framework, performance, web integration, extensibility, state management, and code quality.

@@ -36,6 +36,8 @@ defmodule Raxol.Terminal.Driver do
 
   import Raxol.Terminal.TerminalUtils, only: [has_terminal_device?: 0]
 
+  @mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
+
   # Constants for retry logic
   @max_init_retries 3
   # ms
@@ -114,7 +116,7 @@ defmodule Raxol.Terminal.Driver do
     # relies on :io.columns() which fails in -noshell mode (mix run).
     tty_detected = has_terminal_device?()
 
-    case {Mix.env(), tty_detected, dispatcher_pid} do
+    case {@mix_env, tty_detected, dispatcher_pid} do
       {:test, _, nil} ->
         Raxol.Core.Runtime.Log.info(
           "[Driver] Test environment detected, sending driver_ready event"
@@ -457,7 +459,7 @@ defmodule Raxol.Terminal.Driver do
   """
   def process_title_change(title, state) when is_binary(title) do
     _ =
-      case {Mix.env(), has_terminal_device?()} do
+      case {@mix_env, has_terminal_device?()} do
         {:test, _} ->
           :ok
 
@@ -482,7 +484,7 @@ defmodule Raxol.Terminal.Driver do
   def process_position_change(x, y, state)
       when is_integer(x) and is_integer(y) do
     _ =
-      case {Mix.env(), has_terminal_device?()} do
+      case {@mix_env, has_terminal_device?()} do
         {:test, _} ->
           :ok
 

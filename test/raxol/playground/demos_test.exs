@@ -24,7 +24,8 @@ defmodule Raxol.Playground.DemosTest do
     LineChartDemo,
     BarChartDemo,
     ScatterChartDemo,
-    HeatmapDemo
+    HeatmapDemo,
+    SparklineDemo
   }
 
   defp key_event(char) do
@@ -941,6 +942,43 @@ defmodule Raxol.Playground.DemosTest do
     test "view returns element tree" do
       model = HeatmapDemo.init(nil)
       assert is_map(HeatmapDemo.view(model))
+    end
+  end
+
+  describe "SparklineDemo" do
+    test "init starts with cyan color" do
+      model = SparklineDemo.init(nil)
+      assert model.color == :cyan
+      assert model.tick == 0
+    end
+
+    test "c cycles color" do
+      model = SparklineDemo.init(nil)
+      {model, []} = SparklineDemo.update(key_event("c"), model)
+      assert model.color == :green
+      {model, []} = SparklineDemo.update(key_event("c"), model)
+      assert model.color == :yellow
+    end
+
+    test "r resets tick" do
+      model = %{SparklineDemo.init(nil) | tick: 42}
+      {model, []} = SparklineDemo.update(key_event("r"), model)
+      assert model.tick == 0
+    end
+
+    test "tick increments" do
+      model = SparklineDemo.init(nil)
+      {model, []} = SparklineDemo.update(:tick, model)
+      assert model.tick == 1
+    end
+
+    test "subscribe returns interval" do
+      assert SparklineDemo.subscribe(%{}) != []
+    end
+
+    test "view returns element tree" do
+      model = SparklineDemo.init(nil)
+      assert is_map(SparklineDemo.view(model))
     end
   end
 end

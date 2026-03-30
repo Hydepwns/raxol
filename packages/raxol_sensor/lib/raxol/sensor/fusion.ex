@@ -175,6 +175,8 @@ defmodule Raxol.Sensor.Fusion do
     %{sensors: sensors, fused_at: System.monotonic_time(:millisecond)}
   end
 
+  @compile {:no_warn_undefined, Raxol.Sensor.Fusion.NxBackend}
+
   defp do_weighted_average(values_list, qualities) do
     if Code.ensure_loaded?(Raxol.Sensor.Fusion.NxBackend) do
       Raxol.Sensor.Fusion.NxBackend.weighted_average(values_list, qualities)

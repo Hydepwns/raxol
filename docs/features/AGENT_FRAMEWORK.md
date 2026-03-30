@@ -1,6 +1,6 @@
 # Agent Framework
 
-An agent is just a TEA app where input comes from LLMs and tools instead of a keyboard. Same `init/update/view` loop, same OTP supervision, same crash isolation -- but the "user" is an AI model issuing commands and processing results.
+An agent is just a TEA app where input comes from LLMs and tools instead of a keyboard. Same `init/update/view` loop, same OTP supervision, same crash isolation, but the "user" is an AI model issuing commands and processing results.
 
 ## Quick Start
 
@@ -43,11 +43,11 @@ Commands: async/1, shell/1, send_agent/2
 
 `use Raxol.Agent` sets up the standard TEA callbacks (`init/1`, `update/2`, `view/1`, `subscribe/1`) with defaults, and injects three command helpers:
 
-- `async(fun)` -- async command with a sender callback
-- `shell(command, opts \\ [])` -- shell command via Port
-- `send_agent(target_id, message)` -- message another agent
+- `async(fun)`: async command with a sender callback
+- `shell(command, opts \\ [])`: shell command via Port
+- `send_agent(target_id, message)`: message another agent
 
-All callbacks are overridable. `view/1` defaults to `nil`, which means no rendering -- useful for headless agents that only process messages.
+All callbacks are overridable. `view/1` defaults to `nil`, which means no rendering. Useful for headless agents that only process messages.
 
 ## Agent Session
 
@@ -122,7 +122,7 @@ Commands returned from `update/2` are processed by Lifecycle:
 
 ## Headless Agents
 
-When `view/1` returns `nil` (the default), no rendering happens. The agent is a pure message-processing loop -- good for background workers, data pipelines, or agents that only talk to other agents.
+When `view/1` returns `nil` (the default), no rendering happens. The agent is a pure message-processing loop, good for background workers, data pipelines, or agents that only talk to other agents.
 
 ## AI Backend Streaming
 
@@ -142,7 +142,7 @@ When `view/1` returns `nil` (the default), no rendering happens. The agent is a 
 # {:error, "message"}
 ```
 
-Supports Anthropic, OpenAI, Ollama, Grok, Protons's Lumo, and Kimi 2.5/moonshot.
+Supports Anthropic, OpenAI, Ollama, Grok, Proton's Lumo, and Kimi 2.5/moonshot.
 Provider is auto-detected from `:base_url` or set via `:provider`.
 
 Backend detection tries each in order: Lumo -> Anthropic -> Kimi -> OpenAI -> Ollama -> LLM7 -> Mock. Set `FREE_AI=true` to hit LLM7.io with no API key.

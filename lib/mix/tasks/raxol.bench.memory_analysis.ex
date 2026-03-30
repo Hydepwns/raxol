@@ -1,4 +1,6 @@
 defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
+  @compile {:no_warn_undefined, Benchee}
+
   @moduledoc """
   Advanced memory analysis task demonstrating Phase 3 capabilities.
 

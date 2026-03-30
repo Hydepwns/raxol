@@ -1,6 +1,6 @@
 # Sensor Fusion
 
-Poll hardware sensors, batch their readings, fuse them with weighted averaging, and render the results as gauges and sparklines. The whole pipeline is supervised -- feeds crash and reconnect independently.
+Poll hardware sensors, batch their readings, fuse them with weighted averaging, and render the results as gauges and sparklines. The whole pipeline is supervised, so feeds crash and reconnect independently.
 
 ## Quick Start
 
@@ -42,7 +42,7 @@ Sensors implement `Raxol.Sensor.Behaviour`:
 @callback read(state) :: {:ok, Reading.t(), state} | {:error, term()}
 @callback disconnect(state) :: :ok
 
-# Optional -- defaults to 100ms
+# Optional, defaults to 100ms
 @callback sample_rate() :: pos_integer()
 ```
 
@@ -60,7 +60,7 @@ Sensors implement `Raxol.Sensor.Behaviour`:
 
 ## Feed API
 
-`Raxol.Sensor.Feed` manages a single sensor -- connecting, polling on a timer, buffering in a circular buffer, and forwarding readings to fusion.
+`Raxol.Sensor.Feed` manages a single sensor: connecting, polling on a timer, buffering in a circular buffer, and forwarding readings to fusion.
 
 ```elixir
 # Start a feed (usually via Raxol.Sensor.Supervisor.start_feed/2)
@@ -125,7 +125,7 @@ Raxol.Sensor.Supervisor.start_link(
 
 ## HUD Widgets
 
-`Raxol.Sensor.HUD` has pure functions that turn sensor data into terminal cells -- each returns `[{x, y, char, fg, bg, attrs}]` tuples for the rendering pipeline.
+`Raxol.Sensor.HUD` has pure functions that turn sensor data into terminal cells. Each returns `[{x, y, char, fg, bg, attrs}]` tuples for the rendering pipeline.
 
 Every function takes a `{x, y, width, height}` region as its first argument.
 
