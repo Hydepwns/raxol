@@ -266,20 +266,34 @@ defmodule Raxol.LiveView.TerminalBridge do
         do: ["#{css_prefix}-strikethrough" | classes],
         else: classes
 
-    # Foreground color
+    # Foreground color (supports both :fg_color and :foreground)
+    fg = Map.get(style, :fg_color) || Map.get(style, :foreground)
+
     classes =
-      case Map.get(style, :fg_color) do
-        nil -> classes
-        color when is_atom(color) -> ["#{css_prefix}-fg-#{color}" | classes]
-        _ -> classes
+      case fg do
+        nil ->
+          classes
+
+        color when is_atom(color) and color != false ->
+          ["#{css_prefix}-fg-#{color}" | classes]
+
+        _ ->
+          classes
       end
 
-    # Background color
+    # Background color (supports both :bg_color and :background)
+    bg = Map.get(style, :bg_color) || Map.get(style, :background)
+
     classes =
-      case Map.get(style, :bg_color) do
-        nil -> classes
-        color when is_atom(color) -> ["#{css_prefix}-bg-#{color}" | classes]
-        _ -> classes
+      case bg do
+        nil ->
+          classes
+
+        color when is_atom(color) and color != false ->
+          ["#{css_prefix}-bg-#{color}" | classes]
+
+        _ ->
+          classes
       end
 
     classes
@@ -322,54 +336,35 @@ defmodule Raxol.LiveView.TerminalBridge do
         do: ["text-decoration: line-through" | styles],
         else: styles
 
-    # Foreground color
-    styles =
-      case Map.get(style, :fg_color) do
-        nil ->
-          styles
+    # Foreground color (supports both :fg_color and :foreground keys)
+    fg = Map.get(style, :fg_color) || Map.get(style, :foreground)
+    styles = add_color_style(styles, "color", fg)
 
-        {r, g, b} ->
-          ["color: rgb(#{r}, #{g}, #{b})" | styles]
-
-        n when is_integer(n) ->
-          rgb = color_256_to_rgb(n)
-
-          [
-            "color: rgb(#{elem(rgb, 0)}, #{elem(rgb, 1)}, #{elem(rgb, 2)})"
-            | styles
-          ]
-
-        color when is_atom(color) ->
-          hex = named_color_to_hex(color)
-          ["color: #{hex}" | styles]
-      end
-
-    # Background color
-    styles =
-      case Map.get(style, :bg_color) do
-        nil ->
-          styles
-
-        {r, g, b} ->
-          ["background-color: rgb(#{r}, #{g}, #{b})" | styles]
-
-        n when is_integer(n) ->
-          rgb = color_256_to_rgb(n)
-
-          [
-            "background-color: rgb(#{elem(rgb, 0)}, #{elem(rgb, 1)}, #{elem(rgb, 2)})"
-            | styles
-          ]
-
-        color when is_atom(color) ->
-          hex = named_color_to_hex(color)
-          ["background-color: #{hex}" | styles]
-      end
+    # Background color (supports both :bg_color and :background keys)
+    bg = Map.get(style, :bg_color) || Map.get(style, :background)
+    styles = add_color_style(styles, "background-color", bg)
 
     styles
     |> Enum.reverse()
     |> Enum.join("; ")
   end
+
+  defp add_color_style(styles, _prop, nil), do: styles
+
+  defp add_color_style(styles, prop, {r, g, b}),
+    do: ["#{prop}: rgb(#{r}, #{g}, #{b})" | styles]
+
+  defp add_color_style(styles, prop, n) when is_integer(n) do
+    {r, g, b} = color_256_to_rgb(n)
+    ["#{prop}: rgb(#{r}, #{g}, #{b})" | styles]
+  end
+
+  defp add_color_style(styles, prop, color)
+       when is_atom(color) and color != false do
+    ["#{prop}: #{named_color_to_hex(color)}" | styles]
+  end
+
+  defp add_color_style(styles, _prop, _), do: styles
 
   # HTML escaping
   @spec escape_html(String.t()) :: String.t()

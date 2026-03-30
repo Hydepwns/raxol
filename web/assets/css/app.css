@@ -639,10 +639,8 @@ html, body {
    Demo Container Styles
    ============================================================================= */
 
-.demo-container {
-  max-width: 800px;
-  margin: 0 auto;
-}
+/* demo-container is used as a Tailwind utility class in demo_live.ex,
+   do not add max-width or margin here */
 
 .demo-section {
   margin-bottom: 1.5rem;

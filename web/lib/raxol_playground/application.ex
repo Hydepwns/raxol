@@ -9,21 +9,40 @@ defmodule RaxolPlayground.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      RaxolPlaygroundWeb.Telemetry,
-      {DNSCluster,
-       query:
-         Application.get_env(:raxol_playground, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: RaxolPlayground.PubSub},
-      Supervisor.child_spec({Phoenix.PubSub, name: Raxol.PubSub},
-        id: :raxol_pubsub
-      ),
-      RaxolPlaygroundWeb.Presence,
-      RaxolPlaygroundWeb.Endpoint
-    ]
+    children =
+      [
+        RaxolPlaygroundWeb.Telemetry,
+        {DNSCluster,
+         query:
+           Application.get_env(:raxol_playground, :dns_cluster_query) || :ignore},
+        {Phoenix.PubSub, name: RaxolPlayground.PubSub},
+        Supervisor.child_spec({Phoenix.PubSub, name: Raxol.PubSub},
+          id: :raxol_pubsub
+        ),
+        RaxolPlaygroundWeb.Presence,
+        RaxolPlaygroundWeb.Endpoint
+      ] ++ maybe_ssh_playground()
 
     opts = [strategy: :one_for_one, name: RaxolPlayground.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp maybe_ssh_playground do
+    if System.get_env("RAXOL_SSH_PLAYGROUND") == "true" do
+      port = String.to_integer(System.get_env("RAXOL_SSH_PORT") || "2222")
+      max = String.to_integer(System.get_env("RAXOL_SSH_MAX_CONNECTIONS") || "50")
+      keys_dir = System.get_env("RAXOL_SSH_HOST_KEYS_DIR") || "/app/ssh_keys"
+
+      [
+        {Raxol.SSH.Server,
+         app_module: Raxol.Playground.App,
+         port: port,
+         host_keys_dir: keys_dir,
+         max_connections: max}
+      ]
+    else
+      []
+    end
   end
 
   @impl true

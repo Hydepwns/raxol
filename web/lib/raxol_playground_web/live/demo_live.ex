@@ -9,13 +9,14 @@ defmodule RaxolPlaygroundWeb.DemoLive do
   require Logger
 
   alias Raxol.Playground.Catalog
-  alias Raxol.Core.Runtime.Lifecycle
-  alias RaxolPlaygroundWeb.Playground.Helpers
+  alias RaxolPlaygroundWeb.Playground.{DemoLifecycle, Helpers}
 
-  # Max demo session: 30 minutes
+  import RaxolPlaygroundWeb.PlaygroundComponents
+
   @demo_timeout_ms :timer.minutes(30)
 
-  # Index: list all demos
+  # -- Mount --
+
   @impl true
   def mount(%{"demo" => name}, _session, socket) do
     component = Catalog.get_component(name)
@@ -31,7 +32,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
       |> assign(:show_code, false)
       |> assign(:demo_error, nil)
       |> assign(:demo_timer, nil)
-      |> start_demo()
+      |> then(&DemoLifecycle.start_demo(&1, component, timeout_ms: @demo_timeout_ms))
 
     {:ok, socket}
   end
@@ -52,8 +53,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
 
   @impl true
   def handle_event("select_theme", %{"theme" => theme}, socket) do
-    atom = String.to_existing_atom(theme)
-    {:noreply, assign(socket, :terminal_theme, atom)}
+    {:noreply, assign(socket, :terminal_theme, String.to_existing_atom(theme))}
   rescue
     ArgumentError -> {:noreply, socket}
   end
@@ -65,24 +65,28 @@ defmodule RaxolPlaygroundWeb.DemoLive do
   def handle_event("keydown", params, socket) do
     if socket.assigns[:lifecycle_pid] do
       event = Raxol.LiveView.InputAdapter.translate_key_event(params)
-      dispatch_to_lifecycle(socket.assigns.lifecycle_pid, event)
+      DemoLifecycle.dispatch_to_lifecycle(socket.assigns.lifecycle_pid, event)
     end
 
     {:noreply, socket}
   end
 
   def handle_event("retry_demo", _params, socket) do
+    comp = socket.assigns.component
+
     socket =
       socket
-      |> stop_demo()
+      |> DemoLifecycle.stop_demo()
       |> assign(:demo_error, nil)
       |> assign(:terminal_html, "")
-      |> start_demo()
+      |> DemoLifecycle.start_demo(comp, timeout_ms: @demo_timeout_ms)
 
     {:noreply, socket}
   end
 
   def handle_event(_event, _params, socket), do: {:noreply, socket}
+
+  # -- Info --
 
   @impl true
   def handle_info({:render_update, html}, socket) do
@@ -90,16 +94,16 @@ defmodule RaxolPlaygroundWeb.DemoLive do
   end
 
   def handle_info(:demo_timeout, socket) do
-    Logger.info("Demo session timed out after #{div(@demo_timeout_ms, 60_000)} minutes")
-    socket = stop_demo(socket)
-    {:noreply, assign(socket, demo_error: "Session timed out -- click Retry to restart")}
+    Logger.info("Demo session timed out")
+    socket = DemoLifecycle.stop_demo(socket)
+    {:noreply, assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
   end
 
   def handle_info({:DOWN, _ref, :process, pid, reason}, socket) do
     if pid == socket.assigns[:lifecycle_pid] do
       name = if socket.assigns[:component], do: socket.assigns.component.name, else: "unknown"
       Logger.warning("Demo #{name} crashed: #{inspect(reason)}")
-      {:noreply, assign(socket, lifecycle_pid: nil, demo_error: "Demo crashed: #{format_error(reason)}")}
+      {:noreply, assign(socket, lifecycle_pid: nil, demo_error: "Demo crashed. Click Retry.")}
     else
       {:noreply, socket}
     end
@@ -109,7 +113,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
 
   @impl true
   def terminate(_reason, socket) do
-    _ = stop_demo(socket)
+    _ = DemoLifecycle.stop_demo(socket)
     :ok
   end
 
@@ -125,17 +129,11 @@ defmodule RaxolPlaygroundWeb.DemoLive do
             <a href="/" class="hover:text-blue-400 transition-colors">Raxol</a> Interactive Demos
           </h1>
           <p class="text-xl text-gray-400">
-            <%= @total_count %> real Raxol widget demos -- click to try
+            <%= @total_count %> widget demos. Click to try.
           </p>
         </div>
 
-        <!-- SSH Callout -->
-        <div class="bg-gray-900 border border-gray-800 text-green-400 rounded-lg p-4 font-mono text-sm mb-8">
-          Try the real terminal experience:
-          <span class="text-white ml-2">ssh playground@raxol.io</span>
-          <span class="text-gray-500 mx-2">|</span>
-          <span class="text-white">mix raxol.playground</span>
-        </div>
+        <.ssh_callout variant={:banner} class="mb-8" />
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           <%= for comp <- @components do %>
@@ -145,9 +143,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
             >
               <div class="flex items-start justify-between mb-2">
                 <h3 class="text-lg font-semibold text-gray-100"><%= comp.name %></h3>
-                <span class={"px-2 py-1 text-xs font-medium rounded-full #{Helpers.complexity_class(comp.complexity)}"}>
-                  <%= Helpers.complexity_label(comp.complexity) %>
-                </span>
+                <.complexity_badge level={comp.complexity} />
               </div>
               <p class="text-gray-400 text-sm mb-2"><%= comp.description %></p>
               <span class="text-xs text-gray-500"><%= Helpers.category_label(comp.category) %></span>
@@ -170,7 +166,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
     assigns = assign(assigns, :theme_bg, theme_bg)
 
     ~H"""
-    <div class="demo-container h-screen flex flex-col bg-gray-950">
+    <div class="h-screen flex flex-col bg-gray-950">
       <!-- Header -->
       <div class="bg-gray-900 border-b border-gray-800 px-6 py-4">
         <div class="flex items-center justify-between">
@@ -180,25 +176,15 @@ defmodule RaxolPlaygroundWeb.DemoLive do
               <h1 class="text-2xl font-bold text-gray-100"><%= @component.name %></h1>
               <p class="text-gray-400"><%= @component.description %></p>
             </div>
-            <span class={"px-2 py-1 text-xs font-medium rounded-full #{Helpers.complexity_class(@component.complexity)}"}>
-              <%= Helpers.complexity_label(@component.complexity) %>
-            </span>
+            <.complexity_badge level={@component.complexity} />
           </div>
 
           <div class="flex items-center space-x-3">
-            <form phx-change="select_theme" id="theme-select">
-              <select
-                name="theme"
-                class="bg-gray-800 border border-gray-700 text-gray-100 rounded px-3 py-1 text-sm"
-              >
-                <%= for {key, label, _bg} <- @themes do %>
-                  <option value={key} selected={@terminal_theme == key}>
-                    <%= label %>
-                  </option>
-                <% end %>
-              </select>
-            </form>
-
+            <.theme_selector
+              theme={@terminal_theme}
+              themes={@themes}
+              form_id="theme-select"
+            />
             <button
               phx-click="toggle_code"
               class={"px-4 py-2 border rounded-lg text-sm #{if @show_code, do: "bg-blue-900/50 border-blue-700 text-blue-300", else: "border-gray-700 text-gray-300 hover:bg-gray-800"}"}
@@ -211,14 +197,8 @@ defmodule RaxolPlaygroundWeb.DemoLive do
 
       <!-- Terminal + Code -->
       <div class="flex-1 flex overflow-hidden">
-        <!-- Terminal -->
         <div class="flex-1 flex flex-col">
-          <div class="bg-gray-800 px-4 py-2 flex items-center space-x-2 border-b border-gray-700">
-            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span class="text-gray-400 text-sm ml-4"><%= @component.name %> Demo</span>
-          </div>
+          <.terminal_chrome title={"#{@component.name} Demo"} />
           <div
             id="demo-terminal"
             phx-hook="RaxolTerminal"
@@ -236,120 +216,22 @@ defmodule RaxolPlaygroundWeb.DemoLive do
                 >
                   Retry
                 </button>
-                <p class="mt-4 text-gray-500 text-sm">Or try the terminal:</p>
-                <p class="text-green-400 text-sm">$ ssh playground@raxol.io</p>
               </div>
             <% else %>
               <%= if @terminal_html != "" do %>
                 <%= Phoenix.HTML.raw(@terminal_html) %>
               <% else %>
-                <div class="text-gray-500 py-8 text-center">
-                  <p class="mb-4">For the full interactive experience:</p>
-                  <p class="text-green-400">$ mix raxol.playground</p>
-                  <p class="text-green-400 mt-1">$ ssh playground@raxol.io</p>
-                </div>
+                <.terminal_fallback description={@component.description} />
               <% end %>
             <% end %>
           </div>
         </div>
 
-        <!-- Code Panel -->
-        <%= if @show_code do %>
-          <div class="w-1/3 border-l bg-gray-900 flex flex-col">
-            <div class="px-4 py-2 bg-gray-800 text-gray-300 text-sm font-medium border-b border-gray-700">
-              Code Snippet
-            </div>
-            <div class="flex-1 overflow-auto p-4">
-              <pre class="text-green-400 font-mono text-sm whitespace-pre-wrap"><%= String.trim(@component.code_snippet) %></pre>
-            </div>
-          </div>
-        <% end %>
+        <.code_panel show={@show_code} code={@component.code_snippet} />
       </div>
 
-      <!-- SSH Callout -->
-      <div class="bg-gray-900 text-green-400 px-6 py-3 font-mono text-sm border-t border-gray-700">
-        Try the real terminal:
-        <span class="text-white ml-2">ssh playground@raxol.io</span>
-        <span class="text-gray-500 mx-2">|</span>
-        <span class="text-white">mix raxol.playground</span>
-      </div>
+      <.ssh_callout variant={:footer} />
     </div>
     """
   end
-
-  # -- Lifecycle management --
-
-  defp start_demo(socket) do
-    comp = socket.assigns.component
-
-    if comp && connected?(socket) do
-      topic = "demo:#{inspect(self())}:#{System.unique_integer([:positive])}"
-
-      try do
-        Phoenix.PubSub.subscribe(Raxol.PubSub, topic)
-
-        case Lifecycle.start_link(comp.module,
-               environment: :liveview,
-               liveview_topic: topic,
-               width: 80,
-               height: 24
-             ) do
-          {:ok, pid} ->
-            Process.monitor(pid)
-            timer = Process.send_after(self(), :demo_timeout, @demo_timeout_ms)
-            assign(socket, lifecycle_pid: pid, topic: topic, demo_timer: timer)
-
-          {:error, reason} ->
-            Logger.warning("Demo #{comp.name} failed to start: #{inspect(reason)}")
-            assign(socket, demo_error: "Failed to start: #{format_error(reason)}")
-        end
-      rescue
-        e ->
-          Logger.warning("Demo #{comp.name} failed to start: #{Exception.message(e)}")
-          assign(socket, demo_error: "Failed to start: #{Exception.message(e)}")
-      catch
-        :exit, reason ->
-          Logger.warning("Demo #{comp.name} exit on start: #{inspect(reason)}")
-          assign(socket, demo_error: "Failed to start: #{format_error(reason)}")
-      end
-    else
-      socket
-    end
-  end
-
-  defp stop_demo(socket) do
-    if socket.assigns[:demo_timer] do
-      Process.cancel_timer(socket.assigns.demo_timer)
-    end
-
-    if socket.assigns[:lifecycle_pid] do
-      try do
-        Lifecycle.stop(socket.assigns.lifecycle_pid)
-      catch
-        :exit, _ -> :ok
-      end
-    end
-
-    if socket.assigns[:topic] do
-      Phoenix.PubSub.unsubscribe(Raxol.PubSub, socket.assigns.topic)
-    end
-
-    assign(socket, lifecycle_pid: nil, topic: nil, demo_timer: nil)
-  end
-
-  defp dispatch_to_lifecycle(pid, event) do
-    case GenServer.call(pid, :get_full_state) do
-      %{dispatcher_pid: dpid} when is_pid(dpid) ->
-        GenServer.cast(dpid, {:dispatch, event})
-
-      _ ->
-        :ok
-    end
-  rescue
-    _ -> :ok
-  end
-
-  defp format_error(reason) when is_binary(reason), do: reason
-  defp format_error(reason) when is_atom(reason), do: Atom.to_string(reason)
-  defp format_error(reason), do: inspect(reason, limit: 200)
 end

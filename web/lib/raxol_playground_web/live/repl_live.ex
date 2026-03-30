@@ -27,7 +27,7 @@ defmodule RaxolPlaygroundWeb.ReplLive do
           <div class="text-green-400 text-lg mb-6">$ mix raxol.playground</div>
 
           <div class="text-gray-400 mb-4"># Remote -- try it right now, no install needed</div>
-          <div class="text-green-400 text-lg mb-6">$ ssh playground@raxol.io</div>
+          <div class="text-green-400 text-lg mb-6">$ ssh -p 2222 playground@raxol.io</div>
 
           <div class="text-gray-400 mb-4"># Or add Raxol to a new project</div>
           <div class="text-green-400 text-lg">$ mix raxol.new my_app --template dashboard</div>

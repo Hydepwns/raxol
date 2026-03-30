@@ -504,7 +504,11 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   defp render_to_liveview(cells, state) do
     updated_buffer = apply_cells_to_buffer(cells, state)
-    html = Raxol.LiveView.TerminalBridge.buffer_to_html(updated_buffer)
+
+    html =
+      Raxol.LiveView.TerminalBridge.buffer_to_html(updated_buffer,
+        use_inline_styles: true
+      )
 
     _ =
       if state.liveview_topic && Code.ensure_loaded?(Phoenix.PubSub) do
