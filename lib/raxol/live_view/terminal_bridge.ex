@@ -111,10 +111,10 @@ defmodule Raxol.LiveView.TerminalBridge do
       if theme != :default, do: " #{css_prefix}-theme-#{theme}", else: ""
 
     lines_html =
-      buffer.lines
+      extract_rows(buffer)
       |> Enum.with_index()
-      |> Enum.map_join("\n", fn {line, y} ->
-        render_line(line, y, %{
+      |> Enum.map_join("\n", fn {row, y} ->
+        render_line(extract_cells(row), y, %{
           css_prefix: css_prefix,
           use_inline: use_inline,
           show_cursor: show_cursor,
@@ -146,8 +146,8 @@ defmodule Raxol.LiveView.TerminalBridge do
     css_prefix = Keyword.get(opts, :css_prefix, "raxol")
 
     lines_html =
-      old_buffer.lines
-      |> Enum.zip(new_buffer.lines)
+      extract_rows(old_buffer)
+      |> Enum.zip(extract_rows(new_buffer))
       |> Enum.with_index()
       |> Enum.map_join("\n", fn {{old_line, new_line}, y} ->
         render_line_with_diff(old_line, new_line, y, css_prefix)
@@ -169,7 +169,7 @@ defmodule Raxol.LiveView.TerminalBridge do
     cursor_style = opts.cursor_style
 
     cells_html =
-      line.cells
+      line
       |> Enum.with_index()
       |> Enum.map_join("", fn {cell, x} ->
         is_cursor = show_cursor && cursor_pos == {x, y}
@@ -188,8 +188,8 @@ defmodule Raxol.LiveView.TerminalBridge do
           String.t()
   defp render_line_with_diff(old_line, new_line, y, css_prefix) do
     cells_html =
-      old_line.cells
-      |> Enum.zip(new_line.cells)
+      extract_cells(old_line)
+      |> Enum.zip(extract_cells(new_line))
       |> Enum.with_index()
       |> Enum.map_join("", fn {{old_cell, new_cell}, _x} ->
         changed = old_cell != new_cell
@@ -441,4 +441,16 @@ defmodule Raxol.LiveView.TerminalBridge do
     gray = (n - 232) * 10 + 8
     {gray, gray, gray}
   end
+
+  # Buffer compatibility: ScreenBuffer has .cells (list of rows),
+  # compat Buffer has .lines (list of %{cells: [...]})
+  defp extract_rows(%{lines: lines}) when is_list(lines), do: lines
+  defp extract_rows(%{cells: cells}) when is_list(cells), do: cells
+  defp extract_rows(_), do: []
+
+  # Row compatibility: compat Buffer wraps cells in %{cells: [...]},
+  # ScreenBuffer rows are plain lists
+  defp extract_cells(%{cells: cells}) when is_list(cells), do: cells
+  defp extract_cells(row) when is_list(row), do: row
+  defp extract_cells(_), do: []
 end
