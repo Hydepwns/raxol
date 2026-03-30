@@ -33,13 +33,25 @@ defmodule RaxolPlayground.Application do
       max = String.to_integer(System.get_env("RAXOL_SSH_MAX_CONNECTIONS") || "50")
       keys_dir = System.get_env("RAXOL_SSH_HOST_KEYS_DIR") || "/app/ssh_keys"
 
-      [
-        {Raxol.SSH.Server,
-         app_module: Raxol.Playground.App,
-         port: port,
-         host_keys_dir: keys_dir,
-         max_connections: max}
-      ]
+      try do
+        Application.ensure_all_started(:ssh)
+
+        [
+          {Raxol.SSH.Server,
+           app_module: Raxol.Playground.App,
+           port: port,
+           host_keys_dir: keys_dir,
+           max_connections: max}
+        ]
+      rescue
+        e ->
+          IO.puts("[SSH] Failed to prepare SSH: #{Exception.message(e)}")
+          []
+      catch
+        :exit, reason ->
+          IO.puts("[SSH] Failed to start :ssh app: #{inspect(reason)}")
+          []
+      end
     else
       []
     end
