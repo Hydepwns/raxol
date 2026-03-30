@@ -344,9 +344,10 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
           <% end %>
           <button
             phx-click="toggle_sidebar"
-            class="p-1.5 rounded hover:bg-gray-100 text-gray-600"
+            class="p-2 rounded hover:bg-gray-200 text-gray-500 text-lg leading-none"
+            title={if @sidebar_collapsed, do: "Expand sidebar", else: "Collapse sidebar"}
           >
-            <%= if @sidebar_collapsed, do: ">>", else: "<<" %>
+            <%= if @sidebar_collapsed, do: ">", else: "<" %>
           </button>
         </div>
 
