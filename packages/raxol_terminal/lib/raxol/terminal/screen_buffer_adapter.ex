@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.ScreenBufferAdapter do
     Attributes,
     Core,
     Operations,
-    Scroll,
+    ScrollOps,
     Selection
   }
 
@@ -61,26 +61,33 @@ defmodule Raxol.Terminal.ScreenBufferAdapter do
   defdelegate copy_region(buffer, src_x, src_y, width, height, dest_x, dest_y),
     to: Operations
 
-  # Scrolling operations (from Scroll)
-  defdelegate set_scroll_region(buffer, top, bottom), to: Scroll
-  defdelegate get_scroll_region(buffer), to: Scroll
-  defdelegate scroll_up(buffer), to: Scroll
-  defdelegate scroll_up(buffer, n), to: Scroll
-  defdelegate scroll_down(buffer), to: Scroll
-  defdelegate scroll_down(buffer, n), to: Scroll
-  defdelegate scroll_region_up(buffer, top, bottom, n), to: Scroll
-  defdelegate scroll_region_down(buffer, top, bottom, n), to: Scroll
-  defdelegate save_to_scrollback(buffer, lines), to: Scroll
-  defdelegate clear_scrollback(buffer), to: Scroll
-  defdelegate get_scrollback(buffer), to: Scroll
-  defdelegate get_scrollback(buffer, limit), to: Scroll
-  defdelegate set_scroll_position(buffer, position), to: Scroll
-  defdelegate get_scroll_position(buffer), to: Scroll
-  defdelegate scroll_to_bottom(buffer), to: Scroll
-  defdelegate scroll_to_top(buffer), to: Scroll
-  defdelegate get_visible_lines(buffer), to: Scroll
-  defdelegate reverse_index(buffer), to: Scroll
-  defdelegate index(buffer), to: Scroll
+  # Scrolling operations (from ScrollOps)
+  defdelegate set_scroll_region(buffer, top, bottom), to: ScrollOps
+  defdelegate get_scroll_region(buffer), to: ScrollOps
+  defdelegate get_scroll_position(buffer), to: ScrollOps
+
+  def scroll_up(buffer), do: ScrollOps.scroll_up(buffer, 1)
+  defdelegate scroll_up(buffer, n), to: ScrollOps
+  def scroll_down(buffer), do: ScrollOps.scroll_down(buffer, 1)
+  defdelegate scroll_down(buffer, n), to: ScrollOps
+
+  def scroll_region_up(buffer, top, bottom, n),
+    do: ScrollOps.scroll_up(buffer, top, bottom, n)
+
+  def scroll_region_down(buffer, top, bottom, n),
+    do: ScrollOps.scroll_down(buffer, top, bottom, n)
+
+  # Scrollback stubs (scrollback storage removed with Scroll module)
+  def save_to_scrollback(buffer, _lines), do: buffer
+  def clear_scrollback(buffer), do: buffer
+  def get_scrollback(_buffer), do: []
+  def get_scrollback(_buffer, _limit), do: []
+  def set_scroll_position(buffer, _position), do: buffer
+  def scroll_to_bottom(buffer), do: buffer
+  def scroll_to_top(buffer), do: buffer
+  def get_visible_lines(buffer), do: get_lines(buffer)
+  def reverse_index(buffer), do: elem(ScrollOps.scroll_up(buffer, 1), 0)
+  def index(buffer), do: ScrollOps.scroll_down(buffer, 1)
 
   # Selection operations (from Selection)
   defdelegate start_selection(buffer, x, y), to: Selection
