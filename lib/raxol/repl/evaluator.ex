@@ -138,7 +138,6 @@ defmodule Raxol.REPL.Evaluator do
   end
 
   defp base_env do
-    import IEx.Helpers, warn: false
-    __ENV__
+    %{__ENV__ | file: "iex", line: 1}
   end
 end

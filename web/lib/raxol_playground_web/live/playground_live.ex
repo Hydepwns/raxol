@@ -26,7 +26,10 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     components = Catalog.list_components()
 
     initial_name = params["component"]
-    selected = (initial_name && Catalog.get_component(initial_name)) || List.first(components)
+
+    selected =
+      (initial_name && Catalog.get_component(initial_name)) ||
+        List.first(components)
 
     {socket, user_id} = init_presence(socket, selected)
 
@@ -47,7 +50,10 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       |> assign(:themes, @themes)
       |> assign(:demo_error, nil)
       |> assign(:demo_timer, nil)
-      |> DemoLifecycle.start_demo(selected, timeout_ms: @demo_timeout_ms, topic_prefix: "playground")
+      |> DemoLifecycle.start_demo(selected,
+        timeout_ms: @demo_timeout_ms,
+        topic_prefix: "playground"
+      )
 
     {:ok, socket}
   end
@@ -82,7 +88,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     search = if query == "", do: nil, else: query
     components = Catalog.filter(search: search)
 
-    {:noreply, socket |> assign(:search_query, query) |> assign(:components, components)}
+    {:noreply,
+     socket |> assign(:search_query, query) |> assign(:components, components)}
   end
 
   def handle_event("toggle_code", _params, socket) do
@@ -94,7 +101,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_event("toggle_users_panel", _params, socket) do
-    {:noreply, assign(socket, :show_users_panel, !socket.assigns.show_users_panel)}
+    {:noreply,
+     assign(socket, :show_users_panel, !socket.assigns.show_users_panel)}
   end
 
   def handle_event("toggle_sync", _params, socket) do
@@ -102,7 +110,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_event("toggle_sidebar", _params, socket) do
-    {:noreply, assign(socket, :sidebar_collapsed, !socket.assigns.sidebar_collapsed)}
+    {:noreply,
+     assign(socket, :sidebar_collapsed, !socket.assigns.sidebar_collapsed)}
   end
 
   def handle_event("select_theme", %{"theme" => theme}, socket) do
@@ -120,7 +129,10 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       |> DemoLifecycle.stop_demo()
       |> assign(:demo_error, nil)
       |> assign(:terminal_html, "")
-      |> DemoLifecycle.start_demo(comp, timeout_ms: @demo_timeout_ms, topic_prefix: "playground")
+      |> DemoLifecycle.start_demo(comp,
+        timeout_ms: @demo_timeout_ms,
+        topic_prefix: "playground"
+      )
 
     {:noreply, socket}
   end
@@ -153,7 +165,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_info(
-        {:playground_event, :component_selected, %{component: name, user_id: from}},
+        {:playground_event, :component_selected,
+         %{component: name, user_id: from}},
         socket
       ) do
     if socket.assigns.sync_enabled and from != socket.assigns.user_id do
@@ -169,14 +182,25 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   def handle_info(:demo_timeout, socket) do
     Logger.info("Playground session timed out")
     socket = DemoLifecycle.stop_demo(socket)
-    {:noreply, assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
+
+    {:noreply,
+     assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
   end
 
   def handle_info({:DOWN, _ref, :process, pid, reason}, socket) do
     if pid == socket.assigns[:lifecycle_pid] do
-      name = if socket.assigns[:selected], do: socket.assigns.selected.name, else: "unknown"
+      name =
+        if socket.assigns[:selected],
+          do: socket.assigns.selected.name,
+          else: "unknown"
+
       Logger.warning("Playground demo #{name} crashed: #{inspect(reason)}")
-      {:noreply, assign(socket, lifecycle_pid: nil, demo_error: "Demo crashed. Click Retry.")}
+
+      {:noreply,
+       assign(socket,
+         lifecycle_pid: nil,
+         demo_error: "Demo crashed. Click Retry."
+       )}
     else
       {:noreply, socket}
     end
@@ -513,7 +537,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
 
       case PlaygroundPresence.track_user(socket) do
         {:ok, user_id, _user_meta} ->
-          if selected, do: PlaygroundPresence.update_component(user_id, selected.name)
+          if selected,
+            do: PlaygroundPresence.update_component(user_id, selected.name)
 
           socket =
             socket
@@ -536,6 +561,9 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     |> assign(:selected, comp)
     |> assign(:terminal_html, "")
     |> assign(:demo_error, nil)
-    |> DemoLifecycle.start_demo(comp, timeout_ms: @demo_timeout_ms, topic_prefix: "playground")
+    |> DemoLifecycle.start_demo(comp,
+      timeout_ms: @demo_timeout_ms,
+      topic_prefix: "playground"
+    )
   end
 end

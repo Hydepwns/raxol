@@ -31,6 +31,14 @@ defmodule Raxol.Playground.Demos.EasingDemo do
   @impl true
   def update(message, model) do
     case message do
+      key_match(:up) ->
+        idx = max(0, model.easing_index - 1)
+        {%{model | easing_index: idx, progress: 0.0, tick: 0}, []}
+
+      key_match(:down) ->
+        idx = min(length(@easings) - 1, model.easing_index + 1)
+        {%{model | easing_index: idx, progress: 0.0, tick: 0}, []}
+
       key_match(:left) ->
         idx = max(0, model.easing_index - 1)
         {%{model | easing_index: idx, progress: 0.0, tick: 0}, []}
@@ -73,7 +81,7 @@ defmodule Raxol.Playground.Demos.EasingDemo do
         render_marker_bar(marker_x),
         text(""),
         easing_list(model.easing_index),
-        text("[left/right] change  [r] reset", style: [:dim])
+        text("[arrows] change  [r] reset", style: [:dim])
       ]
     end
   end
