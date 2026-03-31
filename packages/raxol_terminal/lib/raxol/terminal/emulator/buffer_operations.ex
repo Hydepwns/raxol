@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   """
 
   alias Raxol.Core.Runtime.Log
-  alias Raxol.Terminal.Emulator
 
   # Use map() to accept any emulator-like struct
   @type emulator :: map()

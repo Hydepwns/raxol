@@ -24,11 +24,11 @@ if Code.ensure_loaded?(Axon) do
     @actions [:hide, :show, :expand, :shrink, :none]
 
     @doc "Returns the ordered list of action atoms."
-    @spec actions() :: [atom()]
+    @spec actions() :: nonempty_list(:hide | :show | :expand | :shrink | :none)
     def actions, do: @actions
 
     @doc "Returns the number of input features per pane."
-    @spec feature_size() :: pos_integer()
+    @spec feature_size() :: 4
     def feature_size, do: @feature_size
 
     @doc """

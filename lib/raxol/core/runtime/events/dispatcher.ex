@@ -338,15 +338,11 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     )
 
     # Find subscribers for the topic (registry may not exist in web-only deployments)
-    case Registry.lookup(@registry_name, topic) do
-      subscribers when is_list(subscribers) ->
-        Enum.each(subscribers, fn {pid, _value} ->
-          send(pid, {:event, topic, payload})
-        end)
-
-      _ ->
-        :ok
-    end
+    @registry_name
+    |> Registry.lookup(topic)
+    |> Enum.each(fn {pid, _value} ->
+      send(pid, {:event, topic, payload})
+    end)
 
     :ok
   rescue
