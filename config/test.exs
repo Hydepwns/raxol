@@ -15,18 +15,6 @@ config :raxol, Raxol.Repo,
   # pool: Ecto.Adapters.SQL.Sandbox,
   enabled: false
 
-# We don't run a server during test. If one is required,
-# you can enable the server option below.
-config :raxol, RaxolWeb.Endpoint,
-  http: [ip: {127, 0, 0, 1}, port: 4002],
-  # Must be at least 64 bytes for Plug/Phoenix session
-  secret_key_base: String.duplicate("a", 64),
-  server: false,
-  pubsub_server: Raxol.PubSub
-
-# Initialize plugs at runtime for faster test compilation
-config :phoenix, :plug_init_mode, :runtime
-
 # Enable helpful sandbox testing commands (from raxol/support/test_helper.ex)
 config :raxol, :enable_test_commands, true
 

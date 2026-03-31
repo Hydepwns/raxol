@@ -228,24 +228,7 @@ defmodule Raxol.Application do
   end
 
   defp maybe_add_endpoint do
-    if feature_enabled?(:web_interface) && module_available?(RaxolWeb.Endpoint) do
-      endpoints = [RaxolWeb.Endpoint]
-
-      endpoints =
-        if module_available?(RaxolWeb.Telemetry),
-          do: [RaxolWeb.Telemetry | endpoints] |> Enum.reverse(),
-          else: endpoints
-
-      endpoints
-    else
-      if feature_enabled?(:web_interface) do
-        Log.debug(
-          "[Raxol.Application] Web interface feature enabled but RaxolWeb.Endpoint module not available - continuing without web interface"
-        )
-      end
-
-      []
-    end
+    []
   end
 
   defp maybe_add_demo_services do
@@ -278,10 +261,7 @@ defmodule Raxol.Application do
   end
 
   defp maybe_add_rate_limiting do
-    if feature_enabled?(:rate_limiting) && feature_enabled?(:web_interface) &&
-         module_available?(RaxolWeb.RateLimitManager) do
-      RaxolWeb.RateLimitManager
-    end
+    nil
   end
 
   defp maybe_add_telemetry(mode) do
@@ -457,12 +437,7 @@ defmodule Raxol.Application do
       Raxol.Repo,
       # Added for graceful telemetry degradation
       Raxol.Core.Telemetry.Supervisor,
-      # Added for graceful web interface degradation
-      RaxolWeb.Endpoint,
-      # Added for graceful web telemetry degradation
-      RaxolWeb.Telemetry,
       Raxol.Plugin.Supervisor,
-      RaxolWeb.RateLimitManager,
       Raxol.Terminal.Driver
     ]
 
