@@ -45,7 +45,7 @@ MIX_ENV=test mix compile   # or MIX_ENV=dev mix compile
 
 ## Interactive Playground
 
-28 widget demos across 8 categories, searchable and filterable:
+29 widget demos across 8 categories, searchable and filterable:
 
 ```bash
 mix raxol.playground                # Terminal mode

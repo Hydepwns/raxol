@@ -30,7 +30,6 @@ Complete guide to Raxol -- OTP-native terminal framework for Elixir.
 ## Guides
 
 - [Custom Components](guides/custom_components.md)
-- [Accessibility](guides/accessibility_implementation_guide.md)
 - [Migration from DIY](getting-started/MIGRATION_FROM_DIY.md)
 
 ## Reference

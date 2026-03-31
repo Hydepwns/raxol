@@ -84,7 +84,7 @@ font-family: 'Monaspace Argon', 'JetBrains Mono', 'Fira Code',
 
 Any modern monospace font will work. The critical requirement is that characters are exactly 1ch wide for grid alignment.
 
-For best results with the droodotfoo application, use Monaspace Argon:
+For best results, use Monaspace Argon:
 - https://monaspace.githubnext.com/
 
 ## License

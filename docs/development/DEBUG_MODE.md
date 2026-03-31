@@ -204,30 +204,18 @@ Raxol.Debug.export("performance_analysis.json")
 
 ## Removing Debug Code in Production
 
-```elixir
-defmodule MyModule do
-  if Mix.env() != :prod do
-    defp debug_log(message) do
-      Raxol.Debug.debug_log(:my_module, message)
-    end
-  else
-    defp debug_log(_message), do: :ok
-  end
-end
-```
-
-Or with a module attribute:
+Use a module attribute to capture the environment at compile time (calling `Mix.env()` in a function body will crash in releases):
 
 ```elixir
 defmodule MyModule do
   @debug_enabled Mix.env() != :prod
 
   if @debug_enabled do
-    defp debug_trace(data) do
-      Raxol.Debug.debug_log(:my_module, "Trace", context: data)
+    defp debug_log(message) do
+      Raxol.Debug.debug_log(:my_module, message)
     end
   else
-    defp debug_trace(_data), do: :ok
+    defp debug_log(_message), do: :ok
   end
 end
 ```

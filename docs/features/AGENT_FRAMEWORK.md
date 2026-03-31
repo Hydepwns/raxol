@@ -142,7 +142,7 @@ When `view/1` returns `nil` (the default), no rendering happens. The agent is a 
 # {:error, "message"}
 ```
 
-Supports Anthropic, OpenAI, Ollama, Grok, Proton's Lumo, and Kimi 2.5/moonshot.
+Supports Anthropic, OpenAI, Ollama, Proton's Lumo, and Kimi 2.5/moonshot.
 Provider is auto-detected from `:base_url` or set via `:provider`.
 
 Backend detection tries each in order: Lumo -> Anthropic -> Kimi -> OpenAI -> Ollama -> LLM7 -> Mock. Set `FREE_AI=true` to hit LLM7.io with no API key.

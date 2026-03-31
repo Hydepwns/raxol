@@ -203,7 +203,7 @@ Scanning directories: lib, test
 
 ## Status
 
-Standalone script, mix task, and Credo integration all implemented. Historical duplicates being resolved gradually.
+Credo integration is implemented. The standalone script and mix task described above are planned but not yet built.
 
 False positives: add files to `exclude_files`. Legacy code: use `--exclude` while refactoring.
 

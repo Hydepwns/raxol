@@ -34,71 +34,9 @@ Snapshot every `update/2` cycle. Step back, step forward, restore historical sta
 
 ## Terminal Features
 
-### [VIM Navigation](VIM_NAVIGATION.md)
-
-VIM-style keybindings: h/j/k/l, gg/G, w/b/e, search, visual mode.
-
-```elixir
-vim = Vim.new(buffer)
-{:ok, vim} = Vim.handle_key("j", vim)
-```
-
-### [Command Parser](COMMAND_PARSER.md)
-
-CLI with tab completion, history, aliases, argument parsing.
-
-```elixir
-parser = Parser.new()
-  |> Parser.register_command("echo", &echo/1)
-{:ok, result, _} = Parser.parse_and_execute(parser, "echo hi")
-```
-
-### [Fuzzy Search](FUZZY_SEARCH.md)
-
-Multi-mode search: fuzzy (fzf-style), exact, regex with highlighting.
-
-```elixir
-results = Fuzzy.search(buffer, "hlo", :fuzzy)  # Matches "hello"
-```
-
 ### [Cursor Effects](CURSOR_EFFECTS.md)
 
 Visual trails and glow: configurable colors, presets, smooth interpolation.
-
-```elixir
-alias Raxol.Effects.CursorTrail
-
-trail = CursorTrail.rainbow()
-trail = CursorTrail.update(trail, {x, y})
-buffer = CursorTrail.apply(trail, buffer)
-```
-
-## Combined Example
-
-```elixir
-defmodule Terminal do
-  alias Raxol.Effects.CursorTrail
-
-  defstruct [:buffer, :vim, :parser, :search, :trail]
-
-  def new do
-    buffer = Buffer.create_blank_buffer(80, 24)
-    %__MODULE__{
-      buffer: buffer,
-      vim: Vim.new(buffer),
-      parser: Parser.new(),
-      search: Fuzzy.new(buffer),
-      trail: CursorTrail.rainbow()
-    }
-  end
-
-  def handle_key(state, key) do
-    {:ok, vim} = Vim.handle_key(key, state.vim)
-    trail = CursorTrail.update(state.trail, vim.cursor)
-    %{state | vim: vim, trail: trail}
-  end
-end
-```
 
 ## Performance
 
