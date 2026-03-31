@@ -2,6 +2,8 @@ defmodule Raxol.Playground.Demos.StatusBarDemo do
   @moduledoc "Playground demo: status bar with live-updating fields."
   use Raxol.Core.Runtime.Application
 
+  @tick_interval_ms 1000
+
   @impl true
   def init(_context) do
     %{mode: "NORMAL", file: "demo.ex", line: 1, col: 1, tick: 0}
@@ -74,6 +76,6 @@ defmodule Raxol.Playground.Demos.StatusBarDemo do
 
   @impl true
   def subscribe(_model) do
-    [subscribe_interval(1000, :tick)]
+    [subscribe_interval(@tick_interval_ms, :tick)]
   end
 end

@@ -4,6 +4,15 @@ defmodule Raxol.Playground.Demos.ReplDemo do
 
   alias Raxol.REPL.{Evaluator, Sandbox}
 
+  @visible_lines 14
+  @box_width 70
+  @box_height 16
+  @max_history 100
+  @eval_timeout 5_000
+  @max_bindings 8
+  @inspect_limit 5
+  @inspect_width 30
+
   @impl true
   def init(_context) do
     %{
@@ -61,7 +70,7 @@ defmodule Raxol.Playground.Demos.ReplDemo do
       model.output
       |> Enum.reverse()
       |> Enum.drop(model.output_offset)
-      |> Enum.take(14)
+      |> Enum.take(@visible_lines)
       |> Enum.map(fn {line, kind} -> output_line(line, kind) end)
 
     bindings_view = bindings_section(model.evaluator)
@@ -70,7 +79,7 @@ defmodule Raxol.Playground.Demos.ReplDemo do
       [
         text("REPL", style: [:bold]),
         divider(),
-        box style: %{border: :single, padding: 1, width: 70, height: 16} do
+        box style: %{border: :single, padding: 1, width: @box_width, height: @box_height} do
           column style: %{gap: 0} do
             if visible_output == [],
               do: [text("(empty)", style: [:dim])],
@@ -109,10 +118,10 @@ defmodule Raxol.Playground.Demos.ReplDemo do
   end
 
   defp do_eval(model, code) do
-    case Evaluator.eval(model.evaluator, code, timeout: 5_000) do
+    case Evaluator.eval(model.evaluator, code, timeout: @eval_timeout) do
       {:ok, result, new_eval} ->
         output_lines = format_result(result)
-        new_history = [code | model.input_history] |> Enum.take(100)
+        new_history = [code | model.input_history] |> Enum.take(@max_history)
 
         model
         |> Map.put(:evaluator, new_eval)
@@ -197,7 +206,7 @@ defmodule Raxol.Playground.Demos.ReplDemo do
   # -- Scroll --
 
   defp scroll_output(model, delta) do
-    max_offset = max(0, length(model.output) - 14)
+    max_offset = max(0, length(model.output) - @visible_lines)
     new_offset = (model.output_offset + delta) |> max(0) |> min(max_offset)
     %{model | output_offset: new_offset}
   end
@@ -227,13 +236,16 @@ defmodule Raxol.Playground.Demos.ReplDemo do
     else
       binding_strs =
         bindings
-        |> Enum.take(8)
+        |> Enum.take(@max_bindings)
         |> Enum.map(fn {name, value} ->
-          val_str = inspect(value, limit: 5, width: 30) |> String.slice(0..29)
+          val_str =
+            inspect(value, limit: @inspect_limit, width: @inspect_width)
+            |> String.slice(0..(@inspect_width - 1))
+
           "#{name}=#{val_str}"
         end)
 
-      remaining = length(bindings) - 8
+      remaining = length(bindings) - @max_bindings
       suffix = if remaining > 0, do: " +#{remaining} more", else: ""
 
       text("Bindings: #{Enum.join(binding_strs, ", ")}#{suffix}", style: [:dim])

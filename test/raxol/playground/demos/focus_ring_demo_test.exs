@@ -3,6 +3,8 @@ defmodule Raxol.Playground.Demos.FocusRingDemoTest do
 
   alias Raxol.Playground.Demos.FocusRingDemo
 
+  @last_item_index 4
+
   defp key_event(char) do
     %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: char}}
   end
@@ -28,7 +30,7 @@ defmodule Raxol.Playground.Demos.FocusRingDemoTest do
     end
 
     test "tab wraps around" do
-      model = %{FocusRingDemo.init(nil) | focused: 4}
+      model = %{FocusRingDemo.init(nil) | focused: @last_item_index}
       {model, []} = FocusRingDemo.update(special_key(:tab), model)
       assert model.focused == 0
     end
@@ -42,7 +44,7 @@ defmodule Raxol.Playground.Demos.FocusRingDemoTest do
     test "shift+tab wraps to last item" do
       model = FocusRingDemo.init(nil)
       {model, []} = FocusRingDemo.update(special_key(:tab, %{shift: true}), model)
-      assert model.focused == 4
+      assert model.focused == @last_item_index
     end
 
     test "up moves focus up" do
@@ -64,9 +66,9 @@ defmodule Raxol.Playground.Demos.FocusRingDemoTest do
     end
 
     test "down clamps at last item" do
-      model = %{FocusRingDemo.init(nil) | focused: 4}
+      model = %{FocusRingDemo.init(nil) | focused: @last_item_index}
       {model, []} = FocusRingDemo.update(special_key(:down), model)
-      assert model.focused == 4
+      assert model.focused == @last_item_index
     end
   end
 

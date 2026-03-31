@@ -2,6 +2,10 @@ defmodule Raxol.Playground.Demos.HeatmapDemo do
   @moduledoc "Playground demo: 2D heatmap with color scale cycling."
   use Raxol.Core.Runtime.Application
 
+  @grid_rows 8
+  @grid_cols 12
+  @chart_width 48
+  @chart_height 16
   @scales [:warm, :cool, :diverging]
 
   @impl true
@@ -36,8 +40,8 @@ defmodule Raxol.Playground.Demos.HeatmapDemo do
     chart_element =
       heatmap(
         data: model.grid,
-        width: 48,
-        height: 16,
+        width: @chart_width,
+        height: @chart_height,
         color_scale: model.color_scale
       )
 
@@ -56,7 +60,7 @@ defmodule Raxol.Playground.Demos.HeatmapDemo do
   def subscribe(_model), do: []
 
   defp random_grid do
-    for _r <- 1..8, do: for(_c <- 1..12, do: :rand.uniform())
+    for _r <- 1..@grid_rows, do: for(_c <- 1..@grid_cols, do: :rand.uniform())
   end
 
   defp next_scale(current) do

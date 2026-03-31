@@ -199,14 +199,4 @@ defmodule Raxol.Demo.ParticlesTest do
     end
   end
 
-  describe "hue_to_color/1" do
-    test "maps hue to ANSI color" do
-      assert Particles.hue_to_color(0) == 196
-      assert Particles.hue_to_color(60) == 202
-      assert Particles.hue_to_color(120) == 226
-      assert Particles.hue_to_color(180) == 46
-      assert Particles.hue_to_color(240) == 21
-      assert Particles.hue_to_color(300) == 201
-    end
-  end
 end

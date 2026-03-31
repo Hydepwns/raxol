@@ -2,6 +2,8 @@ defmodule Raxol.Playground.Demos.PanelHighlightsDemo do
   @moduledoc "Playground demo: panel focus highlighting with border styles."
   use Raxol.Core.Runtime.Application
 
+  @cols 3
+  @panel_width 22
   @panels [
     %{title: "Status", border: :single, content: "System OK"},
     %{title: "Logs", border: :double, content: "No errors"},
@@ -37,19 +39,19 @@ defmodule Raxol.Playground.Demos.PanelHighlightsDemo do
   end
 
   defp navigate(focused, :left) do
-    if rem(focused, 3) == 0, do: focused + 2, else: focused - 1
+    if rem(focused, @cols) == 0, do: focused + @cols - 1, else: focused - 1
   end
 
   defp navigate(focused, :right) do
-    if rem(focused, 3) == 2, do: focused - 2, else: focused + 1
+    if rem(focused, @cols) == @cols - 1, do: focused - @cols + 1, else: focused + 1
   end
 
   defp navigate(focused, :up) do
-    if focused >= 3, do: focused - 3, else: focused
+    if focused >= @cols, do: focused - @cols, else: focused
   end
 
   defp navigate(focused, :down) do
-    if focused < 3, do: focused + 3, else: focused
+    if focused < @cols, do: focused + @cols, else: focused
   end
 
   @impl true
@@ -68,8 +70,8 @@ defmodule Raxol.Playground.Demos.PanelHighlightsDemo do
   def subscribe(_model), do: []
 
   defp panel_grid(model) do
-    top_row = panel_row(model, 0..2)
-    bottom_row = panel_row(model, 3..5)
+    top_row = panel_row(model, 0..(@cols - 1))
+    bottom_row = panel_row(model, @cols..(2 * @cols - 1))
 
     column style: %{gap: 1} do
       [top_row, bottom_row]
@@ -89,7 +91,7 @@ defmodule Raxol.Playground.Demos.PanelHighlightsDemo do
     border = normalize_border(panel.border)
     title = "[*] #{panel.title}"
 
-    box style: %{border: border, fg: :cyan, width: 22} do
+    box style: %{border: border, fg: :cyan, width: @panel_width} do
       column style: %{gap: 0} do
         [
           text(title, style: [:bold], fg: :cyan),
@@ -102,7 +104,7 @@ defmodule Raxol.Playground.Demos.PanelHighlightsDemo do
   defp render_panel(panel, _idx, false) do
     border = normalize_border(panel.border)
 
-    box style: %{border: border, fg: :white, width: 22} do
+    box style: %{border: border, fg: :white, width: @panel_width} do
       column style: %{gap: 0} do
         [
           text(panel.title, style: [:dim]),

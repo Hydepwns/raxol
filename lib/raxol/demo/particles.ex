@@ -392,21 +392,6 @@ defmodule Raxol.Demo.Particles do
   def palette_color(:white), do: Enum.random(@white_palette)
   def palette_color(:red), do: Enum.random(@red_palette)
 
-  @doc """
-  Converts hue (0-360) to an ANSI 256 color code.
-  """
-  @spec hue_to_color(integer()) :: 21 | 46 | 196 | 201 | 202 | 226
-  def hue_to_color(hue) do
-    case rem(div(hue, 60), 6) do
-      0 -> 196
-      1 -> 202
-      2 -> 226
-      3 -> 46
-      4 -> 21
-      _ -> 201
-    end
-  end
-
   defp dim_color(color) when color > 240, do: color - 3
   defp dim_color(color), do: max(232, color - 2)
 end

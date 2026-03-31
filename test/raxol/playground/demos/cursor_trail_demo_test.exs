@@ -3,6 +3,10 @@ defmodule Raxol.Playground.Demos.CursorTrailDemoTest do
 
   alias Raxol.Playground.Demos.CursorTrailDemo
 
+  # Derive initial cursor from demo's grid dimensions so tests stay in sync.
+  @init_x div(40, 2)
+  @init_y div(14, 2)
+
   defp key_event(char) do
     %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: char}}
   end
@@ -14,7 +18,7 @@ defmodule Raxol.Playground.Demos.CursorTrailDemoTest do
   describe "init/1" do
     test "returns initial state with rainbow preset" do
       model = CursorTrailDemo.init(nil)
-      assert model.cursor == {20, 7}
+      assert model.cursor == {@init_x, @init_y}
       assert model.mode == :manual
       assert model.preset == :rainbow
       assert model.tick == 0
@@ -26,16 +30,16 @@ defmodule Raxol.Playground.Demos.CursorTrailDemoTest do
     test "arrow keys move cursor" do
       model = CursorTrailDemo.init(nil)
       {model, []} = CursorTrailDemo.update(special_key(:right), model)
-      assert model.cursor == {21, 7}
+      assert model.cursor == {@init_x + 1, @init_y}
 
       {model, []} = CursorTrailDemo.update(special_key(:down), model)
-      assert model.cursor == {21, 8}
+      assert model.cursor == {@init_x + 1, @init_y + 1}
 
       {model, []} = CursorTrailDemo.update(special_key(:left), model)
-      assert model.cursor == {20, 8}
+      assert model.cursor == {@init_x, @init_y + 1}
 
       {model, []} = CursorTrailDemo.update(special_key(:up), model)
-      assert model.cursor == {20, 7}
+      assert model.cursor == {@init_x, @init_y}
     end
 
     test "cursor clamps to grid bounds" do
@@ -87,14 +91,14 @@ defmodule Raxol.Playground.Demos.CursorTrailDemoTest do
       model = %{CursorTrailDemo.init(nil) | mode: :auto}
       {model, []} = CursorTrailDemo.update(:tick, model)
       assert model.tick == 1
-      assert model.cursor != {20, 7}
+      assert model.cursor != {@init_x, @init_y}
     end
 
     test "tick in manual mode increments tick" do
       model = CursorTrailDemo.init(nil)
       {model, []} = CursorTrailDemo.update(:tick, model)
       assert model.tick == 1
-      assert model.cursor == {20, 7}
+      assert model.cursor == {@init_x, @init_y}
     end
   end
 

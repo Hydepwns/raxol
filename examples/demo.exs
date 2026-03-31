@@ -37,6 +37,8 @@ defmodule RaxolDemo do
   @spark ~w(▁ ▂ ▃ ▄ ▅ ▆ ▇ █)
   @bar_fill "█"
   @bar_empty "░"
+  @mem_history_size 20
+  @max_log_entries 12
 
   # -- TEA Callbacks --
 
@@ -56,7 +58,7 @@ defmodule RaxolDemo do
         {ts(), "TEA lifecycle active"},
         {ts(), "Rendering engine ready"}
       ],
-      mem_history: List.duplicate(0, 20),
+      mem_history: List.duplicate(0, @mem_history_size),
       proc_offset: 0,
       start_time: System.monotonic_time(:second),
       sched_prev: :erlang.statistics(:scheduler_wall_time) |> Enum.sort(),
@@ -87,10 +89,10 @@ defmodule RaxolDemo do
           end)
 
         mem_pct = mem_percent()
-        history = (model.mem_history ++ [mem_pct]) |> Enum.take(-20)
+        history = (model.mem_history ++ [mem_pct]) |> Enum.take(-@mem_history_size)
 
         entry = tick_entry(model.tick)
-        log = [{ts(), entry} | model.log] |> Enum.take(12)
+        log = [{ts(), entry} | model.log] |> Enum.take(@max_log_entries)
 
         {%{
            model
@@ -121,7 +123,7 @@ defmodule RaxolDemo do
       # Pause / Resume
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: " "}} ->
         log_msg = if model.paused, do: "Resumed", else: "Paused"
-        log = [{ts(), log_msg} | model.log] |> Enum.take(12)
+        log = [{ts(), log_msg} | model.log] |> Enum.take(@max_log_entries)
         {%{model | paused: !model.paused, log: log}, []}
 
       # Quit

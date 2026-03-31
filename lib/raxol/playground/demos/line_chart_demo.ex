@@ -2,6 +2,11 @@ defmodule Raxol.Playground.Demos.LineChartDemo do
   @moduledoc "Playground demo: streaming braille-resolution line chart."
   use Raxol.Core.Runtime.Application
 
+  @data_points 30
+  @chart_width 60
+  @chart_height 15
+  @tick_interval_ms 300
+
   @impl true
   def init(_context) do
     %{tick: 0, show_legend: true, show_axes: false}
@@ -34,8 +39,8 @@ defmodule Raxol.Playground.Demos.LineChartDemo do
     chart_element =
       line_chart(
         series: series,
-        width: 60,
-        height: 15,
+        width: @chart_width,
+        height: @chart_height,
         show_legend: model.show_legend,
         show_axes: model.show_axes
       )
@@ -57,11 +62,12 @@ defmodule Raxol.Playground.Demos.LineChartDemo do
   end
 
   @impl true
-  def subscribe(_model), do: [subscribe_interval(300, :tick)]
+  def subscribe(_model), do: [subscribe_interval(@tick_interval_ms, :tick)]
 
   defp build_series(tick) do
-    data_a = for i <- 0..29, do: round(50 + 40 * :math.sin((tick + i) * 0.2))
-    data_b = for i <- 0..29, do: round(50 + 25 * :math.cos((tick + i) * 0.15))
+    range = 0..(@data_points - 1)
+    data_a = for i <- range, do: round(50 + 40 * :math.sin((tick + i) * 0.2))
+    data_b = for i <- range, do: round(50 + 25 * :math.cos((tick + i) * 0.15))
 
     [
       %{name: "Sine", data: data_a, color: :cyan},

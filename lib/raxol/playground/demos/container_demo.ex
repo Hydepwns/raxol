@@ -3,6 +3,9 @@ defmodule Raxol.Playground.Demos.ContainerDemo do
   use Raxol.Core.Runtime.Application
 
   @total 30
+  @min_visible 3
+  @max_visible 20
+  @scrollbar_width 20
 
   @impl true
   def init(_context) do
@@ -39,10 +42,10 @@ defmodule Raxol.Playground.Demos.ContainerDemo do
         {%{model | scroll_offset: max_offset}, []}
 
       key_match("+") ->
-        {%{model | visible_count: min(model.visible_count + 1, 20)}, []}
+        {%{model | visible_count: min(model.visible_count + 1, @max_visible)}, []}
 
       key_match("-") ->
-        {%{model | visible_count: max(model.visible_count - 1, 3)}, []}
+        {%{model | visible_count: max(model.visible_count - 1, @min_visible)}, []}
 
       _ ->
         {model, []}
@@ -90,7 +93,7 @@ defmodule Raxol.Playground.Demos.ContainerDemo do
   def subscribe(_model), do: []
 
   defp build_scrollbar(offset, visible, total) do
-    bar_len = 20
+    bar_len = @scrollbar_width
     thumb_size = max(1, round(visible / total * bar_len))
     thumb_pos = round(offset / max(total - visible, 1) * (bar_len - thumb_size))
 

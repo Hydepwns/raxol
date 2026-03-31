@@ -6,13 +6,15 @@ defmodule Raxol.Playground.Demos.CursorTrailDemo do
 
   @width 40
   @height 14
+  @tick_interval_ms 50
+  @decay_rate 0.15
   @presets [:rainbow, :minimal, :comet]
 
   @impl true
   def init(_context) do
     %{
       trail: CursorTrail.rainbow(),
-      cursor: {20, 7},
+      cursor: {div(@width, 2), div(@height, 2)},
       mode: :manual,
       preset: :rainbow,
       tick: 0,
@@ -76,7 +78,7 @@ defmodule Raxol.Playground.Demos.CursorTrailDemo do
 
   @impl true
   def subscribe(_model) do
-    [subscribe_interval(50, :tick)]
+    [subscribe_interval(@tick_interval_ms, :tick)]
   end
 
   defp build_grid(model) do
@@ -162,7 +164,7 @@ defmodule Raxol.Playground.Demos.CursorTrailDemo do
     trail.points
     |> Enum.map(fn point ->
       new_age = point.age + 1
-      opacity = :math.exp(-new_age * 0.15)
+      opacity = :math.exp(-new_age * @decay_rate)
       %{point | age: new_age, opacity: opacity}
     end)
     |> Enum.filter(&(&1.opacity >= trail.config.min_opacity))

@@ -3,6 +3,10 @@ defmodule Raxol.Playground.Demos.EasingDemoTest do
 
   alias Raxol.Playground.Demos.EasingDemo
 
+  # Mirror demo constants so tests break at compile time if they change.
+  @last_easing_index 7
+  @cycle_ticks 40
+
   defp key_event(char) do
     %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: char}}
   end
@@ -42,9 +46,9 @@ defmodule Raxol.Playground.Demos.EasingDemoTest do
     end
 
     test "right clamps at last easing" do
-      model = %{easing_index: 7, progress: 0.0, tick: 0}
+      model = %{easing_index: @last_easing_index, progress: 0.0, tick: 0}
       {model, []} = EasingDemo.update(special_key(:right), model)
-      assert model.easing_index == 7
+      assert model.easing_index == @last_easing_index
     end
   end
 
@@ -57,7 +61,7 @@ defmodule Raxol.Playground.Demos.EasingDemoTest do
     end
 
     test "progress cycles back to 0" do
-      model = %{easing_index: 0, progress: 0.0, tick: 39}
+      model = %{easing_index: 0, progress: 0.0, tick: @cycle_ticks - 1}
       {model, []} = EasingDemo.update(:tick, model)
       assert model.progress == 0.0
     end

@@ -2,6 +2,8 @@ defmodule Raxol.Playground.Demos.ProgressDemo do
   @moduledoc "Playground demo: progress bar with value tracking."
   use Raxol.Core.Runtime.Application
 
+  @bar_width 30
+
   @impl true
   def init(_context) do
     %{value: 50, auto: false}
@@ -33,8 +35,8 @@ defmodule Raxol.Playground.Demos.ProgressDemo do
 
   @impl true
   def view(model) do
-    filled = round(model.value / 100 * 30)
-    empty = 30 - filled
+    filled = round(model.value / 100 * @bar_width)
+    empty = @bar_width - filled
     bar = String.duplicate("#", filled) <> String.duplicate(".", empty)
     auto_label = if model.auto, do: "ON", else: "OFF"
 
@@ -71,9 +73,9 @@ defmodule Raxol.Playground.Demos.ProgressDemo do
   defp visual_bars(value) do
     column style: %{gap: 0} do
       [
-        bar_line("Default", value, 30),
-        bar_line("Half", div(value, 2), 30),
-        bar_line("Double", min(value * 2, 100), 30)
+        bar_line("Default", value, @bar_width),
+        bar_line("Half", div(value, 2), @bar_width),
+        bar_line("Double", min(value * 2, 100), @bar_width)
       ]
     end
   end

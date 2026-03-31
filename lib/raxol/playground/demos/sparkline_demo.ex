@@ -2,6 +2,11 @@ defmodule Raxol.Playground.Demos.SparklineDemo do
   @moduledoc "Playground demo: compact sparkline with live data."
   use Raxol.Core.Runtime.Application
 
+  @data_points 40
+  @spark_width 40
+  @spark_height 5
+  @tick_interval_ms 200
+
   @impl true
   def init(_context) do
     %{tick: 0, color: :cyan, colors: [:cyan, :green, :yellow, :magenta, :red]}
@@ -28,37 +33,27 @@ defmodule Raxol.Playground.Demos.SparklineDemo do
 
   @impl true
   def view(model) do
-    data =
-      for i <- 0..39, do: round(50 + 30 * :math.sin((model.tick + i) * 0.25))
+    range = 0..(@data_points - 1)
+
+    cpu_data =
+      for i <- range, do: round(50 + 30 * :math.sin((model.tick + i) * 0.25))
+
+    mem_data =
+      for i <- range, do: round(60 + 20 * :math.cos((model.tick + i) * 0.18))
+
+    net_data =
+      for i <- range, do: round(30 + 25 * :math.sin((model.tick + i) * 0.3))
 
     column style: %{gap: 1} do
       [
         text("Sparkline Demo", style: [:bold]),
         divider(),
         text("CPU Usage:", style: [:dim]),
-        sparkline(data: data, width: 40, height: 5, color: model.color),
+        sparkline(data: cpu_data, width: @spark_width, height: @spark_height, color: model.color),
         text("Memory:", style: [:dim]),
-        sparkline(
-          data:
-            for(
-              i <- 0..39,
-              do: round(60 + 20 * :math.cos((model.tick + i) * 0.18))
-            ),
-          width: 40,
-          height: 5,
-          color: :green
-        ),
+        sparkline(data: mem_data, width: @spark_width, height: @spark_height, color: :green),
         text("Network I/O:", style: [:dim]),
-        sparkline(
-          data:
-            for(
-              i <- 0..39,
-              do: round(30 + 25 * :math.sin((model.tick + i) * 0.3))
-            ),
-          width: 40,
-          height: 5,
-          color: :yellow
-        ),
+        sparkline(data: net_data, width: @spark_width, height: @spark_height, color: :yellow),
         text("Color: #{model.color}  Tick: #{model.tick}"),
         text("[c] cycle color  [r] reset", style: [:dim])
       ]
@@ -66,5 +61,5 @@ defmodule Raxol.Playground.Demos.SparklineDemo do
   end
 
   @impl true
-  def subscribe(_model), do: [subscribe_interval(200, :tick)]
+  def subscribe(_model), do: [subscribe_interval(@tick_interval_ms, :tick)]
 end
