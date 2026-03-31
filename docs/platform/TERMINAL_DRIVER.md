@@ -75,7 +75,7 @@ end
 
 When the NIF is unavailable, `IOTerminal` provides terminal support using:
 
-- **OTP 28+ raw mode**: `shell:start_interactive/1` for reading keypresses
+- **Raw mode**: `stty` and ANSI sequences for reading keypresses
 - **IO.ANSI**: Escape sequences for colors and cursor control
 - **:io module**: Terminal configuration via `:io.setopts/1`
 
@@ -112,7 +112,7 @@ When the NIF is unavailable, `IOTerminal` provides terminal support using:
 The driver checks whether it's running in a real TTY:
 
 ```elixir
-def real_tty? do
+def has_terminal_device? do
   case :io.getopts(:standard_io) do
     {:ok, opts} -> Keyword.get(opts, :terminal, false)
     _ -> false
@@ -120,7 +120,7 @@ def real_tty? do
 end
 ```
 
-This prevents terminal initialization in CI pipelines, Docker containers without a TTY, and piped IEx sessions.
+This prevents terminal initialization in CI pipelines, Docker containers without a TTY, and piped IEx sessions. The actual function name is `has_terminal_device?/0`.
 
 ## Terminal Emulator Compatibility
 
@@ -144,7 +144,11 @@ Detection uses `TERM_PROGRAM` and `TERM` environment variables. See `Raxol.Termi
 When no TTY is available:
 
 ```elixir
-case {Mix.env(), real_tty?()} do
+@mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
+
+# ...
+
+case {@mix_env, has_terminal_device?()} do
   {:test, _} ->
     {:ok, state}
 

@@ -286,7 +286,7 @@ def create_dashboard(buffer, data) do
 end
 ```
 
-**Zero dependencies (core).** Raxol.Core has no runtime dependencies. Minimal install size, no conflicts, works everywhere Elixir runs.
+**Minimal dependencies (core).** Raxol.Core depends only on telemetry at runtime. Minimal install size, no conflicts, works everywhere Elixir runs.
 
 **Incremental adoption.** Use what you need. Buffers and rendering for scripts, the View DSL for interactive apps, or the full framework with LiveView and SSH.
 
@@ -309,7 +309,7 @@ You can! Buffers are optional. But they give you automatic diffing, state inspec
 | Language     | Elixir         | C           | Node.js    |
 | Paradigm     | Functional     | Imperative  | Imperative |
 | Web Support  | Yes (LiveView) | No          | No         |
-| Dependencies | 0 (core)       | System libs | Many       |
+| Dependencies | telemetry      | System libs | Many       |
 
 ### Can I use Raxol alongside other libraries?
 

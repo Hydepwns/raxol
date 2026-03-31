@@ -85,42 +85,27 @@ end
 
 ### ThemeManager
 
-Register and switch themes at runtime:
+Switch themes at runtime:
 
 ```elixir
-# Register a custom theme
-Raxol.UI.Theming.ThemeManager.register_theme(:ocean, %{
-  name: "Ocean",
-  colors: %{
-    primary: {64, 196, 255},
-    secondary: {0, 255, 157},
-    background: {15, 25, 45},
-    foreground: {200, 220, 240},
-    error: {255, 85, 85},
-    warning: {255, 200, 0}
-  },
-  component_styles: %{
-    button: %{fg: {64, 196, 255}, bold: true},
-    text_input: %{border: :single, fg: {200, 220, 240}},
-    tree: %{fg: {200, 220, 240}}
-  }
-})
-
-# Switch theme
-Raxol.UI.Theming.ThemeManager.set_theme(:ocean)
+# Switch to a built-in theme
+Raxol.UI.Theming.ThemeManager.set_theme(:nord)
 ```
 
 ### Component-level theming
 
-Widgets read theme styles from the render context:
+Widgets read theme styles via `Raxol.UI.Theming.Theme.component_style/2`. In a TEA app, apply theme styles in `view/1`:
 
 ```elixir
-# In your component render:
-def render(state, context) do
-  theme = context[:theme] || %{}
-  theme_style = Raxol.UI.Theming.Theme.component_style(theme, :button)
-  base_style = Map.merge(theme_style, state.style || %{})
-  # ...render with base_style...
+def view(model) do
+  theme = Raxol.UI.Theming.ThemeManager.current_theme()
+  btn_style = Raxol.UI.Theming.Theme.component_style(theme, :button)
+
+  column do
+    [
+      text("Submit", fg: btn_style[:fg] || :cyan, style: [:bold])
+    ]
+  end
 end
 ```
 
@@ -154,22 +139,19 @@ ls priv/themes/
 
 ## LiveView Theming
 
-When using the LiveView bridge, themes apply via CSS classes:
+When using the LiveView bridge, theming is applied via CSS classes on the terminal container div. Set a `data-theme` attribute (or a theme CSS class) on the container element, then define per-theme CSS rules targeting that class:
 
-```elixir
-<.live_component
-  module={Raxol.LiveView.TerminalComponent}
-  id="terminal"
-  buffer={@buffer}
-  theme={:nord}
-/>
+```html
+<div id="terminal" class="terminal" data-theme="nord">
+  <!-- terminal content rendered here -->
+</div>
 ```
 
-Built-in LiveView themes: `:synthwave84`, `:nord`, `:dracula`, `:solarized_dark`, `:solarized_light`, `:monokai`.
+Built-in LiveView themes: `:synthwave84`, `:nord`, `:dracula`, `:monokai`, `:gruvbox`, `:solarized_dark`, `:tokyo_night`.
 
 ### Custom CSS theme
 
-I maintain a [zed theme plugin](https://github.com/Hydepwns/synthwave84-zed/) name `Synthwave84`. This is a snippet of it as a custom CSS theme for raxol:
+The following is an example custom CSS theme based on the Synthwave84 palette:
 
 ```css
 .terminal.theme-custom {

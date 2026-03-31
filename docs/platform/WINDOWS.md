@@ -66,7 +66,7 @@ Everything works the same on Windows:
 - Screen clearing, cursor positioning, cell and string rendering
 - Unicode characters, 256-color ANSI palette
 - Raw keyboard input (OTP 28+ raw mode), mouse events, special keys
-- Multi-framework UI (React, Svelte, LiveView, HEEx)
+- Multi-framework UI (React, LiveView, HEEx, Raw)
 - Component library, theme system, event handling, state management
 
 ## Performance
@@ -168,7 +168,7 @@ Logger.info("IOTerminal available: #{Code.ensure_loaded?(Raxol.Terminal.IOTermin
 
 ### IOTerminal
 
-Located in `lib/raxol/terminal/io_terminal.ex`. Uses OTP 28+ raw terminal mode via `:shell.start_interactive/1`, ANSI escape sequences via `IO.ANSI`, and cross-platform terminal size detection via `:io.columns/0` and `:io.rows/0`. Supports 256 colors and unicode.
+Located in `lib/raxol/terminal/io_terminal.ex`. Uses `stty` and ANSI escape sequences via `IO.ANSI` for raw terminal mode, and cross-platform terminal size detection via `:io.columns/0` and `:io.rows/0`. Supports 256 colors and unicode.
 
 API:
 

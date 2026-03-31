@@ -4,7 +4,7 @@ Raxol uses a multi-tier deployment strategy. Fly.io handles the main application
 
 ## Fly.io (Primary)
 
-**URL:** `https://raxol.fly.dev`
+**URL:** `https://raxol.io`
 
 The main deployment runs Phoenix LiveView with full Elixir/OTP and WebSocket support.
 
@@ -66,7 +66,7 @@ Performance dashboard published to GitHub Pages `/performance` subdirectory.
         |                       |
    Fly.io (Primary)      Cloudflare Pages
    Phoenix LiveView        (Optional CDN)
-   raxol.fly.dev           Static Assets
+   raxol.io           Static Assets
         |
         | (Optional)
         v
@@ -102,7 +102,7 @@ flyctl secrets set DATABASE_URL=...
 ```toml
 # fly.toml
 [env]
-  PHX_HOST = 'raxol.fly.dev'
+  PHX_HOST = 'raxol.io'
   PORT = '8080'
 ```
 
@@ -142,7 +142,7 @@ Backups: app state via Fly.io snapshots, config in git, DB via Fly.io PostgreSQL
 
 ## Domain Setup
 
-Current: `raxol.fly.dev` (default). Custom domain `raxol.io` purchased, needs DNS config.
+Current: `raxol.io` (default). Custom domain `raxol.io` purchased, needs DNS config.
 
 ```bash
 flyctl certs create raxol.io
@@ -155,7 +155,7 @@ DNS records:
 raxol.io -> [Fly.io IP]
 
 # CNAME (alternative)
-raxol.io -> raxol.fly.dev
+raxol.io -> raxol.io
 ```
 
 ## Cost

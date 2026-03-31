@@ -2,6 +2,8 @@
 
 Two approaches: the **TEA bridge** (`Raxol.LiveView.TEALive`) runs a full TEA app rendered to HTML via PubSub, and the **raw Buffer** approach where you build a `Buffer` and push it to the LiveView yourself. Most recipes below use the raw approach since it's simpler to show in isolation.
 
+> **Note:** Direct buffer manipulation via `Raxol.Core.{Buffer, Box}` is an advanced, low-level approach. The canonical Raxol API is TEA-based: your `view/1` callback returns an element tree and the framework handles rendering. Prefer the TEA bridge for new integrations.
+
 ## Basic Terminal Embedding
 
 ### Static Terminal
@@ -79,12 +81,12 @@ def render(assigns) do
     id="keyboard"
     buffer={@buffer}
     theme={:nord}
-    on_keypress={&send(self(), {:keypress, &1})}
+    on_keypress="handle_keypress"
   />
   """
 end
 
-def handle_info({:keypress, key}, socket) do
+def handle_event("handle_keypress", %{"key" => key}, socket) do
   socket =
     socket
     |> update(:key_count, &(&1 + 1))
@@ -105,12 +107,12 @@ def render(assigns) do
     id="mouse"
     buffer={@buffer}
     theme={:dracula}
-    on_click={fn coord -> send(self(), {:click, coord}) end}
+    on_click="handle_click"
   />
   """
 end
 
-def handle_info({:click, {x, y}}, socket) do
+def handle_event("handle_click", %{"x" => x, "y" => y}, socket) do
   buffer = Buffer.write_at(socket.assigns.buffer, x, y, "X", %{fg_color: :red})
   {:noreply, assign(socket, buffer: buffer)}
 end
@@ -124,7 +126,7 @@ end
   id="paste"
   buffer={@buffer}
   theme={:solarized_dark}
-  on_paste={fn text -> send(self(), {:paste, text}) end}
+  on_paste="handle_paste"
 />
 ```
 
@@ -142,8 +144,8 @@ defmodule MyAppWeb.CounterLive do
   alias Raxol.Core.{Buffer, Box}
 
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, buffer: Buffer.create_blank_buffer(40, 15), count: 0)
-    |> update_display()}
+    socket = assign(socket, buffer: Buffer.create_blank_buffer(40, 15), count: 0)
+    {:ok, update_display(socket)}
   end
 
   def handle_event("increment", _, socket) do
@@ -208,7 +210,7 @@ def render(assigns) do
         id="left-terminal"
         buffer={@left_buffer}
         theme={:nord}
-        on_keypress={fn k -> send(self(), {:left_key, k}) end}
+        on_keypress="handle_left_key"
       />
     </div>
 
@@ -218,7 +220,7 @@ def render(assigns) do
         id="right-terminal"
         buffer={@right_buffer}
         theme={:dracula}
-        on_keypress={fn k -> send(self(), {:right_key, k}) end}
+        on_keypress="handle_right_key"
       />
     </div>
   </div>
@@ -257,18 +259,12 @@ end
 
 ## Performance: Diff Rendering
 
-TerminalComponent diffs automatically. You can also calculate diffs manually:
+`TerminalComponent` diffs buffers automatically on each render -- you do not need to track `previous_buffer` yourself. Simply assign the new buffer and the component handles the rest:
 
 ```elixir
 def handle_info(:tick, socket) do
   frame = socket.assigns.frame + 1
-  new_buffer = create_buffer(frame)
-
-  {:noreply, assign(socket,
-    buffer: new_buffer,
-    previous_buffer: socket.assigns.buffer,
-    frame: frame
-  )}
+  {:noreply, assign(socket, buffer: create_buffer(frame), frame: frame)}
 end
 ```
 

@@ -1,6 +1,6 @@
 # Buffer API Reference
 
-Complete API documentation for Raxol.Core buffer primitives. Lightweight, zero-dependency terminal buffer operations.
+Complete API documentation for Raxol.Core buffer primitives. Lightweight terminal buffer operations. Note: raxol_core depends on telemetry at runtime.
 
 ## Raxol.Core.Buffer
 
@@ -247,4 +247,3 @@ All modules are pure functional -- no shared state. Safe for concurrent use. No 
 ## See Also
 
 - [Architecture](./ARCHITECTURE.md)
-- [Examples](../../examples/core/README.md)

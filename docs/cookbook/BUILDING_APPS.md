@@ -313,7 +313,7 @@ defp cpu_color(_), do: :green
 ### Bordered panels with titles
 
 ```elixir
-defp panel(title, opts \\ [], do: content) do
+defp panel(title, content, opts \\ []) do
   fg = Keyword.get(opts, :fg, :cyan)
 
   box style: %{border: :single, flex: 1, padding: 0} do
@@ -378,18 +378,23 @@ end
 
 ```elixir
 test "search mode filters items" do
+  key = fn
+    k when is_atom(k) -> %Raxol.Core.Events.Event{type: :key, data: %{key: k, char: nil}}
+    c -> %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: c}}
+  end
+
   model = %{mode: :browsing, items: ["apple", "banana", "avocado"], filter: ""}
 
   # Enter search mode
-  {model, _} = MyApp.update(key("/"), model)
+  {model, _} = MyApp.update(key.("/"), model)
   assert model.mode == :searching
 
   # Type filter
-  {model, _} = MyApp.update(key("a"), model)
+  {model, _} = MyApp.update(key.("a"), model)
   assert model.filter == "a"
 
   # Escape returns to browsing
-  {model, _} = MyApp.update(key(:escape), model)
+  {model, _} = MyApp.update(key.(:escape), model)
   assert model.mode == :browsing
   assert model.filter == ""
 end
