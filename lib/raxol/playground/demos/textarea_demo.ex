@@ -2,6 +2,9 @@ defmodule Raxol.Playground.Demos.TextAreaDemo do
   @moduledoc "Playground demo: multi-line text editor with insert and normal modes."
   use Raxol.Core.Runtime.Application
 
+  @editor_width 50
+  @line_number_pad 2
+
   @impl true
   def init(_context) do
     %{
@@ -72,7 +75,7 @@ defmodule Raxol.Playground.Demos.TextAreaDemo do
       |> Enum.with_index()
       |> Enum.map(fn {line, i} ->
         prefix = if i == model.cursor_line, do: ">", else: " "
-        num = String.pad_leading("#{i + 1}", 2)
+        num = String.pad_leading("#{i + 1}", @line_number_pad)
         text("#{prefix} #{num} | #{line}")
       end)
 
@@ -81,7 +84,7 @@ defmodule Raxol.Playground.Demos.TextAreaDemo do
         text("TextArea Demo", style: [:bold]),
         text("Mode: #{mode_str}", style: [:bold]),
         divider(),
-        box style: %{border: :single, padding: 1, width: 50} do
+        box style: %{border: :single, padding: 1, width: @editor_width} do
           column(style: %{gap: 0}, do: line_rows)
         end,
         text("Ln #{model.cursor_line + 1}, Col #{model.cursor_col}"),

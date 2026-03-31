@@ -20,6 +20,19 @@ defmodule SensorHUDDemo do
 
   @width 60
   @duration_ms 5_000
+  @fusion_batch_ms 200
+  @temp_sample_ms 100
+  @pressure_sample_ms 150
+  @proximity_sample_ms 200
+  @pressure_baseline 1013.0
+  @pressure_frequency 0.05
+  @pressure_amplitude 20
+  @pressure_noise 2
+  @proximity_cycle 10
+  @proximity_high_ticks 3
+  @bearing_step 15
+  @bearing_max 360
+  @render_timeout_ms 500
 
   def run do
     IO.puts("=== Sensor Fusion HUD Demo ===\n")
@@ -27,7 +40,7 @@ defmodule SensorHUDDemo do
     # Fusion batches readings from all feeds within a 200ms window,
     # computes weighted averages, then broadcasts {:fused_update, data}
     # to subscribers.
-    {:ok, fusion} = Fusion.start_link(name: nil, batch_window_ms: 200)
+    {:ok, fusion} = Fusion.start_link(name: nil, batch_window_ms: @fusion_batch_ms)
     Fusion.subscribe(fusion)
 
     # Each Feed is a GenServer that calls MockSensor.read/1 at the given
@@ -36,7 +49,7 @@ defmodule SensorHUDDemo do
       Feed.start_link(
         sensor_id: :temperature,
         module: MockSensor,
-        sample_rate_ms: 100,
+        sample_rate_ms: @temp_sample_ms,
         fusion_pid: fusion
       )
 
@@ -44,11 +57,11 @@ defmodule SensorHUDDemo do
       Feed.start_link(
         sensor_id: :pressure,
         module: MockSensor,
-        sample_rate_ms: 150,
+        sample_rate_ms: @pressure_sample_ms,
         fusion_pid: fusion,
         connect_opts: [
           generator_fn: fn tick ->
-            %{value: 1013.0 + :math.sin(tick * 0.05) * 20 + :rand.uniform() * 2}
+            %{value: @pressure_baseline + :math.sin(tick * @pressure_frequency) * @pressure_amplitude + :rand.uniform() * @pressure_noise}
           end
         ]
       )
@@ -57,12 +70,12 @@ defmodule SensorHUDDemo do
       Feed.start_link(
         sensor_id: :proximity,
         module: MockSensor,
-        sample_rate_ms: 200,
+        sample_rate_ms: @proximity_sample_ms,
         fusion_pid: fusion,
         connect_opts: [
           generator_fn: fn tick ->
-            level = if rem(tick, 10) < 3, do: :high, else: :low
-            %{level: level, bearing: rem(tick * 15, 360)}
+            level = if rem(tick, @proximity_cycle) < @proximity_high_ticks, do: :high, else: :low
+            %{level: level, bearing: rem(tick * @bearing_step, @bearing_max)}
           end
         ]
       )
@@ -79,10 +92,10 @@ defmodule SensorHUDDemo do
     receive do
       {:fused_update, fused} ->
         render_frame(fused, elapsed)
-        render_loop(elapsed + 200, max)
+        render_loop(elapsed + @fusion_batch_ms, max)
     after
-      500 ->
-        render_loop(elapsed + 500, max)
+      @render_timeout_ms ->
+        render_loop(elapsed + @render_timeout_ms, max)
     end
   end
 

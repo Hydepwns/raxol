@@ -39,6 +39,7 @@ defmodule RaxolDemo do
   @bar_empty "░"
   @mem_history_size 20
   @max_log_entries 12
+  @max_proc_offset 20
 
   # -- TEA Callbacks --
 
@@ -115,7 +116,7 @@ defmodule RaxolDemo do
 
       # Process table scroll
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}} ->
-        {%{model | proc_offset: min(model.proc_offset + 1, 20)}, []}
+        {%{model | proc_offset: min(model.proc_offset + 1, @max_proc_offset)}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}} ->
         {%{model | proc_offset: max(model.proc_offset - 1, 0)}, []}

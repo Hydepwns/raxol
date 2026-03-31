@@ -3,6 +3,8 @@ defmodule Raxol.Playground.Demos.MenuDemo do
   use Raxol.Core.Runtime.Application
 
   @items ["File", "Edit", "View", "Tools", "Help"]
+  @info_box_width 35
+  @submenu_width 20
 
   @sub_menus %{
     "File" => ["New", "Open", "Save", "Save As", "Exit"],
@@ -82,7 +84,7 @@ defmodule Raxol.Playground.Demos.MenuDemo do
           text("")
         end,
         divider(),
-        box style: %{border: :single, padding: 1, width: 35} do
+        box style: %{border: :single, padding: 1, width: @info_box_width} do
           column style: %{gap: 0} do
             [
               text("Menu: #{current_item(model)}", style: [:bold]),
@@ -135,7 +137,7 @@ defmodule Raxol.Playground.Demos.MenuDemo do
         text(prefix <> item, style: style)
       end)
 
-    box style: %{border: :single, padding: 1, width: 20} do
+    box style: %{border: :single, padding: 1, width: @submenu_width} do
       column style: %{gap: 0} do
         rendered
       end

@@ -7,6 +7,11 @@ defmodule Raxol.Playground.Demos.SparklineDemo do
   @spark_height 5
   @tick_interval_ms 200
 
+  # {baseline, amplitude, frequency} for each metric
+  @cpu_wave {50, 30, 0.25}
+  @mem_wave {60, 20, 0.18}
+  @net_wave {30, 25, 0.3}
+
   @impl true
   def init(_context) do
     %{tick: 0, color: :cyan, colors: [:cyan, :green, :yellow, :magenta, :red]}
@@ -35,14 +40,9 @@ defmodule Raxol.Playground.Demos.SparklineDemo do
   def view(model) do
     range = 0..(@data_points - 1)
 
-    cpu_data =
-      for i <- range, do: round(50 + 30 * :math.sin((model.tick + i) * 0.25))
-
-    mem_data =
-      for i <- range, do: round(60 + 20 * :math.cos((model.tick + i) * 0.18))
-
-    net_data =
-      for i <- range, do: round(30 + 25 * :math.sin((model.tick + i) * 0.3))
+    cpu_data = wave_data(range, model.tick, @cpu_wave, :sin)
+    mem_data = wave_data(range, model.tick, @mem_wave, :cos)
+    net_data = wave_data(range, model.tick, @net_wave, :sin)
 
     column style: %{gap: 1} do
       [
@@ -62,4 +62,12 @@ defmodule Raxol.Playground.Demos.SparklineDemo do
 
   @impl true
   def subscribe(_model), do: [subscribe_interval(@tick_interval_ms, :tick)]
+
+  defp wave_data(range, tick, {baseline, amplitude, frequency}, :sin) do
+    for i <- range, do: round(baseline + amplitude * :math.sin((tick + i) * frequency))
+  end
+
+  defp wave_data(range, tick, {baseline, amplitude, frequency}, :cos) do
+    for i <- range, do: round(baseline + amplitude * :math.cos((tick + i) * frequency))
+  end
 end

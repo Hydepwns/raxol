@@ -2,6 +2,8 @@ defmodule Raxol.Playground.Demos.SelectListDemo do
   @moduledoc "Playground demo: dropdown select list with keyboard navigation."
   use Raxol.Core.Runtime.Application
 
+  @dropdown_width 30
+
   @impl true
   def init(_context) do
     %{
@@ -62,7 +64,7 @@ defmodule Raxol.Playground.Demos.SelectListDemo do
         text("SelectList Demo", style: [:bold]),
         divider(),
         text("Selected: #{display}", style: [:bold]),
-        box style: %{border: :single, padding: 1, width: 30} do
+        box style: %{border: :single, padding: 1, width: @dropdown_width} do
           column style: %{gap: 0} do
             [text("[#{arrow}] #{current}") | dropdown_items]
           end

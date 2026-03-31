@@ -7,6 +7,12 @@ defmodule Raxol.Playground.Demos.LineChartDemo do
   @chart_height 15
   @tick_interval_ms 300
 
+  @sine_baseline 50
+  @sine_amplitude 40
+  @sine_frequency 0.2
+  @cosine_amplitude 25
+  @cosine_frequency 0.15
+
   @impl true
   def init(_context) do
     %{tick: 0, show_legend: true, show_axes: false}
@@ -66,8 +72,8 @@ defmodule Raxol.Playground.Demos.LineChartDemo do
 
   defp build_series(tick) do
     range = 0..(@data_points - 1)
-    data_a = for i <- range, do: round(50 + 40 * :math.sin((tick + i) * 0.2))
-    data_b = for i <- range, do: round(50 + 25 * :math.cos((tick + i) * 0.15))
+    data_a = for i <- range, do: round(@sine_baseline + @sine_amplitude * :math.sin((tick + i) * @sine_frequency))
+    data_b = for i <- range, do: round(@sine_baseline + @cosine_amplitude * :math.cos((tick + i) * @cosine_frequency))
 
     [
       %{name: "Sine", data: data_a, color: :cyan},

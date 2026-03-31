@@ -18,6 +18,7 @@ defmodule Raxol.Playground.Demos.EasingDemo do
   @plot_width 30
   @plot_height 10
   @cycle_ticks 40
+  @tick_interval_ms 50
 
   @impl true
   def init(_context) do
@@ -88,7 +89,7 @@ defmodule Raxol.Playground.Demos.EasingDemo do
 
   @impl true
   def subscribe(_model) do
-    [subscribe_interval(50, :tick)]
+    [subscribe_interval(@tick_interval_ms, :tick)]
   end
 
   defp current_easing(model) do

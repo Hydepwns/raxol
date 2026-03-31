@@ -3,9 +3,11 @@ defmodule Raxol.Playground.Demos.ContainerDemo do
   use Raxol.Core.Runtime.Application
 
   @total 30
+  @initial_visible 10
   @min_visible 3
   @max_visible 20
   @scrollbar_width 20
+  @content_box_width 30
 
   @impl true
   def init(_context) do
@@ -15,7 +17,7 @@ defmodule Raxol.Playground.Demos.ContainerDemo do
         &"Item #{String.pad_leading(Integer.to_string(&1), 2, "0")}"
       )
 
-    %{items: items, scroll_offset: 0, visible_count: 10}
+    %{items: items, scroll_offset: 0, visible_count: @initial_visible}
   end
 
   @impl true
@@ -70,7 +72,7 @@ defmodule Raxol.Playground.Demos.ContainerDemo do
         text("Container Demo", style: [:bold]),
         divider(),
         text("Showing #{first}-#{last} of #{total}"),
-        box style: %{border: :single, padding: 1, width: 30} do
+        box style: %{border: :single, padding: 1, width: @content_box_width} do
           column style: %{gap: 0} do
             visible
           end

@@ -2,6 +2,9 @@ defmodule Raxol.Playground.Demos.CodeBlockDemo do
   @moduledoc "Playground demo: code display with line numbers and language samples."
   use Raxol.Core.Runtime.Application
 
+  @code_box_width 45
+  @line_number_pad 2
+
   @samples [
     %{
       lang: "Elixir",
@@ -55,7 +58,7 @@ defmodule Raxol.Playground.Demos.CodeBlockDemo do
       |> Enum.with_index(1)
       |> Enum.map(fn {line, num} ->
         if model.show_line_numbers do
-          pad = String.pad_leading(Integer.to_string(num), 2)
+          pad = String.pad_leading(Integer.to_string(num), @line_number_pad)
           text("#{pad} | #{line}")
         else
           text("  #{line}")
@@ -69,7 +72,7 @@ defmodule Raxol.Playground.Demos.CodeBlockDemo do
         text("CodeBlock Demo", style: [:bold]),
         divider(),
         text("#{sample.lang}: #{sample.label}", style: [:bold]),
-        box style: %{border: :single, padding: 1, width: 45} do
+        box style: %{border: :single, padding: 1, width: @code_box_width} do
           column style: %{gap: 0} do
             code_lines
           end

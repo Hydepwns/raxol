@@ -2,9 +2,15 @@ defmodule Raxol.Playground.Demos.SplitPaneDemo do
   @moduledoc "Playground demo: resizable split pane with direction toggle."
   use Raxol.Core.Runtime.Application
 
+  @default_ratio 0.5
+  @ratio_step 0.1
+  @min_ratio 0.1
+  @max_ratio 0.9
+  @percent 100
+
   @impl true
   def init(_context) do
-    %{direction: :horizontal, ratio: 0.5, focus: :left}
+    %{direction: :horizontal, ratio: @default_ratio, focus: :left}
   end
 
   @impl true
@@ -21,13 +27,13 @@ defmodule Raxol.Playground.Demos.SplitPaneDemo do
         {%{model | focus: focus}, []}
 
       key_match("+") ->
-        {%{model | ratio: min(model.ratio + 0.1, 0.9)}, []}
+        {%{model | ratio: min(model.ratio + @ratio_step, @max_ratio)}, []}
 
       key_match("-") ->
-        {%{model | ratio: max(model.ratio - 0.1, 0.1)}, []}
+        {%{model | ratio: max(model.ratio - @ratio_step, @min_ratio)}, []}
 
       key_match("=") ->
-        {%{model | ratio: 0.5}, []}
+        {%{model | ratio: @default_ratio}, []}
 
       _ ->
         {model, []}
@@ -40,7 +46,7 @@ defmodule Raxol.Playground.Demos.SplitPaneDemo do
     right_indicator = if model.focus == :right, do: " [*]", else: ""
     left_style = if model.focus == :left, do: [:bold], else: []
     right_style = if model.focus == :right, do: [:bold], else: []
-    pct = round(model.ratio * 100)
+    pct = round(model.ratio * @percent)
 
     left_pane =
       box style: %{border: :single, padding: 1} do
@@ -57,7 +63,7 @@ defmodule Raxol.Playground.Demos.SplitPaneDemo do
         column style: %{gap: 0} do
           [
             text("Right Pane#{right_indicator}", style: right_style),
-            text("Ratio: #{100 - pct}%")
+            text("Ratio: #{@percent - pct}%")
           ]
         end
       end
@@ -82,7 +88,7 @@ defmodule Raxol.Playground.Demos.SplitPaneDemo do
         row style: %{gap: 2} do
           [
             text("Direction: #{model.direction}"),
-            text("Ratio: #{pct}/#{100 - pct}"),
+            text("Ratio: #{pct}/#{@percent - pct}"),
             text("Focus: #{model.focus}")
           ]
         end,

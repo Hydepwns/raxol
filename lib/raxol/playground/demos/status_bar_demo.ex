@@ -3,6 +3,7 @@ defmodule Raxol.Playground.Demos.StatusBarDemo do
   use Raxol.Core.Runtime.Application
 
   @tick_interval_ms 1000
+  @info_box_width 35
 
   @impl true
   def init(_context) do
@@ -59,7 +60,7 @@ defmodule Raxol.Playground.Demos.StatusBarDemo do
           ]
         end,
         divider(),
-        box style: %{border: :single, padding: 1, width: 35} do
+        box style: %{border: :single, padding: 1, width: @info_box_width} do
           column style: %{gap: 0} do
             [
               text("Mode: #{model.mode}"),

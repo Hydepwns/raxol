@@ -3,6 +3,7 @@ defmodule Raxol.Playground.Demos.TableDemo do
   use Raxol.Core.Runtime.Application
 
   @headers ["#", "Framework", "Language", "Stars"]
+  @detail_box_width 35
 
   @data [
     ["1", "Raxol", "Elixir", "500"],
@@ -91,7 +92,7 @@ defmodule Raxol.Playground.Demos.TableDemo do
   defp selected_row_info(rows, cursor) do
     case Enum.at(rows, cursor) do
       [_, name, lang, stars] ->
-        box style: %{border: :single, padding: 1, width: 35} do
+        box style: %{border: :single, padding: 1, width: @detail_box_width} do
           column style: %{gap: 0} do
             [
               text("Selected: #{name}", style: [:bold]),

@@ -14,13 +14,15 @@ defmodule SnakeGame do
   @width 30
   @height 15
   @initial_length 4
+  @tick_interval_ms 120
+  @initial_food {7, 7}
 
   @impl true
   def init(_context) do
     %{
       direction: :right,
       chain: Enum.map(@initial_length..1//-1, fn x -> {x, 0} end),
-      food: {7, 7},
+      food: @initial_food,
       alive: true
     }
   end
@@ -79,7 +81,7 @@ defmodule SnakeGame do
 
   @impl true
   def subscribe(%{alive: true}) do
-    [subscribe_interval(120, :tick)]
+    [subscribe_interval(@tick_interval_ms, :tick)]
   end
 
   def subscribe(_model), do: []

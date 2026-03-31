@@ -22,6 +22,14 @@ defmodule LineChartDemo do
   alias Raxol.UI.Charts.{LineChart, ViewBridge}
 
   @max_points 80
+  @tick_interval_ms 200
+  @time_scale 0.1
+  @chart_bounds {1, 2, 78, 20}
+
+  # {frequency_multiplier, phase_offset, amplitude, baseline}
+  @wave_a {1.0, 0.0, 50, 50}
+  @wave_b {1.5, 1.0, 30, 50}
+  @wave_c {0.7, 2.0, 40, 50}
 
   @impl true
   def init(_context) do
@@ -32,10 +40,10 @@ defmodule LineChartDemo do
   def update(message, model) do
     case message do
       :tick ->
-        t = model.tick * 0.1
-        a = :math.sin(t) * 50 + 50
-        b = :math.sin(t * 1.5 + 1.0) * 30 + 50
-        c = :math.sin(t * 0.7 + 2.0) * 40 + 50
+        t = model.tick * @time_scale
+        a = wave(t, @wave_a)
+        b = wave(t, @wave_b)
+        c = wave(t, @wave_c)
 
         {%{
            model
@@ -63,7 +71,7 @@ defmodule LineChartDemo do
 
     # render/3 takes {x, y, width, height} bounds and a list of series.
     # Returns raw cell tuples that ViewBridge converts to View DSL elements.
-    cells = LineChart.render({1, 2, 78, 20}, series, show_legend: true)
+    cells = LineChart.render(@chart_bounds, series, show_legend: true)
 
     column style: %{padding: 1} do
       [
@@ -76,7 +84,10 @@ defmodule LineChartDemo do
 
   @impl true
   def subscribe(_model) do
-    [subscribe_interval(200, :tick)]
+    [subscribe_interval(@tick_interval_ms, :tick)]
+  end
+  defp wave(t, {freq, phase, amplitude, baseline}) do
+    :math.sin(t * freq + phase) * amplitude + baseline
   end
 end
 

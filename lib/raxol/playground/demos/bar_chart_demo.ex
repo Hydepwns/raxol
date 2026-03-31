@@ -5,6 +5,7 @@ defmodule Raxol.Playground.Demos.BarChartDemo do
   @labels ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   @chart_width 50
   @chart_height 12
+  @max_bar_value 100
 
   @impl true
   def init(_context) do
@@ -28,7 +29,7 @@ defmodule Raxol.Playground.Demos.BarChartDemo do
         {%{model | show_values: not model.show_values}, []}
 
       key_match("r") ->
-        {%{model | data: Enum.map(1..length(@labels), fn _ -> :rand.uniform(100) end)}, []}
+        {%{model | data: Enum.map(1..length(@labels), fn _ -> :rand.uniform(@max_bar_value) end)}, []}
 
       _ ->
         {model, []}

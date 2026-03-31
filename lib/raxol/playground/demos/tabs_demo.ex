@@ -3,6 +3,8 @@ defmodule Raxol.Playground.Demos.TabsDemo do
   use Raxol.Core.Runtime.Application
 
   @tab_labels ["Overview", "Details", "Settings", "Help"]
+  @tab_count length(@tab_labels)
+  @content_box_width 40
 
   @tab_content %{
     0 => "Welcome to the overview panel.\nThis shows a summary.",
@@ -25,16 +27,16 @@ defmodule Raxol.Playground.Demos.TabsDemo do
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: k}}
       when k in [:left] ->
-        {%{model | active: rem(model.active - 1 + 4, 4)}, []}
+        {%{model | active: rem(model.active - 1 + @tab_count, @tab_count)}, []}
 
       key_match("h") ->
-        {%{model | active: rem(model.active - 1 + 4, 4)}, []}
+        {%{model | active: rem(model.active - 1 + @tab_count, @tab_count)}, []}
 
       key_match(:right) ->
-        {%{model | active: rem(model.active + 1, 4)}, []}
+        {%{model | active: rem(model.active + 1, @tab_count)}, []}
 
       key_match("l") ->
-        {%{model | active: rem(model.active + 1, 4)}, []}
+        {%{model | active: rem(model.active + 1, @tab_count)}, []}
 
       _ ->
         {model, []}
@@ -67,7 +69,7 @@ defmodule Raxol.Playground.Demos.TabsDemo do
         row style: %{gap: 0} do
           tabs
         end,
-        box style: %{border: :single, padding: 1, width: 40} do
+        box style: %{border: :single, padding: 1, width: @content_box_width} do
           column style: %{gap: 0} do
             content_lines
           end

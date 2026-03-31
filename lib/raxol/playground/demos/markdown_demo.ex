@@ -2,6 +2,8 @@ defmodule Raxol.Playground.Demos.MarkdownDemo do
   @moduledoc "Playground demo: markdown rendering with raw toggle."
   use Raxol.Core.Runtime.Application
 
+  @content_box_width 45
+
   @documents [
     %{
       title: "Getting Started",
@@ -66,7 +68,7 @@ defmodule Raxol.Playground.Demos.MarkdownDemo do
             text("[#{mode_label}]", style: [:dim])
           ]
         end,
-        box style: %{border: :single, padding: 1, width: 45} do
+        box style: %{border: :single, padding: 1, width: @content_box_width} do
           column style: %{gap: 0} do
             content_lines
           end

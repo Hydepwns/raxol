@@ -2,6 +2,9 @@ defmodule Raxol.Playground.Demos.ModalDemo do
   @moduledoc "Playground demo: modal dialog with confirm and cancel actions."
   use Raxol.Core.Runtime.Application
 
+  @stats_box_width 30
+  @modal_width 40
+
   @impl true
   def init(_context) do
     %{show: false, confirmed: 0, cancelled: 0}
@@ -55,7 +58,7 @@ defmodule Raxol.Playground.Demos.ModalDemo do
           closed_view(model)
         end,
         divider(),
-        box style: %{border: :rounded, padding: 1, width: 30} do
+        box style: %{border: :rounded, padding: 1, width: @stats_box_width} do
           column style: %{gap: 0} do
             [
               text("Confirmed: #{model.confirmed}"),
@@ -75,7 +78,7 @@ defmodule Raxol.Playground.Demos.ModalDemo do
   defp modal_view(_model) do
     column style: %{gap: 0} do
       [
-        box style: %{border: :double, padding: 1, width: 40} do
+        box style: %{border: :double, padding: 1, width: @modal_width} do
           column style: %{gap: 1} do
             [
               text("Confirm Action", style: [:bold]),

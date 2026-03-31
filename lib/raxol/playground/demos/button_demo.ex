@@ -2,6 +2,8 @@ defmodule Raxol.Playground.Demos.ButtonDemo do
   @moduledoc "Playground demo: interactive button with click handling."
   use Raxol.Core.Runtime.Application
 
+  @info_box_width 30
+
   @impl true
   def init(_context) do
     %{clicks: 0, last_action: "none"}
@@ -47,7 +49,7 @@ defmodule Raxol.Playground.Demos.ButtonDemo do
           ]
         end,
         divider(),
-        box style: %{border: :single, padding: 1, width: 30} do
+        box style: %{border: :single, padding: 1, width: @info_box_width} do
           column style: %{gap: 0} do
             [
               text("Clicks: #{model.clicks}", style: [:bold]),

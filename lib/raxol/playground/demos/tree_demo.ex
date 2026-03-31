@@ -2,6 +2,8 @@ defmodule Raxol.Playground.Demos.TreeDemo do
   @moduledoc "Playground demo: expandable tree view with keyboard navigation."
   use Raxol.Core.Runtime.Application
 
+  @indent "  "
+
   @tree [
     %{
       name: "src",
@@ -74,7 +76,7 @@ defmodule Raxol.Playground.Demos.TreeDemo do
       visible
       |> Enum.with_index()
       |> Enum.map(fn {{node, depth, has_children}, idx} ->
-        indent = String.duplicate("  ", depth)
+        indent = String.duplicate(@indent, depth)
 
         prefix =
           cond do

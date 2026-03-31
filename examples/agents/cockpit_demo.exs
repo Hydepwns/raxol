@@ -16,6 +16,8 @@ defmodule CockpitDemo.FileScanner do
   @moduledoc false
   use Raxol.Agent
 
+  @scan_delay_ms 400
+
   @files ~w(
     lib/raxol/agent.ex
     lib/raxol/agent/session.ex
@@ -61,7 +63,7 @@ defmodule CockpitDemo.FileScanner do
     }
 
     case new_model.remaining do
-      [_ | _] -> {new_model, [Command.delay(:scan_next, 400)]}
+      [_ | _] -> {new_model, [Command.delay(:scan_next, @scan_delay_ms)]}
       [] -> {%{new_model | current: nil, status: :done}, []}
     end
   end
@@ -83,6 +85,8 @@ end
 defmodule CockpitDemo.CodeAnalyzer do
   @moduledoc false
   use Raxol.Agent
+
+  @analyze_delay_ms 500
 
   @files ~w(
     lib/raxol/agent.ex
@@ -118,7 +122,7 @@ defmodule CockpitDemo.CodeAnalyzer do
     }
 
     case new_model.remaining do
-      [_ | _] -> {new_model, [Command.delay(:analyze_next, 500)]}
+      [_ | _] -> {new_model, [Command.delay(:analyze_next, @analyze_delay_ms)]}
       [] -> {%{new_model | current: nil, status: :done}, []}
     end
   end
@@ -141,6 +145,10 @@ defmodule CockpitDemo.SystemMonitor do
   @moduledoc false
   use Raxol.Agent
 
+  @monitor_tick_ms 600
+  @history_max 20
+  @bytes_per_mb 1_048_576
+
   def init(_ctx) do
     %{checks: 0, stats: %{}, status: :idle, history: [], proc_history: []}
   end
@@ -153,7 +161,7 @@ defmodule CockpitDemo.SystemMonitor do
   def update(_msg, model), do: {model, []}
 
   defp do_check(model) do
-    mem_mb = div(:erlang.memory(:total), 1_048_576)
+    mem_mb = div(:erlang.memory(:total), @bytes_per_mb)
     proc_count = :erlang.system_info(:process_count)
 
     stats = %{
@@ -162,8 +170,8 @@ defmodule CockpitDemo.SystemMonitor do
       schedulers: :erlang.system_info(:schedulers_online)
     }
 
-    history = Enum.take([mem_mb | model.history], 20)
-    proc_history = Enum.take([proc_count | model.proc_history], 20)
+    history = Enum.take([mem_mb | model.history], @history_max)
+    proc_history = Enum.take([proc_count | model.proc_history], @history_max)
 
     {%{
        model
@@ -171,13 +179,15 @@ defmodule CockpitDemo.SystemMonitor do
          stats: stats,
          history: history,
          proc_history: proc_history
-     }, [Command.delay(:tick, 600)]}
+     }, [Command.delay(:tick, @monitor_tick_ms)]}
   end
 end
 
 defmodule CockpitDemo.ChaosWorker do
   @moduledoc false
   use Raxol.Agent
+
+  @task_delay_ms 500
 
   def init(_ctx), do: %{tasks_done: 0, status: :idle}
 
@@ -191,7 +201,7 @@ defmodule CockpitDemo.ChaosWorker do
 
   def update({:command_result, {:shell_result, _}}, model) do
     {%{model | tasks_done: model.tasks_done + 1},
-     [Command.delay(:next_task, 500)]}
+     [Command.delay(:next_task, @task_delay_ms)]}
   end
 
   def update(_msg, model), do: {model, []}
@@ -260,6 +270,18 @@ defmodule CockpitDemo do
                     )
   @splash_ms 2000
 
+  @tick_interval_ms 200
+  @default_terminal_size {80, 24}
+  @splash_bar_width 30
+  @mini_bar_width 14
+  @scanner_recent_count 3
+  @analyzer_recent_count 5
+  @event_log_visible 7
+  @max_events 8
+  @spark_history_count 10
+  @stat_label_pad 8
+  @file_name_pad 20
+
   @sparks ~w(\u2581 \u2582 \u2583 \u2584 \u2585 \u2586 \u2587 \u2588)
   @bar_fill "\u2588"
   @bar_empty "\u2591"
@@ -299,7 +321,7 @@ defmodule CockpitDemo do
   end
 
   @impl true
-  def subscribe(_model), do: [subscribe_interval(200, :tick)]
+  def subscribe(_model), do: [subscribe_interval(@tick_interval_ms, :tick)]
 
   @impl true
   def update(message, model) do
@@ -502,9 +524,8 @@ defmodule CockpitDemo do
   defp splash_view(model) do
     elapsed = System.monotonic_time(:millisecond) - model.splash_start
     progress = min(elapsed / @splash_ms, 1.0)
-    bar_width = 30
-    filled = round(progress * bar_width)
-    empty = bar_width - filled
+    filled = round(progress * @splash_bar_width)
+    empty = @splash_bar_width - filled
 
     bar =
       String.duplicate(@bar_fill, filled) <> String.duplicate(@bar_empty, empty)
@@ -694,9 +715,9 @@ defmodule CockpitDemo do
       # Show last 3 completed files + active file with spinner
       recent =
         m.scanned
-        |> Enum.take(3)
+        |> Enum.take(@scanner_recent_count)
         |> Enum.map(fn {name, lines} ->
-          text("  [+] #{String.pad_trailing(name, 20)} #{lines} lines",
+          text("  [+] #{String.pad_trailing(name, @file_name_pad)} #{lines} lines",
             fg: :green
           )
         end)
@@ -714,7 +735,7 @@ defmodule CockpitDemo do
           []
         end
 
-      bar = mini_bar(scanned, total, 14)
+      bar = mini_bar(scanned, total, @mini_bar_width)
       progress = text("  #{bar} #{scanned}/#{total}", style: [:dim])
 
       content = active ++ recent ++ [progress]
@@ -745,7 +766,7 @@ defmodule CockpitDemo do
       # Show last 5 results as checklist
       items =
         m.results
-        |> Enum.take(5)
+        |> Enum.take(@analyzer_recent_count)
         |> Enum.map(fn {name, has_docs} ->
           {icon, fg} = if has_docs, do: {"[+]", :green}, else: {"[-]", :red}
           text("  #{icon} #{name}", fg: fg)
@@ -939,7 +960,7 @@ defmodule CockpitDemo do
   end
 
   defp event_log_panel(model) do
-    entries = model.events |> Enum.take(7) |> Enum.reverse()
+    entries = model.events |> Enum.take(@event_log_visible) |> Enum.reverse()
 
     rows =
       Enum.map(entries, fn {elapsed, tag, message} ->
@@ -954,7 +975,7 @@ defmodule CockpitDemo do
         end
       end)
 
-    padding = for _ <- 1..max(0, 7 - length(rows)), do: text("")
+    padding = for _ <- 1..max(0, @event_log_visible - length(rows)), do: text("")
 
     box style: %{border: :single, width: :fill, padding: 1} do
       column style: %{gap: 0} do
@@ -1113,7 +1134,7 @@ defmodule CockpitDemo do
   defp stat_line(label, value) do
     row style: %{gap: 1} do
       [
-        text("  #{String.pad_trailing(label, 8)}", style: [:dim]),
+        text("  #{String.pad_trailing(label, @stat_label_pad)}", style: [:dim]),
         text(value, style: [:bold])
       ]
     end
@@ -1122,7 +1143,7 @@ defmodule CockpitDemo do
   defp memory_sparkline_row(mem_mb, spark) do
     row style: %{gap: 1} do
       [
-        text("  #{String.pad_trailing("Memory", 8)}", style: [:dim]),
+        text("  #{String.pad_trailing("Memory", @stat_label_pad)}", style: [:dim]),
         text("#{mem_mb} MB", style: [:bold]),
         text(spark, fg: :cyan)
       ]
@@ -1132,7 +1153,7 @@ defmodule CockpitDemo do
   defp proc_sparkline_row(count, spark) do
     row style: %{gap: 1} do
       [
-        text("  #{String.pad_trailing("Procs", 8)}", style: [:dim]),
+        text("  #{String.pad_trailing("Procs", @stat_label_pad)}", style: [:dim]),
         text("#{count}", style: [:bold]),
         text(spark, fg: :magenta)
       ]
@@ -1151,7 +1172,7 @@ defmodule CockpitDemo do
   defp detect_size do
     case {:io.columns(), :io.rows()} do
       {{:ok, w}, {:ok, h}} when w > 0 and h > 0 -> {w, h}
-      _ -> {80, 24}
+      _ -> @default_terminal_size
     end
   end
 
@@ -1365,7 +1386,7 @@ defmodule CockpitDemo do
   defp add_event(model, tag, message) do
     elapsed = System.monotonic_time(:second) - model.start_time
     entry = {elapsed, tag, message}
-    %{model | events: Enum.take([entry | model.events], 8)}
+    %{model | events: Enum.take([entry | model.events], @max_events)}
   end
 
   defp tag_display(:boot), do: {"BOOT  ", :cyan}
@@ -1384,7 +1405,7 @@ defmodule CockpitDemo do
   defp spark_bar(history) when length(history) < 3, do: ""
 
   defp spark_bar(history) do
-    values = Enum.reverse(Enum.take(history, 10))
+    values = Enum.reverse(Enum.take(history, @spark_history_count))
     mn = Enum.min(values)
     mx = Enum.max(values)
     range = max(mx - mn, 1)

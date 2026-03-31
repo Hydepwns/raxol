@@ -2,6 +2,11 @@ defmodule Raxol.Playground.Demos.PasswordFieldDemo do
   @moduledoc "Playground demo: password input with visibility toggle and strength meter."
   use Raxol.Core.Runtime.Application
 
+  @input_box_width 40
+  @min_medium_length 4
+  @min_strong_length 8
+  @strength_bar_width 10
+
   @impl true
   def init(_context) do
     %{value: "", visible: false, strength: :none}
@@ -31,8 +36,8 @@ defmodule Raxol.Playground.Demos.PasswordFieldDemo do
   end
 
   defp strength(""), do: :none
-  defp strength(v) when byte_size(v) < 4, do: :weak
-  defp strength(v) when byte_size(v) < 8, do: :medium
+  defp strength(v) when byte_size(v) < @min_medium_length, do: :weak
+  defp strength(v) when byte_size(v) < @min_strong_length, do: :medium
   defp strength(_v), do: :strong
 
   @impl true
@@ -50,7 +55,7 @@ defmodule Raxol.Playground.Demos.PasswordFieldDemo do
         text("PasswordField Demo", style: [:bold]),
         divider(),
         text("Password:"),
-        box style: %{border: :single, padding: 1, width: 40} do
+        box style: %{border: :single, padding: 1, width: @input_box_width} do
           text(display <> "_")
         end,
         text("Strength: #{strength_label}"),
@@ -66,10 +71,14 @@ defmodule Raxol.Playground.Demos.PasswordFieldDemo do
     end
   end
 
-  defp strength_display(:none), do: {"none", "          "}
-  defp strength_display(:weak), do: {"weak", "##        "}
-  defp strength_display(:medium), do: {"medium", "######    "}
-  defp strength_display(:strong), do: {"strong", "##########"}
+  defp strength_display(:none), do: {"none", strength_bar(0)}
+  defp strength_display(:weak), do: {"weak", strength_bar(2)}
+  defp strength_display(:medium), do: {"medium", strength_bar(6)}
+  defp strength_display(:strong), do: {"strong", strength_bar(@strength_bar_width)}
+
+  defp strength_bar(filled) do
+    String.duplicate("#", filled) <> String.duplicate(" ", @strength_bar_width - filled)
+  end
 
   @impl true
   def subscribe(_model), do: []

@@ -23,6 +23,9 @@ defmodule Raxol.Playground.App do
 
   @categories [nil] ++ Catalog.list_categories()
   @complexities [nil, :basic, :intermediate, :advanced]
+  @sidebar_width 28
+  @help_key_pad 18
+  @unknown_category_order 99
 
   @category_order %{
     input: 0,
@@ -206,7 +209,7 @@ defmodule Raxol.Playground.App do
 
     filter_lines = active_filters(model)
 
-    box style: %{border: :rounded, fg: border_fg, width: 28} do
+    box style: %{border: :rounded, fg: border_fg, width: @sidebar_width} do
       column style: %{gap: 0} do
         filter_lines ++ search_line ++ items
       end
@@ -328,7 +331,7 @@ defmodule Raxol.Playground.App do
   end
 
   defp help_line(key, desc) do
-    padded = String.pad_trailing(key, 18)
+    padded = String.pad_trailing(key, @help_key_pad)
 
     row style: %{gap: 0} do
       [
@@ -380,7 +383,7 @@ defmodule Raxol.Playground.App do
 
   defp sort_by_category(components) do
     Enum.sort_by(components, fn c ->
-      Map.get(@category_order, c.category, 99)
+      Map.get(@category_order, c.category, @unknown_category_order)
     end)
   end
 

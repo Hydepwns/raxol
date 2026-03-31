@@ -6,6 +6,23 @@ defmodule Raxol.Playground.Demos.ScatterChartDemo do
   @chart_width 60
   @chart_height 15
   @tick_interval_ms 200
+  @tick_scale 0.05
+
+  # Cluster A: center, radius, angular speeds
+  @cluster_a_cx 30
+  @cluster_a_cy 20
+  @cluster_a_radius 10
+  @cluster_a_angle_speed 0.3
+  @cluster_a_sin_speed 0.4
+
+  # Cluster B: center, radius, angular speeds
+  @cluster_b_cx 60
+  @cluster_b_cy 40
+  @cluster_b_radius 8
+  @cluster_b_angle_speed 0.35
+  @cluster_b_time_scale 1.2
+  @cluster_b_cos_speed 0.25
+  @cluster_b_cos_time_scale 0.8
 
   @impl true
   def init(_context) do
@@ -61,18 +78,23 @@ defmodule Raxol.Playground.Demos.ScatterChartDemo do
   def subscribe(_model), do: [subscribe_interval(@tick_interval_ms, :tick)]
 
   defp build_series(tick) do
-    t = tick * 0.05
+    t = tick * @tick_scale
     range = 0..(@points_per_cluster - 1)
 
     cluster_a =
       for i <- range do
-        {30 + 10 * :math.cos(i * 0.3 + t), 20 + 10 * :math.sin(i * 0.4 + t)}
+        {
+          @cluster_a_cx + @cluster_a_radius * :math.cos(i * @cluster_a_angle_speed + t),
+          @cluster_a_cy + @cluster_a_radius * :math.sin(i * @cluster_a_sin_speed + t)
+        }
       end
 
     cluster_b =
       for i <- range do
-        {60 + 8 * :math.sin(i * 0.35 + t * 1.2),
-         40 + 8 * :math.cos(i * 0.25 + t * 0.8)}
+        {
+          @cluster_b_cx + @cluster_b_radius * :math.sin(i * @cluster_b_angle_speed + t * @cluster_b_time_scale),
+          @cluster_b_cy + @cluster_b_radius * :math.cos(i * @cluster_b_cos_speed + t * @cluster_b_cos_time_scale)
+        }
       end
 
     [

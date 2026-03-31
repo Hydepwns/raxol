@@ -40,6 +40,8 @@ Logger.configure(level: :warning)
 defmodule AICockpit.Config do
   @moduledoc false
 
+  @default_max_tokens 512
+
   def detect_backend do
     cond do
       System.get_env("PROTON_UID") && System.get_env("PROTON_ACCESS_TOKEN") ->
@@ -54,7 +56,7 @@ defmodule AICockpit.Config do
          api_key: key,
          base_url: "https://api.anthropic.com",
          model: System.get_env("ANTHROPIC_MODEL") || "claude-haiku-3-5-20241022",
-         max_tokens: 512}
+         max_tokens: @default_max_tokens}
 
       key = System.get_env("KIMI_API_KEY") ->
         {:http,
@@ -62,7 +64,7 @@ defmodule AICockpit.Config do
          api_key: key,
          base_url: "https://api.moonshot.ai",
          model: System.get_env("KIMI_MODEL") || "kimi-k2.5",
-         max_tokens: 512}
+         max_tokens: @default_max_tokens}
 
       key = System.get_env("AI_API_KEY") ->
         {:http,
@@ -70,14 +72,14 @@ defmodule AICockpit.Config do
          api_key: key,
          base_url: System.get_env("AI_BASE_URL") || "https://api.openai.com",
          model: System.get_env("AI_MODEL") || "gpt-4o-mini",
-         max_tokens: 512}
+         max_tokens: @default_max_tokens}
 
       model = System.get_env("OLLAMA_MODEL") ->
         {:http,
          provider: :ollama,
          base_url: System.get_env("OLLAMA_URL") || "http://localhost:11434",
          model: model,
-         max_tokens: 512}
+         max_tokens: @default_max_tokens}
 
       System.get_env("FREE_AI") ->
         {:http,
@@ -85,7 +87,7 @@ defmodule AICockpit.Config do
          api_key: "unused",
          base_url: "https://api.llm7.io/v1",
          model: System.get_env("AI_MODEL") || "gpt-4o-mini",
-         max_tokens: 512}
+         max_tokens: @default_max_tokens}
 
       true ->
         {:mock, []}
@@ -101,6 +103,10 @@ end
 
 defmodule AICockpit.MockStream do
   @moduledoc false
+
+  @min_word_delay_ms 15
+  @max_word_jitter_ms 35
+  @mock_input_tokens 150
 
   @analyses %{
     "agent.ex" => """
@@ -201,7 +207,7 @@ defmodule AICockpit.MockStream do
     |> String.split(~r/(?<=\s)/)
     |> Enum.each(fn word ->
       sender.({:chunk, word})
-      Process.sleep(15 + :rand.uniform(35))
+      Process.sleep(@min_word_delay_ms + :rand.uniform(@max_word_jitter_ms))
     end)
 
     token_count = text |> String.split() |> length()
@@ -210,7 +216,7 @@ defmodule AICockpit.MockStream do
       {:done,
        %{
          content: text,
-         usage: %{"input_tokens" => 150, "output_tokens" => token_count},
+         usage: %{"input_tokens" => @mock_input_tokens, "output_tokens" => token_count},
          metadata: %{provider: :mock}
        }}
     )
@@ -222,6 +228,8 @@ end
 defmodule AICockpit.Analyst do
   @moduledoc false
   use Raxol.Agent
+
+  @content_preview_max_chars 3000
 
   @files [
     "lib/raxol/agent.ex",
@@ -306,7 +314,7 @@ defmodule AICockpit.Analyst do
 
         File: #{file}
         ```elixir
-        #{String.slice(content, 0, 3000)}
+        #{String.slice(content, 0, @content_preview_max_chars)}
         ```
         """
 
@@ -380,6 +388,9 @@ defmodule AICockpit.Summarizer do
   @moduledoc false
   use Raxol.Agent
 
+  @header_pad_width 35
+  @summary_max_chars 300
+
   @impl true
   def init(_ctx) do
     %{findings: [], summary: "Waiting for analyst...", status: :idle}
@@ -393,8 +404,8 @@ defmodule AICockpit.Summarizer do
       findings
       |> Enum.reverse()
       |> Enum.map_join("\n\n", fn f ->
-        header = String.pad_trailing("-- #{Path.basename(f.file)} ", 35, "-")
-        "#{header}\n#{String.slice(f.analysis, 0, 300)}"
+        header = String.pad_trailing("-- #{Path.basename(f.file)} ", @header_pad_width, "-")
+        "#{header}\n#{String.slice(f.analysis, 0, @summary_max_chars)}"
       end)
 
     {%{model | findings: findings, summary: summary, status: :updated}, []}
@@ -408,6 +419,17 @@ end
 defmodule AICockpit.Dashboard do
   @moduledoc false
   use Raxol.Core.Runtime.Application
+
+  @tick_interval_ms 200
+  @panel_visible_lines 16
+  @analyst_line_max_chars 46
+  @summary_line_max_chars 40
+  @analyst_panel_width 50
+  @summary_panel_width 44
+  @input_display_max_chars 50
+  @event_log_max_entries 6
+  @event_msg_max_chars 70
+  @max_events 20
 
   @impl true
   def init(_ctx) do
@@ -430,7 +452,7 @@ defmodule AICockpit.Dashboard do
   end
 
   @impl true
-  def subscribe(_model), do: [subscribe_interval(200, :tick)]
+  def subscribe(_model), do: [subscribe_interval(@tick_interval_ms, :tick)]
 
   @impl true
   def update(message, model) do
@@ -488,7 +510,7 @@ defmodule AICockpit.Dashboard do
           {:user_question, model.input_buffer}
         )
 
-        q = String.slice(model.input_buffer, 0, 50)
+        q = String.slice(model.input_buffer, 0, @input_display_max_chars)
 
         {add_event(
            %{model | takeover: false, input_buffer: ""},
@@ -580,9 +602,9 @@ defmodule AICockpit.Dashboard do
         lines =
           m.output
           |> String.split("\n")
-          |> Enum.take(16)
+          |> Enum.take(@panel_visible_lines)
           |> Enum.map(fn line ->
-            text(String.slice(line, 0, 46))
+            text(String.slice(line, 0, @analyst_line_max_chars))
           end)
 
         cursor =
@@ -601,7 +623,7 @@ defmodule AICockpit.Dashboard do
 
     box style: %{
           border: if(active, do: :double, else: :single),
-          width: 50,
+          width: @analyst_panel_width,
           padding: 1
         } do
       column style: %{gap: 0} do
@@ -622,9 +644,9 @@ defmodule AICockpit.Dashboard do
       if m && m.summary != "" do
         m.summary
         |> String.split("\n")
-        |> Enum.take(16)
+        |> Enum.take(@panel_visible_lines)
         |> Enum.map(fn line ->
-          text(String.slice(line, 0, 40))
+          text(String.slice(line, 0, @summary_line_max_chars))
         end)
       else
         [text("  Waiting for findings...", style: [:dim])]
@@ -632,7 +654,7 @@ defmodule AICockpit.Dashboard do
 
     box style: %{
           border: if(active, do: :double, else: :single),
-          width: 44,
+          width: @summary_panel_width,
           padding: 1
         } do
       column style: %{gap: 0} do
@@ -657,7 +679,7 @@ defmodule AICockpit.Dashboard do
 
     entries =
       model.events
-      |> Enum.take(6)
+      |> Enum.take(@event_log_max_entries)
       |> Enum.map(fn {elapsed, tag, msg} ->
         {tag_str, tag_fg} =
           case tag do
@@ -672,7 +694,7 @@ defmodule AICockpit.Dashboard do
           [
             text(String.pad_leading("#{elapsed}s", 4), style: [:dim]),
             text("[#{tag_str}]", fg: tag_fg),
-            text(String.slice(msg, 0, 70))
+            text(String.slice(msg, 0, @event_msg_max_chars))
           ]
         end
       end)
@@ -774,7 +796,7 @@ defmodule AICockpit.Dashboard do
 
   defp add_event(model, tag, msg) do
     elapsed = System.monotonic_time(:second) - model.start_time
-    %{model | events: Enum.take([{elapsed, tag, msg} | model.events], 20)}
+    %{model | events: Enum.take([{elapsed, tag, msg} | model.events], @max_events)}
   end
 end
 
