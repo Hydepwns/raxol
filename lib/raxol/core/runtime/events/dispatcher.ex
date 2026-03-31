@@ -350,7 +350,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
     :ok
   rescue
-    ArgumentError -> :ok
+    ArgumentError ->
+      # Registry not started (web-only deployment); not an error
+      :ok
   end
 
   # --- BaseManager Callbacks ---

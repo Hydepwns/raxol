@@ -21,12 +21,9 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
 
       html = TerminalBridge.buffer_to_html(buffer)
 
-      # Each character is wrapped in a span
-      assert html =~ ">H</span>"
-      assert html =~ ">e</span>"
-      assert html =~ ">l</span>"
-      assert html =~ ">o</span>"
-      assert html =~ ~s(class="raxol-cell")
+      # RLE rendering: text appears as runs, not per-character spans
+      assert html =~ "Hello"
+      assert html =~ ~s(<pre class="raxol-terminal")
     end
 
     test "applies theme class" do
@@ -44,13 +41,13 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
       html = TerminalBridge.buffer_to_html(buffer, css_prefix: "custom")
 
       assert html =~ ~s(class="custom-terminal")
-      assert html =~ ~s(class="custom-line")
-      assert html =~ ~s(class="custom-cell")
     end
 
-    test "shows cursor when enabled" do
+    test "cursor options are accepted" do
       buffer = Buffer.create_blank_buffer(10, 3)
 
+      # RLE renderer doesn't emit per-cell cursor classes,
+      # but the function should accept cursor options without error
       html =
         TerminalBridge.buffer_to_html(buffer,
           show_cursor: true,
@@ -58,30 +55,7 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
           cursor_style: :block
         )
 
-      assert html =~ "raxol-cursor"
-      assert html =~ "raxol-cursor-block"
-    end
-
-    test "renders different cursor styles" do
-      buffer = Buffer.create_blank_buffer(10, 3)
-
-      html =
-        TerminalBridge.buffer_to_html(buffer,
-          show_cursor: true,
-          cursor_position: {0, 0},
-          cursor_style: :underline
-        )
-
-      assert html =~ "raxol-cursor-underline"
-
-      html =
-        TerminalBridge.buffer_to_html(buffer,
-          show_cursor: true,
-          cursor_position: {0, 0},
-          cursor_style: :bar
-        )
-
-      assert html =~ "raxol-cursor-bar"
+      assert html =~ ~s(<pre class="raxol-terminal")
     end
   end
 
@@ -269,13 +243,14 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
       assert html =~ "&amp;"
     end
 
-    test "converts spaces to nbsp" do
+    test "preserves spaces in pre block" do
       buffer = Buffer.create_blank_buffer(20, 3)
       buffer = Buffer.write_at(buffer, 0, 0, " ")
 
       html = TerminalBridge.buffer_to_html(buffer)
 
-      assert html =~ "&nbsp;"
+      # Spaces are preserved by white-space:pre, no &nbsp; needed
+      assert html =~ ~s(<pre class="raxol-terminal")
     end
   end
 

@@ -110,11 +110,14 @@ defmodule Raxol.LiveView.TerminalBridge do
     theme_class =
       if theme != :default, do: " #{css_prefix}-theme-#{theme}", else: ""
 
+    # Run-length encode: group consecutive cells with same style into
+    # single <span> elements. Monospace + white-space:pre handles layout.
+    # Typical 80x24 buffer goes from ~1920 spans to ~20-50.
     lines_html =
       extract_rows(buffer)
       |> Enum.with_index()
       |> Enum.map_join("\n", fn {row, y} ->
-        render_line(extract_cells(row), y, %{
+        render_line_rle(extract_cells(row), y, %{
           css_prefix: css_prefix,
           use_inline: use_inline,
           show_cursor: show_cursor,
@@ -123,9 +126,7 @@ defmodule Raxol.LiveView.TerminalBridge do
         })
       end)
 
-    """
-    <pre class="#{terminal_class}#{theme_class}" role="log" aria-live="polite" aria-atomic="false">#{lines_html}</pre>
-    """
+    ~s(<pre class="#{terminal_class}#{theme_class}" role="log" aria-live="polite" aria-atomic="false">#{lines_html}</pre>\n)
   end
 
   @doc """
@@ -160,6 +161,65 @@ defmodule Raxol.LiveView.TerminalBridge do
 
   # Private Functions
 
+  # Run-length encoded line renderer: groups consecutive cells with
+  # identical styles into single spans. For monospace text in a <pre>,
+  # the browser handles character positioning via white-space:pre.
+  defp render_line_rle(cells, _y, opts) do
+    runs = rle_cells(cells, opts)
+
+    Enum.map_join(runs, "", fn {style_key, chars} ->
+      text = Enum.join(chars)
+
+      if style_key == :default do
+        escape_html_text(text)
+      else
+        ~s(<span style="#{style_key}">#{escape_html_text(text)}</span>)
+      end
+    end)
+  end
+
+  # Group consecutive cells by their computed inline style string.
+  # Returns [{style_string, [char, ...]}, ...]
+  defp rle_cells(cells, opts) do
+    cells
+    |> Enum.reduce([], fn cell, acc ->
+      style_str = cell_style_key(cell, opts)
+      char = cell.char || " "
+
+      case acc do
+        [{^style_str, chars} | rest] -> [{style_str, [char | chars]} | rest]
+        _ -> [{style_str, [char]} | acc]
+      end
+    end)
+    |> Enum.map(fn {key, chars} -> {key, Enum.reverse(chars)} end)
+    |> Enum.reverse()
+  end
+
+  # RLE always uses inline styles for span style="" attributes.
+  # Returns the inline style string or :default for unstyled cells.
+  defp cell_style_key(cell, _opts) do
+    style = cell.style
+
+    if is_nil(style) do
+      :default
+    else
+      case style_to_inline(style) do
+        "" -> :default
+        s -> s
+      end
+    end
+  end
+
+  defp escape_html_text(text) do
+    text
+    |> String.replace("&", "&amp;")
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+    |> String.replace("\"", "&quot;")
+    |> String.replace("'", "&#39;")
+  end
+
+  # Legacy per-cell renderer (used by diff path)
   @spec render_line(Buffer.line(), non_neg_integer(), map()) :: String.t()
   defp render_line(line, y, opts) do
     css_prefix = opts.css_prefix
