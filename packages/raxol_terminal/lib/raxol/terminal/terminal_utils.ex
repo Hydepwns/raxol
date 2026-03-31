@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.TerminalUtils do
 
   # Check if termbox2_nif is available at compile time
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
-  @mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
+  alias Raxol.Terminal.Env
 
   @doc """
   Detects terminal dimensions using a multi-layered approach:
@@ -42,20 +42,18 @@ defmodule Raxol.Terminal.TerminalUtils do
   end
 
   defp try_termbox_detection do
-    case {real_tty?(), @mix_env} do
-      {true, env} when env != :test ->
-        Raxol.Core.Runtime.Log.debug(
-          "[TerminalUtils] TTY detected, attempting detect_with_termbox..."
-        )
+    if real_tty?() and not Env.test?() do
+      Raxol.Core.Runtime.Log.debug(
+        "[TerminalUtils] TTY detected, attempting detect_with_termbox..."
+      )
 
-        detect_with_termbox()
+      detect_with_termbox()
+    else
+      Raxol.Core.Runtime.Log.debug(
+        "[TerminalUtils] Not a real TTY or test env, skipping detect_with_termbox."
+      )
 
-      _ ->
-        Raxol.Core.Runtime.Log.debug(
-          "[TerminalUtils] Not a real TTY, skipping detect_with_termbox."
-        )
-
-        {:error, :not_a_tty}
+      {:error, :not_a_tty}
     end
   end
 

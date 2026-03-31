@@ -6,8 +6,7 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
   use Raxol.Core.Behaviours.BaseManager
 
   alias Raxol.Terminal.Buffer
-
-  @mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
+  alias Raxol.Terminal.Env
 
   defstruct [
     :buffer,
@@ -204,13 +203,13 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
 
   def handle_call({:cleanup, _state}, _from, renderer) do
     # Cleanup termbox only if not in test mode
-    cleanup_termbox(@mix_env)
+    cleanup_termbox()
     {:reply, :ok, renderer}
   end
 
   def handle_call({:resize, width, height}, _from, renderer) do
     # Resize termbox only if not in test mode
-    resize_termbox(@mix_env, width, height)
+    resize_termbox(width, height)
 
     # Update screen buffer with new dimensions
     new_screen = Map.put(renderer.screen || %{}, :width, width)
@@ -220,13 +219,13 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
   end
 
   def handle_call({:set_cursor_visibility, visible}, _from, renderer) do
-    set_cursor_in_terminal(@mix_env, visible, renderer.buffer)
+    set_cursor_in_terminal(visible, renderer.buffer)
     {:reply, :ok, %{renderer | cursor_visible: visible}}
   end
 
   def handle_call({:set_title, title}, _from, renderer) do
     # Set window title only if not in test mode
-    set_title_in_terminal(@mix_env)
+    set_title_in_terminal()
     {:reply, :ok, %{renderer | title: title}}
   end
 
@@ -236,13 +235,13 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
 
   def handle_call(:init_terminal, _from, renderer) do
     # Initialize termbox only if not in test mode
-    init_termbox(@mix_env)
+    init_termbox()
     {:reply, :ok, %{renderer | termbox_initialized: true}}
   end
 
   def handle_call(:shutdown_terminal, _from, renderer) do
     # Shutdown termbox only if not in test mode
-    shutdown_termbox(@mix_env)
+    shutdown_termbox()
     {:reply, :ok, %{renderer | termbox_initialized: false}}
   end
 
@@ -272,7 +271,7 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
   # Private functions
 
   defp render_cell(col, row, cell) do
-    render_cell_in_terminal(@mix_env, col, row, cell)
+    render_cell_in_terminal(col, row, cell)
   end
 
   defp render_to_terminal(state) do
@@ -302,29 +301,23 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
   end
 
   defp handle_render_request(true, state, renderer) do
-    render_to_terminal_if_not_test(@mix_env, state)
+    unless Env.test?(), do: render_to_terminal(state)
     {:reply, :ok, renderer}
   end
 
-  defp render_to_terminal_if_not_test(:test, _state), do: :ok
-
-  defp render_to_terminal_if_not_test(_env, state),
-    do: render_to_terminal(state)
-
-  defp cleanup_termbox(:test), do: :ok
-  defp cleanup_termbox(_env), do: :termbox2_nif.tb_shutdown()
-
-  defp resize_termbox(:test, _width, _height), do: :ok
-
-  defp resize_termbox(_env, width, height) do
-    :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
-    :termbox2_nif.tb_set_cell(width - 1, height - 1, 0, 0, 0)
+  defp cleanup_termbox do
+    unless Env.test?(), do: :termbox2_nif.tb_shutdown()
   end
 
-  defp set_cursor_in_terminal(:test, _visible, _buffer), do: :ok
+  defp resize_termbox(width, height) do
+    unless Env.test?() do
+      :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
+      :termbox2_nif.tb_set_cell(width - 1, height - 1, 0, 0, 0)
+    end
+  end
 
-  defp set_cursor_in_terminal(_env, visible, buffer) do
-    set_cursor_position(visible, buffer)
+  defp set_cursor_in_terminal(visible, buffer) do
+    unless Env.test?(), do: set_cursor_position(visible, buffer)
   end
 
   defp set_cursor_position(true, buffer) do
@@ -336,25 +329,28 @@ defmodule Raxol.Terminal.Rendering.RenderServer do
     :termbox2_nif.tb_set_cursor(-1, -1)
   end
 
-  defp set_title_in_terminal(:test), do: :ok
-  defp set_title_in_terminal(_env), do: :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
+  defp set_title_in_terminal do
+    unless Env.test?(), do: :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
+  end
 
-  defp init_termbox(:test), do: :ok
-  defp init_termbox(_env), do: :termbox2_nif.tb_init()
+  defp init_termbox do
+    unless Env.test?(), do: :termbox2_nif.tb_init()
+  end
 
-  defp shutdown_termbox(:test), do: :ok
-  defp shutdown_termbox(_env), do: :termbox2_nif.tb_shutdown()
+  defp shutdown_termbox do
+    unless Env.test?(), do: :termbox2_nif.tb_shutdown()
+  end
 
-  defp render_cell_in_terminal(:test, _col, _row, _cell), do: :ok
-
-  defp render_cell_in_terminal(_env, col, row, cell) do
-    :termbox2_nif.tb_set_cell(
-      col,
-      row,
-      cell.char,
-      cell.style.fg,
-      cell.style.bg
-    )
+  defp render_cell_in_terminal(col, row, cell) do
+    unless Env.test?() do
+      :termbox2_nif.tb_set_cell(
+        col,
+        row,
+        cell.char,
+        cell.style.fg,
+        cell.style.bg
+      )
+    end
   end
 
   defp render_cursor_with_visibility(true, buffer) do

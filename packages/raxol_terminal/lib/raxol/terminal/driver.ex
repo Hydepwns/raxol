@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.Driver do
 
   import Raxol.Terminal.TerminalUtils, only: [has_terminal_device?: 0]
 
-  @mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
+  alias Raxol.Terminal.Env
 
   # Constants for retry logic
   @max_init_retries 3
@@ -116,8 +116,8 @@ defmodule Raxol.Terminal.Driver do
     # relies on :io.columns() which fails in -noshell mode (mix run).
     tty_detected = has_terminal_device?()
 
-    case {@mix_env, tty_detected, dispatcher_pid} do
-      {:test, _, nil} ->
+    case {Env.test?(), tty_detected, dispatcher_pid} do
+      {true, _, nil} ->
         Raxol.Core.Runtime.Log.info(
           "[Driver] Test environment detected, sending driver_ready event"
         )
@@ -130,7 +130,7 @@ defmodule Raxol.Terminal.Driver do
         state = %{state | termbox_state: :initialized}
         {:ok, state}
 
-      {:test, _, pid} ->
+      {true, _, pid} ->
         Raxol.Core.Runtime.Log.info(
           "[Driver] Test environment detected, sending driver_ready event"
         )
@@ -459,20 +459,10 @@ defmodule Raxol.Terminal.Driver do
   """
   def process_title_change(title, state) when is_binary(title) do
     _ =
-      case {@mix_env, has_terminal_device?()} do
-        {:test, _} ->
-          :ok
-
-        {_, false} ->
-          :ok
-
-        {_, true} ->
-          _ =
-            if @termbox2_available do
-              :termbox2_nif.tb_set_title(title)
-            else
-              0
-            end
+      if not Env.test?() and has_terminal_device?() do
+        if @termbox2_available do
+          :termbox2_nif.tb_set_title(title)
+        end
       end
 
     {:noreply, state}
@@ -484,20 +474,12 @@ defmodule Raxol.Terminal.Driver do
   def process_position_change(x, y, state)
       when is_integer(x) and is_integer(y) do
     _ =
-      case {@mix_env, has_terminal_device?()} do
-        {:test, _} ->
-          :ok
-
-        {_, false} ->
-          :ok
-
-        {_, true} ->
-          _ =
-            if @termbox2_available do
-              :termbox2_nif.tb_set_position(x, y)
-            else
-              0
-            end
+      if not Env.test?() and has_terminal_device?() do
+        if @termbox2_available do
+          :termbox2_nif.tb_set_position(x, y)
+        else
+          0
+        end
       end
 
     {:noreply, state}

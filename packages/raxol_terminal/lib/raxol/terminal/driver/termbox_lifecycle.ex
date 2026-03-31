@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.Driver.TermboxLifecycle do
   import Raxol.Terminal.TerminalUtils, only: [has_terminal_device?: 0]
 
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
-  @mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
+  alias Raxol.Terminal.Env
 
   @doc """
   Initializes termbox. Returns :ok or {:error, reason}.
@@ -100,28 +100,19 @@ defmodule Raxol.Terminal.Driver.TermboxLifecycle do
     end
 
     # Only attempt shutdown if not in test environment
-    _ =
-      case {@mix_env, has_terminal_device?()} do
-        {:test, _} ->
-          :ok
+    if not Env.test?() and has_terminal_device?() do
+      # Disable terminal modes before restoring
+      IO.write("\e[?1000l\e[?1006l\e[?1004l\e[?2004l")
+      # Restore terminal: show cursor, leave alternate screen
+      IO.write("\e[?25h\e[?1049l")
+      _ = :io.setopts(:standard_io, echo: true)
 
-        {_, false} ->
-          :ok
+      # Restore original TTY settings (OS-level via /dev/tty)
+      Raxol.Terminal.Driver.Stty.restore(state.original_stty)
 
-        {_, true} ->
-          # Disable terminal modes before restoring
-          IO.write("\e[?1000l\e[?1006l\e[?1004l\e[?2004l")
-          # Restore terminal: show cursor, leave alternate screen
-          IO.write("\e[?25h\e[?1049l")
-          _ = :io.setopts(:standard_io, echo: true)
-
-          # Restore original TTY settings (OS-level via /dev/tty)
-          Raxol.Terminal.Driver.Stty.restore(state.original_stty)
-
-          # Restore Logger output
-          Logger.configure(level: :debug)
-          :ok
-      end
+      # Restore Logger output
+      Logger.configure(level: :debug)
+    end
 
     :ok
   end

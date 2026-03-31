@@ -8,23 +8,20 @@ defmodule Raxol.Terminal.Driver.Dispatch do
   alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.InputParser
   alias Raxol.Terminal.Driver.TerminalSize
-
-  @mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
+  alias Raxol.Terminal.Env
 
   @doc """
   Sends an event to the dispatcher pid, using direct send in test mode.
   """
   def send_event_to_dispatcher(dispatcher_pid, event) do
-    case @mix_env do
-      :test ->
-        Log.debug(
-          "[Driver] Sending event in test mode: #{inspect(event)} to #{inspect(dispatcher_pid)}"
-        )
+    if Env.test?() do
+      Log.debug(
+        "[Driver] Sending event in test mode: #{inspect(event)} to #{inspect(dispatcher_pid)}"
+      )
 
-        send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
-
-      _ ->
-        GenServer.cast(dispatcher_pid, {:dispatch, event})
+      send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
+    else
+      GenServer.cast(dispatcher_pid, {:dispatch, event})
     end
   end
 
@@ -36,14 +33,11 @@ defmodule Raxol.Terminal.Driver.Dispatch do
     Log.info("Initial terminal size: #{width}x#{height}")
     event = %Event{type: :resize, data: %{width: width, height: height}}
 
-    case @mix_env do
-      :test ->
-        Log.info("[Driver] Sending resize event in test mode: #{inspect(event)}")
-
-        send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
-
-      _ ->
-        GenServer.cast(dispatcher_pid, {:dispatch, event})
+    if Env.test?() do
+      Log.info("[Driver] Sending resize event in test mode: #{inspect(event)}")
+      send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
+    else
+      GenServer.cast(dispatcher_pid, {:dispatch, event})
     end
   end
 

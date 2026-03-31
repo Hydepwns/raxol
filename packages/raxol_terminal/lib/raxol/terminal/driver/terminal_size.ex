@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.Driver.TerminalSize do
   import Raxol.Terminal.TerminalUtils, only: [has_terminal_device?: 0]
 
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
-  @mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
+  alias Raxol.Terminal.Env
 
   @doc """
   Returns the current terminal size as {:ok, width, height}.
@@ -22,10 +22,10 @@ defmodule Raxol.Terminal.Driver.TerminalSize do
   end
 
   defp determine_terminal_size do
-    case {@mix_env, has_terminal_device?()} do
-      {:test, _} -> {:ok, 80, 24}
-      {_, true} -> get_termbox_size()
-      {_, false} -> stty_size_fallback()
+    cond do
+      Env.test?() -> {:ok, 80, 24}
+      has_terminal_device?() -> get_termbox_size()
+      true -> stty_size_fallback()
     end
   end
 

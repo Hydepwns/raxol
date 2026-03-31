@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Session do
 
   require Raxol.Core.Runtime.Log
 
-  @mix_env if Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod
+  alias Raxol.Terminal.Env
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
@@ -277,18 +277,14 @@ defmodule Raxol.Terminal.Session do
 
   # Helper functions for if-statement elimination
   defp execute_save_by_environment(pid) do
-    handle_save_by_env(@mix_env, pid)
-  end
-
-  defp handle_save_by_env(:test, pid) do
-    # Use synchronous save in test environment
-    GenServer.call(pid, :save_session, 5000)
-  end
-
-  defp handle_save_by_env(_env, pid) do
-    # Use asynchronous save in other environments
-    GenServer.cast(pid, :save_session)
-    :ok
+    if Env.test?() do
+      # Use synchronous save in test environment
+      GenServer.call(pid, :save_session, 5000)
+    else
+      # Use asynchronous save in other environments
+      GenServer.cast(pid, :save_session)
+      :ok
+    end
   end
 
   defp execute_auto_save(false, _state), do: :ok
