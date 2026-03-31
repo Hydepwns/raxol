@@ -6,8 +6,8 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
   centralized ErrorHandler and ErrorRecovery modules.
   """
 
-  import Raxol.Core.ErrorHandler
-  alias Raxol.Core.ErrorHandler
+  import Raxol.Core.ErrorHandling
+  alias Raxol.Core.ErrorHandling
   alias Raxol.Core.ErrorRecovery
   alias Raxol.Core.Runtime.Log
 
@@ -126,7 +126,7 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
       {:step, :verify_consistency, &verify_state_consistency/1}
     ]
 
-    ErrorHandler.execute_pipeline(steps)
+    ErrorHandling.execute_pipeline(steps)
   end
 
   # Private helper functions

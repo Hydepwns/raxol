@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
             [
               Raxol.Terminal.ScreenBuffer.WriteOps,
               Raxol.Terminal.ScreenBuffer.ScrollOps,
-              Raxol.Terminal.ScreenBuffer.EraseOps,
+              Raxol.Terminal.ScreenBuffer.EraseOperations,
               Raxol.Terminal.ScreenBuffer.LineOps
             ]}
 
@@ -50,12 +50,11 @@ defmodule Raxol.Terminal.ScreenBuffer do
   alias Raxol.Terminal.ScreenBuffer.{
     Attributes,
     BehaviourImpl,
-    EraseOps,
+    EraseOperations,
     LineOps,
     Operations,
     RegionOperations,
     ScrollOps,
-    Scrolling,
     Selection,
     WriteOps
   }
@@ -199,16 +198,16 @@ defmodule Raxol.Terminal.ScreenBuffer do
   # === Scroll Operations ===
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def scroll_up(buffer, lines), do: Scrolling.scroll_up(buffer, lines)
+  def scroll_up(buffer, lines), do: ScrollOps.scroll_up(buffer, lines)
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def scroll_down(buffer, lines), do: Scrolling.scroll_down(buffer, lines)
+  def scroll_down(buffer, lines), do: ScrollOps.scroll_down(buffer, lines)
 
   def scroll_up(buffer, top, bottom, lines),
-    do: Scrolling.scroll_up(buffer, top, bottom, lines)
+    do: ScrollOps.scroll_up(buffer, top, bottom, lines)
 
   def scroll_down(buffer, top, bottom, lines),
-    do: Scrolling.scroll_down(buffer, top, bottom, lines)
+    do: ScrollOps.scroll_down(buffer, top, bottom, lines)
 
   def scroll_to(buffer, top, bottom, line),
     do: ScrollOps.scroll_to(buffer, top, bottom, line)
@@ -326,46 +325,46 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   # === Erase Operations (EraseOps) ===
 
-  def clear(buffer, style \\ nil), do: EraseOps.clear(buffer, style)
+  def clear(buffer, style \\ nil), do: EraseOperations.clear(buffer, style)
 
   def erase_from_cursor_to_end(buffer, x, y, top, bottom),
-    do: EraseOps.erase_from_cursor_to_end(buffer, x, y, top, bottom)
+    do: EraseOperations.erase_from_cursor_to_end(buffer, x, y, top, bottom)
 
   def erase_from_start_to_cursor(buffer, x, y, top, bottom),
-    do: EraseOps.erase_from_start_to_cursor(buffer, x, y, top, bottom)
+    do: EraseOperations.erase_from_start_to_cursor(buffer, x, y, top, bottom)
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def erase_all(buffer), do: EraseOps.erase_all(buffer)
+  def erase_all(buffer), do: EraseOperations.erase_all(buffer)
 
   def clear_region(buffer, x, y, width, height),
-    do: EraseOps.clear_region(buffer, x, y, width, height)
+    do: EraseOperations.clear_region(buffer, x, y, width, height)
 
   def erase_display(buffer, mode, cursor, min_row, max_row),
-    do: EraseOps.erase_display(buffer, mode, cursor, min_row, max_row)
+    do: EraseOperations.erase_display(buffer, mode, cursor, min_row, max_row)
 
-  def erase_screen(buffer), do: EraseOps.erase_screen(buffer)
+  def erase_screen(buffer), do: EraseOperations.erase_screen(buffer)
 
   def erase_line(buffer, mode, cursor, min_col, max_col),
-    do: EraseOps.erase_line(buffer, mode, cursor, min_col, max_col)
+    do: EraseOperations.erase_line(buffer, mode, cursor, min_col, max_col)
 
   def erase_in_line(buffer, position, type),
-    do: EraseOps.erase_in_line(buffer, position, type)
+    do: EraseOperations.erase_in_line(buffer, position, type)
 
   def erase_in_display(buffer, position, type),
-    do: EraseOps.erase_in_display(buffer, position, type)
+    do: EraseOperations.erase_in_display(buffer, position, type)
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_cursor_to_end(buffer),
-    do: EraseOps.erase_from_cursor_to_end(buffer)
+    do: EraseOperations.erase_from_cursor_to_end(buffer)
 
   def delete_chars(buffer, count, cursor, max_col),
-    do: EraseOps.delete_chars(buffer, count, cursor, max_col)
+    do: EraseOperations.delete_chars(buffer, count, cursor, max_col)
 
   def insert_chars(buffer, count, cursor, max_col),
-    do: EraseOps.insert_chars(buffer, count, cursor, max_col)
+    do: EraseOperations.insert_chars(buffer, count, cursor, max_col)
 
   def delete_characters(buffer, row, col, count, default_style),
-    do: EraseOps.delete_characters(buffer, row, col, count, default_style)
+    do: EraseOperations.delete_characters(buffer, row, col, count, default_style)
 
   # === Line Operations (LineOps) ===
 

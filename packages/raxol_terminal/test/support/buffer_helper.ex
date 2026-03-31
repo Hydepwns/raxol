@@ -1,3 +1,4 @@
+# Canonical copy: test/support/buffer_helper.ex (main raxol)
 defmodule Raxol.Test.BufferHelper do
   @moduledoc """
   Test helper module for the buffer system.

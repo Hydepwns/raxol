@@ -6,8 +6,12 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   including line erasing, display erasing, and region clearing operations.
   """
 
+  require Logger
+
   alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.Buffer.CharEditor
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.ScreenBuffer.BehaviourImpl
 
   @doc """
   Erases from cursor to end of display.
@@ -203,6 +207,79 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
     height = buffer.height || 24
     erase_from_cursor_to_end(buffer, x, y, 0, height)
   end
+
+  # ========================================
+  # Convenience functions (formerly in EraseOps)
+  # ========================================
+
+  @doc """
+  Clears the entire buffer, creating a fresh empty grid.
+  """
+  def clear(buffer, _style \\ nil) do
+    new_cells = create_empty_grid(buffer.width, buffer.height)
+    %{buffer | cells: new_cells}
+  end
+
+  @doc """
+  Erases display content based on mode (0=cursor-to-end, 1=start-to-cursor, 2=all).
+  """
+  def erase_display(buffer, mode, _cursor, _min_row, _max_row) do
+    case mode do
+      0 -> erase_from_cursor_to_end(buffer)
+      1 -> BehaviourImpl.erase_from_start_to_cursor(buffer)
+      2 -> clear(buffer)
+      _ -> buffer
+    end
+  end
+
+  @doc """
+  Erases the entire screen (alias for erase_all).
+  """
+  def erase_screen(buffer), do: erase_all(buffer)
+
+  @doc """
+  Erases line content based on mode (0=cursor-to-end, 1=start-to-cursor, 2=all).
+  """
+  def erase_line(buffer, mode, cursor, _min_col, _max_col) do
+    {cursor_x, cursor_y} = {elem(cursor, 0), elem(cursor, 1)}
+
+    case mode do
+      0 -> erase_in_line(buffer, {cursor_x, cursor_y}, :to_end)
+      1 -> erase_in_line(buffer, {cursor_x, cursor_y}, :to_beginning)
+      2 -> erase_in_line(buffer, {cursor_x, cursor_y}, :all)
+      _ -> buffer
+    end
+  end
+
+  @doc """
+  Deletes characters at cursor position, shifting remaining cells left.
+  """
+  def delete_chars(buffer, count, cursor, _max_col) do
+    {cursor_x, cursor_y} = cursor
+    CharEditor.delete_characters(buffer, cursor_y, cursor_x, count, buffer.default_style)
+  end
+
+  @doc """
+  Inserts blank characters at cursor position (no-op placeholder).
+  """
+  def insert_chars(buffer, _count, _cursor, _max_col), do: buffer
+
+  @doc """
+  Deletes characters at a specific row/col position.
+  """
+  def delete_characters(buffer, row, col, count, default_style) do
+    CharEditor.delete_characters(buffer, row, col, count, default_style)
+  end
+
+  defp create_empty_grid(width, height) when width > 0 and height > 0 do
+    for _y <- 0..(height - 1) do
+      for _x <- 0..(width - 1) do
+        Cell.new()
+      end
+    end
+  end
+
+  defp create_empty_grid(_width, _height), do: []
 
   # Private helper functions
 

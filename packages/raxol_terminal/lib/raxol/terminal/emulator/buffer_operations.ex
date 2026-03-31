@@ -4,6 +4,7 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   Handles active buffer management and buffer switching operations.
   """
 
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Emulator
 
   # Use map() to accept any emulator-like struct
@@ -12,14 +13,13 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   @doc """
   Gets the active buffer from the emulator based on active_buffer_type.
   """
-  @spec get_screen_buffer(map()) :: map()
-  def get_screen_buffer(%Emulator{active_buffer_type: :main} = emulator) do
-    emulator.main_screen_buffer
-  end
+  @spec get_screen_buffer(map()) :: map() | nil
+  def get_screen_buffer(%{active_buffer_type: :alternate, alternate_screen_buffer: buffer})
+      when buffer != nil,
+      do: buffer
 
-  def get_screen_buffer(%Emulator{active_buffer_type: :alternate} = emulator) do
-    emulator.alternate_screen_buffer
-  end
+  def get_screen_buffer(%{main_screen_buffer: buffer}), do: buffer
+  def get_screen_buffer(_), do: nil
 
   @doc """
   Updates the active buffer with new buffer data.
@@ -65,6 +65,10 @@ defmodule Raxol.Terminal.Emulator.BufferOperations do
   """
   def write_to_output(emulator, data) do
     Raxol.Terminal.OutputManager.write(emulator, data)
+  rescue
+    error ->
+      Log.warning("write_to_output failed: #{inspect(error)}")
+      emulator
   end
 
   @doc """

@@ -1,3 +1,4 @@
+# Canonical copy: test/support/test_utils.ex (main raxol)
 defmodule Raxol.Test.TestUtils do
   alias Raxol.Test.SharedUtilities
 

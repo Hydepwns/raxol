@@ -1,3 +1,4 @@
+# Canonical copy: test/support/shared_test_utilities.ex (main raxol)
 defmodule Raxol.Test.SharedUtilities do
   @moduledoc """
   Shared test utilities used across multiple test helper modules.
