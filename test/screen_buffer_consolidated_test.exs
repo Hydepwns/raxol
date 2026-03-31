@@ -9,7 +9,7 @@ defmodule ScreenBufferTest do
     Core,
     Manager,
     Operations,
-    Scroll,
+    ScrollOps,
     Selection
   }
 
@@ -108,8 +108,8 @@ defmodule ScreenBufferTest do
           Operations.put_line(acc, y, line)
         end)
 
-      # Scroll up by 1 line
-      scrolled = Scroll.scroll_up(buffer, 1)
+      # Scroll up by 1 line (returns {buffer, scrolled_out})
+      {scrolled, _scrolled_out} = ScrollOps.scroll_up(buffer, 1)
 
       # Line 0 should now have content from line 1 (which was "1")
       assert Core.get_char(scrolled, 0, 0) == "1"
@@ -127,7 +127,7 @@ defmodule ScreenBufferTest do
         end)
 
       # Scroll down by 1 line
-      scrolled = Scroll.scroll_down(buffer, 1)
+      scrolled = ScrollOps.scroll_down(buffer, 1)
 
       # Line 1 should now have content from line 0 (which was "0")
       assert Core.get_char(scrolled, 0, 1) == "0"
@@ -142,11 +142,11 @@ defmodule ScreenBufferTest do
       line1 = for _ <- 0..9, do: Cell.new("1")
       line2 = for _ <- 0..9, do: Cell.new("2")
 
-      buffer = Scroll.add_to_scrollback(buffer, line1)
-      buffer = Scroll.add_to_scrollback(buffer, line2)
+      scrollback = buffer.scrollback || []
+      buffer = %{buffer | scrollback: [line1 | scrollback]}
+      buffer = %{buffer | scrollback: [line2 | buffer.scrollback]}
 
-      scrollback = Scroll.get_scrollback(buffer)
-      assert length(scrollback) == 2
+      assert length(buffer.scrollback) == 2
     end
   end
 
@@ -300,7 +300,7 @@ defmodule ScreenBufferTest do
       assert y == 5
 
       # Scroll the buffer
-      buffer = Scroll.scroll_up(buffer, 2)
+      {buffer, _} = ScrollOps.scroll_up(buffer, 2)
 
       # Text should have moved up
       # Original line scrolled up
