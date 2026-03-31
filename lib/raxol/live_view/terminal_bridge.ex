@@ -219,26 +219,6 @@ defmodule Raxol.LiveView.TerminalBridge do
     |> String.replace("'", "&#39;")
   end
 
-  # Legacy per-cell renderer (used by diff path)
-  @spec render_line(Buffer.line(), non_neg_integer(), map()) :: String.t()
-  defp render_line(line, y, opts) do
-    css_prefix = opts.css_prefix
-    use_inline = opts.use_inline
-    show_cursor = opts.show_cursor
-    cursor_pos = opts.cursor_pos
-    cursor_style = opts.cursor_style
-
-    cells_html =
-      line
-      |> Enum.with_index()
-      |> Enum.map_join("", fn {cell, x} ->
-        is_cursor = show_cursor && cursor_pos == {x, y}
-        render_cell(cell, is_cursor, cursor_style, css_prefix, use_inline)
-      end)
-
-    ~s(<span class="#{css_prefix}-line" data-line="#{y}">#{cells_html}</span>)
-  end
-
   @spec render_line_with_diff(
           Buffer.line(),
           Buffer.line(),

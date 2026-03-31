@@ -18,6 +18,7 @@ defmodule Raxol.UI.Layout.Engine do
     Grid,
     Inputs,
     Panels,
+    PreparedElement,
     Responsive,
     SplitPane,
     Table
@@ -30,12 +31,24 @@ defmodule Raxol.UI.Layout.Engine do
 
   * `view` - The view to calculate layout for
   * `dimensions` - Terminal dimensions `%{width: w, height: h}`
+  * `prepared_tree` - Optional `PreparedElement` tree with cached text
+    measurements from the prepare phase (Pretext two-phase architecture).
+    When provided, `measure_element` will use cached `measured_width` /
+    `measured_height` instead of re-calling `TextMeasure.display_width`.
 
   ## Returns
 
   A list of positioned elements with absolute coordinates.
   """
-  def apply_layout(view, dimensions) do
+  def apply_layout(view, dimensions, prepared_tree \\ nil) do
+    # Build a flat lookup from element identity to cached measurements.
+    # Uses :erlang.phash2 on the element map as key so measure_element
+    # can look up without threading the cache through every call site.
+    if prepared_tree do
+      cache = build_measurement_cache(prepared_tree)
+      Process.put(:raxol_measurement_cache, cache)
+    end
+
     # Start with the full screen as available space
     available_space = %{
       x: 0,
@@ -49,7 +62,35 @@ defmodule Raxol.UI.Layout.Engine do
       process_element(view, available_space, [])
       |> List.flatten()
 
+    # Clean up process dictionary
+    Process.delete(:raxol_measurement_cache)
+
     result
+  end
+
+  # Build a flat map from element content hash to {measured_width, measured_height}.
+  defp build_measurement_cache(nil), do: %{}
+
+  defp build_measurement_cache(%PreparedElement{} = pe) do
+    entry =
+      if pe.content_hash && (pe.measured_width > 0 || pe.measured_height > 0) do
+        %{{pe.type, pe.content_hash} => {pe.measured_width, pe.measured_height}}
+      else
+        %{}
+      end
+
+    children_entries =
+      case pe.children do
+        children when is_list(children) ->
+          Enum.reduce(children, %{}, fn child, acc ->
+            Map.merge(acc, build_measurement_cache(child))
+          end)
+
+        _ ->
+          %{}
+      end
+
+    Map.merge(entry, children_entries)
   end
 
   # --- Element Processing Logic ---
@@ -441,14 +482,20 @@ defmodule Raxol.UI.Layout.Engine do
   # Handles new widget format (flat maps with :content/:children, no :attrs)
   def measure_element(%{type: :text, content: content}, _available_space)
       when is_binary(content) do
-    lines = String.split(content, "\n")
+    case lookup_prepared(:text, content) do
+      {w, h} ->
+        %{width: w, height: h}
 
-    width =
-      lines
-      |> Enum.map(&Raxol.UI.TextMeasure.display_width/1)
-      |> Enum.max(fn -> 0 end)
+      nil ->
+        lines = String.split(content, "\n")
 
-    %{width: width, height: length(lines)}
+        width =
+          lines
+          |> Enum.map(&Raxol.UI.TextMeasure.display_width/1)
+          |> Enum.max(fn -> 0 end)
+
+        %{width: width, height: length(lines)}
+    end
   end
 
   # Button with top-level :text key (new View DSL format)
@@ -677,6 +724,22 @@ defmodule Raxol.UI.Layout.Engine do
   end
 
   # --- Helper Functions ---
+
+  @doc """
+  Looks up cached measurements for an element from the prepare phase.
+
+  Returns `{width, height}` if cached, or `nil` if not found.
+  """
+  def lookup_prepared(type, content) do
+    case Process.get(:raxol_measurement_cache) do
+      cache when is_map(cache) ->
+        hash = :erlang.phash2(content)
+        Map.get(cache, {type, hash})
+
+      _ ->
+        nil
+    end
+  end
 
   defp convert_attrs_to_map(attrs) when is_list(attrs), do: Map.new(attrs)
   defp convert_attrs_to_map(attrs), do: attrs

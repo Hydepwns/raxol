@@ -408,15 +408,15 @@ defmodule RaxolPlaygroundWeb.LandingLive do
             </tr>
             <tr>
               <td class="py-3 pr-4 text-gray-300">Tree diff (100 nodes)</td>
-              <td class="py-3 text-right text-gray-100 font-mono">4 \u03BCs</td>
+              <td class="py-3 text-right text-gray-100 font-mono">4 μs</td>
             </tr>
             <tr>
               <td class="py-3 pr-4 text-gray-300">Cell write</td>
-              <td class="py-3 text-right text-gray-100 font-mono">0.97 \u03BCs</td>
+              <td class="py-3 text-right text-gray-100 font-mono">0.97 μs</td>
             </tr>
             <tr>
               <td class="py-3 pr-4 text-gray-300">ANSI parse</td>
-              <td class="py-3 text-right text-gray-100 font-mono">38 \u03BCs</td>
+              <td class="py-3 text-right text-gray-100 font-mono">38 μs</td>
             </tr>
           </tbody>
         </table>

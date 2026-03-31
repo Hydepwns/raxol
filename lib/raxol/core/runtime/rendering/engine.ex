@@ -172,7 +172,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
              state.prepared_tree
            ),
          t1 <- profiler_now(state.cycle_profiler),
-         {:ok, positioned_elements} <- safe_apply_layout(view, state),
+         {:ok, positioned_elements} <-
+           safe_apply_layout(view, state, prepared_tree),
          t2 <- profiler_now(state.cycle_profiler),
          :ok <- update_dispatcher_view_tree(state.dispatcher_pid, view),
          :ok <-
@@ -287,7 +288,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   # Safe layout application using functional error handling
-  defp safe_apply_layout(view, state) do
+  defp safe_apply_layout(view, state, prepared_tree) do
     dimensions = %{width: state.width, height: state.height}
 
     Raxol.Core.Runtime.Log.debug(
@@ -295,7 +296,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     )
 
     Raxol.Core.ErrorHandling.safe_call(fn ->
-      positioned_elements = LayoutEngine.apply_layout(view, dimensions)
+      positioned_elements =
+        LayoutEngine.apply_layout(view, dimensions, prepared_tree)
 
       Raxol.Core.Runtime.Log.debug(
         "Rendering Engine: Got positioned elements: #{inspect(positioned_elements)}"

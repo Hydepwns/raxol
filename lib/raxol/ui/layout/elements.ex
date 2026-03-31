@@ -3,6 +3,8 @@ defmodule Raxol.UI.Layout.Elements do
   Handles measurement of basic UI elements like text, labels, boxes, and checkboxes.
   """
 
+  alias Raxol.UI.Layout.Engine, as: LayoutEngine
+
   @default_height 1
   @default_box_size 1
   # "[x] " prefix before label text
@@ -10,12 +12,32 @@ defmodule Raxol.UI.Layout.Elements do
 
   def measure(:text, attrs_map) do
     text = Map.get(attrs_map, :text, "")
-    %{width: Raxol.UI.TextMeasure.display_width(text), height: @default_height}
+
+    case LayoutEngine.lookup_prepared(:text, text) do
+      {w, h} ->
+        %{width: w, height: h}
+
+      nil ->
+        %{
+          width: Raxol.UI.TextMeasure.display_width(text),
+          height: @default_height
+        }
+    end
   end
 
   def measure(:label, attrs_map) do
     text = Map.get(attrs_map, :content, "")
-    %{width: Raxol.UI.TextMeasure.display_width(text), height: @default_height}
+
+    case LayoutEngine.lookup_prepared(:label, text) do
+      {w, _h} ->
+        %{width: w, height: @default_height}
+
+      nil ->
+        %{
+          width: Raxol.UI.TextMeasure.display_width(text),
+          height: @default_height
+        }
+    end
   end
 
   def measure(:box, attrs_map) do
@@ -27,9 +49,16 @@ defmodule Raxol.UI.Layout.Elements do
   def measure(:checkbox, attrs_map) do
     label = Map.get(attrs_map, :label, "")
 
-    %{
-      width: @checkbox_prefix_width + Raxol.UI.TextMeasure.display_width(label),
-      height: @default_height
-    }
+    case LayoutEngine.lookup_prepared(:checkbox, label) do
+      {w, _h} ->
+        %{width: w, height: @default_height}
+
+      nil ->
+        %{
+          width:
+            @checkbox_prefix_width + Raxol.UI.TextMeasure.display_width(label),
+          height: @default_height
+        }
+    end
   end
 end

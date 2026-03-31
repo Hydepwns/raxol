@@ -125,6 +125,30 @@ defmodule Raxol.UI.Layout.Preparer do
   def prepare_incremental(element, nil), do: prepare(element)
 
   def prepare_incremental(
+        %{type: type, children: new_children} = element,
+        %PreparedElement{type: type, children: old_children} = _old
+      )
+      when is_list(new_children) and is_list(old_children) do
+    # Container node: recursively diff children
+    prepared_children =
+      zip_longest(new_children, old_children)
+      |> Enum.map(fn
+        {new_child, nil} -> prepare(new_child)
+        {nil, _old_child} -> nil
+        {new_child, old_child} -> prepare_incremental(new_child, old_child)
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    %PreparedElement{
+      type: type,
+      element: element,
+      measured_width: 0,
+      measured_height: 0,
+      children: prepared_children
+    }
+  end
+
+  def prepare_incremental(
         %{type: type} = element,
         %PreparedElement{type: type} = old
       ) do
@@ -139,6 +163,11 @@ defmodule Raxol.UI.Layout.Preparer do
   end
 
   def prepare_incremental(element, _old), do: prepare(element)
+
+  defp zip_longest([], []), do: []
+  defp zip_longest([], [b | bs]), do: [{nil, b} | zip_longest([], bs)]
+  defp zip_longest([a | as], []), do: [{a, nil} | zip_longest(as, [])]
+  defp zip_longest([a | as], [b | bs]), do: [{a, b} | zip_longest(as, bs)]
 
   defp content_hash_for(%{type: :text} = el) do
     text = Map.get(el, :text) || Map.get(el, :content, "")

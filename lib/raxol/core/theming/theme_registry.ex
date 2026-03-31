@@ -172,7 +172,7 @@ defmodule Raxol.Core.Theming.ThemeRegistry do
   # ============================================================================
 
   @doc """
-  Converts a theme to LiveView format (for Raxol.LiveView.Themes compatibility).
+  Converts a theme to LiveView format.
   """
   @spec to_liveview_format(theme_name()) ::
           %{
