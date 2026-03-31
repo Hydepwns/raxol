@@ -86,6 +86,7 @@ defmodule LineChartDemo do
   def subscribe(_model) do
     [subscribe_interval(@tick_interval_ms, :tick)]
   end
+
   defp wave(t, {freq, phase, amplitude, baseline}) do
     :math.sin(t * freq + phase) * amplitude + baseline
   end

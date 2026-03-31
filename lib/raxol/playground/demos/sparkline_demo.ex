@@ -49,11 +49,26 @@ defmodule Raxol.Playground.Demos.SparklineDemo do
         text("Sparkline Demo", style: [:bold]),
         divider(),
         text("CPU Usage:", style: [:dim]),
-        sparkline(data: cpu_data, width: @spark_width, height: @spark_height, color: model.color),
+        sparkline(
+          data: cpu_data,
+          width: @spark_width,
+          height: @spark_height,
+          color: model.color
+        ),
         text("Memory:", style: [:dim]),
-        sparkline(data: mem_data, width: @spark_width, height: @spark_height, color: :green),
+        sparkline(
+          data: mem_data,
+          width: @spark_width,
+          height: @spark_height,
+          color: :green
+        ),
         text("Network I/O:", style: [:dim]),
-        sparkline(data: net_data, width: @spark_width, height: @spark_height, color: :yellow),
+        sparkline(
+          data: net_data,
+          width: @spark_width,
+          height: @spark_height,
+          color: :yellow
+        ),
         text("Color: #{model.color}  Tick: #{model.tick}"),
         text("[c] cycle color  [r] reset", style: [:dim])
       ]
@@ -64,10 +79,12 @@ defmodule Raxol.Playground.Demos.SparklineDemo do
   def subscribe(_model), do: [subscribe_interval(@tick_interval_ms, :tick)]
 
   defp wave_data(range, tick, {baseline, amplitude, frequency}, :sin) do
-    for i <- range, do: round(baseline + amplitude * :math.sin((tick + i) * frequency))
+    for i <- range,
+        do: round(baseline + amplitude * :math.sin((tick + i) * frequency))
   end
 
   defp wave_data(range, tick, {baseline, amplitude, frequency}, :cos) do
-    for i <- range, do: round(baseline + amplitude * :math.cos((tick + i) * frequency))
+    for i <- range,
+        do: round(baseline + amplitude * :math.cos((tick + i) * frequency))
   end
 end

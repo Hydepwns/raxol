@@ -74,10 +74,13 @@ defmodule Raxol.Playground.Demos.PasswordFieldDemo do
   defp strength_display(:none), do: {"none", strength_bar(0)}
   defp strength_display(:weak), do: {"weak", strength_bar(2)}
   defp strength_display(:medium), do: {"medium", strength_bar(6)}
-  defp strength_display(:strong), do: {"strong", strength_bar(@strength_bar_width)}
+
+  defp strength_display(:strong),
+    do: {"strong", strength_bar(@strength_bar_width)}
 
   defp strength_bar(filled) do
-    String.duplicate("#", filled) <> String.duplicate(" ", @strength_bar_width - filled)
+    String.duplicate("#", filled) <>
+      String.duplicate(" ", @strength_bar_width - filled)
   end
 
   @impl true

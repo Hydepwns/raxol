@@ -43,7 +43,9 @@ defmodule Raxol.Playground.Demos.PanelHighlightsDemo do
   end
 
   defp navigate(focused, :right) do
-    if rem(focused, @cols) == @cols - 1, do: focused - @cols + 1, else: focused + 1
+    if rem(focused, @cols) == @cols - 1,
+      do: focused - @cols + 1,
+      else: focused + 1
   end
 
   defp navigate(focused, :up) do

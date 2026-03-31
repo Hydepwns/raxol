@@ -717,7 +717,8 @@ defmodule CockpitDemo do
         m.scanned
         |> Enum.take(@scanner_recent_count)
         |> Enum.map(fn {name, lines} ->
-          text("  [+] #{String.pad_trailing(name, @file_name_pad)} #{lines} lines",
+          text(
+            "  [+] #{String.pad_trailing(name, @file_name_pad)} #{lines} lines",
             fg: :green
           )
         end)
@@ -975,7 +976,8 @@ defmodule CockpitDemo do
         end
       end)
 
-    padding = for _ <- 1..max(0, @event_log_visible - length(rows)), do: text("")
+    padding =
+      for _ <- 1..max(0, @event_log_visible - length(rows)), do: text("")
 
     box style: %{border: :single, width: :fill, padding: 1} do
       column style: %{gap: 0} do
@@ -1143,7 +1145,9 @@ defmodule CockpitDemo do
   defp memory_sparkline_row(mem_mb, spark) do
     row style: %{gap: 1} do
       [
-        text("  #{String.pad_trailing("Memory", @stat_label_pad)}", style: [:dim]),
+        text("  #{String.pad_trailing("Memory", @stat_label_pad)}",
+          style: [:dim]
+        ),
         text("#{mem_mb} MB", style: [:bold]),
         text(spark, fg: :cyan)
       ]
@@ -1153,7 +1157,9 @@ defmodule CockpitDemo do
   defp proc_sparkline_row(count, spark) do
     row style: %{gap: 1} do
       [
-        text("  #{String.pad_trailing("Procs", @stat_label_pad)}", style: [:dim]),
+        text("  #{String.pad_trailing("Procs", @stat_label_pad)}",
+          style: [:dim]
+        ),
         text("#{count}", style: [:bold]),
         text(spark, fg: :magenta)
       ]

@@ -72,8 +72,22 @@ defmodule Raxol.Playground.Demos.LineChartDemo do
 
   defp build_series(tick) do
     range = 0..(@data_points - 1)
-    data_a = for i <- range, do: round(@sine_baseline + @sine_amplitude * :math.sin((tick + i) * @sine_frequency))
-    data_b = for i <- range, do: round(@sine_baseline + @cosine_amplitude * :math.cos((tick + i) * @cosine_frequency))
+
+    data_a =
+      for i <- range,
+          do:
+            round(
+              @sine_baseline +
+                @sine_amplitude * :math.sin((tick + i) * @sine_frequency)
+            )
+
+    data_b =
+      for i <- range,
+          do:
+            round(
+              @sine_baseline +
+                @cosine_amplitude * :math.cos((tick + i) * @cosine_frequency)
+            )
 
     [
       %{name: "Sine", data: data_a, color: :cyan},

@@ -44,10 +44,12 @@ defmodule Raxol.Playground.Demos.ContainerDemo do
         {%{model | scroll_offset: max_offset}, []}
 
       key_match("+") ->
-        {%{model | visible_count: min(model.visible_count + 1, @max_visible)}, []}
+        {%{model | visible_count: min(model.visible_count + 1, @max_visible)},
+         []}
 
       key_match("-") ->
-        {%{model | visible_count: max(model.visible_count - 1, @min_visible)}, []}
+        {%{model | visible_count: max(model.visible_count - 1, @min_visible)},
+         []}
 
       _ ->
         {model, []}

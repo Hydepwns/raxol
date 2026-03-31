@@ -29,7 +29,13 @@ defmodule Raxol.Playground.Demos.BarChartDemo do
         {%{model | show_values: not model.show_values}, []}
 
       key_match("r") ->
-        {%{model | data: Enum.map(1..length(@labels), fn _ -> :rand.uniform(@max_bar_value) end)}, []}
+        {%{
+           model
+           | data:
+               Enum.map(1..length(@labels), fn _ ->
+                 :rand.uniform(@max_bar_value)
+               end)
+         }, []}
 
       _ ->
         {model, []}

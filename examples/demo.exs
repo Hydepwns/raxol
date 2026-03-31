@@ -90,7 +90,9 @@ defmodule RaxolDemo do
           end)
 
         mem_pct = mem_percent()
-        history = (model.mem_history ++ [mem_pct]) |> Enum.take(-@mem_history_size)
+
+        history =
+          (model.mem_history ++ [mem_pct]) |> Enum.take(-@mem_history_size)
 
         entry = tick_entry(model.tick)
         log = [{ts(), entry} | model.log] |> Enum.take(@max_log_entries)
@@ -116,7 +118,8 @@ defmodule RaxolDemo do
 
       # Process table scroll
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "j"}} ->
-        {%{model | proc_offset: min(model.proc_offset + 1, @max_proc_offset)}, []}
+        {%{model | proc_offset: min(model.proc_offset + 1, @max_proc_offset)},
+         []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "k"}} ->
         {%{model | proc_offset: max(model.proc_offset - 1, 0)}, []}

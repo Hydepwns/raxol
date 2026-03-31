@@ -84,16 +84,24 @@ defmodule Raxol.Playground.Demos.ScatterChartDemo do
     cluster_a =
       for i <- range do
         {
-          @cluster_a_cx + @cluster_a_radius * :math.cos(i * @cluster_a_angle_speed + t),
-          @cluster_a_cy + @cluster_a_radius * :math.sin(i * @cluster_a_sin_speed + t)
+          @cluster_a_cx +
+            @cluster_a_radius * :math.cos(i * @cluster_a_angle_speed + t),
+          @cluster_a_cy +
+            @cluster_a_radius * :math.sin(i * @cluster_a_sin_speed + t)
         }
       end
 
     cluster_b =
       for i <- range do
         {
-          @cluster_b_cx + @cluster_b_radius * :math.sin(i * @cluster_b_angle_speed + t * @cluster_b_time_scale),
-          @cluster_b_cy + @cluster_b_radius * :math.cos(i * @cluster_b_cos_speed + t * @cluster_b_cos_time_scale)
+          @cluster_b_cx +
+            @cluster_b_radius *
+              :math.sin(i * @cluster_b_angle_speed + t * @cluster_b_time_scale),
+          @cluster_b_cy +
+            @cluster_b_radius *
+              :math.cos(
+                i * @cluster_b_cos_speed + t * @cluster_b_cos_time_scale
+              )
         }
       end
 

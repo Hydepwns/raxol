@@ -216,7 +216,10 @@ defmodule AICockpit.MockStream do
       {:done,
        %{
          content: text,
-         usage: %{"input_tokens" => @mock_input_tokens, "output_tokens" => token_count},
+         usage: %{
+           "input_tokens" => @mock_input_tokens,
+           "output_tokens" => token_count
+         },
          metadata: %{provider: :mock}
        }}
     )
@@ -404,7 +407,13 @@ defmodule AICockpit.Summarizer do
       findings
       |> Enum.reverse()
       |> Enum.map_join("\n\n", fn f ->
-        header = String.pad_trailing("-- #{Path.basename(f.file)} ", @header_pad_width, "-")
+        header =
+          String.pad_trailing(
+            "-- #{Path.basename(f.file)} ",
+            @header_pad_width,
+            "-"
+          )
+
         "#{header}\n#{String.slice(f.analysis, 0, @summary_max_chars)}"
       end)
 
@@ -796,7 +805,11 @@ defmodule AICockpit.Dashboard do
 
   defp add_event(model, tag, msg) do
     elapsed = System.monotonic_time(:second) - model.start_time
-    %{model | events: Enum.take([{elapsed, tag, msg} | model.events], @max_events)}
+
+    %{
+      model
+      | events: Enum.take([{elapsed, tag, msg} | model.events], @max_events)
+    }
   end
 end
 

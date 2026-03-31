@@ -40,7 +40,9 @@ defmodule SensorHUDDemo do
     # Fusion batches readings from all feeds within a 200ms window,
     # computes weighted averages, then broadcasts {:fused_update, data}
     # to subscribers.
-    {:ok, fusion} = Fusion.start_link(name: nil, batch_window_ms: @fusion_batch_ms)
+    {:ok, fusion} =
+      Fusion.start_link(name: nil, batch_window_ms: @fusion_batch_ms)
+
     Fusion.subscribe(fusion)
 
     # Each Feed is a GenServer that calls MockSensor.read/1 at the given
@@ -61,7 +63,12 @@ defmodule SensorHUDDemo do
         fusion_pid: fusion,
         connect_opts: [
           generator_fn: fn tick ->
-            %{value: @pressure_baseline + :math.sin(tick * @pressure_frequency) * @pressure_amplitude + :rand.uniform() * @pressure_noise}
+            %{
+              value:
+                @pressure_baseline +
+                  :math.sin(tick * @pressure_frequency) * @pressure_amplitude +
+                  :rand.uniform() * @pressure_noise
+            }
           end
         ]
       )
@@ -74,7 +81,11 @@ defmodule SensorHUDDemo do
         fusion_pid: fusion,
         connect_opts: [
           generator_fn: fn tick ->
-            level = if rem(tick, @proximity_cycle) < @proximity_high_ticks, do: :high, else: :low
+            level =
+              if rem(tick, @proximity_cycle) < @proximity_high_ticks,
+                do: :high,
+                else: :low
+
             %{level: level, bearing: rem(tick * @bearing_step, @bearing_max)}
           end
         ]

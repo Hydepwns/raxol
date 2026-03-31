@@ -79,7 +79,12 @@ defmodule Raxol.Playground.Demos.ReplDemo do
       [
         text("REPL", style: [:bold]),
         divider(),
-        box style: %{border: :single, padding: 1, width: @box_width, height: @box_height} do
+        box style: %{
+              border: :single,
+              padding: 1,
+              width: @box_width,
+              height: @box_height
+            } do
           column style: %{gap: 0} do
             if visible_output == [],
               do: [text("(empty)", style: [:dim])],

@@ -57,7 +57,9 @@ defmodule Raxol.Demo.Dashboard do
           end)
 
         mem_pct = mem_percent()
-        history = (model.mem_history ++ [mem_pct]) |> Enum.take(-@mem_history_size)
+
+        history =
+          (model.mem_history ++ [mem_pct]) |> Enum.take(-@mem_history_size)
 
         entry = tick_entry(model.tick)
         log = [{ts(), entry} | model.log] |> Enum.take(@max_log_entries)

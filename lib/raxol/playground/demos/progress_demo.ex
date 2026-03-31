@@ -31,7 +31,9 @@ defmodule Raxol.Playground.Demos.ProgressDemo do
         {%{model | value: 0}, []}
 
       :tick when model.auto ->
-        new_val = if model.value >= @max_progress, do: 0, else: model.value + @auto_step
+        new_val =
+          if model.value >= @max_progress, do: 0, else: model.value + @auto_step
+
         {%{model | value: new_val}, []}
 
       _ ->
