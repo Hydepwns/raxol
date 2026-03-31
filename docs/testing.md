@@ -1,10 +1,75 @@
 # Testing Guide
 
-See [Test Commands](_includes/test-commands.md) for standard testing patterns.
+## Running Tests
+
+`SKIP_TERMBOX2_TESTS=true` and `TMPDIR=/tmp` are set automatically via `.claude/settings.json`,
+so you can omit them locally.
+
+```bash
+# Standard run (excludes slow, integration, docker-dependent tests)
+MIX_ENV=test mix test --exclude slow --exclude integration --exclude docker
+
+# Specific file or line
+MIX_ENV=test mix test test/path/to/test_file.exs
+MIX_ENV=test mix test test/path/to/test_file.exs:42
+
+# Rerun only previously failed tests
+MIX_ENV=test mix test --failed
+
+# Stop after N failures
+MIX_ENV=test mix test --max-failures 5
+```
+
+### Package tests
+
+Each extracted package has its own test suite:
+
+```bash
+cd packages/raxol_core     && MIX_ENV=test mix test   # 765 tests
+cd packages/raxol_terminal && MIX_ENV=test mix test   # 1874 tests
+cd packages/raxol_sensor   && MIX_ENV=test mix test   # 55 tests
+cd packages/raxol_agent    && MIX_ENV=test mix test   # 131 tests
+```
+
+### All quality checks
+
+```bash
+mix raxol.check                        # format, compile, credo, dialyzer, security, test
+mix raxol.check --quick                # skip dialyzer
+mix raxol.check --only format,credo   # specific checks only
+mix raxol.check --skip test            # skip specific checks
+```
+
+### Coverage
+
+```bash
+mix test --cover
+mix coveralls.html
+```
+
+## Test Tags
+
+Tests are tagged to allow selective exclusion. The standard run excludes `:slow`,
+`:integration`, and `:docker` automatically.
+
+| Tag | Meaning |
+|-----|---------|
+| `@tag :docker` | Requires termbox2 NIF or Docker (excluded when `SKIP_TERMBOX2_TESTS=true`) |
+| `@tag :skip_on_ci` | Skip in CI (also excluded when `SKIP_TERMBOX2_TESTS=true`) |
+| `@tag :unix_only` | Unix/macOS only, excluded on Windows |
+| `@tag :slow` | Long-running tests |
+| `@tag :integration` | Full-stack integration tests |
+
+Run only a specific tag:
+
+```bash
+MIX_ENV=test mix test --only integration
+```
 
 ## Testing TEA Apps
 
-TEA apps have pure `update/2` and `view/1` functions, so they can be tested directly without rendering infrastructure:
+TEA apps have pure `init/1`, `update/2`, and `view/1` functions. Test them directly
+without any rendering infrastructure:
 
 ```elixir
 defmodule MyAppTest do
@@ -35,7 +100,7 @@ defmodule MyAppTest do
 end
 ```
 
-For apps that return commands from `update/2`, assert the command list directly:
+For apps that emit commands from `update/2`, assert the command list directly:
 
 ```elixir
 test "search dispatches async command" do
@@ -47,293 +112,82 @@ end
 
 ## Test Helpers
 
-### Terminal Testing
+Test helpers live in `test/support/`.
+
+### IsolatedCase
+
+`Raxol.Test.IsolatedCase` is a `CaseTemplate` that resets global state
+(AccessibilityServer, EventManager, UserPreferences, theme state, ETS caches)
+before each test. Use it when a test touches any of those shared services:
 
 ```elixir
-defmodule MyTerminalTest do
-  use Raxol.TerminalCase
+defmodule MyTest do
+  use Raxol.Test.IsolatedCase
 
-  test "renders output correctly" do
-    {:ok, term} = create_test_terminal(width: 80, height: 24)
-
-    send_keys(term, "hello world")
-    send_key(term, :enter)
-
-    assert screen_text(term) =~ "hello world"
-    assert cursor_position(term) == {1, 0}
-  end
-
-  test "handles ANSI sequences" do
-    {:ok, term} = create_test_terminal()
-
-    write_ansi(term, "\e[31mRed Text\e[0m")
-
-    assert cell_at(term, 0, 0).fg == :red
-    assert screen_text(term) == "Red Text"
+  test "isolated from global state" do
+    # global state has been reset
   end
 end
 ```
 
-### Component Testing
+For manual control, call the helper directly:
 
 ```elixir
-defmodule MyComponentTest do
-  use Raxol.ComponentCase
-
-  test "renders correctly" do
-    {:ok, component} = render_component(MyButton,
-      label: "Click me"
-    )
-
-    assert find_text(component) == "Click me"
-    assert has_style?(component, :bold)
-  end
-
-  test "handles events" do
-    {:ok, component} = render_component(Counter)
-
-    component |> simulate_click()
-    assert find_text(component) =~ "1"
-
-    component |> simulate_key(:arrow_up)
-    assert find_text(component) =~ "2"
-  end
+setup do
+  Raxol.Test.IsolationHelper.reset_global_state()
+  :ok
 end
 ```
 
-## Property Testing
+### Other helpers
+
+| Module | Purpose |
+|--------|---------|
+| `Raxol.Test.TestHelper` | Common utilities: `setup_test_terminal/0`, `wait_for_state/2`, `cleanup_process/2` |
+| `test/support/buffer_helper.ex` | Screen buffer assertions |
+| `test/support/event_macro_helpers.ex` | Event construction shortcuts |
+
+## Property-Based Tests
+
+Property tests live in `test/property/` and use
+[StreamData](https://hexdocs.pm/stream_data) via `ExUnitProperties`.
 
 ```elixir
-defmodule ParserPropertyTest do
-  use ExUnit.Case
+defmodule MyPropertyTest do
+  use ExUnit.Case, async: true
   use ExUnitProperties
 
-  property "parser handles any valid ANSI sequence" do
-    check all sequence <- ansi_sequence_generator() do
-      assert {:ok, _} = Raxol.Parser.parse(sequence)
+  property "parser never crashes on random input" do
+    check all input <- string(:printable, min_length: 1, max_length: 100),
+              max_runs: 1000 do
+      result = MyParser.parse(input)
+      assert is_list(result)
     end
   end
 
-  property "buffer maintains dimensions" do
-    check all width <- integer(1..200),
-              height <- integer(1..100),
-              ops <- list_of(buffer_operation()) do
-
-      buffer = Buffer.create_blank_buffer(width, height)
-      buffer = Enum.reduce(ops, buffer, &apply_op/2)
-
-      assert buffer.width == width
-      assert buffer.height == height
+  property "round-trip encode/decode" do
+    check all value <- integer(),
+              max_runs: 500 do
+      assert value == value |> encode() |> decode()
     end
   end
 end
 ```
 
-## Performance Testing
+Custom generators follow the `gen all` pattern:
 
 ```elixir
-defmodule PerformanceTest do
-  use Raxol.PerformanceCase
-
-  @tag :performance
-  test "renders in under 1ms" do
-    component = create_large_component()
-
-    assert_performance fn ->
-      Raxol.render(component)
-    end, max_ms: 1
-  end
-
-  @tag :memory
-  test "uses reasonable memory" do
-    assert_memory fn ->
-      Enum.map(1..1000, fn _ ->
-        create_component()
-      end)
-    end, max_mb: 10
+defp csi_sequence_generator do
+  gen all cmd <- member_of(["A", "B", "C", "D", "H", "m"]),
+          params <- list_of(integer(0..100), max_length: 3) do
+    "\e[" <> Enum.join(params, ";") <> cmd
   end
 end
 ```
 
-## Integration Testing
+Existing property test files:
 
-```elixir
-defmodule IntegrationTest do
-  use Raxol.IntegrationCase
-
-  @tag :integration
-  test "full application flow" do
-    {:ok, app} = start_app(MyApp)
-
-    app
-    |> navigate_to(:main_menu)
-    |> select_option("New Document")
-    |> type_text("Hello, World!")
-    |> press_key([:ctrl, :s])
-
-    assert file_exists?("document.txt")
-    assert File.read!("document.txt") == "Hello, World!"
-  end
-end
-```
-
-## Mocking & Stubbing
-
-```elixir
-defmodule MockTest do
-  use ExUnit.Case
-  import Mox
-
-  setup :verify_on_exit!
-
-  test "handles API responses" do
-    expect(HTTPMock, :get, fn url ->
-      {:ok, %{body: "mocked response"}}
-    end)
-
-    result = MyComponent.fetch_data()
-    assert result == "mocked response"
-  end
-
-  test "handles terminal operations" do
-    stub(TerminalMock, :write, fn _, text ->
-      send(self(), {:written, text})
-      :ok
-    end)
-
-    MyComponent.render()
-    assert_received {:written, "expected output"}
-  end
-end
-```
-
-## Accessibility Testing
-
-```elixir
-defmodule A11yTest do
-  use Raxol.AccessibilityCase
-
-  test "meets WCAG standards" do
-    component = render_component(MyForm)
-
-    assert all_inputs_labeled?(component)
-    assert proper_heading_order?(component)
-    assert meets_wcag_aa?(component)
-    assert fully_keyboard_accessible?(component)
-  end
-
-  test "works with screen reader" do
-    with_screen_reader do
-      component = render_component(MyButton)
-
-      assert announces?("Button: Click me")
-      simulate_click(component)
-      assert announces?("Button pressed")
-    end
-  end
-end
-```
-
-## Test Fixtures
-
-```elixir
-defmodule Fixtures do
-  def sample_terminal_output do
-    """
-    Welcome to MyApp v1.0
-    > help
-    Available commands:
-      help - Show this message
-      exit - Quit application
-    >
-    """
-  end
-
-  def complex_ansi_sequence do
-    "\e[2J\e[H\e[31;1mError:\e[0m File not found"
-  end
-
-  def large_dataset do
-    Enum.map(1..10_000, fn i ->
-      %{id: i, name: "Item #{i}", value: :rand.uniform(100)}
-    end)
-  end
-end
-```
-
-## Continuous Integration
-
-```yaml
-# .github/workflows/test.yml
-name: Tests
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    env:
-      SKIP_TERMBOX2_TESTS: true
-      MIX_ENV: test
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: erlef/setup-beam@v1
-        with:
-          elixir-version: "1.15.7"
-          otp-version: "26.0"
-
-      - run: mix deps.get
-      - run: mix compile --warnings-as-errors
-      - run: mix format --check-formatted
-      - run: mix credo
-      - run: mix test --cover
-      - run: mix dialyzer
-```
-
-## Test Configuration
-
-```elixir
-# config/test.exs
-config :raxol,
-  terminal: [
-    headless: true,
-    mock_pty: true
-  ],
-  performance: [
-    assertions: true,
-    profiling: true
-  ],
-  security: [
-    sandbox: true,
-    audit: false
-  ]
-
-# test/test_helper.exs
-ExUnit.configure(
-  exclude: [:slow, :integration],
-  capture_log: true,
-  max_failures: 5
-)
-
-# Start test services
-Raxol.Test.Setup.start()
-```
-
-## Coverage Reports
-
-```bash
-# Generate coverage
-mix test --cover
-
-# HTML report
-mix coveralls.html
-
-# Send to service
-mix coveralls.github
-```
-
-## See Also
-
-- [Development](DEVELOPMENT.md) - Development setup
-- [CI/CD](ci.md) - Continuous integration
-- [Examples](examples/) - Test examples
+- `test/property/parser_property_test.exs` -- ANSI parser
+- `test/property/ui_component_property_test.exs` -- Button, TextInput, Flexbox, Grid
+- `test/property/core_property_test.exs` -- core data structures
+- `test/property/parser_edge_cases_test.exs` -- parser edge cases

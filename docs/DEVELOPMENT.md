@@ -13,7 +13,7 @@ mix setup
 
 ### Manual Setup
 ```bash
-# Requirements: Elixir 1.19.0+, Erlang/OTP 28.2+, Node.js 20+, PostgreSQL 15+
+# Requirements: Elixir 1.19+, Erlang/OTP 27+, Node.js 20+, PostgreSQL 15+
 mix deps.get
 mix compile
 ```
@@ -46,7 +46,7 @@ mix raxol.check --quick       # Skip dialyzer
 
 ### Development
 ```bash
-mix raxol.playground   # Component playground (28 widget demos)
+mix raxol.playground   # Component playground (29 widget demos)
 mix raxol.repl         # Interactive REPL with sandboxing
 iex -S mix            # Interactive shell
 ```
@@ -140,35 +140,6 @@ mix raxol.perf                # Performance monitoring
 mix raxol.flamegraph          # Generate flame graph
 ```
 
-## Architecture
-
-### Module Organization
-```
-lib/raxol/
-├── terminal/       # Terminal emulation
-├── ui/            # UI components
-├── core/          # Core services
-└── test/          # Test helpers
-```
-
-### Naming Conventions
-- Files: `<domain>_<function>.ex` (e.g., `cursor_manager.ex`)
-- Modules: Singular names (`EventManager` not `EventsManager`)
-- Avoid generic names like `manager.ex` or `handler.ex`
-
-### Error Handling
-```elixir
-case safe_call(fn -> operation() end) do
-  {:ok, result} -> result
-  {:error, _} -> default
-end
-
-with {:ok, data} <- fetch(),
-     {:ok, result} <- process(data) do
-  {:ok, result}
-end
-```
-
 ## Performance
 
 ### Profiling
@@ -215,66 +186,3 @@ MIX_ENV=prod mix compile
 MIX_ENV=prod mix release
 ```
 
-## Quick Reference
-
-### TEA App
-
-```elixir
-defmodule MyApp do
-  use Raxol.Core.Runtime.Application
-
-  @impl true
-  def init(_context), do: %{count: 0}
-
-  @impl true
-  def update(message, model) do
-    case message do
-      :increment -> {%{model | count: model.count + 1}, []}
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
-        {model, [command(:quit)]}
-      _ -> {model, []}
-    end
-  end
-
-  @impl true
-  def view(model) do
-    column style: %{padding: 1} do
-      [text("Count: #{model.count}"), button("+", on_click: :increment)]
-    end
-  end
-
-  @impl true
-  def subscribe(_model), do: []
-end
-
-{:ok, pid} = Raxol.start_link(MyApp, [])
-```
-
-### Keyboard Event Shapes
-
-```elixir
-# Printable character
-%Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}}
-
-# Modifier key
-%Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "c", ctrl: true}}
-
-# Special key
-%Raxol.Core.Events.Event{type: :key, data: %{key: :enter}}
-%Raxol.Core.Events.Event{type: :key, data: %{key: :escape}}
-%Raxol.Core.Events.Event{type: :key, data: %{key: :tab}}
-```
-
-### ANSI Codes
-```
-\e[H         Home
-\e[2J        Clear screen
-\e[31m       Red text
-\e[1m        Bold
-\e[?25l      Hide cursor
-```
-
-## Resources
-
-- [Architecture Decision Records](adr/)
-- HexDocs API Reference: https://hexdocs.pm/raxol

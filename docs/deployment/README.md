@@ -6,7 +6,7 @@
 
 Phoenix LiveView playground with full backend. Auto-scaling, WebSocket support, PostgreSQL.
 
-- **URL**: https://raxol.fly.dev
+- **URL**: https://raxol.io
 - **Deploy**: `flyctl deploy`
 
 ## Quick Start
