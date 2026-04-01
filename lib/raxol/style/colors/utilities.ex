@@ -1,6 +1,8 @@
 alias Raxol.Style.Colors.Color
 
 defmodule Raxol.Style.Colors.Utilities do
+  alias Raxol.Style.Colors.HSL
+
   @moduledoc """
   Shared color utilities for the Raxol color system.
 
@@ -219,17 +221,7 @@ defmodule Raxol.Style.Colors.Utilities do
   """
   def rgb_to_hsl(r, g, b)
       when is_integer(r) and is_integer(g) and is_integer(b) do
-    r = r / 255
-    g = g / 255
-    b = b / 255
-
-    max = Enum.max([r, g, b])
-    min = Enum.min([r, g, b])
-    l = (max + min) / 2
-
-    {h, s} = calculate_hue_and_saturation(max == min, r, g, b, max, min, l)
-
-    {h, s, l}
+    HSL.rgb_to_hsl(r, g, b)
   end
 
   @doc """
@@ -247,36 +239,13 @@ defmodule Raxol.Style.Colors.Utilities do
   """
   def hsl_to_rgb(h, s, l) when is_number(h) and is_number(s) and is_number(l) do
     h = rem(h + 360, 360)
-    s = max(0, min(1, s))
-    l = max(0, min(1, l))
-
-    c = (1 - abs(2 * l - 1)) * s
-    x = c * (1 - abs(rem(trunc(h / 60), 2) - 1))
-    m = l - c / 2
-
-    {r1, g1, b1} = hue_to_rgb_components(h, c, x)
-
-    {
-      round((r1 + m) * 255),
-      round((g1 + m) * 255),
-      round((b1 + m) * 255)
-    }
+    s = Raxol.Core.Utils.Math.clamp(s, 0, 1)
+    l = Raxol.Core.Utils.Math.clamp(l, 0, 1)
+    # Ensure floats for HSL module guard
+    HSL.hsl_to_rgb(h * 1.0, s * 1.0, l * 1.0)
   end
 
   # Private helpers
-
-  defp calculate_hue_and_saturation(true, _r, _g, _b, _max, _min, _l),
-    do: {0, 0}
-
-  defp calculate_hue_and_saturation(false, r, g, b, max, min, l) do
-    d = max - min
-    s = calculate_saturation(l > 0.5, d, max, min)
-    h = calculate_hue(r, g, b, max, d) * 60
-    {h, s}
-  end
-
-  defp calculate_saturation(true, d, max, min), do: d / (2 - max - min)
-  defp calculate_saturation(false, d, max, min), do: d / (max + min)
 
   defp convert_to_linear(value) when value <= 0.03928, do: value / 12.92
   defp convert_to_linear(value), do: :math.pow((value + 0.055) / 1.055, 2.4)
@@ -426,26 +395,4 @@ defmodule Raxol.Style.Colors.Utilities do
          black
        ),
        do: black
-
-  defp calculate_hue(r, g, b, max, d) when max == r do
-    (g - b) / d + hue_adjustment(g < b)
-  end
-
-  defp calculate_hue(r, g, b, max, d) when max == g do
-    (b - r) / d + 2
-  end
-
-  defp calculate_hue(r, g, b, max, d) when max == b do
-    (r - g) / d + 4
-  end
-
-  defp hue_adjustment(true), do: 6
-  defp hue_adjustment(false), do: 0
-
-  defp hue_to_rgb_components(h, c, x) when h < 60, do: {c, x, 0}
-  defp hue_to_rgb_components(h, c, x) when h < 120, do: {x, c, 0}
-  defp hue_to_rgb_components(h, c, x) when h < 180, do: {0, c, x}
-  defp hue_to_rgb_components(h, c, x) when h < 240, do: {0, x, c}
-  defp hue_to_rgb_components(h, c, x) when h < 300, do: {x, 0, c}
-  defp hue_to_rgb_components(_h, c, x), do: {c, 0, x}
 end

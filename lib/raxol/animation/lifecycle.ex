@@ -342,7 +342,7 @@ defmodule Raxol.Animation.Lifecycle do
 
   defp calculate_animation_value(elapsed, duration, animation) do
     # Calculate current value
-    progress = min(max(elapsed / duration, 0.0), 1.0)
+    progress = Raxol.Core.Utils.Math.clamp(elapsed / duration, 0.0, 1.0)
     from = Map.get(animation, :from, 0)
     to = Map.get(animation, :to, 1)
 

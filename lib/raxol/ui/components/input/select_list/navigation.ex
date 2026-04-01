@@ -48,7 +48,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   Handles page up navigation.
   """
   def handle_page_up(state) do
-    page_size = state.visible_items || 10
+    page_size = state.visible_items || Raxol.Core.Defaults.page_size()
     new_index = max(state.focused_index - page_size, 0)
 
     %{state | focused_index: new_index}
@@ -59,7 +59,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   Handles page down navigation.
   """
   def handle_page_down(state) do
-    page_size = state.visible_items || 10
+    page_size = state.visible_items || Raxol.Core.Defaults.page_size()
     max_index = length(state.options) - 1
     new_index = min(state.focused_index + page_size, max_index)
 

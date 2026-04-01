@@ -4,6 +4,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   """
 
   alias Raxol.UI.Components.Input.MultiLineInput
+  alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
 
   @doc """
   Moves the cursor in the specified direction within the multi-line input.
@@ -211,7 +212,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
         {nil, nil}
 
       {start_pos, end_pos} ->
-        if pos_to_index(start_pos, state) <= pos_to_index(end_pos, state) do
+        if TextHelper.pos_to_index(start_pos, state) <=
+             TextHelper.pos_to_index(end_pos, state) do
           {start_pos, end_pos}
         else
           {end_pos, start_pos}
@@ -265,14 +267,5 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   @spec clear_selection(MultiLineInput.t()) :: MultiLineInput.t()
   def clear_selection(state) do
     %{state | selection_start: nil, selection_end: nil}
-  end
-
-  # Helper function to convert position to linear index for comparison
-  defp pos_to_index({row, col}, state) do
-    # Calculate the linear position in the text
-    lines_before = Enum.take(state.lines, row)
-    # +1 for newline
-    chars_before = Enum.sum(Enum.map(lines_before, &(String.length(&1) + 1)))
-    chars_before + col
   end
 end

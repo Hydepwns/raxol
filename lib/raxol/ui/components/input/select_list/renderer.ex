@@ -62,7 +62,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         filtered -> filtered
       end
 
-    visible_items = state.visible_items || 10
+    visible_items = state.visible_items || Raxol.Core.Defaults.page_size()
     start_index = state.scroll_offset
 
     Enum.slice(effective_options, start_index, visible_items)

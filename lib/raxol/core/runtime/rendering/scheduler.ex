@@ -10,7 +10,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   defmodule State do
     @moduledoc false
 
-    defstruct interval_ms: 16,
+    defstruct interval_ms: Raxol.Core.Defaults.frame_interval_ms(),
               timer_id: nil,
               enabled: false,
               engine_pid: nil
@@ -37,7 +37,10 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   @impl true
   def init_manager(opts) when is_list(opts) do
     engine_pid = Keyword.get(opts, :engine_pid, Engine)
-    interval_ms = Keyword.get(opts, :interval_ms, 16)
+
+    interval_ms =
+      Keyword.get(opts, :interval_ms, Raxol.Core.Defaults.frame_interval_ms())
+
     {:ok, %State{engine_pid: engine_pid, interval_ms: interval_ms}}
   end
 

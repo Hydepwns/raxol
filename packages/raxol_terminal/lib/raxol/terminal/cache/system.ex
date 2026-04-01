@@ -115,8 +115,8 @@ defmodule Raxol.Terminal.Cache.System do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def init_manager(opts) do
-    max_size = Keyword.get(opts, :max_size, 100 * 1024 * 1024)
-    default_ttl = Keyword.get(opts, :default_ttl, 3600)
+    max_size = Keyword.get(opts, :max_size, Raxol.Core.Defaults.cache_max_bytes())
+    default_ttl = Keyword.get(opts, :default_ttl, Raxol.Core.Defaults.cache_ttl_seconds())
     eviction_policy = Keyword.get(opts, :eviction_policy, :lru)
     compression_enabled = Keyword.get(opts, :compression_enabled, true)
     namespace_configs = Keyword.get(opts, :namespace_configs, %{})

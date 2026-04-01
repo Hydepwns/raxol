@@ -147,7 +147,7 @@ defmodule Raxol.Recording.Player do
     delay_us = elapsed_us - prev_us
     delay_ms = round(delay_us / 1_000 / state.speed)
     max_delay_ms = round(state.max_delay * 1_000)
-    actual_delay = min(max(delay_ms, 0), max_delay_ms)
+    actual_delay = Raxol.Core.Utils.Math.clamp(delay_ms, 0, max_delay_ms)
 
     case wait_with_input(actual_delay) do
       :timeout ->

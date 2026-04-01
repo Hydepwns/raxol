@@ -41,7 +41,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Utils do
   """
   @spec ensure_visible(SelectList.t()) :: SelectList.t()
   def ensure_visible(state) do
-    visible_items = state.visible_items || 10
+    visible_items = state.visible_items || Raxol.Core.Defaults.page_size()
     # Use focused_index since that's what Selection module updates
     index = state.focused_index
 

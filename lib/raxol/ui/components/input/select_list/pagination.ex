@@ -22,12 +22,12 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   """
   @spec update_page_state(SelectList.t(), non_neg_integer()) :: SelectList.t()
   def update_page_state(state, page_num) do
-    page_size = state.page_size || 10
+    page_size = state.page_size || Raxol.Core.Defaults.page_size()
     effective_options = get_effective_options(state)
     max_pages = calculate_max_pages(effective_options, page_size)
 
     # Clamp page number to valid range
-    page = min(max(page_num, 0), max_pages - 1)
+    page = Raxol.Core.Utils.Math.clamp(page_num, 0, max_pages - 1)
 
     # Update focused index to first item on the page
     new_index = page * page_size

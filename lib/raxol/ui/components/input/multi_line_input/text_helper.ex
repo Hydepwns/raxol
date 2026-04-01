@@ -100,14 +100,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     current_line = Enum.at(state.lines, row, "")
     {before_cursor, after_cursor} = String.split_at(current_line, col)
 
-    new_lines =
-      state.lines
-      |> List.replace_at(row, before_cursor)
-      |> List.insert_at(row + 1, after_cursor)
-
-    new_value = Enum.join(new_lines, "\n")
-
-    %{state | lines: new_lines, value: new_value, cursor_pos: {row + 1, 0}}
+    state.lines
+    |> List.replace_at(row, before_cursor)
+    |> List.insert_at(row + 1, after_cursor)
+    |> then(&with_lines(state, &1, %{cursor_pos: {row + 1, 0}}))
   end
 
   defp insert_regular_char(state, row, col, char) do
@@ -115,10 +111,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     {before_cursor, after_cursor} = String.split_at(current_line, col)
     new_line = before_cursor <> char <> after_cursor
 
-    new_lines = List.replace_at(state.lines, row, new_line)
-    new_value = Enum.join(new_lines, "\n")
-
-    %{state | lines: new_lines, value: new_value, cursor_pos: {row, col + 1}}
+    state.lines
+    |> List.replace_at(row, new_line)
+    |> then(&with_lines(state, &1, %{cursor_pos: {row, col + 1}}))
   end
 
   @doc """
@@ -136,15 +131,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
         {before_char, _} = String.split_at(before_cursor, col - 1)
         new_line = before_char <> after_cursor
 
-        new_lines = List.replace_at(state.lines, row, new_line)
-        new_value = Enum.join(new_lines, "\n")
-
-        %{
-          state
-          | lines: new_lines,
-            value: new_value,
-            cursor_pos: {row, col - 1}
-        }
+        state.lines
+        |> List.replace_at(row, new_line)
+        |> then(&with_lines(state, &1, %{cursor_pos: {row, col - 1}}))
 
       row > 0 ->
         # Join with previous line
@@ -152,19 +141,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
         prev_line = Enum.at(state.lines, row - 1, "")
         new_line = prev_line <> current_line
 
-        new_lines =
-          state.lines
-          |> List.replace_at(row - 1, new_line)
-          |> List.delete_at(row)
-
-        new_value = Enum.join(new_lines, "\n")
-
-        %{
-          state
-          | lines: new_lines,
-            value: new_value,
+        state.lines
+        |> List.replace_at(row - 1, new_line)
+        |> List.delete_at(row)
+        |> then(
+          &with_lines(state, &1, %{
             cursor_pos: {row - 1, String.length(prev_line)}
-        }
+          })
+        )
 
       true ->
         # At beginning of document, nothing to delete
@@ -187,24 +171,19 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
         {_, rest} = String.split_at(after_cursor, 1)
         new_line = before_cursor <> rest
 
-        new_lines = List.replace_at(state.lines, row, new_line)
-        new_value = Enum.join(new_lines, "\n")
-
-        %{state | lines: new_lines, value: new_value}
+        state.lines
+        |> List.replace_at(row, new_line)
+        |> then(&with_lines(state, &1))
 
       row < length(state.lines) - 1 ->
         # Join with next line
         next_line = Enum.at(state.lines, row + 1, "")
         new_line = current_line <> next_line
 
-        new_lines =
-          state.lines
-          |> List.replace_at(row, new_line)
-          |> List.delete_at(row + 1)
-
-        new_value = Enum.join(new_lines, "\n")
-
-        %{state | lines: new_lines, value: new_value}
+        state.lines
+        |> List.replace_at(row, new_line)
+        |> List.delete_at(row + 1)
+        |> then(&with_lines(state, &1))
 
       true ->
         # At end of document, nothing to delete
@@ -241,15 +220,30 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     end
   end
 
-  defp pos_to_index({row, col}, state) do
-    # Calculate linear position in text
+  # Syncs lines and value fields in state, with optional field overrides.
+  defp with_lines(state, new_lines, overrides \\ %{}) do
+    Map.merge(
+      %{state | lines: new_lines, value: Enum.join(new_lines, "\n")},
+      overrides
+    )
+  end
+
+  @doc false
+  @spec pos_to_index({integer(), integer()}, %{lines: [String.t()]}) ::
+          integer()
+  def pos_to_index({row, col}, state) do
     lines_before = Enum.take(state.lines, row)
-    # +1 for newline
     chars_before = Enum.sum(Enum.map(lines_before, &(String.length(&1) + 1)))
     chars_before + col
   end
 
   defp delete_text_range(state, {start_row, start_col}, {end_row, end_col}) do
+    clear_selection = %{
+      cursor_pos: {start_row, start_col},
+      selection_start: nil,
+      selection_end: nil
+    }
+
     if start_row == end_row do
       # Selection within single line
       current_line = Enum.at(state.lines, start_row, "")
@@ -257,17 +251,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
       {_, after_cursor} = String.split_at(current_line, end_col)
       new_line = before <> after_cursor
 
-      new_lines = List.replace_at(state.lines, start_row, new_line)
-      new_value = Enum.join(new_lines, "\n")
-
-      %{
-        state
-        | lines: new_lines,
-          value: new_value,
-          cursor_pos: {start_row, start_col},
-          selection_start: nil,
-          selection_end: nil
-      }
+      state.lines
+      |> List.replace_at(start_row, new_line)
+      |> then(&with_lines(state, &1, clear_selection))
     else
       # Selection spans multiple lines
       start_line = Enum.at(state.lines, start_row, "")
@@ -277,24 +263,12 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
       {_, after_end} = String.split_at(end_line, end_col)
       new_line = before_start <> after_end
 
-      # Remove lines between start and end, replace start line with merged line
-      new_lines =
-        state.lines
-        |> Enum.with_index()
-        |> Enum.filter(fn {_, idx} -> idx < start_row or idx > end_row end)
-        |> Enum.map(&elem(&1, 0))
-        |> List.insert_at(start_row, new_line)
-
-      new_value = Enum.join(new_lines, "\n")
-
-      %{
-        state
-        | lines: new_lines,
-          value: new_value,
-          cursor_pos: {start_row, start_col},
-          selection_start: nil,
-          selection_end: nil
-      }
+      state.lines
+      |> Enum.with_index()
+      |> Enum.filter(fn {_, idx} -> idx < start_row or idx > end_row end)
+      |> Enum.map(&elem(&1, 0))
+      |> List.insert_at(start_row, new_line)
+      |> then(&with_lines(state, &1, clear_selection))
     end
   end
 
@@ -325,15 +299,13 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
         {before, after_cursor} = String.split_at(current_line, col)
         new_line = before <> single_line <> after_cursor
 
-        new_lines = List.replace_at(state.lines, row, new_line)
-        new_value = Enum.join(new_lines, "\n")
-
-        %{
-          state
-          | lines: new_lines,
-            value: new_value,
+        state.lines
+        |> List.replace_at(row, new_line)
+        |> then(
+          &with_lines(state, &1, %{
             cursor_pos: {row, col + String.length(single_line)}
-        }
+          })
+        )
 
       [first_line | rest_lines] ->
         # Multi-line replacement
@@ -344,22 +316,13 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
         last_line_index = length(rest_lines) - 1
         {middle_lines, [last_line]} = Enum.split(rest_lines, last_line_index)
         last_new_line = last_line <> after_cursor
-
-        new_lines =
-          state.lines
-          |> List.replace_at(row, first_new_line)
-          |> insert_lines_after(row, middle_lines ++ [last_new_line])
-
-        new_value = Enum.join(new_lines, "\n")
         final_row = row + length(rest_lines)
         final_col = String.length(last_line)
 
-        %{
-          state
-          | lines: new_lines,
-            value: new_value,
-            cursor_pos: {final_row, final_col}
-        }
+        state.lines
+        |> List.replace_at(row, first_new_line)
+        |> insert_lines_after(row, middle_lines ++ [last_new_line])
+        |> then(&with_lines(state, &1, %{cursor_pos: {final_row, final_col}}))
     end
   end
 
@@ -396,11 +359,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
 
   def calculate_new_position(state, {target_row, target_col}) do
     max_row = length(state.lines) - 1
-    clamped_row = min(max(target_row, 0), max_row)
+    clamped_row = Raxol.Core.Utils.Math.clamp(target_row, 0, max_row)
 
     target_line = Enum.at(state.lines, clamped_row, "")
     max_col = String.length(target_line)
-    clamped_col = min(max(target_col, 0), max_col)
+    clamped_col = Raxol.Core.Utils.Math.clamp(target_col, 0, max_col)
 
     {clamped_row, clamped_col}
   end

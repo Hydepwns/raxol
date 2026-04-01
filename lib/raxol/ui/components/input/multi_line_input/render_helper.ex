@@ -4,6 +4,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
   """
 
   alias Raxol.UI.Components.Input.MultiLineInput
+  alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
 
   @doc """
   Renders a single line with proper styling for cursor and selection.
@@ -120,8 +121,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
     sel_end = if line_index == end_row, do: end_col, else: line_length
 
     # Ensure bounds are valid
-    sel_start = max(0, min(sel_start, line_length))
-    sel_end = max(sel_start, min(sel_end, line_length))
+    sel_start = Raxol.Core.Utils.Math.clamp(sel_start, 0, line_length)
+    sel_end = Raxol.Core.Utils.Math.clamp(sel_end, sel_start, line_length)
 
     parts = []
 
@@ -189,7 +190,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
         {nil, nil}
 
       {start_pos, end_pos} ->
-        if pos_to_index(start_pos, state) <= pos_to_index(end_pos, state) do
+        if TextHelper.pos_to_index(start_pos, state) <=
+             TextHelper.pos_to_index(end_pos, state) do
           {start_pos, end_pos}
         else
           {end_pos, start_pos}
@@ -202,14 +204,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
 
   defp line_in_selection?(line_index, {start_row, _}, {end_row, _}) do
     line_index >= start_row and line_index <= end_row
-  end
-
-  defp pos_to_index({row, col}, state) do
-    # Calculate linear position in text
-    lines_before = Enum.take(state.lines, row)
-    # +1 for newline
-    chars_before = Enum.sum(Enum.map(lines_before, &(String.length(&1) + 1)))
-    chars_before + col
   end
 
   defp get_theme_style(theme, path, default) do

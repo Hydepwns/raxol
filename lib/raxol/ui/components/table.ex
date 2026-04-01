@@ -80,10 +80,10 @@ defmodule Raxol.UI.Components.Table do
               paginate: false,
               searchable: false,
               sortable: false,
-              page_size: 10
+              page_size: Raxol.Core.Defaults.page_size()
             },
             current_page: 1,
-            page_size: 10,
+            page_size: Raxol.Core.Defaults.page_size(),
             filter_term: "",
             sort_by: nil,
             sort_direction: :asc,
@@ -123,7 +123,7 @@ defmodule Raxol.UI.Components.Table do
         paginate: false,
         searchable: false,
         sortable: false,
-        page_size: 10
+        page_size: Raxol.Core.Defaults.page_size()
       })
 
     style = Map.get(props, :style, %{})

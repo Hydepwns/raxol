@@ -16,7 +16,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
     max_index = length(effective_options) - 1
 
     # Clamp index to valid range
-    new_index = min(max(index, 0), max_index)
+    new_index = Raxol.Core.Utils.Math.clamp(index, 0, max_index)
 
     new_state =
       if Map.get(state, :multiple, false) do

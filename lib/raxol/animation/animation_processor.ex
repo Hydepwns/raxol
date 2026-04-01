@@ -193,7 +193,7 @@ defmodule Raxol.Animation.AnimationProcessor do
 
   defp calculate_animation_progress(animation, elapsed, duration) do
     # Ensure progress is between 0 and 1
-    progress = min(max(elapsed / duration, 0.0), 1.0)
+    progress = Raxol.Core.Utils.Math.clamp(elapsed / duration, 0.0, 1.0)
 
     # Apply easing if specified
     case Map.get(animation, :easing) do

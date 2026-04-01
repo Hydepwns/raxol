@@ -3,6 +3,8 @@ defmodule Raxol.Style.Colors.PaletteManager do
   Manages color palette generation and scale creation with accessibility considerations.
   """
 
+  alias Raxol.Style.Colors.HSL
+
   @doc """
   Generates a color scale from a base color with the specified number of steps.
   Ensures each color in the scale has sufficient contrast with dark backgrounds.
@@ -25,83 +27,22 @@ defmodule Raxol.Style.Colors.PaletteManager do
     light_step = l / (steps - 1)
 
     Enum.map(0..(steps - 1), fn i ->
-      new_l = max(0.1, min(0.9, l - i * light_step))
+      new_l = Raxol.Core.Utils.Math.clamp(l - i * light_step, 0.1, 0.9)
       hsl_to_hex(h, s, new_l)
     end)
     |> ensure_accessible_contrast()
   end
 
   defp hex_to_hsl(hex) do
-    # Remove # if present
     hex = String.replace(hex, "#", "")
+    r = String.slice(hex, 0..1) |> String.to_integer(16)
+    g = String.slice(hex, 2..3) |> String.to_integer(16)
+    b = String.slice(hex, 4..5) |> String.to_integer(16)
 
-    # Parse RGB values
-    {r, g, b} = parse_hex_rgb_values(hex)
-
-    # Convert to HSL
-    max_val = max(r, max(g, b))
-    min_val = min(r, min(g, b))
-    delta = max_val - min_val
-
-    l = (max_val + min_val) / 2
-
-    {h, s} = calculate_hue_and_saturation(r, g, b, max_val, min_val, delta, l)
-
-    {h, s, l}
+    {h, s, l} = HSL.rgb_to_hsl(r, g, b)
+    # Return as floats (hue in degrees, s/l as 0.0-1.0)
+    {h * 1.0, s * 1.0, l * 1.0}
   end
-
-  defp parse_hex_rgb_values(hex) do
-    r = String.slice(hex, 0..1) |> String.to_integer(16) |> then(&(&1 / 255))
-    g = String.slice(hex, 2..3) |> String.to_integer(16) |> then(&(&1 / 255))
-    b = String.slice(hex, 4..5) |> String.to_integer(16) |> then(&(&1 / 255))
-    {r, g, b}
-  end
-
-  defp calculate_hue_and_saturation(r, g, b, max_val, min_val, delta, l) do
-    handle_delta_calculation(delta, r, g, b, max_val, min_val, l)
-  end
-
-  defp handle_delta_calculation(delta, r, g, b, max_val, min_val, l) do
-    if delta == 0.0 do
-      {0, 0}
-    else
-      s = calculate_saturation(delta, max_val, min_val, l)
-      h = calculate_hue(r, g, b, max_val, delta)
-      {h, s}
-    end
-  end
-
-  defp calculate_saturation(delta, max_val, min_val, l) do
-    saturation_by_lightness(l > 0.5, delta, max_val, min_val)
-  end
-
-  defp saturation_by_lightness(true, delta, max_val, min_val) do
-    delta / (2 - max_val - min_val)
-  end
-
-  defp saturation_by_lightness(false, delta, max_val, min_val) do
-    delta / (max_val + min_val)
-  end
-
-  # Helper functions for pattern matching refactoring
-
-  defp calculate_hue(r, g, b, max_val, delta) when max_val == r do
-    h = (g - b) / delta * 60
-    normalize_hue(h)
-  end
-
-  defp calculate_hue(r, g, b, max_val, delta) when max_val == g do
-    h = ((b - r) / delta + 2) * 60
-    normalize_hue(h)
-  end
-
-  defp calculate_hue(r, g, b, max_val, delta) when max_val == b do
-    h = ((r - g) / delta + 4) * 60
-    normalize_hue(h)
-  end
-
-  defp normalize_hue(h) when h < 0, do: h + 360
-  defp normalize_hue(h), do: h
 
   defp hsl_to_hex(h, s, l) do
     {r, g, b} = hsl_to_rgb(h, s, l)
@@ -109,31 +50,12 @@ defmodule Raxol.Style.Colors.PaletteManager do
   end
 
   defp hsl_to_rgb(h, s, l) do
-    c = calculate_chroma(s, l)
-    x = calculate_secondary_component(h, c)
-    m = l - c / 2
-
-    {r1, g1, b1} = hsl_rgb_components(h, c, x)
-    r = round((r1 + m) * 255)
-    g = round((g1 + m) * 255)
-    b = round((b1 + m) * 255)
-    {max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b))}
+    h = h * 1.0
+    s = s * 1.0
+    l = l * 1.0
+    h = if h >= 360.0, do: :math.fmod(h, 360.0), else: h
+    HSL.hsl_to_rgb(h, s, l)
   end
-
-  defp calculate_chroma(s, l) do
-    (1 - abs(2 * l - 1)) * s
-  end
-
-  defp calculate_secondary_component(h, c) do
-    c * (1 - abs(rem(trunc(h / 60), 2) - 1))
-  end
-
-  defp hsl_rgb_components(h, c, x) when h < 60, do: {c, x, 0}
-  defp hsl_rgb_components(h, c, x) when h < 120, do: {x, c, 0}
-  defp hsl_rgb_components(h, c, x) when h < 180, do: {0, c, x}
-  defp hsl_rgb_components(h, c, x) when h < 240, do: {0, x, c}
-  defp hsl_rgb_components(h, c, x) when h < 300, do: {x, 0, c}
-  defp hsl_rgb_components(_h, c, x), do: {c, 0, x}
 
   defp rgb_to_hex(r, g, b),
     do: Raxol.Utils.ColorConversion.rgb_to_hex({r, g, b})

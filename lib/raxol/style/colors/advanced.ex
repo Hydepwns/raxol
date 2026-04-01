@@ -10,7 +10,7 @@ defmodule Raxol.Style.Colors.Advanced do
   - Color harmony generation
   """
 
-  alias Raxol.Style.Colors.{Adaptive, Color}
+  alias Raxol.Style.Colors.{Adaptive, Color, HSL}
   require :math
 
   @type color :: Color.t()
@@ -192,14 +192,7 @@ defmodule Raxol.Style.Colors.Advanced do
   defp harmony_angle(:tetradic), do: 60
   defp harmony_angle(:square), do: 90
 
-  defp normalize_hue(hue) do
-    normalized = rem(round(hue), 360)
-
-    case normalized < 0 do
-      true -> normalized + 360
-      false -> normalized
-    end
-  end
+  defp normalize_hue(hue), do: HSL.normalize_hue(hue)
 
   @doc """
   Adapts a color to the current terminal capabilities with advanced options.
@@ -236,52 +229,18 @@ defmodule Raxol.Style.Colors.Advanced do
 
   # Private helper functions
 
-  # Reference: https://www.rapidtables.com/convert/color/rgb-to-hsl.html
   defp rgb_to_hsl(%Color{r: r, g: g, b: b}) do
-    r_prime = r / 255
-    g_prime = g / 255
-    b_prime = b / 255
-
-    c_max = Enum.max([r_prime, g_prime, b_prime])
-    c_min = Enum.min([r_prime, g_prime, b_prime])
-    delta = c_max - c_min
-
-    h = calculate_hue(delta, c_max, r_prime, g_prime, b_prime)
-
-    # Ensure hue is positive
-    h =
-      case h < 0 do
-        true -> h + 360
-        false -> h
-      end
-
-    l = (c_max + c_min) / 2
-
-    s =
-      case delta == 0 do
-        true -> 0
-        false -> delta / (1 - abs(2 * l - 1))
-      end
-
+    {h, s, l} = HSL.rgb_to_hsl(r, g, b)
     %{h: round(h), s: round(s * 100), l: round(l * 100)}
   end
 
-  # Reference: https://www.rapidtables.com/convert/color/hsl-to-rgb.html
   defp hsl_to_rgb({h, s, l}) do
-    c = (1 - abs(2 * l - 1)) * s
-    x = c * (1 - abs(:math.fmod(h / 60, 2) - 1))
-    m = l - c / 2
-
-    {r_prime, g_prime, b_prime} = calculate_rgb_prime_from_hue(h, c, x)
-
-    r = round((r_prime + m) * 255)
-    g = round((g_prime + m) * 255)
-    b = round((b_prime + m) * 255)
-
-    r = max(0, min(255, r))
-    g = max(0, min(255, g))
-    b = max(0, min(255, b))
-
+    # Ensure h is a valid float for HSL.hsl_to_rgb guard
+    h = h * 1.0
+    s = s * 1.0
+    l = l * 1.0
+    h = if h >= 360.0, do: :math.fmod(h, 360.0), else: h
+    {r, g, b} = HSL.hsl_to_rgb(h, s, l)
     Color.from_rgb(r, g, b)
   end
 
@@ -358,45 +317,6 @@ defmodule Raxol.Style.Colors.Advanced do
   end
 
   defp maybe_enhance_contrast(color, false), do: color
-
-  defp calculate_hue(0, _c_max, _r_prime, _g_prime, _b_prime), do: 0
-
-  defp calculate_hue(delta, c_max, r_prime, g_prime, b_prime)
-       when c_max == r_prime do
-    60 * ((g_prime - b_prime) / delta)
-  end
-
-  defp calculate_hue(delta, c_max, r_prime, g_prime, b_prime)
-       when c_max == g_prime do
-    60 * ((b_prime - r_prime) / delta + 2)
-  end
-
-  defp calculate_hue(delta, c_max, r_prime, g_prime, b_prime)
-       when c_max == b_prime do
-    60 * ((r_prime - g_prime) / delta + 4)
-  end
-
-  defp calculate_hue(_delta, _c_max, _r_prime, _g_prime, _b_prime), do: 0
-
-  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 0 and h < 60,
-    do: {c, x, 0}
-
-  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 60 and h < 120,
-    do: {x, c, 0}
-
-  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 120 and h < 180,
-    do: {0, c, x}
-
-  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 180 and h < 240,
-    do: {0, x, c}
-
-  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 240 and h < 300,
-    do: {x, 0, c}
-
-  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 300 and h < 360,
-    do: {c, 0, x}
-
-  defp calculate_rgb_prime_from_hue(_h, _c, _x), do: {0, 0, 0}
 
   defp adjust_lightness_for_contrast(l) when l > 40 and l < 60, do: l + 20
   defp adjust_lightness_for_contrast(l) when l < 40, do: l - 10

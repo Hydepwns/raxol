@@ -116,7 +116,7 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
     end
   end
 
-  defstruct lines: [], limit: 1000
+  defstruct lines: [], limit: Raxol.Core.Defaults.scrollback_limit()
 
   @type t :: %__MODULE__{
           lines: list(),

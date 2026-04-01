@@ -51,10 +51,19 @@ defmodule Raxol.Core.Defaults do
   def cb_half_open_timeout_ms, do: @default_cb_half_open_timeout_ms
   def cb_reset_timeout_ms, do: @default_cb_reset_timeout_ms
 
+  # -- Rendering --
+  @default_frame_interval_ms 16
+  @default_page_size 10
+
+  def frame_interval_ms, do: @default_frame_interval_ms
+  def page_size, do: @default_page_size
+
   # -- Cache & Limits --
   @default_history_limit 1_000
   @default_cache_ttl_seconds 3_600
+  @default_cache_max_bytes 100 * 1024 * 1024
 
   def history_limit, do: @default_history_limit
   def cache_ttl_seconds, do: @default_cache_ttl_seconds
+  def cache_max_bytes, do: @default_cache_max_bytes
 end

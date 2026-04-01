@@ -3,7 +3,13 @@ alias Raxol.Style.Colors.Color
 defmodule Raxol.Style.Colors.HSL do
   @moduledoc """
   Provides functions for HSL color space conversions and adjustments.
+
+  This is the single source of truth for RGB<->HSL conversions.
+  Other modules should delegate here instead of reimplementing.
   """
+
+  @rgb_max 255
+  @hue_max 360
 
   @doc """
   Converts RGB values to HSL.
@@ -17,11 +23,12 @@ defmodule Raxol.Style.Colors.HSL do
   @spec rgb_to_hsl(integer(), integer(), integer()) ::
           {float(), float(), float()}
   def rgb_to_hsl(r, g, b)
-      when is_integer(r) and r >= 0 and r <= 255 and is_integer(g) and g >= 0 and
-             g <= 255 and is_integer(b) and b >= 0 and b <= 255 do
-    r_norm = r / 255
-    g_norm = g / 255
-    b_norm = b / 255
+      when is_integer(r) and r >= 0 and r <= @rgb_max and is_integer(g) and
+             g >= 0 and
+             g <= @rgb_max and is_integer(b) and b >= 0 and b <= @rgb_max do
+    r_norm = r / @rgb_max
+    g_norm = g / @rgb_max
+    b_norm = b / @rgb_max
 
     max = Enum.max([r_norm, g_norm, b_norm])
     min = Enum.min([r_norm, g_norm, b_norm])
@@ -42,7 +49,7 @@ defmodule Raxol.Style.Colors.HSL do
   # Helper functions for pattern matching refactoring
 
   defp _calculate_hue(_r, _g, _b, _max, delta) when delta == +0.0,
-    do: normalize_hue(+0.0)
+    do: +0.0
 
   defp _calculate_hue(r, g, b, max, delta) when max == r,
     do: normalize_hue(60.0 * rem(round((g - b) / delta), 6))
@@ -53,15 +60,17 @@ defmodule Raxol.Style.Colors.HSL do
   defp _calculate_hue(r, g, _b, _max, delta),
     do: normalize_hue(60.0 * ((r - g) / delta + 4.0))
 
-  defp normalize_hue(hue) do
-    # Ensure hue is always positive
+  @doc """
+  Normalizes a hue value to the range [0, 360).
+  """
+  def normalize_hue(hue) do
     case hue < 0 do
       true ->
-        hue + 360.0
+        hue + @hue_max * 1.0
 
       false ->
         hue
-        |> then(&rem(round(&1), 360))
+        |> then(&rem(round(&1), @hue_max))
     end
   end
 
@@ -77,7 +86,7 @@ defmodule Raxol.Style.Colors.HSL do
   @spec hsl_to_rgb(number(), float(), float()) ::
           {integer(), integer(), integer()}
   def hsl_to_rgb(h, s, l)
-      when is_number(h) and h >= 0 and h < 360 and is_float(s) and s >= 0.0 and
+      when is_number(h) and h >= 0 and h < @hue_max and is_float(s) and s >= 0.0 and
              s <= 1.0 and is_float(l) and l >= 0.0 and l <= 1.0 do
     c = (1.0 - abs(2.0 * l - 1.0)) * s
     h_prime = h / 60.0
@@ -86,12 +95,13 @@ defmodule Raxol.Style.Colors.HSL do
 
     {r_prime, g_prime, b_prime} = calculate_rgb_prime(h_prime, c, x)
 
-    r = round((r_prime + m) * 255)
-    g = round((g_prime + m) * 255)
-    b = round((b_prime + m) * 255)
+    r = round((r_prime + m) * @rgb_max)
+    g = round((g_prime + m) * @rgb_max)
+    b = round((b_prime + m) * @rgb_max)
 
     # Clamp values just in case of float inaccuracies
-    {max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b))}
+    clamp_rgb = &Raxol.Core.Utils.Math.clamp(&1, 0, @rgb_max)
+    {clamp_rgb.(r), clamp_rgb.(g), clamp_rgb.(b)}
   end
 
   @doc """
@@ -110,7 +120,7 @@ defmodule Raxol.Style.Colors.HSL do
   def rotate_hue(%Color{} = color, degrees) when is_number(degrees) do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     # Ensure calculations are float, then fix rem args: use round/1
-    new_h = rem(round(h + degrees + 360.0), 360)
+    new_h = rem(round(h + degrees + @hue_max * 1.0), @hue_max)
     {r, g, b} = hsl_to_rgb(new_h, s, l)
     %{color | r: r, g: g, b: b}
   end
