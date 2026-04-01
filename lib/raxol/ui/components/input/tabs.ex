@@ -166,7 +166,7 @@ defmodule Raxol.UI.Components.Input.Tabs do
     |> Enum.flat_map(fn {tab, index} ->
       tab_style =
         if index == active_index do
-          %{reverse: true}
+          Raxol.Core.Defaults.selected_style()
         else
           %{}
         end

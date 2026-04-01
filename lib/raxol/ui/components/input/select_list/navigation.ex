@@ -14,7 +14,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     new_index = min(state.focused_index + 1, max_index)
 
     %{state | focused_index: new_index}
-    |> ensure_visible()
+    |> Utils.ensure_visible()
   end
 
   @doc """
@@ -24,7 +24,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     new_index = max(state.focused_index - 1, 0)
 
     %{state | focused_index: new_index}
-    |> ensure_visible()
+    |> Utils.ensure_visible()
   end
 
   @doc """
@@ -41,7 +41,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     max_index = length(state.options) - 1
 
     %{state | focused_index: max_index}
-    |> ensure_visible()
+    |> Utils.ensure_visible()
   end
 
   @doc """
@@ -52,7 +52,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     new_index = max(state.focused_index - page_size, 0)
 
     %{state | focused_index: new_index}
-    |> ensure_visible()
+    |> Utils.ensure_visible()
   end
 
   @doc """
@@ -64,7 +64,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     new_index = min(state.focused_index + page_size, max_index)
 
     %{state | focused_index: new_index}
-    |> ensure_visible()
+    |> Utils.ensure_visible()
   end
 
   @doc """
@@ -99,12 +99,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   Updates the scroll position to ensure selected item is visible.
   """
   def update_scroll_position(state) do
-    ensure_visible(state)
-  end
-
-  # Private functions
-
-  defp ensure_visible(state) do
     Utils.ensure_visible(state)
   end
 end

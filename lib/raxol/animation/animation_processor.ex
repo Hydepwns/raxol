@@ -12,6 +12,7 @@ defmodule Raxol.Animation.AnimationProcessor do
   require Raxol.Core.Runtime.Log
   alias Raxol.Animation.Accessibility, as: AnimAccessibility
   alias Raxol.Animation.Adaptation
+  alias Raxol.Animation.Easing
   alias Raxol.Animation.Lifecycle
   alias Raxol.Animation.PathManager
   alias Raxol.Animation.StateManager, as: StateManager
@@ -164,60 +165,18 @@ defmodule Raxol.Animation.AnimationProcessor do
     end
   end
 
-  defp ease_in_out_quad(progress) when progress < 0.5 do
-    2 * progress * progress
-  end
-
-  defp ease_in_out_quad(progress) do
-    1 - 2 * (1 - progress) * (1 - progress)
-  end
-
-  defp ease_in_out_cubic(progress) when progress < 0.5 do
-    4 * progress * progress * progress
-  end
-
-  defp ease_in_out_cubic(progress) do
-    1 - 4 * (1 - progress) * (1 - progress) * (1 - progress)
-  end
-
   defp interpolate_values(f, t, progress) when is_number(f) and is_number(t) do
     f + (t - f) * progress
   end
 
   defp interpolate_values(_f, t, _progress), do: t
 
-  defp calculate_animation_progress(_animation, _elapsed, 0) do
-    # Handle zero duration case - animation completes immediately
-    1.0
-  end
+  defp calculate_animation_progress(_animation, _elapsed, 0), do: 1.0
 
   defp calculate_animation_progress(animation, elapsed, duration) do
-    # Ensure progress is between 0 and 1
     progress = Raxol.Core.Utils.Math.clamp(elapsed / duration, 0.0, 1.0)
-
-    # Apply easing if specified
-    case Map.get(animation, :easing) do
-      :ease_in_quad ->
-        progress * progress
-
-      :ease_out_quad ->
-        1 - (1 - progress) * (1 - progress)
-
-      :ease_in_out_quad ->
-        ease_in_out_quad(progress)
-
-      :ease_in_cubic ->
-        progress * progress * progress
-
-      :ease_out_cubic ->
-        1 - (1 - progress) * (1 - progress) * (1 - progress)
-
-      :ease_in_out_cubic ->
-        ease_in_out_cubic(progress)
-
-      _ ->
-        progress
-    end
+    easing = Map.get(animation, :easing, :linear)
+    Easing.calculate_value(easing, progress)
   end
 
   defp calculate_current_value(animation, progress) do

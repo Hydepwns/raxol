@@ -11,6 +11,13 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
   alias Raxol.View.Components
 
   @default_width Raxol.Core.Defaults.terminal_width()
+  @heading_style %{bold: true, fg: :cyan}
+  @hr_style %{fg: :white}
+  @code_style %{fg: :yellow}
+  @blockquote_style %{fg: :green}
+  @hr_width 40
+  @ul_prefix "  * "
+  @blockquote_prefix "| "
 
   @spec init(map()) ::
           {:ok, %{markdown_text: String.t(), width: non_neg_integer()}}
@@ -75,7 +82,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
     [
       Components.text(content: ""),
-      Components.text(content: "# " <> text, style: %{bold: true, fg: :cyan}),
+      Components.text(content: "# " <> text, style: @heading_style),
       Components.text(
         content: String.duplicate("=", min(String.length(text) + 2, width))
       ),
@@ -88,7 +95,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
     [
       Components.text(content: ""),
-      Components.text(content: "## " <> text, style: %{bold: true, fg: :cyan}),
+      Components.text(content: "## " <> text, style: @heading_style),
       Components.text(
         content: String.duplicate("-", min(String.length(text) + 3, width))
       ),
@@ -103,7 +110,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
     [
       Components.text(content: ""),
-      Components.text(content: prefix <> text, style: %{bold: true, fg: :cyan}),
+      Components.text(content: prefix <> text, style: @heading_style),
       Components.text(content: "")
     ]
   end
@@ -118,7 +125,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
       Enum.flat_map(children, fn
         {"li", _, li_children, _} ->
           text = extract_inline(li_children)
-          [Components.text(content: "  * " <> text)]
+          [Components.text(content: @ul_prefix <> text)]
 
         other ->
           ast_node_to_elements(other, width)
@@ -149,7 +156,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
     code_elements =
       Enum.map(lines, fn line ->
-        Components.text(content: "  " <> line, style: %{fg: :yellow})
+        Components.text(content: "  " <> line, style: @code_style)
       end)
 
     [Components.text(content: "")] ++
@@ -167,8 +174,8 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
       else
         %{
           el
-          | content: "| " <> content,
-            style: Map.merge(el[:style] || %{}, %{fg: :green})
+          | content: @blockquote_prefix <> content,
+            style: Map.merge(el[:style] || %{}, @blockquote_style)
         }
       end
     end)
@@ -178,8 +185,8 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
     [
       Components.text(content: ""),
       Components.text(
-        content: String.duplicate("-", min(40, width)),
-        style: %{fg: :white}
+        content: String.duplicate("-", min(@hr_width, width)),
+        style: @hr_style
       ),
       Components.text(content: "")
     ]
@@ -254,7 +261,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
     code_elements =
       Enum.map(code_lines, fn line ->
-        Components.text(content: "  " <> line, style: %{fg: :yellow})
+        Components.text(content: "  " <> line, style: @code_style)
       end)
 
     new_acc =
@@ -273,48 +280,51 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
   defp parse_line("# " <> text, _width) do
     Components.text(
       content: "# " <> strip_inline(text),
-      style: %{bold: true, fg: :cyan}
+      style: @heading_style
     )
   end
 
   defp parse_line("## " <> text, _width) do
     Components.text(
       content: "## " <> strip_inline(text),
-      style: %{bold: true, fg: :cyan}
+      style: @heading_style
     )
   end
 
   defp parse_line("### " <> text, _width) do
     Components.text(
       content: "### " <> strip_inline(text),
-      style: %{bold: true, fg: :cyan}
+      style: @heading_style
     )
   end
 
   defp parse_line("---" <> _, width) do
     Components.text(
-      content: String.duplicate("-", min(40, width)),
-      style: %{fg: :white}
+      content: String.duplicate("-", min(@hr_width, width)),
+      style: @hr_style
     )
   end
 
   defp parse_line("***" <> _, width) do
     Components.text(
-      content: String.duplicate("-", min(40, width)),
-      style: %{fg: :white}
+      content: String.duplicate("-", min(@hr_width, width)),
+      style: @hr_style
     )
   end
 
   defp parse_line("> " <> text, _width) do
-    Components.text(content: "| " <> strip_inline(text), style: %{fg: :green})
+    Components.text(
+      content: @blockquote_prefix <> strip_inline(text),
+      style: @blockquote_style
+    )
   end
 
   defp parse_line("- " <> text, _width) do
-    Components.text(content: "  * " <> strip_inline(text))
+    Components.text(content: @ul_prefix <> strip_inline(text))
   end
 
   defp parse_line("* " <> text, _width) do
-    Components.text(content: "  * " <> strip_inline(text))
+    Components.text(content: @ul_prefix <> strip_inline(text))
   end
 
   defp parse_line(line, _width) do

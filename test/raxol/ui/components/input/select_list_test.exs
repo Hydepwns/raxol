@@ -2,7 +2,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
   use ExUnit.Case
 
   alias Raxol.UI.Components.Input.SelectList
-  alias Raxol.UI.Components.Input.SelectList.{Navigation, Pagination, Search, Selection}
+  alias Raxol.UI.Components.Input.SelectList.{Navigation, Pagination, Search, Selection, Utils}
 
   # -- Helpers --
 
@@ -1039,13 +1039,13 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
     test "get_effective_options/1 returns all options when not filtering" do
       state = init_state()
 
-      assert Pagination.get_effective_options(state) == sample_options()
+      assert Utils.get_effective_options(state) == sample_options()
     end
 
     test "get_effective_options/1 returns filtered options when filtering" do
       state = %{init_state() | filtered_options: [{"Apple", :apple}]}
 
-      assert Pagination.get_effective_options(state) == [{"Apple", :apple}]
+      assert Utils.get_effective_options(state) == [{"Apple", :apple}]
     end
 
     test "calculate_total_pages/1 computes correct page count" do

@@ -14,14 +14,17 @@ defmodule Raxol.Style.Colors.Accessibility do
   alias Raxol.Style.Colors.Accessibility.PaletteGenerator
 
   # WCAG contrast ratio thresholds
-  # AA level for normal text
   @contrast_aa 4.5
-  # AAA level for normal text
   @contrast_aaa 7.0
-  # AA level for large text
   @contrast_aa_large 3.0
-  # AAA level for large text
   @contrast_aaa_large 4.5
+
+  # WCAG 2.0 relative luminance coefficients (sRGB)
+  @wcag_r 0.2126
+  @wcag_g 0.7152
+  @wcag_b 0.0722
+
+  @rgb_max 255
 
   @doc """
   Calculates the relative luminance of a color according to WCAG guidelines.
@@ -54,13 +57,13 @@ defmodule Raxol.Style.Colors.Accessibility do
     g_lin = _channel_to_linear(g)
     b_lin = _channel_to_linear(b)
 
-    0.2126 * r_lin + 0.7152 * g_lin + 0.0722 * b_lin
+    @wcag_r * r_lin + @wcag_g * g_lin + @wcag_b * b_lin
   end
 
   # WCAG formula for converting sRGB channel to linear value
   defp _channel_to_linear(channel_val)
-       when channel_val >= 0 and channel_val <= 255 do
-    v = channel_val / 255
+       when channel_val >= 0 and channel_val <= @rgb_max do
+    v = channel_val / @rgb_max
     convert_to_linear(v <= 0.03928, v)
   end
 

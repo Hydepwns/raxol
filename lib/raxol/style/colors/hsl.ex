@@ -39,8 +39,12 @@ defmodule Raxol.Style.Colors.HSL do
 
     s =
       case delta do
-        +0.0 -> +0.0
-        _ -> delta / (1 - abs(2 * l - 1))
+        +0.0 ->
+          +0.0
+
+        _ ->
+          # Clamp to handle float imprecision near l=0 or l=1
+          Raxol.Core.Utils.Math.clamp(delta / (1 - abs(2 * l - 1)), 0.0, 1.0)
       end
 
     {h, s, l}
@@ -86,8 +90,11 @@ defmodule Raxol.Style.Colors.HSL do
   @spec hsl_to_rgb(number(), float(), float()) ::
           {integer(), integer(), integer()}
   def hsl_to_rgb(h, s, l)
-      when is_number(h) and h >= 0 and h < @hue_max and is_float(s) and s >= 0.0 and
-             s <= 1.0 and is_float(l) and l >= 0.0 and l <= 1.0 do
+      when is_number(h) and is_float(s) and is_float(l) do
+    # Clamp to handle float imprecision (e.g., 1.0000000000000002)
+    h = :math.fmod(h + 360.0, 360.0)
+    s = Raxol.Core.Utils.Math.clamp(s, 0.0, 1.0)
+    l = Raxol.Core.Utils.Math.clamp(l, 0.0, 1.0)
     c = (1.0 - abs(2.0 * l - 1.0)) * s
     h_prime = h / 60.0
     x = c * (1.0 - abs(:math.fmod(h_prime, 2.0) - 1.0))

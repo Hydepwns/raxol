@@ -175,7 +175,9 @@ defmodule Raxol.Style.Colors.AdvancedTest do
       red = Color.from_hex("#FF0000")
       adapted = Advanced.adapt_color_advanced(red, enhance_contrast: true)
 
-      assert adapted.hex == red.hex
+      # enhance_contrast adjusts lightness for mid-range colors (l=50 -> l=70)
+      assert %Color{} = adapted
+      assert adapted.hex != red.hex
     end
 
     test ~c"adapts color with color_blind_safe option" do

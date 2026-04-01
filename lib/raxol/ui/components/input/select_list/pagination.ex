@@ -5,17 +5,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   """
 
   alias Raxol.UI.Components.Input.SelectList
-
-  @doc """
-  Gets the effective options based on current filter/search state.
-  """
-  @spec get_effective_options(SelectList.t()) :: list()
-  def get_effective_options(state) do
-    case state.filtered_options do
-      nil -> state.options
-      filtered -> filtered
-    end
-  end
+  alias Raxol.UI.Components.Input.SelectList.Utils
 
   @doc """
   Updates the page state based on page number.
@@ -23,7 +13,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   @spec update_page_state(SelectList.t(), non_neg_integer()) :: SelectList.t()
   def update_page_state(state, page_num) do
     page_size = state.page_size || Raxol.Core.Defaults.page_size()
-    effective_options = get_effective_options(state)
+    effective_options = Utils.get_effective_options(state)
     max_pages = calculate_max_pages(effective_options, page_size)
 
     # Clamp page number to valid range
@@ -45,7 +35,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   """
   @spec calculate_total_pages(SelectList.t()) :: non_neg_integer()
   def calculate_total_pages(state) do
-    effective_options = get_effective_options(state)
+    effective_options = Utils.get_effective_options(state)
     calculate_max_pages(effective_options, state.page_size)
   end
 
@@ -106,7 +96,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   """
   @spec get_page_options(SelectList.t()) :: list()
   def get_page_options(state) do
-    effective_options = get_effective_options(state)
+    effective_options = Utils.get_effective_options(state)
     page = get_current_page(state)
     start_index = page * state.visible_items
 

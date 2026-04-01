@@ -81,7 +81,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
 
     style =
       if is_selected do
-        state.selected_style || %{reverse: true}
+        state.selected_style || Raxol.Core.Defaults.selected_style()
       else
         %{}
       end

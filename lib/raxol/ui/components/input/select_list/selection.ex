@@ -12,7 +12,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
   @spec update_selection_state(SelectList.t(), non_neg_integer()) ::
           {SelectList.t(), list()}
   def update_selection_state(state, index) do
-    effective_options = get_effective_options(state)
+    effective_options = Utils.get_effective_options(state)
     max_index = length(effective_options) - 1
 
     # Clamp index to valid range
@@ -31,7 +31,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
           end
 
         %{state | selected_indices: updated_indices, focused_index: new_index}
-        |> ensure_visible()
+        |> Utils.ensure_visible()
       else
         # Single selection: update selected_index
         updated_state = %{
@@ -40,7 +40,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
             focused_index: new_index
         }
 
-        ensure_visible(updated_state)
+        Utils.ensure_visible(updated_state)
       end
 
     # Generate callback commands if applicable
@@ -54,7 +54,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
   """
   @spec get_selected_option(SelectList.t()) :: any() | nil
   def get_selected_option(state) do
-    effective_options = get_effective_options(state)
+    effective_options = Utils.get_effective_options(state)
     Enum.at(effective_options, state.selected_index)
   end
 
@@ -76,7 +76,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
   """
   @spec select_by_value(SelectList.t(), any()) :: {SelectList.t(), list()}
   def select_by_value(state, target_value) do
-    effective_options = get_effective_options(state)
+    effective_options = Utils.get_effective_options(state)
 
     index =
       Enum.find_index(effective_options, fn option ->
@@ -131,23 +131,12 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
   """
   @spec select_last(SelectList.t()) :: {SelectList.t(), list()}
   def select_last(state) do
-    effective_options = get_effective_options(state)
+    effective_options = Utils.get_effective_options(state)
     last_index = length(effective_options) - 1
     update_selection_state(state, last_index)
   end
 
   # Private functions
-
-  defp get_effective_options(state) do
-    case state.filtered_options do
-      nil -> state.options
-      filtered -> filtered
-    end
-  end
-
-  defp ensure_visible(state) do
-    Utils.ensure_visible(state)
-  end
 
   defp get_option_value(option)
        when is_tuple(option) and tuple_size(option) == 2 do

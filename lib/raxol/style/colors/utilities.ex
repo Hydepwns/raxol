@@ -11,6 +11,13 @@ defmodule Raxol.Style.Colors.Utilities do
   conversions.
   """
 
+  # WCAG 2.0 relative luminance coefficients (sRGB)
+  @wcag_r 0.2126
+  @wcag_g 0.7152
+  @wcag_b 0.0722
+
+  @rgb_max 255
+
   @doc """
   Calculates the relative luminance of a color according to WCAG 2.0.
 
@@ -28,13 +35,11 @@ defmodule Raxol.Style.Colors.Utilities do
 
   def relative_luminance({r, g, b})
       when is_number(r) and is_number(g) and is_number(b) do
-    # Convert RGB to relative luminance
-    r = convert_to_linear(r / 255)
-    g = convert_to_linear(g / 255)
-    b = convert_to_linear(b / 255)
+    r = convert_to_linear(r / @rgb_max)
+    g = convert_to_linear(g / @rgb_max)
+    b = convert_to_linear(b / @rgb_max)
 
-    # Calculate relative luminance
-    0.2126 * r + 0.7152 * g + 0.0722 * b
+    @wcag_r * r + @wcag_g * g + @wcag_b * b
   end
 
   def relative_luminance(hex) when is_binary(hex) do
@@ -165,7 +170,8 @@ defmodule Raxol.Style.Colors.Utilities do
     }
   end
 
-  defp contrast_value(v) when v > 127, do: 255
+  @contrast_threshold 127
+  defp contrast_value(v) when v > @contrast_threshold, do: @rgb_max
   defp contrast_value(_v), do: 0
 
   @doc """
@@ -367,9 +373,9 @@ defmodule Raxol.Style.Colors.Utilities do
   defp lighten_color(%Color{} = color, factor) do
     %{
       color
-      | r: min(255, round(color.r + (255 - color.r) * factor)),
-        g: min(255, round(color.g + (255 - color.g) * factor)),
-        b: min(255, round(color.b + (255 - color.b) * factor))
+      | r: min(@rgb_max, round(color.r + (@rgb_max - color.r) * factor)),
+        g: min(@rgb_max, round(color.g + (@rgb_max - color.g) * factor)),
+        b: min(@rgb_max, round(color.b + (@rgb_max - color.b) * factor))
     }
   end
 

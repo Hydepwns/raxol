@@ -50,11 +50,7 @@ defmodule Raxol.Style.Colors.PaletteManager do
   end
 
   defp hsl_to_rgb(h, s, l) do
-    h = h * 1.0
-    s = s * 1.0
-    l = l * 1.0
-    h = if h >= 360.0, do: :math.fmod(h, 360.0), else: h
-    HSL.hsl_to_rgb(h, s, l)
+    HSL.hsl_to_rgb(h * 1.0, s * 1.0, l * 1.0)
   end
 
   defp rgb_to_hex(r, g, b),

@@ -392,7 +392,7 @@ defmodule Raxol.UI.Components.Input.Menu do
 
       line_style =
         cond do
-          item.id == state.cursor -> %{reverse: true}
+          item.id == state.cursor -> Raxol.Core.Defaults.selected_style()
           disabled -> %{fg: :gray}
           true -> %{}
         end

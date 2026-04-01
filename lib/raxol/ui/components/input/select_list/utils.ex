@@ -7,6 +7,18 @@ defmodule Raxol.UI.Components.Input.SelectList.Utils do
   alias Raxol.UI.Components.Input.SelectList
 
   @doc """
+  Gets the effective options based on current filter/search state.
+  Returns filtered_options if present, otherwise the full options list.
+  """
+  @spec get_effective_options(SelectList.t()) :: list()
+  def get_effective_options(state) do
+    case state.filtered_options do
+      nil -> state.options
+      filtered -> filtered
+    end
+  end
+
+  @doc """
   Extracts a display label from a SelectList option.
   Handles strings, tuples, and maps with :label, :text, :name, or :value keys.
   """
@@ -42,21 +54,14 @@ defmodule Raxol.UI.Components.Input.SelectList.Utils do
   @spec ensure_visible(SelectList.t()) :: SelectList.t()
   def ensure_visible(state) do
     visible_items = state.visible_items || Raxol.Core.Defaults.page_size()
-    # Use focused_index since that's what Selection module updates
-    index = state.focused_index
 
-    cond do
-      index < state.scroll_offset ->
-        # Selected item is above visible area
-        %{state | scroll_offset: index}
+    new_offset =
+      Raxol.Core.Utils.Math.scroll_into_view(
+        state.focused_index,
+        state.scroll_offset,
+        visible_items
+      )
 
-      index >= state.scroll_offset + visible_items ->
-        # Selected item is below visible area
-        %{state | scroll_offset: index - visible_items + 1}
-
-      true ->
-        # Selected item is already visible
-        state
-    end
+    %{state | scroll_offset: new_offset}
   end
 end

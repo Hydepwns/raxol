@@ -58,6 +58,11 @@ defmodule Raxol.Core.Defaults do
   def frame_interval_ms, do: @default_frame_interval_ms
   def page_size, do: @default_page_size
 
+  # -- UI Defaults --
+  @default_selected_style %{reverse: true}
+
+  def selected_style, do: @default_selected_style
+
   # -- Cache & Limits --
   @default_history_limit 1_000
   @default_cache_ttl_seconds 3_600

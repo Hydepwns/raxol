@@ -534,16 +534,14 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
   defp adjust_scroll(state) do
     visible_count = state.panel_height - 4
 
-    cond do
-      state.selected_index < state.scroll_offset ->
-        %{state | scroll_offset: state.selected_index}
+    new_offset =
+      Raxol.Core.Utils.Math.scroll_into_view(
+        state.selected_index,
+        state.scroll_offset,
+        visible_count
+      )
 
-      state.selected_index >= state.scroll_offset + visible_count ->
-        %{state | scroll_offset: state.selected_index - visible_count + 1}
-
-      true ->
-        state
-    end
+    %{state | scroll_offset: new_offset}
   end
 
   defp toggle_hidden(state) do

@@ -16,7 +16,8 @@ defmodule Raxol.UI.Components.Input.SelectList do
     Pagination,
     Renderer,
     Search,
-    Selection
+    Selection,
+    Utils
   }
 
   @behaviour Raxol.UI.Components.Base.Component
@@ -144,7 +145,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
       style: %{},
       on_focus: nil,
       selected_marker: "> ",
-      selected_style: %{reverse: true},
+      selected_style: Raxol.Core.Defaults.selected_style(),
       search_enabled: false,
       paginated: false,
       search_active: false
@@ -335,7 +336,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
   defp handle_mouse_click(y, state) when y >= 1 do
     # Option click: y gives us the 0-based index directly
     index = y
-    effective_options = Pagination.get_effective_options(state)
+    effective_options = Utils.get_effective_options(state)
 
     handle_option_click_if_valid(state, index, effective_options)
   end

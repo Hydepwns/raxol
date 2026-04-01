@@ -330,7 +330,7 @@ defmodule Raxol.UI.Components.Display.Tree do
 
       line_style =
         if node.id == state.cursor do
-          %{reverse: true}
+          Raxol.Core.Defaults.selected_style()
         else
           %{}
         end

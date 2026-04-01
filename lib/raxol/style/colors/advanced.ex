@@ -177,10 +177,11 @@ defmodule Raxol.Style.Colors.Advanced do
       angle = harmony_angle(:complementary)
       hue1 = normalize_hue(h_harmony - angle)
       hue2 = normalize_hue(h_harmony + angle)
+      s_norm = s_harmony / 100
 
       [
-        hsl_to_rgb({hue1, s_harmony, target_l}),
-        hsl_to_rgb({hue2, s_harmony, target_l})
+        hsl_to_rgb({hue1, s_norm, target_l}),
+        hsl_to_rgb({hue2, s_norm, target_l})
       ]
     end)
   end
@@ -235,12 +236,7 @@ defmodule Raxol.Style.Colors.Advanced do
   end
 
   defp hsl_to_rgb({h, s, l}) do
-    # Ensure h is a valid float for HSL.hsl_to_rgb guard
-    h = h * 1.0
-    s = s * 1.0
-    l = l * 1.0
-    h = if h >= 360.0, do: :math.fmod(h, 360.0), else: h
-    {r, g, b} = HSL.hsl_to_rgb(h, s, l)
+    {r, g, b} = HSL.hsl_to_rgb(h * 1.0, s * 1.0, l * 1.0)
     Color.from_rgb(r, g, b)
   end
 
@@ -297,7 +293,7 @@ defmodule Raxol.Style.Colors.Advanced do
       true ->
         %{h: h, s: s} = rgb_to_hsl(color)
         # Increase lightness to 30%
-        hsl_to_rgb({h, s, 0.3})
+        hsl_to_rgb({h, s / 100, 0.3})
 
       false ->
         color
@@ -313,7 +309,7 @@ defmodule Raxol.Style.Colors.Advanced do
     # If lightness is in middle range, push towards extremes
     adjusted_l = adjust_lightness_for_contrast(l)
 
-    hsl_to_rgb({h, s, adjusted_l / 100})
+    hsl_to_rgb({h, s / 100, adjusted_l / 100})
   end
 
   defp maybe_enhance_contrast(color, false), do: color
@@ -332,7 +328,7 @@ defmodule Raxol.Style.Colors.Advanced do
     # Ensure minimum lightness for visibility
     adjusted_l = max(20, l)
 
-    hsl_to_rgb({h, adjusted_s / 100, adjusted_l / 100})
+    hsl_to_rgb({h, min(1.0, adjusted_s / 100), adjusted_l / 100})
   end
 
   defp maybe_make_color_blind_safe(color, false), do: color
