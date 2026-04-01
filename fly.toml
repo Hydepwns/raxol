@@ -34,7 +34,7 @@ kill_signal = 'SIGTERM'
   [http_service.concurrency]
     type = 'connections'
     hard_limit = 1000
-    soft_limit = 1000
+    soft_limit = 800
 
   [[http_service.checks]]
     grace_period = "10s"

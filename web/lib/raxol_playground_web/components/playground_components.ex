@@ -63,7 +63,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundComponents do
   def code_panel(assigns) do
     ~H"""
     <%= if @show do %>
-      <div class="w-1/3 border-l bg-gray-900 flex flex-col">
+      <div class="w-full lg:w-1/3 border-t lg:border-t-0 lg:border-l bg-gray-900 flex flex-col max-h-64 lg:max-h-none">
         <div class="px-4 py-2 bg-gray-800 text-gray-300 text-sm font-medium border-b border-gray-700">
           Code Snippet
         </div>

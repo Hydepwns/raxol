@@ -270,16 +270,18 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
 
       <!-- Main Area -->
       <div class="flex-1 flex overflow-hidden">
-        <!-- Sidebar -->
-        <.sidebar {assigns} />
+        <!-- Sidebar (hidden on mobile) -->
+        <div class="hidden md:block">
+          <.sidebar {assigns} />
+        </div>
 
         <!-- Content -->
-        <div class="flex-1 flex flex-col">
+        <div class="flex-1 flex flex-col min-w-0">
           <!-- Toolbar -->
           <.toolbar {assigns} />
 
           <!-- Demo + Code -->
-          <div class="flex-1 flex overflow-hidden">
+          <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
             <div class="flex-1 flex flex-col">
               <.terminal_chrome title={if @selected, do: @selected.name <> " Demo", else: "Terminal"} />
               <div
@@ -310,7 +312,14 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
                       Click here and use keyboard to interact
                     </div>
                   <% else %>
-                    <.terminal_fallback description={if @selected, do: @selected.description} />
+                    <%= if @lifecycle_pid do %>
+                      <div class="text-gray-500 py-8 text-center" role="status">
+                        <div class="inline-block w-5 h-5 border-2 border-gray-600 border-t-blue-400 rounded-full animate-spin mb-3"></div>
+                        <p>Starting demo...</p>
+                      </div>
+                    <% else %>
+                      <.terminal_fallback description={if @selected, do: @selected.description} />
+                    <% end %>
                   <% end %>
                 <% end %>
               </div>
@@ -376,29 +385,35 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
             />
           </form>
 
-          <div class="space-y-1">
+          <div class="space-y-1" role="listbox" aria-label="Components">
             <%= for comp <- @components do %>
-              <div
-                class={"p-2 rounded cursor-pointer text-sm #{if @selected && @selected.name == comp.name, do: "bg-blue-50 border border-blue-200", else: "hover:bg-gray-50"}"}
+              <button
+                type="button"
+                class={"w-full text-left p-2 rounded text-sm transition-colors #{if @selected && @selected.name == comp.name, do: "bg-blue-50 border border-blue-200", else: "hover:bg-gray-50 border border-transparent"}"}
                 phx-click="select_component"
                 phx-value-component={comp.name}
+                role="option"
+                aria-selected={@selected && @selected.name == comp.name}
               >
                 <div class="font-medium text-gray-900"><%= comp.name %></div>
                 <div class="text-xs text-gray-500"><%= comp.description %></div>
-              </div>
+              </button>
             <% end %>
           </div>
         <% else %>
-          <div class="space-y-0.5">
+          <div class="space-y-0.5" role="listbox" aria-label="Components">
             <%= for comp <- @components do %>
-              <div
-                class={"px-2 py-1.5 rounded cursor-pointer #{if @selected && @selected.name == comp.name, do: "bg-blue-50 border border-blue-200", else: "hover:bg-gray-50"}"}
+              <button
+                type="button"
+                class={"w-full text-left px-2 py-1.5 rounded transition-colors #{if @selected && @selected.name == comp.name, do: "bg-blue-50 border border-blue-200", else: "hover:bg-gray-50 border border-transparent"}"}
                 phx-click="select_component"
                 phx-value-component={comp.name}
                 title={"#{comp.name} -- #{comp.description}"}
+                role="option"
+                aria-selected={@selected && @selected.name == comp.name}
               >
                 <div class="text-xs font-medium text-gray-700 truncate"><%= comp.name %></div>
-              </div>
+              </button>
             <% end %>
           </div>
         <% end %>

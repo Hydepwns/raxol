@@ -64,6 +64,11 @@ defmodule Raxol.LiveView.TerminalBridge do
           | :solarized_dark
           | :solarized_light
           | :monokai
+          | :synthwave84
+          | :gruvbox_dark
+          | :one_dark
+          | :tokyo_night
+          | :catppuccin
           | :default
   @type html_opts :: [
           theme: theme(),
@@ -212,12 +217,21 @@ defmodule Raxol.LiveView.TerminalBridge do
 
   defp escape_html_text(text) do
     text
-    |> String.replace("&", "&amp;")
-    |> String.replace("<", "&lt;")
-    |> String.replace(">", "&gt;")
-    |> String.replace("\"", "&quot;")
-    |> String.replace("'", "&#39;")
+    |> String.to_charlist()
+    |> escape_chars([])
+    |> IO.iodata_to_binary()
   end
+
+  defp escape_chars([], acc), do: Enum.reverse(acc)
+  defp escape_chars([?& | rest], acc), do: escape_chars(rest, [~c"&amp;" | acc])
+  defp escape_chars([?< | rest], acc), do: escape_chars(rest, [~c"&lt;" | acc])
+  defp escape_chars([?> | rest], acc), do: escape_chars(rest, [~c"&gt;" | acc])
+
+  defp escape_chars([?" | rest], acc),
+    do: escape_chars(rest, [~c"&quot;" | acc])
+
+  defp escape_chars([?' | rest], acc), do: escape_chars(rest, [~c"&#39;" | acc])
+  defp escape_chars([c | rest], acc), do: escape_chars(rest, [c | acc])
 
   @spec render_line_with_diff(
           Buffer.line(),
@@ -434,6 +448,14 @@ defmodule Raxol.LiveView.TerminalBridge do
   defp named_color_to_hex(:bright_magenta), do: "#ff80ff"
   defp named_color_to_hex(:bright_cyan), do: "#80ffff"
   defp named_color_to_hex(:bright_white), do: "#ffffff"
+  # Common aliases
+  defp named_color_to_hex(:gray), do: "#808080"
+  defp named_color_to_hex(:grey), do: "#808080"
+  defp named_color_to_hex(:dark_gray), do: "#404040"
+  defp named_color_to_hex(:dark_grey), do: "#404040"
+  defp named_color_to_hex(:light_gray), do: "#c0c0c0"
+  defp named_color_to_hex(:light_grey), do: "#c0c0c0"
+  defp named_color_to_hex(:default), do: "inherit"
   defp named_color_to_hex(_), do: "#ffffff"
 
   # Simplified 256-color to RGB conversion (first 16 colors)
@@ -471,11 +493,13 @@ defmodule Raxol.LiveView.TerminalBridge do
     {r * 51, g * 51, b * 51}
   end
 
-  defp color_256_to_rgb(n) when n >= 232 do
-    # Grayscale
+  defp color_256_to_rgb(n) when n >= 232 and n <= 255 do
+    # Grayscale (24 shades)
     gray = (n - 232) * 10 + 8
     {gray, gray, gray}
   end
+
+  defp color_256_to_rgb(_), do: {255, 255, 255}
 
   # Buffer compatibility: ScreenBuffer has .cells (list of rows),
   # compat Buffer has .lines (list of %{cells: [...]})

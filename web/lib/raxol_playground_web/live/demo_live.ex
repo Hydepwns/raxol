@@ -233,8 +233,18 @@ defmodule RaxolPlaygroundWeb.DemoLive do
             <% else %>
               <%= if @terminal_html != "" do %>
                 <%= Phoenix.HTML.raw(@terminal_html) %>
+                <div class="mt-2 text-xs text-gray-500 opacity-70 select-none">
+                  Click here and use keyboard to interact
+                </div>
               <% else %>
-                <.terminal_fallback description={@component.description} />
+                <%= if @lifecycle_pid do %>
+                  <div class="text-gray-500 py-8 text-center" role="status">
+                    <div class="inline-block w-5 h-5 border-2 border-gray-600 border-t-blue-400 rounded-full animate-spin mb-3"></div>
+                    <p>Starting demo...</p>
+                  </div>
+                <% else %>
+                  <.terminal_fallback description={@component.description} />
+                <% end %>
               <% end %>
             <% end %>
           </div>
