@@ -21,7 +21,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
     new_state =
       if Map.get(state, :multiple, false) do
         # Multiple selection: toggle the index in selected_indices
-        current_indices = state.selected_indices || MapSet.new()
+        current_indices = state.selected_indices
 
         updated_indices =
           if MapSet.member?(current_indices, new_index) do

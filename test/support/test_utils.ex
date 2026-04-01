@@ -1,4 +1,6 @@
 defmodule Raxol.Test.TestUtils do
+  # ExUnit.CaseTemplate macro generates pattern that dialyzer flags
+  @dialyzer :no_match
   alias Raxol.Test.SharedUtilities
 
   @moduledoc """

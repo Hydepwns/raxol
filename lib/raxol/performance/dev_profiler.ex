@@ -2,6 +2,12 @@ defmodule Raxol.Performance.DevProfiler do
   @mix_env Mix.env()
   alias Raxol.Core.Runtime.Log
 
+  # Dev-only private functions become dead code when compiled outside :dev.
+  # profile/2 and start_continuous/1 short-circuit in non-dev environments.
+  if @mix_env != :dev do
+    @dialyzer [:no_unused, :no_match]
+  end
+
   @moduledoc """
   Development-mode profiler for detailed performance analysis.
 
@@ -78,12 +84,14 @@ defmodule Raxol.Performance.DevProfiler do
     profile(@default_opts, fun)
   end
 
-  def profile(opts, fun) when is_list(opts) and is_function(fun) do
-    if @mix_env != :dev do
+  if @mix_env == :dev do
+    def profile(opts, fun) when is_list(opts) and is_function(fun) do
+      do_profile(Keyword.merge(@default_opts, opts), fun)
+    end
+  else
+    def profile(_opts, fun) when is_list(_opts) and is_function(fun) do
       Log.warning("DevProfiler: development mode only")
       fun.()
-    else
-      do_profile(Keyword.merge(@default_opts, opts), fun)
     end
   end
 
@@ -138,11 +146,8 @@ defmodule Raxol.Performance.DevProfiler do
       # Start continuous profiling every 30 seconds
       DevProfiler.start_continuous(interval: 30_000, duration: 5_000)
   """
-  def start_continuous(opts \\ []) do
-    if @mix_env != :dev do
-      Log.warning("Continuous profiling: development only")
-      :ignored
-    else
+  if @mix_env == :dev do
+    def start_continuous(opts \\ []) do
       interval = Keyword.get(opts, :interval, 30_000)
       duration = Keyword.get(opts, :duration, 5_000)
       auto_hints = Keyword.get(opts, :auto_hints, true)
@@ -150,6 +155,11 @@ defmodule Raxol.Performance.DevProfiler do
       spawn_link(fn ->
         continuous_profiling_loop(interval, duration, auto_hints)
       end)
+    end
+  else
+    def start_continuous(_opts \\ []) do
+      Log.warning("Continuous profiling: development only")
+      :ignored
     end
   end
 

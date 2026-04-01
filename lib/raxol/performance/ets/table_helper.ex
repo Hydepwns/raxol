@@ -16,7 +16,7 @@ defmodule Raxol.Performance.ETS.TableHelper do
   def ensure_table(name, opts \\ [:set, :public, :named_table]) do
     case :ets.whereis(name) do
       :undefined ->
-        :ets.new(name, opts)
+        _ref = :ets.new(name, opts)
         name
 
       _ref ->
