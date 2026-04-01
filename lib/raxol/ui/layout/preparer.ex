@@ -164,10 +164,7 @@ defmodule Raxol.UI.Layout.Preparer do
 
   def prepare_incremental(element, _old), do: prepare(element)
 
-  defp zip_longest([], []), do: []
-  defp zip_longest([], [b | bs]), do: [{nil, b} | zip_longest([], bs)]
-  defp zip_longest([a | as], []), do: [{a, nil} | zip_longest(as, [])]
-  defp zip_longest([a | as], [b | bs]), do: [{a, b} | zip_longest(as, bs)]
+  defp zip_longest(a, b), do: Raxol.Core.Utils.List.zip_longest(a, b)
 
   defp content_hash_for(%{type: :text} = el) do
     text = Map.get(el, :text) || Map.get(el, :content, "")

@@ -1,6 +1,7 @@
 defmodule Raxol.Playground.Demos.MenuDemo do
   @moduledoc "Playground demo: selectable menu with keyboard navigation."
   use Raxol.Core.Runtime.Application
+  alias Raxol.Playground.DemoHelpers
 
   @items ["File", "Edit", "View", "Tools", "Help"]
   @info_box_width 35
@@ -40,7 +41,8 @@ defmodule Raxol.Playground.Demos.MenuDemo do
 
         {%{
            model
-           | sub_selected: min(model.sub_selected + 1, length(items) - 1)
+           | sub_selected:
+               DemoHelpers.cursor_down(model.sub_selected, length(items) - 1)
          }, []}
 
       key_match(:down)
@@ -49,16 +51,17 @@ defmodule Raxol.Playground.Demos.MenuDemo do
 
         {%{
            model
-           | sub_selected: min(model.sub_selected + 1, length(items) - 1)
+           | sub_selected:
+               DemoHelpers.cursor_down(model.sub_selected, length(items) - 1)
          }, []}
 
       key_match("k")
       when model.expanded ->
-        {%{model | sub_selected: max(model.sub_selected - 1, 0)}, []}
+        {%{model | sub_selected: DemoHelpers.cursor_up(model.sub_selected)}, []}
 
       key_match(:up)
       when model.expanded ->
-        {%{model | sub_selected: max(model.sub_selected - 1, 0)}, []}
+        {%{model | sub_selected: DemoHelpers.cursor_up(model.sub_selected)}, []}
 
       key_match(:enter) ->
         {%{model | expanded: not model.expanded, sub_selected: 0}, []}
@@ -132,7 +135,7 @@ defmodule Raxol.Playground.Demos.MenuDemo do
       items
       |> Enum.with_index()
       |> Enum.map(fn {item, idx} ->
-        prefix = if idx == model.sub_selected, do: "> ", else: "  "
+        prefix = DemoHelpers.cursor_prefix(idx, model.sub_selected)
         style = if idx == model.sub_selected, do: [:bold], else: []
         text(prefix <> item, style: style)
       end)

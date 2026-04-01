@@ -334,9 +334,5 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
     {:update, path_to_parent, %{type: :keyed_children, ops: all_ops}}
   end
 
-  # Zips two lists, padding with nil if lengths differ
-  defp zip_longest([], []), do: []
-  defp zip_longest([h1 | t1], []), do: [{h1, nil} | zip_longest(t1, [])]
-  defp zip_longest([], [h2 | t2]), do: [{nil, h2} | zip_longest([], t2)]
-  defp zip_longest([h1 | t1], [h2 | t2]), do: [{h1, h2} | zip_longest(t1, t2)]
+  defp zip_longest(a, b), do: Raxol.Core.Utils.List.zip_longest(a, b)
 end

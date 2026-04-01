@@ -322,45 +322,7 @@ defmodule Raxol.UI.Layout.Flexbox do
   defp get_main_axis(direction) when direction in [:column, :column_reverse],
     do: :vertical
 
-  # Text styling properties that cascade from parent to child.
-  @inheritable_keys [
-    :fg,
-    :bg,
-    :foreground,
-    :background,
-    :fg_color,
-    :bg_color,
-    :bold,
-    :italic,
-    :underline,
-    :strikethrough,
-    :reverse,
-    :dim
-  ]
-
   defp inherit_styles(parent, children) do
-    parent_style = ensure_style_map(Map.get(parent, :style, %{}))
-    inheritable = Map.take(parent_style, @inheritable_keys)
-
-    if map_size(inheritable) == 0 do
-      children
-    else
-      Enum.map(children, fn child ->
-        child_style = ensure_style_map(Map.get(child, :style, %{}))
-        merged = Map.merge(inheritable, child_style)
-        Map.put(child, :style, merged)
-      end)
-    end
+    Raxol.UI.Layout.StyleInheritance.inherit_styles(parent, children)
   end
-
-  defp ensure_style_map(style) when is_map(style), do: style
-
-  defp ensure_style_map(style) when is_list(style) do
-    Enum.into(style, %{}, fn
-      {k, v} -> {k, v}
-      atom when is_atom(atom) -> {atom, true}
-    end)
-  end
-
-  defp ensure_style_map(_), do: %{}
 end

@@ -17,9 +17,9 @@ defmodule Raxol.UI.Components.Display.Tree do
   """
 
   alias Raxol.Core.Events.Event
-  alias Raxol.UI.Theming.Theme
+  alias Raxol.UI.StyleHelper
 
-  @behaviour Raxol.UI.Components.Base.Component
+  use Raxol.UI.Components.Base.Component
 
   @type tree_node :: %{
           id: atom(),
@@ -64,22 +64,6 @@ defmodule Raxol.UI.Components.Display.Tree do
 
     {:ok, state}
   end
-
-  @impl true
-  @spec mount(t()) :: {t(), list()}
-  def mount(state), do: {state, []}
-
-  @impl true
-  @spec unmount(t()) :: t()
-  def unmount(state), do: state
-
-  @impl true
-  @spec update(map(), t()) :: {t(), list()}
-  def update(props, state) when is_map(props) do
-    Raxol.UI.Components.Base.Component.merge_props(props, state)
-  end
-
-  def update(_msg, state), do: {state, []}
 
   # Down arrow -- next visible node
   @impl true
@@ -153,12 +137,8 @@ defmodule Raxol.UI.Components.Display.Tree do
     focused = Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused
     state = %{state | focused: focused}
 
-    theme = Map.merge(context[:theme] || %{}, state.theme || %{})
-    theme_style = Theme.component_style(theme, :tree)
-    base_style = Map.merge(theme_style, state.style || %{})
-
     base_style =
-      Raxol.UI.FocusHelper.maybe_focus_style(state.id, context, base_style)
+      StyleHelper.merge_component_styles_with_focus(state, context, :tree)
 
     visible = visible_nodes(state)
     children = build_children(state, visible)

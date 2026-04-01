@@ -1,6 +1,7 @@
 defmodule Raxol.Playground.Demos.ContainerDemo do
   @moduledoc "Playground demo: scrollable container with viewport controls."
   use Raxol.Core.Runtime.Application
+  alias Raxol.Playground.DemoHelpers
 
   @total 30
   @initial_visible 10
@@ -26,16 +27,26 @@ defmodule Raxol.Playground.Demos.ContainerDemo do
 
     case message do
       key_match("j") ->
-        {%{model | scroll_offset: min(model.scroll_offset + 1, max_offset)}, []}
+        {%{
+           model
+           | scroll_offset:
+               DemoHelpers.cursor_down(model.scroll_offset, max_offset)
+         }, []}
 
       key_match(:down) ->
-        {%{model | scroll_offset: min(model.scroll_offset + 1, max_offset)}, []}
+        {%{
+           model
+           | scroll_offset:
+               DemoHelpers.cursor_down(model.scroll_offset, max_offset)
+         }, []}
 
       key_match("k") ->
-        {%{model | scroll_offset: max(model.scroll_offset - 1, 0)}, []}
+        {%{model | scroll_offset: DemoHelpers.cursor_up(model.scroll_offset)},
+         []}
 
       key_match(:up) ->
-        {%{model | scroll_offset: max(model.scroll_offset - 1, 0)}, []}
+        {%{model | scroll_offset: DemoHelpers.cursor_up(model.scroll_offset)},
+         []}
 
       key_match("g") ->
         {%{model | scroll_offset: 0}, []}

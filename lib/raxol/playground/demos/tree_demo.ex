@@ -1,6 +1,7 @@
 defmodule Raxol.Playground.Demos.TreeDemo do
   @moduledoc "Playground demo: expandable tree view with keyboard navigation."
   use Raxol.Core.Runtime.Application
+  alias Raxol.Playground.DemoHelpers
 
   @indent "  "
 
@@ -40,10 +41,10 @@ defmodule Raxol.Playground.Demos.TreeDemo do
 
     case message do
       key_match("j") ->
-        {%{model | cursor: min(model.cursor + 1, max_idx)}, []}
+        {%{model | cursor: DemoHelpers.cursor_down(model.cursor, max_idx)}, []}
 
       key_match("k") ->
-        {%{model | cursor: max(model.cursor - 1, 0)}, []}
+        {%{model | cursor: DemoHelpers.cursor_up(model.cursor)}, []}
 
       key_match("l") ->
         {expand_current(model, visible), []}

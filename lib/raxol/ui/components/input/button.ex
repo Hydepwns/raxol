@@ -354,99 +354,39 @@ defmodule Raxol.UI.Components.Input.Button do
     end
   end
 
-  defp resolve_colors(%{disabled: true} = _button, style) do
+  defp resolve_colors(button, style) do
     default_fg = Map.get(style, :fg, :default)
     default_bg = Map.get(style, :bg, :default)
-    get_disabled_colors(style, default_fg, default_bg)
+
+    case button do
+      %{disabled: true} ->
+        get_state_colors(style, :disabled, default_fg, default_bg)
+
+      %{focused: true} ->
+        get_state_colors(style, :focused, default_fg, default_bg)
+
+      %{role: :primary} ->
+        get_state_colors(style, :primary, default_fg, default_bg)
+
+      %{role: :secondary} ->
+        get_state_colors(style, :secondary, default_fg, default_bg)
+
+      _ ->
+        {default_fg, default_bg}
+    end
   end
 
-  defp resolve_colors(%{focused: true} = _button, style) do
-    default_fg = Map.get(style, :fg, :default)
-    default_bg = Map.get(style, :bg, :default)
-    get_focused_colors(style, default_fg, default_bg)
-  end
-
-  defp resolve_colors(%{role: :primary} = _button, style) do
-    default_fg = Map.get(style, :fg, :default)
-    default_bg = Map.get(style, :bg, :default)
-    get_primary_colors(style, default_fg, default_bg)
-  end
-
-  defp resolve_colors(%{role: :secondary} = _button, style) do
-    default_fg = Map.get(style, :fg, :default)
-    default_bg = Map.get(style, :bg, :default)
-    get_secondary_colors(style, default_fg, default_bg)
-  end
-
-  defp resolve_colors(_button, style) do
-    default_fg = Map.get(style, :fg, :default)
-    default_bg = Map.get(style, :bg, :default)
-    {default_fg, default_bg}
-  end
-
-  defp get_disabled_colors(style, default_fg, default_bg) do
-    # If there's an explicit fg in the style, it should override disabled_fg
+  defp get_state_colors(style, prefix, default_fg, default_bg) do
     fg =
       case Map.has_key?(style, :fg) do
         true -> Map.get(style, :fg)
-        false -> Map.get(style, :disabled_fg, default_fg)
+        false -> Map.get(style, :"#{prefix}_fg", default_fg)
       end
 
     bg =
       case Map.has_key?(style, :bg) do
         true -> Map.get(style, :bg)
-        false -> Map.get(style, :disabled_bg, default_bg)
-      end
-
-    {fg, bg}
-  end
-
-  defp get_focused_colors(style, default_fg, default_bg) do
-    # If there's an explicit fg in the style, it should override focused_fg
-    fg =
-      case Map.has_key?(style, :fg) do
-        true -> Map.get(style, :fg)
-        false -> Map.get(style, :focused_fg, default_fg)
-      end
-
-    bg =
-      case Map.has_key?(style, :bg) do
-        true -> Map.get(style, :bg)
-        false -> Map.get(style, :focused_bg, default_bg)
-      end
-
-    {fg, bg}
-  end
-
-  defp get_primary_colors(style, default_fg, default_bg) do
-    # If there's an explicit fg in the style, it should override primary_fg
-    fg =
-      case Map.has_key?(style, :fg) do
-        true -> Map.get(style, :fg)
-        false -> Map.get(style, :primary_fg, default_fg)
-      end
-
-    bg =
-      case Map.has_key?(style, :bg) do
-        true -> Map.get(style, :bg)
-        false -> Map.get(style, :primary_bg, default_bg)
-      end
-
-    {fg, bg}
-  end
-
-  defp get_secondary_colors(style, default_fg, default_bg) do
-    # If there's an explicit fg in the style, it should override secondary_fg
-    fg =
-      case Map.has_key?(style, :fg) do
-        true -> Map.get(style, :fg)
-        false -> Map.get(style, :secondary_fg, default_fg)
-      end
-
-    bg =
-      case Map.has_key?(style, :bg) do
-        true -> Map.get(style, :bg)
-        false -> Map.get(style, :secondary_bg, default_bg)
+        false -> Map.get(style, :"#{prefix}_bg", default_bg)
       end
 
     {fg, bg}

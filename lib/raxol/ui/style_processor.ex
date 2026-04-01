@@ -256,11 +256,7 @@ defmodule Raxol.UI.StyleProcessor do
     }
   end
 
-  @doc """
-  Ensures a value is a list.
-  """
-  def ensure_list(value) when is_list(value), do: value
-  def ensure_list(value), do: [value]
+  defdelegate ensure_list(value), to: Raxol.Core.Utils.List
 
   @doc """
   Clear all style processing caches.

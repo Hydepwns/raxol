@@ -1,6 +1,7 @@
 defmodule Raxol.Playground.Demos.SparklineDemo do
   @moduledoc "Playground demo: compact sparkline with live data."
   use Raxol.Core.Runtime.Application
+  alias Raxol.Playground.DemoHelpers
 
   @data_points 40
   @spark_width 40
@@ -22,7 +23,13 @@ defmodule Raxol.Playground.Demos.SparklineDemo do
     case message do
       key_match("c") ->
         idx = Enum.find_index(model.colors, &(&1 == model.color))
-        next = Enum.at(model.colors, rem(idx + 1, length(model.colors)))
+
+        next =
+          Enum.at(
+            model.colors,
+            DemoHelpers.cycle_next(idx, length(model.colors))
+          )
+
         {%{model | color: next}, []}
 
       key_match("r") ->

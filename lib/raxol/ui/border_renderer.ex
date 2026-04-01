@@ -50,8 +50,7 @@ defmodule Raxol.UI.BorderRenderer do
     }
   end
 
-  # Fallback for unknown or :none
-  def get_border_chars(_) do
+  def get_border_chars(:none) do
     %{
       top_left: " ",
       top_right: " ",
@@ -59,6 +58,30 @@ defmodule Raxol.UI.BorderRenderer do
       bottom_right: " ",
       horizontal: " ",
       vertical: " "
+    }
+  end
+
+  # Fallback for unknown styles
+  def get_border_chars(_), do: get_border_chars(:none)
+
+  @doc """
+  Returns border chars in the 8-key format used by FocusRing and wrap_with_border.
+
+  Keys: top_left, top, top_right, left, right, bottom_left, bottom, bottom_right
+  """
+  @spec get_border_chars_8key(atom()) :: map()
+  def get_border_chars_8key(style) do
+    chars = get_border_chars(style)
+
+    %{
+      top_left: chars.top_left,
+      top: chars.horizontal,
+      top_right: chars.top_right,
+      left: chars.vertical,
+      right: chars.vertical,
+      bottom_left: chars.bottom_left,
+      bottom: chars.horizontal,
+      bottom_right: chars.bottom_right
     }
   end
 

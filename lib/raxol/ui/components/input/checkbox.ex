@@ -8,9 +8,9 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   """
 
   alias Raxol.Core.Events.Event
-  alias Raxol.UI.Theming.Theme
+  alias Raxol.UI.StyleHelper
 
-  @behaviour Raxol.UI.Components.Base.Component
+  use Raxol.UI.Components.Base.Component
 
   @type t :: %{
           id: String.t(),
@@ -63,43 +63,6 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     {:ok, state}
   end
 
-  @doc """
-  Mounts the Checkbox component. Performs any setup needed after initialization.
-  """
-  @impl Raxol.UI.Components.Base.Component
-  @spec mount(t()) :: {t(), list()}
-  def mount(state) do
-    # Could register focus, subscriptions, etc. if needed
-    # For now, just return state and []
-    {state, []}
-  end
-
-  @doc """
-  Unmounts the Checkbox component, performing any necessary cleanup.
-  """
-  @impl Raxol.UI.Components.Base.Component
-  @spec unmount(t()) :: t()
-  def unmount(state) do
-    # Cleanup any resources, subscriptions, etc. if needed
-    state
-  end
-
-  @doc """
-  Updates the Checkbox component state in response to messages or prop changes.
-  """
-  @impl Raxol.UI.Components.Base.Component
-  @spec update(map(), t()) :: {t(), list()}
-  def update(props, state) when is_map(props) do
-    Raxol.UI.Components.Base.Component.merge_props(props, state)
-  end
-
-  @impl Raxol.UI.Components.Base.Component
-  @spec update(term(), t()) :: {t(), list()}
-  def update(_msg, state) do
-    # Ignore unknown messages for now
-    {state, []}
-  end
-
   @impl Raxol.UI.Components.Base.Component
   def handle_event(
         %Event{type: :mouse, data: %{action: :press}},
@@ -143,10 +106,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     focused = Raxol.UI.FocusHelper.focused?(state.id, context) or state.focused
     state = %{state | focused: focused}
 
-    # Harmonize theme merging: context.theme < state.theme < state.style
-    theme = Map.merge(context[:theme] || %{}, state.theme || %{})
-    theme_style = Theme.component_style(theme, :checkbox)
-    base_style = Map.merge(theme_style, state.style || %{})
+    base_style = StyleHelper.merge_component_styles(state, context, :checkbox)
 
     {fg, bg} = get_checkbox_colors(state, base_style)
 

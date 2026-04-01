@@ -14,9 +14,9 @@ defmodule Raxol.UI.Components.Display.Text do
   """
 
   alias Raxol.UI.Components.Input.TextWrapping
-  alias Raxol.UI.Theming.Theme
+  alias Raxol.UI.StyleHelper
 
-  @behaviour Raxol.UI.Components.Base.Component
+  use Raxol.UI.Components.Base.Component
 
   @type t :: %{
           id: String.t() | atom(),
@@ -48,28 +48,12 @@ defmodule Raxol.UI.Components.Display.Text do
   end
 
   @impl true
-  def mount(state), do: {state, []}
-
-  @impl true
-  def unmount(state), do: state
-
-  @impl true
-  @spec update(map(), t()) :: {t(), list()}
-  def update(props, state) when is_map(props) do
-    Raxol.UI.Components.Base.Component.merge_props(props, state)
-  end
-
-  def update(_msg, state), do: {state, []}
-
-  @impl true
   def handle_event(_event, state, _context), do: {state, []}
 
   @impl true
   @spec render(t(), map()) :: map()
   def render(state, context) do
-    theme = Map.merge(context[:theme] || %{}, state.theme || %{})
-    theme_style = Theme.component_style(theme, :text)
-    style = Map.merge(theme_style, state.style || %{})
+    style = StyleHelper.merge_component_styles(state, context, :text)
 
     lines =
       process_content(state.content, state.width, state.wrap, state.truncate)

@@ -388,39 +388,7 @@ defmodule Raxol.UI.Layout.Containers do
        ),
        do: gap
 
-  # --- Style Inheritance ---
-
-  # Text styling properties that cascade from parent to child.
-  # Layout properties (padding, border, width, height, gap) do NOT inherit.
-  @inheritable_keys [
-    :fg,
-    :bg,
-    :foreground,
-    :background,
-    :fg_color,
-    :bg_color,
-    :bold,
-    :italic,
-    :underline,
-    :strikethrough,
-    :reverse,
-    :dim
-  ]
-
-  # Propagates inheritable style properties from a parent container
-  # into each child's style map. Child values take precedence.
   defp inherit_styles(parent, children) do
-    parent_style = Map.get(parent, :style, %{})
-    inheritable = Map.take(parent_style, @inheritable_keys)
-
-    if map_size(inheritable) == 0 do
-      children
-    else
-      Enum.map(children, fn child ->
-        child_style = Map.get(child, :style, %{})
-        merged = Map.merge(inheritable, child_style)
-        Map.put(child, :style, merged)
-      end)
-    end
+    Raxol.UI.Layout.StyleInheritance.inherit_styles(parent, children)
   end
 end

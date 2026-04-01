@@ -379,8 +379,7 @@ defmodule Raxol.UI.ThemeResolver do
   # Default fallback
   defp hex_to_color_atom(_), do: :white
 
-  defp ensure_list(value) when is_list(value), do: value
-  defp ensure_list(value), do: [value]
+  defp ensure_list(value), do: Raxol.Core.Utils.List.ensure_list(value)
 
   # Helper functions to reduce complexity
   defp get_explicit_color(attrs, color_keys) do

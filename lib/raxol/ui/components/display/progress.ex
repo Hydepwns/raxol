@@ -13,13 +13,7 @@ defmodule Raxol.UI.Components.Display.Progress do
   """
 
   alias Raxol.UI.Components.Base.Component
-  # alias Raxol.UI.Element # Unused
-  # alias Raxol.UI.Layout.Constraints # Unused
-  # alias Raxol.UI.Theming.Theme # Unused
-  # alias Raxol.View
-  # alias Raxol.UI.Theming.Colors
-  # alias Raxol.View.Style
-  # alias Raxol.View.Fragment
+  alias Raxol.UI.StyleHelper
 
   @behaviour Component
 
@@ -143,11 +137,7 @@ defmodule Raxol.UI.Components.Display.Progress do
 
   @impl Component
   def render(state, context) do
-    # Harmonize theme merging: context.theme < state.theme < state.style
-    context_theme = Map.get(context, :theme, %{})
-    theme = Map.merge(context_theme, state.theme || %{})
-    theme_style = Map.get(theme, :progress, %{})
-    base_style = Map.merge(theme_style, state.style || %{})
+    base_style = StyleHelper.merge_component_styles(state, context, :progress)
 
     # Colors for bar, border, text
     fg = Map.get(base_style, :fg, :green)

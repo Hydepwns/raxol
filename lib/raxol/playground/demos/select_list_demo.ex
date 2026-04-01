@@ -1,6 +1,7 @@
 defmodule Raxol.Playground.Demos.SelectListDemo do
   @moduledoc "Playground demo: dropdown select list with keyboard navigation."
   use Raxol.Core.Runtime.Application
+  alias Raxol.Playground.DemoHelpers
 
   @dropdown_width 30
 
@@ -24,12 +25,16 @@ defmodule Raxol.Playground.Demos.SelectListDemo do
       when model.open ->
         {%{
            model
-           | selected: min(model.selected + 1, length(model.options) - 1)
+           | selected:
+               DemoHelpers.cursor_down(
+                 model.selected,
+                 length(model.options) - 1
+               )
          }, []}
 
       key_match("k")
       when model.open ->
-        {%{model | selected: max(model.selected - 1, 0)}, []}
+        {%{model | selected: DemoHelpers.cursor_up(model.selected)}, []}
 
       key_match(:enter)
       when model.open ->
@@ -52,7 +57,7 @@ defmodule Raxol.Playground.Demos.SelectListDemo do
         model.options
         |> Enum.with_index()
         |> Enum.map(fn {opt, i} ->
-          prefix = if i == model.selected, do: "> ", else: "  "
+          prefix = DemoHelpers.cursor_prefix(i, model.selected)
           text("#{prefix}#{opt}")
         end)
       else

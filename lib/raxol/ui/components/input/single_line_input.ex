@@ -203,78 +203,47 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   defp map_key_to_message(%{key: "End", modifiers: []}), do: :move_cursor_end
   defp map_key_to_message(_), do: nil
 
+  alias Raxol.UI.Components.Input.TextEditing
+
   defp insert_char(char, state) do
-    new_value =
-      String.slice(state.value, 0, state.cursor_pos) <>
-        char <>
-        String.slice(state.value, max(0, state.cursor_pos)..-1//1)
+    {new_value, new_cursor_pos} =
+      TextEditing.insert_at(state.value, state.cursor_pos, char)
 
-    new_cursor_pos = state.cursor_pos + 1
     new_state = %{state | value: new_value, cursor_pos: new_cursor_pos}
-
-    commands =
-      case state.on_change do
-        nil -> []
-        callback -> [{callback, new_value}]
-      end
-
-    {new_state, commands}
+    {new_state, on_change_commands(state.on_change, new_value)}
   end
 
   defp move_cursor(offset, state) do
     new_cursor_pos =
-      clamp(state.cursor_pos + offset, 0, String.length(state.value))
+      TextEditing.move_cursor(state.value, state.cursor_pos, offset)
 
     {%{state | cursor_pos: new_cursor_pos}, []}
   end
 
   defp move_cursor_to(pos, state) do
-    new_cursor_pos = clamp(pos, 0, String.length(state.value))
+    new_cursor_pos = TextEditing.move_cursor_to(state.value, pos)
     {%{state | cursor_pos: new_cursor_pos}, []}
   end
 
   defp backspace(state) do
-    case state.cursor_pos > 0 do
-      true ->
-        new_value =
-          String.slice(state.value, 0, max(0, state.cursor_pos - 1)) <>
-            String.slice(state.value, max(0, state.cursor_pos)..-1//1)
-
-        new_cursor_pos = state.cursor_pos - 1
-        new_state = %{state | value: new_value, cursor_pos: new_cursor_pos}
-
-        commands =
-          case state.on_change do
-            nil -> []
-            callback -> [{callback, new_value}]
-          end
-
-        {new_state, commands}
-
-      false ->
+    case TextEditing.backspace(state.value, state.cursor_pos) do
+      {:noop, _} ->
         {state, []}
+
+      {new_value, new_cursor_pos} ->
+        new_state = %{state | value: new_value, cursor_pos: new_cursor_pos}
+        {new_state, on_change_commands(state.on_change, new_value)}
     end
   end
 
   defp delete(state) do
-    case state.cursor_pos < String.length(state.value) do
-      true ->
-        new_value =
-          String.slice(state.value, 0, state.cursor_pos) <>
-            String.slice(state.value, max(0, state.cursor_pos + 1)..-1//1)
-
-        new_state = %{state | value: new_value}
-
-        commands =
-          case state.on_change do
-            nil -> []
-            callback -> [{callback, new_value}]
-          end
-
-        {new_state, commands}
-
-      false ->
+    case TextEditing.delete(state.value, state.cursor_pos) do
+      {:noop, _} ->
         {state, []}
+
+      {new_value, cursor_pos} ->
+        new_state = %{state | value: new_value, cursor_pos: cursor_pos}
+        {new_state, on_change_commands(state.on_change, new_value)}
     end
   end
 
@@ -288,21 +257,6 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
     {state, commands}
   end
 
-  defp clamp(value, lo, hi), do: Raxol.Core.Utils.Math.clamp(value, lo, hi)
-
-  @doc """
-  Mount hook - called when component is mounted.
-  No special setup needed for SingleLineInput.
-  """
-  @impl true
-  @spec mount(map()) :: {map(), list()}
-  def mount(state), do: {state, []}
-
-  @doc """
-  Unmount hook - called when component is unmounted.
-  No cleanup needed for SingleLineInput.
-  """
-  @impl true
-  @spec unmount(map()) :: map()
-  def unmount(state), do: state
+  defp on_change_commands(nil, _value), do: []
+  defp on_change_commands(callback, value), do: [{callback, value}]
 end

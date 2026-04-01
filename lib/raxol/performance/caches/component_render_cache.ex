@@ -21,7 +21,7 @@ defmodule Raxol.Performance.Caches.ComponentRenderCache do
   - Significant reduction in CPU usage for static components
   """
 
-  alias Raxol.Performance.ETSCacheManager
+  alias Raxol.Performance.Caches.CacheHelper
   alias Raxol.UI.Renderer
   alias Raxol.UI.Rendering.Composer
 
@@ -40,18 +40,14 @@ defmodule Raxol.Performance.Caches.ComponentRenderCache do
   def get_rendered_output(component_module, state, props) do
     key = build_render_key(component_module, state, props)
 
-    case ETSCacheManager.get_font_metrics(key) do
-      {:ok, output} ->
-        emit_telemetry(:hit, %{cache_type: :render_output})
-        output
-
-      :miss ->
-        emit_telemetry(:miss, %{cache_type: :render_output})
-        # Render the component
-        output = component_module.render(state, props)
-        ETSCacheManager.cache_font_metrics(key, output)
-        output
-    end
+    CacheHelper.cache_through(
+      key,
+      @telemetry_prefix,
+      %{cache_type: :render_output},
+      fn ->
+        component_module.render(state, props)
+      end
+    )
   end
 
   @doc """
@@ -61,20 +57,14 @@ defmodule Raxol.Performance.Caches.ComponentRenderCache do
   def get_composed_tree(layout_data, new_tree, previous_tree) do
     key = build_composed_tree_key(layout_data, new_tree)
 
-    case ETSCacheManager.get_font_metrics(key) do
-      {:ok, tree} ->
-        emit_telemetry(:hit, %{cache_type: :composed_tree})
-        tree
-
-      :miss ->
-        emit_telemetry(:miss, %{cache_type: :composed_tree})
-        # Compose the render tree
-        tree =
-          Composer.compose_render_tree(layout_data, new_tree, previous_tree)
-
-        ETSCacheManager.cache_font_metrics(key, tree)
-        tree
-    end
+    CacheHelper.cache_through(
+      key,
+      @telemetry_prefix,
+      %{cache_type: :composed_tree},
+      fn ->
+        Composer.compose_render_tree(layout_data, new_tree, previous_tree)
+      end
+    )
   end
 
   @doc """
@@ -84,18 +74,14 @@ defmodule Raxol.Performance.Caches.ComponentRenderCache do
   def get_element_cells(element, theme \\ nil) do
     key = build_cells_key(element, theme)
 
-    case ETSCacheManager.get_font_metrics(key) do
-      {:ok, cells} ->
-        emit_telemetry(:hit, %{cache_type: :element_cells})
-        cells
-
-      :miss ->
-        emit_telemetry(:miss, %{cache_type: :element_cells})
-        # Render element to cells
-        cells = Renderer.render_to_cells(element, theme)
-        ETSCacheManager.cache_font_metrics(key, cells)
-        cells
-    end
+    CacheHelper.cache_through(
+      key,
+      @telemetry_prefix,
+      %{cache_type: :element_cells},
+      fn ->
+        Renderer.render_to_cells(element, theme)
+      end
+    )
   end
 
   @doc """
@@ -105,18 +91,14 @@ defmodule Raxol.Performance.Caches.ComponentRenderCache do
   def get_rendered_element(element, theme, parent_style \\ %{}) do
     key = build_element_render_key(element, theme, parent_style)
 
-    case ETSCacheManager.get_font_metrics(key) do
-      {:ok, rendered} ->
-        emit_telemetry(:hit, %{cache_type: :rendered_element})
-        rendered
-
-      :miss ->
-        emit_telemetry(:miss, %{cache_type: :rendered_element})
-        # Render the element
-        rendered = Renderer.render_element(element, theme, parent_style)
-        ETSCacheManager.cache_font_metrics(key, rendered)
-        rendered
-    end
+    CacheHelper.cache_through(
+      key,
+      @telemetry_prefix,
+      %{cache_type: :rendered_element},
+      fn ->
+        Renderer.render_element(element, theme, parent_style)
+      end
+    )
   end
 
   @doc """
@@ -127,7 +109,10 @@ defmodule Raxol.Performance.Caches.ComponentRenderCache do
     _pattern = build_invalidation_pattern(component_module, state_or_all)
     # Note: In a real implementation, we'd need access to the ETS table directly
     # or add an invalidation method to ETSCacheManager
-    emit_telemetry(:invalidate, %{component: component_module})
+    CacheHelper.emit_telemetry(@telemetry_prefix, :invalidate, %{
+      component: component_module
+    })
+
     :ok
   end
 
@@ -140,7 +125,10 @@ defmodule Raxol.Performance.Caches.ComponentRenderCache do
       get_rendered_output(module, state, props)
     end)
 
-    emit_telemetry(:warmup_complete, %{cached_count: length(component_specs)})
+    CacheHelper.emit_telemetry(@telemetry_prefix, :warmup_complete, %{
+      cached_count: length(component_specs)
+    })
+
     :ok
   end
 
@@ -251,14 +239,5 @@ defmodule Raxol.Performance.Caches.ComponentRenderCache do
 
   defp hash_element(element) do
     :erlang.phash2(element)
-  end
-
-  # Telemetry
-  defp emit_telemetry(event, metadata) do
-    :telemetry.execute(
-      @telemetry_prefix ++ [event],
-      %{count: 1},
-      metadata
-    )
   end
 end

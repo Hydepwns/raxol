@@ -21,7 +21,7 @@ defmodule Raxol.Performance.Caches.FontMetricsCache do
   - Minimal memory footprint with LRU eviction
   """
 
-  alias Raxol.Performance.ETSCacheManager
+  alias Raxol.Performance.Caches.CacheHelper
   alias Raxol.Terminal.CharacterHandling
   alias Raxol.Terminal.Font.Manager, as: FontManager
 
@@ -40,17 +40,14 @@ defmodule Raxol.Performance.Caches.FontMetricsCache do
   def get_char_width(char) do
     key = build_char_width_key(char)
 
-    case ETSCacheManager.get_font_metrics(key) do
-      {:ok, width} ->
-        emit_telemetry(:hit, %{key_type: :char_width})
-        width
-
-      :miss ->
-        emit_telemetry(:miss, %{key_type: :char_width})
-        width = CharacterHandling.get_char_width(char)
-        ETSCacheManager.cache_font_metrics(key, width)
-        width
-    end
+    CacheHelper.cache_through(
+      key,
+      @telemetry_prefix,
+      %{key_type: :char_width},
+      fn ->
+        CharacterHandling.get_char_width(char)
+      end
+    )
   end
 
   @doc """
@@ -60,17 +57,14 @@ defmodule Raxol.Performance.Caches.FontMetricsCache do
   def get_string_width(string) do
     key = build_string_width_key(string)
 
-    case ETSCacheManager.get_font_metrics(key) do
-      {:ok, width} ->
-        emit_telemetry(:hit, %{key_type: :string_width})
-        width
-
-      :miss ->
-        emit_telemetry(:miss, %{key_type: :string_width})
-        width = CharacterHandling.get_string_width(string)
-        ETSCacheManager.cache_font_metrics(key, width)
-        width
-    end
+    CacheHelper.cache_through(
+      key,
+      @telemetry_prefix,
+      %{key_type: :string_width},
+      fn ->
+        CharacterHandling.get_string_width(string)
+      end
+    )
   end
 
   @doc """
@@ -82,20 +76,16 @@ defmodule Raxol.Performance.Caches.FontMetricsCache do
   def get_font_dimensions(%FontManager{} = font_manager) do
     key = build_font_dims_key(font_manager)
 
-    case ETSCacheManager.get_font_metrics(key) do
-      {:ok, dims} ->
-        emit_telemetry(:hit, %{key_type: :font_dims})
-        dims
-
-      :miss ->
-        emit_telemetry(:miss, %{key_type: :font_dims})
-        # Calculate font dimensions based on size and line height
+    CacheHelper.cache_through(
+      key,
+      @telemetry_prefix,
+      %{key_type: :font_dims},
+      fn ->
         char_width = calculate_char_width(font_manager)
         char_height = calculate_char_height(font_manager)
-        dims = {char_width, char_height}
-        ETSCacheManager.cache_font_metrics(key, dims)
-        dims
-    end
+        {char_width, char_height}
+      end
+    )
   end
 
   @doc """
@@ -105,17 +95,14 @@ defmodule Raxol.Performance.Caches.FontMetricsCache do
   def get_font_stack(%FontManager{} = font_manager) do
     key = build_font_stack_key(font_manager)
 
-    case ETSCacheManager.get_font_metrics(key) do
-      {:ok, stack} ->
-        emit_telemetry(:hit, %{key_type: :font_stack})
-        stack
-
-      :miss ->
-        emit_telemetry(:miss, %{key_type: :font_stack})
-        stack = FontManager.get_font_stack(font_manager)
-        ETSCacheManager.cache_font_metrics(key, stack)
-        stack
-    end
+    CacheHelper.cache_through(
+      key,
+      @telemetry_prefix,
+      %{key_type: :font_stack},
+      fn ->
+        FontManager.get_font_stack(font_manager)
+      end
+    )
   end
 
   @doc """
@@ -234,7 +221,10 @@ defmodule Raxol.Performance.Caches.FontMetricsCache do
       get_char_width(char)
     end
 
-    emit_telemetry(:warmup_complete, %{cached_count: 200})
+    CacheHelper.emit_telemetry(@telemetry_prefix, :warmup_complete, %{
+      cached_count: 200
+    })
+
     :ok
   end
 
@@ -284,18 +274,5 @@ defmodule Raxol.Performance.Caches.FontMetricsCache do
     # Character height is font size * line height
     # This matches the default in WindowHandlers (16px for 14pt font with 1.2 line height)
     round(size * line_height)
-  end
-
-  # Telemetry (commented out unused single-argument version)
-  # defp emit_telemetry(event) do
-  #   emit_telemetry(event, %{})
-  # end
-
-  defp emit_telemetry(event, metadata) do
-    :telemetry.execute(
-      @telemetry_prefix ++ [event],
-      %{count: 1},
-      metadata
-    )
   end
 end

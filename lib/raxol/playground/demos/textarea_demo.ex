@@ -1,6 +1,7 @@
 defmodule Raxol.Playground.Demos.TextAreaDemo do
   @moduledoc "Playground demo: multi-line text editor with insert and normal modes."
   use Raxol.Core.Runtime.Application
+  alias Raxol.Playground.DemoHelpers
 
   @editor_width 50
   @line_number_pad 2
@@ -28,11 +29,15 @@ defmodule Raxol.Playground.Demos.TextAreaDemo do
       {:normal, key_match("j")} ->
         {%{
            model
-           | cursor_line: min(model.cursor_line + 1, length(model.lines) - 1)
+           | cursor_line:
+               DemoHelpers.cursor_down(
+                 model.cursor_line,
+                 length(model.lines) - 1
+               )
          }, []}
 
       {:normal, key_match("k")} ->
-        {%{model | cursor_line: max(model.cursor_line - 1, 0)}, []}
+        {%{model | cursor_line: DemoHelpers.cursor_up(model.cursor_line)}, []}
 
       {:insert, key_match(:escape)} ->
         {%{model | mode: :normal}, []}
@@ -51,7 +56,12 @@ defmodule Raxol.Playground.Demos.TextAreaDemo do
         line = current_line(model)
         new_line = String.slice(line, 0..-2//1)
         lines = List.replace_at(model.lines, model.cursor_line, new_line)
-        {%{model | lines: lines, cursor_col: max(model.cursor_col - 1, 0)}, []}
+
+        {%{
+           model
+           | lines: lines,
+             cursor_col: DemoHelpers.cursor_up(model.cursor_col)
+         }, []}
 
       {:insert, key_match(:char, char: ch)}
       when byte_size(ch) == 1 ->

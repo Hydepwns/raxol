@@ -1,6 +1,7 @@
 defmodule Raxol.Playground.Demos.TableDemo do
   @moduledoc "Playground demo: data table with sortable columns and row selection."
   use Raxol.Core.Runtime.Application
+  alias Raxol.Playground.DemoHelpers
 
   @headers ["#", "Framework", "Language", "Stars"]
   @detail_box_width 35
@@ -24,16 +25,16 @@ defmodule Raxol.Playground.Demos.TableDemo do
 
     case message do
       key_match("j") ->
-        {%{model | cursor: min(model.cursor + 1, max_row)}, []}
+        {%{model | cursor: DemoHelpers.cursor_down(model.cursor, max_row)}, []}
 
       key_match(:down) ->
-        {%{model | cursor: min(model.cursor + 1, max_row)}, []}
+        {%{model | cursor: DemoHelpers.cursor_down(model.cursor, max_row)}, []}
 
       key_match("k") ->
-        {%{model | cursor: max(model.cursor - 1, 0)}, []}
+        {%{model | cursor: DemoHelpers.cursor_up(model.cursor)}, []}
 
       key_match(:up) ->
-        {%{model | cursor: max(model.cursor - 1, 0)}, []}
+        {%{model | cursor: DemoHelpers.cursor_up(model.cursor)}, []}
 
       key_match("s") ->
         cycle_sort(model)
@@ -51,7 +52,7 @@ defmodule Raxol.Playground.Demos.TableDemo do
       rows
       |> Enum.with_index()
       |> Enum.map(fn {row, idx} ->
-        prefix = if idx == model.cursor, do: "> ", else: "  "
+        prefix = DemoHelpers.cursor_prefix(idx, model.cursor)
         style = if idx == model.cursor, do: [:bold], else: []
         text(prefix <> Enum.join(row, "  |  "), style: style)
       end)

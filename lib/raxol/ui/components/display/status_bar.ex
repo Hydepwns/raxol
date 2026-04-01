@@ -5,9 +5,9 @@ defmodule Raxol.UI.Components.Display.StatusBar do
   Keys are rendered bold, followed by their label values, joined by a separator string.
   """
 
-  alias Raxol.UI.Theming.Theme
+  alias Raxol.UI.StyleHelper
 
-  @behaviour Raxol.UI.Components.Base.Component
+  use Raxol.UI.Components.Base.Component
 
   @type item :: %{key: String.t(), label: String.t()}
 
@@ -39,30 +39,12 @@ defmodule Raxol.UI.Components.Display.StatusBar do
   end
 
   @impl true
-  @spec mount(t()) :: {t(), list()}
-  def mount(state), do: {state, []}
-
-  @impl true
-  @spec unmount(t()) :: t()
-  def unmount(state), do: state
-
-  @impl true
-  @spec update(map(), t()) :: {t(), list()}
-  def update(props, state) when is_map(props) do
-    Raxol.UI.Components.Base.Component.merge_props(props, state)
-  end
-
-  def update(_msg, state), do: {state, []}
-
-  @impl true
   def handle_event(_event, state, _context), do: {state, []}
 
   @impl true
   @spec render(t(), map()) :: map()
   def render(state, context) do
-    theme = Map.merge(context[:theme] || %{}, state.theme || %{})
-    theme_style = Theme.component_style(theme, :status_bar)
-    base_style = Map.merge(theme_style, state.style || %{})
+    base_style = StyleHelper.merge_component_styles(state, context, :status_bar)
 
     children = build_children(state)
 

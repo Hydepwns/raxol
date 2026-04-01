@@ -88,17 +88,10 @@ defmodule Raxol.UI.Components.FocusRing do
 
   # Private helpers
 
+  # FocusRing uses ASCII-only chars for accessibility.
+  # For Unicode border styles, use BorderRenderer.get_border_chars_8key/1.
   defp get_border_chars(:solid) do
-    %{
-      top_left: "+",
-      top: "-",
-      top_right: "+",
-      left: "|",
-      right: "|",
-      bottom_left: "+",
-      bottom: "-",
-      bottom_right: "+"
-    }
+    Raxol.UI.BorderRenderer.get_border_chars_8key(:ascii)
   end
 
   defp get_border_chars(:double) do
@@ -114,19 +107,6 @@ defmodule Raxol.UI.Components.FocusRing do
     }
   end
 
-  defp get_border_chars(:rounded) do
-    %{
-      top_left: "(",
-      top: "-",
-      top_right: ")",
-      left: "|",
-      right: "|",
-      bottom_left: "(",
-      bottom: "-",
-      bottom_right: ")"
-    }
-  end
-
   defp get_border_chars(:dots) do
     %{
       top_left: ".",
@@ -137,6 +117,19 @@ defmodule Raxol.UI.Components.FocusRing do
       bottom_left: ".",
       bottom: ".",
       bottom_right: "."
+    }
+  end
+
+  defp get_border_chars(:rounded) do
+    %{
+      top_left: "(",
+      top: "-",
+      top_right: ")",
+      left: "|",
+      right: "|",
+      bottom_left: "(",
+      bottom: "-",
+      bottom_right: ")"
     }
   end
 

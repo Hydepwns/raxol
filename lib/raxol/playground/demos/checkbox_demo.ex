@@ -1,6 +1,7 @@
 defmodule Raxol.Playground.Demos.CheckboxDemo do
   @moduledoc "Playground demo: toggle checkboxes with keyboard navigation."
   use Raxol.Core.Runtime.Application
+  alias Raxol.Playground.DemoHelpers
 
   @impl true
   def init(_context) do
@@ -20,10 +21,14 @@ defmodule Raxol.Playground.Demos.CheckboxDemo do
   def update(message, model) do
     case message do
       key_match("j") ->
-        {%{model | cursor: min(model.cursor + 1, length(model.items) - 1)}, []}
+        {%{
+           model
+           | cursor:
+               DemoHelpers.cursor_down(model.cursor, length(model.items) - 1)
+         }, []}
 
       key_match("k") ->
-        {%{model | cursor: max(model.cursor - 1, 0)}, []}
+        {%{model | cursor: DemoHelpers.cursor_up(model.cursor)}, []}
 
       key_match(" ") ->
         items = List.update_at(model.items, model.cursor, &toggle/1)
@@ -49,7 +54,7 @@ defmodule Raxol.Playground.Demos.CheckboxDemo do
       model.items
       |> Enum.with_index()
       |> Enum.map(fn {item, i} ->
-        prefix = if i == model.cursor, do: "> ", else: "  "
+        prefix = DemoHelpers.cursor_prefix(i, model.cursor)
         mark = if item.checked, do: "[x]", else: "[ ]"
         text("#{prefix}#{mark} #{item.label}")
       end)

@@ -1,6 +1,7 @@
 defmodule Raxol.Playground.Demos.HeatmapDemo do
   @moduledoc "Playground demo: 2D heatmap with color scale cycling."
   use Raxol.Core.Runtime.Application
+  alias Raxol.Playground.DemoHelpers
 
   @grid_rows 8
   @grid_cols 12
@@ -65,6 +66,6 @@ defmodule Raxol.Playground.Demos.HeatmapDemo do
 
   defp next_scale(current) do
     idx = Enum.find_index(@scales, &(&1 == current))
-    Enum.at(@scales, rem(idx + 1, length(@scales)))
+    Enum.at(@scales, DemoHelpers.cycle_next(idx, length(@scales)))
   end
 end

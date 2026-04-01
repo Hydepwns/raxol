@@ -41,11 +41,7 @@ defmodule Raxol.UI.CellManager do
     {max(0, x), max(0, y), max(0, width), max(0, height)}
   end
 
-  @doc """
-  Ensures a value is a list.
-  """
-  def ensure_list(value) when is_list(value), do: value
-  def ensure_list(value), do: [value]
+  defdelegate ensure_list(value), to: Raxol.Core.Utils.List
 
   # Helper to build a map of cells by coordinate
   defp build_cell_map(cells) do

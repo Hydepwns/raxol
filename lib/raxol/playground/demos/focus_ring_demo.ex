@@ -1,6 +1,7 @@
 defmodule Raxol.Playground.Demos.FocusRingDemo do
   @moduledoc "Playground demo: accessibility focus ring indicators."
   use Raxol.Core.Runtime.Application
+  alias Raxol.Playground.DemoHelpers
 
   alias Raxol.UI.Components.FocusRing
 
@@ -26,15 +27,15 @@ defmodule Raxol.Playground.Demos.FocusRingDemo do
         {%{model | focused: new_focused}, []}
 
       key_match(:tab) ->
-        new_focused = rem(model.focused + 1, length(@items))
+        new_focused = DemoHelpers.cycle_next(model.focused, length(@items))
         {%{model | focused: new_focused}, []}
 
       key_match(:up) ->
-        new_focused = max(0, model.focused - 1)
+        new_focused = DemoHelpers.cursor_up(model.focused)
         {%{model | focused: new_focused}, []}
 
       key_match(:down) ->
-        new_focused = min(length(@items) - 1, model.focused + 1)
+        new_focused = DemoHelpers.cursor_down(model.focused, length(@items) - 1)
         {%{model | focused: new_focused}, []}
 
       key_match("s") ->
@@ -84,7 +85,7 @@ defmodule Raxol.Playground.Demos.FocusRingDemo do
 
   defp cycle_style(model) do
     current_idx = Enum.find_index(@styles, &(&1 == model.style))
-    next_idx = rem(current_idx + 1, length(@styles))
+    next_idx = DemoHelpers.cycle_next(current_idx, length(@styles))
     new_style = Enum.at(@styles, next_idx)
     new_config = FocusRing.set_style(model.ring_config, new_style)
     %{model | style: new_style, ring_config: new_config}

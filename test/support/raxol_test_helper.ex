@@ -155,15 +155,7 @@ defmodule Raxol.Test.TestHelper do
     end
   end
 
-  @doc """
-  Cleans up an ETS table.
-  """
-  def cleanup_ets_table(table) do
-    case :ets.whereis(table) do
-      :undefined -> :ok
-      _ -> :ets.delete_all_objects(table)
-    end
-  end
+  defdelegate cleanup_ets_table(table), to: Raxol.Test.TestUtils
 
   @doc """
   Cleans up a registry.
