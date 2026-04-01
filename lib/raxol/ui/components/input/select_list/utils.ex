@@ -16,6 +16,35 @@ defmodule Raxol.UI.Components.Input.SelectList.Utils do
   ## Returns
     Updated state with adjusted scroll_offset if necessary
   """
+  @doc """
+  Extracts a display label from a SelectList option.
+  Handles strings, tuples, and maps with :label, :text, :name, or :value keys.
+  """
+  @spec get_option_label(term()) :: String.t()
+  def get_option_label(option) when is_binary(option), do: option
+  def get_option_label({label, _value}), do: label
+  def get_option_label(%{label: label}), do: label
+  def get_option_label(%{text: text}), do: text
+  def get_option_label(%{name: name}), do: name
+  def get_option_label(%{value: value}), do: to_string(value)
+  def get_option_label(option), do: to_string(option)
+
+  @doc """
+  Filters options by a search query (case-insensitive substring match).
+  Returns all options when query is empty.
+  """
+  @spec filter_options([term()], String.t()) :: [term()]
+  def filter_options(options, query) when query == "", do: options
+
+  def filter_options(options, query) do
+    normalized_query = String.downcase(query)
+
+    Enum.filter(options, fn option ->
+      label = get_option_label(option)
+      String.downcase(label) =~ normalized_query
+    end)
+  end
+
   @spec ensure_visible(SelectList.t()) :: SelectList.t()
   def ensure_visible(state) do
     visible_items = state.visible_items || 10

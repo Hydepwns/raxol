@@ -15,6 +15,7 @@ defmodule Raxol.Performance.Optimizer do
 
   import Raxol.Performance.Profiler
   alias Raxol.Core.Runtime.Log
+  @default_timeout_ms Raxol.Core.Defaults.timeout_ms()
 
   @doc """
   Optimizes database queries to prevent N+1 problems.
@@ -131,7 +132,7 @@ defmodule Raxol.Performance.Optimizer do
     max_concurrency =
       Keyword.get(opts, :max_concurrency, System.schedulers_online())
 
-    timeout = Keyword.get(opts, :timeout, 5000)
+    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
     ordered = Keyword.get(opts, :ordered, true)
 
     profile :concurrent_operation, metadata: %{concurrency: max_concurrency} do
@@ -334,7 +335,7 @@ defmodule Raxol.Performance.Optimizer do
   """
   def batch_genserver_calls(server, messages, opts \\ []) do
     batch_size = Keyword.get(opts, :batch_size, 50)
-    timeout = Keyword.get(opts, :timeout, 5000)
+    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
 
     messages
     |> Stream.chunk_every(batch_size)

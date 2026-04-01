@@ -31,18 +31,12 @@ defmodule Raxol.Terminal.ImageCache do
   """
   @spec start() :: :ok
   def start do
-    # Use safe table creation -- returns table name, always succeeds
-    if Code.ensure_loaded?(Raxol.Performance.ETS.TableHelper) do
-      _ = Raxol.Performance.ETS.TableHelper.ensure_table(
-        @table,
-        [:set, :public, :named_table, read_concurrency: true]
-      )
-    else
-      case :ets.whereis(@table) do
-        :undefined ->
-          _ = :ets.new(@table, [:set, :public, :named_table, read_concurrency: true])
-        _ref -> :ok
-      end
+    case :ets.whereis(@table) do
+      :undefined ->
+        _ = :ets.new(@table, [:set, :public, :named_table, read_concurrency: true])
+
+      _ref ->
+        :ok
     end
 
     :ok

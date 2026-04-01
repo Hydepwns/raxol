@@ -638,7 +638,7 @@ defmodule Raxol.UI.Components.Table do
 
   defp pad_content(content, width, alignment) do
     content_str = to_string(content)
-    content_length = String.length(content_str)
+    content_length = Raxol.UI.TextMeasure.display_width(content_str)
 
     adjusted_width =
       case alignment do
@@ -732,7 +732,7 @@ defmodule Raxol.UI.Components.Table do
   end
 
   defp format_content_with_width(false, content_str, adjusted_width, alignment) do
-    content_length = String.length(content_str)
+    content_length = Raxol.UI.TextMeasure.display_width(content_str)
     padding_needed = adjusted_width - content_length
 
     case alignment do

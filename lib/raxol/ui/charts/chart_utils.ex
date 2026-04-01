@@ -119,7 +119,7 @@ defmodule Raxol.UI.Charts.ChartUtils do
     series
     |> Enum.with_index()
     |> Enum.flat_map(fn {%{name: name, color: color}, idx} ->
-      offset = idx * (String.length(name) + 4)
+      offset = idx * (Raxol.UI.TextMeasure.display_width(name) + 4)
       marker = string_to_cells("* ", x + offset, y, color, :default)
       label = string_to_cells(name, x + offset + 2, y, :white, :default)
       marker ++ label

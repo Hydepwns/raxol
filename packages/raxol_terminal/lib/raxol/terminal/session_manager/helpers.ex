@@ -7,6 +7,7 @@ defmodule Raxol.Terminal.SessionManager.Helpers do
 
   @default_width Raxol.Core.Defaults.terminal_width()
   @default_height Raxol.Core.Defaults.terminal_height()
+  @default_cleanup_interval_ms Raxol.Core.Defaults.health_check_interval_ms()
 
   @doc """
   Starts a cleanup timer for periodic session maintenance.
@@ -25,7 +26,7 @@ defmodule Raxol.Terminal.SessionManager.Helpers do
 
   def start_cleanup_timer(_interval) do
     # Default to 30 seconds if invalid interval provided
-    Process.send_after(self(), :cleanup_sessions, 30_000)
+    Process.send_after(self(), :cleanup_sessions, @default_cleanup_interval_ms)
   end
 
   @doc """

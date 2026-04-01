@@ -172,7 +172,10 @@ defmodule Raxol.UI.Components.Display.Progress do
       case state.show_percentage do
         true ->
           percent_str = "#{floor(progress * 100)}%"
-          padding = div(width - String.length(percent_str), 2)
+
+          padding =
+            div(width - Raxol.UI.TextMeasure.display_width(percent_str), 2)
+
           String.duplicate(" ", max(0, padding)) <> percent_str
 
         false ->

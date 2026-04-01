@@ -4,7 +4,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
   """
 
   alias Raxol.UI.Components.Input.SelectList
-  alias Raxol.UI.Components.Input.SelectList.{Pagination, Selection}
+  alias Raxol.UI.Components.Input.SelectList.{Pagination, Selection, Utils}
 
   @doc """
   Renders the SelectList component.
@@ -69,7 +69,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
   end
 
   defp render_option(option, index, state) do
-    label = get_option_label(option)
+    label = Utils.get_option_label(option)
     is_selected = Selection.selected?(state, index)
 
     prefix =
@@ -127,13 +127,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
 
     Raxol.View.Components.text(content: content)
   end
-
-  defp get_option_label(option) when is_binary(option), do: option
-  defp get_option_label({label, _value}), do: label
-  defp get_option_label(%{label: label}), do: label
-  defp get_option_label(%{text: text}), do: text
-  defp get_option_label(%{name: name}), do: name
-  defp get_option_label(option), do: to_string(option)
 
   defp apply_style(text, style) when map_size(style) == 0, do: text
 

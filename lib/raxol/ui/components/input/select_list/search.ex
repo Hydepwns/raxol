@@ -3,6 +3,8 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
   Search/filter functionality for SelectList component.
   """
 
+  alias Raxol.UI.Components.Input.SelectList.Utils
+
   @doc """
   Updates the search state with a new query.
   """
@@ -11,7 +13,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
 
     filtered_options =
       if is_filtering do
-        filter_options(state.options, query)
+        Utils.filter_options(state.options, query)
       else
         nil
       end
@@ -79,25 +81,4 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
 
     update_search_state(state, new_query)
   end
-
-  # Private functions
-
-  defp filter_options(options, query) when query == "", do: options
-
-  defp filter_options(options, query) do
-    normalized_query = String.downcase(query)
-
-    Enum.filter(options, fn option ->
-      label = get_option_label(option)
-      String.downcase(label) =~ normalized_query
-    end)
-  end
-
-  defp get_option_label(option) when is_binary(option), do: option
-  defp get_option_label({label, _value}), do: label
-  defp get_option_label(%{label: label}), do: label
-  defp get_option_label(%{text: text}), do: text
-  defp get_option_label(%{name: name}), do: name
-  defp get_option_label(%{value: value}), do: to_string(value)
-  defp get_option_label(option), do: to_string(option)
 end

@@ -268,7 +268,7 @@ defmodule Raxol.Core.Renderer.Layout do
   """
   def layout_text(text, {width, height}) do
     content = Map.get(text, :content, "")
-    text_width = String.length(content)
+    text_width = Raxol.UI.TextMeasure.display_width(content)
     text_height = 1
 
     positioned_text =
@@ -284,7 +284,7 @@ defmodule Raxol.Core.Renderer.Layout do
   """
   def layout_label(label, {width, height}) do
     content = Map.get(label, :content, Map.get(label, :text, ""))
-    text_width = String.length(content)
+    text_width = Raxol.UI.TextMeasure.display_width(content)
     text_height = 1
 
     positioned_label =
@@ -300,7 +300,7 @@ defmodule Raxol.Core.Renderer.Layout do
   """
   def layout_button(button, {width, _height}) do
     label = Map.get(button, :label, "Button")
-    button_width = min(String.length(label) + 4, width)
+    button_width = min(Raxol.UI.TextMeasure.display_width(label) + 4, width)
     button_height = 3
 
     positioned_button =
@@ -325,7 +325,7 @@ defmodule Raxol.Core.Renderer.Layout do
       end
 
     text = "#{checkbox_text} #{label}"
-    text_width = String.length(text)
+    text_width = Raxol.UI.TextMeasure.display_width(text)
     text_height = 1
 
     positioned_checkbox =

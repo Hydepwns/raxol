@@ -84,4 +84,5 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
   # Helper to normalize plugin keys to strings
   def normalize_plugin_key(key) when is_atom(key), do: Atom.to_string(key)
   def normalize_plugin_key(key) when is_binary(key), do: key
+  def normalize_plugin_key(key), do: inspect(key)
 end

@@ -214,7 +214,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
   end
 
   defp calculate_single_column_width(%{width: :auto} = column, data) do
-    header_width = String.length(column.header)
+    header_width = Raxol.UI.TextMeasure.display_width(column.header)
     content_width = max_content_width(column, data)
     max(header_width, content_width)
   end
@@ -227,7 +227,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
     data
     |> Enum.map(fn row ->
       value = get_column_value(row, column)
-      String.length(to_string(value))
+      Raxol.UI.TextMeasure.display_width(to_string(value))
     end)
     |> Enum.max(fn -> 0 end)
   end
@@ -374,7 +374,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
   end
 
   defp center_align_text(value_str, width) do
-    padding = width - String.length(value_str)
+    padding = width - Raxol.UI.TextMeasure.display_width(value_str)
     left_pad = div(padding, 2)
     right_pad = padding - left_pad
 

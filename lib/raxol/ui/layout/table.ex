@@ -152,7 +152,11 @@ defmodule Raxol.UI.Layout.Table do
                 Enum.reduce(rows, 0, fn row, max ->
                   if is_list(row) and length(row) > col_idx do
                     cell = Enum.at(row, col_idx)
-                    cell_width = String.length(to_string(cell)) + @cell_padding
+
+                    cell_width =
+                      Raxol.UI.TextMeasure.display_width(to_string(cell)) +
+                        @cell_padding
+
                     max(max, cell_width)
                   else
                     max
@@ -248,7 +252,7 @@ defmodule Raxol.UI.Layout.Table do
         :auto ->
           # Start with header width
           header_text = Map.get(column, :header, "")
-          header_width = String.length(header_text)
+          header_width = Raxol.UI.TextMeasure.display_width(header_text)
 
           # Find max content width for this column
           content_width =
@@ -266,7 +270,7 @@ defmodule Raxol.UI.Layout.Table do
                     ""
                 end
 
-              max(max, String.length(cell_content))
+              max(max, Raxol.UI.TextMeasure.display_width(cell_content))
             end)
 
           content_width + @cell_padding

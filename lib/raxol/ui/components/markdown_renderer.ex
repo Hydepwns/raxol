@@ -10,13 +10,15 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
   alias Raxol.View.Components
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+
   @spec init(map()) ::
           {:ok, %{markdown_text: String.t(), width: non_neg_integer()}}
   @impl true
   def init(props) do
     state =
       Map.merge(
-        %{markdown_text: "", width: 80},
+        %{markdown_text: "", width: @default_width},
         props
       )
 

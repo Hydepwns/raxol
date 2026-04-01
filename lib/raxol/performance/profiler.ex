@@ -28,6 +28,7 @@ defmodule Raxol.Performance.Profiler do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+  @analysis_interval_ms Raxol.Core.Defaults.cleanup_interval_ms()
   @type metric_type :: :execution_time | :memory_usage | :call_count | :gc_runs
   @type profile_data :: %{
           operation: atom(),
@@ -290,7 +291,7 @@ defmodule Raxol.Performance.Profiler do
     }
 
     # Schedule periodic analysis
-    Process.send_after(self(), :analyze, 60_000)
+    Process.send_after(self(), :analyze, @analysis_interval_ms)
 
     {:ok, state}
   end
@@ -333,7 +334,7 @@ defmodule Raxol.Performance.Profiler do
     log_new_suggestions(new_suggestions, state.suggestions)
 
     # Schedule next analysis
-    Process.send_after(self(), :analyze, 60_000)
+    Process.send_after(self(), :analyze, @analysis_interval_ms)
 
     {:noreply, %{state | suggestions: new_suggestions}}
   end

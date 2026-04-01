@@ -18,6 +18,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
   alias Raxol.Core.ErrorPatternLearner.{Persistence, Predictor}
 
   @table_name :raxol_error_patterns
+  @persist_interval_ms :timer.hours(1)
 
   defstruct [
     :patterns,
@@ -454,6 +455,6 @@ defmodule Raxol.Core.ErrorPatternLearner do
   end
 
   defp schedule_cleanup do
-    Process.send_after(self(), :cleanup_and_persist, 60 * 60 * 1000)
+    Process.send_after(self(), :cleanup_and_persist, @persist_interval_ms)
   end
 end

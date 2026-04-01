@@ -24,6 +24,7 @@ defmodule Raxol.UI.IntegrationTest do
   """
 
   alias Raxol.Core.Buffer
+  @default_timeout_ms Raxol.Core.Defaults.timeout_ms()
 
   @doc """
   Start an application for integration testing.
@@ -349,7 +350,7 @@ defmodule Raxol.UI.IntegrationTest do
   """
   @spec wait_for(map(), (map() -> boolean()), keyword()) :: map()
   def wait_for(app, condition_fn, opts \\ []) do
-    timeout = Keyword.get(opts, :timeout, 5000)
+    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
     interval = Keyword.get(opts, :interval, 50)
     deadline = System.monotonic_time(:millisecond) + timeout
 

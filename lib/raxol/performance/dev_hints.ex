@@ -215,7 +215,11 @@ defmodule Raxol.Performance.DevHints do
       end)
 
     # Schedule next cleanup
-    Process.send_after(self(), {:cleanup_history}, 60_000)
+    Process.send_after(
+      self(),
+      {:cleanup_history},
+      Raxol.Core.Defaults.cleanup_interval_ms()
+    )
 
     {:noreply, %{state | operation_history: new_history}}
   end

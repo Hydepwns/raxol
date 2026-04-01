@@ -15,8 +15,9 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   # 1MB max input
   @max_input_size 1_048_576
-  @processing_timeout 5_000
-  @recovery_delay 1_000
+  @processing_timeout Raxol.Core.Defaults.timeout_ms()
+  @recovery_delay Raxol.Core.Defaults.monitor_interval_ms()
+  @health_check_interval_ms Raxol.Core.Defaults.health_check_interval_ms()
 
   defstruct [
     :emulator_state,
@@ -534,7 +535,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp schedule_health_check do
-    Process.send_after(self(), :health_check, 30_000)
+    Process.send_after(self(), :health_check, @health_check_interval_ms)
   end
 
   defp handle_processing_error(reason, input, state) do

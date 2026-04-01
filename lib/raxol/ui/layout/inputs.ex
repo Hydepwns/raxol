@@ -10,7 +10,13 @@ defmodule Raxol.UI.Layout.Inputs do
 
   def measure(:button, attrs_map, available_space) do
     text = Map.get(attrs_map, :label, "Button")
-    width = min(String.length(text) + @button_padding, available_space.width)
+
+    width =
+      min(
+        Raxol.UI.TextMeasure.display_width(text) + @button_padding,
+        available_space.width
+      )
+
     %{width: width, height: @button_height}
   end
 
@@ -25,7 +31,10 @@ defmodule Raxol.UI.Layout.Inputs do
       end
 
     width =
-      min(String.length(display_text) + @input_padding, available_space.width)
+      min(
+        Raxol.UI.TextMeasure.display_width(display_text) + @input_padding,
+        available_space.width
+      )
 
     %{width: width, height: @input_height}
   end

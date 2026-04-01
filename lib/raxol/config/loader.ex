@@ -9,6 +9,7 @@ defmodule Raxol.Config.Loader do
   alias Raxol.Core.Runtime.Log
 
   @supported_formats ~w(.toml .json .yaml .yml)
+  @event_cleanup_delay_ms Raxol.Core.Defaults.monitor_interval_ms()
 
   @doc """
   Loads configuration from a file path.
@@ -217,7 +218,12 @@ defmodule Raxol.Config.Loader do
         event_key
       )
 
-    Process.send_after(self(), {:remove_event, event_key}, 1000)
+    Process.send_after(
+      self(),
+      {:remove_event, event_key},
+      @event_cleanup_delay_ms
+    )
+
     watch_loop(paths, callback, new_processed)
   end
 

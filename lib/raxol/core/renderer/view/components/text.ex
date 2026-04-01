@@ -66,7 +66,8 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
     do: Enum.reverse([last_line | lines])
 
   defp process_word(word, {lines, current_line}, width) do
-    case String.length(current_line) + String.length(word) + 1 <= width do
+    case Raxol.UI.TextMeasure.display_width(current_line) +
+           Raxol.UI.TextMeasure.display_width(word) + 1 <= width do
       true ->
         new_line = build_line(current_line, word)
         {lines, new_line}
@@ -88,7 +89,10 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
     do:
       Enum.map(
         lines,
-        &String.pad_leading(&1, div(width + String.length(&1), 2))
+        &String.pad_leading(
+          &1,
+          div(width + Raxol.UI.TextMeasure.display_width(&1), 2)
+        )
       )
 
   defp apply_styles(lines, styles) do

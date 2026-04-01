@@ -71,7 +71,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   Handles search/filter navigation.
   """
   def handle_search(state, query) do
-    filtered_options = filter_options(state.options, query)
+    filtered_options = Utils.filter_options(state.options, query)
 
     %{
       state
@@ -107,22 +107,4 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   defp ensure_visible(state) do
     Utils.ensure_visible(state)
   end
-
-  defp filter_options(options, query) when query == "", do: options
-
-  defp filter_options(options, query) do
-    normalized_query = String.downcase(query)
-
-    Enum.filter(options, fn option ->
-      label = get_option_label(option)
-      String.downcase(label) =~ normalized_query
-    end)
-  end
-
-  defp get_option_label(option) when is_binary(option), do: option
-  defp get_option_label({label, _value}), do: label
-  defp get_option_label(%{label: label}), do: label
-  defp get_option_label(%{text: text}), do: text
-  defp get_option_label(%{name: name}), do: name
-  defp get_option_label(option), do: to_string(option)
 end

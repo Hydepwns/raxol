@@ -7,8 +7,8 @@ defmodule Raxol.Playground.Demos.ReplDemo do
   @visible_lines 14
   @box_width 70
   @box_height 16
-  @max_history 100
-  @eval_timeout 5_000
+  @max_history Raxol.Core.Defaults.history_limit()
+  @eval_timeout Raxol.Core.Defaults.timeout_ms()
   @max_bindings 8
   @inspect_limit 5
   @inspect_width 30

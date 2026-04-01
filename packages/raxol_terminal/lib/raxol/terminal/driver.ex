@@ -31,6 +31,8 @@ defmodule Raxol.Terminal.Driver do
   @compile {:no_warn_undefined, Raxol.Terminal.Driver.InputBuffer}
   @compile {:no_warn_undefined, Raxol.Terminal.Driver.TermboxLifecycle}
 
+  @input_buffer_flush_ms 50
+
   # Check if termbox2_nif is available at compile time
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
 
@@ -409,7 +411,7 @@ defmodule Raxol.Terminal.Driver do
     _ = if state.flush_timer, do: Process.cancel_timer(state.flush_timer)
 
     if InputBuffer.incomplete_escape?(buffer) do
-      timer = Process.send_after(self(), :flush_input_buffer, 50)
+      timer = Process.send_after(self(), :flush_input_buffer, @input_buffer_flush_ms)
       {:noreply, %{state | input_buffer: buffer, flush_timer: timer}}
     else
       flush_buffer(%{state | input_buffer: buffer, flush_timer: nil})

@@ -12,6 +12,7 @@ defmodule Raxol.Config do
 
   use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Defaults
   @mix_env Mix.env()
   @default_config_file "config/raxol.toml"
   @env_config_dir "config/environments"
@@ -388,9 +389,9 @@ defmodule Raxol.Config do
   defp default_config do
     %{
       "terminal" => %{
-        "width" => 80,
-        "height" => 24,
-        "scrollback_size" => 10_000,
+        "width" => Defaults.terminal_width(),
+        "height" => Defaults.terminal_height(),
+        "scrollback_size" => Defaults.scrollback_limit(),
         "encoding" => "UTF-8"
       },
       "rendering" => %{
@@ -402,7 +403,7 @@ defmodule Raxol.Config do
       },
       "performance" => %{
         "cache_size" => 100_000,
-        "worker_pool_size" => 4
+        "worker_pool_size" => System.schedulers_online()
       }
     }
   end

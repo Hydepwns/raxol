@@ -6,6 +6,7 @@ defmodule Raxol.Plugins.EventHandler.Common do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Plugins.Manager
+  alias Raxol.Plugins.Lifecycle.Dependencies
 
   @type event :: map()
   @type plugin :: map()
@@ -83,7 +84,7 @@ defmodule Raxol.Plugins.EventHandler.Common do
   """
   @spec update_manager_state(map(), plugin(), map()) :: map()
   def update_manager_state(manager, plugin, new_plugin_state) do
-    plugin_name = normalize_plugin_key(plugin.name)
+    plugin_name = Dependencies.normalize_plugin_key(plugin.name)
 
     %{
       manager
@@ -97,7 +98,7 @@ defmodule Raxol.Plugins.EventHandler.Common do
   """
   @spec update_manager_plugin(map(), plugin(), plugin()) :: map()
   def update_manager_plugin(manager, _old_plugin, updated_plugin) do
-    plugin_name = normalize_plugin_key(updated_plugin.name)
+    plugin_name = Dependencies.normalize_plugin_key(updated_plugin.name)
 
     %{
       manager
@@ -203,10 +204,6 @@ defmodule Raxol.Plugins.EventHandler.Common do
         false
     end
   end
-
-  defp normalize_plugin_key(key) when is_binary(key), do: key
-  defp normalize_plugin_key(key) when is_atom(key), do: Atom.to_string(key)
-  defp normalize_plugin_key(key), do: inspect(key)
 
   defp log_invalid_plugin(plugin) do
     Raxol.Core.Runtime.Log.warning_with_context(

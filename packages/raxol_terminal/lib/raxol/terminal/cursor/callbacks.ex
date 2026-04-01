@@ -7,6 +7,8 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
 
   alias Raxol.Terminal.Cursor.Movement
 
+  @cursor_blink_interval_ms 500
+
   @doc """
   Handles GenServer call for getting cursor position.
   """
@@ -333,7 +335,7 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
 
   defp schedule_blink do
     timer_id = System.unique_integer([:positive])
-    Process.send_after(self(), {:blink, timer_id}, 500)
+    Process.send_after(self(), {:blink, timer_id}, @cursor_blink_interval_ms)
   end
 
   defp cancel_blink(nil), do: :ok

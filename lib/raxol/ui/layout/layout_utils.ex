@@ -133,7 +133,7 @@ defmodule Raxol.UI.Layout.LayoutUtils do
   """
   @spec center_text(String.t(), non_neg_integer()) :: String.t()
   def center_text(text, width) do
-    padding = max(0, div(width - String.length(text), 2))
+    padding = max(0, div(width - Raxol.UI.TextMeasure.display_width(text), 2))
     String.duplicate(" ", padding) <> text
   end
 

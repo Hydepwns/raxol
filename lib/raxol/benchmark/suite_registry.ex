@@ -8,6 +8,8 @@ defmodule Raxol.Benchmark.SuiteRegistry do
 
   use Raxol.Core.Behaviours.BaseManager
 
+  @auto_discover_delay_ms Raxol.Core.Defaults.monitor_interval_ms()
+
   # Client API
 
   @doc """
@@ -414,6 +416,6 @@ defmodule Raxol.Benchmark.SuiteRegistry do
 
   defp schedule_discovery do
     # Auto-discover suites after a short delay
-    _ = Process.send_after(self(), :auto_discover, 1000)
+    _ = Process.send_after(self(), :auto_discover, @auto_discover_delay_ms)
   end
 end

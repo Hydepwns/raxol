@@ -11,8 +11,8 @@ defmodule Raxol.REPL.Evaluator do
       result.value  #=> 30
   """
 
-  @default_timeout 5_000
-  @default_max_history 100
+  @default_timeout Raxol.Core.Defaults.timeout_ms()
+  @default_max_history Raxol.Core.Defaults.history_limit()
 
   @type t :: %__MODULE__{
           bindings: keyword(),
@@ -59,7 +59,13 @@ defmodule Raxol.REPL.Evaluator do
     receive do
       {:eval_result, {:ok, value, new_bindings, output}} ->
         Process.demonitor(ref, [:flush])
-        formatted = inspect(value, pretty: true, width: 80, limit: 50)
+
+        formatted =
+          inspect(value,
+            pretty: true,
+            width: Raxol.Core.Defaults.terminal_width(),
+            limit: 50
+          )
 
         result = %{value: value, output: output, formatted: formatted}
 

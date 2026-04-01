@@ -16,6 +16,8 @@ defmodule Raxol.Performance.Memoization.MemoizationServer do
 
   require Logger
 
+  @cleanup_interval_ms Raxol.Core.Defaults.cleanup_interval_ms()
+
   # Client API
 
   @doc """
@@ -379,6 +381,6 @@ defmodule Raxol.Performance.Memoization.MemoizationServer do
     do: cache
 
   defp schedule_cleanup do
-    Process.send_after(self(), :cleanup, 60_000)
+    Process.send_after(self(), :cleanup, @cleanup_interval_ms)
   end
 end

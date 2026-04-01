@@ -9,7 +9,7 @@ defmodule Raxol.Sandbox do
       {:ok, result} = Raxol.Sandbox.execute(fn ->
         untrusted_code()
       end,
-        timeout: 5000,
+        timeout: 5_000,
         memory_limit: 100_000_000,
         allowed_modules: [String, Enum]
       )
@@ -20,12 +20,14 @@ defmodule Raxol.Sandbox do
   consider additional security measures such as OS-level containerization.
   """
 
+  @default_timeout_ms Raxol.Core.Defaults.timeout_ms()
+
   @doc """
   Execute code in a sandboxed environment.
 
   ## Options
 
-    - `:timeout` - Maximum execution time in milliseconds (default: 5000)
+    - `:timeout` - Maximum execution time in milliseconds (default: #{@default_timeout_ms})
     - `:memory_limit` - Maximum memory in bytes (advisory, not enforced)
     - `:allowed_modules` - List of modules the code can use (not enforced in basic mode)
 
@@ -37,7 +39,7 @@ defmodule Raxol.Sandbox do
   """
   @spec execute((-> any()), keyword()) :: {:ok, any()} | {:error, term()}
   def execute(fun, opts \\ []) when is_function(fun, 0) do
-    timeout = Keyword.get(opts, :timeout, 5000)
+    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
 
     task =
       Task.async(fn ->

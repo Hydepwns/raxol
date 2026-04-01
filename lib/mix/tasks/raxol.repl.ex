@@ -34,7 +34,7 @@ defmodule Mix.Tasks.Raxol.Repl do
         _ -> :standard
       end
 
-    timeout = Keyword.get(opts, :timeout, 5_000)
+    timeout = Keyword.get(opts, :timeout, Raxol.Core.Defaults.timeout_ms())
 
     Application.put_env(:raxol, :repl_sandbox, sandbox)
     Application.put_env(:raxol, :repl_timeout, timeout)

@@ -33,6 +33,7 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
   @metrics_table :raxol_metrics
   @meta_table :raxol_metrics_meta
   @history_limit Raxol.Core.Defaults.history_limit()
+  @system_metrics_interval_ms 10_000
 
   # ============================================================================
   # Public API - Direct ETS Access (No GenServer call needed)
@@ -430,7 +431,7 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
   end
 
   defp schedule_system_metrics_collection do
-    Process.send_after(self(), :collect_system_metrics, 10_000)
+    Process.send_after(self(), :collect_system_metrics, @system_metrics_interval_ms)
   end
 
   defp collect_system_metrics do
