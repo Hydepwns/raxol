@@ -431,7 +431,11 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
   end
 
   defp schedule_system_metrics_collection do
-    Process.send_after(self(), :collect_system_metrics, @system_metrics_interval_ms)
+    Process.send_after(
+      self(),
+      :collect_system_metrics,
+      @system_metrics_interval_ms
+    )
   end
 
   defp collect_system_metrics do

@@ -7,16 +7,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Utils do
   alias Raxol.UI.Components.Input.SelectList
 
   @doc """
-  Ensures that the selected item is visible within the scroll viewport.
-  Adjusts scroll_offset to bring the selected item into view.
-
-  ## Parameters
-    - state: The SelectList state
-
-  ## Returns
-    Updated state with adjusted scroll_offset if necessary
-  """
-  @doc """
   Extracts a display label from a SelectList option.
   Handles strings, tuples, and maps with :label, :text, :name, or :value keys.
   """
@@ -45,6 +35,10 @@ defmodule Raxol.UI.Components.Input.SelectList.Utils do
     end)
   end
 
+  @doc """
+  Ensures that the selected item is visible within the scroll viewport.
+  Adjusts scroll_offset to bring the selected item into view.
+  """
   @spec ensure_visible(SelectList.t()) :: SelectList.t()
   def ensure_visible(state) do
     visible_items = state.visible_items || 10

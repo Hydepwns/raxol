@@ -12,6 +12,8 @@ defmodule Raxol.Terminal.Commands.Manager do
   alias Raxol.Terminal.Commands.Command
   alias Raxol.Terminal.Emulator
 
+  @default_max_history Raxol.Core.Defaults.history_limit()
+
   defstruct command_buffer: "",
             command_history: [],
             last_key_event: nil,
@@ -34,7 +36,7 @@ defmodule Raxol.Terminal.Commands.Manager do
     %Command{
       history: [],
       current: nil,
-      max_history: 100,
+      max_history: @default_max_history,
       command_buffer: "",
       history_index: -1,
       last_key_event: nil,
@@ -47,7 +49,7 @@ defmodule Raxol.Terminal.Commands.Manager do
   """
   @spec new(keyword()) :: Command.t()
   def new(opts) when is_list(opts) do
-    max_history = Keyword.get(opts, :max_command_history, 100)
+    max_history = Keyword.get(opts, :max_command_history, @default_max_history)
 
     %Command{
       history: [],
@@ -61,7 +63,7 @@ defmodule Raxol.Terminal.Commands.Manager do
   end
 
   def new(opts) when is_map(opts) do
-    max_history = Map.get(opts, :max_command_history, 100)
+    max_history = Map.get(opts, :max_command_history, @default_max_history)
 
     %Command{
       history: [],
@@ -220,7 +222,7 @@ defmodule Raxol.Terminal.Commands.Manager do
   def add_to_history_state(%Raxol.Terminal.Commands.Command{} = state, command)
       when is_binary(command) do
     new_history = [command | state.history]
-    max_history = state.max_history || 100
+    max_history = state.max_history || @default_max_history
 
     trimmed_history =
       trim_history_if_needed(
