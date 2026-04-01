@@ -365,7 +365,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
           description="Snapshot every update/2 cycle. Step back, forward, jump, restore."
         />
         <.feature_card
-          title="29 Widgets"
+          title={"#{RaxolPlaygroundWeb.Playground.Helpers.widget_count()} Widgets"}
           description="Buttons, tables, trees, charts, sparklines. Flexbox + CSS Grid layout."
         />
       </div>
@@ -482,11 +482,11 @@ defmodule RaxolPlaygroundWeb.LandingLive do
         <div class="bg-gray-900 border border-gray-800 rounded-lg px-5 py-3 font-mono text-sm">
           <span class="text-gray-500">$</span>
           <span class="text-green-400 ml-2">mix raxol.playground</span>
-          <span class="text-gray-600 ml-4"># 29 demos across 8 categories</span>
+          <span class="text-gray-600 ml-4"># <%= RaxolPlaygroundWeb.Playground.Helpers.widget_count() %> demos across <%= RaxolPlaygroundWeb.Playground.Helpers.category_count() %> categories</span>
         </div>
         <div class="bg-gray-900 border border-gray-800 rounded-lg px-5 py-3 font-mono text-sm">
           <span class="text-gray-500">$</span>
-          <span class="text-green-400 ml-2">ssh -p 2222 playground@raxol.io</span>
+          <span class="text-green-400 ml-2"><%= RaxolPlaygroundWeb.Playground.Helpers.ssh_command() %></span>
           <span class="text-gray-600 ml-4"># same thing, over SSH</span>
         </div>
         <div class="bg-gray-900 border border-gray-800 rounded-lg px-5 py-3 font-mono text-sm">

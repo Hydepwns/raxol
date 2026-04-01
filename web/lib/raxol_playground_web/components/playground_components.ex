@@ -21,6 +21,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundComponents do
   attr(:class, :string, default: "")
 
   def ssh_callout(assigns) do
+    assigns = Phoenix.Component.assign(assigns, :ssh_cmd, Helpers.ssh_command())
+
     ~H"""
     <div class={[
       "text-green-400 font-mono text-sm",
@@ -33,7 +35,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundComponents do
       <% else %>
         Try the real terminal:
       <% end %>
-      <span class="text-white ml-2">ssh -p 2222 playground@raxol.io</span>
+      <span class="text-white ml-2"><%= @ssh_cmd %></span>
       <span class="text-gray-500 mx-2">|</span>
       <span class="text-white">mix raxol.playground</span>
     </div>
@@ -50,7 +52,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundComponents do
       <% end %>
       <p class="mb-4">For the full interactive experience:</p>
       <p class="text-green-400">$ mix raxol.playground</p>
-      <p class="text-green-400 mt-1">$ ssh -p 2222 playground@raxol.io</p>
+      <p class="text-green-400 mt-1">$ <%= Helpers.ssh_command() %></p>
     </div>
     """
   end

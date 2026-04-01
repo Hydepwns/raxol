@@ -19,15 +19,15 @@ defmodule RaxolPlaygroundWeb.ReplLive do
         <h1 class="text-4xl font-bold mb-4">Try the Real Terminal</h1>
         <p class="text-xl text-gray-400 mb-12">
           The best way to experience Raxol is in an actual terminal.
-          28 interactive widget demos, all running natively.
+          <%= RaxolPlaygroundWeb.Playground.Helpers.widget_count() %> interactive widget demos, all running natively.
         </p>
 
         <div class="bg-gray-800 rounded-lg p-8 font-mono text-left mb-8">
-          <div class="text-gray-400 mb-4"># Local -- browse all 28 widgets</div>
+          <div class="text-gray-400 mb-4"># Local -- browse all <%= RaxolPlaygroundWeb.Playground.Helpers.widget_count() %> widgets</div>
           <div class="text-green-400 text-lg mb-6">$ mix raxol.playground</div>
 
           <div class="text-gray-400 mb-4"># Remote -- try it right now, no install needed</div>
-          <div class="text-green-400 text-lg mb-6">$ ssh -p 2222 playground@raxol.io</div>
+          <div class="text-green-400 text-lg mb-6">$ <%= RaxolPlaygroundWeb.Playground.Helpers.ssh_command() %></div>
 
           <div class="text-gray-400 mb-4"># Or add Raxol to a new project</div>
           <div class="text-green-400 text-lg">$ mix raxol.new my_app --template dashboard</div>

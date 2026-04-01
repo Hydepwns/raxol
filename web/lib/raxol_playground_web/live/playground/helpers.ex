@@ -1,7 +1,37 @@
 defmodule RaxolPlaygroundWeb.Playground.Helpers do
   @moduledoc """
   Helper functions for the Raxol playground web UI.
+  Single source of truth for themes, SSH callout, and shared constants.
   """
+
+  @default_theme :synthwave84
+  @ssh_command "ssh -p 2222 playground@raxol.io"
+
+  @doc "Returns the default terminal theme atom."
+  def default_theme, do: @default_theme
+
+  @doc "Returns the SSH connection command string."
+  def ssh_command, do: @ssh_command
+
+  @doc "Returns the background color for the default theme."
+  def default_theme_bg do
+    Enum.find_value(themes(), "#241b2f", fn {key, _name, bg} ->
+      if key == @default_theme, do: bg
+    end)
+  end
+
+  @doc "Looks up a theme background color by key, falling back to the default."
+  def theme_bg(theme_key) do
+    Enum.find_value(themes(), default_theme_bg(), fn {key, _name, bg} ->
+      if key == theme_key, do: bg
+    end)
+  end
+
+  @doc "Returns the total widget count from the Catalog."
+  def widget_count, do: length(Raxol.Playground.Catalog.list_components())
+
+  @doc "Returns the category count from the Catalog."
+  def category_count, do: length(Raxol.Playground.Catalog.list_categories())
 
   @doc "Returns Tailwind CSS classes for complexity badges."
   def complexity_class(:basic), do: "bg-green-100 text-green-800"

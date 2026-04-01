@@ -174,7 +174,7 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <div class="bg-gray-900 border border-gray-800 text-green-400 rounded-lg p-4 font-mono text-sm">
           Try the real terminal experience:
-          <span class="text-white ml-2">ssh -p 2222 playground@raxol.io</span>
+          <span class="text-white ml-2"><%= RaxolPlaygroundWeb.Playground.Helpers.ssh_command() %></span>
           <span class="text-gray-500 mx-2">|</span>
           <span class="text-white">mix raxol.playground</span>
         </div>

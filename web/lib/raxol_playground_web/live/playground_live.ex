@@ -221,9 +221,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   @impl true
   def render(assigns) do
     theme_bg =
-      Enum.find_value(@themes, "#241b2f", fn {key, _name, bg} ->
-        if key == assigns.terminal_theme, do: bg
-      end)
+      Helpers.theme_bg(assigns.terminal_theme)
 
     assigns = assign(assigns, :theme_bg, theme_bg)
 
@@ -246,7 +244,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
           <div class="flex items-center gap-3">
             <!-- SSH Callout -->
             <span class="text-xs text-gray-500 font-mono hidden lg:block">
-              ssh -p 2222 playground@raxol.io
+              <%= Helpers.ssh_command() %>
             </span>
 
             <!-- Users Button -->

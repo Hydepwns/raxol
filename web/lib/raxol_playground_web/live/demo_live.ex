@@ -171,10 +171,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
   # -- Render: Show --
 
   def render(assigns) do
-    theme_bg =
-      Enum.find_value(assigns.themes, "#241b2f", fn {key, _name, bg} ->
-        if key == assigns.terminal_theme, do: bg
-      end)
+    theme_bg = Helpers.theme_bg(assigns.terminal_theme)
 
     assigns = assign(assigns, :theme_bg, theme_bg)
 
