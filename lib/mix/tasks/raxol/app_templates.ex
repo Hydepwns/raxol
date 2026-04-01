@@ -232,6 +232,13 @@ defmodule Mix.Raxol.AppTemplates do
     """
   end
 
+  @supported_templates ~w(blank counter todo dashboard)
+
+  def render(template, _bindings) when template not in @supported_templates do
+    raise ArgumentError,
+          "unknown template #{inspect(template)}, expected one of: #{inspect(@supported_templates)}"
+  end
+
   def render("dashboard", %{app: app, module: module}) do
     """
     defmodule #{module} do
