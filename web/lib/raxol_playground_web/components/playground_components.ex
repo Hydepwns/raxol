@@ -4,7 +4,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundComponents do
 
   alias RaxolPlaygroundWeb.Playground.Helpers
 
-  attr :title, :string, required: true
+  attr(:title, :string, required: true)
 
   def terminal_chrome(assigns) do
     ~H"""
@@ -17,8 +17,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundComponents do
     """
   end
 
-  attr :variant, :atom, default: :banner
-  attr :class, :string, default: ""
+  attr(:variant, :atom, default: :banner)
+  attr(:class, :string, default: "")
 
   def ssh_callout(assigns) do
     ~H"""
@@ -40,7 +40,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundComponents do
     """
   end
 
-  attr :description, :string, default: nil
+  attr(:description, :string, default: nil)
 
   def terminal_fallback(assigns) do
     ~H"""
@@ -55,8 +55,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundComponents do
     """
   end
 
-  attr :show, :boolean, required: true
-  attr :code, :string, default: ""
+  attr(:show, :boolean, required: true)
+  attr(:code, :string, default: "")
 
   def code_panel(assigns) do
     ~H"""
@@ -73,10 +73,10 @@ defmodule RaxolPlaygroundWeb.PlaygroundComponents do
     """
   end
 
-  attr :theme, :atom, required: true
-  attr :themes, :list, required: true
-  attr :form_id, :string, required: true
-  attr :class, :string, default: ""
+  attr(:theme, :atom, required: true)
+  attr(:themes, :list, required: true)
+  attr(:form_id, :string, required: true)
+  attr(:class, :string, default: "")
 
   def theme_selector(assigns) do
     ~H"""
@@ -93,7 +93,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundComponents do
     """
   end
 
-  attr :level, :atom, required: true
+  attr(:level, :atom, required: true)
 
   def complexity_badge(assigns) do
     ~H"""

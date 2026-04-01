@@ -75,8 +75,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
 
   @impl true
   def handle_event("toggle_mobile_menu", _params, socket) do
-    {:noreply,
-     assign(socket, :mobile_menu_open, !socket.assigns.mobile_menu_open)}
+    {:noreply, assign(socket, :mobile_menu_open, !socket.assigns.mobile_menu_open)}
   end
 
   @impl true
@@ -100,7 +99,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
   # Sections
   # ===========================================================================
 
-  attr :mobile_menu_open, :boolean, required: true
+  attr(:mobile_menu_open, :boolean, required: true)
 
   defp nav_bar(assigns) do
     ~H"""
@@ -142,7 +141,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     """
   end
 
-  attr :raxol_version, :string, required: true
+  attr(:raxol_version, :string, required: true)
 
   defp hero_section(assigns) do
     ~H"""
@@ -272,12 +271,12 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     """
   end
 
-  attr :capability, :string, required: true
-  attr :raxol, :string, required: true
-  attr :ratatui, :string, required: true
-  attr :bubbletea, :string, required: true
-  attr :textual, :string, required: true
-  attr :ink, :string, required: true
+  attr(:capability, :string, required: true)
+  attr(:raxol, :string, required: true)
+  attr(:ratatui, :string, required: true)
+  attr(:bubbletea, :string, required: true)
+  attr(:textual, :string, required: true)
+  attr(:ink, :string, required: true)
 
   defp comparison_row(assigns) do
     ~H"""
@@ -292,7 +291,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     """
   end
 
-  attr :counter_code, :string, required: true
+  attr(:counter_code, :string, required: true)
 
   defp code_example_section(assigns) do
     ~H"""
@@ -373,8 +372,8 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     """
   end
 
-  attr :title, :string, required: true
-  attr :description, :string, required: true
+  attr(:title, :string, required: true)
+  attr(:description, :string, required: true)
 
   defp feature_card(assigns) do
     ~H"""
@@ -459,9 +458,9 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     """
   end
 
-  attr :name, :string, required: true
-  attr :description, :string, required: true
-  attr :tests, :string, required: true
+  attr(:name, :string, required: true)
+  attr(:description, :string, required: true)
+  attr(:tests, :string, required: true)
 
   defp package_card(assigns) do
     ~H"""
@@ -514,7 +513,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     """
   end
 
-  attr :total_tests, :string, required: true
+  attr(:total_tests, :string, required: true)
 
   defp footer_section(assigns) do
     ~H"""

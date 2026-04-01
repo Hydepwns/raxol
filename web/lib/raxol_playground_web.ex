@@ -5,7 +5,9 @@ defmodule RaxolPlaygroundWeb do
   Provides web-specific functionality including router helpers, controllers,
   live views, and static asset paths for the Raxol web playground.
   """
-  def static_paths, do: ~w(assets fonts images favicon.ico favicon-16x16.png favicon-32x32.png apple-touch-icon.png robots.txt)
+  def static_paths,
+    do:
+      ~w(assets fonts images favicon.ico favicon-16x16.png favicon-32x32.png apple-touch-icon.png robots.txt)
 
   def router do
     quote do

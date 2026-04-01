@@ -4,5 +4,5 @@ defmodule RaxolPlaygroundWeb.Layouts do
   """
   use RaxolPlaygroundWeb, :html
 
-  embed_templates "layouts/*"
+  embed_templates("layouts/*")
 end

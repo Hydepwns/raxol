@@ -532,11 +532,11 @@ html, body {
    Pretext-inspired: monospace grid via CSS, run-length encoded spans.
    white-space:pre handles character positioning; no per-cell DOM needed. */
 .raxol-terminal {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Fira Code', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.35;
+  font-family: 'Menlo', 'Monaco', 'Ubuntu Mono', 'DejaVu Sans Mono', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1;
   letter-spacing: 0;
-  background: #282a36;
+  background: transparent;
   color: #f8f8f2;
   padding: 0;
   margin: 0;
@@ -555,6 +555,21 @@ html, body {
 }
 
 /* RLE rendering uses inline styles on spans; no per-cell CSS classes needed. */
+
+/* =============================================================================
+   Terminal Theme Overrides
+   Applied via data-theme attribute on the terminal container.
+   ============================================================================= */
+
+[data-theme="dracula"] .raxol-terminal { color: #f8f8f2; }
+[data-theme="nord"] .raxol-terminal { color: #d8dee9; }
+[data-theme="monokai"] .raxol-terminal { color: #f8f8f2; }
+[data-theme="solarized_dark"] .raxol-terminal { color: #839496; }
+[data-theme="synthwave84"] .raxol-terminal { color: #e0def4; }
+[data-theme="gruvbox_dark"] .raxol-terminal { color: #ebdbb2; }
+[data-theme="one_dark"] .raxol-terminal { color: #abb2bf; }
+[data-theme="tokyo_night"] .raxol-terminal { color: #a9b1d6; }
+[data-theme="catppuccin"] .raxol-terminal { color: #cdd6f4; }
 
 /* =============================================================================
    Demo Container Styles

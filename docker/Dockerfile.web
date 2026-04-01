@@ -66,6 +66,9 @@ ENV LC_ALL=en_US.UTF-8
 WORKDIR "/app"
 RUN chown nobody /app
 
+# Create SSH host keys directory (writable by nobody)
+RUN mkdir -p /app/ssh_keys && chown nobody:root /app/ssh_keys
+
 # set runner ENV
 ENV MIX_ENV="prod"
 

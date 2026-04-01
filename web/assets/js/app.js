@@ -78,12 +78,28 @@ Hooks.Flash = {
 // Raxol Terminal Hook - renders demo output and captures keyboard input
 Hooks.RaxolTerminal = {
   mounted() {
+    // Focus on click anywhere in terminal area
+    this.el.addEventListener('click', () => {
+      this.el.focus()
+    })
+
+    // Visual focus indicator
+    this.el.addEventListener('focus', () => {
+      this.el.style.outline = '2px solid rgba(99, 102, 241, 0.5)'
+      this.el.style.outlineOffset = '-2px'
+    })
+    this.el.addEventListener('blur', () => {
+      this.el.style.outline = 'none'
+    })
+
     this.el.focus()
     this.scrollToBottom()
   },
 
   updated() {
     this.scrollToBottom()
+    // Re-focus terminal after demo content updates
+    this.el.focus()
   },
 
   scrollToBottom() {

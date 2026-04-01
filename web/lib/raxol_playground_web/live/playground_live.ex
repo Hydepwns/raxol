@@ -31,7 +31,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       (initial_name && Catalog.get_component(initial_name)) ||
         List.first(components)
 
-    {socket, user_id} = init_presence(socket, selected)
+    {socket, _user_id} = init_presence(socket, selected)
 
     socket =
       socket
@@ -88,8 +88,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     search = if query == "", do: nil, else: query
     components = Catalog.filter(search: search)
 
-    {:noreply,
-     socket |> assign(:search_query, query) |> assign(:components, components)}
+    {:noreply, socket |> assign(:search_query, query) |> assign(:components, components)}
   end
 
   def handle_event("toggle_code", _params, socket) do
@@ -101,8 +100,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_event("toggle_users_panel", _params, socket) do
-    {:noreply,
-     assign(socket, :show_users_panel, !socket.assigns.show_users_panel)}
+    {:noreply, assign(socket, :show_users_panel, !socket.assigns.show_users_panel)}
   end
 
   def handle_event("toggle_sync", _params, socket) do
@@ -110,8 +108,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_event("toggle_sidebar", _params, socket) do
-    {:noreply,
-     assign(socket, :sidebar_collapsed, !socket.assigns.sidebar_collapsed)}
+    {:noreply, assign(socket, :sidebar_collapsed, !socket.assigns.sidebar_collapsed)}
   end
 
   def handle_event("select_theme", %{"theme" => theme}, socket) do
@@ -165,8 +162,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_info(
-        {:playground_event, :component_selected,
-         %{component: name, user_id: from}},
+        {:playground_event, :component_selected, %{component: name, user_id: from}},
         socket
       ) do
     if socket.assigns.sync_enabled and from != socket.assigns.user_id do
@@ -183,8 +179,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     Logger.info("Playground session timed out")
     socket = DemoLifecycle.stop_demo(socket)
 
-    {:noreply,
-     assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
+    {:noreply, assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
   end
 
   def handle_info({:DOWN, _ref, :process, pid, reason}, socket) do
@@ -289,7 +284,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
                 phx-hook="RaxolTerminal"
                 phx-keydown="keydown"
                 class="flex-1 overflow-auto p-4 font-mono text-sm"
-                style={"background: #{@theme_bg}; color: #e0e0e0;"}
+                style={"background: #{@theme_bg};"}
+                data-theme={@terminal_theme}
                 tabindex="0"
               >
                 <%= if @demo_error do %>
@@ -305,6 +301,9 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
                 <% else %>
                   <%= if @terminal_html != "" do %>
                     <%= Phoenix.HTML.raw(@terminal_html) %>
+                    <div class="mt-2 text-xs text-gray-500 opacity-70 select-none">
+                      Click here and use keyboard to interact
+                    </div>
                   <% else %>
                     <.terminal_fallback description={if @selected, do: @selected.description} />
                   <% end %>
@@ -338,7 +337,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
 
   defp sidebar(assigns) do
     ~H"""
-    <div class={"bg-white border-r overflow-y-auto shadow-sm transition-all duration-200 #{if @sidebar_collapsed, do: "w-16", else: "w-72"}"}>
+    <div class={"bg-white border-r overflow-y-auto shadow-sm transition-all duration-200 #{if @sidebar_collapsed, do: "w-28", else: "w-72"}"}>
       <div class="p-3">
         <div class="flex items-center justify-between mb-3">
           <%= if not @sidebar_collapsed do %>
@@ -378,15 +377,15 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
             <% end %>
           </div>
         <% else %>
-          <div class="space-y-1">
+          <div class="space-y-0.5">
             <%= for comp <- @components do %>
               <div
-                class={"p-2 rounded cursor-pointer text-center #{if @selected && @selected.name == comp.name, do: "bg-blue-50 border border-blue-200", else: "hover:bg-gray-50"}"}
+                class={"px-2 py-1.5 rounded cursor-pointer #{if @selected && @selected.name == comp.name, do: "bg-blue-50 border border-blue-200", else: "hover:bg-gray-50"}"}
                 phx-click="select_component"
                 phx-value-component={comp.name}
-                title={comp.name}
+                title={"#{comp.name} -- #{comp.description}"}
               >
-                <span class="font-bold text-sm text-gray-700"><%= String.first(comp.name) %></span>
+                <div class="text-xs font-medium text-gray-700 truncate"><%= comp.name %></div>
               </div>
             <% end %>
           </div>

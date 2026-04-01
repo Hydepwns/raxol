@@ -4,7 +4,7 @@ defmodule RaxolPlaygroundWeb.Playground.DemoLifecycle do
   require Logger
 
   alias Raxol.Core.Runtime.Lifecycle
-  import Phoenix.Component, only: [assign: 2, assign: 3]
+  import Phoenix.Component, only: [assign: 2]
 
   @doc "Starts a demo lifecycle for the given component."
   def start_demo(socket, component, opts \\ []) do
@@ -77,14 +77,21 @@ defmodule RaxolPlaygroundWeb.Playground.DemoLifecycle do
 
   @doc "Dispatches a translated key event to the running demo's Dispatcher."
   def dispatch_to_lifecycle(pid, event) do
-    case GenServer.call(pid, :get_full_state) do
+    case GenServer.call(pid, :get_full_state, 5_000) do
       %{dispatcher_pid: dpid} when is_pid(dpid) ->
         GenServer.cast(dpid, {:dispatch, event})
 
-      _ ->
+      other ->
+        Logger.debug("No dispatcher found in lifecycle state: #{inspect(other)}")
         :ok
     end
   rescue
-    _ -> :ok
+    e ->
+      Logger.debug("dispatch_to_lifecycle failed: #{Exception.message(e)}")
+      :ok
+  catch
+    :exit, reason ->
+      Logger.debug("dispatch_to_lifecycle exit: #{inspect(reason)}")
+      :ok
   end
 end

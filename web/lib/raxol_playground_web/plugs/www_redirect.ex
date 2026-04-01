@@ -8,14 +8,15 @@ defmodule RaxolPlaygroundWeb.Plugs.WwwRedirect do
   def init(opts), do: opts
 
   def call(%{host: "www." <> rest} = conn, _opts) do
-    url = %{
-      scheme: get_scheme(conn),
-      host: rest,
-      port: get_port(conn),
-      path: conn.request_path,
-      query: conn.query_string
-    }
-    |> build_url()
+    url =
+      %{
+        scheme: get_scheme(conn),
+        host: rest,
+        port: get_port(conn),
+        path: conn.request_path,
+        query: conn.query_string
+      }
+      |> build_url()
 
     conn
     |> put_resp_header("location", url)

@@ -13,8 +13,7 @@ defmodule RaxolPlayground.Application do
       [
         RaxolPlaygroundWeb.Telemetry,
         {DNSCluster,
-         query:
-           Application.get_env(:raxol_playground, :dns_cluster_query) || :ignore},
+         query: Application.get_env(:raxol_playground, :dns_cluster_query) || :ignore},
         {Phoenix.PubSub, name: RaxolPlayground.PubSub},
         Supervisor.child_spec({Phoenix.PubSub, name: Raxol.PubSub},
           id: :raxol_pubsub
@@ -36,13 +35,20 @@ defmodule RaxolPlayground.Application do
       try do
         Application.ensure_all_started(:ssh)
 
-        [
-          {Raxol.SSH.Server,
-           app_module: Raxol.Playground.App,
-           port: port,
-           host_keys_dir: keys_dir,
-           max_connections: max}
-        ]
+        # Mark SSH as temporary -- if it crashes, don't restart it and don't
+        # trigger max_restarts on the parent supervisor (which would kill the
+        # Phoenix endpoint).
+        ssh_spec =
+          Supervisor.child_spec(
+            {Raxol.SSH.Server,
+             app_module: Raxol.Playground.App,
+             port: port,
+             host_keys_dir: keys_dir,
+             max_connections: max},
+            restart: :temporary
+          )
+
+        [ssh_spec]
       rescue
         e ->
           IO.puts("[SSH] Failed to prepare SSH: #{Exception.message(e)}")
