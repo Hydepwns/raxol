@@ -76,30 +76,21 @@ defmodule Raxol.Playground.Demos.ModalDemo do
   def subscribe(_model), do: []
 
   defp modal_view(_model) do
-    column style: %{gap: 0} do
-      [
-        box style: %{border: :double, padding: 1, width: @modal_width} do
-          column style: %{gap: 1} do
+    box style: %{border: :double, padding: 1, width: @modal_width} do
+      column style: %{gap: 1} do
+        [
+          text("Confirm Action", style: [:bold]),
+          text("Are you sure you want to proceed?"),
+          text("This action cannot be undone."),
+          divider(),
+          row style: %{gap: 2} do
             [
-              text("Confirm Action", style: [:bold]),
-              text("Are you sure you want to proceed?"),
-              text("This action cannot be undone."),
-              divider(),
-              row style: %{gap: 2} do
-                [
-                  button("[y] Confirm", on_click: :confirm),
-                  button("[n] Cancel", on_click: :cancel)
-                ]
-              end
+              button("[y] Confirm", on_click: :confirm),
+              button("[n] Cancel", on_click: :cancel)
             ]
           end
-        end,
-        modal(
-          title: "Confirm Action",
-          content: text("Are you sure?"),
-          visible: true
-        )
-      ]
+        ]
+      end
     end
   end
 

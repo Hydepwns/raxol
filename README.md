@@ -37,8 +37,10 @@ mix run examples/agents/ai_cockpit.exs           # Multi-agent AI cockpit (mock)
 FREE_AI=true mix run examples/agents/ai_cockpit.exs  # Real AI via LLM7.io (free)
 mix run examples/swarm/cluster_demo.exs          # CRDT state sync demo
 mix raxol.repl                                    # Sandboxed REPL (--sandbox strict)
-mix phx.server                                    # LiveView counter at /counter
+mix phx.server                                    # Web playground at /playground
 ```
+
+See [examples/README.md](examples/README.md) for a complete learning path from beginner to advanced.
 
 ## Hello World
 

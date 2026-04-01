@@ -91,7 +91,8 @@ defmodule Raxol.Playground.Demos.PanelHighlightsDemo do
 
   defp render_panel(panel, _idx, true) do
     border = normalize_border(panel.border)
-    title = "[*] #{panel.title}"
+    fallback = if border != panel.border, do: " (=> #{border})", else: ""
+    title = "[*] #{panel.title} :#{panel.border}#{fallback}"
 
     box style: %{border: border, fg: :cyan, width: @panel_width} do
       column style: %{gap: 0} do
@@ -105,11 +106,12 @@ defmodule Raxol.Playground.Demos.PanelHighlightsDemo do
 
   defp render_panel(panel, _idx, false) do
     border = normalize_border(panel.border)
+    fallback = if border != panel.border, do: " (=> #{border})", else: ""
 
     box style: %{border: border, fg: :white, width: @panel_width} do
       column style: %{gap: 0} do
         [
-          text(panel.title, style: [:dim]),
+          text("#{panel.title} :#{panel.border}#{fallback}", style: [:dim]),
           text(panel.content, style: [:dim])
         ]
       end

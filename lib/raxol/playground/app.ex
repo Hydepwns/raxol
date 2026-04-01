@@ -60,10 +60,16 @@ defmodule Raxol.Playground.App do
 
   @impl true
   def update(message, model) do
-    cond do
-      model.show_help -> handle_help(message, model)
-      model.focus == :search -> handle_search(message, model)
-      true -> handle_normal(message, model)
+    case message do
+      :tick ->
+        forward_tick_to_demo(model)
+
+      _ ->
+        cond do
+          model.show_help -> handle_help(message, model)
+          model.focus == :search -> handle_search(message, model)
+          true -> handle_normal(message, model)
+        end
     end
   end
 
@@ -167,7 +173,13 @@ defmodule Raxol.Playground.App do
   end
 
   @impl true
-  def subscribe(_model), do: []
+  def subscribe(model) do
+    case {model.selected, model.demo_model} do
+      {nil, _} -> []
+      {_, nil} -> []
+      {comp, demo_model} -> comp.module.subscribe(demo_model)
+    end
+  end
 
   # -- Layout --
 
@@ -199,6 +211,15 @@ defmodule Raxol.Playground.App do
   defp sidebar_panel(model) do
     items = build_sidebar_items(model)
     border_fg = if model.focus == :sidebar, do: :cyan, else: :white
+    total = length(Catalog.list_components())
+    showing = length(model.components)
+
+    count_line =
+      if showing == total do
+        [text(" #{total} widgets", style: [:dim])]
+      else
+        [text(" #{showing}/#{total} widgets", style: [:dim])]
+      end
 
     search_line =
       if model.focus == :search do
@@ -211,9 +232,13 @@ defmodule Raxol.Playground.App do
 
     box style: %{border: :rounded, fg: border_fg, width: @sidebar_width} do
       column style: %{gap: 0} do
-        filter_lines ++ search_line ++ items
+        count_line ++ filter_lines ++ search_line ++ items
       end
     end
+  end
+
+  defp build_sidebar_items(%{components: []} = _model) do
+    [text("   No matches", style: [:dim], fg: :yellow)]
   end
 
   defp build_sidebar_items(model) do
@@ -441,8 +466,18 @@ defmodule Raxol.Playground.App do
   end
 
   defp forward_to_demo(model, event) do
-    {new_demo_model, _commands} =
+    {new_demo_model, demo_commands} =
       model.selected.module.update(event, model.demo_model)
+
+    {%{model | demo_model: new_demo_model}, demo_commands}
+  end
+
+  defp forward_tick_to_demo(%{selected: nil} = model), do: {model, []}
+  defp forward_tick_to_demo(%{demo_model: nil} = model), do: {model, []}
+
+  defp forward_tick_to_demo(model) do
+    {new_demo_model, _cmds} =
+      model.selected.module.update(:tick, model.demo_model)
 
     {%{model | demo_model: new_demo_model}, []}
   end
