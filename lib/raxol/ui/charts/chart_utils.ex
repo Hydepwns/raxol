@@ -53,11 +53,7 @@ defmodule Raxol.UI.Charts.ChartUtils do
     (value - min) / (max - min) * (new_max - new_min) + new_min
   end
 
-  @doc """
-  Clamps a value between `lo` and `hi`.
-  """
-  @spec clamp(number(), number(), number()) :: number()
-  def clamp(val, lo, hi), do: val |> max(lo) |> min(hi)
+  defdelegate clamp(val, lo, hi), to: Raxol.Core.Utils.Math
 
   @doc """
   Normalizes a list or CircularBuffer to a plain list of numbers.

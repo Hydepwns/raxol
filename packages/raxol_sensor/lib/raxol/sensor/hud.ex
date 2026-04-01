@@ -259,6 +259,7 @@ defmodule Raxol.Sensor.HUD do
     top ++ bottom ++ List.flatten(sides)
   end
 
+  # Local clamp -- raxol_sensor has zero deps, cannot import from raxol_core
   defp clamp(val, lo, hi), do: val |> max(lo) |> min(hi)
 
   defp string_to_cells(string, x, y, fg, bg) do

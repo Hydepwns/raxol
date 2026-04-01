@@ -195,16 +195,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     end
   end
 
-  defp format_bytes(bytes) when bytes < 1024, do: "#{bytes} B"
-
-  defp format_bytes(bytes) when bytes < 1024 * 1024,
-    do: "#{Float.round(bytes / 1024, 2)} KB"
-
-  defp format_bytes(bytes) when bytes < 1024 * 1024 * 1024,
-    do: "#{Float.round(bytes / 1024 / 1024, 2)} MB"
-
-  defp format_bytes(bytes),
-    do: "#{Float.round(bytes / 1024 / 1024 / 1024, 2)} GB"
+  defp format_bytes(bytes), do: Raxol.Utils.Format.format_bytes_iec(bytes)
 
   defp success_msg(text) do
     "\e[32m#{text}\e[0m"

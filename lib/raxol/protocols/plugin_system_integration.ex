@@ -141,10 +141,8 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
       """
     end
 
-    defp center_text(text, width) do
-      padding = max(0, div(width - String.length(text), 2))
-      String.duplicate(" ", padding) <> text
-    end
+    defp center_text(text, width),
+      do: Raxol.UI.Layout.LayoutUtils.center_text(text, width)
   end
 
   defimpl Styleable, for: ProtocolPlugin do

@@ -19,7 +19,7 @@ defmodule Raxol.Performance.AlertManager do
 
   # Alert configuration
   # 5 minutes
-  @alert_cooldown_ms 300_000
+  @alert_cooldown_ms Raxol.Core.Defaults.cooldown_ms()
   # 30 minutes
   @escalation_timeout_ms 1_800_000
 

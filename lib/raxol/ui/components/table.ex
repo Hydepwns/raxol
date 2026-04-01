@@ -173,7 +173,7 @@ defmodule Raxol.UI.Components.Table do
   def update({:set_page, page}, state) do
     filtered_data = filter_data(state.data, state.filter_term)
     max_page = max(1, ceil(length(filtered_data) / state.page_size))
-    new_page = max(1, min(page, max_page))
+    new_page = Raxol.Core.Utils.Math.clamp(page, 1, max_page)
     new_state = %{state | current_page: new_page, scroll_top: 0}
     {:ok, new_state}
   end
@@ -526,7 +526,10 @@ defmodule Raxol.UI.Components.Table do
     end)
   end
 
-  defp paginate_data(data, page, page_size) do
+  @doc """
+  Returns a page slice of data.
+  """
+  def paginate_data(data, page, page_size) do
     start_index = (page - 1) * page_size
     Enum.slice(data, start_index, page_size)
   end

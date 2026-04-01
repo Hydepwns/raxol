@@ -11,7 +11,7 @@ defmodule Raxol.Dev.CodeReloader do
 
   require Raxol.Core.Runtime.Log
 
-  @debounce_ms 500
+  @debounce_ms Raxol.Core.Defaults.sync_interval_ms()
 
   defstruct [:watcher_pid, :timer_ref, :lifecycle_pid]
 

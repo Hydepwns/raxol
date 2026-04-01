@@ -584,21 +584,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
 
   defp calculate_variance(values), do: Statistics.calculate_variance(values)
 
-  defp format_bytes(bytes) when bytes >= 1_000_000_000 do
-    "#{Float.round(bytes / 1_000_000_000, 2)} GB"
-  end
-
-  defp format_bytes(bytes) when bytes >= 1_000_000 do
-    "#{Float.round(bytes / 1_000_000, 2)} MB"
-  end
-
-  defp format_bytes(bytes) when bytes >= 1_000 do
-    "#{Float.round(bytes / 1_000, 2)} KB"
-  end
-
-  defp format_bytes(bytes) do
-    "#{bytes} B"
-  end
+  defp format_bytes(bytes), do: Raxol.Utils.Format.format_bytes(bytes)
 
   # =============================================================================
   # CSS and JavaScript

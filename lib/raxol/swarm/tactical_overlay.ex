@@ -14,8 +14,8 @@ defmodule Raxol.Swarm.TacticalOverlay do
 
   alias Raxol.Swarm.CRDT.{LWWRegister, ORSet}
 
-  @default_sync_interval_ms 500
-  @default_anti_entropy_interval_ms 60_000
+  @default_sync_interval_ms Raxol.Core.Defaults.sync_interval_ms()
+  @default_anti_entropy_interval_ms Raxol.Core.Defaults.cleanup_interval_ms()
 
   @type entity :: %{
           id: atom(),

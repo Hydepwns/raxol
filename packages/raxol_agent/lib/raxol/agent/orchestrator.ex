@@ -39,7 +39,10 @@ defmodule Raxol.Agent.Orchestrator do
 
   @max_event_log 200
   @default_pane_position %{x: 0, y: 0}
-  @default_pane_dimensions %{width: 80, height: 24}
+  @default_pane_dimensions %{
+    width: Raxol.Core.Defaults.terminal_width(),
+    height: Raxol.Core.Defaults.terminal_height()
+  }
 
   # -- Client API --------------------------------------------------------------
 

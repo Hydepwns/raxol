@@ -39,11 +39,8 @@ defmodule Raxol.Core.Behaviours.BaseRegistry do
       defstruct registry: %{}, metadata: %{}
 
       def start_link(init_opts \\ []) do
-        server_opts =
-          Keyword.take(init_opts, [:name, :timeout, :debug, :spawn_opt])
-
-        registry_opts =
-          Keyword.drop(init_opts, [:name, :timeout, :debug, :spawn_opt])
+        {server_opts, registry_opts} =
+          Raxol.Core.Utils.GenServerHelpers.split_server_opts(init_opts)
 
         GenServer.start_link(__MODULE__, registry_opts, server_opts)
       end

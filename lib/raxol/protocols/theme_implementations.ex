@@ -209,10 +209,8 @@ defmodule Raxol.Protocols.ThemeImplementations do
       end
     end
 
-    defp center_text(text, width) do
-      padding = max(0, div(width - String.length(text), 2))
-      String.duplicate(" ", padding) <> text
-    end
+    defp center_text(text, width),
+      do: Raxol.UI.Layout.LayoutUtils.center_text(text, width)
 
     defp hex_to_rgb(color), do: ColorConversion.hex_to_rgb(color)
 

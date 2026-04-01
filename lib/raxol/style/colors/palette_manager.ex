@@ -135,12 +135,8 @@ defmodule Raxol.Style.Colors.PaletteManager do
   defp hsl_rgb_components(h, c, x) when h < 300, do: {x, 0, c}
   defp hsl_rgb_components(_h, c, x), do: {c, 0, x}
 
-  defp rgb_to_hex(r, g, b) do
-    "#" <>
-      String.pad_leading(Integer.to_string(r, 16), 2, "0") <>
-      String.pad_leading(Integer.to_string(g, 16), 2, "0") <>
-      String.pad_leading(Integer.to_string(b, 16), 2, "0")
-  end
+  defp rgb_to_hex(r, g, b),
+    do: Raxol.Utils.ColorConversion.rgb_to_hex({r, g, b})
 
   defp ensure_accessible_contrast(colors) do
     dark_bg = "#121212"

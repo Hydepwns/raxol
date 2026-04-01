@@ -12,6 +12,10 @@ defmodule Raxol.Terminal.IO.IOServer do
   - Performance optimizations
   """
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   use Raxol.Core.Behaviours.BaseManager
   require Raxol.Core.Runtime.Log
 
@@ -544,17 +548,17 @@ defmodule Raxol.Terminal.IO.IOServer do
   defp initialize_new_components(config) do
     new_buffer_manager =
       Manager.new(
-        config.width || 80,
-        config.height || 24,
-        scrollback_limit: config.scrollback_limit || 1000,
+        config.width || @default_width,
+        config.height || @default_height,
+        scrollback_limit: config.scrollback_limit || @default_scrollback,
         memory_limit: config.memory_limit || 50 * 1024 * 1024
       )
 
     new_scroll_buffer =
-      Raxol.Terminal.Buffer.Scroll.new(config.scrollback_limit || 1000)
+      Raxol.Terminal.Buffer.Scroll.new(config.scrollback_limit || @default_scrollback)
 
     {:ok, new_renderer} = RenderServer.start_link(config.rendering || %{})
-    new_command_history = History.new(config.command_history_limit || 1000)
+    new_command_history = History.new(config.command_history_limit || @default_scrollback)
 
     {new_buffer_manager, new_scroll_buffer, new_renderer, new_command_history}
   end
@@ -566,7 +570,7 @@ defmodule Raxol.Terminal.IO.IOServer do
         Manager.new(
           width,
           height,
-          scrollback_limit: state.config[:scrollback_limit] || 1000,
+          scrollback_limit: state.config[:scrollback_limit] || @default_scrollback,
           memory_limit: state.config[:memory_limit] || 50 * 1024 * 1024
         )
 
@@ -596,12 +600,12 @@ defmodule Raxol.Terminal.IO.IOServer do
 
   defp get_default_config do
     %{
-      width: 80,
-      height: 24,
-      scrollback_limit: 1000,
+      width: @default_width,
+      height: @default_height,
+      scrollback_limit: @default_scrollback,
       # 50 MB
       memory_limit: 50 * 1024 * 1024,
-      command_history_limit: 1000,
+      command_history_limit: @default_scrollback,
       rendering: %{
         fps: 60,
         theme: %{

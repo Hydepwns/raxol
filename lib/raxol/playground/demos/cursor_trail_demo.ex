@@ -132,8 +132,8 @@ defmodule Raxol.Playground.Demos.CursorTrailDemo do
 
   defp move_cursor(model, dx, dy) do
     {cx, cy} = model.cursor
-    nx = max(0, min(cx + dx, @width - 1))
-    ny = max(0, min(cy + dy, @height - 1))
+    nx = Raxol.Core.Utils.Math.clamp(cx + dx, 0, @width - 1)
+    ny = Raxol.Core.Utils.Math.clamp(cy + dy, 0, @height - 1)
     trail = CursorTrail.update(model.trail, {nx, ny})
     %{model | cursor: {nx, ny}, trail: trail}
   end

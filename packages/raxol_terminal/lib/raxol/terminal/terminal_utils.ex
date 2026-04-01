@@ -4,6 +4,9 @@ defmodule Raxol.Terminal.TerminalUtils do
   consistent handling of terminal capabilities and dimensions.
   """
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+
   require Raxol.Core.Runtime.Log
 
   # Check if termbox2_nif is available at compile time
@@ -21,8 +24,8 @@ defmodule Raxol.Terminal.TerminalUtils do
   """
   @spec detect_dimensions :: {pos_integer(), pos_integer()}
   def detect_dimensions do
-    default_width = 80
-    default_height = 24
+    default_width = @default_width
+    default_height = @default_height
 
     {width, height} =
       with {:error, _} <- detect_with_io(:io),

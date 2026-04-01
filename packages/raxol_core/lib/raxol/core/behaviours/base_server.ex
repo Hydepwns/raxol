@@ -23,11 +23,8 @@ defmodule Raxol.Core.Behaviours.BaseServer do
       @behaviour Raxol.Core.Behaviours.BaseServer
 
       def start_link(init_opts \\ []) do
-        server_opts =
-          Keyword.take(init_opts, [:name, :timeout, :debug, :spawn_opt])
-
-        init_args =
-          Keyword.drop(init_opts, [:name, :timeout, :debug, :spawn_opt])
+        {server_opts, init_args} =
+          Raxol.Core.Utils.GenServerHelpers.split_server_opts(init_opts)
 
         GenServer.start_link(__MODULE__, init_args, server_opts)
       end

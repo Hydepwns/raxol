@@ -381,21 +381,23 @@ defmodule Raxol.Debug.DebuggerApp do
       :timeline ->
         max_offset = max(0, model.count - 20)
 
-        new_offset =
-          (model.timeline_offset + delta) |> max(0) |> min(max_offset)
+        import Raxol.Core.Utils.Math, only: [clamp: 3]
+
+        new_offset = clamp(model.timeline_offset + delta, 0, max_offset)
 
         %{model | timeline_offset: new_offset}
 
       :diff ->
+        import Raxol.Core.Utils.Math, only: [clamp: 3]
         max_offset = max(0, length(model.diff_changes) - 10)
-        new_offset = (model.diff_offset + delta) |> max(0) |> min(max_offset)
+        new_offset = clamp(model.diff_offset + delta, 0, max_offset)
         %{model | diff_offset: new_offset}
 
       :inspector ->
+        import Raxol.Core.Utils.Math, only: [clamp: 3]
         max_offset = max(0, length(model.inspector_lines) - 12)
 
-        new_offset =
-          (model.inspector_offset + delta) |> max(0) |> min(max_offset)
+        new_offset = clamp(model.inspector_offset + delta, 0, max_offset)
 
         %{model | inspector_offset: new_offset}
     end

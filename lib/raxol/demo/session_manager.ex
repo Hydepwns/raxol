@@ -10,7 +10,7 @@ defmodule Raxol.Demo.SessionManager do
   @default_max_sessions 1000
   @default_max_per_ip 10
   @default_timeout_ms 1_800_000
-  @cleanup_interval_ms 60_000
+  @cleanup_interval_ms Raxol.Core.Defaults.cleanup_interval_ms()
 
   defstruct sessions: %{}, ip_counts: %{}
 

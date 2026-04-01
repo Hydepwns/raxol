@@ -25,8 +25,8 @@ defmodule Raxol.UI.Components.Terminal do
         }
 
   defstruct id: nil,
-            width: 80,
-            height: 24,
+            width: Raxol.Core.Defaults.terminal_width(),
+            height: Raxol.Core.Defaults.terminal_height(),
             emulator: nil,
             style: %{},
             scroll_offset: 0
@@ -36,8 +36,8 @@ defmodule Raxol.UI.Components.Terminal do
   def init(props) do
     props_map = if Keyword.keyword?(props), do: Map.new(props), else: props
 
-    width = Map.get(props_map, :width, 80)
-    height = Map.get(props_map, :height, 24)
+    width = Map.get(props_map, :width, Raxol.Core.Defaults.terminal_width())
+    height = Map.get(props_map, :height, Raxol.Core.Defaults.terminal_height())
 
     emulator = EmulatorLite.new(width, height)
 

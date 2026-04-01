@@ -4,6 +4,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Manager do
   Consolidates: Manager, UnifiedManager, SafeManager, EnhancedManager, DamageTracker.
   """
 
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   alias Raxol.Terminal.ScreenBuffer.Core
 
   defstruct [
@@ -31,7 +33,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Manager do
   def new(width, height, opts \\ []) do
     # 10MB default
     memory_limit = Keyword.get(opts, :memory_limit, 10_000_000)
-    scrollback_limit = Keyword.get(opts, :scrollback_limit, 1000)
+    scrollback_limit = Keyword.get(opts, :scrollback_limit, @default_scrollback)
 
     main = Core.new(width, height, scrollback_limit)
     # No scrollback for alternate
@@ -393,7 +395,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Manager do
           non_neg_integer(),
           non_neg_integer()
         ) :: t()
-  def initialize_buffers(width, height, scrollback_limit \\ 1000) do
+  def initialize_buffers(width, height, scrollback_limit \\ @default_scrollback) do
     new(width, height, scrollback_limit: scrollback_limit)
   end
 

@@ -41,9 +41,9 @@ defmodule Raxol.Core.CircuitBreaker do
   @default_opts [
     failure_threshold: 5,
     success_threshold: 2,
-    open_timeout: 60_000,
-    half_open_timeout: 15_000,
-    reset_timeout: 120_000,
+    open_timeout: Raxol.Core.Defaults.idle_timeout_ms(),
+    half_open_timeout: Raxol.Core.Defaults.cb_half_open_timeout_ms(),
+    reset_timeout: Raxol.Core.Defaults.cb_reset_timeout_ms(),
     failure_rate_threshold: 0.5,
     volume_threshold: 10
   ]
@@ -88,7 +88,7 @@ defmodule Raxol.Core.CircuitBreaker do
   @spec call(breaker_name(), (-> result), timeout()) ::
           {:ok, result} | {:error, term()}
         when result: term()
-  def call(breaker_name, fun, timeout \\ 5000) do
+  def call(breaker_name, fun, timeout \\ Raxol.Core.Defaults.timeout_ms()) do
     GenServer.call(breaker_name, {:call, fun}, timeout)
   end
 
@@ -98,7 +98,12 @@ defmodule Raxol.Core.CircuitBreaker do
   @spec call_with_fallback(breaker_name(), (-> result), (-> result), timeout()) ::
           result
         when result: term()
-  def call_with_fallback(breaker_name, fun, fallback_fn, timeout \\ 5000) do
+  def call_with_fallback(
+        breaker_name,
+        fun,
+        fallback_fn,
+        timeout \\ Raxol.Core.Defaults.timeout_ms()
+      ) do
     case call(breaker_name, fun, timeout) do
       {:ok, result} -> result
       {:error, :circuit_open} -> fallback_fn.()

@@ -105,7 +105,13 @@ defmodule Raxol.Animation.Framework do
     cognitive_accessibility =
       Map.get(opts, :cognitive_accessibility, cognitive_accessibility_pref)
 
-    default_duration = Map.get(opts, :default_duration, 300)
+    default_duration =
+      Map.get(
+        opts,
+        :default_duration,
+        Raxol.Core.Defaults.animation_duration_ms()
+      )
+
     frame_ms = Map.get(opts, :frame_ms, @animation_frame_ms)
 
     # Store framework settings via StateManager
@@ -177,7 +183,13 @@ defmodule Raxol.Animation.Framework do
   def create_animation(name, params) do
     # Get default settings via StateManager
     settings = StateManager.get_settings()
-    default_duration = Map.get(settings, :default_duration, 300)
+
+    default_duration =
+      Map.get(
+        settings,
+        :default_duration,
+        Raxol.Core.Defaults.animation_duration_ms()
+      )
 
     # Create animation with defaults
     animation =

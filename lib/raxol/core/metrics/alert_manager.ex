@@ -33,7 +33,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
   @default_options %{
     # 1 minute in seconds
     check_interval: 60,
-    history_size: 1000,
+    history_size: Raxol.Core.Defaults.history_limit(),
     # 5 minutes in seconds
     default_cooldown: 300,
     default_severity: :warning

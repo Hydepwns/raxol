@@ -5,6 +5,9 @@ defmodule Raxol.Terminal.SessionManager.Helpers do
   Provides utilities for session cleanup, timing, and other session management tasks.
   """
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+
   @doc """
   Starts a cleanup timer for periodic session maintenance.
 
@@ -177,7 +180,7 @@ defmodule Raxol.Terminal.SessionManager.Helpers do
       connection_type: Map.get(config, :connection_type, :local),
       connected_at: System.monotonic_time(:millisecond),
       last_activity: System.monotonic_time(:millisecond),
-      terminal_size: Map.get(config, :terminal_size, {80, 24}),
+      terminal_size: Map.get(config, :terminal_size, {@default_width, @default_height}),
       capabilities: Map.get(config, :capabilities, [:resize, :color, :mouse]),
       metadata: Map.get(config, :metadata, %{})
     }

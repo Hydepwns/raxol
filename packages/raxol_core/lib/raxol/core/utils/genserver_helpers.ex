@@ -135,6 +135,32 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
     end
   end
 
+  @server_opt_keys [:name, :timeout, :debug, :spawn_opt]
+
+  @doc """
+  Splits a keyword list into GenServer server options and init args.
+
+  Server options (`:name`, `:timeout`, `:debug`, `:spawn_opt`) are
+  separated from the remaining application-specific options.
+
+  ## Examples
+
+      iex> split_server_opts(name: MyServer, timeout: 5000, foo: :bar)
+      {[name: MyServer, timeout: 5000], [foo: :bar]}
+
+      iex> split_server_opts(%{name: MyServer})
+      {[name: MyServer], []}
+  """
+  @spec split_server_opts(keyword() | map() | term()) ::
+          {keyword(), keyword() | term()}
+  def split_server_opts(opts) when is_map(opts),
+    do: split_server_opts(Map.to_list(opts))
+
+  def split_server_opts(opts) when is_list(opts),
+    do: {Keyword.take(opts, @server_opt_keys), Keyword.drop(opts, @server_opt_keys)}
+
+  def split_server_opts(value), do: {[], value}
+
   @doc """
   Initialize default state with common fields.
   """

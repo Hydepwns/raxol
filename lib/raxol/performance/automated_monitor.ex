@@ -19,11 +19,11 @@ defmodule Raxol.Performance.AutomatedMonitor do
 
   # Monitoring intervals
   # 30 seconds
-  @metrics_collection_interval 30_000
+  @metrics_collection_interval Raxol.Core.Defaults.health_check_interval_ms()
   # 1 minute
-  @health_check_interval 60_000
+  @health_check_interval Raxol.Core.Defaults.cleanup_interval_ms()
   # 5 minutes
-  @regression_check_interval 300_000
+  @regression_check_interval Raxol.Core.Defaults.cooldown_ms()
   # 15 minutes
   @alert_cooldown_period 900_000
 
@@ -80,7 +80,11 @@ defmodule Raxol.Performance.AutomatedMonitor do
   Force a performance regression check.
   """
   def check_regressions do
-    GenServer.call(__MODULE__, :check_regressions, 30_000)
+    GenServer.call(
+      __MODULE__,
+      :check_regressions,
+      Raxol.Core.Defaults.health_check_interval_ms()
+    )
   end
 
   @doc """

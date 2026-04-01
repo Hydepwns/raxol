@@ -5,6 +5,10 @@ defmodule Raxol.Terminal.Config.Defaults do
   Provides functions for generating default terminal configurations.
   """
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   @doc """
   Generates a default configuration map merging all specific defaults.
 
@@ -61,8 +65,8 @@ defmodule Raxol.Terminal.Config.Defaults do
   """
   def default_display_config do
     %{
-      width: 80,
-      height: 24,
+      width: @default_width,
+      height: @default_height,
       # Aligned from configuration.ex
       font_family: "Monospace",
       # Aligned from configuration.ex
@@ -108,7 +112,7 @@ defmodule Raxol.Terminal.Config.Defaults do
   def default_behavior_config do
     %{
       # Aligned from configuration.ex (@default_scrollback_height)
-      scrollback_limit: 1000,
+      scrollback_limit: @default_scrollback,
       # Added from configuration.ex
       prompt: "> ",
       # Added from configuration.ex

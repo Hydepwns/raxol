@@ -177,7 +177,13 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
     # Schedule new search
     timer_id = System.unique_integer([:positive])
-    _ = Process.send_after(self(), {:apply_search, search_text}, 300)
+
+    _ =
+      Process.send_after(
+        self(),
+        {:apply_search, search_text},
+        Raxol.Core.Defaults.debounce_ms()
+      )
 
     # Update buffer immediately
     {%{state | search_buffer: search_text, search_timer: timer_id}, nil}

@@ -47,7 +47,7 @@ defmodule Raxol.Core.Runtime.Supervisor do
       start: {dispatcher_mod, :start_link, [self(), init_arg]},
       type: :worker,
       restart: :permanent,
-      shutdown: 5000
+      shutdown: Raxol.Core.Defaults.shutdown_timeout_ms()
     }
 
     # Define Rendering Engine spec, extracting needed args from init_arg
@@ -68,7 +68,7 @@ defmodule Raxol.Core.Runtime.Supervisor do
       start: {rendering_engine_mod, :start_link, [rendering_engine_args]},
       type: :worker,
       restart: :permanent,
-      shutdown: 5000
+      shutdown: Raxol.Core.Defaults.shutdown_timeout_ms()
     }
 
     # Define Plugin Manager spec (assuming simple start_link/1)
@@ -79,7 +79,7 @@ defmodule Raxol.Core.Runtime.Supervisor do
       start: {plugin_manager_mod, :start_link, [[runtime_pid: self()]]},
       type: :worker,
       restart: :permanent,
-      shutdown: 5000
+      shutdown: Raxol.Core.Defaults.shutdown_timeout_ms()
     }
 
     # Note: Terminal.Driver is started elsewhere by runtime components

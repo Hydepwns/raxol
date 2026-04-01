@@ -155,7 +155,7 @@ defmodule Raxol.UI.Components.Display.Progress do
     border = Map.get(base_style, :border, :white)
     text_color = Map.get(base_style, :text, :white)
 
-    progress = max(0.0, min(1.0, state.progress))
+    progress = Raxol.Core.Utils.Math.clamp(state.progress, 0.0, 1.0)
     width = max(3, state.width)
     filled_width = floor(progress * (width - 2))
 
@@ -294,7 +294,7 @@ defmodule Raxol.UI.Components.Display.Progress do
     |> Map.put_new(:aria_label, nil)
     |> Map.put_new(:tooltip, nil)
     # Clamp progress between 0.0 and 1.0
-    |> Map.update!(:progress, &max(0.0, min(1.0, &1)))
+    |> Map.update!(:progress, &Raxol.Core.Utils.Math.clamp(&1, 0.0, 1.0))
     # Ensure minimum width for borders
     |> Map.update!(:width, &max(3, &1))
   end

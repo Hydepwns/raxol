@@ -30,7 +30,7 @@ defmodule Raxol.UI.Rendering.TimerServer do
   # 8ms debounce
   @default_debounce_interval 8
   # 1s monitoring
-  @default_monitor_interval 1000
+  @default_monitor_interval Raxol.Core.Defaults.monitor_interval_ms()
   # 2s adaptation checks
   @default_adaptive_interval 2000
 

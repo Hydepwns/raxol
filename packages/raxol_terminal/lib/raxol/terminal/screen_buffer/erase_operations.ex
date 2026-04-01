@@ -6,6 +6,8 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   including line erasing, display erasing, and region clearing operations.
   """
 
+  @default_height Raxol.Core.Defaults.terminal_height()
+
   require Logger
 
   alias Raxol.Terminal.Cell
@@ -204,7 +206,7 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   @spec erase_from_cursor_to_end(ScreenBuffer.t()) :: ScreenBuffer.t()
   def erase_from_cursor_to_end(buffer) do
     {x, y} = buffer.cursor_position || {0, 0}
-    height = buffer.height || 24
+    height = buffer.height || @default_height
     erase_from_cursor_to_end(buffer, x, y, 0, height)
   end
 

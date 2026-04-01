@@ -298,7 +298,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         component_module.init(props)
       end)
 
-    case Task.yield(task, 5000) do
+    case Task.yield(task, Raxol.Core.Defaults.timeout_ms()) do
       {:ok, {:ok, initial_state}} ->
         {:ok, initial_state}
 
@@ -335,7 +335,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         end
       end)
 
-    case Task.yield(task, 5000) do
+    case Task.yield(task, Raxol.Core.Defaults.timeout_ms()) do
       {:ok, {:success, result}} ->
         {:ok, result}
 

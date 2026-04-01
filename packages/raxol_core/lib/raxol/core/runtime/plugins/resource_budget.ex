@@ -15,6 +15,7 @@ defmodule Raxol.Core.Runtime.Plugins.ResourceBudget do
   use GenServer
 
   alias Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Plugins.Manifest
   alias Raxol.Core.Runtime.Plugins.PluginLifecycle
   alias Raxol.Core.Runtime.Plugins.PluginRegistry
 
@@ -37,10 +38,6 @@ defmodule Raxol.Core.Runtime.Plugins.ResourceBudget do
   @default_interval_ms 5_000
   @default_action :warn
   @warn_cycles_before_throttle 3
-  @default_max_memory_mb 50
-  @default_max_cpu_percent 10
-  @default_max_ets_tables 2
-  @default_max_processes 20
 
   defstruct [
     :timer_ref,
@@ -229,14 +226,7 @@ defmodule Raxol.Core.Runtime.Plugins.ResourceBudget do
     end
   end
 
-  defp default_budget do
-    %{
-      max_memory_mb: @default_max_memory_mb,
-      max_cpu_percent: @default_max_cpu_percent,
-      max_ets_tables: @default_max_ets_tables,
-      max_processes: @default_max_processes
-    }
-  end
+  defp default_budget, do: Manifest.default_budget()
 
   defp over_budget?(usage, budget) do
     usage.memory_mb > budget.max_memory_mb or

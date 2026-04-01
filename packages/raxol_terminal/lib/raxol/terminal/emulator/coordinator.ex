@@ -11,10 +11,13 @@ defmodule Raxol.Terminal.Emulator.Coordinator do
     ScreenBuffer
   }
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+
   @doc """
   Creates a new emulator instance with default settings.
   """
-  def new(width \\ 80, height \\ 24) do
+  def new(width \\ @default_width, height \\ @default_height) do
     Constructors.new(width, height)
   end
 
@@ -104,7 +107,7 @@ defmodule Raxol.Terminal.Emulator.Coordinator do
   end
 
   # Default width
-  defp get_width(_), do: 80
+  defp get_width(_), do: @default_width
 
   defp get_height(%{height: height}) when is_integer(height), do: height
 
@@ -114,5 +117,5 @@ defmodule Raxol.Terminal.Emulator.Coordinator do
   end
 
   # Default height
-  defp get_height(_), do: 24
+  defp get_height(_), do: @default_height
 end

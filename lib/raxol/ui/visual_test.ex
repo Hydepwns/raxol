@@ -54,8 +54,8 @@ defmodule Raxol.UI.VisualTest do
           checksum: String.t()
         }
   def render_snapshot(component, opts \\ []) do
-    width = Keyword.get(opts, :width, 80)
-    height = Keyword.get(opts, :height, 24)
+    width = Keyword.get(opts, :width, Raxol.Core.Defaults.terminal_width())
+    height = Keyword.get(opts, :height, Raxol.Core.Defaults.terminal_height())
     props = Keyword.drop(opts, [:width, :height])
 
     buffer = Buffer.create_blank_buffer(width, height)

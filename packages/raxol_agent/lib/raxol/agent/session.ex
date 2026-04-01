@@ -77,8 +77,8 @@ defmodule Raxol.Agent.Session do
     {:ok, lifecycle_pid} =
       Raxol.Core.Runtime.Lifecycle.start_link(app_module,
         environment: :agent,
-        width: 80,
-        height: 24,
+        width: Raxol.Core.Defaults.terminal_width(),
+        height: Raxol.Core.Defaults.terminal_height(),
         name: :"agent_lifecycle_#{inspect(id)}"
       )
 

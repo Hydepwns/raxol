@@ -33,6 +33,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   require Logger
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   @behaviour Raxol.Terminal.ScreenBufferBehaviour
 
   @compile {:no_warn_undefined,
@@ -104,10 +108,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Validates and normalizes the input dimensions to ensure they are valid.
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def new(width, height, scrollback_limit \\ 1000) do
-    width = Validation.validate_dimension(width, 80)
-    height = Validation.validate_dimension(height, 24)
-    scrollback_limit = Validation.validate_dimension(scrollback_limit, 1000)
+  def new(width, height, scrollback_limit \\ @default_scrollback) do
+    width = Validation.validate_dimension(width, @default_width)
+    height = Validation.validate_dimension(height, @default_height)
+    scrollback_limit = Validation.validate_dimension(scrollback_limit, @default_scrollback)
 
     %__MODULE__{
       cells: create_empty_grid(width, height),
@@ -128,7 +132,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   def new do
-    new(80, 24)
+    new(@default_width, @default_height)
   end
 
   def new(size) when is_integer(size) and size > 0 do

@@ -5,6 +5,8 @@ defmodule Raxol.Terminal.ScreenManager do
   including buffer switching, initialization, and state management.
   """
 
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ScreenBuffer.Manager
 
@@ -58,7 +60,7 @@ defmodule Raxol.Terminal.ScreenManager do
   Initializes both main and alternate screen buffers with default scrollback limit.
   """
   def initialize_buffers(width, height) do
-    initialize_buffers(width, height, 1000)
+    initialize_buffers(width, height, @default_scrollback)
   end
 
   @doc """
@@ -209,7 +211,7 @@ defmodule Raxol.Terminal.ScreenManager do
   Parses scrollback limit from options, defaulting to 1000.
   """
   def parse_scrollback_limit(opts) do
-    Keyword.get(opts, :scrollback_limit, 1000)
+    Keyword.get(opts, :scrollback_limit, @default_scrollback)
   end
 
   # === Additional ScreenManager Functions ===

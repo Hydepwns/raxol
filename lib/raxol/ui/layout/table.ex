@@ -15,7 +15,7 @@ defmodule Raxol.UI.Layout.Table do
   @header_height 1
   @border_width 1
   @cell_padding 2
-  @fallback_available_width 80
+  @fallback_available_width Raxol.Core.Defaults.terminal_width()
 
   @doc """
   Measures a table element.

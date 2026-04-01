@@ -109,7 +109,7 @@ defmodule Raxol.Core.ServerRegistry do
   Gracefully shutdown all servers in dependency order.
   """
   @spec graceful_shutdown(timeout()) :: :ok
-  def graceful_shutdown(timeout \\ 5000) do
+  def graceful_shutdown(timeout \\ Raxol.Core.Defaults.shutdown_timeout_ms()) do
     Log.info("Initiating graceful server shutdown")
 
     # Shutdown in reverse order to handle dependencies
@@ -140,7 +140,7 @@ defmodule Raxol.Core.ServerRegistry do
       id: server_name,
       start: {module, :start_link, [opts]},
       restart: :permanent,
-      shutdown: 5000,
+      shutdown: Raxol.Core.Defaults.shutdown_timeout_ms(),
       type: :worker,
       modules: [module]
     }

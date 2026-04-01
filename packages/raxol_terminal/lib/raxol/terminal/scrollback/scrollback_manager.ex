@@ -3,8 +3,10 @@ defmodule Raxol.Terminal.Scrollback.Manager do
   Manages terminal scrollback buffer operations.
   """
 
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   defstruct scrollback_buffer: [],
-            scrollback_limit: 1000,
+            scrollback_limit: @default_scrollback,
             current_position: 0
 
   @type scrollback_line :: String.t()
@@ -21,7 +23,7 @@ defmodule Raxol.Terminal.Scrollback.Manager do
   """
   def new(opts \\ []) do
     %__MODULE__{
-      scrollback_limit: Keyword.get(opts, :scrollback_limit, 1000)
+      scrollback_limit: Keyword.get(opts, :scrollback_limit, @default_scrollback)
     }
   end
 

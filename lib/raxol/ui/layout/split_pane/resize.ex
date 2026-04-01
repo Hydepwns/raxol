@@ -63,7 +63,8 @@ defmodule Raxol.UI.Layout.SplitPane.Resize do
       end
 
     # Clamp position to valid range
-    position = position |> max(min_size) |> min(usable - min_size)
+    position =
+      Raxol.Core.Utils.Math.clamp(position, min_size, usable - min_size)
 
     # For 2-pane splits, return proportional ratio
     if pane_count == 2 do
@@ -167,7 +168,7 @@ defmodule Raxol.UI.Layout.SplitPane.Resize do
     {a, b} = ratio
     total = a + b
     proportion = a / total + delta
-    proportion = proportion |> max(0.1) |> min(0.9)
+    proportion = Raxol.Core.Utils.Math.clamp(proportion, 0.1, 0.9)
 
     # Convert back to integer ratio (scale to 100 for precision)
     new_a = round(proportion * 100)

@@ -288,9 +288,7 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
     {state, commands}
   end
 
-  defp clamp(value, min_val, max_val) do
-    value |> max(min_val) |> min(max_val)
-  end
+  defp clamp(value, lo, hi), do: Raxol.Core.Utils.Math.clamp(value, lo, hi)
 
   @doc """
   Mount hook - called when component is mounted.

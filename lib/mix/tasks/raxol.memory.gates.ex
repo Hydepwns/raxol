@@ -621,16 +621,7 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
   defp format_value(value, "score"), do: "#{Float.round(value, 3)}"
   defp format_value(value, unit), do: "#{value} #{unit}"
 
-  defp format_bytes(bytes) when is_number(bytes) do
-    cond do
-      bytes >= 1_000_000_000 -> "#{Float.round(bytes / 1_000_000_000, 2)}GB"
-      bytes >= 1_000_000 -> "#{Float.round(bytes / 1_000_000, 2)}MB"
-      bytes >= 1_000 -> "#{Float.round(bytes / 1_000, 2)}KB"
-      true -> "#{bytes}B"
-    end
-  end
-
-  defp format_bytes(_), do: "N/A"
+  defp format_bytes(bytes), do: Raxol.Utils.Format.format_bytes(bytes)
 
   defp print_help do
     Mix.shell().info(@moduledoc)

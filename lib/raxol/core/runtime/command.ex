@@ -343,7 +343,13 @@ defmodule Raxol.Core.Runtime.Command do
 
   @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:shell, {command, opts}, context) do
-    timeout = Keyword.get(opts, :timeout, 30_000)
+    timeout =
+      Keyword.get(
+        opts,
+        :timeout,
+        Raxol.Core.Defaults.health_check_interval_ms()
+      )
+
     cd = Keyword.get(opts, :cd)
     env = Keyword.get(opts, :env, [])
 

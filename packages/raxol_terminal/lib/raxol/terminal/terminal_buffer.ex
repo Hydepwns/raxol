@@ -3,6 +3,10 @@ defmodule Raxol.Terminal.Buffer do
   Manages the terminal buffer state and operations.
   """
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   require Logger
 
   alias Raxol.Terminal.Buffer.Cell
@@ -72,7 +76,7 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec new() :: t()
   def new do
-    new({80, 24})
+    new({@default_width, @default_height})
   end
 
   @doc """
@@ -549,7 +553,7 @@ defmodule Raxol.Terminal.Buffer do
       damage_regions: buffer.damage_regions,
       scroll_position: 0,
       scrollback: [],
-      scrollback_limit: 1000,
+      scrollback_limit: @default_scrollback,
       selection: nil,
       default_style: nil
     }

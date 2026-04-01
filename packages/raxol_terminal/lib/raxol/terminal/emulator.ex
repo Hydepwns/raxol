@@ -41,6 +41,10 @@ defmodule Raxol.Terminal.Emulator do
 
   @behaviour Raxol.Terminal.EmulatorBehaviour
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   # Terminal emulator state requires many fields (modes, buffers, managers, cursor, etc.)
   # credo:disable-for-next-line Credo.Check.Warning.StructFieldAmount
   defstruct state: nil,
@@ -65,17 +69,17 @@ defmodule Raxol.Terminal.Emulator do
               single_shift: nil,
               active: :us_ascii
             },
-            width: 80,
-            height: 24,
+            width: @default_width,
+            height: @default_height,
             window_state: %{
               iconified: false,
               maximized: false,
               position: {0, 0},
-              size: {80, 24},
-              size_pixels: {640, 384},
+              size: {@default_width, @default_height},
+              size_pixels: {@default_width * 8, @default_height * 16},
               stacking_order: :normal,
-              previous_size: {80, 24},
-              saved_size: {80, 24},
+              previous_size: {@default_width, @default_height},
+              saved_size: {@default_width, @default_height},
               icon_name: ""
             },
             state_stack: [],
@@ -100,8 +104,8 @@ defmodule Raxol.Terminal.Emulator do
             bracketed_paste_active: false,
             bracketed_paste_buffer: "",
             saved_cursor: nil,
-            scroll_region: {0, 23},
-            scrollback_limit: 1000,
+            scroll_region: {0, @default_height - 1},
+            scrollback_limit: @default_scrollback,
             memory_limit: 10_000_000,
             session_id: "",
             client_options: %{},
@@ -389,8 +393,8 @@ defmodule Raxol.Terminal.Emulator do
   Starts a linked terminal emulator process.
   """
   def start_link(opts \\ []) do
-    width = Keyword.get(opts, :width, 80)
-    height = Keyword.get(opts, :height, 24)
+    width = Keyword.get(opts, :width, @default_width)
+    height = Keyword.get(opts, :height, @default_height)
     name = Keyword.get(opts, :name)
     initial_state = new(width, height, opts)
 
@@ -408,7 +412,7 @@ defmodule Raxol.Terminal.Emulator do
   # Constructor functions
   @impl Raxol.Terminal.EmulatorBehaviour
   def new do
-    new(80, 24, [])
+    new(@default_width, @default_height, [])
   end
 
   @impl Raxol.Terminal.EmulatorBehaviour
@@ -432,12 +436,12 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   @deprecated "Use new/3 with use_genservers: false option instead"
-  def new_lite(width \\ 80, height \\ 24, opts \\ []) do
+  def new_lite(width \\ @default_width, height \\ @default_height, opts \\ []) do
     new(width, height, Keyword.put(opts, :use_genservers, false))
   end
 
   @deprecated "Use new/3 with enable_history: false, alternate_buffer: false options instead"
-  def new_minimal(width \\ 80, height \\ 24) do
+  def new_minimal(width \\ @default_width, height \\ @default_height) do
     new(width, height,
       enable_history: false,
       alternate_buffer: false,

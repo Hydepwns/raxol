@@ -425,7 +425,7 @@ defmodule Raxol.Playground.App do
 
   defp move_cursor(model, delta) do
     max_idx = length(model.components) - 1
-    new_cursor = max(0, min(model.cursor + delta, max_idx))
+    new_cursor = Raxol.Core.Utils.Math.clamp(model.cursor + delta, 0, max_idx)
     %{model | cursor: new_cursor}
   end
 

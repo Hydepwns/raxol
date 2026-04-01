@@ -29,7 +29,7 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
       start: {__MODULE__, :start_link, [opts]},
       type: :worker,
       restart: :permanent,
-      shutdown: 5000
+      shutdown: Raxol.Core.Defaults.shutdown_timeout_ms()
     }
   end
 

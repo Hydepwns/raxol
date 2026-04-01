@@ -245,7 +245,7 @@ defmodule TodoApp do
     if len == 0 do
       model
     else
-      new_cursor = max(0, min(model.cursor + delta, len - 1))
+      new_cursor = Raxol.Core.Utils.Math.clamp(model.cursor + delta, 0, len - 1)
       %{model | cursor: new_cursor}
     end
   end

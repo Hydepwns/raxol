@@ -25,6 +25,10 @@ defmodule Raxol.Terminal.Session do
   alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
   alias Raxol.Terminal.Session.Storage
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   @type t :: %__MODULE__{
           id: String.t(),
           emulator: EmulatorStruct.t(),
@@ -183,8 +187,8 @@ defmodule Raxol.Terminal.Session do
     id =
       Keyword.get(opts, :id, "session_#{:erlang.unique_integer([:positive])}")
 
-    width = Keyword.get(opts, :width, 80)
-    height = Keyword.get(opts, :height, 24)
+    width = Keyword.get(opts, :width, @default_width)
+    height = Keyword.get(opts, :height, @default_height)
     title = Keyword.get(opts, :title, "Raxol Session")
     theme = Keyword.get(opts, :theme, :default)
     auto_save = Keyword.get(opts, :auto_save, false)
@@ -196,7 +200,7 @@ defmodule Raxol.Terminal.Session do
     # Create emulator with explicit dimensions
     scrollback_limit =
       Application.get_env(:raxol, :terminal, [])
-      |> Keyword.get(:scrollback_lines, 1000)
+      |> Keyword.get(:scrollback_lines, @default_scrollback)
 
     emulator = EmulatorStruct.new(width, height, scrollback: scrollback_limit)
 

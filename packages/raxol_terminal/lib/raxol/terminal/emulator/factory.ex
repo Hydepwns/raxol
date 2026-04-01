@@ -7,6 +7,8 @@ defmodule Raxol.Terminal.Emulator.Factory do
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
 
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   @doc """
   Creates a full-featured emulator with GenServer processes.
   Falls back to basic emulator on failure.
@@ -26,7 +28,7 @@ defmodule Raxol.Terminal.Emulator.Factory do
   def create_basic(width, height, opts) do
     enable_history = Keyword.get(opts, :enable_history, true)
     alternate_buffer = Keyword.get(opts, :alternate_buffer, true)
-    scrollback_limit = Keyword.get(opts, :scrollback_limit, 1000)
+    scrollback_limit = Keyword.get(opts, :scrollback_limit, @default_scrollback)
 
     main_buffer = ScreenBuffer.new(width, height)
     mode_manager = Raxol.Terminal.ModeManager.new()

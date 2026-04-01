@@ -12,6 +12,9 @@ defmodule Raxol.Terminal.Config do
   alias Raxol.Terminal.Config.ConfigValidator, as: Validator
   alias Raxol.Terminal.Config.Persistence
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+
   defstruct [
     :version,
     :width,
@@ -44,8 +47,8 @@ defmodule Raxol.Terminal.Config do
   def new do
     %__MODULE__{
       version: 1,
-      width: 80,
-      height: 24,
+      width: @default_width,
+      height: @default_height,
       colors: %{},
       styles: %{},
       input: %{},

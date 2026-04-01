@@ -18,7 +18,7 @@ defmodule Raxol.Agent.Backend.HTTP do
 
   @behaviour Raxol.Agent.AIBackend
 
-  @default_timeout 30_000
+  @default_timeout Raxol.Core.Defaults.health_check_interval_ms()
   @default_max_tokens 1_024
   @anthropic_api_version "2023-06-01"
   @default_ollama_port "11434"

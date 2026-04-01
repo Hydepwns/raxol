@@ -4,6 +4,8 @@ defmodule Raxol.Terminal.Tab.TabServer do
   This module handles tab creation, switching, state management, and configuration.
   """
 
+  @default_height Raxol.Core.Defaults.terminal_height()
+
   use Raxol.Core.Behaviours.BaseManager
   require Logger
 
@@ -290,7 +292,7 @@ defmodule Raxol.Terminal.Tab.TabServer do
     %{
       max_tabs: 100,
       tab_width: 120,
-      tab_height: 24,
+      tab_height: @default_height,
       tab_spacing: 2,
       tab_style: :minimal
     }

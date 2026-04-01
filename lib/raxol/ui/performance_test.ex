@@ -419,15 +419,5 @@ defmodule Raxol.UI.PerformanceTest do
     }
   end
 
-  defp format_bytes(bytes) when bytes < 1024 do
-    "#{bytes} bytes"
-  end
-
-  defp format_bytes(bytes) when bytes < 1_048_576 do
-    "#{Float.round(bytes / 1024, 2)} KB"
-  end
-
-  defp format_bytes(bytes) do
-    "#{Float.round(bytes / 1_048_576, 2)} MB"
-  end
+  defp format_bytes(bytes), do: Raxol.Utils.Format.format_bytes_iec(bytes)
 end

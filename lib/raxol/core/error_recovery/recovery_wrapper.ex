@@ -350,7 +350,11 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
 
   defp graceful_shutdown(wrapped_pid) do
     # Try graceful shutdown first
-    GenServer.stop(wrapped_pid, :normal, 5000)
+    GenServer.stop(
+      wrapped_pid,
+      :normal,
+      Raxol.Core.Defaults.shutdown_timeout_ms()
+    )
   catch
     :exit, _reason ->
       # Force kill if graceful shutdown fails

@@ -32,9 +32,9 @@ defmodule Raxol.Core.ErrorRecovery.ContextManager do
 
   @table_name :raxol_recovery_context
   # 1 minute
-  @cleanup_interval 60_000
+  @cleanup_interval Raxol.Core.Defaults.cleanup_interval_ms()
   # 5 minutes
-  @default_ttl 300_000
+  @default_ttl Raxol.Core.Defaults.cooldown_ms()
 
   defstruct [
     :table,

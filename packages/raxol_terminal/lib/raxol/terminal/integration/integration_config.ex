@@ -3,6 +3,8 @@ defmodule Raxol.Terminal.Integration.Config do
   Manages configuration for the terminal integration.
   """
 
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{
@@ -31,7 +33,7 @@ defmodule Raxol.Terminal.Integration.Config do
   def default_config do
     %__MODULE__{
       behavior: %{
-        scrollback_limit: 1000,
+        scrollback_limit: @default_scrollback,
         enable_command_history: true
       },
       # 50 MB

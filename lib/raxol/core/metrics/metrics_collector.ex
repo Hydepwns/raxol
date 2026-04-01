@@ -32,7 +32,7 @@ defmodule Raxol.Core.Metrics.MetricsCollector do
 
   @metrics_table :raxol_metrics
   @meta_table :raxol_metrics_meta
-  @history_limit 1000
+  @history_limit Raxol.Core.Defaults.history_limit()
 
   # ============================================================================
   # Public API - Direct ETS Access (No GenServer call needed)

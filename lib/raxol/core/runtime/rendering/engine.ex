@@ -61,12 +61,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     GenServer.start_link(__MODULE__, manager_opts, server_opts)
   end
 
-  defp normalize_and_split_opts(opts) when is_list(opts) do
-    {Keyword.take(opts, [:name, :timeout, :debug, :spawn_opt]),
-     Keyword.drop(opts, [:name, :timeout, :debug, :spawn_opt])}
-  end
-
-  defp normalize_and_split_opts(_), do: {[], []}
+  defp normalize_and_split_opts(opts),
+    do: Raxol.Core.Utils.GenServerHelpers.split_server_opts(opts)
 
   # --- BaseManager Callbacks ---
 
@@ -677,7 +673,11 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   defp get_plugin_manager_from_dispatcher(dispatcher_pid)
        when is_pid(dispatcher_pid) do
     with {:ok, response} <-
-           safe_genserver_call(dispatcher_pid, :get_plugin_manager, 5000),
+           safe_genserver_call(
+             dispatcher_pid,
+             :get_plugin_manager,
+             Raxol.Core.Defaults.timeout_ms()
+           ),
          {:ok, plugin_manager} <- validate_plugin_manager_response(response) do
       {:ok, plugin_manager}
     else

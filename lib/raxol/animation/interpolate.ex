@@ -90,8 +90,8 @@ defmodule Raxol.Animation.Interpolate do
 
   defp interpolate_hsl({h1, s1, l1}, {h2, s2, l2}, t) do
     h = interpolate_hue(h1, h2, t)
-    s = value(s1, s2, t) |> max(+0.0) |> min(1.0)
-    l = value(l1, l2, t) |> max(+0.0) |> min(1.0)
+    s = value(s1, s2, t) |> Raxol.Core.Utils.Math.clamp(0.0, 1.0)
+    l = value(l1, l2, t) |> Raxol.Core.Utils.Math.clamp(0.0, 1.0)
     {h, s, l}
   end
 

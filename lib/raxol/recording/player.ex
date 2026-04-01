@@ -199,7 +199,7 @@ defmodule Raxol.Recording.Player do
   end
 
   defp jump_to_us(state, target_us) do
-    target_us = max(0, min(target_us, state.total_us))
+    target_us = Raxol.Core.Utils.Math.clamp(target_us, 0, state.total_us)
 
     idx =
       Enum.find_index(state.events, fn {elapsed_us, _, _} ->

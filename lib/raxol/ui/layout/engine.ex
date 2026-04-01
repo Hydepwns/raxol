@@ -562,8 +562,11 @@ defmodule Raxol.UI.Layout.Engine do
       if raw_height == :fill, do: available_space.height, else: raw_height
 
     # Shrink available space for children by border/padding
-    avail_w = Map.get(available_space, :width, 80)
-    avail_h = Map.get(available_space, :height, 24)
+    avail_w =
+      Map.get(available_space, :width, Raxol.Core.Defaults.terminal_width())
+
+    avail_h =
+      Map.get(available_space, :height, Raxol.Core.Defaults.terminal_height())
 
     inner_space =
       Map.merge(available_space, %{

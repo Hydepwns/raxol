@@ -212,7 +212,10 @@ defmodule Raxol.Playground.Demos.ReplDemo do
 
   defp scroll_output(model, delta) do
     max_offset = max(0, length(model.output) - @visible_lines)
-    new_offset = (model.output_offset + delta) |> max(0) |> min(max_offset)
+
+    new_offset =
+      Raxol.Core.Utils.Math.clamp(model.output_offset + delta, 0, max_offset)
+
     %{model | output_offset: new_offset}
   end
 

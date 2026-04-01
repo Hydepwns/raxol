@@ -126,9 +126,16 @@ defmodule Raxol.UI.Layout.LayoutUtils do
 
   Clamped value within the specified bounds.
   """
-  def clamp(value, min, _max) when value < min, do: min
-  def clamp(value, _min, max) when value > max, do: max
-  def clamp(value, _min, _max), do: value
+  defdelegate clamp(value, lo, hi), to: Raxol.Core.Utils.Math
+
+  @doc """
+  Centers text within a given width by prepending spaces.
+  """
+  @spec center_text(String.t(), non_neg_integer()) :: String.t()
+  def center_text(text, width) do
+    padding = max(0, div(width - String.length(text), 2))
+    String.duplicate(" ", padding) <> text
+  end
 
   @doc """
   Calculates available space after subtracting used space.

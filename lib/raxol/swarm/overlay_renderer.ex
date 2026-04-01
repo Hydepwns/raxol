@@ -10,7 +10,7 @@ defmodule Raxol.Swarm.OverlayRenderer do
   """
 
   @stale_threshold_ms 5_000
-  @offline_threshold_ms 30_000
+  @offline_threshold_ms Raxol.Core.Defaults.health_check_interval_ms()
 
   @type cell ::
           {non_neg_integer(), non_neg_integer(), String.t(), atom(), atom(),

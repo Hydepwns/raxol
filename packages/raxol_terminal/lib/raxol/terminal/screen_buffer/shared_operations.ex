@@ -4,6 +4,8 @@ defmodule Raxol.Terminal.ScreenBuffer.SharedOperations do
   This module contains common functionality used across different screen buffer implementations.
   """
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+
   alias Raxol.Terminal.Cell
 
   @doc """
@@ -117,7 +119,7 @@ defmodule Raxol.Terminal.ScreenBuffer.SharedOperations do
 
   # Helper function to create an empty line
   defp create_empty_line(buffer) do
-    width = Map.get(buffer, :width, 80)
+    width = Map.get(buffer, :width, @default_width)
 
     Enum.map(0..(width - 1), fn _ ->
       %Cell{char: " ", style: buffer.default_style}

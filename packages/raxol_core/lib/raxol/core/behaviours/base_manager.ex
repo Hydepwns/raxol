@@ -88,18 +88,9 @@ defmodule Raxol.Core.Behaviours.BaseManager do
       # Default implementation for required callback
       def init_manager(_opts), do: {:ok, %{}}
 
-      # Private helper functions using pattern matching
-      defp normalize_and_split_opts(opts) when is_map(opts) do
-        normalize_and_split_opts(Map.to_list(opts))
-      end
-
-      defp normalize_and_split_opts(opts) when is_list(opts) do
-        server_keys = [:name, :timeout, :debug, :spawn_opt]
-        {Keyword.take(opts, server_keys), Keyword.drop(opts, server_keys)}
-      end
-
-      # Handle single non-keyword value (e.g., a PID) - pass it through as init arg
-      defp normalize_and_split_opts(value), do: {[], value}
+      # Splits GenServer opts from init args
+      defp normalize_and_split_opts(opts),
+        do: Raxol.Core.Utils.GenServerHelpers.split_server_opts(opts)
 
       defp normalize_init_result({:ok, state}), do: {:ok, state}
 

@@ -263,14 +263,10 @@ defmodule Raxol.Core.Theming.ThemeRegistry do
 
   @doc """
   Converts a hex string to RGB tuple.
+  Delegates to `Raxol.Utils.ColorConversion`.
   """
   @spec hex_to_rgb(hex_color()) :: rgb_color()
-  def hex_to_rgb("#" <> hex) do
-    {r, _} = Integer.parse(String.slice(hex, 0, 2), 16)
-    {g, _} = Integer.parse(String.slice(hex, 2, 2), 16)
-    {b, _} = Integer.parse(String.slice(hex, 4, 2), 16)
-    {r, g, b}
-  end
+  defdelegate hex_to_rgb(hex), to: Raxol.Utils.ColorConversion
 
   @doc """
   Converts a hex string to RGBA map.
@@ -283,14 +279,10 @@ defmodule Raxol.Core.Theming.ThemeRegistry do
 
   @doc """
   Converts an RGB tuple to hex string.
+  Delegates to `Raxol.Utils.ColorConversion`.
   """
   @spec rgb_to_hex(rgb_color()) :: hex_color()
-  def rgb_to_hex({r, g, b}) do
-    "#" <>
-      String.pad_leading(Integer.to_string(r, 16), 2, "0") <>
-      String.pad_leading(Integer.to_string(g, 16), 2, "0") <>
-      String.pad_leading(Integer.to_string(b, 16), 2, "0")
-  end
+  defdelegate rgb_to_hex(rgb), to: Raxol.Utils.ColorConversion
 
   # ============================================================================
   # Theme Definitions

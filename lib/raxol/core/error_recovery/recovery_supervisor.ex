@@ -208,7 +208,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
       id: child_id,
       start: {RecoveryWrapper, :start_link, [module, enhanced_args]},
       restart: :permanent,
-      shutdown: 5000,
+      shutdown: Raxol.Core.Defaults.shutdown_timeout_ms(),
       type: :worker
     }
   end
@@ -541,7 +541,7 @@ defmodule Raxol.Core.ErrorRecovery.RecoverySupervisor do
       id: :"#{child_id}_fallback",
       start: {fallback_module, :start_link, []},
       restart: :temporary,
-      shutdown: 5000,
+      shutdown: Raxol.Core.Defaults.shutdown_timeout_ms(),
       type: :worker
     }
 

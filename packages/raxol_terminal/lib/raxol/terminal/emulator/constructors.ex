@@ -7,11 +7,15 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   alias Raxol.Terminal.{Cursor.Manager, ModeManager, ScreenBuffer}
   alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   @doc """
   Creates a new terminal emulator instance with default dimensions.
   """
   def new do
-    new(80, 24)
+    new(@default_width, @default_height)
   end
 
   @doc """
@@ -110,7 +114,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
       # Other fields
       output_buffer: "",
       style: Raxol.Terminal.ANSI.TextFormatting.new(),
-      scrollback_limit: 1000,
+      scrollback_limit: @default_scrollback,
       scrollback_buffer: [],
       window_title: nil,
       plugin_manager: nil,
@@ -216,12 +220,12 @@ defmodule Raxol.Terminal.Emulator.Constructors do
       current_command_buffer: "",
       max_command_history: Keyword.get(opts, :max_command_history, 100),
       history_buffer:
-        Raxol.Terminal.HistoryBuffer.new(Keyword.get(opts, :max_command_history, 1000)),
+        Raxol.Terminal.HistoryBuffer.new(Keyword.get(opts, :max_command_history, @default_scrollback)),
 
       # Other fields
       output_buffer: "",
       style: Raxol.Terminal.ANSI.TextFormatting.new(),
-      scrollback_limit: Keyword.get(opts, :scrollback_limit, 1000),
+      scrollback_limit: Keyword.get(opts, :scrollback_limit, @default_scrollback),
       scrollback_buffer: [],
       window_title: nil,
       plugin_manager: plugin_manager,

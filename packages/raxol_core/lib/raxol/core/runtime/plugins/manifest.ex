@@ -45,6 +45,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manifest do
     max_processes: @default_max_processes
   }
 
+  @doc """
+  Returns the default resource budget for plugins.
+  """
+  @spec default_budget() :: resource_budget()
+  def default_budget, do: @default_budget
+
   defstruct [
     :id,
     :name,

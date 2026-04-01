@@ -454,7 +454,7 @@ defmodule Raxol.UI.Components.Input.TextField do
   @impl Raxol.UI.Components.Base.Component
   def unmount(state), do: state
 
-  defp clamp(value, min_val, max_val), do: max(min_val, min(value, max_val))
+  defp clamp(value, lo, hi), do: Raxol.Core.Utils.Math.clamp(value, lo, hi)
 
   # Helper to keep the cursor visible in the window
   defp adjust_scroll_offset(cursor_pos, width, value, scroll_offset) do

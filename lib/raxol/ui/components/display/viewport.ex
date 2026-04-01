@@ -249,7 +249,11 @@ defmodule Raxol.UI.Components.Display.Viewport do
   end
 
   defp clamp_scroll(pos, content_height, visible_height) do
-    max(0, min(pos, max_scroll(content_height, visible_height)))
+    Raxol.Core.Utils.Math.clamp(
+      pos,
+      0,
+      max_scroll(content_height, visible_height)
+    )
   end
 
   defp max_scroll(content_height, visible_height) do

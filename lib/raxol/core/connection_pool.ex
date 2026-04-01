@@ -34,9 +34,9 @@ defmodule Raxol.Core.ConnectionPool do
   @default_opts [
     pool_size: 5,
     max_overflow: 10,
-    timeout: 5000,
-    idle_timeout: 60_000,
-    health_check_interval: 30_000
+    timeout: Raxol.Core.Defaults.timeout_ms(),
+    idle_timeout: Raxol.Core.Defaults.idle_timeout_ms(),
+    health_check_interval: Raxol.Core.Defaults.health_check_interval_ms()
   ]
 
   defstruct [
@@ -74,7 +74,7 @@ defmodule Raxol.Core.ConnectionPool do
   """
   @spec transaction(pool_name(), (connection() -> result), timeout()) :: result
         when result: term()
-  def transaction(pool_name, fun, timeout \\ 5000) do
+  def transaction(pool_name, fun, timeout \\ Raxol.Core.Defaults.timeout_ms()) do
     GenServer.call(pool_name, {:checkout, fun, timeout}, timeout + 100)
   end
 
@@ -83,7 +83,7 @@ defmodule Raxol.Core.ConnectionPool do
   """
   @spec checkout(pool_name(), timeout()) ::
           {:ok, connection()} | {:error, term()}
-  def checkout(pool_name, timeout \\ 5000) do
+  def checkout(pool_name, timeout \\ Raxol.Core.Defaults.timeout_ms()) do
     GenServer.call(pool_name, {:checkout, timeout}, timeout + 100)
   end
 

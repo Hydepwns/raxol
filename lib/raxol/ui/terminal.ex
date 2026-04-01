@@ -378,15 +378,7 @@ defmodule Raxol.UI.Terminal do
     "48;2;#{r};#{g};#{b}"
   end
 
-  defp hex_to_rgb(hex) do
-    hex = String.replace(hex, ~r/^#/, "")
-
-    r = String.slice(hex, 0..1) |> String.to_integer(16)
-    g = String.slice(hex, 2..3) |> String.to_integer(16)
-    b = String.slice(hex, 4..5) |> String.to_integer(16)
-
-    {r, g, b}
-  end
+  defp hex_to_rgb(hex), do: Raxol.Utils.ColorConversion.hex_to_rgb(hex)
 
   defp parse_key(data) do
     key_mappings = %{
@@ -436,7 +428,10 @@ defmodule Raxol.UI.Terminal do
 
       # Default size
       _ ->
-        %{width: 80, height: 24}
+        %{
+          width: Raxol.Core.Defaults.terminal_width(),
+          height: Raxol.Core.Defaults.terminal_height()
+        }
     end
   end
 

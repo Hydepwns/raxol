@@ -22,51 +22,43 @@ defmodule Raxol.Test.IsolationHelper do
   Resets all global state to ensure test isolation.
   """
   def reset_global_state do
-    reset_accessibility_server()
-    reset_event_manager()
-    reset_user_preferences()
+    reset_if_alive(Raxol.Core.Accessibility.AccessibilityServer, :reset, [])
+    reset_if_alive(Raxol.Core.Events.EventManager, :clear_handlers, [])
+    reset_if_alive(Raxol.Core.UserPreferences, :reset_to_defaults_for_test!, [])
     reset_theme_state()
-    reset_ets_caches()
+
+    reset_if_alive(Raxol.Performance.ETSCacheManager, fn ->
+      Raxol.Performance.ETSCacheManager.clear_cache(:style)
+      Raxol.Performance.ETSCacheManager.clear_cache(:layout)
+      Raxol.Performance.ETSCacheManager.clear_cache(:theme_cache)
+    end)
+
     :ok
   end
 
-  defp reset_accessibility_server do
-    case Process.whereis(Raxol.Core.Accessibility.AccessibilityServer) do
+  @doc """
+  Calls `apply(module, function, args)` only if the named process is alive.
+  """
+  def reset_if_alive(module, function, args \\ [])
+
+  def reset_if_alive(module, function, args)
+      when is_atom(module) and is_atom(function) do
+    case Process.whereis(module) do
       nil -> :ok
-      _pid -> Raxol.Core.Accessibility.AccessibilityServer.reset()
+      _pid -> apply(module, function, args)
     end
   end
 
-  defp reset_event_manager do
-    case Process.whereis(Raxol.Core.Events.EventManager) do
+  def reset_if_alive(module, fun, _args)
+      when is_atom(module) and is_function(fun, 0) do
+    case Process.whereis(module) do
       nil -> :ok
-      _pid -> Raxol.Core.Events.EventManager.clear_handlers()
-    end
-  end
-
-  defp reset_user_preferences do
-    case Process.whereis(Raxol.Core.UserPreferences) do
-      nil -> :ok
-      _pid -> Raxol.Core.UserPreferences.reset_to_defaults_for_test!()
+      _pid -> fun.()
     end
   end
 
   defp reset_theme_state do
-    # Clear accumulated themes from Application env
     Application.delete_env(:raxol, :themes)
     Application.delete_env(:raxol, :current_theme)
-  end
-
-  defp reset_ets_caches do
-    # Clear style/theme caches if ETSCacheManager is running
-    case Process.whereis(Raxol.Performance.ETSCacheManager) do
-      nil ->
-        :ok
-
-      _pid ->
-        Raxol.Performance.ETSCacheManager.clear_cache(:style)
-        Raxol.Performance.ETSCacheManager.clear_cache(:layout)
-        Raxol.Performance.ETSCacheManager.clear_cache(:theme_cache)
-    end
   end
 end

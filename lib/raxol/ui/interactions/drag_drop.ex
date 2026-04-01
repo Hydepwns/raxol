@@ -465,7 +465,7 @@ defmodule Raxol.UI.Interactions.DragDrop do
     _ =
       Framework.create_animation(:drag_return, %{
         type: :slide,
-        duration: 300,
+        duration: Raxol.Core.Defaults.animation_duration_ms(),
         from: drag_offset,
         to: %{x: 0, y: 0},
         easing: :ease_out_back,

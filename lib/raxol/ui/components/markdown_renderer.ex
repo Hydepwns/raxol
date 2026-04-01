@@ -43,7 +43,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
   @impl true
   def render(state, _context) do
     markdown_text = state[:markdown_text] || ""
-    width = state[:width] || 80
+    width = state[:width] || Raxol.Core.Defaults.terminal_width()
 
     elements =
       if Code.ensure_loaded?(EarmarkParser) do

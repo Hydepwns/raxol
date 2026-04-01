@@ -138,7 +138,11 @@ defmodule Raxol.UI.Universal do
   @doc """
   Universal animation utilities.
   """
-  def animate(element, properties, duration \\ 300) do
+  def animate(
+        element,
+        properties,
+        duration \\ Raxol.Core.Defaults.animation_duration_ms()
+      ) do
     start_time = System.monotonic_time(:millisecond)
 
     _ =

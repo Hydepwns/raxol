@@ -18,7 +18,7 @@ defmodule Raxol.Core.Runtime.Lifecycle.Shutdown do
         "[Lifecycle] Stopping #{label} PID: #{inspect(pid)}"
       )
 
-      GenServer.stop(pid, :shutdown, 5_000)
+      GenServer.stop(pid, :shutdown, Raxol.Core.Defaults.shutdown_timeout_ms())
     end
   rescue
     e ->

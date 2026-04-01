@@ -8,6 +8,9 @@ defmodule Raxol.Terminal.Config.Manager do
   alias Raxol.Terminal.{Config, Emulator}
   require Raxol.Core.Runtime.Log
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+
   # Client API
   # BaseManager provides start_link/1 automatically with name: __MODULE__ as default
 
@@ -15,8 +18,8 @@ defmodule Raxol.Terminal.Config.Manager do
 
   @impl true
   def init_manager(opts) do
-    width = Keyword.get(opts, :width, 80)
-    height = Keyword.get(opts, :height, 24)
+    width = Keyword.get(opts, :width, @default_width)
+    height = Keyword.get(opts, :height, @default_height)
     {:ok, new(width, height)}
   end
 
@@ -39,8 +42,8 @@ defmodule Raxol.Terminal.Config.Manager do
   def new do
     %Config{
       version: 1,
-      width: 80,
-      height: 24,
+      width: @default_width,
+      height: @default_height,
       colors: %{},
       styles: %{},
       input: %{},

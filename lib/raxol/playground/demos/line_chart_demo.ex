@@ -5,7 +5,7 @@ defmodule Raxol.Playground.Demos.LineChartDemo do
   @data_points 30
   @chart_width 60
   @chart_height 15
-  @tick_interval_ms 300
+  @tick_interval_ms Raxol.Core.Defaults.animation_duration_ms()
 
   @sine_baseline 50
   @sine_amplitude 40

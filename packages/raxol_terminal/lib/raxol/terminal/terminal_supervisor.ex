@@ -5,6 +5,15 @@ defmodule Raxol.Terminal.Supervisor do
 
   use Supervisor
 
+  # Cache size budgets (bytes)
+  @total_cache_size 100 * 1024 * 1024
+  @animation_cache_size 10 * 1024 * 1024
+  @buffer_cache_size 50 * 1024 * 1024
+  @scroll_cache_size 20 * 1024 * 1024
+  @clipboard_cache_size 1 * 1024 * 1024
+  @general_cache_size 19 * 1024 * 1024
+  @default_cache_ttl_s Raxol.Core.Defaults.cache_ttl_seconds()
+
   def start_link(init_arg) do
     Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
@@ -15,15 +24,15 @@ defmodule Raxol.Terminal.Supervisor do
       {DynamicSupervisor, name: Raxol.Terminal.DynamicSupervisor, strategy: :one_for_one},
       {Raxol.Terminal.Cache.System,
        [
-         max_size: 100 * 1024 * 1024,
-         default_ttl: 3600,
+         max_size: @total_cache_size,
+         default_ttl: @default_cache_ttl_s,
          eviction_policy: :lru,
          namespace_configs: %{
-           animation: %{max_size: 10 * 1024 * 1024},
-           buffer: %{max_size: 50 * 1024 * 1024},
-           scroll: %{max_size: 20 * 1024 * 1024},
-           clipboard: %{max_size: 1 * 1024 * 1024},
-           general: %{max_size: 19 * 1024 * 1024}
+           animation: %{max_size: @animation_cache_size},
+           buffer: %{max_size: @buffer_cache_size},
+           scroll: %{max_size: @scroll_cache_size},
+           clipboard: %{max_size: @clipboard_cache_size},
+           general: %{max_size: @general_cache_size}
          }
        ]}
     ]

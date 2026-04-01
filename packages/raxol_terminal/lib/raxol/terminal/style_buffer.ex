@@ -4,6 +4,9 @@ defmodule Raxol.Terminal.StyleBuffer do
   This module handles text attributes, colors, and formatting for terminal output.
   """
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+
   @type style :: %{
           foreground: String.t() | nil,
           background: String.t() | nil,
@@ -41,8 +44,8 @@ defmodule Raxol.Terminal.StyleBuffer do
               attributes: []
             },
             style_map: %{},
-            width: 80,
-            height: 24
+            width: @default_width,
+            height: @default_height
 
   @doc """
   Creates a new style buffer with the given dimensions.

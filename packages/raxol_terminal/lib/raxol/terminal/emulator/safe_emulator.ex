@@ -10,6 +10,9 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Emulator.Telemetry
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+
   # 1MB max input
   @max_input_size 1_048_576
   @processing_timeout 5_000
@@ -497,8 +500,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp create_initial_emulator_state(opts) do
-    width = Keyword.get(opts, :width, 80)
-    height = Keyword.get(opts, :height, 24)
+    width = Keyword.get(opts, :width, @default_width)
+    height = Keyword.get(opts, :height, @default_height)
 
     state = %{
       width: width,

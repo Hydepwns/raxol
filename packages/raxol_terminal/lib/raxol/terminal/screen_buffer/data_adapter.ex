@@ -10,6 +10,9 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   operation layers without requiring architectural changes.
   """
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Cell
 
@@ -46,7 +49,7 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   """
   def lines_to_cells(buffer, lines_map)
       when is_map(buffer) and is_map(lines_map) do
-    height = Map.get(buffer, :height, 24)
+    height = Map.get(buffer, :height, @default_height)
 
     cells =
       0..(height - 1)
@@ -174,8 +177,8 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   end
 
   defp initialize_and_set_line(buffer, y, line) do
-    height = Map.get(buffer, :height, 24)
-    width = Map.get(buffer, :width, 80)
+    height = Map.get(buffer, :height, @default_height)
+    width = Map.get(buffer, :width, @default_width)
     default_style = Map.get(buffer, :default_style, %TextFormatting{})
     cells = create_empty_cells(width, height, default_style)
 

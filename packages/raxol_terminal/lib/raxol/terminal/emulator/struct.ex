@@ -5,6 +5,10 @@ defmodule Raxol.Terminal.Emulator.Struct do
 
   alias Raxol.Terminal.ScreenBuffer
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   # Helper functions for cursor operations with pattern matching
   defp call_cursor_operation(cursor, operation) when is_pid(cursor) do
     GenServer.call(cursor, operation)
@@ -405,9 +409,9 @@ defmodule Raxol.Terminal.Emulator.Struct do
 
   defp default_opts(opts) do
     %{
-      width: Keyword.get(opts, :width, 80),
-      height: Keyword.get(opts, :height, 24),
-      scrollback_limit: Keyword.get(opts, :scrollback_limit, 1000),
+      width: Keyword.get(opts, :width, @default_width),
+      height: Keyword.get(opts, :height, @default_height),
+      scrollback_limit: Keyword.get(opts, :scrollback_limit, @default_scrollback),
       memory_limit: Keyword.get(opts, :memory_limit, 100_000),
       max_command_history: Keyword.get(opts, :max_command_history, 100),
       plugin_manager: Keyword.get(opts, :plugin_manager),

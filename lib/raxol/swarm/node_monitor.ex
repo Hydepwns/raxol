@@ -11,10 +11,10 @@ defmodule Raxol.Swarm.NodeMonitor do
 
   require Logger
 
-  @default_ping_interval_ms 1_000
+  @default_ping_interval_ms Raxol.Core.Defaults.monitor_interval_ms()
   @rtt_history_size 60
   @suspect_threshold_ms 5_000
-  @down_threshold_ms 30_000
+  @down_threshold_ms Raxol.Core.Defaults.health_check_interval_ms()
 
   @type status :: :healthy | :suspect | :down
 

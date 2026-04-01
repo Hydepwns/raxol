@@ -4,6 +4,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   Consolidates: Initializer, Common, Helpers, and basic state management.
   """
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Cell
 
@@ -49,10 +53,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @doc """
   Creates a new screen buffer with the specified dimensions.
   """
-  def new(width, height, scrollback_limit \\ 1000) do
-    width = validate_dimension(width, 80)
-    height = validate_dimension(height, 24)
-    scrollback_limit = validate_dimension(scrollback_limit, 1000)
+  def new(width, height, scrollback_limit \\ @default_scrollback) do
+    width = validate_dimension(width, @default_width)
+    height = validate_dimension(height, @default_height)
+    scrollback_limit = validate_dimension(scrollback_limit, @default_scrollback)
 
     %__MODULE__{
       cells: create_empty_grid(width, height),

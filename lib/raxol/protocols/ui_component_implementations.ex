@@ -250,10 +250,8 @@ defmodule Raxol.Protocols.UIComponentImplementations do
       end)
     end
 
-    defp paginate_data(data, page, page_size) do
-      start_index = (page - 1) * page_size
-      Enum.slice(data, start_index, page_size)
-    end
+    defp paginate_data(data, page, page_size),
+      do: Raxol.UI.Components.Table.paginate_data(data, page, page_size)
 
     defp calculate_total_pages(table) do
       total_items = length(table.data)

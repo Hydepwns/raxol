@@ -10,6 +10,10 @@ defmodule Raxol.Terminal.Session.Serializer do
   alias Raxol.Terminal.ScreenBuffer.Core, as: ConsolidatedBuffer
   require Raxol.Core.Runtime.Log
 
+  @default_width Raxol.Core.Defaults.terminal_width()
+  @default_height Raxol.Core.Defaults.terminal_height()
+  @default_scrollback Raxol.Core.Defaults.scrollback_limit()
+
   @doc """
   Serializes a session state to a map that can be stored and later restored.
   """
@@ -54,8 +58,8 @@ defmodule Raxol.Terminal.Session.Serializer do
         # Return minimal valid session data
         %{
           id: session.id,
-          width: session.width || 80,
-          height: session.height || 24,
+          width: session.width || @default_width,
+          height: session.height || @default_height,
           title: session.title || "",
           theme: session.theme || %{},
           auto_save: session.auto_save || false,
@@ -433,7 +437,7 @@ defmodule Raxol.Terminal.Session.Serializer do
         window_state: Map.get(emulator_data, :window_state),
         state_stack: Map.get(emulator_data, :state_stack, []),
         output_buffer: Map.get(emulator_data, :output_buffer, ""),
-        scrollback_limit: Map.get(emulator_data, :scrollback_limit, 1000),
+        scrollback_limit: Map.get(emulator_data, :scrollback_limit, @default_scrollback),
         window_title: Map.get(emulator_data, :window_title),
         plugin_manager: Map.get(emulator_data, :plugin_manager),
         saved_cursor: Map.get(emulator_data, :saved_cursor),
@@ -498,7 +502,7 @@ defmodule Raxol.Terminal.Session.Serializer do
       cells: deserialized_cells,
       cursor_position: cursor_position,
       scrollback: [],
-      scrollback_limit: 1000,
+      scrollback_limit: @default_scrollback,
       selection: nil,
       scroll_region: nil,
       scroll_position: 0,
