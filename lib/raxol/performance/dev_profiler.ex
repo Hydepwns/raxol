@@ -2,12 +2,6 @@ defmodule Raxol.Performance.DevProfiler do
   @mix_env Mix.env()
   alias Raxol.Core.Runtime.Log
 
-  # Dev-only private functions become dead code when compiled outside :dev.
-  # profile/2 and start_continuous/1 short-circuit in non-dev environments.
-  if @mix_env != :dev do
-    @dialyzer [:no_unused, :no_match]
-  end
-
   @moduledoc """
   Development-mode profiler for detailed performance analysis.
 
@@ -89,47 +83,10 @@ defmodule Raxol.Performance.DevProfiler do
       do_profile(Keyword.merge(@default_opts, opts), fun)
     end
   else
-    def profile(_opts, fun) when is_list(_opts) and is_function(fun) do
+    def profile(opts, fun) when is_list(opts) and is_function(fun) do
       Log.warning("DevProfiler: development mode only")
       fun.()
     end
-  end
-
-  defp do_profile(opts, fun) do
-    Log.info("Starting profiling")
-
-    start_time = System.monotonic_time(:microsecond)
-    memory_before = if opts[:memory], do: get_memory_info(), else: nil
-
-    profiling_ref = start_profiling_tools(opts)
-
-    result =
-      try do
-        fun.()
-      catch
-        kind, error ->
-          _ = stop_profiling_tools(profiling_ref)
-          :erlang.raise(kind, error, __STACKTRACE__)
-      end
-
-    profile_data = stop_profiling_tools(profiling_ref)
-
-    end_time = System.monotonic_time(:microsecond)
-    duration = end_time - start_time
-    memory_after = if opts[:memory], do: get_memory_info(), else: nil
-
-    report =
-      generate_report(%{
-        duration: duration,
-        memory_before: memory_before,
-        memory_after: memory_after,
-        profile_data: profile_data,
-        opts: opts
-      })
-
-    output_report(report, opts[:output_format])
-
-    result
   end
 
   @doc """
@@ -195,95 +152,279 @@ defmodule Raxol.Performance.DevProfiler do
     collect_memory_samples(samples, end_time)
   end
 
-  # Private Functions
+  # Dev-only private functions -- only reachable from profile/2 and
+  # start_continuous/1 which short-circuit in non-dev environments.
+  if @mix_env == :dev do
+    defp do_profile(opts, fun) do
+      Log.info("Starting profiling")
 
-  defp start_profiling_tools(opts) do
-    tools = %{}
+      start_time = System.monotonic_time(:microsecond)
+      memory_before = if opts[:memory], do: get_memory_info(), else: nil
 
-    tools =
-      if opts[:call_graph] do
-        _ = Application.ensure_all_started(:tools)
-        _ = apply(:fprof, :start, [])
-        _ = apply(:fprof, :trace, [:start])
-        Map.put(tools, :fprof, true)
+      profiling_ref = start_profiling_tools(opts)
+
+      result =
+        try do
+          fun.()
+        catch
+          kind, error ->
+            _ = stop_profiling_tools(profiling_ref)
+            :erlang.raise(kind, error, __STACKTRACE__)
+        end
+
+      profile_data = stop_profiling_tools(profiling_ref)
+
+      end_time = System.monotonic_time(:microsecond)
+      duration = end_time - start_time
+      memory_after = if opts[:memory], do: get_memory_info(), else: nil
+
+      report =
+        generate_report(%{
+          duration: duration,
+          memory_before: memory_before,
+          memory_after: memory_after,
+          profile_data: profile_data,
+          opts: opts
+        })
+
+      output_report(report, opts[:output_format])
+
+      result
+    end
+
+    defp start_profiling_tools(opts) do
+      tools = %{}
+
+      tools =
+        if opts[:call_graph] do
+          _ = Application.ensure_all_started(:tools)
+          _ = apply(:fprof, :start, [])
+          _ = apply(:fprof, :trace, [:start])
+          Map.put(tools, :fprof, true)
+        else
+          tools
+        end
+
+      if opts[:processes] do
+        Map.put(tools, :process_monitor, spawn_process_monitor())
       else
         tools
       end
+    end
 
-    if opts[:processes] do
-      Map.put(tools, :process_monitor, spawn_process_monitor())
-    else
-      tools
+    defp stop_profiling_tools(tools) do
+      profile_data = %{}
+      profile_data = stop_fprof(profile_data, Map.get(tools, :fprof))
+      stop_process_monitor(profile_data, Map.get(tools, :process_monitor))
+    end
+
+    defp stop_fprof(profile_data, nil), do: profile_data
+    defp stop_fprof(profile_data, false), do: profile_data
+
+    defp stop_fprof(profile_data, true) do
+      _ = apply(:fprof, :trace, [:stop])
+      _ = apply(:fprof, :profile, [])
+      fprof_data = capture_fprof_analysis()
+      _ = apply(:fprof, :stop, [])
+      Map.put(profile_data, :fprof, fprof_data)
+    end
+
+    defp stop_process_monitor(profile_data, nil), do: profile_data
+
+    defp stop_process_monitor(profile_data, monitor_pid) do
+      send(monitor_pid, :stop)
+
+      receive do
+        {:process_data, data} -> Map.put(profile_data, :processes, data)
+      after
+        1000 -> profile_data
+      end
+    end
+
+    defp capture_fprof_analysis do
+      temp_file =
+        System.tmp_dir!() <> "/raxol_fprof_#{:os.system_time()}.analysis"
+
+      try do
+        _ = apply(:fprof, :analyse, [[dest: String.to_charlist(temp_file)]])
+        File.read!(temp_file)
+      catch
+        _, _ -> "fprof analysis failed"
+      after
+        _ = File.rm(temp_file)
+      end
+    end
+
+    defp spawn_process_monitor do
+      parent = self()
+
+      spawn(fn ->
+        process_samples = collect_process_samples([])
+        send(parent, {:process_data, process_samples})
+      end)
+    end
+
+    defp collect_process_samples(samples) do
+      receive do
+        :stop -> samples
+      after
+        100 ->
+          sample = %{
+            timestamp: System.monotonic_time(:millisecond),
+            process_count: length(Process.list()),
+            memory_usage: get_memory_info(),
+            top_processes: get_top_processes(5)
+          }
+
+          collect_process_samples([sample | samples])
+      end
+    end
+
+    defp get_top_processes(count) do
+      Process.list()
+      |> Enum.map(fn pid ->
+        case Process.info(pid, [:memory, :current_function]) do
+          nil ->
+            nil
+
+          info ->
+            %{
+              pid: pid,
+              memory: info[:memory] || 0,
+              current_function: info[:current_function]
+            }
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.sort_by(& &1.memory, :desc)
+      |> Enum.take(count)
+    end
+
+    defp generate_report(data) do
+      duration_ms = data.duration / 1000
+
+      report = """
+
+      [STATS] Performance Profile Report
+      ═══════════════════════════════════════
+
+      Execution Time: #{Float.round(duration_ms, 2)}ms
+      """
+
+      # Add memory analysis
+      report =
+        if data.memory_before && data.memory_after do
+          memory_diff = data.memory_after.total - data.memory_before.total
+          memory_diff_mb = memory_diff / (1024 * 1024)
+
+          report <>
+            """
+
+            Memory Usage:
+            - Before: #{Float.round(data.memory_before.total / (1024 * 1024), 2)}MB
+            - After:  #{Float.round(data.memory_after.total / (1024 * 1024), 2)}MB
+            - Change: #{if memory_diff >= 0, do: "+", else: ""}#{Float.round(memory_diff_mb, 2)}MB
+            """
+        else
+          report
+        end
+
+      # Add optimization suggestions
+      suggestions = generate_optimization_suggestions(data)
+
+      if suggestions != [] do
+        report <>
+          """
+
+          [TIP] Optimization Suggestions:
+          #{Enum.map_join(suggestions, "\n", &"  • #{&1}")}
+          """
+      else
+        report <> "\n\n[OK] No obvious optimizations detected"
+      end
+    end
+
+    defp generate_optimization_suggestions(data) do
+      duration_ms = data.duration / 1000
+      memory_growth = memory_growth(data)
+
+      []
+      |> maybe_add(
+        duration_ms > 1000,
+        "Consider async execution or breaking into smaller operations (#{Float.round(duration_ms, 1)}ms)"
+      )
+      |> maybe_add(
+        memory_growth > 50 * 1024 * 1024,
+        "High memory allocation detected - consider memory pooling or streaming"
+      )
+    end
+
+    defp memory_growth(%{memory_before: before, memory_after: after_mem})
+         when not is_nil(before) and not is_nil(after_mem) do
+      after_mem.total - before.total
+    end
+
+    defp memory_growth(_), do: 0
+
+    defp output_report(report, format) do
+      case format do
+        :text ->
+          Log.info(report)
+
+        :html ->
+          html_report = generate_html_report(report)
+          filename = "/tmp/raxol_profile_#{:os.system_time()}.html"
+          _ = File.write!(filename, html_report)
+          Log.info("HTML report written to: #{filename}")
+
+        :json ->
+          json_report = Jason.encode!(parse_report_to_map(report))
+          Log.info("JSON Report: #{json_report}")
+      end
+    end
+
+    defp generate_html_report(text_report) do
+      """
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>Raxol Performance Report</title>
+          <style>
+              body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
+              .report { background: #2d2d30; padding: 20px; border-radius: 8px; }
+              .metric { color: #4ec9b0; }
+              .suggestion { color: #ffd700; }
+          </style>
+      </head>
+      <body>
+          <div class="report">
+              <pre>#{text_report}</pre>
+          </div>
+      </body>
+      </html>
+      """
+    end
+
+    defp parse_report_to_map(report) do
+      %{
+        type: "performance_report",
+        content: report,
+        timestamp: System.system_time(:millisecond)
+      }
+    end
+
+    defp continuous_profiling_loop(interval, duration, auto_hints) do
+      _ =
+        if auto_hints do
+          analyze_current_performance()
+        end
+
+      Process.sleep(interval)
+      continuous_profiling_loop(interval, duration, auto_hints)
     end
   end
 
-  defp stop_profiling_tools(tools) do
-    profile_data = %{}
-    profile_data = stop_fprof(profile_data, Map.get(tools, :fprof))
-    stop_process_monitor(profile_data, Map.get(tools, :process_monitor))
-  end
-
-  defp stop_fprof(profile_data, nil), do: profile_data
-  defp stop_fprof(profile_data, false), do: profile_data
-
-  defp stop_fprof(profile_data, true) do
-    _ = apply(:fprof, :trace, [:stop])
-    _ = apply(:fprof, :profile, [])
-    fprof_data = capture_fprof_analysis()
-    _ = apply(:fprof, :stop, [])
-    Map.put(profile_data, :fprof, fprof_data)
-  end
-
-  defp stop_process_monitor(profile_data, nil), do: profile_data
-
-  defp stop_process_monitor(profile_data, monitor_pid) do
-    send(monitor_pid, :stop)
-
-    receive do
-      {:process_data, data} -> Map.put(profile_data, :processes, data)
-    after
-      1000 -> profile_data
-    end
-  end
-
-  defp capture_fprof_analysis do
-    temp_file =
-      System.tmp_dir!() <> "/raxol_fprof_#{:os.system_time()}.analysis"
-
-    try do
-      _ = apply(:fprof, :analyse, [[dest: String.to_charlist(temp_file)]])
-      File.read!(temp_file)
-    catch
-      _, _ -> "fprof analysis failed"
-    after
-      _ = File.rm(temp_file)
-    end
-  end
-
-  defp spawn_process_monitor do
-    parent = self()
-
-    spawn(fn ->
-      process_samples = collect_process_samples([])
-      send(parent, {:process_data, process_samples})
-    end)
-  end
-
-  defp collect_process_samples(samples) do
-    receive do
-      :stop -> samples
-    after
-      100 ->
-        sample = %{
-          timestamp: System.monotonic_time(:millisecond),
-          process_count: length(Process.list()),
-          memory_usage: get_memory_info(),
-          top_processes: get_top_processes(5)
-        }
-
-        collect_process_samples([sample | samples])
-    end
-  end
+  # Always-available private functions
 
   defp get_memory_info do
     %{
@@ -346,26 +487,6 @@ defmodule Raxol.Performance.DevProfiler do
       atom_count: :erlang.system_info(:atom_count),
       atom_limit: :erlang.system_info(:atom_limit)
     }
-  end
-
-  defp get_top_processes(count) do
-    Process.list()
-    |> Enum.map(fn pid ->
-      case Process.info(pid, [:memory, :current_function]) do
-        nil ->
-          nil
-
-        info ->
-          %{
-            pid: pid,
-            memory: info[:memory] || 0,
-            current_function: info[:current_function]
-          }
-      end
-    end)
-    |> Enum.reject(&is_nil/1)
-    |> Enum.sort_by(& &1.memory, :desc)
-    |> Enum.take(count)
   end
 
   defp analyze_memory(memory_info) do
@@ -445,129 +566,6 @@ defmodule Raxol.Performance.DevProfiler do
     end
 
     hints
-  end
-
-  defp generate_report(data) do
-    duration_ms = data.duration / 1000
-
-    report = """
-
-    [STATS] Performance Profile Report
-    ═══════════════════════════════════════
-
-    Execution Time: #{Float.round(duration_ms, 2)}ms
-    """
-
-    # Add memory analysis
-    report =
-      if data.memory_before && data.memory_after do
-        memory_diff = data.memory_after.total - data.memory_before.total
-        memory_diff_mb = memory_diff / (1024 * 1024)
-
-        report <>
-          """
-
-          Memory Usage:
-          - Before: #{Float.round(data.memory_before.total / (1024 * 1024), 2)}MB
-          - After:  #{Float.round(data.memory_after.total / (1024 * 1024), 2)}MB
-          - Change: #{if memory_diff >= 0, do: "+", else: ""}#{Float.round(memory_diff_mb, 2)}MB
-          """
-      else
-        report
-      end
-
-    # Add optimization suggestions
-    suggestions = generate_optimization_suggestions(data)
-
-    if suggestions != [] do
-      report <>
-        """
-
-        [TIP] Optimization Suggestions:
-        #{Enum.map_join(suggestions, "\n", &"  • #{&1}")}
-        """
-    else
-      report <> "\n\n[OK] No obvious optimizations detected"
-    end
-  end
-
-  defp generate_optimization_suggestions(data) do
-    duration_ms = data.duration / 1000
-    memory_growth = memory_growth(data)
-
-    []
-    |> maybe_add(
-      duration_ms > 1000,
-      "Consider async execution or breaking into smaller operations (#{Float.round(duration_ms, 1)}ms)"
-    )
-    |> maybe_add(
-      memory_growth > 50 * 1024 * 1024,
-      "High memory allocation detected - consider memory pooling or streaming"
-    )
-  end
-
-  defp memory_growth(%{memory_before: before, memory_after: after_mem})
-       when not is_nil(before) and not is_nil(after_mem) do
-    after_mem.total - before.total
-  end
-
-  defp memory_growth(_), do: 0
-
-  defp output_report(report, format) do
-    case format do
-      :text ->
-        Log.info(report)
-
-      :html ->
-        html_report = generate_html_report(report)
-        filename = "/tmp/raxol_profile_#{:os.system_time()}.html"
-        _ = File.write!(filename, html_report)
-        Log.info("HTML report written to: #{filename}")
-
-      :json ->
-        json_report = Jason.encode!(parse_report_to_map(report))
-        Log.info("JSON Report: #{json_report}")
-    end
-  end
-
-  defp generate_html_report(text_report) do
-    """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Raxol Performance Report</title>
-        <style>
-            body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
-            .report { background: #2d2d30; padding: 20px; border-radius: 8px; }
-            .metric { color: #4ec9b0; }
-            .suggestion { color: #ffd700; }
-        </style>
-    </head>
-    <body>
-        <div class="report">
-            <pre>#{text_report}</pre>
-        </div>
-    </body>
-    </html>
-    """
-  end
-
-  defp parse_report_to_map(report) do
-    %{
-      type: "performance_report",
-      content: report,
-      timestamp: System.system_time(:millisecond)
-    }
-  end
-
-  defp continuous_profiling_loop(interval, duration, auto_hints) do
-    _ =
-      if auto_hints do
-        analyze_current_performance()
-      end
-
-    Process.sleep(interval)
-    continuous_profiling_loop(interval, duration, auto_hints)
   end
 
   defp collect_memory_samples(samples, end_time) do
