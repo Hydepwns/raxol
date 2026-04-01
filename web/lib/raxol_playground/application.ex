@@ -13,7 +13,8 @@ defmodule RaxolPlayground.Application do
       [
         RaxolPlaygroundWeb.Telemetry,
         {DNSCluster,
-         query: Application.get_env(:raxol_playground, :dns_cluster_query) || :ignore},
+         query:
+           Application.get_env(:raxol_playground, :dns_cluster_query) || :ignore},
         {Phoenix.PubSub, name: RaxolPlayground.PubSub},
         Supervisor.child_spec({Phoenix.PubSub, name: Raxol.PubSub},
           id: :raxol_pubsub
@@ -29,7 +30,10 @@ defmodule RaxolPlayground.Application do
   defp maybe_ssh_playground do
     if System.get_env("RAXOL_SSH_PLAYGROUND") == "true" do
       port = String.to_integer(System.get_env("RAXOL_SSH_PORT") || "2222")
-      max = String.to_integer(System.get_env("RAXOL_SSH_MAX_CONNECTIONS") || "50")
+
+      max =
+        String.to_integer(System.get_env("RAXOL_SSH_MAX_CONNECTIONS") || "50")
+
       keys_dir = System.get_env("RAXOL_SSH_HOST_KEYS_DIR") || "/app/ssh_keys"
 
       try do

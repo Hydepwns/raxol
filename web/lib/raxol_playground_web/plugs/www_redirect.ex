@@ -40,7 +40,13 @@ defmodule RaxolPlaygroundWeb.Plugs.WwwRedirect do
     end
   end
 
-  defp build_url(%{scheme: scheme, host: host, port: port, path: path, query: query}) do
+  defp build_url(%{
+         scheme: scheme,
+         host: host,
+         port: port,
+         path: path,
+         query: query
+       }) do
     base = "#{scheme}://#{host}"
 
     base =

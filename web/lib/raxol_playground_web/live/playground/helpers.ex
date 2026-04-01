@@ -32,4 +32,16 @@ defmodule RaxolPlaygroundWeb.Playground.Helpers do
       {:catppuccin, "Catppuccin", "#1e1e2e"}
     ]
   end
+
+  @doc "Returns the foreground color for a theme."
+  def theme_fg(:dracula), do: "#f8f8f2"
+  def theme_fg(:nord), do: "#d8dee9"
+  def theme_fg(:monokai), do: "#f8f8f2"
+  def theme_fg(:solarized_dark), do: "#839496"
+  def theme_fg(:synthwave84), do: "#e0def4"
+  def theme_fg(:gruvbox_dark), do: "#ebdbb2"
+  def theme_fg(:one_dark), do: "#abb2bf"
+  def theme_fg(:tokyo_night), do: "#a9b1d6"
+  def theme_fg(:catppuccin), do: "#cdd6f4"
+  def theme_fg(_), do: "#e0e0e0"
 end

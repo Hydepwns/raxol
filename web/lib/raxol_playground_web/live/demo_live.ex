@@ -32,7 +32,9 @@ defmodule RaxolPlaygroundWeb.DemoLive do
       |> assign(:show_code, false)
       |> assign(:demo_error, nil)
       |> assign(:demo_timer, nil)
-      |> then(&DemoLifecycle.start_demo(&1, component, timeout_ms: @demo_timeout_ms))
+      |> then(
+        &DemoLifecycle.start_demo(&1, component, timeout_ms: @demo_timeout_ms)
+      )
 
     {:ok, socket}
   end
@@ -96,14 +98,25 @@ defmodule RaxolPlaygroundWeb.DemoLive do
   def handle_info(:demo_timeout, socket) do
     Logger.info("Demo session timed out")
     socket = DemoLifecycle.stop_demo(socket)
-    {:noreply, assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
+
+    {:noreply,
+     assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
   end
 
   def handle_info({:DOWN, _ref, :process, pid, reason}, socket) do
     if pid == socket.assigns[:lifecycle_pid] do
-      name = if socket.assigns[:component], do: socket.assigns.component.name, else: "unknown"
+      name =
+        if socket.assigns[:component],
+          do: socket.assigns.component.name,
+          else: "unknown"
+
       Logger.warning("Demo #{name} crashed: #{inspect(reason)}")
-      {:noreply, assign(socket, lifecycle_pid: nil, demo_error: "Demo crashed. Click Retry.")}
+
+      {:noreply,
+       assign(socket,
+         lifecycle_pid: nil,
+         demo_error: "Demo crashed. Click Retry."
+       )}
     else
       {:noreply, socket}
     end
@@ -204,8 +217,11 @@ defmodule RaxolPlaygroundWeb.DemoLive do
             phx-hook="RaxolTerminal"
             phx-keydown="keydown"
             class="flex-1 overflow-auto p-4 font-mono text-sm"
-            style={"background: #{@theme_bg}; color: #e0e0e0;"}
+            style={"background: #{@theme_bg};"}
+            data-theme={@terminal_theme}
             tabindex="0"
+            role="application"
+            aria-label={"#{@component.name} interactive demo"}
           >
             <%= if @demo_error do %>
               <div class="text-gray-400 py-8 text-center">

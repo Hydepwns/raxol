@@ -9,9 +9,9 @@ defmodule RaxolPlaygroundWeb.PlaygroundComponents do
   def terminal_chrome(assigns) do
     ~H"""
     <div class="bg-gray-800 px-4 py-2 flex items-center space-x-2 border-b border-gray-700">
-      <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-      <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-      <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+      <div class="w-3 h-3 bg-red-500 rounded-full" aria-hidden="true"></div>
+      <div class="w-3 h-3 bg-yellow-500 rounded-full" aria-hidden="true"></div>
+      <div class="w-3 h-3 bg-green-500 rounded-full" aria-hidden="true"></div>
       <span class="text-gray-400 text-sm ml-4"><%= @title %></span>
     </div>
     """
@@ -83,6 +83,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundComponents do
     <form phx-change="select_theme" id={@form_id} class={@class}>
       <select
         name="theme"
+        aria-label="Terminal color theme"
         class="bg-gray-800 border border-gray-700 text-gray-100 rounded px-3 py-1 text-sm"
       >
         <%= for {key, label, _bg} <- @themes do %>

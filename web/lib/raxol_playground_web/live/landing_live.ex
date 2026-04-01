@@ -75,7 +75,8 @@ defmodule RaxolPlaygroundWeb.LandingLive do
 
   @impl true
   def handle_event("toggle_mobile_menu", _params, socket) do
-    {:noreply, assign(socket, :mobile_menu_open, !socket.assigns.mobile_menu_open)}
+    {:noreply,
+     assign(socket, :mobile_menu_open, !socket.assigns.mobile_menu_open)}
   end
 
   @impl true

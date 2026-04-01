@@ -88,7 +88,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     search = if query == "", do: nil, else: query
     components = Catalog.filter(search: search)
 
-    {:noreply, socket |> assign(:search_query, query) |> assign(:components, components)}
+    {:noreply,
+     socket |> assign(:search_query, query) |> assign(:components, components)}
   end
 
   def handle_event("toggle_code", _params, socket) do
@@ -100,7 +101,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_event("toggle_users_panel", _params, socket) do
-    {:noreply, assign(socket, :show_users_panel, !socket.assigns.show_users_panel)}
+    {:noreply,
+     assign(socket, :show_users_panel, !socket.assigns.show_users_panel)}
   end
 
   def handle_event("toggle_sync", _params, socket) do
@@ -108,7 +110,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_event("toggle_sidebar", _params, socket) do
-    {:noreply, assign(socket, :sidebar_collapsed, !socket.assigns.sidebar_collapsed)}
+    {:noreply,
+     assign(socket, :sidebar_collapsed, !socket.assigns.sidebar_collapsed)}
   end
 
   def handle_event("select_theme", %{"theme" => theme}, socket) do
@@ -162,7 +165,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_info(
-        {:playground_event, :component_selected, %{component: name, user_id: from}},
+        {:playground_event, :component_selected,
+         %{component: name, user_id: from}},
         socket
       ) do
     if socket.assigns.sync_enabled and from != socket.assigns.user_id do
@@ -179,7 +183,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     Logger.info("Playground session timed out")
     socket = DemoLifecycle.stop_demo(socket)
 
-    {:noreply, assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
+    {:noreply,
+     assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
   end
 
   def handle_info({:DOWN, _ref, :process, pid, reason}, socket) do
@@ -287,6 +292,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
                 style={"background: #{@theme_bg};"}
                 data-theme={@terminal_theme}
                 tabindex="0"
+                role="application"
+                aria-label="Interactive demo terminal"
               >
                 <%= if @demo_error do %>
                   <div class="text-gray-400 py-8 text-center">
@@ -320,12 +327,16 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
 
       <!-- Shortcuts Overlay -->
       <%= if @show_shortcuts do %>
-        <.shortcuts_overlay {assigns} />
+        <div phx-window-keydown="toggle_shortcuts" phx-key="Escape">
+          <.shortcuts_overlay {assigns} />
+        </div>
       <% end %>
 
       <!-- Users Panel -->
       <%= if @show_users_panel do %>
-        <.users_panel {assigns} />
+        <div phx-window-keydown="toggle_users_panel" phx-key="Escape">
+          <.users_panel {assigns} />
+        </div>
       <% end %>
     </div>
     """
@@ -347,6 +358,8 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
             phx-click="toggle_sidebar"
             class="p-2 rounded hover:bg-gray-200 text-gray-500 text-lg leading-none"
             title={if @sidebar_collapsed, do: "Expand sidebar", else: "Collapse sidebar"}
+            aria-label={if @sidebar_collapsed, do: "Expand sidebar", else: "Collapse sidebar"}
+            aria-expanded={not @sidebar_collapsed}
           >
             <%= if @sidebar_collapsed, do: ">", else: "<" %>
           </button>
@@ -360,6 +373,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
               placeholder="Search..."
               value={@search_query}
               phx-debounce="300"
+              aria-label="Search components"
               class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </form>
