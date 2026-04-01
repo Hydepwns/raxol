@@ -269,12 +269,12 @@ defmodule Raxol.Core.Renderer.Color do
 
   @doc """
   Converts a hex color string to RGB.
+  Delegates to `Raxol.Style.Colors.Formats.from_hex/1`.
   """
-  def hex_to_rgb("#" <> hex) when is_binary(hex) do
-    case String.length(hex) do
-      6 -> parse_6_digit_hex(hex)
-      3 -> parse_3_digit_hex(hex)
-      _ -> raise ArgumentError, "Invalid hex color format"
+  def hex_to_rgb("#" <> _ = hex) when is_binary(hex) do
+    case Raxol.Style.Colors.Formats.from_hex(hex) do
+      {r, g, b} -> {r, g, b}
+      _other -> raise ArgumentError, "Invalid hex color format"
     end
   end
 
@@ -282,37 +282,13 @@ defmodule Raxol.Core.Renderer.Color do
     raise ArgumentError, "Invalid hex color format"
   end
 
-  defp parse_6_digit_hex(hex) when is_binary(hex) do
-    case parse_hex_components(hex, 2) do
-      {:ok, {r, g, b}} -> {r, g, b}
-      {:error, _} -> raise ArgumentError, "Invalid hex color format"
-    end
-  end
-
-  defp parse_3_digit_hex(hex) when is_binary(hex) do
-    case parse_hex_components(hex, 1) do
-      {:ok, {r, g, b}} -> {r, g, b}
-      {:error, _} -> raise ArgumentError, "Invalid hex color format"
-    end
-  end
-
-  @spec parse_hex_components(String.t(), non_neg_integer()) ::
-          {:ok, any()} | {:error, any()}
-  defp parse_hex_components(hex, size) when is_binary(hex) do
-    case Raxol.Core.ErrorHandling.safe_call(fn ->
-           parse_hex_by_size(hex, size)
-         end) do
-      {:ok, result} -> result
-      {:error, _} -> {:error, :invalid_hex}
-    end
-  end
-
   @doc """
   Converts RGB values to the nearest ANSI 256 color code.
+  Delegates to `Raxol.Style.Colors.Formats.rgb_to_ansi/1`.
   """
   def rgb_to_ansi256({r, g, b})
       when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
-    convert_rgb_to_ansi256(r == g and g == b, r, g, b)
+    Raxol.Style.Colors.Formats.rgb_to_ansi({r, g, b})
   end
 
   def rgb_to_ansi256({r, g, b})
@@ -322,25 +298,6 @@ defmodule Raxol.Core.Renderer.Color do
 
   def rgb_to_ansi256(_invalid) do
     raise ArgumentError, "Invalid RGB tuple"
-  end
-
-  defp convert_rgb_to_ansi256(true, r, _g, _b) do
-    grayscale_to_ansi256(r)
-  end
-
-  defp convert_rgb_to_ansi256(_is_grayscale, r, g, b) do
-    color_cube_to_ansi256(r, g, b)
-  end
-
-  defp grayscale_to_ansi256(r) when r < 4, do: 16
-  defp grayscale_to_ansi256(r) when r > 251, do: 231
-  defp grayscale_to_ansi256(r), do: 232 + div(r - 4, 10)
-
-  defp color_cube_to_ansi256(r, g, b) do
-    ir = div(r * 6, 256)
-    ig = div(g * 6, 256)
-    ib = div(b * 6, 256)
-    16 + 36 * ir + 6 * ig + ib
   end
 
   defp detect_background_fallback do
@@ -356,27 +313,6 @@ defmodule Raxol.Core.Renderer.Color do
       [_, "0"] -> :black
       [_, "15"] -> :white
       _ -> :default
-    end
-  end
-
-  defp parse_hex_by_size(hex, size) do
-    case size do
-      2 ->
-        <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
-
-        {:ok,
-         {String.to_integer(r, 16), String.to_integer(g, 16),
-          String.to_integer(b, 16)}}
-
-      1 ->
-        <<r::binary-size(1), g::binary-size(1), b::binary-size(1)>> = hex
-
-        {:ok,
-         {
-           String.to_integer(r <> r, 16),
-           String.to_integer(g <> g, 16),
-           String.to_integer(b <> b, 16)
-         }}
     end
   end
 end

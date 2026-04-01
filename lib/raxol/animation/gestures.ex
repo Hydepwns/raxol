@@ -19,16 +19,11 @@ defmodule Raxol.Animation.Gestures do
   @type direction :: :up | :down | :left | :right
   @type handler :: (map() -> any())
 
-  # Ensure server is started
   defp ensure_server_started do
-    case Process.whereis(Server) do
-      nil ->
-        {:ok, _pid} = Server.start_link()
-        :ok
-
-      _pid ->
-        :ok
-    end
+    Raxol.Core.Utils.GenServerHelpers.ensure_started(
+      Server,
+      fn -> Server.start_link() end
+    )
   end
 
   @doc """

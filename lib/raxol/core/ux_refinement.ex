@@ -194,15 +194,10 @@ defmodule Raxol.Core.UXRefinement do
   # Private Functions
 
   defp ensure_server_started do
-    case Process.whereis(@server) do
-      nil ->
-        # Start the server if not running
-        {:ok, _pid} = UxServer.start_link(name: @server)
-        :ok
-
-      _pid ->
-        :ok
-    end
+    Raxol.Core.Utils.GenServerHelpers.ensure_started(
+      @server,
+      fn -> UxServer.start_link(name: @server) end
+    )
   end
 
   defp ensure_feature_enabled(feature, context) do

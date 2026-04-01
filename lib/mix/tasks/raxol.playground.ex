@@ -54,7 +54,7 @@ defmodule Mix.Tasks.Raxol.Playground do
   end
 
   defp run_ssh(opts) do
-    port = Keyword.get(opts, :port, 2222)
+    port = Keyword.get(opts, :port, Raxol.Constants.default_ssh_port())
     max = Keyword.get(opts, :max_connections, 50)
 
     {:ok, pid} =

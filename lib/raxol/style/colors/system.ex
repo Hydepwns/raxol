@@ -28,16 +28,11 @@ defmodule Raxol.Style.Colors.System do
 
   @default_theme :default
 
-  # Ensure server is started
   defp ensure_server_started do
-    case Process.whereis(Server) do
-      nil ->
-        {:ok, _pid} = Server.start_link(name: Server)
-        :ok
-
-      _pid ->
-        :ok
-    end
+    Raxol.Core.Utils.GenServerHelpers.ensure_started(
+      Server,
+      fn -> Server.start_link(name: Server) end
+    )
   end
 
   @doc """

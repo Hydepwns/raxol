@@ -200,14 +200,9 @@ defmodule Raxol.Core.I18n do
 
   @spec ensure_server_started(map()) :: any()
   defp ensure_server_started(config \\ %{}) do
-    case Process.whereis(@server) do
-      nil ->
-        # Start the server if not running
-        {:ok, _pid} = I18nServer.start_link(name: @server, config: config)
-        :ok
-
-      _pid ->
-        :ok
-    end
+    Raxol.Core.Utils.GenServerHelpers.ensure_started(
+      @server,
+      fn -> I18nServer.start_link(name: @server, config: config) end
+    )
   end
 end

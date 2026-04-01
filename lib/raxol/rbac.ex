@@ -149,10 +149,10 @@ defmodule Raxol.RBAC do
   # Private helpers
 
   defp ensure_started do
-    case Process.whereis(__MODULE__) do
-      nil -> start_link()
-      _pid -> :ok
-    end
+    Raxol.Core.Utils.GenServerHelpers.ensure_started(
+      __MODULE__,
+      fn -> start_link() end
+    )
   end
 
   defp get_user_id(%{id: id}), do: to_string(id)

@@ -18,8 +18,8 @@ defmodule Raxol.Demo.Animations do
   @spinner_bounce ~w(▁ ▃ ▄ ▅ ▆ ▇ █ ▇ ▆ ▅ ▄ ▃)
 
   @frame_delay 33
-  @default_width 80
-  @default_height 24
+  @default_width Raxol.Constants.default_terminal_width()
+  @default_height Raxol.Constants.default_terminal_height()
 
   @tagline "Terminal Application Framework"
 

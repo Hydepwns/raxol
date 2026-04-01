@@ -8,15 +8,11 @@ defmodule Raxol.Protocols do
 
   @agent_name __MODULE__.Agent
 
-  # Ensure the Agent is started
   defp ensure_started do
-    case Process.whereis(@agent_name) do
-      nil ->
-        _ = Agent.start_link(fn -> %{} end, name: @agent_name)
-
-      _pid ->
-        :ok
-    end
+    Raxol.Core.Utils.GenServerHelpers.ensure_started(
+      @agent_name,
+      fn -> Agent.start_link(fn -> %{} end, name: @agent_name) end
+    )
   end
 
   def list_protocols do

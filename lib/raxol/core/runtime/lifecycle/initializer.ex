@@ -65,8 +65,11 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
 
   @doc "Detects actual terminal size, falling back to options then 80x24."
   def detect_terminal_size(options) do
-    default_w = Keyword.get(options, :width, 80)
-    default_h = Keyword.get(options, :height, 24)
+    default_w =
+      Keyword.get(options, :width, Raxol.Constants.default_terminal_width())
+
+    default_h =
+      Keyword.get(options, :height, Raxol.Constants.default_terminal_height())
 
     case {:io.columns(), :io.rows()} do
       {{:ok, cols}, {:ok, rows}} when cols > 0 and rows > 0 ->
@@ -122,8 +125,10 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
 
   defp get_initial_model_args(options) do
     %{
-      width: Keyword.get(options, :width, 80),
-      height: Keyword.get(options, :height, 24),
+      width:
+        Keyword.get(options, :width, Raxol.Constants.default_terminal_width()),
+      height:
+        Keyword.get(options, :height, Raxol.Constants.default_terminal_height()),
       options: options
     }
   end
@@ -180,8 +185,10 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
     dispatcher_initial_state = %{
       app_module: app_module,
       model: initialized_model,
-      width: Keyword.get(options, :width, 80),
-      height: Keyword.get(options, :height, 24),
+      width:
+        Keyword.get(options, :width, Raxol.Constants.default_terminal_width()),
+      height:
+        Keyword.get(options, :height, Raxol.Constants.default_terminal_height()),
       debug_mode:
         Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false)),
       plugin_manager: pm_pid,

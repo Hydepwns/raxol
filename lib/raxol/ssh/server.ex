@@ -31,7 +31,7 @@ defmodule Raxol.SSH.Server do
     connections: 0
   ]
 
-  @default_port 2222
+  @default_port Raxol.Constants.default_ssh_port()
   @default_max_connections 50
 
   @spec serve(module(), keyword()) :: GenServer.on_start()

@@ -114,6 +114,28 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
   end
 
   @doc """
+  Ensures a named process is running. Starts it via `start_fun` if not found.
+
+  The `start_fun` is a zero-arity function that should return `{:ok, pid}`.
+
+  ## Examples
+
+      ensure_started(MyServer, fn -> MyServer.start_link(name: MyServer) end)
+  """
+  @spec ensure_started(atom(), (-> {:ok, pid()} | {:error, term()})) :: :ok
+  def ensure_started(name, start_fun)
+      when is_atom(name) and is_function(start_fun, 0) do
+    case Process.whereis(name) do
+      nil ->
+        {:ok, _pid} = start_fun.()
+        :ok
+
+      _pid ->
+        :ok
+    end
+  end
+
+  @doc """
   Initialize default state with common fields.
   """
   def init_default_state(custom_state \\ %{}) do

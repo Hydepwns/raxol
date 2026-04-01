@@ -26,8 +26,7 @@ defmodule Raxol.UI.Rendering.TimerServer do
   @pipeline_tick_timer :pipeline_tick
 
   # Default intervals (milliseconds)
-  # 60fps
-  @default_frame_interval 16
+  @default_frame_interval Raxol.Constants.default_frame_interval_ms()
   # 8ms debounce
   @default_debounce_interval 8
   # 1s monitoring

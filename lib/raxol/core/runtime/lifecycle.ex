@@ -46,8 +46,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     defstruct app_module: nil,
               options: [],
               app_name: nil,
-              width: 80,
-              height: 24,
+              width: Raxol.Constants.default_terminal_width(),
+              height: Raxol.Constants.default_terminal_height(),
               debug_mode: false,
               plugin_manager: nil,
               command_registry_table: nil,
@@ -162,8 +162,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       app_module: app_module,
       options: options,
       app_name: get_app_name(app_module, options),
-      width: Keyword.get(options, :width, 80),
-      height: Keyword.get(options, :height, 24),
+      width:
+        Keyword.get(options, :width, Raxol.Constants.default_terminal_width()),
+      height:
+        Keyword.get(options, :height, Raxol.Constants.default_terminal_height()),
       debug_mode:
         Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false)),
       plugin_manager: pm_pid,

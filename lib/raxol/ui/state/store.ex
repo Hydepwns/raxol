@@ -86,16 +86,11 @@ defmodule Raxol.UI.State.Store do
     end
   end
 
-  # Ensure server is started
   defp ensure_server_started do
-    case Process.whereis(Server) do
-      nil ->
-        {:ok, _pid} = Server.start_link()
-        :ok
-
-      _pid ->
-        :ok
-    end
+    Raxol.Core.Utils.GenServerHelpers.ensure_started(
+      Server,
+      fn -> Server.start_link() end
+    )
   end
 
   ## Public API - Delegating to Server

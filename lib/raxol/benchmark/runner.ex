@@ -311,7 +311,8 @@ defmodule Raxol.Benchmark.Runner do
   # Helper functions
 
   defp create_test_emulator do
-    Raxol.Terminal.Emulator.new(80, 24)
+    {w, h} = Raxol.Constants.default_terminal_dimensions()
+    Raxol.Terminal.Emulator.new(w, h)
   end
 
   defp create_test_buffer do

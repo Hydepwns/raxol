@@ -15,8 +15,7 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
 
   alias Raxol.UI.Rendering.DamageTracker
 
-  # 60fps
-  @default_frame_interval_ms 16
+  @default_frame_interval_ms Raxol.Constants.default_frame_interval_ms()
   @max_batch_size 50
   @high_priority_threshold 5
 
@@ -26,8 +25,7 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
   defmodule BatchState do
     @moduledoc false
 
-    # 60fps interval in ms
-    @default_frame_interval_ms 16
+    @default_frame_interval_ms Raxol.Constants.default_frame_interval_ms()
 
     defstruct pending_updates: [],
               accumulated_damage: %{},

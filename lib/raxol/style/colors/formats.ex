@@ -234,11 +234,17 @@ defmodule Raxol.Style.Colors.Formats do
   end
 
   defp find_closest_ansi_256(r, g, b) do
-    # Simple implementation - could be improved with better color matching
-    # For now, we'll use the 216-color cube
-    r_index = div(r, 51)
-    g_index = div(g, 51)
-    b_index = div(b, 51)
-    16 + r_index * 36 + g_index * 6 + b_index
+    if r == g and g == b do
+      cond do
+        r < 4 -> 16
+        r > 251 -> 231
+        true -> 232 + div(r - 4, 10)
+      end
+    else
+      ir = div(r * 6, 256)
+      ig = div(g * 6, 256)
+      ib = div(b * 6, 256)
+      16 + 36 * ir + 6 * ig + ib
+    end
   end
 end

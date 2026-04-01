@@ -17,7 +17,7 @@ defmodule Raxol.Core.ErrorExperience do
   - Interactive recovery console
   """
 
-  alias Raxol.Core.ErrorHandler
+  alias Raxol.Core.ErrorHandling
   alias Raxol.Core.Runtime.Log
   require Logger
 
@@ -43,7 +43,7 @@ defmodule Raxol.Core.ErrorExperience do
   @type enhanced_error :: %{
           original_error: term(),
           category: error_category(),
-          severity: ErrorHandler.error_severity(),
+          severity: ErrorHandling.error_severity(),
           context: map(),
           suggestions: [fix_suggestion()],
           performance_impact: :none | :low | :medium | :high | :critical,
