@@ -7,19 +7,15 @@ defmodule Raxol.Playground.Demos.VfsDemo do
   @visible_lines 14
   @box_width 70
   @box_height 16
+  @max_history 50
 
   @impl true
   def init(_context) do
-    fs = seed_filesystem()
-
     %{
-      fs: fs,
+      fs: seed_filesystem(),
       input: "",
       cursor: 0,
-      output: [
-        {"# Virtual FS -- type commands: ls, cd, cat, pwd, mkdir, rm, tree",
-         :info}
-      ],
+      output: [{"# Virtual FS -- type 'help' for commands", :info}],
       output_offset: 0,
       input_history: [],
       history_index: nil
@@ -76,12 +72,7 @@ defmodule Raxol.Playground.Demos.VfsDemo do
         text("Virtual File System", style: [:bold]),
         text("cwd: #{FileSystem.pwd(model.fs)}", style: [:dim]),
         divider(),
-        box style: %{
-              border: :single,
-              padding: 1,
-              width: @box_width,
-              height: @box_height
-            } do
+        box style: %{border: :single, padding: 1, width: @box_width, height: @box_height} do
           column style: %{gap: 0} do
             if visible == [],
               do: [text("(empty)", style: [:dim])],
@@ -112,24 +103,21 @@ defmodule Raxol.Playground.Demos.VfsDemo do
   defp exec_input(model) do
     cmd = String.trim(model.input)
     {argv0, args} = parse_command(cmd)
-
     {output_lines, new_fs} = dispatch(argv0, args, model.fs)
 
-    new_history = [cmd | model.input_history] |> Enum.take(50)
-
-    model
-    |> Map.put(:fs, new_fs)
-    |> Map.put(:input, "")
-    |> Map.put(:cursor, 0)
-    |> Map.put(:history_index, nil)
-    |> Map.put(:input_history, new_history)
+    %{
+      model
+      | fs: new_fs,
+        input: "",
+        cursor: 0,
+        history_index: nil,
+        input_history: [cmd | model.input_history] |> Enum.take(@max_history)
+    }
     |> add_output([{"$ #{cmd}", :input} | output_lines])
   end
 
   defp parse_command(cmd) do
-    parts = String.split(cmd, ~r/\s+/, trim: true)
-
-    case parts do
+    case String.split(cmd, ~r/\s+/, trim: true) do
       [] -> {"", []}
       [argv0 | args] -> {argv0, args}
     end
@@ -139,49 +127,39 @@ defmodule Raxol.Playground.Demos.VfsDemo do
     dir = List.first(args, ".")
 
     case FileSystem.ls(fs, dir) do
-      {:ok, entries, fs} ->
-        lines = FileSystem.format_ls(entries, fs, resolve_dir(fs, dir))
-        output = Enum.map(lines, fn {text, style} -> {text, style} end)
-        {output, fs}
+      {:ok, entries} ->
+        {FileSystem.format_ls(entries, fs, dir), fs}
 
       {:error, reason} ->
         {[{error_msg("ls", reason), :error}], fs}
     end
   end
 
-  defp dispatch("cd", args, fs) do
-    case args do
-      [] ->
-        {[{"cd: missing argument", :error}], fs}
+  defp dispatch("cd", [], fs), do: {[{"cd: missing argument", :error}], fs}
 
-      [dir | _] ->
-        case FileSystem.cd(fs, dir) do
-          {:ok, new_fs} -> {[], new_fs}
-          {:error, reason} -> {[{error_msg("cd", reason), :error}], fs}
-        end
+  defp dispatch("cd", [dir | _], fs) do
+    case FileSystem.cd(fs, dir) do
+      {:ok, new_fs} -> {[], new_fs}
+      {:error, reason} -> {[{error_msg("cd", reason), :error}], fs}
     end
   end
 
-  defp dispatch("cat", args, fs) do
-    case args do
-      [] ->
-        {[{"cat: missing argument", :error}], fs}
+  defp dispatch("cat", [], fs), do: {[{"cat: missing argument", :error}], fs}
 
-      [path | _] ->
-        case FileSystem.cat(fs, path) do
-          {:ok, content} ->
-            lines =
-              FileSystem.format_cat(content, @box_width - 4, @visible_lines)
-              |> Enum.map(fn {line, num} ->
-                {"#{String.pad_leading(Integer.to_string(num), 3)} | #{line}",
-                 :file}
-              end)
+  defp dispatch("cat", [path | _], fs) do
+    case FileSystem.cat(fs, path) do
+      {:ok, content} ->
+        lines =
+          content
+          |> FileSystem.format_cat(@box_width - 4, @visible_lines)
+          |> Enum.map(fn {line, num} ->
+            {"#{String.pad_leading(Integer.to_string(num), 3)} | #{line}", :file}
+          end)
 
-            {lines, fs}
+        {lines, fs}
 
-          {:error, reason} ->
-            {[{error_msg("cat", reason), :error}], fs}
-        end
+      {:error, reason} ->
+        {[{error_msg("cat", reason), :error}], fs}
     end
   end
 
@@ -189,39 +167,31 @@ defmodule Raxol.Playground.Demos.VfsDemo do
     {[{FileSystem.pwd(fs), :result}], fs}
   end
 
-  defp dispatch("mkdir", args, fs) do
-    case args do
-      [] ->
-        {[{"mkdir: missing argument", :error}], fs}
+  defp dispatch("mkdir", [], fs), do: {[{"mkdir: missing argument", :error}], fs}
 
-      [dir | _] ->
-        case FileSystem.mkdir(fs, dir) do
-          {:ok, new_fs} -> {[{"created: #{dir}", :result}], new_fs}
-          {:error, reason} -> {[{error_msg("mkdir", reason), :error}], fs}
-        end
+  defp dispatch("mkdir", [dir | _], fs) do
+    case FileSystem.mkdir(fs, dir) do
+      {:ok, new_fs} -> {[{"created: #{dir}", :result}], new_fs}
+      {:error, reason} -> {[{error_msg("mkdir", reason), :error}], fs}
     end
   end
 
-  defp dispatch("rm", args, fs) do
-    case args do
-      [] ->
-        {[{"rm: missing argument", :error}], fs}
+  defp dispatch("rm", [], fs), do: {[{"rm: missing argument", :error}], fs}
 
-      [path | _] ->
-        case FileSystem.rm(fs, path) do
-          {:ok, new_fs} -> {[{"removed: #{path}", :result}], new_fs}
-          {:error, reason} -> {[{error_msg("rm", reason), :error}], fs}
-        end
+  defp dispatch("rm", [path | _], fs) do
+    case FileSystem.rm(fs, path) do
+      {:ok, new_fs} -> {[{"removed: #{path}", :result}], new_fs}
+      {:error, reason} -> {[{error_msg("rm", reason), :error}], fs}
     end
   end
 
   defp dispatch("tree", args, fs) do
     dir = Enum.at(args, 0, ".")
-    depth = Enum.at(args, 1, "3") |> String.to_integer()
+    depth = parse_depth(Enum.at(args, 1))
 
     case FileSystem.tree(fs, dir, depth) do
       {:ok, tree_data} ->
-        lines = format_tree(tree_data, "") |> Enum.map(fn l -> {l, :file} end)
+        lines = tree_data |> format_tree("") |> Enum.map(&{&1, :file})
         {lines, fs}
 
       {:error, reason} ->
@@ -231,12 +201,12 @@ defmodule Raxol.Playground.Demos.VfsDemo do
 
   defp dispatch("help", _args, fs) do
     lines = [
-      {"ls [dir]          -- list directory", :info},
-      {"cd <dir>          -- change directory", :info},
-      {"cat <file>        -- show file content", :info},
-      {"pwd               -- print working directory", :info},
-      {"mkdir <dir>       -- create directory", :info},
-      {"rm <path>         -- remove file or empty dir", :info},
+      {"ls [dir]           -- list directory", :info},
+      {"cd <dir>           -- change directory (supports .., -)", :info},
+      {"cat <file>         -- show file content", :info},
+      {"pwd                -- print working directory", :info},
+      {"mkdir <dir>        -- create directory", :info},
+      {"rm <path>          -- remove file or empty dir", :info},
       {"tree [dir] [depth] -- show directory tree", :info}
     ]
 
@@ -249,42 +219,41 @@ defmodule Raxol.Playground.Demos.VfsDemo do
 
   # -- Helpers --
 
-  defp resolve_dir(fs, "."), do: FileSystem.pwd(fs)
-  defp resolve_dir(_fs, "/" <> _ = abs), do: abs
-  defp resolve_dir(fs, rel), do: FileSystem.pwd(fs) |> join(rel)
-
-  defp join("/", child), do: "/" <> child
-  defp join(parent, child), do: parent <> "/" <> child
-
   defp error_msg(cmd, reason) do
     "#{cmd}: #{reason |> Atom.to_string() |> String.replace("_", " ")}"
   end
 
-  defp format_tree({name, :file, _}, prefix) do
-    [prefix <> name]
+  defp parse_depth(nil), do: 3
+
+  defp parse_depth(str) do
+    case Integer.parse(str) do
+      {n, ""} when n >= 0 -> n
+      _ -> 3
+    end
   end
 
+  defp format_tree({name, :file, _}, prefix), do: [prefix <> name]
+
   defp format_tree({name, :directory, children}, prefix) do
-    header = [prefix <> name <> "/"]
+    last_idx = length(children) - 1
 
     child_lines =
       children
       |> Enum.with_index()
       |> Enum.flat_map(fn {{child_name, type, grandchildren}, idx} ->
-        is_last = idx == length(children) - 1
+        is_last = idx == last_idx
         connector = if is_last, do: "`-- ", else: "|-- "
         continuation = if is_last, do: "    ", else: "|   "
 
         format_tree({child_name, type, grandchildren}, prefix <> connector)
         |> Enum.with_index()
-        |> Enum.map(fn {line, i} ->
-          if i == 0,
-            do: line,
-            else: prefix <> continuation <> String.trim_leading(line)
+        |> Enum.map(fn
+          {line, 0} -> line
+          {line, _} -> prefix <> continuation <> String.trim_leading(line)
         end)
       end)
 
-    header ++ child_lines
+    [prefix <> name <> "/" | child_lines]
   end
 
   # -- Seed data --
@@ -314,7 +283,7 @@ defmodule Raxol.Playground.Demos.VfsDemo do
       FileSystem.create_file(
         fs,
         "/home/user/projects/hello.exs",
-        "IO.puts(\"Hello from VFS!\")"
+        ~s[IO.puts("Hello from VFS!")]
       )
 
     {:ok, fs} = FileSystem.mkdir(fs, "/tmp")
@@ -335,22 +304,13 @@ defmodule Raxol.Playground.Demos.VfsDemo do
 
   defp history_next(model) do
     case model.history_index do
-      nil ->
-        model
-
-      0 ->
-        %{model | history_index: nil, input: "", cursor: 0}
+      nil -> model
+      0 -> %{model | history_index: nil, input: "", cursor: 0}
 
       idx ->
         new_idx = idx - 1
         input = Enum.at(model.input_history, new_idx, "")
-
-        %{
-          model
-          | history_index: new_idx,
-            input: input,
-            cursor: String.length(input)
-        }
+        %{model | history_index: new_idx, input: input, cursor: String.length(input)}
     end
   end
 
@@ -358,19 +318,14 @@ defmodule Raxol.Playground.Demos.VfsDemo do
 
   defp scroll_output(model, delta) do
     max_offset = max(0, length(model.output) - @visible_lines)
-
-    new_offset =
-      Raxol.Core.Utils.Math.clamp(model.output_offset + delta, 0, max_offset)
-
+    new_offset = Raxol.Core.Utils.Math.clamp(model.output_offset + delta, 0, max_offset)
     %{model | output_offset: new_offset}
   end
 
   # -- Output --
 
   defp add_output(model, lines) do
-    new_output =
-      Enum.reduce(lines, model.output, fn line, acc -> [line | acc] end)
-
+    new_output = Enum.reduce(lines, model.output, fn line, acc -> [line | acc] end)
     %{model | output: new_output, output_offset: 0}
   end
 
@@ -379,10 +334,7 @@ defmodule Raxol.Playground.Demos.VfsDemo do
   defp output_line({line, :input}), do: text(line, style: [:bold])
   defp output_line({line, :result}), do: text(line, fg: :green)
   defp output_line({line, :file}), do: text(line)
-
-  defp output_line({line, :directory}),
-    do: text(line, fg: :blue, style: [:bold])
-
+  defp output_line({line, :directory}), do: text(line, fg: :blue, style: [:bold])
   defp output_line({line, :error}), do: text(line, fg: :red)
   defp output_line({line, :info}), do: text(line, style: [:dim])
 

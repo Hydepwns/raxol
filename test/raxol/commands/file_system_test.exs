@@ -186,8 +186,7 @@ defmodule Raxol.Commands.FileSystemTest do
       {:ok, fs} = FileSystem.mkdir(fs, "/docs")
       {:ok, fs} = FileSystem.create_file(fs, "/readme.txt", "hi")
       {:ok, fs} = FileSystem.mkdir(fs, "/apps")
-      {:ok, entries, _fs} = FileSystem.ls(fs, "/")
-      assert entries == ["apps", "docs", "readme.txt"]
+      assert {:ok, ["apps", "docs", "readme.txt"]} = FileSystem.ls(fs, "/")
     end
 
     test "lists subdirectory entries" do
@@ -195,20 +194,17 @@ defmodule Raxol.Commands.FileSystemTest do
       {:ok, fs} = FileSystem.mkdir(fs, "/docs")
       {:ok, fs} = FileSystem.create_file(fs, "/docs/a.txt", "a")
       {:ok, fs} = FileSystem.create_file(fs, "/docs/b.txt", "b")
-      {:ok, entries, _fs} = FileSystem.ls(fs, "/docs")
-      assert entries == ["a.txt", "b.txt"]
+      assert {:ok, ["a.txt", "b.txt"]} = FileSystem.ls(fs, "/docs")
     end
 
     test "empty directory returns empty list" do
-      {:ok, entries, _fs} = FileSystem.ls(FileSystem.new(), "/")
-      assert entries == []
+      assert {:ok, []} = FileSystem.ls(FileSystem.new(), "/")
     end
 
     test "defaults to cwd" do
       fs = FileSystem.new()
       {:ok, fs} = FileSystem.create_file(fs, "/a.txt", "a")
-      {:ok, entries, _fs} = FileSystem.ls(fs)
-      assert entries == ["a.txt"]
+      assert {:ok, ["a.txt"]} = FileSystem.ls(fs)
     end
 
     test "fails on non-existent path" do
@@ -338,7 +334,6 @@ defmodule Raxol.Commands.FileSystemTest do
       {:ok, fs} = FileSystem.mkdir(fs, "/a/b/c")
       {:ok, {"/", :directory, children}} = FileSystem.tree(fs, "/", 1)
       {_name, :directory, nested} = hd(children)
-      # depth 1 means children are shown but not grandchildren contents
       assert nested == []
     end
 
@@ -367,15 +362,13 @@ defmodule Raxol.Commands.FileSystemTest do
     test "formats directories with trailing slash" do
       fs = FileSystem.new()
       {:ok, fs} = FileSystem.mkdir(fs, "/docs")
-      result = FileSystem.format_ls(["docs"], fs, "/")
-      assert [{"docs/", :directory}] = result
+      assert [{"docs/", :directory}] = FileSystem.format_ls(["docs"], fs, "/")
     end
 
     test "formats files with size" do
       fs = FileSystem.new()
       {:ok, fs} = FileSystem.create_file(fs, "/a.txt", "hello")
-      result = FileSystem.format_ls(["a.txt"], fs, "/")
-      assert [{"a.txt  5B", :file}] = result
+      assert [{"a.txt  5B", :file}] = FileSystem.format_ls(["a.txt"], fs, "/")
     end
 
     test "sorts entries" do
@@ -435,8 +428,10 @@ defmodule Raxol.Commands.FileSystemTest do
 
     test ".. past root resolves to root" do
       fs = FileSystem.new()
-      abs = FileSystem.resolve_path(fs, "../../..")
-      assert abs == "/"
+      {:ok, fs} = FileSystem.cd(fs, "..")
+      assert fs.cwd == "/"
+      {:ok, fs} = FileSystem.cd(fs, "../../..")
+      assert fs.cwd == "/"
     end
   end
 end

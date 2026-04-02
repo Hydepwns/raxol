@@ -28,19 +28,12 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 - **Self-Evolving Interface** -- Behavior tracking, rule-based layout recommendations, animated transitions, feedback loop
 - **AI Cockpit + Streaming** -- Real AI agents analyzing codebases in multi-pane terminal dashboard. Backend.HTTP streaming (SSE) for Anthropic/OpenAI/Ollama. Pilot takeover for follow-up questions. Free tier via LLM7.io (no API key). Mock fallback for offline use.
 - **libcluster Discovery** -- Automatic node discovery for Swarm via libcluster (optional dep). Strategy presets: gossip (LAN multicast), epmd (static hosts), dns (Fly.io/K8s), tailscale (mesh). NodeMonitor events auto-wire to Topology (elections) and TacticalOverlay (peer sync).
+- **Virtual File System** -- `Raxol.Commands.FileSystem` pure functional in-memory VFS, playground demo (60 tests)
 - **Tailscale Strategy** -- Custom libcluster strategy (`Raxol.Swarm.Strategy.Tailscale`). Polls `tailscale status --json`, filters by tag (ACL-gated membership), constructs BEAM node names from Tailscale IPs or MagicDNS. Zero-config encrypted mesh for multi-node swarm.
 
 ---
 
 ## Next Up
-
-### Virtual File System
-
-| Task              | Description                                                                 | Effort |
-| ----------------- | --------------------------------------------------------------------------- | ------ |
-| Core module       | `Raxol.Commands.FileSystem` -- pure functional in-memory VFS (flat map)     | Medium |
-| Playground demo   | TEA app with shell-like command input (ls, cd, cat, pwd, mkdir, rm, tree)   | Small  |
-| Feature doc       | `docs/features/FILESYSTEM.md`                                               | Small  |
 
 ### Ship It
 

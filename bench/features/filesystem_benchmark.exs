@@ -90,7 +90,7 @@ Benchee.run(
       FileSystem.tree(fs, "/", 3)
     end,
     "format_ls" => fn ->
-      {:ok, entries, _} = FileSystem.ls(fs, "/")
+      {:ok, entries} = FileSystem.ls(fs, "/")
       FileSystem.format_ls(entries, fs, "/")
     end,
     "format_cat" => fn ->

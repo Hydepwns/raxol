@@ -12,7 +12,7 @@ defmodule Raxol.Commands.FileSystem do
       fs = FileSystem.new()
       {:ok, fs} = FileSystem.mkdir(fs, "/docs")
       {:ok, fs} = FileSystem.create_file(fs, "/docs/readme.txt", "Hello")
-      {:ok, entries, fs} = FileSystem.ls(fs, "/docs")
+      {:ok, entries} = FileSystem.ls(fs, "/docs")
       {:ok, content} = FileSystem.cat(fs, "/docs/readme.txt")
   """
 
@@ -26,6 +26,16 @@ defmodule Raxol.Commands.FileSystem do
           size: non_neg_integer(),
           content: String.t() | nil,
           children: [String.t()] | nil
+        }
+
+  @type tree_node :: {String.t(), node_type(), [tree_node()]}
+
+  @type stat_info :: %{
+          type: node_type(),
+          size: non_neg_integer(),
+          created_at: timestamp(),
+          modified_at: timestamp(),
+          path: String.t()
         }
 
   @type t :: %__MODULE__{
@@ -51,14 +61,7 @@ defmodule Raxol.Commands.FileSystem do
       cwd: "/",
       prev_dir: nil,
       nodes: %{
-        "/" => %{
-          type: :directory,
-          created_at: now,
-          modified_at: now,
-          size: 0,
-          content: nil,
-          children: []
-        }
+        "/" => dir_node(now)
       }
     }
   end
@@ -70,118 +73,60 @@ defmodule Raxol.Commands.FileSystem do
   @doc "Create a directory at `path`. Parent directories must exist."
   @spec mkdir(t(), String.t()) :: {:ok, t()} | {:error, atom()}
   def mkdir(%__MODULE__{} = fs, path) do
-    abs = resolve_path(fs, path)
-
-    cond do
-      Map.has_key?(fs.nodes, abs) ->
-        {:error, :already_exists}
-
-      not parent_exists?(fs, abs) ->
-        {:error, :parent_not_found}
-
-      true ->
-        now = System.monotonic_time(:millisecond)
-        name = Path.basename(abs)
-        parent = parent_path(abs)
-
-        node = %{
-          type: :directory,
-          created_at: now,
-          modified_at: now,
-          size: 0,
-          content: nil,
-          children: []
-        }
-
-        nodes =
-          fs.nodes
-          |> Map.put(abs, node)
-          |> update_in([parent, :children], &[name | &1])
-          |> update_in([parent, :modified_at], fn _ -> now end)
-
-        {:ok, %{fs | nodes: nodes}}
-    end
+    now = System.monotonic_time(:millisecond)
+    insert_node(fs, path, dir_node(now))
   end
 
   @doc "Create a file at `path` with `content`. Parent directory must exist."
-  @spec create_file(t(), String.t(), String.t()) ::
-          {:ok, t()} | {:error, atom()}
+  @spec create_file(t(), String.t(), String.t()) :: {:ok, t()} | {:error, atom()}
   def create_file(%__MODULE__{} = fs, path, content) when is_binary(content) do
-    abs = resolve_path(fs, path)
-
-    cond do
-      Map.has_key?(fs.nodes, abs) ->
-        {:error, :already_exists}
-
-      not parent_exists?(fs, abs) ->
-        {:error, :parent_not_found}
-
-      true ->
-        now = System.monotonic_time(:millisecond)
-        name = Path.basename(abs)
-        parent = parent_path(abs)
-
-        node = %{
-          type: :file,
-          created_at: now,
-          modified_at: now,
-          size: byte_size(content),
-          content: content,
-          children: nil
-        }
-
-        nodes =
-          fs.nodes
-          |> Map.put(abs, node)
-          |> update_in([parent, :children], &[name | &1])
-          |> update_in([parent, :modified_at], fn _ -> now end)
-
-        {:ok, %{fs | nodes: nodes}}
-    end
+    now = System.monotonic_time(:millisecond)
+    insert_node(fs, path, file_node(content, now))
   end
 
   @doc "Remove a file or empty directory at `path`."
   @spec rm(t(), String.t()) :: {:ok, t()} | {:error, atom()}
   def rm(%__MODULE__{} = fs, path) do
-    abs = resolve_path(fs, path)
+    abs = resolve_path(fs.cwd, path)
+    do_rm(fs, abs)
+  end
 
+  defp do_rm(_fs, "/"), do: {:error, :cannot_remove_root}
+
+  defp do_rm(fs, abs) do
     case Map.get(fs.nodes, abs) do
       nil ->
         {:error, :not_found}
 
-      %{type: :directory, children: children} when children != [] ->
+      %{type: :directory, children: [_ | _]} ->
         {:error, :directory_not_empty}
 
       _node ->
-        if abs == "/" do
-          {:error, :cannot_remove_root}
-        else
-          now = System.monotonic_time(:millisecond)
-          name = Path.basename(abs)
-          parent = parent_path(abs)
+        now = System.monotonic_time(:millisecond)
+        name = Path.basename(abs)
+        parent = parent_path(abs)
 
-          nodes =
-            fs.nodes
-            |> Map.delete(abs)
-            |> update_in([parent, :children], &List.delete(&1, name))
-            |> update_in([parent, :modified_at], fn _ -> now end)
+        nodes =
+          fs.nodes
+          |> Map.delete(abs)
+          |> update_in([parent, :children], &List.delete(&1, name))
+          |> update_in([parent, :modified_at], fn _ -> now end)
 
-          {:ok, %{fs | nodes: nodes}}
-        end
+        {:ok, %{fs | nodes: nodes}}
     end
   end
 
   @doc "Check if a path exists."
   @spec exists?(t(), String.t()) :: boolean()
   def exists?(%__MODULE__{} = fs, path) do
-    abs = resolve_path(fs, path)
+    abs = resolve_path(fs.cwd, path)
     Map.has_key?(fs.nodes, abs)
   end
 
   @doc "Return metadata for the node at `path`."
-  @spec stat(t(), String.t()) :: {:ok, map()} | {:error, atom()}
+  @spec stat(t(), String.t()) :: {:ok, stat_info()} | {:error, atom()}
   def stat(%__MODULE__{} = fs, path) do
-    abs = resolve_path(fs, path)
+    abs = resolve_path(fs.cwd, path)
 
     case Map.get(fs.nodes, abs) do
       nil ->
@@ -204,22 +149,17 @@ defmodule Raxol.Commands.FileSystem do
   # -------------------------------------------------------------------
 
   @doc """
-  List entries in a directory. Returns `{:ok, entries, fs}` where entries
+  List entries in a directory. Returns `{:ok, entries}` where entries
   is a sorted list of child names.
   """
-  @spec ls(t(), String.t()) :: {:ok, [String.t()], t()} | {:error, atom()}
+  @spec ls(t(), String.t()) :: {:ok, [String.t()]} | {:error, atom()}
   def ls(%__MODULE__{} = fs, path \\ ".") do
-    abs = resolve_path(fs, path)
+    abs = resolve_path(fs.cwd, path)
 
     case Map.get(fs.nodes, abs) do
-      nil ->
-        {:error, :not_found}
-
-      %{type: :file} ->
-        {:error, :not_a_directory}
-
-      %{type: :directory, children: children} ->
-        {:ok, Enum.sort(children), fs}
+      nil -> {:error, :not_found}
+      %{type: :file} -> {:error, :not_a_directory}
+      %{type: :directory, children: children} -> {:ok, Enum.sort(children)}
     end
   end
 
@@ -228,15 +168,12 @@ defmodule Raxol.Commands.FileSystem do
   paths, `..` (parent), and `-` (previous directory).
   """
   @spec cd(t(), String.t()) :: {:ok, t()} | {:error, atom()}
-  def cd(%__MODULE__{} = fs, "-") do
-    case fs.prev_dir do
-      nil -> {:error, :no_previous_directory}
-      prev -> do_cd(fs, prev)
-    end
-  end
+  def cd(%__MODULE__{prev_dir: nil}, "-"), do: {:error, :no_previous_directory}
+
+  def cd(%__MODULE__{prev_dir: prev} = fs, "-"), do: do_cd(fs, prev)
 
   def cd(%__MODULE__{} = fs, path) do
-    abs = resolve_path(fs, path)
+    abs = resolve_path(fs.cwd, path)
     do_cd(fs, abs)
   end
 
@@ -254,12 +191,11 @@ defmodule Raxol.Commands.FileSystem do
 
   @doc """
   Return a tree representation of the directory at `path`, limited to `depth` levels.
-  Returns `{:ok, tree}` where tree is `{name, type, children}`.
+  Returns `{:ok, tree_node}` where tree_node is `{name, type, children}`.
   """
-  @spec tree(t(), String.t(), non_neg_integer()) ::
-          {:ok, tuple()} | {:error, atom()}
+  @spec tree(t(), String.t(), non_neg_integer()) :: {:ok, tree_node()} | {:error, atom()}
   def tree(%__MODULE__{} = fs, path \\ "/", depth \\ 3) do
-    abs = resolve_path(fs, path)
+    abs = resolve_path(fs.cwd, path)
 
     case Map.get(fs.nodes, abs) do
       nil ->
@@ -286,11 +222,8 @@ defmodule Raxol.Commands.FileSystem do
         child_path = join_path(abs, child_name)
 
         case Map.fetch!(fs.nodes, child_path) do
-          %{type: :file} ->
-            {child_name, :file, []}
-
-          %{type: :directory} ->
-            build_tree(fs, child_path, child_name, depth - 1)
+          %{type: :file} -> {child_name, :file, []}
+          %{type: :directory} -> build_tree(fs, child_path, child_name, depth - 1)
         end
       end)
 
@@ -304,7 +237,7 @@ defmodule Raxol.Commands.FileSystem do
   @doc "Read the content of a file."
   @spec cat(t(), String.t()) :: {:ok, String.t()} | {:error, atom()}
   def cat(%__MODULE__{} = fs, path) do
-    abs = resolve_path(fs, path)
+    abs = resolve_path(fs.cwd, path)
 
     case Map.get(fs.nodes, abs) do
       nil -> {:error, :not_found}
@@ -323,9 +256,11 @@ defmodule Raxol.Commands.FileSystem do
   """
   @spec format_ls([String.t()], t(), String.t()) :: [{String.t(), atom()}]
   def format_ls(entries, %__MODULE__{} = fs, dir_path) do
-    abs = resolve_path(fs, dir_path)
+    abs = resolve_path(fs.cwd, dir_path)
 
-    Enum.map(Enum.sort(entries), fn name ->
+    entries
+    |> Enum.sort()
+    |> Enum.map(fn name ->
       child_path = join_path(abs, name)
 
       case Map.get(fs.nodes, child_path) do
@@ -339,10 +274,11 @@ defmodule Raxol.Commands.FileSystem do
   @doc """
   Format file content for terminal display. Returns a list of `{line, line_number}`
   tuples, truncated to fit `max_width` and `max_height`.
+
+  Note: uses `String.length/1` (grapheme count) for truncation. For CJK-accurate
+  display width, the render pipeline handles this via `Raxol.UI.TextMeasure`.
   """
-  @spec format_cat(String.t(), pos_integer(), pos_integer()) :: [
-          {String.t(), pos_integer()}
-        ]
+  @spec format_cat(String.t(), pos_integer(), pos_integer()) :: [{String.t(), pos_integer()}]
   def format_cat(content, max_width, max_height) do
     content
     |> String.split("\n")
@@ -362,20 +298,11 @@ defmodule Raxol.Commands.FileSystem do
   # Path Resolution (internal)
   # -------------------------------------------------------------------
 
-  @doc false
-  def resolve_path(%__MODULE__{cwd: cwd}, path) do
-    resolve_path_from(cwd, path)
-  end
-
-  defp resolve_path_from(_cwd, "/" <> _ = abs), do: normalize_path(abs)
-
-  defp resolve_path_from(cwd, relative) do
-    joined = join_path(cwd, relative)
-    normalize_path(joined)
-  end
+  defp resolve_path(_cwd, "/" <> _ = abs), do: normalize_path(abs)
+  defp resolve_path(cwd, relative), do: normalize_path(join_path(cwd, relative))
 
   defp normalize_path(path) do
-    parts =
+    segments =
       path
       |> String.split("/", trim: true)
       |> Enum.reduce([], fn
@@ -386,27 +313,57 @@ defmodule Raxol.Commands.FileSystem do
       end)
       |> Enum.reverse()
 
-    case parts do
+    case segments do
       [] -> "/"
-      segments -> "/" <> Enum.join(segments, "/")
+      parts -> "/" <> Enum.join(parts, "/")
     end
+  end
+
+  # -------------------------------------------------------------------
+  # Internal helpers
+  # -------------------------------------------------------------------
+
+  defp insert_node(fs, path, node) do
+    abs = resolve_path(fs.cwd, path)
+
+    cond do
+      Map.has_key?(fs.nodes, abs) ->
+        {:error, :already_exists}
+
+      not parent_exists?(fs, abs) ->
+        {:error, :parent_not_found}
+
+      true ->
+        name = Path.basename(abs)
+        parent = parent_path(abs)
+        now = node.created_at
+
+        nodes =
+          fs.nodes
+          |> Map.put(abs, node)
+          |> update_in([parent, :children], &[name | &1])
+          |> update_in([parent, :modified_at], fn _ -> now end)
+
+        {:ok, %{fs | nodes: nodes}}
+    end
+  end
+
+  defp dir_node(now) do
+    %{type: :directory, created_at: now, modified_at: now, size: 0, content: nil, children: []}
+  end
+
+  defp file_node(content, now) do
+    %{type: :file, created_at: now, modified_at: now, size: byte_size(content), content: content, children: nil}
   end
 
   defp join_path("/", child), do: "/" <> child
   defp join_path(parent, child), do: parent <> "/" <> child
 
   defp parent_path("/"), do: "/"
-
-  defp parent_path(path) do
-    case Path.dirname(path) do
-      "/" -> "/"
-      parent -> parent
-    end
-  end
+  defp parent_path(path), do: Path.dirname(path)
 
   defp parent_exists?(fs, path) do
-    parent = parent_path(path)
-    Map.has_key?(fs.nodes, parent)
+    Map.has_key?(fs.nodes, parent_path(path))
   end
 
   defp format_size(bytes) when bytes < 1024, do: "#{bytes}B"
