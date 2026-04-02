@@ -48,6 +48,38 @@ defmodule Raxol.Agent do
       def handle_message(_, model), do: {model, []}
       def terminate(_, _), do: :ok
 
+      @doc """
+      Returns compaction config for automatic session history compaction.
+
+      Override to customize token limits. Return `nil` to disable compaction.
+      Agents that store message history in `model.history` get automatic
+      compaction after each action in `Agent.Process`.
+
+      ## Default Config
+
+          %{max_tokens: 8_000, preserve_recent: 4, summary_max_tokens: 1_000}
+      """
+      def compaction_config do
+        %{max_tokens: 8_000, preserve_recent: 4, summary_max_tokens: 1_000}
+      end
+
+      @doc """
+      Returns a list of `Raxol.Agent.CommandHook` modules for this agent.
+
+      Hooks intercept command execution with pre/post semantics.
+      Return `[]` to disable hooks (default).
+      """
+      def command_hooks, do: []
+
+      @doc """
+      Returns a list of Action modules available to this agent.
+
+      Used by `Agent.Process` with a Strategy to determine which
+      Actions can be invoked. Override to expose Actions as tools.
+      Return `[]` to disable (default).
+      """
+      def available_actions, do: []
+
       defoverridable init: 1,
                      update: 2,
                      view: 1,
@@ -56,7 +88,10 @@ defmodule Raxol.Agent do
                      handle_event: 1,
                      handle_tick: 1,
                      handle_message: 2,
-                     terminate: 2
+                     terminate: 2,
+                     compaction_config: 0,
+                     command_hooks: 0,
+                     available_actions: 0
 
       @doc false
       def async(fun), do: Command.async(fun)
@@ -66,6 +101,40 @@ defmodule Raxol.Agent do
 
       @doc false
       def send_agent(target, message), do: Command.send_agent(target, message)
+
+      @doc "Run an action synchronously. Returns `{:ok, result}` or `{:error, reason}`."
+      def run_action(action_module, params, context \\ %{}) do
+        action_module.call(params, context)
+      end
+
+      @doc "Run an action asynchronously. Result arrives as `{:command_result, {:action_result, module, result}}`."
+      def run_action_async(action_module, params, context \\ %{}) do
+        Command.async(fn sender ->
+          case action_module.call(params, context) do
+            {:ok, result} ->
+              sender.({:action_result, action_module, result})
+
+            {:ok, result, _commands} ->
+              sender.({:action_result, action_module, result})
+
+            {:error, reason} ->
+              sender.({:action_error, action_module, reason})
+          end
+        end)
+      end
+
+      @doc "Run a pipeline asynchronously. Result arrives as `{:command_result, {:pipeline_result, result}}`."
+      def run_pipeline_async(steps, params, context \\ %{}) do
+        Command.async(fn sender ->
+          case Raxol.Agent.Action.Pipeline.run(steps, params, context) do
+            {:ok, result, _commands} ->
+              sender.({:pipeline_result, result})
+
+            {:error, {step, reason}} ->
+              sender.({:pipeline_error, step, reason})
+          end
+        end)
+      end
     end
   end
 end

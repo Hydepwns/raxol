@@ -312,7 +312,21 @@ defmodule Raxol.Playground.Catalog do
       tags: ["effects", "focus", "ring", "accessibility"],
       code_snippet: ~s'FocusRing.render(content, FocusRing.init(style: :solid))'
     },
-    # --- REPL ---
+    # --- REPL & VFS ---
+    %{
+      name: "Virtual FS",
+      module: Demos.VfsDemo,
+      category: :navigation,
+      description: "In-memory virtual file system with shell-like commands",
+      complexity: :intermediate,
+      tags: ["navigation", "filesystem", "shell", "commands", "interactive"],
+      code_snippet: """
+      fs = FileSystem.new()
+      {:ok, fs} = FileSystem.mkdir(fs, "/docs")
+      {:ok, fs} = FileSystem.create_file(fs, "/docs/readme.txt", "Hello")
+      {:ok, entries, fs} = FileSystem.ls(fs, "/docs")
+      """
+    },
     %{
       name: "REPL",
       module: Demos.ReplDemo,

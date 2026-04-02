@@ -31,7 +31,8 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
              pm_pid,
              registry_table
            ),
-         {:ok, driver_pid} <- maybe_start_driver(dispatcher_pid, environment),
+         {:ok, driver_pid} <-
+           maybe_start_driver(dispatcher_pid, environment, options),
          {:ok, rendering_engine_pid} <-
            start_rendering_engine(app_module, dispatcher_pid, options) do
       GenServer.cast(
@@ -218,12 +219,17 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
     end
   end
 
-  defp maybe_start_driver(_dispatcher_pid, :liveview), do: {:ok, nil}
-  defp maybe_start_driver(_dispatcher_pid, :ssh), do: {:ok, nil}
-  defp maybe_start_driver(_dispatcher_pid, :agent), do: {:ok, nil}
+  defp maybe_start_driver(_dispatcher_pid, :liveview, _options), do: {:ok, nil}
+  defp maybe_start_driver(_dispatcher_pid, :ssh, _options), do: {:ok, nil}
+  defp maybe_start_driver(_dispatcher_pid, :agent, _options), do: {:ok, nil}
 
-  defp maybe_start_driver(dispatcher_pid, _environment) do
-    case Raxol.Terminal.Driver.start_link(dispatcher_pid: dispatcher_pid) do
+  defp maybe_start_driver(dispatcher_pid, _environment, options) do
+    driver_opts = [
+      dispatcher_pid: dispatcher_pid,
+      mouse: Keyword.get(options, :mouse, true)
+    ]
+
+    case Raxol.Terminal.Driver.start_link(driver_opts) do
       {:ok, driver_pid} ->
         Log.info_with_context(
           "[Lifecycle.Initializer] Terminal Driver started with PID: #{inspect(driver_pid)}"

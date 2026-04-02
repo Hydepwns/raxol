@@ -28,17 +28,32 @@ defmodule Raxol.Agent.Backend.Mock do
 
     case Keyword.get(opts, :error) do
       nil ->
-        content = resolve_response(messages, opts)
+        case Keyword.get(opts, :tool_calls) do
+          nil ->
+            content = resolve_response(messages, opts)
 
-        {:ok,
-         %{
-           content: content,
-           usage: %{
-             input_tokens: count_tokens(messages),
-             output_tokens: count_tokens(content)
-           },
-           metadata: %{backend: :mock, model: "mock-1"}
-         }}
+            {:ok,
+             %{
+               content: content,
+               usage: %{
+                 input_tokens: count_tokens(messages),
+                 output_tokens: count_tokens(content)
+               },
+               metadata: %{backend: :mock, model: "mock-1"}
+             }}
+
+          tool_calls when is_list(tool_calls) ->
+            {:ok,
+             %{
+               content: "",
+               tool_calls: tool_calls,
+               usage: %{
+                 input_tokens: count_tokens(messages),
+                 output_tokens: 0
+               },
+               metadata: %{backend: :mock, model: "mock-1"}
+             }}
+        end
 
       error ->
         {:error, error}
@@ -68,7 +83,7 @@ defmodule Raxol.Agent.Backend.Mock do
   def name, do: "Mock Backend"
 
   @impl true
-  def capabilities, do: [:completion, :streaming]
+  def capabilities, do: [:completion, :streaming, :tool_use]
 
   defp resolve_response(_messages, opts) do
     case {Keyword.get(opts, :response_fn), Keyword.get(opts, :response)} do

@@ -17,6 +17,7 @@ defmodule Raxol.Agent.Process do
 
   require Logger
 
+  alias Raxol.Agent.ContextCompactor
   alias Raxol.Agent.ContextStore
   alias Raxol.Agent.Protocol
 
@@ -32,6 +33,7 @@ defmodule Raxol.Agent.Process do
     :tick_ms,
     :tick_ref,
     :pane_id,
+    :strategy,
     status: :initializing,
     event_buffer: []
   ]
@@ -45,6 +47,7 @@ defmodule Raxol.Agent.Process do
           tick_ms: pos_integer(),
           tick_ref: reference() | nil,
           pane_id: term(),
+          strategy: module() | nil,
           status: status(),
           event_buffer: [term()]
         }
@@ -149,6 +152,14 @@ defmodule Raxol.Agent.Process do
     backend_config = Keyword.get(opts, :backend_config, [])
     tick_ms = Keyword.get(opts, :tick_ms, @default_tick_ms)
     pane_id = Keyword.get(opts, :pane_id)
+    strategy = Keyword.get(opts, :strategy)
+
+    unless has_process_behaviour?(agent_module) do
+      Logger.debug(
+        "[Agent.Process] #{inspect(agent_module)} does not implement " <>
+          "Raxol.Agent.ProcessBehaviour -- consider adding `use Raxol.Agent.UseProcess`"
+      )
+    end
 
     ContextStore.init()
 
@@ -175,6 +186,7 @@ defmodule Raxol.Agent.Process do
       backend_config: backend_config,
       tick_ms: tick_ms,
       pane_id: pane_id,
+      strategy: strategy,
       status: :waiting
     }
 
@@ -311,14 +323,64 @@ defmodule Raxol.Agent.Process do
   end
 
   defp execute_action(action, state) do
-    case state.agent_module.act(action, state.agent_state) do
-      {:ok, agent_state} ->
-        state = %{state | agent_state: agent_state, status: :waiting}
-        save_context(state)
-        state
+    case maybe_use_strategy(action, state) do
+      {:strategy, result} ->
+        handle_strategy_result(result, state)
 
-      {:error, _reason, agent_state} ->
-        %{state | agent_state: agent_state, status: :waiting}
+      :legacy ->
+        case state.agent_module.act(action, state.agent_state) do
+          {:ok, agent_state} ->
+            agent_state = maybe_compact_history(agent_state, state.agent_module)
+            state = %{state | agent_state: agent_state, status: :waiting}
+            save_context(state)
+            state
+
+          {:error, _reason, agent_state} ->
+            %{state | agent_state: agent_state, status: :waiting}
+        end
+    end
+  end
+
+  defp maybe_use_strategy({action_mod, _params} = action, state)
+       when is_atom(action_mod) and not is_nil(state.strategy) do
+    if function_exported?(action_mod, :__action_meta__, 0) do
+      context = %{
+        backend: state.backend,
+        backend_opts: state.backend_config,
+        actions: get_available_actions(state)
+      }
+
+      {:strategy, state.strategy.execute(action, state.agent_state, context)}
+    else
+      :legacy
+    end
+  end
+
+  defp maybe_use_strategy(_action, _state), do: :legacy
+
+  defp handle_strategy_result({:ok, agent_state}, state) do
+    agent_state = maybe_compact_history(agent_state, state.agent_module)
+    state = %{state | agent_state: agent_state, status: :waiting}
+    save_context(state)
+    state
+  end
+
+  defp handle_strategy_result({:ok, agent_state, _commands}, state) do
+    agent_state = maybe_compact_history(agent_state, state.agent_module)
+    state = %{state | agent_state: agent_state, status: :waiting}
+    save_context(state)
+    state
+  end
+
+  defp handle_strategy_result({:error, _reason}, state) do
+    %{state | status: :waiting}
+  end
+
+  defp get_available_actions(state) do
+    if function_exported?(state.agent_module, :available_actions, 0) do
+      state.agent_module.available_actions()
+    else
+      []
     end
   end
 
@@ -340,6 +402,36 @@ defmodule Raxol.Agent.Process do
       {:ok, state} -> state
       state when is_map(state) -> state
       _ -> %{}
+    end
+  end
+
+  defp maybe_compact_history(agent_state, agent_module) do
+    if function_exported?(agent_module, :compaction_config, 0) do
+      do_compact_history(agent_state, agent_module.compaction_config())
+    else
+      agent_state
+    end
+  end
+
+  defp do_compact_history(agent_state, nil), do: agent_state
+
+  defp do_compact_history(agent_state, config) do
+    case Map.get(agent_state, :history) do
+      history when is_list(history) ->
+        case ContextCompactor.compact(history, config) do
+          %{compacted: true, messages: compacted} ->
+            Logger.debug(
+              "[Agent.Process] Compacted history: #{length(history)} -> #{length(compacted)} messages"
+            )
+
+            Map.put(agent_state, :history, compacted)
+
+          _ ->
+            agent_state
+        end
+
+      _ ->
+        agent_state
     end
   end
 
@@ -366,5 +458,16 @@ defmodule Raxol.Agent.Process do
       [{pid, _}] -> {:ok, pid}
       [] -> {:error, :not_found}
     end
+  end
+
+  defp has_process_behaviour?(module) do
+    behaviours =
+      module.__info__(:attributes)
+      |> Keyword.get_values(:behaviour)
+      |> List.flatten()
+
+    Raxol.Agent.ProcessBehaviour in behaviours
+  rescue
+    _ -> false
   end
 end

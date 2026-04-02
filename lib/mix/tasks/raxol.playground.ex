@@ -45,7 +45,7 @@ defmodule Mix.Tasks.Raxol.Playground do
   end
 
   defp run_terminal do
-    {:ok, pid} = Raxol.start_link(Raxol.Playground.App, [])
+    {:ok, pid} = Raxol.start_link(Raxol.Playground.App, mouse: false)
     ref = Process.monitor(pid)
 
     receive do

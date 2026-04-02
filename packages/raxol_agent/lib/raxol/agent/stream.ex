@@ -1,0 +1,464 @@
+defmodule Raxol.Agent.Stream do
+  @moduledoc """
+  Stream-first API for agent sessions.
+
+  Wraps agent interactions as lazy Elixir Streams with natural backpressure.
+  Each element is a typed event tuple. Compose with standard `Stream`/`Enum`
+  functions.
+
+  ## Quick Start
+
+      # Stream text deltas from a prompt
+      Raxol.Agent.Stream.run("Analyze mix.exs", opts)
+      |> Raxol.Agent.Stream.text_deltas()
+      |> Enum.each(&IO.write/1)
+
+      # Collect final result
+      {:ok, result} =
+        Raxol.Agent.Stream.run("What is 2+2?", opts)
+        |> Raxol.Agent.Stream.collect()
+
+      # ReAct loop with tools
+      Raxol.Agent.Stream.react("Count lines in mix.exs", opts)
+      |> Stream.each(fn
+        {:tool_use, %{name: name}} -> IO.puts("Calling \#{name}...")
+        {:text_delta, text} -> IO.write(text)
+        _ -> :ok
+      end)
+      |> Stream.run()
+
+  ## Event Types
+
+  - `{:text_delta, text}` -- streaming text chunk from LLM
+  - `{:tool_use, %{name, arguments, id}}` -- LLM requesting a tool call
+  - `{:tool_result, %{name, result}}` -- result from executing a tool
+  - `{:turn_complete, %{content, usage, iteration}}` -- end of one ReAct turn
+  - `{:done, %{content, tool_results, usage}}` -- final answer
+  - `{:error, reason}` -- error during execution
+
+  ## Options
+
+  Common options for `run/2` and `react/2`:
+
+  - `:backend` -- AIBackend module (default: `Raxol.Agent.Backend.Mock`)
+  - `:backend_opts` -- keyword list passed to backend (api_key, model, etc.)
+  - `:system_prompt` -- system message prepended to conversation
+  - `:messages` -- pre-built message list (overrides prompt)
+  - `:stream` -- whether to use streaming backend (default: `true`)
+
+  Additional options for `react/2`:
+
+  - `:actions` -- list of Action modules available as tools
+  - `:max_iterations` -- loop guard (default: 10)
+  """
+
+  alias Raxol.Agent.Action.ToolConverter
+
+  @type event ::
+          {:text_delta, String.t()}
+          | {:tool_use, tool_use()}
+          | {:tool_result, tool_result()}
+          | {:turn_complete, turn_info()}
+          | {:done, done_info()}
+          | {:error, term()}
+
+  @type tool_use :: %{name: String.t(), arguments: map(), id: String.t() | nil}
+  @type tool_result :: %{name: String.t(), result: map() | {:error, term()}}
+  @type turn_info :: %{content: String.t(), usage: map(), iteration: non_neg_integer()}
+  @type done_info :: %{content: String.t(), tool_results: [tool_result()], usage: map()}
+
+  @default_max_iterations 10
+  @react_timeout_ms 120_000
+
+  # Config passed through the react loop to avoid 9-arity functions.
+  @typep react_config :: %{
+           backend: module(),
+           opts: keyword(),
+           actions: [module()],
+           context: map(),
+           max_iterations: pos_integer(),
+           caller: pid(),
+           ref: reference()
+         }
+
+  # -- Public API --------------------------------------------------------------
+
+  @doc """
+  Stream a single LLM completion.
+
+  Returns a lazy `Stream` of events. If the backend supports streaming,
+  you get `{:text_delta, chunk}` events followed by `{:done, result}`.
+  Otherwise falls back to a single `{:done, result}`.
+
+  ## Examples
+
+      Raxol.Agent.Stream.run("Hello", backend: Backend.Mock, backend_opts: [response: "Hi"])
+      |> Enum.to_list()
+      #=> [{:text_delta, "Hi"}, {:done, %{content: "Hi", ...}}]
+  """
+  @spec run(String.t() | [map()], keyword()) :: Enumerable.t()
+  def run(prompt_or_messages, opts \\ []) do
+    messages = build_messages(prompt_or_messages, opts)
+    backend = Keyword.get(opts, :backend, Raxol.Agent.Backend.Mock)
+    backend_opts = Keyword.get(opts, :backend_opts, [])
+    use_streaming = Keyword.get(opts, :stream, true)
+
+    if use_streaming and function_exported?(backend, :stream, 2) do
+      stream_completion(backend, messages, backend_opts)
+    else
+      sync_completion(backend, messages, backend_opts)
+    end
+  end
+
+  @doc """
+  Stream a ReAct reasoning loop with tool use.
+
+  The LLM sees available tools (from `:actions`) and can call them.
+  Each iteration emits tool_use/tool_result events. Continues until
+  the LLM produces a final text answer or `:max_iterations` is reached.
+
+  ## Examples
+
+      Raxol.Agent.Stream.react("Analyze mix.exs", [
+        backend: Backend.Mock,
+        backend_opts: [response: "The file looks good."],
+        actions: [MyAction],
+        max_iterations: 5
+      ])
+      |> Enum.to_list()
+  """
+  @spec react(String.t() | [map()], keyword()) :: Enumerable.t()
+  def react(prompt_or_messages, opts \\ []) do
+    messages = build_messages(prompt_or_messages, opts)
+    backend = Keyword.get(opts, :backend, Raxol.Agent.Backend.Mock)
+    backend_opts = Keyword.get(opts, :backend_opts, [])
+    actions = Keyword.get(opts, :actions, [])
+    max_iterations = Keyword.get(opts, :max_iterations, @default_max_iterations)
+    context = Keyword.get(opts, :context, %{})
+
+    tools = ToolConverter.to_tool_definitions(actions)
+    tool_opts = Keyword.merge(backend_opts, tools: tools)
+
+    caller = self()
+    ref = make_ref()
+
+    config = %{
+      backend: backend,
+      opts: tool_opts,
+      actions: actions,
+      context: context,
+      max_iterations: max_iterations,
+      caller: caller,
+      ref: ref
+    }
+
+    pid =
+      spawn_link(fn ->
+        react_loop(messages, 0, config)
+        send(caller, {:react_done, ref})
+      end)
+
+    Stream.resource(
+      fn -> %{ref: ref, pid: pid, done: false} end,
+      &receive_react_event/1,
+      fn %{pid: p} ->
+        if Process.alive?(p), do: Process.exit(p, :normal)
+      end
+    )
+  end
+
+  # -- Filter Helpers ----------------------------------------------------------
+
+  @doc "Filter stream to only text delta events, unwrapping the text."
+  @spec text_deltas(Enumerable.t()) :: Enumerable.t()
+  def text_deltas(stream) do
+    Stream.flat_map(stream, fn
+      {:text_delta, text} -> [text]
+      _ -> []
+    end)
+  end
+
+  @doc "Filter stream to only tool use events."
+  @spec tool_uses(Enumerable.t()) :: Enumerable.t()
+  def tool_uses(stream) do
+    Stream.filter(stream, &match?({:tool_use, _}, &1))
+  end
+
+  @doc "Filter stream to only tool result events."
+  @spec tool_results(Enumerable.t()) :: Enumerable.t()
+  def tool_results(stream) do
+    Stream.filter(stream, &match?({:tool_result, _}, &1))
+  end
+
+  @doc """
+  Collect all events and return the final content.
+
+  Drains the stream and returns `{:ok, done_info}` or `{:error, reason}`.
+  """
+  @spec collect(Enumerable.t()) :: {:ok, done_info()} | {:error, term()}
+  def collect(stream) do
+    result =
+      Enum.reduce(stream, nil, fn
+        {:done, info}, _acc -> {:ok, info}
+        {:error, reason}, _acc -> {:error, reason}
+        _event, acc -> acc
+      end)
+
+    result || {:error, :no_result}
+  end
+
+  @doc """
+  Collect text from a stream into a single string.
+
+  Joins all text deltas. If no text deltas were emitted, falls back
+  to the final content from the `:done` event.
+  """
+  @spec collect_text(Enumerable.t()) :: String.t()
+  def collect_text(stream) do
+    {text, fallback} =
+      Enum.reduce(stream, {"", nil}, fn
+        {:text_delta, chunk}, {acc, fb} -> {acc <> chunk, fb}
+        {:done, %{content: c}}, {acc, _fb} -> {acc, c}
+        _, acc -> acc
+      end)
+
+    case text do
+      "" -> fallback || ""
+      _ -> text
+    end
+  end
+
+  # -- Private: Single Completion Stream --------------------------------------
+
+  defp stream_completion(backend, messages, backend_opts) do
+    case backend.stream(messages, backend_opts) do
+      {:ok, inner_stream} ->
+        normalize_backend_stream(inner_stream)
+
+      {:error, reason} ->
+        error_stream(reason)
+    end
+  end
+
+  defp normalize_backend_stream(inner_stream) do
+    Stream.transform(inner_stream, :running, fn
+      {:chunk, text}, :running ->
+        {[{:text_delta, text}], :running}
+
+      {:done, response}, :running ->
+        done_event =
+          {:done, %{content: response.content, tool_results: [], usage: response.usage}}
+
+        {[done_event], :done}
+
+      {:error, reason}, :running ->
+        {[{:error, reason}], :done}
+
+      _event, :done ->
+        {:halt, :done}
+    end)
+  end
+
+  defp sync_completion(backend, messages, backend_opts) do
+    Stream.resource(
+      fn -> :pending end,
+      fn
+        :pending ->
+          case backend.complete(messages, backend_opts) do
+            {:ok, response} ->
+              events = [
+                {:text_delta, response.content},
+                {:done, %{content: response.content, tool_results: [], usage: response.usage}}
+              ]
+
+              {events, :done}
+
+            {:error, reason} ->
+              {[{:error, reason}], :done}
+          end
+
+        :done ->
+          {:halt, :done}
+      end,
+      fn _ -> :ok end
+    )
+  end
+
+  defp error_stream(reason) do
+    Stream.resource(
+      fn -> :init end,
+      fn
+        :init -> {[{:error, reason}], :done}
+        :done -> {:halt, :done}
+      end,
+      fn _ -> :ok end
+    )
+  end
+
+  # -- Private: Stream.resource next_fun for react ----------------------------
+
+  defp receive_react_event(%{done: true} = state), do: {:halt, state}
+
+  defp receive_react_event(%{ref: ref} = state) do
+    receive do
+      {:react_event, ^ref, event} ->
+        case event do
+          {:done, _} -> {[event], %{state | done: true}}
+          {:error, _} -> {[event], %{state | done: true}}
+          _ -> {[event], state}
+        end
+
+      {:react_done, ^ref} ->
+        {:halt, state}
+    after
+      @react_timeout_ms -> {[{:error, :timeout}], %{state | done: true}}
+    end
+  end
+
+  # -- Private: ReAct Loop (runs in spawned process) --------------------------
+
+  defp react_loop(_messages, iteration, %{max_iterations: max} = config)
+       when iteration >= max do
+    emit(config, {:error, :max_iterations_reached})
+  end
+
+  defp react_loop(messages, iteration, config) do
+    case config.backend.complete(messages, config.opts) do
+      {:ok, %{tool_calls: tool_calls} = response}
+      when is_list(tool_calls) and tool_calls != [] ->
+        handle_tool_turn(messages, iteration, config, response, tool_calls)
+
+      {:ok, %{content: content} = response} ->
+        accumulated = extract_tool_results(messages)
+
+        emit(
+          config,
+          {:done,
+           %{
+             content: content,
+             tool_results: accumulated,
+             usage: Map.get(response, :usage, %{})
+           }}
+        )
+
+      {:error, reason} ->
+        emit(config, {:error, reason})
+    end
+  end
+
+  defp handle_tool_turn(messages, iteration, config, response, tool_calls) do
+    Enum.each(tool_calls, fn tc ->
+      emit(
+        config,
+        {:tool_use,
+         %{
+           name: Map.get(tc, "name"),
+           arguments: Map.get(tc, "arguments", %{}),
+           id: Map.get(tc, "id")
+         }}
+      )
+    end)
+
+    tool_messages = execute_tools(tool_calls, config)
+
+    emit(
+      config,
+      {:turn_complete,
+       %{
+         content: Map.get(response, :content, ""),
+         usage: Map.get(response, :usage, %{}),
+         iteration: iteration
+       }}
+    )
+
+    assistant_msg = %{role: :assistant, content: format_tool_text(tool_calls)}
+    next_messages = messages ++ [assistant_msg | tool_messages]
+
+    react_loop(next_messages, iteration + 1, config)
+  end
+
+  defp emit(%{caller: caller, ref: ref}, event) do
+    send(caller, {:react_event, ref, event})
+  end
+
+  # -- Private: Tool Execution ------------------------------------------------
+
+  defp execute_tools(tool_calls, config) do
+    Enum.map(tool_calls, fn tc ->
+      name = Map.get(tc, "name")
+      {result_map, msg} = dispatch_tool(name, tc, config)
+      emit(config, {:tool_result, result_map})
+      msg
+    end)
+  end
+
+  defp dispatch_tool(name, tool_call, config) do
+    case ToolConverter.dispatch_tool_call(tool_call, config.actions, config.context) do
+      {:ok, result} ->
+        build_tool_response(name, result)
+
+      {:ok, result, _commands} ->
+        build_tool_response(name, result)
+
+      {:error, reason} ->
+        {%{name: name, result: {:error, reason}},
+         %{role: :user, content: "[Tool error for #{name}]: #{inspect(reason)}"}}
+    end
+  end
+
+  defp build_tool_response(name, result) do
+    {%{name: name, result: result},
+     %{role: :user, content: "[Tool result for #{name}]: #{Jason.encode!(result)}"}}
+  end
+
+  # -- Private: Extract results from message history --------------------------
+
+  @tool_result_pattern ~r/\[Tool result for (.+?)\]: (.+)/
+
+  defp extract_tool_results(messages) do
+    Enum.flat_map(messages, &parse_tool_result_message/1)
+  end
+
+  defp parse_tool_result_message(%{content: "[Tool result for " <> _ = content})
+       when is_binary(content) do
+    case Regex.run(@tool_result_pattern, content) do
+      [_, name, json] ->
+        result =
+          case Jason.decode(json) do
+            {:ok, decoded} -> decoded
+            _ -> json
+          end
+
+        [%{name: name, result: result}]
+
+      _ ->
+        []
+    end
+  end
+
+  defp parse_tool_result_message(_), do: []
+
+  # -- Private: Message Building ----------------------------------------------
+
+  defp build_messages(prompt, opts) when is_binary(prompt) do
+    case Keyword.get(opts, :messages) do
+      nil ->
+        base = [%{role: :user, content: prompt}]
+
+        case Keyword.get(opts, :system_prompt) do
+          nil -> base
+          sys -> [%{role: :system, content: sys} | base]
+        end
+
+      messages when is_list(messages) ->
+        messages
+    end
+  end
+
+  defp build_messages(messages, _opts) when is_list(messages), do: messages
+
+  defp format_tool_text(tool_calls) do
+    names = Enum.map_join(tool_calls, ", ", fn tc -> Map.get(tc, "name", "unknown") end)
+    "[Calling tools: #{names}]"
+  end
+end

@@ -48,7 +48,7 @@ defmodule Raxol.Agent.Backend.HTTP do
   def name, do: "HTTP Backend"
 
   @impl true
-  def capabilities, do: [:completion, :streaming]
+  def capabilities, do: [:completion, :streaming, :tool_use]
 
   @impl true
   def stream(messages, opts \\ []) do
@@ -278,6 +278,8 @@ defmodule Raxol.Agent.Backend.HTTP do
     body =
       if system_text != "", do: Map.put(body, :system, system_text), else: body
 
+    body = maybe_add_tools(:anthropic, body, opts)
+
     {url, headers, body}
   end
 
@@ -298,6 +300,8 @@ defmodule Raxol.Agent.Backend.HTTP do
       messages: Enum.map(messages, &format_message/1),
       max_tokens: Keyword.get(opts, :max_tokens, @default_max_tokens)
     }
+
+    body = maybe_add_tools(:openai, body, opts)
 
     {url, headers, body}
   end
@@ -339,7 +343,53 @@ defmodule Raxol.Agent.Backend.HTTP do
     {url, headers, body}
   end
 
+  # -- Tool support -----------------------------------------------------------
+
+  defp maybe_add_tools(_provider, body, opts) do
+    case Keyword.get(opts, :tools) do
+      nil -> body
+      [] -> body
+      tools when is_list(tools) -> Map.put(body, :tools, tools)
+    end
+  end
+
   # -- Response parsing -------------------------------------------------------
+
+  # Anthropic tool_use response: stop_reason "tool_use" with tool_use content blocks
+  defp parse_response(
+         :anthropic,
+         %{"content" => content, "stop_reason" => "tool_use"} = body
+       ) do
+    tool_calls =
+      content
+      |> Enum.filter(&(&1["type"] == "tool_use"))
+      |> Enum.map(fn block ->
+        %{
+          "id" => block["id"],
+          "name" => block["name"],
+          "arguments" => block["input"] || %{}
+        }
+      end)
+
+    text =
+      content
+      |> Enum.find_value("", fn
+        %{"type" => "text", "text" => t} -> t
+        _ -> nil
+      end)
+
+    %{
+      content: text,
+      tool_calls: tool_calls,
+      usage: Map.get(body, "usage", %{}),
+      metadata: %{
+        backend: :http,
+        provider: :anthropic,
+        model: Map.get(body, "model"),
+        stop_reason: "tool_use"
+      }
+    }
+  end
 
   defp parse_response(
          :anthropic,
@@ -353,6 +403,50 @@ defmodule Raxol.Agent.Backend.HTTP do
         provider: :anthropic,
         model: Map.get(body, "model"),
         stop_reason: Map.get(body, "stop_reason")
+      }
+    }
+  end
+
+  # OpenAI tool_calls response
+  defp parse_response(
+         :openai,
+         %{"choices" => [%{"message" => %{"tool_calls" => tool_calls}} | _]} = body
+       )
+       when is_list(tool_calls) and tool_calls != [] do
+    parsed_calls =
+      Enum.map(tool_calls, fn tc ->
+        args =
+          case tc["function"]["arguments"] do
+            s when is_binary(s) ->
+              case Jason.decode(s) do
+                {:ok, map} -> map
+                _ -> %{}
+              end
+
+            map when is_map(map) ->
+              map
+
+            _ ->
+              %{}
+          end
+
+        %{
+          "id" => tc["id"],
+          "name" => tc["function"]["name"],
+          "arguments" => args
+        }
+      end)
+
+    content = get_in(body, ["choices", Access.at(0), "message", "content"]) || ""
+
+    %{
+      content: content,
+      tool_calls: parsed_calls,
+      usage: Map.get(body, "usage", %{}),
+      metadata: %{
+        backend: :http,
+        provider: :openai,
+        model: Map.get(body, "model")
       }
     }
   end

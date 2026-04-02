@@ -34,6 +34,14 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 
 ## Next Up
 
+### Virtual File System
+
+| Task              | Description                                                                 | Effort |
+| ----------------- | --------------------------------------------------------------------------- | ------ |
+| Core module       | `Raxol.Commands.FileSystem` -- pure functional in-memory VFS (flat map)     | Medium |
+| Playground demo   | TEA app with shell-like command input (ls, cd, cat, pwd, mkdir, rm, tree)   | Small  |
+| Feature doc       | `docs/features/FILESYSTEM.md`                                               | Small  |
+
 ### Ship It
 
 | Task           | Description                                                    | Effort |
@@ -60,11 +68,17 @@ Future providers:
 
 ### Longer Term
 
+- VFS agent actions (expose VFS operations as agent tools)
 - Nx-backed layout learning (replace rule engine with trained model)
 - Multi-node cockpit (swarm coordination across physical terminals)
 - Plugin marketplace
 - VS Code extension for component previews
 - Burrito packaging (single standalone binary)
+- Agent harness hardening (session compaction, runtime permissions, pre/post tool hooks)
+- MCP client integration (consume external MCP tool servers from agents)
+- Stream-first agent API (Elixir Stream composability)
+- LSP context enrichment for code-aware agents
+- Session streaming server (HTTP/SSE for remote agent dashboards)
 
 ---
 

@@ -94,6 +94,7 @@ defmodule Raxol.Terminal.Driver do
   def init_manager(opts) do
     # Extract dispatcher_pid from opts - handle both keyword list and raw value
     dispatcher_pid = extract_dispatcher_pid(opts)
+    mouse_enabled = if is_list(opts), do: Keyword.get(opts, :mouse, true), else: true
 
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] init called with dispatcher: #{inspect(dispatcher_pid)}"
@@ -176,7 +177,9 @@ defmodule Raxol.Terminal.Driver do
         IO.write("\e[?1003l\e[?1006l\e[?1000l")
 
         # Enable SGR mouse mode (button events + SGR extended coordinates)
-        IO.write("\e[?1000h\e[?1006h")
+        if mouse_enabled do
+          IO.write("\e[?1000h\e[?1006h")
+        end
 
         # Enable terminal modes: focus reporting, bracketed paste
         IO.write("\e[?1004h\e[?2004h")
