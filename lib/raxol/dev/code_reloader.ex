@@ -100,12 +100,6 @@ defmodule Raxol.Dev.CodeReloader do
           "[CodeReloader] Recompilation failed",
           %{}
         )
-
-      {:error, _} ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[CodeReloader] Recompilation failed",
-          %{}
-        )
     end
 
     if result in [:ok, :noop] && state.lifecycle_pid &&

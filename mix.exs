@@ -46,6 +46,8 @@ defmodule Raxol.MixProject do
         plt_add_apps: [
           :ex_unit,
           :mix,
+          :iex,
+          :tools,
           :phoenix,
           :phoenix_live_view,
           :ecto,
