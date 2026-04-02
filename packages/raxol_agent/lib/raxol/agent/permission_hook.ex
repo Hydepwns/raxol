@@ -62,6 +62,7 @@ defmodule Raxol.Agent.PermissionHook do
   defstruct [:mode, :prompter, denied_types: MapSet.new()]
 
   @mode_order [:read_only, :send_only, :workspace_write, :full_access, :allow]
+  @mode_ranks @mode_order |> Enum.with_index() |> Map.new()
 
   @command_requirements %{
     none: :read_only,
@@ -169,9 +170,7 @@ defmodule Raxol.Agent.PermissionHook do
     |> MapSet.new()
   end
 
-  defp mode_rank(mode) do
-    Enum.find_index(@mode_order, &(&1 == mode)) || 0
-  end
+  defp mode_rank(mode), do: Map.get(@mode_ranks, mode, 0)
 
   defp maybe_prompt(type, %{prompter: nil, mode: mode}, _context) do
     required = required_mode(type)
@@ -181,7 +180,7 @@ defmodule Raxol.Agent.PermissionHook do
        "but agent is running in :#{mode} mode"}
   end
 
-  defp maybe_prompt(type, %{prompter: prompter} = _policy, context)
+  defp maybe_prompt(type, %{prompter: prompter}, context)
        when is_function(prompter, 2) do
     command = %Command{type: type, data: nil}
 

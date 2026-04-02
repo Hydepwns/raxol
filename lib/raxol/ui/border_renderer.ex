@@ -3,9 +3,31 @@ defmodule Raxol.UI.BorderRenderer do
   Handles border rendering logic and border character definitions.
   """
 
+  @type border_style :: :single | :double | :rounded | :ascii | :none
+  @type border_chars :: %{
+          top_left: String.t(),
+          top_right: String.t(),
+          bottom_left: String.t(),
+          bottom_right: String.t(),
+          horizontal: String.t(),
+          vertical: String.t()
+        }
+  @type border_chars_8key :: %{
+          top_left: String.t(),
+          top: String.t(),
+          top_right: String.t(),
+          left: String.t(),
+          right: String.t(),
+          bottom_left: String.t(),
+          bottom: String.t(),
+          bottom_right: String.t()
+        }
+  @type cell :: {integer(), integer(), String.t(), atom(), atom(), list()}
+
   @doc """
   Gets border characters for a given border style.
   """
+  @spec get_border_chars(border_style()) :: border_chars()
   def get_border_chars(:single) do
     %{
       top_left: "┌",
@@ -89,6 +111,7 @@ defmodule Raxol.UI.BorderRenderer do
   Returns border characters, falling back to ASCII if the terminal
   does not support Unicode box-drawing characters.
   """
+  @spec get_border_chars_adaptive(border_style()) :: border_chars()
   def get_border_chars_adaptive(style) do
     case unicode_supported?() do
       true -> get_border_chars(style)
@@ -106,6 +129,14 @@ defmodule Raxol.UI.BorderRenderer do
   @doc """
   Renders box borders with proper styling.
   """
+  @spec render_box_borders(
+          integer(),
+          integer(),
+          pos_integer(),
+          pos_integer(),
+          border_chars(),
+          map()
+        ) :: [cell()]
   def render_box_borders(x, y, 1, 1, _border_chars, style) do
     {fg, bg, style_attrs} = extract_style_attributes(style)
     [{x, y, " ", fg, bg, style_attrs}]
@@ -127,13 +158,10 @@ defmodule Raxol.UI.BorderRenderer do
   end
 
   defp extract_style_attributes(style) do
-    fg = Map.get(style, :fg) || Map.get(style, :foreground, :white)
-    bg = Map.get(style, :bg) || Map.get(style, :background, :black)
-
-    border_style = Map.get(style, :border_style, :single)
+    {fg, bg} = resolve_colors(style)
 
     border_type =
-      case border_style do
+      case Map.get(style, :border_style, :single) do
         %{type: type} -> type
         type when is_atom(type) -> type
         _ -> :single
@@ -227,10 +255,16 @@ defmodule Raxol.UI.BorderRenderer do
   @doc """
   Renders horizontal line.
   """
+  @spec render_horizontal_line(
+          integer(),
+          integer(),
+          pos_integer(),
+          String.t(),
+          map(),
+          term()
+        ) :: [cell()]
   def render_horizontal_line(x, y, width, char, style, _theme) do
-    # Resolve colors properly
-    fg = Map.get(style, :fg) || Map.get(style, :foreground, :white)
-    bg = Map.get(style, :bg) || Map.get(style, :background, :black)
+    {fg, bg} = resolve_colors(style)
 
     for i <- 1..(width - 2) do
       {x + i, y, char, fg, bg, []}
@@ -240,10 +274,16 @@ defmodule Raxol.UI.BorderRenderer do
   @doc """
   Renders vertical line.
   """
+  @spec render_vertical_line(
+          integer(),
+          integer(),
+          pos_integer(),
+          String.t(),
+          map(),
+          term()
+        ) :: [cell()]
   def render_vertical_line(x, y, height, char, style, _theme) do
-    # Resolve colors properly
-    fg = Map.get(style, :fg) || Map.get(style, :foreground, :white)
-    bg = Map.get(style, :bg) || Map.get(style, :background, :black)
+    {fg, bg} = resolve_colors(style)
 
     for i <- 1..(height - 2) do
       {x, y + i, char, fg, bg, []}
@@ -253,14 +293,24 @@ defmodule Raxol.UI.BorderRenderer do
   @doc """
   Renders empty box with no borders.
   """
+  @spec render_empty_box(
+          integer(),
+          integer(),
+          pos_integer(),
+          pos_integer(),
+          map()
+        ) :: [cell()]
   def render_empty_box(x, y, width, height, style) do
-    # Resolve colors properly
-    fg = Map.get(style, :fg) || Map.get(style, :foreground, :white)
-    bg = Map.get(style, :bg) || Map.get(style, :background, :black)
+    {fg, bg} = resolve_colors(style)
 
-    # Empty box with no border style
     for i <- 0..(width - 1), j <- 0..(height - 1) do
       {x + i, y + j, " ", fg, bg, []}
     end
+  end
+
+  defp resolve_colors(style) do
+    fg = Map.get(style, :fg) || Map.get(style, :foreground, :white)
+    bg = Map.get(style, :bg) || Map.get(style, :background, :black)
+    {fg, bg}
   end
 end

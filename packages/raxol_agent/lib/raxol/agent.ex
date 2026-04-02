@@ -103,11 +103,14 @@ defmodule Raxol.Agent do
       def send_agent(target, message), do: Command.send_agent(target, message)
 
       @doc "Run an action synchronously. Returns `{:ok, result}` or `{:error, reason}`."
+      @spec run_action(module(), map(), map()) ::
+              {:ok, term()} | {:error, term()}
       def run_action(action_module, params, context \\ %{}) do
         action_module.call(params, context)
       end
 
       @doc "Run an action asynchronously. Result arrives as `{:command_result, {:action_result, module, result}}`."
+      @spec run_action_async(module(), map(), map()) :: Command.t()
       def run_action_async(action_module, params, context \\ %{}) do
         Command.async(fn sender ->
           case action_module.call(params, context) do
@@ -124,6 +127,7 @@ defmodule Raxol.Agent do
       end
 
       @doc "Run a pipeline asynchronously. Result arrives as `{:command_result, {:pipeline_result, result}}`."
+      @spec run_pipeline_async([module()], map(), map()) :: Command.t()
       def run_pipeline_async(steps, params, context \\ %{}) do
         Command.async(fn sender ->
           case Raxol.Agent.Action.Pipeline.run(steps, params, context) do

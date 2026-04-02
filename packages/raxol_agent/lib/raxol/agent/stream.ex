@@ -64,22 +64,23 @@ defmodule Raxol.Agent.Stream do
 
   @type tool_use :: %{name: String.t(), arguments: map(), id: String.t() | nil}
   @type tool_result :: %{name: String.t(), result: map() | {:error, term()}}
-  @type turn_info :: %{content: String.t(), usage: map(), iteration: non_neg_integer()}
-  @type done_info :: %{content: String.t(), tool_results: [tool_result()], usage: map()}
+  @type turn_info :: %{
+          content: String.t(),
+          usage: map(),
+          iteration: non_neg_integer()
+        }
+  @type done_info :: %{
+          content: String.t(),
+          tool_results: [tool_result()],
+          usage: map()
+        }
 
   @default_max_iterations 10
   @react_timeout_ms 120_000
 
-  # Config passed through the react loop to avoid 9-arity functions.
-  @typep react_config :: %{
-           backend: module(),
-           opts: keyword(),
-           actions: [module()],
-           context: map(),
-           max_iterations: pos_integer(),
-           caller: pid(),
-           ref: reference()
-         }
+  # Config map passed through the react loop to avoid 9-arity functions.
+  # Shape: %{backend: module, opts: keyword, actions: [module],
+  #          context: map, max_iterations: pos_integer, caller: pid, ref: reference}
 
   # -- Public API --------------------------------------------------------------
 
@@ -247,7 +248,8 @@ defmodule Raxol.Agent.Stream do
 
       {:done, response}, :running ->
         done_event =
-          {:done, %{content: response.content, tool_results: [], usage: response.usage}}
+          {:done,
+           %{content: response.content, tool_results: [], usage: response.usage}}
 
         {[done_event], :done}
 
@@ -268,7 +270,12 @@ defmodule Raxol.Agent.Stream do
             {:ok, response} ->
               events = [
                 {:text_delta, response.content},
-                {:done, %{content: response.content, tool_results: [], usage: response.usage}}
+                {:done,
+                 %{
+                   content: response.content,
+                   tool_results: [],
+                   usage: response.usage
+                 }}
               ]
 
               {events, :done}
@@ -393,7 +400,11 @@ defmodule Raxol.Agent.Stream do
   end
 
   defp dispatch_tool(name, tool_call, config) do
-    case ToolConverter.dispatch_tool_call(tool_call, config.actions, config.context) do
+    case ToolConverter.dispatch_tool_call(
+           tool_call,
+           config.actions,
+           config.context
+         ) do
       {:ok, result} ->
         build_tool_response(name, result)
 
@@ -408,7 +419,10 @@ defmodule Raxol.Agent.Stream do
 
   defp build_tool_response(name, result) do
     {%{name: name, result: result},
-     %{role: :user, content: "[Tool result for #{name}]: #{Jason.encode!(result)}"}}
+     %{
+       role: :user,
+       content: "[Tool result for #{name}]: #{Jason.encode!(result)}"
+     }}
   end
 
   # -- Private: Extract results from message history --------------------------
@@ -458,7 +472,11 @@ defmodule Raxol.Agent.Stream do
   defp build_messages(messages, _opts) when is_list(messages), do: messages
 
   defp format_tool_text(tool_calls) do
-    names = Enum.map_join(tool_calls, ", ", fn tc -> Map.get(tc, "name", "unknown") end)
+    names =
+      Enum.map_join(tool_calls, ", ", fn tc ->
+        Map.get(tc, "name", "unknown")
+      end)
+
     "[Calling tools: #{names}]"
   end
 end

@@ -160,7 +160,9 @@ defmodule Raxol.UI.Components.FocusRing do
 
   defp wrap_with_border(content, borders, config) do
     lines = String.split(content, "\n")
-    width = Enum.map(lines, &String.length/1) |> Enum.max()
+
+    width =
+      lines |> Enum.map(&Raxol.UI.TextMeasure.display_width/1) |> Enum.max()
 
     offset_spaces = String.duplicate(" ", config.offset)
 

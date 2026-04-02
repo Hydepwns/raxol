@@ -103,12 +103,12 @@ defmodule Raxol.Performance.Caches.ComponentRenderCache do
 
   @doc """
   Invalidates cache entries for a specific component.
+
+  Note: Full pattern-based invalidation requires ETSCacheManager support.
+  Currently emits telemetry and returns :ok.
   """
   @spec invalidate_component(module(), map() | :all) :: :ok
-  def invalidate_component(component_module, state_or_all \\ :all) do
-    _pattern = build_invalidation_pattern(component_module, state_or_all)
-    # Note: In a real implementation, we'd need access to the ETS table directly
-    # or add an invalidation method to ETSCacheManager
+  def invalidate_component(component_module, _state_or_all \\ :all) do
     CacheHelper.emit_telemetry(@telemetry_prefix, :invalidate, %{
       component: component_module
     })
@@ -216,17 +216,6 @@ defmodule Raxol.Performance.Caches.ComponentRenderCache do
 
     style_hash = :erlang.phash2(parent_style)
     @element_render_prefix <> "#{element_hash}:#{theme_hash}:#{style_hash}"
-  end
-
-  defp build_invalidation_pattern(component_module, :all) do
-    # Pattern to match all cache entries for a component
-    @render_output_prefix <> "#{component_module}:*"
-  end
-
-  defp build_invalidation_pattern(component_module, state) do
-    # Pattern to match specific state cache entries
-    state_hash = :erlang.phash2(state)
-    @render_output_prefix <> "#{component_module}:#{state_hash}:*"
   end
 
   # Element hashing

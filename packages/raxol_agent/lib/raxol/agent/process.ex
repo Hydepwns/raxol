@@ -57,6 +57,7 @@ defmodule Raxol.Agent.Process do
 
   # -- Client API --------------------------------------------------------------
 
+  @spec child_spec(keyword()) :: Supervisor.child_spec()
   def child_spec(opts) do
     agent_id = Keyword.fetch!(opts, :agent_id)
 
@@ -315,8 +316,16 @@ defmodule Raxol.Agent.Process do
         %{state | status: :waiting}
     end
   rescue
-    e ->
-      Logger.warning("[Agent.Process] Cycle error for #{state.agent_id}: #{inspect(e)}")
+    e in [
+      RuntimeError,
+      ArgumentError,
+      FunctionClauseError,
+      MatchError,
+      KeyError
+    ] ->
+      Logger.warning(
+        "[Agent.Process] Cycle error for #{state.agent_id}: #{Exception.message(e)}"
+      )
 
       save_context(state)
       %{state | status: :waiting}
@@ -358,12 +367,8 @@ defmodule Raxol.Agent.Process do
 
   defp maybe_use_strategy(_action, _state), do: :legacy
 
-  defp handle_strategy_result({:ok, agent_state}, state) do
-    agent_state = maybe_compact_history(agent_state, state.agent_module)
-    state = %{state | agent_state: agent_state, status: :waiting}
-    save_context(state)
-    state
-  end
+  defp handle_strategy_result({:ok, agent_state}, state),
+    do: handle_strategy_result({:ok, agent_state, []}, state)
 
   defp handle_strategy_result({:ok, agent_state, _commands}, state) do
     agent_state = maybe_compact_history(agent_state, state.agent_module)

@@ -29,13 +29,9 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
 
-  # Required for using View.Elements macros
   require Raxol.View.Elements
   require Raxol.Core.Renderer.View
   require Raxol.Core.Runtime.Log
-
-  # Require view macros
-  # require Raxol.View.Elements  # Removed
 
   # Define state struct
   defstruct id: nil,
@@ -125,54 +121,32 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   """
   @spec render(__MODULE__.t(), map()) :: any()
   @impl Raxol.UI.Components.Base.Component
-  # Correct arity
+  def render(%{value: "", focused: false} = state, %{} = _props) do
+    Raxol.View.Elements.box id: state.id,
+                            style: Map.put(state.style, :color, :gray) do
+      Raxol.View.Elements.label(content: state.placeholder)
+    end
+  end
+
+  def render(%{focused: true} = state, %{} = _props) do
+    before = String.slice(state.value, 0, state.cursor_pos)
+    after_cursor = String.slice(state.value, state.cursor_pos..-1//1)
+
+    Raxol.View.Elements.box id: state.id,
+                            style: Map.put(state.style, :color, :white) do
+      [
+        Raxol.View.Elements.label(content: before),
+        Raxol.View.Elements.label(content: "|"),
+        Raxol.View.Elements.label(content: after_cursor)
+      ]
+    end
+  end
+
   def render(state, %{} = _props) do
-    display_text =
-      case {state.value == "", state.focused} do
-        {true, false} -> state.placeholder
-        _ -> state.value
-      end
-
-    # Placeholder color handling
-    text_color =
-      case {state.value == "", state.focused} do
-        {true, false} -> :gray
-        _ -> :white
-      end
-
-    # Render with cursor if focused
-    rendered_content =
-      case state.focused do
-        true ->
-          before = String.slice(display_text, 0, state.cursor_pos)
-
-          after_cursor =
-            String.slice(
-              display_text,
-              state.cursor_pos,
-              String.length(display_text)
-            )
-
-          # Use simple characters, assume fixed width font
-          [
-            Raxol.View.Elements.label(content: before),
-            Raxol.View.Elements.label(content: "|"),
-            Raxol.View.Elements.label(content: after_cursor)
-          ]
-
-        false ->
-          Raxol.View.Elements.label(content: display_text)
-      end
-
-    dsl_result =
-      Raxol.View.Elements.box id: state.id,
-                              style: Map.put(state.style, :color, text_color) do
-        rendered_content
-      end
-
-    # Return the element structure directly
-    dsl_result
-    # Or wrap if needed by container: View.to_element(dsl_result)
+    Raxol.View.Elements.box id: state.id,
+                            style: Map.put(state.style, :color, :white) do
+      Raxol.View.Elements.label(content: state.value)
+    end
   end
 
   # --- Internal Helpers ---

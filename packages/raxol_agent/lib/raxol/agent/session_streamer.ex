@@ -137,7 +137,9 @@ defmodule Raxol.Agent.SessionStreamer do
   end
 
   def handle_call(:list_sessions, _from, state) do
-    sessions = for {id, set} <- state.subscriptions, MapSet.size(set) > 0, do: id
+    sessions =
+      for {id, set} <- state.subscriptions, MapSet.size(set) > 0, do: id
+
     {:reply, sessions, state}
   end
 
@@ -150,18 +152,15 @@ defmodule Raxol.Agent.SessionStreamer do
       send(pid, {:session_event, session_id, event})
     end)
 
-    # Store in history
     history =
-      Map.update(state.history, session_id, :queue.from_list([event]), fn queue ->
-        queue = :queue.in(event, queue)
-
-        if :queue.len(queue) > state.max_history do
-          {_dropped, queue} = :queue.out(queue)
-          queue
-        else
-          queue
+      Map.update(
+        state.history,
+        session_id,
+        :queue.from_list([event]),
+        fn queue ->
+          enqueue_bounded(queue, event, state.max_history)
         end
-      end)
+      )
 
     {:noreply, %{state | history: history}}
   end
@@ -178,4 +177,15 @@ defmodule Raxol.Agent.SessionStreamer do
   end
 
   def handle_info(_msg, state), do: {:noreply, state}
+
+  defp enqueue_bounded(queue, item, max) do
+    queue = :queue.in(item, queue)
+
+    if :queue.len(queue) > max do
+      {_dropped, queue} = :queue.out(queue)
+      queue
+    else
+      queue
+    end
+  end
 end
