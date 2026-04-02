@@ -184,7 +184,9 @@ lib/raxol/
 
 **SSH Architecture**: `Raxol.SSH.Server` wraps `:ssh.daemon` with auto-generated host keys. Each connection spawns a `Raxol.SSH.Session` running a Lifecycle with `environment: :ssh`. `CLI_Handler` translates SSH channel data to Raxol events. `IO_Adapter` bridges SSH channel I/O to the terminal rendering pipeline.
 
-**REPL Architecture**: `Raxol.REPL.Evaluator` wraps `Code.eval_string` with `spawn_monitor` timeout, `StringIO` IO capture via group_leader swap, and persistent bindings across evaluations. `Raxol.REPL.Sandbox` scans ASTs via `Macro.prewalk` at three levels: `:none` (unrestricted), `:standard` (blocks System.cmd/File.rm/Port.open/etc), `:strict` (whitelist-only, safe for SSH exposure).
+**REPL Architecture**: `Raxol.REPL.Evaluator` wraps `Code.eval_string` with `spawn_monitor` timeout, `StringIO` IO capture via group_leader swap, and persistent bindings across evaluations. `Raxol.REPL.Sandbox` scans ASTs via `Macro.prewalk` at three levels: `:none` (unrestricted), `:standard` (blocks System.cmd/File.rm/Port.open/etc), `:strict` (whitelist-only, safe for SSH exposure). `Evaluator.with_vfs/1` seeds a VFS binding and auto-imports `Raxol.REPL.VfsHelpers` via prelude.
+
+**Virtual File System**: `Raxol.Commands.FileSystem` is a pure functional in-memory VFS. Flat map keyed by absolute path for O(1) lookups. CRUD: `new/0`, `mkdir/2`, `create_file/3`, `rm/2`, `exists?/2`, `stat/2`. Navigation: `ls/2`, `cd/2`, `pwd/1`, `tree/3`. Read: `cat/2`. REPL helpers in `Raxol.REPL.VfsHelpers` provide shell-like commands (`ls`, `cd`, `cat`, `mkdir`, `touch`, `rm`, `tree`, `stat`). Agent actions in `Raxol.Agent.Actions.Vfs` expose 7 LLM-callable tools via the Action behaviour. See `docs/features/FILESYSTEM.md` for full docs.
 
 **Phoenix as library only**: No active web server in core, Ecto.Repo explicitly disabled at runtime.
 

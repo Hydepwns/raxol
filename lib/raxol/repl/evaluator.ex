@@ -17,7 +17,8 @@ defmodule Raxol.REPL.Evaluator do
   @type t :: %__MODULE__{
           bindings: keyword(),
           history: [{String.t(), result()}],
-          env: Macro.Env.t()
+          env: Macro.Env.t(),
+          prelude: String.t()
         }
 
   @type result :: %{
@@ -28,13 +29,33 @@ defmodule Raxol.REPL.Evaluator do
 
   defstruct bindings: [],
             history: [],
-            env: nil
+            env: nil,
+            prelude: ""
 
   @doc "Creates a new evaluator with an empty binding context."
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
     env = Keyword.get_lazy(opts, :env, fn -> base_env() end)
-    %__MODULE__{bindings: [], history: [], env: env}
+    %__MODULE__{bindings: [], history: [], env: env, prelude: ""}
+  end
+
+  @doc """
+  Enable VFS helpers for this evaluator.
+
+  Seeds a `vfs` binding with a fresh virtual filesystem and auto-imports
+  `Raxol.REPL.VfsHelpers` so shell-like commands are available directly:
+
+      evaluator = Evaluator.new() |> Evaluator.with_vfs()
+      {:ok, _, evaluator} = Evaluator.eval(evaluator, "vfs = mkdir(vfs, \\"/docs\\")")
+      {:ok, _, evaluator} = Evaluator.eval(evaluator, "vfs = ls(vfs)")
+  """
+  @spec with_vfs(t()) :: t()
+  def with_vfs(evaluator) do
+    %{
+      evaluator
+      | bindings: Keyword.put(evaluator.bindings, :vfs, Raxol.Commands.FileSystem.new()),
+        prelude: append_prelude(evaluator.prelude, "import Raxol.REPL.VfsHelpers")
+    }
   end
 
   @doc """
@@ -49,10 +70,11 @@ defmodule Raxol.REPL.Evaluator do
     timeout = Keyword.get(opts, :timeout, @default_timeout)
     parent = self()
     bindings = evaluator.bindings
+    full_code = apply_prelude(evaluator.prelude, code)
 
     {pid, ref} =
       spawn_monitor(fn ->
-        result = eval_with_capture(code, bindings, evaluator.env)
+        result = eval_with_capture(full_code, bindings, evaluator.env)
         send(parent, {:eval_result, result})
       end)
 
@@ -146,4 +168,10 @@ defmodule Raxol.REPL.Evaluator do
   defp base_env do
     %{__ENV__ | file: "iex", line: 1}
   end
+
+  defp apply_prelude("", code), do: code
+  defp apply_prelude(prelude, code), do: prelude <> "\n" <> code
+
+  defp append_prelude("", new), do: new
+  defp append_prelude(existing, new), do: existing <> "\n" <> new
 end
