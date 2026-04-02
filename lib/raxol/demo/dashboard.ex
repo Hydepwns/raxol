@@ -58,8 +58,8 @@ defmodule Raxol.Demo.Dashboard do
 
         mem_pct = mem_percent()
 
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         history =
-          # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
           (model.mem_history ++ [mem_pct]) |> Enum.take(-@mem_history_size)
 
         entry = tick_entry(model.tick)

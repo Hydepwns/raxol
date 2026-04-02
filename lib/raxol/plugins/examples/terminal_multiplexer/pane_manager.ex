@@ -137,8 +137,8 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexer.PaneManager do
 
     updated_window = %{
       window
-      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
-      | panes: updated_panes ++ [new_pane],
+      | # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
+        panes: updated_panes ++ [new_pane],
         active_pane: new_pane.id,
         layout: :split
     }

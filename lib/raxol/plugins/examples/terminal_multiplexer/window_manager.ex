@@ -28,8 +28,8 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexer.WindowManager do
 
     updated_session = %{
       session
-      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
-      | windows: session.windows ++ [window],
+      | # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
+        windows: session.windows ++ [window],
         active_window: window.id
     }
 
