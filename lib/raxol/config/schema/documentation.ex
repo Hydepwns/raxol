@@ -18,6 +18,7 @@ defmodule Raxol.Config.Schema.Documentation do
   defp generate_docs_for_schema(schema, path) when is_map(schema) do
     schema
     |> Enum.flat_map(fn {key, value} ->
+      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
       current_path = path ++ [key]
       generate_doc_for_value(Map.has_key?(value, :type), current_path, value)
     end)

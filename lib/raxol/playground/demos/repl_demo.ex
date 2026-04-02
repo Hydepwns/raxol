@@ -159,20 +159,16 @@ defmodule Raxol.Playground.Demos.ReplDemo do
   end
 
   defp format_result(result) do
-    lines = []
-
     lines =
       if result.output != "" do
-        io_lines =
-          result.output
-          |> String.split("\n")
-          |> Enum.map(fn l -> {"  #{l}", :io} end)
-
-        lines ++ io_lines
+        result.output
+        |> String.split("\n")
+        |> Enum.map(fn l -> {"  #{l}", :io} end)
       else
-        lines
+        []
       end
 
+    # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
     lines ++ [{"=> #{result.formatted}", :result}]
   end
 

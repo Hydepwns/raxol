@@ -86,7 +86,7 @@ defmodule Raxol.Dev.CodeReloader do
   def handle_info(:recompile, state) do
     Raxol.Core.Runtime.Log.info("[CodeReloader] Recompiling...")
 
-    result = apply(IEx.Helpers, :recompile, [])
+    result = IEx.Helpers.recompile()
 
     case result do
       :ok ->

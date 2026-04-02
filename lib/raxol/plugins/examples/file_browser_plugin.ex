@@ -406,6 +406,7 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
     # Footer
     footer = build_footer(state, width)
 
+    # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
     ([header] ++ tree_lines ++ [footer])
     |> Enum.join("\n")
   end

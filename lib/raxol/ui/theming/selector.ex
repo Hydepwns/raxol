@@ -273,6 +273,7 @@ defmodule Raxol.UI.Theming.Selector do
     }
 
     # Combine elements for expanded view
+    # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
     [box, header | theme_items] ++ [instructions]
   end
 

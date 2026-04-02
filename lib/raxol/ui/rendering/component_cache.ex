@@ -281,6 +281,7 @@ defmodule Raxol.UI.Rendering.ComponentCache do
 
   defp emit_telemetry(event, metadata) do
     :telemetry.execute(
+      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
       @telemetry_prefix ++ [event],
       %{count: 1},
       metadata

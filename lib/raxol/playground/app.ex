@@ -312,6 +312,7 @@ defmodule Raxol.Playground.App do
         children = [info, demo_content(model)]
 
         children =
+          # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
           if model.show_code, do: children ++ [code_panel(comp)], else: children
 
         column style: %{gap: 0} do

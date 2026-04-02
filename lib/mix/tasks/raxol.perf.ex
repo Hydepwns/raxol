@@ -268,14 +268,14 @@ defmodule Mix.Tasks.Raxol.Perf do
       case {name, arity} do
         {:new, 0} ->
           try do
-            apply(module, :new, [])
+            module.new()
           catch
             _, _ -> :ok
           end
 
         {:new, 1} ->
           try do
-            apply(module, :new, [%{}])
+            module.new(%{})
           catch
             _, _ -> :ok
           end

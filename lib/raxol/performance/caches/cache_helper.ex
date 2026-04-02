@@ -41,6 +41,7 @@ defmodule Raxol.Performance.Caches.CacheHelper do
   """
   @spec emit_telemetry(list(atom()), atom(), map()) :: :ok
   def emit_telemetry(prefix, event, metadata) do
+    # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
     :telemetry.execute(prefix ++ [event], %{count: 1}, metadata)
   end
 end

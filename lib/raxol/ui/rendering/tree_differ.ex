@@ -127,6 +127,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
           # So, it's `path ++ [idx]`.
           # The `path` argument of `perform_non_keyed_children_diff` is path_to_parent.
           # The diff from `do_diff_trees` will be relative to this child.
+          # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
           case do_diff_trees(old_child, new_child, path ++ [idx]) do
             :no_change -> nil
             diff_for_child_at_idx -> {idx, diff_for_child_at_idx}
@@ -330,6 +331,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
         _ -> false
       end)
 
+    # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
     all_ops = other_ops ++ [{:key_reorder, new_keys_ordered}]
     {:update, path_to_parent, %{type: :keyed_children, ops: all_ops}}
   end

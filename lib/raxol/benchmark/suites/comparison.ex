@@ -74,6 +74,7 @@ defmodule Raxol.Benchmark.Suites.Comparison do
         Map.get(raxol_stats, :memory_per_widget, "measured")
       )
 
+    # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
     [header, separator | competitor_rows] ++ [raxol_row]
   end
 

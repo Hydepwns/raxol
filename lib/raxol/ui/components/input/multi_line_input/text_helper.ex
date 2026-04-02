@@ -321,6 +321,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
 
         state.lines
         |> List.replace_at(row, first_new_line)
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         |> insert_lines_after(row, middle_lines ++ [last_new_line])
         |> then(&with_lines(state, &1, %{cursor_pos: {final_row, final_col}}))
     end

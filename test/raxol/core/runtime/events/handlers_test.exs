@@ -89,6 +89,7 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
         [:test_event],
         fn e, s ->
           current = ProcessStore.get(:execution_order)
+          # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
           ProcessStore.put(:execution_order, current ++ [:handler1])
           {:ok, e, s}
         end,
@@ -100,6 +101,7 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
         [:test_event],
         fn e, s ->
           current = ProcessStore.get(:execution_order)
+          # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
           ProcessStore.put(:execution_order, current ++ [:handler2])
           {:ok, e, s}
         end,
@@ -111,6 +113,7 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
         [:test_event],
         fn e, s ->
           current = ProcessStore.get(:execution_order)
+          # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
           ProcessStore.put(:execution_order, current ++ [:handler3])
           {:ok, e, s}
         end,

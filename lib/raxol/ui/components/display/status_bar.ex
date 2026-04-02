@@ -74,6 +74,7 @@ defmodule Raxol.UI.Components.Display.StatusBar do
       ]
 
       if index < length(items) - 1 do
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         item_elements ++
           [
             Raxol.View.Components.text(

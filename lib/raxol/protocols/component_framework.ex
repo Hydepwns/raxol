@@ -114,11 +114,11 @@ defmodule Raxol.Protocols.ComponentFramework do
     def render(component, opts \\ []) do
       case function_exported?(component.module, :render_component, 3) do
         true ->
-          apply(component.module, :render_component, [
+          component.module.render_component(
             component.type,
             component,
             opts
-          ])
+          )
 
         false ->
           render_default_component(component, opts)
@@ -294,11 +294,11 @@ defmodule Raxol.Protocols.ComponentFramework do
     defp try_module_handler(component, event, state) do
       case function_exported?(component.module, :handle_component_event, 3) do
         true ->
-          apply(component.module, :handle_component_event, [
+          component.module.handle_component_event(
             component,
             event,
             state
-          ])
+          )
 
         false ->
           {:unhandled, component, state}
@@ -455,6 +455,7 @@ defmodule Raxol.Protocols.ComponentFramework do
   Add a child component to a parent component.
   """
   def add_child(parent, child) do
+    # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
     %{parent | children: parent.children ++ [child]}
   end
 

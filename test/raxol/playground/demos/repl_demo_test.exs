@@ -77,8 +77,7 @@ defmodule Raxol.Playground.Demos.ReplDemoTest do
 
       output_text =
         model.output
-        |> Enum.map(fn {text, _kind} -> text end)
-        |> Enum.join("\n")
+        |> Enum.map_join("\n", fn {text, _kind} -> text end)
 
       assert output_text =~ "42"
     end
@@ -91,8 +90,7 @@ defmodule Raxol.Playground.Demos.ReplDemoTest do
 
       output_text =
         model.output
-        |> Enum.map(fn {text, _kind} -> text end)
-        |> Enum.join("\n")
+        |> Enum.map_join("\n", fn {text, _kind} -> text end)
 
       assert output_text =~ "30"
     end
@@ -103,8 +101,7 @@ defmodule Raxol.Playground.Demos.ReplDemoTest do
 
       output_text =
         model.output
-        |> Enum.map(fn {text, _kind} -> text end)
-        |> Enum.join("\n")
+        |> Enum.map_join("\n", fn {text, _kind} -> text end)
 
       assert output_text =~ "Sandbox"
     end
@@ -140,7 +137,7 @@ defmodule Raxol.Playground.Demos.ReplDemoTest do
     test "Ctrl+L clears output" do
       model = ReplDemo.init(nil) |> type_string("1+1")
       {model, _} = ReplDemo.update(key(:enter), model)
-      assert length(model.output) > 0
+      assert model.output != []
 
       {model, _} = ReplDemo.update(ctrl_key("l"), model)
       assert model.output == []

@@ -40,6 +40,7 @@ defmodule Raxol.PluginTest do
 
     @impl true
     def cleanup(state) do
+      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
       new_state = %{state | log: state.log ++ [:cleanup_called]}
 
       if new_state.counter == 999 do

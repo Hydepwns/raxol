@@ -151,6 +151,7 @@ defmodule Raxol.UI.Rendering.DamageTracker do
        ) do
     diffs
     |> Enum.map(fn {idx, diff} ->
+      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
       child_path = parent_path ++ [idx]
       child_node = get_node_at_path(tree, child_path)
 
@@ -173,6 +174,7 @@ defmodule Raxol.UI.Rendering.DamageTracker do
     ops
     |> Enum.with_index()
     |> Enum.map(fn {_op, idx} ->
+      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
       child_path = parent_path ++ [idx]
 
       {child_path,

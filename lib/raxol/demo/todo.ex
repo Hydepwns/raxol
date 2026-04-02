@@ -166,6 +166,7 @@ defmodule Raxol.Demo.Todo do
 
       %{
         model
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         | todos: model.todos ++ [new_todo],
           next_id: model.next_id + 1,
           cursor: length(model.todos),

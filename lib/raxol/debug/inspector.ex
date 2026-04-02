@@ -61,6 +61,7 @@ defmodule Raxol.Debug.Inspector do
 
     Enum.flat_map(keys, fn key ->
       value = Map.get(model, key)
+      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
       child_path = path ++ [key]
       expandable = is_map(value) and map_size(value) > 0
 
@@ -119,6 +120,7 @@ defmodule Raxol.Debug.Inspector do
 
     Enum.reduce(keys, acc, fn key, paths ->
       value = Map.get(model, key)
+      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
       child_path = path ++ [key]
 
       if is_map(value) and map_size(value) > 0 do

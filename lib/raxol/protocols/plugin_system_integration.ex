@@ -98,10 +98,10 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
     def render(plugin, opts \\ []) do
       cond do
         MapSet.member?(plugin.capabilities, :renderable) ->
-          apply(plugin.module, :render, [plugin, opts])
+          plugin.module.render(plugin, opts)
 
         function_exported?(plugin.module, :render_plugin, 2) ->
-          apply(plugin.module, :render_plugin, [plugin, opts])
+          plugin.module.render_plugin(plugin, opts)
 
         true ->
           render_default_plugin(plugin, opts)
@@ -120,7 +120,7 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
 
       case function_exported?(plugin.module, :render_metadata, 1) do
         true ->
-          custom_metadata = apply(plugin.module, :render_metadata, [plugin])
+          custom_metadata = plugin.module.render_metadata(plugin)
           Map.merge(base_metadata, custom_metadata)
 
         false ->
@@ -149,7 +149,7 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
     def apply_style(plugin, style) do
       case MapSet.member?(plugin.capabilities, :styleable) do
         true ->
-          case apply(plugin.module, :apply_style, [plugin, style]) do
+          case plugin.module.apply_style(plugin, style) do
             %ProtocolPlugin{} = updated_plugin -> updated_plugin
             updated_state -> %{plugin | state: updated_state}
           end
@@ -163,7 +163,7 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
 
     def get_style(plugin) do
       case MapSet.member?(plugin.capabilities, :styleable) do
-        true -> apply(plugin.module, :get_style, [plugin])
+        true -> plugin.module.get_style(plugin)
         false -> Map.get(plugin.state, :style, %{})
       end
     end
@@ -188,7 +188,7 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
     def handle_event(plugin, event, state) do
       case MapSet.member?(plugin.capabilities, :event_handler) do
         true ->
-          case apply(plugin.module, :handle_event, [plugin, event, state]) do
+          case plugin.module.handle_event(plugin, event, state) do
             {:ok, updated_plugin, new_state} -> {:ok, updated_plugin, new_state}
             {:error, reason} -> {:error, reason}
             other -> other
@@ -203,7 +203,7 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
       case MapSet.member?(plugin.capabilities, :event_handler) do
         true ->
           case function_exported?(plugin.module, :can_handle?, 2) do
-            true -> apply(plugin.module, :can_handle?, [plugin, event])
+            true -> plugin.module.can_handle?(plugin, event)
             # Assume it can handle if it has the capability
             false -> true
           end
@@ -215,7 +215,7 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
 
     def get_event_listeners(plugin) do
       case function_exported?(plugin.module, :get_event_listeners, 1) do
-        true -> apply(plugin.module, :get_event_listeners, [plugin])
+        true -> plugin.module.get_event_listeners(plugin)
         false -> []
       end
     end
@@ -223,7 +223,7 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
     def subscribe(plugin, event_types) do
       case function_exported?(plugin.module, :subscribe, 2) do
         true ->
-          case apply(plugin.module, :subscribe, [plugin, event_types]) do
+          case plugin.module.subscribe(plugin, event_types) do
             %ProtocolPlugin{} = updated_plugin -> updated_plugin
             updated_state -> %{plugin | state: updated_state}
           end
@@ -240,7 +240,7 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
     def unsubscribe(plugin, event_types) do
       case function_exported?(plugin.module, :unsubscribe, 2) do
         true ->
-          case apply(plugin.module, :unsubscribe, [plugin, event_types]) do
+          case plugin.module.unsubscribe(plugin, event_types) do
             %ProtocolPlugin{} = updated_plugin -> updated_plugin
             updated_state -> %{plugin | state: updated_state}
           end
@@ -259,7 +259,7 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
     def serialize(plugin, format) do
       case MapSet.member?(plugin.capabilities, :serializable) do
         true ->
-          apply(plugin.module, :serialize, [plugin, format])
+          plugin.module.serialize(plugin, format)
 
         false ->
           serialize_default(plugin, format)
@@ -270,7 +270,7 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
       case MapSet.member?(plugin.capabilities, :serializable) do
         true ->
           case function_exported?(plugin.module, :serializable?, 2) do
-            true -> apply(plugin.module, :serializable?, [plugin, format])
+            true -> plugin.module.serializable?(plugin, format)
             false -> format in [:json, :binary]
           end
 

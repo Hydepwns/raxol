@@ -168,6 +168,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
       new_lines =
         lines
         |> List.replace_at(row, new_first_line)
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         |> List.insert_at(row + 1, middle_lines ++ [new_last_line])
         |> List.flatten()
 

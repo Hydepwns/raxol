@@ -67,6 +67,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
   # --- Earmark-based rendering ---
 
   defp render_with_earmark(markdown_text, width) do
+    # credo:disable-for-next-line Credo.Check.Refactor.Apply
     case apply(EarmarkParser, :as_ast, [markdown_text]) do
       {:ok, ast, _} -> Enum.flat_map(ast, &ast_node_to_elements(&1, width))
       _ -> render_with_builtin(markdown_text, width)
@@ -131,6 +132,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
           ast_node_to_elements(other, width)
       end)
 
+    # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
     items ++ [Components.text(content: "")]
   end
 
@@ -147,6 +149,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
           ast_node_to_elements(other, width)
       end)
 
+    # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
     items ++ [Components.text(content: "")]
   end
 
@@ -159,6 +162,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
         Components.text(content: "  " <> line, style: @code_style)
       end)
 
+    # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
     [Components.text(content: "")] ++
       code_elements ++ [Components.text(content: "")]
   end

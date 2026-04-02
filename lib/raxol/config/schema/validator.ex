@@ -23,6 +23,7 @@ defmodule Raxol.Config.Schema.Validator do
 
     unknown_errors =
       Enum.map(unknown_keys, fn key ->
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         {path ++ [key], "unknown configuration key"}
       end)
 
@@ -30,6 +31,7 @@ defmodule Raxol.Config.Schema.Validator do
       schema
       |> Enum.flat_map(fn {key, field_schema} ->
         value = Map.get(config, key)
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         field_path = path ++ [key]
         validate_field(value, field_schema, field_path)
       end)
@@ -70,6 +72,7 @@ defmodule Raxol.Config.Schema.Validator do
       value
       |> Enum.with_index()
       |> Enum.map(fn {item, index} ->
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         validate_type(item, item_type, path ++ [index])
       end)
       |> Enum.filter(&(&1 != :ok))
@@ -81,6 +84,7 @@ defmodule Raxol.Config.Schema.Validator do
     errors =
       value
       |> Enum.map(fn {key, val} ->
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         validate_type(val, value_type, path ++ [key])
       end)
       |> Enum.filter(&(&1 != :ok))

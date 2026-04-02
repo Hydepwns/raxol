@@ -143,12 +143,12 @@ defmodule Raxol.Protocols.BehaviourAdapter do
   # Protocol implementations for wrappers
   defimpl Raxol.Protocols.Renderable, for: RendererWrapper do
     def render(%{module: module}, opts) do
-      apply(module.__struct__, :render, [module, opts])
+      module.__struct__.render(module, opts)
     end
 
     def render_metadata(%{module: module}) do
       if function_exported?(module.__struct__, :get_metadata, 1) do
-        apply(module.__struct__, :get_metadata, [module])
+        module.__struct__.get_metadata(module)
       else
         %{
           width: 80,
@@ -164,29 +164,29 @@ defmodule Raxol.Protocols.BehaviourAdapter do
   defimpl Raxol.Protocols.BufferOperations, for: BufferWrapper do
     def write(%{module: module}, {x, y}, data, style) do
       updated =
-        apply(module.__struct__, :write_char, [module, x, y, data, style])
+        module.__struct__.write_char(module, x, y, data, style)
 
       %{module: updated}
     end
 
     def read(%{module: module}, {x, y}, _length) do
-      apply(module.__struct__, :get_char, [module, x, y])
+      module.__struct__.get_char(module, x, y)
     end
 
     def clear(%{module: module}, region) do
-      updated = apply(module.__struct__, :clear, [module, region])
+      updated = module.__struct__.clear(module, region)
       %{module: updated}
     end
 
     def dimensions(%{module: module}) do
-      apply(module.__struct__, :get_dimensions, [module])
+      module.__struct__.get_dimensions(module)
     end
 
     def scroll(%{module: module}, direction, lines) do
       updated =
         case direction do
-          :up -> apply(module.__struct__, :scroll_up, [module, lines])
-          :down -> apply(module.__struct__, :scroll_down, [module, lines])
+          :up -> module.__struct__.scroll_up(module, lines)
+          :down -> module.__struct__.scroll_down(module, lines)
         end
 
       %{module: updated}
@@ -195,7 +195,7 @@ defmodule Raxol.Protocols.BehaviourAdapter do
 
   defimpl Raxol.Protocols.EventHandler, for: EventHandlerWrapper do
     def handle_event(%{module: module}, event, state) do
-      case apply(module.__struct__, :handle_event, [module, event, state]) do
+      case module.__struct__.handle_event(module, event, state) do
         {:ok, updated, new_state} -> {:ok, %{module: updated}, new_state}
         other -> other
       end
@@ -203,7 +203,7 @@ defmodule Raxol.Protocols.BehaviourAdapter do
 
     def can_handle?(%{module: module}, event) do
       if function_exported?(module.__struct__, :can_handle?, 2) do
-        apply(module.__struct__, :can_handle?, [module, event])
+        module.__struct__.can_handle?(module, event)
       else
         true
       end
@@ -211,7 +211,7 @@ defmodule Raxol.Protocols.BehaviourAdapter do
 
     def get_event_listeners(%{module: module}) do
       if function_exported?(module.__struct__, :get_event_listeners, 1) do
-        apply(module.__struct__, :get_event_listeners, [module])
+        module.__struct__.get_event_listeners(module)
       else
         []
       end
@@ -219,7 +219,7 @@ defmodule Raxol.Protocols.BehaviourAdapter do
 
     def subscribe(%{module: module} = wrapper, event_types) do
       if function_exported?(module.__struct__, :subscribe, 2) do
-        updated = apply(module.__struct__, :subscribe, [module, event_types])
+        updated = module.__struct__.subscribe(module, event_types)
         %{wrapper | module: updated}
       else
         wrapper
@@ -228,7 +228,7 @@ defmodule Raxol.Protocols.BehaviourAdapter do
 
     def unsubscribe(%{module: module} = wrapper, event_types) do
       if function_exported?(module.__struct__, :unsubscribe, 2) do
-        updated = apply(module.__struct__, :unsubscribe, [module, event_types])
+        updated = module.__struct__.unsubscribe(module, event_types)
         %{wrapper | module: updated}
       else
         wrapper

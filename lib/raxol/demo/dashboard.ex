@@ -59,6 +59,7 @@ defmodule Raxol.Demo.Dashboard do
         mem_pct = mem_percent()
 
         history =
+          # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
           (model.mem_history ++ [mem_pct]) |> Enum.take(-@mem_history_size)
 
         entry = tick_entry(model.tick)
@@ -389,7 +390,7 @@ defmodule Raxol.Demo.Dashboard do
   # -- Rendering Helpers --
 
   defp spark_bar(values) do
-    max_val = Enum.max(values ++ [1])
+    max_val = Enum.max([1 | values])
 
     values
     |> Enum.map_join(fn v ->

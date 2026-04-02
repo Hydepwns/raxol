@@ -317,9 +317,11 @@ defmodule Raxol.Core.ErrorRecovery.DependencyGraph do
     Enum.find_value(dependencies, fn dep ->
       if dep in visited do
         cycle_start_index = Enum.find_index(path, &(&1 == dep))
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         Enum.drop(path, cycle_start_index) ++ [dep]
       else
         new_visited = MapSet.put(visited, dep)
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         new_path = path ++ [dep]
         find_cycle(graph, dep, new_path, new_visited)
       end

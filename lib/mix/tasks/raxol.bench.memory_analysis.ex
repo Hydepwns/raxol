@@ -373,6 +373,7 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
           for _col <- 1..80,
               do: %{char: " ", fg: :white, bg: :black, style: %{}}
 
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         rest ++ [empty_row]
     end
   end

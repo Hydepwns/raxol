@@ -491,6 +491,7 @@ defmodule Mix.Raxol.Content do
     Mix.Raxol.AppTemplates.render(template, bindings)
   end
 
+  # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
   defp maybe_add(list, true, item), do: list ++ [item]
   defp maybe_add(list, false, _item), do: list
 end

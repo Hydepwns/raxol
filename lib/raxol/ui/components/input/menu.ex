@@ -288,6 +288,7 @@ defmodule Raxol.UI.Components.Input.Menu do
         {state, []}
 
       item.children != [] and item.id not in state.open_path ->
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         new_path = state.open_path ++ [item.id]
         first_child = first_enabled_id(item.children)
         new_cursor = first_child || state.cursor
@@ -325,6 +326,7 @@ defmodule Raxol.UI.Components.Input.Menu do
         {state, []}
 
       item.id not in state.open_path ->
+        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
         new_path = state.open_path ++ [item.id]
         first_child = first_enabled_id(item.children)
         new_cursor = first_child || state.cursor
