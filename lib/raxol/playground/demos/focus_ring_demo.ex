@@ -20,18 +20,16 @@ defmodule Raxol.Playground.Demos.FocusRingDemo do
   @impl true
   def update(message, model) do
     case message do
-      key_match(:tab, shift: true) ->
-        new_focused =
-          if model.focused == 0, do: length(@items) - 1, else: model.focused - 1
-
-        {%{model | focused: new_focused}, []}
-
-      key_match(:tab) ->
-        new_focused = DemoHelpers.cycle_next(model.focused, length(@items))
+      key_match("k") ->
+        new_focused = DemoHelpers.cursor_up(model.focused)
         {%{model | focused: new_focused}, []}
 
       key_match(:up) ->
         new_focused = DemoHelpers.cursor_up(model.focused)
+        {%{model | focused: new_focused}, []}
+
+      key_match("j") ->
+        new_focused = DemoHelpers.cursor_down(model.focused, length(@items) - 1)
         {%{model | focused: new_focused}, []}
 
       key_match(:down) ->
@@ -57,7 +55,7 @@ defmodule Raxol.Playground.Demos.FocusRingDemo do
         text(""),
         render_items(model),
         text(""),
-        text("[Tab/arrows] navigate  [s] cycle style", style: [:dim])
+        text("[j/k/arrows] navigate  [s] cycle style", style: [:dim])
       ]
     end
   end

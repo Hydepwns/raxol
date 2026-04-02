@@ -1,5 +1,5 @@
 defmodule Raxol.Playground.Demos.RadioGroupDemo do
-  @moduledoc "Playground demo: grouped radio buttons with tab switching."
+  @moduledoc "Playground demo: grouped radio buttons with h/l switching."
   use Raxol.Core.Runtime.Application
 
   @impl true
@@ -30,7 +30,15 @@ defmodule Raxol.Playground.Demos.RadioGroupDemo do
         groups = List.replace_at(model.groups, model.active_group, new_group)
         {%{model | groups: groups}, []}
 
-      key_match(:tab) ->
+      key_match("h") ->
+        prev =
+          if model.active_group == 0,
+            do: length(model.groups) - 1,
+            else: model.active_group - 1
+
+        {%{model | active_group: prev}, []}
+
+      key_match("l") ->
         next = rem(model.active_group + 1, length(model.groups))
         {%{model | active_group: next}, []}
 
@@ -75,7 +83,7 @@ defmodule Raxol.Playground.Demos.RadioGroupDemo do
         row(style: %{gap: 4}, do: group_views),
         divider(),
         text(summary, style: [:bold]),
-        text("[j/k] navigate  [tab] switch group", style: [:dim])
+        text("[j/k] navigate  [h/l] switch group", style: [:dim])
       ]
     end
   end

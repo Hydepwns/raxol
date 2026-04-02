@@ -449,15 +449,23 @@ defmodule Raxol.Playground.DemosTest do
       assert group.selected == 1
     end
 
-    test "tab switches active group" do
+    test "l switches active group forward" do
       model = RadioGroupDemo.init(nil)
-      {model, []} = RadioGroupDemo.update(special_key(:tab), model)
+      {model, []} = RadioGroupDemo.update(key_event("l"), model)
       assert model.active_group == 1
     end
 
-    test "tab wraps around" do
+    test "l wraps around" do
       model = %{groups: RadioGroupDemo.init(nil).groups, active_group: 2}
-      {model, []} = RadioGroupDemo.update(special_key(:tab), model)
+      {model, []} = RadioGroupDemo.update(key_event("l"), model)
+      assert model.active_group == 0
+    end
+
+    test "h switches active group backward" do
+      model = RadioGroupDemo.init(nil)
+      {model, []} = RadioGroupDemo.update(key_event("l"), model)
+      assert model.active_group == 1
+      {model, []} = RadioGroupDemo.update(key_event("h"), model)
       assert model.active_group == 0
     end
 
@@ -726,10 +734,12 @@ defmodule Raxol.Playground.DemosTest do
       assert model.direction == :horizontal
     end
 
-    test "tab toggles focus" do
+    test "h/l switches focus" do
       model = SplitPaneDemo.init(nil)
-      {model, []} = SplitPaneDemo.update(special_key(:tab), model)
+      {model, []} = SplitPaneDemo.update(key_event("l"), model)
       assert model.focus == :right
+      {model, []} = SplitPaneDemo.update(key_event("h"), model)
+      assert model.focus == :left
     end
 
     test "+/- adjust ratio" do

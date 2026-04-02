@@ -22,9 +22,11 @@ defmodule Raxol.Playground.Demos.SplitPaneDemo do
 
         {%{model | direction: dir}, []}
 
-      key_match(:tab) ->
-        focus = if model.focus == :left, do: :right, else: :left
-        {%{model | focus: focus}, []}
+      key_match("h") ->
+        {%{model | focus: :left}, []}
+
+      key_match("l") ->
+        {%{model | focus: :right}, []}
 
       key_match("+") ->
         {%{model | ratio: min(model.ratio + @ratio_step, @max_ratio)}, []}
@@ -92,7 +94,7 @@ defmodule Raxol.Playground.Demos.SplitPaneDemo do
             text("Focus: #{model.focus}")
           ]
         end,
-        text("[d] direction  [Tab] focus  [+/-] resize  [=] reset",
+        text("[d] direction  [h/l] focus  [+/-] resize  [=] reset",
           style: [:dim]
         )
       ]

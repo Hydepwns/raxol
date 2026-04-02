@@ -7,8 +7,9 @@ defmodule Raxol.Playground.App do
 
   Controls:
     j/k or arrows  Navigate component list
-    Enter          Select component
+    Enter          Select component (preview)
     Tab            Cycle focus (sidebar / demo)
+    Escape         Return to sidebar from demo
     /              Search components
     f              Cycle category filter
     x              Cycle complexity filter
@@ -150,6 +151,21 @@ defmodule Raxol.Playground.App do
 
       _ ->
         {model, []}
+    end
+  end
+
+  defp handle_focus_specific(
+         %Raxol.Core.Events.Event{type: :key, data: %{key: :escape}} = message,
+         %{focus: :demo, selected: selected} = model
+       )
+       when selected != nil do
+    {new_demo_model, demo_commands} =
+      model.selected.module.update(message, model.demo_model)
+
+    if new_demo_model == model.demo_model do
+      {%{model | focus: :sidebar}, []}
+    else
+      {%{model | demo_model: new_demo_model}, demo_commands}
     end
   end
 
@@ -338,6 +354,7 @@ defmodule Raxol.Playground.App do
               help_line("j / k / arrows", "Navigate sidebar"),
               help_line("Enter", "Select component"),
               help_line("Tab", "Cycle focus (sidebar / demo)"),
+              help_line("Escape", "Return to sidebar from demo"),
               help_line("/", "Search components"),
               help_line("f", "Cycle category filter"),
               help_line("x", "Cycle complexity filter"),
@@ -384,7 +401,7 @@ defmodule Raxol.Playground.App do
       end
 
     keys =
-      "j/k nav  ·  Tab focus  ·  f filter  ·  x level  ·  c code  ·  / search  ·  ? help  ·  q quit"
+      "j/k nav  ·  Enter select  ·  Tab demo  ·  Esc back  ·  f filter  ·  c code  ·  / search  ·  ? help  ·  q quit"
 
     row style: %{gap: 2} do
       [
@@ -436,7 +453,7 @@ defmodule Raxol.Playground.App do
 
       comp ->
         demo_model = comp.module.init(nil)
-        %{model | selected: comp, demo_model: demo_model, focus: :demo}
+        %{model | selected: comp, demo_model: demo_model}
     end
   end
 

@@ -66,7 +66,8 @@ defmodule Raxol.Playground.Demos.MenuDemo do
       key_match(:enter) ->
         {%{model | expanded: not model.expanded, sub_selected: 0}, []}
 
-      key_match(:escape) ->
+      key_match(:escape)
+      when model.expanded ->
         {%{model | expanded: false}, []}
 
       _ ->

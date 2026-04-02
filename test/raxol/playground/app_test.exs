@@ -59,13 +59,27 @@ defmodule Raxol.Playground.AppTest do
   end
 
   describe "component selection" do
-    test "enter selects component and switches to demo focus" do
+    test "enter selects component but keeps sidebar focus" do
       model = App.init(nil)
       {model, []} = App.update(key_event("j"), model)
       {model, []} = App.update(special_key(:enter), model)
       assert model.selected.name == Enum.at(model.components, 1).name
-      assert model.focus == :demo
+      assert model.focus == :sidebar
       assert model.demo_model != nil
+    end
+
+    test "can browse multiple demos without losing sidebar focus" do
+      model = App.init(nil)
+      first_comp = model.selected
+
+      {model, []} = App.update(key_event("j"), model)
+      {model, []} = App.update(special_key(:enter), model)
+      assert model.focus == :sidebar
+      assert model.selected != first_comp
+
+      {model, []} = App.update(key_event("j"), model)
+      {model, []} = App.update(special_key(:enter), model)
+      assert model.focus == :sidebar
     end
   end
 
@@ -285,12 +299,51 @@ defmodule Raxol.Playground.AppTest do
   describe "demo forwarding" do
     test "events forward to demo when focused on demo" do
       model = App.init(nil)
-      # Select Button demo
+      # Select Button demo, then Tab to demo focus
       {model, []} = App.update(special_key(:enter), model)
+      {model, []} = App.update(special_key(:tab), model)
       assert model.focus == :demo
       # Send "1" which ButtonDemo handles as primary click
       {model, []} = App.update(key_event("1"), model)
       assert model.demo_model.clicks == 1
+    end
+  end
+
+  describe "escape from demo" do
+    test "escape returns to sidebar when demo does not consume it" do
+      model = App.init(nil)
+      # Tab to demo focus (ButtonDemo doesn't use Escape)
+      {model, []} = App.update(special_key(:tab), model)
+      assert model.focus == :demo
+      {model, []} = App.update(special_key(:escape), model)
+      assert model.focus == :sidebar
+    end
+
+    test "escape stays in demo when demo consumes it" do
+      model = App.init(nil)
+      # Navigate to ModalDemo
+      modal_idx = Enum.find_index(model.components, &(&1.name == "Modal"))
+
+      model =
+        Enum.reduce(1..modal_idx, model, fn _, acc ->
+          {acc, []} = App.update(key_event("j"), acc)
+          acc
+        end)
+
+      {model, []} = App.update(special_key(:enter), model)
+      assert model.selected.name == "Modal"
+      # Tab to demo focus, open the modal
+      {model, []} = App.update(special_key(:tab), model)
+      assert model.focus == :demo
+      {model, []} = App.update(key_event("o"), model)
+      assert model.demo_model.show == true
+      # Escape closes the modal but stays in demo focus
+      {model, []} = App.update(special_key(:escape), model)
+      assert model.focus == :demo
+      assert model.demo_model.show == false
+      # Second Escape returns to sidebar (modal already closed)
+      {model, []} = App.update(special_key(:escape), model)
+      assert model.focus == :sidebar
     end
   end
 

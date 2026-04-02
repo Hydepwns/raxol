@@ -23,28 +23,28 @@ defmodule Raxol.Playground.Demos.FocusRingDemoTest do
   end
 
   describe "navigation" do
-    test "tab moves focus forward" do
+    test "j moves focus forward" do
       model = FocusRingDemo.init(nil)
-      {model, []} = FocusRingDemo.update(special_key(:tab), model)
+      {model, []} = FocusRingDemo.update(key_event("j"), model)
       assert model.focused == 1
     end
 
-    test "tab wraps around" do
+    test "j clamps at last item" do
       model = %{FocusRingDemo.init(nil) | focused: @last_item_index}
-      {model, []} = FocusRingDemo.update(special_key(:tab), model)
-      assert model.focused == 0
+      {model, []} = FocusRingDemo.update(key_event("j"), model)
+      assert model.focused == @last_item_index
     end
 
-    test "shift+tab moves focus backward" do
+    test "k moves focus backward" do
       model = %{FocusRingDemo.init(nil) | focused: 2}
-      {model, []} = FocusRingDemo.update(special_key(:tab, %{shift: true}), model)
+      {model, []} = FocusRingDemo.update(key_event("k"), model)
       assert model.focused == 1
     end
 
-    test "shift+tab wraps to last item" do
+    test "k clamps at 0" do
       model = FocusRingDemo.init(nil)
-      {model, []} = FocusRingDemo.update(special_key(:tab, %{shift: true}), model)
-      assert model.focused == @last_item_index
+      {model, []} = FocusRingDemo.update(key_event("k"), model)
+      assert model.focused == 0
     end
 
     test "up moves focus up" do
