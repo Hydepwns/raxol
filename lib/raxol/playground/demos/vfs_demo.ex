@@ -72,7 +72,12 @@ defmodule Raxol.Playground.Demos.VfsDemo do
         text("Virtual File System", style: [:bold]),
         text("cwd: #{FileSystem.pwd(model.fs)}", style: [:dim]),
         divider(),
-        box style: %{border: :single, padding: 1, width: @box_width, height: @box_height} do
+        box style: %{
+              border: :single,
+              padding: 1,
+              width: @box_width,
+              height: @box_height
+            } do
           column style: %{gap: 0} do
             if visible == [],
               do: [text("(empty)", style: [:dim])],
@@ -153,7 +158,8 @@ defmodule Raxol.Playground.Demos.VfsDemo do
           content
           |> FileSystem.format_cat(@box_width - 4, @visible_lines)
           |> Enum.map(fn {line, num} ->
-            {"#{String.pad_leading(Integer.to_string(num), 3)} | #{line}", :file}
+            {"#{String.pad_leading(Integer.to_string(num), 3)} | #{line}",
+             :file}
           end)
 
         {lines, fs}
@@ -167,7 +173,8 @@ defmodule Raxol.Playground.Demos.VfsDemo do
     {[{FileSystem.pwd(fs), :result}], fs}
   end
 
-  defp dispatch("mkdir", [], fs), do: {[{"mkdir: missing argument", :error}], fs}
+  defp dispatch("mkdir", [], fs),
+    do: {[{"mkdir: missing argument", :error}], fs}
 
   defp dispatch("mkdir", [dir | _], fs) do
     case FileSystem.mkdir(fs, dir) do
@@ -304,13 +311,22 @@ defmodule Raxol.Playground.Demos.VfsDemo do
 
   defp history_next(model) do
     case model.history_index do
-      nil -> model
-      0 -> %{model | history_index: nil, input: "", cursor: 0}
+      nil ->
+        model
+
+      0 ->
+        %{model | history_index: nil, input: "", cursor: 0}
 
       idx ->
         new_idx = idx - 1
         input = Enum.at(model.input_history, new_idx, "")
-        %{model | history_index: new_idx, input: input, cursor: String.length(input)}
+
+        %{
+          model
+          | history_index: new_idx,
+            input: input,
+            cursor: String.length(input)
+        }
     end
   end
 
@@ -318,14 +334,19 @@ defmodule Raxol.Playground.Demos.VfsDemo do
 
   defp scroll_output(model, delta) do
     max_offset = max(0, length(model.output) - @visible_lines)
-    new_offset = Raxol.Core.Utils.Math.clamp(model.output_offset + delta, 0, max_offset)
+
+    new_offset =
+      Raxol.Core.Utils.Math.clamp(model.output_offset + delta, 0, max_offset)
+
     %{model | output_offset: new_offset}
   end
 
   # -- Output --
 
   defp add_output(model, lines) do
-    new_output = Enum.reduce(lines, model.output, fn line, acc -> [line | acc] end)
+    new_output =
+      Enum.reduce(lines, model.output, fn line, acc -> [line | acc] end)
+
     %{model | output: new_output, output_offset: 0}
   end
 
@@ -334,7 +355,10 @@ defmodule Raxol.Playground.Demos.VfsDemo do
   defp output_line({line, :input}), do: text(line, style: [:bold])
   defp output_line({line, :result}), do: text(line, fg: :green)
   defp output_line({line, :file}), do: text(line)
-  defp output_line({line, :directory}), do: text(line, fg: :blue, style: [:bold])
+
+  defp output_line({line, :directory}),
+    do: text(line, fg: :blue, style: [:bold])
+
   defp output_line({line, :error}), do: text(line, fg: :red)
   defp output_line({line, :info}), do: text(line, style: [:dim])
 

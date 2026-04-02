@@ -91,7 +91,7 @@ defmodule Raxol.UI.BorderRenderer do
 
   Keys: top_left, top, top_right, left, right, bottom_left, bottom, bottom_right
   """
-  @spec get_border_chars_8key(atom()) :: map()
+  @spec get_border_chars_8key(border_style()) :: border_chars_8key()
   def get_border_chars_8key(style) do
     chars = get_border_chars(style)
 

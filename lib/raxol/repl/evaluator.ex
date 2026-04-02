@@ -53,8 +53,10 @@ defmodule Raxol.REPL.Evaluator do
   def with_vfs(evaluator) do
     %{
       evaluator
-      | bindings: Keyword.put(evaluator.bindings, :vfs, Raxol.Commands.FileSystem.new()),
-        prelude: append_prelude(evaluator.prelude, "import Raxol.REPL.VfsHelpers")
+      | bindings:
+          Keyword.put(evaluator.bindings, :vfs, Raxol.Commands.FileSystem.new()),
+        prelude:
+          append_prelude(evaluator.prelude, "import Raxol.REPL.VfsHelpers")
     }
   end
 

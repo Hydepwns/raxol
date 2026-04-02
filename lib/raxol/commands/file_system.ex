@@ -78,7 +78,8 @@ defmodule Raxol.Commands.FileSystem do
   end
 
   @doc "Create a file at `path` with `content`. Parent directory must exist."
-  @spec create_file(t(), String.t(), String.t()) :: {:ok, t()} | {:error, atom()}
+  @spec create_file(t(), String.t(), String.t()) ::
+          {:ok, t()} | {:error, atom()}
   def create_file(%__MODULE__{} = fs, path, content) when is_binary(content) do
     now = System.monotonic_time(:millisecond)
     insert_node(fs, path, file_node(content, now))
@@ -193,7 +194,8 @@ defmodule Raxol.Commands.FileSystem do
   Return a tree representation of the directory at `path`, limited to `depth` levels.
   Returns `{:ok, tree_node}` where tree_node is `{name, type, children}`.
   """
-  @spec tree(t(), String.t(), non_neg_integer()) :: {:ok, tree_node()} | {:error, atom()}
+  @spec tree(t(), String.t(), non_neg_integer()) ::
+          {:ok, tree_node()} | {:error, atom()}
   def tree(%__MODULE__{} = fs, path \\ "/", depth \\ 3) do
     abs = resolve_path(fs.cwd, path)
 
@@ -222,8 +224,11 @@ defmodule Raxol.Commands.FileSystem do
         child_path = join_path(abs, child_name)
 
         case Map.fetch!(fs.nodes, child_path) do
-          %{type: :file} -> {child_name, :file, []}
-          %{type: :directory} -> build_tree(fs, child_path, child_name, depth - 1)
+          %{type: :file} ->
+            {child_name, :file, []}
+
+          %{type: :directory} ->
+            build_tree(fs, child_path, child_name, depth - 1)
         end
       end)
 
@@ -278,7 +283,9 @@ defmodule Raxol.Commands.FileSystem do
   Note: uses `String.length/1` (grapheme count) for truncation. For CJK-accurate
   display width, the render pipeline handles this via `Raxol.UI.TextMeasure`.
   """
-  @spec format_cat(String.t(), pos_integer(), pos_integer()) :: [{String.t(), pos_integer()}]
+  @spec format_cat(String.t(), pos_integer(), pos_integer()) :: [
+          {String.t(), pos_integer()}
+        ]
   def format_cat(content, max_width, max_height) do
     content
     |> String.split("\n")
@@ -349,11 +356,25 @@ defmodule Raxol.Commands.FileSystem do
   end
 
   defp dir_node(now) do
-    %{type: :directory, created_at: now, modified_at: now, size: 0, content: nil, children: []}
+    %{
+      type: :directory,
+      created_at: now,
+      modified_at: now,
+      size: 0,
+      content: nil,
+      children: []
+    }
   end
 
   defp file_node(content, now) do
-    %{type: :file, created_at: now, modified_at: now, size: byte_size(content), content: content, children: nil}
+    %{
+      type: :file,
+      created_at: now,
+      modified_at: now,
+      size: byte_size(content),
+      content: content,
+      children: nil
+    }
   end
 
   defp join_path("/", child), do: "/" <> child

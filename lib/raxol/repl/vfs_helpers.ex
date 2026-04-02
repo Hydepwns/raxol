@@ -176,6 +176,4 @@ defmodule Raxol.REPL.VfsHelpers do
   defp format_error(atom) when is_atom(atom) do
     atom |> Atom.to_string() |> String.replace("_", " ")
   end
-
-  defp format_error(other), do: inspect(other)
 end
