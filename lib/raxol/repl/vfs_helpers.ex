@@ -16,6 +16,10 @@ defmodule Raxol.REPL.VfsHelpers do
 
   alias Raxol.Commands.FileSystem
 
+  @ansi_red "\e[31m"
+  @ansi_blue_bold "\e[1;34m"
+  @ansi_reset "\e[0m"
+
   @doc "List directory contents."
   @spec ls(FileSystem.t(), String.t()) :: FileSystem.t()
   def ls(fs, path \\ ".") do
@@ -24,13 +28,13 @@ defmodule Raxol.REPL.VfsHelpers do
         FileSystem.format_ls(entries, fs, path)
         |> Enum.each(fn {text, type} ->
           case type do
-            :directory -> IO.puts("\e[1;34m#{text}\e[0m")
+            :directory -> IO.puts("#{@ansi_blue_bold}#{text}#{@ansi_reset}")
             :file -> IO.puts(text)
           end
         end)
 
       {:error, reason} ->
-        IO.puts("\e[31mls: #{format_error(reason)}\e[0m")
+        print_error("ls", reason)
     end
 
     fs
@@ -45,7 +49,7 @@ defmodule Raxol.REPL.VfsHelpers do
         new_fs
 
       {:error, reason} ->
-        IO.puts("\e[31mcd: #{format_error(reason)}\e[0m")
+        print_error("cd", reason)
         fs
     end
   end
@@ -62,7 +66,7 @@ defmodule Raxol.REPL.VfsHelpers do
   def cat(fs, path) do
     case FileSystem.cat(fs, path) do
       {:ok, content} -> IO.puts(content)
-      {:error, reason} -> IO.puts("\e[31mcat: #{format_error(reason)}\e[0m")
+      {:error, reason} -> print_error("cat", reason)
     end
 
     fs
@@ -77,7 +81,7 @@ defmodule Raxol.REPL.VfsHelpers do
         new_fs
 
       {:error, reason} ->
-        IO.puts("\e[31mmkdir: #{format_error(reason)}\e[0m")
+        print_error("mkdir", reason)
         fs
     end
   end
@@ -91,7 +95,7 @@ defmodule Raxol.REPL.VfsHelpers do
         new_fs
 
       {:error, reason} ->
-        IO.puts("\e[31mtouch: #{format_error(reason)}\e[0m")
+        print_error("touch", reason)
         fs
     end
   end
@@ -105,7 +109,7 @@ defmodule Raxol.REPL.VfsHelpers do
         new_fs
 
       {:error, reason} ->
-        IO.puts("\e[31mrm: #{format_error(reason)}\e[0m")
+        print_error("rm", reason)
         fs
     end
   end
@@ -115,7 +119,7 @@ defmodule Raxol.REPL.VfsHelpers do
   def tree(fs, path \\ "/", depth \\ 3) do
     case FileSystem.tree(fs, path, depth) do
       {:ok, tree_node} -> render_tree(tree_node)
-      {:error, reason} -> IO.puts("\e[31mtree: #{format_error(reason)}\e[0m")
+      {:error, reason} -> print_error("tree", reason)
     end
 
     fs
@@ -131,7 +135,7 @@ defmodule Raxol.REPL.VfsHelpers do
         IO.puts("  size: #{info.size}")
 
       {:error, reason} ->
-        IO.puts("\e[31mstat: #{format_error(reason)}\e[0m")
+        print_error("stat", reason)
     end
 
     fs
@@ -139,12 +143,17 @@ defmodule Raxol.REPL.VfsHelpers do
 
   # -- Tree rendering --
 
-  defp render_tree({name, type, children}) do
-    suffix = if type == :directory, do: "/", else: ""
-    IO.puts(name <> suffix)
+  @spec render_tree(FileSystem.tree_node()) :: :ok
+  defp render_tree({name, :directory, children}) do
+    IO.puts(name <> "/")
     render_children(children, "")
   end
 
+  defp render_tree({name, :file, _children}) do
+    IO.puts(name)
+  end
+
+  @spec render_children([FileSystem.tree_node()], String.t()) :: :ok
   defp render_children([], _prefix), do: :ok
 
   defp render_children(children, prefix) do
@@ -157,22 +166,29 @@ defmodule Raxol.REPL.VfsHelpers do
     end)
   end
 
-  defp render_child({name, type, grandchildren}, prefix, is_last) do
-    connector = if is_last, do: "`-- ", else: "|-- "
-    suffix = if type == :directory, do: "/", else: ""
-
-    if type == :directory do
-      IO.puts("#{prefix}#{connector}\e[1;34m#{name}#{suffix}\e[0m")
-    else
-      IO.puts("#{prefix}#{connector}#{name}")
-    end
-
-    if grandchildren != [] do
-      child_prefix = prefix <> if(is_last, do: "    ", else: "|   ")
-      render_children(grandchildren, child_prefix)
-    end
+  @spec render_child(FileSystem.tree_node(), String.t(), boolean()) :: :ok
+  defp render_child({name, type, grandchildren}, prefix, is_last?) do
+    connector = if is_last?, do: "`-- ", else: "|-- "
+    print_tree_node(prefix <> connector, name, type)
+    next_prefix = prefix <> if(is_last?, do: "    ", else: "|   ")
+    render_children(grandchildren, next_prefix)
   end
 
+  @spec print_tree_node(String.t(), String.t(), FileSystem.node_type()) :: :ok
+  defp print_tree_node(prefix, name, :directory) do
+    IO.puts("#{prefix}#{@ansi_blue_bold}#{name}/#{@ansi_reset}")
+  end
+
+  defp print_tree_node(prefix, name, :file) do
+    IO.puts("#{prefix}#{name}")
+  end
+
+  @spec print_error(String.t(), atom()) :: :ok
+  defp print_error(command, reason) do
+    IO.puts("#{@ansi_red}#{command}: #{format_error(reason)}#{@ansi_reset}")
+  end
+
+  @spec format_error(atom()) :: String.t()
   defp format_error(atom) when is_atom(atom) do
     atom |> Atom.to_string() |> String.replace("_", " ")
   end

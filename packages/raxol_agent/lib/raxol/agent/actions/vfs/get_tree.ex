@@ -21,17 +21,13 @@ defmodule Raxol.Agent.Actions.Vfs.GetTree do
     end
   end
 
-  defp format_tree({name, :file, []}), do: name
-
-  defp format_tree({"/", :directory, children}) do
-    %{name: "/", children: Enum.map(children, &format_tree/1)}
-  end
-
-  defp format_tree({name, :directory, []}) do
-    name <> "/"
-  end
+  @spec format_tree(Raxol.Commands.FileSystem.tree_node()) ::
+          String.t() | %{name: String.t(), children: list()}
+  defp format_tree({name, :file, _}), do: name
+  defp format_tree({name, :directory, []}), do: name <> "/"
 
   defp format_tree({name, :directory, children}) do
-    %{name: name <> "/", children: Enum.map(children, &format_tree/1)}
+    display_name = if name == "/", do: "/", else: name <> "/"
+    %{name: display_name, children: Enum.map(children, &format_tree/1)}
   end
 end

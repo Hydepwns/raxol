@@ -44,6 +44,9 @@ defmodule Raxol.Commands.FileSystem do
           nodes: %{String.t() => node_entry()}
         }
 
+  @bytes_per_kb 1024
+  @bytes_per_mb 1024 * 1024
+
   defstruct cwd: "/",
             prev_dir: nil,
             nodes: %{}
@@ -212,6 +215,7 @@ defmodule Raxol.Commands.FileSystem do
     end
   end
 
+  @spec build_tree(t(), String.t(), String.t(), non_neg_integer()) :: tree_node()
   defp build_tree(_fs, _abs, name, 0), do: {name, :directory, []}
 
   defp build_tree(fs, abs, name, depth) do
@@ -305,9 +309,11 @@ defmodule Raxol.Commands.FileSystem do
   # Path Resolution (internal)
   # -------------------------------------------------------------------
 
+  @spec resolve_path(String.t(), String.t()) :: String.t()
   defp resolve_path(_cwd, "/" <> _ = abs), do: normalize_path(abs)
   defp resolve_path(cwd, relative), do: normalize_path(join_path(cwd, relative))
 
+  @spec normalize_path(String.t()) :: String.t()
   defp normalize_path(path) do
     segments =
       path
@@ -330,6 +336,7 @@ defmodule Raxol.Commands.FileSystem do
   # Internal helpers
   # -------------------------------------------------------------------
 
+  @spec insert_node(t(), String.t(), node_entry()) :: {:ok, t()} | {:error, atom()}
   defp insert_node(fs, path, node) do
     abs = resolve_path(fs.cwd, path)
 
@@ -355,6 +362,7 @@ defmodule Raxol.Commands.FileSystem do
     end
   end
 
+  @spec dir_node(timestamp()) :: node_entry()
   defp dir_node(now) do
     %{
       type: :directory,
@@ -366,6 +374,7 @@ defmodule Raxol.Commands.FileSystem do
     }
   end
 
+  @spec file_node(String.t(), timestamp()) :: node_entry()
   defp file_node(content, now) do
     %{
       type: :file,
@@ -377,17 +386,21 @@ defmodule Raxol.Commands.FileSystem do
     }
   end
 
+  @spec join_path(String.t(), String.t()) :: String.t()
   defp join_path("/", child), do: "/" <> child
   defp join_path(parent, child), do: parent <> "/" <> child
 
+  @spec parent_path(String.t()) :: String.t()
   defp parent_path("/"), do: "/"
   defp parent_path(path), do: Path.dirname(path)
 
+  @spec parent_exists?(t(), String.t()) :: boolean()
   defp parent_exists?(fs, path) do
     Map.has_key?(fs.nodes, parent_path(path))
   end
 
-  defp format_size(bytes) when bytes < 1024, do: "#{bytes}B"
-  defp format_size(bytes) when bytes < 1_048_576, do: "#{div(bytes, 1024)}K"
-  defp format_size(bytes), do: "#{div(bytes, 1_048_576)}M"
+  @spec format_size(non_neg_integer()) :: String.t()
+  defp format_size(bytes) when bytes < @bytes_per_kb, do: "#{bytes}B"
+  defp format_size(bytes) when bytes < @bytes_per_mb, do: "#{div(bytes, @bytes_per_kb)}K"
+  defp format_size(bytes), do: "#{div(bytes, @bytes_per_mb)}M"
 end

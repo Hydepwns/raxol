@@ -131,6 +131,8 @@ defmodule Raxol.REPL.Evaluator do
 
   # -- Private --
 
+  @spec eval_with_capture(String.t(), keyword(), Macro.Env.t() | nil) ::
+          {:ok, term(), keyword(), String.t()} | {:error, String.t()}
   defp eval_with_capture(code, bindings, env) do
     {output, result} = capture_io(fn -> do_eval(code, bindings, env) end)
 
@@ -140,6 +142,8 @@ defmodule Raxol.REPL.Evaluator do
     end
   end
 
+  @spec do_eval(String.t(), keyword(), Macro.Env.t() | nil) ::
+          {:ok, term(), keyword()} | {:error, String.t()}
   defp do_eval(code, bindings, env) do
     try do
       {value, new_bindings} =
@@ -152,6 +156,7 @@ defmodule Raxol.REPL.Evaluator do
     end
   end
 
+  @spec capture_io((-> term())) :: {String.t(), term()}
   defp capture_io(fun) do
     {:ok, string_io} = StringIO.open("")
     original_gl = Process.group_leader()
@@ -167,13 +172,16 @@ defmodule Raxol.REPL.Evaluator do
     end
   end
 
+  @spec base_env() :: Macro.Env.t()
   defp base_env do
     %{__ENV__ | file: "iex", line: 1}
   end
 
+  @spec apply_prelude(String.t(), String.t()) :: String.t()
   defp apply_prelude("", code), do: code
   defp apply_prelude(prelude, code), do: prelude <> "\n" <> code
 
+  @spec append_prelude(String.t(), String.t()) :: String.t()
   defp append_prelude("", new), do: new
   defp append_prelude(existing, new), do: existing <> "\n" <> new
 end
