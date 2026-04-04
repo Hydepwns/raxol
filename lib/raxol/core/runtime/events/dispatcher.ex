@@ -17,6 +17,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   alias Raxol.Core.Runtime.Application
   alias Raxol.Core.Runtime.Command
   alias Raxol.Core.Runtime.Events.Bubbler
+  alias Raxol.Core.Runtime.Events.DispatcherHooks
   alias Raxol.Core.UserPreferences
 
   @registry_name :raxol_event_subscriptions
@@ -122,7 +123,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         %Event{type: :mouse, data: %{action: :press, x: x, y: y}} = event,
         %State{} = state
       ) do
-    case hit_test(x, y, state.layout) do
+    case DispatcherHooks.hit_test(x, y, state.layout) do
       {:click, message} ->
         process_app_update(state, message, event)
 
@@ -180,21 +181,21 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     old_model = state.model
 
     {update_us, mem_before, mem_after, update_result} =
-      maybe_time_update(state.cycle_profiler, fn ->
+      DispatcherHooks.maybe_time_update(state.cycle_profiler, fn ->
         Application.delegate_update(state.app_module, message, state.model)
       end)
 
     case update_result do
       {updated_model, commands}
       when is_map(updated_model) and is_list(commands) ->
-        maybe_record_time_travel(
+        DispatcherHooks.maybe_record_time_travel(
           state.time_travel,
           message,
           old_model,
           updated_model
         )
 
-        maybe_record_cycle_update(
+        DispatcherHooks.maybe_record_cycle_update(
           state.cycle_profiler,
           update_us,
           mem_before,
@@ -230,15 +231,19 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   defp handle_theme_update(state, updated_model) do
-    new_theme_id =
-      Map.get(updated_model, :current_theme_id, state.current_theme_id)
+    case Map.get(updated_model, :current_theme_id, state.current_theme_id) do
+      same when same == state.current_theme_id ->
+        %{state | model: updated_model}
 
-    apply_theme_update(
-      new_theme_id == state.current_theme_id,
-      state,
-      updated_model,
-      new_theme_id
-    )
+      new_theme_id ->
+        try do
+          UserPreferences.set("theme.active_id", new_theme_id)
+        catch
+          :exit, _ -> :ok
+        end
+
+        %{state | model: updated_model, current_theme_id: new_theme_id}
+    end
   end
 
   defp log_update_error(state, message, event, reason) do
@@ -333,8 +338,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   @spec broadcast(atom(), map()) :: :ok
   def broadcast(topic, payload) when is_atom(topic) and is_map(payload) do
     Raxol.Core.Runtime.Log.debug(
-      # {topic}": #{inspect(payload)}"
-      "[#{__MODULE__}] Broadcasting on topic "
+      "[#{__MODULE__}] Broadcasting on topic #{topic}"
     )
 
     # Find subscribers for the topic (registry may not exist in web-only deployments)
@@ -373,7 +377,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     )
 
     # Record input events for session recording (zero-coupling)
-    maybe_record_input(event)
+    DispatcherHooks.maybe_record_input(event)
 
     # Delegate to the main event handling logic using do_dispatch_event
     case do_dispatch_event(event, state) do
@@ -421,18 +425,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     end
 
     {:noreply, %{state | rendering_engine: pid}}
-  end
-
-  @impl true
-  def handle_manager_cast({:register_dispatcher, _pid}, state) do
-    # This message is from Terminal.Driver to register itself.
-    # No specific action needed here other than acknowledging it if necessary.
-    # Or, if the dispatcher needs to know about the driver's PID, store it.
-    Raxol.Core.Runtime.Log.debug(
-      "[Dispatcher] Received :register_dispatcher (already registered via init)"
-    )
-
-    {:noreply, state}
   end
 
   @impl true
@@ -516,10 +508,24 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         process_command_commands(state, updated_model, commands)
 
       {:error, reason} ->
-        log_command_error(state, message, reason)
+        log_command_failure(
+          :error,
+          "[Dispatcher] Error calling delegate_update in handle_info",
+          reason,
+          %{module: __MODULE__, msg: message, state: state}
+        )
+
+        {:noreply, state}
 
       other ->
-        log_command_unexpected(state, message, other)
+        log_command_failure(
+          :warning,
+          "[Dispatcher] Unexpected return from delegate_update in handle_info",
+          other,
+          %{module: __MODULE__, msg: message, state: state, other: other}
+        )
+
+        {:noreply, state}
     end
   end
 
@@ -529,40 +535,27 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            process_commands(commands, context, state.command_module)
          end) do
-      {:ok, _} -> :ok
-      {:error, error} -> log_command_process_error(error)
+      {:ok, _} ->
+        :ok
+
+      {:error, error} ->
+        log_command_failure(
+          :error,
+          "[Dispatcher] Error processing commands from command result",
+          error,
+          %{module: __MODULE__}
+        )
     end
 
     {:noreply, %{state | model: updated_model}}
   end
 
-  defp log_command_error(state, message, reason) do
-    Raxol.Core.Runtime.Log.error_with_stacktrace(
-      "[Dispatcher] Error calling delegate_update in handle_info",
-      reason,
-      nil,
-      %{module: __MODULE__, msg: message, state: state}
-    )
-
-    {:noreply, state}
+  defp log_command_failure(:error, label, reason, context) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(label, reason, nil, context)
   end
 
-  defp log_command_unexpected(state, message, other) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "[Dispatcher] Unexpected return from delegate_update in handle_info",
-      %{module: __MODULE__, msg: message, state: state, other: other}
-    )
-
-    {:noreply, state}
-  end
-
-  defp log_command_process_error(error) do
-    Raxol.Core.Runtime.Log.error_with_stacktrace(
-      "[Dispatcher] Error processing commands from command result",
-      error,
-      nil,
-      %{module: __MODULE__}
-    )
+  defp log_command_failure(:warning, label, _reason, context) do
+    Raxol.Core.Runtime.Log.warning_with_context(label, context)
   end
 
   @impl true
@@ -651,20 +644,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     UserPreferences.get_theme_id()
   catch
     :exit, _ -> :default
-  end
-
-  defp apply_theme_update(true, state, updated_model, _new_theme_id) do
-    %{state | model: updated_model}
-  end
-
-  defp apply_theme_update(false, state, updated_model, new_theme_id) do
-    try do
-      UserPreferences.set("theme.active_id", new_theme_id)
-    catch
-      :exit, _ -> :ok
-    end
-
-    %{state | model: updated_model, current_theme_id: new_theme_id}
   end
 
   # Route a raw message (not an Event struct) directly through update/2
@@ -800,101 +779,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       end
     end)
   end
-
-  # --- Mouse hit testing ---
-
-  # Walk positioned elements (last drawn = topmost) looking for a clickable
-  # element whose bounding box contains (x, y).
-  defp hit_test(_x, _y, []), do: :miss
-
-  defp hit_test(x, y, elements) when is_list(elements) do
-    # Reverse so last-drawn (topmost) element is checked first
-    elements
-    |> Enum.reverse()
-    |> Enum.find_value(:miss, &clickable_at(&1, x, y))
-  end
-
-  defp hit_test(_x, _y, _), do: :miss
-
-  defp clickable_at(
-         %{x: ex, y: ey, width: ew, height: eh, attrs: %{on_click: handler}},
-         x,
-         y
-       )
-       when not is_nil(handler) and x >= ex and x < ex + ew and y >= ey and
-              y < ey + eh do
-    {:click, handler}
-  end
-
-  defp clickable_at(_el, _x, _y), do: nil
-
-  # -- Time-travel debugging hook --
-
-  defp maybe_record_time_travel(nil, _message, _old, _new), do: :ok
-
-  defp maybe_record_time_travel(pid, message, old_model, new_model)
-       when is_pid(pid) do
-    if Process.alive?(pid) do
-      Raxol.Debug.TimeTravel.record(pid, message, old_model, new_model)
-    end
-  end
-
-  defp maybe_record_time_travel(_other, _message, _old, _new), do: :ok
-
-  # -- Cycle profiler hooks --
-
-  defp maybe_time_update(nil, fun), do: {0, 0, 0, fun.()}
-
-  defp maybe_time_update(_pid, fun) do
-    {:memory, mem_before} = Process.info(self(), :memory)
-    start = System.monotonic_time(:microsecond)
-    result = fun.()
-    elapsed = System.monotonic_time(:microsecond) - start
-    {:memory, mem_after} = Process.info(self(), :memory)
-    {elapsed, mem_before, mem_after, result}
-  end
-
-  defp maybe_record_cycle_update(nil, _us, _mem_b, _mem_a, _msg), do: :ok
-
-  defp maybe_record_cycle_update(pid, update_us, mem_before, mem_after, message)
-       when is_pid(pid) do
-    if Process.alive?(pid) do
-      Raxol.Performance.CycleProfiler.record_update(pid, %{
-        update_us: update_us,
-        message_summary: inspect(message, limit: 3, printable_limit: 40),
-        memory_before: mem_before,
-        memory_after: mem_after
-      })
-    end
-  end
-
-  defp maybe_record_cycle_update(_other, _us, _mem_b, _mem_a, _msg), do: :ok
-
-  # -- Session recording hook --
-
-  defp maybe_record_input(%Event{type: :key, data: data}) do
-    if pid = Process.whereis(Raxol.Recording.Recorder) do
-      input_str = key_event_to_string(data)
-      Raxol.Recording.Recorder.record_input(pid, input_str)
-    end
-  end
-
-  defp maybe_record_input(_event), do: :ok
-
-  defp key_event_to_string(%{key: key})
-       when is_integer(key) and key in 32..126 do
-    <<key>>
-  end
-
-  defp key_event_to_string(%{key: key}) when is_atom(key) do
-    to_string(key)
-  end
-
-  defp key_event_to_string(%{key: key}) when is_integer(key) do
-    inspect(key)
-  end
-
-  defp key_event_to_string(_), do: ""
 
   defp test_env?, do: Code.ensure_loaded?(Mix) and Mix.env() == :test
 end
