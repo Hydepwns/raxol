@@ -45,7 +45,7 @@ Complete guide to Raxol -- OTP-native terminal framework for Elixir.
 ## Examples
 
 - [Examples Learning Path](../examples/README.md) -- runnable examples, beginner to advanced
-- `mix raxol.playground` -- interactive widget catalog with 29 demos
+- `mix raxol.playground` -- interactive widget catalog with 30 demos
 
 ## Resources
 
