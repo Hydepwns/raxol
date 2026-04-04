@@ -83,7 +83,7 @@ defmodule Raxol.Performance.FlameGraph do
       start_trace(trace_file)
       result = fun.()
       analyse_trace(trace_file, analysis_file)
-      emit_output(format, analysis_file, output, opts)
+      _ = emit_output(format, analysis_file, output, opts)
       {:ok, output, result}
     end)
   end

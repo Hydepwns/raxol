@@ -138,7 +138,7 @@ defmodule Raxol.Demo.Animations do
     center_y = min(8, div(height, 3))
 
     particles = logo_converge(target, center_x, center_y, width, height)
-    logo_shimmer(target, particles, width, height)
+    _ = logo_shimmer(target, particles, width, height)
 
     Effects.flash_screen(target, :cyan, 2, width, height)
 
@@ -308,15 +308,16 @@ defmodule Raxol.Demo.Animations do
         )
       end)
 
-    progress_bars_explode(
-      target,
-      bars,
-      particles,
-      bar_start,
-      bar_width,
-      width,
-      height
-    )
+    _ =
+      progress_bars_explode(
+        target,
+        bars,
+        particles,
+        bar_start,
+        bar_width,
+        width,
+        height
+      )
 
     Process.sleep(300)
   end

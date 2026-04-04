@@ -220,7 +220,6 @@ defmodule Raxol.CLI.ErrorDisplay do
     |> String.capitalize()
   end
 
-  defp format_performance_impact(:none), do: "None"
   defp format_performance_impact(:low), do: "Low"
   defp format_performance_impact(:medium), do: "Medium"
   defp format_performance_impact(:high), do: "High"

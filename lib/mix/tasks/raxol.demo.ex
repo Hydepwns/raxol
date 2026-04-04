@@ -75,7 +75,7 @@ defmodule Mix.Tasks.Raxol.Demo do
   end
 
   defp prompt_and_run do
-    print_demo_menu()
+    _ = print_demo_menu()
 
     answer =
       Mix.shell().prompt(

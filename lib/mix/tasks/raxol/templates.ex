@@ -37,7 +37,7 @@ defmodule Mix.Raxol.Templates do
 
   @doc "Prints an interactive template prompt and returns the chosen template name."
   def prompt_template(opts) do
-    print_template_menu()
+    _ = print_template_menu()
 
     answer =
       Mix.shell().prompt(
