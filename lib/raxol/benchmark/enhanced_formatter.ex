@@ -65,31 +65,11 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
 
     total_ops =
       Enum.reduce(scenarios, 0, fn {_name, scenario}, acc ->
-        ips = Map.get(scenario.run_time_data.statistics, :ips, 0)
-        acc + ips
+        acc + Map.get(scenario.run_time_data.statistics, :ips, 0)
       end)
 
-    avg_time =
-      scenarios
-      |> Enum.map_join(fn {_name, scenario} ->
-        scenario.run_time_data.statistics.average
-      end)
-      |> Enum.sum()
-      |> Kernel./(scenario_count)
-
-    fastest =
-      scenarios
-      |> Enum.min_by(fn {_name, scenario} ->
-        scenario.run_time_data.statistics.average
-      end)
-      |> elem(0)
-
-    slowest =
-      scenarios
-      |> Enum.max_by(fn {_name, scenario} ->
-        scenario.run_time_data.statistics.average
-      end)
-      |> elem(0)
+    avg_time = average_run_time(scenarios, scenario_count)
+    {fastest, slowest} = fastest_and_slowest(scenarios)
 
     %{
       scenario_count: scenario_count,
@@ -99,6 +79,25 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
       slowest_scenario: slowest,
       performance_range: calculate_performance_range(scenarios)
     }
+  end
+
+  defp average_run_time(scenarios, count) do
+    scenarios
+    |> Enum.map_join(fn {_name, scenario} ->
+      scenario.run_time_data.statistics.average
+    end)
+    |> Enum.sum()
+    |> Kernel./(count)
+  end
+
+  defp fastest_and_slowest(scenarios) do
+    by_avg = fn {_name, scenario} ->
+      scenario.run_time_data.statistics.average
+    end
+
+    fastest = scenarios |> Enum.min_by(by_avg) |> elem(0)
+    slowest = scenarios |> Enum.max_by(by_avg) |> elem(0)
+    {fastest, slowest}
   end
 
   defp analyze_performance(scenarios) do
@@ -190,51 +189,45 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
     if Enum.empty?(memory_scenarios) do
       %{available: false, message: "No memory usage data collected"}
     else
-      total_memory =
-        Enum.reduce(memory_scenarios, 0, fn {name, scenario}, acc ->
-          memory =
-            try do
-              scenario.memory_usage_data.statistics.average
-            rescue
-              e ->
-                Logger.warning(
-                  "Failed to get memory average for #{name}: #{Exception.message(e)}"
-                )
-
-                0
-            end
-
-          acc + memory
-        end)
-
-      avg_memory = total_memory / length(memory_scenarios)
-
-      %{
-        available: true,
-        total_memory_mb: Float.round(total_memory / 1_048_576, 2),
-        average_memory_mb: Float.round(avg_memory / 1_048_576, 2),
-        scenarios:
-          Enum.map(memory_scenarios, fn {name, scenario} ->
-            memory =
-              try do
-                scenario.memory_usage_data.statistics.average
-              rescue
-                e ->
-                  Logger.warning(
-                    "Failed to get scenario memory for #{name}: #{Exception.message(e)}"
-                  )
-
-                  0
-              end
-
-            %{
-              name: name,
-              memory_mb: Float.round(memory / 1_048_576, 3),
-              memory_grade: grade_memory_usage(memory)
-            }
-          end)
-      }
+      build_memory_analysis(memory_scenarios)
     end
+  end
+
+  defp build_memory_analysis(memory_scenarios) do
+    total_memory =
+      Enum.reduce(memory_scenarios, 0, fn {name, scenario}, acc ->
+        acc + safe_memory_average(scenario, name)
+      end)
+
+    avg_memory = total_memory / length(memory_scenarios)
+
+    %{
+      available: true,
+      total_memory_mb: Float.round(total_memory / 1_048_576, 2),
+      average_memory_mb: Float.round(avg_memory / 1_048_576, 2),
+      scenarios: Enum.map(memory_scenarios, &format_memory_scenario/1)
+    }
+  end
+
+  defp format_memory_scenario({name, scenario}) do
+    memory = safe_memory_average(scenario, name)
+
+    %{
+      name: name,
+      memory_mb: Float.round(memory / 1_048_576, 3),
+      memory_grade: grade_memory_usage(memory)
+    }
+  end
+
+  defp safe_memory_average(scenario, name) do
+    scenario.memory_usage_data.statistics.average
+  rescue
+    e ->
+      Logger.warning(
+        "Failed to get memory for #{name}: #{Exception.message(e)}"
+      )
+
+      0
   end
 
   defp generate_statistical_insights(scenarios) do

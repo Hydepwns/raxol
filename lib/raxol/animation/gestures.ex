@@ -181,13 +181,16 @@ defmodule Raxol.Animation.Gestures do
     ensure_server_started()
     start_time = System.monotonic_time(:millisecond)
 
-    # Touch down
     Server.touch_down(start_pos, start_time)
+    simulate_movement_steps(start_pos, end_pos, start_time, duration_ms)
+    Server.touch_up(end_pos, start_time + duration_ms)
 
-    # Simulate movement
+    :ok
+  end
+
+  defp simulate_movement_steps(start_pos, end_pos, start_time, duration_ms) do
     {start_x, start_y} = start_pos
     {end_x, end_y} = end_pos
-
     steps = 5
     step_duration = div(duration_ms, steps)
 
@@ -199,12 +202,6 @@ defmodule Raxol.Animation.Gestures do
 
       Server.touch_move({current_x, current_y}, current_time)
     end)
-
-    # Touch up
-    end_time = start_time + duration_ms
-    Server.touch_up(end_pos, end_time)
-
-    :ok
   end
 
   @doc """

@@ -197,26 +197,25 @@ defmodule Raxol.UI.State.Context do
     context_def = Map.get(attrs, :context)
     render_fn = Map.get(attrs, :render)
 
-    case {context_def, render_fn} do
-      {context_def, render_fn}
-      when not is_nil(context_def) and not is_nil(render_fn) ->
-        context_value = use_context(render_context, context_def.name)
+    do_process_consumer(context_def, render_fn, render_context, acc)
+  end
 
-        case Raxol.Core.ErrorHandling.safe_call_with_logging(
-               fn ->
-                 rendered_element = render_fn.(context_value)
-                 # Process the rendered element
-                 alias Raxol.UI.Layout.Engine
-                 Engine.process_element(rendered_element, render_context, acc)
-               end,
-               "Error in context consumer render function"
-             ) do
-          {:ok, result} -> result
-          {:error, _} -> acc
-        end
+  defp do_process_consumer(nil, _render_fn, _render_context, acc), do: acc
+  defp do_process_consumer(_context_def, nil, _render_context, acc), do: acc
 
-      _ ->
-        acc
+  defp do_process_consumer(context_def, render_fn, render_context, acc) do
+    context_value = use_context(render_context, context_def.name)
+
+    case Raxol.Core.ErrorHandling.safe_call_with_logging(
+           fn ->
+             rendered_element = render_fn.(context_value)
+             alias Raxol.UI.Layout.Engine
+             Engine.process_element(rendered_element, render_context, acc)
+           end,
+           "Error in context consumer render function"
+         ) do
+      {:ok, result} -> result
+      {:error, _} -> acc
     end
   end
 

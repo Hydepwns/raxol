@@ -144,38 +144,30 @@ defmodule Raxol.Search.Fuzzy do
 
   defp search_line(line, y, query, mode, case_sensitive) do
     line_text = get_line_text(line)
-
-    case mode do
-      :fuzzy ->
-        if query == "" do
-          []
-        else
-          normalized_query =
-            if case_sensitive, do: query, else: String.downcase(query)
-
-          normalized_text =
-            if case_sensitive, do: line_text, else: String.downcase(line_text)
-
-          fuzzy_search_line(normalized_text, normalized_query, y, line_text)
-        end
-
-      :exact ->
-        if query == "" do
-          []
-        else
-          normalized_query =
-            if case_sensitive, do: query, else: String.downcase(query)
-
-          normalized_text =
-            if case_sensitive, do: line_text, else: String.downcase(line_text)
-
-          exact_search_line(normalized_text, normalized_query, y, line_text)
-        end
-
-      :regex ->
-        regex_search_line(line_text, query, y, line_text)
-    end
+    do_search_line(line_text, y, query, mode, case_sensitive)
   end
+
+  defp do_search_line(_text, _y, "", mode, _cs) when mode in [:fuzzy, :exact],
+    do: []
+
+  defp do_search_line(line_text, y, query, :fuzzy, case_sensitive) do
+    {norm_text, norm_query} = normalize_pair(line_text, query, case_sensitive)
+    fuzzy_search_line(norm_text, norm_query, y, line_text)
+  end
+
+  defp do_search_line(line_text, y, query, :exact, case_sensitive) do
+    {norm_text, norm_query} = normalize_pair(line_text, query, case_sensitive)
+    exact_search_line(norm_text, norm_query, y, line_text)
+  end
+
+  defp do_search_line(line_text, y, query, :regex, _case_sensitive) do
+    regex_search_line(line_text, query, y, line_text)
+  end
+
+  defp normalize_pair(text, query, true), do: {text, query}
+
+  defp normalize_pair(text, query, false),
+    do: {String.downcase(text), String.downcase(query)}
 
   defp get_line_text(%{cells: cells}) do
     Enum.map_join(cells, "", & &1.char)

@@ -113,21 +113,7 @@ defmodule Raxol.Security.UserContext do
     ensure_server_started()
 
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           previous_user = Server.get_current_user()
-           Server.set_current_user(user_id)
-
-           result = fun.()
-
-           # Restore previous user context
-           case previous_user == "system" do
-             true ->
-               Server.clear_current_user()
-
-             false ->
-               Server.set_current_user(previous_user)
-           end
-
-           result
+           execute_with_user_context(user_id, fun)
          end) do
       {:ok, result} ->
         result
@@ -138,4 +124,15 @@ defmodule Raxol.Security.UserContext do
         {:error, reason}
     end
   end
+
+  defp execute_with_user_context(user_id, fun) do
+    previous_user = Server.get_current_user()
+    Server.set_current_user(user_id)
+    result = fun.()
+    restore_previous_user(previous_user)
+    result
+  end
+
+  defp restore_previous_user("system"), do: Server.clear_current_user()
+  defp restore_previous_user(user), do: Server.set_current_user(user)
 end

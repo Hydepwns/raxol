@@ -119,7 +119,6 @@ defmodule Raxol.Test.Integration.HierarchySetup do
          parent_state,
          updated_children
        ) do
-    # Mount parent first
     case ComponentManager.mount(parent_struct.module, parent_state) do
       {:ok, parent_id} ->
         parent_struct = %{
@@ -127,58 +126,50 @@ defmodule Raxol.Test.Integration.HierarchySetup do
           | state: Map.put(parent_state, :component_manager_id, parent_id)
         }
 
-        # Mount all children and update parent's child_states
         {mounted_children, updated_parent_state} =
-          Enum.map_reduce(updated_children, parent_struct.state, fn child,
-                                                                    parent_state ->
-            case ComponentManager.mount(child.module, child.state) do
-              {:ok, child_id} ->
-                # Use the actual ComponentManager key as component_manager_id
-                updated_child_state =
-                  Map.put(child.state, :component_manager_id, child_id)
+          Enum.map_reduce(
+            updated_children,
+            parent_struct.state,
+            &mount_single_child/2
+          )
 
-                updated_child = %{
-                  child
-                  | state: updated_child_state
-                }
-
-                # Immediately update the state in the ComponentManager
-                _ =
-                  ComponentManager.set_component_state(
-                    child_id,
-                    updated_child_state
-                  )
-
-                # Update parent's child_states map with the new child state
-                updated_parent_state =
-                  Map.put(
-                    parent_state,
-                    :child_states,
-                    Map.put(
-                      parent_state.child_states,
-                      child.state.id,
-                      updated_child.state
-                    )
-                  )
-
-                {updated_child, updated_parent_state}
-
-              {:error, reason} ->
-                IO.puts(
-                  "Failed to mount child #{inspect(child.state.id)}: #{inspect(reason)}"
-                )
-
-                {child, parent_state}
-            end
-          end)
-
-        # Update parent struct with new state that includes updated child_states
         parent_struct = %{parent_struct | state: updated_parent_state}
-
         {:ok, parent_struct, mounted_children}
 
       {:error, _reason} ->
         {:ok, parent_struct, updated_children}
+    end
+  end
+
+  defp mount_single_child(child, parent_state) do
+    case ComponentManager.mount(child.module, child.state) do
+      {:ok, child_id} ->
+        updated_child_state =
+          Map.put(child.state, :component_manager_id, child_id)
+
+        updated_child = %{child | state: updated_child_state}
+
+        _ = ComponentManager.set_component_state(child_id, updated_child_state)
+
+        updated_parent_state =
+          Map.put(
+            parent_state,
+            :child_states,
+            Map.put(
+              parent_state.child_states,
+              child.state.id,
+              updated_child.state
+            )
+          )
+
+        {updated_child, updated_parent_state}
+
+      {:error, reason} ->
+        IO.puts(
+          "Failed to mount child #{inspect(child.state.id)}: #{inspect(reason)}"
+        )
+
+        {child, parent_state}
     end
   end
 

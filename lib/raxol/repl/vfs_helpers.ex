@@ -26,12 +26,7 @@ defmodule Raxol.REPL.VfsHelpers do
     case FileSystem.ls(fs, path) do
       {:ok, entries} ->
         FileSystem.format_ls(entries, fs, path)
-        |> Enum.each(fn {text, type} ->
-          case type do
-            :directory -> IO.puts("#{@ansi_blue_bold}#{text}#{@ansi_reset}")
-            :file -> IO.puts(text)
-          end
-        end)
+        |> Enum.each(&print_ls_entry/1)
 
       {:error, reason} ->
         print_error("ls", reason)
@@ -39,6 +34,12 @@ defmodule Raxol.REPL.VfsHelpers do
 
     fs
   end
+
+  defp print_ls_entry({text, :directory}),
+    do: IO.puts("#{@ansi_blue_bold}#{text}#{@ansi_reset}")
+
+  defp print_ls_entry({text, :file}),
+    do: IO.puts(text)
 
   @doc "Change working directory."
   @spec cd(FileSystem.t(), String.t()) :: FileSystem.t()

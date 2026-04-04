@@ -149,47 +149,48 @@ defimpl Raxol.Protocols.Styleable, for: Map do
 
   @spec build_ansi_codes(map()) :: binary()
   defp build_ansi_codes(style) do
-    codes = []
-
-    codes = if style[:bold], do: ["1" | codes], else: codes
-    codes = if style[:italic], do: ["3" | codes], else: codes
-    codes = if style[:underline], do: ["4" | codes], else: codes
-    codes = if style[:blink], do: ["5" | codes], else: codes
-    codes = if style[:reverse], do: ["7" | codes], else: codes
-    codes = if style[:hidden], do: ["8" | codes], else: codes
-    codes = if style[:strikethrough], do: ["9" | codes], else: codes
-
     codes =
-      case style[:foreground] do
-        {r, g, b} -> ["38;2;#{r};#{g};#{b}" | codes]
-        :black -> ["30" | codes]
-        :red -> ["31" | codes]
-        :green -> ["32" | codes]
-        :yellow -> ["33" | codes]
-        :blue -> ["34" | codes]
-        :magenta -> ["35" | codes]
-        :cyan -> ["36" | codes]
-        :white -> ["37" | codes]
-        _ -> codes
-      end
-
-    codes =
-      case style[:background] do
-        {r, g, b} -> ["48;2;#{r};#{g};#{b}" | codes]
-        :black -> ["40" | codes]
-        :red -> ["41" | codes]
-        :green -> ["42" | codes]
-        :yellow -> ["43" | codes]
-        :blue -> ["44" | codes]
-        :magenta -> ["45" | codes]
-        :cyan -> ["46" | codes]
-        :white -> ["47" | codes]
-        _ -> codes
-      end
+      []
+      |> maybe_add_attr(style[:bold], "1")
+      |> maybe_add_attr(style[:italic], "3")
+      |> maybe_add_attr(style[:underline], "4")
+      |> maybe_add_attr(style[:blink], "5")
+      |> maybe_add_attr(style[:reverse], "7")
+      |> maybe_add_attr(style[:hidden], "8")
+      |> maybe_add_attr(style[:strikethrough], "9")
+      |> add_color_code(style[:foreground], 30)
+      |> add_color_code(style[:background], 40)
 
     case codes do
       [] -> ""
       codes -> "\e[#{Enum.join(codes, ";")}m"
     end
   end
+
+  defp maybe_add_attr(codes, true, code), do: [code | codes]
+  defp maybe_add_attr(codes, _, _code), do: codes
+
+  defp add_color_code(codes, {r, g, b}, base) do
+    prefix = if base == 30, do: "38;2", else: "48;2"
+    ["#{prefix};#{r};#{g};#{b}" | codes]
+  end
+
+  defp add_color_code(codes, name, base) when is_atom(name) do
+    case color_name_offset(name) do
+      nil -> codes
+      offset -> ["#{base + offset}" | codes]
+    end
+  end
+
+  defp add_color_code(codes, _, _base), do: codes
+
+  defp color_name_offset(:black), do: 0
+  defp color_name_offset(:red), do: 1
+  defp color_name_offset(:green), do: 2
+  defp color_name_offset(:yellow), do: 3
+  defp color_name_offset(:blue), do: 4
+  defp color_name_offset(:magenta), do: 5
+  defp color_name_offset(:cyan), do: 6
+  defp color_name_offset(:white), do: 7
+  defp color_name_offset(_), do: nil
 end

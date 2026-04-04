@@ -49,28 +49,7 @@ defmodule Raxol.PluginTestHelpers do
   def create_test_plugin(plugin_module, opts \\ []) do
     config = Keyword.get(opts, :config, %{})
     initial_state = Keyword.get(opts, :state)
-
-    state =
-      cond do
-        initial_state != nil ->
-          initial_state
-
-        function_exported?(plugin_module, :init, 1) ->
-          case plugin_module.init(config) do
-            {:ok, s} -> s
-            s when is_map(s) -> s
-          end
-
-        function_exported?(plugin_module, :init, 0) ->
-          case plugin_module.init() do
-            {:ok, s} -> s
-            s when is_map(s) -> s
-          end
-
-        true ->
-          %{}
-      end
-
+    state = resolve_initial_state(plugin_module, config, initial_state)
     hooks = get_plugin_hooks(plugin_module)
 
     %{
@@ -82,6 +61,20 @@ defmodule Raxol.PluginTestHelpers do
       call_log: []
     }
   end
+
+  defp resolve_initial_state(_module, _config, state) when not is_nil(state),
+    do: state
+
+  defp resolve_initial_state(module, config, nil) do
+    cond do
+      function_exported?(module, :init, 1) -> unwrap_init(module.init(config))
+      function_exported?(module, :init, 0) -> unwrap_init(module.init())
+      true -> %{}
+    end
+  end
+
+  defp unwrap_init({:ok, s}), do: s
+  defp unwrap_init(s) when is_map(s), do: s
 
   @doc """
   Call a hook on a test plugin.
@@ -134,32 +127,35 @@ defmodule Raxol.PluginTestHelpers do
   """
   @spec simulate_lifecycle(map(), atom()) :: map()
   def simulate_lifecycle(plugin, event) do
-    module = plugin.module
+    callback = lifecycle_callback(event)
+    invoke_lifecycle(plugin, callback)
+  end
 
-    callback =
-      case event do
-        :enable -> :on_enable
-        :disable -> :on_disable
-        :load -> :on_load
-        :unload -> :on_unload
-        :start -> :on_start
-        :stop -> :on_stop
-        other -> other
-      end
+  defp lifecycle_callback(:enable), do: :on_enable
+  defp lifecycle_callback(:disable), do: :on_disable
+  defp lifecycle_callback(:load), do: :on_load
+  defp lifecycle_callback(:unload), do: :on_unload
+  defp lifecycle_callback(:start), do: :on_start
+  defp lifecycle_callback(:stop), do: :on_stop
+  defp lifecycle_callback(other), do: other
 
-    if function_exported?(module, callback, 1) do
+  defp invoke_lifecycle(plugin, callback) do
+    if function_exported?(plugin.module, callback, 1) do
       new_state =
-        case apply(module, callback, [plugin.state]) do
-          {:ok, s} -> s
-          s when is_map(s) -> s
-          _ -> plugin.state
-        end
+        unwrap_lifecycle(
+          apply(plugin.module, callback, [plugin.state]),
+          plugin.state
+        )
 
       %{plugin | state: new_state}
     else
       plugin
     end
   end
+
+  defp unwrap_lifecycle({:ok, s}, _fallback), do: s
+  defp unwrap_lifecycle(s, _fallback) when is_map(s), do: s
+  defp unwrap_lifecycle(_, fallback), do: fallback
 
   @doc """
   Assert that a hook was called with specific arguments.

@@ -172,6 +172,26 @@ defmodule Raxol.UI.Layout.CSSGrid do
     attrs = Map.get(grid, :attrs, %{})
     grid_props = parse_grid_properties(attrs)
     content_space = apply_padding(available_space, grid_props.padding)
+
+    {final_column_tracks, final_row_tracks} =
+      resolve_grid_tracks(children, content_space, grid_props)
+
+    total_width = sum_track_values(final_column_tracks, grid_props.gap.column)
+    total_height = sum_track_values(final_row_tracks, grid_props.gap.row)
+
+    %{
+      width: total_width + grid_props.padding.left + grid_props.padding.right,
+      height: total_height + grid_props.padding.top + grid_props.padding.bottom
+    }
+  end
+
+  def measure_css_grid(_, _available_space), do: %{width: 0, height: 0}
+
+  # ---------------------------------------------------------------------------
+  # Private helpers
+  # ---------------------------------------------------------------------------
+
+  defp resolve_grid_tracks(children, content_space, grid_props) do
     areas = ItemPlacement.parse_grid_areas(grid_props.grid_template_areas)
 
     column_tracks =
@@ -204,34 +224,19 @@ defmodule Raxol.UI.Layout.CSSGrid do
         grid_props
       )
 
-    {final_column_tracks, final_row_tracks} =
-      Sizing.size_tracks(
-        all_items,
-        column_tracks,
-        row_tracks,
-        content_space,
-        grid_props
-      )
-
-    total_width =
-      Enum.reduce(final_column_tracks, 0, fn track, acc -> acc + track.value end) +
-        grid_props.gap.column * max(0, length(final_column_tracks) - 1)
-
-    total_height =
-      Enum.reduce(final_row_tracks, 0, fn track, acc -> acc + track.value end) +
-        grid_props.gap.row * max(0, length(final_row_tracks) - 1)
-
-    %{
-      width: total_width + grid_props.padding.left + grid_props.padding.right,
-      height: total_height + grid_props.padding.top + grid_props.padding.bottom
-    }
+    Sizing.size_tracks(
+      all_items,
+      column_tracks,
+      row_tracks,
+      content_space,
+      grid_props
+    )
   end
 
-  def measure_css_grid(_, _available_space), do: %{width: 0, height: 0}
-
-  # ---------------------------------------------------------------------------
-  # Private helpers
-  # ---------------------------------------------------------------------------
+  defp sum_track_values(tracks, gap) do
+    Enum.reduce(tracks, 0, fn track, acc -> acc + track.value end) +
+      gap * max(0, length(tracks) - 1)
+  end
 
   defp parse_grid_properties(attrs) do
     %{

@@ -28,52 +28,60 @@ defmodule Raxol.UI.Layout.Grid do
 
   def process(%{type: :grid, attrs: attrs, children: children}, space, acc)
       when is_list(children) do
-    columns = Map.get(attrs, :columns, @default_columns)
-    rows = Map.get(attrs, :rows, ceil(length(children) / columns))
-    gap_x = Map.get(attrs, :gap_x, @default_gap)
-    gap_y = Map.get(attrs, :gap_y, @default_gap)
+    grid_info = extract_grid_info(attrs, children)
+    cell_dims = compute_cell_dims(grid_info, space)
 
-    # Calculate cell dimensions
-    available_width = space.width - gap_x * (columns - 1)
-    available_height = space.height - gap_y * (rows - 1)
-    cell_width = div(available_width, columns)
-    cell_height = div(available_height, rows)
-
-    # Calculate positions for each child
     child_positions =
       children
       |> Enum.with_index()
-      |> Enum.map(fn {child, index} ->
-        # Get column and row from index
-        col = rem(index, columns)
-        row = div(index, columns)
+      |> Enum.map(&position_grid_child(&1, grid_info, cell_dims, space))
 
-        # Calculate child position
-        x = space.x + col * (cell_width + gap_x)
-        y = space.y + row * (cell_height + gap_y)
-
-        # Account for column and row spans if specified
-        col_span = Map.get(child, :col_span, @default_span)
-        row_span = Map.get(child, :row_span, @default_span)
-
-        # Calculate width and height with spans
-        span_width = cell_width * col_span + gap_x * (col_span - 1)
-        span_height = cell_height * row_span + gap_y * (row_span - 1)
-
-        {child, %{x: x, y: y, width: span_width, height: span_height}}
-      end)
-
-    # Process each child with its calculated space
     elements =
       Enum.map(child_positions, fn {child, child_space} ->
         Raxol.UI.Layout.Engine.process_element(child, child_space, [])
       end)
 
-    # Flatten and add to accumulator
     List.flatten(elements) ++ acc
   end
 
   def process(_, _space, acc), do: acc
+
+  defp extract_grid_info(attrs, children) do
+    columns = Map.get(attrs, :columns, @default_columns)
+
+    %{
+      columns: columns,
+      rows: Map.get(attrs, :rows, ceil(length(children) / columns)),
+      gap_x: Map.get(attrs, :gap_x, @default_gap),
+      gap_y: Map.get(attrs, :gap_y, @default_gap)
+    }
+  end
+
+  defp compute_cell_dims(grid_info, space) do
+    available_width = space.width - grid_info.gap_x * (grid_info.columns - 1)
+    available_height = space.height - grid_info.gap_y * (grid_info.rows - 1)
+
+    %{
+      width: div(available_width, grid_info.columns),
+      height: div(available_height, grid_info.rows)
+    }
+  end
+
+  defp position_grid_child({child, index}, grid_info, cell_dims, space) do
+    col = rem(index, grid_info.columns)
+    row = div(index, grid_info.columns)
+
+    x = space.x + col * (cell_dims.width + grid_info.gap_x)
+    y = space.y + row * (cell_dims.height + grid_info.gap_y)
+
+    col_span = Map.get(child, :col_span, @default_span)
+    row_span = Map.get(child, :row_span, @default_span)
+
+    span_width = cell_dims.width * col_span + grid_info.gap_x * (col_span - 1)
+    span_height = cell_dims.height * row_span + grid_info.gap_y * (row_span - 1)
+
+    {child, %{x: x, y: y, width: span_width, height: span_height}}
+  end
 
   @doc """
   Measures the space needed by a grid element.
@@ -105,37 +113,40 @@ defmodule Raxol.UI.Layout.Grid do
         %{type: :grid, attrs: attrs, children: children},
         available_space
       ) do
-    columns = Map.get(attrs, :columns, @default_columns)
-    rows = Map.get(attrs, :rows, ceil(length(children) / columns))
-    gap_x = Map.get(attrs, :gap_x, @default_gap)
-    gap_y = Map.get(attrs, :gap_y, @default_gap)
+    grid_info = extract_grid_info(attrs, children)
 
-    # Get child dimensions
     child_dimensions =
       Enum.map(children, fn child ->
         Raxol.UI.Layout.Engine.measure_element(child, available_space)
       end)
 
-    # Find the largest cell
-    max_cell_width =
-      Enum.reduce(child_dimensions, 0, fn dim, acc ->
-        max(acc, dim.width)
-      end)
+    max_cell = max_child_dimensions(child_dimensions)
+    compute_grid_dimensions(grid_info, max_cell, available_space)
+  end
 
-    max_cell_height =
-      Enum.reduce(child_dimensions, 0, fn dim, acc ->
-        max(acc, dim.height)
-      end)
+  defp max_child_dimensions(child_dimensions) do
+    %{
+      width:
+        Enum.reduce(child_dimensions, 0, fn dim, acc -> max(acc, dim.width) end),
+      height:
+        Enum.reduce(child_dimensions, 0, fn dim, acc -> max(acc, dim.height) end)
+    }
+  end
 
-    # Calculate grid dimensions
+  defp compute_grid_dimensions(grid_info, max_cell, available_space) do
     grid_width =
       min(
-        columns * max_cell_width + gap_x * (columns - 1),
+        grid_info.columns * max_cell.width +
+          grid_info.gap_x * (grid_info.columns - 1),
         available_space.width
       )
 
     grid_height =
-      min(rows * max_cell_height + gap_y * (rows - 1), available_space.height)
+      min(
+        grid_info.rows * max_cell.height +
+          grid_info.gap_y * (grid_info.rows - 1),
+        available_space.height
+      )
 
     %{width: grid_width, height: grid_height}
   end

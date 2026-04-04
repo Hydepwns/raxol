@@ -93,25 +93,32 @@ defmodule Raxol.Debug.DebuggerApp do
   end
 
   defp handle_normal_mode(message, model) do
+    handle_quit_keys(message, model) ||
+      handle_navigation_keys(message, model) ||
+      handle_action_keys(message, model) ||
+      handle_scroll(message, model)
+  end
+
+  defp handle_quit_keys(message, model) do
     case message do
-      key_match("q") ->
-        {model, [command(:quit)]}
+      key_match("q") -> {model, [command(:quit)]}
+      key_match("c", ctrl: true) -> {model, [command(:quit)]}
+      _ -> nil
+    end
+  end
 
-      key_match("c", ctrl: true) ->
-        {model, [command(:quit)]}
+  defp handle_navigation_keys(message, model) do
+    case message do
+      key_match("h") -> step(model, :back)
+      key_match("l") -> step(model, :forward)
+      key_match(:left) -> step(model, :back)
+      key_match(:right) -> step(model, :forward)
+      _ -> nil
+    end
+  end
 
-      key_match("h") ->
-        step(model, :back)
-
-      key_match("l") ->
-        step(model, :forward)
-
-      key_match(:left) ->
-        step(model, :back)
-
-      key_match(:right) ->
-        step(model, :forward)
-
+  defp handle_action_keys(message, model) do
+    case message do
       key_match(:tab) ->
         {cycle_panel(model), []}
 
@@ -128,7 +135,7 @@ defmodule Raxol.Debug.DebuggerApp do
         {toggle_inspector_node(model), []}
 
       _ ->
-        handle_scroll(message, model)
+        nil
     end
   end
 

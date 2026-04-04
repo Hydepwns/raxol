@@ -71,33 +71,22 @@ defmodule Raxol.REPL.Evaluator do
   def eval(evaluator, code, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, @default_timeout)
     parent = self()
-    bindings = evaluator.bindings
     full_code = apply_prelude(evaluator.prelude, code)
 
     {pid, ref} =
       spawn_monitor(fn ->
-        result = eval_with_capture(full_code, bindings, evaluator.env)
+        result = eval_with_capture(full_code, evaluator.bindings, evaluator.env)
         send(parent, {:eval_result, result})
       end)
 
+    handle_eval_response(evaluator, code, pid, ref, timeout)
+  end
+
+  defp handle_eval_response(evaluator, code, pid, ref, timeout) do
     receive do
       {:eval_result, {:ok, value, new_bindings, output}} ->
         Process.demonitor(ref, [:flush])
-
-        formatted =
-          inspect(value,
-            pretty: true,
-            width: Raxol.Core.Defaults.terminal_width(),
-            limit: 50
-          )
-
-        result = %{value: value, output: output, formatted: formatted}
-
-        history =
-          Enum.take([{code, result} | evaluator.history], @default_max_history)
-
-        new_eval = %{evaluator | bindings: new_bindings, history: history}
-        {:ok, result, new_eval}
+        build_success(evaluator, code, value, new_bindings, output)
 
       {:eval_result, {:error, message}} ->
         Process.demonitor(ref, [:flush])
@@ -111,6 +100,22 @@ defmodule Raxol.REPL.Evaluator do
         Process.exit(pid, :brutal_kill)
         {:error, "Evaluation timed out after #{timeout}ms", evaluator}
     end
+  end
+
+  defp build_success(evaluator, code, value, new_bindings, output) do
+    formatted =
+      inspect(value,
+        pretty: true,
+        width: Raxol.Core.Defaults.terminal_width(),
+        limit: 50
+      )
+
+    result = %{value: value, output: output, formatted: formatted}
+
+    history =
+      Enum.take([{code, result} | evaluator.history], @default_max_history)
+
+    {:ok, result, %{evaluator | bindings: new_bindings, history: history}}
   end
 
   @doc "Returns the list of current variable bindings as `[{name, value}]`."

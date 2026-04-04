@@ -287,105 +287,114 @@ defmodule Raxol.Benchmark.RegressionDetector do
 
   defp generate_summary(comparison) do
     total = map_size(comparison)
-
-    {regressions, improvements, stable, new} =
-      Enum.reduce(comparison, {0, 0, 0, 0}, fn {_scenario, result},
-                                               {r, i, s, n} ->
-        case Map.get(result, :status) do
-          :regression -> {r + 1, i, s, n}
-          :improvement -> {r, i + 1, s, n}
-          :new_scenario -> {r, i, s, n + 1}
-          _ -> {r, i, s + 1, n}
-        end
-      end)
+    counts = count_by_status(comparison)
 
     %{
       total_scenarios: total,
-      regressions: regressions,
-      improvements: improvements,
-      stable: stable,
-      new_scenarios: new,
-      regression_rate: if(total > 0, do: regressions / total * 100, else: 0),
-      improvement_rate: if(total > 0, do: improvements / total * 100, else: 0),
-      stability_rate: if(total > 0, do: stable / total * 100, else: 0)
+      regressions: counts.regressions,
+      improvements: counts.improvements,
+      stable: counts.stable,
+      new_scenarios: counts.new,
+      regression_rate: rate(counts.regressions, total),
+      improvement_rate: rate(counts.improvements, total),
+      stability_rate: rate(counts.stable, total)
     }
   end
 
-  defp generate_recommendations(comparison, threshold) do
-    recommendations = []
+  defp count_by_status(comparison) do
+    Enum.reduce(
+      comparison,
+      %{regressions: 0, improvements: 0, stable: 0, new: 0},
+      fn
+        {_scenario, result}, acc ->
+          case Map.get(result, :status) do
+            :regression -> %{acc | regressions: acc.regressions + 1}
+            :improvement -> %{acc | improvements: acc.improvements + 1}
+            :new_scenario -> %{acc | new: acc.new + 1}
+            _ -> %{acc | stable: acc.stable + 1}
+          end
+      end
+    )
+  end
 
-    # Check for critical regressions
-    critical_regressions =
-      comparison
-      |> Enum.filter(fn {_scenario, result} ->
-        Map.get(result, :severity) == :critical
+  defp rate(_count, 0), do: 0
+  defp rate(count, total), do: count / total * 100
+
+  defp generate_recommendations(comparison, threshold) do
+    recommendations =
+      []
+      |> maybe_add_critical_warning(comparison)
+      |> maybe_add_regression_rate_warning(comparison)
+      |> maybe_add_volatility_warning(comparison)
+      |> maybe_add_improvement_feedback(comparison)
+
+    if Enum.empty?(recommendations) do
+      ["Performance is stable within #{threshold * 100}% threshold"]
+    else
+      recommendations
+    end
+  end
+
+  defp maybe_add_critical_warning(recommendations, comparison) do
+    critical =
+      Enum.filter(comparison, fn {_s, r} ->
+        Map.get(r, :severity) == :critical
       end)
 
-    recommendations =
-      if critical_regressions != [] do
-        [
-          "CRITICAL: #{length(critical_regressions)} scenarios show critical performance regression (>50%)"
-          | recommendations
-        ]
-      else
-        recommendations
-      end
+    if critical != [] do
+      [
+        "CRITICAL: #{length(critical)} scenarios show critical performance regression (>50%)"
+        | recommendations
+      ]
+    else
+      recommendations
+    end
+  end
 
-    # Check for widespread regressions
-    regression_rate =
+  defp maybe_add_regression_rate_warning(recommendations, comparison) do
+    reg_rate =
       Enum.count(comparison, fn {_s, r} ->
         Map.get(r, :status) == :regression
       end) /
         map_size(comparison)
 
-    recommendations =
-      if regression_rate > 0.3 do
-        [
-          "WARNING: Over 30% of scenarios show performance regression"
-          | recommendations
-        ]
-      else
-        recommendations
-      end
+    if reg_rate > 0.3 do
+      [
+        "WARNING: Over 30% of scenarios show performance regression"
+        | recommendations
+      ]
+    else
+      recommendations
+    end
+  end
 
-    # Check for high volatility
-    high_volatility =
-      comparison
-      |> Enum.filter(fn {_scenario, result} ->
-        case Map.get(result, :t_test) do
-          %{standard_error: se} when se > 100 -> true
-          _ -> false
-        end
+  defp maybe_add_volatility_warning(recommendations, comparison) do
+    volatile =
+      Enum.filter(comparison, fn {_s, r} ->
+        match?(%{standard_error: se} when se > 100, Map.get(r, :t_test))
       end)
 
-    recommendations =
-      if high_volatility != [] do
-        [
-          "INFO: #{length(high_volatility)} scenarios show high variance - consider increasing sample size"
-          | recommendations
-        ]
-      else
-        recommendations
-      end
+    if volatile != [] do
+      [
+        "INFO: #{length(volatile)} scenarios show high variance - consider increasing sample size"
+        | recommendations
+      ]
+    else
+      recommendations
+    end
+  end
 
-    # Add positive feedback
+  defp maybe_add_improvement_feedback(recommendations, comparison) do
     improvements =
       Enum.count(comparison, fn {_s, r} ->
         Map.get(r, :status) == :improvement
       end)
 
-    recommendations =
-      if improvements > 0 do
-        [
-          "POSITIVE: #{improvements} scenarios show performance improvements"
-          | recommendations
-        ]
-      else
-        recommendations
-      end
-
-    if Enum.empty?(recommendations) do
-      ["Performance is stable within #{threshold * 100}% threshold"]
+    if improvements > 0 do
+      [
+        "POSITIVE: #{improvements} scenarios show performance improvements"
+        | recommendations
+      ]
     else
       recommendations
     end

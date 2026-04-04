@@ -74,40 +74,27 @@ defmodule Raxol.UI.StyleProcessor do
 
   # Direct implementation with cascading inheritance
   defp flatten_merged_style_direct(parent_style, child_element, theme) do
-    # Handle case where parent_style might be an element map or a style map
-    parent_style_map =
-      case parent_style do
-        %{style: style_map} when is_map(style_map) ->
-          # If parent_style is element with :style key, merge with top-level
-          style_map
-          |> Map.merge(
-            Map.take(parent_style, [:foreground, :background, :fg, :bg])
-          )
-
-        style_map when is_map(style_map) ->
-          # If parent_style is already a flattened style map, use it as-is
-          style_map
-
-        _ ->
-          %{}
-      end
-
+    parent_style_map = extract_parent_style(parent_style)
     child_style_map = Map.get(child_element, :style, %{})
 
-    # Inherit only inheritable properties from parent, then overlay child's
-    # explicit values. This prevents layout properties (padding, border, etc.)
-    # from leaking into children.
     inherited = Map.take(parent_style_map, @inheritable_properties)
     merged_style_map = Map.merge(inherited, child_style_map)
-    child_other_attrs = Map.drop(child_element, [:style])
+    all_attrs = Map.merge(Map.drop(child_element, [:style]), merged_style_map)
 
-    # Merge style map with other attributes for proper override resolution
-    all_attrs = Map.merge(child_other_attrs, merged_style_map)
+    promote_colors(all_attrs, theme)
+  end
 
-    # Get component styles from theme
+  defp extract_parent_style(%{style: style_map} = parent)
+       when is_map(style_map) do
+    Map.merge(style_map, Map.take(parent, [:foreground, :background, :fg, :bg]))
+  end
+
+  defp extract_parent_style(style_map) when is_map(style_map), do: style_map
+  defp extract_parent_style(_), do: %{}
+
+  defp promote_colors(all_attrs, theme) do
     component_styles = Raxol.UI.ThemeResolver.get_component_styles(nil, theme)
 
-    # Resolve colors with proper theme fallback, but allow explicit overrides
     resolved_fg =
       Raxol.UI.ThemeResolver.resolve_fg_color(
         all_attrs,
@@ -122,21 +109,17 @@ defmodule Raxol.UI.StyleProcessor do
         theme
       )
 
-    # Use explicit values if provided, otherwise use resolved values
     final_fg =
       Map.get(all_attrs, :foreground) || Map.get(all_attrs, :fg) || resolved_fg
 
     final_bg =
       Map.get(all_attrs, :background) || Map.get(all_attrs, :bg) || resolved_bg
 
-    promoted_attrs =
-      all_attrs
-      |> Map.put(:foreground, final_fg)
-      |> Map.put(:background, final_bg)
-      |> Map.put(:fg, final_fg)
-      |> Map.put(:bg, final_bg)
-
-    promoted_attrs
+    all_attrs
+    |> Map.put(:foreground, final_fg)
+    |> Map.put(:background, final_bg)
+    |> Map.put(:fg, final_fg)
+    |> Map.put(:bg, final_bg)
   end
 
   @doc """

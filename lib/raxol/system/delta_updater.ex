@@ -181,17 +181,20 @@ defmodule Raxol.System.DeltaUpdater do
 
     case system_adapter().http_get(url) do
       {:ok, body} ->
-        # Safely decode JSON using functional error handling
-        case Raxol.Core.ErrorHandling.safe_call(fn -> Jason.decode!(body) end) do
-          {:ok, releases} -> {:ok, releases}
-          {:error, _} -> {:error, :json_decode_error}
-        end
+        decode_releases_json(body)
 
       {:error, {:http_error, status_code, _body}} ->
         {:error, {:fetch_releases_failed_status, status_code}}
 
       {:error, reason} ->
         {:error, {:fetch_releases_failed, reason}}
+    end
+  end
+
+  defp decode_releases_json(body) do
+    case Raxol.Core.ErrorHandling.safe_call(fn -> Jason.decode!(body) end) do
+      {:ok, releases} -> {:ok, releases}
+      {:error, _} -> {:error, :json_decode_error}
     end
   end
 

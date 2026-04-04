@@ -42,12 +42,15 @@ defmodule Raxol.Test.PerformanceHelper do
     warmup = Keyword.get(opts, :warmup, 100)
     _timeout = Keyword.get(opts, :timeout, 5000)
 
-    # Warmup phase
-    for _ <- 1..warmup do
-      fun.()
-    end
+    run_warmup(fun, warmup)
+    run_benchmark(fun, iterations)
+  end
 
-    # Actual benchmark
+  defp run_warmup(fun, warmup) do
+    for _ <- 1..warmup, do: fun.()
+  end
+
+  defp run_benchmark(fun, iterations) do
     start_time = System.monotonic_time()
 
     results =
@@ -59,19 +62,17 @@ defmodule Raxol.Test.PerformanceHelper do
       end
 
     end_time = System.monotonic_time()
+    compute_stats(results, end_time - start_time, iterations)
+  end
 
-    # Calculate statistics
+  defp compute_stats(results, total_time, iterations) do
     times = Enum.map(results, fn {_, time} -> time end)
-    total_time = end_time - start_time
-    avg_time = Enum.sum(times) / length(times)
-    min_time = Enum.min(times)
-    max_time = Enum.max(times)
 
     %{
       total_time: total_time,
-      average_time: avg_time,
-      min_time: min_time,
-      max_time: max_time,
+      average_time: Enum.sum(times) / length(times),
+      min_time: Enum.min(times),
+      max_time: Enum.max(times),
       iterations: iterations,
       times: times,
       results: results

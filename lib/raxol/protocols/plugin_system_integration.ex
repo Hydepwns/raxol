@@ -393,11 +393,7 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
                                                                           acc ->
               current_plugins = Map.get(acc, cap, MapSet.new())
               updated_set = MapSet.delete(current_plugins, plugin_id)
-
-              case MapSet.size(updated_set) do
-                0 -> Map.delete(acc, cap)
-                _ -> Map.put(acc, cap, updated_set)
-              end
+              put_or_delete_capability(acc, cap, updated_set)
             end)
 
           new_state = %{
@@ -456,6 +452,13 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
         end)
 
       {:reply, results, state}
+    end
+
+    defp put_or_delete_capability(acc, cap, set) do
+      case MapSet.size(set) do
+        0 -> Map.delete(acc, cap)
+        _ -> Map.put(acc, cap, set)
+      end
     end
   end
 

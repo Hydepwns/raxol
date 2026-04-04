@@ -139,40 +139,43 @@ defmodule Raxol.UI.Charts.BrailleCanvas do
     dot_positions =
       for {dx, dy} <- Map.keys(@braille_offsets), do: {char_x + dx, char_y + dy}
 
-    # Count dots per layer and compute combined codepoint
     {codepoint, counts} =
       Enum.reduce(layers, {@braille_base, %{}}, fn {layer_id, dot_set},
                                                    {cp_acc, count_acc} ->
         layer_count =
           Enum.count(dot_positions, fn pos -> MapSet.member?(dot_set, pos) end)
 
-        layer_cp =
-          Enum.reduce(@braille_offsets, 0, fn {{dx, dy}, bit}, acc ->
-            if MapSet.member?(dot_set, {char_x + dx, char_y + dy}) do
-              Bitwise.bor(acc, bit)
-            else
-              acc
-            end
-          end)
+        layer_cp = compute_layer_codepoint(dot_set, char_x, char_y)
 
         {Bitwise.bor(cp_acc, layer_cp),
-         if(layer_count > 0,
-           do: Map.put(count_acc, layer_id, layer_count),
-           else: count_acc
-         )}
+         accumulate_layer_count(count_acc, layer_id, layer_count)}
       end)
 
-    # Pick the winning color: most dots, then first in color_map order
-    winning_color =
-      if map_size(counts) == 0 do
-        color_map |> Map.values() |> List.first(:default)
-      else
-        color_map
-        |> Enum.filter(fn {lid, _} -> Map.has_key?(counts, lid) end)
-        |> Enum.max_by(fn {lid, _} -> Map.get(counts, lid, 0) end)
-        |> elem(1)
-      end
-
+    winning_color = pick_winning_color(counts, color_map)
     {codepoint, winning_color}
+  end
+
+  defp compute_layer_codepoint(dot_set, char_x, char_y) do
+    Enum.reduce(@braille_offsets, 0, fn {{dx, dy}, bit}, acc ->
+      if MapSet.member?(dot_set, {char_x + dx, char_y + dy}),
+        do: Bitwise.bor(acc, bit),
+        else: acc
+    end)
+  end
+
+  defp accumulate_layer_count(count_acc, _layer_id, 0), do: count_acc
+
+  defp accumulate_layer_count(count_acc, layer_id, count),
+    do: Map.put(count_acc, layer_id, count)
+
+  defp pick_winning_color(counts, color_map) when map_size(counts) == 0 do
+    color_map |> Map.values() |> List.first(:default)
+  end
+
+  defp pick_winning_color(counts, color_map) do
+    color_map
+    |> Enum.filter(fn {lid, _} -> Map.has_key?(counts, lid) end)
+    |> Enum.max_by(fn {lid, _} -> Map.get(counts, lid, 0) end)
+    |> elem(1)
   end
 end

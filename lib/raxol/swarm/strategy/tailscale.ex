@@ -72,52 +72,50 @@ defmodule Raxol.Swarm.Strategy.Tailscale do
     def handle_info(:poll, state), do: {:noreply, do_poll(state)}
     def handle_info(_, state), do: {:noreply, state}
 
-    defp do_poll(
-           %State{
-             topology: topology,
-             connect: connect,
-             disconnect: disconnect,
-             list_nodes: list_nodes
-           } = state
-         ) do
+    defp do_poll(%State{} = state) do
       new_nodelist = state |> get_nodes() |> MapSet.new()
       removed = MapSet.difference(state.meta, new_nodelist)
 
-      new_nodelist =
-        case Strategy.disconnect_nodes(
-               topology,
-               disconnect,
-               list_nodes,
-               MapSet.to_list(removed)
-             ) do
-          :ok ->
-            new_nodelist
-
-          {:error, bad_nodes} ->
-            Enum.reduce(bad_nodes, new_nodelist, fn {n, _}, acc ->
-              MapSet.put(acc, n)
-            end)
-        end
-
-      new_nodelist =
-        case Strategy.connect_nodes(
-               topology,
-               connect,
-               list_nodes,
-               MapSet.to_list(new_nodelist)
-             ) do
-          :ok ->
-            new_nodelist
-
-          {:error, bad_nodes} ->
-            Enum.reduce(bad_nodes, new_nodelist, fn {n, _}, acc ->
-              MapSet.delete(acc, n)
-            end)
-        end
+      new_nodelist = handle_disconnects(state, new_nodelist, removed)
+      new_nodelist = handle_connects(state, new_nodelist)
 
       Process.send_after(self(), :poll, poll_interval(state))
 
       %{state | meta: new_nodelist}
+    end
+
+    defp handle_disconnects(state, nodelist, removed) do
+      case Strategy.disconnect_nodes(
+             state.topology,
+             state.disconnect,
+             state.list_nodes,
+             MapSet.to_list(removed)
+           ) do
+        :ok ->
+          nodelist
+
+        {:error, bad_nodes} ->
+          Enum.reduce(bad_nodes, nodelist, fn {n, _}, acc ->
+            MapSet.put(acc, n)
+          end)
+      end
+    end
+
+    defp handle_connects(state, nodelist) do
+      case Strategy.connect_nodes(
+             state.topology,
+             state.connect,
+             state.list_nodes,
+             MapSet.to_list(nodelist)
+           ) do
+        :ok ->
+          nodelist
+
+        {:error, bad_nodes} ->
+          Enum.reduce(bad_nodes, nodelist, fn {n, _}, acc ->
+            MapSet.delete(acc, n)
+          end)
+      end
     end
 
     defp poll_interval(%{config: config}) do

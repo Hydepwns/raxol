@@ -281,35 +281,30 @@ defmodule Raxol.Effects.CursorTrail do
   defp bresenham_line({x0, y0}, {x1, y1}) do
     dx = abs(x1 - x0)
     dy = abs(y1 - y0)
-    sx = if x0 < x1, do: 1, else: -1
-    sy = if y0 < y1, do: 1, else: -1
+    params = %{dx: dx, dy: dy, sx: sign(x0, x1), sy: sign(y0, y1)}
 
-    do_bresenham(x0, y0, x1, y1, dx, dy, sx, sy, dx - dy, [])
+    do_bresenham({x0, y0}, {x1, y1}, params, dx - dy, [])
   end
 
-  defp do_bresenham(x, y, x1, y1, _dx, _dy, _sx, _sy, _err, acc)
+  defp sign(from, to), do: if(from < to, do: 1, else: -1)
+
+  defp do_bresenham({x, y}, {x1, y1}, _params, _err, acc)
        when x == x1 and y == y1 do
     Enum.reverse([{x, y} | acc])
   end
 
-  defp do_bresenham(x, y, x1, y1, dx, dy, sx, sy, err, acc) do
+  defp do_bresenham({x, y}, target, params, err, acc) do
     e2 = 2 * err
 
     {new_x, new_err_x} =
-      if e2 > -dy do
-        {x + sx, err - dy}
-      else
-        {x, err}
-      end
+      if e2 > -params.dy, do: {x + params.sx, err - params.dy}, else: {x, err}
 
     {new_y, new_err_y} =
-      if e2 < dx do
-        {y + sy, new_err_x + dx}
-      else
-        {y, new_err_x}
-      end
+      if e2 < params.dx,
+        do: {y + params.sy, new_err_x + params.dx},
+        else: {y, new_err_x}
 
-    do_bresenham(new_x, new_y, x1, y1, dx, dy, sx, sy, new_err_y, [{x, y} | acc])
+    do_bresenham({new_x, new_y}, target, params, new_err_y, [{x, y} | acc])
   end
 
   @doc """

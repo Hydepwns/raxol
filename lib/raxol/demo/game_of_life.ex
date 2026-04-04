@@ -64,25 +64,21 @@ defmodule Raxol.Demo.GameOfLife do
   """
   @spec render(grid(), integer(), integer()) :: String.t()
   def render(grid, width, height) do
-    lines =
-      for y <- 0..(height - 1) do
-        line =
-          for x <- 0..(width - 1) do
-            age = Map.get(grid, {x, y}, 0)
-
-            if age > 0 do
-              char = Enum.at(@live_chars, min(age - 1, 3))
-              color = age_to_color(age)
-              "\e[#{color}m#{char}\e[0m"
-            else
-              @dead_char
-            end
-          end
-
-        Enum.join(line)
+    for y <- 0..(height - 1) do
+      for x <- 0..(width - 1) do
+        render_cell(Map.get(grid, {x, y}, 0))
       end
+      |> Enum.join()
+    end
+    |> Enum.join("\r\n")
+  end
 
-    Enum.join(lines, "\r\n")
+  defp render_cell(0), do: @dead_char
+
+  defp render_cell(age) do
+    char = Enum.at(@live_chars, min(age - 1, 3))
+    color = age_to_color(age)
+    "\e[#{color}m#{char}\e[0m"
   end
 
   @doc """

@@ -19,19 +19,13 @@ defmodule Raxol.Utils.MapUtils do
   """
   @spec stringify_keys(any()) :: any()
   def stringify_keys(map) when is_map(map) do
-    Enum.reduce(map, %{}, fn {key, value}, acc ->
-      string_key = to_string(key)
-
-      stringified_value =
-        case value do
-          v when is_map(v) -> stringify_keys(v)
-          v when is_list(v) -> Enum.map(v, &stringify_keys/1)
-          v -> v
-        end
-
-      Map.put(acc, string_key, stringified_value)
+    Map.new(map, fn {key, value} ->
+      {to_string(key), stringify_keys(value)}
     end)
   end
+
+  def stringify_keys(list) when is_list(list),
+    do: Enum.map(list, &stringify_keys/1)
 
   def stringify_keys(value), do: value
 
@@ -48,26 +42,17 @@ defmodule Raxol.Utils.MapUtils do
   """
   @spec atomize_keys(any()) :: any()
   def atomize_keys(map) when is_map(map) do
-    Enum.reduce(map, %{}, fn {key, value}, acc ->
-      atom_key =
-        cond do
-          is_atom(key) -> key
-          is_binary(key) -> String.to_atom(key)
-          true -> String.to_atom(to_string(key))
-        end
-
-      atomized_value =
-        case value do
-          v when is_map(v) -> atomize_keys(v)
-          v when is_list(v) -> Enum.map(v, &atomize_keys/1)
-          v -> v
-        end
-
-      Map.put(acc, atom_key, atomized_value)
+    Map.new(map, fn {key, value} ->
+      {to_atom_key(key), atomize_keys(value)}
     end)
   end
 
+  def atomize_keys(list) when is_list(list), do: Enum.map(list, &atomize_keys/1)
   def atomize_keys(value), do: value
+
+  defp to_atom_key(key) when is_atom(key), do: key
+  defp to_atom_key(key) when is_binary(key), do: String.to_atom(key)
+  defp to_atom_key(key), do: String.to_atom(to_string(key))
 
   @doc """
   Safely atomizes keys, only converting strings that already exist as atoms.
@@ -84,30 +69,22 @@ defmodule Raxol.Utils.MapUtils do
   """
   @spec safe_atomize_keys(any()) :: any()
   def safe_atomize_keys(map) when is_map(map) do
-    Enum.reduce(map, %{}, fn {key, value}, acc ->
-      safe_key =
-        cond do
-          is_atom(key) -> key
-          is_binary(key) -> String.to_existing_atom(key)
-          true -> key
-        end
-        |> case do
-          key when is_atom(key) -> key
-          _ -> key
-        end
-
-      safe_value =
-        case value do
-          v when is_map(v) -> safe_atomize_keys(v)
-          v when is_list(v) -> Enum.map(v, &safe_atomize_keys/1)
-          v -> v
-        end
-
-      Map.put(acc, safe_key, safe_value)
+    Map.new(map, fn {key, value} ->
+      {to_safe_atom_key(key), safe_atomize_keys(value)}
     end)
   rescue
     ArgumentError -> map
   end
 
+  def safe_atomize_keys(list) when is_list(list),
+    do: Enum.map(list, &safe_atomize_keys/1)
+
   def safe_atomize_keys(value), do: value
+
+  defp to_safe_atom_key(key) when is_atom(key), do: key
+
+  defp to_safe_atom_key(key) when is_binary(key),
+    do: String.to_existing_atom(key)
+
+  defp to_safe_atom_key(key), do: key
 end

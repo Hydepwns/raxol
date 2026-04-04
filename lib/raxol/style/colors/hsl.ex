@@ -36,18 +36,15 @@ defmodule Raxol.Style.Colors.HSL do
 
     h = _calculate_hue(r_norm, g_norm, b_norm, max, delta)
     l = (max + min) / 2
-
-    s =
-      case delta do
-        +0.0 ->
-          +0.0
-
-        _ ->
-          # Clamp to handle float imprecision near l=0 or l=1
-          Raxol.Core.Utils.Math.clamp(delta / (1 - abs(2 * l - 1)), 0.0, 1.0)
-      end
+    s = _calculate_saturation(delta, l)
 
     {h, s, l}
+  end
+
+  defp _calculate_saturation(+0.0, _l), do: +0.0
+
+  defp _calculate_saturation(delta, l) do
+    Raxol.Core.Utils.Math.clamp(delta / (1 - abs(2 * l - 1)), 0.0, 1.0)
   end
 
   # Helper functions for pattern matching refactoring
@@ -91,7 +88,6 @@ defmodule Raxol.Style.Colors.HSL do
           {integer(), integer(), integer()}
   def hsl_to_rgb(h, s, l)
       when is_number(h) and is_float(s) and is_float(l) do
-    # Clamp to handle float imprecision (e.g., 1.0000000000000002)
     h = :math.fmod(h + 360.0, 360.0)
     s = Raxol.Core.Utils.Math.clamp(s, 0.0, 1.0)
     l = Raxol.Core.Utils.Math.clamp(l, 0.0, 1.0)
@@ -101,14 +97,12 @@ defmodule Raxol.Style.Colors.HSL do
     m = l - c / 2.0
 
     {r_prime, g_prime, b_prime} = calculate_rgb_prime(h_prime, c, x)
+    clamp_to_rgb(r_prime + m, g_prime + m, b_prime + m)
+  end
 
-    r = round((r_prime + m) * @rgb_max)
-    g = round((g_prime + m) * @rgb_max)
-    b = round((b_prime + m) * @rgb_max)
-
-    # Clamp values just in case of float inaccuracies
-    clamp_rgb = &Raxol.Core.Utils.Math.clamp(&1, 0, @rgb_max)
-    {clamp_rgb.(r), clamp_rgb.(g), clamp_rgb.(b)}
+  defp clamp_to_rgb(r, g, b) do
+    clamp = &Raxol.Core.Utils.Math.clamp(round(&1 * @rgb_max), 0, @rgb_max)
+    {clamp.(r), clamp.(g), clamp.(b)}
   end
 
   @doc """

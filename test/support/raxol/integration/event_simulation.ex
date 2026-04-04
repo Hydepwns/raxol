@@ -19,31 +19,27 @@ defmodule Raxol.Test.Integration.EventSimulation do
   Handles various types of user interactions and ensures proper event propagation.
   """
   def simulate_user_action(component, action) do
-    event =
-      case action do
-        {:click, pos} ->
-          Event.mouse(:left, pos)
+    event = action_to_event(action)
+    dispatch_simulated_event(component, event)
+  end
 
-        {:type, text} ->
-          text |> String.to_charlist() |> Enum.map(&Event.key({:char, &1}))
+  defp action_to_event({:click, pos}), do: Event.mouse(:left, pos)
 
-        {:key, key} ->
-          Event.key(key)
+  defp action_to_event({:type, text}),
+    do: text |> String.to_charlist() |> Enum.map(&Event.key({:char, &1}))
 
-        {:resize, {w, h}} ->
-          Event.window(w, h, :resize)
+  defp action_to_event({:key, key}), do: Event.key(key)
+  defp action_to_event({:resize, {w, h}}), do: Event.window(w, h, :resize)
 
-        _ ->
-          raise "Unsupported action: #{inspect(action)}"
-      end
+  defp action_to_event(action),
+    do: raise("Unsupported action: #{inspect(action)}")
 
-    case event do
-      events when is_list(events) ->
-        Enum.each(events, &process_event_with_commands(component, &1))
+  defp dispatch_simulated_event(component, events) when is_list(events) do
+    Enum.each(events, &process_event_with_commands(component, &1))
+  end
 
-      event ->
-        process_event_with_commands(component, event)
-    end
+  defp dispatch_simulated_event(component, event) do
+    process_event_with_commands(component, event)
   end
 
   @doc """

@@ -94,17 +94,24 @@ defmodule Raxol.Demo.TextFormation do
     |> Enum.flat_map(fn {letter, letter_idx} ->
       letter_offset = letter_idx * (@letter_width + @letter_spacing)
       bitmap = Map.get(@font, letter, @font["O"])
+      bitmap_to_positions(bitmap, start_x + letter_offset, start_y)
+    end)
+  end
 
-      bitmap
-      |> Enum.with_index()
-      |> Enum.flat_map(fn {row, row_idx} ->
-        row
-        |> Enum.with_index()
-        |> Enum.filter(fn {pixel, _col_idx} -> pixel == 1 end)
-        |> Enum.map(fn {_pixel, col_idx} ->
-          {(start_x + letter_offset + col_idx) * 1.0, (start_y + row_idx) * 1.0}
-        end)
-      end)
+  defp bitmap_to_positions(bitmap, origin_x, origin_y) do
+    bitmap
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {row, row_idx} ->
+      row_pixel_positions(row, origin_x, origin_y + row_idx)
+    end)
+  end
+
+  defp row_pixel_positions(row, origin_x, y) do
+    row
+    |> Enum.with_index()
+    |> Enum.filter(fn {pixel, _col_idx} -> pixel == 1 end)
+    |> Enum.map(fn {_pixel, col_idx} ->
+      {(origin_x + col_idx) * 1.0, y * 1.0}
     end)
   end
 

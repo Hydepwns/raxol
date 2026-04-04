@@ -85,17 +85,8 @@ defmodule Raxol.RateLimit do
     now = System.monotonic_time(:millisecond)
 
     Agent.get(__MODULE__, fn state ->
-      case Map.get(state, key) do
-        nil ->
-          limit
-
-        bucket ->
-          if now - bucket.window_start > window do
-            limit
-          else
-            max(0, limit - bucket.count)
-          end
-      end
+      bucket = Map.get(state, key)
+      remaining_from_bucket(bucket, now, window, limit)
     end)
   end
 
@@ -158,6 +149,14 @@ defmodule Raxol.RateLimit do
   end
 
   # Private helpers
+
+  defp remaining_from_bucket(nil, _now, _window, limit), do: limit
+
+  defp remaining_from_bucket(bucket, now, window, limit) do
+    if now - bucket.window_start > window,
+      do: limit,
+      else: max(0, limit - bucket.count)
+  end
 
   defp ensure_started do
     Raxol.Core.Utils.GenServerHelpers.ensure_started(

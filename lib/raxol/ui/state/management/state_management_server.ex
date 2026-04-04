@@ -236,24 +236,10 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
 
   @impl true
   def handle_call({:get_state, path}, _from, state) do
-    path_list =
-      case path do
-        p when is_list(p) -> Enum.map(p, &normalize_key/1)
-        p -> [normalize_key(p)]
-      end
+    path_list = normalize_path(path)
 
-    # Debug logging
     Log.debug("get_state path_list: #{inspect(path_list)}")
-
-    store_keys =
-      case state.store_data do
-        map when is_map(map) -> Map.keys(map)
-        list when is_list(list) -> Keyword.keys(list)
-        other -> "Unknown type: #{inspect(other)}"
-      end
-
-    Log.debug("store_data type: #{inspect(state.store_data)}")
-    Log.debug("store_data keys: #{inspect(store_keys)}")
+    log_store_debug(state.store_data)
 
     value = get_in(state.store_data, path_list)
     {:reply, value, state}
@@ -261,16 +247,10 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
 
   @impl true
   def handle_call({:update_state, path, value}, _from, state) do
-    path_list =
-      case path do
-        p when is_list(p) -> Enum.map(p, &normalize_key/1)
-        p -> [normalize_key(p)]
-      end
-
+    path_list = normalize_path(path)
     new_data = put_in(state.store_data, path_list, value)
     updated_state = %{state | store_data: new_data}
 
-    # Notify subscribers
     notify_subscribers(path_list, value, updated_state)
 
     {:reply, :ok, updated_state}
@@ -278,15 +258,9 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
 
   @impl true
   def handle_call({:subscribe, id, path, callback, options}, _from, state) do
-    normalized_path =
-      case path do
-        p when is_list(p) -> Enum.map(p, &normalize_key/1)
-        p -> [normalize_key(p)]
-      end
-
     subscription = %{
       id: id,
-      path: normalized_path,
+      path: normalize_path(path),
       callback: callback,
       options: options
     }
@@ -487,14 +461,18 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
 
   defp apply_reducers(action, data, reducers) do
     Enum.reduce(reducers, data, fn reducer_fn, acc_data ->
-      case Raxol.Core.ErrorHandling.safe_call_with_logging(
-             fn -> reducer_fn.(action, acc_data) end,
-             "Error in reducer"
-           ) do
-        {:ok, result} -> result
-        {:error, _} -> acc_data
-      end
+      apply_single_reducer(reducer_fn, action, acc_data)
     end)
+  end
+
+  defp apply_single_reducer(reducer_fn, action, acc_data) do
+    case Raxol.Core.ErrorHandling.safe_call_with_logging(
+           fn -> reducer_fn.(action, acc_data) end,
+           "Error in reducer"
+         ) do
+      {:ok, result} -> result
+      {:error, _} -> acc_data
+    end
   end
 
   defp add_to_history(state, action) do
@@ -567,6 +545,23 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
     timers
     |> Enum.reject(fn {{p, _}, _} -> p == pid end)
     |> Enum.into(%{})
+  end
+
+  defp normalize_path(path) when is_list(path),
+    do: Enum.map(path, &normalize_key/1)
+
+  defp normalize_path(path), do: [normalize_key(path)]
+
+  defp log_store_debug(store_data) do
+    store_keys =
+      case store_data do
+        map when is_map(map) -> Map.keys(map)
+        list when is_list(list) -> Keyword.keys(list)
+        other -> "Unknown type: #{inspect(other)}"
+      end
+
+    Log.debug("store_data type: #{inspect(store_data)}")
+    Log.debug("store_data keys: #{inspect(store_keys)}")
   end
 
   # Convert PIDs and other non-atom keys to strings for use with Access protocol

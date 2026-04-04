@@ -162,34 +162,17 @@ defmodule Raxol.Performance.CycleProfiler do
 
   @impl true
   def handle_cast({:record_render, timing}, %State{} = state) do
-    total = Map.get(timing, :total_us, 0)
-
-    entry = %RenderTiming{
-      timestamp_us: System.monotonic_time(:microsecond),
-      view_us: Map.get(timing, :view_us, 0),
-      layout_us: Map.get(timing, :layout_us, 0),
-      render_us: Map.get(timing, :render_us, 0),
-      plugin_us: Map.get(timing, :plugin_us, 0),
-      backend_us: Map.get(timing, :backend_us, 0),
-      total_us: total,
-      memory_before: Map.get(timing, :memory_before, 0),
-      memory_after: Map.get(timing, :memory_after, 0)
-    }
-
+    entry = build_render_entry(timing)
     buffer = CircularBuffer.insert(state.render_buffer, entry)
-    new_total = state.total_count + 1
-
-    slow =
-      if total > state.slow_threshold_us,
-        do: state.slow_count + 1,
-        else: state.slow_count
-
-    if total > state.slow_threshold_us do
-      notify_subscribers(state.subscribers, {:slow_cycle, entry})
-    end
+    slow = maybe_count_slow(entry, state)
 
     {:noreply,
-     %{state | render_buffer: buffer, total_count: new_total, slow_count: slow}}
+     %{
+       state
+       | render_buffer: buffer,
+         total_count: state.total_count + 1,
+         slow_count: slow
+     }}
   end
 
   @impl true
@@ -271,6 +254,29 @@ defmodule Raxol.Performance.CycleProfiler do
   end
 
   # -- Private --
+
+  defp build_render_entry(timing) do
+    %RenderTiming{
+      timestamp_us: System.monotonic_time(:microsecond),
+      view_us: Map.get(timing, :view_us, 0),
+      layout_us: Map.get(timing, :layout_us, 0),
+      render_us: Map.get(timing, :render_us, 0),
+      plugin_us: Map.get(timing, :plugin_us, 0),
+      backend_us: Map.get(timing, :backend_us, 0),
+      total_us: Map.get(timing, :total_us, 0),
+      memory_before: Map.get(timing, :memory_before, 0),
+      memory_after: Map.get(timing, :memory_after, 0)
+    }
+  end
+
+  defp maybe_count_slow(entry, state) do
+    if entry.total_us > state.slow_threshold_us do
+      notify_subscribers(state.subscribers, {:slow_cycle, entry})
+      state.slow_count + 1
+    else
+      state.slow_count
+    end
+  end
 
   defp notify_subscribers(subscribers, message) do
     Enum.each(subscribers, fn pid ->

@@ -92,27 +92,13 @@ defmodule Raxol.UI.Layout.CSSGrid.TrackParser do
   def parse_track_by_type(_track_str, _available_size), do: Track.new(:auto, 0)
 
   def parse_track_by_suffix(track_str, available_size) do
-    case try_parse_fr_track(track_str) do
-      {:ok, result} ->
-        result
-
-      :error ->
-        case try_parse_px_track(track_str) do
-          {:ok, result} ->
-            result
-
-          :error ->
-            case try_parse_percent_track(track_str, available_size) do
-              {:ok, result} ->
-                result
-
-              :error ->
-                case try_parse_minmax_track(track_str, available_size) do
-                  {:ok, result} -> result
-                  :error -> parse_fallback_track(track_str)
-                end
-            end
-        end
+    with :error <- try_parse_fr_track(track_str),
+         :error <- try_parse_px_track(track_str),
+         :error <- try_parse_percent_track(track_str, available_size),
+         :error <- try_parse_minmax_track(track_str, available_size) do
+      parse_fallback_track(track_str)
+    else
+      {:ok, result} -> result
     end
   end
 

@@ -91,43 +91,42 @@ defmodule Raxol.Demo.Effects do
     end
   end
 
+  @hue_to_256_map %{
+    0 => 196,
+    1 => 202,
+    2 => 208,
+    3 => 214,
+    4 => 220,
+    5 => 226,
+    6 => 46,
+    7 => 48,
+    8 => 51,
+    9 => 45,
+    10 => 39,
+    11 => 201
+  }
+
   @doc "Maps a hue value (0-360) to an ANSI 256-color index."
   def hue_to_256(hue) do
-    case rem(div(hue, 30), 12) do
-      0 -> 196
-      1 -> 202
-      2 -> 208
-      3 -> 214
-      4 -> 220
-      5 -> 226
-      6 -> 46
-      7 -> 48
-      8 -> 51
-      9 -> 45
-      10 -> 39
-      _ -> 201
-    end
+    Map.get(@hue_to_256_map, rem(div(hue, 30), 12), 201)
   end
 
   @doc "Converts HSL to RGB tuple {r, g, b} with values 0-255."
   def hsl_to_rgb(h, s, l) do
     c = (1 - abs(2 * l - 1)) * s
-    h_prime = h / 60
-    x = c * (1 - abs(float_mod(h_prime, 2) - 1))
+    x = c * (1 - abs(float_mod(h / 60, 2) - 1))
     m = l - c / 2
 
-    {r1, g1, b1} =
-      case trunc(h_prime) do
-        0 -> {c, x, 0.0}
-        1 -> {x, c, 0.0}
-        2 -> {0.0, c, x}
-        3 -> {0.0, x, c}
-        4 -> {x, 0.0, c}
-        _ -> {c, 0.0, x}
-      end
-
+    {r1, g1, b1} = hsl_sextant(trunc(h / 60), c, x)
     {round((r1 + m) * 255), round((g1 + m) * 255), round((b1 + m) * 255)}
   end
+
+  defp hsl_sextant(0, c, x), do: {c, x, 0.0}
+  defp hsl_sextant(1, c, x), do: {x, c, 0.0}
+  defp hsl_sextant(2, c, x), do: {0.0, c, x}
+  defp hsl_sextant(3, c, x), do: {0.0, x, c}
+  defp hsl_sextant(4, c, x), do: {x, 0.0, c}
+  defp hsl_sextant(_, c, x), do: {c, 0.0, x}
 
   @doc "Creates a cascading rocket explosion at the given position."
   def create_rocket_explosion(x, y) do

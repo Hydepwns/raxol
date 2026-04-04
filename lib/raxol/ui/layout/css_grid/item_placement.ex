@@ -23,22 +23,21 @@ defmodule Raxol.UI.Layout.CSSGrid.ItemPlacement do
     |> Enum.map(&String.trim/1)
     |> Enum.filter(&(&1 != ""))
     |> Enum.with_index()
-    |> Enum.reduce(%{}, fn {line, row}, acc ->
-      area_names =
-        line
-        |> String.replace(~r/["']/, "")
-        |> String.split(~r/\s+/)
-        |> Enum.filter(&(&1 != ""))
-
-      area_names
-      |> Enum.with_index()
-      |> Enum.reduce(acc, fn {area_name, col}, inner_acc ->
-        update_area_bounds(area_name, row, col, inner_acc)
-      end)
-    end)
+    |> Enum.reduce(%{}, &parse_area_line/2)
   end
 
   def parse_grid_areas(_), do: %{}
+
+  defp parse_area_line({line, row}, acc) do
+    line
+    |> String.replace(~r/["']/, "")
+    |> String.split(~r/\s+/)
+    |> Enum.filter(&(&1 != ""))
+    |> Enum.with_index()
+    |> Enum.reduce(acc, fn {area_name, col}, inner_acc ->
+      update_area_bounds(area_name, row, col, inner_acc)
+    end)
+  end
 
   # ---------------------------------------------------------------------------
   # Explicit item placement

@@ -236,52 +236,31 @@ defmodule Raxol.Style.Colors.HotReload do
   end
 
   defp handle_theme_change({path, _mtime}, subscribers) do
-    # Log.info(
-    #   "[HotReload] theme_change: #{inspect(path)}"
-    # )
-
     theme_name = Path.basename(path, ".json") |> String.to_atom()
 
     case Persistence.load_theme(theme_name) do
       {:ok, theme} ->
-        # Log.info(
-        #   "[HotReload DEBUG] Loaded theme: #{inspect(theme.name)}. Notifying subscribers..."
-        # )
-
-        Enum.each(subscribers, fn pid ->
-          # Don't send message to self
-          send_theme_to_pid(pid != self(), pid, theme)
-        end)
+        notify_subscribers(subscribers, theme)
 
       {:error, _reason} ->
-        # Try loading by full path if loading by name fails
-        case File.read(path) do
-          {:ok, theme_json} ->
-            case Jason.decode(theme_json) do
-              {:ok, theme_map} ->
-                theme_struct = Persistence.map_to_theme_struct(theme_map)
-
-                # Log.info(
-                #   "[HotReload DEBUG] Loaded theme by path: #{inspect(theme_struct.name)}. Notifying subscribers..."
-                # )
-
-                Enum.each(subscribers, fn pid ->
-                  # Don't send message to self
-                  send_theme_to_pid(pid != self(), pid, theme_struct)
-                end)
-
-              _ ->
-                # Log.info(
-                #   "[HotReload DEBUG] Failed to decode theme JSON at #{path}"
-                # )
-                :ok
-            end
-
-          _ ->
-            # Log.info("[HotReload DEBUG] Failed to load theme: #{theme_name}")
-            Log.debug("Failed to load theme: #{theme_name}")
-        end
+        load_theme_from_path(path, theme_name, subscribers)
     end
+  end
+
+  defp load_theme_from_path(path, theme_name, subscribers) do
+    with {:ok, theme_json} <- File.read(path),
+         {:ok, theme_map} <- Jason.decode(theme_json) do
+      theme_struct = Persistence.map_to_theme_struct(theme_map)
+      notify_subscribers(subscribers, theme_struct)
+    else
+      _ -> Log.debug("Failed to load theme: #{theme_name}")
+    end
+  end
+
+  defp notify_subscribers(subscribers, theme) do
+    Enum.each(subscribers, fn pid ->
+      send_theme_to_pid(pid != self(), pid, theme)
+    end)
   end
 
   defp schedule_check do

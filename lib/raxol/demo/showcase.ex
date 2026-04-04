@@ -42,59 +42,67 @@ defmodule Raxol.Demo.Showcase do
 
   @impl true
   def update(message, model) do
+    handle_global_keys(message, model) ||
+      handle_tab_keys(message, model) ||
+      {model, []}
+  end
+
+  defp handle_global_keys(message, model) do
     case message do
-      # Quit
       key_match("q") ->
         {model, [command(:quit)]}
 
       key_match("c", ctrl: true) ->
         {model, [command(:quit)]}
 
-      # Tab switching: number keys
-      key_match(:char, char: n)
-      when n in ["1", "2", "3", "4", "5"] ->
+      key_match(:char, char: n) when n in ["1", "2", "3", "4", "5"] ->
         {%{model | tab: String.to_integer(n) - 1}, []}
 
-      # Tab switching: Tab key
       key_match(:tab) ->
         {%{model | tab: rem(model.tab + 1, @tab_count)}, []}
 
-      # Section 2: Space toggles checkbox
-      key_match(:space)
-      when model.tab == 1 ->
-        {%{model | checkbox_checked: not model.checkbox_checked}, []}
-
-      # Section 3: j/k navigate table
-      key_match("j")
-      when model.tab == 2 ->
-        max_row = length(@sample_table_rows) - 1
-        {%{model | table_cursor: min(model.table_cursor + 1, max_row)}, []}
-
-      key_match("k")
-      when model.tab == 2 ->
-        {%{model | table_cursor: max(model.table_cursor - 1, 0)}, []}
-
-      # Section 4: +/-/r for counter
-      key_match("+")
-      when model.tab == 3 ->
-        {%{model | counter: model.counter + 1}, []}
-
-      key_match("-")
-      when model.tab == 3 ->
-        {%{model | counter: model.counter - 1}, []}
-
-      key_match("r")
-      when model.tab == 3 ->
-        {%{model | counter: 0}, []}
-
-      # Button click
       :click ->
         {%{model | button_clicks: model.button_clicks + 1}, []}
 
       _ ->
-        {model, []}
+        nil
     end
   end
+
+  defp handle_tab_keys(message, %{tab: 1} = model) do
+    case message do
+      key_match(:space) ->
+        {%{model | checkbox_checked: not model.checkbox_checked}, []}
+
+      _ ->
+        nil
+    end
+  end
+
+  defp handle_tab_keys(message, %{tab: 2} = model) do
+    case message do
+      key_match("j") ->
+        max_row = length(@sample_table_rows) - 1
+        {%{model | table_cursor: min(model.table_cursor + 1, max_row)}, []}
+
+      key_match("k") ->
+        {%{model | table_cursor: max(model.table_cursor - 1, 0)}, []}
+
+      _ ->
+        nil
+    end
+  end
+
+  defp handle_tab_keys(message, %{tab: 3} = model) do
+    case message do
+      key_match("+") -> {%{model | counter: model.counter + 1}, []}
+      key_match("-") -> {%{model | counter: model.counter - 1}, []}
+      key_match("r") -> {%{model | counter: 0}, []}
+      _ -> nil
+    end
+  end
+
+  defp handle_tab_keys(_message, _model), do: nil
 
   @impl true
   def view(model) do

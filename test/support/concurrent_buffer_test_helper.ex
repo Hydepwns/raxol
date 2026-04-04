@@ -68,21 +68,26 @@ defmodule ConcurrentBufferTestHelper do
 
     Enum.map(1..writer_count, fn writer_id ->
       Task.async(fn ->
-        {start_x, start_y, width, height} =
-          get_writer_region(writer_id, regions)
+        write_to_region(pid, writer_id, regions, iterations, color)
+      end)
+    end)
+  end
 
-        Enum.each(0..(height - 1), fn y ->
-          Enum.each(0..(width - 1), fn x ->
-            case iterations > 0 do
-              true ->
-                cell = Cell.new("W", TextFormatting.new(foreground: color))
-                ConcurrentBuffer.set_cell(pid, start_x + x, start_y + y, cell)
+  defp write_to_region(pid, writer_id, regions, iterations, color) do
+    {start_x, start_y, width, height} = get_writer_region(writer_id, regions)
 
-              false ->
-                :ok
-            end
-          end)
-        end)
+    if iterations > 0 do
+      cell = Cell.new("W", TextFormatting.new(foreground: color))
+      write_cell_grid(pid, start_x, start_y, width, height, cell)
+    else
+      :ok
+    end
+  end
+
+  defp write_cell_grid(pid, start_x, start_y, width, height, cell) do
+    Enum.each(0..(height - 1), fn y ->
+      Enum.each(0..(width - 1), fn x ->
+        ConcurrentBuffer.set_cell(pid, start_x + x, start_y + y, cell)
       end)
     end)
   end
@@ -102,13 +107,7 @@ defmodule ConcurrentBufferTestHelper do
   """
   def create_concurrent_readers(pid, reader_count, iterations \\ 100) do
     Enum.map(1..reader_count, fn _reader_id ->
-      Task.async(fn ->
-        Enum.each(1..iterations, fn _ ->
-          x = :rand.uniform(80) - 1
-          y = :rand.uniform(24) - 1
-          {:ok, _cell} = ConcurrentBuffer.get_cell(pid, x, y)
-        end)
-      end)
+      Task.async(fn -> random_reads(pid, iterations) end)
     end)
   end
 
@@ -131,44 +130,42 @@ defmodule ConcurrentBufferTestHelper do
     fill_iterations = Keyword.get(opts, :fill_iterations, 10)
 
     [
-      # Reader
-      Task.async(fn ->
-        Enum.each(1..read_iterations, fn _ ->
-          x = :rand.uniform(80) - 1
-          y = :rand.uniform(24) - 1
-          {:ok, _cell} = ConcurrentBuffer.get_cell(pid, x, y)
-        end)
-      end),
-
-      # Writer
-      Task.async(fn ->
-        Enum.each(1..write_iterations, fn _i ->
-          x = :rand.uniform(80) - 1
-          y = :rand.uniform(24) - 1
-          cell = Cell.new("W", TextFormatting.new(foreground: :yellow))
-          ConcurrentBuffer.set_cell(pid, x, y, cell)
-        end)
-      end),
-
-      # Scroller
-      Task.async(fn ->
-        Enum.each(1..scroll_iterations, fn _ ->
-          ConcurrentBuffer.scroll(pid, 1)
-        end)
-      end),
-
-      # Region filler
-      Task.async(fn ->
-        Enum.each(1..fill_iterations, fn i ->
-          x = rem(i, 8) * 10
-          y = div(i, 8) * 3
-
-          ConcurrentBuffer.fill_region(pid, x, y, 10, 3, "F", %{
-            foreground: :red
-          })
-        end)
-      end)
+      Task.async(fn -> random_reads(pid, read_iterations) end),
+      Task.async(fn -> random_writes(pid, write_iterations) end),
+      Task.async(fn -> scroll_operations(pid, scroll_iterations) end),
+      Task.async(fn -> fill_operations(pid, fill_iterations) end)
     ]
+  end
+
+  defp random_reads(pid, iterations) do
+    Enum.each(1..iterations, fn _ ->
+      x = :rand.uniform(80) - 1
+      y = :rand.uniform(24) - 1
+      {:ok, _cell} = ConcurrentBuffer.get_cell(pid, x, y)
+    end)
+  end
+
+  defp random_writes(pid, iterations) do
+    Enum.each(1..iterations, fn _ ->
+      x = :rand.uniform(80) - 1
+      y = :rand.uniform(24) - 1
+      cell = Cell.new("W", TextFormatting.new(foreground: :yellow))
+      ConcurrentBuffer.set_cell(pid, x, y, cell)
+    end)
+  end
+
+  defp scroll_operations(pid, iterations) do
+    Enum.each(1..iterations, fn _ ->
+      ConcurrentBuffer.scroll(pid, 1)
+    end)
+  end
+
+  defp fill_operations(pid, iterations) do
+    Enum.each(1..iterations, fn i ->
+      x = rem(i, 8) * 10
+      y = div(i, 8) * 3
+      ConcurrentBuffer.fill_region(pid, x, y, 10, 3, "F", %{foreground: :red})
+    end)
   end
 
   @doc """
@@ -260,14 +257,11 @@ defmodule ConcurrentBufferTestHelper do
   """
   def verify_cell_content(pid, x, y, expected_char) do
     case ConcurrentBuffer.get_cell(pid, x, y) do
-      {:ok, cell} ->
-        case cell.char == expected_char do
-          true ->
-            :ok
+      {:ok, %{char: ^expected_char}} ->
+        :ok
 
-          false ->
-            {:error, "Expected char '#{expected_char}', got '#{cell.char}'"}
-        end
+      {:ok, %{char: actual_char}} ->
+        {:error, "Expected char '#{expected_char}', got '#{actual_char}'"}
 
       error ->
         error

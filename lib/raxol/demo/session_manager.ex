@@ -204,27 +204,27 @@ defmodule Raxol.Demo.SessionManager do
       |> Enum.map(fn {id, _session} -> id end)
 
     new_state =
-      Enum.reduce(expired_sessions, state, fn session_id, acc ->
-        session = Map.get(acc.sessions, session_id)
-
-        new_sessions = Map.delete(acc.sessions, session_id)
-
-        new_ip_counts =
-          if session do
-            Map.update(acc.ip_counts, session.ip_address, 0, fn count ->
-              max(0, count - 1)
-            end)
-            |> Map.reject(fn {_ip, count} -> count == 0 end)
-          else
-            acc.ip_counts
-          end
-
-        Logger.debug("Demo session expired: #{session_id}")
-        %{acc | sessions: new_sessions, ip_counts: new_ip_counts}
-      end)
+      Enum.reduce(expired_sessions, state, &expire_session/2)
 
     schedule_cleanup()
     {:noreply, new_state}
+  end
+
+  defp expire_session(session_id, acc) do
+    session = Map.get(acc.sessions, session_id)
+    new_sessions = Map.delete(acc.sessions, session_id)
+    new_ip_counts = decrement_ip_count(acc.ip_counts, session)
+
+    Logger.debug("Demo session expired: #{session_id}")
+    %{acc | sessions: new_sessions, ip_counts: new_ip_counts}
+  end
+
+  defp decrement_ip_count(ip_counts, nil), do: ip_counts
+
+  defp decrement_ip_count(ip_counts, session) do
+    ip_counts
+    |> Map.update(session.ip_address, 0, fn count -> max(0, count - 1) end)
+    |> Map.reject(fn {_ip, count} -> count == 0 end)
   end
 
   defp generate_session_id do

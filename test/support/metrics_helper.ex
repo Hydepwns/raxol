@@ -18,63 +18,35 @@ defmodule Raxol.Test.MetricsHelper do
     * `{:ok, state}` - The test state containing all started components
   """
   def setup_metrics_test(opts \\ []) do
-    # Start metrics collector unless disabled
     collector = start_collector_if_enabled(opts)
 
-    # Start metrics aggregator
     aggregator =
-      case Raxol.Core.Metrics.Aggregator.start_link(
-             Keyword.get(opts, :aggregator_opts,
-               update_interval: :timer.seconds(1),
-               max_rules: 10
-             )
-           ) do
-        {:ok, pid} ->
-          pid
+      start_or_reuse(
+        Raxol.Core.Metrics.Aggregator,
+        Keyword.get(opts, :aggregator_opts,
+          update_interval: :timer.seconds(1),
+          max_rules: 10
+        )
+      )
 
-        {:error, {:already_started, pid}} ->
-          pid
-
-        {:error, reason} ->
-          raise "Failed to start Aggregator: #{inspect(reason)}"
-      end
-
-    # Start metrics visualizer
     visualizer =
-      case Raxol.Core.Metrics.Visualizer.start_link(
-             Keyword.get(opts, :visualizer_opts,
-               max_charts: 10,
-               default_time_range: :timer.minutes(5)
-             )
-           ) do
-        {:ok, pid} ->
-          pid
+      start_or_reuse(
+        Raxol.Core.Metrics.Visualizer,
+        Keyword.get(opts, :visualizer_opts,
+          max_charts: 10,
+          default_time_range: :timer.minutes(5)
+        )
+      )
 
-        {:error, {:already_started, pid}} ->
-          pid
-
-        {:error, reason} ->
-          raise "Failed to start Visualizer: #{inspect(reason)}"
-      end
-
-    # Start alert manager
     alert_manager =
-      case Raxol.Core.Metrics.AlertManager.start_link(
-             Keyword.get(opts, :alert_manager_opts,
-               check_interval: :timer.seconds(1),
-               max_rules: 10,
-               default_cooldown: :timer.seconds(5)
-             )
-           ) do
-        {:ok, pid} ->
-          pid
-
-        {:error, {:already_started, pid}} ->
-          pid
-
-        {:error, reason} ->
-          raise "Failed to start AlertManager: #{inspect(reason)}"
-      end
+      start_or_reuse(
+        Raxol.Core.Metrics.AlertManager,
+        Keyword.get(opts, :alert_manager_opts,
+          check_interval: :timer.seconds(1),
+          max_rules: 10,
+          default_cooldown: :timer.seconds(5)
+        )
+      )
 
     %{
       collector: collector,
@@ -82,6 +54,19 @@ defmodule Raxol.Test.MetricsHelper do
       visualizer: visualizer,
       alert_manager: alert_manager
     }
+  end
+
+  defp start_or_reuse(module, opts) do
+    case module.start_link(opts) do
+      {:ok, pid} ->
+        pid
+
+      {:error, {:already_started, pid}} ->
+        pid
+
+      {:error, reason} ->
+        raise "Failed to start #{inspect(module)}: #{inspect(reason)}"
+    end
   end
 
   @doc """

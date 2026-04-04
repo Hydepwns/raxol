@@ -560,24 +560,27 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   defp init_presence(socket, selected) do
     if connected?(socket) do
       PlaygroundPresence.subscribe()
-
-      case PlaygroundPresence.track_user(socket) do
-        {:ok, user_id, _user_meta} ->
-          if selected,
-            do: PlaygroundPresence.update_component(user_id, selected.name)
-
-          socket =
-            socket
-            |> assign(:user_id, user_id)
-            |> assign(:online_users, PlaygroundPresence.list_users())
-
-          {socket, user_id}
-
-        {:error, _reason} ->
-          {assign(socket, user_id: nil, online_users: []), nil}
-      end
+      track_and_assign(socket, selected)
     else
       {assign(socket, user_id: nil, online_users: []), nil}
+    end
+  end
+
+  defp track_and_assign(socket, selected) do
+    case PlaygroundPresence.track_user(socket) do
+      {:ok, user_id, _user_meta} ->
+        if selected,
+          do: PlaygroundPresence.update_component(user_id, selected.name)
+
+        socket =
+          socket
+          |> assign(:user_id, user_id)
+          |> assign(:online_users, PlaygroundPresence.list_users())
+
+        {socket, user_id}
+
+      {:error, _reason} ->
+        {assign(socket, user_id: nil, online_users: []), nil}
     end
   end
 

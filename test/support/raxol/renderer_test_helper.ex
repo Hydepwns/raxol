@@ -23,29 +23,20 @@ defmodule Raxol.Test.RendererTestHelper do
     }
   end
 
+  defp parse_theme_args(arg2, arg3, arg4)
+       when is_binary(arg2) and is_binary(arg3) and is_map(arg4) do
+    has_variants = Map.has_key?(arg4, :variants)
+    handle_variants_parsing(has_variants, arg4)
+  end
+
+  defp parse_theme_args(arg2, arg3, arg4)
+       when is_map(arg2) and is_map(arg3) and (is_map(arg4) or is_nil(arg4)) do
+    {arg2, arg3, arg4 || %{}, %{}}
+  end
+
   defp parse_theme_args(arg2, arg3, arg4) do
-    cond do
-      is_binary(arg2) and is_binary(arg3) and is_map(arg4) ->
-        # Called as (name, desc, desc, colors_or_config)
-        # Check if arg4 contains variants
-        has_variants = Map.has_key?(arg4, :variants)
-        handle_variants_parsing(has_variants, arg4)
-
-      is_map(arg2) and is_map(arg3) and (is_map(arg4) or is_nil(arg4)) ->
-        # Called as (name, colors, styles, fonts)
-        # Don't merge defaults - let themes be partial for inheritance testing
-        {arg2, arg3, arg4 || %{}, %{}}
-
-      true ->
-        # Fallback: treat arg2 as colors if it's a map
-        arg2_is_map = is_map(arg2)
-        arg3_is_map = is_map(arg3)
-        arg4_is_map = is_map(arg4)
-
-        {get_map_or_empty(arg2_is_map, arg2),
-         get_map_or_empty(arg3_is_map, arg3),
-         get_map_or_empty(arg4_is_map, arg4), %{}}
-    end
+    {get_map_or_empty(is_map(arg2), arg2), get_map_or_empty(is_map(arg3), arg3),
+     get_map_or_empty(is_map(arg4), arg4), %{}}
   end
 
   def get_cell_at(cells, x, y) do

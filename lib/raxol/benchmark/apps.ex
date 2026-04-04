@@ -102,19 +102,23 @@ defmodule Raxol.Benchmark.Apps do
     @impl true
     def view(model) do
       row do
-        Enum.map(1..3, fn i ->
-          column do
-            Enum.map(1..3, fn j ->
-              box style: %{border: :single, padding: 1} do
-                column do
-                  Enum.map(1..model.depth, fn k ->
-                    text("Cell [#{i},#{j},#{k}]")
-                  end)
-                end
-              end
-            end)
-          end
-        end)
+        Enum.map(1..3, fn i -> render_column(i, model.depth) end)
+      end
+    end
+
+    defp render_column(i, depth) do
+      column do
+        Enum.map(1..3, fn j -> render_cell(i, j, depth) end)
+      end
+    end
+
+    defp render_cell(i, j, depth) do
+      box style: %{border: :single, padding: 1} do
+        column do
+          Enum.map(1..depth, fn k ->
+            text("Cell [#{i},#{j},#{k}]")
+          end)
+        end
       end
     end
   end

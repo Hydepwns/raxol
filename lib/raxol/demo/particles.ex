@@ -331,38 +331,34 @@ defmodule Raxol.Demo.Particles do
           non_neg_integer()
         ) :: String.t()
   def render_with_trails(particles, width, height) do
-    # First render trails, then particles on top
     trail_output =
       particles
-      |> Enum.flat_map(fn p ->
-        history = Map.get(p, :history, [])
-
-        history
-        |> Enum.with_index()
-        |> Enum.map(fn {{hx, hy}, idx} ->
-          if hx >= 0 and hx < width and hy >= 0 and hy < height do
-            x = trunc(hx) + 1
-            y = trunc(hy) + 1
-
-            char =
-              Enum.at(
-                @afterimage_chars,
-                min(idx, length(@afterimage_chars) - 1)
-              )
-
-            color = dim_color(dim_color(p.color))
-            "\e[#{y};#{x}H\e[38;5;#{color}m#{char}\e[0m"
-          else
-            ""
-          end
-        end)
-      end)
+      |> Enum.flat_map(&render_particle_trail(&1, width, height))
       |> Enum.join("")
 
-    particle_output = render(particles, width, height)
-
-    trail_output <> particle_output
+    trail_output <> render(particles, width, height)
   end
+
+  defp render_particle_trail(particle, width, height) do
+    color = dim_color(dim_color(particle.color))
+
+    particle
+    |> Map.get(:history, [])
+    |> Enum.with_index()
+    |> Enum.map(fn {{hx, hy}, idx} ->
+      render_trail_point(hx, hy, idx, color, width, height)
+    end)
+  end
+
+  defp render_trail_point(hx, hy, idx, color, width, height)
+       when hx >= 0 and hx < width and hy >= 0 and hy < height do
+    x = trunc(hx) + 1
+    y = trunc(hy) + 1
+    char = Enum.at(@afterimage_chars, min(idx, length(@afterimage_chars) - 1))
+    "\e[#{y};#{x}H\e[38;5;#{color}m#{char}\e[0m"
+  end
+
+  defp render_trail_point(_hx, _hy, _idx, _color, _width, _height), do: ""
 
   @doc """
   Filters out dead particles.

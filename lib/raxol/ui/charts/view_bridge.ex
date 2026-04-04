@@ -27,26 +27,27 @@ defmodule Raxol.UI.Charts.ViewBridge do
       cells
       |> Enum.sort_by(fn {x, y, _, _, _, _} -> {y, x} end)
       |> Enum.chunk_by(fn {_x, y, _c, fg, bg, _a} -> {y, fg, bg} end)
-      |> Enum.map(fn group ->
-        [{_x0, y0, _c0, fg, bg, _a0} | _] = group
-
-        x_start =
-          group |> Enum.map(fn {x, _, _, _, _, _} -> x end) |> Enum.min()
-
-        content = Enum.map_join(group, fn {_x, _y, c, _fg, _bg, _a} -> c end)
-
-        text_opts = %{content: content, fg: fg}
-
-        text_opts =
-          if bg != :default, do: Map.put(text_opts, :bg, bg), else: text_opts
-
-        text_opts = Map.put(text_opts, :style, %{position: {x_start, y0}})
-
-        Components.text(text_opts)
-      end)
+      |> Enum.map(&group_to_text_element/1)
 
     Components.box(style: Keyword.get(opts, :style, %{}), children: children)
   end
+
+  defp group_to_text_element(group) do
+    [{_x0, y0, _c0, fg, bg, _a0} | _] = group
+
+    x_start =
+      group |> Enum.map(fn {x, _, _, _, _, _} -> x end) |> Enum.min()
+
+    content = Enum.map_join(group, fn {_x, _y, c, _fg, _bg, _a} -> c end)
+
+    %{content: content, fg: fg}
+    |> maybe_put_bg(bg)
+    |> Map.put(:style, %{position: {x_start, y0}})
+    |> Components.text()
+  end
+
+  defp maybe_put_bg(opts, :default), do: opts
+  defp maybe_put_bg(opts, bg), do: Map.put(opts, :bg, bg)
 
   @doc """
   Convenience wrapper: calls a chart function with args, then converts

@@ -262,39 +262,40 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
   # Memory Growth Pattern Analysis
   # =============================================================================
 
+  defp analyze_growth_pattern(memory_samples) when length(memory_samples) < 3,
+    do: 0.0
+
   defp analyze_growth_pattern(memory_samples) do
-    if length(memory_samples) < 3 do
-      0.0
-    else
-      # Calculate correlation coefficient with time series
-      indexed_samples = Enum.with_index(memory_samples)
-      n = length(indexed_samples)
-
-      # Sum of indices
-      sum_x = n * (n + 1) / 2
-      sum_y = Enum.sum(memory_samples)
-
-      sum_xy =
-        indexed_samples
-        |> Enum.map(fn {val, idx} -> val * idx end)
-        |> Enum.sum()
-
-      # Sum of squared indices
-      sum_x2 = n * (n + 1) * (2 * n + 1) / 6
-      sum_y2 = memory_samples |> Enum.map(&(&1 * &1)) |> Enum.sum()
-
-      numerator = n * sum_xy - sum_x * sum_y
-
-      denominator =
-        :math.sqrt((n * sum_x2 - sum_x * sum_x) * (n * sum_y2 - sum_y * sum_y))
-
-      if denominator > 0 do
-        numerator / denominator
-      else
-        0.0
-      end
-    end
+    correlation_coefficient(memory_samples)
   end
+
+  defp correlation_coefficient(samples) do
+    n = length(samples)
+    sums = compute_sums(samples, n)
+    numerator = n * sums.xy - sums.x * sums.y
+
+    denominator =
+      :math.sqrt(
+        (n * sums.x2 - sums.x * sums.x) * (n * sums.y2 - sums.y * sums.y)
+      )
+
+    safe_divide(numerator, denominator)
+  end
+
+  defp compute_sums(samples, n) do
+    indexed = Enum.with_index(samples)
+
+    %{
+      x: n * (n + 1) / 2,
+      y: Enum.sum(samples),
+      xy: indexed |> Enum.map(fn {val, idx} -> val * idx end) |> Enum.sum(),
+      x2: n * (n + 1) * (2 * n + 1) / 6,
+      y2: samples |> Enum.map(&(&1 * &1)) |> Enum.sum()
+    }
+  end
+
+  defp safe_divide(_numerator, denominator) when denominator <= 0, do: 0.0
+  defp safe_divide(numerator, denominator), do: numerator / denominator
 
   # =============================================================================
   # Memory Sampling and Collection

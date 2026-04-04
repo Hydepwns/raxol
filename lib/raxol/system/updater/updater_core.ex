@@ -339,58 +339,48 @@ defmodule Raxol.System.Updater.Core do
   end
 
   defp do_self_update(version) do
-    # Platform detection
     platform = Validation.get_platform()
+    ext = platform_extension(platform)
+    url = release_url(version, platform, ext)
 
-    # Determine file extension based on platform
-    ext =
-      case platform == "windows" do
-        true -> "zip"
-        false -> "tar.gz"
-      end
-
-    # Download URL for the new version
-    url =
-      "https://github.com/#{@github_repo}/releases/download/v#{version}/raxol-#{version}-#{platform}.#{ext}"
-
-    # Temporary directory for the update
     tmp_dir = System.tmp_dir!() |> Path.join("raxol_update_#{version}")
     _ = File.rm_rf(tmp_dir)
     :ok = File.mkdir_p(tmp_dir)
 
     Raxol.Core.ErrorHandling.ensure_cleanup(
-      fn ->
-        # Download the update
-        archive_path = Path.join(tmp_dir, "update.#{ext}")
-        :ok = Network.download_file(url, archive_path)
-
-        # Extract the update
-        :ok = Network.extract_archive(archive_path, tmp_dir, ext)
-
-        # Get the current executable path
-        current_exe =
-          System.get_env("BURRITO_EXECUTABLE_PATH") ||
-            System.argv() |> List.first()
-
-        # Find the new executable in the extracted files
-        new_exe = Network.find_executable(tmp_dir, platform)
-
-        # Apply the update by replacing the current executable
-        apply_update(current_exe, new_exe, platform)
-
-        :ok
-      end,
-      fn ->
-        # Clean up temporary files
-        _ = File.rm_rf(tmp_dir)
-      end
+      fn -> perform_self_update(tmp_dir, url, ext, platform) end,
+      fn -> File.rm_rf(tmp_dir) end
     )
-    |> case do
-      {:ok, result} -> result
-      {:error, {:throw, {:error, reason}}} -> {:error, reason}
-      {:error, reason} -> {:error, reason}
-    end
+    |> unwrap_cleanup_result()
   end
+
+  defp platform_extension("windows"), do: "zip"
+  defp platform_extension(_), do: "tar.gz"
+
+  defp release_url(version, platform, ext) do
+    "https://github.com/#{@github_repo}/releases/download/v#{version}/raxol-#{version}-#{platform}.#{ext}"
+  end
+
+  defp perform_self_update(tmp_dir, url, ext, platform) do
+    archive_path = Path.join(tmp_dir, "update.#{ext}")
+    :ok = Network.download_file(url, archive_path)
+    :ok = Network.extract_archive(archive_path, tmp_dir, ext)
+
+    current_exe =
+      System.get_env("BURRITO_EXECUTABLE_PATH") ||
+        System.argv() |> List.first()
+
+    new_exe = Network.find_executable(tmp_dir, platform)
+    apply_update(current_exe, new_exe, platform)
+    :ok
+  end
+
+  defp unwrap_cleanup_result({:ok, result}), do: result
+
+  defp unwrap_cleanup_result({:error, {:throw, {:error, reason}}}),
+    do: {:error, reason}
+
+  defp unwrap_cleanup_result({:error, reason}), do: {:error, reason}
 
   defp apply_update(current_exe, new_exe, platform) do
     Network.do_replace_executable(current_exe, new_exe, platform)

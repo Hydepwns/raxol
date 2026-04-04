@@ -81,34 +81,46 @@ defmodule Raxol.UI.Charts.ChartUtils do
     precision = Keyword.get(opts, :precision, 1)
     label_width = Keyword.get(opts, :label_width, 6)
 
-    max_label = format_axis_label(y_max, precision)
-    min_label = format_axis_label(y_min, precision)
+    max_cells = render_axis_label(y_max, precision, label_width, x, y)
+    min_cells = render_axis_label(y_min, precision, label_width, x, y + h - 1)
 
-    max_cells =
-      string_to_cells(
-        String.pad_leading(max_label, label_width),
-        x,
-        y,
-        :white,
-        :default
-      )
-
-    min_cells =
-      string_to_cells(
-        String.pad_leading(min_label, label_width),
-        x,
-        y + h - 1,
-        :white,
-        :default
-      )
-
-    # Vertical axis line
     axis_cells =
       for row <- 0..(h - 1) do
         {x + label_width, y + row, "|", :white, :default, %{}}
       end
 
     max_cells ++ min_cells ++ axis_cells
+  end
+
+  defp render_axis_label(value, precision, label_width, x, y) do
+    value
+    |> format_axis_label(precision)
+    |> String.pad_leading(label_width)
+    |> string_to_cells(x, y, :white, :default)
+  end
+
+  @doc """
+  Computes the plot region within a chart area, reserving space for axes and legend.
+  """
+  @spec compute_plot_region(
+          non_neg_integer(),
+          non_neg_integer(),
+          pos_integer(),
+          pos_integer(),
+          boolean(),
+          boolean()
+        ) :: map()
+  def compute_plot_region(x, y, w, h, show_axes, show_legend) do
+    axes_width = if show_axes, do: 7, else: 0
+    legend_height = if show_legend, do: 1, else: 0
+
+    %{
+      w: max(w - axes_width, 1),
+      h: max(h - legend_height, 1),
+      x: x + axes_width,
+      y: y,
+      axes_w: axes_width
+    }
   end
 
   @doc """

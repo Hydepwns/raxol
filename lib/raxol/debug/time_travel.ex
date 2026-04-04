@@ -315,30 +315,28 @@ defmodule Raxol.Debug.TimeTravel do
   def handle_call({:import, path}, _from, state) do
     with {:ok, binary} <- File.read(path),
          snapshots when is_list(snapshots) <- safe_binary_to_term(binary) do
-      buffer =
-        Enum.reduce(snapshots, CircularBuffer.new(state.max_snapshots), fn snap,
-                                                                           buf ->
-          CircularBuffer.insert(buf, snap)
-        end)
-
-      last_index =
-        case List.last(snapshots) do
-          %Snapshot{index: i} -> i
-          _ -> 0
-        end
-
-      new_state = %{
-        state
-        | buffer: buffer,
-          cursor: last_index,
-          next_index: last_index + 1
-      }
-
+      new_state = rebuild_state_from_snapshots(state, snapshots)
       {:reply, {:ok, length(snapshots)}, new_state}
     else
       {:error, reason} -> {:reply, {:error, reason}, state}
       _ -> {:reply, {:error, :invalid_format}, state}
     end
+  end
+
+  defp rebuild_state_from_snapshots(state, snapshots) do
+    buffer =
+      Enum.reduce(snapshots, CircularBuffer.new(state.max_snapshots), fn snap,
+                                                                         buf ->
+        CircularBuffer.insert(buf, snap)
+      end)
+
+    last_index =
+      case List.last(snapshots) do
+        %Snapshot{index: i} -> i
+        _ -> 0
+      end
+
+    %{state | buffer: buffer, cursor: last_index, next_index: last_index + 1}
   end
 
   # -- Private --

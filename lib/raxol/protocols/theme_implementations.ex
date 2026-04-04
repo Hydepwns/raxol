@@ -214,18 +214,19 @@ defmodule Raxol.Protocols.ThemeImplementations do
 
     defp hex_to_rgb(color), do: ColorConversion.hex_to_rgb(color)
 
+    @color_ansi_map %{
+      black: "40",
+      red: "41",
+      green: "42",
+      yellow: "43",
+      blue: "44",
+      magenta: "45",
+      cyan: "46",
+      white: "47"
+    }
+
     defp color_name_to_ansi(color) do
-      case color do
-        :black -> "40"
-        :red -> "41"
-        :green -> "42"
-        :yellow -> "43"
-        :blue -> "44"
-        :magenta -> "45"
-        :cyan -> "46"
-        :white -> "47"
-        _ -> "40"
-      end
+      Map.get(@color_ansi_map, color, "40")
     end
   end
 

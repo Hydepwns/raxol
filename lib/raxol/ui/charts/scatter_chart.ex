@@ -34,14 +34,21 @@ defmodule Raxol.UI.Charts.ScatterChart do
   def render({x, y, w, h}, series, opts \\ []) do
     show_axes = Keyword.get(opts, :show_axes, false)
     show_legend = Keyword.get(opts, :show_legend, false)
+    plot = ChartUtils.compute_plot_region(x, y, w, h, show_axes, show_legend)
+    {normalized, x_range, y_range} = normalize_series(series, opts)
 
-    axes_width = if show_axes, do: 7, else: 0
-    legend_height = if show_legend, do: 1, else: 0
-    plot_w = max(w - axes_width, 1)
-    plot_h = max(h - legend_height, 1)
-    plot_x = x + axes_width
-    plot_y = y
+    chart_cells = render_scatter_cells(normalized, plot, x_range, y_range)
 
+    axes_cells =
+      render_optional_axes(show_axes, x, y, plot.axes_w, plot.h, y_range)
+
+    legend_cells =
+      render_optional_legend(show_legend, x, y + plot.h, normalized)
+
+    axes_cells ++ chart_cells ++ legend_cells
+  end
+
+  defp normalize_series(series, opts) do
     normalized =
       Enum.map(series, fn s ->
         %{s | data: ChartUtils.normalize_data_2d(s.data)}
@@ -49,8 +56,11 @@ defmodule Raxol.UI.Charts.ScatterChart do
 
     all_points = Enum.flat_map(normalized, & &1.data)
     {x_range, y_range} = resolve_ranges(all_points, opts)
+    {normalized, x_range, y_range}
+  end
 
-    canvas = BrailleCanvas.new(plot_w, plot_h)
+  defp render_scatter_cells(normalized, plot, x_range, y_range) do
+    canvas = BrailleCanvas.new(plot.w, plot.h)
     {dot_w, dot_h} = BrailleCanvas.get_dimensions(canvas)
 
     canvas =
@@ -65,21 +75,18 @@ defmodule Raxol.UI.Charts.ScatterChart do
       |> Enum.with_index()
       |> Map.new(fn {%{color: color}, idx} -> {idx, color} end)
 
-    chart_cells =
-      BrailleCanvas.to_cells_multicolor(canvas, {plot_x, plot_y}, color_map)
-
-    axes_cells =
-      if show_axes,
-        do: ChartUtils.render_axes({x, y, axes_width, plot_h}, y_range),
-        else: []
-
-    legend_cells =
-      if show_legend,
-        do: ChartUtils.render_legend(x, y + plot_h, normalized),
-        else: []
-
-    axes_cells ++ chart_cells ++ legend_cells
+    BrailleCanvas.to_cells_multicolor(canvas, {plot.x, plot.y}, color_map)
   end
+
+  defp render_optional_axes(false, _x, _y, _w, _h, _y_range), do: []
+
+  defp render_optional_axes(true, x, y, w, h, y_range),
+    do: ChartUtils.render_axes({x, y, w, h}, y_range)
+
+  defp render_optional_legend(false, _x, _y, _normalized), do: []
+
+  defp render_optional_legend(true, x, y, normalized),
+    do: ChartUtils.render_legend(x, y, normalized)
 
   # -- Private --
 

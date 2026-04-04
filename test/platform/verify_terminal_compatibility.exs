@@ -283,7 +283,7 @@ defmodule Raxol.Terminal.CompatibilityTest do
     end
   end
 
-  def print_summary(feature_results, platform_info) do
+  def print_summary(feature_results, _platform_info) do
     supported_count =
       feature_results |> Enum.count(fn {_, supported} -> supported end)
 
@@ -295,62 +295,96 @@ defmodule Raxol.Terminal.CompatibilityTest do
       "#{supported_count}/#{total_count} features supported (#{trunc(supported_count / total_count * 100)}%)"
     )
 
-    # Compatibility rating
-    rating =
-      cond do
-        supported_count == total_count -> "Excellent"
-        supported_count >= trunc(total_count * 0.8) -> "Good"
-        supported_count >= trunc(total_count * 0.6) -> "Adequate"
-        true -> "Limited"
-      end
-
+    rating = compatibility_rating(supported_count, total_count)
     IO.puts("Terminal compatibility: #{rating}")
-
-    # Specific recommendations based on platform
-    platform = Platform.get_current_platform()
 
     missing_features =
       feature_results
       |> Enum.filter(fn {_, supported} -> !supported end)
       |> Enum.map(fn {feature, _} -> feature end)
 
-    if missing_features != [] do
-      IO.puts("\nRecommendations:")
+    print_recommendations(missing_features)
+  end
 
-      case platform do
-        :windows when :true_color in missing_features ->
-          IO.puts(
-            "- For better color support, use Windows Terminal instead of Command Prompt or PowerShell"
-          )
+  defp compatibility_rating(supported, total) when supported == total,
+    do: "Excellent"
 
-        :windows when :unicode in missing_features ->
-          IO.puts(
-            "- For better Unicode support, use Windows Terminal or install a TrueType font with Unicode support"
-          )
+  defp compatibility_rating(supported, total)
+       when supported >= trunc(total * 0.8), do: "Good"
 
-        :linux when :true_color in missing_features ->
-          IO.puts(
-            "- Use a terminal that supports true color (like GNOME Terminal, Konsole, or Kitty)"
-          )
+  defp compatibility_rating(supported, total)
+       when supported >= trunc(total * 0.6), do: "Adequate"
 
-          IO.puts("- Set TERM=xterm-256color in your environment")
+  defp compatibility_rating(_supported, _total), do: "Limited"
 
-        :linux when :clipboard in missing_features ->
-          IO.puts(
-            "- Install xclip (X11) or wl-clipboard (Wayland) for clipboard support"
-          )
+  defp print_recommendations([]), do: :ok
 
-        :macos when :true_color in missing_features ->
-          IO.puts(
-            "- For full color support, consider iTerm2 or Kitty instead of Terminal.app"
-          )
+  defp print_recommendations(missing_features) do
+    IO.puts("\nRecommendations:")
+    platform = Platform.get_current_platform()
+    print_platform_recommendations(platform, missing_features)
+  end
 
-        _ ->
-          IO.puts(
-            "- No specific recommendations for your platform and missing features"
-          )
-      end
+  defp print_platform_recommendations(:windows, missing) do
+    if :true_color in missing,
+      do:
+        IO.puts(
+          "- For better color support, use Windows Terminal instead of Command Prompt or PowerShell"
+        )
+
+    if :unicode in missing,
+      do:
+        IO.puts(
+          "- For better Unicode support, use Windows Terminal or install a TrueType font with Unicode support"
+        )
+
+    if :true_color not in missing and :unicode not in missing,
+      do:
+        IO.puts(
+          "- No specific recommendations for your platform and missing features"
+        )
+  end
+
+  defp print_platform_recommendations(:linux, missing) do
+    if :true_color in missing do
+      IO.puts(
+        "- Use a terminal that supports true color (like GNOME Terminal, Konsole, or Kitty)"
+      )
+
+      IO.puts("- Set TERM=xterm-256color in your environment")
     end
+
+    if :clipboard in missing,
+      do:
+        IO.puts(
+          "- Install xclip (X11) or wl-clipboard (Wayland) for clipboard support"
+        )
+
+    if :true_color not in missing and :clipboard not in missing,
+      do:
+        IO.puts(
+          "- No specific recommendations for your platform and missing features"
+        )
+  end
+
+  defp print_platform_recommendations(:macos, missing) do
+    if :true_color in missing,
+      do:
+        IO.puts(
+          "- For full color support, consider iTerm2 or Kitty instead of Terminal.app"
+        )
+
+    if :true_color not in missing,
+      do:
+        IO.puts(
+          "- No specific recommendations for your platform and missing features"
+        )
+  end
+
+  defp print_platform_recommendations(_platform, _missing) do
+    IO.puts(
+      "- No specific recommendations for your platform and missing features"
+    )
   end
 
   def write_results_file(platform_info, feature_results) do

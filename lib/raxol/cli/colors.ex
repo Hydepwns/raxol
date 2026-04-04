@@ -318,26 +318,24 @@ defmodule Raxol.CLI.Colors do
     b = box()
 
     top =
-      border_color.(
-        b.top_left <> String.duplicate(b.horizontal, width - 2) <> b.top_right
+      render_horizontal_border(
+        b.top_left,
+        b.horizontal,
+        b.top_right,
+        width,
+        border_color
       )
 
     bottom =
-      border_color.(
-        b.bottom_left <>
-          String.duplicate(b.horizontal, width - 2) <> b.bottom_right
+      render_horizontal_border(
+        b.bottom_left,
+        b.horizontal,
+        b.bottom_right,
+        width,
+        border_color
       )
 
-    padding = width - 4 - String.length(text)
-    left_pad = div(padding, 2)
-    right_pad = padding - left_pad
-
-    middle =
-      border_color.(b.vertical) <>
-        String.duplicate(" ", left_pad + 1) <>
-        text <>
-        String.duplicate(" ", right_pad + 1) <>
-        border_color.(b.vertical)
+    middle = render_content_line(text, b.vertical, width, border_color)
 
     """
     #{top}
@@ -345,5 +343,21 @@ defmodule Raxol.CLI.Colors do
     #{bottom}
     """
     |> String.trim_trailing()
+  end
+
+  defp render_horizontal_border(left, horizontal, right, width, color_fn) do
+    color_fn.(left <> String.duplicate(horizontal, width - 2) <> right)
+  end
+
+  defp render_content_line(text, vertical, width, color_fn) do
+    padding = width - 4 - String.length(text)
+    left_pad = div(padding, 2)
+    right_pad = padding - left_pad
+
+    color_fn.(vertical) <>
+      String.duplicate(" ", left_pad + 1) <>
+      text <>
+      String.duplicate(" ", right_pad + 1) <>
+      color_fn.(vertical)
   end
 end

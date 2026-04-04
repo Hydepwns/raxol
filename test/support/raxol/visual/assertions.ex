@@ -161,34 +161,36 @@ defmodule Raxol.Test.Visual.Assertions do
     output = Visual.capture_render(component)
     lines = String.split(output, "\n")
 
-    edges =
-      case edges == :all do
-        true -> [:top, :bottom, :left, :right]
-        false -> edges
+    resolved_edges =
+      case edges do
+        :all -> [:top, :bottom, :left, :right]
+        other -> other
       end
 
-    Enum.each(edges, fn edge ->
-      case edge do
-        :top ->
-          [first | _] = lines
-          assert String.trim(first) != "", "Top edge is not aligned"
+    Enum.each(resolved_edges, &assert_edge_aligned(&1, lines))
+  end
 
-        :bottom ->
-          last = List.last(lines)
-          assert String.trim(last) != "", "Bottom edge is not aligned"
+  defp assert_edge_aligned(:top, lines) do
+    [first | _] = lines
+    assert String.trim(first) != "", "Top edge is not aligned"
+  end
 
-        :left ->
-          Enum.each(lines, fn line ->
-            assert String.match?(line, ~r/^\S/), "Left edge is not aligned"
-          end)
+  defp assert_edge_aligned(:bottom, lines) do
+    last = List.last(lines)
+    assert String.trim(last) != "", "Bottom edge is not aligned"
+  end
 
-        :right ->
-          width = Enum.max_by(lines, &String.length/1) |> String.length()
+  defp assert_edge_aligned(:left, lines) do
+    Enum.each(lines, fn line ->
+      assert String.match?(line, ~r/^\S/), "Left edge is not aligned"
+    end)
+  end
 
-          Enum.each(lines, fn line ->
-            assert String.length(line) == width, "Right edge is not aligned"
-          end)
-      end
+  defp assert_edge_aligned(:right, lines) do
+    width = Enum.max_by(lines, &String.length/1) |> String.length()
+
+    Enum.each(lines, fn line ->
+      assert String.length(line) == width, "Right edge is not aligned"
     end)
   end
 

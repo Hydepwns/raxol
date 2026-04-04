@@ -17,29 +17,37 @@ defmodule Raxol.UI.Layout.Flexbox.Wrapper do
       Enum.reduce(
         children_with_dims,
         {[], [], 0},
-        fn {_child, dims, _flex} = item, {lines, current_line, current_size} ->
-          item_size = Positioner.get_dimension(dims, main_axis)
-
-          needed_size =
-            if current_line == [],
-              do: item_size,
-              else: current_size + gap_size + item_size
-
-          if needed_size <= available_main_size or current_line == [] do
-            {lines, [item | current_line], needed_size}
-          else
-            {[Enum.reverse(current_line) | lines], [item], item_size}
-          end
-        end
+        &accumulate_line_item(&1, &2, main_axis, gap_size, available_main_size)
       )
 
-    final_lines =
-      if current_line == [],
-        do: lines,
-        else: [Enum.reverse(current_line) | lines]
-
-    Enum.reverse(final_lines)
+    finalize_lines(lines, current_line)
   end
+
+  defp accumulate_line_item(
+         {_child, dims, _flex} = item,
+         {lines, current_line, current_size},
+         main_axis,
+         gap_size,
+         available_main_size
+       ) do
+    item_size = Positioner.get_dimension(dims, main_axis)
+
+    needed_size =
+      if current_line == [],
+        do: item_size,
+        else: current_size + gap_size + item_size
+
+    if needed_size <= available_main_size or current_line == [] do
+      {lines, [item | current_line], needed_size}
+    else
+      {[Enum.reverse(current_line) | lines], [item], item_size}
+    end
+  end
+
+  defp finalize_lines(lines, []), do: Enum.reverse(lines)
+
+  defp finalize_lines(lines, current_line),
+    do: Enum.reverse([Enum.reverse(current_line) | lines])
 
   @doc "Calculate the cross-axis height of a single line."
   def calculate_line_height(line_children, cross_axis) do

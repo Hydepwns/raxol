@@ -48,7 +48,25 @@ defmodule Raxol.Animation.AnimationProcessor do
     # Ensure state has proper structure for animations
     state_with_elements = PathManager.ensure_state_structure(state, [:elements])
 
-    # First, process completions due to re-adaptation
+    process_disabled_completions(completed_due_to_disable, user_preferences_pid)
+
+    {new_state, completed} =
+      reduce_active_animations(
+        active_animations,
+        state_with_elements,
+        now,
+        user_preferences_pid
+      )
+
+    remove_completed_animations(completed)
+
+    new_state
+  end
+
+  defp process_disabled_completions(
+         completed_due_to_disable,
+         user_preferences_pid
+       ) do
     Enum.each(completed_due_to_disable, fn {element_id, animation_name,
                                             instance} ->
       Lifecycle.handle_animation_completion(
@@ -61,28 +79,33 @@ defmodule Raxol.Animation.AnimationProcessor do
 
       StateManager.remove_active_animation(element_id, animation_name)
     end)
+  end
 
-    {new_state, completed} =
-      Enum.reduce(active_animations, {state_with_elements, []}, fn {element_id,
-                                                                    element_animations},
-                                                                   {current_state,
-                                                                    completed_list} ->
-        process_element_animations(
-          element_animations,
-          element_id,
-          current_state,
-          completed_list,
-          now,
-          user_preferences_pid
-        )
-      end)
+  defp reduce_active_animations(
+         active_animations,
+         state,
+         now,
+         user_preferences_pid
+       ) do
+    Enum.reduce(active_animations, {state, []}, fn {element_id,
+                                                    element_animations},
+                                                   {current_state,
+                                                    completed_list} ->
+      process_element_animations(
+        element_animations,
+        element_id,
+        current_state,
+        completed_list,
+        now,
+        user_preferences_pid
+      )
+    end)
+  end
 
-    # Remove completed animations from state manager
+  defp remove_completed_animations(completed) do
     Enum.each(completed, fn {element_id, animation_name} ->
       StateManager.remove_active_animation(element_id, animation_name)
     end)
-
-    new_state
   end
 
   defp process_element_animations(
@@ -182,18 +205,16 @@ defmodule Raxol.Animation.AnimationProcessor do
   defp calculate_current_value(animation, progress) do
     from = Map.get(animation, :from, 0)
     to = Map.get(animation, :to, 1)
-
-    case {from, to} do
-      {from_val, to_val} when is_number(from_val) and is_number(to_val) ->
-        from_val + (to_val - from_val) * progress
-
-      {from_val, to_val} when is_list(from_val) and is_list(to_val) ->
-        Enum.zip_with(from_val, to_val, fn f, t ->
-          interpolate_values(f, t, progress)
-        end)
-
-      _ ->
-        to
-    end
+    interpolate(from, to, progress)
   end
+
+  defp interpolate(from, to, progress) when is_number(from) and is_number(to) do
+    from + (to - from) * progress
+  end
+
+  defp interpolate(from, to, progress) when is_list(from) and is_list(to) do
+    Enum.zip_with(from, to, fn f, t -> interpolate_values(f, t, progress) end)
+  end
+
+  defp interpolate(_from, to, _progress), do: to
 end

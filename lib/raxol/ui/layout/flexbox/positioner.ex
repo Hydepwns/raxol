@@ -6,11 +6,7 @@ defmodule Raxol.UI.Layout.Flexbox.Positioner do
 
   @doc "Position sized children along the main axis."
   def position_main_axis(sized_children, space, flex_props, main_axis) do
-    total_size =
-      Enum.reduce(sized_children, 0, fn {_child, dims, _flex}, acc ->
-        acc + get_dimension(dims, main_axis)
-      end)
-
+    total_size = sum_main_sizes(sized_children, main_axis)
     gap_size = get_gap_size(flex_props.gap, main_axis)
     total_gaps = gap_size * max(0, length(sized_children) - 1)
     available_space = get_dimension(space, main_axis) - total_size - total_gaps
@@ -23,8 +19,28 @@ defmodule Raxol.UI.Layout.Flexbox.Positioner do
         gap_size
       )
 
-    start_coord = get_coord(space, main_axis) + start_pos
+    place_children_on_main_axis(
+      sized_children,
+      space,
+      main_axis,
+      get_coord(space, main_axis) + start_pos,
+      item_gap
+    )
+  end
 
+  defp sum_main_sizes(sized_children, main_axis) do
+    Enum.reduce(sized_children, 0, fn {_child, dims, _flex}, acc ->
+      acc + get_dimension(dims, main_axis)
+    end)
+  end
+
+  defp place_children_on_main_axis(
+         sized_children,
+         space,
+         main_axis,
+         start_coord,
+         item_gap
+       ) do
     {_, positioned} =
       Enum.reduce(sized_children, {start_coord, []}, fn {child, dims, flex},
                                                         {current_pos, acc} ->
@@ -145,13 +161,7 @@ defmodule Raxol.UI.Layout.Flexbox.Positioner do
         flex_props,
         cross_axis
       ) do
-    line_heights =
-      Enum.map(lines_with_layout, fn line ->
-        Enum.reduce(line, 0, fn item, acc ->
-          max(acc, get_dimension(item_space(item), cross_axis))
-        end)
-      end)
-
+    line_heights = compute_line_heights(lines_with_layout, cross_axis)
     total_line_height = Enum.sum(line_heights)
     available_space = get_dimension(space, cross_axis) - total_line_height
     gap_size = get_gap_size(flex_props.gap, cross_axis)
@@ -165,8 +175,30 @@ defmodule Raxol.UI.Layout.Flexbox.Positioner do
         gap_size
       )
 
-    start_coord = get_coord(space, cross_axis) + start_pos
+    place_lines_cross(
+      lines_with_layout,
+      line_heights,
+      cross_axis,
+      get_coord(space, cross_axis) + start_pos,
+      line_gap
+    )
+  end
 
+  defp compute_line_heights(lines_with_layout, cross_axis) do
+    Enum.map(lines_with_layout, fn line ->
+      Enum.reduce(line, 0, fn item, acc ->
+        max(acc, get_dimension(item_space(item), cross_axis))
+      end)
+    end)
+  end
+
+  defp place_lines_cross(
+         lines_with_layout,
+         line_heights,
+         cross_axis,
+         start_coord,
+         line_gap
+       ) do
     {_, positioned_lines} =
       lines_with_layout
       |> Enum.zip(line_heights)

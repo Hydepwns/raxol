@@ -257,40 +257,30 @@ defmodule Raxol.Style.Colors.Utilities do
   defp convert_to_linear(value), do: :math.pow((value + 0.055) / 1.055, 2.4)
 
   defp get_required_ratio(level, size) do
-    # Normalize to lowercase atoms for robust matching
-    norm_level =
-      case level do
-        l when is_atom(l) ->
-          String.downcase(Atom.to_string(l)) |> String.to_atom()
+    norm_level = normalize_to_atom(level, :aa)
+    norm_size = normalize_to_atom(size, :normal)
+    ratio_for_level_and_size(norm_level, norm_size)
+  end
 
-        l when is_binary(l) ->
-          String.downcase(l) |> String.to_atom()
+  defp normalize_to_atom(v, _default) when is_atom(v),
+    do: v |> Atom.to_string() |> String.downcase() |> String.to_atom()
 
-        _ ->
-          :aa
-      end
+  defp normalize_to_atom(v, _default) when is_binary(v),
+    do: v |> String.downcase() |> String.to_atom()
 
-    norm_size =
-      case size do
-        s when is_atom(s) ->
-          String.downcase(Atom.to_string(s)) |> String.to_atom()
+  defp normalize_to_atom(_, default), do: default
 
-        s when is_binary(s) ->
-          String.downcase(s) |> String.to_atom()
+  @ratio_map %{
+    {:a, :normal} => 3.0,
+    {:a, :large} => 3.0,
+    {:aa, :normal} => 4.5,
+    {:aa, :large} => 3.0,
+    {:aaa, :normal} => 7.0,
+    {:aaa, :large} => 4.5
+  }
 
-        _ ->
-          :normal
-      end
-
-    case {norm_level, norm_size} do
-      {:a, :normal} -> 3.0
-      {:a, :large} -> 3.0
-      {:aa, :normal} -> 4.5
-      {:aa, :large} -> 3.0
-      {:aaa, :normal} -> 7.0
-      {:aaa, :large} -> 4.5
-      _ -> 4.5
-    end
+  defp ratio_for_level_and_size(level, size) do
+    Map.get(@ratio_map, {level, size}, 4.5)
   end
 
   defp darken_until_contrast(

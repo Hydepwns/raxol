@@ -260,36 +260,38 @@ defmodule Raxol.Swarm.Topology do
 
   defp run_election(%__MODULE__{} = state) do
     state = %__MODULE__{state | election_state: :electing}
-
-    if map_size(state.nodes) < state.quorum_size do
-      Logger.warning(
-        "Swarm topology: no quorum (#{map_size(state.nodes)}/#{state.quorum_size})"
-      )
-
-      %__MODULE__{state | commander: nil, election_state: :stable}
-    else
-      # Seniority election: node with earliest joined_at wins
-      {winner, _info} =
-        state.nodes
-        |> Enum.min_by(fn {_node, info} -> info.joined_at end)
-
-      Logger.info("Swarm topology: elected commander: #{winner}")
-
-      nodes =
-        Map.new(state.nodes, fn {node, info} ->
-          new_role = if node == winner, do: :commander, else: :wingmate
-          {node, %{info | role: new_role}}
-        end)
-
-      own_role = if state.node_id == winner, do: :commander, else: :wingmate
-
-      %__MODULE__{
-        state
-        | nodes: nodes,
-          commander: winner,
-          role: own_role,
-          election_state: :stable
-      }
-    end
+    elect_if_quorum(state, map_size(state.nodes) >= state.quorum_size)
   end
+
+  defp elect_if_quorum(%__MODULE__{} = state, false) do
+    Logger.warning(
+      "Swarm topology: no quorum (#{map_size(state.nodes)}/#{state.quorum_size})"
+    )
+
+    %__MODULE__{state | commander: nil, election_state: :stable}
+  end
+
+  defp elect_if_quorum(%__MODULE__{} = state, true) do
+    {winner, _info} =
+      state.nodes
+      |> Enum.min_by(fn {_node, info} -> info.joined_at end)
+
+    Logger.info("Swarm topology: elected commander: #{winner}")
+
+    nodes =
+      Map.new(state.nodes, fn {node, info} ->
+        {node, %{info | role: role_for_node(node, winner)}}
+      end)
+
+    %__MODULE__{
+      state
+      | nodes: nodes,
+        commander: winner,
+        role: role_for_node(state.node_id, winner),
+        election_state: :stable
+    }
+  end
+
+  defp role_for_node(node, winner) when node == winner, do: :commander
+  defp role_for_node(_node, _winner), do: :wingmate
 end

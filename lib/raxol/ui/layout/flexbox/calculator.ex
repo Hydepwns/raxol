@@ -102,43 +102,9 @@ defmodule Raxol.UI.Layout.Flexbox.Calculator do
 
   @doc "Distribute flex children across available space."
   def distribute_flex(children, available_space, gap, size_key, pos_key) do
-    raw_flex = Enum.map(children, fn child -> Map.get(child, :flex, 1) end)
-    total_flex = Enum.sum(raw_flex)
-
-    flex_values =
-      if total_flex == 0 do
-        Enum.map(raw_flex, fn _ -> 1 end)
-      else
-        raw_flex
-      end
-
+    flex_values = normalize_flex_values(children)
     total_flex = max(Enum.sum(flex_values), 1)
-
-    base_sizes =
-      Enum.map(flex_values, fn flex ->
-        div(available_space * flex, total_flex)
-      end)
-
-    remainder = available_space - Enum.sum(base_sizes)
-
-    fractional_parts =
-      flex_values
-      |> Enum.with_index()
-      |> Enum.map(fn {flex, idx} ->
-        exact = available_space * flex / total_flex
-        {exact - Enum.at(base_sizes, idx), idx}
-      end)
-      |> Enum.sort_by(fn {frac, _} -> frac end, :desc)
-      |> Enum.take(remainder)
-      |> Enum.map(fn {_, idx} -> idx end)
-      |> MapSet.new()
-
-    sizes =
-      base_sizes
-      |> Enum.with_index()
-      |> Enum.map(fn {size, idx} ->
-        if MapSet.member?(fractional_parts, idx), do: size + 1, else: size
-      end)
+    sizes = compute_flex_sizes(flex_values, available_space, total_flex)
 
     {laid_out, _} =
       children
@@ -153,6 +119,55 @@ defmodule Raxol.UI.Layout.Flexbox.Calculator do
       end)
 
     laid_out
+  end
+
+  defp normalize_flex_values(children) do
+    raw_flex = Enum.map(children, fn child -> Map.get(child, :flex, 1) end)
+
+    if Enum.sum(raw_flex) == 0,
+      do: Enum.map(raw_flex, fn _ -> 1 end),
+      else: raw_flex
+  end
+
+  defp compute_flex_sizes(flex_values, available_space, total_flex) do
+    base_sizes =
+      Enum.map(flex_values, fn flex ->
+        div(available_space * flex, total_flex)
+      end)
+
+    bonus_indices =
+      compute_bonus_indices(
+        flex_values,
+        base_sizes,
+        available_space,
+        total_flex
+      )
+
+    base_sizes
+    |> Enum.with_index()
+    |> Enum.map(fn {size, idx} ->
+      if MapSet.member?(bonus_indices, idx), do: size + 1, else: size
+    end)
+  end
+
+  defp compute_bonus_indices(
+         flex_values,
+         base_sizes,
+         available_space,
+         total_flex
+       ) do
+    remainder = available_space - Enum.sum(base_sizes)
+
+    flex_values
+    |> Enum.with_index()
+    |> Enum.map(fn {flex, idx} ->
+      exact = available_space * flex / total_flex
+      {exact - Enum.at(base_sizes, idx), idx}
+    end)
+    |> Enum.sort_by(fn {frac, _} -> frac end, :desc)
+    |> Enum.take(remainder)
+    |> Enum.map(fn {_, idx} -> idx end)
+    |> MapSet.new()
   end
 
   # ---------------------------------------------------------------------------

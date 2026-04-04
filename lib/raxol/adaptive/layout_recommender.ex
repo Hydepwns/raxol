@@ -125,34 +125,7 @@ defmodule Raxol.Adaptive.LayoutRecommender do
     if on_cooldown?(state, now) do
       {:noreply, state}
     else
-      case apply_rules(aggregate, state) do
-        {:recommend, changes, confidence, reasoning}
-        when confidence >= state.confidence_threshold ->
-          rec =
-            %{
-              id: generate_id(),
-              layout_changes: changes,
-              confidence: confidence,
-              reasoning: reasoning,
-              timestamp: now
-            }
-            |> maybe_attach_features(aggregate, state)
-
-          Enum.each(state.subscribers, fn pid ->
-            send(pid, {:layout_recommendation, rec})
-          end)
-
-          state = %__MODULE__{
-            state
-            | last_recommendation: rec,
-              last_recommendation_at: now
-          }
-
-          {:noreply, state}
-
-        _ ->
-          {:noreply, state}
-      end
+      handle_behavior_aggregate(aggregate, state, now)
     end
   end
 
@@ -166,6 +139,43 @@ defmodule Raxol.Adaptive.LayoutRecommender do
   def handle_info(msg, %__MODULE__{} = state) do
     Logger.debug("#{__MODULE__} received unexpected message: #{inspect(msg)}")
     {:noreply, state}
+  end
+
+  # -- Private: Behavior Aggregate Processing --
+
+  defp handle_behavior_aggregate(aggregate, %__MODULE__{} = state, now) do
+    case apply_rules(aggregate, state) do
+      {:recommend, changes, confidence, reasoning}
+      when confidence >= state.confidence_threshold ->
+        rec =
+          %{
+            id: generate_id(),
+            layout_changes: changes,
+            confidence: confidence,
+            reasoning: reasoning,
+            timestamp: now
+          }
+          |> maybe_attach_features(aggregate, state)
+
+        notify_subscribers(state.subscribers, rec)
+
+        new_state = %__MODULE__{
+          state
+          | last_recommendation: rec,
+            last_recommendation_at: now
+        }
+
+        {:noreply, new_state}
+
+      _ ->
+        {:noreply, state}
+    end
+  end
+
+  defp notify_subscribers(subscribers, rec) do
+    Enum.each(subscribers, fn pid ->
+      send(pid, {:layout_recommendation, rec})
+    end)
   end
 
   # -- Private: Rules --

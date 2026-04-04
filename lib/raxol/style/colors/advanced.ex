@@ -241,39 +241,18 @@ defmodule Raxol.Style.Colors.Advanced do
   end
 
   defp rgb_to_lab(%Color{} = color) do
-    # Convert RGB to XYZ first
     xyz = rgb_to_xyz(color)
 
-    # Then convert XYZ to Lab
-    # This is a simplified conversion - a full implementation would be more complex
-    x = xyz.x / 95.047
-    y = xyz.y / 100.0
-    z = xyz.z / 108.883
+    x = lab_f(xyz.x / 95.047)
+    y = lab_f(xyz.y / 100.0)
+    z = lab_f(xyz.z / 108.883)
 
-    x =
-      case x > 0.008856 do
-        true -> :math.pow(x, 1 / 3)
-        false -> 7.787 * x + 16 / 116
-      end
-
-    y =
-      case y > 0.008856 do
-        true -> :math.pow(y, 1 / 3)
-        false -> 7.787 * y + 16 / 116
-      end
-
-    z =
-      case z > 0.008856 do
-        true -> :math.pow(z, 1 / 3)
-        false -> 7.787 * z + 16 / 116
-      end
-
-    l = 116 * y - 16
-    a = 500 * (x - y)
-    b = 200 * (y - z)
-
-    %{l: l, a: a, b: b}
+    %{l: 116 * y - 16, a: 500 * (x - y), b: 200 * (y - z)}
   end
+
+  @lab_threshold 0.008856
+  defp lab_f(v) when v > @lab_threshold, do: :math.pow(v, 1 / 3)
+  defp lab_f(v), do: 7.787 * v + 16 / 116
 
   defp rgb_to_xyz(%Color{r: r, g: g, b: b}) do
     # Convert RGB to XYZ using standard conversion matrix

@@ -576,68 +576,40 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
   end
 
   defp determine_optimizations(analysis, state) do
-    optimizations = []
+    thresholds = state.adaptive_thresholds
 
-    # Response time optimizations
-    optimizations =
-      case analysis.avg_response_time >
-             state.adaptive_thresholds.slow_operation_threshold do
-        true ->
-          [
-            {:optimize_slow_operations, analysis.avg_response_time}
-            | optimizations
-          ]
-
-        false ->
-          optimizations
-      end
-
-    # Cache optimizations
-    optimizations =
-      case analysis.cache_hit_rate <
-             state.adaptive_thresholds.low_cache_hit_rate do
-        true ->
-          [
-            {:optimize_cache_configuration, analysis.cache_hit_rate}
-            | optimizations
-          ]
-
-        false ->
-          optimizations
-      end
-
-    # Memory pressure optimizations
-    optimizations =
-      case analysis.memory_pressure >
-             state.adaptive_thresholds.high_memory_threshold do
-        true ->
-          [{:optimize_memory_usage, analysis.memory_pressure} | optimizations]
-
-        false ->
-          optimizations
-      end
-
-    # Workload-specific optimizations
-    workload_optimizations =
-      case analysis.workload_type do
-        :heavy ->
-          [{:scale_up_resources, :heavy_workload}]
-
-        :extreme ->
-          [
-            {:scale_up_resources, :extreme_workload},
-            {:enable_performance_mode, true}
-          ]
-
-        :light ->
-          [{:scale_down_resources, :light_workload}]
-
-        _ ->
-          []
-      end
-
-    optimizations ++ workload_optimizations
+    []
+    |> maybe_add_optimization(
+      analysis.avg_response_time > thresholds.slow_operation_threshold,
+      {:optimize_slow_operations, analysis.avg_response_time}
+    )
+    |> maybe_add_optimization(
+      analysis.cache_hit_rate < thresholds.low_cache_hit_rate,
+      {:optimize_cache_configuration, analysis.cache_hit_rate}
+    )
+    |> maybe_add_optimization(
+      analysis.memory_pressure > thresholds.high_memory_threshold,
+      {:optimize_memory_usage, analysis.memory_pressure}
+    )
+    |> Enum.concat(workload_optimizations(analysis.workload_type))
   end
+
+  defp maybe_add_optimization(list, true, item), do: [item | list]
+  defp maybe_add_optimization(list, false, _item), do: list
+
+  defp workload_optimizations(:heavy),
+    do: [{:scale_up_resources, :heavy_workload}]
+
+  defp workload_optimizations(:extreme),
+    do: [
+      {:scale_up_resources, :extreme_workload},
+      {:enable_performance_mode, true}
+    ]
+
+  defp workload_optimizations(:light),
+    do: [{:scale_down_resources, :light_workload}]
+
+  defp workload_optimizations(_), do: []
 
   defp apply_optimizations(optimizations, state) do
     Enum.map(optimizations, fn optimization ->

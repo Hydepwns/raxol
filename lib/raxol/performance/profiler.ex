@@ -444,49 +444,16 @@ defmodule Raxol.Performance.Profiler do
     metadata = Keyword.get(opts, :metadata, %{})
     trace = Keyword.get(opts, :trace, false)
 
-    # Collect initial metrics
-    gc_before = :erlang.statistics(:garbage_collection)
-    {:memory, memory_before} = Process.info(self(), :memory)
-    {reductions_before, _} = :erlang.statistics(:reductions)
-
-    # Start timing
-    start_time = System.monotonic_time(:microsecond)
-
-    # Enable tracing if requested
+    before = collect_metrics_snapshot()
     _ = enable_tracing_if_requested(trace)
 
-    # Execute the function with functional error handling
     case Raxol.Core.ErrorHandling.safe_call_with_info(fun) do
       {:ok, result} ->
-        # Collect final metrics
-        end_time = System.monotonic_time(:microsecond)
-        gc_after = :erlang.statistics(:garbage_collection)
-        {:memory, memory_after} = Process.info(self(), :memory)
-        {reductions_after, _} = :erlang.statistics(:reductions)
-
-        # Stop tracing
+        after_snap = collect_metrics_snapshot()
         disable_tracing_if_enabled(trace)
 
-        # Build metrics
-        metrics = %Metrics{
-          operation: operation,
-          start_time: start_time,
-          end_time: end_time,
-          duration_us: end_time - start_time,
-          memory_before: memory_before,
-          memory_after: memory_after,
-          memory_delta: memory_after - memory_before,
-          gc_before: elem(gc_before, 0),
-          gc_after: elem(gc_after, 0),
-          gc_runs: elem(gc_after, 0) - elem(gc_before, 0),
-          reductions: reductions_after - reductions_before,
-          metadata: metadata
-        }
-
-        # Record the profile
+        metrics = build_metrics(operation, before, after_snap, metadata)
         GenServer.call(__MODULE__, {:record_profile, metrics})
-
-        # Log if slow (> 1 second)
         log_slow_operation_if_needed(operation, metrics)
 
         result
@@ -495,6 +462,36 @@ defmodule Raxol.Performance.Profiler do
         disable_tracing_if_enabled(trace)
         :erlang.raise(kind, error, stacktrace)
     end
+  end
+
+  defp collect_metrics_snapshot do
+    gc = :erlang.statistics(:garbage_collection)
+    {:memory, memory} = Process.info(self(), :memory)
+    {reductions, _} = :erlang.statistics(:reductions)
+
+    %{
+      time: System.monotonic_time(:microsecond),
+      gc: gc,
+      memory: memory,
+      reductions: reductions
+    }
+  end
+
+  defp build_metrics(operation, before, after_snap, metadata) do
+    %Metrics{
+      operation: operation,
+      start_time: before.time,
+      end_time: after_snap.time,
+      duration_us: after_snap.time - before.time,
+      memory_before: before.memory,
+      memory_after: after_snap.memory,
+      memory_delta: after_snap.memory - before.memory,
+      gc_before: elem(before.gc, 0),
+      gc_after: elem(after_snap.gc, 0),
+      gc_runs: elem(after_snap.gc, 0) - elem(before.gc, 0),
+      reductions: after_snap.reductions - before.reductions,
+      metadata: metadata
+    }
   end
 
   def analyze_benchmark_results(operation, times) do
@@ -600,38 +597,15 @@ defmodule Raxol.Performance.Profiler do
   end
 
   defp analyze_for_optimizations(state) do
-    profiles_by_op = Enum.group_by(state.profiles, & &1.operation)
+    state.profiles
+    |> Enum.group_by(& &1.operation)
+    |> Enum.flat_map(&analyze_operation_group/1)
+  end
 
-    suggestions = []
-
-    # Check for slow operations
-    suggestions =
-      suggestions ++
-        Enum.flat_map(profiles_by_op, fn {op, profiles} ->
-          avg = average_duration(profiles)
-          # > 100ms
-          check_slow_operation_suggestion(op, avg)
-        end)
-
-    # Check for high memory operations
-    suggestions =
-      suggestions ++
-        Enum.flat_map(profiles_by_op, fn {op, profiles} ->
-          avg_mem = average_memory(profiles)
-          # > 1MB
-          check_high_memory_suggestion(op, avg_mem)
-        end)
-
-    # Check for GC pressure
-    suggestions =
-      suggestions ++
-        Enum.flat_map(profiles_by_op, fn {op, profiles} ->
-          gc_pressure = calculate_gc_pressure(profiles)
-          # > 0.5 GCs per call
-          check_gc_pressure_suggestion(op, gc_pressure)
-        end)
-
-    suggestions
+  defp analyze_operation_group({op, profiles}) do
+    check_slow_operation_suggestion(op, average_duration(profiles)) ++
+      check_high_memory_suggestion(op, average_memory(profiles)) ++
+      check_gc_pressure_suggestion(op, calculate_gc_pressure(profiles))
   end
 
   defp average_duration(profiles) do

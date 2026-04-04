@@ -60,23 +60,26 @@ defmodule Raxol.Core.Runtime.ProcessStoreTest do
 
     def get_and_update(pid, key, fun) do
       Agent.get_and_update(pid, fn state ->
-        case Map.fetch(state, key) do
-          {:ok, value} ->
-            case fun.(value) do
-              {get_value, new_value} -> {get_value, Map.put(state, key, new_value)}
-              :pop -> {value, Map.delete(state, key)}
-            end
+        {value, found} =
+          case Map.fetch(state, key) do
+            {:ok, v} -> {v, true}
+            :error -> {nil, false}
+          end
 
-          :error ->
-            case fun.(nil) do
-              {get_value, new_value} -> {get_value, Map.put(state, key, new_value)}
-              :pop -> {nil, state}
-            end
-        end
+        apply_update_fn(fun.(value), key, value, found, state)
       end)
     catch
       :exit, _ -> nil
     end
+
+    defp apply_update_fn({get_value, new_value}, key, _value, _found, state),
+      do: {get_value, Map.put(state, key, new_value)}
+
+    defp apply_update_fn(:pop, key, value, true, state),
+      do: {value, Map.delete(state, key)}
+
+    defp apply_update_fn(:pop, _key, _value, false, state),
+      do: {nil, state}
   end
 
   setup do
@@ -214,13 +217,20 @@ defmodule Raxol.Core.Runtime.ProcessStoreTest do
   describe "get_and_update/3" do
     test "returns current value and updates atomically", %{store: pid} do
       TestStore.put(pid, :counter, 5)
-      result = TestStore.get_and_update(pid, :counter, fn val -> {val, val + 1} end)
+
+      result =
+        TestStore.get_and_update(pid, :counter, fn val -> {val, val + 1} end)
+
       assert result == 5
       assert TestStore.get(pid, :counter) == 6
     end
 
     test "handles missing key by passing nil to function", %{store: pid} do
-      result = TestStore.get_and_update(pid, :missing, fn nil -> {:was_nil, "now_set"} end)
+      result =
+        TestStore.get_and_update(pid, :missing, fn nil ->
+          {:was_nil, "now_set"}
+        end)
+
       assert result == :was_nil
       assert TestStore.get(pid, :missing) == "now_set"
     end
@@ -279,7 +289,9 @@ defmodule Raxol.Core.Runtime.ProcessStoreTest do
     test "get_and_update returns nil when store is dead" do
       {:ok, pid} = TestStore.start_link()
       Agent.stop(pid)
-      assert TestStore.get_and_update(pid, :key, fn val -> {val, val} end) == nil
+
+      assert TestStore.get_and_update(pid, :key, fn val -> {val, val} end) ==
+               nil
     end
   end
 end

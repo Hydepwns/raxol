@@ -257,26 +257,23 @@ defmodule Raxol.Themes do
 
   defp convert_color_value(color), do: color
 
-  defp parse_hex_color("#" <> hex) do
-    case String.length(hex) do
-      6 ->
-        # RGB
-        {r, _} = Integer.parse(String.slice(hex, 0, 2), 16)
-        {g, _} = Integer.parse(String.slice(hex, 2, 2), 16)
-        {b, _} = Integer.parse(String.slice(hex, 4, 2), 16)
-        {r, g, b}
+  defp parse_hex_color("#" <> hex) when byte_size(hex) == 6 do
+    parse_hex_rgb(hex)
+  end
 
-      8 ->
-        # RGBA
-        {r, _} = Integer.parse(String.slice(hex, 0, 2), 16)
-        {g, _} = Integer.parse(String.slice(hex, 2, 2), 16)
-        {b, _} = Integer.parse(String.slice(hex, 4, 2), 16)
-        {a, _} = Integer.parse(String.slice(hex, 6, 2), 16)
-        {r, g, b, a}
+  defp parse_hex_color("#" <> hex) when byte_size(hex) == 8 do
+    {r, g, b} = parse_hex_rgb(hex)
+    {a, _} = Integer.parse(String.slice(hex, 6, 2), 16)
+    {r, g, b, a}
+  end
 
-      _ ->
-        :default
-    end
+  defp parse_hex_color("#" <> _hex), do: :default
+
+  defp parse_hex_rgb(hex) do
+    {r, _} = Integer.parse(String.slice(hex, 0, 2), 16)
+    {g, _} = Integer.parse(String.slice(hex, 2, 2), 16)
+    {b, _} = Integer.parse(String.slice(hex, 4, 2), 16)
+    {r, g, b}
   end
 
   defp notify_theme_callbacks(theme, callbacks) do

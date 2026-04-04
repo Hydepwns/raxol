@@ -22,40 +22,14 @@ defmodule Raxol.UI.Layout.CSSGrid.Sizing do
   end
 
   def size_track_list(items, tracks, direction, available_space, grid_props) do
-    first_pass_tracks =
-      Enum.map(tracks, fn track ->
-        case track.type do
-          :fixed ->
-            track
-
-          :auto ->
-            calculate_auto_track_size(track, items, direction)
-
-          :min_content ->
-            calculate_min_content_track_size(track, items, direction)
-
-          :max_content ->
-            calculate_max_content_track_size(track, items, direction)
-
-          :minmax ->
-            calculate_minmax_track_size(track, items, direction)
-
-          _ ->
-            track
-        end
-      end)
+    first_pass_tracks = resolve_intrinsic_tracks(tracks, items, direction)
 
     used_space =
       Enum.reduce(first_pass_tracks, 0, fn track, acc ->
         accumulate_non_fr_space(track.type == :fr, track.value, acc)
       end)
 
-    gap_space =
-      case direction do
-        :column -> grid_props.gap.column * max(0, length(tracks) - 1)
-        :row -> grid_props.gap.row * max(0, length(tracks) - 1)
-      end
-
+    gap_space = calculate_gap_space(direction, grid_props, tracks)
     remaining_space = max(0, available_space - used_space - gap_space)
 
     total_fr =
@@ -70,6 +44,36 @@ defmodule Raxol.UI.Layout.CSSGrid.Sizing do
       finalize_track_size(track.type == :fr, track, fr_unit_size)
     end)
   end
+
+  defp resolve_intrinsic_tracks(tracks, items, direction) do
+    Enum.map(tracks, fn track ->
+      case track.type do
+        :fixed ->
+          track
+
+        :auto ->
+          calculate_auto_track_size(track, items, direction)
+
+        :min_content ->
+          calculate_min_content_track_size(track, items, direction)
+
+        :max_content ->
+          calculate_max_content_track_size(track, items, direction)
+
+        :minmax ->
+          calculate_minmax_track_size(track, items, direction)
+
+        _ ->
+          track
+      end
+    end)
+  end
+
+  defp calculate_gap_space(:column, grid_props, tracks),
+    do: grid_props.gap.column * max(0, length(tracks) - 1)
+
+  defp calculate_gap_space(:row, grid_props, tracks),
+    do: grid_props.gap.row * max(0, length(tracks) - 1)
 
   # ---------------------------------------------------------------------------
   # Track size helpers

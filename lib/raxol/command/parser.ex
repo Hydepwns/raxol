@@ -90,16 +90,19 @@ defmodule Raxol.Command.Parser do
          {:ok, command, args} <- extract_command(tokens),
          resolved_command <- resolve_alias(parser, command),
          {:ok, handler} <- get_handler(parser, resolved_command) do
-      case handler.(args) do
-        {:ok, result} ->
-          new_parser = add_to_history(parser, command_str)
-          {:ok, result, new_parser}
-
-        {:error, reason} ->
-          {:error, reason, parser}
-      end
+      invoke_handler(parser, handler, args, command_str)
     else
       {:error, reason} -> {:error, reason, parser}
+    end
+  end
+
+  defp invoke_handler(parser, handler, args, command_str) do
+    case handler.(args) do
+      {:ok, result} ->
+        {:ok, result, add_to_history(parser, command_str)}
+
+      {:error, reason} ->
+        {:error, reason, parser}
     end
   end
 

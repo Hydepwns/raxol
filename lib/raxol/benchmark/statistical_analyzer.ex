@@ -11,10 +11,15 @@ defmodule Raxol.Benchmark.StatisticalAnalyzer do
   """
   def analyze(results) when is_list(results) do
     sorted = Enum.sort(results)
-    count = length(results)
 
+    basic_stats(results, sorted)
+    |> Map.merge(distribution_stats(results, sorted))
+    |> Map.merge(shape_stats(results))
+  end
+
+  defp basic_stats(results, sorted) do
     %{
-      count: count,
+      count: length(results),
       mean: calculate_mean(results),
       median: calculate_median(sorted),
       mode: calculate_mode(results),
@@ -22,16 +27,26 @@ defmodule Raxol.Benchmark.StatisticalAnalyzer do
       variance: calculate_variance(results),
       min: List.first(sorted),
       max: List.last(sorted),
-      range: List.last(sorted) - List.first(sorted),
+      range: List.last(sorted) - List.first(sorted)
+    }
+  end
+
+  defp distribution_stats(results, sorted) do
+    %{
       percentiles: calculate_percentiles(sorted),
       iqr: calculate_iqr(sorted),
       outliers: detect_outliers(sorted),
       distribution: analyze_distribution(results),
       confidence_intervals: calculate_confidence_intervals(results),
+      histogram: generate_histogram(results)
+    }
+  end
+
+  defp shape_stats(results) do
+    %{
       coefficient_of_variation: calculate_cv(results),
       skewness: calculate_skewness(results),
-      kurtosis: calculate_kurtosis(results),
-      histogram: generate_histogram(results)
+      kurtosis: calculate_kurtosis(results)
     }
   end
 
@@ -149,31 +164,12 @@ defmodule Raxol.Benchmark.StatisticalAnalyzer do
   Perform Mann-Whitney U test (non-parametric).
   """
   def mann_whitney_u_test(sample1, sample2) do
-    combined =
-      Enum.concat(sample1, sample2)
-      |> Enum.with_index()
-      |> Enum.sort_by(&elem(&1, 0))
-
-    # Assign ranks
-    ranked = assign_ranks(combined)
-
-    # Calculate U statistics
+    ranked = rank_combined_samples(sample1, sample2)
     n1 = length(sample1)
     n2 = length(sample2)
 
-    r1 =
-      ranked
-      |> Enum.filter(fn {_val, idx, _rank} -> idx < n1 end)
-      |> Enum.map(fn {_val, _idx, rank} -> rank end)
-      |> Enum.sum()
-
-    u1 = r1 - n1 * (n1 + 1) / 2
-    u2 = n1 * n2 - u1
-
-    # Calculate z-score for large samples
-    mean_u = n1 * n2 / 2
-    std_u = :math.sqrt(n1 * n2 * (n1 + n2 + 1) / 12)
-    z = (min(u1, u2) - mean_u) / std_u
+    {u1, u2} = compute_u_statistics(ranked, n1, n2)
+    z = compute_u_z_score(u1, u2, n1, n2)
 
     %{
       u1: u1,
@@ -182,6 +178,31 @@ defmodule Raxol.Benchmark.StatisticalAnalyzer do
       z_score: z,
       p_value: calculate_p_value(z, :two_tailed)
     }
+  end
+
+  defp rank_combined_samples(sample1, sample2) do
+    Enum.concat(sample1, sample2)
+    |> Enum.with_index()
+    |> Enum.sort_by(&elem(&1, 0))
+    |> assign_ranks()
+  end
+
+  defp compute_u_statistics(ranked, n1, n2) do
+    r1 =
+      ranked
+      |> Enum.filter(fn {_val, idx, _rank} -> idx < n1 end)
+      |> Enum.map(fn {_val, _idx, rank} -> rank end)
+      |> Enum.sum()
+
+    u1 = r1 - n1 * (n1 + 1) / 2
+    u2 = n1 * n2 - u1
+    {u1, u2}
+  end
+
+  defp compute_u_z_score(u1, u2, n1, n2) do
+    mean_u = n1 * n2 / 2
+    std_u = :math.sqrt(n1 * n2 * (n1 + n2 + 1) / 12)
+    (min(u1, u2) - mean_u) / std_u
   end
 
   @doc """

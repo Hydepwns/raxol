@@ -270,22 +270,22 @@ defmodule Raxol.Recording.Player do
     end
   end
 
-  defp parse_key(char) do
-    case char do
-      ?q -> :quit
-      ?\e -> :quit
-      ?\s -> :pause
-      ?+ -> :speed_up
-      ?= -> :speed_up
-      ?- -> :speed_down
-      ?> -> :seek_forward
-      ?. -> :seek_forward
-      ?< -> :seek_backward
-      ?, -> :seek_backward
-      n when n in ?0..?9 -> {:jump, (n - ?0) * 10}
-      _ -> :unknown
-    end
-  end
+  @key_map %{
+    ?q => :quit,
+    ?\e => :quit,
+    ?\s => :pause,
+    ?+ => :speed_up,
+    ?= => :speed_up,
+    ?- => :speed_down,
+    ?> => :seek_forward,
+    ?. => :seek_forward,
+    ?< => :seek_backward,
+    ?, => :seek_backward
+  }
+
+  defp parse_key(char) when is_map_key(@key_map, char), do: @key_map[char]
+  defp parse_key(char) when char in ?0..?9, do: {:jump, (char - ?0) * 10}
+  defp parse_key(_char), do: :unknown
 
   # -- Speed steps --
 

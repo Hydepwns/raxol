@@ -30,51 +30,83 @@ defmodule Raxol.UI.Charts.Heatmap do
   def render(region, data, opts \\ [])
   def render(_region, [], _opts), do: []
 
+  def render({_x, _y, _w, _h}, data, _opts) when data == [], do: []
+
   def render({x, y, w, h}, data, opts) do
-    color_scale = Keyword.get(opts, :color_scale, :warm)
-    show_values = Keyword.get(opts, :show_values, false)
-    cell_char = Keyword.get(opts, :cell_char, " ")
-
     all_values = List.flatten(data)
+    render_nonempty({x, y, w, h}, data, all_values, opts)
+  end
 
-    case all_values do
-      [] ->
-        []
+  defp render_nonempty(_region, _data, [], _opts), do: []
 
-      _ ->
-        {val_min, val_max} = ChartUtils.resolve_range(all_values, opts)
+  defp render_nonempty({x, y, w, h}, data, all_values, opts) do
+    ctx = build_heatmap_context({x, y, w, h}, data, all_values, opts)
 
-        num_rows = length(data)
-        num_cols = data |> Enum.map(&length/1) |> Enum.max(fn -> 0 end)
+    data
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {row, row_idx} ->
+      render_heatmap_row(row, row_idx, ctx)
+    end)
+  end
 
-        # Scale grid cells to fit region
-        cell_w = max(div(w, max(num_cols, 1)), 1)
-        cell_h = max(div(h, max(num_rows, 1)), 1)
+  defp build_heatmap_context({x, y, w, h}, data, all_values, opts) do
+    {val_min, val_max} = ChartUtils.resolve_range(all_values, opts)
+    num_rows = length(data)
+    num_cols = data |> Enum.map(&length/1) |> Enum.max(fn -> 0 end)
 
-        data
-        |> Enum.with_index()
-        |> Enum.flat_map(fn {row, row_idx} ->
-          row
-          |> Enum.with_index()
-          |> Enum.flat_map(fn {value, col_idx} ->
-            cx = x + col_idx * cell_w
-            cy = y + row_idx * cell_h
+    %{
+      x: x,
+      y: y,
+      cell_w: max(div(w, max(num_cols, 1)), 1),
+      cell_h: max(div(h, max(num_rows, 1)), 1),
+      color_scale: Keyword.get(opts, :color_scale, :warm),
+      show_values: Keyword.get(opts, :show_values, false),
+      cell_char: Keyword.get(opts, :cell_char, " "),
+      val_min: val_min,
+      val_max: val_max
+    }
+  end
 
-            {fg, bg} = resolve_color(color_scale, value, val_min, val_max)
+  defp render_heatmap_row(row, row_idx, ctx) do
+    row
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {value, col_idx} ->
+      cx = ctx.x + col_idx * ctx.cell_w
+      cy = ctx.y + row_idx * ctx.cell_h
+      {fg, bg} = resolve_color(ctx.color_scale, value, ctx.val_min, ctx.val_max)
 
-            if show_values do
-              label =
-                ChartUtils.format_number(value)
-                |> String.slice(0, cell_w)
-                |> String.pad_trailing(cell_w)
+      cell = %{cx: cx, cy: cy, w: ctx.cell_w, h: ctx.cell_h, fg: fg, bg: bg}
+      render_heatmap_cell(ctx.show_values, cell, value, ctx.cell_char)
+    end)
+  end
 
-              render_heat_cell_with_text(cx, cy, cell_w, cell_h, label, fg, bg)
-            else
-              render_heat_cell(cx, cy, cell_w, cell_h, cell_char, fg, bg)
-            end
-          end)
-        end)
-    end
+  defp render_heatmap_cell(true, cell, value, _cell_char) do
+    label =
+      ChartUtils.format_number(value)
+      |> String.slice(0, cell.w)
+      |> String.pad_trailing(cell.w)
+
+    render_heat_cell_with_text(
+      cell.cx,
+      cell.cy,
+      cell.w,
+      cell.h,
+      label,
+      cell.fg,
+      cell.bg
+    )
+  end
+
+  defp render_heatmap_cell(false, cell, _value, cell_char) do
+    render_heat_cell(
+      cell.cx,
+      cell.cy,
+      cell.w,
+      cell.h,
+      cell_char,
+      cell.fg,
+      cell.bg
+    )
   end
 
   # -- Built-in color scales --

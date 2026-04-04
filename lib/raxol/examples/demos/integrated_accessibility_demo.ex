@@ -42,72 +42,69 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
   Updates the demo state based on events.
   """
   @spec update(Event.t(), t()) :: {t(), list()}
-  def update(%Event{type: :key, data: %{key: key}}, state) do
-    case {state.mode, key} do
-      # Global navigation
-      {_, "q"} ->
-        {state, [{:exit}]}
+  def update(%Event{type: :key, data: %{key: "q"}}, state) do
+    {state, [{:exit}]}
+  end
 
-      # Menu mode navigation
-      {:menu, "h"} ->
+  def update(%Event{type: :key, data: %{key: key}}, state) do
+    handle_mode_key(state.mode, key, state)
+  end
+
+  def update(_event, state), do: {state, []}
+
+  defp handle_mode_key(:menu, key, state) do
+    case key do
+      "h" ->
         show_help(state)
 
-      {:menu, "1"} ->
+      "1" ->
         {%{state | mode: :contrast}, [{:announce, "Contrast settings mode"}]}
 
-      {:menu, "2"} ->
+      "2" ->
         {%{state | mode: :screen_reader},
          [{:announce, "Screen reader settings"}]}
 
-      {:menu, "3"} ->
+      "3" ->
         {%{state | mode: :navigation}, [{:announce, "Navigation settings"}]}
 
-      {:menu, :escape} ->
+      :escape ->
         {state, [{:exit}]}
 
-      # Contrast mode
-      {:contrast, "n"} ->
-        set_contrast(state, :normal)
-
-      {:contrast, "c"} ->
-        set_contrast(state, :high)
-
-      {:contrast, "x"} ->
-        set_contrast(state, :highest)
-
-      {:contrast, "h"} ->
-        show_help(state)
-
-      {:contrast, :escape} ->
-        {%{state | mode: :menu}, [{:announce, "Back to main menu"}]}
-
-      # Screen reader mode
-      {:screen_reader, "e"} ->
-        toggle_screen_reader(state, true)
-
-      {:screen_reader, "d"} ->
-        toggle_screen_reader(state, false)
-
-      {:screen_reader, :escape} ->
-        {%{state | mode: :menu}, [{:announce, "Back to main menu"}]}
-
-      # Navigation mode
-      {:navigation, "s"} ->
-        set_navigation(state, :standard)
-
-      {:navigation, "v"} ->
-        set_navigation(state, :vim)
-
-      {:navigation, :escape} ->
-        {%{state | mode: :menu}, [{:announce, "Back to main menu"}]}
-
-      # Default - no action
       _ ->
         {state, []}
     end
   end
 
-  def update(_event, state), do: {state, []}
+  defp handle_mode_key(:contrast, key, state) do
+    case key do
+      "n" -> set_contrast(state, :normal)
+      "c" -> set_contrast(state, :high)
+      "x" -> set_contrast(state, :highest)
+      "h" -> show_help(state)
+      :escape -> {%{state | mode: :menu}, [{:announce, "Back to main menu"}]}
+      _ -> {state, []}
+    end
+  end
+
+  defp handle_mode_key(:screen_reader, key, state) do
+    case key do
+      "e" -> toggle_screen_reader(state, true)
+      "d" -> toggle_screen_reader(state, false)
+      :escape -> {%{state | mode: :menu}, [{:announce, "Back to main menu"}]}
+      _ -> {state, []}
+    end
+  end
+
+  defp handle_mode_key(:navigation, key, state) do
+    case key do
+      "s" -> set_navigation(state, :standard)
+      "v" -> set_navigation(state, :vim)
+      :escape -> {%{state | mode: :menu}, [{:announce, "Back to main menu"}]}
+      _ -> {state, []}
+    end
+  end
+
+  defp handle_mode_key(_mode, _key, state), do: {state, []}
 
   @doc """
   Renders the current view.

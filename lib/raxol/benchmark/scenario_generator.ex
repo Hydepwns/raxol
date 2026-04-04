@@ -563,18 +563,22 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
 
   defp generate_heavy_rendering_scenario do
     # Scenario that requires many screen updates
-    frames =
-      for frame <- 1..60 do
-        "\e[2J\e[H" <>
-          Enum.map_join(1..24, fn row ->
-            Enum.map(1..80, fn col ->
-              color = rem(frame + row + col, 8) + 30
-              "\e[#{color}m█"
-            end)
-          end)
-      end
-
+    frames = for frame <- 1..60, do: render_frame(frame)
     Enum.join(frames, "")
+  end
+
+  defp render_frame(frame) do
+    "\e[2J\e[H" <>
+      Enum.map_join(1..24, fn row ->
+        render_row(frame, row)
+      end)
+  end
+
+  defp render_row(frame, row) do
+    Enum.map_join(1..80, fn col ->
+      color = rem(frame + row + col, 8) + 30
+      "\e[#{color}m█"
+    end)
   end
 
   defp generate_state_thrashing_scenario do

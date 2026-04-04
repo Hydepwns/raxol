@@ -4,7 +4,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
   """
 
   alias Raxol.UI.Components.Input.MultiLineInput
-  alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
+  alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
 
   @doc """
   Renders a single line with proper styling for cursor and selection.
@@ -181,23 +181,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
     [{:text, " ", cursor_style} | parts]
   end
 
-  defp normalize_selection(state) do
-    case {state.selection_start, state.selection_end} do
-      {nil, _} ->
-        {nil, nil}
-
-      {_, nil} ->
-        {nil, nil}
-
-      {start_pos, end_pos} ->
-        if TextHelper.pos_to_index(start_pos, state) <=
-             TextHelper.pos_to_index(end_pos, state) do
-          {start_pos, end_pos}
-        else
-          {end_pos, start_pos}
-        end
-    end
-  end
+  defp normalize_selection(state),
+    do: NavigationHelper.normalize_selection(state)
 
   defp line_in_selection?(_line_index, nil, _), do: false
   defp line_in_selection?(_line_index, _, nil), do: false

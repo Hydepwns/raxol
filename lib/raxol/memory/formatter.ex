@@ -48,7 +48,14 @@ defmodule Raxol.Memory.Formatter do
     Mix.shell().info("\nMemory Analysis Report")
     Mix.shell().info(String.duplicate("=", 50))
 
-    memory = analysis.memory_overview
+    print_memory_overview(analysis.memory_overview)
+    print_top_processes(analysis.process_analysis.top_consumers)
+    print_ets_tables(analysis.ets_analysis.top_consumers)
+
+    save_output_if_requested(analysis, config)
+  end
+
+  defp print_memory_overview(memory) do
     Mix.shell().info("\nMemory Overview:")
     Mix.shell().info("  Total: #{fmt(memory.total)}")
 
@@ -63,28 +70,30 @@ defmodule Raxol.Memory.Formatter do
     Mix.shell().info(
       "  Binary: #{fmt(memory.binary)} (#{memory.breakdown.binary.percentage}%)"
     )
+  end
 
+  defp print_top_processes(consumers) do
     Mix.shell().info("\nTop Memory Consuming Processes:")
 
-    analysis.process_analysis.top_consumers
+    consumers
     |> Enum.take(5)
     |> Enum.each(fn proc ->
       Mix.shell().info("  #{proc.name}: #{fmt(proc.memory)}")
     end)
+  end
 
-    if analysis.ets_analysis.top_consumers != [] do
-      Mix.shell().info("\nLargest ETS Tables:")
+  defp print_ets_tables([]), do: :ok
 
-      analysis.ets_analysis.top_consumers
-      |> Enum.take(3)
-      |> Enum.each(fn table ->
-        Mix.shell().info(
-          "  #{table.name}: #{fmt(table.memory)} (#{table.size} entries)"
-        )
-      end)
-    end
+  defp print_ets_tables(consumers) do
+    Mix.shell().info("\nLargest ETS Tables:")
 
-    save_output_if_requested(analysis, config)
+    consumers
+    |> Enum.take(3)
+    |> Enum.each(fn table ->
+      Mix.shell().info(
+        "  #{table.name}: #{fmt(table.memory)} (#{table.size} entries)"
+      )
+    end)
   end
 
   defp output_text_hotspots(hotspots, config) do
