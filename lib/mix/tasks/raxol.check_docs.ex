@@ -84,25 +84,28 @@ defmodule Mix.Tasks.Raxol.CheckDocs do
   end
 
   defp check_stale_patterns do
-    @doc_files
-    |> Enum.flat_map(fn path ->
-      case File.read(path) do
-        {:ok, content} ->
-          content
-          |> String.split("\n")
-          |> Enum.with_index(1)
-          |> Enum.flat_map(fn {line, line_num} ->
-            Enum.flat_map(@stale_patterns, fn {regex, label} ->
-              if Regex.match?(regex, line) do
-                ["#{path}:#{line_num}: #{label} -- #{String.trim(line)}"]
-              else
-                []
-              end
-            end)
-          end)
+    Enum.flat_map(@doc_files, &check_file_for_stale_patterns/1)
+  end
 
-        {:error, _} ->
-          []
+  defp check_file_for_stale_patterns(path) do
+    case File.read(path) do
+      {:ok, content} ->
+        content
+        |> String.split("\n")
+        |> Enum.with_index(1)
+        |> Enum.flat_map(&check_line_for_stale_patterns(path, &1))
+
+      {:error, _} ->
+        []
+    end
+  end
+
+  defp check_line_for_stale_patterns(path, {line, line_num}) do
+    Enum.flat_map(@stale_patterns, fn {regex, label} ->
+      if Regex.match?(regex, line) do
+        ["#{path}:#{line_num}: #{label} -- #{String.trim(line)}"]
+      else
+        []
       end
     end)
   end

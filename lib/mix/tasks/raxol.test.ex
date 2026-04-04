@@ -46,43 +46,38 @@ defmodule Mix.Tasks.Raxol.Test do
 
   @shortdoc "Enhanced test runner with additional features"
 
+  @test_switches [
+    parallel: :boolean,
+    coverage: :boolean,
+    failed: :boolean,
+    watch: :boolean,
+    profile: :boolean,
+    max_failures: :integer,
+    seed: :integer,
+    only: :string,
+    exclude: :string
+  ]
+
   @impl Mix.Task
   def run(args) do
-    {opts, files, _} =
-      OptionParser.parse(args,
-        strict: [
-          parallel: :boolean,
-          coverage: :boolean,
-          failed: :boolean,
-          watch: :boolean,
-          profile: :boolean,
-          max_failures: :integer,
-          seed: :integer,
-          only: :string,
-          exclude: :string
-        ]
-      )
+    {opts, files, _} = OptionParser.parse(args, strict: @test_switches)
+    set_test_env()
+    dispatch_test_mode(opts, files)
+  end
 
-    # Set environment variables
+  defp set_test_env do
     System.put_env("TMPDIR", "/tmp")
     System.put_env("SKIP_TERMBOX2_TESTS", "true")
     System.put_env("MIX_ENV", "test")
+  end
 
+  defp dispatch_test_mode(opts, files) do
     cond do
-      opts[:watch] ->
-        run_watch_mode(opts, files)
-
-      opts[:parallel] ->
-        run_parallel_tests(opts, files)
-
-      opts[:coverage] ->
-        run_with_coverage(opts, files)
-
-      opts[:profile] ->
-        run_with_profiling(opts, files)
-
-      true ->
-        run_standard_tests(opts, files)
+      opts[:watch] -> run_watch_mode(opts, files)
+      opts[:parallel] -> run_parallel_tests(opts, files)
+      opts[:coverage] -> run_with_coverage(opts, files)
+      opts[:profile] -> run_with_profiling(opts, files)
+      true -> run_standard_tests(opts, files)
     end
   end
 
@@ -152,15 +147,7 @@ defmodule Mix.Tasks.Raxol.Test do
     Mix.shell().info(Colors.section_header("Running tests with profiling"))
     Mix.shell().info("")
 
-    start_time = System.monotonic_time(:millisecond)
-
-    test_args = build_test_args(opts, files)
-    test_args = ["--profile-tests" | test_args]
-
-    result = Mix.shell().cmd("mix test #{Enum.join(test_args, " ")}")
-
-    end_time = System.monotonic_time(:millisecond)
-    duration = end_time - start_time
+    {result, duration} = timed_test_run(opts, files)
 
     Mix.shell().info("")
 
@@ -168,14 +155,17 @@ defmodule Mix.Tasks.Raxol.Test do
       Colors.muted("Execution time: ") <> Colors.info("#{duration}ms")
     )
 
-    case result do
-      0 ->
-        Mix.shell().info("  " <> Colors.success("[OK]") <> " All tests passed")
+    handle_test_result(result)
+  end
 
-      _ ->
-        Mix.shell().error("  " <> Colors.error("[!!]") <> " Some tests failed")
-        Mix.raise("Test suite failed")
-    end
+  defp timed_test_run(opts, files) do
+    start_time = System.monotonic_time(:millisecond)
+
+    test_args = ["--profile-tests" | build_test_args(opts, files)]
+    result = Mix.shell().cmd("mix test #{Enum.join(test_args, " ")}")
+
+    duration = System.monotonic_time(:millisecond) - start_time
+    {result, duration}
   end
 
   defp run_watch_mode(opts, files) do

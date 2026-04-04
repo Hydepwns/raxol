@@ -284,48 +284,53 @@ defmodule Mix.Tasks.Raxol.Check do
     System.put_env("SKIP_TERMBOX2_TESTS", "true")
     System.put_env("MIX_ENV", "test")
 
-    # Exclude slow tests and benchmarks
-    case Mix.shell().cmd(
-           "mix test --exclude slow --exclude integration --exclude docker --exclude benchmark --exclude skip_on_ci --max-failures 10"
-         ) do
-      0 ->
-        Mix.shell().info("    " <> Colors.format_success("All tests passed"))
-        {:test, :ok}
+    exit_code =
+      Mix.shell().cmd(
+        "mix test --exclude slow --exclude integration --exclude docker --exclude benchmark --exclude skip_on_ci --max-failures 10"
+      )
 
-      exit_code ->
-        Mix.shell().error("    " <> Colors.format_error("Some tests failed"))
-
-        # Display enhanced error with suggestions
-        ErrorDisplay.display_error(
-          {:error, "Test suite failed with exit code #{exit_code}"},
-          %{check: :test, operation: "test_suite", exit_code: exit_code}
-        )
-
-        Mix.shell().info("")
-        Mix.shell().info("  " <> Colors.info("Quick actions:"))
-
-        Mix.shell().info(
-          "    " <>
-            Colors.format_fix("Re-run failed tests", "mix test --failed")
-        )
-
-        Mix.shell().info(
-          "    " <> Colors.format_fix("Run with seed 0", "mix test --seed 0")
-        )
-
-        Mix.shell().info(
-          "    " <> Colors.format_fix("Increase verbosity", "mix test --trace")
-        )
-
-        Mix.shell().info("")
-
-        {:test, :error}
-    end
+    format_test_result(exit_code)
   end
 
   defp run_check(unknown) do
     Mix.shell().error(Colors.format_error("Unknown check: #{unknown}"))
     {unknown, :error}
+  end
+
+  defp format_test_result(0) do
+    Mix.shell().info("    " <> Colors.format_success("All tests passed"))
+    {:test, :ok}
+  end
+
+  defp format_test_result(exit_code) do
+    Mix.shell().error("    " <> Colors.format_error("Some tests failed"))
+
+    ErrorDisplay.display_error(
+      {:error, "Test suite failed with exit code #{exit_code}"},
+      %{check: :test, operation: "test_suite", exit_code: exit_code}
+    )
+
+    print_test_quick_actions()
+    {:test, :error}
+  end
+
+  defp print_test_quick_actions do
+    Mix.shell().info("")
+    Mix.shell().info("  " <> Colors.info("Quick actions:"))
+
+    Mix.shell().info(
+      "    " <> Colors.format_fix("Re-run failed tests", "mix test --failed")
+    )
+
+    Mix.shell().info(
+      "    " <> Colors.format_fix("Run with seed 0", "mix test --seed 0")
+    )
+
+    Mix.shell().info(
+      "    " <> Colors.format_fix("Increase verbosity", "mix test --trace")
+    )
+
+    Mix.shell().info("")
   end
 
   defp print_summary(results) do

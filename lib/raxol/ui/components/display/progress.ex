@@ -138,12 +138,7 @@ defmodule Raxol.UI.Components.Display.Progress do
   @impl Component
   def render(state, context) do
     base_style = StyleHelper.merge_component_styles(state, context, :progress)
-
-    # Colors for bar, border, text
-    fg = Map.get(base_style, :fg, :green)
-    bg = Map.get(base_style, :bg, :black)
-    border = Map.get(base_style, :border, :white)
-    text_color = Map.get(base_style, :text, :white)
+    colors = extract_colors(base_style)
 
     progress = Raxol.Core.Utils.Math.clamp(state.progress, 0.0, 1.0)
     width = max(3, state.width)
@@ -158,39 +153,39 @@ defmodule Raxol.UI.Components.Display.Progress do
         state.animation_frame
       )
 
-    percentage_text =
-      case state.show_percentage do
-        true ->
-          percent_str = "#{floor(progress * 100)}%"
+    extra_attrs = build_extra_attrs(state)
 
-          padding =
-            div(width - Raxol.UI.TextMeasure.display_width(percent_str), 2)
+    base_elements = build_base_elements(width, bar_content, colors, extra_attrs)
 
-          String.duplicate(" ", max(0, padding)) <> percent_str
+    base_elements
+    |> maybe_prepend_percentage(state.show_percentage, progress, width, colors)
+    |> maybe_prepend_label(state.label, colors)
+  end
 
-        false ->
-          ""
-      end
+  defp extract_colors(base_style) do
+    %{
+      fg: Map.get(base_style, :fg, :green),
+      bg: Map.get(base_style, :bg, :black),
+      border: Map.get(base_style, :border, :white),
+      text: Map.get(base_style, :text, :white)
+    }
+  end
 
-    # Accessibility/extra attributes
-    extra_attrs =
-      %{
-        aria_label: state.aria_label,
-        tooltip: state.tooltip
-      }
-      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-      |> Enum.into(%{})
+  defp build_extra_attrs(state) do
+    %{aria_label: state.aria_label, tooltip: state.tooltip}
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.into(%{})
+  end
 
-    # Elements list
-    progress_elements = [
-      # Border box
+  defp build_base_elements(width, bar_content, colors, extra_attrs) do
+    [
       %{
         type: :box,
         width: width,
         height: 1,
         style: %{
-          fg: border,
-          bg: bg,
+          fg: colors.border,
+          bg: colors.bg,
           border: %{
             top_left: "[",
             top_right: "]",
@@ -202,68 +197,47 @@ defmodule Raxol.UI.Components.Display.Progress do
         }
       }
       |> Map.merge(extra_attrs),
-      # Progress fill
       %{
         type: :text,
-        # Inside the border
         x: 1,
         y: 0,
         content: bar_content,
-        style: %{
-          fg: fg,
-          bg: bg
-        }
+        style: %{fg: colors.fg, bg: colors.bg}
       }
     ]
+  end
 
-    # Add percentage text if needed
-    # Use state.show_percentage
-    progress_elements =
-      case state.show_percentage do
-        true ->
-          text_element = %{
-            type: :text,
-            x: 1,
-            y: 0,
-            content: percentage_text,
-            style: %{
-              fg: text_color,
-              bg: :transparent
-            }
-          }
+  defp maybe_prepend_percentage(elements, true, progress, width, colors) do
+    percent_str = "#{floor(progress * 100)}%"
+    padding = div(width - Raxol.UI.TextMeasure.display_width(percent_str), 2)
+    percentage_text = String.duplicate(" ", max(0, padding)) <> percent_str
 
-          # Prepend text element
-          [text_element | progress_elements]
+    text_element = %{
+      type: :text,
+      x: 1,
+      y: 0,
+      content: percentage_text,
+      style: %{fg: colors.text, bg: :transparent}
+    }
 
-        false ->
-          progress_elements
-      end
+    [text_element | elements]
+  end
 
-    # Add label if provided
-    # Use state.label
-    progress_elements =
-      case state.label do
-        nil ->
-          progress_elements
+  defp maybe_prepend_percentage(elements, false, _progress, _width, _colors),
+    do: elements
 
-        label ->
-          label_element = %{
-            type: :text,
-            x: 0,
-            y: -1,
-            content: label,
-            style: %{
-              fg: text_color,
-              bg: bg
-            }
-          }
+  defp maybe_prepend_label(elements, nil, _colors), do: elements
 
-          # Prepend label element
-          [label_element | progress_elements]
-      end
+  defp maybe_prepend_label(elements, label, colors) do
+    label_element = %{
+      type: :text,
+      x: 0,
+      y: -1,
+      content: label,
+      style: %{fg: colors.text, bg: colors.bg}
+    }
 
-    # Return the list of elements
-    progress_elements
+    [label_element | elements]
   end
 
   # Private helpers

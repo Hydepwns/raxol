@@ -205,71 +205,59 @@ defmodule Raxol.Core.Metrics.AlertManager do
   end
 
   defp check_alert(rule_id, rule, state) do
-    # For grouped metrics, we need to get all metrics regardless of tags
-    metrics_result =
-      case rule.group_by do
-        [] ->
-          # Single alert - use exact tag matching
-          MetricsCollector.get_metrics(rule.metric_name, rule.tags)
+    {:ok, metrics} = fetch_metrics_for_rule(rule)
+    current_value = resolve_current_value(metrics, rule.group_by)
 
-        _ ->
-          # Grouped metrics - get all metrics with this name
-          MetricsCollector.get_metrics(rule.metric_name, %{})
-      end
+    {new_alert_state, should_trigger} =
+      evaluate_alert(current_value, rule, state.alert_states[rule_id])
 
-    # MetricsCollector.get_metrics/2 always returns {:ok, data}
-    {:ok, metrics} = metrics_result
+    apply_alert_result(
+      should_trigger,
+      rule_id,
+      rule,
+      current_value,
+      new_alert_state,
+      state
+    )
+  end
 
-    case rule.group_by do
-      [] ->
-        # Single alert for all metrics
-        current_value = get_single_value(metrics)
-        alert_state = state.alert_states[rule_id]
+  defp fetch_metrics_for_rule(%{group_by: [], metric_name: name, tags: tags}),
+    do: MetricsCollector.get_metrics(name, tags)
 
-        {new_alert_state, should_trigger} =
-          evaluate_alert(current_value, rule, alert_state)
+  defp fetch_metrics_for_rule(%{metric_name: name}),
+    do: MetricsCollector.get_metrics(name, %{})
 
-        case should_trigger do
-          true ->
-            trigger_alert(rule_id, rule, current_value, state)
+  defp resolve_current_value(metrics, []), do: get_single_value(metrics)
 
-          false ->
-            %{
-              state
-              | alert_states:
-                  Map.put(state.alert_states, rule_id, new_alert_state)
-            }
-        end
-
-      group_by ->
-        # Multiple alerts for grouped metrics
-        grouped_values = get_grouped_values(metrics, group_by)
-
-        # For now, we'll evaluate the first group or use the max value
-        current_value =
-          case grouped_values do
-            [] -> nil
-            values -> extract_and_get_max_value(values)
-          end
-
-        alert_state = state.alert_states[rule_id]
-
-        {new_alert_state, should_trigger} =
-          evaluate_alert(current_value, rule, alert_state)
-
-        case should_trigger do
-          true ->
-            trigger_alert(rule_id, rule, current_value, state)
-
-          false ->
-            %{
-              state
-              | alert_states:
-                  Map.put(state.alert_states, rule_id, new_alert_state)
-            }
-        end
+  defp resolve_current_value(metrics, group_by) do
+    case get_grouped_values(metrics, group_by) do
+      [] -> nil
+      values -> extract_and_get_max_value(values)
     end
   end
+
+  defp apply_alert_result(
+         true,
+         rule_id,
+         rule,
+         current_value,
+         _alert_state,
+         state
+       ),
+       do: trigger_alert(rule_id, rule, current_value, state)
+
+  defp apply_alert_result(
+         false,
+         rule_id,
+         _rule,
+         _current_value,
+         new_alert_state,
+         state
+       ),
+       do: %{
+         state
+         | alert_states: Map.put(state.alert_states, rule_id, new_alert_state)
+       }
 
   defp get_single_value(metrics) do
     case List.first(metrics) do

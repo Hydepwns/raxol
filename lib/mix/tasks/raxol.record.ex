@@ -52,17 +52,32 @@ defmodule Mix.Tasks.Raxol.Record do
   defp record(module_str, opts) do
     Mix.Task.run("app.start")
 
-    module = Module.concat([module_str])
-    title = Keyword.get(opts, :title, module_str)
+    module = resolve_module!(module_str)
     output = Keyword.get(opts, :output, default_output(module_str))
+
+    print_recording_header(module_str, output)
+    session = run_recording(module, module_str, output, opts)
+    print_recording_summary(session, output)
+  end
+
+  defp resolve_module!(module_str) do
+    module = Module.concat([module_str])
 
     unless Code.ensure_loaded?(module) do
       Mix.raise("Module #{module_str} not found")
     end
 
+    module
+  end
+
+  defp print_recording_header(module_str, output) do
     Mix.shell().info([:green, "Recording #{module_str}...", :reset])
     Mix.shell().info("Output: #{output}")
     Mix.shell().info("Press 'q' or Ctrl+C to stop recording.\n")
+  end
+
+  defp run_recording(module, module_str, output, opts) do
+    title = Keyword.get(opts, :title, module_str)
 
     recorder_opts =
       [
@@ -80,9 +95,11 @@ defmodule Mix.Tasks.Raxol.Record do
       {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
     end
 
-    session = Recorder.stop()
-    Asciicast.write!(session, output)
+    Recorder.stop()
+  end
 
+  defp print_recording_summary(session, output) do
+    Asciicast.write!(session, output)
     Mix.shell().info("")
 
     Mix.shell().info([

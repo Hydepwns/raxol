@@ -157,59 +157,101 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       "Rendering Engine executing do_render_frame. Model=#{inspect(model)}, Theme=#{inspect(theme)}, State=#{inspect(state)}"
     )
 
+    case prepare_view_tree(model, state) do
+      {:nil_view} ->
+        {:ok, state}
+
+      {:ok, view, prepared_tree, t0, t1, mem_before} ->
+        render_prepared_view(
+          view,
+          prepared_tree,
+          t0,
+          t1,
+          mem_before,
+          theme,
+          state
+        )
+
+      {:error, reason} ->
+        log_render_error(reason, state)
+    end
+  end
+
+  defp prepare_view_tree(model, state) do
     mem_before = profiler_memory(state.cycle_profiler)
     t0 = profiler_now(state.cycle_profiler)
 
     with {:ok, view} <- safe_get_view(state.app_module, model),
-         false <- is_nil(view),
-         prepared_tree <-
-           Raxol.UI.Layout.Preparer.prepare_incremental(
-             view,
-             state.prepared_tree
-           ),
-         t1 <- profiler_now(state.cycle_profiler),
-         {:ok, positioned_elements} <-
+         false <- is_nil(view) do
+      prepared_tree =
+        Raxol.UI.Layout.Preparer.prepare_incremental(view, state.prepared_tree)
+
+      t1 = profiler_now(state.cycle_profiler)
+      {:ok, view, prepared_tree, t0, t1, mem_before}
+    else
+      true -> {:nil_view}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp render_prepared_view(
+         view,
+         prepared_tree,
+         t0,
+         t1,
+         mem_before,
+         theme,
+         state
+       ) do
+    with {:ok, positioned_elements} <-
            safe_apply_layout(view, state, prepared_tree),
          t2 <- profiler_now(state.cycle_profiler),
-         :ok <- update_dispatcher_view_tree(state.dispatcher_pid, view),
-         :ok <-
-           update_dispatcher_layout(state.dispatcher_pid, positioned_elements),
+         :ok <- sync_dispatcher(state.dispatcher_pid, view, positioned_elements),
          :continue <- agent_short_circuit(state),
-         {:ok, cells} <- safe_render_to_cells(positioned_elements, theme),
-         t3 <- profiler_now(state.cycle_profiler),
-         {:ok, final_cells} <- safe_apply_plugin_transforms(cells, state),
-         t4 <- profiler_now(state.cycle_profiler),
-         {:ok, new_state} <- safe_render_to_backend(final_cells, state),
-         t5 <- profiler_now(state.cycle_profiler) do
+         {:ok, new_state, t5} <-
+           render_cells_to_backend(positioned_elements, theme, state) do
       maybe_record_cycle_render(
         state.cycle_profiler,
         t0,
         t1,
         t2,
-        t3,
-        t4,
+        t5,
+        t5,
         t5,
         mem_before
       )
 
       {:ok, %{new_state | prepared_tree: prepared_tree}}
     else
-      true ->
-        {:ok, state}
-
-      {:agent, :skip_cells} ->
-        {:ok, state}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Render error",
-          reason,
-          nil,
-          %{module: __MODULE__, state: state}
-        )
-
-        {:error, {:render_error, reason}, state}
+      {:agent, :skip_cells} -> {:ok, state}
+      {:error, reason} -> log_render_error(reason, state)
     end
+  end
+
+  defp sync_dispatcher(dispatcher_pid, view, positioned_elements) do
+    with :ok <- update_dispatcher_view_tree(dispatcher_pid, view) do
+      update_dispatcher_layout(dispatcher_pid, positioned_elements)
+    end
+  end
+
+  defp render_cells_to_backend(positioned_elements, theme, state) do
+    with {:ok, cells} <- safe_render_to_cells(positioned_elements, theme),
+         {:ok, final_cells} <- safe_apply_plugin_transforms(cells, state),
+         {:ok, new_state} <- safe_render_to_backend(final_cells, state) do
+      t5 = profiler_now(state.cycle_profiler)
+      {:ok, new_state, t5}
+    end
+  end
+
+  defp log_render_error(reason, state) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "Render error",
+      reason,
+      nil,
+      %{module: __MODULE__, state: state}
+    )
+
+    {:error, {:render_error, reason}, state}
   end
 
   # -- Cycle profiler hooks --
@@ -259,28 +301,32 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         "Rendering Engine: Calling app_module.view(model)"
       )
 
-      Raxol.Core.ErrorHandling.safe_call(fn ->
-        case app_module.view(model) do
-          nil ->
-            {:ok, nil}
-
-          view ->
-            resolved = resolve_process_components(view)
-
-            Raxol.Core.Runtime.Log.debug(
-              "Rendering Engine: Got view: #{inspect(resolved)}"
-            )
-
-            {:ok, resolved}
-        end
-      end)
-      |> case do
-        {:ok, result} -> result
-        {:error, reason} -> {:error, {:view_error, reason}}
-      end
+      call_view_safely(app_module, model)
     else
       {:ok, nil}
     end
+  end
+
+  defp call_view_safely(app_module, model) do
+    Raxol.Core.ErrorHandling.safe_call(fn ->
+      resolve_view_result(app_module.view(model))
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, {:view_error, reason}}
+    end
+  end
+
+  defp resolve_view_result(nil), do: {:ok, nil}
+
+  defp resolve_view_result(view) do
+    resolved = resolve_process_components(view)
+
+    Raxol.Core.Runtime.Log.debug(
+      "Rendering Engine: Got view: #{inspect(resolved)}"
+    )
+
+    {:ok, resolved}
   end
 
   # Safe layout application using functional error handling

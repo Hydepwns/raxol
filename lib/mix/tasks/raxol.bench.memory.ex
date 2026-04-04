@@ -473,47 +473,32 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
   end
 
   defp generate_code_line(line_num, length) do
-    case rem(line_num, 10) do
-      0 ->
-        String.pad_trailing("def function_#{line_num}(param) do", length)
-
-      1 ->
-        String.pad_trailing("  # Comment for line #{line_num}", length)
-
-      2 ->
-        String.pad_trailing(
-          "  @spec some_function(integer()) :: {:ok, term()}",
-          length
-        )
-
-      3 ->
-        String.pad_trailing("  result = expensive_operation(param)", length)
-
-      4 ->
-        String.pad_trailing(
-          "  Log.info(\"Processing #{line_num}\")",
-          length
-        )
-
-      5 ->
-        String.pad_trailing("  {:ok, result}", length)
-
-      6 ->
-        String.pad_trailing("end", length)
-
-      7 ->
-        ""
-
-      8 ->
-        String.pad_trailing("# Module documentation", length)
-
-      9 ->
-        String.pad_trailing(
-          "defmodule MyModule.SubModule#{line_num} do",
-          length
-        )
-    end
+    code_line_template(rem(line_num, 10), line_num)
+    |> pad_code_line(length)
   end
+
+  defp code_line_template(0, line_num), do: "def function_#{line_num}(param) do"
+  defp code_line_template(1, line_num), do: "  # Comment for line #{line_num}"
+
+  defp code_line_template(2, _line_num),
+    do: "  @spec some_function(integer()) :: {:ok, term()}"
+
+  defp code_line_template(3, _line_num),
+    do: "  result = expensive_operation(param)"
+
+  defp code_line_template(4, line_num),
+    do: "  Log.info(\"Processing #{line_num}\")"
+
+  defp code_line_template(5, _line_num), do: "  {:ok, result}"
+  defp code_line_template(6, _line_num), do: "end"
+  defp code_line_template(7, _line_num), do: ""
+  defp code_line_template(8, _line_num), do: "# Module documentation"
+
+  defp code_line_template(9, line_num),
+    do: "defmodule MyModule.SubModule#{line_num} do"
+
+  defp pad_code_line("", _length), do: ""
+  defp pad_code_line(line, length), do: String.pad_trailing(line, length)
 
   defp generate_syntax_data(line_content) do
     # Simulate syntax highlighting tokens

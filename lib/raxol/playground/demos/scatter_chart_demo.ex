@@ -79,35 +79,34 @@ defmodule Raxol.Playground.Demos.ScatterChartDemo do
 
   defp build_series(tick) do
     t = tick * @tick_scale
-    range = 0..(@points_per_cluster - 1)
-
-    cluster_a =
-      for i <- range do
-        {
-          @cluster_a_cx +
-            @cluster_a_radius * :math.cos(i * @cluster_a_angle_speed + t),
-          @cluster_a_cy +
-            @cluster_a_radius * :math.sin(i * @cluster_a_sin_speed + t)
-        }
-      end
-
-    cluster_b =
-      for i <- range do
-        {
-          @cluster_b_cx +
-            @cluster_b_radius *
-              :math.sin(i * @cluster_b_angle_speed + t * @cluster_b_time_scale),
-          @cluster_b_cy +
-            @cluster_b_radius *
-              :math.cos(
-                i * @cluster_b_cos_speed + t * @cluster_b_cos_time_scale
-              )
-        }
-      end
 
     [
-      %{name: "Alpha", data: cluster_a, color: :green},
-      %{name: "Beta", data: cluster_b, color: :yellow}
+      %{name: "Alpha", data: build_cluster_a(t), color: :green},
+      %{name: "Beta", data: build_cluster_b(t), color: :yellow}
     ]
+  end
+
+  defp build_cluster_a(t) do
+    for i <- 0..(@points_per_cluster - 1) do
+      {
+        @cluster_a_cx +
+          @cluster_a_radius * :math.cos(i * @cluster_a_angle_speed + t),
+        @cluster_a_cy +
+          @cluster_a_radius * :math.sin(i * @cluster_a_sin_speed + t)
+      }
+    end
+  end
+
+  defp build_cluster_b(t) do
+    for i <- 0..(@points_per_cluster - 1) do
+      {
+        @cluster_b_cx +
+          @cluster_b_radius *
+            :math.sin(i * @cluster_b_angle_speed + t * @cluster_b_time_scale),
+        @cluster_b_cy +
+          @cluster_b_radius *
+            :math.cos(i * @cluster_b_cos_speed + t * @cluster_b_cos_time_scale)
+      }
+    end
   end
 end

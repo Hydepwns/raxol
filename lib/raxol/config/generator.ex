@@ -333,18 +333,18 @@ defmodule Raxol.Config.Generator do
   end
 
   defp generate_template_value(field_schema) do
-    case field_schema.type do
-      :string -> field_schema.default || "example_string"
-      :integer -> field_schema.default || 42
-      :float -> field_schema.default || 3.14
-      :boolean -> field_schema.default || true
-      :atom -> field_schema.default || :example
-      {:enum, values} -> field_schema.default || hd(values)
-      {:list, _} -> field_schema.default || []
-      {:map, _} -> field_schema.default || %{}
-      _ -> field_schema.default
-    end
+    field_schema.default || type_default(field_schema.type)
   end
+
+  defp type_default(:string), do: "example_string"
+  defp type_default(:integer), do: 42
+  defp type_default(:float), do: 3.14
+  defp type_default(:boolean), do: true
+  defp type_default(:atom), do: :example
+  defp type_default({:enum, values}), do: hd(values)
+  defp type_default({:list, _}), do: []
+  defp type_default({:map, _}), do: %{}
+  defp type_default(_), do: nil
 
   defp write_config_file(config, path, format, opts) do
     ensure_directory(path)
@@ -385,36 +385,39 @@ defmodule Raxol.Config.Generator do
   defp generate_toml_content(config, indent_level) do
     indent = String.duplicate("  ", indent_level)
 
-    config
-    |> Enum.map_join(
-      "\n",
-      fn {key, value} ->
-        case value do
-          v when is_map(v) ->
-            "#{indent}[#{key}]\n" <> generate_toml_content(v, indent_level + 1)
-
-          v when is_binary(v) ->
-            "#{indent}#{key} = \"#{v}\""
-
-          v when is_atom(v) ->
-            "#{indent}#{key} = \"#{v}\""
-
-          v when is_boolean(v) ->
-            "#{indent}#{key} = #{v}"
-
-          v when is_number(v) ->
-            "#{indent}#{key} = #{v}"
-
-          v when is_list(v) ->
-            list_str = Enum.map_join(v, ", ", &inspect/1)
-            "#{indent}#{key} = [#{list_str}]"
-
-          v ->
-            "#{indent}#{key} = #{inspect(v)}"
-        end
-      end
-    )
+    Enum.map_join(config, "\n", fn {key, value} ->
+      format_toml_entry(indent, key, value, indent_level)
+    end)
   end
+
+  defp format_toml_entry(indent, key, value, indent_level) when is_map(value) do
+    "#{indent}[#{key}]\n" <> generate_toml_content(value, indent_level + 1)
+  end
+
+  defp format_toml_entry(indent, key, value, _indent_level)
+       when is_binary(value),
+       do: "#{indent}#{key} = \"#{value}\""
+
+  defp format_toml_entry(indent, key, value, _indent_level)
+       when is_boolean(value),
+       do: "#{indent}#{key} = #{value}"
+
+  defp format_toml_entry(indent, key, value, _indent_level)
+       when is_atom(value),
+       do: "#{indent}#{key} = \"#{value}\""
+
+  defp format_toml_entry(indent, key, value, _indent_level)
+       when is_number(value),
+       do: "#{indent}#{key} = #{value}"
+
+  defp format_toml_entry(indent, key, value, _indent_level)
+       when is_list(value) do
+    list_str = Enum.map_join(value, ", ", &inspect/1)
+    "#{indent}#{key} = [#{list_str}]"
+  end
+
+  defp format_toml_entry(indent, key, value, _indent_level),
+    do: "#{indent}#{key} = #{inspect(value)}"
 
   defp generate_example_toml do
     example_config = %{

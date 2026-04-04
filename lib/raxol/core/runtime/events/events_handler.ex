@@ -158,26 +158,32 @@ defmodule Raxol.Core.Runtime.Events.Handler do
     Enum.reduce_while(handlers, {event, initial_state}, fn {_id, handler},
                                                            {current_event,
                                                             current_state} ->
-      if handler.filter.(current_event) do
-        try do
-          case handler.handler_fun.(current_event, current_state) do
-            {:ok, updated_event, updated_state} ->
-              {:cont, {updated_event, updated_state}}
-
-            {:error, reason, updated_state} ->
-              {:halt, {:error, reason, updated_state}}
-
-            {:stop, updated_event, updated_state} ->
-              {:halt, {updated_event, updated_state}}
-          end
-        rescue
-          error ->
-            {:halt, {:error, {:handler_error, error}, current_state}}
-        end
-      else
-        {:cont, {current_event, current_state}}
-      end
+      run_single_handler(handler, current_event, current_state)
     end)
+  end
+
+  defp run_single_handler(handler, current_event, current_state) do
+    if handler.filter.(current_event) do
+      invoke_handler_fun(handler.handler_fun, current_event, current_state)
+    else
+      {:cont, {current_event, current_state}}
+    end
+  end
+
+  defp invoke_handler_fun(handler_fun, current_event, current_state) do
+    case handler_fun.(current_event, current_state) do
+      {:ok, updated_event, updated_state} ->
+        {:cont, {updated_event, updated_state}}
+
+      {:error, reason, updated_state} ->
+        {:halt, {:error, reason, updated_state}}
+
+      {:stop, updated_event, updated_state} ->
+        {:halt, {updated_event, updated_state}}
+    end
+  rescue
+    error ->
+      {:halt, {:error, {:handler_error, error}, current_state}}
   end
 
   defp get_all_stored_handlers do

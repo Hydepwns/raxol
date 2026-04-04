@@ -256,40 +256,40 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
 
   defp run_memory_pattern_analysis(config) do
     jobs = %{
-      "linear_growth_pattern" => fn ->
-        # Simulate linear memory growth
-        data = for i <- 1..100, do: String.duplicate("data", i)
-        Enum.reduce(data, [], &[&1 | &2])
-      end,
-      "exponential_growth_pattern" => fn ->
-        # Simulate exponential memory growth
-        data =
-          Enum.reduce(1..10, ["start"], fn _i, acc ->
-            expanded = Enum.map(acc, &String.duplicate(&1, 2))
-            acc ++ expanded
-          end)
-
-        data
-      end,
-      "constant_memory_pattern" => fn ->
-        # Simulate constant memory usage
-        data = for _i <- 1..1000, do: "constant"
-        Enum.take(data, 100)
-      end,
-      "gc_pressure_pattern" => fn ->
-        # Create scenario that triggers GC
-        large_data =
-          for _i <- 1..1000 do
-            :crypto.strong_rand_bytes(1024)
-          end
-
-        # Force some allocation/deallocation cycles
-        Enum.chunk_every(large_data, 100)
-        |> Enum.map(&length/1)
-      end
+      "linear_growth_pattern" => &benchmark_linear_growth/0,
+      "exponential_growth_pattern" => &benchmark_exponential_growth/0,
+      "constant_memory_pattern" => &benchmark_constant_memory/0,
+      "gc_pressure_pattern" => &benchmark_gc_pressure/0
     }
 
     Benchee.run(jobs, config)
+  end
+
+  defp benchmark_linear_growth do
+    data = for i <- 1..100, do: String.duplicate("data", i)
+    Enum.reduce(data, [], &[&1 | &2])
+  end
+
+  defp benchmark_exponential_growth do
+    Enum.reduce(1..10, ["start"], fn _i, acc ->
+      expanded = Enum.map(acc, &String.duplicate(&1, 2))
+      acc ++ expanded
+    end)
+  end
+
+  defp benchmark_constant_memory do
+    data = for _i <- 1..1000, do: "constant"
+    Enum.take(data, 100)
+  end
+
+  defp benchmark_gc_pressure do
+    large_data =
+      for _i <- 1..1000 do
+        :crypto.strong_rand_bytes(1024)
+      end
+
+    Enum.chunk_every(large_data, 100)
+    |> Enum.map(&length/1)
   end
 
   defp run_comprehensive_analysis(config) do

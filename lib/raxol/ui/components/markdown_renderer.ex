@@ -215,32 +215,31 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
   defp extract_text(_), do: ""
 
   defp extract_inline(children) when is_list(children) do
-    Enum.map_join(children, "", fn
-      text when is_binary(text) ->
-        text
-
-      {"strong", _, inner, _} ->
-        "*" <> extract_text(inner) <> "*"
-
-      {"em", _, inner, _} ->
-        "_" <> extract_text(inner) <> "_"
-
-      {"code", _, inner, _} ->
-        "`" <> extract_text(inner) <> "`"
-
-      {"a", attrs, inner, _} ->
-        href =
-          attrs |> Enum.find_value("", fn {k, v} -> if k == "href", do: v end)
-
-        extract_text(inner) <> " (" <> href <> ")"
-
-      {_tag, _, inner, _} ->
-        extract_inline(inner)
-    end)
+    Enum.map_join(children, "", &extract_inline_node/1)
   end
 
   defp extract_inline(text) when is_binary(text), do: text
   defp extract_inline(_), do: ""
+
+  defp extract_inline_node(text) when is_binary(text), do: text
+
+  defp extract_inline_node({"strong", _, inner, _}),
+    do: "*" <> extract_text(inner) <> "*"
+
+  defp extract_inline_node({"em", _, inner, _}),
+    do: "_" <> extract_text(inner) <> "_"
+
+  defp extract_inline_node({"code", _, inner, _}),
+    do: "`" <> extract_text(inner) <> "`"
+
+  defp extract_inline_node({"a", attrs, inner, _}) do
+    href =
+      Enum.find_value(attrs, "", fn {k, v} -> if k == "href", do: v end)
+
+    extract_text(inner) <> " (" <> href <> ")"
+  end
+
+  defp extract_inline_node({_tag, _, inner, _}), do: extract_inline(inner)
 
   defp extract_code_text(children) when is_list(children) do
     Enum.map_join(children, "", fn

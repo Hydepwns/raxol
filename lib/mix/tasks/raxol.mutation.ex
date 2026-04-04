@@ -114,33 +114,41 @@ defmodule Mix.Tasks.Raxol.Mutation do
   end
 
   defp run_mutation_analysis(config) do
+    target_files = discover_and_log_targets(config)
+    baseline_result = run_and_check_baseline()
+    mutations_results = generate_and_test_mutations(target_files, config)
+
+    build_analysis_results(target_files, baseline_result, mutations_results)
+  end
+
+  defp discover_and_log_targets(config) do
     Log.info("\nAnalyzing target files...")
-
-    # Find target files
     target_files = discover_target_files(config.target)
-
     Log.info("   Found #{length(target_files)} files to analyze")
+    target_files
+  end
 
-    # Run baseline tests to ensure they pass
+  defp run_and_check_baseline do
     Log.info("\nRunning baseline tests...")
     baseline_result = run_tests()
-
     handle_baseline_result(baseline_result)
+    baseline_result
+  end
 
-    # Generate and test mutations
+  defp generate_and_test_mutations(target_files, config) do
     Log.info("\nGenerating mutations...")
 
-    mutations_results =
-      target_files
-      # Limit to 3 files for demo
-      |> Enum.take(min(3, length(target_files)))
-      |> Enum.flat_map(&generate_mutations_for_file(&1, config))
-      |> Enum.take(config.mutations)
-      |> Enum.with_index(1)
-      |> Enum.map(fn {mutation, index} ->
-        test_mutation(mutation, index, config)
-      end)
+    target_files
+    |> Enum.take(min(3, length(target_files)))
+    |> Enum.flat_map(&generate_mutations_for_file(&1, config))
+    |> Enum.take(config.mutations)
+    |> Enum.with_index(1)
+    |> Enum.map(fn {mutation, index} ->
+      test_mutation(mutation, index, config)
+    end)
+  end
 
+  defp build_analysis_results(target_files, baseline_result, mutations_results) do
     %{
       target_files: target_files,
       baseline: baseline_result,

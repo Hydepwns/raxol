@@ -82,40 +82,10 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
   @impl true
   def init({wrapped_module, opts}) do
     worker_args = Keyword.get(opts, :worker_args, [])
-    context_key = Keyword.get(opts, :context_key, wrapped_module)
-    recovery_supervisor = Keyword.get(opts, :recovery_supervisor)
-    context_manager = Keyword.get(opts, :context_manager)
-    dependency_graph = Keyword.get(opts, :dependency_graph)
-    snapshot_interval = Keyword.get(opts, :snapshot_interval, 30_000)
 
-    # Start the wrapped process
     case start_wrapped_process(wrapped_module, worker_args) do
       {:ok, wrapped_pid} ->
-        # Set up monitoring
-        Process.monitor(wrapped_pid)
-
-        # Schedule periodic state snapshots
-        schedule_snapshot(snapshot_interval)
-
-        # Try to restore previous context
-        restore_context_if_available(context_key, wrapped_pid, context_manager)
-
-        state = %__MODULE__{
-          wrapped_module: wrapped_module,
-          wrapped_pid: wrapped_pid,
-          context_key: context_key,
-          recovery_supervisor: recovery_supervisor,
-          context_manager: context_manager,
-          dependency_graph: dependency_graph,
-          last_state_snapshot: nil,
-          performance_baseline: capture_performance_baseline(),
-          error_count: 0,
-          start_time: DateTime.utc_now()
-        }
-
-        Log.info("RecoveryWrapper started for #{wrapped_module}")
-
-        {:ok, state}
+        init_wrapper_state(wrapped_module, wrapped_pid, opts)
 
       {:error, reason} ->
         Log.error(
@@ -124,6 +94,32 @@ defmodule Raxol.Core.ErrorRecovery.RecoveryWrapper do
 
         {:stop, reason}
     end
+  end
+
+  defp init_wrapper_state(wrapped_module, wrapped_pid, opts) do
+    snapshot_interval = Keyword.get(opts, :snapshot_interval, 30_000)
+    context_key = Keyword.get(opts, :context_key, wrapped_module)
+    context_manager = Keyword.get(opts, :context_manager)
+
+    Process.monitor(wrapped_pid)
+    schedule_snapshot(snapshot_interval)
+    restore_context_if_available(context_key, wrapped_pid, context_manager)
+
+    state = %__MODULE__{
+      wrapped_module: wrapped_module,
+      wrapped_pid: wrapped_pid,
+      context_key: context_key,
+      recovery_supervisor: Keyword.get(opts, :recovery_supervisor),
+      context_manager: context_manager,
+      dependency_graph: Keyword.get(opts, :dependency_graph),
+      last_state_snapshot: nil,
+      performance_baseline: capture_performance_baseline(),
+      error_count: 0,
+      start_time: DateTime.utc_now()
+    }
+
+    Log.info("RecoveryWrapper started for #{wrapped_module}")
+    {:ok, state}
   end
 
   @impl true

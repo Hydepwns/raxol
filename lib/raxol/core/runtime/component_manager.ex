@@ -669,53 +669,37 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   defp process_update_result(result, component_id, component, state) do
     case result do
       {new_state, commands} when is_map(new_state) ->
-        # Store updated state
-        state = put_in(state.components[component_id].state, new_state)
-
-        # Process any commands from update
-        state = process_commands(commands, component_id, state)
-
-        # Queue re-render if state changed
-        state =
-          queue_render_if_changed(
-            state,
-            component_id,
-            new_state,
-            component.state
-          )
-
-        # Send component_updated message if runtime_pid is set
-        send_component_updated_if_runtime_pid(
-          state.runtime_pid,
-          component_id
+        apply_component_update(
+          new_state,
+          commands,
+          component_id,
+          component,
+          state
         )
-
-        {:reply, {:ok, new_state}, state}
 
       new_state when is_map(new_state) ->
-        # Handle case where update returns just state (no commands)
-        state = put_in(state.components[component_id].state, new_state)
-
-        # Queue re-render if state changed
-        state =
-          queue_render_if_changed(
-            state,
-            component_id,
-            new_state,
-            component.state
-          )
-
-        # Send component_updated message if runtime_pid is set
-        send_component_updated_if_runtime_pid(
-          state.runtime_pid,
-          component_id
-        )
-
-        {:reply, {:ok, new_state}, state}
+        apply_component_update(new_state, [], component_id, component, state)
 
       _ ->
         {:reply, {:error, :invalid_component_return}, state}
     end
+  end
+
+  defp apply_component_update(
+         new_state,
+         commands,
+         component_id,
+         component,
+         state
+       ) do
+    state = put_in(state.components[component_id].state, new_state)
+    state = process_commands(commands, component_id, state)
+
+    state =
+      queue_render_if_changed(state, component_id, new_state, component.state)
+
+    send_component_updated_if_runtime_pid(state.runtime_pid, component_id)
+    {:reply, {:ok, new_state}, state}
   end
 
   defp process_scheduled_update_result(result, component_id, state) do

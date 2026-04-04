@@ -299,39 +299,30 @@ defmodule Raxol.Config.Loader do
   defp normalize_config(_), do: {:error, :invalid_config_format}
 
   defp atomize_keys(map) when is_map(map) do
-    Enum.reduce(map, %{}, fn {key, value}, acc ->
-      atom_key =
-        case is_binary(key) do
-          true -> String.to_atom(key)
-          false -> key
-        end
-
-      normalized_value =
-        case value do
-          v when is_map(v) -> atomize_keys(v)
-          v when is_list(v) -> Enum.map(v, &atomize_keys/1)
-          v -> v
-        end
-
-      Map.put(acc, atom_key, normalized_value)
+    Map.new(map, fn {key, value} ->
+      {atomize_key(key), atomize_keys(value)}
     end)
   end
+
+  defp atomize_keys(list) when is_list(list),
+    do: Enum.map(list, &atomize_keys/1)
 
   defp atomize_keys(value), do: value
 
-  defp normalize_values(map) when is_map(map) do
-    Enum.reduce(map, %{}, fn {key, value}, acc ->
-      normalized_value =
-        case value do
-          v when is_map(v) -> normalize_values(v)
-          v when is_list(v) -> Enum.map(v, &normalize_values/1)
-          v when is_binary(v) -> normalize_string_value(v)
-          v -> v
-        end
+  defp atomize_key(key) when is_binary(key), do: String.to_atom(key)
+  defp atomize_key(key), do: key
 
-      Map.put(acc, key, normalized_value)
+  defp normalize_values(map) when is_map(map) do
+    Map.new(map, fn {key, value} ->
+      {key, normalize_values(value)}
     end)
   end
+
+  defp normalize_values(list) when is_list(list),
+    do: Enum.map(list, &normalize_values/1)
+
+  defp normalize_values(value) when is_binary(value),
+    do: normalize_string_value(value)
 
   defp normalize_values(value), do: value
 

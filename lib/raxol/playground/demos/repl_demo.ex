@@ -37,8 +37,7 @@ defmodule Raxol.Playground.Demos.ReplDemo do
         {eval_input(model), []}
 
       key_match(:backspace) ->
-        input = String.slice(model.input, 0..-2//1)
-        {%{model | input: input, cursor: max(model.cursor - 1, 0)}, []}
+        {delete_char(model), []}
 
       key_match("l", ctrl: true) ->
         {%{model | output: [], output_offset: 0}, []}
@@ -52,6 +51,13 @@ defmodule Raxol.Playground.Demos.ReplDemo do
       key_match(:down) ->
         {history_next(model), []}
 
+      _ ->
+        handle_repl_continued(message, model)
+    end
+  end
+
+  defp handle_repl_continued(message, model) do
+    case message do
       key_match("j", ctrl: true) ->
         {scroll_output(model, 1), []}
 
@@ -64,6 +70,11 @@ defmodule Raxol.Playground.Demos.ReplDemo do
       _ ->
         {model, []}
     end
+  end
+
+  defp delete_char(model) do
+    input = String.slice(model.input, 0..-2//1)
+    %{model | input: input, cursor: max(model.cursor - 1, 0)}
   end
 
   @impl true

@@ -106,31 +106,25 @@ defmodule Raxol.Core.CompilerState do
         :ok
       end)
 
-    case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
-      {:ok, :ok} ->
-        :ok
+    task
+    |> Task.yield(100)
+    |> Kernel.||(Task.shutdown(task, :brutal_kill))
+    |> handle_create_result(name)
+  end
 
-      nil ->
-        # Timeout - check if another process created it
-        case table_exists?(name) do
-          true -> :ok
-          false -> {:error, :creation_timeout}
-        end
+  defp handle_create_result({:ok, :ok}, _name), do: :ok
 
-      {:exit, {:badarg, _}} ->
-        # Table creation failed - likely already exists
-        case table_exists?(name) do
-          true -> :ok
-          false -> {:error, :creation_failed}
-        end
+  defp handle_create_result(nil, name),
+    do: fallback_check(name, :creation_timeout)
 
-      {:exit, reason} ->
-        # Unexpected error - check table existence as fallback
-        case table_exists?(name) do
-          true -> :ok
-          false -> {:error, {:creation_error, reason}}
-        end
-    end
+  defp handle_create_result({:exit, {:badarg, _}}, name),
+    do: fallback_check(name, :creation_failed)
+
+  defp handle_create_result({:exit, reason}, name),
+    do: fallback_check(name, {:creation_error, reason})
+
+  defp fallback_check(name, error_reason) do
+    if table_exists?(name), do: :ok, else: {:error, error_reason}
   end
 
   @spec perform_safe_lookup(atom() | :ets.tid(), term()) ::

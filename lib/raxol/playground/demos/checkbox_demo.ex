@@ -35,13 +35,17 @@ defmodule Raxol.Playground.Demos.CheckboxDemo do
         {%{model | items: items}, []}
 
       key_match("a") ->
-        all_checked? = Enum.all?(model.items, & &1.checked)
-        items = Enum.map(model.items, &%{&1 | checked: not all_checked?})
-        {%{model | items: items}, []}
+        {toggle_all(model), []}
 
       _ ->
         {model, []}
     end
+  end
+
+  defp toggle_all(model) do
+    all_checked? = Enum.all?(model.items, & &1.checked)
+    items = Enum.map(model.items, &%{&1 | checked: not all_checked?})
+    %{model | items: items}
   end
 
   defp toggle(item), do: %{item | checked: not item.checked}

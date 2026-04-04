@@ -15,44 +15,47 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   Handles bounds checking and calls the internal drawing logic.
   Expects bounds map: %{width: w, height: h}.
   """
-  def render_image_content(
-        data,
-        opts,
-        %{width: width, height: height} = bounds,
-        state
-      ) do
+  def render_image_content(data, opts, %{width: w, height: h} = bounds, state)
+      when w < 1 or h < 1 do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[ImageRenderer] Bounds too small for image rendering: #{inspect(bounds)}",
+      %{}
+    )
+
+    _ = {data, opts, state}
+    []
+  end
+
+  def render_image_content(data, opts, bounds, state) do
     title = Map.get(opts, :title, "Image")
     protocol = Map.get(opts, :protocol, detect_protocol(state))
+    do_render_image(data, bounds, opts, title, protocol)
+  end
 
-    case width < 1 or height < 1 do
-      true ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[ImageRenderer] Bounds too small for image rendering: #{inspect(bounds)}",
-          %{}
+  defp do_render_image(data, bounds, opts, title, protocol) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           render_by_protocol(protocol, data, bounds, opts, title)
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, e} ->
+        Raxol.Core.Runtime.Log.error(
+          "[ImageRenderer] Error rendering image: #{inspect(e)}"
         )
 
-        []
-
-      false ->
-        case Raxol.Core.ErrorHandling.safe_call(fn ->
-               case protocol do
-                 :sixel -> render_sixel(data, bounds, opts)
-                 :kitty -> render_kitty(data, bounds, opts)
-                 _ -> draw_placeholder(data, title, bounds)
-               end
-             end) do
-          {:ok, result} ->
-            result
-
-          {:error, e} ->
-            Raxol.Core.Runtime.Log.error(
-              "[ImageRenderer] Error rendering image: #{inspect(e)}"
-            )
-
-            DrawingUtils.draw_box_with_text("[Render Error]", bounds)
-        end
+        DrawingUtils.draw_box_with_text("[Render Error]", bounds)
     end
   end
+
+  defp render_by_protocol(:sixel, data, bounds, opts, _t),
+    do: render_sixel(data, bounds, opts)
+
+  defp render_by_protocol(:kitty, data, bounds, opts, _t),
+    do: render_kitty(data, bounds, opts)
+
+  defp render_by_protocol(_, data, bounds, _opts, title),
+    do: draw_placeholder(data, title, bounds)
 
   defp detect_protocol(state) do
     case {supports_kitty?(state), supports_sixel?(state)} do

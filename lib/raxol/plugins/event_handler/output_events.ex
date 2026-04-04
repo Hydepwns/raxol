@@ -44,69 +44,55 @@ defmodule Raxol.Plugins.EventHandler.OutputEvents do
 
   # Private result handlers
 
-  defp handle_output_result(acc, plugin, _callback_name, result) do
-    case result do
-      {:ok, transformed_output} when is_binary(transformed_output) ->
-        {:cont, %{acc | transformed_output: transformed_output}}
+  defp handle_output_result(acc, plugin, _cb, {:ok, s, t})
+       when is_map(s) and is_binary(t) do
+    mgr = Common.update_manager_state(acc.manager, plugin, s)
+    {:cont, %{acc | manager: mgr, transformed_output: t}}
+  end
 
-      {:ok, {updated_plugin, transformed_output}}
-      when is_binary(transformed_output) ->
-        updated_plugin_state = Common.extract_plugin_state(updated_plugin)
+  defp handle_output_result(acc, plugin, _cb, {:ok, payload}) do
+    handle_output_ok(acc, plugin, payload)
+  end
 
-        updated_manager =
-          Common.update_manager_state(acc.manager, plugin, updated_plugin_state)
+  defp handle_output_result(acc, plugin, _cb, {:halt, payload}) do
+    handle_output_halt(acc, plugin, payload)
+  end
 
-        {:cont,
-         %{
-           acc
-           | manager: updated_manager,
-             transformed_output: transformed_output
-         }}
+  defp handle_output_result(acc, plugin, _cb, {:error, reason}) do
+    Common.log_plugin_error(plugin, :handle_output, reason)
+    {:cont, acc}
+  end
 
-      {:ok, updated_plugin_state, transformed_output}
-      when is_map(updated_plugin_state) and is_binary(transformed_output) ->
-        updated_manager =
-          Common.update_manager_state(acc.manager, plugin, updated_plugin_state)
+  defp handle_output_result(acc, plugin, _cb, other) do
+    Common.log_unexpected_result(plugin, :handle_output, other)
+    {:cont, acc}
+  end
 
-        {:cont,
-         %{
-           acc
-           | manager: updated_manager,
-             transformed_output: transformed_output
-         }}
+  defp handle_output_ok(acc, _plugin, t) when is_binary(t) do
+    {:cont, %{acc | transformed_output: t}}
+  end
 
-      {:ok, updated_plugin} ->
-        updated_plugin_state = Common.extract_plugin_state(updated_plugin)
+  defp handle_output_ok(acc, plugin, {up, t}) when is_binary(t) do
+    mgr = update_manager_from_plugin(acc.manager, plugin, up)
+    {:cont, %{acc | manager: mgr, transformed_output: t}}
+  end
 
-        updated_manager =
-          Common.update_manager_state(acc.manager, plugin, updated_plugin_state)
+  defp handle_output_ok(acc, plugin, up) do
+    mgr = update_manager_from_plugin(acc.manager, plugin, up)
+    {:cont, %{acc | manager: mgr}}
+  end
 
-        {:cont, %{acc | manager: updated_manager}}
+  defp handle_output_halt(acc, _plugin, t) when is_binary(t) do
+    {:halt, %{acc | transformed_output: t}}
+  end
 
-      {:error, reason} ->
-        Common.log_plugin_error(plugin, :handle_output, reason)
-        {:cont, acc}
+  defp handle_output_halt(acc, plugin, {up, t}) when is_binary(t) do
+    mgr = update_manager_from_plugin(acc.manager, plugin, up)
+    {:halt, %{acc | manager: mgr, transformed_output: t}}
+  end
 
-      {:halt, transformed_output} when is_binary(transformed_output) ->
-        {:halt, %{acc | transformed_output: transformed_output}}
-
-      {:halt, {updated_plugin, transformed_output}}
-      when is_binary(transformed_output) ->
-        updated_plugin_state = Common.extract_plugin_state(updated_plugin)
-
-        updated_manager =
-          Common.update_manager_state(acc.manager, plugin, updated_plugin_state)
-
-        {:halt,
-         %{
-           acc
-           | manager: updated_manager,
-             transformed_output: transformed_output
-         }}
-
-      other ->
-        Common.log_unexpected_result(plugin, :handle_output, other)
-        {:cont, acc}
-    end
+  defp update_manager_from_plugin(manager, plugin, updated_plugin) do
+    updated_plugin_state = Common.extract_plugin_state(updated_plugin)
+    Common.update_manager_state(manager, plugin, updated_plugin_state)
   end
 end

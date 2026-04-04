@@ -228,38 +228,25 @@ defmodule Raxol.Core.Runtime.Events.Bubbler do
 
       module ->
         state = component_state_from_element(element)
-
-        case module.handle_event(event, state, context) do
-          :passthrough ->
-            :passthrough
-
-          {:handled, _state} ->
-            {:handled, :ok}
-
-          {:ok, _state} ->
-            {:handled, :ok}
-
-          {_state, commands} when is_list(commands) ->
-            if commands == [] do
-              {:handled, :ok}
-            else
-              {:commands, commands}
-            end
-
-          {:update, _state, commands} ->
-            {:commands, commands}
-
-          {:noreply, _state, _term} ->
-            {:handled, :ok}
-
-          _ ->
-            :passthrough
-        end
+        dispatch_component_event(module, event, state, context)
     end
   rescue
     e ->
       Logger.debug("Component handle_event raised: #{Exception.message(e)}")
       :passthrough
+  end
+
+  defp dispatch_component_event(module, event, state, context) do
+    case module.handle_event(event, state, context) do
+      :passthrough -> :passthrough
+      {:handled, _state} -> {:handled, :ok}
+      {:ok, _state} -> {:handled, :ok}
+      {_state, []} -> {:handled, :ok}
+      {_state, commands} when is_list(commands) -> {:commands, commands}
+      {:update, _state, commands} -> {:commands, commands}
+      {:noreply, _state, _term} -> {:handled, :ok}
+      _ -> :passthrough
+    end
   end
 
   # Map element types to their component modules

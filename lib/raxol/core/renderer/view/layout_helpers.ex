@@ -35,50 +35,33 @@ defmodule Raxol.Core.Renderer.View.LayoutHelpers do
   NOTE: Only panel/1 (with a keyword list) is supported. Update any panel/2 usages to panel/1.
   """
   def panel(opts \\ []) do
-    require Keyword
-
-    case Keyword.keyword?(opts) do
-      false ->
-        raise ArgumentError,
-              "LayoutHelpers.panel macro expects a keyword list as the first argument, got: #{inspect(opts)}"
-
-      true ->
-        :ok
+    unless Keyword.keyword?(opts) do
+      raise ArgumentError,
+            "LayoutHelpers.panel macro expects a keyword list as the first argument, got: #{inspect(opts)}"
     end
 
-    border = Keyword.get(opts, :border, :single)
-    padding = Keyword.get(opts, :padding, 1)
-    children = Keyword.get(opts, :children, [])
-    style = Keyword.get(opts, :style, [])
-    title = Keyword.get(opts, :title)
-    fg = Keyword.get(opts, :fg)
-    bg = Keyword.get(opts, :bg)
-
-    box_opts =
-      [
-        border: border,
-        padding: padding,
-        children: children,
-        fg: fg,
-        bg: bg
-      ]
-      |> Keyword.merge(
-        case title do
-          nil -> []
-          _ -> [title: title]
-        end
-      )
-      |> Keyword.merge(
-        case style do
-          [] -> []
-          _ -> [style: style]
-        end
-      )
-
-    # Note: This will need to be updated to use the new Box module
-    # For now, we'll delegate to the main View module
-    Raxol.Core.Renderer.View.box(box_opts)
+    opts
+    |> build_panel_opts()
+    |> Raxol.Core.Renderer.View.box()
   end
+
+  defp build_panel_opts(opts) do
+    base = [
+      border: Keyword.get(opts, :border, :single),
+      padding: Keyword.get(opts, :padding, 1),
+      children: Keyword.get(opts, :children, []),
+      fg: Keyword.get(opts, :fg),
+      bg: Keyword.get(opts, :bg)
+    ]
+
+    base
+    |> maybe_add_panel_opt(:title, Keyword.get(opts, :title))
+    |> maybe_add_panel_opt(:style, Keyword.get(opts, :style, []))
+  end
+
+  defp maybe_add_panel_opt(opts, _key, nil), do: opts
+  defp maybe_add_panel_opt(opts, :style, []), do: opts
+  defp maybe_add_panel_opt(opts, key, value), do: Keyword.put(opts, key, value)
 
   # Private helper functions
 

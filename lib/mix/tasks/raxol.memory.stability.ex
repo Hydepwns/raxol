@@ -171,10 +171,17 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
   defp simulate_vim_session(duration) do
     Mix.shell().info("Simulating Vim session...")
     buffer = Raxol.Terminal.ScreenBuffer.new(120, 40)
+    deadline = System.monotonic_time(:millisecond) + duration * 1000
 
-    start_time = System.monotonic_time(:millisecond)
-    operations_count = 0
+    run_timed_simulation(
+      buffer,
+      deadline,
+      &random_vim_operation/0,
+      "vim_session"
+    )
+  end
 
+  defp random_vim_operation do
     vim_operations = [
       &vim_write_text/1,
       &vim_navigate/1,
@@ -183,27 +190,32 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
       &vim_buffer_management/1
     ]
 
-    Stream.repeatedly(fn -> Enum.random(vim_operations) end)
-    |> Stream.scan({buffer, operations_count}, fn operation,
-                                                  {current_buffer, count} ->
-      if System.monotonic_time(:millisecond) - start_time < duration * 1000 do
+    Enum.random(vim_operations)
+  end
+
+  defp run_timed_simulation(buffer, deadline, operation_fn, type) do
+    Stream.repeatedly(operation_fn)
+    |> Stream.scan({buffer, 0}, fn operation, {current_buffer, count} ->
+      if System.monotonic_time(:millisecond) < deadline do
         execute_vim_operation(operation, current_buffer, count)
       else
         {current_buffer, count}
       end
     end)
-    |> Stream.take_while(fn {_buffer, _count} ->
-      System.monotonic_time(:millisecond) - start_time < duration * 1000
+    |> Stream.take_while(fn _ ->
+      System.monotonic_time(:millisecond) < deadline
     end)
     |> Enum.to_list()
     |> List.last()
-    |> case do
-      {final_buffer, final_count} ->
-        %{buffer: final_buffer, operations: final_count, type: "vim_session"}
+    |> format_simulation_result(type)
+  end
 
-      _ ->
-        %{operations: 0, type: "vim_session"}
-    end
+  defp format_simulation_result({final_buffer, final_count}, type) do
+    %{buffer: final_buffer, operations: final_count, type: type}
+  end
+
+  defp format_simulation_result(_, type) do
+    %{operations: 0, type: type}
   end
 
   defp simulate_log_streaming(duration) do

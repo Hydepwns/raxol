@@ -18,96 +18,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
         %Event{type: :key, data: %{key: key, modifiers: modifiers}},
         state
       ) do
-    case {key, modifiers} do
-      # Character input
-      {char, []} when is_binary(char) and byte_size(char) == 1 ->
-        {:update, {:input, char}, state}
-
-      # Enter key
-      {:enter, []} ->
-        {:update, {:enter}, state}
-
-      # Backspace
-      {:backspace, []} ->
-        {:update, {:backspace}, state}
-
-      # Delete
-      {:delete, []} ->
-        {:update, {:delete}, state}
-
-      # Arrow keys
-      {:up, []} ->
-        {:update, {:move_cursor, :up}, state}
-
-      {:down, []} ->
-        {:update, {:move_cursor, :down}, state}
-
-      {:left, []} ->
-        {:update, {:move_cursor, :left}, state}
-
-      {:right, []} ->
-        {:update, {:move_cursor, :right}, state}
-
-      # Arrow keys with shift (selection)
-      {:up, [:shift]} ->
-        {:update, {:selection_move, :up}, state}
-
-      {:down, [:shift]} ->
-        {:update, {:selection_move, :down}, state}
-
-      {:left, [:shift]} ->
-        {:update, {:selection_move, :left}, state}
-
-      {:right, [:shift]} ->
-        {:update, {:selection_move, :right}, state}
-
-      # Home/End
-      {:home, []} ->
-        {:update, {:move_cursor_line_start}, state}
-
-      {:end, []} ->
-        {:update, {:move_cursor_line_end}, state}
-
-      # Page up/down (both variants)
-      {:page_up, []} ->
-        {:update, {:move_cursor_page, :up}, state}
-
-      {:page_down, []} ->
-        {:update, {:move_cursor_page, :down}, state}
-
-      {:pageup, []} ->
-        {:update, {:move_cursor_page, :up}, state}
-
-      {:pagedown, []} ->
-        {:update, {:move_cursor_page, :down}, state}
-
-      # Ctrl combinations
-      {"a", [:ctrl]} ->
-        {:update, {:select_all}, state}
-
-      {"c", [:ctrl]} ->
-        {:update, {:copy}, state}
-
-      {"v", [:ctrl]} ->
-        {:update, {:paste}, state}
-
-      {"x", [:ctrl]} ->
-        {:update, {:cut}, state}
-
-      {"z", [:ctrl]} ->
-        {:update, :undo, state}
-
-      {"y", [:ctrl]} ->
-        {:update, :redo, state}
-
-      # Tab - insert tab character
-      {:tab, []} ->
-        {:update, {:input, ?\t}, state}
-
-      # Default case - no action for unknown key events
-      _ ->
-        {:noreply, state, nil}
-    end
+    dispatch_key(key, modifiers, state)
   end
 
   def handle_event(
@@ -130,4 +41,65 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     # Default case for other event types
     {:noreply, state, nil}
   end
+
+  # Character input
+  defp dispatch_key(char, [], state)
+       when is_binary(char) and byte_size(char) == 1,
+       do: {:update, {:input, char}, state}
+
+  # Editing keys
+  defp dispatch_key(:enter, [], state), do: {:update, {:enter}, state}
+  defp dispatch_key(:backspace, [], state), do: {:update, {:backspace}, state}
+  defp dispatch_key(:delete, [], state), do: {:update, {:delete}, state}
+  defp dispatch_key(:tab, [], state), do: {:update, {:input, ?\t}, state}
+
+  # Arrow keys (no modifier)
+  defp dispatch_key(:up, [], state), do: {:update, {:move_cursor, :up}, state}
+
+  defp dispatch_key(:down, [], state),
+    do: {:update, {:move_cursor, :down}, state}
+
+  defp dispatch_key(:left, [], state),
+    do: {:update, {:move_cursor, :left}, state}
+
+  defp dispatch_key(:right, [], state),
+    do: {:update, {:move_cursor, :right}, state}
+
+  # Arrow keys with shift (selection)
+  defp dispatch_key(:up, [:shift], state),
+    do: {:update, {:selection_move, :up}, state}
+
+  defp dispatch_key(:down, [:shift], state),
+    do: {:update, {:selection_move, :down}, state}
+
+  defp dispatch_key(:left, [:shift], state),
+    do: {:update, {:selection_move, :left}, state}
+
+  defp dispatch_key(:right, [:shift], state),
+    do: {:update, {:selection_move, :right}, state}
+
+  # Home/End
+  defp dispatch_key(:home, [], state),
+    do: {:update, {:move_cursor_line_start}, state}
+
+  defp dispatch_key(:end, [], state),
+    do: {:update, {:move_cursor_line_end}, state}
+
+  # Page up/down (both variants)
+  defp dispatch_key(k, [], state) when k in [:page_up, :pageup],
+    do: {:update, {:move_cursor_page, :up}, state}
+
+  defp dispatch_key(k, [], state) when k in [:page_down, :pagedown],
+    do: {:update, {:move_cursor_page, :down}, state}
+
+  # Ctrl combinations
+  defp dispatch_key("a", [:ctrl], state), do: {:update, {:select_all}, state}
+  defp dispatch_key("c", [:ctrl], state), do: {:update, {:copy}, state}
+  defp dispatch_key("v", [:ctrl], state), do: {:update, {:paste}, state}
+  defp dispatch_key("x", [:ctrl], state), do: {:update, {:cut}, state}
+  defp dispatch_key("z", [:ctrl], state), do: {:update, :undo, state}
+  defp dispatch_key("y", [:ctrl], state), do: {:update, :redo, state}
+
+  # Default case
+  defp dispatch_key(_key, _modifiers, state), do: {:noreply, state, nil}
 end

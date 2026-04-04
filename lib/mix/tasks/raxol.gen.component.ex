@@ -40,12 +40,22 @@ defmodule Mix.Tasks.Raxol.Gen.Component do
   end
 
   defp generate(name, opts) do
+    validate_component_name!(name)
+
+    {module, filename} = derive_module_and_filename(name)
+    write_component_files(module, filename, opts)
+    print_generation_summary(name, module)
+  end
+
+  defp validate_component_name!(name) do
     unless name =~ ~r/^[A-Z][A-Za-z0-9]*(\.[A-Z][A-Za-z0-9]*)*$/ do
       Mix.raise(
         "Component name must be a valid Elixir module name (e.g., Sidebar, StatusBar). Got: #{name}"
       )
     end
+  end
 
+  defp derive_module_and_filename(name) do
     app =
       Mix.Project.config()[:app] ||
         Mix.raise("Could not determine app name from mix.exs")
@@ -53,17 +63,18 @@ defmodule Mix.Tasks.Raxol.Gen.Component do
     app_module = app |> to_string() |> Macro.camelize()
     module = "#{app_module}.Components.#{name}"
     filename = name |> Macro.underscore() |> String.replace("/", "_")
-    skip_test = Keyword.get(opts, :no_test, false)
+    {module, "#{app}/#{filename}"}
+  end
 
-    write_file("lib/#{app}/components/#{filename}.ex", component_module(module))
+  defp write_component_files(module, path, opts) do
+    write_file("lib/#{path}.ex", component_module(module))
 
-    unless skip_test do
-      write_file(
-        "test/#{app}/components/#{filename}_test.exs",
-        component_test(module)
-      )
+    unless Keyword.get(opts, :no_test, false) do
+      write_file("test/#{path}_test.exs", component_test(module))
     end
+  end
 
+  defp print_generation_summary(name, module) do
     Mix.shell().info("")
     Mix.shell().info([:green, :bright, "Component #{name} created.", :reset])
     Mix.shell().info("")

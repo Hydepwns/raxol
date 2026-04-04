@@ -142,23 +142,25 @@ defmodule Raxol.Config.Schema.Validator do
 
   defp validate_constraint(_value, _constraint, _path), do: :ok
 
+  defp validate_field(nil, field_schema, field_path) do
+    if Map.get(field_schema, :required, false),
+      do: [{field_path, "required field is missing"}],
+      else: []
+  end
+
   defp validate_field(value, field_schema, field_path) do
-    cond do
-      is_nil(value) and Map.get(field_schema, :required, false) ->
-        [{field_path, "required field is missing"}]
+    if is_map(field_schema) and not Map.has_key?(field_schema, :type) do
+      validate_map(value, field_schema, field_path)
+    else
+      collect_validation_errors(value, field_schema, field_path)
+    end
+  end
 
-      is_nil(value) ->
-        []
-
-      is_map(field_schema) and not Map.has_key?(field_schema, :type) ->
-        validate_map(value, field_schema, field_path)
-
-      true ->
-        case do_validate(value, field_schema, field_path) do
-          :ok -> []
-          {:error, errors} when is_list(errors) -> errors
-          {:error, error} -> [error]
-        end
+  defp collect_validation_errors(value, field_schema, field_path) do
+    case do_validate(value, field_schema, field_path) do
+      :ok -> []
+      {:error, errors} when is_list(errors) -> errors
+      {:error, error} -> [error]
     end
   end
 

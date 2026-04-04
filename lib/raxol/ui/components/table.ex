@@ -402,30 +402,22 @@ defmodule Raxol.UI.Components.Table do
   defp handle_button_click(_button_id, state), do: {:ok, state}
 
   defp categorize_button(button_id) do
-    Enum.find_value(
-      [
-        {&String.ends_with?(&1, "_next_page"), :next_page},
-        {&String.ends_with?(&1, "_prev_page"), :prev_page},
-        {&String.contains?(&1, "_sort_"),
-         fn id ->
-           column_id = String.replace(id, ~r/.*_sort_/, "") |> String.to_atom()
-           {:sort, column_id}
-         end}
-      ],
-      :unknown,
-      fn {predicate, result} ->
-        case predicate.(button_id) do
-          true ->
-            case result do
-              fun when is_function(fun) -> fun.(button_id)
-              value -> value
-            end
+    cond do
+      String.ends_with?(button_id, "_next_page") ->
+        :next_page
 
-          false ->
-            nil
-        end
-      end
-    )
+      String.ends_with?(button_id, "_prev_page") ->
+        :prev_page
+
+      String.contains?(button_id, "_sort_") ->
+        column_id =
+          button_id |> String.replace(~r/.*_sort_/, "") |> String.to_atom()
+
+        {:sort, column_id}
+
+      true ->
+        :unknown
+    end
   end
 
   defp handle_next_page_click(%{options: %{paginate: true}} = state) do

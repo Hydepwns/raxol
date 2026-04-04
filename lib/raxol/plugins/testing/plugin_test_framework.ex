@@ -652,9 +652,7 @@ defmodule Raxol.Plugins.Testing.BenchmarkHelper do
     {time, _result} =
       :timer.tc(fn ->
         Enum.each(1..iterations, fn _ ->
-          Enum.each(keys, fn key ->
-            GenServer.call(plugin_pid, {:handle_keypress, key})
-          end)
+          send_all_keys(plugin_pid, keys)
         end)
       end)
 
@@ -666,5 +664,11 @@ defmodule Raxol.Plugins.Testing.BenchmarkHelper do
       total_keypresses: total_keypresses,
       time_per_keypress: time_per_keypress
     }
+  end
+
+  defp send_all_keys(plugin_pid, keys) do
+    Enum.each(keys, fn key ->
+      GenServer.call(plugin_pid, {:handle_keypress, key})
+    end)
   end
 end

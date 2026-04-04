@@ -137,29 +137,7 @@ defmodule Raxol.UI.Components.Display.Viewport do
 
   @impl true
   def handle_event(%{type: :key, data: %{key: key}}, state, _context) do
-    case key do
-      k when k in [:up, "Up"] ->
-        scroll(state, -1)
-
-      k when k in [:down, "Down"] ->
-        scroll(state, 1)
-
-      k when k in [:page_up, :pageup, "PageUp"] ->
-        scroll(state, -state.visible_height)
-
-      k when k in [:page_down, :pagedown, "PageDown"] ->
-        scroll(state, state.visible_height)
-
-      k when k in [:home, "Home"] ->
-        {%{state | scroll_top: 0}, []}
-
-      k when k in [:end, "End"] ->
-        scroll_top = max_scroll(state.content_height, state.visible_height)
-        {%{state | scroll_top: scroll_top}, []}
-
-      _ ->
-        {state, []}
-    end
+    handle_key(key, state)
   end
 
   def handle_event(%{type: :focus}, state, _context) do
@@ -171,6 +149,25 @@ defmodule Raxol.UI.Components.Display.Viewport do
   end
 
   def handle_event(_event, state, _context), do: {state, []}
+
+  defp handle_key(k, state) when k in [:up, "Up"], do: scroll(state, -1)
+  defp handle_key(k, state) when k in [:down, "Down"], do: scroll(state, 1)
+
+  defp handle_key(k, state) when k in [:page_up, :pageup, "PageUp"],
+    do: scroll(state, -state.visible_height)
+
+  defp handle_key(k, state) when k in [:page_down, :pagedown, "PageDown"],
+    do: scroll(state, state.visible_height)
+
+  defp handle_key(k, state) when k in [:home, "Home"],
+    do: {%{state | scroll_top: 0}, []}
+
+  defp handle_key(k, state) when k in [:end, "End"] do
+    scroll_top = max_scroll(state.content_height, state.visible_height)
+    {%{state | scroll_top: scroll_top}, []}
+  end
+
+  defp handle_key(_key, state), do: {state, []}
 
   @impl true
   @spec render(t(), map()) :: map()

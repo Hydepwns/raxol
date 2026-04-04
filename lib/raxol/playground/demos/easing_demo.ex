@@ -33,28 +33,22 @@ defmodule Raxol.Playground.Demos.EasingDemo do
   def update(message, model) do
     case message do
       key_match(:up) ->
-        idx = max(0, model.easing_index - 1)
-        {%{model | easing_index: idx, progress: 0.0, tick: 0}, []}
+        {select_easing(model, -1), []}
 
       key_match(:down) ->
-        idx = min(length(@easings) - 1, model.easing_index + 1)
-        {%{model | easing_index: idx, progress: 0.0, tick: 0}, []}
+        {select_easing(model, 1), []}
 
       key_match(:left) ->
-        idx = max(0, model.easing_index - 1)
-        {%{model | easing_index: idx, progress: 0.0, tick: 0}, []}
+        {select_easing(model, -1), []}
 
       key_match(:right) ->
-        idx = min(length(@easings) - 1, model.easing_index + 1)
-        {%{model | easing_index: idx, progress: 0.0, tick: 0}, []}
+        {select_easing(model, 1), []}
 
       key_match("r") ->
         {%{model | progress: 0.0, tick: 0}, []}
 
       :tick ->
-        new_tick = model.tick + 1
-        progress = rem(new_tick, @cycle_ticks) / @cycle_ticks
-        {%{model | tick: new_tick, progress: progress}, []}
+        {advance_tick(model), []}
 
       _ ->
         {model, []}
@@ -90,6 +84,18 @@ defmodule Raxol.Playground.Demos.EasingDemo do
   @impl true
   def subscribe(_model) do
     [subscribe_interval(@tick_interval_ms, :tick)]
+  end
+
+  defp select_easing(model, delta) do
+    max_idx = length(@easings) - 1
+    idx = Raxol.Core.Utils.Math.clamp(model.easing_index + delta, 0, max_idx)
+    %{model | easing_index: idx, progress: 0.0, tick: 0}
+  end
+
+  defp advance_tick(model) do
+    new_tick = model.tick + 1
+    progress = rem(new_tick, @cycle_ticks) / @cycle_ticks
+    %{model | tick: new_tick, progress: progress}
   end
 
   defp current_easing(model) do

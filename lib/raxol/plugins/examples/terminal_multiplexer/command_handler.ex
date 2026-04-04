@@ -30,63 +30,70 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexer.CommandHandler do
   def handle_prefixed_command(key, state) do
     new_state = %{state | prefix_active: false}
 
+    dispatch_prefixed_window(key, new_state) ||
+      dispatch_prefixed_pane(key, new_state) ||
+      dispatch_prefixed_misc(key, new_state) ||
+      {:ok, new_state}
+  end
+
+  defp dispatch_prefixed_window(key, state) do
     case key do
       "c" ->
-        WindowManager.create_new_window(new_state)
+        WindowManager.create_new_window(state)
 
       "n" ->
-        WindowManager.next_window(new_state)
+        WindowManager.next_window(state)
 
       "p" ->
-        WindowManager.previous_window(new_state)
-
-      "%" ->
-        PaneManager.split_horizontal(new_state)
-
-      "\"" ->
-        PaneManager.split_vertical(new_state)
-
-      "o" ->
-        PaneManager.next_pane(new_state)
-
-      "x" ->
-        PaneManager.close_pane(new_state)
-
-      "z" ->
-        PaneManager.zoom_pane(new_state)
+        WindowManager.previous_window(state)
 
       "d" ->
-        WindowManager.detach_session(new_state)
+        WindowManager.detach_session(state)
 
       "s" ->
-        WindowManager.show_sessions(new_state)
+        WindowManager.show_sessions(state)
 
       "w" ->
-        WindowManager.show_windows(new_state)
-
-      ":" ->
-        enter_command_mode(new_state)
-
-      "?" ->
-        show_help(new_state)
-
-      "up" ->
-        PaneManager.select_pane(new_state, :up)
-
-      "down" ->
-        PaneManager.select_pane(new_state, :down)
-
-      "left" ->
-        PaneManager.select_pane(new_state, :left)
-
-      "right" ->
-        PaneManager.select_pane(new_state, :right)
+        WindowManager.show_windows(state)
 
       digit when digit in ~w(0 1 2 3 4 5 6 7 8 9) ->
-        WindowManager.switch_to_window(new_state, String.to_integer(digit))
+        WindowManager.switch_to_window(state, String.to_integer(digit))
 
       _ ->
-        {:ok, new_state}
+        nil
+    end
+  end
+
+  defp dispatch_prefixed_pane(key, state) do
+    dispatch_pane_action(key, state) || dispatch_pane_navigation(key, state)
+  end
+
+  defp dispatch_pane_action(key, state) do
+    case key do
+      "%" -> PaneManager.split_horizontal(state)
+      "\"" -> PaneManager.split_vertical(state)
+      "o" -> PaneManager.next_pane(state)
+      "x" -> PaneManager.close_pane(state)
+      "z" -> PaneManager.zoom_pane(state)
+      _ -> nil
+    end
+  end
+
+  defp dispatch_pane_navigation(key, state) do
+    case key do
+      "up" -> PaneManager.select_pane(state, :up)
+      "down" -> PaneManager.select_pane(state, :down)
+      "left" -> PaneManager.select_pane(state, :left)
+      "right" -> PaneManager.select_pane(state, :right)
+      _ -> nil
+    end
+  end
+
+  defp dispatch_prefixed_misc(key, state) do
+    case key do
+      ":" -> enter_command_mode(state)
+      "?" -> show_help(state)
+      _ -> nil
     end
   end
 

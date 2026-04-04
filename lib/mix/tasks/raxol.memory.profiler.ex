@@ -292,28 +292,33 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
         String.pad_trailing("Memory", 12) <> "Heap"
     )
 
-    # Get process information
-    processes =
-      Process.list()
-      |> Enum.map(fn pid ->
-        case Process.info(pid, [:memory, :registered_name, :current_function]) do
-          [memory: mem, registered_name: name, current_function: func] ->
-            %{pid: pid, memory: mem, name: name || func, registered_name: name}
+    top_processes()
+    |> Enum.each(&print_process_row/1)
+  end
 
-          _ ->
-            nil
-        end
-      end)
-      |> Enum.reject(&is_nil/1)
-      |> Enum.sort_by(& &1.memory, :desc)
-      |> Enum.take(10)
+  defp top_processes do
+    Process.list()
+    |> Enum.map(&extract_process_info/1)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.sort_by(& &1.memory, :desc)
+    |> Enum.take(10)
+  end
 
-    Enum.each(processes, fn proc ->
-      pid_str = inspect(proc.pid) |> String.pad_trailing(8)
-      name_str = format_process_name(proc.name) |> String.pad_trailing(25)
-      memory_str = format_memory(proc.memory) |> String.pad_trailing(12)
-      Log.info("  #{pid_str}#{name_str}#{memory_str}")
-    end)
+  defp extract_process_info(pid) do
+    case Process.info(pid, [:memory, :registered_name, :current_function]) do
+      [memory: mem, registered_name: name, current_function: func] ->
+        %{pid: pid, memory: mem, name: name || func, registered_name: name}
+
+      _ ->
+        nil
+    end
+  end
+
+  defp print_process_row(proc) do
+    pid_str = inspect(proc.pid) |> String.pad_trailing(8)
+    name_str = format_process_name(proc.name) |> String.pad_trailing(25)
+    memory_str = format_memory(proc.memory) |> String.pad_trailing(12)
+    Log.info("  #{pid_str}#{name_str}#{memory_str}")
   end
 
   defp draw_gc_view do

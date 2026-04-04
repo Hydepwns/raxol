@@ -58,36 +58,43 @@ defmodule Mix.Tasks.Raxol.New do
   @impl Mix.Task
   def run(args) do
     case OptionParser.parse(args, strict: @switches) do
-      {opts, [], _} ->
-        if Keyword.get(opts, :list, false) do
-          Templates.print_template_list()
-        else
-          print_usage()
-        end
-
-      {opts, [name], _} ->
-        if Keyword.get(opts, :list, false) do
-          Templates.print_template_list()
-        else
-          opts = maybe_prompt_interactive(opts)
-          template = Keyword.get(opts, :template, "counter")
-
-          if template not in @templates do
-            Mix.raise(
-              "Unknown template: #{template}. Available: #{Enum.join(@templates, ", ")}"
-            )
-          end
-
-          Generator.generate(
-            name,
-            Keyword.put(opts, :template, template),
-            @raxol_version
-          )
-        end
-
-      _ ->
-        print_usage()
+      {opts, [], _} -> handle_no_args(opts)
+      {opts, [name], _} -> handle_name_arg(name, opts)
+      _ -> print_usage()
     end
+  end
+
+  defp handle_no_args(opts) do
+    if Keyword.get(opts, :list, false) do
+      Templates.print_template_list()
+    else
+      print_usage()
+    end
+  end
+
+  defp handle_name_arg(name, opts) do
+    if Keyword.get(opts, :list, false) do
+      Templates.print_template_list()
+    else
+      generate_app(name, opts)
+    end
+  end
+
+  defp generate_app(name, opts) do
+    opts = maybe_prompt_interactive(opts)
+    template = Keyword.get(opts, :template, "counter")
+
+    if template not in @templates do
+      Mix.raise(
+        "Unknown template: #{template}. Available: #{Enum.join(@templates, ", ")}"
+      )
+    end
+
+    Generator.generate(
+      name,
+      Keyword.put(opts, :template, template),
+      @raxol_version
+    )
   end
 
   # ---------------------------------------------------------------------------

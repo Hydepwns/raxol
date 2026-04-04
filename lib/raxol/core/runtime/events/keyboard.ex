@@ -115,27 +115,23 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     Enum.any?(quit_keys, &matches_quit_key(&1, key, modifiers))
   end
 
-  defp matches_quit_key(quit_key, key, modifiers) do
-    case quit_key do
-      :ctrl_c ->
-        key == ?c and Keyword.get(modifiers, :ctrl, false)
+  defp matches_quit_key(:ctrl_c, key, modifiers),
+    do: key == ?c and Keyword.get(modifiers, :ctrl, false)
 
-      :ctrl_q ->
-        key == ?q and Keyword.get(modifiers, :ctrl, false)
+  defp matches_quit_key(:ctrl_q, key, modifiers),
+    do: key == ?q and Keyword.get(modifiers, :ctrl, false)
 
-      {key_val, mods} when is_list(mods) ->
-        key == key_val and modifiers_match?(modifiers, mods)
+  defp matches_quit_key({key_val, mods}, key, modifiers) when is_list(mods),
+    do: key == key_val and modifiers_match?(modifiers, mods)
 
-      key_val when is_atom(key_val) or is_integer(key_val) ->
-        key == key_val
+  defp matches_quit_key(key_val, key, _modifiers)
+       when is_atom(key_val) or is_integer(key_val),
+       do: key == key_val
 
-      {:unrecognized, other} ->
-        log_unknown_quit_key(other)
+  defp matches_quit_key({:unrecognized, other}, _key, _modifiers),
+    do: log_unknown_quit_key(other)
 
-      _ ->
-        false
-    end
-  end
+  defp matches_quit_key(_quit_key, _key, _modifiers), do: false
 
   defp log_unknown_quit_key(other) do
     Raxol.Core.Runtime.Log.warning_with_context(

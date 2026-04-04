@@ -78,57 +78,66 @@ defmodule Raxol.Plugins.EventHandler.MouseEvents do
 
   # Private result handlers
 
-  defp handle_mouse_event_result(acc, plugin, _callback_name, result) do
-    case result do
-      {:ok, modified_cells} when is_map(modified_cells) ->
-        {:cont, %{acc | modified_cells: modified_cells}}
+  defp handle_mouse_event_result(acc, plugin, _callback_name, {:ok, result}) do
+    handle_mouse_ok(acc, plugin, result)
+  end
 
-      {:ok, {updated_plugin, modified_cells}} when is_map(modified_cells) ->
-        updated_plugin_state = Common.extract_plugin_state(updated_plugin)
+  defp handle_mouse_event_result(acc, plugin, _callback_name, {:halt, result}) do
+    handle_mouse_halt(acc, plugin, result)
+  end
 
-        updated_manager =
-          Common.update_manager_state(acc.manager, plugin, updated_plugin_state)
+  defp handle_mouse_event_result(acc, plugin, _callback_name, {:error, reason}) do
+    Common.log_plugin_error(plugin, :handle_mouse_event, reason)
+    {:cont, acc}
+  end
 
-        {:cont,
-         %{
-           acc
-           | manager: updated_manager,
-             modified_cells: modified_cells
-         }}
+  defp handle_mouse_event_result(acc, plugin, _callback_name, other) do
+    Common.log_unexpected_result(plugin, :handle_mouse_event, other)
+    {:cont, acc}
+  end
 
-      {:ok, updated_plugin} ->
-        updated_plugin_state = Common.extract_plugin_state(updated_plugin)
+  defp handle_mouse_ok(acc, _plugin, modified_cells)
+       when is_map(modified_cells) do
+    {:cont, %{acc | modified_cells: modified_cells}}
+  end
 
-        updated_manager =
-          Common.update_manager_state(acc.manager, plugin, updated_plugin_state)
+  defp handle_mouse_ok(acc, plugin, {updated_plugin, modified_cells})
+       when is_map(modified_cells) do
+    updated_manager =
+      update_manager_from_plugin(acc.manager, plugin, updated_plugin)
 
-        {:cont, %{acc | manager: updated_manager}}
+    {:cont, %{acc | manager: updated_manager, modified_cells: modified_cells}}
+  end
 
-      {:halt, modified_cells} when is_map(modified_cells) ->
-        {:halt, %{acc | modified_cells: modified_cells, halt_requested: true}}
+  defp handle_mouse_ok(acc, plugin, updated_plugin) do
+    updated_manager =
+      update_manager_from_plugin(acc.manager, plugin, updated_plugin)
 
-      {:halt, {updated_plugin, modified_cells}} when is_map(modified_cells) ->
-        updated_plugin_state = Common.extract_plugin_state(updated_plugin)
+    {:cont, %{acc | manager: updated_manager}}
+  end
 
-        updated_manager =
-          Common.update_manager_state(acc.manager, plugin, updated_plugin_state)
+  defp handle_mouse_halt(acc, _plugin, modified_cells)
+       when is_map(modified_cells) do
+    {:halt, %{acc | modified_cells: modified_cells, halt_requested: true}}
+  end
 
-        {:halt,
-         %{
-           acc
-           | manager: updated_manager,
-             modified_cells: modified_cells,
-             halt_requested: true
-         }}
+  defp handle_mouse_halt(acc, plugin, {updated_plugin, modified_cells})
+       when is_map(modified_cells) do
+    updated_manager =
+      update_manager_from_plugin(acc.manager, plugin, updated_plugin)
 
-      {:error, reason} ->
-        Common.log_plugin_error(plugin, :handle_mouse_event, reason)
-        {:cont, acc}
+    {:halt,
+     %{
+       acc
+       | manager: updated_manager,
+         modified_cells: modified_cells,
+         halt_requested: true
+     }}
+  end
 
-      other ->
-        Common.log_unexpected_result(plugin, :handle_mouse_event, other)
-        {:cont, acc}
-    end
+  defp update_manager_from_plugin(manager, plugin, updated_plugin) do
+    updated_plugin_state = Common.extract_plugin_state(updated_plugin)
+    Common.update_manager_state(manager, plugin, updated_plugin_state)
   end
 
   defp handle_resize_result(acc, plugin, _callback_name, result) do

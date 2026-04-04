@@ -37,36 +37,15 @@ defmodule Mix.Tasks.Raxol do
   @shortdoc "Main Raxol task runner"
 
   @impl Mix.Task
-  def run(args) do
-    case args do
-      [] ->
-        show_help()
-
-      ["help" | _] ->
-        show_help()
-
-      ["check" | rest] ->
-        run_check_tasks(rest)
-
-      ["test" | rest] ->
-        run_test_tasks(rest)
-
-      ["dev" | rest] ->
-        run_dev_tasks(rest)
-
-      ["docs" | rest] ->
-        run_docs_tasks(rest)
-
-      ["setup" | rest] ->
-        run_setup_tasks(rest)
-
-      ["clean" | rest] ->
-        run_clean_tasks(rest)
-
-      [unknown | _] ->
-        handle_unknown_command(unknown)
-    end
-  end
+  def run([]), do: show_help()
+  def run(["help" | _]), do: show_help()
+  def run(["check" | rest]), do: run_check_tasks(rest)
+  def run(["test" | rest]), do: run_test_tasks(rest)
+  def run(["dev" | rest]), do: run_dev_tasks(rest)
+  def run(["docs" | rest]), do: run_docs_tasks(rest)
+  def run(["setup" | rest]), do: run_setup_tasks(rest)
+  def run(["clean" | rest]), do: run_clean_tasks(rest)
+  def run([unknown | _]), do: handle_unknown_command(unknown)
 
   @commands ~w(check test dev docs setup clean help)
   @check_subcommands ~w(format compile credo)

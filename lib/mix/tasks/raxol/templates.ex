@@ -37,13 +37,7 @@ defmodule Mix.Raxol.Templates do
 
   @doc "Prints an interactive template prompt and returns the chosen template name."
   def prompt_template(opts) do
-    Mix.shell().info("")
-    Mix.shell().info([:bright, "Available templates:", :reset])
-
-    for {name, i} <- Enum.with_index(@templates, 1) do
-      desc = @template_descriptions[name]
-      Mix.shell().info("  #{i}. #{String.pad_trailing(name, 12)} #{desc}")
-    end
+    print_template_menu()
 
     answer =
       Mix.shell().prompt(
@@ -52,37 +46,29 @@ defmodule Mix.Raxol.Templates do
       |> String.trim()
       |> String.downcase()
 
-    template =
-      case answer do
-        "" ->
-          "counter"
+    Keyword.put(opts, :template, resolve_template(answer))
+  end
 
-        "1" ->
-          "counter"
+  defp print_template_menu do
+    Mix.shell().info("")
+    Mix.shell().info([:bright, "Available templates:", :reset])
 
-        "2" ->
-          "blank"
+    for {name, i} <- Enum.with_index(@templates, 1) do
+      desc = @template_descriptions[name]
+      Mix.shell().info("  #{i}. #{String.pad_trailing(name, 12)} #{desc}")
+    end
+  end
 
-        "3" ->
-          "dashboard"
+  defp resolve_template(""), do: "counter"
+  defp resolve_template("1"), do: "counter"
+  defp resolve_template("2"), do: "blank"
+  defp resolve_template("3"), do: "dashboard"
+  defp resolve_template("4"), do: "todo"
+  defp resolve_template(t) when t in @templates, do: t
 
-        "4" ->
-          "todo"
-
-        t when t in @templates ->
-          t
-
-        _ ->
-          Mix.shell().info([
-            :yellow,
-            "Unknown template, using counter.",
-            :reset
-          ])
-
-          "counter"
-      end
-
-    Keyword.put(opts, :template, template)
+  defp resolve_template(_) do
+    Mix.shell().info([:yellow, "Unknown template, using counter.", :reset])
+    "counter"
   end
 
   # --- Private ---

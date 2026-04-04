@@ -236,14 +236,17 @@ defmodule Raxol.Core.Renderer.Buffer do
   defp copy_cells(cells, {old_w, old_h}, {new_w, new_h}) do
     for y <- 0..(new_h - 1) do
       for x <- 0..(new_w - 1) do
-        case {x < old_w, y < old_h} do
-          {true, true} ->
-            Map.get(cells, {x, y}, Raxol.Terminal.Cell.new())
-
-          _ ->
-            Raxol.Terminal.Cell.new()
-        end
+        copy_single_cell(cells, x, y, old_w, old_h)
       end
     end
+  end
+
+  defp copy_single_cell(cells, x, y, old_w, old_h)
+       when x < old_w and y < old_h do
+    Map.get(cells, {x, y}, Raxol.Terminal.Cell.new())
+  end
+
+  defp copy_single_cell(_cells, _x, _y, _old_w, _old_h) do
+    Raxol.Terminal.Cell.new()
   end
 end

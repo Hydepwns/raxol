@@ -215,40 +215,26 @@ defmodule Raxol.Core.Theming.ThemeRegistry do
           | nil
   def to_terminal_format(theme_name) do
     case get(theme_name) do
-      {:ok, theme} ->
-        %{
-          name: Atom.to_string(theme.name),
-          description: theme.description,
-          author: "Raxol",
-          version: "1.0.0",
-          colors: %{
-            background: hex_to_rgba(theme.ui.background),
-            foreground: hex_to_rgba(theme.ui.foreground),
-            cursor: hex_to_rgba(theme.ui.cursor),
-            selection: hex_to_rgba(theme.ui.selection),
-            black: hex_to_rgba(theme.colors.black),
-            red: hex_to_rgba(theme.colors.red),
-            green: hex_to_rgba(theme.colors.green),
-            yellow: hex_to_rgba(theme.colors.yellow),
-            blue: hex_to_rgba(theme.colors.blue),
-            magenta: hex_to_rgba(theme.colors.magenta),
-            cyan: hex_to_rgba(theme.colors.cyan),
-            white: hex_to_rgba(theme.colors.white),
-            bright_black: hex_to_rgba(theme.colors.bright_black),
-            bright_red: hex_to_rgba(theme.colors.bright_red),
-            bright_green: hex_to_rgba(theme.colors.bright_green),
-            bright_yellow: hex_to_rgba(theme.colors.bright_yellow),
-            bright_blue: hex_to_rgba(theme.colors.bright_blue),
-            bright_magenta: hex_to_rgba(theme.colors.bright_magenta),
-            bright_cyan: hex_to_rgba(theme.colors.bright_cyan),
-            bright_white: hex_to_rgba(theme.colors.bright_white)
-          },
-          styles: default_styles(theme)
-        }
-
-      {:error, _} ->
-        nil
+      {:ok, theme} -> build_terminal_format(theme)
+      {:error, _} -> nil
     end
+  end
+
+  defp build_terminal_format(theme) do
+    %{
+      name: Atom.to_string(theme.name),
+      description: theme.description,
+      author: "Raxol",
+      version: "1.0.0",
+      colors: build_terminal_colors(theme),
+      styles: default_styles(theme)
+    }
+  end
+
+  defp build_terminal_colors(theme) do
+    ui_colors = Map.new(theme.ui, fn {k, v} -> {k, hex_to_rgba(v)} end)
+    ansi_colors = Map.new(theme.colors, fn {k, v} -> {k, hex_to_rgba(v)} end)
+    Map.merge(ui_colors, ansi_colors)
   end
 
   @doc """

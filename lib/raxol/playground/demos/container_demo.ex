@@ -23,48 +23,48 @@ defmodule Raxol.Playground.Demos.ContainerDemo do
 
   @impl true
   def update(message, model) do
+    case message do
+      key_match("j") -> {scroll_down(model), []}
+      key_match(:down) -> {scroll_down(model), []}
+      key_match("k") -> {scroll_up(model), []}
+      key_match(:up) -> {scroll_up(model), []}
+      _ -> handle_viewport_keys(message, model)
+    end
+  end
+
+  defp handle_viewport_keys(message, model) do
+    case message do
+      key_match("g") -> {%{model | scroll_offset: 0}, []}
+      key_match("G") -> {scroll_to_end(model), []}
+      key_match("+") -> {grow_visible(model), []}
+      key_match("-") -> {shrink_visible(model), []}
+      _ -> {model, []}
+    end
+  end
+
+  defp scroll_down(model) do
     max_offset = length(model.items) - model.visible_count
 
-    case message do
-      key_match("j") ->
-        {%{
-           model
-           | scroll_offset:
-               DemoHelpers.cursor_down(model.scroll_offset, max_offset)
-         }, []}
+    %{
+      model
+      | scroll_offset: DemoHelpers.cursor_down(model.scroll_offset, max_offset)
+    }
+  end
 
-      key_match(:down) ->
-        {%{
-           model
-           | scroll_offset:
-               DemoHelpers.cursor_down(model.scroll_offset, max_offset)
-         }, []}
+  defp scroll_up(model) do
+    %{model | scroll_offset: DemoHelpers.cursor_up(model.scroll_offset)}
+  end
 
-      key_match("k") ->
-        {%{model | scroll_offset: DemoHelpers.cursor_up(model.scroll_offset)},
-         []}
+  defp scroll_to_end(model) do
+    %{model | scroll_offset: length(model.items) - model.visible_count}
+  end
 
-      key_match(:up) ->
-        {%{model | scroll_offset: DemoHelpers.cursor_up(model.scroll_offset)},
-         []}
+  defp grow_visible(model) do
+    %{model | visible_count: min(model.visible_count + 1, @max_visible)}
+  end
 
-      key_match("g") ->
-        {%{model | scroll_offset: 0}, []}
-
-      key_match("G") ->
-        {%{model | scroll_offset: max_offset}, []}
-
-      key_match("+") ->
-        {%{model | visible_count: min(model.visible_count + 1, @max_visible)},
-         []}
-
-      key_match("-") ->
-        {%{model | visible_count: max(model.visible_count - 1, @min_visible)},
-         []}
-
-      _ ->
-        {model, []}
-    end
+  defp shrink_visible(model) do
+    %{model | visible_count: max(model.visible_count - 1, @min_visible)}
   end
 
   @impl true

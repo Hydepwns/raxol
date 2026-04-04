@@ -68,52 +68,51 @@ defmodule Raxol.Plugins.SearchPlugin do
   def handle_input(%__MODULE__{} = plugin, input) do
     case input do
       "search " <> search_term ->
-        updated_plugin = %{plugin | search_term: search_term}
-        {:ok, updated_plugin}
+        {:ok, %{plugin | search_term: search_term}}
 
       "/search " <> search_term ->
-        updated_plugin = %{plugin | search_term: search_term}
-        {:ok, updated_plugin}
+        {:ok, %{plugin | search_term: search_term}}
 
       "/n" when plugin.search_term != nil ->
-        search_results = plugin.search_results || []
-
-        next_index =
-          if search_results != [] do
-            min(plugin.current_result_index + 1, length(search_results) - 1)
-          else
-            0
-          end
-
-        updated_plugin = %{plugin | current_result_index: next_index}
-        {:ok, updated_plugin}
+        handle_next_result(plugin)
 
       "/N" when plugin.search_term != nil ->
-        search_results = plugin.search_results || []
-
-        prev_index =
-          if search_results != [] do
-            max(plugin.current_result_index - 1, 0)
-          else
-            0
-          end
-
-        updated_plugin = %{plugin | current_result_index: prev_index}
-        {:ok, updated_plugin}
+        handle_prev_result(plugin)
 
       "/clear" ->
-        updated_plugin = %{
-          plugin
-          | search_term: nil,
-            search_results: [],
-            current_result_index: 0
-        }
-
-        {:ok, updated_plugin}
+        {:ok,
+         %{
+           plugin
+           | search_term: nil,
+             search_results: [],
+             current_result_index: 0
+         }}
 
       _ ->
         {:ok, plugin}
     end
+  end
+
+  defp handle_next_result(plugin) do
+    search_results = plugin.search_results || []
+
+    next_index =
+      if search_results != [],
+        do: min(plugin.current_result_index + 1, length(search_results) - 1),
+        else: 0
+
+    {:ok, %{plugin | current_result_index: next_index}}
+  end
+
+  defp handle_prev_result(plugin) do
+    search_results = plugin.search_results || []
+
+    prev_index =
+      if search_results != [],
+        do: max(plugin.current_result_index - 1, 0),
+        else: 0
+
+    {:ok, %{plugin | current_result_index: prev_index}}
   end
 
   @impl Raxol.Plugins.Plugin

@@ -25,18 +25,17 @@ defmodule Raxol.Playground.Demos.TabsDemo do
       when c in ["1", "2", "3", "4"] ->
         {%{model | active: String.to_integer(c) - 1}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: k}}
-      when k in [:left] ->
-        {%{model | active: rem(model.active - 1 + @tab_count, @tab_count)}, []}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: k}} when k in [:left] ->
+        {prev_tab(model), []}
 
       key_match("h") ->
-        {%{model | active: rem(model.active - 1 + @tab_count, @tab_count)}, []}
+        {prev_tab(model), []}
 
       key_match(:right) ->
-        {%{model | active: rem(model.active + 1, @tab_count)}, []}
+        {next_tab(model), []}
 
       key_match("l") ->
-        {%{model | active: rem(model.active + 1, @tab_count)}, []}
+        {next_tab(model), []}
 
       _ ->
         {model, []}
@@ -79,6 +78,11 @@ defmodule Raxol.Playground.Demos.TabsDemo do
       ]
     end
   end
+
+  defp prev_tab(model),
+    do: %{model | active: rem(model.active - 1 + @tab_count, @tab_count)}
+
+  defp next_tab(model), do: %{model | active: rem(model.active + 1, @tab_count)}
 
   @impl true
   def subscribe(_model), do: []

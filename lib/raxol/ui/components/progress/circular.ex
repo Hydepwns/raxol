@@ -94,27 +94,29 @@ defmodule Raxol.UI.Components.Progress.Circular do
         dx = x - center
         dy = y - center
         distance = :math.sqrt(dx * dx + dy * dy)
-
-        cond do
-          distance > radius + 0.5 ->
-            " "
-
-          distance < radius - 0.5 ->
-            angle = :math.atan2(dy, dx)
-            normalized_angle = (angle + :math.pi()) / (2 * :math.pi())
-
-            if normalized_angle * 100 <= percentage do
-              get_filled_char(style)
-            else
-              get_empty_char(style)
-            end
-
-          true ->
-            get_border_char(style)
-        end
+        grid_cell_char(distance, radius, dx, dy, percentage, style)
       end
     end
   end
+
+  defp grid_cell_char(distance, radius, _dx, _dy, _percentage, _style)
+       when distance > radius + 0.5 do
+    " "
+  end
+
+  defp grid_cell_char(distance, radius, dx, dy, percentage, style)
+       when distance < radius - 0.5 do
+    angle = :math.atan2(dy, dx)
+    normalized_angle = (angle + :math.pi()) / (2 * :math.pi())
+    interior_char(normalized_angle * 100 <= percentage, style)
+  end
+
+  defp grid_cell_char(_distance, _radius, _dx, _dy, _percentage, style) do
+    get_border_char(style)
+  end
+
+  defp interior_char(true, style), do: get_filled_char(style)
+  defp interior_char(false, style), do: get_empty_char(style)
 
   defp get_char(level, :blocks) do
     case level do

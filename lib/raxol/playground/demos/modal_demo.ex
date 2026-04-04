@@ -13,38 +13,31 @@ defmodule Raxol.Playground.Demos.ModalDemo do
   @impl true
   def update(message, model) do
     case message do
-      :open ->
-        {%{model | show: true}, []}
-
-      :confirm ->
-        {%{model | show: false, confirmed: model.confirmed + 1}, []}
-
-      :cancel ->
-        {%{model | show: false, cancelled: model.cancelled + 1}, []}
-
-      key_match("o") ->
-        {%{model | show: true}, []}
-
-      key_match(:enter)
-      when model.show ->
-        {%{model | show: false, confirmed: model.confirmed + 1}, []}
-
-      key_match(:escape)
-      when model.show ->
-        {%{model | show: false, cancelled: model.cancelled + 1}, []}
-
-      key_match("y")
-      when model.show ->
-        {%{model | show: false, confirmed: model.confirmed + 1}, []}
-
-      key_match("n")
-      when model.show ->
-        {%{model | show: false, cancelled: model.cancelled + 1}, []}
-
-      _ ->
-        {model, []}
+      :open -> {%{model | show: true}, []}
+      :confirm -> {do_confirm(model), []}
+      :cancel -> {do_cancel(model), []}
+      key_match("o") -> {%{model | show: true}, []}
+      _ -> handle_modal_keys(message, model)
     end
   end
+
+  defp handle_modal_keys(message, %{show: true} = model) do
+    case message do
+      key_match(:enter) -> {do_confirm(model), []}
+      key_match("y") -> {do_confirm(model), []}
+      key_match(:escape) -> {do_cancel(model), []}
+      key_match("n") -> {do_cancel(model), []}
+      _ -> {model, []}
+    end
+  end
+
+  defp handle_modal_keys(_message, model), do: {model, []}
+
+  defp do_confirm(model),
+    do: %{model | show: false, confirmed: model.confirmed + 1}
+
+  defp do_cancel(model),
+    do: %{model | show: false, cancelled: model.cancelled + 1}
 
   @impl true
   def view(model) do

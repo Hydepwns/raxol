@@ -35,44 +35,39 @@ defmodule Raxol.Playground.Demos.MenuDemo do
       key_match(:right) ->
         {move_menu(model, 1), []}
 
-      key_match("j")
-      when model.expanded ->
-        items = current_sub_items(model)
-
-        {%{
-           model
-           | sub_selected:
-               DemoHelpers.cursor_down(model.sub_selected, length(items) - 1)
-         }, []}
-
-      key_match(:down)
-      when model.expanded ->
-        items = current_sub_items(model)
-
-        {%{
-           model
-           | sub_selected:
-               DemoHelpers.cursor_down(model.sub_selected, length(items) - 1)
-         }, []}
-
-      key_match("k")
-      when model.expanded ->
-        {%{model | sub_selected: DemoHelpers.cursor_up(model.sub_selected)}, []}
-
-      key_match(:up)
-      when model.expanded ->
-        {%{model | sub_selected: DemoHelpers.cursor_up(model.sub_selected)}, []}
-
       key_match(:enter) ->
         {%{model | expanded: not model.expanded, sub_selected: 0}, []}
 
-      key_match(:escape)
-      when model.expanded ->
-        {%{model | expanded: false}, []}
-
       _ ->
-        {model, []}
+        handle_sub_or_passthrough(message, model)
     end
+  end
+
+  defp handle_sub_or_passthrough(message, %{expanded: true} = model) do
+    case message do
+      key_match("j") -> {sub_menu_down(model), []}
+      key_match(:down) -> {sub_menu_down(model), []}
+      key_match("k") -> {sub_menu_up(model), []}
+      key_match(:up) -> {sub_menu_up(model), []}
+      key_match(:escape) -> {%{model | expanded: false}, []}
+      _ -> {model, []}
+    end
+  end
+
+  defp handle_sub_or_passthrough(_message, model), do: {model, []}
+
+  defp sub_menu_down(model) do
+    items = current_sub_items(model)
+
+    %{
+      model
+      | sub_selected:
+          DemoHelpers.cursor_down(model.sub_selected, length(items) - 1)
+    }
+  end
+
+  defp sub_menu_up(model) do
+    %{model | sub_selected: DemoHelpers.cursor_up(model.sub_selected)}
   end
 
   @impl true

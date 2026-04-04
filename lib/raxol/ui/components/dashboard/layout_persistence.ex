@@ -19,40 +19,37 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
     layout_file = @layout_file
 
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           :ok = File.mkdir_p(Path.dirname(layout_file))
-
-           layout_data =
-             Enum.map(widgets, fn w ->
-               Map.take(w, [
-                 :id,
-                 :type,
-                 :title,
-                 :grid_spec,
-                 :component_opts,
-                 :data
-               ])
-             end)
-
-           binary_data = :erlang.term_to_binary(layout_data)
-
-           case File.write(layout_file, binary_data) do
-             :ok ->
-               Raxol.Core.Runtime.Log.info(
-                 "Dashboard layout saved to #{layout_file}"
-               )
-
-               :ok
-
-             {:error, reason} ->
-               Raxol.Core.Runtime.Log.error(
-                 "Failed to save dashboard layout to #{layout_file}: #{inspect(reason)}"
-               )
-
-               {:error, reason}
-           end
+           do_save_layout(widgets, layout_file)
          end) do
       {:ok, result} ->
         result
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error(
+          "Failed to save dashboard layout to #{layout_file}: #{inspect(reason)}"
+        )
+
+        {:error, reason}
+    end
+  end
+
+  defp do_save_layout(widgets, layout_file) do
+    :ok = File.mkdir_p(Path.dirname(layout_file))
+
+    layout_data =
+      Enum.map(widgets, fn w ->
+        Map.take(w, [:id, :type, :title, :grid_spec, :component_opts, :data])
+      end)
+
+    binary_data = :erlang.term_to_binary(layout_data)
+    write_layout_file(layout_file, binary_data)
+  end
+
+  defp write_layout_file(layout_file, binary_data) do
+    case File.write(layout_file, binary_data) do
+      :ok ->
+        Raxol.Core.Runtime.Log.info("Dashboard layout saved to #{layout_file}")
+        :ok
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
@@ -79,13 +76,17 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
 
   defp load_existing_layout(layout_file) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           case File.read(layout_file) do
-             {:ok, binary_data} -> process_layout_data(binary_data, layout_file)
-             {:error, reason} -> handle_read_error(layout_file, reason)
-           end
+           read_and_process_layout(layout_file)
          end) do
       {:ok, result} -> result
       {:error, reason} -> handle_deserialization_error(layout_file, reason)
+    end
+  end
+
+  defp read_and_process_layout(layout_file) do
+    case File.read(layout_file) do
+      {:ok, binary_data} -> process_layout_data(binary_data, layout_file)
+      {:error, reason} -> handle_read_error(layout_file, reason)
     end
   end
 

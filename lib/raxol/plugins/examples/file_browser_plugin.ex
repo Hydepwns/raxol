@@ -488,27 +488,23 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
   # Helpers
   defp get_icon(entry, expanded_dirs) do
     case entry.type do
-      :directory ->
-        case MapSet.member?(expanded_dirs, entry.path) do
-          true -> "▼"
-          false -> "▶"
-        end
+      :directory -> directory_icon(entry.path, expanded_dirs)
+      :regular -> file_icon(entry.name)
+      _ -> "?"
+    end
+  end
 
-      :regular ->
-        case Path.extname(entry.name) do
-          ".ex" -> "※"
-          ".exs" -> "※"
-          ".md" -> "▣"
-          ".txt" -> "▤"
-          ".json" -> "◈"
-          ".toml" -> "◈"
-          ".yaml" -> "◈"
-          ".yml" -> "◈"
-          _ -> "○"
-        end
+  defp directory_icon(path, expanded_dirs) do
+    if MapSet.member?(expanded_dirs, path), do: "▼", else: "▶"
+  end
 
-      _ ->
-        "?"
+  defp file_icon(name) do
+    case Path.extname(name) do
+      ext when ext in [".ex", ".exs"] -> "※"
+      ".md" -> "▣"
+      ".txt" -> "▤"
+      ext when ext in [".json", ".toml", ".yaml", ".yml"] -> "◈"
+      _ -> "○"
     end
   end
 

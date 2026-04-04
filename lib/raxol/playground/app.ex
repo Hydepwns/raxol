@@ -118,6 +118,13 @@ defmodule Raxol.Playground.App do
       key_match("?") ->
         {%{model | show_help: true}, []}
 
+      _ ->
+        handle_normal_continued(message, model)
+    end
+  end
+
+  defp handle_normal_continued(message, model) do
+    case message do
       key_match("c") ->
         {%{model | show_code: not model.show_code, copied: false}, []}
 

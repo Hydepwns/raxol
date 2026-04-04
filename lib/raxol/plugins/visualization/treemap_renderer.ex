@@ -302,17 +302,18 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
        ) do
     ratio = calculate_max_aspect_ratio(current_row, total, fixed_dim)
 
-    compare_ratio_and_continue(
-      ratio < min_ratio,
-      best_row,
-      children,
-      tail,
-      total,
-      fixed_dim,
-      current_row,
-      ratio,
-      index
-    )
+    if ratio < min_ratio do
+      {best_row, children}
+    else
+      find_best_row_recursive(
+        tail,
+        total,
+        fixed_dim,
+        current_row,
+        ratio,
+        index + 1
+      )
+    end
   end
 
   # Calculates the maximum aspect ratio for a given row of children
@@ -612,41 +613,6 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
 
   defp get_fixed_dimension(true, bh, _bw), do: bh
   defp get_fixed_dimension(false, _bh, bw), do: bw
-
-  defp compare_ratio_and_continue(
-         true,
-         best_row,
-         children,
-         _tail,
-         _total,
-         _fixed_dim,
-         _current_row,
-         _ratio,
-         _index
-       ) do
-    {best_row, children}
-  end
-
-  defp compare_ratio_and_continue(
-         false,
-         _best_row,
-         _children,
-         tail,
-         total,
-         fixed_dim,
-         current_row,
-         ratio,
-         index
-       ) do
-    find_best_row_recursive(
-      tail,
-      total,
-      fixed_dim,
-      current_row,
-      ratio,
-      index + 1
-    )
-  end
 
   defp handle_child_value(
          true,

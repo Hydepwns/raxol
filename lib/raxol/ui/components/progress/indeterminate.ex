@@ -78,19 +78,14 @@ defmodule Raxol.UI.Components.Progress.Indeterminate do
 
     chars =
       for i <- 0..(width - 1) do
-        distance = position - i
-
-        cond do
-          distance < 0 or distance > 4 -> " "
-          distance == 0 -> ">"
-          distance == 1 -> "="
-          distance == 2 -> "="
-          distance == 3 -> "="
-          distance == 4 -> "-"
-          true -> " "
-        end
+        slide_char(position - i)
       end
 
     "[#{Enum.join(chars)}]"
   end
+
+  defp slide_char(0), do: ">"
+  defp slide_char(d) when d in 1..3, do: "="
+  defp slide_char(4), do: "-"
+  defp slide_char(_), do: " "
 end

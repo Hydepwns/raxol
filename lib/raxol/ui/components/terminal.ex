@@ -201,33 +201,34 @@ defmodule Raxol.UI.Components.Terminal do
 
     text
     |> String.graphemes()
-    |> Enum.reduce({buffer, cursor_x, cursor_y}, fn char, {buf, x, y} ->
-      case char do
-        "\n" ->
-          new_y = min(y + 1, buf.height - 1)
-          buf = %{buf | cursor_position: {0, new_y}}
-          {buf, 0, new_y}
-
-        "\r" ->
-          buf = %{buf | cursor_position: {0, y}}
-          {buf, 0, y}
-
-        _ ->
-          if x < buf.width do
-            buf = ScreenBuffer.write_char(buf, x, y, char)
-            new_x = x + 1
-            buf = %{buf | cursor_position: {new_x, y}}
-            {buf, new_x, y}
-          else
-            # Wrap to next line
-            new_y = min(y + 1, buf.height - 1)
-            buf = ScreenBuffer.write_char(buf, 0, new_y, char)
-            buf = %{buf | cursor_position: {1, new_y}}
-            {buf, 1, new_y}
-          end
-      end
-    end)
+    |> Enum.reduce({buffer, cursor_x, cursor_y}, &write_grapheme/2)
     |> elem(0)
+  end
+
+  defp write_grapheme("\n", {buf, _x, y}) do
+    new_y = min(y + 1, buf.height - 1)
+    buf = %{buf | cursor_position: {0, new_y}}
+    {buf, 0, new_y}
+  end
+
+  defp write_grapheme("\r", {buf, _x, y}) do
+    buf = %{buf | cursor_position: {0, y}}
+    {buf, 0, y}
+  end
+
+  defp write_grapheme(char, {buf, x, y}) when x < buf.width do
+    buf = ScreenBuffer.write_char(buf, x, y, char)
+    new_x = x + 1
+    buf = %{buf | cursor_position: {new_x, y}}
+    {buf, new_x, y}
+  end
+
+  defp write_grapheme(char, {buf, _x, y}) do
+    # Wrap to next line
+    new_y = min(y + 1, buf.height - 1)
+    buf = ScreenBuffer.write_char(buf, 0, new_y, char)
+    buf = %{buf | cursor_position: {1, new_y}}
+    {buf, 1, new_y}
   end
 
   defp key_to_char(key) when is_binary(key), do: key

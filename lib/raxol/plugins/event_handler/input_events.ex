@@ -74,7 +74,6 @@ defmodule Raxol.Plugins.EventHandler.InputEvents do
         {:cont, %{acc | manager: updated_manager}}
 
       {:ok, updated_plugin} ->
-        # Update both the plugin instance and its state
         updated_manager_with_plugin =
           Common.update_manager_plugin(acc.manager, plugin, updated_plugin)
 
@@ -94,7 +93,6 @@ defmodule Raxol.Plugins.EventHandler.InputEvents do
         {:cont, acc}
 
       {:halt, updated_plugin} ->
-        # Update both the plugin instance and its state
         updated_manager_with_plugin =
           Common.update_manager_plugin(acc.manager, plugin, updated_plugin)
 
@@ -129,13 +127,18 @@ defmodule Raxol.Plugins.EventHandler.InputEvents do
       {:halt, command} ->
         {:halt, %{acc | commands: [command | acc.commands]}}
 
-      {:error, reason} ->
-        Common.log_plugin_error(plugin, :handle_key_event, reason)
-        {:cont, acc}
-
       other ->
-        Common.log_unexpected_result(plugin, :handle_key_event, other)
-        {:cont, acc}
+        handle_key_event_error_or_unexpected(acc, plugin, other)
     end
+  end
+
+  defp handle_key_event_error_or_unexpected(acc, plugin, {:error, reason}) do
+    Common.log_plugin_error(plugin, :handle_key_event, reason)
+    {:cont, acc}
+  end
+
+  defp handle_key_event_error_or_unexpected(acc, plugin, other) do
+    Common.log_unexpected_result(plugin, :handle_key_event, other)
+    {:cont, acc}
   end
 end

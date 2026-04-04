@@ -79,30 +79,19 @@ defmodule Raxol.Core.Runtime.Events.Converter do
   ## Returns
   A normalized `%Event{}` struct.
   """
-  def normalize_event(event) do
-    case event do
-      %Event{} = e ->
-        e
+  def normalize_event(%Event{} = e), do: e
 
-      {type, mod, key, ch, w, h} ->
-        convert_termbox_event(type, mod, key, ch, w, h)
+  def normalize_event({type, mod, key, ch, w, h}),
+    do: convert_termbox_event(type, mod, key, ch, w, h)
 
-      %{type: _} = e ->
-        convert_vscode_event(e)
+  def normalize_event(%{type: _} = e), do: convert_vscode_event(e)
+  def normalize_event({:key, key}), do: Event.new(:key, %{key: key})
 
-      {:key, key} ->
-        Event.new(:key, %{key: key})
+  def normalize_event({:mouse, x, y, button}),
+    do: Event.new(:mouse, %{x: x, y: y, button: button})
 
-      {:mouse, x, y, button} ->
-        Event.new(:mouse, %{x: x, y: y, button: button})
-
-      {:text, text} ->
-        Event.new(:text, %{text: text})
-
-      other ->
-        Event.new(:unknown, %{raw_event: other})
-    end
-  end
+  def normalize_event({:text, text}), do: Event.new(:text, %{text: text})
+  def normalize_event(other), do: Event.new(:unknown, %{raw_event: other})
 
   # Private functions
 

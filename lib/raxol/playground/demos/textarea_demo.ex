@@ -17,61 +17,80 @@ defmodule Raxol.Playground.Demos.TextAreaDemo do
   end
 
   @impl true
-  def update(message, model) do
-    case {model.mode, message} do
-      {:normal, key_match("i")} ->
+  def update(message, %{mode: :normal} = model),
+    do: handle_normal_mode(message, model)
+
+  def update(message, %{mode: :insert} = model),
+    do: handle_insert_mode(message, model)
+
+  def update(_message, model), do: {model, []}
+
+  defp handle_normal_mode(message, model) do
+    case message do
+      key_match("i") ->
         {%{
            model
            | mode: :insert,
              cursor_col: String.length(current_line(model))
          }, []}
 
-      {:normal, key_match("j")} ->
+      key_match("j") ->
+        max_line = length(model.lines) - 1
+
         {%{
            model
-           | cursor_line:
-               DemoHelpers.cursor_down(
-                 model.cursor_line,
-                 length(model.lines) - 1
-               )
+           | cursor_line: DemoHelpers.cursor_down(model.cursor_line, max_line)
          }, []}
 
-      {:normal, key_match("k")} ->
+      key_match("k") ->
         {%{model | cursor_line: DemoHelpers.cursor_up(model.cursor_line)}, []}
-
-      {:insert, key_match(:escape)} ->
-        {%{model | mode: :normal}, []}
-
-      {:insert, key_match(:enter)} ->
-        lines = List.insert_at(model.lines, model.cursor_line + 1, "")
-
-        {%{
-           model
-           | lines: lines,
-             cursor_line: model.cursor_line + 1,
-             cursor_col: 0
-         }, []}
-
-      {:insert, key_match(:backspace)} ->
-        line = current_line(model)
-        new_line = String.slice(line, 0..-2//1)
-        lines = List.replace_at(model.lines, model.cursor_line, new_line)
-
-        {%{
-           model
-           | lines: lines,
-             cursor_col: DemoHelpers.cursor_up(model.cursor_col)
-         }, []}
-
-      {:insert, key_match(:char, char: ch)}
-      when byte_size(ch) == 1 ->
-        line = current_line(model) <> ch
-        lines = List.replace_at(model.lines, model.cursor_line, line)
-        {%{model | lines: lines, cursor_col: model.cursor_col + 1}, []}
 
       _ ->
         {model, []}
     end
+  end
+
+  defp handle_insert_mode(message, model) do
+    case message do
+      key_match(:escape) ->
+        {%{model | mode: :normal}, []}
+
+      key_match(:enter) ->
+        insert_newline(model)
+
+      key_match(:backspace) ->
+        delete_backward(model)
+
+      key_match(:char, char: ch) when byte_size(ch) == 1 ->
+        insert_char(model, ch)
+
+      _ ->
+        {model, []}
+    end
+  end
+
+  defp insert_newline(model) do
+    lines = List.insert_at(model.lines, model.cursor_line + 1, "")
+
+    {%{model | lines: lines, cursor_line: model.cursor_line + 1, cursor_col: 0},
+     []}
+  end
+
+  defp delete_backward(model) do
+    new_line = String.slice(current_line(model), 0..-2//1)
+    lines = List.replace_at(model.lines, model.cursor_line, new_line)
+
+    {%{
+       model
+       | lines: lines,
+         cursor_col: DemoHelpers.cursor_up(model.cursor_col)
+     }, []}
+  end
+
+  defp insert_char(model, ch) do
+    line = current_line(model) <> ch
+    lines = List.replace_at(model.lines, model.cursor_line, line)
+    {%{model | lines: lines, cursor_col: model.cursor_col + 1}, []}
   end
 
   defp current_line(model), do: Enum.at(model.lines, model.cursor_line, "")

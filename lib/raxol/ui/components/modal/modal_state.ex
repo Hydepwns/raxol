@@ -15,53 +15,50 @@ defmodule Raxol.UI.Components.Modal.State do
 
     validated_fields = Enum.map(state.form_state.fields, &validate_field/1)
     has_errors = Enum.any?(validated_fields, &(&1.error != nil))
+    apply_form_submission(has_errors, validated_fields, state, original_msg)
+  end
 
-    case has_errors do
-      true ->
-        Raxol.Core.Runtime.Log.debug(
-          "[DEBUG] handle_form_submission found errors: #{inspect(validated_fields)}"
-        )
+  defp apply_form_submission(true, validated_fields, state, _original_msg) do
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] handle_form_submission found errors: #{inspect(validated_fields)}"
+    )
 
-        new_form_state = %{state.form_state | fields: validated_fields}
+    new_form_state = %{state.form_state | fields: validated_fields}
 
-        result =
-          {%{
-             state
-             | form_state: new_form_state,
-               visible: true
-           }, []}
+    result =
+      {%{state | form_state: new_form_state, visible: true}, []}
 
-        Raxol.Core.Runtime.Log.debug(
-          "[DEBUG] handle_form_submission returning (errors): #{inspect(result)}"
-        )
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] handle_form_submission returning (errors): #{inspect(result)}"
+    )
 
-        result
+    result
+  end
 
-      false ->
-        form_values = extract_form_values(validated_fields)
-        cleared_fields = Enum.map(validated_fields, &Map.put(&1, :error, nil))
-        new_form_state = %{state.form_state | fields: cleared_fields}
+  defp apply_form_submission(false, validated_fields, state, original_msg) do
+    form_values = extract_form_values(validated_fields)
+    cleared_fields = Enum.map(validated_fields, &Map.put(&1, :error, nil))
+    new_form_state = %{state.form_state | fields: cleared_fields}
 
-        new_state = %{
-          state
-          | visible: false,
-            form_state: new_form_state
-        }
+    new_state = %{
+      state
+      | visible: false,
+        form_state: new_form_state
+    }
 
-        _ =
-          send(
-            self(),
-            {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
-          )
+    _ =
+      send(
+        self(),
+        {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+      )
 
-        result = {new_state, [{original_msg, form_values}]}
+    result = {new_state, [{original_msg, form_values}]}
 
-        Raxol.Core.Runtime.Log.debug(
-          "[DEBUG] handle_form_submission returning (success): #{inspect(result)}"
-        )
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] handle_form_submission returning (success): #{inspect(result)}"
+    )
 
-        result
-    end
+    result
   end
 
   @doc "Handles prompt submission."

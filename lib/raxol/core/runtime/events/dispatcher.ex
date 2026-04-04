@@ -811,18 +811,22 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     # Reverse so last-drawn (topmost) element is checked first
     elements
     |> Enum.reverse()
-    |> Enum.find_value(:miss, fn el ->
-      with %{x: ex, y: ey, width: ew, height: eh} <- el,
-           true <- x >= ex and x < ex + ew and y >= ey and y < ey + eh,
-           %{attrs: %{on_click: handler}} when not is_nil(handler) <- el do
-        {:click, handler}
-      else
-        _ -> nil
-      end
-    end)
+    |> Enum.find_value(:miss, &clickable_at(&1, x, y))
   end
 
   defp hit_test(_x, _y, _), do: :miss
+
+  defp clickable_at(
+         %{x: ex, y: ey, width: ew, height: eh, attrs: %{on_click: handler}},
+         x,
+         y
+       )
+       when not is_nil(handler) and x >= ex and x < ex + ew and y >= ey and
+              y < ey + eh do
+    {:click, handler}
+  end
+
+  defp clickable_at(_el, _x, _y), do: nil
 
   # -- Time-travel debugging hook --
 

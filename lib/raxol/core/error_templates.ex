@@ -345,37 +345,27 @@ defmodule Raxol.Core.ErrorTemplates do
     |> Map.merge(@tool_templates)
   end
 
+  @error_classification_patterns [
+    {["parse", "parser", "slow"], :parser_slow},
+    {["memory", "limit", "exceeded"], :memory_limit_exceeded},
+    {["render", "batch", "overflow"], :render_batch_overflow},
+    {["optimization", "marker"], :missing_optimization_marker},
+    {["lifecycle", "component"], :component_lifecycle_error},
+    {["ansi", "sequence", "parse"], :ansi_parse_error},
+    {["buffer", "overflow", "terminal"], :terminal_buffer_overflow},
+    {["tool", "integration", "mix"], :tool_integration_failed}
+  ]
+
   defp classify_error_type(error) do
     error_text = inspect(error) |> String.downcase()
 
-    cond do
-      String.contains?(error_text, ["parse", "parser", "slow"]) ->
-        :parser_slow
-
-      String.contains?(error_text, ["memory", "limit", "exceeded"]) ->
-        :memory_limit_exceeded
-
-      String.contains?(error_text, ["render", "batch", "overflow"]) ->
-        :render_batch_overflow
-
-      String.contains?(error_text, ["optimization", "marker"]) ->
-        :missing_optimization_marker
-
-      String.contains?(error_text, ["lifecycle", "component"]) ->
-        :component_lifecycle_error
-
-      String.contains?(error_text, ["ansi", "sequence", "parse"]) ->
-        :ansi_parse_error
-
-      String.contains?(error_text, ["buffer", "overflow", "terminal"]) ->
-        :terminal_buffer_overflow
-
-      String.contains?(error_text, ["tool", "integration", "mix"]) ->
-        :tool_integration_failed
-
-      true ->
-        :generic_error
-    end
+    Enum.find_value(
+      @error_classification_patterns,
+      :generic_error,
+      fn {keywords, type} ->
+        if String.contains?(error_text, keywords), do: type
+      end
+    )
   end
 
   defp enhance_template(template, context) do

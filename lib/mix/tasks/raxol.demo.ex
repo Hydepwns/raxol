@@ -75,12 +75,7 @@ defmodule Mix.Tasks.Raxol.Demo do
   end
 
   defp prompt_and_run do
-    Mix.shell().info("")
-    Mix.shell().info([:bright, "Available demos:", :reset])
-
-    for {{name, _, desc}, idx} <- Enum.with_index(@demos, 1) do
-      Mix.shell().info("  #{idx}. #{String.pad_trailing(name, 12)} #{desc}")
-    end
+    print_demo_menu()
 
     answer =
       Mix.shell().prompt(
@@ -89,23 +84,28 @@ defmodule Mix.Tasks.Raxol.Demo do
       |> String.trim()
       |> String.downcase()
 
-    name =
-      case answer do
-        "" ->
-          "counter"
+    launch(resolve_demo_name(answer))
+  end
 
-        n when n in ["1", "2", "3", "4"] ->
-          Enum.at(@demo_names, String.to_integer(n) - 1)
+  defp print_demo_menu do
+    Mix.shell().info("")
+    Mix.shell().info([:bright, "Available demos:", :reset])
 
-        n when n in @demo_names ->
-          n
+    for {{name, _, desc}, idx} <- Enum.with_index(@demos, 1) do
+      Mix.shell().info("  #{idx}. #{String.pad_trailing(name, 12)} #{desc}")
+    end
+  end
 
-        _ ->
-          Mix.shell().info([:yellow, "Unknown demo, using counter.", :reset])
-          "counter"
-      end
+  defp resolve_demo_name(""), do: "counter"
 
-    launch(name)
+  defp resolve_demo_name(n) when n in ["1", "2", "3", "4"],
+    do: Enum.at(@demo_names, String.to_integer(n) - 1)
+
+  defp resolve_demo_name(n) when n in @demo_names, do: n
+
+  defp resolve_demo_name(_) do
+    Mix.shell().info([:yellow, "Unknown demo, using counter.", :reset])
+    "counter"
   end
 
   defp print_list do

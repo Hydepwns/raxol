@@ -124,13 +124,21 @@ defmodule Raxol.Core.Buffer do
     # Copy existing content where it fits
     Enum.reduce(0..(min(buffer.height, new_height) - 1), new_buffer, fn y,
                                                                         acc ->
-      Enum.reduce(0..(min(buffer.width, new_width) - 1), acc, fn x, inner_acc ->
-        case get_cell(buffer, x, y) do
-          %{char: char, style: style} -> set_cell(inner_acc, x, y, char, style)
-          _ -> inner_acc
-        end
-      end)
+      copy_row(buffer, acc, y, min(buffer.width, new_width))
     end)
+  end
+
+  defp copy_row(source, target, y, max_x) do
+    Enum.reduce(0..(max_x - 1), target, fn x, acc ->
+      copy_cell(source, acc, x, y)
+    end)
+  end
+
+  defp copy_cell(source, target, x, y) do
+    case get_cell(source, x, y) do
+      %{char: char, style: style} -> set_cell(target, x, y, char, style)
+      _ -> target
+    end
   end
 
   defp update_cell_at_offset(cells, x, offset, char, style, width) do

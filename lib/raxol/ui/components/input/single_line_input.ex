@@ -70,25 +70,29 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   @spec update(term(), __MODULE__.t()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
-    # Handle internal messages (e.g., from key events)
     Raxol.Core.Runtime.Log.debug(
       "SingleLineInput #{state.id} received message: #{inspect(msg)}"
     )
 
-    case msg do
-      {:insert_char, char} -> insert_char(char, state)
-      :move_cursor_left -> move_cursor(-1, state)
-      :move_cursor_right -> move_cursor(1, state)
-      :backspace -> backspace(state)
-      :delete -> delete(state)
-      :move_cursor_start -> move_cursor_to(0, state)
-      :move_cursor_end -> move_cursor_to(String.length(state.value), state)
-      :submit -> submit(state)
-      :focus -> {%{state | focused: true}, []}
-      :blur -> {%{state | focused: false}, []}
-      _ -> {state, []}
-    end
+    dispatch_message(msg, state)
   end
+
+  defp dispatch_message({:insert_char, char}, state),
+    do: insert_char(char, state)
+
+  defp dispatch_message(:move_cursor_left, state), do: move_cursor(-1, state)
+  defp dispatch_message(:move_cursor_right, state), do: move_cursor(1, state)
+  defp dispatch_message(:backspace, state), do: backspace(state)
+  defp dispatch_message(:delete, state), do: delete(state)
+  defp dispatch_message(:move_cursor_start, state), do: move_cursor_to(0, state)
+
+  defp dispatch_message(:move_cursor_end, state),
+    do: move_cursor_to(String.length(state.value), state)
+
+  defp dispatch_message(:submit, state), do: submit(state)
+  defp dispatch_message(:focus, state), do: {%{state | focused: true}, []}
+  defp dispatch_message(:blur, state), do: {%{state | focused: false}, []}
+  defp dispatch_message(_msg, state), do: {state, []}
 
   @doc """
   Handles events for the SingleLineInput component, such as keypresses and mouse clicks.

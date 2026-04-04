@@ -369,29 +369,17 @@ defmodule Raxol.Core.Renderer.Layout do
     {padding_top, padding_right, padding_bottom, padding_left} = padding
     {margin_top, _margin_right, _margin_bottom, margin_left} = margin
 
-    border_width =
-      case border do
-        true -> 2
-        false -> 0
-      end
+    border_edge = border_size(border)
+    border_total = border_edge * 2
 
-    content_width = box_width - padding_left - padding_right - border_width
-    content_height = box_height - padding_top - padding_bottom - border_width
-
-    content_x =
-      margin_left + padding_left +
-        case border do
-          true -> 1
-          false -> 0
-        end
-
-    content_y =
-      margin_top + padding_top +
-        case border do
-          true -> 1
-          false -> 0
-        end
+    content_width = box_width - padding_left - padding_right - border_total
+    content_height = box_height - padding_top - padding_bottom - border_total
+    content_x = margin_left + padding_left + border_edge
+    content_y = margin_top + padding_top + border_edge
 
     {content_x, content_y, max(0, content_width), max(0, content_height)}
   end
+
+  defp border_size(true), do: 1
+  defp border_size(false), do: 0
 end

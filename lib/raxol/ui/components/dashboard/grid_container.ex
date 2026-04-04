@@ -213,40 +213,15 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   # Original function with guard to ensure parent_bounds exists and is a map
   def get_cell_dimensions(%{parent_bounds: parent_bounds} = grid_config)
       when is_map(parent_bounds) do
-    # Extract grid parameters with defaults
-    # Resolve cols/rows based on breakpoints and parent width
-    %{cols: cols, rows: rows} = resolve_grid_params(grid_config)
-    gap = grid_config[:gap] || @default_gap
+    case {is_number(parent_bounds[:width]), is_number(parent_bounds[:height])} do
+      {true, true} ->
+        compute_cell_dimensions(parent_bounds, grid_config)
 
-    # Check for required width/height fields in parent_bounds
-    with true <-
-           Map.has_key?(parent_bounds, :width) and
-             Map.has_key?(parent_bounds, :height),
-         true <-
-           is_number(parent_bounds.width) and is_number(parent_bounds.height) do
-      container_width = parent_bounds.width
-      container_height = parent_bounds.height
-
-      # Calculate total gap space
-      total_horizontal_gap = max(0, cols - 1) * gap
-      total_vertical_gap = max(0, rows - 1) * gap
-
-      # Calculate available space for cells
-      available_width = max(0, container_width - total_horizontal_gap)
-      available_height = max(0, container_height - total_vertical_gap)
-
-      # Calculate base cell dimensions (use floating-point division and round)
-      cell_width = calculate_cell_width(cols, available_width)
-      cell_height = calculate_cell_height(rows, available_height)
-
-      {cell_width, cell_height}
-    else
       _ ->
         Raxol.Core.Runtime.Log.warning(
           "Invalid parent_bounds structure in get_cell_dimensions: #{inspect(parent_bounds)}"
         )
 
-        # Return sensible defaults
         {10, 10}
     end
   end
@@ -259,6 +234,22 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
 
     # Return sensible defaults
     {10, 10}
+  end
+
+  defp compute_cell_dimensions(parent_bounds, grid_config) do
+    %{cols: cols, rows: rows} = resolve_grid_params(grid_config)
+    gap = grid_config[:gap] || @default_gap
+
+    total_horizontal_gap = max(0, cols - 1) * gap
+    total_vertical_gap = max(0, rows - 1) * gap
+
+    available_width = max(0, parent_bounds.width - total_horizontal_gap)
+    available_height = max(0, parent_bounds.height - total_vertical_gap)
+
+    cell_width = calculate_cell_width(cols, available_width)
+    cell_height = calculate_cell_height(rows, available_height)
+
+    {cell_width, cell_height}
   end
 
   defp get_width_cells(grid_spec) when is_map_key(grid_spec, :width) do

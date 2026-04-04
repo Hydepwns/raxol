@@ -17,31 +17,38 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
   """
   def initialize_all(app_module, options) do
     {:module, _} = Code.ensure_loaded(app_module)
+
+    with {:ok, registry_table, pm_pid, model} <- init_core(app_module, options),
+         {:ok, dispatcher_pid, driver_pid, engine_pid} <-
+           init_runtime(app_module, model, options, pm_pid, registry_table) do
+      GenServer.cast(dispatcher_pid, {:set_rendering_engine, engine_pid})
+
+      {:ok, registry_table, pm_pid, model, dispatcher_pid, driver_pid,
+       engine_pid}
+    end
+  end
+
+  defp init_core(app_module, options) do
     environment = Keyword.get(options, :environment, :terminal)
 
     with {:ok, registry_table} <- initialize_registry_table(app_module),
          {:ok, pm_pid} <- start_plugin_manager(options, environment),
-         {:ok, initialized_model} <-
-           initialize_app_model(app_module, get_initial_model_args(options)),
-         {:ok, dispatcher_pid} <-
-           start_dispatcher(
-             app_module,
-             initialized_model,
-             options,
-             pm_pid,
-             registry_table
-           ),
+         {:ok, model} <-
+           initialize_app_model(app_module, get_initial_model_args(options)) do
+      {:ok, registry_table, pm_pid, model}
+    end
+  end
+
+  defp init_runtime(app_module, model, options, pm_pid, registry_table) do
+    environment = Keyword.get(options, :environment, :terminal)
+
+    with {:ok, dispatcher_pid} <-
+           start_dispatcher(app_module, model, options, pm_pid, registry_table),
          {:ok, driver_pid} <-
            maybe_start_driver(dispatcher_pid, environment, options),
-         {:ok, rendering_engine_pid} <-
+         {:ok, engine_pid} <-
            start_rendering_engine(app_module, dispatcher_pid, options) do
-      GenServer.cast(
-        dispatcher_pid,
-        {:set_rendering_engine, rendering_engine_pid}
-      )
-
-      {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid,
-       driver_pid, rendering_engine_pid}
+      {:ok, dispatcher_pid, driver_pid, engine_pid}
     end
   end
 
@@ -212,12 +219,12 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
         {:ok, dispatcher_pid}
 
       {:error, reason} ->
-        cleanup =
-          if pm_pid, do: fn -> Manager.stop(pm_pid) end, else: fn -> :ok end
-
-        {:error, {:dispatcher_start_failed, reason}, cleanup}
+        {:error, {:dispatcher_start_failed, reason}, pm_cleanup_fn(pm_pid)}
     end
   end
+
+  defp pm_cleanup_fn(nil), do: fn -> :ok end
+  defp pm_cleanup_fn(pm_pid), do: fn -> Manager.stop(pm_pid) end
 
   defp maybe_start_driver(_dispatcher_pid, :liveview, _options), do: {:ok, nil}
   defp maybe_start_driver(_dispatcher_pid, :ssh, _options), do: {:ok, nil}
