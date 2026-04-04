@@ -267,17 +267,22 @@ defmodule Raxol.System.Platform do
       {:ok, content} ->
         content
         |> String.split("\n")
-        |> Enum.find_value("unknown", fn line ->
-          with [key, value] <- String.split(line, "=", parts: 2),
-               true <- String.trim(key) == "VERSION_ID" do
-            String.trim(value, "\"")
-          else
-            _ -> false
-          end
-        end)
+        |> Enum.find_value("unknown", &parse_version_id_line/1)
 
       _ ->
         "unknown"
+    end
+  end
+
+  defp parse_version_id_line(line) do
+    case String.split(line, "=", parts: 2) do
+      [key, value] ->
+        if String.trim(key) == "VERSION_ID",
+          do: String.trim(value, "\""),
+          else: false
+
+      _ ->
+        false
     end
   end
 
@@ -368,39 +373,46 @@ defmodule Raxol.System.Platform do
   end
 
   defp detect_terminal_type do
-    case {
-      System.get_env("TERM"),
-      System.get_env("TERM_PROGRAM"),
-      System.get_env("KITTY_WINDOW_ID"),
-      System.get_env("WEZTERM_EXECUTABLE"),
-      System.get_env("ALACRITTY_LOG")
-    } do
-      {"xterm-kitty", _, _, _, _} ->
-        :kitty
+    detect_kitty_terminal() ||
+      detect_wezterm_terminal() ||
+      detect_iterm2_terminal() ||
+      detect_alacritty_terminal() ||
+      detect_terminal_by_term_var() ||
+      :unknown
+  end
 
-      {_, _, kitty_id, _, _} when not is_nil(kitty_id) ->
-        :kitty
+  defp detect_kitty_terminal do
+    cond do
+      System.get_env("TERM") == "xterm-kitty" -> :kitty
+      System.get_env("KITTY_WINDOW_ID") != nil -> :kitty
+      true -> nil
+    end
+  end
 
-      {_, _, _, wezterm, _} when not is_nil(wezterm) ->
-        :wezterm
+  defp detect_wezterm_terminal do
+    cond do
+      System.get_env("WEZTERM_EXECUTABLE") != nil -> :wezterm
+      System.get_env("TERM") == "wezterm" -> :wezterm
+      true -> nil
+    end
+  end
 
-      {"wezterm", _, _, _, _} ->
-        :wezterm
+  defp detect_iterm2_terminal do
+    if System.get_env("TERM_PROGRAM") == "iTerm.app", do: :iterm2
+  end
 
-      {_, "iTerm.app", _, _, _} ->
-        :iterm2
+  defp detect_alacritty_terminal do
+    cond do
+      System.get_env("ALACRITTY_LOG") != nil -> :alacritty
+      System.get_env("TERM") == "alacritty" -> :alacritty
+      true -> nil
+    end
+  end
 
-      {_, _, _, _, alacritty} when not is_nil(alacritty) ->
-        :alacritty
-
-      {"alacritty", _, _, _, _} ->
-        :alacritty
-
-      {term, _, _, _, _} when not is_nil(term) ->
-        detect_terminal_from_term(term)
-
-      _ ->
-        :unknown
+  defp detect_terminal_by_term_var do
+    case System.get_env("TERM") do
+      nil -> nil
+      term -> detect_terminal_from_term(term)
     end
   end
 
@@ -621,34 +633,40 @@ defmodule Raxol.System.Platform do
   end
 
   defp detect_windows_console_type do
-    case {System.get_env("WT_SESSION"), System.get_env("TERM_PROGRAM"),
-          System.get_env("CMDER_ROOT"), System.get_env("PROMPT"),
-          System.get_env("PSModulePath")} do
-      {wt, _, _, _, _} when wt != nil ->
-        "Windows Terminal"
+    detect_windows_terminal_type() ||
+      detect_windows_vscode() ||
+      detect_windows_cmder() ||
+      detect_windows_prompt_type() ||
+      detect_windows_powershell() ||
+      "unknown"
+  end
 
-      {_, "vscode", _, _, _} ->
-        "VS Code"
+  defp detect_windows_terminal_type do
+    if System.get_env("WT_SESSION") != nil, do: "Windows Terminal"
+  end
 
-      {_, _, cmder, _, _} when cmder != nil ->
-        "Cmder"
+  defp detect_windows_vscode do
+    if System.get_env("TERM_PROGRAM") == "vscode", do: "VS Code"
+  end
 
-      {_, _, _, prompt, _} when prompt != nil ->
-        case String.contains?(prompt, "$P$G") do
-          true -> "Command Prompt"
-          false -> determine_by_psmodule(System.get_env("PSModulePath"))
-        end
+  defp detect_windows_cmder do
+    if System.get_env("CMDER_ROOT") != nil, do: "Cmder"
+  end
 
-      {_, _, _, _, psmodule} when psmodule != nil ->
-        "PowerShell"
+  defp detect_windows_prompt_type do
+    prompt = System.get_env("PROMPT")
 
-      _ ->
-        "unknown"
+    cond do
+      is_nil(prompt) -> nil
+      String.contains?(prompt, "$P$G") -> "Command Prompt"
+      System.get_env("PSModulePath") != nil -> "PowerShell"
+      true -> "unknown"
     end
   end
 
-  defp determine_by_psmodule(nil), do: "unknown"
-  defp determine_by_psmodule(_psmodule), do: "PowerShell"
+  defp detect_windows_powershell do
+    if System.get_env("PSModulePath") != nil, do: "PowerShell"
+  end
 
   defp detect_linux_clipboard_support do
     case Raxol.Core.ErrorHandling.safe_call(&check_linux_clipboard_tools/0) do

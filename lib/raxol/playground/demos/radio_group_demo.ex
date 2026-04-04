@@ -17,34 +17,30 @@ defmodule Raxol.Playground.Demos.RadioGroupDemo do
   @impl true
   def update(message, model) do
     case message do
-      key_match("j") ->
-        group = Enum.at(model.groups, model.active_group)
-        max_idx = length(group.options) - 1
-        new_group = %{group | selected: min(group.selected + 1, max_idx)}
-        groups = List.replace_at(model.groups, model.active_group, new_group)
-        {%{model | groups: groups}, []}
-
-      key_match("k") ->
-        group = Enum.at(model.groups, model.active_group)
-        new_group = %{group | selected: max(group.selected - 1, 0)}
-        groups = List.replace_at(model.groups, model.active_group, new_group)
-        {%{model | groups: groups}, []}
-
-      key_match("h") ->
-        prev =
-          if model.active_group == 0,
-            do: length(model.groups) - 1,
-            else: model.active_group - 1
-
-        {%{model | active_group: prev}, []}
-
-      key_match("l") ->
-        next = rem(model.active_group + 1, length(model.groups))
-        {%{model | active_group: next}, []}
-
-      _ ->
-        {model, []}
+      key_match("j") -> {move_selection(model, 1), []}
+      key_match("k") -> {move_selection(model, -1), []}
+      key_match("h") -> {switch_group(model, -1), []}
+      key_match("l") -> {switch_group(model, 1), []}
+      _ -> {model, []}
     end
+  end
+
+  defp move_selection(model, delta) do
+    group = Enum.at(model.groups, model.active_group)
+    max_idx = length(group.options) - 1
+
+    new_selected =
+      Raxol.Core.Utils.Math.clamp(group.selected + delta, 0, max_idx)
+
+    new_group = %{group | selected: new_selected}
+    groups = List.replace_at(model.groups, model.active_group, new_group)
+    %{model | groups: groups}
+  end
+
+  defp switch_group(model, delta) do
+    count = length(model.groups)
+    next = rem(model.active_group + delta + count, count)
+    %{model | active_group: next}
   end
 
   @impl true
@@ -52,27 +48,10 @@ defmodule Raxol.Playground.Demos.RadioGroupDemo do
     group_views =
       model.groups
       |> Enum.with_index()
-      |> Enum.map(fn {group, gi} ->
-        active? = gi == model.active_group
-        title_style = if active?, do: [:bold], else: [:dim]
-
-        options =
-          group.options
-          |> Enum.with_index()
-          |> Enum.map(fn {opt, oi} ->
-            mark = if oi == group.selected, do: "(o)", else: "( )"
-            prefix = if active? and oi == group.selected, do: "> ", else: "  "
-            text("#{prefix}#{mark} #{opt}")
-          end)
-
-        column style: %{gap: 0} do
-          [text(group.name, style: title_style) | options]
-        end
-      end)
+      |> Enum.map(&render_group(&1, model.active_group))
 
     summary =
-      model.groups
-      |> Enum.map_join("  ", fn g ->
+      Enum.map_join(model.groups, "  ", fn g ->
         "#{g.name}: #{Enum.at(g.options, g.selected)}"
       end)
 
@@ -86,6 +65,26 @@ defmodule Raxol.Playground.Demos.RadioGroupDemo do
         text("[j/k] navigate  [h/l] switch group", style: [:dim])
       ]
     end
+  end
+
+  defp render_group({group, gi}, active_group) do
+    active? = gi == active_group
+    title_style = if active?, do: [:bold], else: [:dim]
+
+    options =
+      group.options
+      |> Enum.with_index()
+      |> Enum.map(&render_option(&1, group.selected, active?))
+
+    column style: %{gap: 0} do
+      [text(group.name, style: title_style) | options]
+    end
+  end
+
+  defp render_option({opt, oi}, selected, active?) do
+    mark = if oi == selected, do: "(o)", else: "( )"
+    prefix = if active? and oi == selected, do: "> ", else: "  "
+    text("#{prefix}#{mark} #{opt}")
   end
 
   @impl true

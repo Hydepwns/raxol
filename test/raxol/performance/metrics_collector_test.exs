@@ -5,8 +5,8 @@ defmodule Raxol.Performance.MetricsCollectorTest do
   """
   use ExUnit.Case, async: true
 
-  alias Raxol.Performance.MetricsCollector
   alias Raxol.Core.Runtime.ProcessStore
+  alias Raxol.Performance.MetricsCollector
 
   describe "Metrics Collector" do
     test "creates new collector" do

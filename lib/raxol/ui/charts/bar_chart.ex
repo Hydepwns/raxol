@@ -37,88 +37,117 @@ defmodule Raxol.UI.Charts.BarChart do
           [series()],
           keyword()
         ) :: [cell()]
-  def render({x, y, w, h}, series, opts \\ []) do
-    orientation = Keyword.get(opts, :orientation, :vertical)
-    show_axes = Keyword.get(opts, :show_axes, false)
-    show_legend = Keyword.get(opts, :show_legend, false)
-    show_values = Keyword.get(opts, :show_values, false)
-    bar_gap = Keyword.get(opts, :bar_gap, 0)
-    group_gap = Keyword.get(opts, :group_gap, 1)
+  def render(region, series, opts \\ []) do
+    config = parse_opts(opts)
+    normalized = normalize_series(series)
 
-    axes_space = if show_axes, do: 7, else: 0
-    legend_space = if show_legend, do: 1, else: 0
-    value_space = if show_values, do: 1, else: 0
+    {val_min, val_max} =
+      resolve_range(Enum.flat_map(normalized, & &1.data), opts)
 
-    normalized =
-      Enum.map(series, fn s ->
-        %{s | data: ChartUtils.normalize_data(s.data)}
-      end)
-
-    all_values = Enum.flat_map(normalized, & &1.data)
-    {val_min, val_max} = resolve_range(all_values, opts)
-
-    case orientation do
+    case config.orientation do
       :vertical ->
-        plot_w = max(w - axes_space, 1)
-        plot_h = max(h - legend_space - value_space, 1)
-        plot_x = x + axes_space
-        plot_y = y + value_space
-
-        bar_cells =
-          render_vertical(
-            normalized,
-            {plot_x, plot_y, plot_w, plot_h},
-            val_min,
-            val_max,
-            bar_gap,
-            group_gap,
-            show_values
-          )
-
-        axes_cells =
-          if show_axes,
-            do:
-              ChartUtils.render_axes(
-                {x, y + value_space, axes_space, plot_h},
-                {val_min, val_max}
-              ),
-            else: []
-
-        legend_cells =
-          if show_legend,
-            do:
-              ChartUtils.render_legend(x, y + value_space + plot_h, normalized),
-            else: []
-
-        axes_cells ++ bar_cells ++ legend_cells
+        render_vertical_chart(region, normalized, val_min, val_max, config)
 
       :horizontal ->
-        plot_w = max(w - axes_space, 1)
-        plot_h = max(h - legend_space, 1)
-        plot_x = x + axes_space
-        plot_y = y
-
-        bar_cells =
-          render_horizontal(
-            normalized,
-            {plot_x, plot_y, plot_w, plot_h},
-            val_min,
-            val_max,
-            bar_gap,
-            group_gap,
-            show_values
-          )
-
-        legend_cells =
-          if show_legend,
-            do: ChartUtils.render_legend(x, y + plot_h, normalized),
-            else: []
-
-        bar_cells ++ legend_cells
+        render_horizontal_chart(region, normalized, val_min, val_max, config)
     end
   end
 
   # -- Private --
+
+  defp parse_opts(opts) do
+    show_axes = Keyword.get(opts, :show_axes, false)
+    show_legend = Keyword.get(opts, :show_legend, false)
+    show_values = Keyword.get(opts, :show_values, false)
+
+    %{
+      orientation: Keyword.get(opts, :orientation, :vertical),
+      show_axes: show_axes,
+      show_legend: show_legend,
+      show_values: show_values,
+      bar_gap: Keyword.get(opts, :bar_gap, 0),
+      group_gap: Keyword.get(opts, :group_gap, 1),
+      axes_space: if(show_axes, do: 7, else: 0),
+      legend_space: if(show_legend, do: 1, else: 0),
+      value_space: if(show_values, do: 1, else: 0)
+    }
+  end
+
+  defp normalize_series(series) do
+    Enum.map(series, fn s ->
+      %{s | data: ChartUtils.normalize_data(s.data)}
+    end)
+  end
+
+  defp render_vertical_chart({x, y, w, h}, normalized, val_min, val_max, config) do
+    plot_w = max(w - config.axes_space, 1)
+    plot_h = max(h - config.legend_space - config.value_space, 1)
+    plot_x = x + config.axes_space
+    plot_y = y + config.value_space
+
+    bar_cells =
+      render_vertical(
+        normalized,
+        {plot_x, plot_y, plot_w, plot_h},
+        val_min,
+        val_max,
+        config.bar_gap,
+        config.group_gap,
+        config.show_values
+      )
+
+    axes_cells =
+      if config.show_axes,
+        do:
+          ChartUtils.render_axes(
+            {x, y + config.value_space, config.axes_space, plot_h},
+            {val_min, val_max}
+          ),
+        else: []
+
+    legend_cells =
+      if config.show_legend,
+        do:
+          ChartUtils.render_legend(
+            x,
+            y + config.value_space + plot_h,
+            normalized
+          ),
+        else: []
+
+    axes_cells ++ bar_cells ++ legend_cells
+  end
+
+  defp render_horizontal_chart(
+         {x, y, w, h},
+         normalized,
+         val_min,
+         val_max,
+         config
+       ) do
+    plot_w = max(w - config.axes_space, 1)
+    plot_h = max(h - config.legend_space, 1)
+    plot_x = x + config.axes_space
+    plot_y = y
+
+    bar_cells =
+      render_horizontal(
+        normalized,
+        {plot_x, plot_y, plot_w, plot_h},
+        val_min,
+        val_max,
+        config.bar_gap,
+        config.group_gap,
+        config.show_values
+      )
+
+    legend_cells =
+      if config.show_legend,
+        do: ChartUtils.render_legend(x, y + plot_h, normalized),
+        else: []
+
+    bar_cells ++ legend_cells
+  end
 
   # Bars should include 0 in the range (unlike line/scatter charts)
   defp resolve_range(values, opts) do
@@ -162,22 +191,42 @@ defmodule Raxol.UI.Charts.BarChart do
       series_list
       |> Enum.with_index()
       |> Enum.flat_map(fn {%{data: data, color: color}, s_idx} ->
-        data
-        |> Enum.with_index()
-        |> Enum.flat_map(fn {value, g_idx} ->
-          render_single_vertical_bar(
-            layout,
-            value,
-            g_idx,
-            s_idx,
-            color,
-            val_min,
-            val_max,
-            show_values
-          )
-        end)
+        render_vertical_series(
+          data,
+          layout,
+          s_idx,
+          color,
+          val_min,
+          val_max,
+          show_values
+        )
       end)
     end
+  end
+
+  defp render_vertical_series(
+         data,
+         layout,
+         s_idx,
+         color,
+         val_min,
+         val_max,
+         show_values
+       ) do
+    data
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {value, g_idx} ->
+      render_single_vertical_bar(
+        layout,
+        value,
+        g_idx,
+        s_idx,
+        color,
+        val_min,
+        val_max,
+        show_values
+      )
+    end)
   end
 
   defp vertical_layout(
@@ -243,12 +292,14 @@ defmodule Raxol.UI.Charts.BarChart do
     value_cells =
       vertical_value_label(
         show_values,
-        bar_x,
-        layout.py,
-        layout.ph,
-        bar_w,
-        full_blocks,
-        remainder,
+        %{
+          bar_x: bar_x,
+          py: layout.py,
+          ph: layout.ph,
+          bar_w: bar_w,
+          full_blocks: full_blocks,
+          remainder: remainder
+        },
         value,
         color
       )
@@ -256,29 +307,18 @@ defmodule Raxol.UI.Charts.BarChart do
     bar_cells ++ value_cells
   end
 
-  defp vertical_value_label(false, _bx, _py, _ph, _bw, _fb, _rem, _val, _color),
-    do: []
+  defp vertical_value_label(false, _geom, _val, _color), do: []
 
-  defp vertical_value_label(
-         true,
-         bar_x,
-         py,
-         ph,
-         bar_w,
-         full_blocks,
-         remainder,
-         value,
-         color
-       ) do
-    partial_offset = if remainder > 0, do: 1, else: 0
-    label_y = py + ph - full_blocks - partial_offset - 1
+  defp vertical_value_label(true, geom, value, color) do
+    partial_offset = if geom.remainder > 0, do: 1, else: 0
+    label_y = geom.py + geom.ph - geom.full_blocks - partial_offset - 1
 
-    if label_y >= py do
+    if label_y >= geom.py do
       label = ChartUtils.format_number(value)
 
       ChartUtils.string_to_cells(
-        String.slice(label, 0, bar_w),
-        bar_x,
+        String.slice(label, 0, geom.bar_w),
+        geom.bar_x,
         label_y,
         color,
         :default
@@ -324,22 +364,42 @@ defmodule Raxol.UI.Charts.BarChart do
       series_list
       |> Enum.with_index()
       |> Enum.flat_map(fn {%{data: data, color: color}, s_idx} ->
-        data
-        |> Enum.with_index()
-        |> Enum.flat_map(fn {value, g_idx} ->
-          render_single_horizontal_bar(
-            layout,
-            value,
-            g_idx,
-            s_idx,
-            color,
-            val_min,
-            val_max,
-            show_values
-          )
-        end)
+        render_horizontal_series(
+          data,
+          layout,
+          s_idx,
+          color,
+          val_min,
+          val_max,
+          show_values
+        )
       end)
     end
+  end
+
+  defp render_horizontal_series(
+         data,
+         layout,
+         s_idx,
+         color,
+         val_min,
+         val_max,
+         show_values
+       ) do
+    data
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {value, g_idx} ->
+      render_single_horizontal_bar(
+        layout,
+        value,
+        g_idx,
+        s_idx,
+        color,
+        val_min,
+        val_max,
+        show_values
+      )
+    end)
   end
 
   defp horizontal_layout(

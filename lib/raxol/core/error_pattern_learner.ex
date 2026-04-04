@@ -14,8 +14,8 @@ defmodule Raxol.Core.ErrorPatternLearner do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Runtime.Log
   alias Raxol.Core.ErrorPatternLearner.{Persistence, Predictor}
+  alias Raxol.Core.Runtime.Log
 
   @table_name :raxol_error_patterns
   @persist_interval_ms :timer.hours(1)

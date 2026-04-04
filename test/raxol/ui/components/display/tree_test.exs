@@ -1,8 +1,8 @@
 defmodule Raxol.UI.Components.Display.TreeTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.UI.Components.Display.Tree
   alias Raxol.Core.Events.Event
+  alias Raxol.UI.Components.Display.Tree
 
   defp default_context do
     %{theme: Raxol.UI.Theming.Theme.default_theme()}

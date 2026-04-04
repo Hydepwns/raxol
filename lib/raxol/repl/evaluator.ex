@@ -145,15 +145,13 @@ defmodule Raxol.REPL.Evaluator do
   @spec do_eval(String.t(), keyword(), Macro.Env.t() | nil) ::
           {:ok, term(), keyword()} | {:error, String.t()}
   defp do_eval(code, bindings, env) do
-    try do
-      {value, new_bindings} =
-        Code.eval_string(code, bindings, env || base_env())
+    {value, new_bindings} =
+      Code.eval_string(code, bindings, env || base_env())
 
-      {:ok, value, new_bindings}
-    catch
-      kind, reason ->
-        {:error, Exception.format(kind, reason, __STACKTRACE__)}
-    end
+    {:ok, value, new_bindings}
+  catch
+    kind, reason ->
+      {:error, Exception.format(kind, reason, __STACKTRACE__)}
   end
 
   @spec capture_io((-> term())) :: {String.t(), term()}

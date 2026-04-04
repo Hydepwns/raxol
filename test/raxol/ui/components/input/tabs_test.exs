@@ -1,8 +1,8 @@
 defmodule Raxol.UI.Components.Input.TabsTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.UI.Components.Input.Tabs
   alias Raxol.Core.Events.Event
+  alias Raxol.UI.Components.Input.Tabs
 
   defp default_context do
     %{theme: Raxol.UI.Theming.Theme.default_theme()}

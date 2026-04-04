@@ -9,9 +9,9 @@ defmodule Raxol.Style.Colors.Accessibility do
               Raxol.Style.Colors.Accessibility.PaletteGenerator
             ]}
 
-  alias Raxol.Style.Colors.Color
-  alias Raxol.Style.Colors.Accessibility.Suggester
   alias Raxol.Style.Colors.Accessibility.PaletteGenerator
+  alias Raxol.Style.Colors.Accessibility.Suggester
+  alias Raxol.Style.Colors.Color
 
   # WCAG contrast ratio thresholds
   @contrast_aa 4.5

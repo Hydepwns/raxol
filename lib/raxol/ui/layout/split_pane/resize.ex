@@ -19,16 +19,14 @@ defmodule Raxol.UI.Layout.SplitPane.Resize do
     * `dividers` - List of divider rects from `divider_positions/3`
     * `direction` - `:horizontal` or `:vertical`
   """
-  def check_divider_hit({mx, my}, dividers, direction) do
-    Enum.find_value(dividers, :miss, fn {x, y, w, h, index} ->
-      hit =
-        case direction do
-          :horizontal -> mx >= x and mx < x + w and my >= y and my < y + h
-          :vertical -> mx >= x and mx < x + w and my >= y and my < y + h
-        end
-
-      if hit, do: {:hit, index}, else: nil
+  def check_divider_hit(mouse_pos, dividers, _direction) do
+    Enum.find_value(dividers, :miss, fn divider ->
+      if point_in_rect?(mouse_pos, divider), do: {:hit, elem(divider, 4)}
     end)
+  end
+
+  defp point_in_rect?({mx, my}, {x, y, w, h, _index}) do
+    mx >= x and mx < x + w and my >= y and my < y + h
   end
 
   @doc """
@@ -135,16 +133,7 @@ defmodule Raxol.UI.Layout.SplitPane.Resize do
       |> Enum.with_index()
       |> Enum.reduce({0, []}, fn {size, index}, {offset, positions} ->
         pos = offset + size
-
-        rect =
-          case direction do
-            :horizontal ->
-              {space.x + pos, space.y, 1, space.height, index}
-
-            :vertical ->
-              {space.x, space.y + pos, space.width, 1, index}
-          end
-
+        rect = divider_rect(direction, space, pos, index)
         {pos + 1, [rect | positions]}
       end)
       |> elem(1)
@@ -153,6 +142,12 @@ defmodule Raxol.UI.Layout.SplitPane.Resize do
   end
 
   # -- Private --
+
+  defp divider_rect(:horizontal, space, pos, index),
+    do: {space.x + pos, space.y, 1, space.height, index}
+
+  defp divider_rect(:vertical, space, pos, index),
+    do: {space.x, space.y + pos, space.width, 1, index}
 
   defp classify_key(%{ctrl: true, key: :arrow_right}, :horizontal),
     do: :grow_first

@@ -121,41 +121,39 @@ defmodule Mix.Tasks.Raxol.Gen.Specs do
   end
 
   defp find_private_functions(ast) do
-    {_, acc} =
-      Macro.prewalk(ast, [], fn
-        # Handle defp with guard clauses
-        {:defp, meta, [{:when, _, [{name, _, args} | _guards]} | _]} = node, acc
-        when is_atom(name) and is_list(args) ->
-          func_info = %{
-            name: name,
-            arity: length(args),
-            args: extract_arg_patterns(args),
-            line: meta[:line] || 0,
-            full_ast: node,
-            has_guard: true
-          }
-
-          {node, [func_info | acc]}
-
-        # Handle regular defp without guards
-        {:defp, meta, [{name, _, args} = fun | _]} = node, acc
-        when is_atom(name) and is_list(args) ->
-          func_info = %{
-            name: name,
-            arity: length(args),
-            args: extract_arg_patterns(args),
-            line: meta[:line] || 0,
-            full_ast: fun,
-            has_guard: false
-          }
-
-          {node, [func_info | acc]}
-
-        node, acc ->
-          {node, acc}
-      end)
-
+    {_, acc} = Macro.prewalk(ast, [], &collect_private_function/2)
     Enum.reverse(acc)
+  end
+
+  # Handle defp with guard clauses
+  defp collect_private_function(
+         {:defp, meta, [{:when, _, [{name, _, args} | _guards]} | _]} = node,
+         acc
+       )
+       when is_atom(name) and is_list(args) do
+    {node, [build_func_info(name, args, meta, node, true) | acc]}
+  end
+
+  # Handle regular defp without guards
+  defp collect_private_function(
+         {:defp, meta, [{name, _, args} = fun | _]} = node,
+         acc
+       )
+       when is_atom(name) and is_list(args) do
+    {node, [build_func_info(name, args, meta, fun, false) | acc]}
+  end
+
+  defp collect_private_function(node, acc), do: {node, acc}
+
+  defp build_func_info(name, args, meta, ast_node, has_guard) do
+    %{
+      name: name,
+      arity: length(args),
+      args: extract_arg_patterns(args),
+      line: meta[:line] || 0,
+      full_ast: ast_node,
+      has_guard: has_guard
+    }
   end
 
   defp extract_arg_patterns(args) do
@@ -255,29 +253,18 @@ defmodule Mix.Tasks.Raxol.Gen.Specs do
     end)
   end
 
+  @prefix_type_rules [
+    {["x", "y"], "non_neg_integer()"},
+    {["width", "height"], "pos_integer()"},
+    {["count", "size", "index"], "non_neg_integer()"},
+    {["is_", "has_"], "boolean()"},
+    {["enable", "disable"], "boolean()"}
+  ]
+
   defp infer_by_prefix(arg) do
-    cond do
-      String.starts_with?(arg, "x") or String.starts_with?(arg, "y") ->
-        "non_neg_integer()"
-
-      String.starts_with?(arg, "width") or String.starts_with?(arg, "height") ->
-        "pos_integer()"
-
-      String.starts_with?(arg, "count") or String.starts_with?(arg, "size") ->
-        "non_neg_integer()"
-
-      String.starts_with?(arg, "index") ->
-        "non_neg_integer()"
-
-      String.starts_with?(arg, "is_") or String.starts_with?(arg, "has_") ->
-        "boolean()"
-
-      String.starts_with?(arg, "enable") or String.starts_with?(arg, "disable") ->
-        "boolean()"
-
-      true ->
-        nil
-    end
+    Enum.find_value(@prefix_type_rules, fn {prefixes, type} ->
+      if Enum.any?(prefixes, &String.starts_with?(arg, &1)), do: type
+    end)
   end
 
   defp infer_by_function_name(function_name) do
@@ -293,54 +280,54 @@ defmodule Mix.Tasks.Raxol.Gen.Specs do
     end
   end
 
+  @return_type_prefix_rules [
+    {"validate_", "{:ok, any()} | {:error, any()}"},
+    {"parse_", "{:ok, any()} | {:error, any()}"},
+    {"is_", "boolean()"},
+    {"has_", "boolean()"},
+    {"get_", "any() | nil"},
+    {"set_", "any()"},
+    {"update_", "any()"},
+    {"handle_", :analyze_handle},
+    {"format_", "String.t()"},
+    {"build_", "any()"},
+    {"create_", "any()"},
+    {"init_", "any()"}
+  ]
+
+  @return_type_suffix_rules [
+    {"?", "boolean()"},
+    {"!", "any() | no_return()"}
+  ]
+
   defp infer_return_type(%{name: name, full_ast: ast}) do
-    cond do
-      # Function name patterns
-      String.starts_with?(to_string(name), "validate_") ->
-        "{:ok, any()} | {:error, any()}"
+    fname = to_string(name)
 
-      String.starts_with?(to_string(name), "parse_") ->
-        "{:ok, any()} | {:error, any()}"
+    infer_return_by_prefix(fname, ast) ||
+      infer_return_by_suffix(fname) ||
+      analyze_function_body(ast)
+  end
 
-      String.starts_with?(to_string(name), "is_") ->
-        "boolean()"
+  defp infer_return_by_prefix(fname, ast) do
+    fname
+    |> match_prefix_rule()
+    |> resolve_prefix_type(ast)
+  end
 
-      String.starts_with?(to_string(name), "has_") ->
-        "boolean()"
+  defp match_prefix_rule(fname) do
+    Enum.find_value(@return_type_prefix_rules, fn {prefix, type} ->
+      if String.starts_with?(fname, prefix), do: type
+    end)
+  end
 
-      String.starts_with?(to_string(name), "get_") ->
-        "any() | nil"
+  defp resolve_prefix_type(:analyze_handle, ast), do: analyze_handle_return(ast)
+  defp resolve_prefix_type(nil, _ast), do: nil
+  defp resolve_prefix_type(static_type, _ast), do: static_type
 
-      String.starts_with?(to_string(name), "set_") ->
-        "any()"
-
-      String.starts_with?(to_string(name), "update_") ->
-        "any()"
-
-      String.starts_with?(to_string(name), "handle_") ->
-        analyze_handle_return(ast)
-
-      String.starts_with?(to_string(name), "format_") ->
-        "String.t()"
-
-      String.starts_with?(to_string(name), "build_") ->
-        "any()"
-
-      String.starts_with?(to_string(name), "create_") ->
-        "any()"
-
-      String.starts_with?(to_string(name), "init_") ->
-        "any()"
-
-      String.ends_with?(to_string(name), "?") ->
-        "boolean()"
-
-      String.ends_with?(to_string(name), "!") ->
-        "any() | no_return()"
-
-      true ->
-        analyze_function_body(ast)
-    end
+  defp infer_return_by_suffix(fname) do
+    Enum.find_value(@return_type_suffix_rules, fn {suffix, type} ->
+      if String.ends_with?(fname, suffix), do: type
+    end)
   end
 
   defp analyze_handle_return(_ast) do

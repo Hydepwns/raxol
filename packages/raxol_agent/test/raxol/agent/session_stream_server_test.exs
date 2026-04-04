@@ -46,7 +46,13 @@ defmodule Raxol.Agent.SessionStreamServerTest do
 
     test "returns event history", %{streamer: streamer} do
       SessionStreamer.emit(:test_session, {:text_delta, "hello"}, streamer)
-      SessionStreamer.emit(:test_session, {:tool_use, %{name: "read", arguments: %{}, id: "t1"}}, streamer)
+
+      SessionStreamer.emit(
+        :test_session,
+        {:tool_use, %{name: "read", arguments: %{}, id: "t1"}},
+        streamer
+      )
+
       Process.sleep(50)
 
       conn = conn(:get, "/sessions/test_session/history") |> call(streamer)

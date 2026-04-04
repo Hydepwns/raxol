@@ -4,6 +4,8 @@ defmodule Raxol.Playground.Demos.ReplDemo do
 
   alias Raxol.REPL.{Evaluator, Sandbox}
 
+  import Raxol.Playground.DemoHelpers, only: [history_prev: 1, history_next: 1]
+
   @visible_lines 14
   @box_width 70
   @box_height 16
@@ -172,37 +174,7 @@ defmodule Raxol.Playground.Demos.ReplDemo do
     lines ++ [{"=> #{result.formatted}", :result}]
   end
 
-  # -- History navigation --
-
-  defp history_prev(%{input_history: []} = model), do: model
-
-  defp history_prev(model) do
-    idx = (model.history_index || -1) + 1
-    idx = min(idx, length(model.input_history) - 1)
-    input = Enum.at(model.input_history, idx, model.input)
-    %{model | history_index: idx, input: input, cursor: String.length(input)}
-  end
-
-  defp history_next(model) do
-    case model.history_index do
-      nil ->
-        model
-
-      0 ->
-        %{model | history_index: nil, input: "", cursor: 0}
-
-      idx ->
-        new_idx = idx - 1
-        input = Enum.at(model.input_history, new_idx, "")
-
-        %{
-          model
-          | history_index: new_idx,
-            input: input,
-            cursor: String.length(input)
-        }
-    end
-  end
+  # history_prev/1 and history_next/1 imported from DemoHelpers
 
   # -- Scroll --
 

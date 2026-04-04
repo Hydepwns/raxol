@@ -141,43 +141,40 @@ defmodule Raxol.UI.Components.Input.TextWrappingCached do
   end
 
   defp wrap_words_by_visual_width([word | rest], width, current_line, lines) do
-    current_text =
-      if current_line == [],
-        do: "",
-        else: Enum.join(Enum.reverse(current_line), " ")
-
-    new_text =
-      if current_line == [], do: word, else: current_text <> " " <> word
+    new_text = join_with_word(current_line, word)
 
     if calculate_visual_width(new_text) <= width do
       wrap_words_by_visual_width(rest, width, [word | current_line], lines)
     else
-      # Check if we can fit just the word on current line
-      if current_line == [] do
-        # Word is too long, but we need to place it somewhere
-        if calculate_visual_width(word) > width do
-          # Break the word itself
-          word_parts = break_word_by_visual_width(word, width)
-          first_part = List.first(word_parts)
-          remaining_parts = Enum.drop(word_parts, 1)
-          # Add remaining parts back to processing queue
-          updated_rest = Enum.map(remaining_parts, & &1) ++ rest
-
-          wrap_words_by_visual_width(updated_rest, width, [], [
-            first_part | lines
-          ])
-        else
-          wrap_words_by_visual_width(rest, width, [word], lines)
-        end
-      else
-        # Complete current line and start new line with current word
-        completed_line = Enum.join(Enum.reverse(current_line), " ")
-
-        wrap_words_by_visual_width([word | rest], width, [], [
-          completed_line | lines
-        ])
-      end
+      handle_visual_overflow(word, rest, width, current_line, lines)
     end
+  end
+
+  defp join_with_word([], word), do: word
+
+  defp join_with_word(current_line, word),
+    do: Enum.join(Enum.reverse(current_line), " ") <> " " <> word
+
+  defp handle_visual_overflow(word, rest, width, [], lines) do
+    if calculate_visual_width(word) > width do
+      break_and_continue_visual(word, rest, width, lines)
+    else
+      wrap_words_by_visual_width(rest, width, [word], lines)
+    end
+  end
+
+  defp handle_visual_overflow(word, rest, width, current_line, lines) do
+    completed_line = Enum.join(Enum.reverse(current_line), " ")
+
+    wrap_words_by_visual_width([word | rest], width, [], [
+      completed_line | lines
+    ])
+  end
+
+  defp break_and_continue_visual(word, rest, width, lines) do
+    [first_part | remaining_parts] = break_word_by_visual_width(word, width)
+    updated_rest = remaining_parts ++ rest
+    wrap_words_by_visual_width(updated_rest, width, [], [first_part | lines])
   end
 
   defp break_word_by_visual_width(word, width) do
@@ -248,39 +245,36 @@ defmodule Raxol.UI.Components.Input.TextWrappingCached do
   end
 
   defp wrap_words([word | rest], width, current_line, lines) do
-    current_text = Enum.join(Enum.reverse(current_line), " ")
-
-    new_text =
-      if current_line == [], do: word, else: current_text <> " " <> word
+    new_text = join_with_word(current_line, word)
 
     if Raxol.UI.TextMeasure.display_width(new_text) <= width do
       wrap_words(rest, width, [word | current_line], lines)
     else
-      # Start new line with the word
-      completed_line =
-        if current_line != [],
-          do: Enum.join(Enum.reverse(current_line), " "),
-          else: ""
-
-      new_lines =
-        if completed_line != "", do: [completed_line | lines], else: lines
-
-      # Handle very long words that exceed width
-      if Raxol.UI.TextMeasure.display_width(word) > width do
-        # Break long word into chunks
-        word_chunks = break_long_word(word, width)
-
-        wrap_words(
-          rest,
-          width,
-          [List.last(word_chunks)],
-          new_lines ++ Enum.reverse(Enum.drop(word_chunks, -1))
-        )
-      else
-        wrap_words(rest, width, [word], new_lines)
-      end
+      handle_word_overflow(word, rest, width, current_line, lines)
     end
   end
+
+  defp handle_word_overflow(word, rest, width, current_line, lines) do
+    new_lines = flush_current_line(current_line, lines)
+
+    if Raxol.UI.TextMeasure.display_width(word) > width do
+      word_chunks = break_long_word(word, width)
+
+      wrap_words(
+        rest,
+        width,
+        [List.last(word_chunks)],
+        new_lines ++ Enum.reverse(Enum.drop(word_chunks, -1))
+      )
+    else
+      wrap_words(rest, width, [word], new_lines)
+    end
+  end
+
+  defp flush_current_line([], lines), do: lines
+
+  defp flush_current_line(current_line, lines),
+    do: [Enum.join(Enum.reverse(current_line), " ") | lines]
 
   defp break_long_word(word, width) do
     graphemes = String.graphemes(word)

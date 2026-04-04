@@ -42,71 +42,75 @@ defmodule Raxol.Demo.Dashboard do
   end
 
   @impl true
-  def update(message, model) do
+  def update(:tick, model), do: do_tick(model)
+  def update(message, model), do: handle_key(message, model)
+
+  defp handle_key(message, model) do
     case message do
-      :tick when model.paused ->
-        {model, []}
-
-      :tick ->
-        curr = :erlang.statistics(:scheduler_wall_time) |> Enum.sort()
-
-        utils =
-          Enum.zip(model.sched_prev, curr)
-          |> Enum.map(fn {{_id, a1, t1}, {_id2, a2, t2}} ->
-            sched_utilization(a2 - a1, t2 - t1)
-          end)
-
-        mem_pct = mem_percent()
-
-        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
-        history =
-          (model.mem_history ++ [mem_pct]) |> Enum.take(-@mem_history_size)
-
-        entry = tick_entry(model.tick)
-        log = [{ts(), entry} | model.log] |> Enum.take(@max_log_entries)
-
-        {%{
-           model
-           | tick: model.tick + 1,
-             sched_prev: curr,
-             sched_utils: utils,
-             mem_history: history,
-             log: log
-         }, []}
-
-      # Navigation
-      key_match(:tab) ->
-        {%{model | panel: next_panel(model.panel)}, []}
-
-      key_match("l") ->
-        {%{model | panel: next_panel(model.panel)}, []}
-
-      key_match("h") ->
-        {%{model | panel: prev_panel(model.panel)}, []}
-
-      # Process table scroll
-      key_match("j") ->
-        {%{model | proc_offset: min(model.proc_offset + 1, 20)}, []}
-
-      key_match("k") ->
-        {%{model | proc_offset: max(model.proc_offset - 1, 0)}, []}
-
-      # Pause / Resume
-      key_match(" ") ->
-        log_msg = if model.paused, do: "Resumed", else: "Paused"
-        log = [{ts(), log_msg} | model.log] |> Enum.take(@max_log_entries)
-        {%{model | paused: !model.paused, log: log}, []}
-
-      # Quit
-      key_match("q") ->
-        {model, [command(:quit)]}
-
-      key_match("c", ctrl: true) ->
-        {model, [command(:quit)]}
-
-      _ ->
-        {model, []}
+      key_match(:tab) -> handle_next_panel(model)
+      key_match("l") -> handle_next_panel(model)
+      key_match("h") -> handle_prev_panel(model)
+      key_match("j") -> handle_scroll_down(model)
+      key_match("k") -> handle_scroll_up(model)
+      _ -> handle_action(message, model)
     end
+  end
+
+  defp handle_action(message, model) do
+    case message do
+      key_match(" ") -> handle_pause_toggle(model)
+      key_match("q") -> {model, [command(:quit)]}
+      key_match("c", ctrl: true) -> {model, [command(:quit)]}
+      _ -> {model, []}
+    end
+  end
+
+  defp do_tick(%{paused: true} = model), do: {model, []}
+
+  defp do_tick(model) do
+    curr = :erlang.statistics(:scheduler_wall_time) |> Enum.sort()
+
+    utils =
+      Enum.zip(model.sched_prev, curr)
+      |> Enum.map(fn {{_id, a1, t1}, {_id2, a2, t2}} ->
+        sched_utilization(a2 - a1, t2 - t1)
+      end)
+
+    mem_pct = mem_percent()
+
+    history =
+      Enum.concat(model.mem_history, [mem_pct])
+      |> Enum.take(-@mem_history_size)
+
+    entry = tick_entry(model.tick)
+    log = [{ts(), entry} | model.log] |> Enum.take(@max_log_entries)
+
+    {%{
+       model
+       | tick: model.tick + 1,
+         sched_prev: curr,
+         sched_utils: utils,
+         mem_history: history,
+         log: log
+     }, []}
+  end
+
+  defp handle_next_panel(model),
+    do: {%{model | panel: next_panel(model.panel)}, []}
+
+  defp handle_prev_panel(model),
+    do: {%{model | panel: prev_panel(model.panel)}, []}
+
+  defp handle_scroll_down(model),
+    do: {%{model | proc_offset: min(model.proc_offset + 1, 20)}, []}
+
+  defp handle_scroll_up(model),
+    do: {%{model | proc_offset: max(model.proc_offset - 1, 0)}, []}
+
+  defp handle_pause_toggle(model) do
+    log_msg = if model.paused, do: "Resumed", else: "Paused"
+    log = [{ts(), log_msg} | model.log] |> Enum.take(@max_log_entries)
+    {%{model | paused: !model.paused, log: log}, []}
   end
 
   @impl true
@@ -157,9 +161,6 @@ defmodule Raxol.Demo.Dashboard do
 
   defp runtime_panel(model) do
     active = model.panel == :runtime
-    mem = mem_stats()
-    uptime = System.monotonic_time(:second) - model.start_time
-    pct = mem_percent()
 
     box style: %{border: panel_border(active), width: 30, padding: 1} do
       column style: %{gap: 0} do
@@ -168,53 +169,61 @@ defmodule Raxol.Demo.Dashboard do
             style: [:bold],
             fg: title_color(active)
           ),
-          divider(char: "-"),
-          text("Elixir     #{System.version()}"),
-          text("OTP        #{:erlang.system_info(:otp_release)}"),
-          text("Uptime     #{fmt_uptime(uptime)}"),
-          spacer(size: 1),
-          text("Processes  #{:erlang.system_info(:process_count)}"),
-          text("Ports      #{length(:erlang.ports())}"),
-          text("Atoms      #{fmt_num(:erlang.system_info(:atom_count))}"),
-          text("ETS        #{length(:ets.all())}"),
-          spacer(size: 1),
-          text("Memory", style: [:bold], fg: :cyan),
-          text("  Total    #{mem.total} MB"),
-          text("  Used     #{mem.used} MB"),
-          text("  Binary   #{mem.binary} MB"),
-          spacer(size: 1),
-          text("  #{spark_bar(model.mem_history)}", fg: :cyan),
-          spacer(size: 1),
-          row style: %{gap: 1} do
-            [
-              text(bar(pct, 14), fg: bar_color(pct)),
-              text("#{pct}%", style: [:bold], fg: bar_color(pct))
-            ]
-          end
+          divider(char: "-")
+          | runtime_version_rows(model) ++
+              [spacer(size: 1)] ++
+              runtime_process_rows() ++
+              [spacer(size: 1)] ++
+              runtime_memory_rows(model)
         ]
       end
     end
+  end
+
+  defp runtime_version_rows(model) do
+    uptime = System.monotonic_time(:second) - model.start_time
+
+    [
+      text("Elixir     #{System.version()}"),
+      text("OTP        #{:erlang.system_info(:otp_release)}"),
+      text("Uptime     #{fmt_uptime(uptime)}")
+    ]
+  end
+
+  defp runtime_process_rows do
+    [
+      text("Processes  #{:erlang.system_info(:process_count)}"),
+      text("Ports      #{length(:erlang.ports())}"),
+      text("Atoms      #{fmt_num(:erlang.system_info(:atom_count))}"),
+      text("ETS        #{length(:ets.all())}")
+    ]
+  end
+
+  defp runtime_memory_rows(model) do
+    mem = mem_stats()
+    pct = mem_percent()
+
+    [
+      text("Memory", style: [:bold], fg: :cyan),
+      text("  Total    #{mem.total} MB"),
+      text("  Used     #{mem.used} MB"),
+      text("  Binary   #{mem.binary} MB"),
+      spacer(size: 1),
+      text("  #{spark_bar(model.mem_history)}", fg: :cyan),
+      spacer(size: 1),
+      row style: %{gap: 1} do
+        [
+          text(bar(pct, 14), fg: bar_color(pct)),
+          text("#{pct}%", style: [:bold], fg: bar_color(pct))
+        ]
+      end
+    ]
   end
 
   # -- Scheduler Panel --
 
   defp scheduler_panel(model) do
     active = model.panel == :schedulers
-
-    sched_rows =
-      model.sched_utils
-      |> Enum.with_index(1)
-      |> Enum.map(fn {pct, idx} ->
-        row style: %{gap: 1} do
-          [
-            text("##{idx}", style: [:dim]),
-            text(bar(pct, 12), fg: bar_color(pct)),
-            text("#{String.pad_leading("#{pct}", 3)}%", fg: bar_color(pct))
-          ]
-        end
-      end)
-
-    avg = avg_utilization(model.sched_utils)
 
     box style: %{border: panel_border(active), width: 28, padding: 1} do
       column style: %{gap: 0} do
@@ -224,28 +233,46 @@ defmodule Raxol.Demo.Dashboard do
             fg: title_color(active)
           ),
           divider(char: "-")
-          | sched_rows ++
-              [
-                spacer(size: 1),
-                divider(char: "-"),
-                row style: %{gap: 1} do
-                  [
-                    text("Avg", style: [:bold]),
-                    text(bar(avg, 12), fg: bar_color(avg)),
-                    text("#{String.pad_leading("#{avg}", 3)}%",
-                      style: [:bold],
-                      fg: bar_color(avg)
-                    )
-                  ]
-                end,
-                spacer(size: 1),
-                text("#{status_dot(avg)} #{sched_status(avg)}",
-                  fg: bar_color(avg)
-                )
-              ]
+          | sched_util_rows(model.sched_utils) ++
+              sched_summary_rows(model.sched_utils)
         ]
       end
     end
+  end
+
+  defp sched_util_rows(sched_utils) do
+    sched_utils
+    |> Enum.with_index(1)
+    |> Enum.map(fn {pct, idx} ->
+      row style: %{gap: 1} do
+        [
+          text("##{idx}", style: [:dim]),
+          text(bar(pct, 12), fg: bar_color(pct)),
+          text("#{String.pad_leading("#{pct}", 3)}%", fg: bar_color(pct))
+        ]
+      end
+    end)
+  end
+
+  defp sched_summary_rows(sched_utils) do
+    avg = avg_utilization(sched_utils)
+
+    [
+      spacer(size: 1),
+      divider(char: "-"),
+      row style: %{gap: 1} do
+        [
+          text("Avg", style: [:bold]),
+          text(bar(avg, 12), fg: bar_color(avg)),
+          text("#{String.pad_leading("#{avg}", 3)}%",
+            style: [:bold],
+            fg: bar_color(avg)
+          )
+        ]
+      end,
+      spacer(size: 1),
+      text("#{status_dot(avg)} #{sched_status(avg)}", fg: bar_color(avg))
+    ]
   end
 
   # -- Event Log Panel --
@@ -279,32 +306,6 @@ defmodule Raxol.Demo.Dashboard do
 
   defp process_table(model) do
     active = model.panel == :processes
-    procs = top_processes(model.proc_offset)
-
-    header =
-      row style: %{gap: 1} do
-        [
-          text(String.pad_trailing("PID", 16), style: [:bold], fg: :yellow),
-          text(String.pad_trailing("Name", 28), style: [:bold], fg: :yellow),
-          text(String.pad_leading("Reductions", 12),
-            style: [:bold],
-            fg: :yellow
-          ),
-          text(String.pad_leading("Memory", 10), style: [:bold], fg: :yellow)
-        ]
-      end
-
-    rows =
-      Enum.map(procs, fn p ->
-        row style: %{gap: 1} do
-          [
-            text(String.pad_trailing(p.pid, 16), style: [:dim]),
-            text(String.pad_trailing(p.name, 28), fg: name_color(p.name)),
-            text(String.pad_leading(fmt_num(p.reds), 12)),
-            text(String.pad_leading(fmt_bytes(p.mem), 10))
-          ]
-        end
-      end)
 
     box style: %{border: panel_border(active), width: :fill, padding: 1} do
       column style: %{gap: 0} do
@@ -314,12 +315,38 @@ defmodule Raxol.Demo.Dashboard do
             fg: title_color(active)
           ),
           divider(char: "-"),
-          header,
+          proc_table_header(),
           divider(char: "-")
-          | rows
+          | proc_table_rows(model.proc_offset)
         ]
       end
     end
+  end
+
+  defp proc_table_header do
+    row style: %{gap: 1} do
+      [
+        text(String.pad_trailing("PID", 16), style: [:bold], fg: :yellow),
+        text(String.pad_trailing("Name", 28), style: [:bold], fg: :yellow),
+        text(String.pad_leading("Reductions", 12), style: [:bold], fg: :yellow),
+        text(String.pad_leading("Memory", 10), style: [:bold], fg: :yellow)
+      ]
+    end
+  end
+
+  defp proc_table_rows(offset) do
+    offset
+    |> top_processes()
+    |> Enum.map(fn p ->
+      row style: %{gap: 1} do
+        [
+          text(String.pad_trailing(p.pid, 16), style: [:dim]),
+          text(String.pad_trailing(p.name, 28), fg: name_color(p.name)),
+          text(String.pad_leading(fmt_num(p.reds), 12)),
+          text(String.pad_leading(fmt_bytes(p.mem), 10))
+        ]
+      end
+    end)
   end
 
   # -- Key Hints Bar --
@@ -345,32 +372,31 @@ defmodule Raxol.Demo.Dashboard do
 
   defp top_processes(offset) do
     Process.list()
-    |> Enum.flat_map(fn pid ->
-      case Process.info(pid, [:registered_name, :reductions, :memory]) do
-        nil ->
-          []
-
-        info ->
-          name =
-            case info[:registered_name] do
-              [] -> inspect(pid)
-              n -> inspect(n)
-            end
-
-          [
-            %{
-              pid: inspect(pid),
-              name: name,
-              reds: info[:reductions],
-              mem: info[:memory]
-            }
-          ]
-      end
-    end)
+    |> Enum.flat_map(&process_info_entry/1)
     |> Enum.sort_by(& &1.reds, :desc)
     |> Enum.drop(offset)
     |> Enum.take(6)
   end
+
+  defp process_info_entry(pid) do
+    case Process.info(pid, [:registered_name, :reductions, :memory]) do
+      nil ->
+        []
+
+      info ->
+        [
+          %{
+            pid: inspect(pid),
+            name: process_display_name(pid, info[:registered_name]),
+            reds: info[:reductions],
+            mem: info[:memory]
+          }
+        ]
+    end
+  end
+
+  defp process_display_name(pid, []), do: inspect(pid)
+  defp process_display_name(_pid, name), do: inspect(name)
 
   defp mem_stats do
     m = :erlang.memory()

@@ -162,9 +162,11 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
         Components.text(content: "  " <> line, style: @code_style)
       end)
 
-    # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
-    [Components.text(content: "")] ++
-      code_elements ++ [Components.text(content: "")]
+    Enum.concat([
+      [Components.text(content: "")],
+      code_elements,
+      [Components.text(content: "")]
+    ])
   end
 
   defp ast_node_to_elements({"blockquote", _attrs, children, _meta}, width) do

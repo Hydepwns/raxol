@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Layout.PreparerTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.UI.Layout.{Preparer, PreparedElement}
+  alias Raxol.UI.Layout.{PreparedElement, Preparer}
 
   describe "prepare/1" do
     test "prepares text element with correct display width" do

@@ -652,7 +652,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   defp validate_focus_matches_expected(current, expected, context)
        when current != expected do
     flunk(
-      "Expected focus on \"#{expected}\", but it's on \"#{current}\"\n#{context}"
+      ~s(Expected focus on "#{expected}", but it's on "#{current}"\n#{context})
     )
   end
 

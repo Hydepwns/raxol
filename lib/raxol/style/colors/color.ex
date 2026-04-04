@@ -81,15 +81,17 @@ defmodule Raxol.Style.Colors.Color do
   """
   @spec from_hex(String.t()) :: t() | {:error, :invalid_hex}
   def from_hex(hex_string) when is_binary(hex_string) do
-    case Raxol.Core.ErrorHandling.safe_call(fn ->
-           case Formats.from_hex(hex_string) do
-             {r, g, b} -> from_rgb(r, g, b)
-             {r, g, b, a} -> from_rgba(r, g, b, a)
-             {:error, :invalid_hex} = err -> err
-           end
-         end) do
+    case Raxol.Core.ErrorHandling.safe_call(fn -> convert_hex(hex_string) end) do
       {:ok, result} -> result
       {:error, _reason} -> {:error, :invalid_hex}
+    end
+  end
+
+  defp convert_hex(hex_string) do
+    case Formats.from_hex(hex_string) do
+      {r, g, b} -> from_rgb(r, g, b)
+      {r, g, b, a} -> from_rgba(r, g, b, a)
+      {:error, :invalid_hex} = err -> err
     end
   end
 
@@ -272,23 +274,28 @@ defmodule Raxol.Style.Colors.Color do
   @spec blend(t(), t(), float()) :: t()
   def blend(%__MODULE__{} = color1, %__MODULE__{} = color2, alpha)
       when is_float(alpha) and alpha >= 0.0 and alpha <= 1.0 do
-    # Simple linear interpolation for each component
-    r = round(color1.r * (1 - alpha) + color2.r * alpha)
-    g = round(color1.g * (1 - alpha) + color2.g * alpha)
-    b = round(color1.b * (1 - alpha) + color2.b * alpha)
+    {r, g, b} = interpolate_rgb(color1, color2, alpha)
+    blended_a = interpolate_alpha(color1.a, color2.a, alpha)
 
-    # Alpha blending for the 'a' component if both have it
-    a1 = color1.a || 255
-    a2 = color2.a || 255
-    blended_a_float = a1 * (1 - alpha) + a2 * alpha
-    blended_a = round(blended_a_float)
-
-    # Decide if the result should have an alpha component
-    case {color1.a != nil or color2.a != nil, blended_a != 255} do
-      {true, _} -> from_rgba(r, g, b, blended_a)
-      {false, true} -> from_rgba(r, g, b, blended_a)
-      {false, false} -> from_rgb(r, g, b)
+    if has_alpha_component?(color1.a, color2.a, blended_a) do
+      from_rgba(r, g, b, blended_a)
+    else
+      from_rgb(r, g, b)
     end
+  end
+
+  defp interpolate_rgb(c1, c2, alpha) do
+    {round(c1.r * (1 - alpha) + c2.r * alpha),
+     round(c1.g * (1 - alpha) + c2.g * alpha),
+     round(c1.b * (1 - alpha) + c2.b * alpha)}
+  end
+
+  defp interpolate_alpha(a1, a2, alpha) do
+    round((a1 || 255) * (1 - alpha) + (a2 || 255) * alpha)
+  end
+
+  defp has_alpha_component?(a1, a2, blended_a) do
+    a1 != nil or a2 != nil or blended_a != 255
   end
 
   @doc """

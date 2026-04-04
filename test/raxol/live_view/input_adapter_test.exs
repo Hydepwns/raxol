@@ -1,8 +1,8 @@
 defmodule Raxol.LiveView.InputAdapterTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.LiveView.InputAdapter
   alias Raxol.Core.Events.Event
+  alias Raxol.LiveView.InputAdapter
 
   describe "translate_key_event/1" do
     test "translates regular character keys" do

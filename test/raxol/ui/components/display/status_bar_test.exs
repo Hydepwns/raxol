@@ -1,8 +1,8 @@
 defmodule Raxol.UI.Components.Display.StatusBarTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.UI.Components.Display.StatusBar
   alias Raxol.Core.Events.Event
+  alias Raxol.UI.Components.Display.StatusBar
 
   defp default_context do
     %{theme: Raxol.UI.Theming.Theme.default_theme()}

@@ -48,7 +48,13 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
     test "100% when all accepted", %{loop: pid} do
       for i <- 1..3 do
         id = "acc#{i}"
-        FeedbackLoop.submit_recommendation(pid, %{id: id, layout_changes: [], confidence: 0.8, reasoning: "", timestamp: 0})
+
+        rec = %{
+          id: id, layout_changes: [],
+          confidence: 0.8, reasoning: "", timestamp: 0
+        }
+
+        FeedbackLoop.submit_recommendation(pid, rec)
         Process.sleep(5)
         FeedbackLoop.accept(pid, id)
       end
@@ -59,7 +65,13 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
     test "0% when all rejected", %{loop: pid} do
       for i <- 1..3 do
         id = "rej#{i}"
-        FeedbackLoop.submit_recommendation(pid, %{id: id, layout_changes: [], confidence: 0.8, reasoning: "", timestamp: 0})
+
+        rec = %{
+          id: id, layout_changes: [],
+          confidence: 0.8, reasoning: "", timestamp: 0
+        }
+
+        FeedbackLoop.submit_recommendation(pid, rec)
         Process.sleep(5)
         FeedbackLoop.reject(pid, id)
       end
@@ -68,8 +80,18 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
     end
 
     test "50% with mixed decisions", %{loop: pid} do
-      FeedbackLoop.submit_recommendation(pid, %{id: "m1", layout_changes: [], confidence: 0.8, reasoning: "", timestamp: 0})
-      FeedbackLoop.submit_recommendation(pid, %{id: "m2", layout_changes: [], confidence: 0.8, reasoning: "", timestamp: 0})
+      rec1 = %{
+        id: "m1", layout_changes: [],
+        confidence: 0.8, reasoning: "", timestamp: 0
+      }
+
+      rec2 = %{
+        id: "m2", layout_changes: [],
+        confidence: 0.8, reasoning: "", timestamp: 0
+      }
+
+      FeedbackLoop.submit_recommendation(pid, rec1)
+      FeedbackLoop.submit_recommendation(pid, rec2)
       Process.sleep(10)
 
       FeedbackLoop.accept(pid, "m1")
@@ -81,7 +103,12 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
 
   describe "history" do
     test "returns feedback history", %{loop: pid} do
-      FeedbackLoop.submit_recommendation(pid, %{id: "h1", layout_changes: [], confidence: 0.8, reasoning: "", timestamp: 0})
+      rec = %{
+        id: "h1", layout_changes: [],
+        confidence: 0.8, reasoning: "", timestamp: 0
+      }
+
+      FeedbackLoop.submit_recommendation(pid, rec)
       Process.sleep(10)
       FeedbackLoop.accept(pid, "h1")
 

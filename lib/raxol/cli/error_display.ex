@@ -96,26 +96,29 @@ defmodule Raxol.CLI.ErrorDisplay do
     Mix.shell().info("")
     Mix.shell().info(Colors.divider("=", 60))
 
-    severity_color =
-      case enhanced.severity do
-        :critical -> &Colors.error/1
-        :error -> &Colors.error/1
-        :warning -> &Colors.warning/1
-        _ -> &Colors.info/1
-      end
+    header =
+      severity_color(enhanced.severity).(
+        "Error: #{format_category(enhanced.category)}"
+      )
 
-    header = severity_color.("Error: #{format_category(enhanced.category)}")
     Mix.shell().info("  " <> header)
 
-    if enhanced.performance_impact != :none do
-      impact_str = format_performance_impact(enhanced.performance_impact)
-
-      Mix.shell().info(
-        "  " <> Colors.muted("Performance impact: #{impact_str}")
-      )
-    end
+    display_performance_impact(enhanced.performance_impact)
 
     Mix.shell().info(Colors.divider("-", 60))
+  end
+
+  defp severity_color(:critical), do: &Colors.error/1
+  defp severity_color(:error), do: &Colors.error/1
+  defp severity_color(:warning), do: &Colors.warning/1
+  defp severity_color(_), do: &Colors.info/1
+
+  defp display_performance_impact(:none), do: :ok
+
+  defp display_performance_impact(impact) do
+    impact_str = format_performance_impact(impact)
+
+    Mix.shell().info("  " <> Colors.muted("Performance impact: #{impact_str}"))
   end
 
   defp display_error_details(error) do
@@ -135,52 +138,62 @@ defmodule Raxol.CLI.ErrorDisplay do
     Mix.shell().info("  " <> Colors.info("Suggested fixes:"))
     Mix.shell().info("")
 
-    Enum.each(top_suggestions, fn suggestion ->
-      confidence_pct = trunc(suggestion.confidence * 100)
-      confidence_str = Colors.muted("(#{confidence_pct}% confidence)")
+    Enum.each(top_suggestions, &display_single_suggestion/1)
 
-      type_indicator =
-        case suggestion.type do
-          :automatic -> Colors.success("[auto]")
-          :guided -> Colors.info("[guided]")
-          :manual -> Colors.warning("[manual]")
-          :documentation -> Colors.muted("[docs]")
-        end
-
-      Mix.shell().info(
-        "  #{type_indicator} #{suggestion.description} #{confidence_str}"
-      )
-
-      if suggestion.action do
-        Mix.shell().info("       " <> Colors.format_command(suggestion.action))
-      end
-
-      Mix.shell().info("")
-    end)
-
-    if length(suggestions) > 3 do
-      remaining = length(suggestions) - 3
-
-      Mix.shell().info(
-        "  " <> Colors.muted("... and #{remaining} more suggestions")
-      )
-
-      Mix.shell().info("")
-    end
+    display_remaining_count(suggestions)
   end
 
-  defp display_recovery_hints(enhanced) do
-    if enhanced.related_optimizations != [] do
-      Mix.shell().info("  " <> Colors.muted("Related optimizations:"))
+  defp display_single_suggestion(suggestion) do
+    confidence_pct = trunc(suggestion.confidence * 100)
+    confidence_str = Colors.muted("(#{confidence_pct}% confidence)")
+    type_indicator = suggestion_type_indicator(suggestion.type)
 
-      Enum.each(enhanced.related_optimizations, fn opt ->
-        Mix.shell().info("    - #{opt}")
-      end)
+    Mix.shell().info(
+      "  #{type_indicator} #{suggestion.description} #{confidence_str}"
+    )
 
-      Mix.shell().info("")
+    if suggestion.action do
+      Mix.shell().info("       " <> Colors.format_command(suggestion.action))
     end
 
-    # Show quick commands
+    Mix.shell().info("")
+  end
+
+  defp suggestion_type_indicator(:automatic), do: Colors.success("[auto]")
+  defp suggestion_type_indicator(:guided), do: Colors.info("[guided]")
+  defp suggestion_type_indicator(:manual), do: Colors.warning("[manual]")
+  defp suggestion_type_indicator(:documentation), do: Colors.muted("[docs]")
+
+  defp display_remaining_count(suggestions) when length(suggestions) > 3 do
+    remaining = length(suggestions) - 3
+
+    Mix.shell().info(
+      "  " <> Colors.muted("... and #{remaining} more suggestions")
+    )
+
+    Mix.shell().info("")
+  end
+
+  defp display_remaining_count(_suggestions), do: :ok
+
+  defp display_recovery_hints(enhanced) do
+    display_related_optimizations(enhanced.related_optimizations)
+    display_quick_commands()
+  end
+
+  defp display_related_optimizations([]), do: :ok
+
+  defp display_related_optimizations(optimizations) do
+    Mix.shell().info("  " <> Colors.muted("Related optimizations:"))
+
+    Enum.each(optimizations, fn opt ->
+      Mix.shell().info("    - #{opt}")
+    end)
+
+    Mix.shell().info("")
+  end
+
+  defp display_quick_commands do
     Mix.shell().info("  " <> Colors.muted("Quick commands:"))
 
     Mix.shell().info(

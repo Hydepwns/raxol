@@ -292,67 +292,33 @@ defmodule Raxol.LiveView.TerminalBridge do
   """
   @spec style_to_classes(map(), String.t()) :: String.t()
   def style_to_classes(style, css_prefix \\ "raxol") do
-    classes = []
-
-    # Text attributes
-    classes =
-      if Map.get(style, :bold),
-        do: ["#{css_prefix}-bold" | classes],
-        else: classes
-
-    classes =
-      if Map.get(style, :italic),
-        do: ["#{css_prefix}-italic" | classes],
-        else: classes
-
-    classes =
-      if Map.get(style, :underline),
-        do: ["#{css_prefix}-underline" | classes],
-        else: classes
-
-    classes =
-      if Map.get(style, :reverse),
-        do: ["#{css_prefix}-reverse" | classes],
-        else: classes
-
-    classes =
-      if Map.get(style, :strikethrough),
-        do: ["#{css_prefix}-strikethrough" | classes],
-        else: classes
-
-    # Foreground color (supports both :fg_color and :foreground)
-    fg = Map.get(style, :fg_color) || Map.get(style, :foreground)
-
-    classes =
-      case fg do
-        nil ->
-          classes
-
-        color when is_atom(color) and color != false ->
-          ["#{css_prefix}-fg-#{color}" | classes]
-
-        _ ->
-          classes
-      end
-
-    # Background color (supports both :bg_color and :background)
-    bg = Map.get(style, :bg_color) || Map.get(style, :background)
-
-    classes =
-      case bg do
-        nil ->
-          classes
-
-        color when is_atom(color) and color != false ->
-          ["#{css_prefix}-bg-#{color}" | classes]
-
-        _ ->
-          classes
-      end
-
-    classes
+    text_attr_classes(style, css_prefix)
+    |> add_color_class(style, :fg_color, :foreground, "fg", css_prefix)
+    |> add_color_class(style, :bg_color, :background, "bg", css_prefix)
     |> Enum.reverse()
     |> Enum.join(" ")
+  end
+
+  @style_attrs [:bold, :italic, :underline, :reverse, :strikethrough]
+
+  defp text_attr_classes(style, css_prefix) do
+    Enum.reduce(@style_attrs, [], fn attr, acc ->
+      if Map.get(style, attr),
+        do: ["#{css_prefix}-#{attr}" | acc],
+        else: acc
+    end)
+  end
+
+  defp add_color_class(classes, style, key1, key2, label, css_prefix) do
+    color = Map.get(style, key1) || Map.get(style, key2)
+
+    case color do
+      color when is_atom(color) and color not in [nil, false] ->
+        ["#{css_prefix}-#{label}-#{color}" | classes]
+
+      _ ->
+        classes
+    end
   end
 
   @doc """
@@ -459,29 +425,28 @@ defmodule Raxol.LiveView.TerminalBridge do
   defp named_color_to_hex(_), do: "#ffffff"
 
   # Simplified 256-color to RGB conversion (first 16 colors)
+  @ansi_16 %{
+    0 => {0, 0, 0},
+    1 => {128, 0, 0},
+    2 => {0, 128, 0},
+    3 => {128, 128, 0},
+    4 => {0, 0, 128},
+    5 => {128, 0, 128},
+    6 => {0, 128, 128},
+    7 => {192, 192, 192},
+    8 => {128, 128, 128},
+    9 => {255, 0, 0},
+    10 => {0, 255, 0},
+    11 => {255, 255, 0},
+    12 => {0, 0, 255},
+    13 => {255, 0, 255},
+    14 => {0, 255, 255},
+    15 => {255, 255, 255}
+  }
+
   @spec color_256_to_rgb(non_neg_integer()) ::
           {non_neg_integer(), non_neg_integer(), non_neg_integer()}
-  defp color_256_to_rgb(n) when n < 16 do
-    # Standard 16 colors
-    case n do
-      0 -> {0, 0, 0}
-      1 -> {128, 0, 0}
-      2 -> {0, 128, 0}
-      3 -> {128, 128, 0}
-      4 -> {0, 0, 128}
-      5 -> {128, 0, 128}
-      6 -> {0, 128, 128}
-      7 -> {192, 192, 192}
-      8 -> {128, 128, 128}
-      9 -> {255, 0, 0}
-      10 -> {0, 255, 0}
-      11 -> {255, 255, 0}
-      12 -> {0, 0, 255}
-      13 -> {255, 0, 255}
-      14 -> {0, 255, 255}
-      15 -> {255, 255, 255}
-    end
-  end
+  defp color_256_to_rgb(n) when n < 16, do: Map.fetch!(@ansi_16, n)
 
   defp color_256_to_rgb(n) when n >= 16 and n < 232 do
     # 216 colors (6x6x6 cube)

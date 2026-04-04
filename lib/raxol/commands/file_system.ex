@@ -215,7 +215,8 @@ defmodule Raxol.Commands.FileSystem do
     end
   end
 
-  @spec build_tree(t(), String.t(), String.t(), non_neg_integer()) :: tree_node()
+  @spec build_tree(t(), String.t(), String.t(), non_neg_integer()) ::
+          tree_node()
   defp build_tree(_fs, _abs, name, 0), do: {name, :directory, []}
 
   defp build_tree(fs, abs, name, depth) do
@@ -336,7 +337,8 @@ defmodule Raxol.Commands.FileSystem do
   # Internal helpers
   # -------------------------------------------------------------------
 
-  @spec insert_node(t(), String.t(), node_entry()) :: {:ok, t()} | {:error, atom()}
+  @spec insert_node(t(), String.t(), node_entry()) ::
+          {:ok, t()} | {:error, atom()}
   defp insert_node(fs, path, node) do
     abs = resolve_path(fs.cwd, path)
 
@@ -401,6 +403,9 @@ defmodule Raxol.Commands.FileSystem do
 
   @spec format_size(non_neg_integer()) :: String.t()
   defp format_size(bytes) when bytes < @bytes_per_kb, do: "#{bytes}B"
-  defp format_size(bytes) when bytes < @bytes_per_mb, do: "#{div(bytes, @bytes_per_kb)}K"
+
+  defp format_size(bytes) when bytes < @bytes_per_mb,
+    do: "#{div(bytes, @bytes_per_kb)}K"
+
   defp format_size(bytes), do: "#{div(bytes, @bytes_per_mb)}M"
 end

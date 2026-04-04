@@ -384,28 +384,49 @@ defmodule Raxol.Minimal do
   end
 
   defp handle_csi_sequence(%{command: command, params: params}, state) do
-    case command do
-      # Cursor movement
-      "A" -> move_cursor(state, :up, parse_param(params, 0, 1))
-      "B" -> move_cursor(state, :down, parse_param(params, 0, 1))
-      "C" -> move_cursor(state, :right, parse_param(params, 0, 1))
-      "D" -> move_cursor(state, :left, parse_param(params, 0, 1))
-      "H" -> set_cursor_position(state, params)
-      "f" -> set_cursor_position(state, params)
-      # Erasing
-      "J" -> erase_display(state, parse_param(params, 0, 0))
-      "K" -> erase_line(state, parse_param(params, 0, 0))
-      # Scrolling
-      "S" -> scroll_up(state, parse_param(params, 0, 1))
-      "T" -> scroll_down(state, parse_param(params, 0, 1))
-      # Graphics
-      "m" -> set_graphics_rendition(state, params)
-      # Save/Restore cursor
-      "s" -> %{state | saved_cursor: state.cursor}
-      "u" -> %{state | cursor: state.saved_cursor || state.cursor}
-      _ -> state
-    end
+    handle_csi_command(command, params, state)
   end
+
+  defp handle_csi_command("A", params, state),
+    do: move_cursor(state, :up, parse_param(params, 0, 1))
+
+  defp handle_csi_command("B", params, state),
+    do: move_cursor(state, :down, parse_param(params, 0, 1))
+
+  defp handle_csi_command("C", params, state),
+    do: move_cursor(state, :right, parse_param(params, 0, 1))
+
+  defp handle_csi_command("D", params, state),
+    do: move_cursor(state, :left, parse_param(params, 0, 1))
+
+  defp handle_csi_command("H", params, state),
+    do: set_cursor_position(state, params)
+
+  defp handle_csi_command("f", params, state),
+    do: set_cursor_position(state, params)
+
+  defp handle_csi_command("J", params, state),
+    do: erase_display(state, parse_param(params, 0, 0))
+
+  defp handle_csi_command("K", params, state),
+    do: erase_line(state, parse_param(params, 0, 0))
+
+  defp handle_csi_command("S", params, state),
+    do: scroll_up(state, parse_param(params, 0, 1))
+
+  defp handle_csi_command("T", params, state),
+    do: scroll_down(state, parse_param(params, 0, 1))
+
+  defp handle_csi_command("m", params, state),
+    do: set_graphics_rendition(state, params)
+
+  defp handle_csi_command("s", _params, state),
+    do: %{state | saved_cursor: state.cursor}
+
+  defp handle_csi_command("u", _params, state),
+    do: %{state | cursor: state.saved_cursor || state.cursor}
+
+  defp handle_csi_command(_cmd, _params, state), do: state
 
   defp handle_osc_sequence(%{params: params}, state) do
     case params do
@@ -456,27 +477,24 @@ defmodule Raxol.Minimal do
     {new_buffer, new_x, new_y} =
       text
       |> String.graphemes()
-      |> Enum.reduce({buffer, x, y}, fn char, {buf, cur_x, cur_y} ->
-        case char do
-          "\r" ->
-            {buf, 0, cur_y}
-
-          "\n" ->
-            new_y = min(state.height - 1, cur_y + 1)
-            {buf, 0, new_y}
-
-          "\t" ->
-            # Move to next tab stop (every 8 columns)
-            new_x = min(state.width - 1, (div(cur_x, 8) + 1) * 8)
-            {buf, new_x, cur_y}
-
-          _ ->
-            handle_printable_char(char, buf, cur_x, cur_y, state)
-        end
-      end)
+      |> Enum.reduce({buffer, x, y}, &write_grapheme(&1, &2, state))
 
     new_state = put_active_buffer(state, new_buffer)
     %{new_state | cursor: {new_x, new_y}}
+  end
+
+  defp write_grapheme("\r", {buf, _cur_x, cur_y}, _state), do: {buf, 0, cur_y}
+
+  defp write_grapheme("\n", {buf, _cur_x, cur_y}, state) do
+    {buf, 0, min(state.height - 1, cur_y + 1)}
+  end
+
+  defp write_grapheme("\t", {buf, cur_x, cur_y}, state) do
+    {buf, min(state.width - 1, (div(cur_x, 8) + 1) * 8), cur_y}
+  end
+
+  defp write_grapheme(char, {buf, cur_x, cur_y}, state) do
+    handle_printable_char(char, buf, cur_x, cur_y, state)
   end
 
   defp erase_display(state, mode) do

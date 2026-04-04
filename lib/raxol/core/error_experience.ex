@@ -183,6 +183,16 @@ defmodule Raxol.Core.ErrorExperience do
 
   # Private implementation
 
+  @error_category_keywords [
+    {:terminal_io, ["parse", "ansi", "sequence"]},
+    {:ui_rendering, ["render", "damage", "batch"]},
+    {:component_lifecycle, ["component", "lifecycle"]},
+    {:performance, ["memory", "allocation", "buffer"]},
+    {:performance, ["timeout", "slow", "latency"]},
+    {:compilation, ["compilation", "syntax"]},
+    {:optimization, ["optimization", "phase3"]}
+  ]
+
   @spec classify_error(term(), map()) ::
           :terminal_io
           | :ui_rendering
@@ -194,34 +204,19 @@ defmodule Raxol.Core.ErrorExperience do
   defp classify_error(error, context) do
     error_string = inspect(error) |> String.downcase()
 
-    cond do
-      String.contains?(error_string, ["parse", "ansi", "sequence"]) ->
-        :terminal_io
+    classify_by_keywords(error_string) ||
+      classify_by_context(context) ||
+      :runtime
+  end
 
-      String.contains?(error_string, ["render", "damage", "batch"]) ->
-        :ui_rendering
+  defp classify_by_keywords(error_string) do
+    Enum.find_value(@error_category_keywords, fn {category, keywords} ->
+      if String.contains?(error_string, keywords), do: category
+    end)
+  end
 
-      String.contains?(error_string, ["component", "lifecycle"]) ->
-        :component_lifecycle
-
-      String.contains?(error_string, ["memory", "allocation", "buffer"]) ->
-        :performance
-
-      String.contains?(error_string, ["timeout", "slow", "latency"]) ->
-        :performance
-
-      String.contains?(error_string, ["compilation", "syntax"]) ->
-        :compilation
-
-      String.contains?(error_string, ["optimization", "phase3"]) ->
-        :optimization
-
-      Map.has_key?(context, :performance_metrics) ->
-        :performance
-
-      true ->
-        :runtime
-    end
+  defp classify_by_context(context) do
+    if Map.has_key?(context, :performance_metrics), do: :performance
   end
 
   defp generate_suggestions(error, category, context) do
@@ -521,22 +516,29 @@ defmodule Raxol.Core.ErrorExperience do
   end
 
   defp handle_recovery_interaction(enhanced_error) do
+    display_recovery_menu(enhanced_error.recovery_options)
+    prompt_and_execute(enhanced_error)
+  end
+
+  defp display_recovery_menu(options) do
     Log.info("\n" <> IO.ANSI.blue() <> "Recovery Options:" <> IO.ANSI.reset())
 
-    enhanced_error.recovery_options
+    options
     |> Enum.with_index(1)
     |> Enum.each(fn {option, index} ->
       Log.info("#{index}. #{format_recovery_option(option)}")
     end)
 
-    Log.info("#{length(enhanced_error.recovery_options) + 1}. Exit")
+    Log.info("#{length(options) + 1}. Exit")
+  end
 
+  defp prompt_and_execute(enhanced_error) do
     raw = IO.gets("Select option: ") |> String.trim()
+    options = enhanced_error.recovery_options
 
     case Integer.parse(raw) do
-      {choice, _}
-      when choice >= 1 and choice <= length(enhanced_error.recovery_options) ->
-        option = Enum.at(enhanced_error.recovery_options, choice - 1)
+      {choice, _} when choice >= 1 and choice <= length(options) ->
+        option = Enum.at(options, choice - 1)
         execute_recovery_option(option, enhanced_error)
 
       _ ->
@@ -544,20 +546,21 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
+  @recovery_labels %{
+    retry: "Retry operation",
+    ignore: "Ignore and continue",
+    debug: "Start debug console",
+    analyze: "Run performance analysis",
+    profile: "Start interactive profiler",
+    optimize: "Apply automatic optimizations",
+    debug_render: "Debug rendering pipeline",
+    check_optimizations: "Check Phase 3 optimizations",
+    analyze_parser: "Analyze parser performance",
+    check_ansi: "Check ANSI sequence handling"
+  }
+
   defp format_recovery_option(option) do
-    case option do
-      :retry -> "Retry operation"
-      :ignore -> "Ignore and continue"
-      :debug -> "Start debug console"
-      :analyze -> "Run performance analysis"
-      :profile -> "Start interactive profiler"
-      :optimize -> "Apply automatic optimizations"
-      :debug_render -> "Debug rendering pipeline"
-      :check_optimizations -> "Check Phase 3 optimizations"
-      :analyze_parser -> "Analyze parser performance"
-      :check_ansi -> "Check ANSI sequence handling"
-      _ -> to_string(option)
-    end
+    Map.get(@recovery_labels, option, to_string(option))
   end
 
   defp execute_recovery_option(option, _enhanced_error) do

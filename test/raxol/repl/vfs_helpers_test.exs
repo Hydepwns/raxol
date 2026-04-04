@@ -1,8 +1,8 @@
 defmodule Raxol.REPL.VfsHelpersTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.REPL.{Evaluator, VfsHelpers}
   alias Raxol.Commands.FileSystem
+  alias Raxol.REPL.{Evaluator, VfsHelpers}
 
   describe "ls/2" do
     test "prints directory entries" do

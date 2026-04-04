@@ -54,36 +54,9 @@ defmodule Raxol.Style.Colors.Formats do
           | {integer(), integer(), integer(), integer()}
           | {:error, :invalid_hex}
   def from_hex(hex_string) when is_binary(hex_string) do
-    hex_string = String.trim_leading(hex_string, "#")
-
-    case String.length(hex_string) do
-      3 ->
-        # Expand short RGB (e.g., F00 -> FF0000)
-        [r, g, b] = String.graphemes(hex_string)
-        expanded = r <> r <> g <> g <> b <> b
-        parse_rgb_hex(expanded)
-
-      4 ->
-        # Expand short RGBA (e.g., F008 -> FF000088)
-        [r, g, b, a] = String.graphemes(hex_string)
-        expanded = r <> r <> g <> g <> b <> b <> a <> a
-        parse_rgba_hex(expanded)
-
-      6 ->
-        case parse_rgb_hex(hex_string) do
-          {r, g, b} -> {r, g, b}
-          {:error, :invalid_hex} = err -> err
-        end
-
-      8 ->
-        case parse_rgba_hex(hex_string) do
-          {r, g, b, a} -> {r, g, b, a}
-          {:error, :invalid_hex} = err -> err
-        end
-
-      _ ->
-        {:error, :invalid_hex}
-    end
+    hex_string
+    |> String.trim_leading("#")
+    |> parse_hex_by_length()
   end
 
   @doc """
@@ -95,86 +68,21 @@ defmodule Raxol.Style.Colors.Formats do
       {205, 0, 0}
   """
   @spec ansi_to_rgb(byte()) :: {integer(), integer(), integer()}
-  def ansi_to_rgb(code) when code in 0..255//1 do
-    case code do
-      # Basic 16 colors
-      # Black
-      0 ->
-        {0, 0, 0}
+  def ansi_to_rgb(code) when code in 0..15//1, do: basic_ansi_color(code)
 
-      # Red
-      1 ->
-        {205, 0, 0}
+  # 216 colors (6x6x6 cube)
+  def ansi_to_rgb(code) when code in 16..231//1 do
+    n = code - 16
+    r = div(n, 36) * 51
+    g = rem(div(n, 6), 6) * 51
+    b = rem(n, 6) * 51
+    {r, g, b}
+  end
 
-      # Green
-      2 ->
-        {0, 205, 0}
-
-      # Yellow
-      3 ->
-        {205, 205, 0}
-
-      # Blue
-      4 ->
-        {0, 0, 238}
-
-      # Magenta
-      5 ->
-        {205, 0, 205}
-
-      # Cyan
-      6 ->
-        {0, 205, 205}
-
-      # White
-      7 ->
-        {229, 229, 229}
-
-      # Bright Black
-      8 ->
-        {127, 127, 127}
-
-      # Bright Red
-      9 ->
-        {255, 0, 0}
-
-      # Bright Green
-      10 ->
-        {0, 255, 0}
-
-      # Bright Yellow
-      11 ->
-        {255, 255, 0}
-
-      # Bright Blue
-      12 ->
-        {92, 92, 255}
-
-      # Bright Magenta
-      13 ->
-        {255, 0, 255}
-
-      # Bright Cyan
-      14 ->
-        {0, 255, 255}
-
-      # Bright White
-      15 ->
-        {255, 255, 255}
-
-      # 216 colors (6x6x6 cube)
-      n when n in 16..231//1 ->
-        n = n - 16
-        r = div(n, 36) * 51
-        g = rem(div(n, 6), 6) * 51
-        b = rem(n, 6) * 51
-        {r, g, b}
-
-      # 24 grayscale colors
-      n when n in 232..255//1 ->
-        value = (n - 232) * 10 + 8
-        {value, value, value}
-    end
+  # 24 grayscale colors
+  def ansi_to_rgb(code) when code in 232..255//1 do
+    value = (code - 232) * 10 + 8
+    {value, value, value}
   end
 
   @doc """
@@ -194,6 +102,44 @@ defmodule Raxol.Style.Colors.Formats do
   end
 
   # --- Private Helpers ---
+
+  # Short RGB (e.g., F00 -> FF0000)
+  defp parse_hex_by_length(<<r, g, b>>) do
+    expanded = <<r, r, g, g, b, b>>
+    parse_rgb_hex(expanded)
+  end
+
+  # Short RGBA (e.g., F008 -> FF000088)
+  defp parse_hex_by_length(<<r, g, b, a>>) do
+    expanded = <<r, r, g, g, b, b, a, a>>
+    parse_rgba_hex(expanded)
+  end
+
+  # Standard RGB hex
+  defp parse_hex_by_length(<<_::binary-size(6)>> = hex), do: parse_rgb_hex(hex)
+
+  # Standard RGBA hex
+  defp parse_hex_by_length(<<_::binary-size(8)>> = hex), do: parse_rgba_hex(hex)
+
+  defp parse_hex_by_length(_), do: {:error, :invalid_hex}
+
+  # Basic 16 ANSI colors
+  defp basic_ansi_color(0), do: {0, 0, 0}
+  defp basic_ansi_color(1), do: {205, 0, 0}
+  defp basic_ansi_color(2), do: {0, 205, 0}
+  defp basic_ansi_color(3), do: {205, 205, 0}
+  defp basic_ansi_color(4), do: {0, 0, 238}
+  defp basic_ansi_color(5), do: {205, 0, 205}
+  defp basic_ansi_color(6), do: {0, 205, 205}
+  defp basic_ansi_color(7), do: {229, 229, 229}
+  defp basic_ansi_color(8), do: {127, 127, 127}
+  defp basic_ansi_color(9), do: {255, 0, 0}
+  defp basic_ansi_color(10), do: {0, 255, 0}
+  defp basic_ansi_color(11), do: {255, 255, 0}
+  defp basic_ansi_color(12), do: {92, 92, 255}
+  defp basic_ansi_color(13), do: {255, 0, 255}
+  defp basic_ansi_color(14), do: {0, 255, 255}
+  defp basic_ansi_color(15), do: {255, 255, 255}
 
   defp parse_rgb_hex(hex) do
     case byte_size(hex) do

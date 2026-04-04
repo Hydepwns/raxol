@@ -1,8 +1,8 @@
 defmodule Raxol.Core.Runtime.Events.ConverterTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Core.Runtime.Events.Converter
   alias Raxol.Core.Events.Event
+  alias Raxol.Core.Runtime.Events.Converter
 
   describe "convert_termbox_event/6 - key events" do
     test "converts special key event (ch=0) with no modifiers" do

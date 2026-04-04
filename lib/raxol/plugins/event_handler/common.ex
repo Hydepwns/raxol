@@ -5,8 +5,8 @@ defmodule Raxol.Plugins.EventHandler.Common do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Plugins.Manager
   alias Raxol.Plugins.Lifecycle.Dependencies
+  alias Raxol.Plugins.Manager
 
   @type event :: map()
   @type plugin :: map()

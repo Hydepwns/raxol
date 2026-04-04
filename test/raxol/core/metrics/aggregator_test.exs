@@ -22,19 +22,15 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
   end
 
   defp setup_meck do
-    try do
-      :meck.new(Raxol.Core.Metrics.MetricsCollector, [:passthrough])
-    catch
-      :error, {:already_started, _} -> :ok
-    end
+    :meck.new(Raxol.Core.Metrics.MetricsCollector, [:passthrough])
+  catch
+    :error, {:already_started, _} -> :ok
   end
 
   defp cleanup_meck do
-    try do
-      :meck.unload(Raxol.Core.Metrics.MetricsCollector)
-    catch
-      :error, {:not_mocked, _} -> :ok
-    end
+    :meck.unload(Raxol.Core.Metrics.MetricsCollector)
+  catch
+    :error, {:not_mocked, _} -> :ok
   end
 
   defp create_test_metrics(values, tags \\ %{service: "test"}) do

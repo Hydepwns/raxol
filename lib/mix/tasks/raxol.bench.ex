@@ -84,46 +84,31 @@ defmodule Mix.Tasks.Raxol.Bench do
     if suite = opts[:suite] do
       run_framework_suite(suite, opts)
     else
-      case args do
-        [] ->
-          run_all_benchmarks(opts)
-
-        ["render"] ->
-          run_framework_suite("render", opts)
-
-        ["latency"] ->
-          run_framework_suite("latency", opts)
-
-        ["memory_widgets"] ->
-          run_framework_suite("memory_widgets", opts)
-
-        ["startup"] ->
-          run_framework_suite("startup", opts)
-
-        ["comparison"] ->
-          run_framework_suite("comparison", opts)
-
-        # Legacy suites
-        ["parser"] ->
-          run_parser_only(opts)
-
-        ["terminal"] ->
-          run_terminal_only(opts)
-
-        ["rendering"] ->
-          run_rendering_only(opts)
-
-        ["memory"] ->
-          run_memory_only(opts)
-
-        ["dashboard"] ->
-          run_dashboard_only(opts)
-
-        [benchmark] ->
-          Mix.shell().error("Unknown benchmark: #{benchmark}")
-          print_help()
-      end
+      execute_benchmark_by_arg(args, opts)
     end
+  end
+
+  @framework_suites ~w(render latency memory_widgets startup comparison)
+
+  defp execute_benchmark_by_arg([], opts), do: run_all_benchmarks(opts)
+
+  defp execute_benchmark_by_arg([suite], opts) when suite in @framework_suites,
+    do: run_framework_suite(suite, opts)
+
+  defp execute_benchmark_by_arg(["parser"], opts), do: run_parser_only(opts)
+  defp execute_benchmark_by_arg(["terminal"], opts), do: run_terminal_only(opts)
+
+  defp execute_benchmark_by_arg(["rendering"], opts),
+    do: run_rendering_only(opts)
+
+  defp execute_benchmark_by_arg(["memory"], opts), do: run_memory_only(opts)
+
+  defp execute_benchmark_by_arg(["dashboard"], opts),
+    do: run_dashboard_only(opts)
+
+  defp execute_benchmark_by_arg([benchmark], _opts) do
+    Mix.shell().error("Unknown benchmark: #{benchmark}")
+    print_help()
   end
 
   defp run_all_benchmarks(opts) do
@@ -278,13 +263,17 @@ defmodule Mix.Tasks.Raxol.Bench do
   end
 
   defp run_memory_benchmarks(config) do
+    Benchee.run(memory_benchmark_jobs(), config)
+  end
+
+  defp memory_benchmark_jobs do
     alias Raxol.Terminal.ANSI.StateMachine
     alias Raxol.Terminal.ANSI.Utils.AnsiParser
     alias Raxol.Terminal.Cursor
     alias Raxol.Terminal.Emulator
     alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
 
-    jobs = %{
+    %{
       "memory_emulator_80x24" => fn -> Emulator.new(80, 24) end,
       "memory_emulator_200x50" => fn -> Emulator.new(200, 50) end,
       "memory_parser_session" => fn ->
@@ -298,12 +287,9 @@ defmodule Mix.Tasks.Raxol.Bench do
         buffer = ScreenBuffer.new(100, 30)
         _cursor = Cursor.new()
 
-        buffer =
-          Enum.reduce(1..50, buffer, fn i, acc ->
-            ScreenBuffer.write_string(acc, 0, rem(i, 30), "Test line #{i}")
-          end)
-
-        buffer
+        Enum.reduce(1..50, buffer, fn i, acc ->
+          ScreenBuffer.write_string(acc, 0, rem(i, 30), "Test line #{i}")
+        end)
       end,
       "memory_large_buffer_allocation" => fn -> ScreenBuffer.new(500, 500) end,
       "memory_plugin_system" => fn ->
@@ -312,8 +298,6 @@ defmodule Mix.Tasks.Raxol.Bench do
         Manager.list_plugins(manager)
       end
     }
-
-    Benchee.run(jobs, config)
   end
 
   defp run_concurrent_benchmarks(config) do
@@ -481,34 +465,34 @@ defmodule Mix.Tasks.Raxol.Bench do
   end
 
   defp maybe_write_output(result, suite, opts) do
-    case {opts[:format], opts[:output]} do
-      {nil, _} ->
+    case opts[:format] do
+      nil ->
         :ok
 
-      {"json", path} when is_binary(path) ->
-        content =
-          Raxol.Benchmark.Formatter.json(%{suite => result},
-            include_system: true
-          )
-
-        :ok = Raxol.Benchmark.Formatter.write(content, path)
-        Mix.shell().info("JSON results written to #{path}")
-
-      {"markdown", path} when is_binary(path) ->
-        content = Raxol.Benchmark.Formatter.markdown(%{suite => result})
-        :ok = Raxol.Benchmark.Formatter.write(content, path)
-        Mix.shell().info("Markdown results written to #{path}")
-
-      {"json", nil} ->
-        IO.puts(Raxol.Benchmark.Formatter.json(%{suite => result}))
-
-      {"markdown", nil} ->
-        IO.puts(Raxol.Benchmark.Formatter.markdown(%{suite => result}))
-
-      _ ->
-        :ok
+      format ->
+        write_formatted_output(format, opts[:output], %{suite => result})
     end
   end
+
+  defp write_formatted_output("json", path, data) when is_binary(path) do
+    content = Raxol.Benchmark.Formatter.json(data, include_system: true)
+    :ok = Raxol.Benchmark.Formatter.write(content, path)
+    Mix.shell().info("JSON results written to #{path}")
+  end
+
+  defp write_formatted_output("markdown", path, data) when is_binary(path) do
+    content = Raxol.Benchmark.Formatter.markdown(data)
+    :ok = Raxol.Benchmark.Formatter.write(content, path)
+    Mix.shell().info("Markdown results written to #{path}")
+  end
+
+  defp write_formatted_output("json", nil, data),
+    do: IO.puts(Raxol.Benchmark.Formatter.json(data))
+
+  defp write_formatted_output("markdown", nil, data),
+    do: IO.puts(Raxol.Benchmark.Formatter.markdown(data))
+
+  defp write_formatted_output(_format, _path, _data), do: :ok
 
   defp framework_config do
     [

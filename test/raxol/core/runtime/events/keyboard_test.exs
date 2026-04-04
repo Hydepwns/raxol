@@ -1,8 +1,8 @@
 defmodule Raxol.Core.Runtime.Events.KeyboardTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Core.Runtime.Events.Keyboard
   alias Raxol.Core.Events.Event
+  alias Raxol.Core.Runtime.Events.Keyboard
 
   defp make_key_event(key, modifiers \\ [ctrl: false, alt: false, shift: false]) do
     Event.new(:key, %{key: key, modifiers: modifiers})

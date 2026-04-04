@@ -58,84 +58,62 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
 
   # Private helpers
 
-  defp get_selected_text(%MultiLineInput{} = state) do
+  defp ordered_selection_bounds(%MultiLineInput{} = state) do
     {start_row, start_col} = normalize_position(state.selection_start)
     {end_row, end_col} = normalize_position(state.selection_end)
 
-    # Ensure start is before end
-    {start_row, start_col, end_row, end_col} =
-      if start_row > end_row or (start_row == end_row and start_col > end_col) do
-        {end_row, end_col, start_row, start_col}
-      else
-        {start_row, start_col, end_row, end_col}
-      end
-
-    lines = state.lines || []
-
-    if start_row == end_row do
-      # Single line selection
-      line = Enum.at(lines, start_row, "")
-      String.slice(line, start_col, end_col - start_col)
+    if start_row > end_row or (start_row == end_row and start_col > end_col) do
+      {end_row, end_col, start_row, start_col}
     else
-      # Multi-line selection
-      selected_lines =
-        lines
-        |> Enum.slice(start_row..end_row)
-        |> Enum.with_index(start_row)
-        |> Enum.map(fn {line, idx} ->
-          cond do
-            idx == start_row ->
-              String.slice(line, start_col..-1//1)
-
-            idx == end_row ->
-              String.slice(line, 0, end_col)
-
-            true ->
-              line
-          end
-        end)
-
-      Enum.join(selected_lines, "\n")
+      {start_row, start_col, end_row, end_col}
     end
   end
 
+  defp get_selected_text(%MultiLineInput{} = state) do
+    {start_row, start_col, end_row, end_col} = ordered_selection_bounds(state)
+    lines = state.lines || []
+    extract_text(lines, start_row, start_col, end_row, end_col)
+  end
+
+  defp extract_text(lines, row, start_col, row, end_col) do
+    line = Enum.at(lines, row, "")
+    String.slice(line, start_col, end_col - start_col)
+  end
+
+  defp extract_text(lines, start_row, start_col, end_row, end_col) do
+    lines
+    |> Enum.slice(start_row..end_row)
+    |> Enum.with_index(start_row)
+    |> Enum.map_join(
+      "\n",
+      &slice_selected_line(&1, start_row, start_col, end_row, end_col)
+    )
+  end
+
+  defp slice_selected_line({line, idx}, idx, start_col, _end_row, _end_col) do
+    String.slice(line, start_col..-1//1)
+  end
+
+  defp slice_selected_line({line, idx}, _start_row, _start_col, idx, end_col) do
+    String.slice(line, 0, end_col)
+  end
+
+  defp slice_selected_line(
+         {line, _idx},
+         _start_row,
+         _start_col,
+         _end_row,
+         _end_col
+       ) do
+    line
+  end
+
   defp delete_selection(%MultiLineInput{} = state) do
-    {start_row, start_col} = normalize_position(state.selection_start)
-    {end_row, end_col} = normalize_position(state.selection_end)
-
-    # Ensure start is before end
-    {start_row, start_col, end_row, end_col} =
-      if start_row > end_row or (start_row == end_row and start_col > end_col) do
-        {end_row, end_col, start_row, start_col}
-      else
-        {start_row, start_col, end_row, end_col}
-      end
-
+    {start_row, start_col, end_row, end_col} = ordered_selection_bounds(state)
     lines = state.lines || []
 
     new_lines =
-      if start_row == end_row do
-        # Single line deletion
-        line = Enum.at(lines, start_row, "")
-
-        new_line =
-          String.slice(line, 0, start_col) <> String.slice(line, end_col..-1//1)
-
-        List.replace_at(lines, start_row, new_line)
-      else
-        # Multi-line deletion
-        start_line = Enum.at(lines, start_row, "")
-        end_line = Enum.at(lines, end_row, "")
-
-        merged_line =
-          String.slice(start_line, 0, start_col) <>
-            String.slice(end_line, end_col..-1//1)
-
-        lines
-        |> List.replace_at(start_row, merged_line)
-        |> List.delete_at(end_row)
-        |> delete_lines_between(start_row + 1, end_row - 1)
-      end
+      remove_selected_range(lines, start_row, start_col, end_row, end_col)
 
     %{
       state
@@ -147,56 +125,81 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
     }
   end
 
+  defp remove_selected_range(lines, row, start_col, row, end_col) do
+    line = Enum.at(lines, row, "")
+
+    new_line =
+      String.slice(line, 0, start_col) <> String.slice(line, end_col..-1//1)
+
+    List.replace_at(lines, row, new_line)
+  end
+
+  defp remove_selected_range(lines, start_row, start_col, end_row, end_col) do
+    start_line = Enum.at(lines, start_row, "")
+    end_line = Enum.at(lines, end_row, "")
+
+    merged_line =
+      String.slice(start_line, 0, start_col) <>
+        String.slice(end_line, end_col..-1//1)
+
+    lines
+    |> List.replace_at(start_row, merged_line)
+    |> List.delete_at(end_row)
+    |> delete_lines_between(start_row + 1, end_row - 1)
+  end
+
   defp insert_text(%MultiLineInput{} = state, text) do
     {row, col} = state.cursor_pos
     lines = state.lines || []
     current_line = Enum.at(lines, row, "")
+    do_insert_text(state, lines, current_line, row, col, text)
+  end
 
+  defp do_insert_text(state, lines, current_line, row, col, text) do
     if String.contains?(text, "\n") do
-      # Multi-line insert
-      text_lines = String.split(text, "\n")
-      first_line = hd(text_lines)
-      last_line = List.last(text_lines)
-      middle_lines = text_lines |> tl() |> Enum.drop(-1)
-
-      before = String.slice(current_line, 0, col)
-      after_text = String.slice(current_line, col..-1//1)
-
-      new_first_line = before <> first_line
-      new_last_line = last_line <> after_text
-
-      new_lines =
-        lines
-        |> List.replace_at(row, new_first_line)
-        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
-        |> List.insert_at(row + 1, middle_lines ++ [new_last_line])
-        |> List.flatten()
-
-      new_row = row + length(text_lines) - 1
-      new_col = String.length(last_line)
-
-      %{
-        state
-        | lines: new_lines,
-          value: Enum.join(new_lines, "\n"),
-          cursor_pos: {new_row, new_col}
-      }
+      insert_multiline_text(state, lines, current_line, row, col, text)
     else
-      # Single line insert
-      new_line =
-        String.slice(current_line, 0, col) <>
-          text <> String.slice(current_line, col..-1//1)
-
-      new_lines = List.replace_at(lines, row, new_line)
-      new_col = col + String.length(text)
-
-      %{
-        state
-        | lines: new_lines,
-          value: Enum.join(new_lines, "\n"),
-          cursor_pos: {row, new_col}
-      }
+      insert_single_line_text(state, lines, current_line, row, col, text)
     end
+  end
+
+  defp insert_multiline_text(state, lines, current_line, row, col, text) do
+    text_lines = String.split(text, "\n")
+    first_line = hd(text_lines)
+    last_line = List.last(text_lines)
+    middle_lines = text_lines |> tl() |> Enum.drop(-1)
+
+    before = String.slice(current_line, 0, col)
+    after_text = String.slice(current_line, col..-1//1)
+
+    new_lines =
+      lines
+      |> List.replace_at(row, before <> first_line)
+      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
+      |> List.insert_at(row + 1, middle_lines ++ [last_line <> after_text])
+      |> List.flatten()
+
+    %{
+      state
+      | lines: new_lines,
+        value: Enum.join(new_lines, "\n"),
+        cursor_pos: {row + length(text_lines) - 1, String.length(last_line)}
+    }
+  end
+
+  defp insert_single_line_text(state, lines, current_line, row, col, text) do
+    new_line =
+      String.slice(current_line, 0, col) <>
+        text <> String.slice(current_line, col..-1//1)
+
+    new_lines = List.replace_at(lines, row, new_line)
+
+    %{
+      state
+      | lines: new_lines,
+        value: Enum.join(new_lines, "\n"),
+        cursor_pos: {row, col + String.length(text)}
+    }
   end
 
   defp normalize_position(nil), do: {0, 0}

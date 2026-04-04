@@ -37,59 +37,44 @@ defmodule Raxol.Playground.Demos.TreeDemo do
   @impl true
   def update(message, model) do
     visible = flatten_visible(@tree, model.expanded)
-    max_idx = max(length(visible) - 1, 0)
-
-    case message do
-      key_match("j") ->
-        {%{model | cursor: DemoHelpers.cursor_down(model.cursor, max_idx)}, []}
-
-      key_match("k") ->
-        {%{model | cursor: DemoHelpers.cursor_up(model.cursor)}, []}
-
-      key_match("l") ->
-        {expand_current(model, visible), []}
-
-      key_match(:right) ->
-        {expand_current(model, visible), []}
-
-      key_match("h") ->
-        {collapse_current(model, visible), []}
-
-      key_match(:left) ->
-        {collapse_current(model, visible), []}
-
-      key_match("e") ->
-        {%{model | expanded: all_dir_names(@tree)}, []}
-
-      key_match("c") ->
-        {%{model | expanded: MapSet.new(), cursor: 0}, []}
-
-      _ ->
-        {model, []}
-    end
+    apply_key(message, model, visible)
   end
+
+  defp apply_key(key_match("j"), model, visible) do
+    max_idx = max(length(visible) - 1, 0)
+    {%{model | cursor: DemoHelpers.cursor_down(model.cursor, max_idx)}, []}
+  end
+
+  defp apply_key(key_match("k"), model, _visible) do
+    {%{model | cursor: DemoHelpers.cursor_up(model.cursor)}, []}
+  end
+
+  defp apply_key(key_match("l"), model, visible),
+    do: {expand_current(model, visible), []}
+
+  defp apply_key(key_match(:right), model, visible),
+    do: {expand_current(model, visible), []}
+
+  defp apply_key(key_match("h"), model, visible),
+    do: {collapse_current(model, visible), []}
+
+  defp apply_key(key_match(:left), model, visible),
+    do: {collapse_current(model, visible), []}
+
+  defp apply_key(key_match("e"), model, _visible) do
+    {%{model | expanded: all_dir_names(@tree)}, []}
+  end
+
+  defp apply_key(key_match("c"), model, _visible) do
+    {%{model | expanded: MapSet.new(), cursor: 0}, []}
+  end
+
+  defp apply_key(_message, model, _visible), do: {model, []}
 
   @impl true
   def view(model) do
     visible = flatten_visible(@tree, model.expanded)
-
-    lines =
-      visible
-      |> Enum.with_index()
-      |> Enum.map(fn {{node, depth, has_children}, idx} ->
-        indent = String.duplicate(@indent, depth)
-
-        prefix =
-          cond do
-            has_children and MapSet.member?(model.expanded, node.name) -> "v "
-            has_children -> "> "
-            true -> "  "
-          end
-
-        style = if idx == model.cursor, do: [:bold], else: []
-        marker = if idx == model.cursor, do: "*", else: " "
-        text(marker <> indent <> prefix <> node.name, style: style)
-      end)
+    lines = Enum.map(Enum.with_index(visible), &render_node(&1, model))
 
     column style: %{gap: 1} do
       [
@@ -109,6 +94,21 @@ defmodule Raxol.Playground.Demos.TreeDemo do
       ]
     end
   end
+
+  defp render_node({{node, depth, has_children}, idx}, model) do
+    indent = String.duplicate(@indent, depth)
+
+    prefix =
+      node_prefix(has_children, MapSet.member?(model.expanded, node.name))
+
+    style = if idx == model.cursor, do: [:bold], else: []
+    marker = if idx == model.cursor, do: "*", else: " "
+    text(marker <> indent <> prefix <> node.name, style: style)
+  end
+
+  defp node_prefix(true, true), do: "v "
+  defp node_prefix(true, false), do: "> "
+  defp node_prefix(false, _), do: "  "
 
   @impl true
   def subscribe(_model), do: []

@@ -154,60 +154,58 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
     {:ok, %{state | active: false}}
   end
 
-  def on_command("rainbow", args, state) do
-    case args do
-      ["start"] ->
-        state = start_animation(state)
-        {:ok, "Rainbow animation started", state}
+  def on_command("rainbow", args, state), do: dispatch_command(args, state)
 
-      ["stop"] ->
-        state = stop_animation(state)
-        {:ok, "Rainbow animation stopped", state}
+  defp dispatch_command(["start"], state) do
+    {:ok, "Rainbow animation started", start_animation(state)}
+  end
 
-      ["speed", speed_str] ->
-        case Integer.parse(speed_str) do
-          {speed, _} when speed > 0 ->
-            new_config = %{state.config | animation_speed: speed}
-            state = %{state | config: new_config}
+  defp dispatch_command(["stop"], state) do
+    {:ok, "Rainbow animation stopped", stop_animation(state)}
+  end
 
-            state =
-              if state.animation_timer,
-                do: restart_animation(state),
-                else: state
+  defp dispatch_command(["speed", speed_str], state) do
+    apply_speed(speed_str, state)
+  end
 
-            {:ok, "Animation speed set to #{speed}ms", state}
+  defp dispatch_command(["palette" | colors], state) do
+    palette_atoms = Enum.map(colors, &String.to_atom/1)
+    new_config = %{state.config | color_palette: palette_atoms}
 
-          _ ->
-            {:error, "Invalid speed value", state}
-        end
+    state = %{state | config: new_config, palette: build_palette(palette_atoms)}
+    {:ok, "Color palette updated", state}
+  end
 
-      ["palette" | colors] ->
-        palette_atoms = Enum.map(colors, &String.to_atom/1)
-        new_config = %{state.config | color_palette: palette_atoms}
+  defp dispatch_command(["next"], state) do
+    {:ok, "Rotated to next color", rotate_color(state)}
+  end
 
-        state = %{
-          state
-          | config: new_config,
-            palette: build_palette(palette_atoms)
-        }
+  defp dispatch_command(_args, state) do
+    help_text = """
+    Rainbow Theme Plugin Commands:
+    - rainbow start              Start color animation
+    - rainbow stop               Stop color animation
+    - rainbow speed <ms>         Set animation speed
+    - rainbow palette <colors>   Set color palette
+    - rainbow next              Rotate to next color
+    """
 
-        {:ok, "Color palette updated", state}
+    {:ok, help_text, state}
+  end
 
-      ["next"] ->
-        state = rotate_color(state)
-        {:ok, "Rotated to next color", state}
+  defp apply_speed(speed_str, state) do
+    case Integer.parse(speed_str) do
+      {speed, _} when speed > 0 ->
+        new_config = %{state.config | animation_speed: speed}
+        state = %{state | config: new_config}
+
+        state =
+          if state.animation_timer, do: restart_animation(state), else: state
+
+        {:ok, "Animation speed set to #{speed}ms", state}
 
       _ ->
-        help_text = """
-        Rainbow Theme Plugin Commands:
-        - rainbow start              Start color animation
-        - rainbow stop               Stop color animation
-        - rainbow speed <ms>         Set animation speed
-        - rainbow palette <colors>   Set color palette
-        - rainbow next              Rotate to next color
-        """
-
-        {:ok, help_text, state}
+        {:error, "Invalid speed value", state}
     end
   end
 

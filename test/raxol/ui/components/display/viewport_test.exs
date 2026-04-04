@@ -1,8 +1,8 @@
 defmodule Raxol.UI.Components.Display.ViewportTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.UI.Components.Display.Viewport
   alias Raxol.Core.Events.Event
+  alias Raxol.UI.Components.Display.Viewport
   alias Raxol.View.Components
 
   defp make_children(n) do

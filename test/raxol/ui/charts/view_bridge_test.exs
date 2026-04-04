@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Charts.ViewBridgeTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.UI.Charts.{ViewBridge, LineChart}
+  alias Raxol.UI.Charts.{LineChart, ViewBridge}
 
   describe "cells_to_view/2" do
     test "empty cells returns empty box" do

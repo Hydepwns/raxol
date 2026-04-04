@@ -1,8 +1,8 @@
 defmodule Raxol.UI.StyleInheritanceTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.UI.StyleProcessor
   alias Raxol.UI.Layout.Engine, as: LayoutEngine
+  alias Raxol.UI.StyleProcessor
 
   # Helper to extract style from a positioned element.
   # After layout, text elements have style at either :style or :attrs.style

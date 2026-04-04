@@ -2,9 +2,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.SelectionOps do
   @moduledoc false
 
   alias Raxol.UI.Components.Input.MultiLineInput
+  alias Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper
   alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
-  alias Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper
 
   def handle_select_all(state) do
     new_state = NavigationHelper.select_all(state)

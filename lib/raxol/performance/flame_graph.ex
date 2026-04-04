@@ -79,58 +79,13 @@ defmodule Raxol.Performance.FlameGraph do
     output = Keyword.get(opts, :output, @default_output)
     format = Keyword.get(opts, :format, :svg)
 
-    # Create temp directory for profiling files
-    tmp_dir = System.tmp_dir!()
-
-    trace_file =
-      Path.join(
-        tmp_dir,
-        "raxol_profile_#{:erlang.unique_integer([:positive])}.trace"
-      )
-
-    analysis_file =
-      Path.join(
-        tmp_dir,
-        "raxol_profile_#{:erlang.unique_integer([:positive])}.analysis"
-      )
-
-    try do
-      ensure_fprof()
-      _ = :fprof.start()
-
-      _ =
-        :fprof.trace([:start, {:file, String.to_charlist(trace_file)}])
-
+    with_fprof_profiling("raxol_profile", fn trace_file, analysis_file ->
+      start_trace(trace_file)
       result = fun.()
-      _ = :fprof.trace(:stop)
-      _ = :fprof.profile(file: String.to_charlist(trace_file))
-
-      _ =
-        :fprof.analyse(dest: String.to_charlist(analysis_file), cols: 120)
-
-      _ = :fprof.stop()
-
-      _ =
-        case format do
-          :svg -> generate_svg(analysis_file, output, opts)
-          :folded -> generate_folded(analysis_file, output)
-          :fprof -> copy_fprof_output(analysis_file, output)
-        end
-
+      analyse_trace(trace_file, analysis_file)
+      emit_output(format, analysis_file, output, opts)
       {:ok, output, result}
-    rescue
-      e ->
-        try do
-          :fprof.stop()
-        rescue
-          _ -> :ok
-        end
-
-        {:error, Exception.message(e)}
-    after
-      _ = File.rm(trace_file)
-      _ = File.rm(analysis_file)
-    end
+    end)
   end
 
   @doc """
@@ -159,57 +114,14 @@ defmodule Raxol.Performance.FlameGraph do
     output = Keyword.get(opts, :output, "#{module}_flamegraph.svg")
     functions = Keyword.get(opts, :functions, :all)
 
-    tmp_dir = System.tmp_dir!()
-
-    trace_file =
-      Path.join(
-        tmp_dir,
-        "raxol_module_#{:erlang.unique_integer([:positive])}.trace"
-      )
-
-    analysis_file =
-      Path.join(
-        tmp_dir,
-        "raxol_module_#{:erlang.unique_integer([:positive])}.analysis"
-      )
-
-    try do
-      ensure_fprof()
-      _ = :fprof.start()
-
+    with_fprof_profiling("raxol_module", fn trace_file, analysis_file ->
       trace_spec = build_trace_spec(module, functions)
-
-      _ =
-        :fprof.trace([
-          :start,
-          {:file, String.to_charlist(trace_file)} | trace_spec
-        ])
-
+      start_trace_with_spec(trace_file, trace_spec)
       Process.sleep(duration)
-
-      _ = :fprof.trace(:stop)
-      _ = :fprof.profile(file: String.to_charlist(trace_file))
-
-      _ =
-        :fprof.analyse(dest: String.to_charlist(analysis_file), cols: 120)
-
-      _ = :fprof.stop()
-
+      analyse_trace(trace_file, analysis_file)
       _ = generate_svg(analysis_file, output, opts)
       {:ok, output}
-    rescue
-      e ->
-        try do
-          :fprof.stop()
-        rescue
-          _ -> :ok
-        end
-
-        {:error, Exception.message(e)}
-    after
-      _ = File.rm(trace_file)
-      _ = File.rm(analysis_file)
-    end
+    end)
   end
 
   @doc """
@@ -225,56 +137,13 @@ defmodule Raxol.Performance.FlameGraph do
     duration = Keyword.get(opts, :duration, 5000)
     output = Keyword.get(opts, :output, "process_flamegraph.svg")
 
-    tmp_dir = System.tmp_dir!()
-
-    trace_file =
-      Path.join(
-        tmp_dir,
-        "raxol_self_#{:erlang.unique_integer([:positive])}.trace"
-      )
-
-    analysis_file =
-      Path.join(
-        tmp_dir,
-        "raxol_self_#{:erlang.unique_integer([:positive])}.analysis"
-      )
-
-    try do
-      ensure_fprof()
-      _ = :fprof.start()
-
-      _ =
-        :fprof.trace([
-          :start,
-          {:procs, [self()]},
-          {:file, String.to_charlist(trace_file)}
-        ])
-
+    with_fprof_profiling("raxol_self", fn trace_file, analysis_file ->
+      start_trace_with_spec(trace_file, [{:procs, [self()]}])
       Process.sleep(duration)
-
-      _ = :fprof.trace(:stop)
-      _ = :fprof.profile(file: String.to_charlist(trace_file))
-
-      _ =
-        :fprof.analyse(dest: String.to_charlist(analysis_file), cols: 120)
-
-      _ = :fprof.stop()
-
+      analyse_trace(trace_file, analysis_file)
       _ = generate_svg(analysis_file, output, opts)
       {:ok, output}
-    rescue
-      e ->
-        try do
-          :fprof.stop()
-        rescue
-          _ -> :ok
-        end
-
-        {:error, Exception.message(e)}
-    after
-      _ = File.rm(trace_file)
-      _ = File.rm(analysis_file)
-    end
+    end)
   end
 
   @doc """
@@ -319,6 +188,80 @@ defmodule Raxol.Performance.FlameGraph do
   end
 
   # Private functions
+
+  @spec with_fprof_profiling(String.t(), (String.t(), String.t() -> term())) ::
+          term()
+  defp with_fprof_profiling(prefix, fun) do
+    {trace_file, analysis_file} = make_temp_files(prefix)
+
+    try do
+      ensure_fprof()
+      _ = :fprof.start()
+      fun.(trace_file, analysis_file)
+    rescue
+      e ->
+        safe_stop_fprof()
+        {:error, Exception.message(e)}
+    after
+      _ = File.rm(trace_file)
+      _ = File.rm(analysis_file)
+    end
+  end
+
+  defp make_temp_files(prefix) do
+    tmp_dir = System.tmp_dir!()
+
+    trace_file =
+      Path.join(
+        tmp_dir,
+        "#{prefix}_#{:erlang.unique_integer([:positive])}.trace"
+      )
+
+    analysis_file =
+      Path.join(
+        tmp_dir,
+        "#{prefix}_#{:erlang.unique_integer([:positive])}.analysis"
+      )
+
+    {trace_file, analysis_file}
+  end
+
+  defp start_trace(trace_file) do
+    _ = :fprof.trace([:start, {:file, String.to_charlist(trace_file)}])
+    :ok
+  end
+
+  defp start_trace_with_spec(trace_file, spec) do
+    _ =
+      :fprof.trace([
+        :start,
+        {:file, String.to_charlist(trace_file)} | spec
+      ])
+
+    :ok
+  end
+
+  defp analyse_trace(trace_file, analysis_file) do
+    _ = :fprof.trace(:stop)
+    _ = :fprof.profile(file: String.to_charlist(trace_file))
+    _ = :fprof.analyse(dest: String.to_charlist(analysis_file), cols: 120)
+    _ = :fprof.stop()
+    :ok
+  end
+
+  defp emit_output(format, analysis_file, output, opts) do
+    case format do
+      :svg -> generate_svg(analysis_file, output, opts)
+      :folded -> generate_folded(analysis_file, output)
+      :fprof -> copy_fprof_output(analysis_file, output)
+    end
+  end
+
+  defp safe_stop_fprof do
+    :fprof.stop()
+  rescue
+    _ -> :ok
+  end
 
   defp ensure_fprof do
     _ = Application.ensure_all_started(:tools)

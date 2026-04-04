@@ -248,8 +248,7 @@ defmodule Raxol.Agent.Stream do
 
       {:done, response}, :running ->
         done_event =
-          {:done,
-           %{content: response.content, tool_results: [], usage: response.usage}}
+          {:done, %{content: response.content, tool_results: [], usage: response.usage}}
 
         {[done_event], :done}
 

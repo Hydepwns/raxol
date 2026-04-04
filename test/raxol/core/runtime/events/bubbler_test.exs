@@ -1,8 +1,8 @@
 defmodule Raxol.Core.Runtime.Events.BubblerTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Core.Runtime.Events.Bubbler
   alias Raxol.Core.Events.Event
+  alias Raxol.Core.Runtime.Events.Bubbler
 
   # --- Test Helpers ---
 

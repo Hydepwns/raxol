@@ -34,20 +34,24 @@ defmodule Raxol.Demo.Todo do
   def update(message, %{mode: :input} = model), do: handle_input(message, model)
   def update(message, model), do: handle_normal(message, model)
 
-  defp handle_normal(message, model) do
-    case message do
-      key_match("q") -> {model, [command(:quit)]}
-      key_match(:down) -> {move_cursor(model, 1), []}
-      key_match("j") -> {move_cursor(model, 1), []}
-      key_match(:up) -> {move_cursor(model, -1), []}
-      key_match("k") -> {move_cursor(model, -1), []}
-      key_match(:enter) -> {toggle_done(model), []}
-      key_match(:space) -> {toggle_done(model), []}
-      key_match("d") -> {delete_todo(model), []}
-      key_match("a") -> {%{model | mode: :input, input_buffer: ""}, []}
-      _ -> {model, []}
-    end
-  end
+  defp handle_normal(message, model), do: apply_normal_key(message, model)
+
+  defp apply_normal_key(key_match("q"), model), do: {model, [command(:quit)]}
+
+  defp apply_normal_key(key_match(:down), model),
+    do: {move_cursor(model, 1), []}
+
+  defp apply_normal_key(key_match("j"), model), do: {move_cursor(model, 1), []}
+  defp apply_normal_key(key_match(:up), model), do: {move_cursor(model, -1), []}
+  defp apply_normal_key(key_match("k"), model), do: {move_cursor(model, -1), []}
+  defp apply_normal_key(key_match(:enter), model), do: {toggle_done(model), []}
+  defp apply_normal_key(key_match(:space), model), do: {toggle_done(model), []}
+  defp apply_normal_key(key_match("d"), model), do: {delete_todo(model), []}
+
+  defp apply_normal_key(key_match("a"), model),
+    do: {%{model | mode: :input, input_buffer: ""}, []}
+
+  defp apply_normal_key(_message, model), do: {model, []}
 
   defp handle_input(message, model) do
     case message do
@@ -92,28 +96,30 @@ defmodule Raxol.Demo.Todo do
 
   # -- View helpers --
 
-  defp todo_list_box(model) do
-    if model.todos == [] do
-      box style: %{padding: 1, border: :single, width: 40} do
-        text("(no todos -- press 'a' to add one)")
-      end
-    else
-      items =
-        model.todos
-        |> Enum.with_index()
-        |> Enum.map(fn {todo, idx} ->
-          prefix = if idx == model.cursor, do: "> ", else: "  "
-          check = if todo.done, do: "[x]", else: "[ ]"
-          style = if idx == model.cursor, do: [:bold], else: []
-          text("#{prefix}#{check} #{todo.text}", style: style)
-        end)
+  defp todo_list_box(%{todos: []} = _model) do
+    box style: %{padding: 1, border: :single, width: 40} do
+      text("(no todos -- press 'a' to add one)")
+    end
+  end
 
-      box style: %{padding: 1, border: :single, width: 40} do
-        column style: %{gap: 0} do
-          items
-        end
+  defp todo_list_box(model) do
+    items =
+      model.todos
+      |> Enum.with_index()
+      |> Enum.map(&render_todo_item(&1, model.cursor))
+
+    box style: %{padding: 1, border: :single, width: 40} do
+      column style: %{gap: 0} do
+        items
       end
     end
+  end
+
+  defp render_todo_item({todo, idx}, cursor) do
+    prefix = if idx == cursor, do: "> ", else: "  "
+    check = if todo.done, do: "[x]", else: "[ ]"
+    style = if idx == cursor, do: [:bold], else: []
+    text("#{prefix}#{check} #{todo.text}", style: style)
   end
 
   defp help_text(%{mode: :input} = model) do

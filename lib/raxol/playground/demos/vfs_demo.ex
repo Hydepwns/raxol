@@ -4,6 +4,8 @@ defmodule Raxol.Playground.Demos.VfsDemo do
 
   alias Raxol.Commands.FileSystem
 
+  import Raxol.Playground.DemoHelpers, only: [history_prev: 1, history_next: 1]
+
   @visible_lines 14
   @box_width 70
   @box_height 16
@@ -23,40 +25,34 @@ defmodule Raxol.Playground.Demos.VfsDemo do
   end
 
   @impl true
-  def update(message, model) do
-    case message do
-      key_match(:enter) ->
-        {exec_input(model), []}
+  def update(message, model), do: {handle_key(message, model), []}
 
-      key_match(:backspace) ->
-        input = String.slice(model.input, 0..-2//1)
-        {%{model | input: input, cursor: max(model.cursor - 1, 0)}, []}
+  defp handle_key(key_match(:enter), model), do: exec_input(model)
+  defp handle_key(key_match(:up), model), do: history_prev(model)
+  defp handle_key(key_match(:down), model), do: history_next(model)
 
-      key_match("l", ctrl: true) ->
-        {%{model | output: [], output_offset: 0}, []}
-
-      key_match("u", ctrl: true) ->
-        {%{model | input: "", cursor: 0}, []}
-
-      key_match(:up) ->
-        {history_prev(model), []}
-
-      key_match(:down) ->
-        {history_next(model), []}
-
-      key_match("j", ctrl: true) ->
-        {scroll_output(model, 1), []}
-
-      key_match("k", ctrl: true) ->
-        {scroll_output(model, -1), []}
-
-      key_match(:char, char: ch) when byte_size(ch) == 1 ->
-        {%{model | input: model.input <> ch, cursor: model.cursor + 1}, []}
-
-      _ ->
-        {model, []}
-    end
+  defp handle_key(key_match(:backspace), model) do
+    input = String.slice(model.input, 0..-2//1)
+    %{model | input: input, cursor: max(model.cursor - 1, 0)}
   end
+
+  defp handle_key(key_match("l", ctrl: true), model),
+    do: %{model | output: [], output_offset: 0}
+
+  defp handle_key(key_match("u", ctrl: true), model),
+    do: %{model | input: "", cursor: 0}
+
+  defp handle_key(key_match("j", ctrl: true), model),
+    do: scroll_output(model, 1)
+
+  defp handle_key(key_match("k", ctrl: true), model),
+    do: scroll_output(model, -1)
+
+  defp handle_key(key_match(:char, char: ch), model) when byte_size(ch) == 1 do
+    %{model | input: model.input <> ch, cursor: model.cursor + 1}
+  end
+
+  defp handle_key(_other, model), do: model
 
   @impl true
   def view(model) do
@@ -247,20 +243,23 @@ defmodule Raxol.Playground.Demos.VfsDemo do
     child_lines =
       children
       |> Enum.with_index()
-      |> Enum.flat_map(fn {{child_name, type, grandchildren}, idx} ->
-        is_last = idx == last_idx
-        connector = if is_last, do: "`-- ", else: "|-- "
-        continuation = if is_last, do: "    ", else: "|   "
-
-        format_tree({child_name, type, grandchildren}, prefix <> connector)
-        |> Enum.with_index()
-        |> Enum.map(fn
-          {line, 0} -> line
-          {line, _} -> prefix <> continuation <> String.trim_leading(line)
-        end)
+      |> Enum.flat_map(fn {child, idx} ->
+        format_tree_child(child, prefix, idx == last_idx)
       end)
 
     [prefix <> name <> "/" | child_lines]
+  end
+
+  defp format_tree_child(child, prefix, is_last?) do
+    connector = if is_last?, do: "`-- ", else: "|-- "
+    continuation = if is_last?, do: "    ", else: "|   "
+
+    format_tree(child, prefix <> connector)
+    |> Enum.with_index()
+    |> Enum.map(fn
+      {line, 0} -> line
+      {line, _} -> prefix <> continuation <> String.trim_leading(line)
+    end)
   end
 
   # -- Seed data --
@@ -298,37 +297,7 @@ defmodule Raxol.Playground.Demos.VfsDemo do
     fs
   end
 
-  # -- History navigation --
-
-  defp history_prev(%{input_history: []} = model), do: model
-
-  defp history_prev(model) do
-    idx = (model.history_index || -1) + 1
-    idx = min(idx, length(model.input_history) - 1)
-    input = Enum.at(model.input_history, idx, model.input)
-    %{model | history_index: idx, input: input, cursor: String.length(input)}
-  end
-
-  defp history_next(model) do
-    case model.history_index do
-      nil ->
-        model
-
-      0 ->
-        %{model | history_index: nil, input: "", cursor: 0}
-
-      idx ->
-        new_idx = idx - 1
-        input = Enum.at(model.input_history, new_idx, "")
-
-        %{
-          model
-          | history_index: new_idx,
-            input: input,
-            cursor: String.length(input)
-        }
-    end
-  end
+  # history_prev/1 and history_next/1 imported from DemoHelpers
 
   # -- Scroll --
 

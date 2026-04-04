@@ -65,36 +65,17 @@ defmodule Raxol.UI.PerformanceTest do
     height = Keyword.get(opts, :height, 24)
     props = Keyword.drop(opts, [:iterations, :warmup, :width, :height])
 
-    # Initialize component state once
-    state =
-      if function_exported?(component, :init, 1) do
-        component.init(props)
-      else
-        %{}
-      end
+    state = init_component_state(component, props)
 
     # Warmup runs
     for _ <- 1..warmup do
-      buffer = Buffer.create_blank_buffer(width, height)
-
-      if function_exported?(component, :render, 2) do
-        component.render(state, buffer)
-      end
+      render_component(component, state, width, height)
     end
 
     # Timed runs
     times =
       for _ <- 1..iterations do
-        buffer = Buffer.create_blank_buffer(width, height)
-
-        {time_us, _result} =
-          :timer.tc(fn ->
-            if function_exported?(component, :render, 2) do
-              component.render(state, buffer)
-            end
-          end)
-
-        time_us
+        timed_render(component, state, width, height)
       end
 
     calculate_stats(times)
@@ -172,29 +153,12 @@ defmodule Raxol.UI.PerformanceTest do
     height = Keyword.get(opts, :height, 24)
     props = Keyword.drop(opts, [:gc_before, :width, :height])
 
-    if gc_before do
-      :erlang.garbage_collect()
-    end
+    if gc_before, do: :erlang.garbage_collect()
 
-    {:memory, mem_before} = Process.info(self(), :memory)
-    {:reductions, red_before} = Process.info(self(), :reductions)
-
-    state =
-      if function_exported?(component, :init, 1) do
-        component.init(props)
-      else
-        %{}
-      end
-
-    buffer = Buffer.create_blank_buffer(width, height)
-
-    _result =
-      if function_exported?(component, :render, 2) do
-        component.render(state, buffer)
-      end
-
-    {:memory, mem_after} = Process.info(self(), :memory)
-    {:reductions, red_after} = Process.info(self(), :reductions)
+    {mem_before, red_before} = snapshot_process_info()
+    state = init_component_state(component, props)
+    render_component(component, state, width, height)
+    {mem_after, red_after} = snapshot_process_info()
     {:heap_size, heap_size} = Process.info(self(), :heap_size)
 
     %{
@@ -280,52 +244,17 @@ defmodule Raxol.UI.PerformanceTest do
     height = Keyword.get(opts, :height, 24)
     props = Keyword.drop(opts, [:iterations, :batch_size, :width, :height])
 
-    state =
-      if function_exported?(component, :init, 1) do
-        component.init(props)
-      else
-        %{}
-      end
-
+    state = init_component_state(component, props)
     num_batches = div(iterations, batch_size)
 
     batches =
       for batch <- 1..num_batches do
-        times =
-          for _ <- 1..batch_size do
-            buffer = Buffer.create_blank_buffer(width, height)
-
-            {time_us, _} =
-              :timer.tc(fn ->
-                if function_exported?(component, :render, 2) do
-                  component.render(state, buffer)
-                end
-              end)
-
-            time_us
-          end
-
+        times = collect_batch_times(component, state, batch_size, width, height)
         stats = calculate_stats(times)
         %{batch: batch, mean: stats.mean, p99: stats.p99}
       end
 
-    first_batch_mean = List.first(batches).mean
-    last_batch_mean = List.last(batches).mean
-
-    degradation =
-      if first_batch_mean > 0 do
-        (last_batch_mean - first_batch_mean) / first_batch_mean * 100
-      else
-        0.0
-      end
-
-    %{
-      total_iterations: iterations,
-      batches: batches,
-      degradation: Float.round(degradation, 2),
-      first_batch_mean: first_batch_mean,
-      last_batch_mean: last_batch_mean
-    }
+    build_stress_result(iterations, batches)
   end
 
   @doc """
@@ -380,43 +309,99 @@ defmodule Raxol.UI.PerformanceTest do
 
   # Private helpers
 
+  defp init_component_state(component, props) do
+    if function_exported?(component, :init, 1) do
+      component.init(props)
+    else
+      %{}
+    end
+  end
+
+  defp render_component(component, state, width, height) do
+    buffer = Buffer.create_blank_buffer(width, height)
+
+    if function_exported?(component, :render, 2) do
+      component.render(state, buffer)
+    end
+  end
+
+  defp timed_render(component, state, width, height) do
+    {time_us, _result} =
+      :timer.tc(fn -> render_component(component, state, width, height) end)
+
+    time_us
+  end
+
+  defp snapshot_process_info do
+    {:memory, memory} = Process.info(self(), :memory)
+    {:reductions, reductions} = Process.info(self(), :reductions)
+    {memory, reductions}
+  end
+
+  defp collect_batch_times(component, state, batch_size, width, height) do
+    for _ <- 1..batch_size do
+      timed_render(component, state, width, height)
+    end
+  end
+
+  defp build_stress_result(iterations, batches) do
+    first_batch_mean = List.first(batches).mean
+    last_batch_mean = List.last(batches).mean
+
+    degradation =
+      if first_batch_mean > 0 do
+        (last_batch_mean - first_batch_mean) / first_batch_mean * 100
+      else
+        0.0
+      end
+
+    %{
+      total_iterations: iterations,
+      batches: batches,
+      degradation: Float.round(degradation, 2),
+      first_batch_mean: first_batch_mean,
+      last_batch_mean: last_batch_mean
+    }
+  end
+
   defp calculate_stats(times) do
     sorted = Enum.sort(times)
     count = length(times)
+    mean = Enum.sum(times) / count
 
-    min = List.first(sorted)
-    max = List.last(sorted)
-    sum = Enum.sum(times)
-    mean = sum / count
+    %{
+      min: List.first(sorted),
+      max: List.last(sorted),
+      mean: Float.round(mean, 2),
+      median: Float.round(calculate_median(sorted, count), 2),
+      std_dev: Float.round(calculate_std_dev(times, mean, count), 2),
+      p99: calculate_percentile(sorted, count, 0.99),
+      count: count
+    }
+  end
 
-    median =
-      if rem(count, 2) == 0 do
-        mid = div(count, 2)
-        (Enum.at(sorted, mid - 1) + Enum.at(sorted, mid)) / 2
-      else
-        Enum.at(sorted, div(count, 2))
-      end
+  defp calculate_median(sorted, count) when rem(count, 2) == 0 do
+    mid = div(count, 2)
+    (Enum.at(sorted, mid - 1) + Enum.at(sorted, mid)) / 2
+  end
 
+  defp calculate_median(sorted, count) do
+    Enum.at(sorted, div(count, 2))
+  end
+
+  defp calculate_std_dev(times, mean, count) do
     variance =
       times
       |> Enum.map(fn t -> :math.pow(t - mean, 2) end)
       |> Enum.sum()
       |> Kernel./(count)
 
-    std_dev = :math.sqrt(variance)
+    :math.sqrt(variance)
+  end
 
-    p99_index = floor(count * 0.99) - 1
-    p99 = Enum.at(sorted, max(0, p99_index))
-
-    %{
-      min: min,
-      max: max,
-      mean: Float.round(mean, 2),
-      median: Float.round(median, 2),
-      std_dev: Float.round(std_dev, 2),
-      p99: p99,
-      count: count
-    }
+  defp calculate_percentile(sorted, count, percentile) do
+    index = floor(count * percentile) - 1
+    Enum.at(sorted, max(0, index))
   end
 
   defp format_bytes(bytes), do: Raxol.Utils.Format.format_bytes_iec(bytes)

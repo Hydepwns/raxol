@@ -323,9 +323,7 @@ defmodule Raxol.Agent.Process do
       MatchError,
       KeyError
     ] ->
-      Logger.warning(
-        "[Agent.Process] Cycle error for #{state.agent_id}: #{Exception.message(e)}"
-      )
+      Logger.warning("[Agent.Process] Cycle error for #{state.agent_id}: #{Exception.message(e)}")
 
       save_context(state)
       %{state | status: :waiting}

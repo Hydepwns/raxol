@@ -257,27 +257,12 @@ defmodule Raxol.UI.Layout.Engine do
 
   def process_element(%{type: :box, children: children} = box, space, acc)
       when is_list(children) do
-    style =
-      case Map.get(box, :style) do
-        s when is_map(s) -> s
-        _ -> %{}
-      end
-
+    style = resolve_style(box)
     padding = Map.get(box, :padding, 0)
     border = Map.get(box, :border) || Map.get(style, :border, :none)
 
-    # Calculate inner space accounting for border and padding
-    border_offset = if border == :none, do: 0, else: 1
-    pad = if is_integer(padding), do: padding, else: 0
+    inner_space = box_inner_space(space, border, padding)
 
-    inner_space = %{
-      x: space.x + border_offset + pad,
-      y: space.y + border_offset + pad,
-      width: max(0, space.width - 2 * (border_offset + pad)),
-      height: max(0, space.height - 2 * (border_offset + pad))
-    }
-
-    # Add box frame element
     box_element = %{
       type: :box,
       x: space.x,
@@ -291,7 +276,6 @@ defmodule Raxol.UI.Layout.Engine do
       }
     }
 
-    # Process children in inner space
     children_acc = process_children(children, inner_space, [])
     [box_element | children_acc] ++ acc
   end
@@ -406,46 +390,12 @@ defmodule Raxol.UI.Layout.Engine do
     ]
   end
 
-  # Process children of a container element (Helper)
+  # Process children of a container element (Helper).
+  # Each child is dispatched through process_element/3 which already handles
+  # all element types (containers, primitives, catch-all).
   defp process_children(children, space, acc) when is_list(children) do
-    # Process each child with proper delegation to container-specific modules
     Enum.reduce(children, acc, fn child, current_acc ->
-      case child do
-        %{type: :row} = row ->
-          Containers.process_row(row, space, current_acc)
-
-        %{type: :column} = column ->
-          Containers.process_column(column, space, current_acc)
-
-        %{type: :panel} = panel ->
-          Panels.process(panel, space, current_acc)
-
-        %{type: :grid} = grid ->
-          Grid.process(grid, space, current_acc)
-
-        %{type: :flex} = flex ->
-          Flexbox.process_flex(enrich_flex_attrs(flex), space, current_acc)
-
-        %{type: :css_grid} = css_grid ->
-          CSSGrid.process_css_grid(css_grid, space, current_acc)
-
-        %{type: :responsive} = responsive ->
-          Responsive.process_responsive(responsive, space, current_acc)
-
-        %{type: :responsive_grid} = responsive_grid ->
-          Responsive.process_responsive_grid(
-            responsive_grid,
-            space,
-            current_acc
-          )
-
-        %{type: :split_pane} = split ->
-          SplitPane.process(split, space, current_acc)
-
-        _ ->
-          # For non-container elements, process in the same space
-          process_element(child, space, current_acc)
-      end
+      process_element(child, space, current_acc)
     end)
   end
 
@@ -536,72 +486,12 @@ defmodule Raxol.UI.Layout.Engine do
         available_space
       )
       when is_list(children) do
-    style =
-      case Map.get(element, :style) do
-        s when is_map(s) -> s
-        _ -> %{}
-      end
+    style = resolve_style(element)
+    overhead = box_overhead(element, style)
+    {width, height} = resolve_box_dimensions(element, style, available_space)
+    inner_space = shrink_space_by(available_space, overhead)
 
-    # Calculate border and padding overhead
-    border = Map.get(element, :border) || Map.get(style, :border, :none)
-    padding = Map.get(element, :padding, 0)
-    border_offset = if border == :none, do: 0, else: 1
-    pad = if is_integer(padding), do: padding, else: 0
-    overhead = 2 * (border_offset + pad)
-
-    raw_width =
-      Map.get(element, :width) || Map.get(style, :width) ||
-        Map.get(element, :size)
-
-    # :fill expands to available width
-    width = if raw_width == :fill, do: available_space.width, else: raw_width
-
-    raw_height = Map.get(element, :height) || Map.get(style, :height)
-
-    height =
-      if raw_height == :fill, do: available_space.height, else: raw_height
-
-    # Shrink available space for children by border/padding
-    avail_w =
-      Map.get(available_space, :width, Raxol.Core.Defaults.terminal_width())
-
-    avail_h =
-      Map.get(available_space, :height, Raxol.Core.Defaults.terminal_height())
-
-    inner_space =
-      Map.merge(available_space, %{
-        width: max(0, avail_w - overhead),
-        height: max(0, avail_h - overhead)
-      })
-
-    # If explicit dimensions, use them; otherwise measure children and add overhead
-    case {width, height} do
-      {w, h} when is_integer(w) and is_integer(h) ->
-        %{width: w, height: h}
-
-      {w, _} when is_integer(w) ->
-        child_dims =
-          measure_container_element(
-            :column,
-            %{type: :column, children: children},
-            inner_space
-          )
-
-        %{width: w, height: child_dims.height + overhead}
-
-      _ ->
-        child_dims =
-          measure_container_element(
-            :column,
-            %{type: :column, children: children},
-            inner_space
-          )
-
-        %{
-          width: child_dims.width + overhead,
-          height: child_dims.height + overhead
-        }
-    end
+    resolve_box_size(width, height, children, inner_space, overhead)
   end
 
   # Flex with top-level properties (new View DSL format from Flex.row/1 etc.)
@@ -747,6 +637,96 @@ defmodule Raxol.UI.Layout.Engine do
   defp convert_attrs_to_map(attrs) when is_list(attrs), do: Map.new(attrs)
   defp convert_attrs_to_map(attrs), do: attrs
 
+  # Resolve style map from an element, defaulting to empty map.
+  defp resolve_style(element) do
+    case Map.get(element, :style) do
+      s when is_map(s) -> s
+      _ -> %{}
+    end
+  end
+
+  # Calculate total border + padding overhead for a box (both sides).
+  defp box_overhead(element, style) do
+    border = Map.get(element, :border) || Map.get(style, :border, :none)
+    padding = Map.get(element, :padding, 0)
+    border_offset = if border == :none, do: 0, else: 1
+    pad = if is_integer(padding), do: padding, else: 0
+    2 * (border_offset + pad)
+  end
+
+  # Build inner space for a box by subtracting border and padding from outer space.
+  defp box_inner_space(space, border, padding) do
+    border_offset = if border == :none, do: 0, else: 1
+    pad = if is_integer(padding), do: padding, else: 0
+    inset = border_offset + pad
+
+    %{
+      x: space.x + inset,
+      y: space.y + inset,
+      width: max(0, space.width - 2 * inset),
+      height: max(0, space.height - 2 * inset)
+    }
+  end
+
+  # Resolve explicit width/height for a box, handling :fill expansion.
+  defp resolve_box_dimensions(element, style, available_space) do
+    raw_width =
+      Map.get(element, :width) || Map.get(style, :width) ||
+        Map.get(element, :size)
+
+    raw_height = Map.get(element, :height) || Map.get(style, :height)
+
+    width = if raw_width == :fill, do: available_space.width, else: raw_width
+
+    height =
+      if raw_height == :fill, do: available_space.height, else: raw_height
+
+    {width, height}
+  end
+
+  # Shrink available space by a symmetric overhead amount.
+  defp shrink_space_by(available_space, overhead) do
+    avail_w =
+      Map.get(available_space, :width, Raxol.Core.Defaults.terminal_width())
+
+    avail_h =
+      Map.get(available_space, :height, Raxol.Core.Defaults.terminal_height())
+
+    Map.merge(available_space, %{
+      width: max(0, avail_w - overhead),
+      height: max(0, avail_h - overhead)
+    })
+  end
+
+  # Determine final box size from explicit dimensions or measured children.
+  defp resolve_box_size(w, h, _children, _inner_space, _overhead)
+       when is_integer(w) and is_integer(h) do
+    %{width: w, height: h}
+  end
+
+  defp resolve_box_size(w, _h, children, inner_space, overhead)
+       when is_integer(w) do
+    child_dims = measure_children_as_column(children, inner_space)
+    %{width: w, height: child_dims.height + overhead}
+  end
+
+  defp resolve_box_size(_w, _h, children, inner_space, overhead) do
+    child_dims = measure_children_as_column(children, inner_space)
+
+    %{
+      width: child_dims.width + overhead,
+      height: child_dims.height + overhead
+    }
+  end
+
+  defp measure_children_as_column(children, inner_space) do
+    measure_container_element(
+      :column,
+      %{type: :column, children: children},
+      inner_space
+    )
+  end
+
   # Build :attrs from top-level keys so Flexbox.parse_flex_properties works.
   # The View DSL (Flex.row/column) puts direction/gap/etc. at the top level,
   # but Flexbox reads from the :attrs map.
@@ -756,25 +736,26 @@ defmodule Raxol.UI.Layout.Engine do
     if map_size(existing) > 0 and Map.has_key?(existing, :flex_direction) do
       flex
     else
-      style =
-        if is_map(Map.get(flex, :style)), do: Map.get(flex, :style), else: %{}
-
-      # Style values take priority over top-level defaults because
-      # Flex.row/column always sets top-level gap/padding to 0 as defaults,
-      # so `row style: %{gap: 1}` would otherwise be ignored.
-      attrs = %{
-        flex_direction: Map.get(flex, :direction, :row),
-        justify_content:
-          Map.get(style, :justify_content) ||
-            Map.get(flex, :justify, :flex_start),
-        align_items:
-          Map.get(style, :align_items) || Map.get(flex, :align, :stretch),
-        gap: Map.get(style, :gap) || Map.get(flex, :gap, 0),
-        padding: Map.get(style, :padding) || Map.get(flex, :padding, 0)
-      }
-
-      Map.put(flex, :attrs, attrs)
+      Map.put(flex, :attrs, build_flex_attrs(flex))
     end
+  end
+
+  # Style values take priority over top-level defaults because
+  # Flex.row/column always sets top-level gap/padding to 0 as defaults,
+  # so `row style: %{gap: 1}` would otherwise be ignored.
+  defp build_flex_attrs(flex) do
+    style = resolve_style(flex)
+
+    %{
+      flex_direction: Map.get(flex, :direction, :row),
+      justify_content:
+        Map.get(style, :justify_content) ||
+          Map.get(flex, :justify, :flex_start),
+      align_items:
+        Map.get(style, :align_items) || Map.get(flex, :align, :stretch),
+      gap: Map.get(style, :gap) || Map.get(flex, :gap, 0),
+      padding: Map.get(style, :padding) || Map.get(flex, :padding, 0)
+    }
   end
 
   defp get_display_text("", placeholder), do: placeholder

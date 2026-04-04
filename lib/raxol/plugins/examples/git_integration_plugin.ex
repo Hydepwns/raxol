@@ -359,33 +359,42 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
       String.split(output, "\n")
       |> Enum.reject(&(&1 == ""))
 
-    staged =
-      Enum.filter(lines, fn line ->
-        case String.at(line, 0) do
-          " " -> false
-          "?" -> false
-          _ -> true
-        end
-      end)
-      |> Enum.map(&parse_status_line/1)
-
-    unstaged =
-      Enum.filter(lines, fn line ->
-        case {String.at(line, 0), String.at(line, 1)} do
-          {_, " "} -> false
-          {_, "?"} -> false
-          _ -> true
-        end
-      end)
-      |> Enum.map(&parse_status_line/1)
-
-    untracked =
-      Enum.filter(lines, fn line ->
-        String.starts_with?(line, "??")
-      end)
-      |> Enum.map(&parse_status_line/1)
+    staged = extract_staged(lines)
+    unstaged = extract_unstaged(lines)
+    untracked = extract_untracked(lines)
 
     {staged, unstaged, untracked}
+  end
+
+  defp extract_staged(lines) do
+    Enum.filter(lines, &staged_line?/1)
+    |> Enum.map(&parse_status_line/1)
+  end
+
+  defp staged_line?(line) do
+    case String.at(line, 0) do
+      " " -> false
+      "?" -> false
+      _ -> true
+    end
+  end
+
+  defp extract_unstaged(lines) do
+    Enum.filter(lines, &unstaged_line?/1)
+    |> Enum.map(&parse_status_line/1)
+  end
+
+  defp unstaged_line?(line) do
+    case {String.at(line, 0), String.at(line, 1)} do
+      {_, " "} -> false
+      {_, "?"} -> false
+      _ -> true
+    end
+  end
+
+  defp extract_untracked(lines) do
+    Enum.filter(lines, &String.starts_with?(&1, "??"))
+    |> Enum.map(&parse_status_line/1)
   end
 
   defp parse_status_line(line) do
@@ -442,54 +451,44 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   end
 
   defp render_status_view(state, width, height) do
-    # Build sections using functional approach instead of imperative if statements
     sections = [
-      # Always include header
       [render_header("Git Status", state.current_branch, width)],
-
-      # Repository info section
-      case state.repo_path do
-        nil -> []
-        _path -> [render_repo_info(state, width)]
-      end,
-
-      # Staged changes section
-      case state.staged_changes do
-        [_ | _] = changes ->
-          [render_section_header("Staged Changes", width)] ++
-            Enum.map(changes, &render_file_line(&1, :staged, width))
-
-        _ ->
-          []
-      end,
-
-      # Unstaged changes section
-      case state.unstaged_changes do
-        [_ | _] = changes ->
-          [render_section_header("Unstaged Changes", width)] ++
-            Enum.map(changes, &render_file_line(&1, :unstaged, width))
-
-        _ ->
-          []
-      end,
-
-      # Untracked files section
-      case state.untracked_files do
-        [_ | _] = files ->
-          [render_section_header("Untracked Files", width)] ++
-            Enum.map(files, &render_file_line(&1, :untracked, width))
-
-        _ ->
-          []
-      end
+      render_repo_section(state, width),
+      render_changes_section(
+        "Staged Changes",
+        state.staged_changes,
+        :staged,
+        width
+      ),
+      render_changes_section(
+        "Unstaged Changes",
+        state.unstaged_changes,
+        :unstaged,
+        width
+      ),
+      render_changes_section(
+        "Untracked Files",
+        state.untracked_files,
+        :untracked,
+        width
+      )
     ]
 
-    # Flatten sections and apply height constraints
     sections
     |> List.flatten()
     |> Enum.take(height)
     |> pad_to_height(height, width)
   end
+
+  defp render_repo_section(%{repo_path: nil}, _width), do: []
+  defp render_repo_section(state, width), do: [render_repo_info(state, width)]
+
+  defp render_changes_section(title, [_ | _] = changes, type, width) do
+    [render_section_header(title, width)] ++
+      Enum.map(changes, &render_file_line(&1, type, width))
+  end
+
+  defp render_changes_section(_title, _changes, _type, _width), do: []
 
   defp render_branches_view(state, width, height) do
     header_line = render_header("Branches", state.current_branch, width)
@@ -555,39 +554,20 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   end
 
   defp format_diff_line(line, width) do
-    # Colorize diff lines based on prefix
-    styled_line =
-      cond do
-        String.starts_with?(line, "+") and not String.starts_with?(line, "+++") ->
-          # Addition - green
-          "\e[32m#{line}\e[0m"
+    styled_line = colorize_diff_line(line)
 
-        String.starts_with?(line, "-") and not String.starts_with?(line, "---") ->
-          # Deletion - red
-          "\e[31m#{line}\e[0m"
-
-        String.starts_with?(line, "@@") ->
-          # Hunk header - cyan
-          "\e[36m#{line}\e[0m"
-
-        String.starts_with?(line, "diff --git") ->
-          # File header - bold
-          "\e[1m#{line}\e[0m"
-
-        String.starts_with?(line, "index") or String.starts_with?(line, "---") or
-            String.starts_with?(line, "+++") ->
-          # Meta information - dim
-          "\e[2m#{line}\e[0m"
-
-        true ->
-          # Context lines - normal
-          line
-      end
-
-    # Truncate or pad to width
     String.slice(styled_line, 0, width - 1)
     |> String.pad_trailing(width)
   end
+
+  defp colorize_diff_line("+++" <> _ = line), do: "\e[2m#{line}\e[0m"
+  defp colorize_diff_line("+" <> _ = line), do: "\e[32m#{line}\e[0m"
+  defp colorize_diff_line("---" <> _ = line), do: "\e[2m#{line}\e[0m"
+  defp colorize_diff_line("-" <> _ = line), do: "\e[31m#{line}\e[0m"
+  defp colorize_diff_line("@@" <> _ = line), do: "\e[36m#{line}\e[0m"
+  defp colorize_diff_line("diff --git" <> _ = line), do: "\e[1m#{line}\e[0m"
+  defp colorize_diff_line("index" <> _ = line), do: "\e[2m#{line}\e[0m"
+  defp colorize_diff_line(line), do: line
 
   defp render_header(title, branch, width) do
     branch_info = if branch, do: " (#{branch})", else: ""
@@ -712,29 +692,25 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   end
 
   # Status Line Integration
+  def status_line_info(%{repo_path: nil}), do: ""
+
   def status_line_info(state) do
-    case state.repo_path do
-      nil ->
-        ""
+    branch_info = format_branch_info(state.current_branch)
+    changes_info = format_changes_info(state)
+    "#{branch_info}#{changes_info}"
+  end
 
-      _repo_path ->
-        staged_count = length(state.staged_changes || [])
-        unstaged_count = length(state.unstaged_changes || [])
-        untracked_count = length(state.untracked_files || [])
+  defp format_branch_info(nil), do: ""
+  defp format_branch_info(branch), do: " #{branch}"
 
-        branch_info =
-          case state.current_branch do
-            nil -> ""
-            branch -> " #{branch}"
-          end
+  defp format_changes_info(state) do
+    staged_count = length(state.staged_changes || [])
+    unstaged_count = length(state.unstaged_changes || [])
+    untracked_count = length(state.untracked_files || [])
 
-        changes_info =
-          case {staged_count, unstaged_count, untracked_count} do
-            {0, 0, 0} -> " [OK]"
-            {s, u, t} -> " +#{s} ~#{u} ?#{t}"
-          end
-
-        "#{branch_info}#{changes_info}"
+    case {staged_count, unstaged_count, untracked_count} do
+      {0, 0, 0} -> " [OK]"
+      {s, u, t} -> " +#{s} ~#{u} ?#{t}"
     end
   end
 end

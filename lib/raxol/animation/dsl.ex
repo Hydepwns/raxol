@@ -51,8 +51,8 @@ defmodule Raxol.Animation.DSL do
       |> execute_choreography(element_id)
   """
 
-  alias Raxol.Animation.Framework
   alias Raxol.Animation.DSL.{Compiler, Transforms}
+  alias Raxol.Animation.Framework
 
   @compile {:no_warn_undefined, Raxol.Animation.DSL.Compiler}
   @compile {:no_warn_undefined, Raxol.Animation.DSL.Transforms}

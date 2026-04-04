@@ -122,39 +122,39 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
   @spec handle_backspace_no_selection(MultiLineInput.t()) :: MultiLineInput.t()
   def handle_backspace_no_selection(state) do
     {row, col} = state.cursor_pos
-
-    cond do
-      col > 0 ->
-        # Delete character before cursor in same line
-        current_line = Enum.at(state.lines, row, "")
-        {before_cursor, after_cursor} = String.split_at(current_line, col)
-        {before_char, _} = String.split_at(before_cursor, col - 1)
-        new_line = before_char <> after_cursor
-
-        state.lines
-        |> List.replace_at(row, new_line)
-        |> then(&with_lines(state, &1, %{cursor_pos: {row, col - 1}}))
-
-      row > 0 ->
-        # Join with previous line
-        current_line = Enum.at(state.lines, row, "")
-        prev_line = Enum.at(state.lines, row - 1, "")
-        new_line = prev_line <> current_line
-
-        state.lines
-        |> List.replace_at(row - 1, new_line)
-        |> List.delete_at(row)
-        |> then(
-          &with_lines(state, &1, %{
-            cursor_pos: {row - 1, String.length(prev_line)}
-          })
-        )
-
-      true ->
-        # At beginning of document, nothing to delete
-        state
-    end
+    backspace_at(state, row, col)
   end
+
+  # Delete character before cursor in same line
+  defp backspace_at(state, row, col) when col > 0 do
+    current_line = Enum.at(state.lines, row, "")
+    {before_cursor, after_cursor} = String.split_at(current_line, col)
+    {before_char, _} = String.split_at(before_cursor, col - 1)
+    new_line = before_char <> after_cursor
+
+    state.lines
+    |> List.replace_at(row, new_line)
+    |> then(&with_lines(state, &1, %{cursor_pos: {row, col - 1}}))
+  end
+
+  # Join with previous line
+  defp backspace_at(state, row, _col) when row > 0 do
+    current_line = Enum.at(state.lines, row, "")
+    prev_line = Enum.at(state.lines, row - 1, "")
+    new_line = prev_line <> current_line
+
+    state.lines
+    |> List.replace_at(row - 1, new_line)
+    |> List.delete_at(row)
+    |> then(
+      &with_lines(state, &1, %{
+        cursor_pos: {row - 1, String.length(prev_line)}
+      })
+    )
+  end
+
+  # At beginning of document, nothing to delete
+  defp backspace_at(state, _row, _col), do: state
 
   @doc """
   Handles delete when no selection exists.
@@ -166,29 +166,36 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
 
     cond do
       col < String.length(current_line) ->
-        # Delete character at cursor in same line
-        {before_cursor, after_cursor} = String.split_at(current_line, col)
-        {_, rest} = String.split_at(after_cursor, 1)
-        new_line = before_cursor <> rest
-
-        state.lines
-        |> List.replace_at(row, new_line)
-        |> then(&with_lines(state, &1))
+        delete_char_at(state, row, col, current_line)
 
       row < length(state.lines) - 1 ->
-        # Join with next line
-        next_line = Enum.at(state.lines, row + 1, "")
-        new_line = current_line <> next_line
-
-        state.lines
-        |> List.replace_at(row, new_line)
-        |> List.delete_at(row + 1)
-        |> then(&with_lines(state, &1))
+        join_with_next_line(state, row, current_line)
 
       true ->
-        # At end of document, nothing to delete
         state
     end
+  end
+
+  # Delete character at cursor in same line
+  defp delete_char_at(state, row, col, current_line) do
+    {before_cursor, after_cursor} = String.split_at(current_line, col)
+    {_, rest} = String.split_at(after_cursor, 1)
+    new_line = before_cursor <> rest
+
+    state.lines
+    |> List.replace_at(row, new_line)
+    |> then(&with_lines(state, &1))
+  end
+
+  # Join current line with next line
+  defp join_with_next_line(state, row, current_line) do
+    next_line = Enum.at(state.lines, row + 1, "")
+    new_line = current_line <> next_line
+
+    state.lines
+    |> List.replace_at(row, new_line)
+    |> List.delete_at(row + 1)
+    |> then(&with_lines(state, &1))
   end
 
   @doc """
@@ -237,39 +244,45 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     chars_before + col
   end
 
-  defp delete_text_range(state, {start_row, start_col}, {end_row, end_col}) do
+  defp delete_text_range(
+         state,
+         {start_row, start_col} = start_pos,
+         {end_row, end_col}
+       ) do
     clear_selection = %{
-      cursor_pos: {start_row, start_col},
+      cursor_pos: start_pos,
       selection_start: nil,
       selection_end: nil
     }
 
-    if start_row == end_row do
-      # Selection within single line
-      current_line = Enum.at(state.lines, start_row, "")
-      {before, _} = String.split_at(current_line, start_col)
-      {_, after_cursor} = String.split_at(current_line, end_col)
-      new_line = before <> after_cursor
+    new_lines =
+      delete_range_lines(state.lines, start_row, start_col, end_row, end_col)
 
-      state.lines
-      |> List.replace_at(start_row, new_line)
-      |> then(&with_lines(state, &1, clear_selection))
-    else
-      # Selection spans multiple lines
-      start_line = Enum.at(state.lines, start_row, "")
-      end_line = Enum.at(state.lines, end_row, "")
+    with_lines(state, new_lines, clear_selection)
+  end
 
-      {before_start, _} = String.split_at(start_line, start_col)
-      {_, after_end} = String.split_at(end_line, end_col)
-      new_line = before_start <> after_end
+  # Selection within single line
+  defp delete_range_lines(lines, row, start_col, row, end_col) do
+    current_line = Enum.at(lines, row, "")
+    {before, _} = String.split_at(current_line, start_col)
+    {_, after_cursor} = String.split_at(current_line, end_col)
+    List.replace_at(lines, row, before <> after_cursor)
+  end
 
-      state.lines
-      |> Enum.with_index()
-      |> Enum.filter(fn {_, idx} -> idx < start_row or idx > end_row end)
-      |> Enum.map(&elem(&1, 0))
-      |> List.insert_at(start_row, new_line)
-      |> then(&with_lines(state, &1, clear_selection))
-    end
+  # Selection spans multiple lines
+  defp delete_range_lines(lines, start_row, start_col, end_row, end_col) do
+    start_line = Enum.at(lines, start_row, "")
+    end_line = Enum.at(lines, end_row, "")
+
+    {before_start, _} = String.split_at(start_line, start_col)
+    {_, after_end} = String.split_at(end_line, end_col)
+    new_line = before_start <> after_end
+
+    lines
+    |> Enum.with_index()
+    |> Enum.filter(fn {_, idx} -> idx < start_row or idx > end_row end)
+    |> Enum.map(&elem(&1, 0))
+    |> List.insert_at(start_row, new_line)
   end
 
   @doc """
@@ -290,41 +303,50 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
   end
 
   defp insert_text_at_position(state, {row, col}, text) do
-    replacement_lines = String.split(text, "\n")
+    current_line = Enum.at(state.lines, row, "")
+    {before, after_cursor} = String.split_at(current_line, col)
 
-    case replacement_lines do
-      [single_line] ->
-        # Single line replacement
-        current_line = Enum.at(state.lines, row, "")
-        {before, after_cursor} = String.split_at(current_line, col)
-        new_line = before <> single_line <> after_cursor
+    text
+    |> String.split("\n")
+    |> insert_replacement(state, row, col, before, after_cursor)
+  end
 
-        state.lines
-        |> List.replace_at(row, new_line)
-        |> then(
-          &with_lines(state, &1, %{
-            cursor_pos: {row, col + String.length(single_line)}
-          })
-        )
+  # Single line replacement
+  defp insert_replacement([single_line], state, row, col, before, after_cursor) do
+    new_line = before <> single_line <> after_cursor
 
-      [first_line | rest_lines] ->
-        # Multi-line replacement
-        current_line = Enum.at(state.lines, row, "")
-        {before, after_cursor} = String.split_at(current_line, col)
+    state.lines
+    |> List.replace_at(row, new_line)
+    |> then(
+      &with_lines(state, &1, %{
+        cursor_pos: {row, col + String.length(single_line)}
+      })
+    )
+  end
 
-        first_new_line = before <> first_line
-        last_line_index = length(rest_lines) - 1
-        {middle_lines, [last_line]} = Enum.split(rest_lines, last_line_index)
-        last_new_line = last_line <> after_cursor
-        final_row = row + length(rest_lines)
-        final_col = String.length(last_line)
+  # Multi-line replacement
+  defp insert_replacement(
+         [first_line | rest_lines],
+         state,
+         row,
+         _col,
+         before,
+         after_cursor
+       ) do
+    first_new_line = before <> first_line
+    last_line_index = length(rest_lines) - 1
+    {middle_lines, [last_line]} = Enum.split(rest_lines, last_line_index)
+    last_new_line = last_line <> after_cursor
 
-        state.lines
-        |> List.replace_at(row, first_new_line)
-        # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
-        |> insert_lines_after(row, middle_lines ++ [last_new_line])
-        |> then(&with_lines(state, &1, %{cursor_pos: {final_row, final_col}}))
-    end
+    state.lines
+    |> List.replace_at(row, first_new_line)
+    # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
+    |> insert_lines_after(row, middle_lines ++ [last_new_line])
+    |> then(
+      &with_lines(state, &1, %{
+        cursor_pos: {row + length(rest_lines), String.length(last_line)}
+      })
+    )
   end
 
   defp insert_lines_after(lines, index, new_lines) do

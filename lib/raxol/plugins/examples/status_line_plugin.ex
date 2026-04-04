@@ -207,85 +207,75 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
   end
 
   defp build_status_components(state) do
-    components = []
-
-    # Mode indicator
-    components =
-      case state.config.show_mode do
-        false -> components
-        _ -> [{:mode, format_mode(state.current_mode)} | components]
-      end
-
-    # Git information
-    components =
-      case state.config.show_git && state.git_branch do
-        false ->
-          components
-
-        nil ->
-          components
-
-        _ ->
-          [{:git, format_git(state.git_branch, state.git_status)} | components]
-      end
-
-    # Resource usage
-    components =
-      case state.config.show_resources do
-        false ->
-          components
-
-        _ ->
-          [
-            {:cpu, format_cpu(state.cpu_usage)},
-            {:memory, format_memory(state.memory_usage)} | components
-          ]
-      end
-
-    # Cursor position
     {row, col} = state.cursor_position
-    components = [{:cursor, "#{row + 1}:#{col + 1}"} | components]
-
-    # Terminal size
     {width, height} = state.terminal_size
-    components = [{:size, "#{width}x#{height}"} | components]
 
-    # Time
-    components =
-      case state.config.show_time do
-        false -> components
-        _ -> [{:time, format_time()} | components]
-      end
-
-    Enum.reverse(components)
+    []
+    |> maybe_add_mode(state)
+    |> maybe_add_git(state)
+    |> maybe_add_resources(state)
+    |> then(&[{:cursor, "#{row + 1}:#{col + 1}"} | &1])
+    |> then(&[{:size, "#{width}x#{height}"} | &1])
+    |> maybe_add_time(state)
+    |> Enum.reverse()
   end
 
+  defp maybe_add_mode(components, %{config: %{show_mode: false}}),
+    do: components
+
+  defp maybe_add_mode(components, state),
+    do: [{:mode, format_mode(state.current_mode)} | components]
+
+  defp maybe_add_git(components, %{config: %{show_git: false}}), do: components
+  defp maybe_add_git(components, %{git_branch: nil}), do: components
+
+  defp maybe_add_git(components, state),
+    do: [{:git, format_git(state.git_branch, state.git_status)} | components]
+
+  defp maybe_add_resources(components, %{config: %{show_resources: false}}),
+    do: components
+
+  defp maybe_add_resources(components, state) do
+    [
+      {:cpu, format_cpu(state.cpu_usage)},
+      {:memory, format_memory(state.memory_usage)} | components
+    ]
+  end
+
+  defp maybe_add_time(components, %{config: %{show_time: false}}),
+    do: components
+
+  defp maybe_add_time(components, _state),
+    do: [{:time, format_time()} | components]
+
   defp format_status_line(components, width, config) do
-    # Apply theme
     theme = get_theme(config[:theme] || "default")
 
-    # Build left, center, and right sections
-    left_components =
-      Enum.filter(components, fn {type, _} ->
-        type in [:mode, :git]
-      end)
+    {left, center, right} = partition_and_format(components, theme)
 
-    center_components =
-      Enum.filter(components, fn {type, _} ->
-        type in [:cursor, :size]
-      end)
+    justify_sections(left, center, right, width)
+  end
 
-    right_components =
-      Enum.filter(components, fn {type, _} ->
-        type in [:cpu, :memory, :time]
-      end)
+  defp partition_and_format(components, theme) do
+    left =
+      components
+      |> Enum.filter(fn {type, _} -> type in [:mode, :git] end)
+      |> format_section(theme, :left)
 
-    # Format sections
-    left = format_section(left_components, theme, :left)
-    center = format_section(center_components, theme, :center)
-    right = format_section(right_components, theme, :right)
+    center =
+      components
+      |> Enum.filter(fn {type, _} -> type in [:cursor, :size] end)
+      |> format_section(theme, :center)
 
-    # Calculate spacing
+    right =
+      components
+      |> Enum.filter(fn {type, _} -> type in [:cpu, :memory, :time] end)
+      |> format_section(theme, :right)
+
+    {left, center, right}
+  end
+
+  defp justify_sections(left, center, right, width) do
     left_len = String.length(strip_ansi(left))
     center_len = String.length(strip_ansi(center))
     right_len = String.length(strip_ansi(right))
@@ -293,7 +283,6 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
     available = width - left_len - right_len
     center_padding = div(available - center_len, 2)
 
-    # Build final line
     left <>
       String.duplicate(" ", max(0, center_padding)) <>
       center <>

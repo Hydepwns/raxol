@@ -11,8 +11,8 @@ defmodule Raxol.Config do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  alias Raxol.Core.Runtime.Log
   alias Raxol.Core.Defaults
+  alias Raxol.Core.Runtime.Log
   @mix_env Mix.env()
   @default_config_file "config/raxol.toml"
   @env_config_dir "config/environments"

@@ -135,59 +135,9 @@ defmodule Raxol.UI.Layout.Table do
     available_width =
       Map.get(available_space, :width, @fallback_available_width)
 
-    # If no columns defined, infer from data with content-based sizing
-    columns =
-      if columns == [] and rows != [] do
-        # Calculate max width for each column from data
-        first_row = List.first(rows)
+    columns = infer_columns_from_rows(columns, rows)
+    column_configs = extract_column_configs(columns)
 
-        if is_list(first_row) do
-          # Calculate actual content widths
-          col_count = length(first_row)
-
-          max_widths =
-            Enum.map(0..(col_count - 1), fn col_idx ->
-              # Find max width for this column across all rows
-              max_width =
-                Enum.reduce(rows, 0, fn row, max ->
-                  if is_list(row) and length(row) > col_idx do
-                    cell = Enum.at(row, col_idx)
-
-                    cell_width =
-                      Raxol.UI.TextMeasure.display_width(to_string(cell)) +
-                        @cell_padding
-
-                    max(max, cell_width)
-                  else
-                    max
-                  end
-                end)
-
-              %{width: {:fixed, max_width}}
-            end)
-
-          max_widths
-        else
-          []
-        end
-      else
-        columns
-      end
-
-    # Extract column definitions
-    column_configs =
-      Enum.map(columns, fn col ->
-        case col do
-          %{width: width} when is_integer(width) -> {:fixed, width}
-          # Handle our generated fixed widths
-          %{width: {:fixed, width}} -> {:fixed, width}
-          %{width: {:percent, pct}} -> {:percent, pct}
-          %{width: :auto} -> :auto
-          _ -> :auto
-        end
-      end)
-
-    # Calculate content-based widths for auto columns
     auto_widths =
       if Enum.any?(column_configs, &(&1 == :auto)) do
         calculate_content_widths(columns, rows)
@@ -195,18 +145,55 @@ defmodule Raxol.UI.Layout.Table do
         []
       end
 
-    # Calculate fixed widths first
-    {fixed_total, auto_count, percent_total} =
-      Enum.reduce(column_configs, {0, 0, 0}, fn config,
-                                                {fixed, auto, percent} ->
-        case config do
-          {:fixed, width} -> {fixed + width, auto, percent}
-          {:percent, pct} -> {fixed, auto, percent + pct}
-          :auto -> {fixed, auto + 1, percent}
-        end
-      end)
+    resolve_column_widths(column_configs, auto_widths, available_width)
+  end
 
-    # Calculate remaining space for auto columns
+  defp infer_columns_from_rows([], [first_row | _] = rows)
+       when is_list(first_row) do
+    col_count = length(first_row)
+
+    Enum.map(0..(col_count - 1), fn col_idx ->
+      max_width = max_column_width_from_rows(rows, col_idx)
+      %{width: {:fixed, max_width}}
+    end)
+  end
+
+  defp infer_columns_from_rows([], _rows), do: []
+  defp infer_columns_from_rows(columns, _rows), do: columns
+
+  defp max_column_width_from_rows(rows, col_idx) do
+    Enum.reduce(rows, 0, fn row, acc ->
+      cell_width_at(row, col_idx, acc)
+    end)
+  end
+
+  defp cell_width_at(row, col_idx, current_max)
+       when is_list(row) and length(row) > col_idx do
+    cell = Enum.at(row, col_idx)
+
+    cell_width =
+      Raxol.UI.TextMeasure.display_width(to_string(cell)) + @cell_padding
+
+    max(current_max, cell_width)
+  end
+
+  defp cell_width_at(_row, _col_idx, current_max), do: current_max
+
+  defp extract_column_configs(columns) do
+    Enum.map(columns, fn col ->
+      case col do
+        %{width: width} when is_integer(width) -> {:fixed, width}
+        %{width: {:fixed, width}} -> {:fixed, width}
+        %{width: {:percent, pct}} -> {:percent, pct}
+        %{width: :auto} -> :auto
+        _ -> :auto
+      end
+    end)
+  end
+
+  defp resolve_column_widths(column_configs, auto_widths, available_width) do
+    {fixed_total, auto_count, percent_total} = sum_column_space(column_configs)
+
     percent_space = div(available_width * percent_total, 100)
     remaining_space = max(0, available_width - fixed_total - percent_space)
 
@@ -216,71 +203,113 @@ defmodule Raxol.UI.Layout.Table do
         count -> div(remaining_space, count)
       end
 
-    # Build final column widths using content-based widths for auto columns
-    {_, result} =
-      Enum.reduce(Enum.with_index(column_configs), {0, []}, fn {config, col_idx},
-                                                               {auto_idx, acc} ->
-        case config do
-          {:fixed, width} ->
-            {auto_idx, [width | acc]}
-
-          {:percent, pct} ->
-            {auto_idx, [div(available_width * pct, 100) | acc]}
-
-          :auto ->
-            content_width =
-              case Enum.at(auto_widths, col_idx) do
-                # Fallback to equal distribution
-                nil -> auto_width
-                # Use content-based width
-                width -> width
-              end
-
-            {auto_idx + 1, [content_width | acc]}
-        end
-      end)
-
-    Enum.reverse(result)
+    column_configs
+    |> Enum.with_index()
+    |> Enum.reduce({0, []}, fn {config, col_idx}, {auto_idx, acc} ->
+      resolve_single_column(
+        config,
+        col_idx,
+        auto_idx,
+        acc,
+        auto_widths,
+        auto_width,
+        available_width
+      )
+    end)
+    |> elem(1)
+    |> Enum.reverse()
   end
 
-  defp calculate_content_widths(columns, rows) do
-    # Calculate content-based widths for each column (returns widths for ALL columns)
-    Enum.with_index(columns)
-    |> Enum.map(fn {column, col_idx} ->
-      # Only calculate for auto columns using pattern matching
-      case Map.get(column, :width, :auto) do
-        :auto ->
-          # Start with header width
-          header_text = Map.get(column, :header, "")
-          header_width = Raxol.UI.TextMeasure.display_width(header_text)
-
-          # Find max content width for this column
-          content_width =
-            Enum.reduce(rows, header_width, fn row, max ->
-              cell_content =
-                case row do
-                  map when is_map(map) ->
-                    key = Map.get(column, :key)
-                    Map.get(map, key, "") |> to_string()
-
-                  list when is_list(list) when col_idx < length(list) ->
-                    Enum.at(list, col_idx) |> to_string()
-
-                  _ ->
-                    ""
-                end
-
-              max(max, Raxol.UI.TextMeasure.display_width(cell_content))
-            end)
-
-          content_width + @cell_padding
-
-        _ ->
-          # Not an auto column
-          nil
+  defp sum_column_space(column_configs) do
+    Enum.reduce(column_configs, {0, 0, 0}, fn config, {fixed, auto, percent} ->
+      case config do
+        {:fixed, width} -> {fixed + width, auto, percent}
+        {:percent, pct} -> {fixed, auto, percent + pct}
+        :auto -> {fixed, auto + 1, percent}
       end
     end)
   end
+
+  defp resolve_single_column(
+         {:fixed, width},
+         _col_idx,
+         auto_idx,
+         acc,
+         _auto_widths,
+         _auto_width,
+         _available_width
+       ) do
+    {auto_idx, [width | acc]}
+  end
+
+  defp resolve_single_column(
+         {:percent, pct},
+         _col_idx,
+         auto_idx,
+         acc,
+         _auto_widths,
+         _auto_width,
+         available_width
+       ) do
+    {auto_idx, [div(available_width * pct, 100) | acc]}
+  end
+
+  defp resolve_single_column(
+         :auto,
+         col_idx,
+         auto_idx,
+         acc,
+         auto_widths,
+         auto_width,
+         _available_width
+       ) do
+    content_width =
+      case Enum.at(auto_widths, col_idx) do
+        nil -> auto_width
+        width -> width
+      end
+
+    {auto_idx + 1, [content_width | acc]}
+  end
+
+  defp calculate_content_widths(columns, rows) do
+    columns
+    |> Enum.with_index()
+    |> Enum.map(fn {column, col_idx} ->
+      content_width_for_column(column, col_idx, rows)
+    end)
+  end
+
+  defp content_width_for_column(column, col_idx, rows) do
+    case Map.get(column, :width, :auto) do
+      :auto ->
+        header_text = Map.get(column, :header, "")
+        header_width = Raxol.UI.TextMeasure.display_width(header_text)
+
+        content_width =
+          Enum.reduce(rows, header_width, fn row, acc ->
+            cell_text = extract_cell_content(row, column, col_idx)
+            max(acc, Raxol.UI.TextMeasure.display_width(cell_text))
+          end)
+
+        content_width + @cell_padding
+
+      _ ->
+        nil
+    end
+  end
+
+  defp extract_cell_content(row, column, _col_idx) when is_map(row) do
+    key = Map.get(column, :key)
+    row |> Map.get(key, "") |> to_string()
+  end
+
+  defp extract_cell_content(row, _column, col_idx)
+       when is_list(row) and col_idx < length(row) do
+    row |> Enum.at(col_idx) |> to_string()
+  end
+
+  defp extract_cell_content(_row, _column, _col_idx), do: ""
 
   defp calculate_total_width(column_widths, show_borders) do
     base_width = Enum.sum(column_widths)
@@ -294,40 +323,20 @@ defmodule Raxol.UI.Layout.Table do
     end
   end
 
-  defp calculate_total_height(rows, show_header, show_borders, columns) do
+  defp calculate_total_height(rows, _show_header, _show_borders, columns)
+       when rows == [] and columns == [] do
+    0
+  end
+
+  defp calculate_total_height(rows, show_header, show_borders, _columns) do
     row_count = length(rows)
-    col_count = length(columns)
+    row_space = row_count * @default_row_height
+    header_space = if show_header, do: @header_height, else: 0
+    border_space = if show_borders, do: @border_width, else: 0
 
-    # If no columns and no rows, height is always 0 regardless of header/border settings
-    case {row_count, col_count, show_header, show_borders} do
-      # No rows, no columns = 0 (special case)
-      {0, 0, _, _} ->
-        0
-
-      # No rows, no header, no borders = 0
-      {0, _, false, false} ->
-        0
-
-      {0, _, true, true} ->
-        @header_height + @border_width
-
-      {0, _, true, false} ->
-        @header_height
-
-      {0, _, false, true} ->
-        @border_width
-
-      {count, _, true, true} ->
-        count * @default_row_height + @header_height + @border_width
-
-      {count, _, true, false} ->
-        count * @default_row_height + @header_height
-
-      {count, _, false, true} ->
-        count * @default_row_height + @border_width
-
-      {count, _, false, false} ->
-        count * @default_row_height
+    case {row_count, header_space, border_space} do
+      {0, 0, 0} -> 0
+      _ -> row_space + header_space + border_space
     end
   end
 

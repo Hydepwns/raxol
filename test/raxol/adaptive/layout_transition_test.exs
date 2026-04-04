@@ -110,7 +110,11 @@ defmodule Raxol.Adaptive.LayoutTransitionTest do
     end
 
     test "handles panes only in from" do
-      from = %{panes: [%{id: :x, position: {0, 0}, size: {10, 10}, z_order: 0}], focus: :x, hidden: []}
+      from = %{
+        panes: [%{id: :x, position: {0, 0}, size: {10, 10}, z_order: 0}],
+        focus: :x,
+        hidden: []
+      }
       to = %{panes: [], focus: nil, hidden: []}
 
       layout = LayoutTransition.interpolate_layout(from, to, 0.5)
@@ -119,7 +123,11 @@ defmodule Raxol.Adaptive.LayoutTransitionTest do
 
     test "handles panes only in to" do
       from = %{panes: [], focus: nil, hidden: []}
-      to = %{panes: [%{id: :y, position: {0, 0}, size: {10, 10}, z_order: 0}], focus: :y, hidden: []}
+      to = %{
+        panes: [%{id: :y, position: {0, 0}, size: {10, 10}, z_order: 0}],
+        focus: :y,
+        hidden: []
+      }
 
       layout = LayoutTransition.interpolate_layout(from, to, 0.5)
       assert length(layout.panes) == 1

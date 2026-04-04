@@ -262,7 +262,6 @@ defmodule Raxol.Property.UIComponentTest do
     end
   end
 
-
   # Helper functions
 
   defp create_test_component(id) do

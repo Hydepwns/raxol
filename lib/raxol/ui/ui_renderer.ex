@@ -157,20 +157,7 @@ defmodule Raxol.UI.Renderer do
     clip_bounds = Map.get(box_element, :clip_bounds)
 
     children_cells =
-      case Map.get(box_element, :children) do
-        nil ->
-          []
-
-        children when is_list(children) ->
-          Enum.flat_map(children, fn child ->
-            child_with_clip = add_clip_bounds(child, clip_bounds)
-            render_element(child_with_clip, theme, merged_style)
-          end)
-
-        child when is_map(child) ->
-          child_with_clip = add_clip_bounds(child, clip_bounds)
-          render_element(child_with_clip, theme, merged_style)
-      end
+      render_box_children(box_element, clip_bounds, theme, merged_style)
 
     title_cells = render_box_title(box_element, x, y, w, merged_style)
     all_cells = CellManager.merge_cells(box_cells, children_cells)
@@ -269,27 +256,14 @@ defmodule Raxol.UI.Renderer do
          _parent_style
        ) do
     src = Map.get(image_el, :src)
-
-    opts =
-      [
-        width: Map.get(image_el, :width),
-        height: Map.get(image_el, :height),
-        protocol: Map.get(image_el, :protocol),
-        preserve_aspect: Map.get(image_el, :preserve_aspect, true)
-      ]
-      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    opts = build_image_opts(image_el)
 
     case Raxol.Terminal.Image.display(src, opts) do
       {:ok, escape_seq} ->
         [{x, y, escape_seq, :default, :default, [image: true]}]
 
       {:error, _reason} ->
-        placeholder = "[image]"
-        truncated = String.slice(placeholder, 0, w)
-
-        for {ch, i} <- Enum.with_index(String.graphemes(truncated)) do
-          {x + i, y, ch, :white, :black, []}
-        end
+        render_image_placeholder(x, y, w)
     end
   end
 
@@ -311,29 +285,68 @@ defmodule Raxol.UI.Renderer do
     []
   end
 
+  defp build_image_opts(image_el) do
+    [
+      width: Map.get(image_el, :width),
+      height: Map.get(image_el, :height),
+      protocol: Map.get(image_el, :protocol),
+      preserve_aspect: Map.get(image_el, :preserve_aspect, true)
+    ]
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+  end
+
+  defp render_image_placeholder(x, y, w) do
+    truncated = String.slice("[image]", 0, w)
+
+    for {ch, i} <- Enum.with_index(String.graphemes(truncated)) do
+      {x + i, y, ch, :white, :black, []}
+    end
+  end
+
+  defp render_box_children(box_element, clip_bounds, theme, merged_style) do
+    case Map.get(box_element, :children) do
+      nil ->
+        []
+
+      children when is_list(children) ->
+        Enum.flat_map(children, fn child ->
+          child_with_clip = add_clip_bounds(child, clip_bounds)
+          render_element(child_with_clip, theme, merged_style)
+        end)
+
+      child when is_map(child) ->
+        child_with_clip = add_clip_bounds(child, clip_bounds)
+        render_element(child_with_clip, theme, merged_style)
+    end
+  end
+
   defp render_box_title(%{title: title}, x, y, w, style)
        when is_binary(title) and title != "" do
     has_border = Map.get(style, :border, :none) != :none
+    border_offset = if(has_border, do: 2, else: 0)
 
-    # Place title in the top border row, offset by 2 for the border corner + space
-    title_x = x + if(has_border, do: 2, else: 0)
-    title_y = y
-    max_len = w - if(has_border, do: 4, else: 0)
+    title_x = x + border_offset
+    max_len = w - border_offset * 2
     truncated = String.slice(title, 0, max(0, max_len))
 
-    fg = Map.get(style, :fg, Map.get(style, :fg_color, :white))
-    bg = Map.get(style, :bg, Map.get(style, :bg_color, :black))
-    attrs = if Map.get(style, :bold, false), do: [:bold], else: []
+    {fg, bg, attrs} = resolve_title_style(style)
 
     truncated
     |> String.graphemes()
     |> Enum.with_index()
     |> Enum.map(fn {char, i} ->
-      {title_x + i, title_y, char, fg, bg, attrs}
+      {title_x + i, y, char, fg, bg, attrs}
     end)
   end
 
   defp render_box_title(_box_element, _x, _y, _w, _style), do: []
+
+  defp resolve_title_style(style) do
+    fg = Map.get(style, :fg, Map.get(style, :fg_color, :white))
+    bg = Map.get(style, :bg, Map.get(style, :bg_color, :black))
+    attrs = if Map.get(style, :bold, false), do: [:bold], else: []
+    {fg, bg, attrs}
+  end
 
   defp add_clip_bounds(child, nil), do: child
 

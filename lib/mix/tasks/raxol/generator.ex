@@ -14,64 +14,80 @@ defmodule Mix.Raxol.Generator do
   def generate(name, opts, raxol_version) do
     path = Path.expand(name)
     app = validate_app_name!(Path.basename(path))
-    module = opts[:module] || Macro.camelize(app)
-    template = Keyword.get(opts, :template, "counter")
-    sup? = Keyword.get(opts, :sup, false)
-    ssh? = Keyword.get(opts, :ssh, false)
-    liveview? = Keyword.get(opts, :liveview, false)
-    ci? = Keyword.get(opts, :ci, false)
-    skip_test = Keyword.get(opts, :no_test, false)
-    install? = Keyword.get(opts, :install, false)
 
     if File.exists?(path) do
       Mix.raise("Directory #{path} already exists")
     end
 
-    bindings = %{
-      app: app,
-      module: module,
-      template: template,
-      sup: sup?,
-      ssh: ssh?,
-      liveview: liveview?,
-      ci: ci?,
-      version: raxol_version
-    }
+    bindings = build_bindings(app, opts, raxol_version)
+    install? = Keyword.get(opts, :install, false)
+    skip_test = Keyword.get(opts, :no_test, false)
 
     Mix.shell().info([:green, "* creating ", :reset, name])
 
+    create_directories(path, skip_test)
+    write_core_files(path, bindings)
+    write_app_modules(path, bindings)
+    write_optional_files(path, bindings, skip_test)
+
+    git_init(path)
+    Mix.shell().info("")
+
+    if install?, do: install_and_verify(path)
+
+    print_instructions(bindings, name, install?)
+  end
+
+  defp build_bindings(app, opts, raxol_version) do
+    %{
+      app: app,
+      module: opts[:module] || Macro.camelize(app),
+      template: Keyword.get(opts, :template, "counter"),
+      sup: Keyword.get(opts, :sup, false),
+      ssh: Keyword.get(opts, :ssh, false),
+      liveview: Keyword.get(opts, :liveview, false),
+      ci: Keyword.get(opts, :ci, false),
+      version: raxol_version
+    }
+  end
+
+  defp create_directories(path, skip_test) do
     File.mkdir_p!(path)
     File.mkdir_p!(Path.join(path, "lib"))
     File.mkdir_p!(Path.join(path, "config"))
     unless skip_test, do: File.mkdir_p!(Path.join(path, "test"))
+  end
 
-    # Core files
+  defp write_core_files(path, bindings) do
     write_file(path, "mix.exs", Content.mix_exs(bindings))
     write_file(path, "config/config.exs", Content.config_exs(bindings))
     write_file(path, ".formatter.exs", Content.formatter())
     write_file(path, ".gitignore", Content.gitignore())
     write_file(path, "README.md", Content.readme(bindings))
     write_file(path, ".mise.toml", Content.mise_toml())
+  end
 
-    # App modules
-    if sup? do
-      write_file(path, "lib/#{app}.ex", Content.app_module_sup(bindings))
+  defp write_app_modules(path, %{sup: true, app: app} = bindings) do
+    write_file(path, "lib/#{app}.ex", Content.app_module_sup(bindings))
 
-      write_file(
-        path,
-        "lib/#{app}/application.ex",
-        Content.application_module(bindings)
-      )
+    write_file(
+      path,
+      "lib/#{app}/application.ex",
+      Content.application_module(bindings)
+    )
 
-      write_file(path, "lib/#{app}/app.ex", Content.tea_module(bindings))
-    else
-      write_file(path, "lib/#{app}.ex", Content.tea_module_standalone(bindings))
-    end
+    write_file(path, "lib/#{app}/app.ex", Content.tea_module(bindings))
+  end
 
-    if ssh?,
+  defp write_app_modules(path, %{app: app} = bindings) do
+    write_file(path, "lib/#{app}.ex", Content.tea_module_standalone(bindings))
+  end
+
+  defp write_optional_files(path, %{app: app} = bindings, skip_test) do
+    if bindings.ssh,
       do: write_file(path, "lib/#{app}/ssh.ex", Content.ssh_module(bindings))
 
-    if liveview?,
+    if bindings.liveview,
       do:
         write_file(
           path,
@@ -84,21 +100,13 @@ defmodule Mix.Raxol.Generator do
       write_file(path, "test/#{app}_test.exs", Content.app_test(bindings))
     end
 
-    if ci?,
+    if bindings.ci,
       do:
         write_file(
           path,
           ".github/workflows/ci.yml",
           Content.ci_workflow(bindings)
         )
-
-    git_init(path)
-
-    Mix.shell().info("")
-
-    if install?, do: install_and_verify(path)
-
-    print_instructions(bindings, name, install?)
   end
 
   # --- Private ---
@@ -213,11 +221,17 @@ defmodule Mix.Raxol.Generator do
   end
 
   defp print_instructions(bindings, name, installed?) do
-    %{app: app, sup: sup?, ssh: ssh?} = bindings
-
     Mix.shell().info([:green, :bright, "Your Raxol app is ready!", :reset])
     Mix.shell().info("")
 
+    print_setup_commands(bindings, name, installed?)
+    print_template_hint(bindings)
+    print_ssh_hint(bindings)
+
+    Mix.shell().info("")
+  end
+
+  defp print_setup_commands(%{app: app, sup: sup?}, name, installed?) do
     unless installed? do
       Mix.shell().info(["    ", :cyan, "cd #{name}", :reset])
       Mix.shell().info(["    ", :cyan, "mix deps.get", :reset])
@@ -230,33 +244,33 @@ defmodule Mix.Raxol.Generator do
     end
 
     Mix.shell().info("")
-
-    case bindings.template do
-      "counter" ->
-        Mix.shell().info("Press '+'/'-' or click buttons. 'q' to quit.")
-
-      "todo" ->
-        Mix.shell().info("Type to add todos, Enter to confirm, 'q' to quit.")
-
-      "dashboard" ->
-        Mix.shell().info("Press Tab to cycle panels, 'q' to quit.")
-
-      "blank" ->
-        Mix.shell().info("Edit lib/#{app}.ex to build your app.")
-    end
-
-    if ssh? do
-      Mix.shell().info("")
-      Mix.shell().info([:yellow, "SSH server:", :reset, " mix run --no-halt"])
-
-      Mix.shell().info([
-        "Then connect: ",
-        :cyan,
-        "ssh localhost -p 2222",
-        :reset
-      ])
-    end
-
-    Mix.shell().info("")
   end
+
+  defp print_template_hint(%{template: "counter"}),
+    do: Mix.shell().info("Press '+'/'-' or click buttons. 'q' to quit.")
+
+  defp print_template_hint(%{template: "todo"}),
+    do: Mix.shell().info("Type to add todos, Enter to confirm, 'q' to quit.")
+
+  defp print_template_hint(%{template: "dashboard"}),
+    do: Mix.shell().info("Press Tab to cycle panels, 'q' to quit.")
+
+  defp print_template_hint(%{template: "blank", app: app}),
+    do: Mix.shell().info("Edit lib/#{app}.ex to build your app.")
+
+  defp print_template_hint(_bindings), do: :ok
+
+  defp print_ssh_hint(%{ssh: true}) do
+    Mix.shell().info("")
+    Mix.shell().info([:yellow, "SSH server:", :reset, " mix run --no-halt"])
+
+    Mix.shell().info([
+      "Then connect: ",
+      :cyan,
+      "ssh localhost -p 2222",
+      :reset
+    ])
+  end
+
+  defp print_ssh_hint(_bindings), do: :ok
 end

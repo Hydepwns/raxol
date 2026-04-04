@@ -97,8 +97,14 @@ defmodule Raxol.Swarm.OverlayRendererTest do
     test "renders node statuses" do
       now = 1000
       nodes = [
-        %{node: :wing1@host, role: :wingmate, avg_rtt_ms: 12.0, last_seen: now, status: :healthy},
-        %{node: :wing2@host, role: :observer, avg_rtt_ms: 50.0, last_seen: now - 6_000, status: :suspect}
+        %{
+          node: :wing1@host, role: :wingmate,
+          avg_rtt_ms: 12.0, last_seen: now, status: :healthy
+        },
+        %{
+          node: :wing2@host, role: :observer,
+          avg_rtt_ms: 50.0, last_seen: now - 6_000, status: :suspect
+        }
       ]
 
       cells = OverlayRenderer.render_wingmate_summary({0, 0, 60, 5}, nodes, now: now)

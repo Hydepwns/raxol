@@ -101,74 +101,76 @@ defmodule Mix.Tasks.Raxol.Flamegraph do
     module = String.to_atom("Elixir." <> module_str)
     duration = opts[:duration] || 5000
 
+    print_module_header(module_str, duration)
+
+    profile_opts = build_profile_opts(module_str, opts)
+
+    module
+    |> FlameGraph.profile_module([{:duration, duration} | profile_opts])
+    |> handle_profile_result()
+  end
+
+  defp print_module_header(module_str, duration) do
     Mix.shell().info(Colors.section_header("Flame Graph Profiler"))
     Mix.shell().info("")
     Mix.shell().info("  Module:   #{module_str}")
     Mix.shell().info("  Duration: #{duration}ms")
     Mix.shell().info("")
-
     Mix.shell().info(Colors.muted("Starting profiler..."))
+  end
 
-    profile_opts = build_profile_opts(module_str, opts)
+  defp handle_profile_result({:ok, output}) do
+    Mix.shell().info("")
+    Mix.shell().info("  " <> Colors.success("[OK]") <> " Flame graph generated")
+    Mix.shell().info("  " <> Colors.muted("Output:") <> " " <> output)
+    Mix.shell().info("")
+    suggest_viewing(output)
+  end
 
-    case FlameGraph.profile_module(module, [
-           {:duration, duration} | profile_opts
-         ]) do
-      {:ok, output} ->
-        Mix.shell().info("")
-
-        Mix.shell().info(
-          "  " <> Colors.success("[OK]") <> " Flame graph generated"
-        )
-
-        Mix.shell().info("  " <> Colors.muted("Output:") <> " " <> output)
-        Mix.shell().info("")
-        suggest_viewing(output)
-
-      {:error, reason} ->
-        Mix.shell().error("  " <> Colors.error("[!!]") <> " Profiling failed")
-        Mix.shell().error("  " <> Colors.muted("Reason:") <> " #{reason}")
-    end
+  defp handle_profile_result({:error, reason}) do
+    Mix.shell().error("  " <> Colors.error("[!!]") <> " Profiling failed")
+    Mix.shell().error("  " <> Colors.muted("Reason:") <> " #{reason}")
   end
 
   defp profile_function(mfa_str, opts) do
     Mix.Task.run("app.start")
 
-    Mix.shell().info(Colors.section_header("Flame Graph Profiler"))
-    Mix.shell().info("")
-    Mix.shell().info("  Function: #{mfa_str}")
-    Mix.shell().info("")
+    print_function_header(mfa_str)
 
     case parse_mfa(mfa_str) do
-      {:ok, {module, function, args}} ->
-        Mix.shell().info(Colors.muted("Profiling function call..."))
-
-        profile_opts = build_profile_opts(mfa_str, opts)
-
-        case FlameGraph.profile(
-               fn -> apply(module, function, args) end,
-               profile_opts
-             ) do
-          {:ok, output, _result} ->
-            Mix.shell().info("")
-
-            Mix.shell().info(
-              "  " <> Colors.success("[OK]") <> " Flame graph generated"
-            )
-
-            Mix.shell().info("  " <> Colors.muted("Output:") <> " " <> output)
-            Mix.shell().info("")
-            suggest_viewing(output)
-
-          {:error, reason} ->
-            Mix.shell().error(
-              "  " <> Colors.error("[!!]") <> " Profiling failed: #{reason}"
-            )
-        end
+      {:ok, mfa} ->
+        run_function_profile(mfa, mfa_str, opts)
 
       {:error, reason} ->
         Mix.shell().error("  " <> Colors.error("[!!]") <> " #{reason}")
     end
+  end
+
+  defp print_function_header(mfa_str) do
+    Mix.shell().info(Colors.section_header("Flame Graph Profiler"))
+    Mix.shell().info("")
+    Mix.shell().info("  Function: #{mfa_str}")
+    Mix.shell().info("")
+  end
+
+  defp run_function_profile({module, function, args}, mfa_str, opts) do
+    Mix.shell().info(Colors.muted("Profiling function call..."))
+
+    profile_opts = build_profile_opts(mfa_str, opts)
+
+    fn -> apply(module, function, args) end
+    |> FlameGraph.profile(profile_opts)
+    |> handle_function_profile_result()
+  end
+
+  defp handle_function_profile_result({:ok, output, _result}) do
+    handle_profile_result({:ok, output})
+  end
+
+  defp handle_function_profile_result({:error, reason}) do
+    Mix.shell().error(
+      "  " <> Colors.error("[!!]") <> " Profiling failed: #{reason}"
+    )
   end
 
   defp show_tool_info do
@@ -177,33 +179,40 @@ defmodule Mix.Tasks.Raxol.Flamegraph do
 
     info = FlameGraph.tool_info()
 
-    tools = [
+    print_tool_statuses(info)
+    print_recommendation(info)
+    print_install_hint(info)
+  end
+
+  defp print_tool_statuses(info) do
+    [
       {"fprof (Erlang built-in)", info.fprof, "Always available"},
       {"flamegraph.pl", info.flamegraph_pl, "For SVG generation"},
       {"eflambe", info.eflambe, "Alternative SVG generator"}
     ]
-
-    Enum.each(tools, fn {name, available, desc} ->
+    |> Enum.each(fn {name, available, desc} ->
       status =
-        if available,
-          do: Colors.success("[OK]"),
-          else: Colors.muted("[--]")
+        if available, do: Colors.success("[OK]"), else: Colors.muted("[--]")
 
       Mix.shell().info("  #{status} #{name}")
       Mix.shell().info("      " <> Colors.muted(desc))
     end)
+  end
 
+  defp print_recommendation(info) do
     Mix.shell().info("")
     Mix.shell().info(Colors.info("Recommendation:"))
     Mix.shell().info("  " <> info.recommendation)
     Mix.shell().info("")
+  end
 
-    unless info.flamegraph_pl do
-      Mix.shell().info(Colors.muted("To install flamegraph.pl:"))
-      Mix.shell().info("  git clone https://github.com/brendangregg/FlameGraph")
-      Mix.shell().info("  export PATH=$PATH:/path/to/FlameGraph")
-      Mix.shell().info("")
-    end
+  defp print_install_hint(%{flamegraph_pl: true}), do: :ok
+
+  defp print_install_hint(_info) do
+    Mix.shell().info(Colors.muted("To install flamegraph.pl:"))
+    Mix.shell().info("  git clone https://github.com/brendangregg/FlameGraph")
+    Mix.shell().info("  export PATH=$PATH:/path/to/FlameGraph")
+    Mix.shell().info("")
   end
 
   defp build_profile_opts(name, opts) do
@@ -241,42 +250,39 @@ defmodule Mix.Tasks.Raxol.Flamegraph do
     base_opts
   end
 
+  @mfa_format_error "Invalid function format. Use Module.function(args) or Module.function/arity"
+
   defp parse_mfa(mfa_str) do
     # Parse "Module.function/arity" or "Module.function(arg1, arg2)"
     cond do
-      String.contains?(mfa_str, "(") ->
-        # Has arguments: Module.function(arg1, arg2)
-        case Regex.run(~r/^(.+)\.([^.(]+)\(([^)]*)\)$/, mfa_str) do
-          [_, module_str, func_str, args_str] ->
-            module = String.to_atom("Elixir." <> module_str)
-            function = String.to_atom(func_str)
-            args = parse_args(args_str)
-            {:ok, {module, function, args}}
+      String.contains?(mfa_str, "(") -> parse_mfa_with_args(mfa_str)
+      String.contains?(mfa_str, "/") -> parse_mfa_with_arity(mfa_str)
+      true -> {:error, @mfa_format_error}
+    end
+  end
 
-          _ ->
-            {:error,
-             "Invalid function format. Use Module.function(args) or Module.function/arity"}
-        end
+  defp parse_mfa_with_args(mfa_str) do
+    case Regex.run(~r/^(.+)\.([^.(]+)\(([^)]*)\)$/, mfa_str) do
+      [_, module_str, func_str, args_str] ->
+        module = String.to_atom("Elixir." <> module_str)
+        function = String.to_atom(func_str)
+        {:ok, {module, function, parse_args(args_str)}}
 
-      String.contains?(mfa_str, "/") ->
-        # Has arity: Module.function/2
-        case Regex.run(~r|^(.+)\.([^./]+)/(\d+)$|, mfa_str) do
-          [_, module_str, func_str, arity_str] ->
-            module = String.to_atom("Elixir." <> module_str)
-            function = String.to_atom(func_str)
-            arity = String.to_integer(arity_str)
-            # Create placeholder args
-            args = List.duplicate(nil, arity)
-            {:ok, {module, function, args}}
+      _ ->
+        {:error, @mfa_format_error}
+    end
+  end
 
-          _ ->
-            {:error,
-             "Invalid function format. Use Module.function(args) or Module.function/arity"}
-        end
+  defp parse_mfa_with_arity(mfa_str) do
+    case Regex.run(~r|^(.+)\.([^./]+)/(\d+)$|, mfa_str) do
+      [_, module_str, func_str, arity_str] ->
+        module = String.to_atom("Elixir." <> module_str)
+        function = String.to_atom(func_str)
+        args = List.duplicate(nil, String.to_integer(arity_str))
+        {:ok, {module, function, args}}
 
-      true ->
-        {:error,
-         "Invalid function format. Use Module.function(args) or Module.function/arity"}
+      _ ->
+        {:error, @mfa_format_error}
     end
   end
 

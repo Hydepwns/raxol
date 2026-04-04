@@ -5,7 +5,7 @@ defmodule Raxol.REPL.SandboxTest do
 
   describe "check/2 with :none" do
     test "allows everything" do
-      assert :ok = Sandbox.check("System.cmd(\"rm\", [\"-rf\", \"/\"])", :none)
+      assert :ok = Sandbox.check(~S{System.cmd("rm", ["-rf", "/"])}, :none)
     end
   end
 
@@ -53,7 +53,7 @@ defmodule Raxol.REPL.SandboxTest do
     end
 
     test "denies File.write" do
-      {:error, violations} = Sandbox.check("File.write(\"x.txt\", \"data\")")
+      {:error, violations} = Sandbox.check(~S{File.write("x.txt", "data")})
       assert Enum.any?(violations, &String.contains?(&1, "File.write"))
     end
 

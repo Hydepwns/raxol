@@ -160,17 +160,18 @@ defmodule Raxol.UI.Theming.Colors do
       "#800080"
   """
   def blend(color1, color2, alpha) when alpha >= 0 and alpha <= 1 do
-    hex1 = to_hex(color1)
-    hex2 = to_hex(color2)
+    rgb1 = to_rgb(color1)
+    rgb2 = to_rgb(color2)
 
-    {r1, g1, b1} = hex_to_rgb(hex1)
-    {r2, g2, b2} = hex_to_rgb(hex2)
-
-    r = round(r1 * alpha + r2 * (1 - alpha))
-    g = round(g1 * alpha + g2 * (1 - alpha))
-    b = round(b1 * alpha + b2 * (1 - alpha))
-
+    {r, g, b} = blend_rgb(rgb1, rgb2, alpha)
     rgb_to_hex(r, g, b)
+  end
+
+  defp blend_rgb({r1, g1, b1}, {r2, g2, b2}, alpha) do
+    inv = 1 - alpha
+
+    {round(r1 * alpha + r2 * inv), round(g1 * alpha + g2 * inv),
+     round(b1 * alpha + b2 * inv)}
   end
 
   @doc """
@@ -246,18 +247,13 @@ defmodule Raxol.UI.Theming.Colors do
       iex> Colors.to_rgb(:blue)
       {0, 0, 255}
   """
-  def to_rgb(color) do
-    case color do
-      hex when is_binary(hex) ->
-        hex_to_rgb(hex)
+  def to_rgb(hex) when is_binary(hex), do: hex_to_rgb(hex)
 
-      name when is_atom(name) ->
-        hex_to_rgb(@color_names[name])
+  def to_rgb(name) when is_atom(name), do: hex_to_rgb(@color_names[name])
 
-      {r, g, b} when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 ->
-        {r, g, b}
-    end
-  end
+  def to_rgb({r, g, b} = rgb)
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1,
+      do: rgb
 
   @doc """
   Converts a color to its hex representation.
@@ -270,23 +266,19 @@ defmodule Raxol.UI.Theming.Colors do
       iex> Colors.to_hex("#00FF00")
       "#00FF00"
   """
-  def to_hex(color) do
-    case color do
-      hex when is_binary(hex) ->
-        hex
+  def to_hex(hex) when is_binary(hex), do: hex
 
-      name when is_atom(name) ->
-        @color_names[name]
+  def to_hex(name) when is_atom(name), do: @color_names[name]
 
-      {r, g, b} when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 ->
-        rgb_to_hex(r, g, b)
+  def to_hex({r, g, b})
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1,
+      do: rgb_to_hex(r, g, b)
 
-      {r, g, b, a}
+  def to_hex({r, g, b, a})
       when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 and
-             a in 0..255//1 ->
-        (rgb_to_hex(r, g, b) <> Integer.to_string(a, 16))
-        |> String.pad_leading(2, "0")
-    end
+             a in 0..255//1 do
+    alpha_hex = a |> Integer.to_string(16) |> String.pad_leading(2, "0")
+    rgb_to_hex(r, g, b) <> alpha_hex
   end
 
   @doc """
@@ -600,36 +592,28 @@ defmodule Raxol.UI.Theming.Colors do
   defp valid_palette_color?(_), do: false
 
   defp find_closest_palette_color(rgb, palette_name) do
-    palette =
-      case palette_name do
-        :xterm256 ->
-          @ansi_256_colors
+    palette_name
+    |> resolve_palette()
+    |> find_closest_in_palette(rgb)
+  end
 
-        :basic ->
-          @ansi_basic_colors
+  defp resolve_palette(:xterm256), do: @ansi_256_colors
+  defp resolve_palette(:basic), do: @ansi_basic_colors
+  defp resolve_palette(:linux), do: @linux_colors
+  defp resolve_palette(:mac), do: @mac_colors
+  defp resolve_palette(:windows), do: @windows_colors
+  defp resolve_palette(:xterm), do: @xterm_colors
 
-        :linux ->
-          @linux_colors
+  defp resolve_palette(custom) when is_atom(custom) do
+    case Raxol.UI.Theming.PaletteRegistry.get(custom) do
+      {:ok, colors} -> colors
+      {:error, _} -> @ansi_256_colors
+    end
+  end
 
-        :mac ->
-          @mac_colors
+  defp resolve_palette(_), do: @ansi_256_colors
 
-        :windows ->
-          @windows_colors
-
-        :xterm ->
-          @xterm_colors
-
-        custom when is_atom(custom) ->
-          case Raxol.UI.Theming.PaletteRegistry.get(custom) do
-            {:ok, colors} -> colors
-            {:error, _} -> @ansi_256_colors
-          end
-
-        _ ->
-          @ansi_256_colors
-      end
-
+  defp find_closest_in_palette(palette, rgb) do
     palette
     |> Enum.min_by(fn {_index, palette_rgb} ->
       color_distance_sq(rgb, palette_rgb)

@@ -30,4 +30,46 @@ defmodule Raxol.Playground.DemoHelpers do
   """
   @spec cycle_next(non_neg_integer(), non_neg_integer()) :: non_neg_integer()
   def cycle_next(current, count), do: rem(current + 1, count)
+
+  @doc """
+  Navigate backward through input history.
+
+  Expects the model to have `:input_history`, `:history_index`, `:input`, and `:cursor` fields.
+  """
+  @spec history_prev(map()) :: map()
+  def history_prev(%{input_history: []} = model), do: model
+
+  def history_prev(model) do
+    idx = (model.history_index || -1) + 1
+    idx = min(idx, length(model.input_history) - 1)
+    input = Enum.at(model.input_history, idx, model.input)
+    %{model | history_index: idx, input: input, cursor: String.length(input)}
+  end
+
+  @doc """
+  Navigate forward through input history.
+
+  Expects the model to have `:input_history`, `:history_index`, `:input`, and `:cursor` fields.
+  """
+  @spec history_next(map()) :: map()
+  def history_next(model) do
+    case model.history_index do
+      nil ->
+        model
+
+      0 ->
+        %{model | history_index: nil, input: "", cursor: 0}
+
+      idx ->
+        new_idx = idx - 1
+        input = Enum.at(model.input_history, new_idx, "")
+
+        %{
+          model
+          | history_index: new_idx,
+            input: input,
+            cursor: String.length(input)
+        }
+    end
+  end
 end
