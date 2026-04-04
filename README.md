@@ -15,7 +15,7 @@ No other TUI framework does this; Raxol inherits it from the runtime.
 ```bash
 git clone https://github.com/Hydepwns/raxol.git
 cd raxol && mix deps.get
-mix raxol.playground          # 29 live demos, browse/search/filter
+mix raxol.playground          # 30 live demos, browse/search/filter
 mix raxol.playground --ssh    # same thing, served over SSH (port 2222)
 ```
 
@@ -172,7 +172,7 @@ Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
 
 **Session recording.** Captures to asciinema v2 `.cast` files with pause, seek, speed control, and auto-save on crash.
 
-**Sandboxed REPL.** `mix raxol.repl` with three safety levels. AST-based scanning blocks dangerous operations; safe for SSH in strict mode. The playground has 29 live demos across 8 categories.
+**Sandboxed REPL.** `mix raxol.repl` with three safety levels. AST-based scanning blocks dangerous operations; safe for SSH in strict mode. The playground has 30 live demos across 8 categories.
 
 ## Performance
 

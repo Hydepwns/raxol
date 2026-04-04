@@ -59,7 +59,7 @@ Sensor examples: `sensor_hud_demo.exs` (3 mock sensors with gauge, sparkline, th
 
 Adaptive examples: `adaptive_ui_demo.exs` (behavior tracking, layout recommendations, feedback loop).
 
-Playground: `mix raxol.playground` -- interactive widget catalog with 28 demos across 8 categories (input, display, feedback, navigation, overlay, layout, visualization, effects). Demos are self-contained TEA apps in `lib/raxol/playground/demos/`. Chart demos use View DSL functions directly. SSH mode: `mix raxol.playground --ssh` serves the playground over SSH (port 2222 by default). Production SSH enabled via `RAXOL_SSH_PLAYGROUND=true` env var in fly.toml.
+Playground: `mix raxol.playground` -- interactive widget catalog with 30 demos across 8 categories (input, display, feedback, navigation, overlay, layout, visualization, effects). Demos are self-contained TEA apps in `lib/raxol/playground/demos/`. Chart demos use View DSL functions directly. SSH mode: `mix raxol.playground --ssh` serves the playground over SSH (port 2222 by default). Production SSH enabled via `RAXOL_SSH_PLAYGROUND=true` env var in fly.toml.
 
 ### Development
 
@@ -81,7 +81,7 @@ mix docs                      # Generate documentation
 
 ## Architecture
 
-Raxol is an AGI-ready terminal framework for Elixir -- component model, agent runtime, sensor fusion, distributed swarm, and time-travel debugging on OTP. Supports multiple UI paradigms (React, LiveView, HEEx, Raw).
+Raxol is a terminal framework for Elixir built on OTP -- component model, agent runtime, sensor fusion, distributed swarm, and time-travel debugging. Supports multiple UI paradigms (React, LiveView, HEEx, Raw).
 
 ### Application Model
 
@@ -123,10 +123,10 @@ Cross-package references use `@compile {:no_warn_undefined, Module}` and `Code.e
 **Package test commands:**
 
 ```bash
-cd packages/raxol_core && MIX_ENV=test mix test       # 765 tests
-cd packages/raxol_terminal && MIX_ENV=test mix test    # 1874 tests
-cd packages/raxol_sensor && MIX_ENV=test mix test      # 55 tests
-cd packages/raxol_agent && MIX_ENV=test mix test       # 131 tests
+cd packages/raxol_core && MIX_ENV=test mix test       # ~719 tests
+cd packages/raxol_terminal && MIX_ENV=test mix test    # ~1874 tests
+cd packages/raxol_sensor && MIX_ENV=test mix test      # ~55 tests
+cd packages/raxol_agent && MIX_ENV=test mix test       # ~378 tests
 ```
 
 ### Core Layers (main raxol)
@@ -151,7 +151,7 @@ lib/raxol/
 │   ├── discovery.ex   # libcluster wrapper with strategy presets
 │   ├── strategy/      # Custom libcluster strategies (Tailscale)
 │   └── crdt/          # LWWRegister, ORSet (pure functional)
-├── playground/      # Interactive widget catalog (28 demos, 8 categories)
+├── playground/      # Interactive widget catalog (30 demos, 8 categories)
 ├── ssh/             # SSH serving
 ├── repl/            # Interactive REPL
 ├── performance/     # Performance monitoring, profiling, caching
@@ -204,17 +204,11 @@ IO.write(Renderer.apply_diff(diff))  # NOT Enum.each(diff, &IO.write/1)
 
 ### Render Pipeline
 
-The render pipeline lives in `lib/raxol/ui/rendering/` (10 modules: TreeDiffer, Layouter, Composer, Painter, DamageTracker, ComponentCache, RenderBatcher, TimerServer, Renderer, LayouterCached) plus `lib/raxol/ui/layout/` (Preparer, PreparedElement, ScrollContent). The flow is:
+`view(model)` -> Preparer (text measurement) -> LayoutEngine (positioning) -> UIRenderer (cell tuples) -> ScreenBuffer (diff) -> Terminal.Renderer (ANSI). See `docs/core/ARCHITECTURE.md` for the full layer-by-layer walkthrough.
 
-1. `view(model)` -> element tree
-2. `Preparer.prepare_incremental` -> PreparedElement tree (cached text measurements)
-3. `LayoutEngine.apply_layout` -> positioned elements (arithmetic only)
-4. `UIRenderer.render_to_cells` -> cell tuples `{x, y, char, fg, bg, attrs}`
-5. `ScreenBuffer` -> diff -> `Terminal.Renderer` -> ANSI output
-
-**Text measurement**: All display-width-sensitive code uses `Raxol.UI.TextMeasure` (facade in `lib/raxol/ui/text_measure.ex`), which delegates to `Raxol.Terminal.CharacterHandling` for correct CJK/Unicode width. Never use `String.length` for display width.
-
-**Scrollable containers**: `Raxol.UI.Layout.ScrollContent` behaviour enables lazy content sourcing for Viewport. `ListScrollContent` wraps lists, `StreamScrollContent` wraps fetch functions with a sliding cache window.
+Key rules:
+- Use `Raxol.UI.TextMeasure` for display width, never `String.length` -- CJK chars are double-width
+- `ScrollContent` behaviour enables lazy content for Viewport (`ListScrollContent`, `StreamScrollContent`)
 
 ### Testing Patterns
 
@@ -269,7 +263,7 @@ These namespaces have been consolidated -- avoid creating new top-level alternat
 ## Dialyzer
 
 - PLT cached in `priv/plts/` for faster reruns
-- `.dialyzer_ignore.exs` contains ~39 documented intentional suppressions (15 patterns)
+- `.dialyzer_ignore.exs` contains 12 documented suppression patterns (fprof, broad API specs, flow narrowing)
 - Mix aliases: `mix dialyzer.setup`, `mix dialyzer.check`, `mix dialyzer.clean`
 
 ## Deployment
