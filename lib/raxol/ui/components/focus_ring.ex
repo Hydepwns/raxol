@@ -36,13 +36,8 @@ defmodule Raxol.UI.Components.FocusRing do
   def render(content, %{enabled: false}), do: content
 
   def render(content, config) do
-    style = config.style
-    color = config.color
-
-    border_chars = get_border_chars(style)
-    colored_borders = apply_color(border_chars, color)
-
-    wrap_with_border(content, colored_borders, config)
+    border_chars = get_border_chars(config.style)
+    wrap_with_border(content, border_chars, config)
   end
 
   @doc """
@@ -137,27 +132,6 @@ defmodule Raxol.UI.Components.FocusRing do
     get_border_chars(:solid)
   end
 
-  defp apply_color(border_chars, color) when is_atom(color) do
-    ansi_code = color_to_ansi(color)
-    reset = "\e[0m"
-
-    Map.new(border_chars, fn {k, v} ->
-      {k, "#{ansi_code}#{v}#{reset}"}
-    end)
-  end
-
-  defp apply_color(border_chars, _), do: border_chars
-
-  defp color_to_ansi(:black), do: "\e[30m"
-  defp color_to_ansi(:red), do: "\e[31m"
-  defp color_to_ansi(:green), do: "\e[32m"
-  defp color_to_ansi(:yellow), do: "\e[33m"
-  defp color_to_ansi(:blue), do: "\e[34m"
-  defp color_to_ansi(:magenta), do: "\e[35m"
-  defp color_to_ansi(:cyan), do: "\e[36m"
-  defp color_to_ansi(:white), do: "\e[37m"
-  defp color_to_ansi(_), do: "\e[34m"
-
   defp wrap_with_border(content, borders, config) do
     lines = String.split(content, "\n")
 
@@ -174,8 +148,9 @@ defmodule Raxol.UI.Components.FocusRing do
 
     middle_lines =
       Enum.map(lines, fn line ->
-        padded_line = String.pad_trailing(line, width)
-        "#{offset_spaces}#{borders.left}#{padded_line}#{borders.right}"
+        display_w = Raxol.UI.TextMeasure.display_width(line)
+        pad = String.duplicate(" ", max(width - display_w, 0))
+        "#{offset_spaces}#{borders.left}#{line}#{pad}#{borders.right}"
       end)
 
     ([top_line | middle_lines] ++ [bottom_line])

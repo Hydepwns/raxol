@@ -139,14 +139,11 @@ defmodule Raxol.UI.Components.HintDisplay do
 
   defp apply_style(text, :inline, type) do
     prefix = get_type_prefix(type)
-    color = get_type_color(type)
-
-    "#{color}(#{prefix}#{text})\e[0m"
+    "(#{prefix}#{text})"
   end
 
-  defp apply_style(text, :minimal, type) do
-    color = get_type_color(type)
-    "#{color}#{text}\e[0m"
+  defp apply_style(text, :minimal, _type) do
+    text
   end
 
   defp apply_style(text, _, type) do
@@ -159,13 +156,6 @@ defmodule Raxol.UI.Components.HintDisplay do
   defp get_type_prefix(:success), do: "ok: "
   defp get_type_prefix(:help), do: "?: "
   defp get_type_prefix(_), do: ""
-
-  defp get_type_color(:info), do: "\e[34m"
-  defp get_type_color(:warning), do: "\e[33m"
-  defp get_type_color(:error), do: "\e[31m"
-  defp get_type_color(:success), do: "\e[32m"
-  defp get_type_color(:help), do: "\e[36m"
-  defp get_type_color(_), do: "\e[37m"
 
   defp get_type_border(:info) do
     %{top: "---- Info ----", left: "|", right: "|", bottom: "--------------"}

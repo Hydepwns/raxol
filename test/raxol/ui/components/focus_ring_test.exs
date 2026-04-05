@@ -65,12 +65,10 @@ defmodule Raxol.UI.Components.FocusRingTest do
       assert result =~ ":"
     end
 
-    test "applies color to border characters" do
+    test "does not embed ANSI codes in rendered output" do
       config = FocusRing.init(style: :solid, color: :cyan)
       result = FocusRing.render("text", config)
-      # cyan ANSI code
-      assert result =~ "\e[36m"
-      assert result =~ "\e[0m"
+      refute result =~ "\e["
     end
 
     test "handles multiline content" do

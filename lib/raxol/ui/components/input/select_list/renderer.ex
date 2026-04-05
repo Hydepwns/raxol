@@ -86,8 +86,17 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         %{}
       end
 
+    style_attrs =
+      Enum.flat_map(style, fn
+        {:bold, true} -> [:bold]
+        {:reverse, true} -> [:reverse]
+        {:underline, true} -> [:underline]
+        _ -> []
+      end)
+
     Raxol.View.Components.text(
-      content: apply_style("#{prefix}#{label}\n", style)
+      content: "#{prefix}#{label}\n",
+      style: style_attrs
     )
   end
 
@@ -126,21 +135,5 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
       |> IO.iodata_to_binary()
 
     Raxol.View.Components.text(content: content)
-  end
-
-  defp apply_style(text, style) when map_size(style) == 0, do: text
-
-  defp apply_style(text, style) do
-    # Apply ANSI style codes based on style map
-    codes = []
-    codes = if style[:bold], do: ["\e[1m" | codes], else: codes
-    codes = if style[:reverse], do: ["\e[7m" | codes], else: codes
-    codes = if style[:underline], do: ["\e[4m" | codes], else: codes
-
-    if codes == [] do
-      text
-    else
-      IO.iodata_to_binary([codes, text, "\e[0m"])
-    end
   end
 end
