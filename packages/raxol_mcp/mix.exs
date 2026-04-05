@@ -1,4 +1,4 @@
-defmodule RaxolAgent.MixProject do
+defmodule RaxolMcp.MixProject do
   use Mix.Project
 
   @version "2.3.1"
@@ -6,28 +6,24 @@ defmodule RaxolAgent.MixProject do
 
   def project do
     [
-      app: :raxol_agent,
+      app: :raxol_mcp,
       version: @version,
-      elixir: "~> 1.17 or ~> 1.18 or ~> 1.19",
-      elixirc_paths: elixirc_paths(Mix.env()),
+      elixir: "~> 1.16 or ~> 1.17 or ~> 1.18 or ~> 1.19",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      elixirc_paths: elixirc_paths(Mix.env()),
       description: description(),
       package: package(),
       docs: docs(),
-      name: "Raxol Agent",
+      name: "Raxol MCP",
       source_url: @source_url
     ]
   end
 
   def application do
-    app = [extra_applications: [:logger]]
-
-    if Mix.env() != :test do
-      Keyword.put(app, :mod, {RaxolAgent.Application, []})
-    else
-      app
-    end
+    [
+      extra_applications: [:logger]
+    ]
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
@@ -35,11 +31,9 @@ defmodule RaxolAgent.MixProject do
 
   defp deps do
     [
-      {:raxol, path: "../..", override: true},
-      {:raxol_mcp, path: "../raxol_mcp"},
-      {:circular_buffer, "~> 1.0"},
+      {:raxol_core, path: "../raxol_core"},
       {:jason, "~> 1.4"},
-      {:req, "~> 0.5", optional: true},
+      {:plug, "~> 1.16", optional: true},
 
       # Dev/test only
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
@@ -50,21 +44,21 @@ defmodule RaxolAgent.MixProject do
 
   defp description do
     """
-    AI agent framework for Elixir built on OTP. TEA-based agents with crash
-    isolation, inter-agent messaging, team supervision, and real SSE streaming
-    to Anthropic, OpenAI, Ollama, and more.
+    MCP (Model Context Protocol) server and client for Raxol. Provides JSON-RPC 2.0
+    protocol handling, tool/resource registry, stdio and SSE transports.
+    Build a TUI app, get an AI interface for free.
     """
   end
 
   defp package do
     [
-      name: "raxol_agent",
+      name: "raxol_mcp",
       files: ~w(lib .formatter.exs mix.exs README.md LICENSE.md),
       licenses: ["MIT"],
       links: %{
         "GitHub" => @source_url,
-        "Docs" => "https://hexdocs.pm/raxol_agent",
-        "Changelog" => "#{@source_url}/blob/main/packages/raxol_agent/CHANGELOG.md"
+        "Docs" => "https://hexdocs.pm/raxol_mcp",
+        "Changelog" => "#{@source_url}/blob/main/packages/raxol_mcp/CHANGELOG.md"
       },
       maintainers: ["Raxol Team"]
     ]

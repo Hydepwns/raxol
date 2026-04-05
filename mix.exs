@@ -177,7 +177,8 @@ defmodule Raxol.MixProject do
     [
       {:raxol_core, path: "packages/raxol_core", override: true},
       {:raxol_terminal, path: "packages/raxol_terminal", override: true},
-      {:raxol_sensor, path: "packages/raxol_sensor", override: true}
+      {:raxol_sensor, path: "packages/raxol_sensor", override: true},
+      {:raxol_mcp, path: "packages/raxol_mcp", override: true}
     ]
   end
 

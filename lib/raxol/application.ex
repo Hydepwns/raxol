@@ -56,7 +56,10 @@ defmodule Raxol.Application do
     # Start supervision tree with error handling
     result = start_supervisor(children, opts)
 
-    # Inject Raxol headless tools into Tidewave MCP (dev only, after Tidewave starts)
+    # Register headless tools with MCP registry (all environments)
+    maybe_register_mcp_tools()
+
+    # Legacy: also inject into Tidewave in dev (for Tidewave's own tools)
     maybe_inject_mcp_tools()
 
     # Record startup metrics
@@ -167,6 +170,8 @@ defmodule Raxol.Application do
       {Raxol.Terminal.Supervisor, []},
       maybe_add_agent_supervisor(),
       {Registry, keys: :duplicate, name: :raxol_event_subscriptions},
+      # MCP server (registry + server, works in all environments)
+      maybe_add_mcp_supervisor(),
       # Headless session manager for programmatic app interaction
       {Raxol.Headless, []},
 
@@ -249,6 +254,12 @@ defmodule Raxol.Application do
   defp maybe_add_agent_supervisor do
     if module_available?(Raxol.Agent.Supervisor) do
       {Raxol.Agent.Supervisor, []}
+    end
+  end
+
+  defp maybe_add_mcp_supervisor do
+    if module_available?(Raxol.MCP.Supervisor) do
+      {Raxol.MCP.Supervisor, []}
     end
   end
 
@@ -597,19 +608,28 @@ defmodule Raxol.Application do
     end
   end
 
-  defp maybe_inject_mcp_tools do
-    _result =
-      if mix_env() == :dev and Code.ensure_loaded?(Raxol.Headless.McpTools) do
-        # Tidewave ETS table may take a moment to initialize, retry briefly
-        Task.start(fn ->
-          Enum.find(1..10, fn _ ->
-            Process.sleep(500)
-            Raxol.Headless.McpTools.inject_into_tidewave() == :ok
-          end)
-        end)
-      end
+  defp maybe_register_mcp_tools do
+    if module_available?(Raxol.MCP.Registry) and
+         module_available?(Raxol.Headless.McpTools) do
+      Raxol.Headless.McpTools.register(Raxol.MCP.Registry)
+    end
 
     :ok
+  end
+
+  defp maybe_inject_mcp_tools do
+    if mix_env() == :dev and Code.ensure_loaded?(Raxol.Headless.McpTools) do
+      Task.start(&retry_tidewave_injection/0)
+    end
+
+    :ok
+  end
+
+  defp retry_tidewave_injection do
+    Enum.find(1..10, fn _ ->
+      Process.sleep(500)
+      Raxol.Headless.McpTools.inject_into_tidewave() == :ok
+    end)
   end
 
   defp mix_env, do: if(Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod)

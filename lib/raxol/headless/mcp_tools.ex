@@ -2,10 +2,9 @@ defmodule Raxol.Headless.McpTools do
   @moduledoc """
   MCP tool definitions for Raxol headless sessions.
 
-  Injected into Tidewave's ETS-based tool registry at startup, making
-  `raxol_start`, `raxol_screenshot`, `raxol_send_key`, `raxol_get_model`,
-  and `raxol_stop` available as named MCP tools alongside Tidewave's
-  built-in `project_eval`, `get_logs`, etc.
+  Registers `raxol_start`, `raxol_screenshot`, `raxol_send_key`,
+  `raxol_get_model`, `raxol_stop`, and `raxol_list` as MCP tools
+  via `Raxol.MCP.Registry`.
   """
 
   @doc """
@@ -167,6 +166,21 @@ defmodule Raxol.Headless.McpTools do
         callback: &list_sessions/1
       }
     ]
+  end
+
+  @doc """
+  Register all headless tools with the given MCP Registry.
+
+  Called from `Raxol.Application` after the MCP supervisor and Headless
+  are both running.
+  """
+  @spec register(GenServer.server()) :: :ok
+  def register(registry \\ Raxol.MCP.Registry) do
+    if Code.ensure_loaded?(Raxol.MCP.Registry) do
+      Raxol.MCP.Registry.register_tools(registry, tools())
+    else
+      :ok
+    end
   end
 
   @doc """

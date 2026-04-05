@@ -1,8 +1,16 @@
 {
   "mcpServers": {
+    "raxol": {
+      "type": "stdio",
+      "command": "mix",
+      "args": ["mcp.server"],
+      "env": {
+        "MIX_ENV": "dev"
+      }
+    },
     "tidewave": {
-      "type": "http",
-      "url": "http://localhost:4000/tidewave/mcp"
+      "type": "stdio",
+      "command": "./scripts/tidewave-mcp-proxy.sh"
     }
   }
 }
