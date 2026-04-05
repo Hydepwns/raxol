@@ -34,17 +34,6 @@
   ~r"vfs_helpers\.ex:\d+:contract_supertype",
 
   # ------------------------------------------------------------------------------
-  # :fprof OTP MODULE (unknown_function)
-  # ------------------------------------------------------------------------------
-  # :fprof is in the :tools OTP app, added to PLT. Direct calls trigger
-  # unknown_function because fprof beam isn't always in the PLT path.
-  # These were previously hidden behind apply/3 but are now direct calls.
-  ~r"bench\.advanced\.ex:\d+:\d+:unknown_function",
-  ~r"dev_profiler\.ex:\d+:\d+:unknown_function",
-  ~r"flame_graph\.ex:\d+:\d+:unknown_function",
-  ~r"profiler\.ex:\d+:\d+:unknown_function",
-
-  # ------------------------------------------------------------------------------
   # DIALYZER FLOW NARROWING (false positive)
   # ------------------------------------------------------------------------------
   # text_helper.ex: delete_text_range called from delete_selection which takes

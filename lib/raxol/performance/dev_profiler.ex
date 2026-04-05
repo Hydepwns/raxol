@@ -198,8 +198,8 @@ defmodule Raxol.Performance.DevProfiler do
       tools =
         if opts[:call_graph] do
           _ = Application.ensure_all_started(:tools)
-          _ = :fprof.start()
-          _ = :fprof.trace(:start)
+          _ = apply(:fprof, :start, [])
+          _ = apply(:fprof, :trace, [:start])
           Map.put(tools, :fprof, true)
         else
           tools
@@ -222,10 +222,10 @@ defmodule Raxol.Performance.DevProfiler do
     defp stop_fprof(profile_data, false), do: profile_data
 
     defp stop_fprof(profile_data, true) do
-      _ = :fprof.trace(:stop)
-      _ = :fprof.profile()
+      _ = apply(:fprof, :trace, [:stop])
+      _ = apply(:fprof, :profile, [])
       fprof_data = capture_fprof_analysis()
-      _ = :fprof.stop()
+      _ = apply(:fprof, :stop, [])
       Map.put(profile_data, :fprof, fprof_data)
     end
 
@@ -246,7 +246,7 @@ defmodule Raxol.Performance.DevProfiler do
         System.tmp_dir!() <> "/raxol_fprof_#{:os.system_time()}.analysis"
 
       try do
-        _ = :fprof.analyse(dest: String.to_charlist(temp_file))
+        _ = apply(:fprof, :analyse, [[dest: String.to_charlist(temp_file)]])
         File.read!(temp_file)
       catch
         _, _ -> "fprof analysis failed"

@@ -198,14 +198,14 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
     suite = opts[:suite] || "all"
 
     _ = Application.ensure_all_started(:tools)
-    _ = :fprof.start()
-    _ = :fprof.trace([:start])
+    _ = apply(:fprof, :start, [])
+    _ = apply(:fprof, :trace, [[:start]])
 
     results = run_with_profiling(suite, opts)
 
-    _ = :fprof.trace([:stop])
-    _ = :fprof.profile()
-    _ = :fprof.analyse(dest: ~c"profile_output.txt")
+    _ = apply(:fprof, :trace, [[:stop]])
+    _ = apply(:fprof, :profile, [])
+    _ = apply(:fprof, :analyse, [[dest: ~c"profile_output.txt"]])
 
     # Generate flame graph if available
     if System.find_executable("flamegraph.pl") do

@@ -196,7 +196,7 @@ defmodule Raxol.Performance.FlameGraph do
 
     try do
       ensure_fprof()
-      _ = :fprof.start()
+      _ = apply(:fprof, :start, [])
       fun.(trace_file, analysis_file)
     rescue
       e ->
@@ -227,25 +227,31 @@ defmodule Raxol.Performance.FlameGraph do
   end
 
   defp start_trace(trace_file) do
-    _ = :fprof.trace([:start, {:file, String.to_charlist(trace_file)}])
+    _ =
+      apply(:fprof, :trace, [[:start, {:file, String.to_charlist(trace_file)}]])
+
     :ok
   end
 
   defp start_trace_with_spec(trace_file, spec) do
     _ =
-      :fprof.trace([
-        :start,
-        {:file, String.to_charlist(trace_file)} | spec
+      apply(:fprof, :trace, [
+        [:start, {:file, String.to_charlist(trace_file)} | spec]
       ])
 
     :ok
   end
 
   defp analyse_trace(trace_file, analysis_file) do
-    _ = :fprof.trace(:stop)
-    _ = :fprof.profile(file: String.to_charlist(trace_file))
-    _ = :fprof.analyse(dest: String.to_charlist(analysis_file), cols: 120)
-    _ = :fprof.stop()
+    _ = apply(:fprof, :trace, [:stop])
+    _ = apply(:fprof, :profile, [[file: String.to_charlist(trace_file)]])
+
+    _ =
+      apply(:fprof, :analyse, [
+        [dest: String.to_charlist(analysis_file), cols: 120]
+      ])
+
+    _ = apply(:fprof, :stop, [])
     :ok
   end
 
@@ -258,7 +264,7 @@ defmodule Raxol.Performance.FlameGraph do
   end
 
   defp safe_stop_fprof do
-    :fprof.stop()
+    apply(:fprof, :stop, [])
   rescue
     _ -> :ok
   end
