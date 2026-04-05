@@ -429,7 +429,8 @@ defmodule Raxol.Headless do
   @compile {:no_warn_undefined, Raxol.MCP.ToolSynchronizer}
 
   defp start_tool_synchronizer(lifecycle_pid, session_id) do
-    if Code.ensure_loaded?(Raxol.MCP.ToolSynchronizer) do
+    if Code.ensure_loaded?(Raxol.MCP.ToolSynchronizer) and
+         Process.whereis(Raxol.MCP.Registry) != nil do
       dispatcher_pid = get_dispatcher_pid(lifecycle_pid)
 
       if dispatcher_pid do
