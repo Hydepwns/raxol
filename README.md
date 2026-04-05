@@ -190,11 +190,13 @@ A full frame uses 13% of the 60fps budget, leaving plenty of room for applicatio
 ## Documentation
 
 **Start here**
+
 - [Quickstart](docs/getting-started/QUICKSTART.md)
 - [Core Concepts](docs/getting-started/CORE_CONCEPTS.md)
 - [Widget Gallery](docs/getting-started/WIDGET_GALLERY.md)
 
 **Cookbook**
+
 - [Building Apps](docs/cookbook/BUILDING_APPS.md)
 - [SSH Deployment](docs/cookbook/SSH_DEPLOYMENT.md)
 - [Theming](docs/cookbook/THEMING.md)
@@ -202,12 +204,14 @@ A full frame uses 13% of the 60fps budget, leaving plenty of room for applicatio
 - [Performance](docs/cookbook/PERFORMANCE_OPTIMIZATION.md)
 
 **Reference**
+
 - [Architecture](docs/core/ARCHITECTURE.md)
 - [Buffer API](docs/core/BUFFER_API.md)
 - [Benchmarks](docs/bench/README.md)
 - [API Docs](https://hexdocs.pm/raxol)
 
 **Advanced**
+
 - [Agent Framework](docs/features/AGENT_FRAMEWORK.md)
 - [Sensor Fusion](docs/features/SENSOR_FUSION.md)
 - [Distributed Swarm](docs/features/DISTRIBUTED_SWARM.md)
@@ -215,6 +219,7 @@ A full frame uses 13% of the 60fps budget, leaving plenty of room for applicatio
 - [Why OTP for TUIs](docs/WHY_OTP.md)
 
 **Standalone packages** -- use these if you want just one subsystem without the full framework:
+
 - [`raxol_core`](packages/raxol_core/) -- behaviours, events, config, plugins
 - [`raxol_terminal`](packages/raxol_terminal/) -- terminal emulation, termbox2 NIF
 - [`raxol_agent`](packages/raxol_agent/) -- AI agent framework
