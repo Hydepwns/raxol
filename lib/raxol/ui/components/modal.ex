@@ -32,6 +32,7 @@ defmodule Raxol.UI.Components.Modal do
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
+  @behaviour Raxol.MCP.ToolProvider
   require Raxol.Core.Runtime.Log
 
   # Require view macros and components
@@ -307,4 +308,38 @@ defmodule Raxol.UI.Components.Modal do
   """
   @impl true
   def unmount(state), do: state
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(%{visible: false}), do: []
+
+  def mcp_tools(state) do
+    title = state[:title] || "Modal"
+
+    [
+      %{
+        name: "dismiss",
+        description: "Dismiss the '#{title}' modal",
+        inputSchema: %{type: "object", properties: %{}}
+      },
+      %{
+        name: "confirm",
+        description: "Confirm/accept the '#{title}' modal",
+        inputSchema: %{type: "object", properties: %{}}
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("dismiss", _args, context) do
+    {:ok, "Dismissed modal", [{:modal_dismiss, context.widget_id}]}
+  end
+
+  def handle_tool_call("confirm", _args, context) do
+    {:ok, "Confirmed modal", [{:modal_confirm, context.widget_id}]}
+  end
+
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
 end

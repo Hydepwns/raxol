@@ -254,8 +254,15 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   defp sync_dispatcher(dispatcher_pid, view, positioned_elements) do
-    with :ok <- update_dispatcher_view_tree(dispatcher_pid, view) do
-      update_dispatcher_layout(dispatcher_pid, positioned_elements)
+    with :ok <- update_dispatcher_view_tree(dispatcher_pid, view),
+         :ok <- update_dispatcher_layout(dispatcher_pid, positioned_elements) do
+      :telemetry.execute(
+        [:raxol, :runtime, :view_tree_updated],
+        %{},
+        %{view_tree: view, dispatcher_pid: dispatcher_pid}
+      )
+
+      :ok
     end
   end
 

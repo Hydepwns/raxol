@@ -36,6 +36,7 @@ defmodule RaxolMcp.MixProject do
       {:plug, "~> 1.16", optional: true},
 
       # Dev/test only
+      {:stream_data, "~> 1.1", only: [:dev, :test]},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}

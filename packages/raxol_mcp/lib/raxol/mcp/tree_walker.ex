@@ -1,0 +1,154 @@
+defmodule Raxol.MCP.TreeWalker do
+  @moduledoc """
+  Traverses a view element tree and derives namespaced MCP tools from widgets.
+
+  The view tree is the output of a TEA app's `view/1` function -- nested maps
+  with `:type`, `:id`, `:attrs`, `:children` keys. TreeWalker walks this tree,
+  finds widgets that implement `Raxol.MCP.ToolProvider`, calls `mcp_tools/1`
+  to get tool specs, namespaces them by widget ID, and wraps callbacks that
+  dispatch TEA messages through the session's Dispatcher.
+
+  ## Usage
+
+      context = %{dispatcher_pid: dispatcher_pid}
+      tools = TreeWalker.derive_tools(view_tree, context)
+      Raxol.MCP.Registry.register_tools(tools)
+
+  Tool names are namespaced as `"widget_id.action"`, e.g., `"search_input.type_into"`.
+  Nodes without an `:id` key are skipped (layout containers like `:column`, `:row`).
+  """
+
+  alias Raxol.MCP.ToolProvider
+
+  # Widget type atoms -> module names. These are in main raxol, so we use
+  # @compile to suppress undefined warnings for cross-package references.
+  @compile {:no_warn_undefined,
+            [
+              Raxol.UI.Components.Input.Button,
+              Raxol.UI.Components.Input.TextInput,
+              Raxol.UI.Components.Input.SelectList,
+              Raxol.UI.Components.Input.Checkbox,
+              Raxol.UI.Components.Input.Tabs,
+              Raxol.UI.Components.Input.TextArea,
+              Raxol.UI.Components.Input.Menu,
+              Raxol.UI.Components.Input.PasswordField,
+              Raxol.UI.Components.Display.Tree,
+              Raxol.UI.Components.Display.Viewport,
+              Raxol.UI.Components.Modal,
+              Raxol.UI.Components.Table
+            ]}
+
+  @default_type_map %{
+    button: Raxol.UI.Components.Input.Button,
+    text_input: Raxol.UI.Components.Input.TextInput,
+    select_list: Raxol.UI.Components.Input.SelectList,
+    checkbox: Raxol.UI.Components.Input.Checkbox,
+    tabs: Raxol.UI.Components.Input.Tabs,
+    text_area: Raxol.UI.Components.Input.TextArea,
+    menu: Raxol.UI.Components.Input.Menu,
+    password_field: Raxol.UI.Components.Input.PasswordField,
+    tree: Raxol.UI.Components.Display.Tree,
+    viewport: Raxol.UI.Components.Display.Viewport,
+    modal: Raxol.UI.Components.Modal,
+    table: Raxol.UI.Components.Table
+  }
+
+  @type context :: %{
+          dispatcher_pid: pid() | nil,
+          type_map: %{atom() => module()}
+        }
+
+  @doc """
+  Derives MCP tool definitions from a view element tree.
+
+  Returns a list of `Registry.tool_def()` maps with namespaced names and
+  wrapped callbacks that dispatch TEA messages.
+
+  ## Options in context
+
+    * `:dispatcher_pid` - pid of the session's Dispatcher (for message dispatch)
+    * `:type_map` - optional override for widget type -> module mapping
+  """
+  @spec derive_tools(map() | [map()], context()) :: [Raxol.MCP.Registry.tool_def()]
+  def derive_tools(tree, context) do
+    type_map = Map.get(context, :type_map, @default_type_map)
+    do_walk(tree, context, type_map, [])
+  end
+
+  defp do_walk(nodes, context, type_map, acc) when is_list(nodes) do
+    Enum.reduce(nodes, acc, &do_walk(&1, context, type_map, &2))
+  end
+
+  defp do_walk(%{type: type, id: id} = node, context, type_map, acc)
+       when is_atom(type) and is_binary(id) and id != "" do
+    widget_tools = derive_widget_tools(node, type, id, context, type_map)
+    children_acc = do_walk(node[:children] || [], context, type_map, acc)
+    widget_tools ++ children_acc
+  end
+
+  defp do_walk(%{children: children}, context, type_map, acc) when is_list(children) do
+    do_walk(children, context, type_map, acc)
+  end
+
+  defp do_walk(_node, _context, _type_map, acc), do: acc
+
+  defp derive_widget_tools(node, type, id, context, type_map) do
+    case Map.get(type_map, type) do
+      nil ->
+        []
+
+      module ->
+        if ToolProvider.tool_provider?(module) do
+          specs = module.mcp_tools(node)
+          Enum.map(specs, &build_tool_def(&1, id, module, node, context))
+        else
+          []
+        end
+    end
+  end
+
+  defp build_tool_def(spec, widget_id, module, node, context) do
+    action_name = spec.name
+
+    %{
+      name: "#{widget_id}.#{action_name}",
+      description: spec.description,
+      inputSchema: spec.inputSchema,
+      callback: fn args ->
+        tool_context = %{
+          widget_id: widget_id,
+          widget_state: node,
+          dispatcher_pid: context[:dispatcher_pid]
+        }
+
+        case module.handle_tool_call(action_name, args, tool_context) do
+          {:ok, result, messages} ->
+            dispatch_messages(messages, context[:dispatcher_pid])
+            {:ok, format_result(result)}
+
+          {:ok, result} ->
+            {:ok, format_result(result)}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+      end
+    }
+  end
+
+  defp dispatch_messages(messages, dispatcher_pid) when is_pid(dispatcher_pid) do
+    for msg <- messages, msg != nil do
+      GenServer.cast(dispatcher_pid, {:dispatch, msg})
+    end
+  end
+
+  defp dispatch_messages(_messages, _pid), do: :ok
+
+  defp format_result(result) when is_binary(result) do
+    [%{type: "text", text: result}]
+  end
+
+  defp format_result(result) do
+    [%{type: "text", text: inspect(result)}]
+  end
+end

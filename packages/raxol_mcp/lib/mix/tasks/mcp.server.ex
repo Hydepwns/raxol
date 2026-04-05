@@ -33,7 +33,10 @@ defmodule Mix.Tasks.Mcp.Server do
     # Configure logger to stderr so it doesn't corrupt the JSON-RPC stream
     Logger.configure_backend(:console, device: :standard_error)
 
-    # Start the full application (includes MCP.Supervisor, Headless, etc.)
+    # Skip the Phoenix endpoint -- MCP server uses stdio, not HTTP
+    Application.put_env(:raxol, :skip_endpoint, true)
+
+    # Start the application (includes MCP.Supervisor, Headless, etc.)
     Mix.Task.run("app.start")
 
     # Start stdio transport connected to the MCP server

@@ -21,6 +21,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
   }
 
   @behaviour Raxol.UI.Components.Base.Component
+  @behaviour Raxol.MCP.ToolProvider
 
   @key_mapping %{
     "Down" => :navigation_down,
@@ -666,4 +667,64 @@ defmodule Raxol.UI.Components.Input.SelectList do
   defp handle_backspace_if_applicable(state) do
     {state, nil}
   end
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(state) do
+    id = state[:id] || "select_list"
+
+    [
+      %{
+        name: "select",
+        description: "Select an option in '#{id}' by index",
+        inputSchema: %{
+          type: "object",
+          properties: %{
+            index: %{type: "integer", description: "Option index (0-based)"}
+          },
+          required: ["index"]
+        }
+      },
+      %{
+        name: "get_selected",
+        description: "Get the currently selected option in '#{id}'",
+        inputSchema: %{type: "object", properties: %{}}
+      },
+      %{
+        name: "get_options",
+        description: "Get all available options in '#{id}'",
+        inputSchema: %{type: "object", properties: %{}}
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("select", %{"index" => index}, context) do
+    {:ok, "Selected option #{index}",
+     [{:select_option, context.widget_id, index}]}
+  end
+
+  def handle_tool_call("get_selected", _args, context) do
+    state = context.widget_state
+    selected = state[:selected_index] || state[:focused_index]
+    options = state[:options] || state[:filtered_options] || []
+
+    case Enum.at(options, selected || 0) do
+      nil ->
+        {:ok, nil}
+
+      option ->
+        {:ok, %{index: selected, label: option[:label] || inspect(option)}}
+    end
+  end
+
+  def handle_tool_call("get_options", _args, context) do
+    options = context.widget_state[:options] || []
+    labels = Enum.map(options, fn opt -> opt[:label] || inspect(opt) end)
+    {:ok, labels}
+  end
+
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
 end

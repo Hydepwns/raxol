@@ -4,6 +4,7 @@ defmodule Raxol.UI.Components.Input.Button do
   """
 
   use Raxol.UI.Components.Base.Component
+  @behaviour Raxol.MCP.ToolProvider
   @default_max_width Raxol.Core.Defaults.terminal_width()
 
   defstruct [
@@ -251,6 +252,46 @@ defmodule Raxol.UI.Components.Input.Button do
   def handle_event(%Raxol.Core.Events.Event{} = _event, _button, _context) do
     :passthrough
   end
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(%{attrs: %{disabled: true}}), do: []
+
+  def mcp_tools(state) do
+    label = get_in(state, [:attrs, :label]) || "Button"
+
+    [
+      %{
+        name: "click",
+        description: "Click the '#{label}' button",
+        inputSchema: %{type: "object", properties: %{}}
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("click", _args, context) do
+    widget = context.widget_state
+    label = get_in(widget, [:attrs, :label]) || "Button"
+
+    case get_in(widget, [:attrs, :disabled]) do
+      true ->
+        {:error, "Button '#{label}' is disabled"}
+
+      _ ->
+        {:ok, "Clicked '#{label}'",
+         [
+           %Raxol.Core.Events.Event{
+             type: :click,
+             data: %{widget_id: context.widget_id}
+           }
+         ]}
+    end
+  end
+
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
 
   # Add validation for invalid roles
   def errors(button) do

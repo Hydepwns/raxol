@@ -41,7 +41,7 @@ defmodule Raxol.Headless do
 
   defmodule Session do
     @moduledoc false
-    defstruct [:id, :module, :lifecycle_pid, :width, :height]
+    defstruct [:id, :module, :lifecycle_pid, :synchronizer_pid, :width, :height]
   end
 
   # --- Public API ---
@@ -204,6 +204,7 @@ defmodule Raxol.Headless do
   def handle_call({:stop_session, id}, _from, state) do
     case get_session(state, id) do
       {:ok, session} ->
+        stop_synchronizer(session.synchronizer_pid)
         stop_lifecycle(session.lifecycle_pid)
         new_state = %{state | sessions: Map.delete(state.sessions, id)}
         {:reply, :ok, new_state}
@@ -250,10 +251,13 @@ defmodule Raxol.Headless do
   defp create_session(module, id, width, height, state) do
     case start_headless_app(module, width, height) do
       {:ok, lifecycle_pid} ->
+        synchronizer_pid = start_tool_synchronizer(lifecycle_pid, id)
+
         session = %Session{
           id: id,
           module: module,
           lifecycle_pid: lifecycle_pid,
+          synchronizer_pid: synchronizer_pid,
           width: width,
           height: height
         }
@@ -408,9 +412,43 @@ defmodule Raxol.Headless do
     end
   end
 
+  defp stop_synchronizer(nil), do: :ok
+
+  defp stop_synchronizer(pid) do
+    GenServer.stop(pid, :normal, 5_000)
+  catch
+    :exit, _ -> :ok
+  end
+
   defp stop_lifecycle(pid) do
     GenServer.stop(pid, :normal, 5_000)
   catch
     :exit, _ -> :ok
+  end
+
+  @compile {:no_warn_undefined, Raxol.MCP.ToolSynchronizer}
+
+  defp start_tool_synchronizer(lifecycle_pid, session_id) do
+    if Code.ensure_loaded?(Raxol.MCP.ToolSynchronizer) do
+      dispatcher_pid = get_dispatcher_pid(lifecycle_pid)
+
+      if dispatcher_pid do
+        case Raxol.MCP.ToolSynchronizer.start_link(
+               registry: Raxol.MCP.Registry,
+               dispatcher_pid: dispatcher_pid,
+               session_id: session_id
+             ) do
+          {:ok, pid} -> pid
+          _error -> nil
+        end
+      end
+    end
+  end
+
+  defp get_dispatcher_pid(lifecycle_pid) do
+    lifecycle_state = GenServer.call(lifecycle_pid, :get_full_state)
+    lifecycle_state.dispatcher_pid
+  catch
+    :exit, _ -> nil
   end
 end

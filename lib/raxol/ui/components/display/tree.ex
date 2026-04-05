@@ -20,6 +20,7 @@ defmodule Raxol.UI.Components.Display.Tree do
   alias Raxol.UI.StyleHelper
 
   use Raxol.UI.Components.Base.Component
+  @behaviour Raxol.MCP.ToolProvider
 
   @type tree_node :: %{
           id: atom(),
@@ -328,4 +329,64 @@ defmodule Raxol.UI.Components.Display.Tree do
   defp node_icon(%{id: id}, expanded) do
     if MapSet.member?(expanded, id), do: "▼", else: "▶"
   end
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(_state) do
+    [
+      %{
+        name: "expand",
+        description: "Expand a tree node by ID",
+        inputSchema: %{
+          type: "object",
+          properties: %{
+            node_id: %{type: "string", description: "Node ID to expand"}
+          },
+          required: ["node_id"]
+        }
+      },
+      %{
+        name: "collapse",
+        description: "Collapse a tree node by ID",
+        inputSchema: %{
+          type: "object",
+          properties: %{
+            node_id: %{type: "string", description: "Node ID to collapse"}
+          },
+          required: ["node_id"]
+        }
+      },
+      %{
+        name: "select_node",
+        description: "Select a tree node by ID",
+        inputSchema: %{
+          type: "object",
+          properties: %{
+            node_id: %{type: "string", description: "Node ID to select"}
+          },
+          required: ["node_id"]
+        }
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("expand", %{"node_id" => node_id}, context) do
+    {:ok, "Expanded node '#{node_id}'",
+     [{:tree_expand, context.widget_id, node_id}]}
+  end
+
+  def handle_tool_call("collapse", %{"node_id" => node_id}, context) do
+    {:ok, "Collapsed node '#{node_id}'",
+     [{:tree_collapse, context.widget_id, node_id}]}
+  end
+
+  def handle_tool_call("select_node", %{"node_id" => node_id}, context) do
+    {:ok, "Selected node '#{node_id}'",
+     [{:tree_select, context.widget_id, node_id}]}
+  end
+
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
 end

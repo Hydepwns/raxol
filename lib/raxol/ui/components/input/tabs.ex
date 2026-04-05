@@ -14,6 +14,7 @@ defmodule Raxol.UI.Components.Input.Tabs do
   alias Raxol.UI.StyleHelper
 
   use Raxol.UI.Components.Base.Component
+  @behaviour Raxol.MCP.ToolProvider
 
   @type tab :: %{id: atom() | String.t(), label: String.t()}
 
@@ -171,4 +172,52 @@ defmodule Raxol.UI.Components.Input.Tabs do
       end
     end)
   end
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(state) do
+    tabs = state[:tabs] || []
+    tab_names = Enum.map(tabs, & &1[:label]) |> Enum.join(", ")
+
+    [
+      %{
+        name: "select_tab",
+        description: "Select a tab (available: #{tab_names})",
+        inputSchema: %{
+          type: "object",
+          properties: %{
+            index: %{type: "integer", description: "Tab index (0-based)"}
+          },
+          required: ["index"]
+        }
+      },
+      %{
+        name: "get_tabs",
+        description: "Get tab labels and active index",
+        inputSchema: %{type: "object", properties: %{}}
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("select_tab", %{"index" => index}, context) do
+    tabs = context.widget_state[:tabs] || []
+
+    if index >= 0 and index < length(tabs) do
+      {:ok, "Selected tab #{index}", [{:tab_change, context.widget_id, index}]}
+    else
+      {:error, "Tab index #{index} out of range (0..#{length(tabs) - 1})"}
+    end
+  end
+
+  def handle_tool_call("get_tabs", _args, context) do
+    tabs = context.widget_state[:tabs] || []
+    active = context.widget_state[:active_index] || 0
+    labels = Enum.map(tabs, & &1[:label])
+    {:ok, %{tabs: labels, active_index: active}}
+  end
+
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
 end

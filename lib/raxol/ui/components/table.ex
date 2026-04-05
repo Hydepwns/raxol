@@ -108,6 +108,7 @@ defmodule Raxol.UI.Components.Table do
         }
 
   @behaviour Raxol.UI.Components.Base.Component
+  @behaviour Raxol.MCP.ToolProvider
 
   @doc """
   Initializes the table component with the given props.
@@ -745,4 +746,65 @@ defmodule Raxol.UI.Components.Table do
         content_str <> String.duplicate(" ", padding_needed)
     end
   end
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(_state) do
+    [
+      %{
+        name: "select_row",
+        description: "Select a table row by index",
+        inputSchema: %{
+          type: "object",
+          properties: %{
+            index: %{type: "integer", description: "Row index (0-based)"}
+          },
+          required: ["index"]
+        }
+      },
+      %{
+        name: "get_rows",
+        description: "Get the table's current row data",
+        inputSchema: %{type: "object", properties: %{}}
+      },
+      %{
+        name: "sort",
+        description: "Sort the table by a column",
+        inputSchema: %{
+          type: "object",
+          properties: %{
+            column: %{type: "string", description: "Column key to sort by"},
+            direction: %{
+              type: "string",
+              enum: ["asc", "desc"],
+              description: "Sort direction"
+            }
+          },
+          required: ["column"]
+        }
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("select_row", %{"index" => index}, context) do
+    {:ok, "Selected row #{index}", [{:select_row, context.widget_id, index}]}
+  end
+
+  def handle_tool_call("get_rows", _args, context) do
+    data = context.widget_state[:data] || []
+    {:ok, data}
+  end
+
+  def handle_tool_call("sort", args, context) do
+    column = args["column"]
+    direction = args["direction"] || "asc"
+
+    {:ok, "Sorted by #{column} #{direction}",
+     [{:sort, context.widget_id, column, direction}]}
+  end
+
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
 end

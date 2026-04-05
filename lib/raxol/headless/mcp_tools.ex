@@ -10,7 +10,7 @@ defmodule Raxol.Headless.McpTools do
   @doc """
   Returns the list of Raxol MCP tool definitions.
   """
-  @spec tools() :: [map()]
+  @spec tools() :: [Raxol.MCP.Registry.tool_def()]
   def tools do
     [
       %{
@@ -192,7 +192,13 @@ defmodule Raxol.Headless.McpTools do
   The Tidewave ETS table is `:protected`, so the insert must run in the
   owning process. We spawn a task linked to that process to do the write.
   """
-  @spec inject_into_tidewave() :: :ok | {:error, term()}
+  @spec inject_into_tidewave() ::
+          :ok
+          | {:error,
+             :inject_timeout
+             | :tidewave_not_started
+             | :tidewave_owner_not_alive
+             | {:sys_replace_failed, term()}}
   def inject_into_tidewave do
     if :ets.whereis(:tidewave_tools) != :undefined do
       owner = :ets.info(:tidewave_tools, :owner)

@@ -11,6 +11,7 @@ defmodule Raxol.UI.Components.Display.Viewport do
   """
 
   @behaviour Raxol.UI.Components.Base.Component
+  @behaviour Raxol.MCP.ToolProvider
 
   alias Raxol.View.Components
 
@@ -263,4 +264,43 @@ defmodule Raxol.UI.Components.Display.Viewport do
       :error -> state
     end
   end
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(_state) do
+    [
+      %{
+        name: "scroll_to",
+        description: "Scroll to a specific row",
+        inputSchema: %{
+          type: "object",
+          properties: %{
+            row: %{type: "integer", description: "Row to scroll to (0-based)"}
+          },
+          required: ["row"]
+        }
+      },
+      %{
+        name: "get_visible_range",
+        description: "Get the currently visible row range",
+        inputSchema: %{type: "object", properties: %{}}
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("scroll_to", %{"row" => row}, context) do
+    {:ok, "Scrolled to row #{row}", [{:scroll_to, context.widget_id, row}]}
+  end
+
+  def handle_tool_call("get_visible_range", _args, context) do
+    state = context.widget_state
+    scroll_top = state[:scroll_top] || 0
+    visible_height = state[:visible_height] || 10
+    {:ok, %{top: scroll_top, bottom: scroll_top + visible_height - 1}}
+  end
+
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
 end

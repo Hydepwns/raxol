@@ -11,6 +11,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   alias Raxol.UI.StyleHelper
 
   use Raxol.UI.Components.Base.Component
+  @behaviour Raxol.MCP.ToolProvider
 
   @type t :: %{
           id: String.t(),
@@ -160,4 +161,42 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   defp get_checkbox_colors(_state, base_style) do
     {Map.get(base_style, :fg, :default), Map.get(base_style, :bg, :default)}
   end
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(%{disabled: true}), do: []
+
+  def mcp_tools(state) do
+    label = state[:label] || "Checkbox"
+
+    [
+      %{
+        name: "toggle",
+        description: "Toggle checkbox '#{label}'",
+        inputSchema: %{type: "object", properties: %{}}
+      },
+      %{
+        name: "get_checked",
+        description: "Get whether '#{label}' is checked",
+        inputSchema: %{type: "object", properties: %{}}
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("toggle", _args, context) do
+    checked = context.widget_state[:checked] || false
+    new_checked = not checked
+
+    {:ok, "Toggled to #{new_checked}",
+     [{:checkbox_toggle, context.widget_id, new_checked}]}
+  end
+
+  def handle_tool_call("get_checked", _args, context) do
+    {:ok, context.widget_state[:checked] || false}
+  end
+
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
 end

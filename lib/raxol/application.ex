@@ -238,7 +238,8 @@ defmodule Raxol.Application do
   end
 
   defp maybe_add_endpoint do
-    if mix_env() == :dev and Code.ensure_loaded?(Raxol.Endpoint) do
+    if mix_env() == :dev and Code.ensure_loaded?(Raxol.Endpoint) and
+         not Application.get_env(:raxol, :skip_endpoint, false) do
       {Raxol.Endpoint, []}
     end
   end
@@ -618,9 +619,10 @@ defmodule Raxol.Application do
   end
 
   defp maybe_inject_mcp_tools do
-    if mix_env() == :dev and Code.ensure_loaded?(Raxol.Headless.McpTools) do
-      Task.start(&retry_tidewave_injection/0)
-    end
+    _ =
+      if mix_env() == :dev and Code.ensure_loaded?(Raxol.Headless.McpTools) do
+        Task.start(&retry_tidewave_injection/0)
+      end
 
     :ok
   end

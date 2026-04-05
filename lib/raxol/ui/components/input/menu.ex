@@ -27,6 +27,7 @@ defmodule Raxol.UI.Components.Input.Menu do
   alias Raxol.UI.StyleHelper
 
   use Raxol.UI.Components.Base.Component
+  @behaviour Raxol.MCP.ToolProvider
 
   @type menu_item :: %{
           id: atom(),
@@ -384,6 +385,52 @@ defmodule Raxol.UI.Components.Input.Menu do
         content: "#{indent}#{item.label}#{suffix}",
         style: line_style
       )
+    end)
+  end
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(_state) do
+    [
+      %{
+        name: "select",
+        description: "Select a menu item by ID",
+        inputSchema: %{
+          type: "object",
+          properties: %{item_id: %{type: "string", description: "Menu item ID"}},
+          required: ["item_id"]
+        }
+      },
+      %{
+        name: "get_items",
+        description: "Get available menu items",
+        inputSchema: %{type: "object", properties: %{}}
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("select", %{"item_id" => item_id}, context) do
+    {:ok, "Selected menu item '#{item_id}'",
+     [{:menu_select, context.widget_id, item_id}]}
+  end
+
+  def handle_tool_call("get_items", _args, context) do
+    items = context.widget_state[:items] || []
+    labels = collect_item_labels(items, 0)
+    {:ok, labels}
+  end
+
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
+
+  defp collect_item_labels(items, depth) do
+    Enum.flat_map(items, fn item ->
+      prefix = String.duplicate("  ", depth)
+      entry = %{id: item[:id], label: "#{prefix}#{item[:label]}"}
+      children = collect_item_labels(item[:children] || [], depth + 1)
+      [entry | children]
     end)
   end
 end

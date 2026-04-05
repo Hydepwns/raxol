@@ -10,6 +10,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
   alias Raxol.UI.Components.Input.TextInput.KeyHandler
 
   @behaviour Component
+  @behaviour Raxol.MCP.ToolProvider
 
   @type props :: %{
           optional(:id) => String.t(),
@@ -176,6 +177,55 @@ defmodule Raxol.UI.Components.Input.TextInput do
 
   defp get_display_text(true, placeholder, _masked_text), do: placeholder
   defp get_display_text(false, _placeholder, masked_text), do: masked_text
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(state) do
+    id = state[:id] || "text_input"
+
+    [
+      %{
+        name: "type_into",
+        description: "Type text into '#{id}'",
+        inputSchema: %{
+          type: "object",
+          properties: %{text: %{type: "string", description: "Text to type"}},
+          required: ["text"]
+        }
+      },
+      %{
+        name: "clear",
+        description: "Clear the text input '#{id}'",
+        inputSchema: %{type: "object", properties: %{}}
+      },
+      %{
+        name: "get_value",
+        description: "Get the current value of '#{id}'",
+        inputSchema: %{type: "object", properties: %{}}
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("type_into", %{"text" => text}, context) do
+    {:ok, "Typed '#{text}'", [{:text_input_change, context.widget_id, text}]}
+  end
+
+  def handle_tool_call("clear", _args, context) do
+    {:ok, "Cleared", [{:text_input_change, context.widget_id, ""}]}
+  end
+
+  def handle_tool_call("get_value", _args, context) do
+    value =
+      context.widget_state[:value] ||
+        get_in(context.widget_state, [:attrs, :value]) || ""
+
+    {:ok, value}
+  end
+
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
 end
 
 defmodule Raxol.UI.Components.Input.TextInput.KeyHandler do
