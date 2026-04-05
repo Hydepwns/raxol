@@ -188,7 +188,9 @@ lib/raxol/
 
 **Virtual File System**: `Raxol.Commands.FileSystem` is a pure functional in-memory VFS. Flat map keyed by absolute path for O(1) lookups. CRUD: `new/0`, `mkdir/2`, `create_file/3`, `rm/2`, `exists?/2`, `stat/2`. Navigation: `ls/2`, `cd/2`, `pwd/1`, `tree/3`. Read: `cat/2`. REPL helpers in `Raxol.REPL.VfsHelpers` provide shell-like commands (`ls`, `cd`, `cat`, `mkdir`, `touch`, `rm`, `tree`, `stat`). Agent actions in `Raxol.Agent.Actions.Vfs` expose 7 LLM-callable tools via the Action behaviour. See `docs/features/FILESYSTEM.md` for full docs.
 
-**Phoenix as library only**: No active web server in core, Ecto.Repo explicitly disabled at runtime.
+**Headless Sessions**: `Raxol.Headless` is a GenServer managing headless TEA app instances in `:agent` environment. `start/2` accepts a module or file path (AST-parsed to extract only `defmodule` blocks, skipping boot code). `screenshot/1` calls `:render_frame_sync` on the engine then reads the buffer via `:get_buffer`. `send_key/3` builds an Event via `Raxol.Headless.EventBuilder` and casts to the dispatcher. `Raxol.Headless.McpTools` defines 6 MCP tools injected into Tidewave's ETS table at startup via `:sys.replace_state` on the table owner process. Dev endpoint at `localhost:4000/tidewave/mcp` (`lib/raxol/endpoint.ex`, config in `config/dev.exs`).
+
+**Phoenix as library only**: No active web server in core (dev-only endpoint for Tidewave MCP), Ecto.Repo explicitly disabled at runtime.
 
 ### Buffer/Renderer API
 
@@ -247,6 +249,7 @@ These namespaces have been consolidated -- avoid creating new top-level alternat
 - `Raxol.Swarm.Strategy.*` - Custom libcluster strategies (Tailscale)
 - `Raxol.UI.TextMeasure` - Single facade for display width measurement (not `String.length`)
 - `Raxol.UI.Layout.ScrollContent` - Cursor-based lazy scroll behaviour + adapters
+- `Raxol.Headless.*` - Headless session manager, EventBuilder, TextCapture, McpTools
 
 ## Environment Variables
 

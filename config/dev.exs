@@ -30,6 +30,12 @@ config :raxol, Raxol.Repo,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
+# Dev endpoint for Tidewave MCP (localhost:4000/tidewave/mcp)
+config :raxol, Raxol.Endpoint,
+  http: [port: 4000],
+  server: true,
+  secret_key_base: String.duplicate("dev", 22)
+
 # Enable LiveView debug features for Tidewave
 config :phoenix_live_view,
   debug_heex_annotations: true,

@@ -168,6 +168,8 @@ Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
 
 ### Developer tools
 
+**Headless sessions.** Start any TEA app without a terminal for programmatic testing and MCP integration. `Raxol.Headless.start("examples/demo.exs")`, take text screenshots, send keystrokes, inspect the model. Six named MCP tools (`raxol_start`, `raxol_screenshot`, `raxol_send_key`, `raxol_get_model`, `raxol_stop`, `raxol_list`) auto-inject into Tidewave in dev mode.
+
 **Time-travel debugging.** Snapshots every `update/2` cycle: step back, forward, jump, restore. Zero cost when disabled.
 
 **Session recording.** Captures to asciinema v2 `.cast` files with pause, seek, speed control, and auto-save on crash.

@@ -56,6 +56,9 @@ defmodule Raxol.Application do
     # Start supervision tree with error handling
     result = start_supervisor(children, opts)
 
+    # Inject Raxol headless tools into Tidewave MCP (dev only, after Tidewave starts)
+    maybe_inject_mcp_tools()
+
     # Record startup metrics
     record_startup_metrics(start_time, mode, result)
 
@@ -164,6 +167,8 @@ defmodule Raxol.Application do
       {Raxol.Terminal.Supervisor, []},
       maybe_add_agent_supervisor(),
       {Registry, keys: :duplicate, name: :raxol_event_subscriptions},
+      # Headless session manager for programmatic app interaction
+      {Raxol.Headless, []},
 
       # Configuration and Debug services
       {Raxol.Config, [name: Raxol.Config]},
@@ -228,7 +233,9 @@ defmodule Raxol.Application do
   end
 
   defp maybe_add_endpoint do
-    []
+    if mix_env() == :dev and Code.ensure_loaded?(Raxol.Endpoint) do
+      {Raxol.Endpoint, []}
+    end
   end
 
   defp maybe_add_demo_services do
@@ -588,6 +595,21 @@ defmodule Raxol.Application do
     else
       :ok
     end
+  end
+
+  defp maybe_inject_mcp_tools do
+    _result =
+      if mix_env() == :dev and Code.ensure_loaded?(Raxol.Headless.McpTools) do
+        # Tidewave ETS table may take a moment to initialize, retry briefly
+        Task.start(fn ->
+          Enum.find(1..10, fn _ ->
+            Process.sleep(500)
+            Raxol.Headless.McpTools.inject_into_tidewave() == :ok
+          end)
+        end)
+      end
+
+    :ok
   end
 
   defp mix_env, do: if(Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod)

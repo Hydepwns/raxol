@@ -150,6 +150,31 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     {:reply, state, state}
   end
 
+  @impl true
+  def handle_call(:render_frame_sync, _from, state) do
+    case GenServer.call(state.dispatcher_pid, :get_render_context) do
+      {:ok, %{model: current_model, theme_id: current_theme_id}} ->
+        theme =
+          Theme.get(current_theme_id) || Theme.get(Theme.default_theme_id())
+
+        case do_render_frame(current_model, theme, state) do
+          {:ok, new_state} ->
+            {:reply, :ok, new_state}
+
+          {:error, _reason, current_state} ->
+            {:reply, {:error, :render_failed}, current_state}
+        end
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
+  def handle_call(:get_buffer, _from, state) do
+    {:reply, {:ok, state.buffer}, state}
+  end
+
   # --- Private Helpers ---
 
   # Functional rendering pipeline replacing try/catch
@@ -224,7 +249,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
       {:ok, %{new_state | prepared_tree: prepared_tree}}
     else
-      {:agent, :skip_cells} -> {:ok, state}
       {:error, reason} -> log_render_error(reason, state)
     end
   end
@@ -288,8 +312,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
-  # Agents only need the view tree in Dispatcher; skip the cell pipeline.
-  defp agent_short_circuit(%{environment: :agent}), do: {:agent, :skip_cells}
+  # Agent environment renders cells to buffer (no IO) so headless sessions
+  # can capture screenshots. Previously this short-circuited and skipped cells.
   defp agent_short_circuit(_state), do: :continue
 
   # Safe view retrieval using functional error handling
