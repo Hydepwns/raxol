@@ -1,3 +1,22 @@
+## [2.4.0] - 2026-04-05
+
+### Added
+
+- **Headless session manager** (`Raxol.Headless`) -- GenServer managing non-interactive TEA app instances in `:agent` environment. Start from module or .exs file, take text screenshots, send keystrokes, read model state. Used by MCP tools and future test harness.
+- **MCP tools for Claude Code** -- 6 tools (`raxol_start`, `raxol_screenshot`, `raxol_send_key`, `raxol_get_model`, `raxol_stop`, `raxol_list`) injected into Tidewave at dev startup. Tidewave MCP proxy script for stdio transport.
+- **ADR-0012: MCP as Rendering Target** -- Architecture decision formalizing MCP as a first-class rendering target. Automatic tool derivation from widget tree via ToolProvider behaviour, focus lens with mouse tracking, context tree as MCP resources, agent-MCP symmetry, multi-surface cockpit vision (terminal, MCP, Telegram, speech, watch). Category theory foundations for design and property-based test invariants.
+- **SPECS.md Phases 8-11** -- raxol_mcp package, ToolProvider + tool derivation, context tree + resources, MCP test harness.
+- **Playground resize handling** -- Fixed resize event propagation in playground demos.
+
+### Changed
+
+- Updated `docs/core/ARCHITECTURE.md` with MCP rendering target section
+- Updated `CLAUDE.md` with raxol_mcp package, dependency graph, and consolidated namespace
+- Updated `IDEAS.md` with MCP architecture, functor family, multi-surface cockpit, category theory
+- Updated `docs/adr/README.md` with ADR-0012 and new "AI & MCP" category
+- Dispatcher and Engine refactored under 800 LOC each
+- Credo strict: 0 issues (was 373, resolved via function extraction and pattern matching)
+
 ## [2.3.0] - 2026-03-27
 
 182 commits, 1,030 files changed, net -39K LOC (89,793 insertions, 129,283 deletions).

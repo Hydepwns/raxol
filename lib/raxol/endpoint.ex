@@ -20,6 +20,7 @@ defmodule Raxol.Endpoint do
     json_decoder: Jason
 
   plug :health_check
+  plug :not_found
 
   defp health_check(%Plug.Conn{path_info: ["health"]} = conn, _opts) do
     conn
@@ -29,4 +30,13 @@ defmodule Raxol.Endpoint do
   end
 
   defp health_check(conn, _opts), do: conn
+
+  defp not_found(%Plug.Conn{state: :sent} = conn, _opts), do: conn
+
+  defp not_found(conn, _opts) do
+    conn
+    |> Plug.Conn.put_resp_content_type("application/json")
+    |> Plug.Conn.send_resp(404, Jason.encode!(%{error: "not_found"}))
+    |> Plug.Conn.halt()
+  end
 end

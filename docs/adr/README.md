@@ -15,6 +15,7 @@ ADRs for the Raxol project. Each one captures a single architectural decision: w
 | [0009](0009-high-performance-buffer-management.md) | High-Performance Buffer Management | Implemented | 2025-04-20 |
 | [0010](0010-functional-error-handling-architecture.md) | Functional Error Handling Architecture | Implemented | 2025-02-01 |
 | [0011](0011-terminal-module-consolidation.md) | Terminal Module Consolidation | Implemented | 2025-02-27 |
+| [0012](0012-mcp-as-rendering-target.md) | MCP as Rendering Target | Proposed | 2026-04-05 |
 
 ## Template
 
@@ -84,6 +85,9 @@ They preserve context for why decisions were made, help new contributors underst
 ### Code Quality
 - [0010: Functional Error Handling Architecture](0010-functional-error-handling-architecture.md)
 
+### AI & MCP
+- [0012: MCP as Rendering Target](0012-mcp-as-rendering-target.md)
+
 ## Coverage
 
-9 ADRs covering core framework, performance, web integration, extensibility, state management, and code quality.
+10 ADRs covering core framework, performance, web integration, extensibility, state management, code quality, and AI/MCP architecture.

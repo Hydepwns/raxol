@@ -69,6 +69,10 @@ mix raxol.gen.specs lib/path  # Generate type specs for private functions
 mix docs                      # Generate documentation
 ```
 
+### Headless MCP Tools
+
+When `mix phx.server` is running, Tidewave serves MCP at `http://localhost:4000/tidewave/mcp` (configured in `.mcp.json`). Six Raxol-specific tools are auto-injected at startup: `raxol_start`, `raxol_screenshot`, `raxol_send_key`, `raxol_get_model`, `raxol_stop`, `raxol_list`. For Claude Code to see these as native MCP tools, the server must be running **before** starting the conversation.
+
 ### Development Scripts
 
 ```bash
@@ -104,6 +108,7 @@ packages/
 ├── raxol_terminal/  # Terminal emulation (VT100/ANSI), termbox2 NIF, screen buffer
 ├── raxol_sensor/    # Sensor fusion (zero Raxol deps)
 ├── raxol_agent/     # AI agent framework (depends on main raxol)
+├── raxol_mcp/       # (planned) MCP protocol: server, client, registry, tool derivation
 ├── raxol_liveview/  # (scaffold) LiveView bridge -- not yet wired
 └── raxol_plugin/    # (scaffold) Plugin SDK -- not yet wired
 ```
@@ -111,9 +116,10 @@ packages/
 **Dependency graph** (arrows = "depends on"):
 
 ```
-raxol (main) --> raxol_core, raxol_terminal, raxol_sensor
+raxol (main) --> raxol_core, raxol_terminal, raxol_sensor, raxol_mcp
 raxol_terminal --> raxol_core
-raxol_agent --> raxol (main does NOT depend on raxol_agent)
+raxol_mcp --> raxol_core
+raxol_agent --> raxol, raxol_mcp (main does NOT depend on raxol_agent)
 raxol_core --> telemetry (only external dep)
 raxol_sensor --> (none)
 ```
@@ -190,6 +196,8 @@ lib/raxol/
 
 **Headless Sessions**: `Raxol.Headless` is a GenServer managing headless TEA app instances in `:agent` environment. `start/2` accepts a module or file path (AST-parsed to extract only `defmodule` blocks, skipping boot code). `screenshot/1` calls `:render_frame_sync` on the engine then reads the buffer via `:get_buffer`. `send_key/3` builds an Event via `Raxol.Headless.EventBuilder` and casts to the dispatcher. `Raxol.Headless.McpTools` defines 6 MCP tools injected into Tidewave's ETS table at startup via `:sys.replace_state` on the table owner process. Dev endpoint at `localhost:4000/tidewave/mcp` (`lib/raxol/endpoint.ex`, config in `config/dev.exs`).
 
+**MCP as Rendering Target** (see ADR-0012): MCP is a first-class rendering target, not a bolted-on feature. The framework derives MCP tools automatically from the widget tree via `Raxol.MCP.ToolProvider` behaviour on each widget type. A focus lens (attention-aware, with mouse tracking) filters to ~10 relevant tools per interaction. Model state exposed as MCP resources via app-declared projections. Agents both consume and serve MCP (symmetry). Multi-surface cockpit: same model projected to terminal, MCP, Telegram, speech, and watch via functors from the TEA model category. Package: `packages/raxol_mcp/` (depends on raxol_core). Context tree assembles state from model, widgets, agents, swarm, and notifications as MCP resources, streamed as diffs. Category theory used for design and property-based test invariants, not in code.
+
 **Phoenix as library only**: No active web server in core (dev-only endpoint for Tidewave MCP), Ecto.Repo explicitly disabled at runtime.
 
 ### Buffer/Renderer API
@@ -211,6 +219,7 @@ IO.write(Renderer.apply_diff(diff))  # NOT Enum.each(diff, &IO.write/1)
 Key rules:
 - Use `Raxol.UI.TextMeasure` for display width, never `String.length` -- CJK chars are double-width
 - `ScrollContent` behaviour enables lazy content for Viewport (`ListScrollContent`, `StreamScrollContent`)
+- **Never embed raw ANSI codes** (`\e[...m`) in strings passed to `text()` or the View DSL. ANSI codes are only applied at the final Terminal.Renderer stage. Components must use `text("content", fg: :cyan, style: [:bold])` -- not `text("\e[36mcontent\e[0m")`
 
 ### Testing Patterns
 
@@ -250,6 +259,7 @@ These namespaces have been consolidated -- avoid creating new top-level alternat
 - `Raxol.UI.TextMeasure` - Single facade for display width measurement (not `String.length`)
 - `Raxol.UI.Layout.ScrollContent` - Cursor-based lazy scroll behaviour + adapters
 - `Raxol.Headless.*` - Headless session manager, EventBuilder, TextCapture, McpTools
+- `Raxol.MCP.*` - MCP protocol (server, client, registry, transports, tool derivation)
 
 ## Environment Variables
 

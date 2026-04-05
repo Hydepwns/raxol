@@ -5,13 +5,13 @@ How Raxol works, from application model to terminal output.
 ## The Big Picture
 
 ```elixir
-Your App (TEA)          Raxol (Framework)           Terminal
+Your App (TEA)          Raxol (Framework)           Rendering Targets
 ┌─────────────┐    ┌───────────────────────┐    ┌─────────────┐
 │ init/1      │    │ Lifecycle (GenServer) │    │ termbox2 NIF│
-│ update/2    │───>│ Rendering Engine      │───>│ or          │
-│ view/1      │    │ Layout Engine         │    │ IOTerminal  │
-│ subscribe/1 │    │ Event Dispatcher      │    │ or          │
-│             │    │                       │    │ LiveView    │
+│ update/2    │───>│ Rendering Engine      │───>│ IOTerminal  │
+│ view/1      │    │ Layout Engine         │    │ LiveView    │
+│ subscribe/1 │    │ Event Dispatcher      │    │ SSH         │
+│             │    │ MCP Tool Deriver      │───>│ MCP (tools) │
 └─────────────┘    └───────────────────────┘    └─────────────┘
 ```
 
@@ -89,6 +89,20 @@ Platform-detected backend writes ANSI escape sequences:
 - **Windows**: Pure Elixir `IOTerminal` using `IO.write/1`
 - **Browser**: LiveView bridge via PubSub (`Raxol.LiveView.TEALive`)
 - **SSH**: Erlang `:ssh` module (`Raxol.SSH.Server`)
+- **MCP**: Tool/resource derivation from widget tree (`Raxol.MCP.Server`, see ADR-0012)
+
+### MCP as Rendering Target (ADR-0012)
+
+MCP is a first-class rendering target alongside terminal, LiveView, and SSH. Instead of rendering pixels, it renders capabilities -- tools and resources derived from the widget tree:
+
+```
+view(model) -> widget tree -> ToolProvider per widget -> MCP tool set
+                            -> app projections       -> MCP resources
+```
+
+Each widget type implements `Raxol.MCP.ToolProvider`, mapping its state to MCP tools (e.g., TextInput -> type_into/clear/get_value, Table -> sort/filter/select_row). A focus lens filters to ~10 relevant tools per interaction. The context tree assembles model, widgets, agents, swarm topology, and notifications into browsable MCP resources.
+
+This means every Raxol app is AI-controllable with zero glue code. Package: `raxol_mcp` (depends on `raxol_core`). See `docs/adr/0012-mcp-as-rendering-target.md` for full details.
 
 ## Event Flow
 
