@@ -3,7 +3,9 @@ defmodule Raxol.Playground.Demos.TextAreaDemo do
   use Raxol.Core.Runtime.Application
   alias Raxol.Playground.DemoHelpers
 
-  @editor_width 50
+  import Raxol.Playground.DemoHelpers, only: [effective_width: 2]
+
+  @default_editor_width 50
   @line_number_pad 2
 
   @impl true
@@ -113,7 +115,11 @@ defmodule Raxol.Playground.Demos.TextAreaDemo do
         text("TextArea Demo", style: [:bold]),
         text("Mode: #{mode_str}", style: [:bold]),
         divider(),
-        box style: %{border: :single, padding: 1, width: @editor_width} do
+        box style: %{
+              border: :single,
+              padding: 1,
+              width: effective_width(model, @default_editor_width)
+            } do
           column(style: %{gap: 0}, do: line_rows)
         end,
         text("Ln #{model.cursor_line + 1}, Col #{model.cursor_col}"),

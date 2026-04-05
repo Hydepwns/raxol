@@ -4,10 +4,11 @@ defmodule Raxol.Playground.Demos.ReplDemo do
 
   alias Raxol.REPL.{Evaluator, Sandbox}
 
-  import Raxol.Playground.DemoHelpers, only: [history_prev: 1, history_next: 1]
+  import Raxol.Playground.DemoHelpers,
+    only: [history_prev: 1, history_next: 1, effective_width: 2]
 
   @visible_lines 14
-  @box_width 70
+  @default_box_width 70
   @box_height 16
   @max_history Raxol.Core.Defaults.history_limit()
   @eval_timeout Raxol.Core.Defaults.timeout_ms()
@@ -95,7 +96,7 @@ defmodule Raxol.Playground.Demos.ReplDemo do
         box style: %{
               border: :single,
               padding: 1,
-              width: @box_width,
+              width: effective_width(model, @default_box_width),
               height: @box_height
             } do
           column style: %{gap: 0} do

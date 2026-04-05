@@ -4,7 +4,9 @@ defmodule Raxol.Playground.Demos.TabsDemo do
 
   @tab_labels ["Overview", "Details", "Settings", "Help"]
   @tab_count length(@tab_labels)
-  @content_box_width 40
+  import Raxol.Playground.DemoHelpers, only: [effective_width: 2]
+
+  @default_content_box_width 40
 
   @tab_content %{
     0 => "Welcome to the overview panel.\nThis shows a summary.",
@@ -68,7 +70,11 @@ defmodule Raxol.Playground.Demos.TabsDemo do
         row style: %{gap: 0} do
           tabs
         end,
-        box style: %{border: :single, padding: 1, width: @content_box_width} do
+        box style: %{
+              border: :single,
+              padding: 1,
+              width: effective_width(model, @default_content_box_width)
+            } do
           column style: %{gap: 0} do
             content_lines
           end

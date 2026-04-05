@@ -9,6 +9,7 @@ defmodule Raxol.Agent.Actions.Vfs.WriteFile do
       ]
     ]
 
+  @spec run(map(), map()) :: {:ok, map()} | {:error, term()}
   @impl true
   def run(%{path: path, content: content} = params, context) do
     fs = Raxol.Agent.Actions.Vfs.get_vfs(params, context)

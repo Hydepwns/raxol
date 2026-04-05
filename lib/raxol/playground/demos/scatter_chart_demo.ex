@@ -2,8 +2,10 @@ defmodule Raxol.Playground.Demos.ScatterChartDemo do
   @moduledoc "Playground demo: braille scatter plot with animated clusters."
   use Raxol.Core.Runtime.Application
 
+  import Raxol.Playground.DemoHelpers, only: [effective_width: 2]
+
   @points_per_cluster 20
-  @chart_width 60
+  @default_chart_width 60
   @chart_height 15
   @tick_interval_ms 200
   @tick_scale 0.05
@@ -54,7 +56,7 @@ defmodule Raxol.Playground.Demos.ScatterChartDemo do
     chart_element =
       scatter_chart(
         series: series,
-        width: @chart_width,
+        width: effective_width(model, @default_chart_width),
         height: @chart_height,
         show_legend: model.show_legend
       )

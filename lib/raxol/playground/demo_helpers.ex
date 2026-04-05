@@ -32,6 +32,19 @@ defmodule Raxol.Playground.DemoHelpers do
   def cycle_next(current, count), do: rem(current + 1, count)
 
   @doc """
+  Returns the effective width for a demo element, clamping `desired` to the
+  available width injected by the playground app. Falls back to `desired` when
+  running outside the playground.
+  """
+  @spec effective_width(map(), pos_integer()) :: pos_integer()
+  def effective_width(model, desired) do
+    case Map.get(model, :available_width) do
+      avail when is_integer(avail) and avail > 0 -> min(desired, avail)
+      _ -> desired
+    end
+  end
+
+  @doc """
   Navigate backward through input history.
 
   Expects the model to have `:input_history`, `:history_index`, `:input`, and `:cursor` fields.

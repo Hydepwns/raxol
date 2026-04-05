@@ -2,8 +2,10 @@ defmodule Raxol.Playground.Demos.BarChartDemo do
   @moduledoc "Playground demo: block-character bar chart with orientation toggle."
   use Raxol.Core.Runtime.Application
 
+  import Raxol.Playground.DemoHelpers, only: [effective_width: 2]
+
   @labels ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-  @chart_width 50
+  @default_chart_width 50
   @chart_height 12
   @max_bar_value 100
 
@@ -49,7 +51,7 @@ defmodule Raxol.Playground.Demos.BarChartDemo do
     chart_element =
       bar_chart(
         series: series,
-        width: @chart_width,
+        width: effective_width(model, @default_chart_width),
         height: @chart_height,
         orientation: model.orientation,
         show_values: model.show_values

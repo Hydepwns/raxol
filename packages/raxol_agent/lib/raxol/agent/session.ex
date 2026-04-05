@@ -20,6 +20,7 @@ defmodule Raxol.Agent.Session do
           team_id: term() | nil
         }
 
+  @spec child_spec(keyword()) :: Supervisor.child_spec()
   def child_spec(opts) do
     id = Keyword.fetch!(opts, :id)
 
@@ -30,6 +31,7 @@ defmodule Raxol.Agent.Session do
     }
   end
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
     id = Keyword.fetch!(opts, :id)
 
@@ -37,6 +39,7 @@ defmodule Raxol.Agent.Session do
   end
 
   @doc "Send a message into the agent's TEA loop."
+  @spec send_message(term(), term()) :: :ok | {:error, :not_found}
   def send_message(agent_id, message) do
     case Registry.lookup(Raxol.Agent.Registry, agent_id) do
       [{pid, _}] -> GenServer.cast(pid, {:send_message, message})
@@ -45,6 +48,7 @@ defmodule Raxol.Agent.Session do
   end
 
   @doc "Read the agent's current model."
+  @spec get_model(term()) :: {:ok, term()} | {:error, :not_found}
   def get_model(agent_id) do
     case Registry.lookup(Raxol.Agent.Registry, agent_id) do
       [{pid, _}] -> GenServer.call(pid, :get_model)
@@ -53,6 +57,7 @@ defmodule Raxol.Agent.Session do
   end
 
   @doc "Read the agent's latest view tree."
+  @spec get_view_tree(term()) :: {:ok, term()} | {:error, :not_found}
   def get_view_tree(agent_id) do
     case Registry.lookup(Raxol.Agent.Registry, agent_id) do
       [{pid, _}] -> GenServer.call(pid, :get_view_tree)
@@ -61,6 +66,7 @@ defmodule Raxol.Agent.Session do
   end
 
   @doc "Read the agent's view as a semantic tree (layout keys stripped)."
+  @spec get_semantic_view(term()) :: {:ok, term()} | {:error, :not_found}
   def get_semantic_view(agent_id) do
     case Registry.lookup(Raxol.Agent.Registry, agent_id) do
       [{pid, _}] -> GenServer.call(pid, :get_semantic_view)

@@ -2,8 +2,10 @@ defmodule Raxol.Playground.Demos.LineChartDemo do
   @moduledoc "Playground demo: streaming braille-resolution line chart."
   use Raxol.Core.Runtime.Application
 
+  import Raxol.Playground.DemoHelpers, only: [effective_width: 2]
+
   @data_points 30
-  @chart_width 60
+  @default_chart_width 60
   @chart_height 15
   @tick_interval_ms Raxol.Core.Defaults.animation_duration_ms()
 
@@ -45,7 +47,7 @@ defmodule Raxol.Playground.Demos.LineChartDemo do
     chart_element =
       line_chart(
         series: series,
-        width: @chart_width,
+        width: effective_width(model, @default_chart_width),
         height: @chart_height,
         show_legend: model.show_legend,
         show_axes: model.show_axes

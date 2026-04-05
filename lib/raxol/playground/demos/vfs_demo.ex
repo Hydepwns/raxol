@@ -4,10 +4,11 @@ defmodule Raxol.Playground.Demos.VfsDemo do
 
   alias Raxol.Commands.FileSystem
 
-  import Raxol.Playground.DemoHelpers, only: [history_prev: 1, history_next: 1]
+  import Raxol.Playground.DemoHelpers,
+    only: [history_prev: 1, history_next: 1, effective_width: 2]
 
   @visible_lines 14
-  @box_width 70
+  @default_box_width 70
   @box_height 16
   @max_history 50
 
@@ -56,6 +57,8 @@ defmodule Raxol.Playground.Demos.VfsDemo do
 
   @impl true
   def view(model) do
+    box_width = effective_width(model, @default_box_width)
+
     visible =
       model.output
       |> Enum.reverse()
@@ -71,7 +74,7 @@ defmodule Raxol.Playground.Demos.VfsDemo do
         box style: %{
               border: :single,
               padding: 1,
-              width: @box_width,
+              width: box_width,
               height: @box_height
             } do
           column style: %{gap: 0} do
@@ -87,7 +90,7 @@ defmodule Raxol.Playground.Demos.VfsDemo do
           style: [:dim]
         ),
         text(
-          "Commands: ls [dir] | cd <dir> | cat <file> | pwd | mkdir <dir> | rm <path> | tree [dir] [depth]",
+          "Commands: ls | cd | cat | pwd | mkdir | rm | tree (try 'help')",
           style: [:dim]
         )
       ]
@@ -152,7 +155,7 @@ defmodule Raxol.Playground.Demos.VfsDemo do
       {:ok, content} ->
         lines =
           content
-          |> FileSystem.format_cat(@box_width - 4, @visible_lines)
+          |> FileSystem.format_cat(@default_box_width - 4, @visible_lines)
           |> Enum.map(fn {line, num} ->
             {"#{String.pad_leading(Integer.to_string(num), 3)} | #{line}",
              :file}

@@ -2,7 +2,9 @@ defmodule Raxol.Playground.Demos.TextInputDemo do
   @moduledoc "Playground demo: single-line text input with character counting."
   use Raxol.Core.Runtime.Application
 
-  @input_box_width 40
+  import Raxol.Playground.DemoHelpers, only: [effective_width: 2]
+
+  @default_input_box_width 40
 
   @impl true
   def init(_context) do
@@ -36,12 +38,20 @@ defmodule Raxol.Playground.Demos.TextInputDemo do
         text("TextInput Demo", style: [:bold]),
         divider(),
         text("Input:"),
-        box style: %{border: :single, padding: 1, width: @input_box_width} do
+        box style: %{
+              border: :single,
+              padding: 1,
+              width: effective_width(model, @default_input_box_width)
+            } do
           text(display <> "_")
         end,
         text_input(value: model.value, placeholder: "Type here..."),
         divider(),
-        box style: %{border: :rounded, padding: 1, width: @input_box_width} do
+        box style: %{
+              border: :rounded,
+              padding: 1,
+              width: effective_width(model, @default_input_box_width)
+            } do
           column style: %{gap: 0} do
             [
               text("Value: \"#{model.value}\""),

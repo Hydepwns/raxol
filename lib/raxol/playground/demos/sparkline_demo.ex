@@ -3,8 +3,10 @@ defmodule Raxol.Playground.Demos.SparklineDemo do
   use Raxol.Core.Runtime.Application
   alias Raxol.Playground.DemoHelpers
 
+  import Raxol.Playground.DemoHelpers, only: [effective_width: 2]
+
   @data_points 40
-  @spark_width 40
+  @default_spark_width 40
   @spark_height 5
   @tick_interval_ms 200
 
@@ -58,21 +60,21 @@ defmodule Raxol.Playground.Demos.SparklineDemo do
         text("CPU Usage:", style: [:dim]),
         sparkline(
           data: cpu_data,
-          width: @spark_width,
+          width: effective_width(model, @default_spark_width),
           height: @spark_height,
           color: model.color
         ),
         text("Memory:", style: [:dim]),
         sparkline(
           data: mem_data,
-          width: @spark_width,
+          width: effective_width(model, @default_spark_width),
           height: @spark_height,
           color: :green
         ),
         text("Network I/O:", style: [:dim]),
         sparkline(
           data: net_data,
-          width: @spark_width,
+          width: effective_width(model, @default_spark_width),
           height: @spark_height,
           color: :yellow
         ),

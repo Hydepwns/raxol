@@ -471,6 +471,7 @@ defmodule Raxol.Agent.Process do
 
     Raxol.Agent.ProcessBehaviour in behaviours
   rescue
-    _ -> false
+    UndefinedFunctionError -> false
+    ArgumentError -> false
   end
 end

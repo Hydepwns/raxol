@@ -113,8 +113,10 @@ defmodule Raxol.Recording.RecorderTest do
     end
 
     test "unregisters the recorder" do
-      {:ok, _pid} = Recorder.start_link()
+      {:ok, pid} = Recorder.start_link()
+      ref = Process.monitor(pid)
       Recorder.stop()
+      assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
       refute Recorder.active?()
     end
   end

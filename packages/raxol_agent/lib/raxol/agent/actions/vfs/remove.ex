@@ -8,6 +8,7 @@ defmodule Raxol.Agent.Actions.Vfs.Remove do
       ]
     ]
 
+  @spec run(map(), map()) :: {:ok, map()} | {:error, term()}
   @impl true
   def run(%{path: path} = params, context) do
     fs = Raxol.Agent.Actions.Vfs.get_vfs(params, context)

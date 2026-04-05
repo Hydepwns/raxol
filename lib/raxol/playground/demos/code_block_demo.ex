@@ -2,7 +2,9 @@ defmodule Raxol.Playground.Demos.CodeBlockDemo do
   @moduledoc "Playground demo: code display with line numbers and language samples."
   use Raxol.Core.Runtime.Application
 
-  @code_box_width 45
+  import Raxol.Playground.DemoHelpers, only: [effective_width: 2]
+
+  @default_code_box_width 45
   @line_number_pad 2
 
   @samples [
@@ -72,7 +74,11 @@ defmodule Raxol.Playground.Demos.CodeBlockDemo do
         text("CodeBlock Demo", style: [:bold]),
         divider(),
         text("#{sample.lang}: #{sample.label}", style: [:bold]),
-        box style: %{border: :single, padding: 1, width: @code_box_width} do
+        box style: %{
+              border: :single,
+              padding: 1,
+              width: effective_width(model, @default_code_box_width)
+            } do
           column style: %{gap: 0} do
             code_lines
           end

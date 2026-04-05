@@ -8,6 +8,7 @@ defmodule Raxol.Agent.Actions.Vfs.ListDir do
       ]
     ]
 
+  @spec run(map(), map()) :: {:ok, map()} | {:error, term()}
   @impl true
   def run(params, context) do
     fs = Raxol.Agent.Actions.Vfs.get_vfs(params, context)

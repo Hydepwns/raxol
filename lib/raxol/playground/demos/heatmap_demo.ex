@@ -3,9 +3,11 @@ defmodule Raxol.Playground.Demos.HeatmapDemo do
   use Raxol.Core.Runtime.Application
   alias Raxol.Playground.DemoHelpers
 
+  import Raxol.Playground.DemoHelpers, only: [effective_width: 2]
+
   @grid_rows 8
   @grid_cols 12
-  @chart_width 48
+  @default_chart_width 48
   @chart_height 16
   @scales [:warm, :cool, :diverging]
 
@@ -41,7 +43,7 @@ defmodule Raxol.Playground.Demos.HeatmapDemo do
     chart_element =
       heatmap(
         data: model.grid,
-        width: @chart_width,
+        width: effective_width(model, @default_chart_width),
         height: @chart_height,
         color_scale: model.color_scale
       )

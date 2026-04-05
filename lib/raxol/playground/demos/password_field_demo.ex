@@ -2,7 +2,9 @@ defmodule Raxol.Playground.Demos.PasswordFieldDemo do
   @moduledoc "Playground demo: password input with visibility toggle and strength meter."
   use Raxol.Core.Runtime.Application
 
-  @input_box_width 40
+  import Raxol.Playground.DemoHelpers, only: [effective_width: 2]
+
+  @default_input_box_width 40
   @min_medium_length 4
   @min_strong_length 8
   @strength_bar_width 10
@@ -55,7 +57,11 @@ defmodule Raxol.Playground.Demos.PasswordFieldDemo do
         text("PasswordField Demo", style: [:bold]),
         divider(),
         text("Password:"),
-        box style: %{border: :single, padding: 1, width: @input_box_width} do
+        box style: %{
+              border: :single,
+              padding: 1,
+              width: effective_width(model, @default_input_box_width)
+            } do
           text(display <> "_")
         end,
         text("Strength: #{strength_label}"),

@@ -21,26 +21,26 @@ in pkgs.mkShell {
 
   shellHook = ''
     echo "Setting up Raxol development environment..."
-    
+
     # Environment setup
     export PATH="${pkgs.elixir}/bin:${pkgs.imagemagick}/bin:$PATH"
     export MIX_ENV=dev
-    
+
     # PostgreSQL setup
     export PGDATA="$PWD/.postgres"
     mkdir -p /tmp/postgresql
-    
+
     if [ ! -d "$PGDATA" ]; then
       initdb -D "$PGDATA" --auth=trust --no-locale
       pg_ctl -D "$PGDATA" -o "-k /tmp/postgresql" start
       sleep 1 && createuser -s postgres || true
       pg_ctl -D "$PGDATA" stop
     fi
-    
+
     if ! pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then
       pg_ctl -D "$PGDATA" -o "-k /tmp/postgresql" start
     fi
-    
+
     echo "Environment ready! Run 'mix test' to verify setup."
   '';
 
@@ -49,4 +49,4 @@ in pkgs.mkShell {
       pg_ctl -D "$PGDATA" stop
     fi
   '';
-} 
+}

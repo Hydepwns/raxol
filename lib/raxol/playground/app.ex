@@ -25,8 +25,10 @@ defmodule Raxol.Playground.App do
   @categories [nil] ++ Catalog.list_categories()
   @complexities [nil, :basic, :intermediate, :advanced]
   @sidebar_width 28
+  @sidebar_border_overhead 2
   @help_key_pad 18
   @unknown_category_order 99
+  @default_terminal_width 80
 
   @category_order %{
     input: 0,
@@ -42,6 +44,7 @@ defmodule Raxol.Playground.App do
   @impl true
   def init(_context) do
     components = Catalog.list_components() |> sort_by_category()
+    terminal_width = detect_terminal_width()
 
     %{
       components: components,
@@ -54,7 +57,9 @@ defmodule Raxol.Playground.App do
       copied: false,
       category_filter: nil,
       complexity_filter: nil,
-      show_help: false
+      show_help: false,
+      terminal_width: terminal_width,
+      available_width: demo_available_width(terminal_width)
     }
     |> init_demo()
   end
@@ -64,6 +69,17 @@ defmodule Raxol.Playground.App do
     case message do
       :tick ->
         forward_tick_to_demo(model)
+
+      %Raxol.Core.Events.Event{type: :resize, data: %{width: w}} ->
+        new_avail = demo_available_width(w)
+
+        model =
+          model
+          |> Map.put(:terminal_width, w)
+          |> Map.put(:available_width, new_avail)
+          |> inject_width_into_demo()
+
+        {model, []}
 
       _ ->
         cond do
@@ -445,7 +461,12 @@ defmodule Raxol.Playground.App do
 
       comp ->
         demo_model = comp.module.init(nil)
-        %{model | demo_model: demo_model}
+
+        %{
+          model
+          | demo_model:
+              Map.put(demo_model, :available_width, model.available_width)
+        }
     end
   end
 
@@ -462,7 +483,13 @@ defmodule Raxol.Playground.App do
 
       comp ->
         demo_model = comp.module.init(nil)
-        %{model | selected: comp, demo_model: demo_model}
+
+        %{
+          model
+          | selected: comp,
+            demo_model:
+              Map.put(demo_model, :available_width, model.available_width)
+        }
     end
   end
 
@@ -506,5 +533,26 @@ defmodule Raxol.Playground.App do
       model.selected.module.update(:tick, model.demo_model)
 
     {%{model | demo_model: new_demo_model}, []}
+  end
+
+  defp detect_terminal_width do
+    case :io.columns() do
+      {:ok, cols} -> cols
+      _ -> @default_terminal_width
+    end
+  end
+
+  defp demo_available_width(terminal_width) do
+    max(terminal_width - @sidebar_width - @sidebar_border_overhead, 1)
+  end
+
+  defp inject_width_into_demo(%{demo_model: nil} = model), do: model
+
+  defp inject_width_into_demo(model) do
+    %{
+      model
+      | demo_model:
+          Map.put(model.demo_model, :available_width, model.available_width)
+    }
   end
 end
