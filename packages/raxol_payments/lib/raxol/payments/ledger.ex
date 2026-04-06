@@ -1,0 +1,202 @@
+defmodule Raxol.Payments.Ledger do
+  @moduledoc """
+  ETS-backed spend tracking for agent payment operations.
+
+  Tracks all payments made by an agent with timestamps, enabling
+  sliding-window session limits and lifetime totals. One Ledger
+  GenServer runs per agent (or shared across agents if desired).
+
+  ## Usage
+
+      {:ok, ledger} = Ledger.start_link(name: :my_ledger)
+
+      :ok = Ledger.record_spend(ledger, "agent_1", Decimal.new("0.05"), %{
+        domain: "api.example.com",
+        protocol: :x402,
+        tx_hash: "0x..."
+      })
+
+      case Ledger.check_budget(ledger, "agent_1", Decimal.new("0.10"), policy) do
+        :ok -> # proceed with payment
+        {:over_limit, :per_request} -> # amount too high
+        {:over_limit, :session} -> # session window exhausted
+      end
+  """
+
+  use GenServer
+
+  alias Raxol.Payments.SpendingPolicy
+
+  @type entry :: %{
+          agent_id: term(),
+          amount: Decimal.t(),
+          currency: String.t(),
+          timestamp_ms: integer(),
+          metadata: map()
+        }
+
+  # -- Public API --
+
+  @spec start_link(keyword()) :: GenServer.on_start()
+  def start_link(opts \\ []) do
+    name = Keyword.get(opts, :name)
+    GenServer.start_link(__MODULE__, opts, name: name)
+  end
+
+  @doc """
+  Record a completed payment.
+  """
+  @spec record_spend(GenServer.server(), term(), Decimal.t(), map()) :: :ok
+  def record_spend(server, agent_id, amount, metadata \\ %{}) do
+    GenServer.cast(server, {:record, agent_id, amount, metadata})
+  end
+
+  @doc """
+  Check if a payment amount fits within the spending policy.
+
+  Returns `:ok` or `{:over_limit, limit_type}` where limit_type is
+  `:per_request`, `:session`, or `:lifetime`.
+  """
+  @spec check_budget(GenServer.server(), term(), Decimal.t(), SpendingPolicy.t()) ::
+          :ok | {:over_limit, atom()}
+  def check_budget(server, agent_id, amount, policy) do
+    GenServer.call(server, {:check, agent_id, amount, policy})
+  end
+
+  @doc """
+  Get spend history for an agent.
+  """
+  @spec get_history(GenServer.server(), term(), keyword()) :: [entry()]
+  def get_history(server, agent_id, opts \\ []) do
+    GenServer.call(server, {:history, agent_id, opts})
+  end
+
+  @doc """
+  Get aggregate totals for an agent.
+  """
+  @spec get_totals(GenServer.server(), term(), SpendingPolicy.t()) :: %{
+          session: Decimal.t(),
+          lifetime: Decimal.t()
+        }
+  def get_totals(server, agent_id, policy) do
+    GenServer.call(server, {:totals, agent_id, policy})
+  end
+
+  # -- GenServer callbacks --
+
+  @impl true
+  def init(opts) do
+    table_name = Keyword.get(opts, :table_name, :raxol_payments_ledger)
+
+    table =
+      :ets.new(table_name, [
+        :bag,
+        :protected,
+        read_concurrency: true
+      ])
+
+    {:ok, %{table: table}}
+  end
+
+  @impl true
+  def handle_cast({:record, agent_id, amount, metadata}, state) do
+    entry = %{
+      agent_id: agent_id,
+      amount: amount,
+      currency: Map.get(metadata, :currency, "USDC"),
+      timestamp_ms: System.system_time(:millisecond),
+      metadata: metadata
+    }
+
+    :ets.insert(state.table, {agent_id, entry})
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_call({:check, agent_id, amount, policy}, _from, state) do
+    result = do_check_budget(state.table, agent_id, amount, policy)
+    {:reply, result, state}
+  end
+
+  def handle_call({:history, agent_id, opts}, _from, state) do
+    entries = get_entries(state.table, agent_id)
+
+    filtered =
+      case Keyword.get(opts, :since) do
+        nil -> entries
+        since_ms -> Enum.filter(entries, &(&1.timestamp_ms >= since_ms))
+      end
+
+    limited =
+      case Keyword.get(opts, :limit) do
+        nil -> filtered
+        n -> Enum.take(filtered, -n)
+      end
+
+    {:reply, limited, state}
+  end
+
+  def handle_call({:totals, agent_id, policy}, _from, state) do
+    entries = get_entries(state.table, agent_id)
+    now = System.system_time(:millisecond)
+    window_start = now - policy.session_window_ms
+
+    session_total =
+      entries
+      |> Enum.filter(&(&1.timestamp_ms >= window_start))
+      |> sum_amounts()
+
+    lifetime_total = sum_amounts(entries)
+
+    {:reply, %{session: session_total, lifetime: lifetime_total}, state}
+  end
+
+  # -- Private --
+
+  defp do_check_budget(table, agent_id, amount, policy) do
+    cond do
+      Decimal.compare(amount, policy.per_request_max) == :gt ->
+        {:over_limit, :per_request}
+
+      true ->
+        entries = get_entries(table, agent_id)
+        now = System.system_time(:millisecond)
+        window_start = now - policy.session_window_ms
+
+        session_total =
+          entries
+          |> Enum.filter(&(&1.timestamp_ms >= window_start))
+          |> sum_amounts()
+
+        session_after = Decimal.add(session_total, amount)
+
+        lifetime_total = sum_amounts(entries)
+        lifetime_after = Decimal.add(lifetime_total, amount)
+
+        cond do
+          Decimal.compare(session_after, policy.session_max) == :gt ->
+            {:over_limit, :session}
+
+          Decimal.compare(lifetime_after, policy.lifetime_max) == :gt ->
+            {:over_limit, :lifetime}
+
+          true ->
+            :ok
+        end
+    end
+  end
+
+  defp get_entries(table, agent_id) do
+    :ets.lookup(table, agent_id)
+    |> Enum.map(fn {_key, entry} -> entry end)
+    |> Enum.sort_by(& &1.timestamp_ms)
+  end
+
+  defp sum_amounts([]), do: Decimal.new(0)
+
+  defp sum_amounts(entries) do
+    Enum.reduce(entries, Decimal.new(0), fn entry, acc ->
+      Decimal.add(acc, entry.amount)
+    end)
+  end
+end

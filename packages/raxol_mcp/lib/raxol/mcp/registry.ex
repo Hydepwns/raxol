@@ -37,6 +37,8 @@ defmodule Raxol.MCP.Registry do
 
   use GenServer
 
+  alias Raxol.MCP.CircuitBreaker
+
   @type tool_def :: %{
           name: String.t(),
           description: String.t(),
@@ -49,6 +51,13 @@ defmodule Raxol.MCP.Registry do
           name: String.t(),
           description: String.t(),
           callback: (-> {:ok, term()} | {:error, term()})
+        }
+
+  @type prompt_def :: %{
+          name: String.t(),
+          description: String.t(),
+          arguments: [map()],
+          callback: (map() -> {:ok, [map()]} | {:error, term()})
         }
 
   # -- Client API ---------------------------------------------------------------
@@ -87,14 +96,12 @@ defmodule Raxol.MCP.Registry do
           {:ok, term()} | {:error, term()}
   def call_tool(registry \\ __MODULE__, name, arguments) do
     table = get_table(registry)
+    breaker_table = get_breaker_table(registry)
+    breaker_key = tool_key(name)
 
-    case :ets.lookup(table, tool_key(name)) do
+    case :ets.lookup(table, breaker_key) do
       [{_key, {:tool, ^name, _def, callback}}] ->
-        try do
-          callback.(arguments)
-        rescue
-          e -> {:error, Exception.message(e)}
-        end
+        invoke_with_breaker(breaker_table, breaker_key, fn -> callback.(arguments) end)
 
       [] ->
         {:error, :tool_not_found}
@@ -128,18 +135,71 @@ defmodule Raxol.MCP.Registry do
           {:ok, term()} | {:error, term()}
   def read_resource(registry \\ __MODULE__, uri) do
     table = get_table(registry)
+    breaker_table = get_breaker_table(registry)
+    breaker_key = resource_key(uri)
 
-    case :ets.lookup(table, resource_key(uri)) do
+    case :ets.lookup(table, breaker_key) do
       [{_key, {:resource, ^uri, _def, callback}}] ->
-        try do
-          callback.()
-        rescue
-          e -> {:error, Exception.message(e)}
-        end
+        invoke_with_breaker(breaker_table, breaker_key, fn -> callback.() end)
 
       [] ->
         {:error, :resource_not_found}
     end
+  end
+
+  # -- Prompts API --------------------------------------------------------------
+
+  @doc "Register one or more prompts."
+  @spec register_prompts(GenServer.server(), [prompt_def()]) :: :ok
+  def register_prompts(registry \\ __MODULE__, prompts) do
+    GenServer.call(registry, {:register_prompts, prompts})
+  end
+
+  @doc "Unregister prompts by name."
+  @spec unregister_prompts(GenServer.server(), [String.t()]) :: :ok
+  def unregister_prompts(registry \\ __MODULE__, names) do
+    GenServer.call(registry, {:unregister_prompts, names})
+  end
+
+  @doc "List all registered prompts (definitions without callbacks)."
+  @spec list_prompts(GenServer.server()) :: [map()]
+  def list_prompts(registry \\ __MODULE__) do
+    table = get_table(registry)
+
+    :ets.select(table, [
+      {{:"$1", {:prompt, :"$2", :"$3", :_}}, [], [:"$3"]}
+    ])
+  end
+
+  @doc "Get a prompt by name, rendering it with the given arguments."
+  @spec get_prompt(GenServer.server(), String.t(), map()) ::
+          {:ok, [map()]} | {:error, term()}
+  def get_prompt(registry \\ __MODULE__, name, arguments) do
+    table = get_table(registry)
+    breaker_table = get_breaker_table(registry)
+    breaker_key = prompt_key(name)
+
+    case :ets.lookup(table, breaker_key) do
+      [{_key, {:prompt, ^name, _def, callback}}] ->
+        invoke_with_breaker(breaker_table, breaker_key, fn -> callback.(arguments) end)
+
+      [] ->
+        {:error, :prompt_not_found}
+    end
+  end
+
+  @doc "Get circuit breaker status for a tool, resource, or prompt key."
+  @spec circuit_status(GenServer.server(), CircuitBreaker.key()) :: map()
+  def circuit_status(registry \\ __MODULE__, key) do
+    breaker_table = get_breaker_table(registry)
+    CircuitBreaker.status(breaker_table, key)
+  end
+
+  @doc "Manually reset a circuit breaker."
+  @spec reset_circuit(GenServer.server(), CircuitBreaker.key()) :: :ok
+  def reset_circuit(registry \\ __MODULE__, key) do
+    breaker_table = get_breaker_table(registry)
+    CircuitBreaker.reset(breaker_table, key)
   end
 
   # -- GenServer Callbacks -------------------------------------------------------
@@ -155,7 +215,10 @@ defmodule Raxol.MCP.Registry do
         read_concurrency: true
       ])
 
-    {:ok, %{table: table}}
+    breaker_name = :"#{table_name}_breakers"
+    breaker_table = CircuitBreaker.new(breaker_name)
+
+    {:ok, %{table: table, breaker_table: breaker_table}}
   end
 
   @impl true
@@ -208,10 +271,30 @@ defmodule Raxol.MCP.Registry do
     {:reply, :ok, state}
   end
 
+  @impl true
+  def handle_call({:register_prompts, prompts}, _from, state) do
+    for prompt <- prompts do
+      entry = {:prompt, prompt.name, prompt_definition(prompt), prompt.callback}
+      :ets.insert(state.table, {prompt_key(prompt.name), entry})
+    end
+
+    {:reply, :ok, state}
+  end
+
+  @impl true
+  def handle_call({:unregister_prompts, names}, _from, state) do
+    for name <- names do
+      :ets.delete(state.table, prompt_key(name))
+    end
+
+    {:reply, :ok, state}
+  end
+
   # -- Private -----------------------------------------------------------------
 
   defp tool_key(name), do: {:tool, name}
   defp resource_key(uri), do: {:resource, uri}
+  defp prompt_key(name), do: {:prompt, name}
 
   defp tool_definition(tool) do
     Map.take(tool, [:name, :description, :inputSchema])
@@ -221,16 +304,51 @@ defmodule Raxol.MCP.Registry do
     Map.take(resource, [:uri, :name, :description])
   end
 
+  defp prompt_definition(prompt) do
+    Map.take(prompt, [:name, :description, :arguments])
+  end
+
+  # -- Circuit breaker integration ----------------------------------------------
+
+  defp invoke_with_breaker(breaker_table, key, callback_fn) do
+    case CircuitBreaker.check(breaker_table, key) do
+      :open ->
+        {:error, :circuit_open}
+
+      _closed_or_half_open ->
+        try do
+          case callback_fn.() do
+            {:ok, _} = ok ->
+              CircuitBreaker.record_success(breaker_table, key)
+              ok
+
+            {:error, _} = err ->
+              CircuitBreaker.record_failure(breaker_table, key)
+              err
+
+            other ->
+              CircuitBreaker.record_success(breaker_table, key)
+              {:ok, other}
+          end
+        rescue
+          e ->
+            CircuitBreaker.record_failure(breaker_table, key)
+            {:error, Exception.message(e)}
+        end
+    end
+  end
+
+  # -- Table resolution --------------------------------------------------------
+
   # Resolve a registry name/pid to its ETS table reference.
   # The GenServer stores the table ref in its state, but we need it
   # from client processes. We use :sys.get_state for named processes.
   @table_cache :raxol_mcp_registry_tables
+  @breaker_cache :raxol_mcp_registry_breakers
 
   defp get_table(registry) when is_atom(registry) do
-    # Try the cache first (ETS lookup by registry name)
     case :persistent_term.get({@table_cache, registry}, nil) do
       nil ->
-        # Fall back to asking the GenServer for its table
         %{table: table} = :sys.get_state(registry)
         :persistent_term.put({@table_cache, registry}, table)
         table
@@ -243,5 +361,22 @@ defmodule Raxol.MCP.Registry do
   defp get_table(registry) do
     %{table: table} = :sys.get_state(registry)
     table
+  end
+
+  defp get_breaker_table(registry) when is_atom(registry) do
+    case :persistent_term.get({@breaker_cache, registry}, nil) do
+      nil ->
+        %{breaker_table: bt} = :sys.get_state(registry)
+        :persistent_term.put({@breaker_cache, registry}, bt)
+        bt
+
+      bt ->
+        bt
+    end
+  end
+
+  defp get_breaker_table(registry) do
+    %{breaker_table: bt} = :sys.get_state(registry)
+    bt
   end
 end

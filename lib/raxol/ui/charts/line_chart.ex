@@ -9,6 +9,9 @@ defmodule Raxol.UI.Charts.LineChart do
 
   alias Raxol.UI.Charts.{BrailleCanvas, ChartUtils}
 
+  @compile {:no_warn_undefined, Raxol.MCP.ToolProvider}
+  @behaviour Raxol.MCP.ToolProvider
+
   @type cell :: ChartUtils.cell()
 
   @type series :: %{
@@ -168,4 +171,81 @@ defmodule Raxol.UI.Charts.LineChart do
       do_bresenham(canvas, next_x, next_y, next_err, params)
     end
   end
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(state) do
+    id = state[:id] || "line_chart"
+
+    [
+      %{
+        name: "get_series",
+        description: "Get all series data for line chart '#{id}'",
+        inputSchema: %{type: "object", properties: %{}}
+      },
+      %{
+        name: "get_range",
+        description: "Get Y-axis min/max range for line chart '#{id}'",
+        inputSchema: %{type: "object", properties: %{}}
+      },
+      %{
+        name: "get_point_at",
+        description:
+          "Get the value at a given X index for each series in line chart '#{id}'",
+        inputSchema: %{
+          type: "object",
+          properties: %{
+            index: %{
+              type: "integer",
+              description: "X-axis index (0-based) into each series"
+            }
+          },
+          required: ["index"]
+        }
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("get_series", _args, context) do
+    series = context.widget_state[:series] || []
+    {:ok, ChartUtils.summarize_series(series)}
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("get_range", _args, context) do
+    series = context.widget_state[:series] || []
+    chart_opts = context.widget_state[:chart_opts] || []
+
+    all_values =
+      series
+      |> Enum.flat_map(fn s -> ChartUtils.normalize_data(s[:data] || []) end)
+
+    {y_min, y_max} = ChartUtils.resolve_range(all_values, chart_opts)
+    {:ok, %{min: y_min, max: y_max}}
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("get_point_at", %{"index" => index}, context) do
+    series = context.widget_state[:series] || []
+
+    result =
+      Enum.map(series, fn s ->
+        data = ChartUtils.normalize_data(s[:data] || [])
+        value = Enum.at(data, index)
+
+        %{
+          name: s[:name] || "unnamed",
+          index: index,
+          value: value
+        }
+      end)
+
+    {:ok, result}
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
 end

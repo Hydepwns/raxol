@@ -8,9 +8,9 @@ defmodule Raxol.MCP.Property.FocusLensTest do
 
   defp widget_id_gen do
     gen all(
-      prefix <- member_of(~w(btn inp sel chk tbl tree)),
-      n <- integer(1..99)
-    ) do
+          prefix <- member_of(~w(btn inp sel chk tbl tree)),
+          n <- integer(1..99)
+        ) do
       "#{prefix}#{n}"
     end
   end
@@ -47,13 +47,16 @@ defmodule Raxol.MCP.Property.FocusLensTest do
 
   defp tools_list_gen do
     gen all(
-      widget_ids <- list_of(widget_id_gen(), min_length: 2, max_length: 6),
-      widget_ids = Enum.uniq(widget_ids),
-      widget_tools <- fixed_list(Enum.map(widget_ids, fn id ->
-        list_of(tool_gen(id), min_length: 1, max_length: 3)
-      end)),
-      globals <- list_of(global_tool_gen(), min_length: 0, max_length: 2)
-    ) do
+          widget_ids <- list_of(widget_id_gen(), min_length: 2, max_length: 6),
+          widget_ids = Enum.uniq(widget_ids),
+          widget_tools <-
+            fixed_list(
+              Enum.map(widget_ids, fn id ->
+                list_of(tool_gen(id), min_length: 1, max_length: 3)
+              end)
+            ),
+          globals <- list_of(global_tool_gen(), min_length: 0, max_length: 2)
+        ) do
       List.flatten(widget_tools) ++ globals
     end
   end

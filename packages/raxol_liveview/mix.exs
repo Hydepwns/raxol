@@ -9,6 +9,7 @@ defmodule RaxolLiveView.MixProject do
       app: :raxol_liveview,
       version: @version,
       elixir: "~> 1.16 or ~> 1.17",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
@@ -25,18 +26,26 @@ defmodule RaxolLiveView.MixProject do
     ]
   end
 
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
   defp deps do
     [
-      # Core dependency - terminal buffer primitives
-      {:raxol_core, "~> 2.0", path: "../raxol_core"},
+      # Core dependency (Buffer, Events, etc.)
+      {:raxol_core, path: "../raxol_core", override: true},
 
-      # Phoenix LiveView integration
-      {:phoenix_live_view, "~> 0.20 or ~> 1.0"},
+      # PubSub for LiveView <-> Lifecycle communication
+      {:phoenix_pubsub, "~> 2.1"},
+
+      # JSON processing
+      {:jason, "~> 1.4"},
+
+      # Phoenix LiveView integration (optional -- module guards with Code.ensure_loaded?)
+      {:phoenix_live_view, "~> 0.20 or ~> 1.0", optional: true},
+      {:phoenix_html, "~> 4.0 or ~> 3.3", optional: true},
 
       # Dev/test only
-      {:ex_doc, "~> 0.31", only: :dev, runtime: false},
-      {:phoenix, "~> 1.7", only: [:dev, :test]},
-      {:floki, ">= 0.30.0", only: :test}
+      {:ex_doc, "~> 0.31", only: :dev, runtime: false}
     ]
   end
 
@@ -44,8 +53,7 @@ defmodule RaxolLiveView.MixProject do
     """
     Phoenix LiveView integration for Raxol terminal buffers. Render terminal
     UIs in web browsers with real-time updates, keyboard/mouse events, and
-    themeable CSS. Built on top of raxol_core for lightweight, performant
-    terminal rendering.
+    themeable CSS.
     """
   end
 
@@ -69,12 +77,7 @@ defmodule RaxolLiveView.MixProject do
       source_url: @source_url,
       source_ref: "v#{@version}",
       extras: [
-        "README.md",
-        "../../docs/cookbook/LIVEVIEW_INTEGRATION.md",
-        "../../docs/cookbook/THEMING.md"
-      ],
-      groups_for_extras: [
-        Cookbooks: Path.wildcard("../../docs/cookbook/*.md")
+        "README.md"
       ]
     ]
   end

@@ -7,10 +7,6 @@
       "env": {
         "MIX_ENV": "dev"
       }
-    },
-    "tidewave": {
-      "type": "stdio",
-      "command": "./scripts/tidewave-mcp-proxy.sh"
     }
   }
 }

@@ -42,7 +42,7 @@ defmodule Raxol.Test.PerformanceHelper do
     warmup = Keyword.get(opts, :warmup, 100)
     _timeout = Keyword.get(opts, :timeout, 5000)
 
-    run_warmup(fun, warmup)
+    _ = run_warmup(fun, warmup)
     run_benchmark(fun, iterations)
   end
 

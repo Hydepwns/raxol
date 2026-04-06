@@ -2,57 +2,67 @@ defmodule RaxolLiveView do
   @moduledoc """
   Phoenix LiveView integration for Raxol terminal buffers.
 
-  RaxolLiveView enables rendering terminal UIs in web browsers with:
+  Renders terminal UIs in web browsers with real-time updates,
+  keyboard/mouse event translation, and themeable CSS.
 
-  - Real-time buffer updates
-  - Keyboard and mouse event handling
-  - 5 built-in themes (Nord, Dracula, Solarized, Monokai)
-  - 60fps rendering performance
-  - Responsive and accessible
+  ## Modules
 
-  ## Quick Start
+    * `Raxol.LiveView.TerminalBridge` -- buffer-to-HTML conversion with
+      run-length encoding, diff highlighting, and inline/class style output.
+    * `Raxol.LiveView.InputAdapter` -- translates browser keydown events
+      into `Raxol.Core.Events.Event` structs.
+    * `Raxol.LiveView.TEALive` -- a Phoenix LiveView that hosts a TEA app
+      (requires `phoenix_live_view`).
+    * `Raxol.LiveView.TerminalComponent` -- a Phoenix LiveComponent that
+      renders a buffer with theme support (requires `phoenix_live_view`).
+    * `Raxol.LiveView.Themes` -- built-in color themes and CSS custom
+      property generation.
 
-      # In your LiveView
+  ## Quick start
+
       defmodule MyAppWeb.TerminalLive do
         use MyAppWeb, :live_view
-        alias Raxol.Core.{Buffer, Box}
+        alias Raxol.LiveView.TerminalBridge
 
         def mount(_params, _session, socket) do
-          buffer = Buffer.create_blank_buffer(80, 24)
-          buffer = Box.draw_box(buffer, 0, 0, 80, 24, :double)
-
+          buffer = Raxol.Core.Buffer.create_blank_buffer(80, 24)
           {:ok, assign(socket, buffer: buffer)}
         end
 
         def render(assigns) do
           ~H\"\"\"
-          <.live_component
-            module={Raxol.LiveView.TerminalComponent}
-            id="terminal"
-            buffer={@buffer}
-            theme={:nord}
-          />
+          <div class="terminal-container">
+            <%= raw(TerminalBridge.buffer_to_html(@buffer, theme: :synthwave84)) %>
+          </div>
           \"\"\"
         end
       end
 
-  ## Modules
+  ## CSS
 
-  - `Raxol.LiveView.TerminalBridge` - Buffer to HTML conversion
-  - `Raxol.LiveView.TerminalComponent` - Phoenix LiveComponent
-
-  ## Themes
-
-  Built-in themes: `:nord`, `:dracula`, `:solarized_dark`, `:solarized_light`, `:monokai`
-
-  ## Documentation
-
-  See the [LiveView Integration Cookbook](https://hexdocs.pm/raxol_liveview/liveview-integration.html)
-  for comprehensive examples.
+  Include the bundled stylesheet for base terminal styles and named color
+  classes. Call `css_path/0` to get the filesystem path.
   """
 
   @doc """
   Returns the version of RaxolLiveView.
   """
+  @spec version() :: String.t()
   def version, do: unquote(Mix.Project.config()[:version])
+
+  @doc """
+  Returns the absolute filesystem path to the bundled CSS stylesheet.
+
+  Copy or symlink this file into your Phoenix static assets to use
+  the pre-built terminal styles.
+
+  ## Example
+
+      # In a Mix task or setup script
+      File.cp!(RaxolLiveView.css_path(), "priv/static/css/raxol_terminal.css")
+  """
+  @spec css_path() :: String.t()
+  def css_path do
+    Path.join(:code.priv_dir(:raxol_liveview), "static/raxol_terminal.css")
+  end
 end

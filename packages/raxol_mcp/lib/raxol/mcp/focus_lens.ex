@@ -10,9 +10,10 @@ defmodule Raxol.MCP.FocusLens do
 
     * `:all` -- return all tools (default for headless sessions)
     * `:focused` -- return tools for the focused widget + globals
+    * `:hover` -- return tools for focused widget + hovered widget + globals
 
-  In `:focused` mode, a `discover_tools` meta-tool is always included
-  so agents can search the full set by keyword.
+  In `:focused` and `:hover` modes, a `discover_tools` meta-tool is
+  always included so agents can search the full set by keyword.
 
   ## Usage
 
@@ -23,6 +24,13 @@ defmodule Raxol.MCP.FocusLens do
 
       # Interactive: show focused + globals
       FocusLens.filter(all_tools, mode: :focused, focused_id: "search_input")
+
+      # Mouse tracking: anticipatory tool exposure
+      FocusLens.filter(all_tools,
+        mode: :hover,
+        focused_id: "search_input",
+        hover_id: "submit_btn"
+      )
   """
 
   @default_max_tools 15
@@ -34,8 +42,9 @@ defmodule Raxol.MCP.FocusLens do
 
   ## Options
 
-    * `:mode` - `:all` (default) or `:focused`
-    * `:focused_id` - widget ID that currently has focus (for `:focused` mode)
+    * `:mode` - `:all` (default), `:focused`, or `:hover`
+    * `:focused_id` - widget ID that currently has focus
+    * `:hover_id` - widget ID under the mouse cursor (for `:hover` mode)
     * `:max_tools` - maximum number of tools to return (default: 15)
     * `:registry` - Registry reference for `discover_tools` (optional)
   """
@@ -52,6 +61,12 @@ defmodule Raxol.MCP.FocusLens do
         focused_id = Keyword.get(opts, :focused_id)
         registry = Keyword.get(opts, :registry)
         filter_focused(tools, focused_id, max_tools, registry)
+
+      :hover ->
+        focused_id = Keyword.get(opts, :focused_id)
+        hover_id = Keyword.get(opts, :hover_id)
+        registry = Keyword.get(opts, :registry)
+        filter_hover(tools, focused_id, hover_id, max_tools, registry)
     end
   end
 
@@ -123,6 +138,50 @@ defmodule Raxol.MCP.FocusLens do
       end
 
     (focused_tools ++ discover ++ global_tools)
+    |> Enum.uniq_by(& &1.name)
+    |> Enum.take(max_tools)
+  end
+
+  defp filter_hover(tools, focused_id, nil, max_tools, registry) do
+    filter_focused(tools, focused_id, max_tools, registry)
+  end
+
+  defp filter_hover(tools, focused_id, hover_id, max_tools, registry)
+       when hover_id == focused_id do
+    filter_focused(tools, focused_id, max_tools, registry)
+  end
+
+  defp filter_hover(tools, focused_id, hover_id, max_tools, registry) do
+    focused_prefix = if focused_id, do: "#{focused_id}.", else: nil
+    hover_prefix = "#{hover_id}."
+
+    focused_tools =
+      if focused_prefix do
+        Enum.filter(tools, fn tool ->
+          String.starts_with?(tool.name, focused_prefix)
+        end)
+      else
+        []
+      end
+
+    hover_tools =
+      Enum.filter(tools, fn tool ->
+        String.starts_with?(tool.name, hover_prefix)
+      end)
+
+    global_tools =
+      Enum.filter(tools, fn tool ->
+        not String.contains?(tool.name, ".")
+      end)
+
+    discover =
+      if registry do
+        [discover_tools_spec(registry)]
+      else
+        []
+      end
+
+    (focused_tools ++ hover_tools ++ discover ++ global_tools)
     |> Enum.uniq_by(& &1.name)
     |> Enum.take(max_tools)
   end

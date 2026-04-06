@@ -63,6 +63,34 @@ defmodule Raxol.UI.Charts.ChartUtils do
   def normalize_data(data), do: Enum.to_list(data)
 
   @doc """
+  Summarizes series for MCP tool output: name, color, and normalized 1D data.
+  """
+  @spec summarize_series([map()]) :: [map()]
+  def summarize_series(series) do
+    Enum.map(series, fn s ->
+      %{
+        name: s[:name] || "unnamed",
+        color: s[:color] || :default,
+        data: normalize_data(s[:data] || [])
+      }
+    end)
+  end
+
+  @doc """
+  Summarizes series for MCP tool output with 2D `{x, y}` data.
+  """
+  @spec summarize_series_2d([map()]) :: [map()]
+  def summarize_series_2d(series) do
+    Enum.map(series, fn s ->
+      %{
+        name: s[:name] || "unnamed",
+        color: s[:color] || :default,
+        data: normalize_data_2d(s[:data] || [])
+      }
+    end)
+  end
+
+  @doc """
   Normalizes a list or CircularBuffer of `{x, y}` tuples to a plain list.
   """
   @spec normalize_data_2d(list() | struct()) :: [{number(), number()}]

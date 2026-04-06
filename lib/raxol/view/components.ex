@@ -546,11 +546,24 @@ defmodule Raxol.View.Components do
 
     view = Raxol.UI.Charts.ViewBridge.cells_to_view(cells, style: style)
 
+    # Preserve chart type, series, and render opts so MCP ToolProvider
+    # can expose chart data as read-only tools via TreeWalker.
+    view =
+      view
+      |> Map.put(:type, chart_view_type(chart_type))
+      |> Map.put(:series, Map.get(opts, :series, Map.get(opts, :data, [])))
+      |> Map.put(:chart_opts, chart_opts)
+
     case Map.get(opts, :id) do
       nil -> view
       id -> Map.put(view, :id, id)
     end
   end
+
+  defp chart_view_type(:line), do: :line_chart
+  defp chart_view_type(:bar), do: :bar_chart
+  defp chart_view_type(:scatter), do: :scatter_chart
+  defp chart_view_type(:heatmap), do: :heatmap
 
   defp chart_render_opts(:line, opts) do
     [

@@ -1,65 +1,30 @@
 defmodule RaxolPlugin do
   @moduledoc """
-  Plugin system for Raxol terminal applications.
+  Plugin SDK for Raxol terminal applications.
 
-  Build extensible terminal UIs with a simple plugin behavior. Plugins define
-  lifecycle callbacks for initialization, input handling, rendering, and cleanup.
+  Provides the tools to build, test, and manage Raxol plugins:
 
-  ## Quick Start
+    * `Raxol.Plugin` - `use` macro with overridable callback defaults
+    * `Raxol.Plugin.API` - Facade for loading/unloading/enabling plugins at runtime
+    * `Raxol.Plugin.Manifest` - Cross-package manifest builder and validator
+    * `Raxol.Plugin.Testing` - ExUnit helpers for plugin test suites
+    * `mix raxol.gen.plugin` - Code generator for new plugins
+
+  ## Quick start
 
       defmodule MyPlugin do
         use Raxol.Plugin
 
         @impl true
-        def init(config) do
-          {:ok, %{config: config, count: 0}}
-        end
-
-        @impl true
-        def handle_input(key, _buffer, state) do
-          case key do
-            "+" -> {:ok, %{state | count: state.count + 1}}
-            "-" -> {:ok, %{state | count: state.count - 1}}
-            _ -> {:ok, state}
-          end
-        end
-
-        @impl true
-        def render(buffer, state) do
-          alias Raxol.Core.{Buffer, Box}
-
-          buffer
-          |> Box.draw_box(0, 0, 40, 10, :single)
-          |> Buffer.write_at(5, 5, "Count: #{state.count}")
-        end
-
-        @impl true
-        def cleanup(_state) do
-          :ok
-        end
+        def init(config), do: {:ok, %{config: config}}
       end
 
-  ## Running Plugins
-
-      # Standalone
-      Raxol.Plugin.run(MyPlugin, %{})
-
-      # With configuration
-      config = %{width: 80, height: 24}
-      Raxol.Plugin.run(MyPlugin, config)
-
-  ## Modules
-
-  - `Raxol.Plugin` - Plugin behavior and runner
-
-  ## Documentation
-
-  See the [Plugin Development Guide](https://hexdocs.pm/raxol_plugin/building-plugins.html)
-  for comprehensive examples and best practices.
+  See `Raxol.Plugin` for the full callback list and defaults.
   """
 
   @doc """
-  Returns the version of RaxolPlugin.
+  Returns the package version.
   """
+  @spec version() :: String.t()
   def version, do: unquote(Mix.Project.config()[:version])
 end

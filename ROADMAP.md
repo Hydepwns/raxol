@@ -2,7 +2,7 @@
 
 Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 
-## Current Version: v2.3.0
+## Current Version: v2.4.0
 
 ### What's Done
 
@@ -10,26 +10,22 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 - **Phase 2: Widget Library** -- 23 widgets with tests and examples (exceeds original 15-widget target)
 - **Phase 3: Framework Polish** -- Focus management, W3C-style event capture/bubble, style inheritance, terminal compatibility (color downsampling, Unicode width, synchronized output)
 - **Phase 4: OTP Differentiators** -- Process-per-component crash isolation, hot code reload, LiveView bridge, SSH app serving
-- **Phase 5.1: Hex Package** -- `mix hex.build` succeeds, optional deps trimmed, NIF compiles via elixir_make
-- **Phase 5.2: Phoenix Optional** -- LiveView/web code wrapped in `Code.ensure_loaded?` guards; pure-terminal apps no longer require Phoenix
-- **Phase 5.3: Developer Tooling** -- `mix raxol.new` generator (4 templates, 8 flags, interactive mode, CI, mise), `mix raxol.gen.component` scaffolder, 20 mix tasks
-- **Phase 5.4: Documentation** -- Quickstart, widget gallery, architecture overview, 5 cookbook guides (TEA patterns, SSH deployment, theming, LiveView, performance)
-- **Phase 5.5: Tech Debt Cleanup** -- Removed ~7,300 LOC dead code (CQRS/EventSourcing, Pipeline stubs), ETS-backed GenServers where appropriate
-- **Phase 5.6: Showcase** -- Flagship demo (live BEAM dashboard), file browser example, benchmark suite vs Ratatui/Bubble Tea/Textual
-- **Phase 5.7: Session Recording & Replay** -- Asciinema v2 format (.cast), `mix raxol.record` / `mix raxol.replay`, streaming player with pause/seek/speed
-- **Phase 6.0: Streaming Charts** -- 7 chart modules (LineChart, ScatterChart, BarChart, Heatmap, BrailleCanvas, ChartUtils, ViewBridge), multi-series, braille rendering
-- **Phase 6.1: Playground** -- Interactive widget catalog (terminal app + mix task, search/filter/help overlay)
-- **Phase 6.2: Web Refactor** -- All LiveViews use Playground.Catalog, TEALive lifecycle integration
-- **Phase 6.3: SSH Playground** -- `mix raxol.playground --ssh`, connection tracking, Fly.io TCP service
+- **Phase 5: Ecosystem Tooling** -- Hex package, Phoenix optional, `mix raxol.new` generator, documentation, tech debt cleanup, showcase, session recording
+- **Phase 6: Playground + Charts** -- 30 demos across 8 categories, 7 chart modules (braille-resolution), web refactor, SSH playground
 - **Time-Travel Debugging** -- Snapshot every update/2 cycle, cursor navigation, restore, export/import. Zero cost when disabled
-- **Agent Framework** -- TEA-based AI agents with OTP supervision, inter-agent messaging, coordinator/worker teams, shell/async commands
-- **Sensor Fusion HUD** -- Sensor behaviour, polling feeds, weighted averaging, threshold alerts, gauge/sparkline/threat/minimap widgets
-- **Distributed Swarm** -- CRDTs (LWW registers, OR-sets), node monitoring, seniority-based topology election, tactical overlay sync
-- **Self-Evolving Interface** -- Behavior tracking, rule-based layout recommendations, animated transitions, feedback loop
-- **AI Cockpit + Streaming** -- Real AI agents analyzing codebases in multi-pane terminal dashboard. Backend.HTTP streaming (SSE) for Anthropic/OpenAI/Ollama. Pilot takeover for follow-up questions. Free tier via LLM7.io (no API key). Mock fallback for offline use.
-- **libcluster Discovery** -- Automatic node discovery for Swarm via libcluster (optional dep). Strategy presets: gossip (LAN multicast), epmd (static hosts), dns (Fly.io/K8s), tailscale (mesh). NodeMonitor events auto-wire to Topology (elections) and TacticalOverlay (peer sync).
-- **Virtual File System** -- `Raxol.Commands.FileSystem` pure functional in-memory VFS, playground demo (60 tests)
-- **Tailscale Strategy** -- Custom libcluster strategy (`Raxol.Swarm.Strategy.Tailscale`). Polls `tailscale status --json`, filters by tag (ACL-gated membership), constructs BEAM node names from Tailscale IPs or MagicDNS. Zero-config encrypted mesh for multi-node swarm.
+- **Agent Framework** -- TEA-based AI agents, coordinator/worker teams, 7 agent harness gaps closed (compaction, hooks, permissions, MCP client, streams, LSP, SSE)
+- **Sensor Fusion HUD** -- Sensor behaviour, polling feeds, weighted averaging, threshold alerts
+- **Distributed Swarm** -- CRDTs, node monitoring, topology election, libcluster + Tailscale strategy
+- **Self-Evolving Interface** -- Behavior tracking, layout recommendations, animated transitions
+- **AI Cockpit + Streaming** -- Multi-pane terminal dashboard, SSE streaming for 8 AI backends
+- **Virtual File System** -- Pure functional in-memory VFS, REPL helpers, 7 agent actions
+- **Phase 8: raxol_mcp** -- Extracted MCP package (server, client, registry, stdio/SSE transports)
+- **Phase 9: ToolProvider** -- Auto-derive MCP tools from widget tree (15 widgets), focus lens, tree walker
+- **Phase 10: MCP Protocol Hardening** -- Full MCP spec coverage (prompts, logging, completion), notifications, circuit breaker, chart ToolProviders, agent bridge, Tidewave removed
+- **Phase 11: MCP Resources + Context Tree** -- ResourceProvider behaviour, ResourceRouter, ContextTree, StructuredScreenshot, model projection diffs, resource subscriptions
+- **Phase 12: MCP Widget + Agent Coverage** -- `@mcp_exclude` attribute, FocusLens hover mode, ToolSynchronizer focus/hover tracking, HoverHighlight effect
+- **Phase 13: MCP Test Harness** -- Pipe-friendly test API (`click`, `type_into`, `assert_widget`, `assert_tool_available`), session lifecycle, functor law property tests (10 properties)
+- **Agent Payments** -- x402/MPP auto-pay, wallets (env + 1Password), spending controls, 5 agent actions
 
 ---
 
@@ -55,23 +51,18 @@ Supported now:
 - **OpenAI** (`AI_API_KEY=...`) -- GPT-4o-mini and up
 - **Anthropic** (`ANTHROPIC_API_KEY=...`) -- Claude Haiku/Sonnet/Opus
 
-Future providers:
-
-- **LocalAI** -- self-hosted OpenAI-compatible (similar to Ollama)
-
 ### Longer Term
 
-- VFS agent actions (expose VFS operations as agent tools)
 - Nx-backed layout learning (replace rule engine with trained model)
 - Multi-node cockpit (swarm coordination across physical terminals)
 - Plugin marketplace
 - VS Code extension for component previews
 - Burrito packaging (single standalone binary)
-- Agent harness hardening (session compaction, runtime permissions, pre/post tool hooks)
-- MCP client integration (consume external MCP tool servers from agents)
-- Stream-first agent API (Elixir Stream composability)
-- LSP context enrichment for code-aware agents
-- Session streaming server (HTTP/SSE for remote agent dashboards)
+- Riddler cross-chain payment integration
+- Xochi private payment protocol (stealth addresses, ZKSAR)
+- Telegram bridge (`raxol_telegram`)
+- Speech interface (`raxol_speech`)
+- Watch interface
 
 ---
 

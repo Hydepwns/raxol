@@ -87,7 +87,7 @@ Platform-detected backend writes ANSI escape sequences:
 
 - **Unix/macOS**: Native C NIF via termbox2 (`lib/termbox2_nif/c_src/`)
 - **Windows**: Pure Elixir `IOTerminal` using `IO.write/1`
-- **Browser**: LiveView bridge via PubSub (`Raxol.LiveView.TEALive`)
+- **Browser**: LiveView bridge via PubSub (`Raxol.LiveView.TEALive` in `raxol_liveview` package)
 - **SSH**: Erlang `:ssh` module (`Raxol.SSH.Server`)
 - **MCP**: Tool/resource derivation from widget tree (`Raxol.MCP.Server`, see ADR-0012)
 

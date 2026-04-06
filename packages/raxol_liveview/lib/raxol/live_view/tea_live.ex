@@ -1,34 +1,36 @@
-defmodule Raxol.LiveView.TEALive do
-  @moduledoc """
-  A Phoenix LiveView that hosts a TEA (The Elm Architecture) application.
+if Code.ensure_loaded?(Phoenix.LiveView) do
+  defmodule Raxol.LiveView.TEALive do
+    @moduledoc """
+    A Phoenix LiveView that hosts a TEA (The Elm Architecture) application.
 
-  This allows any Raxol TEA app to run in a browser with the same `init/1`,
-  `update/2`, and `view/1` callbacks that work in the terminal.
+    This allows any Raxol TEA app to run in a browser with the same `init/1`,
+    `update/2`, and `view/1` callbacks that work in the terminal.
 
-  ## Usage
+    ## Usage
 
-  In your Phoenix router:
+    In your Phoenix router:
 
-      live "/counter", Raxol.LiveView.TEALive,
-        session: %{"app_module" => "Elixir.CounterExample"}
+        live "/counter", Raxol.LiveView.TEALive,
+          session: %{"app_module" => "Elixir.CounterExample"}
 
-  Or create a dedicated LiveView:
+    Or create a dedicated LiveView:
 
-      defmodule MyAppWeb.CounterLive do
-        use Phoenix.LiveView
+        defmodule MyAppWeb.CounterLive do
+          use Phoenix.LiveView
 
-        def mount(params, session, socket) do
-          Raxol.LiveView.TEALive.mount(params, session, socket,
-            app_module: CounterExample
-          )
+          def mount(params, session, socket) do
+            Raxol.LiveView.TEALive.mount(params, session, socket,
+              app_module: CounterExample
+            )
+          end
+
+          # Delegate remaining callbacks...
         end
+    """
 
-        # Delegate remaining callbacks...
-      end
-  """
-
-  if Code.ensure_loaded?(Phoenix.LiveView) do
     use Phoenix.LiveView
+
+    @compile {:no_warn_undefined, [Raxol.Core.Runtime.Lifecycle, Phoenix.PubSub]}
 
     require Logger
 

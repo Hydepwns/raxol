@@ -9,6 +9,7 @@ if Code.ensure_loaded?(Plug.Router) do
     ## Endpoints
 
     - `POST /mcp` -- receive JSON-RPC request, return response
+    - `GET /mcp/sse` -- server-sent events stream for notifications
     - `GET /health` -- health check
 
     ## Usage
@@ -19,6 +20,7 @@ if Code.ensure_loaded?(Plug.Router) do
     """
 
     use Plug.Router
+    require Logger
 
     alias Raxol.MCP.{Protocol, Server}
 
@@ -47,25 +49,55 @@ if Code.ensure_loaded?(Plug.Router) do
         end
 
       if body do
-        {:reply, response} = Server.handle_message(server, body)
+        try do
+          {:reply, response} = Server.handle_message(server, body)
 
-        if response do
-          {:ok, json} = Jason.encode(response)
+          if response do
+            json = Jason.encode!(response)
 
-          conn
-          |> put_resp_content_type("application/json")
-          |> send_resp(200, json)
-        else
-          send_resp(conn, 204, "")
+            conn
+            |> put_resp_content_type("application/json")
+            |> send_resp(200, json)
+          else
+            send_resp(conn, 204, "")
+          end
+        rescue
+          e ->
+            Logger.error("[MCP.SSE] Error handling message: #{Exception.message(e)}")
+            error = Protocol.error_response(nil, Protocol.internal_error(), "Internal server error")
+            json = Jason.encode!(error)
+
+            conn
+            |> put_resp_content_type("application/json")
+            |> send_resp(500, json)
         end
       else
         error = Protocol.error_response(nil, Protocol.parse_error(), "Invalid JSON")
-        {:ok, json} = Jason.encode(error)
+        json = Jason.encode!(error)
 
         conn
         |> put_resp_content_type("application/json")
         |> send_resp(400, json)
       end
+    end
+
+    get "/mcp/sse" do
+      server = conn.private[:mcp_server] || Server
+
+      conn =
+        conn
+        |> put_resp_content_type("text/event-stream")
+        |> put_resp_header("cache-control", "no-cache")
+        |> put_resp_header("connection", "keep-alive")
+        |> send_chunked(200)
+
+      # Subscribe this process to server notifications
+      Server.subscribe(server, self())
+
+      # Send initial keepalive
+      {:ok, conn} = Plug.Conn.chunk(conn, ": keepalive\n\n")
+
+      sse_loop(conn)
     end
 
     get "/health" do
@@ -86,6 +118,38 @@ if Code.ensure_loaded?(Plug.Router) do
       |> Plug.Conn.put_private(:mcp_server, server)
       |> super(opts)
     end
+
+    # -- SSE loop ---------------------------------------------------------------
+
+    defp sse_loop(conn) do
+      receive do
+        {:mcp_notification, notification} ->
+          case Jason.encode(notification) do
+            {:ok, json} ->
+              event = "data: #{json}\n\n"
+
+              case Plug.Conn.chunk(conn, event) do
+                {:ok, conn} -> sse_loop(conn)
+                {:error, _} -> conn
+              end
+
+            {:error, _} ->
+              sse_loop(conn)
+          end
+
+        _ ->
+          sse_loop(conn)
+      after
+        30_000 ->
+          # Send keepalive every 30s
+          case Plug.Conn.chunk(conn, ": keepalive\n\n") do
+            {:ok, conn} -> sse_loop(conn)
+            {:error, _} -> conn
+          end
+      end
+    end
+
+    # -- Private ----------------------------------------------------------------
 
     defp normalize_body_params(params) do
       # Plug.Parsers decodes JSON with string keys; normalize known fields

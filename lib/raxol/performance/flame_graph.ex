@@ -192,15 +192,16 @@ defmodule Raxol.Performance.FlameGraph do
   @spec with_fprof_profiling(String.t(), (String.t(), String.t() -> term())) ::
           term()
   defp with_fprof_profiling(prefix, fun) do
+    alias Raxol.Performance.FprofWrapper
     {trace_file, analysis_file} = make_temp_files(prefix)
 
     try do
       ensure_fprof()
-      _ = apply(:fprof, :start, [])
+      _ = FprofWrapper.start()
       fun.(trace_file, analysis_file)
     rescue
       e ->
-        safe_stop_fprof()
+        FprofWrapper.safe_stop()
         {:error, Exception.message(e)}
     after
       _ = File.rm(trace_file)
@@ -227,31 +228,29 @@ defmodule Raxol.Performance.FlameGraph do
   end
 
   defp start_trace(trace_file) do
-    _ =
-      apply(:fprof, :trace, [[:start, {:file, String.to_charlist(trace_file)}]])
-
+    alias Raxol.Performance.FprofWrapper
+    _ = FprofWrapper.trace([:start, {:file, String.to_charlist(trace_file)}])
     :ok
   end
 
   defp start_trace_with_spec(trace_file, spec) do
+    alias Raxol.Performance.FprofWrapper
+
     _ =
-      apply(:fprof, :trace, [
-        [:start, {:file, String.to_charlist(trace_file)} | spec]
+      FprofWrapper.trace([
+        :start,
+        {:file, String.to_charlist(trace_file)} | spec
       ])
 
     :ok
   end
 
   defp analyse_trace(trace_file, analysis_file) do
-    _ = apply(:fprof, :trace, [:stop])
-    _ = apply(:fprof, :profile, [[file: String.to_charlist(trace_file)]])
-
-    _ =
-      apply(:fprof, :analyse, [
-        [dest: String.to_charlist(analysis_file), cols: 120]
-      ])
-
-    _ = apply(:fprof, :stop, [])
+    alias Raxol.Performance.FprofWrapper
+    _ = FprofWrapper.trace(:stop)
+    _ = FprofWrapper.profile(file: String.to_charlist(trace_file))
+    _ = FprofWrapper.analyse(dest: String.to_charlist(analysis_file), cols: 120)
+    _ = FprofWrapper.stop()
     :ok
   end
 
@@ -261,12 +260,6 @@ defmodule Raxol.Performance.FlameGraph do
       :folded -> generate_folded(analysis_file, output)
       :fprof -> copy_fprof_output(analysis_file, output)
     end
-  end
-
-  defp safe_stop_fprof do
-    apply(:fprof, :stop, [])
-  rescue
-    _ -> :ok
   end
 
   defp ensure_fprof do

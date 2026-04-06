@@ -29,7 +29,7 @@ defmodule Raxol.Application do
   alias Raxol.Core.Runtime.Log
 
   @type feature_flag :: atom()
-  @type start_mode :: :full | :minimal | :custom
+  @type start_mode :: :full | :minimal | :mcp | :custom
   @type child_spec :: Supervisor.child_spec() | {module(), term()} | module()
 
   @impl Application
@@ -56,11 +56,11 @@ defmodule Raxol.Application do
     # Start supervision tree with error handling
     result = start_supervisor(children, opts)
 
+    # Record actual start time for uptime calculation
+    :persistent_term.put(:raxol_start_time, System.monotonic_time(:second))
+
     # Register headless tools with MCP registry (all environments)
     maybe_register_mcp_tools()
-
-    # Legacy: also inject into Tidewave in dev (for Tidewave's own tools)
-    maybe_inject_mcp_tools()
 
     # Record startup metrics
     record_startup_metrics(start_time, mode, result)
@@ -86,6 +86,9 @@ defmodule Raxol.Application do
 
       System.get_env("RAXOL_MODE") == "minimal" ->
         :minimal
+
+      System.get_env("RAXOL_MODE") == "mcp" ->
+        :mcp
 
       Application.get_env(:raxol, :startup_mode) ->
         Application.get_env(:raxol, :startup_mode)
@@ -136,6 +139,21 @@ defmodule Raxol.Application do
       {Raxol.Core.ErrorRecovery, [mode: :minimal]},
       # Basic telemetry if enabled
       maybe_add_telemetry(:minimal)
+    ]
+    |> List.flatten()
+    |> Enum.filter(& &1)
+  end
+
+  defp get_children_for_mode(:mcp) do
+    # Lightweight mode for MCP server -- only what headless tools need
+    [
+      {Raxol.Core.ErrorRecovery, [name: Raxol.Core.ErrorRecovery]},
+      {Raxol.Core.UserPreferences, [name: Raxol.Core.UserPreferences]},
+      {Raxol.DynamicSupervisor, []},
+      {Registry, keys: :duplicate, name: :raxol_event_subscriptions},
+      maybe_add_mcp_supervisor(),
+      {Raxol.Headless, []},
+      maybe_add_pubsub()
     ]
     |> List.flatten()
     |> Enum.filter(& &1)
@@ -576,15 +594,22 @@ defmodule Raxol.Application do
           uptime_seconds: integer()
         }
   def health_status do
+    supervisor_pid = Process.whereis(Raxol.Supervisor)
+
     %{
       mode: determine_startup_mode([]),
       supervisor_alive:
-        Process.alive?(Process.whereis(Raxol.Supervisor) || self()),
+        is_pid(supervisor_pid) and Process.alive?(supervisor_pid),
       children: count_children(),
       memory_mb: div(:erlang.memory(:total), 1_048_576),
       process_count: :erlang.system_info(:process_count),
       features: Application.get_env(:raxol, :features, default_features()),
-      uptime_seconds: System.monotonic_time(:second)
+      uptime_seconds:
+        System.monotonic_time(:second) -
+          :persistent_term.get(
+            :raxol_start_time,
+            System.monotonic_time(:second)
+          )
     }
   end
 
@@ -611,27 +636,12 @@ defmodule Raxol.Application do
 
   defp maybe_register_mcp_tools do
     if module_available?(Raxol.MCP.Registry) and
-         module_available?(Raxol.Headless.McpTools) do
+         Code.ensure_loaded?(Raxol.Headless.McpTools) and
+         Process.whereis(Raxol.MCP.Registry) != nil do
       Raxol.Headless.McpTools.register(Raxol.MCP.Registry)
     end
 
     :ok
-  end
-
-  defp maybe_inject_mcp_tools do
-    _ =
-      if mix_env() == :dev and Code.ensure_loaded?(Raxol.Headless.McpTools) do
-        Task.start(&retry_tidewave_injection/0)
-      end
-
-    :ok
-  end
-
-  defp retry_tidewave_injection do
-    Enum.find(1..10, fn _ ->
-      Process.sleep(500)
-      Raxol.Headless.McpTools.inject_into_tidewave() == :ok
-    end)
   end
 
   defp mix_env, do: if(Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod)

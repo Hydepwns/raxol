@@ -178,7 +178,7 @@ defmodule Raxol.UI.Components.Input.Tabs do
   @impl Raxol.MCP.ToolProvider
   def mcp_tools(state) do
     tabs = state[:tabs] || []
-    tab_names = Enum.map(tabs, & &1[:label]) |> Enum.join(", ")
+    tab_names = Enum.map_join(tabs, ", ", & &1[:label])
 
     [
       %{

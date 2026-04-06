@@ -47,7 +47,9 @@ defmodule Raxol.MCP.Property.TreeWalkerTest do
     end
 
     @impl true
-    def handle_tool_call("type_into", %{"text" => t}, _), do: {:ok, "Typed '#{t}'", [{:change, t}]}
+    def handle_tool_call("type_into", %{"text" => t}, _),
+      do: {:ok, "Typed '#{t}'", [{:change, t}]}
+
     def handle_tool_call("get_value", _, ctx), do: {:ok, ctx.widget_state[:attrs][:value] || ""}
     def handle_tool_call(_, _, _), do: {:error, :unknown}
   end
@@ -58,28 +60,28 @@ defmodule Raxol.MCP.Property.TreeWalkerTest do
 
   defp widget_id_gen do
     gen all(
-      prefix <- member_of(~w(btn inp sel chk tbl tree tab menu modal)),
-      suffix <- string(:alphanumeric, min_length: 1, max_length: 8)
-    ) do
+          prefix <- member_of(~w(btn inp sel chk tbl tree tab menu modal)),
+          suffix <- string(:alphanumeric, min_length: 1, max_length: 8)
+        ) do
       "#{prefix}_#{suffix}"
     end
   end
 
   defp button_gen do
     gen all(
-      id <- widget_id_gen(),
-      label <- string(:printable, min_length: 1, max_length: 30),
-      disabled <- boolean()
-    ) do
+          id <- widget_id_gen(),
+          label <- string(:printable, min_length: 1, max_length: 30),
+          disabled <- boolean()
+        ) do
       %{type: :button, id: id, attrs: %{label: label, disabled: disabled}}
     end
   end
 
   defp input_gen do
     gen all(
-      id <- widget_id_gen(),
-      value <- string(:printable, max_length: 50)
-    ) do
+          id <- widget_id_gen(),
+          value <- string(:printable, max_length: 50)
+        ) do
       %{type: :text_input, id: id, attrs: %{value: value}}
     end
   end
@@ -99,9 +101,9 @@ defmodule Raxol.MCP.Property.TreeWalkerTest do
 
   defp nested_tree_gen do
     gen all(
-      top_widgets <- list_of(widget_gen(), min_length: 0, max_length: 3),
-      inner_widgets <- list_of(widget_gen(), min_length: 1, max_length: 4)
-    ) do
+          top_widgets <- list_of(widget_gen(), min_length: 0, max_length: 3),
+          inner_widgets <- list_of(widget_gen(), min_length: 1, max_length: 4)
+        ) do
       %{
         type: :column,
         children:

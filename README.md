@@ -168,7 +168,20 @@ Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
 
 ### Developer tools
 
-**Headless sessions.** Start any TEA app without a terminal for programmatic testing and MCP integration. `Raxol.Headless.start("examples/demo.exs")`, take text screenshots, send keystrokes, inspect the model. Six named MCP tools (`raxol_start`, `raxol_screenshot`, `raxol_send_key`, `raxol_get_model`, `raxol_stop`, `raxol_list`) auto-inject into Tidewave in dev mode.
+**Headless sessions and MCP.** Start any TEA app without a terminal for programmatic testing and AI integration. Tools are auto-derived from the widget tree -- Button exposes `click`, TextInput exposes `type_into`/`clear`/`get_value`. A focus lens filters to ~15 relevant tools per interaction, with mouse hover tracking for anticipatory tool exposure. `mix mcp.server` starts the MCP server on stdio for Claude Code. Test with a pipe-friendly API:
+
+```elixir
+import Raxol.MCP.Test
+import Raxol.MCP.Test.Assertions
+
+session = start_session(MyApp)
+
+session
+|> type_into("search", "elixir")
+|> click("submit")
+|> assert_widget("results", fn w -> w[:content] != nil end)
+|> stop_session()
+```
 
 **Time-travel debugging.** Snapshots every `update/2` cycle: step back, forward, jump, restore. Zero cost when disabled.
 
@@ -224,8 +237,12 @@ A full frame uses 13% of the 60fps budget, leaving plenty of room for applicatio
 
 - [`raxol_core`](packages/raxol_core/) -- behaviours, events, config, plugins
 - [`raxol_terminal`](packages/raxol_terminal/) -- terminal emulation, termbox2 NIF
+- [`raxol_mcp`](packages/raxol_mcp/) -- MCP server, client, registry, test harness
 - [`raxol_agent`](packages/raxol_agent/) -- AI agent framework
 - [`raxol_sensor`](packages/raxol_sensor/) -- sensor fusion
+- [`raxol_payments`](packages/raxol_payments/) -- agent payments (x402/MPP)
+- [`raxol_liveview`](packages/raxol_liveview/) -- Phoenix LiveView bridge, themes, CSS
+- [`raxol_plugin`](packages/raxol_plugin/) -- plugin SDK (`use Raxol.Plugin`), testing, generator
 
 ## Development
 

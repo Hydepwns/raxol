@@ -9,6 +9,9 @@ defmodule Raxol.UI.Charts.BarChart do
 
   alias Raxol.UI.Charts.ChartUtils
 
+  @compile {:no_warn_undefined, Raxol.MCP.ToolProvider}
+  @behaviour Raxol.MCP.ToolProvider
+
   @type cell :: ChartUtils.cell()
 
   @type series :: %{
@@ -515,4 +518,48 @@ defmodule Raxol.UI.Charts.BarChart do
   defp bars_per_group_width(num_series, bar_gap, group_gap) do
     num_series + (num_series - 1) * bar_gap + group_gap
   end
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(state) do
+    id = state[:id] || "bar_chart"
+
+    [
+      %{
+        name: "get_data",
+        description: "Get current data series for bar chart '#{id}'",
+        inputSchema: %{type: "object", properties: %{}}
+      },
+      %{
+        name: "get_range",
+        description: "Get axis min/max range for bar chart '#{id}'",
+        inputSchema: %{type: "object", properties: %{}}
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("get_data", _args, context) do
+    series = context.widget_state[:series] || []
+    {:ok, ChartUtils.summarize_series(series)}
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("get_range", _args, context) do
+    series = context.widget_state[:series] || []
+    chart_opts = context.widget_state[:chart_opts] || []
+
+    all_values =
+      series
+      |> Enum.flat_map(fn s -> ChartUtils.normalize_data(s[:data] || []) end)
+
+    {range_min, range_max} = ChartUtils.resolve_range(all_values, chart_opts)
+    # Bar charts include 0 in range
+    {:ok, %{min: min(0, range_min), max: max(0, range_max)}}
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
 end

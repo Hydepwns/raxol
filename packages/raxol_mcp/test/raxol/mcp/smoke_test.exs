@@ -19,11 +19,13 @@ defmodule Raxol.MCP.SmokeTest do
     def mcp_tools(%{attrs: %{disabled: true}}), do: []
 
     def mcp_tools(state) do
-      [%{
-        name: "click",
-        description: "Click '#{state[:attrs][:label] || "Button"}'",
-        inputSchema: %{type: "object", properties: %{}}
-      }]
+      [
+        %{
+          name: "click",
+          description: "Click '#{state[:attrs][:label] || "Button"}'",
+          inputSchema: %{type: "object", properties: %{}}
+        }
+      ]
     end
 
     @impl true
@@ -159,10 +161,11 @@ defmodule Raxol.MCP.SmokeTest do
 
   describe "TreeWalker end-to-end" do
     test "derives all expected tools from a realistic tree" do
-      tools = TreeWalker.derive_tools(search_app_tree(), %{
-        dispatcher_pid: nil,
-        type_map: @type_map
-      })
+      tools =
+        TreeWalker.derive_tools(search_app_tree(), %{
+          dispatcher_pid: nil,
+          type_map: @type_map
+        })
 
       names = Enum.map(tools, & &1.name) |> Enum.sort()
 
@@ -181,10 +184,11 @@ defmodule Raxol.MCP.SmokeTest do
     end
 
     test "tool callbacks are callable and return proper results" do
-      tools = TreeWalker.derive_tools(search_app_tree(), %{
-        dispatcher_pid: nil,
-        type_map: @type_map
-      })
+      tools =
+        TreeWalker.derive_tools(search_app_tree(), %{
+          dispatcher_pid: nil,
+          type_map: @type_map
+        })
 
       tools_by_name = Map.new(tools, &{&1.name, &1})
 
@@ -215,10 +219,11 @@ defmodule Raxol.MCP.SmokeTest do
     end
 
     test "tool callbacks dispatch messages to dispatcher" do
-      tools = TreeWalker.derive_tools(search_app_tree(), %{
-        dispatcher_pid: self(),
-        type_map: @type_map
-      })
+      tools =
+        TreeWalker.derive_tools(search_app_tree(), %{
+          dispatcher_pid: self(),
+          type_map: @type_map
+        })
 
       # Call search_btn.click -- should dispatch a message
       click_tool = Enum.find(tools, &(&1.name == "search_btn.click"))
@@ -236,10 +241,11 @@ defmodule Raxol.MCP.SmokeTest do
 
   describe "FocusLens end-to-end" do
     test "focused mode filters to target widget" do
-      tools = TreeWalker.derive_tools(search_app_tree(), %{
-        dispatcher_pid: nil,
-        type_map: @type_map
-      })
+      tools =
+        TreeWalker.derive_tools(search_app_tree(), %{
+          dispatcher_pid: nil,
+          type_map: @type_map
+        })
 
       focused = FocusLens.filter(tools, mode: :focused, focused_id: "search_input")
       names = Enum.map(focused, & &1.name)
@@ -253,10 +259,11 @@ defmodule Raxol.MCP.SmokeTest do
     end
 
     test "all mode returns everything" do
-      tools = TreeWalker.derive_tools(search_app_tree(), %{
-        dispatcher_pid: nil,
-        type_map: @type_map
-      })
+      tools =
+        TreeWalker.derive_tools(search_app_tree(), %{
+          dispatcher_pid: nil,
+          type_map: @type_map
+        })
 
       all = FocusLens.filter(tools, mode: :all)
       assert length(all) == length(tools)
@@ -267,10 +274,11 @@ defmodule Raxol.MCP.SmokeTest do
     test "derived tools can be registered and called via Registry" do
       {:ok, registry} = Registry.start_link(name: nil)
 
-      tools = TreeWalker.derive_tools(search_app_tree(), %{
-        dispatcher_pid: nil,
-        type_map: @type_map
-      })
+      tools =
+        TreeWalker.derive_tools(search_app_tree(), %{
+          dispatcher_pid: nil,
+          type_map: @type_map
+        })
 
       Registry.register_tools(registry, tools)
 
@@ -304,10 +312,11 @@ defmodule Raxol.MCP.SmokeTest do
     test "tools can be unregistered cleanly" do
       {:ok, registry} = Registry.start_link(name: nil)
 
-      tools = TreeWalker.derive_tools(search_app_tree(), %{
-        dispatcher_pid: nil,
-        type_map: @type_map
-      })
+      tools =
+        TreeWalker.derive_tools(search_app_tree(), %{
+          dispatcher_pid: nil,
+          type_map: @type_map
+        })
 
       Registry.register_tools(registry, tools)
       assert length(Registry.list_tools(registry)) == 6
@@ -419,10 +428,11 @@ defmodule Raxol.MCP.SmokeTest do
       {:ok, registry} = Registry.start_link(name: nil)
 
       # Derive and register tools
-      tools = TreeWalker.derive_tools(search_app_tree(), %{
-        dispatcher_pid: nil,
-        type_map: @type_map
-      })
+      tools =
+        TreeWalker.derive_tools(search_app_tree(), %{
+          dispatcher_pid: nil,
+          type_map: @type_map
+        })
 
       Registry.register_tools(registry, tools)
 

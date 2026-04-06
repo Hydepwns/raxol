@@ -16,6 +16,15 @@ defmodule Raxol.MCP.TreeWalker do
 
   Tool names are namespaced as `"widget_id.action"`, e.g., `"search_input.type_into"`.
   Nodes without an `:id` key are skipped (layout containers like `:column`, `:row`).
+
+  ## Excluding Widgets
+
+  Set `mcp_exclude: true` in a widget's attrs to suppress tool derivation:
+
+      %{type: :text_input, id: "internal", attrs: %{mcp_exclude: true}}
+
+  The widget and its children still render normally -- only MCP tool
+  exposure is suppressed. Useful for decorative or internal widgets.
   """
 
   alias Raxol.MCP.ToolProvider
@@ -35,7 +44,10 @@ defmodule Raxol.MCP.TreeWalker do
               Raxol.UI.Components.Display.Tree,
               Raxol.UI.Components.Display.Viewport,
               Raxol.UI.Components.Modal,
-              Raxol.UI.Components.Table
+              Raxol.UI.Components.Table,
+              Raxol.UI.Charts.BarChart,
+              Raxol.UI.Charts.LineChart,
+              Raxol.UI.Charts.ScatterChart
             ]}
 
   @default_type_map %{
@@ -50,7 +62,10 @@ defmodule Raxol.MCP.TreeWalker do
     tree: Raxol.UI.Components.Display.Tree,
     viewport: Raxol.UI.Components.Display.Viewport,
     modal: Raxol.UI.Components.Modal,
-    table: Raxol.UI.Components.Table
+    table: Raxol.UI.Components.Table,
+    bar_chart: Raxol.UI.Charts.BarChart,
+    line_chart: Raxol.UI.Charts.LineChart,
+    scatter_chart: Raxol.UI.Charts.ScatterChart
   }
 
   @type context :: %{
@@ -81,7 +96,13 @@ defmodule Raxol.MCP.TreeWalker do
 
   defp do_walk(%{type: type, id: id} = node, context, type_map, acc)
        when is_atom(type) and is_binary(id) and id != "" do
-    widget_tools = derive_widget_tools(node, type, id, context, type_map)
+    widget_tools =
+      if mcp_excluded?(node) do
+        []
+      else
+        derive_widget_tools(node, type, id, context, type_map)
+      end
+
     children_acc = do_walk(node[:children] || [], context, type_map, acc)
     widget_tools ++ children_acc
   end
@@ -151,4 +172,7 @@ defmodule Raxol.MCP.TreeWalker do
   defp format_result(result) do
     [%{type: "text", text: inspect(result)}]
   end
+
+  defp mcp_excluded?(%{attrs: %{mcp_exclude: true}}), do: true
+  defp mcp_excluded?(_), do: false
 end

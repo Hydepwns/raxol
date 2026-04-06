@@ -9,6 +9,9 @@ defmodule Raxol.UI.Charts.ScatterChart do
 
   alias Raxol.UI.Charts.{BrailleCanvas, ChartUtils}
 
+  @compile {:no_warn_undefined, Raxol.MCP.ToolProvider}
+  @behaviour Raxol.MCP.ToolProvider
+
   @type cell :: ChartUtils.cell()
 
   @type series :: %{
@@ -119,13 +122,123 @@ defmodule Raxol.UI.Charts.ScatterChart do
          dot_h
        ) do
     Enum.reduce(data, canvas, fn {px, py}, acc ->
-      dx = round(ChartUtils.scale_value(px, x_min, x_max, 0, dot_w - 1))
+      dx =
+        ChartUtils.scale_value(px, x_min, x_max, 0, dot_w - 1)
+        |> round()
+        |> ChartUtils.clamp(0, dot_w - 1)
+
       # Invert Y: high values at top
       dy =
-        dot_h - 1 -
-          round(ChartUtils.scale_value(py, y_min, y_max, 0, dot_h - 1))
+        ChartUtils.scale_value(py, y_min, y_max, 0, dot_h - 1)
+        |> round()
+        |> ChartUtils.clamp(0, dot_h - 1)
+        |> then(&(dot_h - 1 - &1))
 
       BrailleCanvas.put_dot(acc, dx, dy, layer_id)
     end)
+  end
+
+  # -- ToolProvider callbacks --
+
+  @impl Raxol.MCP.ToolProvider
+  def mcp_tools(state) do
+    id = state[:id] || "scatter_chart"
+
+    [
+      %{
+        name: "get_points",
+        description: "Get all data points for scatter chart '#{id}'",
+        inputSchema: %{type: "object", properties: %{}}
+      },
+      %{
+        name: "get_range",
+        description: "Get X and Y axis ranges for scatter chart '#{id}'",
+        inputSchema: %{type: "object", properties: %{}}
+      },
+      %{
+        name: "get_cluster_info",
+        description:
+          "Get point density summary (count, centroid, spread) per series in scatter chart '#{id}'",
+        inputSchema: %{type: "object", properties: %{}}
+      }
+    ]
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("get_points", _args, context) do
+    series = context.widget_state[:series] || []
+    {:ok, ChartUtils.summarize_series_2d(series)}
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("get_range", _args, context) do
+    series = context.widget_state[:series] || []
+    chart_opts = context.widget_state[:chart_opts] || []
+
+    all_points =
+      series
+      |> Enum.flat_map(fn s -> ChartUtils.normalize_data_2d(s[:data] || []) end)
+
+    {x_range, y_range} = resolve_ranges(all_points, chart_opts)
+
+    {:ok,
+     %{
+       x: %{min: elem(x_range, 0), max: elem(x_range, 1)},
+       y: %{min: elem(y_range, 0), max: elem(y_range, 1)}
+     }}
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call("get_cluster_info", _args, context) do
+    series = context.widget_state[:series] || []
+    result = Enum.map(series, &series_cluster_stats/1)
+    {:ok, result}
+  end
+
+  @impl Raxol.MCP.ToolProvider
+  def handle_tool_call(action, _args, _ctx),
+    do: {:error, "Unknown action: #{action}"}
+
+  defp series_cluster_stats(s) do
+    points = ChartUtils.normalize_data_2d(s[:data] || [])
+    name = s[:name] || "unnamed"
+    count = length(points)
+
+    if count == 0 do
+      %{name: name, count: 0, centroid: nil, spread: nil}
+    else
+      {cx, cy, std_x, std_y} = compute_centroid_and_spread(points, count)
+
+      %{
+        name: name,
+        count: count,
+        centroid: %{x: Float.round(cx, 4), y: Float.round(cy, 4)},
+        spread: %{x: Float.round(std_x, 4), y: Float.round(std_y, 4)}
+      }
+    end
+  end
+
+  defp compute_centroid_and_spread(points, count) do
+    {cx, cy} = centroid(points, count)
+    {std_x, std_y} = std_deviation(points, cx, cy, count)
+    {cx, cy, std_x, std_y}
+  end
+
+  defp centroid(points, count) do
+    {sum_x, sum_y} =
+      Enum.reduce(points, {0.0, 0.0}, fn {px, py}, {ax, ay} ->
+        {ax + px, ay + py}
+      end)
+
+    {sum_x / count, sum_y / count}
+  end
+
+  defp std_deviation(points, cx, cy, count) do
+    {var_x, var_y} =
+      Enum.reduce(points, {0.0, 0.0}, fn {px, py}, {sx, sy} ->
+        {sx + (px - cx) * (px - cx), sy + (py - cy) * (py - cy)}
+      end)
+
+    {:math.sqrt(var_x / count), :math.sqrt(var_y / count)}
   end
 end

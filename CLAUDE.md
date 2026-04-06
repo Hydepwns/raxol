@@ -71,7 +71,7 @@ mix docs                      # Generate documentation
 
 ### Headless MCP Tools
 
-When `mix phx.server` is running, Tidewave serves MCP at `http://localhost:4000/tidewave/mcp` (configured in `.mcp.json`). Six Raxol-specific tools are auto-injected at startup: `raxol_start`, `raxol_screenshot`, `raxol_send_key`, `raxol_get_model`, `raxol_stop`, `raxol_list`. For Claude Code to see these as native MCP tools, the server must be running **before** starting the conversation.
+`mix mcp.server` starts the MCP server on stdio (for Claude Code integration). Six Raxol-specific tools are registered at startup: `raxol_start`, `raxol_screenshot`, `raxol_send_key`, `raxol_get_model`, `raxol_stop`, `raxol_list`. Tools are auto-derived from the widget tree via `Raxol.MCP.ToolProvider` -- each interactive widget exposes semantic actions (e.g., Button exposes `click`, TextInput exposes `type_into`/`clear`/`get_value`). Set `mcp_exclude: true` in widget attrs to suppress tool derivation for internal widgets.
 
 ### Development Scripts
 
@@ -108,18 +108,22 @@ packages/
 ├── raxol_terminal/  # Terminal emulation (VT100/ANSI), termbox2 NIF, screen buffer
 ├── raxol_sensor/    # Sensor fusion (zero Raxol deps)
 ├── raxol_agent/     # AI agent framework (depends on main raxol)
-├── raxol_mcp/       # (planned) MCP protocol: server, client, registry, tool derivation
-├── raxol_liveview/  # (scaffold) LiveView bridge -- not yet wired
-└── raxol_plugin/    # (scaffold) Plugin SDK -- not yet wired
+├── raxol_mcp/       # MCP protocol: server, client, registry, tool derivation, test harness
+├── raxol_payments/  # Agent payments: x402/MPP auto-pay, wallet, spending controls
+├── raxol_liveview/  # LiveView bridge: TerminalBridge, TEALive, TerminalComponent, themes
+└── raxol_plugin/    # Plugin SDK: use macro, API facade, testing utils, generator
 ```
 
 **Dependency graph** (arrows = "depends on"):
 
 ```
-raxol (main) --> raxol_core, raxol_terminal, raxol_sensor, raxol_mcp
+raxol (main) --> raxol_core, raxol_terminal, raxol_sensor, raxol_mcp, raxol_liveview, raxol_plugin
 raxol_terminal --> raxol_core
 raxol_mcp --> raxol_core
+raxol_liveview --> raxol_core (+ phoenix_live_view optional)
+raxol_plugin --> raxol_core
 raxol_agent --> raxol, raxol_mcp (main does NOT depend on raxol_agent)
+raxol_payments --> raxol_agent (runtime: false, compile-time only)
 raxol_core --> telemetry (only external dep)
 raxol_sensor --> (none)
 ```
@@ -133,6 +137,10 @@ cd packages/raxol_core && MIX_ENV=test mix test       # ~719 tests
 cd packages/raxol_terminal && MIX_ENV=test mix test    # ~1874 tests
 cd packages/raxol_sensor && MIX_ENV=test mix test      # ~55 tests
 cd packages/raxol_agent && MIX_ENV=test mix test       # ~378 tests
+cd packages/raxol_mcp && MIX_ENV=test mix test         # ~222 tests + 31 properties
+cd packages/raxol_payments && MIX_ENV=test mix test    # ~45 tests
+cd packages/raxol_liveview && MIX_ENV=test mix test    # ~37 tests
+cd packages/raxol_plugin && MIX_ENV=test mix test      # ~50 tests
 ```
 
 ### Core Layers (main raxol)
@@ -161,8 +169,8 @@ lib/raxol/
 ├── ssh/             # SSH serving
 ├── repl/            # Interactive REPL
 ├── performance/     # Performance monitoring, profiling, caching
-├── live_view/       # Phoenix LiveView integration (terminal + browser bridge)
-└── effects/         # Visual effects (CursorTrail, etc.)
+├── live_view/       # README only (code moved to packages/raxol_liveview)
+└── effects/         # Visual effects (CursorTrail, HoverHighlight)
 ```
 
 ### Key Architectural Decisions
@@ -182,6 +190,8 @@ lib/raxol/
 
 **Agent Framework** (in `packages/raxol_agent/`): `use Raxol.Agent` creates TEA apps for AI agents. `Agent.Session` wraps Lifecycle with `environment: :agent` (skips terminal driver and plugin manager, uses anonymous Dispatcher to avoid singleton conflicts). Agents discover each other via `Raxol.Agent.Registry` (unique Registry). `Agent.Team` is an OTP Supervisor for coordinator/worker groups. Three agent-specific Command types: `:async` (streaming sender callback), `:shell` (Port-based execution), `:send_agent` (Registry-routed inter-agent messages arriving as `{:agent_message, from, payload}`). `view/1` is optional -- headless agents skip rendering entirely. Note: raxol_agent depends on main raxol, not the other way around.
 
+**Agent Payments** (in `packages/raxol_payments/`): Autonomous payment capabilities for agents. `Raxol.Payments.Wallet` behaviour with `Wallets.Env` (env var) and `Wallets.Op` (1Password GenServer). `Raxol.Payments.Protocol` behaviour with `Protocols.X402` (Coinbase x402, EIP-712/ERC-3009 signing) and `Protocols.MPP` (Stripe/Tempo Machine Payments Protocol). `Raxol.Payments.Req.AutoPay` is a Req response step plugin that transparently handles HTTP 402 flows. `SpendingPolicy` + `Ledger` (ETS-backed GenServer) + `SpendingHook` (CommandHook) enforce per-request/session/lifetime spending limits. Five Agent Actions: `payment_get_balance`, `payment_get_quote`, `payment_transfer`, `payment_spending_status`, `payment_list_history`. Stubs exist for Riddler (cross-chain intents) and Xochi (private payments with ZKSAR). Depends on raxol_agent at compile time only (`runtime: false`).
+
 **Swarm Discovery**: `Raxol.Swarm.Discovery` wraps libcluster (optional dep) with strategy presets: `:gossip` (LAN multicast), `:epmd` (static hosts), `:dns` (Fly.io/K8s), `:tailscale` (mesh via `tailscale status --json`, tag-filtered). NodeMonitor auto-wires `:nodeup`/`:nodedown` events to Topology (elections) and TacticalOverlay (peer sync). Custom strategy: `Raxol.Swarm.Strategy.Tailscale`.
 
 **AI Backend Streaming**: `Raxol.Agent.Backend.HTTP.stream/2` provides real SSE streaming for Anthropic, OpenAI, Ollama, and Kimi APIs. Uses `Stream.resource/3` + `spawn_link` + message passing. Four SSE formats: Anthropic (content_block_delta), OpenAI/Kimi (data chunks + `[DONE]`), Ollama (NDJSON), Lumo (data: JSON per line with U2L decryption). `Raxol.Agent.Backend.Lumo` implements Proton Lumo's full U2L encryption protocol (per-request AES-256-GCM + PGP key delivery via gpg) with lumo-tamer OpenAI-compatible proxy as fallback. Tiered backend detection: Lumo -> Anthropic -> Kimi -> OpenAI -> Ollama -> LLM7 -> Mock.
@@ -194,11 +204,11 @@ lib/raxol/
 
 **Virtual File System**: `Raxol.Commands.FileSystem` is a pure functional in-memory VFS. Flat map keyed by absolute path for O(1) lookups. CRUD: `new/0`, `mkdir/2`, `create_file/3`, `rm/2`, `exists?/2`, `stat/2`. Navigation: `ls/2`, `cd/2`, `pwd/1`, `tree/3`. Read: `cat/2`. REPL helpers in `Raxol.REPL.VfsHelpers` provide shell-like commands (`ls`, `cd`, `cat`, `mkdir`, `touch`, `rm`, `tree`, `stat`). Agent actions in `Raxol.Agent.Actions.Vfs` expose 7 LLM-callable tools via the Action behaviour. See `docs/features/FILESYSTEM.md` for full docs.
 
-**Headless Sessions**: `Raxol.Headless` is a GenServer managing headless TEA app instances in `:agent` environment. `start/2` accepts a module or file path (AST-parsed to extract only `defmodule` blocks, skipping boot code). `screenshot/1` calls `:render_frame_sync` on the engine then reads the buffer via `:get_buffer`. `send_key/3` builds an Event via `Raxol.Headless.EventBuilder` and casts to the dispatcher. `Raxol.Headless.McpTools` defines 6 MCP tools injected into Tidewave's ETS table at startup via `:sys.replace_state` on the table owner process. Dev endpoint at `localhost:4000/tidewave/mcp` (`lib/raxol/endpoint.ex`, config in `config/dev.exs`).
+**Headless Sessions**: `Raxol.Headless` is a GenServer managing headless TEA app instances in `:agent` environment. `start/2` accepts a module or file path (AST-parsed to extract only `defmodule` blocks, skipping boot code). `screenshot/1` calls `:render_frame_sync` on the engine then reads the buffer via `:get_buffer`. `send_key/3` builds an Event via `Raxol.Headless.EventBuilder` and casts to the dispatcher. `Raxol.Headless.McpTools` defines 6 MCP tools registered with `Raxol.MCP.Registry` at startup. `mix mcp.server` starts the standalone MCP server on stdio (lightweight `:mcp` startup mode, ~18ms).
 
-**MCP as Rendering Target** (see ADR-0012): MCP is a first-class rendering target, not a bolted-on feature. The framework derives MCP tools automatically from the widget tree via `Raxol.MCP.ToolProvider` behaviour on each widget type. A focus lens (attention-aware, with mouse tracking) filters to ~10 relevant tools per interaction. Model state exposed as MCP resources via app-declared projections. Agents both consume and serve MCP (symmetry). Multi-surface cockpit: same model projected to terminal, MCP, Telegram, speech, and watch via functors from the TEA model category. Package: `packages/raxol_mcp/` (depends on raxol_core). Context tree assembles state from model, widgets, agents, swarm, and notifications as MCP resources, streamed as diffs. Category theory used for design and property-based test invariants, not in code.
+**MCP as Rendering Target** (see ADR-0012): MCP is a first-class rendering target, not a bolted-on feature. The framework derives MCP tools automatically from the widget tree via `Raxol.MCP.ToolProvider` behaviour on each widget type (15 widgets). A focus lens (attention-aware, with mouse hover tracking via `:hover` mode) filters to ~15 relevant tools per interaction. `@mcp_exclude` attribute suppresses tool derivation for internal widgets. Model state exposed as MCP resources via app-declared projections. `Raxol.MCP.Test` provides a pipe-friendly test harness: `session |> type_into("field", "value") |> click("btn") |> assert_widget("status")`. Functor law property tests verify tool derivation consistency. Package: `packages/raxol_mcp/` (depends on raxol_core). Context tree assembles state from model, widgets, agents, swarm, and notifications as MCP resources, streamed as diffs.
 
-**Phoenix as library only**: No active web server in core (dev-only endpoint for Tidewave MCP), Ecto.Repo explicitly disabled at runtime.
+**Phoenix as library only**: No active web server in core, Ecto.Repo explicitly disabled at runtime. MCP is served via `mix mcp.server` (stdio), not through Phoenix.
 
 ### Buffer/Renderer API
 
@@ -251,7 +261,7 @@ These namespaces have been consolidated -- avoid creating new top-level alternat
 - `Raxol.Terminal.Commands.*` - All command processing, in raxol_terminal package
 - `Raxol.Terminal.Rendering.*` - All terminal rendering, in raxol_terminal package
 - `Raxol.Performance.*` - All performance tools (not `core/performance/`)
-- `Raxol.LiveView.*` - LiveView integration (not `liveview/`)
+- `Raxol.LiveView.*` - LiveView integration, in raxol_liveview package
 - `Raxol.Debug.*` - Debugging tools (time-travel, snapshots)
 - `Raxol.Recording.*` - Session recording/replay (not `session/`)
 - `Raxol.Swarm.*` - Distributed swarm (CRDTs, discovery, topology)
@@ -260,6 +270,8 @@ These namespaces have been consolidated -- avoid creating new top-level alternat
 - `Raxol.UI.Layout.ScrollContent` - Cursor-based lazy scroll behaviour + adapters
 - `Raxol.Headless.*` - Headless session manager, EventBuilder, TextCapture, McpTools
 - `Raxol.MCP.*` - MCP protocol (server, client, registry, transports, tool derivation)
+- `Raxol.Payments.*` - Agent payments (protocols, wallets, spending, actions) in raxol_payments package
+- `Raxol.Plugin` - Plugin SDK macro (`use Raxol.Plugin`), API, testing in raxol_plugin package
 
 ## Environment Variables
 

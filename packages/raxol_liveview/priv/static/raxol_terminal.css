@@ -1,0 +1,124 @@
+/* Raxol Terminal -- LiveView CSS
+ *
+ * Include this stylesheet to style terminal buffers rendered by
+ * Raxol.LiveView.TerminalBridge and Raxol.LiveView.TerminalComponent.
+ *
+ * Theming: override the custom properties below, or use
+ * Raxol.LiveView.Themes.to_css_vars/1 to generate them per-theme.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Custom properties (defaults = dark theme)                          */
+/* ------------------------------------------------------------------ */
+:root {
+  --raxol-bg: #1a1a2e;
+  --raxol-fg: #e0e0e0;
+  --raxol-cursor: #f0f0f0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Base terminal container                                            */
+/* ------------------------------------------------------------------ */
+.raxol-terminal {
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono",
+    "Menlo", "Consolas", monospace;
+  font-size: 14px;
+  line-height: 1.2;
+  background-color: var(--raxol-bg);
+  color: var(--raxol-fg);
+  padding: 0.75rem 1rem;
+  margin: 0;
+  overflow: auto;
+  white-space: pre;
+  tab-size: 8;
+  border-radius: 6px;
+  outline: none;
+}
+
+.raxol-terminal:focus {
+  box-shadow: 0 0 0 2px var(--raxol-cursor);
+}
+
+/* ------------------------------------------------------------------ */
+/* Cursor styles                                                      */
+/* ------------------------------------------------------------------ */
+.raxol-cursor-block {
+  background-color: var(--raxol-cursor);
+  color: var(--raxol-bg);
+}
+
+.raxol-cursor-underline {
+  border-bottom: 2px solid var(--raxol-cursor);
+}
+
+.raxol-cursor-bar {
+  border-left: 2px solid var(--raxol-cursor);
+}
+
+/* Blinking animation for focused terminals */
+.raxol-terminal:focus .raxol-cursor-block,
+.raxol-terminal:focus .raxol-cursor-underline,
+.raxol-terminal:focus .raxol-cursor-bar {
+  animation: raxol-blink 1s step-end infinite;
+}
+
+@keyframes raxol-blink {
+  50% { opacity: 0; }
+}
+
+/* ------------------------------------------------------------------ */
+/* Text style classes                                                 */
+/* ------------------------------------------------------------------ */
+.raxol-bold        { font-weight: bold; }
+.raxol-italic      { font-style: italic; }
+.raxol-underline   { text-decoration: underline; }
+.raxol-reverse     { filter: invert(1); }
+.raxol-strikethrough { text-decoration: line-through; }
+
+/* ------------------------------------------------------------------ */
+/* Named foreground color classes                                     */
+/* ------------------------------------------------------------------ */
+.raxol-fg-black          { color: #000000; }
+.raxol-fg-red            { color: #ff0000; }
+.raxol-fg-green          { color: #00ff00; }
+.raxol-fg-yellow         { color: #ffff00; }
+.raxol-fg-blue           { color: #0000ff; }
+.raxol-fg-magenta        { color: #ff00ff; }
+.raxol-fg-cyan           { color: #00ffff; }
+.raxol-fg-white          { color: #ffffff; }
+.raxol-fg-bright_black   { color: #808080; }
+.raxol-fg-bright_red     { color: #ff8080; }
+.raxol-fg-bright_green   { color: #80ff80; }
+.raxol-fg-bright_yellow  { color: #ffff80; }
+.raxol-fg-bright_blue    { color: #8080ff; }
+.raxol-fg-bright_magenta { color: #ff80ff; }
+.raxol-fg-bright_cyan    { color: #80ffff; }
+.raxol-fg-bright_white   { color: #ffffff; }
+
+/* ------------------------------------------------------------------ */
+/* Named background color classes                                     */
+/* ------------------------------------------------------------------ */
+.raxol-bg-black          { background-color: #000000; }
+.raxol-bg-red            { background-color: #ff0000; }
+.raxol-bg-green          { background-color: #00ff00; }
+.raxol-bg-yellow         { background-color: #ffff00; }
+.raxol-bg-blue           { background-color: #0000ff; }
+.raxol-bg-magenta        { background-color: #ff00ff; }
+.raxol-bg-cyan           { background-color: #00ffff; }
+.raxol-bg-white          { background-color: #ffffff; }
+.raxol-bg-bright_black   { background-color: #808080; }
+.raxol-bg-bright_red     { background-color: #ff8080; }
+.raxol-bg-bright_green   { background-color: #80ff80; }
+.raxol-bg-bright_yellow  { background-color: #ffff80; }
+.raxol-bg-bright_blue    { background-color: #8080ff; }
+.raxol-bg-bright_magenta { background-color: #ff80ff; }
+.raxol-bg-bright_cyan    { background-color: #80ffff; }
+.raxol-bg-bright_white   { background-color: #ffffff; }
+
+/* ------------------------------------------------------------------ */
+/* Diff highlighting (used by buffer_diff_to_html)                    */
+/* ------------------------------------------------------------------ */
+.raxol-diff-changed {
+  background-color: rgba(255, 255, 0, 0.25);
+  outline: 1px solid rgba(255, 255, 0, 0.5);
+}

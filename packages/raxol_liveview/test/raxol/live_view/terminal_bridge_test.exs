@@ -1,8 +1,8 @@
 defmodule Raxol.LiveView.TerminalBridgeTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Core.Buffer
   alias Raxol.LiveView.TerminalBridge
+  alias Raxol.LiveView.Test.BufferHelper, as: Buffer
 
   describe "buffer_to_html/2" do
     test "converts empty buffer to HTML" do
@@ -17,11 +17,10 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
 
     test "converts buffer with text to HTML" do
       buffer = Buffer.create_blank_buffer(20, 5)
-      buffer = Buffer.write_at(buffer, 0, 0, "Hello")
+      buffer = Buffer.write_string(buffer, 0, 0, "Hello")
 
       html = TerminalBridge.buffer_to_html(buffer)
 
-      # RLE rendering: text appears as runs, not per-character spans
       assert html =~ "Hello"
       assert html =~ ~s(<pre class="raxol-terminal")
     end
@@ -46,8 +45,6 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
     test "cursor options are accepted" do
       buffer = Buffer.create_blank_buffer(10, 3)
 
-      # RLE renderer doesn't emit per-cell cursor classes,
-      # but the function should accept cursor options without error
       html =
         TerminalBridge.buffer_to_html(buffer,
           show_cursor: true,
@@ -62,7 +59,7 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
   describe "buffer_diff_to_html/3" do
     test "highlights changed cells" do
       old_buffer = Buffer.create_blank_buffer(20, 5)
-      new_buffer = Buffer.write_at(old_buffer, 0, 0, "Changed")
+      new_buffer = Buffer.write_string(old_buffer, 0, 0, "Changed")
 
       html = TerminalBridge.buffer_diff_to_html(old_buffer, new_buffer)
 
@@ -72,11 +69,10 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
 
     test "does not highlight unchanged cells" do
       buffer = Buffer.create_blank_buffer(20, 5)
-      buffer = Buffer.write_at(buffer, 0, 0, "Same")
+      buffer = Buffer.write_string(buffer, 0, 0, "Same")
 
       html = TerminalBridge.buffer_diff_to_html(buffer, buffer)
 
-      # Should have diff container but no changed cells
       assert html =~ "raxol-diff"
       refute html =~ "raxol-diff-changed"
     end
@@ -84,43 +80,33 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
 
   describe "style_to_classes/2" do
     test "converts bold to CSS class" do
-      style = %{bold: true}
-      classes = TerminalBridge.style_to_classes(style)
-
-      assert classes =~ "raxol-bold"
+      assert TerminalBridge.style_to_classes(%{bold: true}) =~ "raxol-bold"
     end
 
     test "converts italic to CSS class" do
-      style = %{italic: true}
-      classes = TerminalBridge.style_to_classes(style)
-
-      assert classes =~ "raxol-italic"
+      assert TerminalBridge.style_to_classes(%{italic: true}) =~ "raxol-italic"
     end
 
     test "converts underline to CSS class" do
-      style = %{underline: true}
-      classes = TerminalBridge.style_to_classes(style)
-
-      assert classes =~ "raxol-underline"
+      assert TerminalBridge.style_to_classes(%{underline: true}) =~ "raxol-underline"
     end
 
     test "converts named foreground color to CSS class" do
-      style = %{fg_color: :blue}
-      classes = TerminalBridge.style_to_classes(style)
-
-      assert classes =~ "raxol-fg-blue"
+      assert TerminalBridge.style_to_classes(%{fg_color: :blue}) =~ "raxol-fg-blue"
     end
 
     test "converts named background color to CSS class" do
-      style = %{bg_color: :red}
-      classes = TerminalBridge.style_to_classes(style)
-
-      assert classes =~ "raxol-bg-red"
+      assert TerminalBridge.style_to_classes(%{bg_color: :red}) =~ "raxol-bg-red"
     end
 
     test "combines multiple style attributes" do
-      style = %{bold: true, italic: true, fg_color: :green, bg_color: :black}
-      classes = TerminalBridge.style_to_classes(style)
+      classes =
+        TerminalBridge.style_to_classes(%{
+          bold: true,
+          italic: true,
+          fg_color: :green,
+          bg_color: :black
+        })
 
       assert classes =~ "raxol-bold"
       assert classes =~ "raxol-italic"
@@ -129,82 +115,59 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
     end
 
     test "uses custom CSS prefix" do
-      style = %{bold: true, fg_color: :blue}
-      classes = TerminalBridge.style_to_classes(style, "custom")
-
+      classes = TerminalBridge.style_to_classes(%{bold: true, fg_color: :blue}, "custom")
       assert classes =~ "custom-bold"
       assert classes =~ "custom-fg-blue"
     end
 
     test "returns empty string for empty style" do
-      style = %{}
-      classes = TerminalBridge.style_to_classes(style)
-
-      assert classes == ""
+      assert TerminalBridge.style_to_classes(%{}) == ""
     end
   end
 
   describe "style_to_inline/1" do
     test "converts bold to inline style" do
-      style = %{bold: true}
-      inline = TerminalBridge.style_to_inline(style)
-
-      assert inline =~ "font-weight: bold"
+      assert TerminalBridge.style_to_inline(%{bold: true}) =~ "font-weight: bold"
     end
 
     test "converts italic to inline style" do
-      style = %{italic: true}
-      inline = TerminalBridge.style_to_inline(style)
-
-      assert inline =~ "font-style: italic"
+      assert TerminalBridge.style_to_inline(%{italic: true}) =~ "font-style: italic"
     end
 
     test "converts underline to inline style" do
-      style = %{underline: true}
-      inline = TerminalBridge.style_to_inline(style)
-
-      assert inline =~ "text-decoration: underline"
+      assert TerminalBridge.style_to_inline(%{underline: true}) =~ "text-decoration: underline"
     end
 
     test "converts RGB foreground color to inline style" do
-      style = %{fg_color: {255, 128, 64}}
-      inline = TerminalBridge.style_to_inline(style)
-
-      assert inline =~ "color: rgb(255, 128, 64)"
+      assert TerminalBridge.style_to_inline(%{fg_color: {255, 128, 64}}) =~
+               "color: rgb(255, 128, 64)"
     end
 
     test "converts RGB background color to inline style" do
-      style = %{bg_color: {64, 128, 255}}
-      inline = TerminalBridge.style_to_inline(style)
-
-      assert inline =~ "background-color: rgb(64, 128, 255)"
+      assert TerminalBridge.style_to_inline(%{bg_color: {64, 128, 255}}) =~
+               "background-color: rgb(64, 128, 255)"
     end
 
     test "converts named foreground color to hex" do
-      style = %{fg_color: :red}
-      inline = TerminalBridge.style_to_inline(style)
-
-      assert inline =~ "color: #ff0000"
+      assert TerminalBridge.style_to_inline(%{fg_color: :red}) =~ "color: #ff0000"
     end
 
     test "converts named background color to hex" do
-      style = %{bg_color: :blue}
-      inline = TerminalBridge.style_to_inline(style)
-
-      assert inline =~ "background-color: #0000ff"
+      assert TerminalBridge.style_to_inline(%{bg_color: :blue}) =~ "background-color: #0000ff"
     end
 
     test "converts 256-color index to RGB" do
-      style = %{fg_color: 196}
-      inline = TerminalBridge.style_to_inline(style)
-
-      # Color 196 should be bright red
-      assert inline =~ "color: rgb("
+      assert TerminalBridge.style_to_inline(%{fg_color: 196}) =~ "color: rgb("
     end
 
     test "combines multiple inline styles" do
-      style = %{bold: true, italic: true, fg_color: {255, 0, 0}, bg_color: {0, 0, 255}}
-      inline = TerminalBridge.style_to_inline(style)
+      inline =
+        TerminalBridge.style_to_inline(%{
+          bold: true,
+          italic: true,
+          fg_color: {255, 0, 0},
+          bg_color: {0, 0, 255}
+        })
 
       assert inline =~ "font-weight: bold"
       assert inline =~ "font-style: italic"
@@ -213,43 +176,35 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
     end
 
     test "returns empty string for empty style" do
-      style = %{}
-      inline = TerminalBridge.style_to_inline(style)
-
-      assert inline == ""
+      assert TerminalBridge.style_to_inline(%{}) == ""
     end
   end
 
   describe "HTML safety" do
     test "escapes HTML special characters" do
-      buffer = Buffer.create_blank_buffer(20, 3)
-      buffer = Buffer.write_at(buffer, 0, 0, "<script>")
+      buffer =
+        Buffer.create_blank_buffer(20, 3)
+        |> Buffer.write_string(0, 0, "<script>")
 
       html = TerminalBridge.buffer_to_html(buffer)
 
-      # Each character is escaped and wrapped in spans
       assert html =~ "&lt;"
       assert html =~ "&gt;"
-      # Should not have raw < or > from user input
       refute html =~ "<script>"
     end
 
     test "escapes ampersands" do
-      buffer = Buffer.create_blank_buffer(20, 3)
-      buffer = Buffer.write_at(buffer, 0, 0, "A & B")
+      buffer =
+        Buffer.create_blank_buffer(20, 3)
+        |> Buffer.write_string(0, 0, "A & B")
 
       html = TerminalBridge.buffer_to_html(buffer)
-
       assert html =~ "&amp;"
     end
 
     test "preserves spaces in pre block" do
       buffer = Buffer.create_blank_buffer(20, 3)
-      buffer = Buffer.write_at(buffer, 0, 0, " ")
-
       html = TerminalBridge.buffer_to_html(buffer)
-
-      # Spaces are preserved by white-space:pre, no &nbsp; needed
       assert html =~ ~s(<pre class="raxol-terminal")
     end
   end
@@ -257,21 +212,13 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
   describe "performance" do
     @tag :skip_on_ci
     test "renders 80x24 buffer quickly" do
-      buffer = Buffer.create_blank_buffer(80, 24)
-
-      # Fill with some content
       buffer =
-        Enum.reduce(0..23, buffer, fn y, acc ->
-          Buffer.write_at(acc, 0, y, "Line #{y}")
+        Enum.reduce(0..23, Buffer.create_blank_buffer(80, 24), fn y, acc ->
+          Buffer.write_string(acc, 0, y, "Line #{y}")
         end)
 
-      {time_us, _html} =
-        :timer.tc(fn ->
-          TerminalBridge.buffer_to_html(buffer)
-        end)
-
-      # Should be well under 16ms (16000μs) for 60fps
-      assert time_us < 16_000, "Rendering took #{time_us}μs (target: < 16_000μs)"
+      {time_us, _html} = :timer.tc(fn -> TerminalBridge.buffer_to_html(buffer) end)
+      assert time_us < 16_000, "Rendering took #{time_us}us (target: < 16_000us)"
     end
 
     @tag :skip_on_ci
@@ -280,16 +227,13 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
 
       new_buffer =
         Enum.reduce(0..23, old_buffer, fn y, acc ->
-          Buffer.write_at(acc, 0, y, "Line #{y}")
+          Buffer.write_string(acc, 0, y, "Line #{y}")
         end)
 
       {time_us, _html} =
-        :timer.tc(fn ->
-          TerminalBridge.buffer_diff_to_html(old_buffer, new_buffer)
-        end)
+        :timer.tc(fn -> TerminalBridge.buffer_diff_to_html(old_buffer, new_buffer) end)
 
-      # Diff should also be fast
-      assert time_us < 16_000, "Diff rendering took #{time_us}μs (target: < 16_000μs)"
+      assert time_us < 16_000, "Diff rendering took #{time_us}us (target: < 16_000us)"
     end
   end
 end

@@ -9,6 +9,7 @@ defmodule RaxolPlugin.MixProject do
       app: :raxol_plugin,
       version: @version,
       elixir: "~> 1.16 or ~> 1.17",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
@@ -25,12 +26,16 @@ defmodule RaxolPlugin.MixProject do
     ]
   end
 
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
   defp deps do
     [
-      # Core dependency - terminal buffer primitives
+      # Core dependency - plugin behaviours and runtime
       {:raxol_core, "~> 2.0", path: "../raxol_core"},
 
       # Dev/test only
+      {:mox, "~> 1.2", only: :test},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}

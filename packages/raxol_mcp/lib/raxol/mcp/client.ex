@@ -53,7 +53,8 @@ defmodule Raxol.MCP.Client do
     :tools,
     :registry,
     next_id: 1,
-    status: :starting
+    status: :starting,
+    call_timeout: 30_000
   ]
 
   @type t :: %__MODULE__{
@@ -67,10 +68,11 @@ defmodule Raxol.MCP.Client do
           tools: [tool()] | nil,
           registry: atom() | nil,
           next_id: pos_integer(),
-          status: :starting | :initializing | :ready | :closed
+          status: :starting | :initializing | :ready | :closed,
+          call_timeout: pos_integer()
         }
 
-  @call_timeout 30_000
+  @default_call_timeout 30_000
 
   # -- Client API ---------------------------------------------------------------
 
@@ -84,16 +86,18 @@ defmodule Raxol.MCP.Client do
   end
 
   @doc "List tools available on the MCP server."
-  @spec list_tools(GenServer.server()) :: {:ok, [tool()]} | {:error, term()}
-  def list_tools(server) do
-    GenServer.call(server, :list_tools, @call_timeout)
+  @spec list_tools(GenServer.server(), keyword()) :: {:ok, [tool()]} | {:error, term()}
+  def list_tools(server, opts \\ []) do
+    timeout = Keyword.get(opts, :timeout, @default_call_timeout)
+    GenServer.call(server, :list_tools, timeout)
   end
 
   @doc "Call a tool on the MCP server."
-  @spec call_tool(GenServer.server(), String.t(), map()) ::
+  @spec call_tool(GenServer.server(), String.t(), map(), keyword()) ::
           {:ok, call_result()} | {:error, term()}
-  def call_tool(server, tool_name, arguments \\ %{}) do
-    GenServer.call(server, {:call_tool, tool_name, arguments}, @call_timeout)
+  def call_tool(server, tool_name, arguments \\ %{}, opts \\ []) do
+    timeout = Keyword.get(opts, :timeout, @default_call_timeout)
+    GenServer.call(server, {:call_tool, tool_name, arguments}, timeout)
   end
 
   @doc "Get the client's current status."
@@ -136,6 +140,8 @@ defmodule Raxol.MCP.Client do
     env = Keyword.get(opts, :env, [])
     registry = Keyword.get(opts, :registry)
 
+    call_timeout = Keyword.get(opts, :call_timeout, @default_call_timeout)
+
     state = %__MODULE__{
       name: name,
       command: command,
@@ -144,7 +150,8 @@ defmodule Raxol.MCP.Client do
       buffer: "",
       pending: %{},
       status: :starting,
-      registry: registry
+      registry: registry,
+      call_timeout: call_timeout
     }
 
     {:ok, state, {:continue, :spawn_server}}
