@@ -379,7 +379,11 @@ defmodule Raxol.Core.Runtime.Command do
          [{agent_pid, _}] <- Registry.lookup(Raxol.Agent.Registry, target_id) do
       GenServer.cast(agent_pid, {:send_message, message})
     else
-      _ -> send(context.pid, {:command_result, {:send_agent_error, :not_found, target_id}})
+      _ ->
+        send(
+          context.pid,
+          {:command_result, {:send_agent_error, :not_found, target_id}}
+        )
     end
   end
 

@@ -9,9 +9,21 @@ defmodule Raxol.Core.Metrics do
 
   @spec init(keyword()) :: :ok | {:error, term()}
   def init(options \\ []) do
-    with {:ok, _pid} <- safe_call(fn -> Raxol.Core.Metrics.MetricsCollector.start_link(options) end, 5000),
-         :ok <- safe_call(fn -> Raxol.Core.Metrics.Aggregator.init(options) end, 3000),
-         :ok <- safe_call(fn -> Raxol.Core.Metrics.AlertManager.init(options) end, 3000) do
+    with {:ok, _pid} <-
+           safe_call(
+             fn -> Raxol.Core.Metrics.MetricsCollector.start_link(options) end,
+             5000
+           ),
+         :ok <-
+           safe_call(
+             fn -> Raxol.Core.Metrics.Aggregator.init(options) end,
+             3000
+           ),
+         :ok <-
+           safe_call(
+             fn -> Raxol.Core.Metrics.AlertManager.init(options) end,
+             3000
+           ) do
       :ok
     else
       {:error, reason} -> {:error, {:metrics_init_failed, reason}}
@@ -29,7 +41,9 @@ defmodule Raxol.Core.Metrics do
   def record(name, value, tags \\ []) do
     # Metrics are non-critical -- swallow failures
     fire_and_forget(fn ->
-      Raxol.Core.Metrics.MetricsCollector.record_metric(name, :custom, value, tags: tags)
+      Raxol.Core.Metrics.MetricsCollector.record_metric(name, :custom, value,
+        tags: tags
+      )
     end)
 
     fire_and_forget(fn ->
@@ -41,7 +55,10 @@ defmodule Raxol.Core.Metrics do
 
   @spec get_metrics() :: {:ok, map()} | {:error, term()}
   def get_metrics do
-    case safe_call(fn -> Raxol.Core.Metrics.MetricsCollector.get_all_metrics() end, 2000) do
+    case safe_call(
+           fn -> Raxol.Core.Metrics.MetricsCollector.get_all_metrics() end,
+           2000
+         ) do
       {:ok, metrics} when is_map(metrics) -> {:ok, metrics}
       {:ok, data} -> {:ok, normalize_metrics(data)}
       {:error, reason} -> {:error, {:metrics_get_failed, reason}}
@@ -50,7 +67,11 @@ defmodule Raxol.Core.Metrics do
 
   @spec clear_metrics() :: :ok | {:error, term()}
   def clear_metrics do
-    with :ok <- safe_call(fn -> Raxol.Core.Metrics.MetricsCollector.clear_metrics() end, 2000),
+    with :ok <-
+           safe_call(
+             fn -> Raxol.Core.Metrics.MetricsCollector.clear_metrics() end,
+             2000
+           ),
          :ok <- safe_call(fn -> Raxol.Core.Metrics.Aggregator.clear() end, 2000) do
       :ok
     else
