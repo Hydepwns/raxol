@@ -443,9 +443,9 @@ defmodule Raxol.Demo.Dashboard do
   defp bar_color(pct) when pct >= 60, do: :yellow
   defp bar_color(_pct), do: :green
 
-  defp status_dot(pct) when pct >= 80, do: "●"
-  defp status_dot(pct) when pct >= 60, do: "●"
-  defp status_dot(_pct), do: "●"
+  defp status_dot(pct) when pct >= 80, do: "!"
+  defp status_dot(pct) when pct >= 60, do: "~"
+  defp status_dot(_pct), do: "*"
 
   defp sched_status(pct) when pct >= 80, do: "High load"
   defp sched_status(pct) when pct >= 60, do: "Moderate"

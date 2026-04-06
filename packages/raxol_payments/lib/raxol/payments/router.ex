@@ -1,39 +1,48 @@
 defmodule Raxol.Payments.Router do
   @moduledoc """
-  Selects the optimal payment protocol based on configuration and KYC tier.
+  Selects the optimal payment protocol based on transfer requirements.
 
-  Routes payment requests to the appropriate protocol based on:
-  - KYC verification level (verified, basic, none)
-  - Privacy preference (private, public, auto)
-  - Cross-chain requirements
-  - Cost optimization
+  ## Routing Logic
 
-  ## Routing Logic (planned)
+      Same-chain + HTTP 402 detected -> x402 or MPP (auto-pay plugin)
+      Cross-chain transfer          -> Xochi (agent-facing, cash-positive)
+      Explicit privacy request      -> Xochi with stealth/shielded settlement
+      Direct solver access          -> Riddler (internal, not default)
 
-      KYC Verified + wants privacy -> Xochi (stealth addresses, ZKSAR)
-      KYC Verified + wants best rate -> Public chain (lowest fees)
-      No KYC + wants privacy -> Xochi (limited, higher fees)
-      No KYC + public -> x402/MPP direct (cheapest, fully transparent)
-      Cross-chain needed -> Riddler (any of the above as settlement)
-
-  This module is a stub. Full routing will be implemented in Phase C.
+  Xochi is the default for cross-chain because it's the revenue-positive
+  path with tier-based fees. Riddler Commerce is B2B (Coinbase/Shopify)
+  and not intended for agent use.
   """
 
-  @type kyc_tier :: :verified | :basic | :none
-  @type privacy :: :private | :public | :auto
+  @type privacy :: :public | :stealth | :shielded | :auto
 
   @doc """
-  Select the best protocol for a payment based on configuration.
+  Select the best protocol for a payment.
 
-  Returns a protocol atom (:x402, :mpp, :riddler, :xochi).
+  Returns a protocol atom: `:x402`, `:mpp`, `:xochi`, or `:riddler`.
+
+  ## Options
+
+  - `:cross_chain` -- true if source and dest chains differ (default: false)
+  - `:privacy` -- `:public`, `:stealth`, `:shielded`, or `:auto` (default: `:auto`)
+  - `:protocol` -- force a specific protocol (overrides routing)
   """
   @spec select(keyword()) :: atom()
   def select(opts \\ []) do
-    _kyc = Keyword.get(opts, :kyc_tier, :none)
-    _privacy = Keyword.get(opts, :privacy, :auto)
-    _cross_chain = Keyword.get(opts, :cross_chain, false)
+    case Keyword.get(opts, :protocol) do
+      nil -> auto_select(opts)
+      forced -> forced
+    end
+  end
 
-    # Phase A: always use x402 or mpp
-    :x402
+  defp auto_select(opts) do
+    cross_chain = Keyword.get(opts, :cross_chain, false)
+    privacy = Keyword.get(opts, :privacy, :auto)
+
+    cond do
+      privacy in [:stealth, :shielded] -> :xochi
+      cross_chain -> :xochi
+      true -> :x402
+    end
   end
 end

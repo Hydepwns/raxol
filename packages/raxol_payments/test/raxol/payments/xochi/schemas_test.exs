@@ -1,0 +1,190 @@
+defmodule Raxol.Payments.Xochi.SchemasTest do
+  use ExUnit.Case, async: true
+
+  alias Raxol.Payments.Xochi.Schemas.{
+    QuoteRequest,
+    QuoteResponse,
+    ExecuteRequest,
+    ExecuteResponse,
+    IntentStatus
+  }
+
+  describe "QuoteRequest.to_json/1" do
+    test "converts struct to camelCase JSON map" do
+      req = %QuoteRequest{
+        wallet: "0xabc",
+        from_chain_id: 1,
+        to_chain_id: 8453,
+        from_token: "0xA0b8",
+        to_token: "0x8335",
+        from_amount: "1000000",
+        settlement_preference: "public",
+        slippage_bps: 100,
+        gasless: true
+      }
+
+      json = QuoteRequest.to_json(req)
+
+      assert json["wallet"] == "0xabc"
+      assert json["from_chain_id"] == 1
+      assert json["to_chain_id"] == 8453
+      assert json["from_amount"] == "1000000"
+      assert json["settlement_preference"] == "public"
+      assert json["slippage_bps"] == 100
+      assert json["gasless"] == true
+      assert is_integer(json["deadline"])
+    end
+
+    test "includes trust_score when set" do
+      req = %QuoteRequest{
+        wallet: "0xabc",
+        from_chain_id: 1,
+        to_chain_id: 8453,
+        from_token: "0xA0b8",
+        to_token: "0x8335",
+        from_amount: "1000000",
+        settlement_preference: "public",
+        trust_score: 75
+      }
+
+      json = QuoteRequest.to_json(req)
+      assert json["trust_score"] == 75
+    end
+  end
+
+  describe "QuoteResponse.from_json/1" do
+    test "parses JSON response" do
+      json = %{
+        "intentId" => "intent_123",
+        "quoteId" => "quote_456",
+        "canSolve" => true,
+        "toAmount" => "995000",
+        "minToAmount" => "990000",
+        "xochiFee" => "3000",
+        "xochiFeeRate" => "0.30",
+        "estimatedGasCost" => "0.50",
+        "expiry" => "2026-04-06T12:30:30Z",
+        "gasless" => false,
+        "settlementOptions" => [%{"type" => "public", "available" => true}],
+        "eip712Data" => %{"domain" => %{}}
+      }
+
+      resp = QuoteResponse.from_json(json)
+
+      assert resp.intent_id == "intent_123"
+      assert resp.quote_id == "quote_456"
+      assert resp.can_solve == true
+      assert resp.to_amount == "995000"
+      assert resp.xochi_fee == "3000"
+      assert resp.eip712_data == %{"domain" => %{}}
+      assert length(resp.settlement_options) == 1
+    end
+
+    test "defaults can_solve to false" do
+      json = %{"intentId" => "i", "quoteId" => "q"}
+      resp = QuoteResponse.from_json(json)
+      assert resp.can_solve == false
+    end
+  end
+
+  describe "ExecuteRequest.to_json/1" do
+    test "converts to JSON with required fields" do
+      req = %ExecuteRequest{
+        intent_id: "intent_123",
+        quote_id: "quote_456",
+        signature: "0xdeadbeef",
+        nonce: 42
+      }
+
+      json = ExecuteRequest.to_json(req)
+
+      assert json["intent_id"] == "intent_123"
+      assert json["quote_id"] == "quote_456"
+      assert json["signature"] == "0xdeadbeef"
+      assert json["nonce"] == 42
+      refute Map.has_key?(json, "pull_signature")
+    end
+
+    test "includes optional fields when set" do
+      req = %ExecuteRequest{
+        intent_id: "i",
+        quote_id: "q",
+        signature: "0x",
+        nonce: 1,
+        pull_signature: "0xpull",
+        aztec_proof: "0xproof"
+      }
+
+      json = ExecuteRequest.to_json(req)
+      assert json["pull_signature"] == "0xpull"
+      assert json["aztec_proof"] == "0xproof"
+    end
+  end
+
+  describe "ExecuteResponse.from_json/1" do
+    test "parses JSON response" do
+      json = %{
+        "success" => true,
+        "intentId" => "intent_123",
+        "status" => "executing",
+        "txHash" => "0xabc"
+      }
+
+      resp = ExecuteResponse.from_json(json)
+      assert resp.success == true
+      assert resp.intent_id == "intent_123"
+      assert resp.status == :executing
+      assert resp.tx_hash == "0xabc"
+    end
+
+    test "parses stealth settlement fields" do
+      json = %{
+        "success" => true,
+        "intentId" => "i",
+        "status" => "settling",
+        "stealthAddress" => "0xstealth",
+        "ephemeralPubKey" => "0xeph",
+        "viewTag" => 42
+      }
+
+      resp = ExecuteResponse.from_json(json)
+      assert resp.stealth_address == "0xstealth"
+      assert resp.ephemeral_pub_key == "0xeph"
+      assert resp.view_tag == 42
+    end
+  end
+
+  describe "IntentStatus.from_json/1" do
+    test "parses JSON status" do
+      json = %{
+        "intentId" => "intent_123",
+        "status" => "bridging",
+        "txHash" => "0xabc",
+        "updatedAt" => "2026-04-06T12:00:00Z",
+        "terminal" => false
+      }
+
+      status = IntentStatus.from_json(json)
+      assert status.intent_id == "intent_123"
+      assert status.status == :bridging
+      assert status.tx_hash == "0xabc"
+      assert status.terminal == false
+    end
+
+    test "detects terminal statuses" do
+      for s <- ["completed", "failed", "expired"] do
+        json = %{"intentId" => "i", "status" => s}
+        status = IntentStatus.from_json(json)
+        assert IntentStatus.terminal?(status), "expected #{s} to be terminal"
+      end
+    end
+
+    test "non-terminal statuses" do
+      for s <- ["pending", "executing", "bridging", "settling"] do
+        json = %{"intentId" => "i", "status" => s}
+        status = IntentStatus.from_json(json)
+        refute IntentStatus.terminal?(status), "expected #{s} to be non-terminal"
+      end
+    end
+  end
+end

@@ -1,3 +1,21 @@
+## [Unreleased]
+
+### Added
+
+- **Phase 14B: Xochi Integration** -- Xochi as default agent-facing protocol for cross-chain payments. Cash-positive with tier-based fees (0.10-0.30%). Riddler solves intents behind the scenes.
+  - `Raxol.Payments.Xochi.Client` -- HTTP client for Xochi intent API (quote, execute, status, history)
+  - `Raxol.Payments.Xochi.Schemas` -- 5 typed structs (QuoteRequest, QuoteResponse, ExecuteRequest, ExecuteResponse, IntentStatus)
+  - `Raxol.Payments.Protocols.Xochi` -- full intent flow: `get_quote/2` -> `execute/3` (EIP-712 wallet signing) -> `poll_status/3`. Convenience `transfer/4` wraps the full lifecycle
+  - `Raxol.Payments.Riddler.Client` -- Commerce API client (B2B/direct solver access, not default)
+  - `Raxol.Payments.Riddler.Schemas` -- 6 typed structs (Chain, Route, QuoteRequest, QuoteResponse, OrderRequest, OrderStatus)
+  - `Raxol.Payments.Protocols.Riddler` -- ERC-3009/Permit2 signing, poll flow for direct solver
+  - `Raxol.Payments.Router` -- cross-chain routes to `:xochi`, privacy (stealth/shielded) routes to `:xochi`, same-chain stays `:x402`. Force via `:protocol` option
+  - 49 new tests (94 total in raxol_payments, was 45)
+
+### Fixed
+
+- **Dashboard demo** -- `status_dot/1` used identical character for all scheduler load levels; now uses distinct ASCII indicators per threshold
+
 ## [2.4.0] - 2026-04-05
 
 ### Added

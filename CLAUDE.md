@@ -109,7 +109,7 @@ packages/
 ├── raxol_sensor/    # Sensor fusion (zero Raxol deps)
 ├── raxol_agent/     # AI agent framework (depends on main raxol)
 ├── raxol_mcp/       # MCP protocol: server, client, registry, tool derivation, test harness
-├── raxol_payments/  # Agent payments: x402/MPP auto-pay, wallet, spending controls
+├── raxol_payments/  # Agent payments: x402/MPP auto-pay, Xochi cross-chain, wallet, spending
 ├── raxol_liveview/  # LiveView bridge: TerminalBridge, TEALive, TerminalComponent, themes
 └── raxol_plugin/    # Plugin SDK: use macro, API facade, testing utils, generator
 ```
@@ -138,7 +138,7 @@ cd packages/raxol_terminal && MIX_ENV=test mix test    # ~1874 tests
 cd packages/raxol_sensor && MIX_ENV=test mix test      # ~55 tests
 cd packages/raxol_agent && MIX_ENV=test mix test       # ~378 tests
 cd packages/raxol_mcp && MIX_ENV=test mix test         # ~222 tests + 31 properties
-cd packages/raxol_payments && MIX_ENV=test mix test    # ~45 tests
+cd packages/raxol_payments && MIX_ENV=test mix test    # ~94 tests
 cd packages/raxol_liveview && MIX_ENV=test mix test    # ~37 tests
 cd packages/raxol_plugin && MIX_ENV=test mix test      # ~50 tests
 ```
@@ -190,7 +190,9 @@ lib/raxol/
 
 **Agent Framework** (in `packages/raxol_agent/`): `use Raxol.Agent` creates TEA apps for AI agents. `Agent.Session` wraps Lifecycle with `environment: :agent` (skips terminal driver and plugin manager, uses anonymous Dispatcher to avoid singleton conflicts). Agents discover each other via `Raxol.Agent.Registry` (unique Registry). `Agent.Team` is an OTP Supervisor for coordinator/worker groups. Three agent-specific Command types: `:async` (streaming sender callback), `:shell` (Port-based execution), `:send_agent` (Registry-routed inter-agent messages arriving as `{:agent_message, from, payload}`). `view/1` is optional -- headless agents skip rendering entirely. Note: raxol_agent depends on main raxol, not the other way around.
 
-**Agent Payments** (in `packages/raxol_payments/`): Autonomous payment capabilities for agents. `Raxol.Payments.Wallet` behaviour with `Wallets.Env` (env var) and `Wallets.Op` (1Password GenServer). `Raxol.Payments.Protocol` behaviour with `Protocols.X402` (Coinbase x402, EIP-712/ERC-3009 signing) and `Protocols.MPP` (Stripe/Tempo Machine Payments Protocol). `Raxol.Payments.Req.AutoPay` is a Req response step plugin that transparently handles HTTP 402 flows. `SpendingPolicy` + `Ledger` (ETS-backed GenServer) + `SpendingHook` (CommandHook) enforce per-request/session/lifetime spending limits. Five Agent Actions: `payment_get_balance`, `payment_get_quote`, `payment_transfer`, `payment_spending_status`, `payment_list_history`. Stubs exist for Riddler (cross-chain intents) and Xochi (private payments with ZKSAR). Depends on raxol_agent at compile time only (`runtime: false`).
+**Agent Payments** (in `packages/raxol_payments/`): Autonomous payment capabilities for agents. `Raxol.Payments.Wallet` behaviour with `Wallets.Env` (env var) and `Wallets.Op` (1Password GenServer). `Raxol.Payments.Protocol` behaviour with `Protocols.X402` (Coinbase x402, EIP-712/ERC-3009 signing) and `Protocols.MPP` (Stripe/Tempo Machine Payments Protocol). `Raxol.Payments.Req.AutoPay` is a Req response step plugin that transparently handles HTTP 402 flows. `SpendingPolicy` + `Ledger` (ETS-backed GenServer) + `SpendingHook` (CommandHook) enforce per-request/session/lifetime spending limits. Five Agent Actions: `payment_get_balance`, `payment_get_quote`, `payment_transfer`, `payment_spending_status`, `payment_list_history`. Depends on raxol_agent at compile time only (`runtime: false`).
+
+**Payment Protocol Routing**: `Raxol.Payments.Router.select/1` chooses the protocol. Same-chain HTTP 402 -> x402/MPP (auto-pay). Cross-chain -> Xochi (default, cash-positive with tier fees 0.10-0.30%). Privacy (stealth/shielded) -> Xochi. `Protocols.Xochi` implements the full intent flow: `get_quote/2` -> `execute/3` (wallet signs EIP-712) -> `poll_status/3`. `Xochi.Client` calls the Xochi API (`/api/intent/quote`, `/api/intent/execute`, `/api/intent/:id/status`). Riddler solves intents behind the scenes. `Protocols.Riddler` + `Riddler.Client` provide direct solver access (Commerce API, B2B only -- do NOT use for agent payments, it's cash-negative). See `../riddler/docs/architecture/decisions/0005-xochi-integration.md` for the architectural rationale.
 
 **Swarm Discovery**: `Raxol.Swarm.Discovery` wraps libcluster (optional dep) with strategy presets: `:gossip` (LAN multicast), `:epmd` (static hosts), `:dns` (Fly.io/K8s), `:tailscale` (mesh via `tailscale status --json`, tag-filtered). NodeMonitor auto-wires `:nodeup`/`:nodedown` events to Topology (elections) and TacticalOverlay (peer sync). Custom strategy: `Raxol.Swarm.Strategy.Tailscale`.
 
@@ -227,6 +229,7 @@ IO.write(Renderer.apply_diff(diff))  # NOT Enum.each(diff, &IO.write/1)
 `view(model)` -> Preparer (text measurement) -> LayoutEngine (positioning) -> UIRenderer (cell tuples) -> ScreenBuffer (diff) -> Terminal.Renderer (ANSI). See `docs/core/ARCHITECTURE.md` for the full layer-by-layer walkthrough.
 
 Key rules:
+
 - Use `Raxol.UI.TextMeasure` for display width, never `String.length` -- CJK chars are double-width
 - `ScrollContent` behaviour enables lazy content for Viewport (`ListScrollContent`, `StreamScrollContent`)
 - **Never embed raw ANSI codes** (`\e[...m`) in strings passed to `text()` or the View DSL. ANSI codes are only applied at the final Terminal.Renderer stage. Components must use `text("content", fg: :cyan, style: [:bold])` -- not `text("\e[36mcontent\e[0m")`

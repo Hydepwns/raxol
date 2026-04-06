@@ -25,7 +25,8 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 - **Phase 11: MCP Resources + Context Tree** -- ResourceProvider behaviour, ResourceRouter, ContextTree, StructuredScreenshot, model projection diffs, resource subscriptions
 - **Phase 12: MCP Widget + Agent Coverage** -- `@mcp_exclude` attribute, FocusLens hover mode, ToolSynchronizer focus/hover tracking, HoverHighlight effect
 - **Phase 13: MCP Test Harness** -- Pipe-friendly test API (`click`, `type_into`, `assert_widget`, `assert_tool_available`), session lifecycle, functor law property tests (10 properties)
-- **Agent Payments** -- x402/MPP auto-pay, wallets (env + 1Password), spending controls, 5 agent actions
+- **Agent Payments (Phase A)** -- x402/MPP auto-pay, wallets (env + 1Password), spending controls, 5 agent actions
+- **Phase 14B: Xochi Integration** -- Xochi as default agent protocol for cross-chain (cash-positive, tier fees 0.10-0.30%). Riddler solves behind the scenes. Full intent flow: quote -> sign -> execute -> poll. Router prefers Xochi for cross-chain and privacy. 94 tests.
 
 ---
 
@@ -36,6 +37,15 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 | Task           | Description                                                    | Effort |
 | -------------- | -------------------------------------------------------------- | ------ |
 | Publish to Hex | `mix hex.publish` -- build succeeds, docs clean, zero warnings | Small  |
+
+### Xochi + Payments
+
+| Task                     | Description                                                          | Effort |
+| ------------------------ | -------------------------------------------------------------------- | ------ |
+| Stealth settlement       | ERC-5564/6538 address derivation in `Xochi.Stealth`                  | Medium |
+| ZKSAR attestation        | Verify compliance proofs attached to intents                         | Medium |
+| Trust tier integration   | Score-based fee rates + privacy depth routing                        | Small  |
+| Riddler solver in Xochi  | Wire Xochi adapter to Riddler's intent engine (ADR-0005)             | Large  |
 
 ### AI Backend Providers
 
@@ -58,8 +68,6 @@ Supported now:
 - Plugin marketplace
 - VS Code extension for component previews
 - Burrito packaging (single standalone binary)
-- Riddler cross-chain payment integration
-- Xochi private payment protocol (stealth addresses, ZKSAR)
 - Telegram bridge (`raxol_telegram`)
 - Speech interface (`raxol_speech`)
 - Watch interface

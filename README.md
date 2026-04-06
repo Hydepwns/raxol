@@ -82,7 +82,7 @@ That counter works in a terminal. Same module renders in Phoenix LiveView or ser
 ```elixir
 # mix.exs
 def deps do
-  [{:raxol, "~> 2.3"}]
+  [{:raxol, "~> 2.4"}]
 end
 ```
 
@@ -240,7 +240,7 @@ A full frame uses 13% of the 60fps budget, leaving plenty of room for applicatio
 - [`raxol_mcp`](packages/raxol_mcp/) -- MCP server, client, registry, test harness
 - [`raxol_agent`](packages/raxol_agent/) -- AI agent framework
 - [`raxol_sensor`](packages/raxol_sensor/) -- sensor fusion
-- [`raxol_payments`](packages/raxol_payments/) -- agent payments (x402/MPP)
+- [`raxol_payments`](packages/raxol_payments/) -- agent payments (x402/MPP auto-pay, Xochi cross-chain)
 - [`raxol_liveview`](packages/raxol_liveview/) -- Phoenix LiveView bridge, themes, CSS
 - [`raxol_plugin`](packages/raxol_plugin/) -- plugin SDK (`use Raxol.Plugin`), testing, generator
 
