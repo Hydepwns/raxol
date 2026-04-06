@@ -1,6 +1,6 @@
 # Raxol
 
-## Recursively, [axol](https://axol.io). Forever FOSS.
+> Recursively, [axol](https://axol.io). Forever FOSS.
 
 [![CI](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml/badge.svg?branch=master)](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml)
 [![Hex](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
