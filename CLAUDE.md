@@ -85,7 +85,7 @@ mix docs                      # Generate documentation
 
 ## Architecture
 
-Raxol is a terminal framework for Elixir built on OTP -- component model, agent runtime, sensor fusion, distributed swarm, and time-travel debugging. Supports multiple UI paradigms (React, LiveView, HEEx, Raw).
+Raxol is a terminal framework for Elixir built on OTP. It covers the component model, agent runtime, sensor fusion, distributed swarm, and time-travel debugging. Four UI paradigms: React, LiveView, HEEx, Raw.
 
 ### Application Model
 
@@ -100,7 +100,7 @@ use Raxol.UI, framework: :raw        # Direct terminal control
 
 ### Extracted Packages
 
-The codebase is decomposed into focused packages under `packages/`:
+The codebase splits into focused packages under `packages/`:
 
 ```
 packages/
@@ -190,13 +190,13 @@ lib/raxol/
 
 **Agent Framework** (in `packages/raxol_agent/`): `use Raxol.Agent` creates TEA apps for AI agents. `Agent.Session` wraps Lifecycle with `environment: :agent` (skips terminal driver and plugin manager, uses anonymous Dispatcher to avoid singleton conflicts). Agents discover each other via `Raxol.Agent.Registry` (unique Registry). `Agent.Team` is an OTP Supervisor for coordinator/worker groups. Three agent-specific Command types: `:async` (streaming sender callback), `:shell` (Port-based execution), `:send_agent` (Registry-routed inter-agent messages arriving as `{:agent_message, from, payload}`). `view/1` is optional -- headless agents skip rendering entirely. Note: raxol_agent depends on main raxol, not the other way around.
 
-**Agent Payments** (in `packages/raxol_payments/`): Autonomous payment capabilities for agents. `Raxol.Payments.Wallet` behaviour with `Wallets.Env` (env var) and `Wallets.Op` (1Password GenServer). `Raxol.Payments.Protocol` behaviour with `Protocols.X402` (Coinbase x402, EIP-712/ERC-3009 signing) and `Protocols.MPP` (Stripe/Tempo Machine Payments Protocol). `Raxol.Payments.Req.AutoPay` is a Req response step plugin that transparently handles HTTP 402 flows. `SpendingPolicy` + `Ledger` (ETS-backed GenServer) + `SpendingHook` (CommandHook) enforce per-request/session/lifetime spending limits. Five Agent Actions: `payment_get_balance`, `payment_get_quote`, `payment_transfer`, `payment_spending_status`, `payment_list_history`. Depends on raxol_agent at compile time only (`runtime: false`).
+**Agent Payments** (in `packages/raxol_payments/`): Agents that can pay for things. Two wallet backends behind `Raxol.Payments.Wallet`: `Wallets.Env` (key from env var) and `Wallets.Op` (key from 1Password via GenServer). Three protocols behind `Raxol.Payments.Protocol`: `Protocols.X402` (Coinbase x402, EIP-712/ERC-3009 signing), `Protocols.MPP` (Stripe/Tempo machine payments), and `Protocols.Xochi` (cross-chain intent settlement). `Raxol.Payments.Req.AutoPay` is a Req response step that handles HTTP 402 flows transparently. `SpendingPolicy` + `Ledger` (ETS-backed GenServer) + `SpendingHook` (CommandHook) enforce per-request/session/lifetime spending limits. Five Agent Actions: `payment_get_balance`, `payment_get_quote`, `payment_transfer`, `payment_spending_status`, `payment_list_history`. Depends on raxol_agent at compile time only (`runtime: false`). See `docs/features/AGENTIC_COMMERCE.md`.
 
-**Payment Protocol Routing**: `Raxol.Payments.Router.select/1` chooses the protocol. Same-chain HTTP 402 -> x402/MPP (auto-pay). Cross-chain -> Xochi (default, cash-positive with tier fees 0.10-0.30%). Privacy (stealth/shielded) -> Xochi. `Protocols.Xochi` implements the full intent flow: `get_quote/2` -> `execute/3` (wallet signs EIP-712) -> `poll_status/3`. `Xochi.Client` calls the Xochi API (`/api/intent/quote`, `/api/intent/execute`, `/api/intent/:id/status`). Riddler solves intents behind the scenes. `Protocols.Riddler` + `Riddler.Client` provide direct solver access (Commerce API, B2B only -- do NOT use for agent payments, it's cash-negative). See `../riddler/docs/architecture/decisions/0005-xochi-integration.md` for the architectural rationale.
+**Payment Protocol Routing**: `Raxol.Payments.Router.select/1` picks the protocol. Same-chain HTTP 402 goes to x402/MPP (auto-pay). Cross-chain goes to Xochi (cash-positive, tier fees 0.10-0.30%). Privacy (stealth/shielded) also goes to Xochi. The intent flow: `get_quote/2` -> `execute/3` (wallet signs EIP-712) -> `poll_status/3`. `Xochi.Client` talks to the Xochi API (`/api/intent/quote`, `/api/intent/execute`, `/api/intent/:id/status`). Riddler solves intents behind the scenes. `Protocols.Riddler` + `Riddler.Client` give direct solver access (Commerce API, B2B only -- don't use for agent payments, it's cash-negative). See `../riddler/docs/architecture/decisions/0005-xochi-integration.md` for the rationale.
 
 **Swarm Discovery**: `Raxol.Swarm.Discovery` wraps libcluster (optional dep) with strategy presets: `:gossip` (LAN multicast), `:epmd` (static hosts), `:dns` (Fly.io/K8s), `:tailscale` (mesh via `tailscale status --json`, tag-filtered). NodeMonitor auto-wires `:nodeup`/`:nodedown` events to Topology (elections) and TacticalOverlay (peer sync). Custom strategy: `Raxol.Swarm.Strategy.Tailscale`.
 
-**AI Backend Streaming**: `Raxol.Agent.Backend.HTTP.stream/2` provides real SSE streaming for Anthropic, OpenAI, Ollama, and Kimi APIs. Uses `Stream.resource/3` + `spawn_link` + message passing. Four SSE formats: Anthropic (content_block_delta), OpenAI/Kimi (data chunks + `[DONE]`), Ollama (NDJSON), Lumo (data: JSON per line with U2L decryption). `Raxol.Agent.Backend.Lumo` implements Proton Lumo's full U2L encryption protocol (per-request AES-256-GCM + PGP key delivery via gpg) with lumo-tamer OpenAI-compatible proxy as fallback. Tiered backend detection: Lumo -> Anthropic -> Kimi -> OpenAI -> Ollama -> LLM7 -> Mock.
+**AI Backend Streaming**: `Raxol.Agent.Backend.HTTP.stream/2` does real SSE streaming for Anthropic, OpenAI, Ollama, and Kimi. Built on `Stream.resource/3` + `spawn_link` + message passing. Four SSE formats: Anthropic (content_block_delta), OpenAI/Kimi (data chunks + `[DONE]`), Ollama (NDJSON), Lumo (data: JSON per line with U2L decryption). `Raxol.Agent.Backend.Lumo` handles Proton Lumo's U2L encryption (per-request AES-256-GCM + PGP key delivery via gpg) with lumo-tamer proxy as fallback. Backend detection order: Lumo -> Anthropic -> Kimi -> OpenAI -> Ollama -> LLM7 -> Mock.
 
 **Time-Travel Debugging**: `Raxol.start_link(MyApp, time_travel: true)` enables snapshot recording of every `update/2` cycle. `Raxol.Debug.TimeTravel` stores `{message, model_before, model_after}` in a CircularBuffer. Navigate with `step_back/0`, `step_forward/0`, `jump_to/1`. `restore/0` sends the historical model to the Dispatcher for re-render. `Snapshot.diff/2` computes recursive map changes. Zero cost when disabled.
 
@@ -206,11 +206,11 @@ lib/raxol/
 
 **Virtual File System**: `Raxol.Commands.FileSystem` is a pure functional in-memory VFS. Flat map keyed by absolute path for O(1) lookups. CRUD: `new/0`, `mkdir/2`, `create_file/3`, `rm/2`, `exists?/2`, `stat/2`. Navigation: `ls/2`, `cd/2`, `pwd/1`, `tree/3`. Read: `cat/2`. REPL helpers in `Raxol.REPL.VfsHelpers` provide shell-like commands (`ls`, `cd`, `cat`, `mkdir`, `touch`, `rm`, `tree`, `stat`). Agent actions in `Raxol.Agent.Actions.Vfs` expose 7 LLM-callable tools via the Action behaviour. See `docs/features/FILESYSTEM.md` for full docs.
 
-**Headless Sessions**: `Raxol.Headless` is a GenServer managing headless TEA app instances in `:agent` environment. `start/2` accepts a module or file path (AST-parsed to extract only `defmodule` blocks, skipping boot code). `screenshot/1` calls `:render_frame_sync` on the engine then reads the buffer via `:get_buffer`. `send_key/3` builds an Event via `Raxol.Headless.EventBuilder` and casts to the dispatcher. `Raxol.Headless.McpTools` defines 6 MCP tools registered with `Raxol.MCP.Registry` at startup. `mix mcp.server` starts the standalone MCP server on stdio (lightweight `:mcp` startup mode, ~18ms).
+**Headless Sessions**: `Raxol.Headless` is a GenServer that manages headless TEA app instances in `:agent` environment. `start/2` takes a module or file path (AST-parsed to pull out `defmodule` blocks, skipping boot code). `screenshot/1` calls `:render_frame_sync` on the engine then reads the buffer via `:get_buffer`. `send_key/3` builds an Event via `Raxol.Headless.EventBuilder` and casts to the dispatcher. `Raxol.Headless.McpTools` defines 6 MCP tools registered with `Raxol.MCP.Registry` at startup. `mix mcp.server` starts the standalone MCP server on stdio (~18ms startup).
 
-**MCP as Rendering Target** (see ADR-0012): MCP is a first-class rendering target, not a bolted-on feature. The framework derives MCP tools automatically from the widget tree via `Raxol.MCP.ToolProvider` behaviour on each widget type (15 widgets). A focus lens (attention-aware, with mouse hover tracking via `:hover` mode) filters to ~15 relevant tools per interaction. `@mcp_exclude` attribute suppresses tool derivation for internal widgets. Model state exposed as MCP resources via app-declared projections. `Raxol.MCP.Test` provides a pipe-friendly test harness: `session |> type_into("field", "value") |> click("btn") |> assert_widget("status")`. Functor law property tests verify tool derivation consistency. Package: `packages/raxol_mcp/` (depends on raxol_core). Context tree assembles state from model, widgets, agents, swarm, and notifications as MCP resources, streamed as diffs.
+**MCP as Rendering Target** (see ADR-0012): MCP is a first-class rendering target, not bolted on. The framework derives MCP tools from the widget tree via `Raxol.MCP.ToolProvider` behaviour on each widget type (15 widgets). A focus lens (attention-aware, mouse hover tracking via `:hover` mode) filters to ~15 relevant tools per interaction. `@mcp_exclude` suppresses tool derivation for internal widgets. Model state is exposed as MCP resources via app-declared projections. `Raxol.MCP.Test` gives you a pipe-friendly test harness: `session |> type_into("field", "value") |> click("btn") |> assert_widget("status")`. Functor law property tests verify tool derivation consistency. Package: `packages/raxol_mcp/` (depends on raxol_core). The context tree assembles state from model, widgets, agents, swarm, and notifications as MCP resources, streamed as diffs.
 
-**Phoenix as library only**: No active web server in core, Ecto.Repo explicitly disabled at runtime. MCP is served via `mix mcp.server` (stdio), not through Phoenix.
+**Phoenix as library only**: No active web server in core. Ecto.Repo is disabled at runtime. MCP is served via `mix mcp.server` (stdio), not through Phoenix.
 
 ### Buffer/Renderer API
 
@@ -259,7 +259,7 @@ Key rules:
 
 ### Consolidated Namespaces
 
-These namespaces have been consolidated -- avoid creating new top-level alternatives:
+These namespaces are settled -- don't create new top-level alternatives:
 
 - `Raxol.Terminal.Commands.*` - All command processing, in raxol_terminal package
 - `Raxol.Terminal.Rendering.*` - All terminal rendering, in raxol_terminal package
@@ -311,8 +311,8 @@ Configuration: `fly.toml`, Dockerfile: `docker/Dockerfile.web`
 - Themes stored in `priv/themes/` as JSON
 - Domain: raxol.io (made by axol.io)
 - Plugin docs: `docs/plugins/GUIDE.md`
-- `AGENTS.md` contains the improvement roadmap, competitive analysis, and implementation plan
-- HEEx terminal compilation (`compile_heex_for_terminal`) is experimental/naive
+- `AGENTS.md` has the improvement roadmap, competitive analysis, and implementation plan
+- HEEx terminal compilation (`compile_heex_for_terminal`) is experimental
 
 <!-- usage-rules-start -->
 <!-- usage_rules-start -->

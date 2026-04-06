@@ -36,13 +36,13 @@ defmodule Raxol.Payments.Router do
   end
 
   defp auto_select(opts) do
-    cross_chain = Keyword.get(opts, :cross_chain, false)
-    privacy = Keyword.get(opts, :privacy, :auto)
-
-    cond do
-      privacy in [:stealth, :shielded] -> :xochi
-      cross_chain -> :xochi
-      true -> :x402
-    end
+    select_protocol(
+      Keyword.get(opts, :privacy, :auto),
+      Keyword.get(opts, :cross_chain, false)
+    )
   end
+
+  defp select_protocol(privacy, _cross_chain) when privacy in [:stealth, :shielded], do: :xochi
+  defp select_protocol(_privacy, true), do: :xochi
+  defp select_protocol(_privacy, _cross_chain), do: :x402
 end

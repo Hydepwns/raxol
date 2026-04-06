@@ -85,20 +85,14 @@ defmodule Raxol.Payments.SpendingHook do
       {amount, domain} ->
         agent_id = Map.get(context, :agent_id, :unknown)
 
-        if not SpendingPolicy.domain_approved?(config.policy, domain) do
-          {:deny, {:domain_not_approved, domain}}
+        with true <- SpendingPolicy.domain_approved?(config.policy, domain),
+             :ok <- Ledger.check_budget(config.ledger, agent_id, amount, config.policy),
+             false <- SpendingPolicy.requires_confirmation?(config.policy, amount) do
+          {:ok, command}
         else
-          case Ledger.check_budget(config.ledger, agent_id, amount, config.policy) do
-            :ok ->
-              if SpendingPolicy.requires_confirmation?(config.policy, amount) do
-                {:deny, {:requires_confirmation, amount, domain}}
-              else
-                {:ok, command}
-              end
-
-            {:over_limit, limit_type} ->
-              {:deny, {:over_budget, limit_type, amount}}
-          end
+          false -> {:deny, {:domain_not_approved, domain}}
+          true -> {:deny, {:requires_confirmation, amount, domain}}
+          {:over_limit, limit_type} -> {:deny, {:over_budget, limit_type, amount}}
         end
     end
   end

@@ -184,21 +184,21 @@ defmodule Raxol.Payments.Protocols.Xochi do
   defp do_poll(config, intent_id, interval, deadline) do
     case Client.get_status(config, intent_id) do
       {:ok, %IntentStatus{} = status} ->
-        if IntentStatus.terminal?(status) do
-          {:ok, status}
-        else
-          now = System.monotonic_time(:millisecond)
-
-          if now + interval > deadline do
-            {:error, :timeout}
-          else
-            Process.sleep(interval)
-            do_poll(config, intent_id, interval, deadline)
-          end
-        end
+        if IntentStatus.terminal?(status),
+          do: {:ok, status},
+          else: poll_or_timeout(config, intent_id, interval, deadline)
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  defp poll_or_timeout(config, intent_id, interval, deadline) do
+    if System.monotonic_time(:millisecond) + interval > deadline do
+      {:error, :timeout}
+    else
+      Process.sleep(interval)
+      do_poll(config, intent_id, interval, deadline)
     end
   end
 end

@@ -1,24 +1,26 @@
 # Features
 
-Terminal interface features and framework capabilities.
-
-## Framework Features
+## Framework
 
 ### [Agent Framework](AGENT_FRAMEWORK.md)
 
-AI agents as TEA apps with OTP supervision, crash isolation, and inter-agent messaging.
+AI agents as TEA apps. OTP supervision, crash isolation, inter-agent messaging, LLM streaming to Anthropic/OpenAI/Ollama/Groq.
+
+### [Agentic Commerce](AGENTIC_COMMERCE.md)
+
+Autonomous payments for agents. Wallet management, spending controls, x402/MPP auto-pay, Xochi cross-chain settlement.
 
 ### [Sensor Fusion](SENSOR_FUSION.md)
 
-Poll sensors, fuse readings with weighted averaging and thresholds, render HUD widgets.
+Poll sensors, fuse readings with weighted averaging and thresholds, render gauges and sparklines.
 
 ### [Distributed Swarm](DISTRIBUTED_SWARM.md)
 
-CRDTs, node monitoring, topology election, tactical overlay. Automatic discovery via libcluster.
+CRDTs, node monitoring, topology election, tactical overlay. Discovery via libcluster with gossip, epmd, DNS, or Tailscale.
 
 ### [Adaptive UI](ADAPTIVE_UI.md)
 
-Track pilot behavior, recommend layout changes, animate transitions with a feedback loop.
+Track usage patterns, recommend layout changes, animate transitions with a feedback loop.
 
 ### [Recording & Replay](RECORDING_REPLAY.md)
 
@@ -26,18 +28,22 @@ Capture terminal sessions as asciinema v2 `.cast` files. Replay with interactive
 
 ### [REPL](REPL.md)
 
-Sandboxed interactive Elixir REPL with three safety levels and persistent bindings.
+Sandboxed Elixir REPL with three safety levels, persistent bindings, and virtual filesystem.
 
 ### [Time-Travel Debugging](TIME_TRAVEL_DEBUGGING.md)
 
-Snapshot every `update/2` cycle. Step back, step forward, restore historical state.
+Snapshot every `update/2` cycle. Step back, forward, jump to any point, restore historical state.
 
-## Terminal Features
+### [Virtual File System](FILESYSTEM.md)
+
+Pure functional in-memory VFS with REPL helpers and 7 LLM-callable agent actions.
+
+## Terminal
 
 ### [Cursor Effects](CURSOR_EFFECTS.md)
 
-Visual trails and glow: configurable colors, presets, smooth interpolation.
+Visual trails and glow with configurable colors, presets, and smooth interpolation.
 
 ## Performance
 
-All operations are well within the 16ms frame budget (60fps). See [benchmarks](../bench/README.md) for methodology and current numbers.
+Full frame in 2.1ms on M1 Pro -- 13% of the 60fps budget. See [benchmarks](../bench/README.md) for methodology.

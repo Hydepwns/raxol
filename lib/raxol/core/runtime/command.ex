@@ -326,17 +326,14 @@ defmodule Raxol.Core.Runtime.Command do
   @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:async, fun, context) do
     pid = context.pid
-
-    sender = fn msg ->
-      send(pid, {:command_result, msg})
-    end
+    sender = fn msg -> send(pid, {:command_result, msg}) end
 
     Task.start(fn ->
       try do
         fun.(sender)
       rescue
-        e ->
-          send(pid, {:command_result, {:async_error, Exception.message(e)}})
+        # Catch-all is intentional: agent callbacks are user-supplied code
+        e -> send(pid, {:command_result, {:async_error, Exception.message(e)}})
       end
     end)
   end
@@ -378,26 +375,11 @@ defmodule Raxol.Core.Runtime.Command do
 
   @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:send_agent, {target_id, message}, context) do
-    _source_id = Map.get(context, :agent_id, :unknown)
-
-    case Process.whereis(Raxol.Agent.Registry) do
-      nil ->
-        send(
-          context.pid,
-          {:command_result, {:send_agent_error, :not_found, target_id}}
-        )
-
-      _pid ->
-        case Registry.lookup(Raxol.Agent.Registry, target_id) do
-          [{pid, _}] ->
-            GenServer.cast(pid, {:send_message, message})
-
-          [] ->
-            send(
-              context.pid,
-              {:command_result, {:send_agent_error, :not_found, target_id}}
-            )
-        end
+    with pid when is_pid(pid) <- Process.whereis(Raxol.Agent.Registry),
+         [{agent_pid, _}] <- Registry.lookup(Raxol.Agent.Registry, target_id) do
+      GenServer.cast(agent_pid, {:send_message, message})
+    else
+      _ -> send(context.pid, {:command_result, {:send_agent_error, :not_found, target_id}})
     end
   end
 

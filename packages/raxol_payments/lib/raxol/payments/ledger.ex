@@ -119,21 +119,13 @@ defmodule Raxol.Payments.Ledger do
   end
 
   def handle_call({:history, agent_id, opts}, _from, state) do
-    entries = get_entries(state.table, agent_id)
+    result =
+      state.table
+      |> get_entries(agent_id)
+      |> filter_since(Keyword.get(opts, :since))
+      |> take_last(Keyword.get(opts, :limit))
 
-    filtered =
-      case Keyword.get(opts, :since) do
-        nil -> entries
-        since_ms -> Enum.filter(entries, &(&1.timestamp_ms >= since_ms))
-      end
-
-    limited =
-      case Keyword.get(opts, :limit) do
-        nil -> filtered
-        n -> Enum.take(filtered, -n)
-      end
-
-    {:reply, limited, state}
+    {:reply, result, state}
   end
 
   def handle_call({:totals, agent_id, policy}, _from, state) do
@@ -154,37 +146,51 @@ defmodule Raxol.Payments.Ledger do
   # -- Private --
 
   defp do_check_budget(table, agent_id, amount, policy) do
-    cond do
-      Decimal.compare(amount, policy.per_request_max) == :gt ->
-        {:over_limit, :per_request}
-
-      true ->
-        entries = get_entries(table, agent_id)
-        now = System.system_time(:millisecond)
-        window_start = now - policy.session_window_ms
-
-        session_total =
-          entries
-          |> Enum.filter(&(&1.timestamp_ms >= window_start))
-          |> sum_amounts()
-
-        session_after = Decimal.add(session_total, amount)
-
-        lifetime_total = sum_amounts(entries)
-        lifetime_after = Decimal.add(lifetime_total, amount)
-
-        cond do
-          Decimal.compare(session_after, policy.session_max) == :gt ->
-            {:over_limit, :session}
-
-          Decimal.compare(lifetime_after, policy.lifetime_max) == :gt ->
-            {:over_limit, :lifetime}
-
-          true ->
-            :ok
-        end
+    with :ok <- check_per_request(amount, policy),
+         entries = get_entries(table, agent_id),
+         :ok <- check_session(entries, amount, policy),
+         :ok <- check_lifetime(entries, amount, policy) do
+      :ok
     end
   end
+
+  defp check_per_request(amount, policy) do
+    if Decimal.compare(amount, policy.per_request_max) == :gt,
+      do: {:over_limit, :per_request},
+      else: :ok
+  end
+
+  defp check_session(entries, amount, policy) do
+    now = System.system_time(:millisecond)
+    window_start = now - policy.session_window_ms
+
+    session_after =
+      entries
+      |> Enum.filter(&(&1.timestamp_ms >= window_start))
+      |> sum_amounts()
+      |> Decimal.add(amount)
+
+    if Decimal.compare(session_after, policy.session_max) == :gt,
+      do: {:over_limit, :session},
+      else: :ok
+  end
+
+  defp check_lifetime(entries, amount, policy) do
+    lifetime_after =
+      entries
+      |> sum_amounts()
+      |> Decimal.add(amount)
+
+    if Decimal.compare(lifetime_after, policy.lifetime_max) == :gt,
+      do: {:over_limit, :lifetime},
+      else: :ok
+  end
+
+  defp filter_since(entries, nil), do: entries
+  defp filter_since(entries, since_ms), do: Enum.filter(entries, &(&1.timestamp_ms >= since_ms))
+
+  defp take_last(entries, nil), do: entries
+  defp take_last(entries, n), do: Enum.take(entries, -n)
 
   defp get_entries(table, agent_id) do
     :ets.lookup(table, agent_id)
