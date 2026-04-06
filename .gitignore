@@ -45,6 +45,7 @@ priv/termbox2_nif.so
 
 # Claude Code local configuration (user-specific, not shared)
 .claude/settings.local.json
+.claude/worktrees/**
 
 # Ignore package tarball and unpacked dir (built via "mix hex.build").
 raxol-*.tar
