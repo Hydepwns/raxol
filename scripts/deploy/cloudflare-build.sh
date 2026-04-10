@@ -117,7 +117,7 @@ elif [ ! -f "priv/static/index.html" ]; then
         <h1>Raxol Playground</h1>
         <p>High-performance terminal UI framework for Elixir</p>
         <div class="links">
-            <a href="https://github.com/Hydepwns/raxol">GitHub</a>
+            <a href="https://github.com/DROOdotFOO/raxol">GitHub</a>
             <a href="https://hexdocs.pm/raxol">Documentation</a>
             <a href="https://hex.pm/packages/raxol">Hex Package</a>
         </div>

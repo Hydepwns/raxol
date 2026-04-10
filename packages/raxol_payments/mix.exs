@@ -2,7 +2,7 @@ defmodule RaxolPayments.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/Hydepwns/raxol"
+  @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
     [

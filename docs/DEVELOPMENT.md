@@ -4,7 +4,7 @@
 
 ### Quick Start (Nix)
 ```bash
-git clone https://github.com/Hydepwns/raxol.git
+git clone https://github.com/DROOdotFOO/raxol.git
 cd raxol
 nix-shell
 mix deps.get

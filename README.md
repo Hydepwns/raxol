@@ -2,7 +2,7 @@
 
 > Recursively, [axol](https://axol.io). Forever FOSS.
 
-[![CI](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml/badge.svg?branch=master)](https://github.com/Hydepwns/raxol/actions/workflows/ci-unified.yml)
+[![CI](https://github.com/DROOdotFOO/raxol/actions/workflows/ci-unified.yml/badge.svg?branch=master)](https://github.com/DROOdotFOO/raxol/actions/workflows/ci-unified.yml)
 [![Hex](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
 
 [OTP](https://en.wikipedia.org/wiki/Open_Telecom_Platform)-native terminal framework for Elixir.
@@ -16,7 +16,7 @@ No other TUI framework does this; Raxol inherits it from the runtime.
 ## Try It
 
 ```bash
-git clone https://github.com/Hydepwns/raxol.git
+git clone https://github.com/DROOdotFOO/raxol.git
 cd raxol && mix deps.get
 mix raxol.playground          # 30 live demos, browse/search/filter
 mix raxol.playground --ssh    # same thing, served over SSH (port 2222)
@@ -253,7 +253,7 @@ The Unix/macOS backend uses a termbox2 NIF; Windows uses a pure Elixir driver (u
 ## Development
 
 ```bash
-git clone https://github.com/Hydepwns/raxol.git
+git clone https://github.com/DROOdotFOO/raxol.git
 cd raxol
 mix deps.get
 MIX_ENV=test mix test --exclude slow --exclude integration --exclude docker

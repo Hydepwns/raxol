@@ -115,7 +115,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
           <a href="/gallery" class="hover:text-gray-200 transition-colors">Gallery</a>
           <a href="/demos" class="hover:text-gray-200 transition-colors">Demos</a>
           <a href="https://hexdocs.pm/raxol" class="hover:text-gray-200 transition-colors">Docs</a>
-          <a href="https://github.com/Hydepwns/raxol" class="hover:text-gray-200 transition-colors">GitHub</a>
+          <a href="https://github.com/DROOdotFOO/raxol" class="hover:text-gray-200 transition-colors">GitHub</a>
         </div>
         <!-- Mobile hamburger -->
         <button phx-click="toggle_mobile_menu" class="md:hidden text-gray-400 hover:text-gray-200 p-1">
@@ -135,7 +135,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
           <a href="/gallery" class="hover:text-gray-200 transition-colors">Gallery</a>
           <a href="/demos" class="hover:text-gray-200 transition-colors">Demos</a>
           <a href="https://hexdocs.pm/raxol" class="hover:text-gray-200 transition-colors">Docs</a>
-          <a href="https://github.com/Hydepwns/raxol" class="hover:text-gray-200 transition-colors">GitHub</a>
+          <a href="https://github.com/DROOdotFOO/raxol" class="hover:text-gray-200 transition-colors">GitHub</a>
         </div>
       <% end %>
     </nav>
@@ -148,7 +148,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     ~H"""
     <section class="px-6 py-24 md:py-32 max-w-4xl mx-auto text-center">
       <a
-        href="https://github.com/Hydepwns/raxol"
+        href="https://github.com/DROOdotFOO/raxol"
         class="inline-block px-4 py-1.5 mb-8 text-sm font-medium text-purple-300 bg-purple-900/40 border border-purple-700/50 rounded-full hover:bg-purple-900/60 transition-colors"
       >
         Terminal built for your Gundam
@@ -172,7 +172,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
           Try Playground
         </a>
         <a
-          href="https://github.com/Hydepwns/raxol"
+          href="https://github.com/DROOdotFOO/raxol"
           class="px-6 py-3 text-sm font-semibold text-gray-300 rounded-lg border border-gray-700 hover:border-gray-500 hover:text-white transition-colors"
         >
           GitHub
@@ -521,7 +521,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     <footer class="px-6 py-16 border-t border-gray-800">
       <div class="max-w-4xl mx-auto">
         <div class="flex flex-wrap gap-6 text-sm text-gray-400 mb-10">
-          <a href="https://github.com/Hydepwns/raxol" class="hover:text-gray-200 transition-colors">GitHub</a>
+          <a href="https://github.com/DROOdotFOO/raxol" class="hover:text-gray-200 transition-colors">GitHub</a>
           <a href="https://hex.pm/packages/raxol" class="hover:text-gray-200 transition-colors">Hex.pm</a>
           <a href="https://hexdocs.pm/raxol" class="hover:text-gray-200 transition-colors">Docs</a>
           <a href="/playground" class="hover:text-gray-200 transition-colors">Playground</a>

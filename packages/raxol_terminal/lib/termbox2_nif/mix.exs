@@ -66,9 +66,9 @@ defmodule Termbox2Nif.MixProject do
         "README.md",
         "LICENSE"
       ],
-      maintainers: ["hydepwns"],
+      maintainers: ["DROOdotFOO"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/hydepwns/termbox2_nif"}
+      links: %{"GitHub" => "https://github.com/DROOdotFOO/termbox2_nif"}
     ]
   end
 end

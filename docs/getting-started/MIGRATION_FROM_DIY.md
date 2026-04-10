@@ -176,7 +176,7 @@ If something's missing, open a GitHub issue.
 
 **What if Raxol is missing a feature I need?** Keep that part of your code, extend Raxol with a plugin, or open a GitHub issue.
 
-**Can I contribute my adapter back?** Yes. Open a PR on [GitHub](https://github.com/Hydepwns/raxol).
+**Can I contribute my adapter back?** Yes. Open a PR on [GitHub](https://github.com/DROOdotFOO/raxol).
 
 ---
 
@@ -186,4 +186,4 @@ If something's missing, open a GitHub issue.
 - [Core Concepts](./CORE_CONCEPTS.md)
 - [API Reference](../core/BUFFER_API.md)
 - [Cookbook](../cookbook/README.md)
-- [GitHub Issues](https://github.com/Hydepwns/raxol/issues)
+- [GitHub Issues](https://github.com/DROOdotFOO/raxol/issues)

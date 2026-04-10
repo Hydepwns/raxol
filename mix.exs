@@ -2,7 +2,7 @@ defmodule Raxol.MixProject do
   use Mix.Project
 
   @version "2.4.0"
-  @source_url "https://github.com/Hydepwns/raxol"
+  @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
     [
@@ -370,10 +370,10 @@ defmodule Raxol.MixProject do
       maintainers: ["DROO AMOR"],
       licenses: ["MIT"],
       links: %{
-        "GitHub" => "https://github.com/Hydepwns/raxol",
+        "GitHub" => "https://github.com/DROOdotFOO/raxol",
         "Documentation" => "https://hexdocs.pm/raxol",
         "Changelog" =>
-          "https://github.com/Hydepwns/raxol/blob/master/CHANGELOG.md"
+          "https://github.com/DROOdotFOO/raxol/blob/master/CHANGELOG.md"
       },
       description: description(),
       source_url: @source_url,
@@ -525,7 +525,7 @@ defmodule Raxol.MixProject do
           ~r/^RaxolWeb\..*/
         ]
       ],
-      source_url: "https://github.com/Hydepwns/raxol",
+      source_url: "https://github.com/DROOdotFOO/raxol",
       source_ref: "v#{@version}",
       formatters: ["html"],
       api_reference: true,

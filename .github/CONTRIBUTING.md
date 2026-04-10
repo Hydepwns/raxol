@@ -6,7 +6,7 @@ Contributions welcome.
 
 1. Fork the repo
 2. Clone locally: `git clone https://github.com/YOUR_USERNAME/raxol.git`
-3. Add upstream: `git remote add upstream https://github.com/Hydepwns/raxol.git`
+3. Add upstream: `git remote add upstream https://github.com/DROOdotFOO/raxol.git`
 
 ## Development Setup
 

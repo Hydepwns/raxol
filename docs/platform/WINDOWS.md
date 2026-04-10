@@ -233,6 +233,6 @@ Potential optimizations, none currently needed:
 
 ## Issues
 
-If you hit problems: https://github.com/Hydepwns/raxol/issues
+If you hit problems: https://github.com/DROOdotFOO/raxol/issues
 
 Include your Windows version, terminal emulator, Erlang/OTP version, Elixir version, and the error output.

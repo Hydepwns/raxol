@@ -50,6 +50,6 @@ Complete guide to Raxol -- OTP-native terminal framework for Elixir.
 ## Resources
 
 - [API Docs](https://hexdocs.pm/raxol)
-- [GitHub](https://github.com/Hydepwns/raxol)
+- [GitHub](https://github.com/DROOdotFOO/raxol)
 - [ROADMAP](../ROADMAP.md)
-- [Issues](https://github.com/Hydepwns/raxol/issues)
+- [Issues](https://github.com/DROOdotFOO/raxol/issues)
