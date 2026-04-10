@@ -194,6 +194,17 @@ lib/raxol/
 
 **Payment Protocol Routing**: `Raxol.Payments.Router.select/1` picks the protocol. Same-chain HTTP 402 goes to x402/MPP (auto-pay). Cross-chain goes to Xochi (cash-positive, tier fees 0.10-0.30%). Privacy (stealth/shielded) also goes to Xochi. The intent flow: `get_quote/2` -> `execute/3` (wallet signs EIP-712) -> `poll_status/3`. `Xochi.Client` talks to the Xochi API (`/api/intent/quote`, `/api/intent/execute`, `/api/intent/:id/status`). Riddler solves intents behind the scenes. `Protocols.Riddler` + `Riddler.Client` give direct solver access (Commerce API, B2B only -- don't use for agent payments, it's cash-negative). See `../riddler/docs/architecture/decisions/0005-xochi-integration.md` for the rationale.
 
+**Cross-repo payment method types** (canonical in Xochi `src/types/intent.ts`):
+
+| Method      | raxol protocol          | Xochi type  | Gasless | Route                          |
+| ----------- | ----------------------- | ----------- | ------- | ------------------------------ |
+| Direct Auth | Protocols.X402/Riddler  | `erc3009`   | yes     | USDC via ERC-3009              |
+| Permit2     | Protocols.Riddler       | `permit2`   | yes     | Most ERC-20 tokens             |
+| Sponsored   | Protocols.Xochi         | `pimlico`   | yes     | ERC-4337 stealth claims        |
+| Pay-per-call| Protocols.X402          | `x402`      | no      | HTTP 402 micropayments         |
+| Agent Relay | Protocols.MPP           | `mpp`       | yes     | Stripe/Tempo machine payments  |
+| Approval    | (on-chain)              | `approval`  | no      | Fallback, requires gas         |
+
 **Swarm Discovery**: `Raxol.Swarm.Discovery` wraps libcluster (optional dep) with strategy presets: `:gossip` (LAN multicast), `:epmd` (static hosts), `:dns` (Fly.io/K8s), `:tailscale` (mesh via `tailscale status --json`, tag-filtered). NodeMonitor auto-wires `:nodeup`/`:nodedown` events to Topology (elections) and TacticalOverlay (peer sync). Custom strategy: `Raxol.Swarm.Strategy.Tailscale`.
 
 **AI Backend Streaming**: `Raxol.Agent.Backend.HTTP.stream/2` does real SSE streaming for Anthropic, OpenAI, Ollama, and Kimi. Built on `Stream.resource/3` + `spawn_link` + message passing. Four SSE formats: Anthropic (content_block_delta), OpenAI/Kimi (data chunks + `[DONE]`), Ollama (NDJSON), Lumo (data: JSON per line with U2L decryption). `Raxol.Agent.Backend.Lumo` handles Proton Lumo's U2L encryption (per-request AES-256-GCM + PGP key delivery via gpg) with lumo-tamer proxy as fallback. Backend detection order: Lumo -> Anthropic -> Kimi -> OpenAI -> Ollama -> LLM7 -> Mock.
