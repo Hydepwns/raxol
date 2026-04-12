@@ -2,25 +2,26 @@ defmodule Raxol.Payments.Xochi.Client do
   @moduledoc """
   Client for the Xochi private execution protocol.
 
-  Xochi is the cash-positive, agent-facing intent protocol. Riddler
-  solves intents behind the scenes. Agents route through Xochi for
-  cross-chain transfers with tier-based fees.
+  Talks directly to Riddler's `/xochi/*` endpoints. Riddler is the solver
+  backend; agents get the cash-positive path with tier-based fees.
 
   ## Endpoints
 
-  - `quote/2` -- POST /api/intent/quote
-  - `execute/2` -- POST /api/intent/execute
-  - `get_status/2` -- GET /api/intent/:id/status
-  - `get_history/2` -- GET /api/intent/history?wallet=
+  - `get_quote/2` -- POST /xochi/quote
+  - `execute/2` -- POST /xochi/execute
+  - `get_status/2` -- GET /xochi/status/:id
+  - `get_history/2` -- GET /xochi/history?wallet=
+  - `prepare_claim/2` -- POST /xochi/claim/prepare (client-side signing)
+  - `submit_claim/2` -- POST /xochi/claim/submit (client-side signing)
 
   ## Configuration
 
       config = %{
-        base_url: "https://xochi.fi",
-        auth_token: "jwt-or-api-key"
+        base_url: "https://riddler.example.com",
+        auth_token: "bearer-token"
       }
 
-      {:ok, quote} = Xochi.Client.quote(config, %QuoteRequest{...})
+      {:ok, quote} = Xochi.Client.get_quote(config, %QuoteRequest{...})
   """
 
   alias Raxol.Payments.Xochi.Schemas.{
@@ -43,7 +44,7 @@ defmodule Raxol.Payments.Xochi.Client do
   def get_quote(config, %QuoteRequest{} = request) do
     config
     |> build_req()
-    |> Req.post(url: "/api/intent/quote", json: QuoteRequest.to_json(request))
+    |> Req.post(url: "/xochi/quote", json: QuoteRequest.to_json(request))
     |> handle_response(&QuoteResponse.from_json/1)
   end
 
@@ -52,7 +53,7 @@ defmodule Raxol.Payments.Xochi.Client do
   def execute(config, %ExecuteRequest{} = request) do
     config
     |> build_req()
-    |> Req.post(url: "/api/intent/execute", json: ExecuteRequest.to_json(request))
+    |> Req.post(url: "/xochi/execute", json: ExecuteRequest.to_json(request))
     |> handle_response(&ExecuteResponse.from_json/1)
   end
 
@@ -61,7 +62,7 @@ defmodule Raxol.Payments.Xochi.Client do
   def get_status(config, intent_id) do
     config
     |> build_req()
-    |> Req.get(url: "/api/intent/#{intent_id}/status")
+    |> Req.get(url: "/xochi/status/#{intent_id}")
     |> handle_response(&IntentStatus.from_json/1)
   end
 
@@ -72,10 +73,48 @@ defmodule Raxol.Payments.Xochi.Client do
 
     config
     |> build_req()
-    |> Req.get(url: "/api/intent/history", params: params)
+    |> Req.get(url: "/xochi/history", params: params)
     |> handle_response(fn body ->
       Map.get(body, "intents", [])
     end)
+  end
+
+  @doc """
+  Prepare an unsigned claim for client-side signing.
+
+  Returns the UserOp hash for the client to sign with their stealth key.
+  No private keys are sent to the server.
+  """
+  @spec prepare_claim(config(), map()) :: {:ok, map()} | error()
+  def prepare_claim(config, %{intent_id: _, recipient_address: _} = params) do
+    json = %{
+      "intentId" => params.intent_id,
+      "recipientAddress" => params.recipient_address
+    }
+
+    config
+    |> build_req()
+    |> Req.post(url: "/xochi/claim/prepare", json: json)
+    |> handle_response(& &1)
+  end
+
+  @doc """
+  Submit a client-signed claim to the bundler.
+
+  The client signs the hash from `prepare_claim/2` and submits
+  the signature here.
+  """
+  @spec submit_claim(config(), map()) :: {:ok, map()} | error()
+  def submit_claim(config, %{intent_id: _, signature: _} = params) do
+    json = %{
+      "intentId" => params.intent_id,
+      "signature" => params.signature
+    }
+
+    config
+    |> build_req()
+    |> Req.post(url: "/xochi/claim/submit", json: json)
+    |> handle_response(& &1)
   end
 
   # -- Private --

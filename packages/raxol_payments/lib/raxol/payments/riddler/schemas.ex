@@ -114,7 +114,8 @@ defmodule Raxol.Payments.Riddler.Schemas do
       :request,
       :deposit_address,
       :gasless,
-      :pimlico
+      :pimlico,
+      :eip712_data
     ]
 
     @type t :: %__MODULE__{
@@ -124,7 +125,8 @@ defmodule Raxol.Payments.Riddler.Schemas do
             request: map() | nil,
             deposit_address: map() | nil,
             gasless: map() | nil,
-            pimlico: map() | nil
+            pimlico: map() | nil,
+            eip712_data: map() | nil
           }
 
     @spec from_json(map()) :: t()
@@ -136,7 +138,8 @@ defmodule Raxol.Payments.Riddler.Schemas do
         request: json["request"],
         deposit_address: json["depositAddress"],
         gasless: json["gasless"],
-        pimlico: json["pimlico"]
+        pimlico: json["pimlico"],
+        eip712_data: json["eip712Data"]
       }
     end
   end

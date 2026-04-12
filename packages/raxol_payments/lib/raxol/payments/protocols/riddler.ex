@@ -2,26 +2,29 @@ defmodule Raxol.Payments.Protocols.Riddler do
   @moduledoc """
   Riddler cross-chain intent solver protocol.
 
-  Unlike x402/MPP, Riddler is not a 402-triggered protocol. It uses an
-  explicit quote -> sign -> order -> poll flow via the Riddler Commerce API.
+  **Deprecated:** Use `Raxol.Payments.Protocols.Xochi` instead. This module
+  now delegates to Xochi internally, routing through `/xochi/*` endpoints
+  instead of `/commerce/*`. The Commerce API remains available for B2B
+  integrations but is not intended for agent use.
 
-  The Protocol behaviour callbacks (`detect?/2`, `parse_challenge/1`, etc.)
-  return stub values since Riddler is invoked directly, not via HTTP 402.
+  ## Migration
 
-  ## Usage
+  Replace:
 
       config = %{base_url: "https://riddler.example.com", api_key: "..."}
-      wallet = MyWallet
+      Riddler.get_quote(config, %Riddler.Schemas.QuoteRequest{...})
 
-      {:ok, quote} = Riddler.quote(config, %QuoteRequest{...})
-      {:ok, order} = Riddler.submit_order(config, quote, wallet)
-      {:ok, status} = Riddler.poll_status(config, order["orderId"])
+  With:
+
+      config = %{base_url: "https://riddler.example.com", auth_token: "..."}
+      Xochi.get_quote(config, %Xochi.Schemas.QuoteRequest{...})
   """
 
   @behaviour Raxol.Payments.Protocol
 
-  alias Raxol.Payments.Riddler.Client
-  alias Raxol.Payments.Riddler.Schemas.{QuoteRequest, QuoteResponse, OrderRequest, OrderStatus}
+  alias Raxol.Payments.Protocols.Xochi, as: XochiProtocol
+  alias Raxol.Payments.Riddler.Schemas.{QuoteRequest, QuoteResponse, OrderStatus}
+  alias Raxol.Payments.Xochi.Schemas, as: XochiSchemas
 
   @default_poll_interval_ms 2_000
   @default_poll_timeout_ms 120_000
@@ -53,252 +56,156 @@ defmodule Raxol.Payments.Protocols.Riddler do
   def amount(%{output_amount: amt}) when is_binary(amt), do: Decimal.new(amt)
   def amount(_challenge), do: Decimal.new(0)
 
-  # -- Direct API --
+  # -- Direct API (delegates to Xochi) --
 
   @doc """
-  Request a cross-chain transfer quote from Riddler.
+  Request a cross-chain transfer quote.
+
+  Deprecated: use `Raxol.Payments.Protocols.Xochi.get_quote/2`.
+
+  Accepts either a `Riddler.Schemas.QuoteRequest` (mapped to Xochi format)
+  or a `Xochi.Schemas.QuoteRequest` directly.
   """
-  @spec get_quote(Client.config(), QuoteRequest.t()) ::
+  @spec get_quote(map(), QuoteRequest.t() | XochiSchemas.QuoteRequest.t()) ::
           {:ok, QuoteResponse.t()} | {:error, term()}
   def get_quote(config, %QuoteRequest{} = request) do
-    Client.get_quote(config, request)
+    xochi_config = to_xochi_config(config)
+    xochi_request = to_xochi_quote_request(request)
+
+    case XochiProtocol.get_quote(xochi_config, xochi_request) do
+      {:ok, xochi_resp} -> {:ok, from_xochi_quote_response(xochi_resp)}
+      {:error, _} = err -> err
+    end
+  end
+
+  def get_quote(config, %XochiSchemas.QuoteRequest{} = request) do
+    xochi_config = to_xochi_config(config)
+
+    case XochiProtocol.get_quote(xochi_config, request) do
+      {:ok, xochi_resp} -> {:ok, from_xochi_quote_response(xochi_resp)}
+      {:error, _} = err -> err
+    end
   end
 
   @doc """
   Sign and submit an order for a given quote.
 
-  Builds an ERC-3009 ReceiveWithAuthorization message from the quote's
-  gasless parameters and signs it with the provided wallet.
+  Deprecated: use `Raxol.Payments.Protocols.Xochi.execute/3`.
+
+  Signs with EIP-712 (Xochi typed data) instead of ERC-3009/Permit2.
+  The quote must contain `eip712_data` with a `message` field.
   """
-  @spec submit_order(Client.config(), QuoteResponse.t(), module()) ::
+  @spec submit_order(map(), QuoteResponse.t(), module()) ::
           {:ok, map()} | {:error, term()}
   def submit_order(config, %QuoteResponse{} = quote_resp, wallet) do
-    with {:ok, {signed_object, signature}} <- sign_quote(quote_resp, wallet) do
-      order = %OrderRequest{
-        quote_id: quote_resp.quote_id,
-        signed_object: signed_object,
-        signature: signature
-      }
+    xochi_config = to_xochi_config(config)
+    xochi_quote = to_xochi_quote_response(quote_resp)
 
-      Client.submit_order(config, order)
+    case XochiProtocol.execute(xochi_config, xochi_quote, wallet) do
+      {:ok, exec_resp} ->
+        {:ok, %{"intentId" => exec_resp.intent_id, "status" => to_string(exec_resp.status)}}
+
+      {:error, _} = err ->
+        err
     end
   end
 
   @doc """
-  Poll order status until terminal (completed/failed/refunded) or timeout.
+  Poll order status until terminal or timeout.
 
-  Returns `{:ok, %OrderStatus{}}` when a terminal state is reached,
-  or `{:error, :timeout}` if `timeout_ms` elapses.
+  Deprecated: use `Raxol.Payments.Protocols.Xochi.poll_status/3`.
 
   ## Options
 
   - `:interval_ms` -- poll interval (default: #{@default_poll_interval_ms}ms)
   - `:timeout_ms` -- max wait time (default: #{@default_poll_timeout_ms}ms)
   """
-  @spec poll_status(Client.config(), String.t(), keyword()) ::
+  @spec poll_status(map(), String.t(), keyword()) ::
           {:ok, OrderStatus.t()} | {:error, term()}
-  def poll_status(config, order_id, opts \\ []) do
-    interval = Keyword.get(opts, :interval_ms, @default_poll_interval_ms)
-    timeout = Keyword.get(opts, :timeout_ms, @default_poll_timeout_ms)
-    deadline = System.monotonic_time(:millisecond) + timeout
-
-    do_poll(config, order_id, interval, deadline)
-  end
-
-  # -- Private --
-
-  defp do_poll(config, order_id, interval, deadline) do
-    case Client.get_status(config, order_id) do
-      {:ok, %OrderStatus{} = status} ->
-        if OrderStatus.terminal?(status) do
-          {:ok, status}
-        else
-          now = System.monotonic_time(:millisecond)
-
-          if now + interval > deadline do
-            {:error, :timeout}
-          else
-            Process.sleep(interval)
-            do_poll(config, order_id, interval, deadline)
-          end
-        end
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  defp sign_quote(%QuoteResponse{gasless: %{"type" => "erc3009"} = gasless}, wallet) do
-    sign_erc3009(gasless, wallet)
-  end
-
-  defp sign_quote(%QuoteResponse{gasless: %{"type" => "permit2"} = gasless}, wallet) do
-    sign_permit2(gasless, wallet)
-  end
-
-  defp sign_quote(%QuoteResponse{deposit_address: %{"address" => _}}, _wallet) do
-    # Deposit address flow: no signing needed, user sends funds directly
-    {:error, :deposit_address_flow}
-  end
-
-  defp sign_quote(_quote_resp, _wallet) do
-    {:error, :unsupported_quote_type}
-  end
-
-  defp sign_erc3009(gasless, wallet) do
-    domain = %{
-      name: "USD Coin",
-      version: "2",
-      chainId: wallet.chain_id(),
-      verifyingContract: usdc_address(wallet.chain_id())
-    }
-
-    types = %{
-      "ReceiveWithAuthorization" => [
-        {"from", "address"},
-        {"to", "address"},
-        {"value", "uint256"},
-        {"validAfter", "uint256"},
-        {"validBefore", "uint256"},
-        {"nonce", "bytes32"}
-      ]
-    }
-
-    now = :os.system_time(:second)
-
-    message = %{
-      from: wallet.address(),
-      to: gasless["to"],
-      value: gasless["value"] || 0,
-      validAfter: 0,
-      validBefore: now + 3600,
-      nonce: gasless["nonce"] || generate_nonce()
-    }
-
-    # Encode message as ABI-packed hex for signedObject
-    signed_object = encode_erc3009(message)
-
-    case wallet.sign_typed_data(domain, types, message) do
-      {:ok, sig_bytes} ->
-        signature = "0x" <> Base.encode16(sig_bytes, case: :lower)
-        {:ok, {signed_object, signature}}
-
-      {:error, reason} ->
-        {:error, {:sign_failed, reason}}
-    end
-  end
-
-  defp sign_permit2(gasless, wallet) do
-    domain = %{
-      name: "Permit2",
-      chainId: wallet.chain_id(),
-      verifyingContract: permit2_address()
-    }
-
-    types = %{
-      "PermitTransferFrom" => [
-        {"permitted", "TokenPermissions"},
-        {"spender", "address"},
-        {"nonce", "uint256"},
-        {"deadline", "uint256"}
-      ],
-      "TokenPermissions" => [
-        {"token", "address"},
-        {"amount", "uint256"}
-      ]
-    }
-
-    now = :os.system_time(:second)
-
-    message = %{
-      permitted: %{
-        token: usdc_address(wallet.chain_id()),
-        amount: gasless["value"] || 0
-      },
-      spender: gasless["to"],
-      nonce: gasless["nonce"] || 0,
-      deadline: now + 3600
-    }
-
-    signed_object = encode_permit2(message, gasless["orderId"])
-
-    case wallet.sign_typed_data(domain, types, message) do
-      {:ok, sig_bytes} ->
-        signature = "0x" <> Base.encode16(sig_bytes, case: :lower)
-        {:ok, {signed_object, signature}}
-
-      {:error, reason} ->
-        {:error, {:sign_failed, reason}}
-    end
-  end
-
-  defp encode_erc3009(message) do
-    # ABI-encode the ReceiveWithAuthorization fields as hex
-    fields = [
-      pad_address(message.from),
-      pad_address(message.to),
-      pad_uint256(message.value),
-      pad_uint256(message.validAfter),
-      pad_uint256(message.validBefore),
-      pad_bytes32(message.nonce)
+  def poll_status(config, intent_id, opts \\ []) do
+    xochi_config = to_xochi_config(config)
+    xochi_opts = [
+      interval_ms: Keyword.get(opts, :interval_ms, @default_poll_interval_ms),
+      timeout_ms: Keyword.get(opts, :timeout_ms, @default_poll_timeout_ms),
     ]
 
-    "0x" <> Enum.join(fields)
+    case XochiProtocol.poll_status(xochi_config, intent_id, xochi_opts) do
+      {:ok, xochi_status} -> {:ok, from_xochi_intent_status(xochi_status)}
+      {:error, _} = err -> err
+    end
   end
 
-  defp encode_permit2(message, order_id) do
-    fields = [
-      pad_address(message.permitted.token),
-      pad_uint256(message.permitted.amount),
-      pad_address(message.spender),
-      pad_uint256(message.nonce),
-      pad_uint256(message.deadline),
-      pad_bytes32(order_id || "0x" <> String.duplicate("0", 64))
-    ]
+  # -- Schema mapping --
 
-    "0x" <> Enum.join(fields)
+  defp to_xochi_config(%{base_url: base_url, api_key: api_key}) do
+    %{base_url: base_url, auth_token: api_key}
   end
 
-  defp pad_address(addr) when is_binary(addr) do
-    addr
-    |> String.replace_leading("0x", "")
-    |> String.downcase()
-    |> String.pad_leading(64, "0")
+  defp to_xochi_config(%{base_url: base_url, auth_token: auth_token}) do
+    %{base_url: base_url, auth_token: auth_token}
   end
 
-  defp pad_uint256(val) when is_integer(val) do
-    val
-    |> Integer.to_string(16)
-    |> String.downcase()
-    |> String.pad_leading(64, "0")
+  defp to_xochi_quote_request(%QuoteRequest{} = req) do
+    %XochiSchemas.QuoteRequest{
+      wallet: req.refund_address,
+      from_chain_id: req.input_chain_id,
+      to_chain_id: req.output_chain_id,
+      from_token: req.input_token,
+      to_token: req.output_token,
+      from_amount: req.input_amount,
+      settlement_preference: "public",
+      slippage_bps: 50,
+    }
   end
 
-  defp pad_uint256(val) when is_binary(val) do
-    val
-    |> String.replace_leading("0x", "")
-    |> String.downcase()
-    |> String.pad_leading(64, "0")
+  defp from_xochi_quote_response(%XochiSchemas.QuoteResponse{} = resp) do
+    %QuoteResponse{
+      quote_id: resp.quote_id,
+      output_amount: resp.to_amount,
+      quote_expires: parse_expiry(resp.expiry),
+      eip712_data: resp.eip712_data,
+    }
   end
 
-  defp pad_bytes32(val) when is_binary(val) do
-    val
-    |> String.replace_leading("0x", "")
-    |> String.downcase()
-    |> String.pad_trailing(64, "0")
+  defp to_xochi_quote_response(%QuoteResponse{} = resp) do
+    %XochiSchemas.QuoteResponse{
+      intent_id: extract_intent_id(resp),
+      quote_id: resp.quote_id,
+      can_solve: true,
+      to_amount: resp.output_amount,
+      expiry: to_string(resp.quote_expires),
+      eip712_data: resp.eip712_data,
+    }
   end
 
-  defp generate_nonce do
-    "0x" <> (:crypto.strong_rand_bytes(32) |> Base.encode16(case: :lower))
+  defp from_xochi_intent_status(%XochiSchemas.IntentStatus{} = status) do
+    %OrderStatus{
+      order_id: status.intent_id,
+      status: map_xochi_status(status.status),
+      input_transaction: status.tx_hash,
+      output_transaction: status.receiving_tx_hash,
+      error_reason: status.error,
+    }
   end
 
-  # Canonical USDC addresses per chain
-  defp usdc_address(8453), do: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-  defp usdc_address(1), do: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-  defp usdc_address(42161), do: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
-  defp usdc_address(10), do: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
-  defp usdc_address(137), do: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
-  defp usdc_address(_), do: "0x0000000000000000000000000000000000000000"
+  defp map_xochi_status(:executing), do: :settling
+  defp map_xochi_status(:completed), do: :completed
+  defp map_xochi_status(:failed), do: :failed
+  defp map_xochi_status(:expired), do: :expired
+  defp map_xochi_status(:pending), do: :pending
+  defp map_xochi_status(other), do: other
 
-  # Canonical Permit2 address (same on all EVM chains)
-  defp permit2_address, do: "0x000000000022D473030F116dDEE9F6B43aC78BA3"
+  defp parse_expiry(nil), do: 0
+  defp parse_expiry(val) when is_integer(val), do: val
+
+  defp parse_expiry(val) when is_binary(val) do
+    case Integer.parse(val) do
+      {int, ""} -> int
+      _ -> 0
+    end
+  end
+
+  defp extract_intent_id(%QuoteResponse{eip712_data: %{"message" => %{"intentId" => id}}}), do: id
+  defp extract_intent_id(%QuoteResponse{eip712_data: %{message: %{intentId: id}}}), do: id
+  defp extract_intent_id(_), do: nil
 end

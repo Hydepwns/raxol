@@ -12,7 +12,7 @@ defmodule Raxol.Payments.Protocols.Xochi do
 
   ## Usage
 
-      config = %{base_url: "https://xochi.fi", auth_token: "..."}
+      config = %{base_url: "https://riddler.example.com", auth_token: "..."}
       wallet = MyWallet
 
       {:ok, quote} = Xochi.quote(config, %QuoteRequest{...})
