@@ -175,13 +175,21 @@ defmodule Raxol.MixProject do
 
   defp modular_packages do
     [
-      {:raxol_core, path: "packages/raxol_core", override: true},
-      {:raxol_terminal, path: "packages/raxol_terminal", override: true},
-      {:raxol_sensor, path: "packages/raxol_sensor", override: true},
-      {:raxol_mcp, path: "packages/raxol_mcp", override: true},
-      {:raxol_liveview, path: "packages/raxol_liveview", override: true},
-      {:raxol_plugin, path: "packages/raxol_plugin", override: true}
+      raxol_dep(:raxol_core, "~> 2.4", "packages/raxol_core"),
+      raxol_dep(:raxol_terminal, "~> 2.4", "packages/raxol_terminal"),
+      raxol_dep(:raxol_sensor, "~> 2.4", "packages/raxol_sensor"),
+      raxol_dep(:raxol_mcp, "~> 2.4", "packages/raxol_mcp"),
+      raxol_dep(:raxol_liveview, "~> 2.4", "packages/raxol_liveview"),
+      raxol_dep(:raxol_plugin, "~> 2.4", "packages/raxol_plugin")
     ]
+  end
+
+  defp raxol_dep(name, version, path) do
+    if System.get_env("HEX_BUILD") || !File.dir?(path) do
+      {name, version}
+    else
+      {name, version, path: path, override: true}
+    end
   end
 
   defp core_deps do
