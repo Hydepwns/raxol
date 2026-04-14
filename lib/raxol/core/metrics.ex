@@ -53,7 +53,9 @@ defmodule Raxol.Core.Metrics do
     :ok
   end
 
-  @spec get_metrics() :: {:ok, map()} | {:error, term()}
+  @spec get_metrics() ::
+          {:ok, map()}
+          | {:error, {:metrics_get_failed, :timeout | {term(), term()}}}
   def get_metrics do
     case safe_call(
            fn -> Raxol.Core.Metrics.MetricsCollector.get_all_metrics() end,
@@ -65,7 +67,8 @@ defmodule Raxol.Core.Metrics do
     end
   end
 
-  @spec clear_metrics() :: :ok | {:error, term()}
+  @spec clear_metrics() ::
+          :ok | {:error, {:metrics_clear_failed, :timeout | {term(), term()}}}
   def clear_metrics do
     with :ok <-
            safe_call(
