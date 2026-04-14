@@ -33,7 +33,7 @@ defmodule RaxolPayments.MixProject do
   defp deps do
     [
       # Compile-time only: Action macro, CommandHook behaviour, Command struct
-      {:raxol_agent, "~> 2.4", path: "../raxol_agent", runtime: false},
+      raxol_dep(:raxol_agent, "~> 2.4", "../raxol_agent", runtime: false),
       {:req, "~> 0.5"},
       {:ex_secp256k1, "~> 0.8"},
       {:ex_keccak, "~> 0.7"},
@@ -45,6 +45,10 @@ defmodule RaxolPayments.MixProject do
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
+  end
+
+  defp raxol_dep(name, version, path, opts \\ []) do
+    if File.dir?(path), do: {name, version, [path: path] ++ opts}, else: {name, version, opts}
   end
 
   defp description do
