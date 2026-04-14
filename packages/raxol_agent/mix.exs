@@ -49,7 +49,11 @@ defmodule RaxolAgent.MixProject do
   end
 
   defp raxol_dep(name, version, path, opts \\ []) do
-    if File.dir?(path), do: {name, version, [path: path] ++ opts}, else: {name, version, opts}
+    if System.get_env("HEX_BUILD") || !File.dir?(path) do
+      if opts == [], do: {name, version}, else: {name, version, opts}
+    else
+      {name, version, [path: path] ++ opts}
+    end
   end
 
   defp description do

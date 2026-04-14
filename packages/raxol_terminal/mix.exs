@@ -59,11 +59,12 @@ defmodule RaxolTerminal.MixProject do
   end
 
   # Use path dep for local dev, Hex dep for publishing
+  # Strip path with: HEX_BUILD=1 mix hex.build
   defp raxol_dep(name, version, path) do
-    if File.dir?(path) do
-      {name, version, path: path}
-    else
+    if System.get_env("HEX_BUILD") || !File.dir?(path) do
       {name, version}
+    else
+      {name, version, path: path}
     end
   end
 
@@ -82,7 +83,7 @@ defmodule RaxolTerminal.MixProject do
       licenses: ["MIT"],
       links: %{
         "GitHub" => @source_url,
-        "Docs" => "https://hexdocs.pm/raxol_terminal",
+        "Docs" => "https://hexdocs.pm/raxol_terminal"
       },
       maintainers: ["Raxol Team"]
     ]
