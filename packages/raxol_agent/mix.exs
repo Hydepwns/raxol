@@ -35,8 +35,8 @@ defmodule RaxolAgent.MixProject do
 
   defp deps do
     [
-      {:raxol, path: "../..", override: true},
-      {:raxol_mcp, path: "../raxol_mcp"},
+      {:raxol, "~> 2.4", path: "../..", override: true},
+      {:raxol_mcp, "~> 2.4", path: "../raxol_mcp"},
       {:circular_buffer, "~> 1.0"},
       {:jason, "~> 1.4"},
       {:req, "~> 0.5", optional: true},
@@ -64,7 +64,6 @@ defmodule RaxolAgent.MixProject do
       links: %{
         "GitHub" => @source_url,
         "Docs" => "https://hexdocs.pm/raxol_agent",
-        "Changelog" => "#{@source_url}/blob/main/packages/raxol_agent/CHANGELOG.md"
       },
       maintainers: ["Raxol Team"]
     ]

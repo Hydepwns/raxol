@@ -32,7 +32,7 @@ defmodule RaxolPlugin.MixProject do
   defp deps do
     [
       # Core dependency - plugin behaviours and runtime
-      {:raxol_core, "~> 2.0", path: "../raxol_core"},
+      {:raxol_core, "~> 2.4", path: "../raxol_core"},
 
       # Dev/test only
       {:mox, "~> 1.2", only: :test},
@@ -58,7 +58,6 @@ defmodule RaxolPlugin.MixProject do
       links: %{
         "GitHub" => @source_url,
         "Docs" => "https://hexdocs.pm/raxol_plugin",
-        "Changelog" => "#{@source_url}/blob/main/packages/raxol_plugin/CHANGELOG.md"
       },
       maintainers: ["Raxol Team"]
     ]

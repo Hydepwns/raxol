@@ -59,7 +59,6 @@ defmodule RaxolCore.MixProject do
       links: %{
         "GitHub" => @source_url,
         "Docs" => "https://hexdocs.pm/raxol_core",
-        "Changelog" => "#{@source_url}/blob/main/packages/raxol_core/CHANGELOG.md"
       },
       maintainers: ["Raxol Team"]
     ]

@@ -33,7 +33,7 @@ defmodule RaxolPayments.MixProject do
   defp deps do
     [
       # Compile-time only: Action macro, CommandHook behaviour, Command struct
-      {:raxol_agent, path: "../raxol_agent", runtime: false},
+      {:raxol_agent, "~> 2.4", path: "../raxol_agent", runtime: false},
       {:req, "~> 0.5"},
       {:ex_secp256k1, "~> 0.8"},
       {:ex_keccak, "~> 0.7"},

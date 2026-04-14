@@ -32,7 +32,7 @@ defmodule RaxolLiveView.MixProject do
   defp deps do
     [
       # Core dependency (Buffer, Events, etc.)
-      {:raxol_core, path: "../raxol_core", override: true},
+      {:raxol_core, "~> 2.4", path: "../raxol_core", override: true},
 
       # PubSub for LiveView <-> Lifecycle communication
       {:phoenix_pubsub, "~> 2.1"},
@@ -65,7 +65,6 @@ defmodule RaxolLiveView.MixProject do
       links: %{
         "GitHub" => @source_url,
         "Docs" => "https://hexdocs.pm/raxol_liveview",
-        "Changelog" => "#{@source_url}/blob/main/packages/raxol_liveview/CHANGELOG.md"
       },
       maintainers: ["Raxol Team"]
     ]

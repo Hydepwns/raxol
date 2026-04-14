@@ -31,7 +31,7 @@ defmodule RaxolMcp.MixProject do
 
   defp deps do
     [
-      {:raxol_core, path: "../raxol_core"},
+      {:raxol_core, "~> 2.4", path: "../raxol_core"},
       {:jason, "~> 1.4"},
       {:plug, "~> 1.16", optional: true},
 
@@ -59,7 +59,6 @@ defmodule RaxolMcp.MixProject do
       links: %{
         "GitHub" => @source_url,
         "Docs" => "https://hexdocs.pm/raxol_mcp",
-        "Changelog" => "#{@source_url}/blob/main/packages/raxol_mcp/CHANGELOG.md"
       },
       maintainers: ["Raxol Team"]
     ]

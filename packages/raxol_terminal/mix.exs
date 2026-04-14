@@ -43,7 +43,7 @@ defmodule RaxolTerminal.MixProject do
 
   defp deps do
     [
-      {:raxol_core, path: "../raxol_core"},
+      {:raxol_core, "~> 2.4", path: "../raxol_core"},
       {:uuid, "~> 1.1"},
       {:jason, "~> 1.4"},
 
@@ -74,7 +74,6 @@ defmodule RaxolTerminal.MixProject do
       links: %{
         "GitHub" => @source_url,
         "Docs" => "https://hexdocs.pm/raxol_terminal",
-        "Changelog" => "#{@source_url}/blob/main/packages/raxol_terminal/CHANGELOG.md"
       },
       maintainers: ["Raxol Team"]
     ]
