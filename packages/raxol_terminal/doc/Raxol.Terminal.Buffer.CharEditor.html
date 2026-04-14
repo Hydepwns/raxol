@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.Buffer.CharEditor — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>CharEditor</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.Buffer.CharEditor.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Manages terminal character editing operations.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#char_width/1" data-no-tooltip="" translate="no">char_width(char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the width of a character.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#content_length/1" data-no-tooltip="" translate="no">content_length(line)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Determines the content length of a line (number of non-blank characters).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#control_char?/1" data-no-tooltip="" translate="no">control_char?(char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if a character is a control character.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#delete_char/1" data-no-tooltip="" translate="no">delete_char(cell)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Deletes a character at the current position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#delete_characters/5" data-no-tooltip="" translate="no">delete_characters(buffer, row, col, count, default_style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Deletes a specified number of characters starting from the given position.
+Characters to the right of the deleted characters are shifted left.
+Blank characters are added at the end of the line with the specified style.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#delete_chars/4" data-no-tooltip="" translate="no">delete_chars(buffer, row, col, count)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Deletes a specified number of characters starting from the given position.
+Characters to the right of the deleted characters are shifted left.
+Blank characters are added at the end of the line.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#delete_from_line/4" data-no-tooltip="" translate="no">delete_from_line(line, col, count, default_style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Deletes characters from a line at the specified position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#delete_string/2" data-no-tooltip="" translate="no">delete_string(cell, length)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Deletes a string of characters.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_chars/4" data-no-tooltip="" translate="no">erase_chars(buffer, row, col, count)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Erases a specified number of characters starting from the given position.
+Characters to the right of the erased characters are shifted left.
+Blank characters are added at the end of the line.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_chars/5" data-no-tooltip="" translate="no">erase_chars(buffer, row, col, count, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Erases a specified number of characters starting from the given position with a specific style.
+Characters to the right of the erased characters are shifted left.
+Blank characters are added at the end of the line with the specified style.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#insert_char/2" data-no-tooltip="" translate="no">insert_char(cell, char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Inserts a character at the current position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#insert_characters/5" data-no-tooltip="" translate="no">insert_characters(buffer, row, col, count, default_style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Inserts a specified number of characters at the given position.
+Characters to the right of the insertion point are shifted right.
+Characters shifted off the end of the line are discarded.
+Uses the provided default style for new characters.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#insert_chars/4" data-no-tooltip="" translate="no">insert_chars(buffer, row, col, count)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Inserts a specified number of characters at the given position.
+Characters to the right of the insertion point are shifted right.
+Characters shifted off the end of the line are discarded.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#insert_into_line/4" data-no-tooltip="" translate="no">insert_into_line(line, col, count, default_style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Inserts characters into a line at the specified position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#insert_string/2" data-no-tooltip="" translate="no">insert_string(cell, string)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Inserts a string of characters.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#printable_char?/1" data-no-tooltip="" translate="no">printable_char?(char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if a character is a printable character.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#replace_char/2" data-no-tooltip="" translate="no">replace_char(cell, char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Replaces a character at the current position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#replace_chars/5" data-no-tooltip="" translate="no">replace_chars(buffer, row, col, string, style \\ nil)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#replace_string/2" data-no-tooltip="" translate="no">replace_string(cell, string)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Replaces a string of characters.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#string_width/1" data-no-tooltip="" translate="no">string_width(string)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the width of a string.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#truncate_to_content_length/2" data-no-tooltip="" translate="no">truncate_to_content_length(line, content_length)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Truncates a line to the specified content length, padding with blank cells if needed.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_line_with_string/4" data-no-tooltip="" translate="no">update_line_with_string(line, col, string, width)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#whitespace_char?/1" data-no-tooltip="" translate="no">whitespace_char?(char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if a character is a whitespace character.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_char/4" data-no-tooltip="" translate="no">write_char(buffer, row, col, char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Writes a character at the specified position in the buffer.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_string/4" data-no-tooltip="" translate="no">write_string(buffer, row, col, string)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Writes a string at the specified position in the buffer.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="char_width/1">
+
+  <div class="detail-header">
+    <a href="#char_width/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">char_width(char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L92" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the width of a character.</p>
+  </section>
+</section>
+<section class="detail" id="content_length/1">
+
+  <div class="detail-header">
+    <a href="#content_length/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">content_length(line)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L113" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Determines the content length of a line (number of non-blank characters).</p>
+  </section>
+</section>
+<section class="detail" id="control_char?/1">
+
+  <div class="detail-header">
+    <a href="#control_char?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">control_char?(char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L65" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if a character is a control character.</p>
+  </section>
+</section>
+<section class="detail" id="delete_char/1">
+
+  <div class="detail-header">
+    <a href="#delete_char/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">delete_char(cell)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L18" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Deletes a character at the current position.</p>
+  </section>
+</section>
+<section class="detail" id="delete_characters/5">
+
+  <div class="detail-header">
+    <a href="#delete_characters/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">delete_characters(buffer, row, col, count, default_style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L349" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> delete_characters(
+  <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>()
+) :: <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>()</pre>
+
+      </div>
+
+<p>Deletes a specified number of characters starting from the given position.
+Characters to the right of the deleted characters are shifted left.
+Blank characters are added at the end of the line with the specified style.</p><h2 id="delete_characters/5-parameters" class="section-heading"><a href="#delete_characters/5-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">buffer</code> - The screen buffer to modify</li><li><code class="inline">row</code> - The row to delete characters from</li><li><code class="inline">col</code> - The column to start deleting from</li><li><code class="inline">count</code> - The number of characters to delete</li><li><code class="inline">default_style</code> - The style to apply to new blank characters</li></ul><h2 id="delete_characters/5-returns" class="section-heading"><a href="#delete_characters/5-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>The updated screen buffer.</p>
+  </section>
+</section>
+<section class="detail" id="delete_chars/4">
+
+  <div class="detail-header">
+    <a href="#delete_chars/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">delete_chars(buffer, row, col, count)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L311" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> delete_chars(
+  <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()
+) :: <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>()</pre>
+
+      </div>
+
+<p>Deletes a specified number of characters starting from the given position.
+Characters to the right of the deleted characters are shifted left.
+Blank characters are added at the end of the line.</p><h2 id="delete_chars/4-parameters" class="section-heading"><a href="#delete_chars/4-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">buffer</code> - The screen buffer to modify</li><li><code class="inline">row</code> - The row to delete characters from</li><li><code class="inline">col</code> - The column to start deleting from</li><li><code class="inline">count</code> - The number of characters to delete</li></ul><h2 id="delete_chars/4-returns" class="section-heading"><a href="#delete_chars/4-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>The updated screen buffer.</p>
+  </section>
+</section>
+<section class="detail" id="delete_from_line/4">
+
+  <div class="detail-header">
+    <a href="#delete_from_line/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">delete_from_line(line, col, count, default_style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L382" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> delete_from_line(
+  [<a href="Raxol.Terminal.Cell.html#t:t/0">Raxol.Terminal.Cell.t</a>()],
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>()
+) :: [<a href="Raxol.Terminal.Cell.html#t:t/0">Raxol.Terminal.Cell.t</a>()]</pre>
+
+      </div>
+
+<p>Deletes characters from a line at the specified position.</p><h2 id="delete_from_line/4-parameters" class="section-heading"><a href="#delete_from_line/4-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">line</code> - The line to modify</li><li><code class="inline">col</code> - The column to start deleting from</li><li><code class="inline">count</code> - The number of characters to delete</li><li><code class="inline">default_style</code> - The style to apply to new blank characters</li></ul><h2 id="delete_from_line/4-returns" class="section-heading"><a href="#delete_from_line/4-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>The updated line with deleted characters replaced by blanks.</p><h2 id="delete_from_line/4-examples" class="section-heading"><a href="#delete_from_line/4-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">List</span><span class="o">.</span><span class="n">duplicate</span><span class="p" data-group-id="0445253602-1">(</span><span class="p" data-group-id="0445253602-2">%</span><span class="nc" data-group-id="0445253602-2">Cell</span><span class="p" data-group-id="0445253602-2">{</span><span class="p" data-group-id="0445253602-2">}</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p" data-group-id="0445253602-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">style</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="0445253602-3">%{</span><span class="ss">fg</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p">,</span><span class="w"> </span><span class="ss">bg</span><span class="p">:</span><span class="w"> </span><span class="ss">:blue</span><span class="p" data-group-id="0445253602-3">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">new_line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">CharEditor</span><span class="o">.</span><span class="n">delete_from_line</span><span class="p" data-group-id="0445253602-4">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">style</span><span class="p" data-group-id="0445253602-4">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">length</span><span class="p" data-group-id="0445253602-5">(</span><span class="n">new_line</span><span class="p" data-group-id="0445253602-5">)</span><span class="w">
+</span><span class="mi">10</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="delete_string/2">
+
+  <div class="detail-header">
+    <a href="#delete_string/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">delete_string(cell, length)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L43" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Deletes a string of characters.</p>
+  </section>
+</section>
+<section class="detail" id="erase_chars/4">
+
+  <div class="detail-header">
+    <a href="#erase_chars/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_chars(buffer, row, col, count)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L458" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> erase_chars(
+  <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()
+) :: <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>()</pre>
+
+      </div>
+
+<p>Erases a specified number of characters starting from the given position.
+Characters to the right of the erased characters are shifted left.
+Blank characters are added at the end of the line.</p><h2 id="erase_chars/4-parameters" class="section-heading"><a href="#erase_chars/4-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">buffer</code> - The screen buffer to modify</li><li><code class="inline">row</code> - The row to erase characters from</li><li><code class="inline">col</code> - The column to start erasing from</li><li><code class="inline">count</code> - The number of characters to erase</li></ul><h2 id="erase_chars/4-returns" class="section-heading"><a href="#erase_chars/4-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>The updated screen buffer.</p>
+  </section>
+</section>
+<section class="detail" id="erase_chars/5">
+
+  <div class="detail-header">
+    <a href="#erase_chars/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_chars(buffer, row, col, count, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L489" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> erase_chars(
+  <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>()
+) :: <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>()</pre>
+
+      </div>
+
+<p>Erases a specified number of characters starting from the given position with a specific style.
+Characters to the right of the erased characters are shifted left.
+Blank characters are added at the end of the line with the specified style.</p><h2 id="erase_chars/5-parameters" class="section-heading"><a href="#erase_chars/5-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">buffer</code> - The screen buffer to modify</li><li><code class="inline">row</code> - The row to erase characters from</li><li><code class="inline">col</code> - The column to start erasing from</li><li><code class="inline">count</code> - The number of characters to erase</li><li><code class="inline">style</code> - The style to apply to new blank characters</li></ul><h2 id="erase_chars/5-returns" class="section-heading"><a href="#erase_chars/5-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>The updated screen buffer.</p>
+  </section>
+</section>
+<section class="detail" id="insert_char/2">
+
+  <div class="detail-header">
+    <a href="#insert_char/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">insert_char(cell, char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L11" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Inserts a character at the current position.</p>
+  </section>
+</section>
+<section class="detail" id="insert_characters/5">
+
+  <div class="detail-header">
+    <a href="#insert_characters/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">insert_characters(buffer, row, col, count, default_style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L240" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> insert_characters(
+  <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>()
+) :: <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>()</pre>
+
+      </div>
+
+<p>Inserts a specified number of characters at the given position.
+Characters to the right of the insertion point are shifted right.
+Characters shifted off the end of the line are discarded.
+Uses the provided default style for new characters.</p><h2 id="insert_characters/5-parameters" class="section-heading"><a href="#insert_characters/5-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">buffer</code> - The screen buffer to modify</li><li><code class="inline">row</code> - The row to insert characters in</li><li><code class="inline">col</code> - The column to start inserting at</li><li><code class="inline">count</code> - The number of characters to insert</li><li><code class="inline">default_style</code> - The style to apply to new characters</li></ul><h2 id="insert_characters/5-returns" class="section-heading"><a href="#insert_characters/5-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>The updated screen buffer.</p><h2 id="insert_characters/5-examples" class="section-heading"><a href="#insert_characters/5-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ScreenBuffer</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="2735140169-1">(</span><span class="mi">80</span><span class="p">,</span><span class="w"> </span><span class="mi">24</span><span class="p" data-group-id="2735140169-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">style</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="2735140169-2">%{</span><span class="ss">fg</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p">,</span><span class="w"> </span><span class="ss">bg</span><span class="p">:</span><span class="w"> </span><span class="ss">:blue</span><span class="p" data-group-id="2735140169-2">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">CharEditor</span><span class="o">.</span><span class="n">insert_characters</span><span class="p" data-group-id="2735140169-3">(</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">style</span><span class="p" data-group-id="2735140169-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">CharEditor</span><span class="o">.</span><span class="n">get_char</span><span class="p" data-group-id="2735140169-4">(</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="2735140169-4">)</span><span class="w">
+</span><span class="s">&quot; &quot;</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="insert_chars/4">
+
+  <div class="detail-header">
+    <a href="#insert_chars/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">insert_chars(buffer, row, col, count)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L184" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> insert_chars(
+  <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()
+) :: <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>()</pre>
+
+      </div>
+
+<p>Inserts a specified number of characters at the given position.
+Characters to the right of the insertion point are shifted right.
+Characters shifted off the end of the line are discarded.</p><h2 id="insert_chars/4-parameters" class="section-heading"><a href="#insert_chars/4-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">buffer</code> - The screen buffer to modify</li><li><code class="inline">row</code> - The row to insert characters in</li><li><code class="inline">col</code> - The column to start inserting at</li><li><code class="inline">count</code> - The number of characters to insert</li></ul><h2 id="insert_chars/4-returns" class="section-heading"><a href="#insert_chars/4-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>The updated screen buffer.</p>
+  </section>
+</section>
+<section class="detail" id="insert_into_line/4">
+
+  <div class="detail-header">
+    <a href="#insert_into_line/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">insert_into_line(line, col, count, default_style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L273" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> insert_into_line(
+  [<a href="Raxol.Terminal.Cell.html#t:t/0">Raxol.Terminal.Cell.t</a>()],
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>()
+) :: [<a href="Raxol.Terminal.Cell.html#t:t/0">Raxol.Terminal.Cell.t</a>()]</pre>
+
+      </div>
+
+<p>Inserts characters into a line at the specified position.</p><h2 id="insert_into_line/4-parameters" class="section-heading"><a href="#insert_into_line/4-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">line</code> - The line to modify</li><li><code class="inline">col</code> - The column to start inserting at</li><li><code class="inline">count</code> - The number of characters to insert</li><li><code class="inline">default_style</code> - The style to apply to new characters</li></ul><h2 id="insert_into_line/4-returns" class="section-heading"><a href="#insert_into_line/4-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>The updated line with inserted characters.</p><h2 id="insert_into_line/4-examples" class="section-heading"><a href="#insert_into_line/4-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">List</span><span class="o">.</span><span class="n">duplicate</span><span class="p" data-group-id="7503186854-1">(</span><span class="p" data-group-id="7503186854-2">%</span><span class="nc" data-group-id="7503186854-2">Cell</span><span class="p" data-group-id="7503186854-2">{</span><span class="p" data-group-id="7503186854-2">}</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p" data-group-id="7503186854-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">style</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7503186854-3">%{</span><span class="ss">fg</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p">,</span><span class="w"> </span><span class="ss">bg</span><span class="p">:</span><span class="w"> </span><span class="ss">:blue</span><span class="p" data-group-id="7503186854-3">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">new_line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">CharEditor</span><span class="o">.</span><span class="n">insert_into_line</span><span class="p" data-group-id="7503186854-4">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">style</span><span class="p" data-group-id="7503186854-4">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">length</span><span class="p" data-group-id="7503186854-5">(</span><span class="n">new_line</span><span class="p" data-group-id="7503186854-5">)</span><span class="w">
+</span><span class="mi">10</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="insert_string/2">
+
+  <div class="detail-header">
+    <a href="#insert_string/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">insert_string(cell, string)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L32" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Inserts a string of characters.</p>
+  </section>
+</section>
+<section class="detail" id="printable_char?/1">
+
+  <div class="detail-header">
+    <a href="#printable_char?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">printable_char?(char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L75" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if a character is a printable character.</p>
+  </section>
+</section>
+<section class="detail" id="replace_char/2">
+
+  <div class="detail-header">
+    <a href="#replace_char/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">replace_char(cell, char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L25" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Replaces a character at the current position.</p>
+  </section>
+</section>
+<section class="detail" id="replace_chars/5">
+
+    <span id="replace_chars/4"></span>
+
+  <div class="detail-header">
+    <a href="#replace_chars/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">replace_chars(buffer, row, col, string, style \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L545" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="replace_string/2">
+
+  <div class="detail-header">
+    <a href="#replace_string/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">replace_string(cell, string)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L54" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Replaces a string of characters.</p>
+  </section>
+</section>
+<section class="detail" id="string_width/1">
+
+  <div class="detail-header">
+    <a href="#string_width/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">string_width(string)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L103" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the width of a string.</p>
+  </section>
+</section>
+<section class="detail" id="truncate_to_content_length/2">
+
+  <div class="detail-header">
+    <a href="#truncate_to_content_length/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">truncate_to_content_length(line, content_length)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L122" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Truncates a line to the specified content length, padding with blank cells if needed.</p>
+  </section>
+</section>
+<section class="detail" id="update_line_with_string/4">
+
+  <div class="detail-header">
+    <a href="#update_line_with_string/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_line_with_string(line, col, string, width)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L426" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="whitespace_char?/1">
+
+  <div class="detail-header">
+    <a href="#whitespace_char?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">whitespace_char?(char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L85" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if a character is a whitespace character.</p>
+  </section>
+</section>
+<section class="detail" id="write_char/4">
+
+  <div class="detail-header">
+    <a href="#write_char/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_char(buffer, row, col, char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L403" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Writes a character at the specified position in the buffer.</p>
+  </section>
+</section>
+<section class="detail" id="write_string/4">
+
+  <div class="detail-header">
+    <a href="#write_string/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_string(buffer, row, col, string)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/char_editor.ex#L410" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Writes a string at the specified position in the buffer.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

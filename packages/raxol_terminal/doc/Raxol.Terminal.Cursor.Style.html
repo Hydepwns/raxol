@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.Cursor.Style — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-behaviour" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>Cursor.<wbr>Style</span> <small>behaviour</small>
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.Cursor.Style.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Handles cursor style and visibility control for the terminal emulator.</p><p>This module provides functions for changing cursor appearance, controlling
+visibility, and managing cursor blinking.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-callbacks summary">
+  <h3>
+    <a href="#callbacks">Callbacks</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:blink/1" data-no-tooltip="" translate="no">blink(cursor)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:get_blink/1" data-no-tooltip="" translate="no">get_blink(cursor)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:get_state/1" data-no-tooltip="" translate="no">get_state(cursor)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:get_style/1" data-no-tooltip="" translate="no">get_style(cursor)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:hide/1" data-no-tooltip="" translate="no">hide(cursor)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:set_bar/1" data-no-tooltip="" translate="no">set_bar(cursor)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:set_blink_rate/2" data-no-tooltip="" translate="no">set_blink_rate(cursor, rate)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:set_block/1" data-no-tooltip="" translate="no">set_block(cursor)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:set_custom/3" data-no-tooltip="" translate="no">set_custom(cursor, shape, dimensions)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:set_underline/1" data-no-tooltip="" translate="no">set_underline(cursor)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:show/1" data-no-tooltip="" translate="no">show(cursor)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:toggle_blink/1" data-no-tooltip="" translate="no">toggle_blink(cursor)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:toggle_visibility/1" data-no-tooltip="" translate="no">toggle_visibility(cursor)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:update_blink/1" data-no-tooltip="" translate="no">update_blink(cursor)</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#blink/1" data-no-tooltip="" translate="no">blink(cursor)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Makes the cursor blink.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_blink/1" data-no-tooltip="" translate="no">get_blink(cursor)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the current cursor blink mode.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_state/1" data-no-tooltip="" translate="no">get_state(cursor)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the current cursor state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_style/1" data-no-tooltip="" translate="no">get_style(cursor)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the current cursor style.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#hide/1" data-no-tooltip="" translate="no">hide(cursor)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Hides the cursor.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_bar/1" data-no-tooltip="" translate="no">set_bar(cursor)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the cursor style to bar.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_blink_rate/2" data-no-tooltip="" translate="no">set_blink_rate(cursor, rate)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the cursor blink rate in milliseconds.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_block/1" data-no-tooltip="" translate="no">set_block(cursor)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the cursor style to block.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_custom/3" data-no-tooltip="" translate="no">set_custom(cursor, shape, dimensions)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets a custom cursor shape.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_underline/1" data-no-tooltip="" translate="no">set_underline(cursor)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the cursor style to underline.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#show/1" data-no-tooltip="" translate="no">show(cursor)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Makes the cursor visible.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#toggle_blink/1" data-no-tooltip="" translate="no">toggle_blink(cursor)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Toggles the cursor blinking state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#toggle_visibility/1" data-no-tooltip="" translate="no">toggle_visibility(cursor)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Toggles the cursor visibility.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_blink/1" data-no-tooltip="" translate="no">update_blink(cursor)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates the cursor blink state and returns the updated cursor and visibility.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="callbacks" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#callbacks">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Callbacks</span>
+    </h2>
+
+    <div class="callbacks-list">
+<section class="detail" id="c:blink/1">
+
+  <div class="detail-header">
+    <a href="#c:blink/1" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">blink(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L39" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> blink(cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()) ::
+  <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:get_blink/1">
+
+  <div class="detail-header">
+    <a href="#c:get_blink/1" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_blink(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L38" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> get_blink(cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:get_state/1">
+
+  <div class="detail-header">
+    <a href="#c:get_state/1" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_state(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L37" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> get_state(cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:get_style/1">
+
+  <div class="detail-header">
+    <a href="#c:get_style/1" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_style(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L41" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> get_style(cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:hide/1">
+
+  <div class="detail-header">
+    <a href="#c:hide/1" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">hide(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L25" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> hide(cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()) ::
+  <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:set_bar/1">
+
+  <div class="detail-header">
+    <a href="#c:set_bar/1" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_bar(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L16" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> set_bar(cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()) ::
+  <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:set_blink_rate/2">
+
+  <div class="detail-header">
+    <a href="#c:set_blink_rate/2" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_blink_rate(cursor, rate)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L31" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> set_blink_rate(
+  cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>(),
+  rate :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()
+) :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:set_block/1">
+
+  <div class="detail-header">
+    <a href="#c:set_block/1" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_block(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L12" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> set_block(cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()) ::
+  <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:set_custom/3">
+
+  <div class="detail-header">
+    <a href="#c:set_custom/3" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_custom(cursor, shape, dimensions)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L18" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> set_custom(
+  cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>(),
+  shape :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  dimensions :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
+) :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:set_underline/1">
+
+  <div class="detail-header">
+    <a href="#c:set_underline/1" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_underline(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L14" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> set_underline(cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()) ::
+  <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:show/1">
+
+  <div class="detail-header">
+    <a href="#c:show/1" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">show(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L23" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> show(cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()) ::
+  <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:toggle_blink/1">
+
+  <div class="detail-header">
+    <a href="#c:toggle_blink/1" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">toggle_blink(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L29" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> toggle_blink(cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()) ::
+  <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:toggle_visibility/1">
+
+  <div class="detail-header">
+    <a href="#c:toggle_visibility/1" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">toggle_visibility(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L27" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> toggle_visibility(cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()) ::
+  <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:update_blink/1">
+
+  <div class="detail-header">
+    <a href="#c:update_blink/1" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_blink(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L35" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> update_blink(cursor :: <a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>()) ::
+  {<a href="Raxol.Terminal.Cursor.Manager.html#t:t/0">Raxol.Terminal.Cursor.Manager.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="blink/1">
+
+  <div class="detail-header">
+    <a href="#blink/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">blink(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L161" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Makes the cursor blink.</p><h2 id="blink/1-examples" class="section-heading"><a href="#blink/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="4366994559-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="4366994559-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="4366994559-2">(</span><span class="p" data-group-id="4366994559-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">blink</span><span class="p" data-group-id="4366994559-3">(</span><span class="n">cursor</span><span class="p" data-group-id="4366994559-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">state</span><span class="w">
+</span><span class="ss">:blinking</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="get_blink/1">
+
+  <div class="detail-header">
+    <a href="#get_blink/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_blink(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L287" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the current cursor blink mode.</p><h2 id="get_blink/1-examples" class="section-heading"><a href="#get_blink/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="4494733176-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="4494733176-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="4494733176-2">(</span><span class="p" data-group-id="4494733176-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Style</span><span class="o">.</span><span class="n">get_blink</span><span class="p" data-group-id="4494733176-3">(</span><span class="n">cursor</span><span class="p" data-group-id="4494733176-3">)</span><span class="w">
+</span><span class="no">true</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="get_state/1">
+
+  <div class="detail-header">
+    <a href="#get_state/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_state(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L272" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the current cursor state.</p><h2 id="get_state/1-examples" class="section-heading"><a href="#get_state/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="9948081623-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="9948081623-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="9948081623-2">(</span><span class="p" data-group-id="9948081623-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Style</span><span class="o">.</span><span class="n">get_state</span><span class="p" data-group-id="9948081623-3">(</span><span class="n">cursor</span><span class="p" data-group-id="9948081623-3">)</span><span class="w">
+</span><span class="ss">:visible</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="get_style/1">
+
+  <div class="detail-header">
+    <a href="#get_style/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_style(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L257" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the current cursor style.</p><h2 id="get_style/1-examples" class="section-heading"><a href="#get_style/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="6788302929-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="6788302929-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="6788302929-2">(</span><span class="p" data-group-id="6788302929-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Style</span><span class="o">.</span><span class="n">get_style</span><span class="p" data-group-id="6788302929-3">(</span><span class="n">cursor</span><span class="p" data-group-id="6788302929-3">)</span><span class="w">
+</span><span class="ss">:block</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="hide/1">
+
+  <div class="detail-header">
+    <a href="#hide/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">hide(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L145" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Hides the cursor.</p><h2 id="hide/1-examples" class="section-heading"><a href="#hide/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="0279058424-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="0279058424-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="0279058424-2">(</span><span class="p" data-group-id="0279058424-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">hide</span><span class="p" data-group-id="0279058424-3">(</span><span class="n">cursor</span><span class="p" data-group-id="0279058424-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">state</span><span class="w">
+</span><span class="ss">:hidden</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="set_bar/1">
+
+  <div class="detail-header">
+    <a href="#set_bar/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_bar(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L89" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the cursor style to bar.</p><h2 id="set_bar/1-examples" class="section-heading"><a href="#set_bar/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="5362105367-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="5362105367-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="5362105367-2">(</span><span class="p" data-group-id="5362105367-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">set_bar</span><span class="p" data-group-id="5362105367-3">(</span><span class="n">cursor</span><span class="p" data-group-id="5362105367-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">style</span><span class="w">
+</span><span class="ss">:bar</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="set_blink_rate/2">
+
+  <div class="detail-header">
+    <a href="#set_blink_rate/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_blink_rate(cursor, rate)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L177" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the cursor blink rate in milliseconds.</p><h2 id="set_blink_rate/2-examples" class="section-heading"><a href="#set_blink_rate/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="2063827903-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="2063827903-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="2063827903-2">(</span><span class="p" data-group-id="2063827903-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">set_blink_rate</span><span class="p" data-group-id="2063827903-3">(</span><span class="n">cursor</span><span class="p">,</span><span class="w"> </span><span class="mi">1000</span><span class="p" data-group-id="2063827903-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">blink_rate</span><span class="w">
+</span><span class="mi">1000</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="set_block/1">
+
+  <div class="detail-header">
+    <a href="#set_block/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_block(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L57" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the cursor style to block.</p><h2 id="set_block/1-examples" class="section-heading"><a href="#set_block/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="3682522683-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="3682522683-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="3682522683-2">(</span><span class="p" data-group-id="3682522683-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">set_block</span><span class="p" data-group-id="3682522683-3">(</span><span class="n">cursor</span><span class="p" data-group-id="3682522683-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">style</span><span class="w">
+</span><span class="ss">:block</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="set_custom/3">
+
+  <div class="detail-header">
+    <a href="#set_custom/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_custom(cursor, shape, dimensions)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L107" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets a custom cursor shape.</p><h2 id="set_custom/3-examples" class="section-heading"><a href="#set_custom/3-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="4856427263-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="4856427263-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="4856427263-2">(</span><span class="p" data-group-id="4856427263-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">set_custom</span><span class="p" data-group-id="4856427263-3">(</span><span class="n">cursor</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;█&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4856427263-4">{</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="4856427263-4">}</span><span class="p" data-group-id="4856427263-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">style</span><span class="w">
+</span><span class="ss">:custom</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">custom_shape</span><span class="w">
+</span><span class="s">&quot;█&quot;</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="set_underline/1">
+
+  <div class="detail-header">
+    <a href="#set_underline/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_underline(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L73" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the cursor style to underline.</p><h2 id="set_underline/1-examples" class="section-heading"><a href="#set_underline/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="6232127203-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="6232127203-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="6232127203-2">(</span><span class="p" data-group-id="6232127203-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">set_underline</span><span class="p" data-group-id="6232127203-3">(</span><span class="n">cursor</span><span class="p" data-group-id="6232127203-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">style</span><span class="w">
+</span><span class="ss">:underline</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="show/1">
+
+  <div class="detail-header">
+    <a href="#show/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">show(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L129" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Makes the cursor visible.</p><h2 id="show/1-examples" class="section-heading"><a href="#show/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="9618968702-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="9618968702-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="9618968702-2">(</span><span class="p" data-group-id="9618968702-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">set_state</span><span class="p" data-group-id="9618968702-3">(</span><span class="n">cursor</span><span class="p">,</span><span class="w"> </span><span class="ss">:hidden</span><span class="p" data-group-id="9618968702-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">show</span><span class="p" data-group-id="9618968702-4">(</span><span class="n">cursor</span><span class="p" data-group-id="9618968702-4">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">state</span><span class="w">
+</span><span class="ss">:visible</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="toggle_blink/1">
+
+  <div class="detail-header">
+    <a href="#toggle_blink/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">toggle_blink(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L239" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Toggles the cursor blinking state.</p><h2 id="toggle_blink/1-examples" class="section-heading"><a href="#toggle_blink/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="0913109526-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="0913109526-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="0913109526-2">(</span><span class="p" data-group-id="0913109526-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">toggle_blink</span><span class="p" data-group-id="0913109526-3">(</span><span class="n">cursor</span><span class="p" data-group-id="0913109526-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">state</span><span class="w">
+</span><span class="ss">:blinking</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">toggle_blink</span><span class="p" data-group-id="0913109526-4">(</span><span class="n">cursor</span><span class="p" data-group-id="0913109526-4">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">state</span><span class="w">
+</span><span class="ss">:visible</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="toggle_visibility/1">
+
+  <div class="detail-header">
+    <a href="#toggle_visibility/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">toggle_visibility(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L216" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Toggles the cursor visibility.</p><h2 id="toggle_visibility/1-examples" class="section-heading"><a href="#toggle_visibility/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="8189469519-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="8189469519-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="8189469519-2">(</span><span class="p" data-group-id="8189469519-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">toggle_visibility</span><span class="p" data-group-id="8189469519-3">(</span><span class="n">cursor</span><span class="p" data-group-id="8189469519-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">state</span><span class="w">
+</span><span class="ss">:hidden</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">toggle_visibility</span><span class="p" data-group-id="8189469519-4">(</span><span class="n">cursor</span><span class="p" data-group-id="8189469519-4">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="o">.</span><span class="n">state</span><span class="w">
+</span><span class="ss">:visible</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="update_blink/1">
+
+  <div class="detail-header">
+    <a href="#update_blink/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_blink(cursor)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cursor/style.ex#L195" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Updates the cursor blink state and returns the updated cursor and visibility.</p><h2 id="update_blink/1-examples" class="section-heading"><a href="#update_blink/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Terminal.Cursor</span><span class="o">.</span><span class="p" data-group-id="1282807659-1">{</span><span class="nc">Manager</span><span class="p">,</span><span class="w"> </span><span class="nc">Style</span><span class="p" data-group-id="1282807659-1">}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Manager</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="1282807659-2">(</span><span class="p" data-group-id="1282807659-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cursor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">blink</span><span class="p" data-group-id="1282807659-3">(</span><span class="n">cursor</span><span class="p" data-group-id="1282807659-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="p" data-group-id="1282807659-4">{</span><span class="c">_cursor</span><span class="p">,</span><span class="w"> </span><span class="n">visible</span><span class="p" data-group-id="1282807659-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Style</span><span class="o">.</span><span class="n">update_blink</span><span class="p" data-group-id="1282807659-5">(</span><span class="n">cursor</span><span class="p" data-group-id="1282807659-5">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">is_boolean</span><span class="p" data-group-id="1282807659-6">(</span><span class="n">visible</span><span class="p" data-group-id="1282807659-6">)</span><span class="w">
+</span><span class="no">true</span></code></pre>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

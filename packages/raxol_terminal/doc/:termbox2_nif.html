@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>:termbox2_nif — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">:termbox2_nif</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href=":termbox2_nif.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Termbox2 NIF for Elixir - A terminal UI library.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#load_nif/0" data-no-tooltip="" translate="no">load_nif()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_clear/0" data-no-tooltip="" translate="no">tb_clear()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Clear the terminal.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_height/0" data-no-tooltip="" translate="no">tb_height()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get the height of the terminal.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_hide_cursor/0" data-no-tooltip="" translate="no">tb_hide_cursor()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Hide the cursor.
+Returns 0 on success, -1 on error.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_init/0" data-no-tooltip="" translate="no">tb_init()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Initialize the termbox2 library.
+Returns 0 on success, -1 on error.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_present/0" data-no-tooltip="" translate="no">tb_present()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Present the changes to the terminal.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_print/5" data-no-tooltip="" translate="no">tb_print(x, y, fg, bg, str)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Print a string at the specified position.
+Returns 0 on success, -1 on error.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_set_cell/5" data-no-tooltip="" translate="no">tb_set_cell(x, y, ch, fg, bg)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Set a cell in the terminal.
+Returns 0 on success, -1 on error.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_set_cursor/2" data-no-tooltip="" translate="no">tb_set_cursor(x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Set the cursor position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_set_input_mode/1" data-no-tooltip="" translate="no">tb_set_input_mode(mode)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Set the input mode.
+Returns the previous mode.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_set_output_mode/1" data-no-tooltip="" translate="no">tb_set_output_mode(mode)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Set the output mode.
+Returns the previous mode.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_set_position/2" data-no-tooltip="" translate="no">tb_set_position(x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Set the terminal window position.
+Returns {:ok, &quot;set&quot;} on success, {:error, reason} on failure.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_set_title/1" data-no-tooltip="" translate="no">tb_set_title(title)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Set the terminal title.
+Returns {:ok, &quot;set&quot;} on success, {:error, reason} on failure.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_shutdown/0" data-no-tooltip="" translate="no">tb_shutdown()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Shutdown the termbox2 library.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tb_width/0" data-no-tooltip="" translate="no">tb_width()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get the width of the terminal.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="load_nif/0">
+
+  <div class="detail-header">
+    <a href="#load_nif/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">load_nif()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L8" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="tb_clear/0">
+
+  <div class="detail-header">
+    <a href="#tb_clear/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_clear()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L99" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Clear the terminal.</p>
+  </section>
+</section>
+<section class="detail" id="tb_height/0">
+
+  <div class="detail-header">
+    <a href="#tb_height/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_height()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L94" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Get the height of the terminal.</p>
+  </section>
+</section>
+<section class="detail" id="tb_hide_cursor/0">
+
+  <div class="detail-header">
+    <a href="#tb_hide_cursor/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_hide_cursor()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L115" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Hide the cursor.
+Returns 0 on success, -1 on error.</p>
+  </section>
+</section>
+<section class="detail" id="tb_init/0">
+
+  <div class="detail-header">
+    <a href="#tb_init/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_init()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L79" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Initialize the termbox2 library.
+Returns 0 on success, -1 on error.</p>
+  </section>
+</section>
+<section class="detail" id="tb_present/0">
+
+  <div class="detail-header">
+    <a href="#tb_present/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_present()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L104" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Present the changes to the terminal.</p>
+  </section>
+</section>
+<section class="detail" id="tb_print/5">
+
+  <div class="detail-header">
+    <a href="#tb_print/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_print(x, y, fg, bg, str)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L139" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Print a string at the specified position.
+Returns 0 on success, -1 on error.</p>
+  </section>
+</section>
+<section class="detail" id="tb_set_cell/5">
+
+  <div class="detail-header">
+    <a href="#tb_set_cell/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_set_cell(x, y, ch, fg, bg)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L121" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Set a cell in the terminal.
+Returns 0 on success, -1 on error.</p>
+  </section>
+</section>
+<section class="detail" id="tb_set_cursor/2">
+
+  <div class="detail-header">
+    <a href="#tb_set_cursor/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_set_cursor(x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L109" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Set the cursor position.</p>
+  </section>
+</section>
+<section class="detail" id="tb_set_input_mode/1">
+
+  <div class="detail-header">
+    <a href="#tb_set_input_mode/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_set_input_mode(mode)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L127" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Set the input mode.
+Returns the previous mode.</p>
+  </section>
+</section>
+<section class="detail" id="tb_set_output_mode/1">
+
+  <div class="detail-header">
+    <a href="#tb_set_output_mode/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_set_output_mode(mode)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L133" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Set the output mode.
+Returns the previous mode.</p>
+  </section>
+</section>
+<section class="detail" id="tb_set_position/2">
+
+  <div class="detail-header">
+    <a href="#tb_set_position/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_set_position(x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L151" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Set the terminal window position.
+Returns {:ok, &quot;set&quot;} on success, {:error, reason} on failure.</p>
+  </section>
+</section>
+<section class="detail" id="tb_set_title/1">
+
+  <div class="detail-header">
+    <a href="#tb_set_title/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_set_title(title)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L145" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Set the terminal title.
+Returns {:ok, &quot;set&quot;} on success, {:error, reason} on failure.</p>
+  </section>
+</section>
+<section class="detail" id="tb_shutdown/0">
+
+  <div class="detail-header">
+    <a href="#tb_shutdown/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_shutdown()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L84" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Shutdown the termbox2 library.</p>
+  </section>
+</section>
+<section class="detail" id="tb_width/0">
+
+  <div class="detail-header">
+    <a href="#tb_width/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">tb_width()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/termbox2_nif/lib/termbox2_nif.ex#L89" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Get the width of the terminal.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

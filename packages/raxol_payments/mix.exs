@@ -47,9 +47,9 @@ defmodule RaxolPayments.MixProject do
     ]
   end
 
-  defp raxol_dep(name, version, path, opts \\ []) do
+  defp raxol_dep(name, version, path, opts) do
     if System.get_env("HEX_BUILD") || !File.dir?(path) do
-      if opts == [], do: {name, version}, else: {name, version, opts}
+      {name, version, opts}
     else
       {name, version, [path: path] ++ opts}
     end

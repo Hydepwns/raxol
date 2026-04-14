@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.Window.Manager.WindowManagerServer — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>Window.<wbr>Manager.<wbr>WindowManagerServer</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.Window.Manager.WindowManagerServer.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>GenServer implementation for terminal window management in Raxol.</p><p>This server provides a pure functional approach to window management,
+eliminating Process dictionary usage and implementing proper OTP patterns.</p><h2 id="module-features" class="section-heading"><a href="#module-features" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Features</span></h2><ul><li>Window creation, destruction, and lifecycle management</li><li>Hierarchical window relationships (parent/child)</li><li>Window state tracking (active, inactive, minimized, maximized)</li><li>Window properties management (title, size, position)</li><li>Icon management for windows</li><li>Supervised state management with fault tolerance</li></ul><h2 id="module-state-structure" class="section-heading"><a href="#module-state-structure" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">State Structure</span></h2><p>The server maintains state with the following structure:</p><pre><code class="makeup elixir" translate="no"><span class="p" data-group-id="6179453979-1">%{</span><span class="w">
+  </span><span class="ss">windows</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6179453979-2">%{</span><span class="n">window_id</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nc">Window</span><span class="o">.</span><span class="n">t</span><span class="p" data-group-id="6179453979-3">(</span><span class="p" data-group-id="6179453979-3">)</span><span class="p" data-group-id="6179453979-2">}</span><span class="p">,</span><span class="w">
+  </span><span class="ss">active_window</span><span class="p">:</span><span class="w"> </span><span class="n">window_id</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="no">nil</span><span class="p">,</span><span class="w">
+  </span><span class="ss">window_order</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6179453979-4">[</span><span class="n">window_id</span><span class="p" data-group-id="6179453979-4">]</span><span class="p">,</span><span class="w">  </span><span class="c1"># Z-order for stacking</span><span class="w">
+  </span><span class="ss">window_state</span><span class="p">:</span><span class="w"> </span><span class="ss">:normal</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="ss">:minimized</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="ss">:maximized</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="ss">:fullscreen</span><span class="p">,</span><span class="w">
+  </span><span class="ss">window_size</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6179453979-5">{</span><span class="n">width</span><span class="p">,</span><span class="w"> </span><span class="n">height</span><span class="p" data-group-id="6179453979-5">}</span><span class="p">,</span><span class="w">
+  </span><span class="ss">window_title</span><span class="p">:</span><span class="w"> </span><span class="nc">String</span><span class="o">.</span><span class="n">t</span><span class="p" data-group-id="6179453979-6">(</span><span class="p" data-group-id="6179453979-6">)</span><span class="p">,</span><span class="w">
+  </span><span class="ss">icon_name</span><span class="p">:</span><span class="w"> </span><span class="nc">String</span><span class="o">.</span><span class="n">t</span><span class="p" data-group-id="6179453979-7">(</span><span class="p" data-group-id="6179453979-7">)</span><span class="p">,</span><span class="w">
+  </span><span class="ss">icon_title</span><span class="p">:</span><span class="w"> </span><span class="nc">String</span><span class="o">.</span><span class="n">t</span><span class="p" data-group-id="6179453979-8">(</span><span class="p" data-group-id="6179453979-8">)</span><span class="p">,</span><span class="w">
+  </span><span class="ss">spatial_map</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6179453979-9">%{</span><span class="p" data-group-id="6179453979-9">}</span><span class="p">,</span><span class="w">  </span><span class="c1"># For spatial navigation</span><span class="w">
+  </span><span class="ss">navigation_paths</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6179453979-10">%{</span><span class="p" data-group-id="6179453979-10">}</span><span class="p">,</span><span class="w">  </span><span class="c1"># Custom navigation paths</span><span class="w">
+  </span><span class="ss">next_window_id</span><span class="p">:</span><span class="w"> </span><span class="n">integer</span><span class="p" data-group-id="6179453979-11">(</span><span class="p" data-group-id="6179453979-11">)</span><span class="w">
+</span><span class="p" data-group-id="6179453979-1">}</span></code></pre>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#child_spec/1" data-no-tooltip="" translate="no">child_spec(init_arg)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns a specification to start this module under a supervisor.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_child_window/2" data-no-tooltip="" translate="no">create_child_window(parent_id, config)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a child window.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_window/2" data-no-tooltip="" translate="no">create_window(config_or_width, height_or_config \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a new window with the given configuration.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#define_navigation_path/4" data-no-tooltip="" translate="no">define_navigation_path(server \\ __MODULE__, from_id, direction, to_id)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Defines a navigation path between windows.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#destroy_window/2" data-no-tooltip="" translate="no">destroy_window(server \\ __MODULE__, window_id)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Destroys a window by ID.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_active_window/1" data-no-tooltip="" translate="no">get_active_window(server \\ __MODULE__)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the active window.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_child_windows/1" data-no-tooltip="" translate="no">get_child_windows(parent_id)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets child windows.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_parent_window/1" data-no-tooltip="" translate="no">get_parent_window(child_id)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets parent window.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_state/1" data-no-tooltip="" translate="no">get_state(server \\ __MODULE__)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the complete state (for debugging/migration).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_window/2" data-no-tooltip="" translate="no">get_window(server \\ __MODULE__, window_id)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets a window by ID.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_window_size/1" data-no-tooltip="" translate="no">get_window_size(server \\ __MODULE__)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the window size.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_window_state/1" data-no-tooltip="" translate="no">get_window_state(server \\ __MODULE__)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the window manager state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#handle_manager_cast/2" data-no-tooltip="" translate="no">handle_manager_cast(msg, state)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/raxol_core/2.4.0/Raxol.Core.Behaviours.BaseManager.html#c:handle_manager_cast/2"><code class="inline">Raxol.Core.Behaviours.BaseManager.handle_manager_cast/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#handle_manager_info/2" data-no-tooltip="" translate="no">handle_manager_info(msg, state)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/raxol_core/2.4.0/Raxol.Core.Behaviours.BaseManager.html#c:handle_manager_info/2"><code class="inline">Raxol.Core.Behaviours.BaseManager.handle_manager_info/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#list_windows/1" data-no-tooltip="" translate="no">list_windows(server \\ __MODULE__)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Lists all windows.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_window_to_back/2" data-no-tooltip="" translate="no">move_window_to_back(server \\ __MODULE__, window_id)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Moves a window to the back in Z-order.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_window_to_front/2" data-no-tooltip="" translate="no">move_window_to_front(server \\ __MODULE__, window_id)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Moves a window in the Z-order.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#register_window_position/6" data-no-tooltip="" translate="no">register_window_position(server \\ __MODULE__, window_id, x, y, width, height)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Registers a window's spatial position for navigation.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reset/1" data-no-tooltip="" translate="no">reset(server \\ __MODULE__)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Resets to initial state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_active_window/2" data-no-tooltip="" translate="no">set_active_window(server \\ __MODULE__, window_id)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the active window.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_icon_name/2" data-no-tooltip="" translate="no">set_icon_name(server \\ __MODULE__, icon_name)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the icon name.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_icon_title/2" data-no-tooltip="" translate="no">set_icon_title(server \\ __MODULE__, icon_title)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the icon title.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_window_position/3" data-no-tooltip="" translate="no">set_window_position(window_id, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets window position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_window_size/2" data-no-tooltip="" translate="no">set_window_size(width, height)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the window size.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_window_size/3" data-no-tooltip="" translate="no">set_window_size(server, width, height)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_window_size/4" data-no-tooltip="" translate="no">set_window_size(server, window_id, width, height)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets a specific window's size.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_window_state/1" data-no-tooltip="" translate="no">set_window_state(state)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the window state (normal, minimized, maximized, fullscreen).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_window_state/2" data-no-tooltip="" translate="no">set_window_state(server, state)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_window_state/3" data-no-tooltip="" translate="no">set_window_state(server, window_id, state)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets a specific window's state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_window_title/1" data-no-tooltip="" translate="no">set_window_title(title)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the window title.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_window_title/2" data-no-tooltip="" translate="no">set_window_title(server, title)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_window_title/3" data-no-tooltip="" translate="no">set_window_title(server, window_id, title)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets a specific window's title.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#split_window/2" data-no-tooltip="" translate="no">split_window(window_id, direction)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Split a window horizontally or vertically.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#split_window/3" data-no-tooltip="" translate="no">split_window(server, window_id, direction)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#start_link/1" data-no-tooltip="" translate="no">start_link(init_opts \\ [])</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_config/1" data-no-tooltip="" translate="no">update_config(config)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates the window manager configuration.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_config/2" data-no-tooltip="" translate="no">update_config(server, config)</a>
+
+      </div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="child_spec/1">
+
+  <div class="detail-header">
+    <a href="#child_spec/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">child_spec(init_arg)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L35" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns a specification to start this module under a supervisor.</p><p>See <a href="https://hexdocs.pm/elixir/Supervisor.html"><code class="inline">Supervisor</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="create_child_window/2">
+
+  <div class="detail-header">
+    <a href="#create_child_window/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">create_child_window(parent_id, config)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L242" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Creates a child window.</p>
+  </section>
+</section>
+<section class="detail" id="create_window/2">
+
+    <span id="create_window/1"></span>
+
+  <div class="detail-header">
+    <a href="#create_window/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">create_window(config_or_width, height_or_config \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L65" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Creates a new window with the given configuration.</p>
+  </section>
+</section>
+<section class="detail" id="define_navigation_path/4">
+
+    <span id="define_navigation_path/3"></span>
+
+  <div class="detail-header">
+    <a href="#define_navigation_path/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">define_navigation_path(server \\ __MODULE__, from_id, direction, to_id)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L204" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Defines a navigation path between windows.</p>
+  </section>
+</section>
+<section class="detail" id="destroy_window/2">
+
+    <span id="destroy_window/1"></span>
+
+  <div class="detail-header">
+    <a href="#destroy_window/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">destroy_window(server \\ __MODULE__, window_id)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L86" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Destroys a window by ID.</p>
+  </section>
+</section>
+<section class="detail" id="get_active_window/1">
+
+    <span id="get_active_window/0"></span>
+
+  <div class="detail-header">
+    <a href="#get_active_window/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_active_window(server \\ __MODULE__)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L101" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the active window.</p>
+  </section>
+</section>
+<section class="detail" id="get_child_windows/1">
+
+  <div class="detail-header">
+    <a href="#get_child_windows/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_child_windows(parent_id)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L247" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets child windows.</p>
+  </section>
+</section>
+<section class="detail" id="get_parent_window/1">
+
+  <div class="detail-header">
+    <a href="#get_parent_window/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_parent_window(child_id)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L252" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets parent window.</p>
+  </section>
+</section>
+<section class="detail" id="get_state/1">
+
+    <span id="get_state/0"></span>
+
+  <div class="detail-header">
+    <a href="#get_state/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_state(server \\ __MODULE__)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L209" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the complete state (for debugging/migration).</p>
+  </section>
+</section>
+<section class="detail" id="get_window/2">
+
+    <span id="get_window/1"></span>
+
+  <div class="detail-header">
+    <a href="#get_window/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_window(server \\ __MODULE__, window_id)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L81" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets a window by ID.</p>
+  </section>
+</section>
+<section class="detail" id="get_window_size/1">
+
+    <span id="get_window_size/0"></span>
+
+  <div class="detail-header">
+    <a href="#get_window_size/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_window_size(server \\ __MODULE__)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L147" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the window size.</p>
+  </section>
+</section>
+<section class="detail" id="get_window_state/1">
+
+    <span id="get_window_state/0"></span>
+
+  <div class="detail-header">
+    <a href="#get_window_state/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_window_state(server \\ __MODULE__)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L125" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the window manager state.</p>
+  </section>
+</section>
+<section class="detail" id="handle_manager_cast/2">
+
+  <div class="detail-header">
+    <a href="#handle_manager_cast/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">handle_manager_cast(msg, state)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L35" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Callback implementation for <a href="https://hexdocs.pm/raxol_core/2.4.0/Raxol.Core.Behaviours.BaseManager.html#c:handle_manager_cast/2"><code class="inline">Raxol.Core.Behaviours.BaseManager.handle_manager_cast/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="handle_manager_info/2">
+
+  <div class="detail-header">
+    <a href="#handle_manager_info/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">handle_manager_info(msg, state)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L35" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Callback implementation for <a href="https://hexdocs.pm/raxol_core/2.4.0/Raxol.Core.Behaviours.BaseManager.html#c:handle_manager_info/2"><code class="inline">Raxol.Core.Behaviours.BaseManager.handle_manager_info/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="list_windows/1">
+
+    <span id="list_windows/0"></span>
+
+  <div class="detail-header">
+    <a href="#list_windows/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">list_windows(server \\ __MODULE__)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L91" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Lists all windows.</p>
+  </section>
+</section>
+<section class="detail" id="move_window_to_back/2">
+
+    <span id="move_window_to_back/1"></span>
+
+  <div class="detail-header">
+    <a href="#move_window_to_back/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_window_to_back(server \\ __MODULE__, window_id)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L184" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Moves a window to the back in Z-order.</p>
+  </section>
+</section>
+<section class="detail" id="move_window_to_front/2">
+
+    <span id="move_window_to_front/1"></span>
+
+  <div class="detail-header">
+    <a href="#move_window_to_front/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_window_to_front(server \\ __MODULE__, window_id)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L179" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Moves a window in the Z-order.</p>
+  </section>
+</section>
+<section class="detail" id="register_window_position/6">
+
+    <span id="register_window_position/5"></span>
+
+  <div class="detail-header">
+    <a href="#register_window_position/6" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">register_window_position(server \\ __MODULE__, window_id, x, y, width, height)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L189" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Registers a window's spatial position for navigation.</p>
+  </section>
+</section>
+<section class="detail" id="reset/1">
+
+    <span id="reset/0"></span>
+
+  <div class="detail-header">
+    <a href="#reset/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">reset(server \\ __MODULE__)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L214" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Resets to initial state.</p>
+  </section>
+</section>
+<section class="detail" id="set_active_window/2">
+
+    <span id="set_active_window/1"></span>
+
+  <div class="detail-header">
+    <a href="#set_active_window/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_active_window(server \\ __MODULE__, window_id)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L96" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the active window.</p>
+  </section>
+</section>
+<section class="detail" id="set_icon_name/2">
+
+    <span id="set_icon_name/1"></span>
+
+  <div class="detail-header">
+    <a href="#set_icon_name/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_icon_name(server \\ __MODULE__, icon_name)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L167" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the icon name.</p>
+  </section>
+</section>
+<section class="detail" id="set_icon_title/2">
+
+    <span id="set_icon_title/1"></span>
+
+  <div class="detail-header">
+    <a href="#set_icon_title/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_icon_title(server \\ __MODULE__, icon_title)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L173" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the icon title.</p>
+  </section>
+</section>
+<section class="detail" id="set_window_position/3">
+
+  <div class="detail-header">
+    <a href="#set_window_position/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_window_position(window_id, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L237" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets window position.</p>
+  </section>
+</section>
+<section class="detail" id="set_window_size/2">
+
+  <div class="detail-header">
+    <a href="#set_window_size/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_window_size(width, height)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L130" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the window size.</p>
+  </section>
+</section>
+<section class="detail" id="set_window_size/3">
+
+  <div class="detail-header">
+    <a href="#set_window_size/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_window_size(server, width, height)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L135" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="set_window_size/4">
+
+  <div class="detail-header">
+    <a href="#set_window_size/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_window_size(server, window_id, width, height)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L142" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets a specific window's size.</p>
+  </section>
+</section>
+<section class="detail" id="set_window_state/1">
+
+  <div class="detail-header">
+    <a href="#set_window_state/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_window_state(state)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L106" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the window state (normal, minimized, maximized, fullscreen).</p>
+  </section>
+</section>
+<section class="detail" id="set_window_state/2">
+
+  <div class="detail-header">
+    <a href="#set_window_state/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_window_state(server, state)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L111" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="set_window_state/3">
+
+  <div class="detail-header">
+    <a href="#set_window_state/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_window_state(server, window_id, state)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L118" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets a specific window's state.</p>
+  </section>
+</section>
+<section class="detail" id="set_window_title/1">
+
+  <div class="detail-header">
+    <a href="#set_window_title/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_window_title(title)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L152" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the window title.</p>
+  </section>
+</section>
+<section class="detail" id="set_window_title/2">
+
+  <div class="detail-header">
+    <a href="#set_window_title/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_window_title(server, title)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L156" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="set_window_title/3">
+
+  <div class="detail-header">
+    <a href="#set_window_title/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_window_title(server, window_id, title)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L162" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets a specific window's title.</p>
+  </section>
+</section>
+<section class="detail" id="split_window/2">
+
+  <div class="detail-header">
+    <a href="#split_window/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">split_window(window_id, direction)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L219" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Split a window horizontally or vertically.</p>
+  </section>
+</section>
+<section class="detail" id="split_window/3">
+
+  <div class="detail-header">
+    <a href="#split_window/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">split_window(server, window_id, direction)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L223" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="start_link/1">
+
+    <span id="start_link/0"></span>
+
+  <div class="detail-header">
+    <a href="#start_link/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">start_link(init_opts \\ [])</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L35" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="update_config/1">
+
+  <div class="detail-header">
+    <a href="#update_config/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_config(config)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L228" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Updates the window manager configuration.</p>
+  </section>
+</section>
+<section class="detail" id="update_config/2">
+
+  <div class="detail-header">
+    <a href="#update_config/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_config(server, config)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/window/manager/window_manager_server.ex#L232" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

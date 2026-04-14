@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.Buffer.Writer — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Writer</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.Buffer.Writer.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/writer.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Handles writing characters and strings to the Raxol.Terminal.ScreenBuffer.
+Responsible for character width, bidirectional text segmentation, and cell creation.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_cell_style/1" data-no-tooltip="" translate="no">create_cell_style(style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a cell style by merging the provided style with default formatting.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#log_char_write/4" data-no-tooltip="" translate="no">log_char_write(char, x, y, cell_style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Logs character write operations for debugging purposes.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_cells/6" data-no-tooltip="" translate="no">update_cells(buffer, x, y, char, cell_style, width)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates cells in the buffer at the specified position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_row/6" data-no-tooltip="" translate="no">update_row(row, x, char, cell_style, width, buffer_width)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates a row in the buffer at the specified position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_char/5" data-no-tooltip="" translate="no">write_char(buffer, x, y, char, style \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Writes a character to the buffer at the specified position.
+Handles wide characters by taking up two cells when necessary.
+Accepts an optional style to apply to the cell.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_segment/5" data-no-tooltip="" translate="no">write_segment(buffer, x, y, segment, style \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Writes a segment of text to the buffer.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_string/5" data-no-tooltip="" translate="no">write_string(buffer, x, y, string, style \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Writes a string to the buffer at the specified position.
+Handles wide characters and bidirectional text.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="create_cell_style/1">
+
+  <div class="detail-header">
+    <a href="#create_cell_style/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">create_cell_style(style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/writer.ex#L58" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> create_cell_style(<a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>() | nil) ::
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:t/0">Raxol.Terminal.ANSI.TextFormatting.t</a>()</pre>
+
+      </div>
+
+<p>Creates a cell style by merging the provided style with default formatting.</p><h2 id="create_cell_style/1-parameters" class="section-heading"><a href="#create_cell_style/1-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">style</code> - The style to merge with default formatting, or nil for default style</li></ul><h2 id="create_cell_style/1-returns" class="section-heading"><a href="#create_cell_style/1-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>A map containing the merged text formatting style.</p><h2 id="create_cell_style/1-examples" class="section-heading"><a href="#create_cell_style/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Writer</span><span class="o">.</span><span class="n">create_cell_style</span><span class="p" data-group-id="6296585704-1">(</span><span class="p" data-group-id="6296585704-2">%{</span><span class="ss">fg</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="6296585704-2">}</span><span class="p" data-group-id="6296585704-1">)</span><span class="w">
+</span><span class="p" data-group-id="6296585704-3">%{</span><span class="ss">fg</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p">,</span><span class="w"> </span><span class="ss">bg</span><span class="p">:</span><span class="w"> </span><span class="ss">:default</span><span class="p">,</span><span class="w"> </span><span class="ss">bold</span><span class="p">:</span><span class="w"> </span><span class="no">false</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="6296585704-3">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="log_char_write/4">
+
+  <div class="detail-header">
+    <a href="#log_char_write/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">log_char_write(char, x, y, cell_style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/writer.ex#L104" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> log_char_write(
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>()
+) :: :ok</pre>
+
+      </div>
+
+<p>Logs character write operations for debugging purposes.</p><h2 id="log_char_write/4-parameters" class="section-heading"><a href="#log_char_write/4-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">char</code> - The character being written</li><li><code class="inline">x</code> - The x-coordinate where the character is being written</li><li><code class="inline">y</code> - The y-coordinate where the character is being written</li><li><code class="inline">cell_style</code> - The style being applied to the cell</li></ul><h2 id="log_char_write/4-returns" class="section-heading"><a href="#log_char_write/4-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>:ok</p><h2 id="log_char_write/4-examples" class="section-heading"><a href="#log_char_write/4-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Writer</span><span class="o">.</span><span class="n">log_char_write</span><span class="p" data-group-id="9323654719-1">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9323654719-2">%{</span><span class="ss">fg</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="9323654719-2">}</span><span class="p" data-group-id="9323654719-1">)</span><span class="w">
+</span><span class="ss">:ok</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="update_cells/6">
+
+  <div class="detail-header">
+    <a href="#update_cells/6" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_cells(buffer, x, y, char, cell_style, width)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/writer.ex#L143" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> update_cells(
+  <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>(),
+  1..2
+) :: [[<a href="Raxol.Terminal.Cell.html#t:t/0">Raxol.Terminal.Cell.t</a>()]]</pre>
+
+      </div>
+
+<p>Updates cells in the buffer at the specified position.</p><h2 id="update_cells/6-parameters" class="section-heading"><a href="#update_cells/6-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">buffer</code> - The screen buffer to update</li><li><code class="inline">x</code> - The x-coordinate to update</li><li><code class="inline">y</code> - The y-coordinate to update</li><li><code class="inline">char</code> - The character to write</li><li><code class="inline">cell_style</code> - The style to apply</li><li><code class="inline">width</code> - The width of the character (1 or 2 for wide characters)</li></ul><h2 id="update_cells/6-returns" class="section-heading"><a href="#update_cells/6-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>The updated list of cells.</p><h2 id="update_cells/6-examples" class="section-heading"><a href="#update_cells/6-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ScreenBuffer</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="6199697520-1">(</span><span class="mi">80</span><span class="p">,</span><span class="w"> </span><span class="mi">24</span><span class="p" data-group-id="6199697520-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Writer</span><span class="o">.</span><span class="n">update_cells</span><span class="p" data-group-id="6199697520-2">(</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6199697520-3">%{</span><span class="ss">fg</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="6199697520-3">}</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="6199697520-2">)</span><span class="w">
+</span><span class="p" data-group-id="6199697520-4">[</span><span class="p" data-group-id="6199697520-5">%</span><span class="nc" data-group-id="6199697520-5">Cell</span><span class="p" data-group-id="6199697520-5">{</span><span class="ss">char</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">style</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6199697520-6">%{</span><span class="ss">fg</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="6199697520-6">}</span><span class="p" data-group-id="6199697520-5">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="6199697520-4">]</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="update_row/6">
+
+  <div class="detail-header">
+    <a href="#update_row/6" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_row(row, x, char, cell_style, width, buffer_width)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/writer.ex#L181" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> update_row(
+  [<a href="Raxol.Terminal.Cell.html#t:t/0">Raxol.Terminal.Cell.t</a>()],
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>(),
+  1..2,
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()
+) :: [<a href="Raxol.Terminal.Cell.html#t:t/0">Raxol.Terminal.Cell.t</a>()]</pre>
+
+      </div>
+
+<p>Updates a row in the buffer at the specified position.</p><h2 id="update_row/6-parameters" class="section-heading"><a href="#update_row/6-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">row</code> - The row to update</li><li><code class="inline">x</code> - The x-coordinate to update</li><li><code class="inline">char</code> - The character to write</li><li><code class="inline">cell_style</code> - The style to apply</li><li><code class="inline">width</code> - The width of the character (1 or 2 for wide characters)</li><li><code class="inline">buffer_width</code> - The total width of the buffer</li></ul><h2 id="update_row/6-returns" class="section-heading"><a href="#update_row/6-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>The updated row of cells.</p><h2 id="update_row/6-examples" class="section-heading"><a href="#update_row/6-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">List</span><span class="o">.</span><span class="n">duplicate</span><span class="p" data-group-id="2777067308-1">(</span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="2777067308-2">(</span><span class="p" data-group-id="2777067308-2">)</span><span class="p">,</span><span class="w"> </span><span class="mi">80</span><span class="p" data-group-id="2777067308-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Writer</span><span class="o">.</span><span class="n">update_row</span><span class="p" data-group-id="2777067308-3">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2777067308-4">%{</span><span class="ss">fg</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="2777067308-4">}</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">80</span><span class="p" data-group-id="2777067308-3">)</span><span class="w">
+</span><span class="p" data-group-id="2777067308-5">[</span><span class="p" data-group-id="2777067308-6">%</span><span class="nc" data-group-id="2777067308-6">Cell</span><span class="p" data-group-id="2777067308-6">{</span><span class="ss">char</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">style</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2777067308-7">%{</span><span class="ss">fg</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="2777067308-7">}</span><span class="p" data-group-id="2777067308-6">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="2777067308-5">]</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="write_char/5">
+
+    <span id="write_char/4"></span>
+
+  <div class="detail-header">
+    <a href="#write_char/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_char(buffer, x, y, char, style \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/writer.ex#L24" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> write_char(
+  <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>() | nil
+) :: <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+<p>Writes a character to the buffer at the specified position.
+Handles wide characters by taking up two cells when necessary.
+Accepts an optional style to apply to the cell.</p>
+  </section>
+</section>
+<section class="detail" id="write_segment/5">
+
+    <span id="write_segment/4"></span>
+
+  <div class="detail-header">
+    <a href="#write_segment/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_segment(buffer, x, y, segment, style \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/writer.ex#L256" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> write_segment(
+  <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>() | nil
+) :: {<a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()}</pre>
+
+      </div>
+
+<p>Writes a segment of text to the buffer.</p><h2 id="write_segment/5-parameters" class="section-heading"><a href="#write_segment/5-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">buffer</code> - The screen buffer to write to</li><li><code class="inline">x</code> - The x-coordinate to start writing at</li><li><code class="inline">y</code> - The y-coordinate to write at</li><li><code class="inline">segment</code> - The text segment to write</li></ul><h2 id="write_segment/5-returns" class="section-heading"><a href="#write_segment/5-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>A tuple containing the updated buffer and the new x-coordinate.</p><h2 id="write_segment/5-examples" class="section-heading"><a href="#write_segment/5-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ScreenBuffer</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="1708371425-1">(</span><span class="mi">80</span><span class="p">,</span><span class="w"> </span><span class="mi">24</span><span class="p" data-group-id="1708371425-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="p" data-group-id="1708371425-2">{</span><span class="n">new_buffer</span><span class="p">,</span><span class="w"> </span><span class="n">new_x</span><span class="p" data-group-id="1708371425-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Writer</span><span class="o">.</span><span class="n">write_segment</span><span class="p" data-group-id="1708371425-3">(</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Hello&quot;</span><span class="p" data-group-id="1708371425-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">new_x</span><span class="w">
+</span><span class="mi">5</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="write_string/5">
+
+    <span id="write_string/4"></span>
+
+  <div class="detail-header">
+    <a href="#write_string/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_string(buffer, x, y, string, style \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/buffer/writer.ex#L208" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> write_string(
+  <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>() | nil
+) :: <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+<p>Writes a string to the buffer at the specified position.
+Handles wide characters and bidirectional text.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

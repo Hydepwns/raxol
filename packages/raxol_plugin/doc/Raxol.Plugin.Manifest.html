@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Plugin v2.4.0">
+
+
+    <title>Raxol.Plugin.Manifest — Raxol Plugin v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-D9A29B59.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Plugin
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Plugin</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Plugin.<wbr>Manifest</span> 
+      <small class="app-vsn" translate="no">(Raxol Plugin v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Plugin.Manifest.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/plugin/manifest.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Cross-package-safe manifest builder for Raxol plugins.</p><p>Wraps the core <a href="https://hexdocs.pm/raxol_core/2.4.0/Raxol.Core.Runtime.Plugins.Manifest.html"><code class="inline">Raxol.Core.Runtime.Plugins.Manifest</code></a> struct as a plain
+map so that consumers in separate packages do not need a compile-time
+dependency on the struct definition.</p><h2 id="module-usage" class="section-heading"><a href="#module-usage" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Usage</span></h2><pre><code class="makeup elixir" translate="no"><span class="n">manifest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Raxol.Plugin.Manifest</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="3384939808-1">(</span><span class="w">
+  </span><span class="ss">id</span><span class="p">:</span><span class="w"> </span><span class="ss">:my_plugin</span><span class="p">,</span><span class="w">
+  </span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;My Plugin&quot;</span><span class="p">,</span><span class="w">
+  </span><span class="ss">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.0.0&quot;</span><span class="p">,</span><span class="w">
+  </span><span class="ss">module</span><span class="p">:</span><span class="w"> </span><span class="nc">MyPlugin</span><span class="w">
+</span><span class="p" data-group-id="3384939808-1">)</span><span class="w">
+
+</span><span class="k">case</span><span class="w"> </span><span class="nc">Raxol.Plugin.Manifest</span><span class="o">.</span><span class="n">validate</span><span class="p" data-group-id="3384939808-2">(</span><span class="n">manifest</span><span class="p" data-group-id="3384939808-2">)</span><span class="w"> </span><span class="k" data-group-id="3384939808-3">do</span><span class="w">
+  </span><span class="ss">:ok</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nc">IO</span><span class="o">.</span><span class="n">puts</span><span class="p" data-group-id="3384939808-4">(</span><span class="s">&quot;valid&quot;</span><span class="p" data-group-id="3384939808-4">)</span><span class="w">
+  </span><span class="p" data-group-id="3384939808-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="n">errors</span><span class="p" data-group-id="3384939808-5">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nc">IO</span><span class="o">.</span><span class="n">inspect</span><span class="p" data-group-id="3384939808-6">(</span><span class="n">errors</span><span class="p" data-group-id="3384939808-6">)</span><span class="w">
+</span><span class="k" data-group-id="3384939808-3">end</span></code></pre>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-types summary">
+  <h3>
+    <a href="#types">Types</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:t/0" data-no-tooltip="" translate="no">t()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#default_budget/0" data-no-tooltip="" translate="no">default_budget()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the default resource budget.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#new/1" data-no-tooltip="" translate="no">new(opts)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Builds a manifest map from keyword options.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#supported_api_versions/0" data-no-tooltip="" translate="no">supported_api_versions()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the list of supported API versions.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#validate/1" data-no-tooltip="" translate="no">validate(manifest)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Validates a manifest map for completeness and correctness.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h2>
+
+    <div class="types-list">
+<section class="detail" id="t:t/0">
+
+  <div class="detail-header">
+    <a href="#t:t/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">t()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/plugin/manifest.ex#L26" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> t() :: %{
+  id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(),
+  name: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  version: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  author: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  api_version: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  description: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  module: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">module</a>(),
+  depends_on: [{<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}],
+  conflicts_with: [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()],
+  provides: [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()],
+  requires: [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()],
+  resource_budget: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()
+}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="default_budget/0">
+
+  <div class="detail-header">
+    <a href="#default_budget/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">default_budget()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/plugin/manifest.ex#L117" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> default_budget() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+<p>Returns the default resource budget.</p>
+  </section>
+</section>
+<section class="detail" id="new/1">
+
+  <div class="detail-header">
+    <a href="#new/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">new(opts)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/plugin/manifest.ex#L76" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> new(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">keyword</a>()) :: <a href="#t:t/0">t</a>()</pre>
+
+      </div>
+
+<p>Builds a manifest map from keyword options.</p><p>Returns a plain map (not a struct) for cross-package compatibility.</p><h2 id="new/1-required-keys" class="section-heading"><a href="#new/1-required-keys" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Required keys</span></h2><ul><li><code class="inline">:id</code> - Plugin identifier (atom)</li><li><code class="inline">:name</code> - Human-readable name</li><li><code class="inline">:version</code> - Semver version string</li><li><code class="inline">:module</code> - Plugin module</li></ul><h2 id="new/1-optional-keys" class="section-heading"><a href="#new/1-optional-keys" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Optional keys</span></h2><ul><li><code class="inline">:author</code> - Author name (default: <code class="inline">&quot;&quot;</code>)</li><li><code class="inline">:api_version</code> - API version (default: <code class="inline">&quot;1.0&quot;</code>)</li><li><code class="inline">:description</code> - Description (default: <code class="inline">&quot;&quot;</code>)</li><li><code class="inline">:depends_on</code> - Dependencies as <code class="inline">[{atom, version_string}]</code> (default: <code class="inline">[]</code>)</li><li><code class="inline">:conflicts_with</code> - Conflicting plugin IDs (default: <code class="inline">[]</code>)</li><li><code class="inline">:provides</code> - Capabilities provided (default: <code class="inline">[]</code>)</li><li><code class="inline">:requires</code> - Capabilities required (default: <code class="inline">[]</code>)</li><li><code class="inline">:resource_budget</code> - Resource limits map (default: standard budget)</li></ul>
+  </section>
+</section>
+<section class="detail" id="supported_api_versions/0">
+
+  <div class="detail-header">
+    <a href="#supported_api_versions/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">supported_api_versions()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/plugin/manifest.ex#L123" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> supported_api_versions() :: [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]</pre>
+
+      </div>
+
+<p>Returns the list of supported API versions.</p>
+  </section>
+</section>
+<section class="detail" id="validate/1">
+
+  <div class="detail-header">
+    <a href="#validate/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">validate(manifest)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/plugin/manifest.ex#L99" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> validate(<a href="#t:t/0">t</a>()) :: :ok | {:error, [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]}</pre>
+
+      </div>
+
+<p>Validates a manifest map for completeness and correctness.</p><p>Returns <code class="inline">:ok</code> or <code class="inline">{:error, [String.t()]}</code> with a list of validation errors.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_plugin/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_plugin/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Plugin.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

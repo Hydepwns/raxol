@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.Cell — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>Cell</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.Cell.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Terminal character cell module.</p><p>This module handles the representation and manipulation of individual
+character cells in the terminal screen buffer, including:</p><ul><li>Character content</li><li>Text attributes (color, style)</li><li>Cell state</li></ul>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-types summary">
+  <h3>
+    <a href="#types">Types</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:style/0" data-no-tooltip="" translate="no">style()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Text style for a terminal cell. See <code class="inline">Raxol.Terminal.ANSI.TextFormatting.text_style()</code> type for details.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:t/0" data-no-tooltip="" translate="no">t()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#bg/1" data-no-tooltip="" translate="no">bg(cell)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the cell's background color (compatibility function).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#copy/1" data-no-tooltip="" translate="no">copy(cell)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a deep copy of a cell.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#double_height?/1" data-no-tooltip="" translate="no">double_height?(cell)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if the cell is in double-height mode.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#double_width?/1" data-no-tooltip="" translate="no">double_width?(cell)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if the cell is in double-width mode.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#empty/0" data-no-tooltip="" translate="no">empty()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates an empty cell.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#empty?/1" data-no-tooltip="" translate="no">empty?(cell)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if the cell is empty.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#equals?/2" data-no-tooltip="" translate="no">equals?(cell1, cell2)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Compares two cells for equality.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#fg/1" data-no-tooltip="" translate="no">fg(cell)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the cell's foreground color (compatibility function).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#from_map/1" data-no-tooltip="" translate="no">from_map(map)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a Cell struct from a map representation, typically from rendering.
+Expects a map like %{char: integer_codepoint, style: map, wide_placeholder: boolean | nil}.
+Returns nil if the map is invalid.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_char/1" data-no-tooltip="" translate="no">get_char(cell)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the character of the cell.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_style/1" data-no-tooltip="" translate="no">get_style(cell)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the text style of the cell.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#has_attribute?/2" data-no-tooltip="" translate="no">has_attribute?(cell, attribute)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if the cell has a specific attribute.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#has_decoration?/2" data-no-tooltip="" translate="no">has_decoration?(cell, decoration)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if the cell has a specific decoration.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#merge_style/2" data-no-tooltip="" translate="no">merge_style(cell, style_to_merge)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Merges a given style map into the cell's style.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#new/2" data-no-tooltip="" translate="no">new(char \\ &quot; &quot;, style \\ TextFormatting.new())</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a new cell with optional character and style.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#new_sixel/2" data-no-tooltip="" translate="no">new_sixel(char \\ &quot; &quot;, style \\ TextFormatting.new())</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a new cell representing a sixel graphics pixel.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#new_wide_placeholder/1" data-no-tooltip="" translate="no">new_wide_placeholder(style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a new cell representing the second half of a wide character.
+Inherits the style from the primary cell.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_char/2" data-no-tooltip="" translate="no">set_char(cell, char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the character content of a cell.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_style/2" data-no-tooltip="" translate="no">set_style(cell, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the text style of the cell.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#with_attributes/2" data-no-tooltip="" translate="no">with_attributes(cell, attributes)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a copy of a cell with new attributes applied.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#with_char/2" data-no-tooltip="" translate="no">with_char(cell, char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a copy of a cell with a new character.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h2>
+
+    <div class="types-list">
+<section class="detail" id="t:style/0">
+
+  <div class="detail-header">
+    <a href="#t:style/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">style()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L17" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> style() :: <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>()</pre>
+
+      </div>
+
+<p>Text style for a terminal cell. See <code class="inline">Raxol.Terminal.ANSI.TextFormatting.text_style()</code> type for details.</p>
+  </section>
+</section>
+<section class="detail" id="t:t/0">
+
+  <div class="detail-header">
+    <a href="#t:t/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">t()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L19" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> t() :: %Raxol.Terminal.Cell{
+  char: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  dirty: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  sixel: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  style: <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>() | nil,
+  wide_placeholder: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()
+}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="bg/1">
+
+  <div class="detail-header">
+    <a href="#bg/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">bg(cell)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L124" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the cell's background color (compatibility function).</p>
+  </section>
+</section>
+<section class="detail" id="copy/1">
+
+  <div class="detail-header">
+    <a href="#copy/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">copy(cell)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L338" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Creates a deep copy of a cell.</p><h2 id="copy/1-examples" class="section-heading"><a href="#copy/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="8005557480-1">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8005557480-2">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="8005557480-2">}</span><span class="p" data-group-id="8005557480-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">copy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">copy</span><span class="p" data-group-id="8005557480-3">(</span><span class="n">cell</span><span class="p" data-group-id="8005557480-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_char</span><span class="p" data-group-id="8005557480-4">(</span><span class="n">copy</span><span class="p" data-group-id="8005557480-4">)</span><span class="w">
+</span><span class="s">&quot;A&quot;</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_style</span><span class="p" data-group-id="8005557480-5">(</span><span class="n">copy</span><span class="p" data-group-id="8005557480-5">)</span><span class="w">
+</span><span class="p" data-group-id="8005557480-6">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="8005557480-6">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="double_height?/1">
+
+  <div class="detail-header">
+    <a href="#double_height?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">double_height?(cell)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L253" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if the cell is in double-height mode.</p><h2 id="double_height?/1-examples" class="section-heading"><a href="#double_height?/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="3572612677-1">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3572612677-2">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="3572612677-2">}</span><span class="p" data-group-id="3572612677-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">double_height?</span><span class="p" data-group-id="3572612677-3">(</span><span class="n">cell</span><span class="p" data-group-id="3572612677-3">)</span><span class="w">
+</span><span class="no">false</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="double_width?/1">
+
+  <div class="detail-header">
+    <a href="#double_width?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">double_width?(cell)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L242" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if the cell is in double-width mode.</p><h2 id="double_width?/1-examples" class="section-heading"><a href="#double_width?/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="5382177535-1">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5382177535-2">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="5382177535-2">}</span><span class="p" data-group-id="5382177535-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">double_width?</span><span class="p" data-group-id="5382177535-3">(</span><span class="n">cell</span><span class="p" data-group-id="5382177535-3">)</span><span class="w">
+</span><span class="no">false</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="empty/0">
+
+  <div class="detail-header">
+    <a href="#empty/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">empty()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L412" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> empty() :: <a href="#t:t/0">t</a>()</pre>
+
+      </div>
+
+<p>Creates an empty cell.</p>
+  </section>
+</section>
+<section class="detail" id="empty?/1">
+
+  <div class="detail-header">
+    <a href="#empty?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">empty?(cell)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L270" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> empty?(<a href="#t:t/0">t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
+      </div>
+
+<p>Checks if the cell is empty.</p><h2 id="empty?/1-examples" class="section-heading"><a href="#empty?/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="8920781890-1">(</span><span class="p" data-group-id="8920781890-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">empty?</span><span class="p" data-group-id="8920781890-2">(</span><span class="n">cell</span><span class="p" data-group-id="8920781890-2">)</span><span class="w">
+</span><span class="no">true</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="8920781890-3">(</span><span class="s">&quot;A&quot;</span><span class="p" data-group-id="8920781890-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">empty?</span><span class="p" data-group-id="8920781890-4">(</span><span class="n">cell</span><span class="p" data-group-id="8920781890-4">)</span><span class="w">
+</span><span class="no">false</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="equals?/2">
+
+  <div class="detail-header">
+    <a href="#equals?/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">equals?(cell1, cell2)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L374" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Compares two cells for equality.</p><p>Cells are considered equal if they have the same character and the same style map.
+Handles comparison with <code class="inline">nil</code>.</p><h2 id="equals?/2-examples" class="section-heading"><a href="#equals?/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">style1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">TextFormatting</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="2972835385-1">(</span><span class="p" data-group-id="2972835385-1">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="nc">TextFormatting</span><span class="o">.</span><span class="n">apply_attribute</span><span class="p" data-group-id="2972835385-2">(</span><span class="ss">:bold</span><span class="p" data-group-id="2972835385-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">style2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">TextFormatting</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="2972835385-3">(</span><span class="p" data-group-id="2972835385-3">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="nc">TextFormatting</span><span class="o">.</span><span class="n">apply_attribute</span><span class="p" data-group-id="2972835385-4">(</span><span class="ss">:bold</span><span class="p" data-group-id="2972835385-4">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">style3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">TextFormatting</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="2972835385-5">(</span><span class="p" data-group-id="2972835385-5">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="nc">TextFormatting</span><span class="o">.</span><span class="n">apply_attribute</span><span class="p" data-group-id="2972835385-6">(</span><span class="ss">:underline</span><span class="p" data-group-id="2972835385-6">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cell1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="2972835385-7">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">style1</span><span class="p" data-group-id="2972835385-7">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cell2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="2972835385-8">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">style2</span><span class="p" data-group-id="2972835385-8">)</span><span class="w"> </span><span class="c1"># Same char and style attributes</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cell3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="2972835385-9">(</span><span class="s">&quot;B&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">style1</span><span class="p" data-group-id="2972835385-9">)</span><span class="w"> </span><span class="c1"># Different char</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cell4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="2972835385-10">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">style3</span><span class="p" data-group-id="2972835385-10">)</span><span class="w"> </span><span class="c1"># Different style</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">equals?</span><span class="p" data-group-id="2972835385-11">(</span><span class="n">cell1</span><span class="p">,</span><span class="w"> </span><span class="n">cell2</span><span class="p" data-group-id="2972835385-11">)</span><span class="w">
+</span><span class="no">true</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">equals?</span><span class="p" data-group-id="2972835385-12">(</span><span class="n">cell1</span><span class="p">,</span><span class="w"> </span><span class="n">cell3</span><span class="p" data-group-id="2972835385-12">)</span><span class="w">
+</span><span class="no">false</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">equals?</span><span class="p" data-group-id="2972835385-13">(</span><span class="n">cell1</span><span class="p">,</span><span class="w"> </span><span class="n">cell4</span><span class="p" data-group-id="2972835385-13">)</span><span class="w">
+</span><span class="no">false</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">equals?</span><span class="p" data-group-id="2972835385-14">(</span><span class="n">cell1</span><span class="p">,</span><span class="w"> </span><span class="no">nil</span><span class="p" data-group-id="2972835385-14">)</span><span class="w">
+</span><span class="no">false</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">equals?</span><span class="p" data-group-id="2972835385-15">(</span><span class="no">nil</span><span class="p">,</span><span class="w"> </span><span class="n">cell1</span><span class="p" data-group-id="2972835385-15">)</span><span class="w">
+</span><span class="no">false</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">equals?</span><span class="p" data-group-id="2972835385-16">(</span><span class="no">nil</span><span class="p">,</span><span class="w"> </span><span class="no">nil</span><span class="p" data-group-id="2972835385-16">)</span><span class="w">
+</span><span class="no">true</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="fg/1">
+
+  <div class="detail-header">
+    <a href="#fg/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">fg(cell)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L117" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the cell's foreground color (compatibility function).</p>
+  </section>
+</section>
+<section class="detail" id="from_map/1">
+
+  <div class="detail-header">
+    <a href="#from_map/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">from_map(map)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L389" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> from_map(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="#t:t/0">t</a>() | nil</pre>
+
+      </div>
+
+<p>Creates a Cell struct from a map representation, typically from rendering.
+Expects a map like %{char: integer_codepoint, style: map, wide_placeholder: boolean | nil}.
+Returns nil if the map is invalid.</p>
+  </section>
+</section>
+<section class="detail" id="get_char/1">
+
+  <div class="detail-header">
+    <a href="#get_char/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_char(cell)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L100" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_char(<a href="#t:t/0">t</a>()) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">char</a>()</pre>
+
+      </div>
+
+<p>Returns the character of the cell.</p>
+  </section>
+</section>
+<section class="detail" id="get_style/1">
+
+  <div class="detail-header">
+    <a href="#get_style/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_style(cell)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L112" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_style(<a href="#t:t/0">t</a>()) :: <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>() | nil</pre>
+
+      </div>
+
+<p>Gets the text style of the cell.</p><h2 id="get_style/1-examples" class="section-heading"><a href="#get_style/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="4858454961-1">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4858454961-2">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="4858454961-2">}</span><span class="p" data-group-id="4858454961-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_style</span><span class="p" data-group-id="4858454961-3">(</span><span class="n">cell</span><span class="p" data-group-id="4858454961-3">)</span><span class="w">
+</span><span class="p" data-group-id="4858454961-4">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="4858454961-4">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="has_attribute?/2">
+
+  <div class="detail-header">
+    <a href="#has_attribute?/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">has_attribute?(cell, attribute)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L216" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if the cell has a specific attribute.</p><h2 id="has_attribute?/2-examples" class="section-heading"><a href="#has_attribute?/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="0968471266-1">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0968471266-2">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="0968471266-2">}</span><span class="p" data-group-id="0968471266-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">has_attribute?</span><span class="p" data-group-id="0968471266-3">(</span><span class="n">cell</span><span class="p">,</span><span class="w"> </span><span class="ss">:foreground</span><span class="p" data-group-id="0968471266-3">)</span><span class="w">
+</span><span class="no">true</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="has_decoration?/2">
+
+  <div class="detail-header">
+    <a href="#has_decoration?/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">has_decoration?(cell, decoration)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L229" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if the cell has a specific decoration.</p><h2 id="has_decoration?/2-examples" class="section-heading"><a href="#has_decoration?/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="7143096457-1">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7143096457-2">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="7143096457-2">}</span><span class="p" data-group-id="7143096457-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">has_decoration?</span><span class="p" data-group-id="7143096457-3">(</span><span class="n">cell</span><span class="p">,</span><span class="w"> </span><span class="ss">:bold</span><span class="p" data-group-id="7143096457-3">)</span><span class="w">
+</span><span class="no">false</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="merge_style/2">
+
+  <div class="detail-header">
+    <a href="#merge_style/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">merge_style(cell, style_to_merge)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L174" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Merges a given style map into the cell's style.</p><p>Only non-default attributes from the <code class="inline">style</code> map will overwrite existing attributes
+in the cell's style. This prevents merging default values (like <code class="inline">bold: false</code>)
+and unintentionally removing existing attributes.</p><h2 id="merge_style/2-examples" class="section-heading"><a href="#merge_style/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">initial_style</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">TextFormatting</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="7001739875-1">(</span><span class="p" data-group-id="7001739875-1">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="nc">TextFormatting</span><span class="o">.</span><span class="n">apply_attribute</span><span class="p" data-group-id="7001739875-2">(</span><span class="ss">:bold</span><span class="p" data-group-id="7001739875-2">)</span><span class="w"> </span><span class="c1"># %{bold: true, ...}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">merge_style</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">TextFormatting</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="7001739875-3">(</span><span class="p" data-group-id="7001739875-3">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="nc">TextFormatting</span><span class="o">.</span><span class="n">apply_attribute</span><span class="p" data-group-id="7001739875-4">(</span><span class="ss">:underline</span><span class="p" data-group-id="7001739875-4">)</span><span class="w"> </span><span class="c1"># %{underline: true, bold: false, ...}</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="7001739875-5">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">initial_style</span><span class="p" data-group-id="7001739875-5">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">merged_cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">merge_style</span><span class="p" data-group-id="7001739875-6">(</span><span class="n">cell</span><span class="p">,</span><span class="w"> </span><span class="n">merge_style</span><span class="p" data-group-id="7001739875-6">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_style</span><span class="p" data-group-id="7001739875-7">(</span><span class="n">merged_cell</span><span class="p" data-group-id="7001739875-7">)</span><span class="w">
+</span><span class="p" data-group-id="7001739875-8">%{</span><span class="ss">bold</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p">,</span><span class="w"> </span><span class="ss">underline</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p" data-group-id="7001739875-8">}</span><span class="w"> </span><span class="c1"># Note: :bold remains, :underline added</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="new/2">
+
+    <span id="new/0"></span>
+
+    <span id="new/1"></span>
+
+  <div class="detail-header">
+    <a href="#new/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">new(char \\ &quot; &quot;, style \\ TextFormatting.new())</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L58" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> new(
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:t/0">Raxol.Terminal.ANSI.TextFormatting.t</a>()
+  | <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>()
+  | nil
+) :: <a href="#t:t/0">t</a>()</pre>
+
+      </div>
+
+<p>Creates a new cell with optional character and style.</p><h2 id="new/2-examples" class="section-heading"><a href="#new/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="4521849358-1">(</span><span class="p" data-group-id="4521849358-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">empty?</span><span class="p" data-group-id="4521849358-2">(</span><span class="n">cell</span><span class="p" data-group-id="4521849358-2">)</span><span class="w">
+</span><span class="no">true</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="4521849358-3">(</span><span class="s">&quot;A&quot;</span><span class="p" data-group-id="4521849358-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_char</span><span class="p" data-group-id="4521849358-4">(</span><span class="n">cell</span><span class="p" data-group-id="4521849358-4">)</span><span class="w">
+</span><span class="s">&quot;A&quot;</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="4521849358-5">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4521849358-6">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="4521849358-6">}</span><span class="p" data-group-id="4521849358-5">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_char</span><span class="p" data-group-id="4521849358-7">(</span><span class="n">cell</span><span class="p" data-group-id="4521849358-7">)</span><span class="w">
+</span><span class="s">&quot;A&quot;</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_style</span><span class="p" data-group-id="4521849358-8">(</span><span class="n">cell</span><span class="p" data-group-id="4521849358-8">)</span><span class="w">
+</span><span class="p" data-group-id="4521849358-9">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="4521849358-9">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="new_sixel/2">
+
+    <span id="new_sixel/0"></span>
+
+    <span id="new_sixel/1"></span>
+
+  <div class="detail-header">
+    <a href="#new_sixel/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">new_sixel(char \\ &quot; &quot;, style \\ TextFormatting.new())</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L86" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Creates a new cell representing a sixel graphics pixel.</p>
+  </section>
+</section>
+<section class="detail" id="new_wide_placeholder/1">
+
+  <div class="detail-header">
+    <a href="#new_wide_placeholder/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">new_wide_placeholder(style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L72" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Creates a new cell representing the second half of a wide character.
+Inherits the style from the primary cell.</p>
+  </section>
+</section>
+<section class="detail" id="set_char/2">
+
+  <div class="detail-header">
+    <a href="#set_char/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_char(cell, char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L139" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> set_char(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="#t:t/0">t</a>()</pre>
+
+      </div>
+
+<p>Sets the character content of a cell.</p><h2 id="set_char/2-examples" class="section-heading"><a href="#set_char/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="3306982808-1">(</span><span class="p" data-group-id="3306982808-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">set_char</span><span class="p" data-group-id="3306982808-2">(</span><span class="n">cell</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;A&quot;</span><span class="p" data-group-id="3306982808-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_char</span><span class="p" data-group-id="3306982808-3">(</span><span class="n">cell</span><span class="p" data-group-id="3306982808-3">)</span><span class="w">
+</span><span class="s">&quot;A&quot;</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="set_style/2">
+
+  <div class="detail-header">
+    <a href="#set_style/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_style(cell, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L154" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> set_style(<a href="#t:t/0">t</a>(), <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:text_style/0">Raxol.Terminal.ANSI.TextFormatting.text_style</a>() | nil) :: <a href="#t:t/0">t</a>()</pre>
+
+      </div>
+
+<p>Sets the text style of the cell.</p><h2 id="set_style/2-examples" class="section-heading"><a href="#set_style/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="9760772050-1">(</span><span class="s">&quot;A&quot;</span><span class="p" data-group-id="9760772050-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">set_style</span><span class="p" data-group-id="9760772050-2">(</span><span class="n">cell</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9760772050-3">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="9760772050-3">}</span><span class="p" data-group-id="9760772050-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_style</span><span class="p" data-group-id="9760772050-4">(</span><span class="n">cell</span><span class="p" data-group-id="9760772050-4">)</span><span class="w">
+</span><span class="p" data-group-id="9760772050-5">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="9760772050-5">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="with_attributes/2">
+
+  <div class="detail-header">
+    <a href="#with_attributes/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">with_attributes(cell, attributes)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L293" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Creates a copy of a cell with new attributes applied.</p><p>Accepts a map of attributes or a list of attribute atoms.
+If a list is provided, the attributes are applied sequentially, starting from the cell's <em>existing</em> style.</p><h2 id="with_attributes/2-examples" class="section-heading"><a href="#with_attributes/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="0785463071-1">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0785463071-2">%{</span><span class="ss">bold</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p" data-group-id="0785463071-2">}</span><span class="p" data-group-id="0785463071-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">new_cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">with_attributes</span><span class="p" data-group-id="0785463071-3">(</span><span class="n">cell</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0785463071-4">%{</span><span class="ss">underline</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p" data-group-id="0785463071-4">}</span><span class="p" data-group-id="0785463071-3">)</span><span class="w"> </span><span class="c1"># Using a map</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_style</span><span class="p" data-group-id="0785463071-5">(</span><span class="n">new_cell</span><span class="p" data-group-id="0785463071-5">)</span><span class="w">
+</span><span class="p" data-group-id="0785463071-6">%{</span><span class="ss">bold</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p">,</span><span class="w"> </span><span class="ss">underline</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p" data-group-id="0785463071-6">}</span><span class="w"> </span><span class="c1"># Merged</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="0785463071-7">(</span><span class="s">&quot;B&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0785463071-8">%{</span><span class="ss">bold</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p" data-group-id="0785463071-8">}</span><span class="p" data-group-id="0785463071-7">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">new_cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">with_attributes</span><span class="p" data-group-id="0785463071-9">(</span><span class="n">cell</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0785463071-10">[</span><span class="ss">:underline</span><span class="p">,</span><span class="w"> </span><span class="ss">:reverse</span><span class="p" data-group-id="0785463071-10">]</span><span class="p" data-group-id="0785463071-9">)</span><span class="w"> </span><span class="c1"># Using a list</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_style</span><span class="p" data-group-id="0785463071-11">(</span><span class="n">new_cell</span><span class="p" data-group-id="0785463071-11">)</span><span class="w">
+</span><span class="p" data-group-id="0785463071-12">%{</span><span class="ss">bold</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p">,</span><span class="w"> </span><span class="ss">underline</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p">,</span><span class="w"> </span><span class="ss">reverse</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p" data-group-id="0785463071-12">}</span><span class="w"> </span><span class="c1"># Original bold + list applied</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="with_char/2">
+
+  <div class="detail-header">
+    <a href="#with_char/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">with_char(cell, char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/cell.ex#L322" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Creates a copy of a cell with a new character.</p><h2 id="with_char/2-examples" class="section-heading"><a href="#with_char/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="9790196647-1">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9790196647-2">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="9790196647-2">}</span><span class="p" data-group-id="9790196647-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">new_cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Cell</span><span class="o">.</span><span class="n">with_char</span><span class="p" data-group-id="9790196647-3">(</span><span class="n">cell</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;B&quot;</span><span class="p" data-group-id="9790196647-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_char</span><span class="p" data-group-id="9790196647-4">(</span><span class="n">new_cell</span><span class="p" data-group-id="9790196647-4">)</span><span class="w">
+</span><span class="s">&quot;B&quot;</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Cell</span><span class="o">.</span><span class="n">get_style</span><span class="p" data-group-id="9790196647-5">(</span><span class="n">new_cell</span><span class="p" data-group-id="9790196647-5">)</span><span class="w">
+</span><span class="p" data-group-id="9790196647-6">%{</span><span class="ss">foreground</span><span class="p">:</span><span class="w"> </span><span class="ss">:red</span><span class="p" data-group-id="9790196647-6">}</span></code></pre>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.Input.FileDropHandler — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>FileDropHandler</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.Input.FileDropHandler.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/input/file_drop_handler.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Handles file drag-and-drop operations for the terminal emulator.</p><p>Processes file URIs from drag-and-drop events and provides secure
+file access with permission controls and type validation.</p><h2 id="module-features" class="section-heading"><a href="#module-features" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Features</span></h2><ul><li>File URI parsing and validation</li><li>Multiple file drop support</li><li>MIME type detection</li><li>File size and permission checking</li><li>Security controls and sandbox validation</li><li>Integration with system file watchers</li></ul><h2 id="module-supported-protocols" class="section-heading"><a href="#module-supported-protocols" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Supported Protocols</span></h2><ul><li><code class="inline">file://</code> - Local file system paths</li><li><code class="inline">content://</code> - Android content URIs (if applicable)</li><li>Data URLs for small embedded content</li></ul><h2 id="module-security" class="section-heading"><a href="#module-security" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Security</span></h2><ul><li>File access is restricted to allowed directories</li><li>File size limits prevent memory exhaustion</li><li>MIME type validation prevents execution of dangerous files</li><li>Symlink resolution with loop detection</li></ul>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-types summary">
+  <h3>
+    <a href="#types">Types</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:drop_event/0" data-no-tooltip="" translate="no">drop_event()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:drop_options/0" data-no-tooltip="" translate="no">drop_options()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:file_info/0" data-no-tooltip="" translate="no">file_info()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_temporary_copies/2" data-no-tooltip="" translate="no">create_temporary_copies(files, options \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a temporary copy of dropped files in a secure location.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_file_info/2" data-no-tooltip="" translate="no">get_file_info(file_path, options \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets detailed information about a file.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#parse_file_uri/1" data-no-tooltip="" translate="no">parse_file_uri(uri)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Parses a file URI and extracts the local file path.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#process_drop_event/3" data-no-tooltip="" translate="no">process_drop_event(file_uris, position, options \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Processes a file drop event from the terminal.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#validate_files/2" data-no-tooltip="" translate="no">validate_files(files, options \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Validates that a file drop operation meets security and size constraints.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#watch_dropped_files/2" data-no-tooltip="" translate="no">watch_dropped_files(files, callbacks \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Watches dropped files for changes and executes callbacks.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h2>
+
+    <div class="types-list">
+<section class="detail" id="t:drop_event/0">
+
+  <div class="detail-header">
+    <a href="#t:drop_event/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">drop_event()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/input/file_drop_handler.ex#L42" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> drop_event() :: %{
+  files: [<a href="#t:file_info/0">file_info</a>()],
+  position: {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()},
+  modifiers: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  timestamp: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()
+}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:drop_options/0">
+
+  <div class="detail-header">
+    <a href="#t:drop_options/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">drop_options()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/input/file_drop_handler.ex#L49" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> drop_options() :: %{
+  optional(:max_files) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  optional(:max_file_size) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  optional(:allowed_mime_types) =&gt; [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()],
+  optional(:allowed_extensions) =&gt; [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()],
+  optional(:allowed_directories) =&gt; [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()],
+  optional(:resolve_symlinks) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  optional(:validate_permissions) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()
+}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:file_info/0">
+
+  <div class="detail-header">
+    <a href="#t:file_info/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">file_info()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/input/file_drop_handler.ex#L33" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> file_info() :: %{
+  path: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  name: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  size: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  mime_type: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  permissions: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  last_modified: <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>()
+}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="create_temporary_copies/2">
+
+    <span id="create_temporary_copies/1"></span>
+
+  <div class="detail-header">
+    <a href="#create_temporary_copies/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">create_temporary_copies(files, options \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/input/file_drop_handler.ex#L294" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> create_temporary_copies([<a href="#t:file_info/0">file_info</a>()], <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()}</pre>
+
+      </div>
+
+<p>Creates a temporary copy of dropped files in a secure location.</p><p>Useful for processing files without affecting the originals or when
+working with files from untrusted sources.</p><h2 id="create_temporary_copies/2-parameters" class="section-heading"><a href="#create_temporary_copies/2-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">files</code> - List of files to copy</li><li><code class="inline">options</code> - Copy options including temporary directory</li></ul><h2 id="create_temporary_copies/2-returns" class="section-heading"><a href="#create_temporary_copies/2-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li><code class="inline">{:ok, copied_files}</code> - List of temporary file paths</li><li><code class="inline">{:error, reason}</code> - Error during copying</li></ul>
+  </section>
+</section>
+<section class="detail" id="get_file_info/2">
+
+    <span id="get_file_info/1"></span>
+
+  <div class="detail-header">
+    <a href="#get_file_info/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_file_info(file_path, options \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/input/file_drop_handler.ex#L197" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_file_info(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="#t:file_info/0">file_info</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()}</pre>
+
+      </div>
+
+<p>Gets detailed information about a file.</p><p>Retrieves file metadata including size, permissions, MIME type, and timestamps.</p><h2 id="get_file_info/2-parameters" class="section-heading"><a href="#get_file_info/2-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">file_path</code> - Path to the file</li><li><code class="inline">options</code> - Options for information gathering</li></ul><h2 id="get_file_info/2-returns" class="section-heading"><a href="#get_file_info/2-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li><code class="inline">{:ok, file_info}</code> - File information structure</li><li><code class="inline">{:error, reason}</code> - Error accessing file</li></ul>
+  </section>
+</section>
+<section class="detail" id="parse_file_uri/1">
+
+  <div class="detail-header">
+    <a href="#parse_file_uri/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">parse_file_uri(uri)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/input/file_drop_handler.ex#L158" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> parse_file_uri(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()} | {:ok, {:data, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()}</pre>
+
+      </div>
+
+<p>Parses a file URI and extracts the local file path.</p><p>Supports various URI schemes and handles URL decoding properly.</p><h2 id="parse_file_uri/1-parameters" class="section-heading"><a href="#parse_file_uri/1-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">uri</code> - File URI string (e.g., &quot;file:///path/to/file.txt&quot;)</li></ul><h2 id="parse_file_uri/1-returns" class="section-heading"><a href="#parse_file_uri/1-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li><code class="inline">{:ok, path}</code> - Successfully extracted file path</li><li><code class="inline">{:error, reason}</code> - Error parsing URI</li></ul><h2 id="parse_file_uri/1-examples" class="section-heading"><a href="#parse_file_uri/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">FileDropHandler</span><span class="o">.</span><span class="n">parse_file_uri</span><span class="p" data-group-id="2512090245-1">(</span><span class="s">&quot;file:///home/user/test%20file.txt&quot;</span><span class="p" data-group-id="2512090245-1">)</span><span class="w">
+</span><span class="p" data-group-id="2512090245-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/home/user/test file.txt&quot;</span><span class="p" data-group-id="2512090245-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">FileDropHandler</span><span class="o">.</span><span class="n">parse_file_uri</span><span class="p" data-group-id="2512090245-3">(</span><span class="s">&quot;http://example.com/file.txt&quot;</span><span class="p" data-group-id="2512090245-3">)</span><span class="w">
+</span><span class="p" data-group-id="2512090245-4">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="ss">:unsupported_scheme</span><span class="p" data-group-id="2512090245-4">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="process_drop_event/3">
+
+    <span id="process_drop_event/2"></span>
+
+  <div class="detail-header">
+    <a href="#process_drop_event/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">process_drop_event(file_uris, position, options \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/input/file_drop_handler.ex#L115" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> process_drop_event(
+  [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()],
+  {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()},
+  <a href="#t:drop_options/0">drop_options</a>()
+) :: {:ok, <a href="#t:drop_event/0">drop_event</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()}</pre>
+
+      </div>
+
+<p>Processes a file drop event from the terminal.</p><p>Takes raw file URIs from a drag-and-drop operation and converts them
+into validated file information structures.</p><h2 id="process_drop_event/3-parameters" class="section-heading"><a href="#process_drop_event/3-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">file_uris</code> - List of file URIs from the drop event</li><li><code class="inline">position</code> - {x, y} coordinates where files were dropped</li><li><code class="inline">options</code> - Configuration options for validation and security</li></ul><h2 id="process_drop_event/3-returns" class="section-heading"><a href="#process_drop_event/3-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li><code class="inline">{:ok, drop_event}</code> - Successfully processed drop event</li><li><code class="inline">{:error, reason}</code> - Error with validation failure details</li></ul><h2 id="process_drop_event/3-examples" class="section-heading"><a href="#process_drop_event/3-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">FileDropHandler</span><span class="o">.</span><span class="n">process_drop_event</span><span class="p" data-group-id="0106156623-1">(</span><span class="p" data-group-id="0106156623-2">[</span><span class="w">
+</span><span class="gp unselectable">...&gt; </span><span class="w">  </span><span class="s">&quot;file:///home/user/document.txt&quot;</span><span class="p">,</span><span class="w">
+</span><span class="gp unselectable">...&gt; </span><span class="w">  </span><span class="s">&quot;file:///home/user/image.png&quot;</span><span class="w">
+</span><span class="gp unselectable">...&gt; </span><span class="p" data-group-id="0106156623-2">]</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0106156623-3">{</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="p" data-group-id="0106156623-3">}</span><span class="p" data-group-id="0106156623-1">)</span><span class="w">
+</span><span class="p" data-group-id="0106156623-4">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0106156623-5">%{</span><span class="ss">files</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0106156623-6">[</span><span class="n">...</span><span class="p" data-group-id="0106156623-6">]</span><span class="p">,</span><span class="w"> </span><span class="ss">position</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0106156623-7">{</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="p" data-group-id="0106156623-7">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="0106156623-5">}</span><span class="p" data-group-id="0106156623-4">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="validate_files/2">
+
+    <span id="validate_files/1"></span>
+
+  <div class="detail-header">
+    <a href="#validate_files/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">validate_files(files, options \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/input/file_drop_handler.ex#L232" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> validate_files([<a href="#t:file_info/0">file_info</a>()], <a href="#t:drop_options/0">drop_options</a>()) :: :ok | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()}</pre>
+
+      </div>
+
+<p>Validates that a file drop operation meets security and size constraints.</p><h2 id="validate_files/2-parameters" class="section-heading"><a href="#validate_files/2-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">files</code> - List of file information structures</li><li><code class="inline">options</code> - Validation options</li></ul><h2 id="validate_files/2-returns" class="section-heading"><a href="#validate_files/2-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li><code class="inline">:ok</code> - All files pass validation</li><li><code class="inline">{:error, reason}</code> - Validation failure with details</li></ul>
+  </section>
+</section>
+<section class="detail" id="watch_dropped_files/2">
+
+    <span id="watch_dropped_files/1"></span>
+
+  <div class="detail-header">
+    <a href="#watch_dropped_files/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">watch_dropped_files(files, callbacks \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/input/file_drop_handler.ex#L261" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> watch_dropped_files([<a href="#t:file_info/0">file_info</a>()], <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">pid</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()}</pre>
+
+      </div>
+
+<p>Watches dropped files for changes and executes callbacks.</p><p>Sets up file system watchers on dropped files to detect modifications,
+deletions, or other changes.</p><h2 id="watch_dropped_files/2-parameters" class="section-heading"><a href="#watch_dropped_files/2-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">files</code> - List of files to watch</li><li><code class="inline">callbacks</code> - Map of callback functions for different events</li></ul><h2 id="watch_dropped_files/2-returns" class="section-heading"><a href="#watch_dropped_files/2-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li><code class="inline">{:ok, watcher_pid}</code> - File watcher process ID</li><li><code class="inline">{:error, reason}</code> - Error setting up file watching</li></ul>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

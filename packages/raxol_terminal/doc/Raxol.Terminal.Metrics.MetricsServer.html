@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.Metrics.MetricsServer — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>Metrics.<wbr>MetricsServer</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.Metrics.MetricsServer.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>ETS-backed metrics collection and export module.</p><p>Provides centralized metrics storage using ETS for high-performance
+concurrent writes and reads. Supports multiple metric types and
+Prometheus-compatible export.</p><h2 id="module-design" class="section-heading"><a href="#module-design" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Design</span></h2><p>Uses ETS for write-heavy workloads (per Rich Hickey's feedback).
+No GenServer serialization for metric recording - direct ETS writes.</p><h2 id="module-metric-types" class="section-heading"><a href="#module-metric-types" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Metric Types</span></h2><ul><li><strong>Counters</strong>: Monotonically increasing values (e.g., operations count)</li><li><strong>Gauges</strong>: Point-in-time values (e.g., memory usage)</li><li><strong>Histograms</strong>: Distribution of values (e.g., latency percentiles)</li></ul><h2 id="module-usage" class="section-heading"><a href="#module-usage" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Usage</span></h2><pre><code class="makeup elixir" translate="no"><span class="c1"># Initialize (call once at app startup)</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">init</span><span class="p" data-group-id="8514743653-1">(</span><span class="p" data-group-id="8514743653-1">)</span><span class="w">
+
+</span><span class="c1"># Record metrics</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">increment</span><span class="p" data-group-id="8514743653-2">(</span><span class="ss">:requests_total</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8514743653-3">%{</span><span class="ss">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/api&quot;</span><span class="p" data-group-id="8514743653-3">}</span><span class="p" data-group-id="8514743653-2">)</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">gauge</span><span class="p" data-group-id="8514743653-4">(</span><span class="ss">:memory_bytes</span><span class="p">,</span><span class="w"> </span><span class="mi">1024000</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8514743653-5">%{</span><span class="ss">type</span><span class="p">:</span><span class="w"> </span><span class="ss">:heap</span><span class="p" data-group-id="8514743653-5">}</span><span class="p" data-group-id="8514743653-4">)</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">histogram</span><span class="p" data-group-id="8514743653-6">(</span><span class="ss">:latency_ms</span><span class="p">,</span><span class="w"> </span><span class="mf">42.5</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8514743653-7">%{</span><span class="ss">endpoint</span><span class="p">:</span><span class="w"> </span><span class="ss">:render</span><span class="p" data-group-id="8514743653-7">}</span><span class="p" data-group-id="8514743653-6">)</span><span class="w">
+
+</span><span class="c1"># Query metrics</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">get</span><span class="p" data-group-id="8514743653-8">(</span><span class="ss">:requests_total</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8514743653-9">%{</span><span class="ss">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/api&quot;</span><span class="p" data-group-id="8514743653-9">}</span><span class="p" data-group-id="8514743653-8">)</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">get_all</span><span class="p" data-group-id="8514743653-10">(</span><span class="p" data-group-id="8514743653-10">)</span><span class="w">
+
+</span><span class="c1"># Export for monitoring</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">export</span><span class="p" data-group-id="8514743653-11">(</span><span class="ss">:prometheus</span><span class="p" data-group-id="8514743653-11">)</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">export</span><span class="p" data-group-id="8514743653-12">(</span><span class="ss">:json</span><span class="p" data-group-id="8514743653-12">)</span></code></pre>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-types summary">
+  <h3>
+    <a href="#types">Types</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:labels/0" data-no-tooltip="" translate="no">labels()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:metric_name/0" data-no-tooltip="" translate="no">metric_name()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:metric_value/0" data-no-tooltip="" translate="no">metric_value()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cleanup_metrics/2" data-no-tooltip="" translate="no">cleanup_metrics(opts \\ [], store_name \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Cleans up old metrics.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#export/1" data-no-tooltip="" translate="no">export(format)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Exports metrics in the specified format.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#export_metrics/2" data-no-tooltip="" translate="no">export_metrics(opts \\ [], store_name \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Exports metrics in the specified format.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#gauge/3" data-no-tooltip="" translate="no">gauge(name, value, labels \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets a gauge metric to a specific value.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_all/0" data-no-tooltip="" translate="no">get_all()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets all metrics as a map.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_counter/2" data-no-tooltip="" translate="no">get_counter(name, labels \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the current value of a counter.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_error_stats/2" data-no-tooltip="" translate="no">get_error_stats(labels \\ %{}, store_name \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets error statistics.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_gauge/2" data-no-tooltip="" translate="no">get_gauge(name, labels \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the current value of a gauge.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_histogram/2" data-no-tooltip="" translate="no">get_histogram(name, labels \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets histogram statistics.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_metric/3" data-no-tooltip="" translate="no">get_metric(name, labels \\ %{}, store_name \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets a metric value (generic interface).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#histogram/3" data-no-tooltip="" translate="no">histogram(name, value, labels \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Records a value in a histogram.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#increment/3" data-no-tooltip="" translate="no">increment(name, labels \\ %{}, amount \\ 1)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Increments a counter metric.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#init/0" data-no-tooltip="" translate="no">init()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Initializes the metrics storage tables.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#initialized?/0" data-no-tooltip="" translate="no">initialized?()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if metrics storage is initialized.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#record_error/3" data-no-tooltip="" translate="no">record_error(message, labels \\ %{}, store_name \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Records an error occurrence.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#record_metric/4" data-no-tooltip="" translate="no">record_metric(name, value, labels \\ %{}, store_name \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Records a metric value (generic interface).</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h2>
+
+    <div class="types-list">
+<section class="detail" id="t:labels/0">
+
+  <div class="detail-header">
+    <a href="#t:labels/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">labels()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L44" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> labels() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:metric_name/0">
+
+  <div class="detail-header">
+    <a href="#t:metric_name/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">metric_name()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L43" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> metric_name() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:metric_value/0">
+
+  <div class="detail-header">
+    <a href="#t:metric_value/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">metric_value()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L45" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> metric_value() :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">number</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="cleanup_metrics/2">
+
+    <span id="cleanup_metrics/0"></span>
+
+    <span id="cleanup_metrics/1"></span>
+
+  <div class="detail-header">
+    <a href="#cleanup_metrics/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cleanup_metrics(opts \\ [], store_name \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L294" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> cleanup_metrics(
+  <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">keyword</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()
+) :: :ok</pre>
+
+      </div>
+
+<p>Cleans up old metrics.</p><h2 id="cleanup_metrics/2-options" class="section-heading"><a href="#cleanup_metrics/2-options" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Options</span></h2><ul><li><code class="inline">:older_than</code> - Remove entries older than this many milliseconds</li><li><code class="inline">:type</code> - Only clean this type (:histogram, :error)</li></ul>
+  </section>
+</section>
+<section class="detail" id="export/1">
+
+  <div class="detail-header">
+    <a href="#export/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">export(format)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L349" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> export(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | {:error, :unsupported_format}</pre>
+
+      </div>
+
+<p>Exports metrics in the specified format.</p>
+  </section>
+</section>
+<section class="detail" id="export_metrics/2">
+
+    <span id="export_metrics/0"></span>
+
+    <span id="export_metrics/1"></span>
+
+  <div class="detail-header">
+    <a href="#export_metrics/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">export_metrics(opts \\ [], store_name \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L340" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> export_metrics(
+  <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">keyword</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()
+) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | {:error, :unsupported_format}</pre>
+
+      </div>
+
+<p>Exports metrics in the specified format.</p><h2 id="export_metrics/2-formats" class="section-heading"><a href="#export_metrics/2-formats" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Formats</span></h2><ul><li><code class="inline">:prometheus</code> - Prometheus text format</li><li><code class="inline">:json</code> - JSON format</li></ul><h2 id="export_metrics/2-examples" class="section-heading"><a href="#export_metrics/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">export</span><span class="p" data-group-id="2724824113-1">(</span><span class="ss">:prometheus</span><span class="p" data-group-id="2724824113-1">)</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">export</span><span class="p" data-group-id="2724824113-2">(</span><span class="ss">:json</span><span class="p" data-group-id="2724824113-2">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="gauge/3">
+
+    <span id="gauge/2"></span>
+
+  <div class="detail-header">
+    <a href="#gauge/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">gauge(name, value, labels \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L152" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> gauge(<a href="#t:metric_name/0">metric_name</a>(), <a href="#t:metric_value/0">metric_value</a>(), <a href="#t:labels/0">labels</a>()) :: :ok</pre>
+
+      </div>
+
+<p>Sets a gauge metric to a specific value.</p><h2 id="gauge/3-examples" class="section-heading"><a href="#gauge/3-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">gauge</span><span class="p" data-group-id="0514081640-1">(</span><span class="ss">:memory_bytes</span><span class="p">,</span><span class="w"> </span><span class="mi">1024000</span><span class="p" data-group-id="0514081640-1">)</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">gauge</span><span class="p" data-group-id="0514081640-2">(</span><span class="ss">:cpu_percent</span><span class="p">,</span><span class="w"> </span><span class="mf">45.5</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0514081640-3">%{</span><span class="ss">core</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="0514081640-3">}</span><span class="p" data-group-id="0514081640-2">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="get_all/0">
+
+  <div class="detail-header">
+    <a href="#get_all/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_all()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L367" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_all() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+<p>Gets all metrics as a map.</p>
+  </section>
+</section>
+<section class="detail" id="get_counter/2">
+
+    <span id="get_counter/1"></span>
+
+  <div class="detail-header">
+    <a href="#get_counter/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_counter(name, labels \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L129" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_counter(<a href="#t:metric_name/0">metric_name</a>(), <a href="#t:labels/0">labels</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()</pre>
+
+      </div>
+
+<p>Gets the current value of a counter.</p>
+  </section>
+</section>
+<section class="detail" id="get_error_stats/2">
+
+    <span id="get_error_stats/0"></span>
+
+    <span id="get_error_stats/1"></span>
+
+  <div class="detail-header">
+    <a href="#get_error_stats/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_error_stats(labels \\ %{}, store_name \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L263" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_error_stats(<a href="#t:labels/0">labels</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}</pre>
+
+      </div>
+
+<p>Gets error statistics.</p>
+  </section>
+</section>
+<section class="detail" id="get_gauge/2">
+
+    <span id="get_gauge/1"></span>
+
+  <div class="detail-header">
+    <a href="#get_gauge/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_gauge(name, labels \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L165" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_gauge(<a href="#t:metric_name/0">metric_name</a>(), <a href="#t:labels/0">labels</a>()) :: <a href="#t:metric_value/0">metric_value</a>() | nil</pre>
+
+      </div>
+
+<p>Gets the current value of a gauge.</p>
+  </section>
+</section>
+<section class="detail" id="get_histogram/2">
+
+    <span id="get_histogram/1"></span>
+
+  <div class="detail-header">
+    <a href="#get_histogram/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_histogram(name, labels \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L203" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_histogram(<a href="#t:metric_name/0">metric_name</a>(), <a href="#t:labels/0">labels</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+<p>Gets histogram statistics.</p><p>Returns count, sum, min, max, and percentiles.</p>
+  </section>
+</section>
+<section class="detail" id="get_metric/3">
+
+    <span id="get_metric/1"></span>
+
+    <span id="get_metric/2"></span>
+
+  <div class="detail-header">
+    <a href="#get_metric/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_metric(name, labels \\ %{}, store_name \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L232" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_metric(<a href="#t:metric_name/0">metric_name</a>(), <a href="#t:labels/0">labels</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) ::
+  {:ok, <a href="#t:metric_value/0">metric_value</a>()} | {:error, :not_found}</pre>
+
+      </div>
+
+<p>Gets a metric value (generic interface).</p>
+  </section>
+</section>
+<section class="detail" id="histogram/3">
+
+    <span id="histogram/2"></span>
+
+  <div class="detail-header">
+    <a href="#histogram/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">histogram(name, value, labels \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L188" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> histogram(<a href="#t:metric_name/0">metric_name</a>(), <a href="#t:metric_value/0">metric_value</a>(), <a href="#t:labels/0">labels</a>()) :: :ok</pre>
+
+      </div>
+
+<p>Records a value in a histogram.</p><h2 id="histogram/3-examples" class="section-heading"><a href="#histogram/3-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">histogram</span><span class="p" data-group-id="1989169699-1">(</span><span class="ss">:latency_ms</span><span class="p">,</span><span class="w"> </span><span class="mf">42.5</span><span class="p" data-group-id="1989169699-1">)</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">histogram</span><span class="p" data-group-id="1989169699-2">(</span><span class="ss">:latency_ms</span><span class="p">,</span><span class="w"> </span><span class="mf">15.2</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1989169699-3">%{</span><span class="ss">endpoint</span><span class="p">:</span><span class="w"> </span><span class="ss">:render</span><span class="p" data-group-id="1989169699-3">}</span><span class="p" data-group-id="1989169699-2">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="increment/3">
+
+    <span id="increment/1"></span>
+
+    <span id="increment/2"></span>
+
+  <div class="detail-header">
+    <a href="#increment/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">increment(name, labels \\ %{}, amount \\ 1)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L117" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> increment(<a href="#t:metric_name/0">metric_name</a>(), <a href="#t:labels/0">labels</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">pos_integer</a>()) :: :ok</pre>
+
+      </div>
+
+<p>Increments a counter metric.</p><h2 id="increment/3-examples" class="section-heading"><a href="#increment/3-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">increment</span><span class="p" data-group-id="4022622337-1">(</span><span class="ss">:requests_total</span><span class="p" data-group-id="4022622337-1">)</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">increment</span><span class="p" data-group-id="4022622337-2">(</span><span class="ss">:requests_total</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4022622337-3">%{</span><span class="ss">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/api&quot;</span><span class="p" data-group-id="4022622337-3">}</span><span class="p" data-group-id="4022622337-2">)</span><span class="w">
+</span><span class="nc">MetricsServer</span><span class="o">.</span><span class="n">increment</span><span class="p" data-group-id="4022622337-4">(</span><span class="ss">:requests_total</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4022622337-5">%{</span><span class="ss">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/api&quot;</span><span class="p" data-group-id="4022622337-5">}</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="4022622337-4">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="init/0">
+
+  <div class="detail-header">
+    <a href="#init/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">init()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L57" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> init() :: :ok</pre>
+
+      </div>
+
+<p>Initializes the metrics storage tables.</p><p>Call once during application startup.</p>
+  </section>
+</section>
+<section class="detail" id="initialized?/0">
+
+  <div class="detail-header">
+    <a href="#initialized?/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">initialized?()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L99" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> initialized?() :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
+      </div>
+
+<p>Checks if metrics storage is initialized.</p>
+  </section>
+</section>
+<section class="detail" id="record_error/3">
+
+    <span id="record_error/1"></span>
+
+    <span id="record_error/2"></span>
+
+  <div class="detail-header">
+    <a href="#record_error/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">record_error(message, labels \\ %{}, store_name \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L247" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> record_error(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="#t:labels/0">labels</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: :ok</pre>
+
+      </div>
+
+<p>Records an error occurrence.</p>
+  </section>
+</section>
+<section class="detail" id="record_metric/4">
+
+    <span id="record_metric/2"></span>
+
+    <span id="record_metric/3"></span>
+
+  <div class="detail-header">
+    <a href="#record_metric/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">record_metric(name, value, labels \\ %{}, store_name \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/metrics/metrics_server.ex#L223" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> record_metric(<a href="#t:metric_name/0">metric_name</a>(), <a href="#t:metric_value/0">metric_value</a>(), <a href="#t:labels/0">labels</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: :ok</pre>
+
+      </div>
+
+<p>Records a metric value (generic interface).</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

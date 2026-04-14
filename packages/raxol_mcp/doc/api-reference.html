@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol MCP v2.4.0">
+
+
+    <title>API Reference — Raxol MCP v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-C84C43A4.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol MCP
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-extra" id="main" data-type="extras">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol MCP</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>API Reference <small class="app-vsn">Raxol MCP v#2.4.0</small></h1>
+<a href="api-reference.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+      <a href="https://github.com/DROOdotFOO/raxol" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+    <section class="details-list">
+      <h2 id="modules" class="section-heading">Modules</h2>
+      <div class="summary">
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.AgentBridge.html" translate="no">Raxol.<wbr>MCP.<wbr>AgentBridge</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Bridges Raxol Agent Actions to MCP tools.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.CircuitBreaker.html" translate="no">Raxol.<wbr>MCP.<wbr>CircuitBreaker</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Lightweight ETS-backed circuit breaker for MCP tool/resource callbacks.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.Client.html" translate="no">Raxol.<wbr>MCP.<wbr>Client</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>MCP (Model Context Protocol) client for consuming external tool servers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.ContextTree.html" translate="no">Raxol.<wbr>MCP.<wbr>ContextTree</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Assembles a structured context tree from multiple sources.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.Diff.html" translate="no">Raxol.<wbr>MCP.<wbr>Diff</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Simple map diff utility for detecting resource/model changes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.FocusLens.html" translate="no">Raxol.<wbr>MCP.<wbr>FocusLens</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Attention-aware tool filtering for MCP surfaces.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.Protocol.html" translate="no">Raxol.<wbr>MCP.<wbr>Protocol</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>JSON-RPC 2.0 message encoding/decoding for the Model Context Protocol.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.Registry.html" translate="no">Raxol.<wbr>MCP.<wbr>Registry</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ETS-backed registry for MCP tools and resources.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.ResourceProvider.html" translate="no">Raxol.<wbr>MCP.<wbr>ResourceProvider</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for TEA apps that expose model state as MCP resources.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.ResourceRouter.html" translate="no">Raxol.<wbr>MCP.<wbr>ResourceRouter</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Routes <code class="inline">raxol://</code> resource URIs to the appropriate data source.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.Server.html" translate="no">Raxol.<wbr>MCP.<wbr>Server</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Transport-agnostic MCP server.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.StructuredScreenshot.html" translate="no">Raxol.<wbr>MCP.<wbr>StructuredScreenshot</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Converts a view tree into a clean, JSON-friendly widget summary.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.Supervisor.html" translate="no">Raxol.<wbr>MCP.<wbr>Supervisor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Supervision tree for the MCP subsystem.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.Test.html" translate="no">Raxol.<wbr>MCP.<wbr>Test</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Test harness for Raxol MCP applications.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.Test.Assertions.html" translate="no">Raxol.<wbr>MCP.<wbr>Test.<wbr>Assertions</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ExUnit assertion macros for Raxol MCP tests.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.Test.Session.html" translate="no">Raxol.<wbr>MCP.<wbr>Test.<wbr>Session</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Struct representing a test session for MCP testing.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.ToolProvider.html" translate="no">Raxol.<wbr>MCP.<wbr>ToolProvider</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for widgets that expose MCP tools.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.ToolSynchronizer.html" translate="no">Raxol.<wbr>MCP.<wbr>ToolSynchronizer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Per-session GenServer that bridges the render pipeline to the MCP Registry.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.Transport.SSE.html" translate="no">Raxol.<wbr>MCP.<wbr>Transport.<wbr>SSE</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>HTTP/SSE transport for MCP.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.Transport.Stdio.html" translate="no">Raxol.<wbr>MCP.<wbr>Transport.<wbr>Stdio</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Stdio transport for MCP.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.MCP.TreeWalker.html" translate="no">Raxol.<wbr>MCP.<wbr>TreeWalker</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Traverses a view element tree and derives namespaced MCP tools from widgets.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="RaxolMcp.html" translate="no">RaxolMcp</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>MCP (Model Context Protocol) server and client for Raxol.</p></div>
+
+</div>
+
+      </div>
+    </section>
+
+
+    <section class="details-list">
+      <h2 id="tasks" class="section-heading">Mix Tasks</h2>
+      <div class="summary">
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Mix.Tasks.Mcp.Server.html" translate="no">mix mcp.<wbr>server</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Starts the Raxol MCP server with stdio transport.</p></div>
+
+</div>
+
+      </div>
+    </section>
+
+</div>
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_mcp/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_mcp/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol MCP.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

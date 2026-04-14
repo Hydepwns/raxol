@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.ScreenBuffer.Attributes — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>Attributes</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.ScreenBuffer.Attributes.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Manages buffer attributes including formatting, charset, and cursor state.
+Consolidates: Formatting, TextFormatting, Charset, Cursor functionality.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#apply_single_shift/2" data-no-tooltip="" translate="no">apply_single_shift(buffer, set)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Applies single shift (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#attribute_set?/2" data-no-tooltip="" translate="no">attribute_set?(buffer, attr)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if attribute is set (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_all_tab_stops/1" data-no-tooltip="" translate="no">clear_all_tab_stops(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Clears all tab stops.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_selection/1" data-no-tooltip="" translate="no">clear_selection(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Clears selection (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_tab_stop/1" data-no-tooltip="" translate="no">clear_tab_stop(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Clears a tab stop at the current cursor position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_style/1" data-no-tooltip="" translate="no">create_style(params)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a text style from SGR parameters.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cursor_blinking?/1" data-no-tooltip="" translate="no">cursor_blinking?(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if cursor is blinking (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cursor_visible?/1" data-no-tooltip="" translate="no">cursor_visible?(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if cursor is visible (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#designate_charset/3" data-no-tooltip="" translate="no">designate_charset(buffer, set, charset)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Designates charset (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_active_charset/1" data-no-tooltip="" translate="no">get_active_charset(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the currently active charset.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_background/1" data-no-tooltip="" translate="no">get_background(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets background color (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_charset/2" data-no-tooltip="" translate="no">get_charset(buffer, slot)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the active charset for a slot.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_current_g_set/1" data-no-tooltip="" translate="no">get_current_g_set(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets current G set (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_cursor_position/1" data-no-tooltip="" translate="no">get_cursor_position(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the cursor position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_cursor_style/1" data-no-tooltip="" translate="no">get_cursor_style(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets cursor style (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_default_style/1" data-no-tooltip="" translate="no">get_default_style(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the default text style.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_designated_charset/2" data-no-tooltip="" translate="no">get_designated_charset(buffer, set)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets designated charset (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_foreground/1" data-no-tooltip="" translate="no">get_foreground(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets foreground color (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_selection/1" data-no-tooltip="" translate="no">get_selection(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets selection (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_selection_boundaries/1" data-no-tooltip="" translate="no">get_selection_boundaries(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets selection boundaries (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_selection_end/1" data-no-tooltip="" translate="no">get_selection_end(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets selection end (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_selection_start/1" data-no-tooltip="" translate="no">get_selection_start(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets selection start (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_set_attributes/1" data-no-tooltip="" translate="no">get_set_attributes(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets set attributes (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_single_shift/1" data-no-tooltip="" translate="no">get_single_shift(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets single shift state (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_style/1" data-no-tooltip="" translate="no">get_style(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets text style (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_text_in_region/5" data-no-tooltip="" translate="no">get_text_in_region(buffer, x1, y1, x2, y2)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets text in region.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#in_selection?/3" data-no-tooltip="" translate="no">in_selection?(buffer, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if position is in selection (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#invoke_g_set/2" data-no-tooltip="" translate="no">invoke_g_set(buffer, set)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Invokes G set (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#merge_styles/2" data-no-tooltip="" translate="no">merge_styles(base, override)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Merges two styles, with the second taking precedence.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_cursor/3" data-no-tooltip="" translate="no">move_cursor(buffer, dx, dy)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Moves the cursor relative to its current position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#next_tab_stop/1" data-no-tooltip="" translate="no">next_tab_stop(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Finds the next tab stop position from the current cursor.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reset_all_attributes/1" data-no-tooltip="" translate="no">reset_all_attributes(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Resets all attributes to defaults (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reset_attribute/2" data-no-tooltip="" translate="no">reset_attribute(buffer, attr)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Resets specific attribute (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reset_charset_state/1" data-no-tooltip="" translate="no">reset_charset_state(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Resets charset state (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reset_tab_stops/1" data-no-tooltip="" translate="no">reset_tab_stops(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Resets tab stops to default (every 8 columns).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#restore_cursor/1" data-no-tooltip="" translate="no">restore_cursor(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Restores the saved cursor position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#save_cursor/1" data-no-tooltip="" translate="no">save_cursor(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Saves the current cursor position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#select_charset/2" data-no-tooltip="" translate="no">select_charset(buffer, slot)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Selects which charset slot is active.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#selection_active?/1" data-no-tooltip="" translate="no">selection_active?(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if selection is active (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_alternate_screen/2" data-no-tooltip="" translate="no">set_alternate_screen(buffer, use_alternate)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Switches between main and alternate screen buffers.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_attribute/2" data-no-tooltip="" translate="no">set_attribute(buffer, attr)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets specific attribute (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_background/2" data-no-tooltip="" translate="no">set_background(buffer, color)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets background color (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_charset/3" data-no-tooltip="" translate="no">set_charset(buffer, slot, charset)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the active charset (G0, G1, G2, G3).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_blink/2" data-no-tooltip="" translate="no">set_cursor_blink(buffer, blink)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets cursor blink state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_position/3" data-no-tooltip="" translate="no">set_cursor_position(buffer, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the cursor position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_style/2" data-no-tooltip="" translate="no">set_cursor_style(buffer, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets cursor style.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_visibility/2" data-no-tooltip="" translate="no">set_cursor_visibility(buffer, visible)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets cursor visibility (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_visible/2" data-no-tooltip="" translate="no">set_cursor_visible(buffer, visible)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets cursor visibility.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_default_style/2" data-no-tooltip="" translate="no">set_default_style(buffer, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the default text style for the buffer.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_foreground/2" data-no-tooltip="" translate="no">set_foreground(buffer, color)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets foreground color (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_tab_stop/1" data-no-tooltip="" translate="no">set_tab_stop(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets a tab stop at the current cursor position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#start_selection/3" data-no-tooltip="" translate="no">start_selection(buffer, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Starts selection (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#translate_char/2" data-no-tooltip="" translate="no">translate_char(buffer, char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Translates a character according to the active charset.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_selection/3" data-no-tooltip="" translate="no">update_selection(buffer, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates selection (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_style/2" data-no-tooltip="" translate="no">update_style(buffer, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates text style (stub).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#using_alternate_screen?/1" data-no-tooltip="" translate="no">using_alternate_screen?(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if using alternate screen.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="apply_single_shift/2">
+
+  <div class="detail-header">
+    <a href="#apply_single_shift/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">apply_single_shift(buffer, set)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L458" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Applies single shift (stub).</p>
+  </section>
+</section>
+<section class="detail" id="attribute_set?/2">
+
+  <div class="detail-header">
+    <a href="#attribute_set?/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">attribute_set?(buffer, attr)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L448" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if attribute is set (stub).</p>
+  </section>
+</section>
+<section class="detail" id="clear_all_tab_stops/1">
+
+  <div class="detail-header">
+    <a href="#clear_all_tab_stops/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_all_tab_stops(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L215" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Clears all tab stops.</p>
+  </section>
+</section>
+<section class="detail" id="clear_selection/1">
+
+  <div class="detail-header">
+    <a href="#clear_selection/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_selection(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L346" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Clears selection (stub).</p>
+  </section>
+</section>
+<section class="detail" id="clear_tab_stop/1">
+
+  <div class="detail-header">
+    <a href="#clear_tab_stop/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_tab_stop(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L205" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Clears a tab stop at the current cursor position.</p>
+  </section>
+</section>
+<section class="detail" id="create_style/1">
+
+  <div class="detail-header">
+    <a href="#create_style/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">create_style(params)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L96" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Creates a text style from SGR parameters.</p>
+  </section>
+</section>
+<section class="detail" id="cursor_blinking?/1">
+
+  <div class="detail-header">
+    <a href="#cursor_blinking?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cursor_blinking?(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L301" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if cursor is blinking (stub).</p>
+  </section>
+</section>
+<section class="detail" id="cursor_visible?/1">
+
+  <div class="detail-header">
+    <a href="#cursor_visible?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cursor_visible?(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L296" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if cursor is visible (stub).</p>
+  </section>
+</section>
+<section class="detail" id="designate_charset/3">
+
+  <div class="detail-header">
+    <a href="#designate_charset/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">designate_charset(buffer, set, charset)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L473" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Designates charset (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_active_charset/1">
+
+  <div class="detail-header">
+    <a href="#get_active_charset/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_active_charset(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L161" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the currently active charset.</p>
+  </section>
+</section>
+<section class="detail" id="get_background/1">
+
+  <div class="detail-header">
+    <a href="#get_background/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_background(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L326" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets background color (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_charset/2">
+
+  <div class="detail-header">
+    <a href="#get_charset/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_charset(buffer, slot)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L135" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the active charset for a slot.</p>
+  </section>
+</section>
+<section class="detail" id="get_current_g_set/1">
+
+  <div class="detail-header">
+    <a href="#get_current_g_set/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_current_g_set(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L468" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets current G set (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_cursor_position/1">
+
+  <div class="detail-header">
+    <a href="#get_cursor_position/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_cursor_position(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L24" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the cursor position.</p>
+  </section>
+</section>
+<section class="detail" id="get_cursor_style/1">
+
+  <div class="detail-header">
+    <a href="#get_cursor_style/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_cursor_style(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L306" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets cursor style (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_default_style/1">
+
+  <div class="detail-header">
+    <a href="#get_default_style/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_default_style(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L89" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the default text style.</p>
+  </section>
+</section>
+<section class="detail" id="get_designated_charset/2">
+
+  <div class="detail-header">
+    <a href="#get_designated_charset/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_designated_charset(buffer, set)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L478" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets designated charset (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_foreground/1">
+
+  <div class="detail-header">
+    <a href="#get_foreground/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_foreground(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L321" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets foreground color (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_selection/1">
+
+  <div class="detail-header">
+    <a href="#get_selection/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_selection(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L351" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets selection (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_selection_boundaries/1">
+
+  <div class="detail-header">
+    <a href="#get_selection_boundaries/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_selection_boundaries(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L377" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets selection boundaries (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_selection_end/1">
+
+  <div class="detail-header">
+    <a href="#get_selection_end/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_selection_end(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L366" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets selection end (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_selection_start/1">
+
+  <div class="detail-header">
+    <a href="#get_selection_start/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_selection_start(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L356" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets selection start (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_set_attributes/1">
+
+  <div class="detail-header">
+    <a href="#get_set_attributes/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_set_attributes(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L453" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets set attributes (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_single_shift/1">
+
+  <div class="detail-header">
+    <a href="#get_single_shift/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_single_shift(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L463" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets single shift state (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_style/1">
+
+  <div class="detail-header">
+    <a href="#get_style/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_style(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L311" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets text style (stub).</p>
+  </section>
+</section>
+<section class="detail" id="get_text_in_region/5">
+
+  <div class="detail-header">
+    <a href="#get_text_in_region/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_text_in_region(buffer, x1, y1, x2, y2)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L405" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets text in region.</p>
+  </section>
+</section>
+<section class="detail" id="in_selection?/3">
+
+  <div class="detail-header">
+    <a href="#in_selection?/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">in_selection?(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L382" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if position is in selection (stub).</p>
+  </section>
+</section>
+<section class="detail" id="invoke_g_set/2">
+
+  <div class="detail-header">
+    <a href="#invoke_g_set/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">invoke_g_set(buffer, set)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L483" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Invokes G set (stub).</p>
+  </section>
+</section>
+<section class="detail" id="merge_styles/2">
+
+  <div class="detail-header">
+    <a href="#merge_styles/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">merge_styles(base, override)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L108" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Merges two styles, with the second taking precedence.</p>
+  </section>
+</section>
+<section class="detail" id="move_cursor/3">
+
+  <div class="detail-header">
+    <a href="#move_cursor/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_cursor(buffer, dx, dy)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L31" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Moves the cursor relative to its current position.</p>
+  </section>
+</section>
+<section class="detail" id="next_tab_stop/1">
+
+  <div class="detail-header">
+    <a href="#next_tab_stop/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">next_tab_stop(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L229" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Finds the next tab stop position from the current cursor.</p>
+  </section>
+</section>
+<section class="detail" id="reset_all_attributes/1">
+
+  <div class="detail-header">
+    <a href="#reset_all_attributes/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">reset_all_attributes(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L488" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Resets all attributes to defaults (stub).</p>
+  </section>
+</section>
+<section class="detail" id="reset_attribute/2">
+
+  <div class="detail-header">
+    <a href="#reset_attribute/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">reset_attribute(buffer, attr)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L495" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Resets specific attribute (stub).</p>
+  </section>
+</section>
+<section class="detail" id="reset_charset_state/1">
+
+  <div class="detail-header">
+    <a href="#reset_charset_state/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">reset_charset_state(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L500" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Resets charset state (stub).</p>
+  </section>
+</section>
+<section class="detail" id="reset_tab_stops/1">
+
+  <div class="detail-header">
+    <a href="#reset_tab_stops/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">reset_tab_stops(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L222" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Resets tab stops to default (every 8 columns).</p>
+  </section>
+</section>
+<section class="detail" id="restore_cursor/1">
+
+  <div class="detail-header">
+    <a href="#restore_cursor/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">restore_cursor(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L70" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Restores the saved cursor position.</p>
+  </section>
+</section>
+<section class="detail" id="save_cursor/1">
+
+  <div class="detail-header">
+    <a href="#save_cursor/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">save_cursor(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L63" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Saves the current cursor position.</p>
+  </section>
+</section>
+<section class="detail" id="select_charset/2">
+
+  <div class="detail-header">
+    <a href="#select_charset/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">select_charset(buffer, slot)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L152" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Selects which charset slot is active.</p>
+  </section>
+</section>
+<section class="detail" id="selection_active?/1">
+
+  <div class="detail-header">
+    <a href="#selection_active?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">selection_active?(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L505" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if selection is active (stub).</p>
+  </section>
+</section>
+<section class="detail" id="set_alternate_screen/2">
+
+  <div class="detail-header">
+    <a href="#set_alternate_screen/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_alternate_screen(buffer, use_alternate)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L179" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Switches between main and alternate screen buffers.</p>
+  </section>
+</section>
+<section class="detail" id="set_attribute/2">
+
+  <div class="detail-header">
+    <a href="#set_attribute/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_attribute(buffer, attr)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L510" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets specific attribute (stub).</p>
+  </section>
+</section>
+<section class="detail" id="set_background/2">
+
+  <div class="detail-header">
+    <a href="#set_background/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_background(buffer, color)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L515" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets background color (stub).</p>
+  </section>
+</section>
+<section class="detail" id="set_charset/3">
+
+  <div class="detail-header">
+    <a href="#set_charset/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_charset(buffer, slot, charset)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L117" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the active charset (G0, G1, G2, G3).</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_blink/2">
+
+  <div class="detail-header">
+    <a href="#set_cursor_blink/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_blink(buffer, blink)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L56" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets cursor blink state.</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_position/3">
+
+  <div class="detail-header">
+    <a href="#set_cursor_position/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_position(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L15" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the cursor position.</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_style/2">
+
+  <div class="detail-header">
+    <a href="#set_cursor_style/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_style(buffer, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L46" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets cursor style.</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_visibility/2">
+
+  <div class="detail-header">
+    <a href="#set_cursor_visibility/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_visibility(buffer, visible)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L523" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets cursor visibility (stub).</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_visible/2">
+
+  <div class="detail-header">
+    <a href="#set_cursor_visible/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_visible(buffer, visible)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L39" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets cursor visibility.</p>
+  </section>
+</section>
+<section class="detail" id="set_default_style/2">
+
+  <div class="detail-header">
+    <a href="#set_default_style/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_default_style(buffer, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L82" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the default text style for the buffer.</p>
+  </section>
+</section>
+<section class="detail" id="set_foreground/2">
+
+  <div class="detail-header">
+    <a href="#set_foreground/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_foreground(buffer, color)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L530" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets foreground color (stub).</p>
+  </section>
+</section>
+<section class="detail" id="set_tab_stop/1">
+
+  <div class="detail-header">
+    <a href="#set_tab_stop/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_tab_stop(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L195" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets a tab stop at the current cursor position.</p>
+  </section>
+</section>
+<section class="detail" id="start_selection/3">
+
+  <div class="detail-header">
+    <a href="#start_selection/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">start_selection(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L331" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Starts selection (stub).</p>
+  </section>
+</section>
+<section class="detail" id="translate_char/2">
+
+  <div class="detail-header">
+    <a href="#translate_char/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">translate_char(buffer, char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L169" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Translates a character according to the active charset.</p>
+  </section>
+</section>
+<section class="detail" id="update_selection/3">
+
+  <div class="detail-header">
+    <a href="#update_selection/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_selection(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L336" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Updates selection (stub).</p>
+  </section>
+</section>
+<section class="detail" id="update_style/2">
+
+  <div class="detail-header">
+    <a href="#update_style/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_style(buffer, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L316" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Updates text style (stub).</p>
+  </section>
+</section>
+<section class="detail" id="using_alternate_screen?/1">
+
+  <div class="detail-header">
+    <a href="#using_alternate_screen?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">using_alternate_screen?(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer/attributes.ex#L186" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if using alternate screen.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

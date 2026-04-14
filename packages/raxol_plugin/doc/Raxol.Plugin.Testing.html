@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Plugin v2.4.0">
+
+
+    <title>Raxol.Plugin.Testing — Raxol Plugin v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-D9A29B59.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Plugin
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Plugin</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Plugin.<wbr>Testing</span> 
+      <small class="app-vsn" translate="no">(Raxol Plugin v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Plugin.Testing.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/plugin/testing.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Test helpers for Raxol plugins.</p><p>Provides utilities for exercising plugin callbacks in isolation
+without starting the full plugin manager infrastructure.</p><h2 id="module-usage" class="section-heading"><a href="#module-usage" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Usage</span></h2><pre><code class="makeup elixir" translate="no"><span class="kn">use</span><span class="w"> </span><span class="nc">ExUnit.Case</span><span class="w">
+</span><span class="kn">import</span><span class="w"> </span><span class="nc">Raxol.Plugin.Testing</span><span class="w">
+
+</span><span class="n">test</span><span class="w"> </span><span class="s">&quot;handles events&quot;</span><span class="w"> </span><span class="k" data-group-id="5876360111-1">do</span><span class="w">
+  </span><span class="p" data-group-id="5876360111-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p" data-group-id="5876360111-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">setup_plugin</span><span class="p" data-group-id="5876360111-3">(</span><span class="nc">MyPlugin</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5876360111-4">%{</span><span class="ss">key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;value&quot;</span><span class="p" data-group-id="5876360111-4">}</span><span class="p" data-group-id="5876360111-3">)</span><span class="w">
+  </span><span class="n">assert_handles_event</span><span class="p" data-group-id="5876360111-5">(</span><span class="nc">MyPlugin</span><span class="p">,</span><span class="w"> </span><span class="ss">:some_event</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p" data-group-id="5876360111-5">)</span><span class="w">
+</span><span class="k" data-group-id="5876360111-1">end</span></code></pre>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#assert_halts_event/3" data-no-tooltip="" translate="no">assert_halts_event(module, event, state)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Asserts that a plugin halts a given event.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#assert_handles_command/4" data-no-tooltip="" translate="no">assert_handles_command(module, command, args, state)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Asserts that a plugin handles a command successfully.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#assert_handles_event/3" data-no-tooltip="" translate="no">assert_handles_event(module, event, state)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Asserts that a plugin handles an event without halting.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#setup_plugin/2" data-no-tooltip="" translate="no">setup_plugin(module, config \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Initializes a plugin module with the given config and returns its state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#simulate_lifecycle/2" data-no-tooltip="" translate="no">simulate_lifecycle(module, config \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Runs a plugin through its full lifecycle: init -&gt; enable -&gt; disable -&gt; terminate.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="assert_halts_event/3">
+
+  <div class="detail-header">
+    <a href="#assert_halts_event/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">assert_halts_event(module, event, state)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/plugin/testing.ex#L133" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> assert_halts_event(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">module</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()) :: :halt</pre>
+
+      </div>
+
+<p>Asserts that a plugin halts a given event.</p><p>Calls <code class="inline">module.filter_event(event, state)</code> and asserts the result is <code class="inline">:halt</code>.</p><h2 id="assert_halts_event/3-examples" class="section-heading"><a href="#assert_halts_event/3-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="n">assert_halts_event</span><span class="p" data-group-id="7085191053-1">(</span><span class="nc">MyPlugin</span><span class="p">,</span><span class="w"> </span><span class="ss">:blocked_event</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p" data-group-id="7085191053-1">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="assert_handles_command/4">
+
+  <div class="detail-header">
+    <a href="#assert_handles_command/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">assert_handles_command(module, command, args, state)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/plugin/testing.ex#L76" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> assert_handles_command(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">module</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">tuple</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()) ::
+  {<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()}</pre>
+
+      </div>
+
+<p>Asserts that a plugin handles a command successfully.</p><p>Calls <code class="inline">module.handle_command(command, args, state)</code> and asserts the
+result matches <code class="inline">{:ok, new_state, result}</code>. Returns <code class="inline">{new_state, result}</code>.</p><h2 id="assert_handles_command/4-examples" class="section-heading"><a href="#assert_handles_command/4-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="p" data-group-id="3885587343-1">{</span><span class="n">new_state</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p" data-group-id="3885587343-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">assert_handles_command</span><span class="p" data-group-id="3885587343-2">(</span><span class="nc">MyPlugin</span><span class="p">,</span><span class="w"> </span><span class="ss">:do_thing</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3885587343-3">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="3885587343-3">]</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p" data-group-id="3885587343-2">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="assert_handles_event/3">
+
+  <div class="detail-header">
+    <a href="#assert_handles_event/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">assert_handles_event(module, event, state)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/plugin/testing.ex#L46" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> assert_handles_event(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">module</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Asserts that a plugin handles an event without halting.</p><p>Calls <code class="inline">module.filter_event(event, state)</code> and asserts the result
+matches <code class="inline">{:ok, _}</code>. Returns the (possibly modified) event.</p><h2 id="assert_handles_event/3-examples" class="section-heading"><a href="#assert_handles_event/3-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="n">event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">assert_handles_event</span><span class="p" data-group-id="2428468758-1">(</span><span class="nc">MyPlugin</span><span class="p">,</span><span class="w"> </span><span class="ss">:click</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p" data-group-id="2428468758-1">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="setup_plugin/2">
+
+    <span id="setup_plugin/1"></span>
+
+  <div class="detail-header">
+    <a href="#setup_plugin/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">setup_plugin(module, config \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/plugin/testing.ex#L31" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> setup_plugin(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">module</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()}</pre>
+
+      </div>
+
+<p>Initializes a plugin module with the given config and returns its state.</p><p>Calls <code class="inline">module.init(config)</code> and asserts it returns <code class="inline">{:ok, state}</code>.</p><h2 id="setup_plugin/2-examples" class="section-heading"><a href="#setup_plugin/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="p" data-group-id="5996866874-1">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p" data-group-id="5996866874-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">setup_plugin</span><span class="p" data-group-id="5996866874-2">(</span><span class="nc">MyPlugin</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5996866874-3">%{</span><span class="p" data-group-id="5996866874-3">}</span><span class="p" data-group-id="5996866874-2">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="simulate_lifecycle/2">
+
+    <span id="simulate_lifecycle/1"></span>
+
+  <div class="detail-header">
+    <a href="#simulate_lifecycle/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">simulate_lifecycle(module, config \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/plugin/testing.ex#L107" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> simulate_lifecycle(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">module</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [{<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()}]</pre>
+
+      </div>
+
+<p>Runs a plugin through its full lifecycle: init -&gt; enable -&gt; disable -&gt; terminate.</p><p>Asserts each step succeeds. Returns a list of <code class="inline">{callback, result}</code> tuples
+for inspection.</p><h2 id="simulate_lifecycle/2-examples" class="section-heading"><a href="#simulate_lifecycle/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="n">steps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">simulate_lifecycle</span><span class="p" data-group-id="4220333455-1">(</span><span class="nc">MyPlugin</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4220333455-2">%{</span><span class="ss">option</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p" data-group-id="4220333455-2">}</span><span class="p" data-group-id="4220333455-1">)</span><span class="w">
+</span><span class="n">assert</span><span class="w"> </span><span class="n">length</span><span class="p" data-group-id="4220333455-3">(</span><span class="n">steps</span><span class="p" data-group-id="4220333455-3">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">4</span></code></pre>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_plugin/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_plugin/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Plugin.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

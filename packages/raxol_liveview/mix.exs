@@ -32,7 +32,7 @@ defmodule RaxolLiveView.MixProject do
   defp deps do
     [
       # Core dependency (Buffer, Events, etc.)
-      raxol_dep(:raxol_core, "~> 2.4", "../raxol_core", override: true),
+      raxol_dep(:raxol_core, "~> 2.4", "../raxol_core"),
 
       # PubSub for LiveView <-> Lifecycle communication
       {:phoenix_pubsub, "~> 2.1"},
@@ -49,11 +49,11 @@ defmodule RaxolLiveView.MixProject do
     ]
   end
 
-  defp raxol_dep(name, version, path, opts \\ []) do
+  defp raxol_dep(name, version, path) do
     if System.get_env("HEX_BUILD") || !File.dir?(path) do
-      if opts == [], do: {name, version}, else: {name, version, opts}
+      {name, version}
     else
-      {name, version, [path: path] ++ opts}
+      {name, version, path: path, override: true}
     end
   end
 

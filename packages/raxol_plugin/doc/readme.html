@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Plugin v2.4.0">
+
+
+    <title>Raxol Plugin — Raxol Plugin v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-D9A29B59.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Plugin
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-extra" id="main" data-type="extras">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Plugin</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>Raxol Plugin</h1>
+
+<a href="readme.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/README.md#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+<p>Plugin SDK for building extensible Raxol terminal applications.</p><p>Provides the <code class="inline">use Raxol.Plugin</code> macro, a public API facade, manifest validation, testing utilities, and a code generator. Wraps the 40-module plugin infrastructure in <code class="inline">raxol_core</code> with a clean, safe cross-package boundary.</p><h2 id="install" class="section-heading"><a href="#install" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Install</span></h2><pre><code class="makeup elixir" translate="no"><span class="c1"># mix.exs</span><span class="w">
+</span><span class="kd">def</span><span class="w"> </span><span class="nf">deps</span><span class="w"> </span><span class="k" data-group-id="6745701847-1">do</span><span class="w">
+  </span><span class="p" data-group-id="6745701847-2">[</span><span class="p" data-group-id="6745701847-3">{</span><span class="ss">:raxol_plugin</span><span class="p">,</span><span class="w"> </span><span class="ss">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;packages/raxol_plugin&quot;</span><span class="p" data-group-id="6745701847-3">}</span><span class="p" data-group-id="6745701847-2">]</span><span class="w">
+</span><span class="k" data-group-id="6745701847-1">end</span></code></pre><h2 id="modules" class="section-heading"><a href="#modules" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Modules</span></h2><table><thead><tr><th style="text-align: left;">Module</th><th style="text-align: left;">Purpose</th></tr></thead><tbody><tr><td style="text-align: left;"><a href="Raxol.Plugin.html"><code class="inline">Raxol.Plugin</code></a></td><td style="text-align: left;"><code class="inline">use</code> macro -- sets behaviour, 6 overridable callback defaults, <code class="inline">init/1</code> required</td></tr><tr><td style="text-align: left;"><a href="Raxol.Plugin.API.html"><code class="inline">Raxol.Plugin.API</code></a></td><td style="text-align: left;">Public facade: load, unload, enable, disable, list, get_state, reload (all try/catch guarded)</td></tr><tr><td style="text-align: left;"><a href="Raxol.Plugin.Manifest.html"><code class="inline">Raxol.Plugin.Manifest</code></a></td><td style="text-align: left;">Cross-package manifest builder with <code class="inline">validate/1</code></td></tr><tr><td style="text-align: left;"><a href="Raxol.Plugin.Testing.html"><code class="inline">Raxol.Plugin.Testing</code></a></td><td style="text-align: left;">ExUnit helpers: <code class="inline">setup_plugin</code>, <code class="inline">assert_handles_event</code>, <code class="inline">simulate_lifecycle</code></td></tr><tr><td style="text-align: left;"><a href="Mix.Tasks.Raxol.Gen.Plugin.html"><code class="inline">mix raxol.gen.plugin</code></a></td><td style="text-align: left;">Generator -- creates plugin module + test file skeleton</td></tr></tbody></table><h2 id="quick-start" class="section-heading"><a href="#quick-start" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Quick Start</span></h2><p>Generate a plugin:</p><pre><code class="makeup bash" translate="no"><span class="">mix raxol.gen.plugin MyPlugin
+</span></code></pre><p>Or write one by hand:</p><pre><code class="makeup elixir" translate="no"><span class="kd">defmodule</span><span class="w"> </span><span class="nc">MyPlugin</span><span class="w"> </span><span class="k" data-group-id="1491668949-1">do</span><span class="w">
+  </span><span class="kn">use</span><span class="w"> </span><span class="nc">Raxol.Plugin</span><span class="w">
+
+  </span><span class="na">@impl</span><span class="w"> </span><span class="no">true</span><span class="w">
+  </span><span class="kd">def</span><span class="w"> </span><span class="nf">init</span><span class="p" data-group-id="1491668949-2">(</span><span class="n">config</span><span class="p" data-group-id="1491668949-2">)</span><span class="w"> </span><span class="k" data-group-id="1491668949-3">do</span><span class="w">
+    </span><span class="p" data-group-id="1491668949-4">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1491668949-5">%{</span><span class="ss">enabled</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p">,</span><span class="w"> </span><span class="ss">config</span><span class="p">:</span><span class="w"> </span><span class="n">config</span><span class="p" data-group-id="1491668949-5">}</span><span class="p" data-group-id="1491668949-4">}</span><span class="w">
+  </span><span class="k" data-group-id="1491668949-3">end</span><span class="w">
+
+  </span><span class="na">@impl</span><span class="w"> </span><span class="no">true</span><span class="w">
+  </span><span class="kd">def</span><span class="w"> </span><span class="nf">handle_event</span><span class="p" data-group-id="1491668949-6">(</span><span class="ss">:some_event</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p" data-group-id="1491668949-6">)</span><span class="w"> </span><span class="k" data-group-id="1491668949-7">do</span><span class="w">
+    </span><span class="p" data-group-id="1491668949-8">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1491668949-9">%{</span><span class="n">state</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="ss">last_event</span><span class="p">:</span><span class="w"> </span><span class="n">data</span><span class="p" data-group-id="1491668949-9">}</span><span class="p" data-group-id="1491668949-8">}</span><span class="w">
+  </span><span class="k" data-group-id="1491668949-7">end</span><span class="w">
+</span><span class="k" data-group-id="1491668949-1">end</span></code></pre><p>Load and manage at runtime:</p><pre><code class="makeup elixir" translate="no"><span class="kn">alias</span><span class="w"> </span><span class="nc">Raxol.Plugin.API</span><span class="w">
+
+</span><span class="nc">API</span><span class="o">.</span><span class="n">load</span><span class="p" data-group-id="0881095128-1">(</span><span class="nc">MyPlugin</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0881095128-2">%{</span><span class="ss">setting</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;value&quot;</span><span class="p" data-group-id="0881095128-2">}</span><span class="p" data-group-id="0881095128-1">)</span><span class="w">
+</span><span class="nc">API</span><span class="o">.</span><span class="n">enable</span><span class="p" data-group-id="0881095128-3">(</span><span class="nc">MyPlugin</span><span class="p" data-group-id="0881095128-3">)</span><span class="w">
+</span><span class="nc">API</span><span class="o">.</span><span class="n">get_state</span><span class="p" data-group-id="0881095128-4">(</span><span class="nc">MyPlugin</span><span class="p" data-group-id="0881095128-4">)</span><span class="w">
+</span><span class="nc">API</span><span class="o">.</span><span class="n">disable</span><span class="p" data-group-id="0881095128-5">(</span><span class="nc">MyPlugin</span><span class="p" data-group-id="0881095128-5">)</span><span class="w">
+</span><span class="nc">API</span><span class="o">.</span><span class="n">unload</span><span class="p" data-group-id="0881095128-6">(</span><span class="nc">MyPlugin</span><span class="p" data-group-id="0881095128-6">)</span></code></pre><h2 id="testing" class="section-heading"><a href="#testing" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Testing</span></h2><pre><code class="makeup elixir" translate="no"><span class="kn">use</span><span class="w"> </span><span class="nc">ExUnit.Case</span><span class="w">
+</span><span class="kn">import</span><span class="w"> </span><span class="nc">Raxol.Plugin.Testing</span><span class="w">
+
+</span><span class="n">test</span><span class="w"> </span><span class="s">&quot;handles events&quot;</span><span class="w"> </span><span class="k" data-group-id="0208094042-1">do</span><span class="w">
+  </span><span class="p" data-group-id="0208094042-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p" data-group-id="0208094042-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">setup_plugin</span><span class="p" data-group-id="0208094042-3">(</span><span class="nc">MyPlugin</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0208094042-4">%{</span><span class="p" data-group-id="0208094042-4">}</span><span class="p" data-group-id="0208094042-3">)</span><span class="w">
+  </span><span class="n">assert_handles_event</span><span class="p" data-group-id="0208094042-5">(</span><span class="nc">MyPlugin</span><span class="p">,</span><span class="w"> </span><span class="ss">:some_event</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0208094042-6">%{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="0208094042-6">}</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p" data-group-id="0208094042-5">)</span><span class="w">
+</span><span class="k" data-group-id="0208094042-1">end</span></code></pre><pre><code class="makeup bash" translate="no"><span class="">cd packages/raxol_plugin &amp;&amp; MIX_ENV=test mix test  # 50 tests, 0 failures
+</span></code></pre><p>See <a href="../../docs/plugins/GUIDE.md">Plugin Guide</a> for development patterns.</p>
+
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+  </div>
+  <div class="bottom-actions-item">
+
+  </div>
+</div>
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_plugin/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_plugin/2.4.0">Hex Preview</a>
+
+                (<a href="https://preview.hex.pm/preview/raxol_plugin/2.4.0/show/README.md">current file</a>)
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Plugin.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

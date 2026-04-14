@@ -1,0 +1,3924 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>API Reference — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-extra" id="main" data-type="extras">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>API Reference <small class="app-vsn">Raxol Terminal v#2.4.0</small></h1>
+<a href="api-reference.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+      <a href="https://github.com/DROOdotFOO/raxol" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+    <section class="details-list">
+      <h2 id="modules" class="section-heading">Modules</h2>
+      <div class="summary">
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href=":termbox2_nif.html" translate="no">:termbox2_nif</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Termbox2 NIF for Elixir - A terminal UI library.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Command.Manager.html" translate="no">Command.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Stub module for backward compatibility.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="ElixirMake.Downloader.html" translate="no">ElixirMake.<wbr>Downloader</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The behaviour for downloader modules.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="ElixirMake.Precompiler.html" translate="no">ElixirMake.<wbr>Precompiler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The behaviour for precompiler modules.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>This module serves as a documentation reference for the ANSI terminal functionality.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Behaviours.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Behaviours</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Consolidated ANSI behaviours for terminal functionality.
+Consolidates: SixelGraphics.Behaviour, TerminalStateBehaviour, TextFormattingBehaviour.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Behaviours.KittyGraphics.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Behaviours.<wbr>KittyGraphics</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for Kitty graphics protocol support.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Behaviours.SixelGraphics.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Behaviours.<wbr>SixelGraphics</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for Sixel graphics support.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Behaviours.TerminalState.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Behaviours.<wbr>TerminalState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for managing terminal state saving and restoring.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Behaviours.TextFormatting.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Behaviours.<wbr>TextFormatting</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the behaviour for text formatting in the terminal.
+This includes handling text attributes, colors, and special text modes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Benchmark.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Benchmark</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides benchmarking capabilities for the ANSI handling system.
+Measures performance of parsing and processing ANSI sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.CachedParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>CachedParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Optimized ANSI parser with caching for common sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.CharacterSets.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>CharacterSets</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Consolidated character set management for the terminal emulator.
+Combines: Handler, StateManager, Translator, and core CharacterSets functionality.
+Supports G0, G1, G2, G3 character sets and their switching operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.CharacterSets.ASCII.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>CharacterSets.<wbr>ASCII</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>US ASCII character set identifier.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.CharacterSets.CharsetData.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>CharacterSets.<wbr>CharsetData</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Translation maps for all supported character sets.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.CharacterSets.DEC.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>CharacterSets.<wbr>DEC</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>DEC Special Graphics character set identifier.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.CharacterSets.Handler.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>CharacterSets.<wbr>Handler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles character set control sequences and state changes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.CharacterSets.StateManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>CharacterSets.<wbr>StateManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages character set state and operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.CharacterSets.Translator.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>CharacterSets.<wbr>Translator</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles character set translations and mappings.
+Delegates per-charset data lookups to CharsetData.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.CharacterSets.UK.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>CharacterSets.<wbr>UK</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>UK character set identifier.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.CharacterTranslations.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>CharacterTranslations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides character translation tables for different character sets.
+Maps characters between different character sets according to ANSI standards.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.DeviceStatus.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>DeviceStatus</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles terminal state queries and device status reports.
+This includes cursor position reports, device status reports,
+and terminal identification queries.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.ExtendedSequences.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>ExtendedSequences</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles extended ANSI sequences and provides improved integration with the screen buffer.
+Functional Programming Version - All try/catch blocks replaced with with statements.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.InputParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>InputParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Parses raw ANSI terminal input bytes into Raxol Event structs.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.KittyAnimation.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>KittyAnimation</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Animation support for the Kitty graphics protocol.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.KittyGraphics.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>KittyGraphics</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Complete Kitty graphics protocol support for terminal rendering.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.KittyParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>KittyParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles the parsing logic for Kitty graphics protocol sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.KittyParser.ParserState.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>KittyParser.<wbr>ParserState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Represents the state during parsing of a Kitty graphics data stream.
+Tracks control parameters, chunked data, and image buffers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Monitor.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Monitor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides monitoring capabilities for the ANSI handling system.
+Tracks performance metrics, errors, and sequence statistics.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Mouse.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Mouse</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Consolidated mouse handling for the terminal emulator.
+Combines MouseEvents and MouseTracking functionality.
+Supports various mouse tracking modes and event reporting.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Mouse.Events.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Mouse.<wbr>Events</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles mouse event reporting for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Mouse.Tracking.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Mouse.<wbr>Tracking</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles mouse tracking and focus tracking for the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Parser.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Parser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ANSI escape sequence parser for terminal emulation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.PngDecoder.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>PngDecoder</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pure Elixir PNG decoder using <code class="inline">:zlib</code>.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.SGR.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>SGR</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Consolidated SGR (Select Graphic Rendition) handling for ANSI escape sequences.
+Combines: SGR formatting, SGRHandler, and SGRProcessor functionality.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.SGR.Formatter.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>SGR.<wbr>Formatter</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>SGR parameter formatting for the Raxol Terminal ANSI TextFormatting module.
+Handles SGR parameter parsing, formatting, and attribute handling.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.SGR.Handler.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>SGR.<wbr>Handler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles parsing of SGR (Select Graphic Rendition) ANSI escape sequences.
+Translates SGR codes into updates on a TextFormatting style map.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.SGR.Processor.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>SGR.<wbr>Processor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Optimized SGR (Select Graphic Rendition) processor for ANSI escape sequences.
+Uses compile-time optimizations and pattern matching for maximum performance.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.SGRProcessor.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>SGRProcessor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Processes SGR (Select Graphic Rendition) ANSI escape sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.SequenceHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>SequenceHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles parsing and processing of ANSI escape sequences.
+This module extracts the ANSI sequence parsing logic from the main emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Sequences.Colors.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Sequences.<wbr>Colors</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ANSI Color Sequence Handler.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Sequences.Cursor.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Sequences.<wbr>Cursor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ANSI Cursor Sequence Handler.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Sequences.Modes.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Sequences.<wbr>Modes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ANSI Terminal Modes Sequence Handler.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.SixelDithering.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>SixelDithering</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Dithering algorithms for Sixel image color quantization.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.SixelGraphics.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>SixelGraphics</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Complete Sixel graphics support for terminal rendering.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.SixelPalette.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>SixelPalette</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles Sixel color palette management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.SixelParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>SixelParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles the parsing logic for Sixel graphics data streams within a DCS sequence.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.SixelParser.ParserState.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>SixelParser.<wbr>ParserState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Represents the state during the parsing of a Sixel graphics data stream.
+Tracks position, color, palette, and pixel buffer information.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.SixelRenderer.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>SixelRenderer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles rendering Sixel graphics data from a pixel buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.StateMachine.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>StateMachine</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A state machine for parsing ANSI escape sequences.
+This module provides a more efficient alternative to regex-based parsing.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.TerminalState.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>TerminalState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal state operations for ANSI escape sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.TextFormatting.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>TextFormatting</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Consolidated text formatting module for the terminal emulator.
+Combines Core, Attributes, and Colors functionality.
+Handles advanced text formatting features including double-width/height,
+text attributes, and color management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.TextFormatting.Attributes.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>TextFormatting.<wbr>Attributes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Text attribute handling for ANSI text formatting.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.TextFormatting.Colors.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>TextFormatting.<wbr>Colors</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Color handling utilities for ANSI text formatting.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.TextFormatting.Core.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>TextFormatting.<wbr>Core</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Core text formatting functionality.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.TextFormatting.SGR.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>TextFormatting.<wbr>SGR</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>SGR parameter formatting and parsing for text styles.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Utils.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Utils</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Consolidated ANSI utilities for terminal functionality.
+Combines: SixelPatternMap, AnsiProcessor, SequenceParser, AnsiParser, and Emitter.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Utils.AnsiParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Utils.<wbr>AnsiParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides comprehensive parsing for ANSI escape sequences.
+Determines the type of sequence and extracts its parameters.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Utils.AnsiProcessor.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Utils.<wbr>AnsiProcessor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Processes ANSI escape sequences for terminal control.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Utils.Emitter.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Utils.<wbr>Emitter</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ANSI escape sequence generation module.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Utils.SequenceParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Utils.<wbr>SequenceParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Helper module for parsing ANSI escape sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Utils.SixelPatternMap.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Utils.<wbr>SixelPatternMap</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides a mapping from Sixel characters to their 6-bit pixel patterns.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Window.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Window</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Consolidated window handling for the terminal emulator.
+Combines WindowEvents and WindowManipulation functionality.
+Supports window events, resizing, positioning, and state management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Window.Events.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Window.<wbr>Events</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles window events for terminal control.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ANSI.Window.Manipulation.html" translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>Window.<wbr>Manipulation</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles window manipulation sequences for terminal control.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.AdvancedFeatures.html" translate="no">Raxol.<wbr>Terminal.<wbr>AdvancedFeatures</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Implements advanced terminal features for modern terminal emulators.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages the terminal buffer state and operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.BufferManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>BufferManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Buffer manager for terminal operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.BufferServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>BufferServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Buffer server stub for test compatibility.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Cell.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Cell</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal cell operations and attributes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.CharEditor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>CharEditor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal character editing operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Charset.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Charset</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages character set state and operations for the screen buffer.
+This module handles character set designations, G-sets, and single shifts.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.ConcurrentBuffer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>ConcurrentBuffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A thread-safe buffer implementation using GenServer for concurrent access.
+Provides synchronous operations to ensure data integrity when multiple
+processes are reading/writing to the buffer simultaneously.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Content.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Content</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Compatibility adapter for buffer content operations.
+Forwards calls to Raxol.Terminal.ScreenBuffer.Operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Cursor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Cursor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages cursor state and operations for the screen buffer.
+This module handles cursor position, visibility, style, and blink state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.DamageTracker.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>DamageTracker</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Tracks damage regions in a terminal buffer for efficient rendering.
+Damage regions indicate areas that have changed and need to be redrawn.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Eraser.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Eraser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Compatibility adapter for buffer erasing operations.
+Forwards calls to Raxol.Terminal.ScreenBuffer.Operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Formatting.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Formatting</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages text formatting state and operations for the screen buffer.
+This module handles text attributes, colors, and style management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.LineEditor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>LineEditor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides functionality for line editing operations in the terminal buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.LineOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>LineOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides line-level operations for the screen buffer.
+This module handles operations like inserting, deleting, and manipulating lines.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.LineOperations.CharOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>LineOperations.<wbr>CharOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Character-level operations for buffer lines.
+Handles character insertion, deletion, and manipulation within lines.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.LineOperations.Deletion.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>LineOperations.<wbr>Deletion</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Line deletion operations for terminal buffers.
+Handles deletion of single and multiple lines, with support for scroll regions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.LineOperations.Insertion.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>LineOperations.<wbr>Insertion</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Line insertion operations for terminal buffers.
+Handles insertion of single and multiple lines with style support.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.LineOperations.Management.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>LineOperations.<wbr>Management</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Line management operations for terminal buffers.
+Handles line creation, retrieval, and manipulation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.LineOperations.Utils.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>LineOperations.<wbr>Utils</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Shared utility functions for line operations.
+Extracted to eliminate code duplication between Deletion and Insertion modules.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Operations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Operations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Compatibility adapter for consolidated buffer operations.
+Forwards calls to Raxol.Terminal.ScreenBuffer.Operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Paste.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Paste</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles text pasting operations for terminal buffers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Queries.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Queries</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles buffer state querying operations.
+This module provides functions for querying the state of the screen buffer,
+including dimensions, content, and selection state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.SafeManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>SafeManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Safe buffer manager that handles buffer operations with error recovery.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Scroll.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Scroll</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal scroll buffer module.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.ScrollRegion.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>ScrollRegion</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles scroll region operations for the screen buffer.
+This module manages the scroll region boundaries and provides functions
+for scrolling content within the defined region.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Scrollback.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Scrollback</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles scrollback buffer operations for the screen buffer.
+This module manages the history of lines that have scrolled off the screen,
+including adding, retrieving, and clearing scrollback content.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Scroller.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Scroller</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles scrolling operations for the terminal buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Selection.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Selection</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages text selection operations for the terminal.
+This module handles all selection-related operations including</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.TextFormatting.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>TextFormatting</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal text formatting operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Buffer.Writer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Buffer.<wbr>Writer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles writing characters and strings to the Raxol.Terminal.ScreenBuffer.
+Responsible for character width, bidirectional text segmentation, and cell creation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Cache.EvictionHelpers.html" translate="no">Raxol.<wbr>Terminal.<wbr>Cache.<wbr>EvictionHelpers</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Helper functions for cache eviction strategies.
+Provides shared implementations for LRU, LFU, and FIFO eviction policies.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Cache.System.html" translate="no">Raxol.<wbr>Terminal.<wbr>Cache.<wbr>System</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified caching system for the Raxol terminal emulator.
+This module provides a centralized caching mechanism that consolidates all caching
+operations across the terminal system, including</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Capabilities.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Capabilities.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal capabilities including detection, negotiation, and caching.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Capabilities.Types.html" translate="no">Raxol.<wbr>Terminal.<wbr>Capabilities.<wbr>Types</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines types and structures for terminal capabilities management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Cell.html" translate="no">Raxol.<wbr>Terminal.<wbr>Cell</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal character cell module.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.CellCached.html" translate="no">Raxol.<wbr>Terminal.<wbr>CellCached</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Cached version of Cell operations for performance optimization.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.CharacterHandling.html" translate="no">Raxol.<wbr>Terminal.<wbr>CharacterHandling</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles wide character and bidirectional text support for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.CharacterSets.html" translate="no">Raxol.<wbr>Terminal.<wbr>CharacterSets</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages character sets for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Charset.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Charset.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal character sets and encoding operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Charset.Maps.html" translate="no">Raxol.<wbr>Terminal.<wbr>Charset.<wbr>Maps</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides character mapping functions for different character sets.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Charset.Operations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Charset.<wbr>Operations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides operations for managing character sets and their state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Charset.Types.html" translate="no">Raxol.<wbr>Terminal.<wbr>Charset.<wbr>Types</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines types used across the charset modules.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.CharsetManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>CharsetManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages the terminal character sets.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Clipboard.html" translate="no">Raxol.<wbr>Terminal.<wbr>Clipboard</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides a high-level interface for clipboard operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Clipboard.Format.html" translate="no">Raxol.<wbr>Terminal.<wbr>Clipboard.<wbr>Format</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles clipboard content formatting and filtering.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Clipboard.History.html" translate="no">Raxol.<wbr>Terminal.<wbr>Clipboard.<wbr>History</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages clipboard history for the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Clipboard.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Clipboard.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages clipboard operations for the terminal, including copying and pasting text.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Clipboard.Store.html" translate="no">Raxol.<wbr>Terminal.<wbr>Clipboard.<wbr>Store</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages clipboard content storage and retrieval.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Clipboard.Sync.html" translate="no">Raxol.<wbr>Terminal.<wbr>Clipboard.<wbr>Sync</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles clipboard synchronization between different terminal instances.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ClipboardBehaviour.html" translate="no">Raxol.<wbr>Terminal.<wbr>ClipboardBehaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the behaviour for clipboard operations in the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Color.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Color.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal colors and color operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Color.TrueColor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Color.<wbr>TrueColor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>True color (24-bit RGB) support for Raxol terminal applications.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Color.TrueColor.AnsiCodes.html" translate="no">Raxol.<wbr>Terminal.<wbr>Color.<wbr>TrueColor.<wbr>AnsiCodes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Low-level ANSI color code helpers: 256-color and 16-color mapping,
+hex string parsing, and hex formatting.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Color.TrueColor.Conversion.html" translate="no">Raxol.<wbr>Terminal.<wbr>Color.<wbr>TrueColor.<wbr>Conversion</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Color space math for TrueColor: RGB/HSL/HSV/XYZ/Lab conversions
+and luminance calculations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Color.TrueColor.Detection.html" translate="no">Raxol.<wbr>Terminal.<wbr>Color.<wbr>TrueColor.<wbr>Detection</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal color capability detection via environment variables.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Color.TrueColor.Palette.html" translate="no">Raxol.<wbr>Terminal.<wbr>Color.<wbr>TrueColor.<wbr>Palette</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Named color constants and lookup for TrueColor.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Colors.html" translate="no">Raxol.<wbr>Terminal.<wbr>Colors</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal colors and color-related operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.CSIHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>CSIHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handlers for CSI (Control Sequence Introducer) commands.
+This is a simplified version that delegates to the available handler modules.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.CSIHandler.Cursor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>CSIHandler.<wbr>Cursor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles cursor-related CSI sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>CSIHandler.<wbr>CursorMovementHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles cursor movement operations for CSI sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.CSIHandler.ModeHandlers.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>CSIHandler.<wbr>ModeHandlers</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles CSI mode commands (Set Mode/Reset Mode).</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.CSIHandler.Screen.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>CSIHandler.<wbr>Screen</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles screen-related CSI sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.CSIHandler.ScreenHandlers.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>CSIHandler.<wbr>ScreenHandlers</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Screen handling utilities for CSI commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.Command.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>Command</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the structure for terminal commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.CommandServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>CommandServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified command handler that consolidates all terminal command processing.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.CommandsParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>CommandsParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles parsing of command parameters in terminal sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.CursorHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>CursorHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles cursor movement related CSI commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.CursorUtils.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>CursorUtils</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Shared utility functions for cursor handling commands.
+Eliminates code duplication between CursorHandler and CSIHandler.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.DeviceHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>DeviceHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles device-specific terminal commands like Device Attributes (DA) and Device Status Report (DSR).
+This module provides direct implementations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.Editor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>Editor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles editor-related terminal commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.EraseHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>EraseHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles terminal erase commands like Erase in Display (ED) and Erase in Line (EL).
+This module provides simple fallback implementations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal command processing and execution.
+This module is responsible for handling command parsing, validation, and execution.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.OSCHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>OSCHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Consolidated OSC (Operating System Command) handler for terminal control sequences.
+Combines all OSC handler functionality including window, clipboard, color, and selection operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.OSCHandler.Clipboard.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>OSCHandler.<wbr>Clipboard</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles clipboard-related OSC commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.OSCHandler.Color.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>OSCHandler.<wbr>Color</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles color-related OSC commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.OSCHandler.ColorPalette.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>OSCHandler.<wbr>ColorPalette</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles color palette OSC commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.OSCHandler.ColorParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>OSCHandler.<wbr>ColorParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Parses color specifications from OSC commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.OSCHandler.FontParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>OSCHandler.<wbr>FontParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Parses font specifications from OSC commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.OSCHandler.HyperlinkParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>OSCHandler.<wbr>HyperlinkParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Parses hyperlink specifications from OSC 8 commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.OSCHandler.Selection.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>OSCHandler.<wbr>Selection</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles selection-related OSC commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.OSCHandler.SelectionParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>OSCHandler.<wbr>SelectionParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Parses selection specifications from OSC commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.OSCHandler.Window.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>OSCHandler.<wbr>Window</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles window-related OSC commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.Processor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>Processor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles command processing for the terminal emulator.
+This module is responsible for parsing, validating, and executing terminal commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.Screen.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>Screen</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles screen manipulation commands in the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.Scrolling.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>Scrolling</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles scrolling operations for the terminal screen buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Commands.WindowHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Commands.<wbr>WindowHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles window-related commands and operations for the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles terminal settings and behavior, including</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.AnimationCache.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config.<wbr>AnimationCache</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages caching for terminal animations using the unified caching system.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.Application.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config.<wbr>Application</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal configuration application.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.Capabilities.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config.<wbr>Capabilities</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal capability detection and management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.ConfigValidator.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config.<wbr>ConfigValidator</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Validates terminal configuration settings.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.Defaults.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config.<wbr>Defaults</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Default terminal configuration values.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.EnvironmentAdapterBehaviour.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config.<wbr>EnvironmentAdapterBehaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the behaviour for terminal environment configuration.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal configuration including settings, preferences, and environment variables.
+This module is responsible for handling configuration operations and state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.Persistence.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config.<wbr>Persistence</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles persistence and migration of terminal configurations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.Profiles.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config.<wbr>Profiles</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal configuration profile management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.Schema.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config.<wbr>Schema</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Schema definitions for terminal configuration.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.Utils.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config.<wbr>Utils</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Utility functions for handling terminal configuration maps.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Config.Validation.html" translate="no">Raxol.<wbr>Terminal.<wbr>Config.<wbr>Validation</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Validation logic for terminal configuration.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ControlCodes.html" translate="no">Raxol.<wbr>Terminal.<wbr>ControlCodes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles C0 control codes and simple ESC sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Cursor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Cursor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides cursor manipulation functions for the terminal emulator.
+This module handles operations like moving the cursor, setting its visibility,
+and managing cursor state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Cursor.Callbacks.html" translate="no">Raxol.<wbr>Terminal.<wbr>Cursor.<wbr>Callbacks</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles GenServer callbacks for the cursor manager.
+Extracted from Raxol.Terminal.Cursor.Manager to reduce file size.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Cursor.CursorState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Cursor.<wbr>CursorState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles cursor state management operations for the terminal cursor.
+Extracted from Raxol.Terminal.Cursor.Manager to reduce file size.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Cursor.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Cursor.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages cursor state and operations in the terminal.
+Handles cursor position, visibility, style, and blinking state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Cursor.Movement.html" translate="no">Raxol.<wbr>Terminal.<wbr>Cursor.<wbr>Movement</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles cursor movement operations for the terminal cursor.
+Extracted from Raxol.Terminal.Cursor.Manager to reduce file size.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Cursor.Style.html" translate="no">Raxol.<wbr>Terminal.<wbr>Cursor.<wbr>Style</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles cursor style and visibility control for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Device.Status.html" translate="no">Raxol.<wbr>Terminal.<wbr>Device.<wbr>Status</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles device status reporting and attributes for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Display.AsciiArt.html" translate="no">Raxol.<wbr>Terminal.<wbr>Display.<wbr>AsciiArt</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ASCII art rendering system for the Raxol terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Driver.html" translate="no">Raxol.<wbr>Terminal.<wbr>Driver</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles raw terminal input/output and event generation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Driver.Behaviour.html" translate="no">Raxol.<wbr>Terminal.<wbr>Driver.<wbr>Behaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour specification for terminal drivers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Driver.Dispatch.html" translate="no">Raxol.<wbr>Terminal.<wbr>Driver.<wbr>Dispatch</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Event dispatching helpers for Driver: sends events to the dispatcher
+and handles initial resize notification.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Driver.EventTranslator.html" translate="no">Raxol.<wbr>Terminal.<wbr>Driver.<wbr>EventTranslator</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Translates termbox NIF events into Raxol.Core.Events.Event structs.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Driver.InputBuffer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Driver.<wbr>InputBuffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Input buffer management for Driver: accumulates bytes, detects incomplete
+escape sequences, and flushes complete sequences for parsing.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Driver.TermboxLifecycle.html" translate="no">Raxol.<wbr>Terminal.<wbr>Driver.<wbr>TermboxLifecycle</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Termbox NIF initialization, shutdown, and recovery helpers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Driver.TerminalSize.html" translate="no">Raxol.<wbr>Terminal.<wbr>Driver.<wbr>TerminalSize</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal size detection: termbox, stty, and fallback strategies.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Enterprise-grade terminal emulator with VT100/ANSI support and high-performance parsing.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.ANSIHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>ANSIHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles ANSI sequence processing for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Adapter.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Adapter</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Adapter module to make EmulatorLite compatible with existing code that
+expects the full Emulator struct.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Buffer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Buffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides buffer management functionality for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.BufferOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>BufferOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Buffer operation functions extracted from the main emulator module.
+Handles active buffer management and buffer switching operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.CommandHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>CommandHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles CSI/ESC/SGR/OSC and related command logic for the terminal emulator.
+Extracted from the main emulator module for clarity and maintainability.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Constructors.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Constructors</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles emulator constructor functions.
+This module extracts the constructor logic from the main emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Coordinator.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Coordinator</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Coordinates complex operations that require interaction between multiple
+terminal subsystems. This module handles the orchestration logic that
+was previously embedded in the main Emulator module.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Core.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Core</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles core emulator functionality including input processing and scrolling.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.CursorOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>CursorOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Cursor operation functions extracted from the main emulator module.
+Handles cursor movement, positioning, and blink operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Dimensions.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Dimensions</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Dimension and resize operation functions extracted from the main emulator module.
+Handles terminal resizing and dimension getters.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.EmulatorServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>EmulatorServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GenServer implementation for the Terminal Emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.EmulatorState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>EmulatorState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles state management for the terminal emulator.
+Provides functions for managing terminal state, modes, and character sets.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Factory.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Factory</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Emulator construction helpers: creates full (GenServer) and basic (struct-only) emulators.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Helpers.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Helpers</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Utility and helper functions for the terminal emulator.
+Extracted from the main emulator module for clarity and reuse.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Input.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Input</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles input processing for the terminal emulator.
+Provides functions for key event handling, command history, and input parsing.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.ModeOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>ModeOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Mode operation functions extracted from the main emulator module.
+Handles terminal mode setting and resetting operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.OptimizedInputProcessor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>OptimizedInputProcessor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Optimized input processing for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Output.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Output</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles output processing for the terminal emulator.
+Provides functions for output buffering, processing, and formatting.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Reset.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Reset</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles emulator reset and cleanup functions.
+This module extracts the reset logic from the main emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.SafeEmulator.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>SafeEmulator</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Enhanced terminal emulator with comprehensive error handling.
+Refactored to use functional error handling patterns instead of try/catch.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.ScreenOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>ScreenOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Screen operation functions extracted from the main emulator module.
+Handles screen clearing and line clearing operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.ScrollOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>ScrollOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Scroll operation functions extracted from the main emulator module.
+Handles scroll region management and scroll positioning.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Struct.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Struct</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides terminal emulator structure and related functionality.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Style.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Style</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles text styling and formatting for the terminal emulator.
+Provides functions for managing character attributes, colors, and text formatting.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Style.Behaviour.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Style.<wbr>Behaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the behaviour for terminal emulator style management.
+This includes handling text attributes, colors, and text formatting.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.Telemetry.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>Telemetry</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Telemetry instrumentation for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Emulator.TextOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Emulator.<wbr>TextOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Text operation functions extracted from the main emulator module.
+Handles text writing with charset translation and cursor updates.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.EmulatorBehaviour.html" translate="no">Raxol.<wbr>Terminal.<wbr>EmulatorBehaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the behaviour for the core Terminal Emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.EmulatorFactory.html" translate="no">Raxol.<wbr>Terminal.<wbr>EmulatorFactory</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Factory module for creating terminal emulator instances.
+This module is responsible for initializing and configuring new emulator instances.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.EmulatorLite.html" translate="no">Raxol.<wbr>Terminal.<wbr>EmulatorLite</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Lightweight terminal emulator for performance-critical paths.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Escape.Parsers.BaseParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>Escape.<wbr>Parsers.<wbr>BaseParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Base parser utilities for escape sequence parsers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Escape.Parsers.CSIParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>Escape.<wbr>Parsers.<wbr>CSIParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Parser for CSI (Control Sequence Introducer) escape sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Escape.Parsers.CSIParserCached.html" translate="no">Raxol.<wbr>Terminal.<wbr>Escape.<wbr>Parsers.<wbr>CSIParserCached</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Cached version of CSI parser for performance optimization.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Escape.Parsers.SCSParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>Escape.<wbr>Parsers.<wbr>SCSParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Parser for SCS (Select Character Set) escape sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.EscapeSequence.html" translate="no">Raxol.<wbr>Terminal.<wbr>EscapeSequence</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles parsing of ANSI escape sequences and other control sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Event.html" translate="no">Raxol.<wbr>Terminal.<wbr>Event</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the structure for terminal events.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Event.Handler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Event.<wbr>Handler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles terminal events including input events, state changes, and notifications.
+This module is responsible for processing and dispatching events to appropriate handlers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.EventHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>EventHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles various terminal events including mouse, keyboard, and focus events.
+This module is responsible for processing and responding to user interactions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.EventProcessor.html" translate="no">Raxol.<wbr>Terminal.<wbr>EventProcessor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Optimized event processing pipeline for terminal events.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Events.html" translate="no">Raxol.<wbr>Terminal.<wbr>Events</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Global event management for terminal interactions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Events.Handler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Events.<wbr>Handler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles terminal events and dispatches them to appropriate handlers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Extension.ExtensionManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Extension.<wbr>ExtensionManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal extensions, including loading, unloading, and executing extension commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Extension.ExtensionServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Extension.<wbr>ExtensionServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified extension management GenServer that provides a single interface for loading,
+unloading, and managing terminal extensions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Font.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Font.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages font operations and settings for the terminal, including font family,
+size, weight, and style.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Format.html" translate="no">Raxol.<wbr>Terminal.<wbr>Format</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified terminal text formatting and styling operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.HistoryBuffer.html" translate="no">Raxol.<wbr>Terminal.<wbr>HistoryBuffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal command history buffer operations.
+This module handles the storage and retrieval of command history.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.HistoryManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>HistoryManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal command history operations including history storage, retrieval, and navigation.
+This module is responsible for handling all history-related operations in the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.IO.IOServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>IO.<wbr>IOServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified input/output system for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.IOTerminal.html" translate="no">Raxol.<wbr>Terminal.<wbr>IOTerminal</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pure Elixir terminal I/O using OTP 28+ raw mode and IO.ANSI.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Image.html" translate="no">Raxol.<wbr>Terminal.<wbr>Image</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified facade for terminal inline image display.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ImageCache.html" translate="no">Raxol.<wbr>Terminal.<wbr>ImageCache</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ETS-backed cache for decoded and encoded terminal images.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles input processing for the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.Buffer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>Buffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages input buffering for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.CharacterProcessor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>CharacterProcessor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles character processing, translation, and writing to the terminal buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.ClipboardHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>ClipboardHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles clipboard operations for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.ControlSequenceHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>ControlSequenceHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles various control sequences for the terminal emulator.
+Includes CSI, OSC, DCS, PM, and APC sequence handling.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.CoreHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>CoreHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Core input handling functionality for the terminal emulator.
+Manages the main input buffer and cursor state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.Event.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>Event</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the base event struct and common types for input events.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.Event.KeyEvent.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>Event.<wbr>KeyEvent</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Represents a keyboard input event.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.Event.MouseEvent.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>Event.<wbr>MouseEvent</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Represents a mouse input event.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.FileDropHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>FileDropHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles file drag-and-drop operations for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.InputBuffer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>InputBuffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A simple data structure for managing input buffer state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.InputBufferUtils.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>InputBufferUtils</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Utility functions for Raxol.Terminal.Input.InputBuffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.InputHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>InputHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles input processing for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.InputProcessor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>InputProcessor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Processes input events for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal input processing including character input, key events, and input mode handling.
+This module is responsible for processing all input events and converting them into appropriate
+terminal actions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.MouseHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>MouseHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Comprehensive mouse event handling for terminal applications.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.SpecialKeys.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>SpecialKeys</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles special key combinations and their escape sequences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.TextProcessor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>TextProcessor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles text input processing for the terminal emulator.
+This module extracts the text input handling logic from the main emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Input.Types.html" translate="no">Raxol.<wbr>Terminal.<wbr>Input.<wbr>Types</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines shared types for the Raxol terminal input subsystem.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.InputHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>InputHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Main input handler module that coordinates between different input handling components.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Integration.html" translate="no">Raxol.<wbr>Terminal.<wbr>Integration</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Coordinates terminal integration components and provides a unified interface
+for terminal operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Integration.Buffer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Integration.<wbr>Buffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles buffer and cursor management for the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Integration.CellRenderer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Integration.<wbr>CellRenderer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Renders a list of cells to the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Integration.Config.html" translate="no">Raxol.<wbr>Terminal.<wbr>Integration.<wbr>Config</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages configuration for the terminal integration.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Integration.Main.html" translate="no">Raxol.<wbr>Terminal.<wbr>Integration.<wbr>Main</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Main integration module that provides a GenServer-based interface for terminal integration.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Integration.Renderer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Integration.<wbr>Renderer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles terminal output rendering and display management using Termbox2.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Integration.State.html" translate="no">Raxol.<wbr>Terminal.<wbr>Integration.<wbr>State</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages the state of the integrated terminal system.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.MemoryManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>MemoryManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages memory usage and limits for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Metrics.MetricsServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Metrics.<wbr>MetricsServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ETS-backed metrics collection and export module.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ModeHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>ModeHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles terminal mode management functions.
+This module extracts the mode handling logic from the main emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ModeManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>ModeManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal modes (DEC Private Modes, Standard Modes) and their effects.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ModeManager.SavedState.html" translate="no">Raxol.<wbr>Terminal.<wbr>ModeManager.<wbr>SavedState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles saved state operations for the mode manager.
+This includes saving and restoring cursor positions, screen states, and other terminal modes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ModeState.html" translate="no">Raxol.<wbr>Terminal.<wbr>ModeState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal mode state and transitions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Modes.html" translate="no">Raxol.<wbr>Terminal.<wbr>Modes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles terminal modes and state transitions for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Modes.Handlers.DECPrivateHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Modes.<wbr>Handlers.<wbr>DECPrivateHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles DEC Private mode operations and their side effects.
+Manages the implementation of DEC private mode changes and their effects on the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Modes.Handlers.MouseHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Modes.<wbr>Handlers.<wbr>MouseHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles mouse mode operations and their side effects.
+Manages different mouse reporting modes and their effects on the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Modes.Handlers.ScreenBufferHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Modes.<wbr>Handlers.<wbr>ScreenBufferHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles screen buffer mode operations and their side effects.
+Manages alternate screen buffer switching and related functionality.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Modes.Handlers.StandardHandler.html" translate="no">Raxol.<wbr>Terminal.<wbr>Modes.<wbr>Handlers.<wbr>StandardHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles standard mode operations and their side effects.
+Manages standard terminal modes like insert mode and line feed mode.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Modes.Types.ModeTypes.html" translate="no">Raxol.<wbr>Terminal.<wbr>Modes.<wbr>Types.<wbr>ModeTypes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines types and constants for terminal modes.
+Provides a centralized registry of all terminal modes and their properties.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Mouse.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Mouse.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages mouse events and tracking in the terminal, including button clicks,
+movement, and wheel events.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Mouse.MouseServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Mouse.<wbr>MouseServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides unified mouse handling functionality for the terminal emulator.
+This module handles mouse events, tracking, and state management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Operations.CursorOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Operations.<wbr>CursorOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Implements cursor-related operations for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Operations.ScreenOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Operations.<wbr>ScreenOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Implements screen-related operations for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Operations.ScrollOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Operations.<wbr>ScrollOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Implements scroll-related operations for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Operations.SelectionOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Operations.<wbr>SelectionOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Implements selection-related operations for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Operations.StateOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Operations.<wbr>StateOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Implements state-related operations for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Operations.TextOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Operations.<wbr>TextOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Implements text-related operations for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.OperationsBehaviour.html" translate="no">Raxol.<wbr>Terminal.<wbr>OperationsBehaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the behaviour for core terminal operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Output.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Output.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal output buffering, event processing, styling, and formatting.
+This module handles output events, applies styles and formatting rules, and tracks metrics.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Output.OutputProcessor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Output.<wbr>OutputProcessor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Processes output events for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.OutputBuffer.html" translate="no">Raxol.<wbr>Terminal.<wbr>OutputBuffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Simple output buffer implementation for terminal output.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.OutputManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>OutputManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal output operations including writing, flushing, and output buffering.
+This module is responsible for handling all output-related operations in the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.ParserState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>ParserState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Parser state for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.State.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>State.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages the state of the terminal parser, including escape sequences,
+control sequences, and parser modes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.State.ManagerRefactored.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>State.<wbr>ManagerRefactored</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Refactored version of Terminal Parser State Manager using pattern matching
+instead of cond statements.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.StateBehaviour.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>StateBehaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the behaviour for parser states.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.StateManagerBehaviour.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>StateManagerBehaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for terminal parser state management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.States.CSIEntryState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>States.<wbr>CSIEntryState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles the CSI Entry state in the terminal parser.
+This state is entered after receiving an ESC [ sequence.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.States.CSIIntermediateState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>States.<wbr>CSIIntermediateState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles the :csi_intermediate state of the terminal parser.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.States.CSIParamState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>States.<wbr>CSIParamState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles the :csi_param state of the terminal parser.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.States.DCSEntryState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>States.<wbr>DCSEntryState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles the :dcs_entry state of the terminal parser.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>States.<wbr>DCSPassthroughMaybeSTState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles the :dcs_passthrough_maybe_st state of the terminal parser.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.States.DCSPassthroughState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>States.<wbr>DCSPassthroughState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles the :dcs_passthrough state of the terminal parser.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.States.DesignateCharsetState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>States.<wbr>DesignateCharsetState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles the :designate_charset state of the terminal parser.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.States.EscapeState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>States.<wbr>EscapeState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles the :escape state of the terminal parser.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.States.GroundState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>States.<wbr>GroundState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles parsing in the ground state, the default state of the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.States.OSCStringMaybeSTState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>States.<wbr>OSCStringMaybeSTState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles the :osc_string_maybe_st state of the terminal parser.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Parser.States.OSCStringState.html" translate="no">Raxol.<wbr>Terminal.<wbr>Parser.<wbr>States.<wbr>OSCStringState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles the OSC String state in the terminal parser.
+This state is entered when an OSC sequence is initiated.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ParserState.html" translate="no">Raxol.<wbr>Terminal.<wbr>ParserState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Alias module for parser state functionality.
+This module delegates to the actual implementation in Parser.ParserState.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ParserStateManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>ParserStateManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Consolidated terminal parser state manager combining simple emulator operations with
+comprehensive parser state management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Plugin.DependencyResolver.html" translate="no">Raxol.<wbr>Terminal.<wbr>Plugin.<wbr>DependencyResolver</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles plugin dependency resolution for the terminal emulator.
+This module extracts the plugin dependency resolution logic from the main emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Plugin.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Plugin.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal plugins with advanced features</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Plugin.PluginServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Plugin.<wbr>PluginServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified plugin system for the Raxol terminal emulator.
+Handles themes, scripting, and extensions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Registry.html" translate="no">Raxol.<wbr>Terminal.<wbr>Registry</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Registry for terminal processes and components.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Renderer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Renderer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal renderer module.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Rendering.Backend.html" translate="no">Raxol.<wbr>Terminal.<wbr>Rendering.<wbr>Backend</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour definition for terminal rendering backends.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Rendering.CachedStyleRenderer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Rendering.<wbr>CachedStyleRenderer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>High-performance terminal renderer with style string caching.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Rendering.GPUAccelerator.html" translate="no">Raxol.<wbr>Terminal.<wbr>Rendering.<wbr>GPUAccelerator</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GPU-accelerated rendering backend for Raxol terminals using Metal (macOS) and Vulkan.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Rendering.GPURenderer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Rendering.<wbr>GPURenderer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GPU-accelerated terminal renderer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Rendering.LigatureRenderer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Rendering.<wbr>LigatureRenderer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Programming font ligature rendering system for Raxol terminals.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Rendering.OptimizedStyleRenderer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Rendering.<wbr>OptimizedStyleRenderer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Phase 3 optimized terminal renderer with efficient style handling.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Rendering.RenderServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Rendering.<wbr>RenderServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides a unified interface for terminal rendering operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Screen.html" translate="no">Raxol.<wbr>Terminal.<wbr>Screen</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides screen manipulation functions for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages the terminal's screen buffer state (grid, scrollback, selection).
+This module serves as the main interface for terminal buffer operations,
+delegating specific operations to specialized modules in Raxol.Terminal.Buffer.*.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.Attributes.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>Attributes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages buffer attributes including formatting, charset, and cursor state.
+Consolidates: Formatting, TextFormatting, Charset, Cursor functionality.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.BehaviourImpl.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>BehaviourImpl</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Implements behaviour callbacks for the terminal screen buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.Charset.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>Charset</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles character set operations for the screen buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.Core.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>Core</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Core functionality for screen buffer creation, initialization, and basic queries.
+Consolidates: Initializer, Common, Helpers, and basic state management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.DataAdapter.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>DataAdapter</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Data structure adapter for ScreenBuffer operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.EraseOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>EraseOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles all erase operations for the terminal screen buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages buffer lifecycle, memory tracking, damage regions, and buffer switching.
+Consolidates: Manager, UnifiedManager, SafeManager, EnhancedManager, DamageTracker.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.MemoryUtils.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>MemoryUtils</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles memory usage calculations for the terminal screen buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.Operations.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>Operations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>All buffer mutation operations.
+Consolidates: Operations, Ops, OperationsCached, Writer, Updater, CharEditor,
+LineOperations, Eraser, Content, Paste functionality.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.Operations.Erasing.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>Operations.<wbr>Erasing</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Erasing operations for the screen buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.RegionOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>RegionOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles region operations for the terminal screen buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.Screen.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>Screen</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles screen buffer operations for the terminal emulator.
+This module provides functions for managing the screen state, including
+clearing, erasing, and marking damaged regions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.ScrollOps.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>ScrollOps</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Scroll operations for ScreenBuffer: region management and scroll up/down.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.ScrollRegion.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>ScrollRegion</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages scroll region boundaries for the screen buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.Selection.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>Selection</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Text selection operations for the screen buffer.
+Handles selection creation, updates, text extraction, and clipboard operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBuffer.SharedOperations.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBuffer.<wbr>SharedOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Shared operations for screen buffer modules to eliminate code duplication.
+This module contains common functionality used across different screen buffer implementations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBufferAdapter.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBufferAdapter</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Backward-compatible adapter that maps the old ScreenBuffer API to the new consolidated modules.
+This allows existing code to work without changes while we migrate to the consolidated architecture.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenBufferBehaviour.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBufferBehaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the behaviour for screen buffer operations in the terminal.
+This module specifies the callbacks that must be implemented by any module
+that wants to act as a screen buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages screen buffer operations for the terminal emulator.
+This module handles operations related to the main and alternate screen buffers,
+including buffer switching, initialization, and state management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.ScreenUpdater.html" translate="no">Raxol.<wbr>Terminal.<wbr>ScreenUpdater</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles screen update operations for the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Script.ScriptServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Script.<wbr>ScriptServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified scripting system for the Raxol terminal emulator.
+Handles script execution, management, and integration with the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Scroll.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Scroll.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal scrolling operations with advanced features.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Scroll.Optimizer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Scroll.<wbr>Optimizer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles scroll optimization for better performance.
+Dynamically adjusts batch size based on recent scroll patterns and (optionally) performance metrics.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Scroll.PatternAnalyzer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Scroll.<wbr>PatternAnalyzer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Shared utilities for analyzing scroll patterns.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Scroll.Predictor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Scroll.<wbr>Predictor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles predictive scrolling operations for the terminal.
+Tracks recent scrolls and provides pattern analysis for smarter prediction.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Scroll.ScrollServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Scroll.<wbr>ScrollServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified scroll management system for the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Scroll.Sync.html" translate="no">Raxol.<wbr>Terminal.<wbr>Scroll.<wbr>Sync</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles scroll synchronization across terminal splits.
+Tracks recent sync events for analytics and smarter sync strategies.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Scrollback.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Scrollback.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal scrollback buffer operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.SearchBuffer.html" translate="no">Raxol.<wbr>Terminal.<wbr>SearchBuffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages search state, options, matches, and history for terminal search operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.SearchManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>SearchManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal search operations including text search, pattern matching, and search history.
+This module is responsible for handling all search-related operations in the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Selection.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Selection.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages text selection operations in the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Session.html" translate="no">Raxol.<wbr>Terminal.<wbr>Session</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal session module.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Session.Serializer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Session.<wbr>Serializer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles serialization and deserialization of terminal session state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Session.Storage.html" translate="no">Raxol.<wbr>Terminal.<wbr>Session.<wbr>Storage</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles persistence of terminal sessions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.SessionManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>SessionManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal multiplexing system providing tmux-like session management for Raxol.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.SessionManager.Cleanup.html" translate="no">Raxol.<wbr>Terminal.<wbr>SessionManager.<wbr>Cleanup</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Session cleanup: expired session removal and resource monitoring.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.SessionManager.Client.html" translate="no">Raxol.<wbr>Terminal.<wbr>SessionManager.<wbr>Client</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Client connection to a session.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.SessionManager.Helpers.html" translate="no">Raxol.<wbr>Terminal.<wbr>SessionManager.<wbr>Helpers</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Helper functions for SessionManager operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.SessionManager.Pane.html" translate="no">Raxol.<wbr>Terminal.<wbr>SessionManager.<wbr>Pane</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal pane within a window.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.SessionManager.Persistence.html" translate="no">Raxol.<wbr>Terminal.<wbr>SessionManager.<wbr>Persistence</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Session persistence: save/restore sessions to/from disk.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.SessionManager.Session.html" translate="no">Raxol.<wbr>Terminal.<wbr>SessionManager.<wbr>Session</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal session structure.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.SessionManager.StateQueries.html" translate="no">Raxol.<wbr>Terminal.<wbr>SessionManager.<wbr>StateQueries</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>State query helpers for SessionManager: finding panes/windows and building summaries.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.SessionManager.Window.html" translate="no">Raxol.<wbr>Terminal.<wbr>SessionManager.<wbr>Window</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal window within a session.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.SessionManager.WindowFactory.html" translate="no">Raxol.<wbr>Terminal.<wbr>SessionManager.<wbr>WindowFactory</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Window and pane creation helpers for SessionManager.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Split.SplitManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Split.<wbr>SplitManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal split windows and panes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.State.html" translate="no">Raxol.<wbr>Terminal.<wbr>State</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides state management for the terminal emulator.
+This module handles operations like creating new states, saving and restoring states,
+and managing state transitions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.State.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>State.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>State manager for terminal emulator state.
+Provides functions for managing modes, attributes, and state stack.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.StateManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>StateManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal state transitions and state stack operations.
+This module is responsible for maintaining and manipulating the terminal's state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Style.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Style.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages text styling and formatting for the terminal emulator.
+This module provides a clean interface for managing text styles, colors, and attributes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Style.StyleProcessor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Style.<wbr>StyleProcessor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles style management for the terminal emulator.
+This module extracts the style handling logic from the main emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.StyleBuffer.html" translate="no">Raxol.<wbr>Terminal.<wbr>StyleBuffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal style state and operations.
+This module handles text attributes, colors, and formatting for terminal output.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.StyleManager.html" translate="no">Raxol.<wbr>Terminal.<wbr>StyleManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal style operations including colors, attributes, and formatting.
+This module is responsible for handling all style-related operations in the terminal.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Supervisor.html" translate="no">Raxol.<wbr>Terminal.<wbr>Supervisor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Supervisor for terminal-related processes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Sync.Component.html" translate="no">Raxol.<wbr>Terminal.<wbr>Sync.<wbr>Component</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the structure for synchronized components.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Sync.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Sync.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages synchronization between different terminal components (splits, windows, tabs).
+Provides a high-level interface for component synchronization and state management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Sync.Protocol.html" translate="no">Raxol.<wbr>Terminal.<wbr>Sync.<wbr>Protocol</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the synchronization protocol for terminal components.
+Handles message formats, versioning, and conflict resolution strategies.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Sync.SyncServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Sync.<wbr>SyncServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified synchronization system for the Raxol terminal emulator.
+This module provides centralized synchronization mechanisms for</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Sync.System.html" translate="no">Raxol.<wbr>Terminal.<wbr>Sync.<wbr>System</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified synchronization system for the terminal emulator.
+Handles synchronization between splits, windows, and tabs with different consistency levels.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Tab.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Tab.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal tabs and their associated sessions.
+This module handles</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Tab.TabServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Tab.<wbr>TabServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides unified tab management functionality for the terminal emulator.
+This module handles tab creation, switching, state management, and configuration.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Tab.WindowIntegration.html" translate="no">Raxol.<wbr>Terminal.<wbr>Tab.<wbr>WindowIntegration</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Integration module for managing tabs and their associated windows.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.TelemetryLogger.html" translate="no">Raxol.<wbr>Terminal.<wbr>TelemetryLogger</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Logs all Raxol.Terminal telemetry events for observability and debugging.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.TerminalParser.html" translate="no">Raxol.<wbr>Terminal.<wbr>TerminalParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Parses raw byte streams into terminal events and commands.
+Handles escape sequences (CSI, OSC, DCS, etc.) and plain text.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.TerminalUtils.html" translate="no">Raxol.<wbr>Terminal.<wbr>TerminalUtils</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Utility functions for terminal operations, providing cross-platform and
+consistent handling of terminal capabilities and dimensions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.TextFormatting.html" translate="no">Raxol.<wbr>Terminal.<wbr>TextFormatting</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Alias module for Raxol.Terminal.ANSI.TextFormatting.
+This module re-exports the functionality from ANSI.TextFormatting to maintain compatibility.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Theme.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Theme.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages terminal themes with advanced features</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Theme.ThemeServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Theme.<wbr>ThemeServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified theme system for the Raxol terminal emulator.
+Handles theme management, preview, switching, and customization.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Tooltip.html" translate="no">Raxol.<wbr>Terminal.<wbr>Tooltip</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Tooltip display functionality for terminal UI.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Unicode.html" translate="no">Raxol.<wbr>Terminal.<wbr>Unicode</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unicode handling utilities for terminal rendering.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Validation.html" translate="no">Raxol.<wbr>Terminal.<wbr>Validation</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Stub module for terminal input validation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Window.html" translate="no">Raxol.<wbr>Terminal.<wbr>Window</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Represents a terminal window with its properties and state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Window.Manager.html" translate="no">Raxol.<wbr>Terminal.<wbr>Window.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Refactored Window.Manager that delegates to GenServer implementation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Window.Manager.NavigationOps.html" translate="no">Raxol.<wbr>Terminal.<wbr>Window.<wbr>Manager.<wbr>NavigationOps</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pure-functional helpers for spatial navigation and position registration
+within the WindowManagerServer state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Window.Manager.Operations.html" translate="no">Raxol.<wbr>Terminal.<wbr>Window.<wbr>Manager.<wbr>Operations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Operations module for window management functionality.
+Handles all the complex logic for window creation, updates, and hierarchy management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Window.Manager.StateOps.html" translate="no">Raxol.<wbr>Terminal.<wbr>Window.<wbr>Manager.<wbr>StateOps</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pure functional state operations for the WindowManagerServer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Window.Manager.WindowManagerServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Window.<wbr>Manager.<wbr>WindowManagerServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GenServer implementation for terminal window management in Raxol.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Window.Registry.html" translate="no">Raxol.<wbr>Terminal.<wbr>Window.<wbr>Registry</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Registry for managing multiple terminal windows.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Terminal.Window.WindowServer.html" translate="no">Raxol.<wbr>Terminal.<wbr>Window.<wbr>WindowServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A unified window manager for terminal applications.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="RaxolTerminal.html" translate="no">RaxolTerminal</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Terminal emulation and rendering for Elixir.</p></div>
+
+</div>
+
+      </div>
+    </section>
+
+
+    <section class="details-list">
+      <h2 id="tasks" class="section-heading">Mix Tasks</h2>
+      <div class="summary">
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Mix.Tasks.Compile.ElixirMake.html" translate="no">mix compile.<wbr>elixir_make</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Runs <code class="inline">make</code> in the current project.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Mix.Tasks.ElixirMake.Checksum.html" translate="no">mix elixir_make.<wbr>checksum</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A task responsible for downloading the precompiled NIFs for a given module.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Mix.Tasks.ElixirMake.Precompile.html" translate="no">mix elixir_make.<wbr>precompile</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Precompiles the given project for all targets.</p></div>
+
+</div>
+
+      </div>
+    </section>
+
+</div>
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

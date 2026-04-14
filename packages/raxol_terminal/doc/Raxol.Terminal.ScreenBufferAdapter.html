@@ -1,0 +1,3577 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.ScreenBufferAdapter — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>ScreenBufferAdapter</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.ScreenBufferAdapter.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Backward-compatible adapter that maps the old ScreenBuffer API to the new consolidated modules.
+This allows existing code to work without changes while we migrate to the consolidated architecture.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-types summary">
+  <h3>
+    <a href="#types">Types</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:t/0" data-no-tooltip="" translate="no">t()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear/1" data-no-tooltip="" translate="no">clear(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#clear/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.clear/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_all_tab_stops/1" data-no-tooltip="" translate="no">clear_all_tab_stops(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#clear_all_tab_stops/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.clear_all_tab_stops/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_damage_regions/1" data-no-tooltip="" translate="no">clear_damage_regions(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_line/2" data-no-tooltip="" translate="no">clear_line(buffer, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#clear_line/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.clear_line/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_region/5" data-no-tooltip="" translate="no">clear_region(buffer, x, y, width, height)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#clear_region/5"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.clear_region/5</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_scrollback/1" data-no-tooltip="" translate="no">clear_scrollback(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_selection/1" data-no-tooltip="" translate="no">clear_selection(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#clear_selection/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.clear_selection/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_tab_stop/1" data-no-tooltip="" translate="no">clear_tab_stop(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#clear_tab_stop/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.clear_tab_stop/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_to_beginning_of_line/1" data-no-tooltip="" translate="no">clear_to_beginning_of_line(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#clear_to_beginning_of_line/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.clear_to_beginning_of_line/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_to_beginning_of_screen/1" data-no-tooltip="" translate="no">clear_to_beginning_of_screen(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#clear_to_beginning_of_screen/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.clear_to_beginning_of_screen/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_to_end_of_line/1" data-no-tooltip="" translate="no">clear_to_end_of_line(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#clear_to_end_of_line/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.clear_to_end_of_line/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_to_end_of_screen/1" data-no-tooltip="" translate="no">clear_to_end_of_screen(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#clear_to_end_of_screen/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.clear_to_end_of_screen/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#contains?/3" data-no-tooltip="" translate="no">contains?(buffer, x, y)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#copy_region/7" data-no-tooltip="" translate="no">copy_region(buffer, src_x, src_y, width, height, dest_x, dest_y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#copy_region/7"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.copy_region/7</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_style/1" data-no-tooltip="" translate="no">create_style(params)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#create_style/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.create_style/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cursor_position/1" data-no-tooltip="" translate="no">cursor_position(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cursor_position/3" data-no-tooltip="" translate="no">cursor_position(buffer, x, y)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cursor_style/2" data-no-tooltip="" translate="no">cursor_style(buffer, style)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cursor_visible/2" data-no-tooltip="" translate="no">cursor_visible(buffer, visible)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#delete_char/1" data-no-tooltip="" translate="no">delete_char(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#delete_char/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.delete_char/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#delete_line/2" data-no-tooltip="" translate="no">delete_line(buffer, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#delete_line/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.delete_line/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase/1" data-no-tooltip="" translate="no">erase(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_line/2" data-no-tooltip="" translate="no">erase_line(buffer, y)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_line/5" data-no-tooltip="" translate="no">erase_line(buffer, y, x, width, style)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_region/5" data-no-tooltip="" translate="no">erase_region(buffer, x, y, w, h)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_screen/1" data-no-tooltip="" translate="no">erase_screen(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#expand_selection_to_word/1" data-no-tooltip="" translate="no">expand_selection_to_word(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#expand_selection_to_word/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.expand_selection_to_word/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#extend_selection/3" data-no-tooltip="" translate="no">extend_selection(buffer, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#extend_selection/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.extend_selection/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#fill_region/6" data-no-tooltip="" translate="no">fill_region(buffer, x, y, width, height, char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#fill_region/6"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.fill_region/6</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#fill_region/7" data-no-tooltip="" translate="no">fill_region(buffer, x, y, width, height, char, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#fill_region/7"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.fill_region/7</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_active_charset/1" data-no-tooltip="" translate="no">get_active_charset(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#get_active_charset/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.get_active_charset/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_cell/3" data-no-tooltip="" translate="no">get_cell(buffer, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#get_cell/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.get_cell/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_char/3" data-no-tooltip="" translate="no">get_char(buffer, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#get_char/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.get_char/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_charset/2" data-no-tooltip="" translate="no">get_charset(buffer, slot)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#get_charset/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.get_charset/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_cursor_position/1" data-no-tooltip="" translate="no">get_cursor_position(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#get_cursor_position/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.get_cursor_position/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_damage_regions/1" data-no-tooltip="" translate="no">get_damage_regions(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_default_style/1" data-no-tooltip="" translate="no">get_default_style(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#get_default_style/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.get_default_style/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_dimensions/1" data-no-tooltip="" translate="no">get_dimensions(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#get_dimensions/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.get_dimensions/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_height/1" data-no-tooltip="" translate="no">get_height(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#get_height/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.get_height/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_line/2" data-no-tooltip="" translate="no">get_line(buffer, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#get_line/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.get_line/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_lines/1" data-no-tooltip="" translate="no">get_lines(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_scroll_position/1" data-no-tooltip="" translate="no">get_scroll_position(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.ScrollOps.html#get_scroll_position/1"><code class="inline">Raxol.Terminal.ScreenBuffer.ScrollOps.get_scroll_position/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_scroll_region/1" data-no-tooltip="" translate="no">get_scroll_region(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.ScrollOps.html#get_scroll_region/1"><code class="inline">Raxol.Terminal.ScreenBuffer.ScrollOps.get_scroll_region/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_scrollback/1" data-no-tooltip="" translate="no">get_scrollback(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_scrollback/2" data-no-tooltip="" translate="no">get_scrollback(buffer, limit)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_selected_lines/1" data-no-tooltip="" translate="no">get_selected_lines(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#get_selected_lines/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.get_selected_lines/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_selected_text/1" data-no-tooltip="" translate="no">get_selected_text(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#get_selected_text/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.get_selected_text/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_selection/1" data-no-tooltip="" translate="no">get_selection(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#get_selection/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.get_selection/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_text/1" data-no-tooltip="" translate="no">get_text(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_visible_lines/1" data-no-tooltip="" translate="no">get_visible_lines(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_width/1" data-no-tooltip="" translate="no">get_width(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#get_width/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.get_width/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#index/1" data-no-tooltip="" translate="no">index(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#insert_char/2" data-no-tooltip="" translate="no">insert_char(buffer, char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#insert_char/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.insert_char/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#insert_char/3" data-no-tooltip="" translate="no">insert_char(buffer, char, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#insert_char/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.insert_char/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#insert_line/2" data-no-tooltip="" translate="no">insert_line(buffer, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#insert_line/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.insert_line/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#mark_damaged/5" data-no-tooltip="" translate="no">mark_damaged(buffer, x, y, width, height)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#merge_styles/2" data-no-tooltip="" translate="no">merge_styles(base, override)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#merge_styles/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.merge_styles/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_cursor/3" data-no-tooltip="" translate="no">move_cursor(buffer, dx, dy)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#move_cursor/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.move_cursor/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#new/2" data-no-tooltip="" translate="no">new(width, height)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#new/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.new/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#new/3" data-no-tooltip="" translate="no">new(width, height, scrollback_limit)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#new/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.new/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#next_tab_stop/1" data-no-tooltip="" translate="no">next_tab_stop(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#next_tab_stop/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.next_tab_stop/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#position_in_selection?/3" data-no-tooltip="" translate="no">position_in_selection?(buffer, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#position_in_selection?/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.position_in_selection?/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#put_line/3" data-no-tooltip="" translate="no">put_line(buffer, y, line)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reset_tab_stops/1" data-no-tooltip="" translate="no">reset_tab_stops(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#reset_tab_stops/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.reset_tab_stops/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#resize/3" data-no-tooltip="" translate="no">resize(buffer, new_width, new_height)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#resize/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.resize/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#restore_cursor/1" data-no-tooltip="" translate="no">restore_cursor(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#restore_cursor/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.restore_cursor/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reverse_index/1" data-no-tooltip="" translate="no">reverse_index(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#save_cursor/1" data-no-tooltip="" translate="no">save_cursor(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#save_cursor/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.save_cursor/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#save_to_scrollback/2" data-no-tooltip="" translate="no">save_to_scrollback(buffer, lines)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#scroll/2" data-no-tooltip="" translate="no">scroll(buffer, n)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#scroll_down/1" data-no-tooltip="" translate="no">scroll_down(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#scroll_down/2" data-no-tooltip="" translate="no">scroll_down(buffer, n)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.ScrollOps.html#scroll_down/2"><code class="inline">Raxol.Terminal.ScreenBuffer.ScrollOps.scroll_down/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#scroll_region_down/4" data-no-tooltip="" translate="no">scroll_region_down(buffer, top, bottom, n)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#scroll_region_up/4" data-no-tooltip="" translate="no">scroll_region_up(buffer, top, bottom, n)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#scroll_to_bottom/1" data-no-tooltip="" translate="no">scroll_to_bottom(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#scroll_to_top/1" data-no-tooltip="" translate="no">scroll_to_top(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#scroll_up/1" data-no-tooltip="" translate="no">scroll_up(buffer)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#scroll_up/2" data-no-tooltip="" translate="no">scroll_up(buffer, n)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.ScrollOps.html#scroll_up/2"><code class="inline">Raxol.Terminal.ScreenBuffer.ScrollOps.scroll_up/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#select_all/1" data-no-tooltip="" translate="no">select_all(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#select_all/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.select_all/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#select_charset/2" data-no-tooltip="" translate="no">select_charset(buffer, slot)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#select_charset/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.select_charset/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#select_line/2" data-no-tooltip="" translate="no">select_line(buffer, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#select_line/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.select_line/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#select_lines/3" data-no-tooltip="" translate="no">select_lines(buffer, start_y, end_y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#select_lines/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.select_lines/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#select_word/3" data-no-tooltip="" translate="no">select_word(buffer, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#select_word/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.select_word/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_alternate_screen/2" data-no-tooltip="" translate="no">set_alternate_screen(buffer, use_alternate)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_alternate_screen/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_alternate_screen/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_charset/3" data-no-tooltip="" translate="no">set_charset(buffer, slot, charset)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_charset/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_charset/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_blink/2" data-no-tooltip="" translate="no">set_cursor_blink(buffer, blink)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_cursor_blink/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_cursor_blink/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_position/3" data-no-tooltip="" translate="no">set_cursor_position(buffer, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_cursor_position/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_cursor_position/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_style/2" data-no-tooltip="" translate="no">set_cursor_style(buffer, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_cursor_style/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_cursor_style/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_visible/2" data-no-tooltip="" translate="no">set_cursor_visible(buffer, visible)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_cursor_visible/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_cursor_visible/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_default_style/2" data-no-tooltip="" translate="no">set_default_style(buffer, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_default_style/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_default_style/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_scroll_position/2" data-no-tooltip="" translate="no">set_scroll_position(buffer, position)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_scroll_region/3" data-no-tooltip="" translate="no">set_scroll_region(buffer, top, bottom)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.ScrollOps.html#set_scroll_region/3"><code class="inline">Raxol.Terminal.ScreenBuffer.ScrollOps.set_scroll_region/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_tab_stop/1" data-no-tooltip="" translate="no">set_tab_stop(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_tab_stop/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_tab_stop/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#start/3" data-no-tooltip="" translate="no">start(buffer, x, y)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#start_selection/3" data-no-tooltip="" translate="no">start_selection(buffer, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#start_selection/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.start_selection/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#translate_char/2" data-no-tooltip="" translate="no">translate_char(buffer, char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#translate_char/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.translate_char/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update/3" data-no-tooltip="" translate="no">update(buffer, x, y)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#using_alternate_screen?/1" data-no-tooltip="" translate="no">using_alternate_screen?(buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#using_alternate_screen?/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.using_alternate_screen?/1</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#within_bounds?/3" data-no-tooltip="" translate="no">within_bounds?(buffer, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#within_bounds?/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.within_bounds?/3</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write/5" data-no-tooltip="" translate="no">write(buffer, x, y, text, style \\ nil)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_char/4" data-no-tooltip="" translate="no">write_char(buffer, x, y, char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#write_char/4"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.write_char/4</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_char/5" data-no-tooltip="" translate="no">write_char(buffer, x, y, char, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#write_char/5"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.write_char/5</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_string/4" data-no-tooltip="" translate="no">write_string(buffer, x, y, string)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#write_text/4"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.write_text/4</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_string/5" data-no-tooltip="" translate="no">write_string(buffer, x, y, string, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#write_text/5"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.write_text/5</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_text/4" data-no-tooltip="" translate="no">write_text(buffer, x, y, text)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#write_text/4"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.write_text/4</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_text/5" data-no-tooltip="" translate="no">write_text(buffer, x, y, text, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#write_text/5"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.write_text/5</code></a>.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h2>
+
+    <div class="types-list">
+<section class="detail" id="t:t/0">
+
+  <div class="detail-header">
+    <a href="#t:t/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">t()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L16" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> t() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="clear/1">
+
+  <div class="detail-header">
+    <a href="#clear/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L29" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#clear/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.clear/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="clear_all_tab_stops/1">
+
+  <div class="detail-header">
+    <a href="#clear_all_tab_stops/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_all_tab_stops(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L128" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#clear_all_tab_stops/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.clear_all_tab_stops/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="clear_damage_regions/1">
+
+  <div class="detail-header">
+    <a href="#clear_damage_regions/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_damage_regions(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L168" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="clear_line/2">
+
+  <div class="detail-header">
+    <a href="#clear_line/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_line(buffer, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L48" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#clear_line/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.clear_line/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="clear_region/5">
+
+  <div class="detail-header">
+    <a href="#clear_region/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_region(buffer, x, y, width, height)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L53" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#clear_region/5"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.clear_region/5</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="clear_scrollback/1">
+
+  <div class="detail-header">
+    <a href="#clear_scrollback/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_scrollback(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L82" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="clear_selection/1">
+
+  <div class="detail-header">
+    <a href="#clear_selection/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_selection(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L95" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#clear_selection/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.clear_selection/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="clear_tab_stop/1">
+
+  <div class="detail-header">
+    <a href="#clear_tab_stop/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_tab_stop(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L127" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#clear_tab_stop/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.clear_tab_stop/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="clear_to_beginning_of_line/1">
+
+  <div class="detail-header">
+    <a href="#clear_to_beginning_of_line/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_to_beginning_of_line(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L50" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#clear_to_beginning_of_line/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.clear_to_beginning_of_line/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="clear_to_beginning_of_screen/1">
+
+  <div class="detail-header">
+    <a href="#clear_to_beginning_of_screen/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_to_beginning_of_screen(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L52" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#clear_to_beginning_of_screen/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.clear_to_beginning_of_screen/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="clear_to_end_of_line/1">
+
+  <div class="detail-header">
+    <a href="#clear_to_end_of_line/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_to_end_of_line(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L49" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#clear_to_end_of_line/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.clear_to_end_of_line/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="clear_to_end_of_screen/1">
+
+  <div class="detail-header">
+    <a href="#clear_to_end_of_screen/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_to_end_of_screen(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L51" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#clear_to_end_of_screen/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.clear_to_end_of_screen/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="contains?/3">
+
+  <div class="detail-header">
+    <a href="#contains?/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">contains?(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L149" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="copy_region/7">
+
+  <div class="detail-header">
+    <a href="#copy_region/7" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">copy_region(buffer, src_x, src_y, width, height, dest_x, dest_y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L61" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#copy_region/7"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.copy_region/7</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="create_style/1">
+
+  <div class="detail-header">
+    <a href="#create_style/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">create_style(params)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L117" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#create_style/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.create_style/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="cursor_position/1">
+
+  <div class="detail-header">
+    <a href="#cursor_position/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cursor_position(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L152" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="cursor_position/3">
+
+  <div class="detail-header">
+    <a href="#cursor_position/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cursor_position(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L153" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="cursor_style/2">
+
+  <div class="detail-header">
+    <a href="#cursor_style/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cursor_style(buffer, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L155" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="cursor_visible/2">
+
+  <div class="detail-header">
+    <a href="#cursor_visible/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cursor_visible(buffer, visible)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L154" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="delete_char/1">
+
+  <div class="detail-header">
+    <a href="#delete_char/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">delete_char(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L47" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#delete_char/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.delete_char/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="delete_line/2">
+
+  <div class="detail-header">
+    <a href="#delete_line/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">delete_line(buffer, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L55" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#delete_line/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.delete_line/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="erase/1">
+
+  <div class="detail-header">
+    <a href="#erase/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L139" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="erase_line/2">
+
+  <div class="detail-header">
+    <a href="#erase_line/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_line(buffer, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L140" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="erase_line/5">
+
+  <div class="detail-header">
+    <a href="#erase_line/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_line(buffer, y, x, width, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L141" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="erase_region/5">
+
+  <div class="detail-header">
+    <a href="#erase_region/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_region(buffer, x, y, w, h)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L143" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="erase_screen/1">
+
+  <div class="detail-header">
+    <a href="#erase_screen/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_screen(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L142" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="expand_selection_to_word/1">
+
+  <div class="detail-header">
+    <a href="#expand_selection_to_word/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">expand_selection_to_word(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L104" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#expand_selection_to_word/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.expand_selection_to_word/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="extend_selection/3">
+
+  <div class="detail-header">
+    <a href="#extend_selection/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">extend_selection(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L94" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#extend_selection/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.extend_selection/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="fill_region/6">
+
+  <div class="detail-header">
+    <a href="#fill_region/6" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">fill_region(buffer, x, y, width, height, char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L56" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#fill_region/6"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.fill_region/6</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="fill_region/7">
+
+  <div class="detail-header">
+    <a href="#fill_region/7" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">fill_region(buffer, x, y, width, height, char, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L58" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#fill_region/7"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.fill_region/7</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_active_charset/1">
+
+  <div class="detail-header">
+    <a href="#get_active_charset/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_active_charset(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L122" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#get_active_charset/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.get_active_charset/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_cell/3">
+
+  <div class="detail-header">
+    <a href="#get_cell/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_cell(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L26" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#get_cell/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.get_cell/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_char/3">
+
+  <div class="detail-header">
+    <a href="#get_char/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_char(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L27" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#get_char/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.get_char/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_charset/2">
+
+  <div class="detail-header">
+    <a href="#get_charset/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_charset(buffer, slot)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L120" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#get_charset/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.get_charset/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_cursor_position/1">
+
+  <div class="detail-header">
+    <a href="#get_cursor_position/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_cursor_position(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L108" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#get_cursor_position/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.get_cursor_position/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_damage_regions/1">
+
+  <div class="detail-header">
+    <a href="#get_damage_regions/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_damage_regions(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L164" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="get_default_style/1">
+
+  <div class="detail-header">
+    <a href="#get_default_style/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_default_style(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L116" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#get_default_style/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.get_default_style/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_dimensions/1">
+
+  <div class="detail-header">
+    <a href="#get_dimensions/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_dimensions(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L22" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#get_dimensions/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.get_dimensions/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_height/1">
+
+  <div class="detail-header">
+    <a href="#get_height/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_height(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L24" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#get_height/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.get_height/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_line/2">
+
+  <div class="detail-header">
+    <a href="#get_line/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_line(buffer, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L28" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#get_line/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.get_line/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_lines/1">
+
+  <div class="detail-header">
+    <a href="#get_lines/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_lines(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L186" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="get_scroll_position/1">
+
+  <div class="detail-header">
+    <a href="#get_scroll_position/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_scroll_position(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L67" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.ScrollOps.html#get_scroll_position/1"><code class="inline">Raxol.Terminal.ScreenBuffer.ScrollOps.get_scroll_position/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_scroll_region/1">
+
+  <div class="detail-header">
+    <a href="#get_scroll_region/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_scroll_region(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L66" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.ScrollOps.html#get_scroll_region/1"><code class="inline">Raxol.Terminal.ScreenBuffer.ScrollOps.get_scroll_region/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_scrollback/1">
+
+  <div class="detail-header">
+    <a href="#get_scrollback/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_scrollback(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L83" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="get_scrollback/2">
+
+  <div class="detail-header">
+    <a href="#get_scrollback/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_scrollback(buffer, limit)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L84" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="get_selected_lines/1">
+
+  <div class="detail-header">
+    <a href="#get_selected_lines/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_selected_lines(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L99" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#get_selected_lines/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.get_selected_lines/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_selected_text/1">
+
+  <div class="detail-header">
+    <a href="#get_selected_text/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_selected_text(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L98" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#get_selected_text/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.get_selected_text/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_selection/1">
+
+  <div class="detail-header">
+    <a href="#get_selection/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_selection(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L96" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#get_selection/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.get_selection/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_text/1">
+
+  <div class="detail-header">
+    <a href="#get_text/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_text(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L148" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="get_visible_lines/1">
+
+  <div class="detail-header">
+    <a href="#get_visible_lines/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_visible_lines(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L88" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="get_width/1">
+
+  <div class="detail-header">
+    <a href="#get_width/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_width(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L23" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#get_width/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.get_width/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="index/1">
+
+  <div class="detail-header">
+    <a href="#index/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">index(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L90" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="insert_char/2">
+
+  <div class="detail-header">
+    <a href="#insert_char/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">insert_char(buffer, char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L45" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#insert_char/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.insert_char/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="insert_char/3">
+
+  <div class="detail-header">
+    <a href="#insert_char/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">insert_char(buffer, char, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L46" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#insert_char/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.insert_char/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="insert_line/2">
+
+  <div class="detail-header">
+    <a href="#insert_line/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">insert_line(buffer, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L54" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#insert_line/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.insert_line/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="mark_damaged/5">
+
+  <div class="detail-header">
+    <a href="#mark_damaged/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">mark_damaged(buffer, x, y, width, height)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L158" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="merge_styles/2">
+
+  <div class="detail-header">
+    <a href="#merge_styles/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">merge_styles(base, override)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L118" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#merge_styles/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.merge_styles/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="move_cursor/3">
+
+  <div class="detail-header">
+    <a href="#move_cursor/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_cursor(buffer, dx, dy)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L109" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#move_cursor/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.move_cursor/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="new/2">
+
+  <div class="detail-header">
+    <a href="#new/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">new(width, height)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L19" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#new/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.new/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="new/3">
+
+  <div class="detail-header">
+    <a href="#new/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">new(width, height, scrollback_limit)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L20" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#new/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.new/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="next_tab_stop/1">
+
+  <div class="detail-header">
+    <a href="#next_tab_stop/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">next_tab_stop(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L130" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#next_tab_stop/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.next_tab_stop/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="position_in_selection?/3">
+
+  <div class="detail-header">
+    <a href="#position_in_selection?/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">position_in_selection?(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L97" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#position_in_selection?/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.position_in_selection?/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="put_line/3">
+
+  <div class="detail-header">
+    <a href="#put_line/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">put_line(buffer, y, line)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L173" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="reset_tab_stops/1">
+
+  <div class="detail-header">
+    <a href="#reset_tab_stops/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">reset_tab_stops(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L129" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#reset_tab_stops/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.reset_tab_stops/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="resize/3">
+
+  <div class="detail-header">
+    <a href="#resize/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">resize(buffer, new_width, new_height)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L21" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#resize/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.resize/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="restore_cursor/1">
+
+  <div class="detail-header">
+    <a href="#restore_cursor/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">restore_cursor(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L114" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#restore_cursor/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.restore_cursor/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="reverse_index/1">
+
+  <div class="detail-header">
+    <a href="#reverse_index/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">reverse_index(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L89" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="save_cursor/1">
+
+  <div class="detail-header">
+    <a href="#save_cursor/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">save_cursor(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L113" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#save_cursor/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.save_cursor/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="save_to_scrollback/2">
+
+  <div class="detail-header">
+    <a href="#save_to_scrollback/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">save_to_scrollback(buffer, lines)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L81" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="scroll/2">
+
+  <div class="detail-header">
+    <a href="#scroll/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">scroll(buffer, n)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L138" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="scroll_down/1">
+
+  <div class="detail-header">
+    <a href="#scroll_down/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">scroll_down(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L71" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="scroll_down/2">
+
+  <div class="detail-header">
+    <a href="#scroll_down/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">scroll_down(buffer, n)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L72" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.ScrollOps.html#scroll_down/2"><code class="inline">Raxol.Terminal.ScreenBuffer.ScrollOps.scroll_down/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="scroll_region_down/4">
+
+  <div class="detail-header">
+    <a href="#scroll_region_down/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">scroll_region_down(buffer, top, bottom, n)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L77" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="scroll_region_up/4">
+
+  <div class="detail-header">
+    <a href="#scroll_region_up/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">scroll_region_up(buffer, top, bottom, n)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L74" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="scroll_to_bottom/1">
+
+  <div class="detail-header">
+    <a href="#scroll_to_bottom/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">scroll_to_bottom(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L86" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="scroll_to_top/1">
+
+  <div class="detail-header">
+    <a href="#scroll_to_top/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">scroll_to_top(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L87" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="scroll_up/1">
+
+  <div class="detail-header">
+    <a href="#scroll_up/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">scroll_up(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L69" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="scroll_up/2">
+
+  <div class="detail-header">
+    <a href="#scroll_up/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">scroll_up(buffer, n)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L70" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.ScrollOps.html#scroll_up/2"><code class="inline">Raxol.Terminal.ScreenBuffer.ScrollOps.scroll_up/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="select_all/1">
+
+  <div class="detail-header">
+    <a href="#select_all/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">select_all(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L102" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#select_all/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.select_all/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="select_charset/2">
+
+  <div class="detail-header">
+    <a href="#select_charset/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">select_charset(buffer, slot)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L121" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#select_charset/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.select_charset/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="select_line/2">
+
+  <div class="detail-header">
+    <a href="#select_line/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">select_line(buffer, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L100" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#select_line/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.select_line/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="select_lines/3">
+
+  <div class="detail-header">
+    <a href="#select_lines/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">select_lines(buffer, start_y, end_y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L101" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#select_lines/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.select_lines/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="select_word/3">
+
+  <div class="detail-header">
+    <a href="#select_word/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">select_word(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L103" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#select_word/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.select_word/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="set_alternate_screen/2">
+
+  <div class="detail-header">
+    <a href="#set_alternate_screen/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_alternate_screen(buffer, use_alternate)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L124" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_alternate_screen/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_alternate_screen/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="set_charset/3">
+
+  <div class="detail-header">
+    <a href="#set_charset/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_charset(buffer, slot, charset)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L119" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_charset/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_charset/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_blink/2">
+
+  <div class="detail-header">
+    <a href="#set_cursor_blink/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_blink(buffer, blink)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L112" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_cursor_blink/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_cursor_blink/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_position/3">
+
+  <div class="detail-header">
+    <a href="#set_cursor_position/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_position(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L107" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_cursor_position/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_cursor_position/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_style/2">
+
+  <div class="detail-header">
+    <a href="#set_cursor_style/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_style(buffer, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L111" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_cursor_style/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_cursor_style/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_visible/2">
+
+  <div class="detail-header">
+    <a href="#set_cursor_visible/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_visible(buffer, visible)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L110" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_cursor_visible/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_cursor_visible/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="set_default_style/2">
+
+  <div class="detail-header">
+    <a href="#set_default_style/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_default_style(buffer, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L115" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_default_style/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_default_style/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="set_scroll_position/2">
+
+  <div class="detail-header">
+    <a href="#set_scroll_position/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_scroll_position(buffer, position)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L85" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="set_scroll_region/3">
+
+  <div class="detail-header">
+    <a href="#set_scroll_region/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_scroll_region(buffer, top, bottom)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L65" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.ScrollOps.html#set_scroll_region/3"><code class="inline">Raxol.Terminal.ScreenBuffer.ScrollOps.set_scroll_region/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="set_tab_stop/1">
+
+  <div class="detail-header">
+    <a href="#set_tab_stop/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_tab_stop(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L126" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#set_tab_stop/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.set_tab_stop/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="start/3">
+
+  <div class="detail-header">
+    <a href="#start/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">start(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L146" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="start_selection/3">
+
+  <div class="detail-header">
+    <a href="#start_selection/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">start_selection(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L93" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Selection.html#start_selection/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Selection.start_selection/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="translate_char/2">
+
+  <div class="detail-header">
+    <a href="#translate_char/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">translate_char(buffer, char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L123" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#translate_char/2"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.translate_char/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="update/3">
+
+  <div class="detail-header">
+    <a href="#update/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L147" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="using_alternate_screen?/1">
+
+  <div class="detail-header">
+    <a href="#using_alternate_screen?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">using_alternate_screen?(buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L125" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Attributes.html#using_alternate_screen?/1"><code class="inline">Raxol.Terminal.ScreenBuffer.Attributes.using_alternate_screen?/1</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="within_bounds?/3">
+
+  <div class="detail-header">
+    <a href="#within_bounds?/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">within_bounds?(buffer, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L25" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Core.html#within_bounds?/3"><code class="inline">Raxol.Terminal.ScreenBuffer.Core.within_bounds?/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="write/5">
+
+    <span id="write/4"></span>
+
+  <div class="detail-header">
+    <a href="#write/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write(buffer, x, y, text, style \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L135" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="write_char/4">
+
+  <div class="detail-header">
+    <a href="#write_char/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_char(buffer, x, y, char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L32" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#write_char/4"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.write_char/4</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="write_char/5">
+
+  <div class="detail-header">
+    <a href="#write_char/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_char(buffer, x, y, char, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L33" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#write_char/5"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.write_char/5</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="write_string/4">
+
+  <div class="detail-header">
+    <a href="#write_string/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_string(buffer, x, y, string)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L37" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#write_text/4"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.write_text/4</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="write_string/5">
+
+  <div class="detail-header">
+    <a href="#write_string/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_string(buffer, x, y, string, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L41" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#write_text/5"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.write_text/5</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="write_text/4">
+
+  <div class="detail-header">
+    <a href="#write_text/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_text(buffer, x, y, text)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L34" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#write_text/4"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.write_text/4</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="write_text/5">
+
+  <div class="detail-header">
+    <a href="#write_text/5" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_text(buffer, x, y, text, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/screen_buffer_adapter.ex#L35" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>See <a href="Raxol.Terminal.ScreenBuffer.Operations.html#write_text/5"><code class="inline">Raxol.Terminal.ScreenBuffer.Operations.write_text/5</code></a>.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.EmulatorLite — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>EmulatorLite</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.EmulatorLite.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator_lite.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Lightweight terminal emulator for performance-critical paths.</p><p>This is a pure struct-based emulator without GenServer processes,
+designed for fast parsing and simple terminal operations.</p><p>For full-featured terminal emulation with state management and
+concurrent operations, use Raxol.Terminal.Emulator.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-types summary">
+  <h3>
+    <a href="#types">Types</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:t/0" data-no-tooltip="" translate="no">t()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_active_buffer/1" data-no-tooltip="" translate="no">get_active_buffer(emulator_lite)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the active screen buffer.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_cursor/3" data-no-tooltip="" translate="no">move_cursor(emulator, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Moves the cursor to a specific position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_cursor_relative/3" data-no-tooltip="" translate="no">move_cursor_relative(emulator, dx, dy)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates the cursor position relatively.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#new/3" data-no-tooltip="" translate="no">new(width \\ 80, height \\ 24, opts \\ [])</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a new lightweight emulator with minimal overhead.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#new_minimal/2" data-no-tooltip="" translate="no">new_minimal(width \\ 80, height \\ 24)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a minimal emulator for fastest possible parsing.
+No history, no alternate buffer, minimal features.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reset/1" data-no-tooltip="" translate="no">reset(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Resets the emulator to initial state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#resize/3" data-no-tooltip="" translate="no">resize(emulator, new_width, new_height)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Resizes the emulator to new dimensions.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#switch_buffer/2" data-no-tooltip="" translate="no">switch_buffer(emulator, atom)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Switches between main and alternate screen buffers.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_active_buffer/2" data-no-tooltip="" translate="no">update_active_buffer(emulator, fun)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates the active screen buffer.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h2>
+
+    <div class="types-list">
+<section class="detail" id="t:t/0">
+
+  <div class="detail-header">
+    <a href="#t:t/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">t()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator_lite.ex#L69" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> t() :: %Raxol.Terminal.EmulatorLite{
+  active_buffer_type: :main | :alternate,
+  alternate_screen_buffer: <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>() | nil,
+  charset_state: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  client_options: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  command_history: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>() | nil,
+  current_command_buffer: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  cursor: <a href="Raxol.Terminal.Cursor.html#t:t/0">Raxol.Terminal.Cursor.t</a>(),
+  cursor_style: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(),
+  height: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  last_col_exceeded: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  main_screen_buffer: <a href="Raxol.Terminal.ScreenBuffer.html#t:t/0">Raxol.Terminal.ScreenBuffer.t</a>(),
+  max_command_history: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  mode_manager: <a href="Raxol.Terminal.ModeManager.html#t:t/0">Raxol.Terminal.ModeManager.t</a>(),
+  mode_state: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  output_buffer: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  parser_state: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  saved_cursor: <a href="Raxol.Terminal.Cursor.html#t:t/0">Raxol.Terminal.Cursor.t</a>() | nil,
+  saved_style: <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:t/0">Raxol.Terminal.ANSI.TextFormatting.t</a>() | nil,
+  scroll_region: {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()} | nil,
+  scrollback_buffer: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>(),
+  scrollback_limit: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  session_id: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  style: <a href="Raxol.Terminal.ANSI.TextFormatting.html#t:t/0">Raxol.Terminal.ANSI.TextFormatting.t</a>(),
+  width: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  window_state: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  window_title: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil
+}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="get_active_buffer/1">
+
+  <div class="detail-header">
+    <a href="#get_active_buffer/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_active_buffer(emulator_lite)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator_lite.ex#L174" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the active screen buffer.</p>
+  </section>
+</section>
+<section class="detail" id="move_cursor/3">
+
+  <div class="detail-header">
+    <a href="#move_cursor/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_cursor(emulator, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator_lite.ex#L288" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Moves the cursor to a specific position.</p>
+  </section>
+</section>
+<section class="detail" id="move_cursor_relative/3">
+
+  <div class="detail-header">
+    <a href="#move_cursor_relative/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_cursor_relative(emulator, dx, dy)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator_lite.ex#L298" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Updates the cursor position relatively.</p>
+  </section>
+</section>
+<section class="detail" id="new/3">
+
+    <span id="new/0"></span>
+
+    <span id="new/1"></span>
+
+    <span id="new/2"></span>
+
+  <div class="detail-header">
+    <a href="#new/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">new(width \\ 80, height \\ 24, opts \\ [])</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator_lite.ex#L106" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Creates a new lightweight emulator with minimal overhead.</p><p>Options:</p><ul><li>:enable_history - Enable command history tracking (default: false)</li><li>:scrollback_limit - Number of scrollback lines (default: 1000)</li><li>:alternate_buffer - Create alternate screen buffer (default: false)</li></ul>
+  </section>
+</section>
+<section class="detail" id="new_minimal/2">
+
+    <span id="new_minimal/0"></span>
+
+    <span id="new_minimal/1"></span>
+
+  <div class="detail-header">
+    <a href="#new_minimal/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">new_minimal(width \\ 80, height \\ 24)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator_lite.ex#L163" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Creates a minimal emulator for fastest possible parsing.
+No history, no alternate buffer, minimal features.</p>
+  </section>
+</section>
+<section class="detail" id="reset/1">
+
+  <div class="detail-header">
+    <a href="#reset/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">reset(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator_lite.ex#L224" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Resets the emulator to initial state.</p>
+  </section>
+</section>
+<section class="detail" id="resize/3">
+
+  <div class="detail-header">
+    <a href="#resize/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">resize(emulator, new_width, new_height)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator_lite.ex#L258" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Resizes the emulator to new dimensions.</p>
+  </section>
+</section>
+<section class="detail" id="switch_buffer/2">
+
+  <div class="detail-header">
+    <a href="#switch_buffer/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">switch_buffer(emulator, atom)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator_lite.ex#L204" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Switches between main and alternate screen buffers.</p>
+  </section>
+</section>
+<section class="detail" id="update_active_buffer/2">
+
+  <div class="detail-header">
+    <a href="#update_active_buffer/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_active_buffer(emulator, fun)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator_lite.ex#L186" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Updates the active screen buffer.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

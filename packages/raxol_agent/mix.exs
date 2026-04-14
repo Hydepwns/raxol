@@ -35,7 +35,7 @@ defmodule RaxolAgent.MixProject do
 
   defp deps do
     [
-      raxol_dep(:raxol, "~> 2.4", "../..", override: true),
+      raxol_dep(:raxol, "~> 2.4", "../.."),
       raxol_dep(:raxol_mcp, "~> 2.4", "../raxol_mcp"),
       {:circular_buffer, "~> 1.0"},
       {:jason, "~> 1.4"},
@@ -48,11 +48,11 @@ defmodule RaxolAgent.MixProject do
     ]
   end
 
-  defp raxol_dep(name, version, path, opts \\ []) do
+  defp raxol_dep(name, version, path) do
     if System.get_env("HEX_BUILD") || !File.dir?(path) do
-      if opts == [], do: {name, version}, else: {name, version, opts}
+      {name, version}
     else
-      {name, version, [path: path] ++ opts}
+      {name, version, path: path, override: true}
     end
   end
 

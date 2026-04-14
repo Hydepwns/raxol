@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.AdvancedFeatures — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>AdvancedFeatures</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.AdvancedFeatures.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Implements advanced terminal features for modern terminal emulators.</p><p>This module provides support for:</p><ul><li>OSC 8 Hyperlinks - Clickable links in terminal output</li><li>Synchronized Output (DEC 2026) - Flicker-free rendering</li><li>Focus Events - Terminal focus/blur detection</li><li>Enhanced Bracketed Paste - Improved paste handling</li><li>Window Manipulation - Advanced terminal control</li></ul><p>These features enable rich, interactive terminal applications with modern UX patterns.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-types summary">
+  <h3>
+    <a href="#types">Types</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:hyperlink_id/0" data-no-tooltip="" translate="no">hyperlink_id()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:hyperlink_params/0" data-no-tooltip="" translate="no">hyperlink_params()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:url/0" data-no-tooltip="" translate="no">url()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#begin_synchronized_output/0" data-no-tooltip="" translate="no">begin_synchronized_output()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Enables synchronized output mode for flicker-free rendering.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_hyperlink/3" data-no-tooltip="" translate="no">create_hyperlink(text, url, options \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a clickable hyperlink using OSC 8 escape sequences.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_hyperlinks/2" data-no-tooltip="" translate="no">create_hyperlinks(text_url_pairs, shared_options \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates multiple hyperlinks with shared parameters.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#disable_bracketed_paste/0" data-no-tooltip="" translate="no">disable_bracketed_paste()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Disables bracketed paste mode.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#disable_focus_events/0" data-no-tooltip="" translate="no">disable_focus_events()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Disables terminal focus events.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#enable_bracketed_paste/0" data-no-tooltip="" translate="no">enable_bracketed_paste()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Enables enhanced bracketed paste mode.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#enable_focus_events/0" data-no-tooltip="" translate="no">enable_focus_events()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Enables terminal focus events.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#end_synchronized_output/0" data-no-tooltip="" translate="no">end_synchronized_output()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Disables synchronized output mode and flushes buffered content.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_terminal_capabilities/0" data-no-tooltip="" translate="no">get_terminal_capabilities()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets current terminal capabilities and features.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_window_size/0" data-no-tooltip="" translate="no">get_window_size()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the current terminal window size.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#parse_focus_event/1" data-no-tooltip="" translate="no">parse_focus_event(data)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Parses focus event sequences.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#parse_paste_event/1" data-no-tooltip="" translate="no">parse_paste_event(data)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Parses bracketed paste sequences.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_window_title/1" data-no-tooltip="" translate="no">set_window_title(title)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the terminal window title.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#supports_hyperlinks?/0" data-no-tooltip="" translate="no">supports_hyperlinks?()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Detects if the current terminal supports OSC 8 hyperlinks.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#supports_synchronized_output?/0" data-no-tooltip="" translate="no">supports_synchronized_output?()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Detects if the terminal supports synchronized output.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#with_synchronized_output/1" data-no-tooltip="" translate="no">with_synchronized_output(fun)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Executes a function with synchronized output enabled.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h2>
+
+    <div class="types-list">
+<section class="detail" id="t:hyperlink_id/0">
+
+  <div class="detail-header">
+    <a href="#t:hyperlink_id/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">hyperlink_id()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L17" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> hyperlink_id() :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:hyperlink_params/0">
+
+  <div class="detail-header">
+    <a href="#t:hyperlink_params/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">hyperlink_params()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L19" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> hyperlink_params() :: %{
+  optional(:id) =&gt; <a href="#t:hyperlink_id/0">hyperlink_id</a>(),
+  optional(:tooltip) =&gt; <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  optional(:params) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()
+}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:url/0">
+
+  <div class="detail-header">
+    <a href="#t:url/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">url()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L18" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> url() :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="begin_synchronized_output/0">
+
+  <div class="detail-header">
+    <a href="#begin_synchronized_output/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">begin_synchronized_output()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L128" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> begin_synchronized_output() :: :ok</pre>
+
+      </div>
+
+<p>Enables synchronized output mode for flicker-free rendering.</p><p>When enabled, terminal output is buffered until explicitly flushed,
+preventing screen flickering during complex updates.</p><h2 id="begin_synchronized_output/0-examples" class="section-heading"><a href="#begin_synchronized_output/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="nc">AdvancedFeatures</span><span class="o">.</span><span class="n">begin_synchronized_output</span><span class="p" data-group-id="8993024601-1">(</span><span class="p" data-group-id="8993024601-1">)</span><span class="w">
+</span><span class="c1"># ... perform multiple terminal updates ...</span><span class="w">
+</span><span class="nc">AdvancedFeatures</span><span class="o">.</span><span class="n">end_synchronized_output</span><span class="p" data-group-id="8993024601-2">(</span><span class="p" data-group-id="8993024601-2">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="create_hyperlink/3">
+
+    <span id="create_hyperlink/2"></span>
+
+  <div class="detail-header">
+    <a href="#create_hyperlink/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">create_hyperlink(text, url, options \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L47" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> create_hyperlink(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="#t:url/0">url</a>(), <a href="#t:hyperlink_params/0">hyperlink_params</a>()) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
+      </div>
+
+<p>Creates a clickable hyperlink using OSC 8 escape sequences.</p><h2 id="create_hyperlink/3-parameters" class="section-heading"><a href="#create_hyperlink/3-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">text</code> - The text to display as clickable</li><li><code class="inline">url</code> - The URL to open when clicked</li><li><code class="inline">options</code> - Additional hyperlink options</li></ul><h2 id="create_hyperlink/3-examples" class="section-heading"><a href="#create_hyperlink/3-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">AdvancedFeatures</span><span class="o">.</span><span class="n">create_hyperlink</span><span class="p" data-group-id="0746304379-1">(</span><span class="s">&quot;Visit GitHub&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;https://github.com&quot;</span><span class="p" data-group-id="0746304379-1">)</span><span class="w">
+</span><span class="s">&quot;</span><span class="se">\e</span><span class="s">]8;;https://github.com</span><span class="se">\e</span><span class="se">\\</span><span class="s">Visit GitHub</span><span class="se">\e</span><span class="s">]8;;</span><span class="se">\e</span><span class="se">\\</span><span class="s">&quot;</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">AdvancedFeatures</span><span class="o">.</span><span class="n">create_hyperlink</span><span class="p" data-group-id="0746304379-2">(</span><span class="s">&quot;Click me&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;https://example.com&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0746304379-3">%{</span><span class="w">
+</span><span class="gp unselectable">...&gt; </span><span class="w">  </span><span class="ss">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;link1&quot;</span><span class="p">,</span><span class="w">
+</span><span class="gp unselectable">...&gt; </span><span class="w">  </span><span class="ss">tooltip</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Opens example.com&quot;</span><span class="w">
+</span><span class="gp unselectable">...&gt; </span><span class="p" data-group-id="0746304379-3">}</span><span class="p" data-group-id="0746304379-2">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="create_hyperlinks/2">
+
+    <span id="create_hyperlinks/1"></span>
+
+  <div class="detail-header">
+    <a href="#create_hyperlinks/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">create_hyperlinks(text_url_pairs, shared_options \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L76" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> create_hyperlinks([{<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="#t:url/0">url</a>()}], <a href="#t:hyperlink_params/0">hyperlink_params</a>()) :: [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]</pre>
+
+      </div>
+
+<p>Creates multiple hyperlinks with shared parameters.</p><h2 id="create_hyperlinks/2-examples" class="section-heading"><a href="#create_hyperlinks/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="n">links</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="8837681229-1">[</span><span class="w">
+  </span><span class="p" data-group-id="8837681229-2">{</span><span class="s">&quot;GitHub&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;https://github.com&quot;</span><span class="p" data-group-id="8837681229-2">}</span><span class="p">,</span><span class="w">
+  </span><span class="p" data-group-id="8837681229-3">{</span><span class="s">&quot;GitLab&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;https://gitlab.com&quot;</span><span class="p" data-group-id="8837681229-3">}</span><span class="w">
+</span><span class="p" data-group-id="8837681229-1">]</span><span class="w">
+
+</span><span class="nc">AdvancedFeatures</span><span class="o">.</span><span class="n">create_hyperlinks</span><span class="p" data-group-id="8837681229-4">(</span><span class="n">links</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8837681229-5">%{</span><span class="ss">tooltip</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Git repository&quot;</span><span class="p" data-group-id="8837681229-5">}</span><span class="p" data-group-id="8837681229-4">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="disable_bracketed_paste/0">
+
+  <div class="detail-header">
+    <a href="#disable_bracketed_paste/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">disable_bracketed_paste()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L239" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> disable_bracketed_paste() :: :ok</pre>
+
+      </div>
+
+<p>Disables bracketed paste mode.</p>
+  </section>
+</section>
+<section class="detail" id="disable_focus_events/0">
+
+  <div class="detail-header">
+    <a href="#disable_focus_events/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">disable_focus_events()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L200" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> disable_focus_events() :: :ok</pre>
+
+      </div>
+
+<p>Disables terminal focus events.</p>
+  </section>
+</section>
+<section class="detail" id="enable_bracketed_paste/0">
+
+  <div class="detail-header">
+    <a href="#enable_bracketed_paste/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">enable_bracketed_paste()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L229" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> enable_bracketed_paste() :: :ok</pre>
+
+      </div>
+
+<p>Enables enhanced bracketed paste mode.</p><p>This prevents pasted content from being interpreted as terminal commands
+and provides better handling of multiline pastes.</p>
+  </section>
+</section>
+<section class="detail" id="enable_focus_events/0">
+
+  <div class="detail-header">
+    <a href="#enable_focus_events/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">enable_focus_events()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L190" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> enable_focus_events() :: :ok</pre>
+
+      </div>
+
+<p>Enables terminal focus events.</p><p>When enabled, the terminal will send escape sequences when it gains
+or loses focus, allowing applications to respond to focus changes.</p>
+  </section>
+</section>
+<section class="detail" id="end_synchronized_output/0">
+
+  <div class="detail-header">
+    <a href="#end_synchronized_output/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">end_synchronized_output()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L138" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> end_synchronized_output() :: :ok</pre>
+
+      </div>
+
+<p>Disables synchronized output mode and flushes buffered content.</p>
+  </section>
+</section>
+<section class="detail" id="get_terminal_capabilities/0">
+
+  <div class="detail-header">
+    <a href="#get_terminal_capabilities/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_terminal_capabilities()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L313" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_terminal_capabilities() :: %{
+  hyperlinks: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  synchronized_output: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  focus_events: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  bracketed_paste: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  window_manipulation: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  terminal_type: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  term_variable: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()
+}</pre>
+
+      </div>
+
+<p>Gets current terminal capabilities and features.</p>
+  </section>
+</section>
+<section class="detail" id="get_window_size/0">
+
+  <div class="detail-header">
+    <a href="#get_window_size/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_window_size()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L270" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_window_size() ::
+  {:ok, {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()}} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()}</pre>
+
+      </div>
+
+<p>Gets the current terminal window size.</p><p>Returns <code class="inline">{:ok, {width, height}}</code> or <code class="inline">{:error, reason}</code>.</p>
+  </section>
+</section>
+<section class="detail" id="parse_focus_event/1">
+
+  <div class="detail-header">
+    <a href="#parse_focus_event/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">parse_focus_event(data)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L216" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> parse_focus_event(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()) :: {:focus_in} | {:focus_out} | {:unknown, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()}</pre>
+
+      </div>
+
+<p>Parses focus event sequences.</p><p>Returns:</p><ul><li><code class="inline">{:focus_in}</code> - Terminal gained focus</li><li><code class="inline">{:focus_out}</code> - Terminal lost focus</li><li><code class="inline">{:unknown, data}</code> - Unrecognized sequence</li></ul>
+  </section>
+</section>
+<section class="detail" id="parse_paste_event/1">
+
+  <div class="detail-header">
+    <a href="#parse_paste_event/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">parse_paste_event(data)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L257" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> parse_paste_event(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()) ::
+  {:paste_start} | {:paste_end} | {:paste_content, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()}</pre>
+
+      </div>
+
+<p>Parses bracketed paste sequences.</p><p>Returns:</p><ul><li><code class="inline">{:paste_start}</code> - Beginning of pasted content</li><li><code class="inline">{:paste_end}</code> - End of pasted content</li><li><code class="inline">{:paste_content, data}</code> - Pasted content</li></ul>
+  </section>
+</section>
+<section class="detail" id="set_window_title/1">
+
+  <div class="detail-header">
+    <a href="#set_window_title/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_window_title(title)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L295" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> set_window_title(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: :ok</pre>
+
+      </div>
+
+<p>Sets the terminal window title.</p>
+  </section>
+</section>
+<section class="detail" id="supports_hyperlinks?/0">
+
+  <div class="detail-header">
+    <a href="#supports_hyperlinks?/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">supports_hyperlinks?()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L86" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> supports_hyperlinks?() :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
+      </div>
+
+<p>Detects if the current terminal supports OSC 8 hyperlinks.</p>
+  </section>
+</section>
+<section class="detail" id="supports_synchronized_output?/0">
+
+  <div class="detail-header">
+    <a href="#supports_synchronized_output?/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">supports_synchronized_output?()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L170" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> supports_synchronized_output?() :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
+      </div>
+
+<p>Detects if the terminal supports synchronized output.</p>
+  </section>
+</section>
+<section class="detail" id="with_synchronized_output/1">
+
+  <div class="detail-header">
+    <a href="#with_synchronized_output/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">with_synchronized_output(fun)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/advanced_features.ex#L156" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> with_synchronized_output((-&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>())) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()</pre>
+
+      </div>
+
+<p>Executes a function with synchronized output enabled.</p><h2 id="with_synchronized_output/1-examples" class="section-heading"><a href="#with_synchronized_output/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="nc">AdvancedFeatures</span><span class="o">.</span><span class="n">with_synchronized_output</span><span class="p" data-group-id="7670185041-1">(</span><span class="k" data-group-id="7670185041-2">fn</span><span class="w"> </span><span class="o">-&gt;</span><span class="w">
+  </span><span class="nc">Log</span><span class="o">.</span><span class="n">info</span><span class="p" data-group-id="7670185041-3">(</span><span class="s">&quot;Line 1&quot;</span><span class="p" data-group-id="7670185041-3">)</span><span class="w">
+  </span><span class="nc">Log</span><span class="o">.</span><span class="n">info</span><span class="p" data-group-id="7670185041-4">(</span><span class="s">&quot;Line 2&quot;</span><span class="p" data-group-id="7670185041-4">)</span><span class="w">
+  </span><span class="c1"># These will appear atomically</span><span class="w">
+</span><span class="k" data-group-id="7670185041-2">end</span><span class="p" data-group-id="7670185041-1">)</span></code></pre>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

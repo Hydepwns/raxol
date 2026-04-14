@@ -1,0 +1,2906 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.Emulator — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>Emulator</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.Emulator.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Enterprise-grade terminal emulator with VT100/ANSI support and high-performance parsing.</p><p>Provides full terminal emulation with true color, mouse tracking, alternate screen,
+and modern features. Uses modular architecture with separate coordinators for
+buffer, mode, input, and output operations.</p><h2 id="module-usage" class="section-heading"><a href="#module-usage" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Usage</span></h2><pre><code class="makeup elixir" translate="no"><span class="c1"># Create standard emulator</span><span class="w">
+</span><span class="n">emulator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Raxol.Terminal.Emulator</span><span class="o">.</span><span class="n">new</span><span class="p" data-group-id="1218908263-1">(</span><span class="mi">80</span><span class="p">,</span><span class="w"> </span><span class="mi">24</span><span class="p" data-group-id="1218908263-1">)</span><span class="w">
+
+</span><span class="c1"># Process input with colors</span><span class="w">
+</span><span class="p" data-group-id="1218908263-2">{</span><span class="n">emulator</span><span class="p">,</span><span class="w"> </span><span class="n">output</span><span class="p" data-group-id="1218908263-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Raxol.Terminal.Emulator</span><span class="o">.</span><span class="n">process_input</span><span class="p" data-group-id="1218908263-3">(</span><span class="w">
+  </span><span class="n">emulator</span><span class="p">,</span><span class="w">
+  </span><span class="s">&quot;</span><span class="se">\e</span><span class="s">[1;31mRed Bold</span><span class="se">\e</span><span class="s">[0m Normal text&quot;</span><span class="w">
+</span><span class="p" data-group-id="1218908263-3">)</span></code></pre><h2 id="module-performance-modes" class="section-heading"><a href="#module-performance-modes" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Performance Modes</span></h2><ul><li><code class="inline">new/2</code> - Full features (2.8MB, ~95ms startup)</li><li><a href="#new_lite/3"><code class="inline">new_lite/3</code></a> - Most features (1.2MB, ~30ms startup)</li><li><a href="#new_minimal/2"><code class="inline">new_minimal/2</code></a> - Basic only (8.8KB, &lt;10ms startup)</li></ul>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-types summary">
+  <h3>
+    <a href="#types">Types</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:t/0" data-no-tooltip="" translate="no">t()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#apply_color_changes/1" data-no-tooltip="" translate="no">apply_color_changes(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Applies color changes (legacy compatibility).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#blinking?/1" data-no-tooltip="" translate="no">blinking?(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns cursor blinking state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cleanup/1" data-no-tooltip="" translate="no">cleanup(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Cleans up emulator resources.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_line/2" data-no-tooltip="" translate="no">clear_line(emulator, line)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Clears the specified line.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_screen/1" data-no-tooltip="" translate="no">clear_screen(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Clears the entire screen.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_screen_and_home/1" data-no-tooltip="" translate="no">clear_screen_and_home(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Clears the screen and moves cursor to home position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_scrollback/1" data-no-tooltip="" translate="no">clear_scrollback(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Clears the scrollback buffer.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_selection/1" data-no-tooltip="" translate="no">clear_selection(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Clears the current text selection.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cursor_blinking?/1" data-no-tooltip="" translate="no">cursor_blinking?(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns true if the cursor is blinking.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cursor_visible?/1" data-no-tooltip="" translate="no">cursor_visible?(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns true if the cursor is visible.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#delete_char/1" data-no-tooltip="" translate="no">delete_char(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Deletes the character at the cursor position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#delete_chars/2" data-no-tooltip="" translate="no">delete_chars(emulator, count)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Deletes the specified number of characters.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#end_selection/1" data-no-tooltip="" translate="no">end_selection(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Ends the current text selection.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_chars/2" data-no-tooltip="" translate="no">erase_chars(emulator, count)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Erases the specified number of characters.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_display/2" data-no-tooltip="" translate="no">erase_display(emulator, mode)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Erases display content based on mode (0=to end, 1=from start, 2=entire).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_from_cursor_to_end/1" data-no-tooltip="" translate="no">erase_from_cursor_to_end(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Erases from cursor position to end of screen.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_from_start_to_cursor/1" data-no-tooltip="" translate="no">erase_from_start_to_cursor(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Erases from start of screen to cursor position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_in_display/2" data-no-tooltip="" translate="no">erase_in_display(emulator, mode)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Erases content within the display.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_in_line/2" data-no-tooltip="" translate="no">erase_in_line(emulator, mode)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Erases content within the current line.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#erase_line/2" data-no-tooltip="" translate="no">erase_line(emulator, mode)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Erases line content based on mode.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_config_struct/1" data-no-tooltip="" translate="no">get_config_struct(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the configuration structure.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_cursor_position/1" data-no-tooltip="" translate="no">get_cursor_position(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the current cursor position as {x, y}.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_cursor_position_struct/1" data-no-tooltip="" translate="no">get_cursor_position_struct(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets cursor position as a structured object.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_cursor_style/1" data-no-tooltip="" translate="no">get_cursor_style(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the current cursor style (:block, :line, :underscore).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_cursor_visible/1" data-no-tooltip="" translate="no">get_cursor_visible(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets cursor visibility state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_height/1" data-no-tooltip="" translate="no">get_height(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the terminal height in rows.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_mode_manager/1" data-no-tooltip="" translate="no">get_mode_manager(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the mode manager.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_mode_manager_cursor_visible/1" data-no-tooltip="" translate="no">get_mode_manager_cursor_visible(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets cursor visibility from mode manager.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_output/1" data-no-tooltip="" translate="no">get_output(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets output from the emulator.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_output_buffer/1" data-no-tooltip="" translate="no">get_output_buffer(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets output buffer (legacy compatibility).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_screen_buffer/1" data-no-tooltip="" translate="no">get_screen_buffer(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the active screen buffer.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_scroll_region/1" data-no-tooltip="" translate="no">get_scroll_region(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the current scroll region as {top, bottom}.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_scrollback/1" data-no-tooltip="" translate="no">get_scrollback(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the scrollback buffer contents.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_selection/1" data-no-tooltip="" translate="no">get_selection(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the currently selected text.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_width/1" data-no-tooltip="" translate="no">get_width(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets the terminal width in columns.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#handle_esc_equals/1" data-no-tooltip="" translate="no">handle_esc_equals(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Handles ESC = sequence (DECKPAM - Enable application keypad mode).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#handle_esc_greater/1" data-no-tooltip="" translate="no">handle_esc_greater(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Handles ESC &gt; sequence (DECKPNM - Disable application keypad mode).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#has_selection?/1" data-no-tooltip="" translate="no">has_selection?(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns true if text is currently selected.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#insert_char/2" data-no-tooltip="" translate="no">insert_char(emulator, char)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Inserts a character at the cursor position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#insert_chars/2" data-no-tooltip="" translate="no">insert_chars(emulator, count)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Inserts the specified number of blank characters.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#maybe_scroll/1" data-no-tooltip="" translate="no">maybe_scroll(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Performs automatic scrolling if needed.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_cursor/3" data-no-tooltip="" translate="no">move_cursor(emulator, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Moves the cursor to the specified position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_cursor_back/2" data-no-tooltip="" translate="no">move_cursor_back(emulator, count)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Moves cursor back (stub implementation).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_cursor_down/2" data-no-tooltip="" translate="no">move_cursor_down(emulator, count)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Moves cursor down (stub implementation).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_cursor_forward/2" data-no-tooltip="" translate="no">move_cursor_forward(emulator, count)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Moves cursor forward (stub implementation).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_cursor_to/3" data-no-tooltip="" translate="no">move_cursor_to(emulator, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Moves cursor to specified position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_cursor_to/4" data-no-tooltip="" translate="no">move_cursor_to(emulator, x, y, opts)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Moves cursor to specified position with options.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#move_cursor_up/2" data-no-tooltip="" translate="no">move_cursor_up(emulator, count)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Moves cursor up (stub implementation).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#new_lite/3" data-no-tooltip="" translate="no">new_lite(width \\ 80, height \\ 24, opts \\ [])</a>
+
+          <span class="deprecated" title="Use new/3 with use_genservers: false option instead">deprecated</span>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#new_minimal/2" data-no-tooltip="" translate="no">new_minimal(width \\ 80, height \\ 24)</a>
+
+          <span class="deprecated" title="Use new/3 with enable_history: false, alternate_buffer: false options instead">deprecated</span>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#process_input/2" data-no-tooltip="" translate="no">process_input(emulator, input)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Processes input and returns updated emulator with output.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#render_screen/1" data-no-tooltip="" translate="no">render_screen(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Renders the emulator screen.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reset/1" data-no-tooltip="" translate="no">reset(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Resets the terminal emulator to its initial state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reset_mode/2" data-no-tooltip="" translate="no">reset_mode(emulator, mode)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Resets a terminal mode.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#resize/3" data-no-tooltip="" translate="no">resize(emulator, new_width, new_height)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Resizes the terminal to the specified dimensions.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#restore_state/1" data-no-tooltip="" translate="no">restore_state(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Restores the previously saved terminal state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#save_state/1" data-no-tooltip="" translate="no">save_state(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Saves the current terminal state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#scroll_down/2" data-no-tooltip="" translate="no">scroll_down(emulator, lines)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Scrolls the display down by the specified number of lines.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#scroll_up/2" data-no-tooltip="" translate="no">scroll_up(emulator, lines)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Scrolls the display up by the specified number of lines.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_attribute/3" data-no-tooltip="" translate="no">set_attribute(emulator, attr, value)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets a terminal attribute.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_blink/2" data-no-tooltip="" translate="no">set_cursor_blink(emulator, blinking)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets cursor blinking state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_position/3" data-no-tooltip="" translate="no">set_cursor_position(emulator, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the cursor position to the specified coordinates.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_style/2" data-no-tooltip="" translate="no">set_cursor_style(emulator, style)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets the cursor style to :block, :line, or :underscore.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_cursor_visibility/2" data-no-tooltip="" translate="no">set_cursor_visibility(emulator, visible)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets cursor visibility.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_dimensions/3" data-no-tooltip="" translate="no">set_dimensions(emulator, width, height)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets terminal dimensions after validation.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_mode/2" data-no-tooltip="" translate="no">set_mode(emulator, mode)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Sets a terminal mode.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#start_link/1" data-no-tooltip="" translate="no">start_link(opts \\ [])</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Starts a linked terminal emulator process.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#start_selection/3" data-no-tooltip="" translate="no">start_selection(emulator, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Starts text selection at the specified coordinates.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#switch_to_alternate_screen/1" data-no-tooltip="" translate="no">switch_to_alternate_screen(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Switches to the alternate screen buffer.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#switch_to_normal_screen/1" data-no-tooltip="" translate="no">switch_to_normal_screen(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Switches to the normal screen buffer.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_active_buffer/2" data-no-tooltip="" translate="no">update_active_buffer(emulator, buffer)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates the active buffer with new content.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_auto_wrap_mode/2" data-no-tooltip="" translate="no">update_auto_wrap_mode(emulator, enabled)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates auto wrap mode state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_blink_state/1" data-no-tooltip="" translate="no">update_blink_state(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates blink state (legacy compatibility).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_insert_mode/2" data-no-tooltip="" translate="no">update_insert_mode(emulator, enabled)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates insert mode state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#update_selection/3" data-no-tooltip="" translate="no">update_selection(emulator, x, y)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Updates the selection endpoint to the specified coordinates.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#validate_dimensions/2" data-no-tooltip="" translate="no">validate_dimensions(width, height)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Validates terminal dimensions.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#visible?/1" data-no-tooltip="" translate="no">visible?(emulator)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns cursor visibility state.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_text/2" data-no-tooltip="" translate="no">write_text(emulator, text)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Writes text to the terminal at the cursor position.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#write_to_output/2" data-no-tooltip="" translate="no">write_to_output(emulator, data)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Writes data to the output buffer.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h2>
+
+    <div class="types-list">
+<section class="detail" id="t:t/0">
+
+  <div class="detail-header">
+    <a href="#t:t/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">t()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L150" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> t() :: %Raxol.Terminal.Emulator{
+  active: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  active_buffer: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  active_buffer_type: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(),
+  alternate: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  alternate_screen_buffer: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  bracketed_paste_active: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  bracketed_paste_buffer: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  buffer: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  capabilities_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  charset_state: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  client_options: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  clipboard_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  color_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  color_palette: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  command: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  command_history: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>(),
+  config: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  current_command_buffer: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  current_hyperlink: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  cursor: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  cursor_blink_rate: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  cursor_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  cursor_position_reported: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  cursor_style: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(),
+  damage_tracker: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  device_status_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  device_status_reported: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  event: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  font_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  graphics_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  height: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  history_buffer: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  hyperlink_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  icon_name: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  input_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  last_col_exceeded: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  last_key_event: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  main_screen_buffer: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  max_command_history: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  memory_limit: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  metrics_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  mode_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  mode_manager_pid: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  mode_state: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  mouse_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  notification_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  output_buffer: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>(),
+  output_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  parser_state: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  plugin_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  registry: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  renderer: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  saved_cursor: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  screen_buffer_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  scroll_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  scroll_region: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">tuple</a>(),
+  scrollback_buffer: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>(),
+  scrollback_limit: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  scrollback_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  selection_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  session_id: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  session_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  sixel_state: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  state: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  state_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  state_stack: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>(),
+  style: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  style_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  supervisor: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  sync_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  tab_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  tab_stops: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>(),
+  terminal_state_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  theme_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  validation_service: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  width: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  window_manager: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  window_registry: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  window_state: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  window_title: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil
+}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="apply_color_changes/1">
+
+  <div class="detail-header">
+    <a href="#apply_color_changes/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">apply_color_changes(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L505" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Applies color changes (legacy compatibility).</p>
+  </section>
+</section>
+<section class="detail" id="blinking?/1">
+
+  <div class="detail-header">
+    <a href="#blinking?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">blinking?(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L269" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns cursor blinking state.</p>
+  </section>
+</section>
+<section class="detail" id="cleanup/1">
+
+  <div class="detail-header">
+    <a href="#cleanup/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cleanup(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L571" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> cleanup(<a href="#t:t/0">t</a>()) :: :ok</pre>
+
+      </div>
+
+<p>Cleans up emulator resources.</p>
+  </section>
+</section>
+<section class="detail" id="clear_line/2">
+
+  <div class="detail-header">
+    <a href="#clear_line/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_line(emulator, line)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L279" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Clears the specified line.</p>
+  </section>
+</section>
+<section class="detail" id="clear_screen/1">
+
+  <div class="detail-header">
+    <a href="#clear_screen/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_screen(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L276" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Clears the entire screen.</p>
+  </section>
+</section>
+<section class="detail" id="clear_screen_and_home/1">
+
+  <div class="detail-header">
+    <a href="#clear_screen_and_home/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_screen_and_home(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L467" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Clears the screen and moves cursor to home position.</p>
+  </section>
+</section>
+<section class="detail" id="clear_scrollback/1">
+
+  <div class="detail-header">
+    <a href="#clear_scrollback/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_scrollback(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L369" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Clears the scrollback buffer.</p>
+  </section>
+</section>
+<section class="detail" id="clear_selection/1">
+
+  <div class="detail-header">
+    <a href="#clear_selection/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear_selection(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L332" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Clears the current text selection.</p>
+  </section>
+</section>
+<section class="detail" id="cursor_blinking?/1">
+
+  <div class="detail-header">
+    <a href="#cursor_blinking?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cursor_blinking?(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L263" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns true if the cursor is blinking.</p>
+  </section>
+</section>
+<section class="detail" id="cursor_visible?/1">
+
+  <div class="detail-header">
+    <a href="#cursor_visible?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cursor_visible?(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L247" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns true if the cursor is visible.</p>
+  </section>
+</section>
+<section class="detail" id="delete_char/1">
+
+  <div class="detail-header">
+    <a href="#delete_char/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">delete_char(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L310" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Deletes the character at the cursor position.</p>
+  </section>
+</section>
+<section class="detail" id="delete_chars/2">
+
+  <div class="detail-header">
+    <a href="#delete_chars/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">delete_chars(emulator, count)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L313" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Deletes the specified number of characters.</p>
+  </section>
+</section>
+<section class="detail" id="end_selection/1">
+
+  <div class="detail-header">
+    <a href="#end_selection/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">end_selection(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L328" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Ends the current text selection.</p>
+  </section>
+</section>
+<section class="detail" id="erase_chars/2">
+
+  <div class="detail-header">
+    <a href="#erase_chars/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_chars(emulator, count)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L300" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Erases the specified number of characters.</p>
+  </section>
+</section>
+<section class="detail" id="erase_display/2">
+
+  <div class="detail-header">
+    <a href="#erase_display/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_display(emulator, mode)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L282" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Erases display content based on mode (0=to end, 1=from start, 2=entire).</p>
+  </section>
+</section>
+<section class="detail" id="erase_from_cursor_to_end/1">
+
+  <div class="detail-header">
+    <a href="#erase_from_cursor_to_end/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_from_cursor_to_end(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L294" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Erases from cursor position to end of screen.</p>
+  </section>
+</section>
+<section class="detail" id="erase_from_start_to_cursor/1">
+
+  <div class="detail-header">
+    <a href="#erase_from_start_to_cursor/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_from_start_to_cursor(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L297" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Erases from start of screen to cursor position.</p>
+  </section>
+</section>
+<section class="detail" id="erase_in_display/2">
+
+  <div class="detail-header">
+    <a href="#erase_in_display/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_in_display(emulator, mode)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L285" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Erases content within the display.</p>
+  </section>
+</section>
+<section class="detail" id="erase_in_line/2">
+
+  <div class="detail-header">
+    <a href="#erase_in_line/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_in_line(emulator, mode)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L291" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Erases content within the current line.</p>
+  </section>
+</section>
+<section class="detail" id="erase_line/2">
+
+  <div class="detail-header">
+    <a href="#erase_line/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">erase_line(emulator, mode)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L288" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Erases line content based on mode.</p>
+  </section>
+</section>
+<section class="detail" id="get_config_struct/1">
+
+  <div class="detail-header">
+    <a href="#get_config_struct/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_config_struct(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L534" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the configuration structure.</p>
+  </section>
+</section>
+<section class="detail" id="get_cursor_position/1">
+
+  <div class="detail-header">
+    <a href="#get_cursor_position/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_cursor_position(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L235" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the current cursor position as {x, y}.</p>
+  </section>
+</section>
+<section class="detail" id="get_cursor_position_struct/1">
+
+  <div class="detail-header">
+    <a href="#get_cursor_position_struct/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_cursor_position_struct(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L254" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets cursor position as a structured object.</p>
+  </section>
+</section>
+<section class="detail" id="get_cursor_style/1">
+
+  <div class="detail-header">
+    <a href="#get_cursor_style/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_cursor_style(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L241" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the current cursor style (:block, :line, :underscore).</p>
+  </section>
+</section>
+<section class="detail" id="get_cursor_visible/1">
+
+  <div class="detail-header">
+    <a href="#get_cursor_visible/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_cursor_visible(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L251" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets cursor visibility state.</p>
+  </section>
+</section>
+<section class="detail" id="get_height/1">
+
+  <div class="detail-header">
+    <a href="#get_height/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_height(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L384" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the terminal height in rows.</p>
+  </section>
+</section>
+<section class="detail" id="get_mode_manager/1">
+
+  <div class="detail-header">
+    <a href="#get_mode_manager/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_mode_manager(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L531" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the mode manager.</p>
+  </section>
+</section>
+<section class="detail" id="get_mode_manager_cursor_visible/1">
+
+  <div class="detail-header">
+    <a href="#get_mode_manager_cursor_visible/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_mode_manager_cursor_visible(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L257" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets cursor visibility from mode manager.</p>
+  </section>
+</section>
+<section class="detail" id="get_output/1">
+
+  <div class="detail-header">
+    <a href="#get_output/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_output(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L563" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_output(<a href="#t:t/0">t</a>()) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
+      </div>
+
+<p>Gets output from the emulator.</p>
+  </section>
+</section>
+<section class="detail" id="get_output_buffer/1">
+
+  <div class="detail-header">
+    <a href="#get_output_buffer/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_output_buffer(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L502" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets output buffer (legacy compatibility).</p>
+  </section>
+</section>
+<section class="detail" id="get_screen_buffer/1">
+
+  <div class="detail-header">
+    <a href="#get_screen_buffer/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_screen_buffer(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L490" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the active screen buffer.</p>
+  </section>
+</section>
+<section class="detail" id="get_scroll_region/1">
+
+  <div class="detail-header">
+    <a href="#get_scroll_region/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_scroll_region(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L388" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the current scroll region as {top, bottom}.</p>
+  </section>
+</section>
+<section class="detail" id="get_scrollback/1">
+
+  <div class="detail-header">
+    <a href="#get_scrollback/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_scrollback(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L516" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the scrollback buffer contents.</p>
+  </section>
+</section>
+<section class="detail" id="get_selection/1">
+
+  <div class="detail-header">
+    <a href="#get_selection/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_selection(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L336" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the currently selected text.</p>
+  </section>
+</section>
+<section class="detail" id="get_width/1">
+
+  <div class="detail-header">
+    <a href="#get_width/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_width(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L380" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Gets the terminal width in columns.</p>
+  </section>
+</section>
+<section class="detail" id="handle_esc_equals/1">
+
+  <div class="detail-header">
+    <a href="#handle_esc_equals/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">handle_esc_equals(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L556" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Handles ESC = sequence (DECKPAM - Enable application keypad mode).</p>
+  </section>
+</section>
+<section class="detail" id="handle_esc_greater/1">
+
+  <div class="detail-header">
+    <a href="#handle_esc_greater/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">handle_esc_greater(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L559" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Handles ESC &gt; sequence (DECKPNM - Disable application keypad mode).</p>
+  </section>
+</section>
+<section class="detail" id="has_selection?/1">
+
+  <div class="detail-header">
+    <a href="#has_selection?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">has_selection?(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L340" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns true if text is currently selected.</p>
+  </section>
+</section>
+<section class="detail" id="insert_char/2">
+
+  <div class="detail-header">
+    <a href="#insert_char/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">insert_char(emulator, char)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L304" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Inserts a character at the cursor position.</p>
+  </section>
+</section>
+<section class="detail" id="insert_chars/2">
+
+  <div class="detail-header">
+    <a href="#insert_chars/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">insert_chars(emulator, count)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L307" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Inserts the specified number of blank characters.</p>
+  </section>
+</section>
+<section class="detail" id="maybe_scroll/1">
+
+  <div class="detail-header">
+    <a href="#maybe_scroll/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">maybe_scroll(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L519" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Performs automatic scrolling if needed.</p>
+  </section>
+</section>
+<section class="detail" id="move_cursor/3">
+
+  <div class="detail-header">
+    <a href="#move_cursor/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_cursor(emulator, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L464" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Moves the cursor to the specified position.</p>
+  </section>
+</section>
+<section class="detail" id="move_cursor_back/2">
+
+  <div class="detail-header">
+    <a href="#move_cursor_back/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_cursor_back(emulator, count)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L553" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Moves cursor back (stub implementation).</p>
+  </section>
+</section>
+<section class="detail" id="move_cursor_down/2">
+
+  <div class="detail-header">
+    <a href="#move_cursor_down/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_cursor_down(emulator, count)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L547" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Moves cursor down (stub implementation).</p>
+  </section>
+</section>
+<section class="detail" id="move_cursor_forward/2">
+
+  <div class="detail-header">
+    <a href="#move_cursor_forward/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_cursor_forward(emulator, count)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L550" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Moves cursor forward (stub implementation).</p>
+  </section>
+</section>
+<section class="detail" id="move_cursor_to/3">
+
+  <div class="detail-header">
+    <a href="#move_cursor_to/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_cursor_to(emulator, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L538" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Moves cursor to specified position.</p>
+  </section>
+</section>
+<section class="detail" id="move_cursor_to/4">
+
+  <div class="detail-header">
+    <a href="#move_cursor_to/4" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_cursor_to(emulator, x, y, opts)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L541" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Moves cursor to specified position with options.</p>
+  </section>
+</section>
+<section class="detail" id="move_cursor_up/2">
+
+  <div class="detail-header">
+    <a href="#move_cursor_up/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">move_cursor_up(emulator, count)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L544" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Moves cursor up (stub implementation).</p>
+  </section>
+</section>
+<section class="detail" id="new_lite/3">
+
+    <span id="new_lite/0"></span>
+
+    <span id="new_lite/1"></span>
+
+    <span id="new_lite/2"></span>
+
+  <div class="detail-header">
+    <a href="#new_lite/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">new_lite(width \\ 80, height \\ 24, opts \\ [])</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L439" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+    <div class="deprecated">
+      This function is deprecated. Use new/3 with use_genservers: false option instead.
+    </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="new_minimal/2">
+
+    <span id="new_minimal/0"></span>
+
+    <span id="new_minimal/1"></span>
+
+  <div class="detail-header">
+    <a href="#new_minimal/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">new_minimal(width \\ 80, height \\ 24)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L444" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+    <div class="deprecated">
+      This function is deprecated. Use new/3 with enable_history: false, alternate_buffer: false options instead.
+    </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="process_input/2">
+
+  <div class="detail-header">
+    <a href="#process_input/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">process_input(emulator, input)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L512" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Processes input and returns updated emulator with output.</p>
+  </section>
+</section>
+<section class="detail" id="render_screen/1">
+
+  <div class="detail-header">
+    <a href="#render_screen/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">render_screen(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L567" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> render_screen(<a href="#t:t/0">t</a>()) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
+      </div>
+
+<p>Renders the emulator screen.</p>
+  </section>
+</section>
+<section class="detail" id="reset/1">
+
+  <div class="detail-header">
+    <a href="#reset/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">reset(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L454" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Resets the terminal emulator to its initial state.</p>
+  </section>
+</section>
+<section class="detail" id="reset_mode/2">
+
+  <div class="detail-header">
+    <a href="#reset_mode/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">reset_mode(emulator, mode)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L525" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Resets a terminal mode.</p>
+  </section>
+</section>
+<section class="detail" id="resize/3">
+
+  <div class="detail-header">
+    <a href="#resize/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">resize(emulator, new_width, new_height)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L458" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Resizes the terminal to the specified dimensions.</p>
+  </section>
+</section>
+<section class="detail" id="restore_state/1">
+
+  <div class="detail-header">
+    <a href="#restore_state/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">restore_state(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L358" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Restores the previously saved terminal state.</p>
+  </section>
+</section>
+<section class="detail" id="save_state/1">
+
+  <div class="detail-header">
+    <a href="#save_state/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">save_state(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L354" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Saves the current terminal state.</p>
+  </section>
+</section>
+<section class="detail" id="scroll_down/2">
+
+  <div class="detail-header">
+    <a href="#scroll_down/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">scroll_down(emulator, lines)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L349" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Scrolls the display down by the specified number of lines.</p>
+  </section>
+</section>
+<section class="detail" id="scroll_up/2">
+
+  <div class="detail-header">
+    <a href="#scroll_up/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">scroll_up(emulator, lines)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L345" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Scrolls the display up by the specified number of lines.</p>
+  </section>
+</section>
+<section class="detail" id="set_attribute/3">
+
+  <div class="detail-header">
+    <a href="#set_attribute/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_attribute(emulator, attr, value)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L528" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets a terminal attribute.</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_blink/2">
+
+  <div class="detail-header">
+    <a href="#set_cursor_blink/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_blink(emulator, blinking)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L266" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets cursor blinking state.</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_position/3">
+
+  <div class="detail-header">
+    <a href="#set_cursor_position/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_position(emulator, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L238" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the cursor position to the specified coordinates.</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_style/2">
+
+  <div class="detail-header">
+    <a href="#set_cursor_style/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_style(emulator, style)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L244" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets the cursor style to :block, :line, or :underscore.</p>
+  </section>
+</section>
+<section class="detail" id="set_cursor_visibility/2">
+
+  <div class="detail-header">
+    <a href="#set_cursor_visibility/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_cursor_visibility(emulator, visible)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L260" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets cursor visibility.</p>
+  </section>
+</section>
+<section class="detail" id="set_dimensions/3">
+
+  <div class="detail-header">
+    <a href="#set_dimensions/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_dimensions(emulator, width, height)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L493" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets terminal dimensions after validation.</p>
+  </section>
+</section>
+<section class="detail" id="set_mode/2">
+
+  <div class="detail-header">
+    <a href="#set_mode/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_mode(emulator, mode)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L522" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Sets a terminal mode.</p>
+  </section>
+</section>
+<section class="detail" id="start_link/1">
+
+    <span id="start_link/0"></span>
+
+  <div class="detail-header">
+    <a href="#start_link/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">start_link(opts \\ [])</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L395" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Starts a linked terminal emulator process.</p>
+  </section>
+</section>
+<section class="detail" id="start_selection/3">
+
+  <div class="detail-header">
+    <a href="#start_selection/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">start_selection(emulator, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L320" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Starts text selection at the specified coordinates.</p>
+  </section>
+</section>
+<section class="detail" id="switch_to_alternate_screen/1">
+
+  <div class="detail-header">
+    <a href="#switch_to_alternate_screen/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">switch_to_alternate_screen(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L363" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Switches to the alternate screen buffer.</p>
+  </section>
+</section>
+<section class="detail" id="switch_to_normal_screen/1">
+
+  <div class="detail-header">
+    <a href="#switch_to_normal_screen/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">switch_to_normal_screen(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L366" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Switches to the normal screen buffer.</p>
+  </section>
+</section>
+<section class="detail" id="update_active_buffer/2">
+
+  <div class="detail-header">
+    <a href="#update_active_buffer/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_active_buffer(emulator, buffer)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L373" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Updates the active buffer with new content.</p>
+  </section>
+</section>
+<section class="detail" id="update_auto_wrap_mode/2">
+
+  <div class="detail-header">
+    <a href="#update_auto_wrap_mode/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_auto_wrap_mode(emulator, enabled)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L482" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Updates auto wrap mode state.</p>
+  </section>
+</section>
+<section class="detail" id="update_blink_state/1">
+
+  <div class="detail-header">
+    <a href="#update_blink_state/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_blink_state(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L508" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Updates blink state (legacy compatibility).</p>
+  </section>
+</section>
+<section class="detail" id="update_insert_mode/2">
+
+  <div class="detail-header">
+    <a href="#update_insert_mode/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_insert_mode(emulator, enabled)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L476" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Updates insert mode state.</p>
+  </section>
+</section>
+<section class="detail" id="update_selection/3">
+
+  <div class="detail-header">
+    <a href="#update_selection/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">update_selection(emulator, x, y)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L324" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Updates the selection endpoint to the specified coordinates.</p>
+  </section>
+</section>
+<section class="detail" id="validate_dimensions/2">
+
+  <div class="detail-header">
+    <a href="#validate_dimensions/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">validate_dimensions(width, height)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L471" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Validates terminal dimensions.</p>
+  </section>
+</section>
+<section class="detail" id="visible?/1">
+
+  <div class="detail-header">
+    <a href="#visible?/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">visible?(emulator)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L272" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns cursor visibility state.</p>
+  </section>
+</section>
+<section class="detail" id="write_text/2">
+
+  <div class="detail-header">
+    <a href="#write_text/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_text(emulator, text)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L316" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Writes text to the terminal at the cursor position.</p>
+  </section>
+</section>
+<section class="detail" id="write_to_output/2">
+
+  <div class="detail-header">
+    <a href="#write_to_output/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">write_to_output(emulator, data)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/emulator.ex#L376" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Writes data to the output buffer.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

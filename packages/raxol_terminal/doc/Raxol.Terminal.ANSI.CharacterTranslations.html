@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Terminal v2.4.0">
+
+
+    <title>Raxol.Terminal.ANSI.CharacterTranslations — Raxol Terminal v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-5B8D9796.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Terminal
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Terminal</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Terminal.<wbr>ANSI.<wbr>CharacterTranslations</span> 
+      <small class="app-vsn" translate="no">(Raxol Terminal v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Terminal.ANSI.CharacterTranslations.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Provides character translation tables for different character sets.
+Maps characters between different character sets according to ANSI standards.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#dec_special/0" data-no-tooltip="" translate="no">dec_special()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the DEC Special Graphics character set translation table.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#dec_supplementary/0" data-no-tooltip="" translate="no">dec_supplementary()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the DEC Supplementary character set translation table.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#dec_supplementary_graphics/0" data-no-tooltip="" translate="no">dec_supplementary_graphics()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the DEC Supplementary Graphics character set translation table.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#dec_technical/0" data-no-tooltip="" translate="no">dec_technical()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the DEC Technical character set translation table.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#french/0" data-no-tooltip="" translate="no">french()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the French character set translation table.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#german/0" data-no-tooltip="" translate="no">german()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the German character set translation table.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#latin1/0" data-no-tooltip="" translate="no">latin1()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the Latin-1 character set translation table.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#translate_char/2" data-no-tooltip="" translate="no">translate_char(char, charset)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Translates a character from the source character set to the target character set.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#translate_string/2" data-no-tooltip="" translate="no">translate_string(string, charset)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Translates a string from the source character set to the target character set.
+Handles invalid bytes gracefully by passing them through as-is.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#uk/0" data-no-tooltip="" translate="no">uk()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the UK character set translation table.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#unicode_to_ansi/0" data-no-tooltip="" translate="no">unicode_to_ansi()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Map of Unicode codepoints to their ANSI terminal equivalents.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#us_ascii/0" data-no-tooltip="" translate="no">us_ascii()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the US ASCII character set translation table.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="dec_special/0">
+
+  <div class="detail-header">
+    <a href="#dec_special/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">dec_special()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L515" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns the DEC Special Graphics character set translation table.</p><h2 id="dec_special/0-returns" class="section-heading"><a href="#dec_special/0-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li>Map containing DEC Special Graphics character translations</li></ul><h2 id="dec_special/0-examples" class="section-heading"><a href="#dec_special/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Raxol.Terminal.ANSI.CharacterTranslations</span><span class="o">.</span><span class="n">dec_special</span><span class="p" data-group-id="2234192136-1">(</span><span class="p" data-group-id="2234192136-1">)</span><span class="w">
+</span><span class="p" data-group-id="2234192136-2">%{</span><span class="n">...</span><span class="p" data-group-id="2234192136-2">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="dec_supplementary/0">
+
+  <div class="detail-header">
+    <a href="#dec_supplementary/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">dec_supplementary()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L529" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns the DEC Supplementary character set translation table.</p><h2 id="dec_supplementary/0-returns" class="section-heading"><a href="#dec_supplementary/0-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li>Map containing DEC Supplementary character translations</li></ul><h2 id="dec_supplementary/0-examples" class="section-heading"><a href="#dec_supplementary/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Raxol.Terminal.ANSI.CharacterTranslations</span><span class="o">.</span><span class="n">dec_supplementary</span><span class="p" data-group-id="1399439511-1">(</span><span class="p" data-group-id="1399439511-1">)</span><span class="w">
+</span><span class="p" data-group-id="1399439511-2">%{</span><span class="n">...</span><span class="p" data-group-id="1399439511-2">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="dec_supplementary_graphics/0">
+
+  <div class="detail-header">
+    <a href="#dec_supplementary_graphics/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">dec_supplementary_graphics()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L557" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns the DEC Supplementary Graphics character set translation table.</p><h2 id="dec_supplementary_graphics/0-returns" class="section-heading"><a href="#dec_supplementary_graphics/0-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li>Map containing DEC Supplementary Graphics character translations</li></ul><h2 id="dec_supplementary_graphics/0-examples" class="section-heading"><a href="#dec_supplementary_graphics/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Raxol.Terminal.ANSI.CharacterTranslations</span><span class="o">.</span><span class="n">dec_supplementary_graphics</span><span class="p" data-group-id="2120502827-1">(</span><span class="p" data-group-id="2120502827-1">)</span><span class="w">
+</span><span class="p" data-group-id="2120502827-2">%{</span><span class="n">...</span><span class="p" data-group-id="2120502827-2">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="dec_technical/0">
+
+  <div class="detail-header">
+    <a href="#dec_technical/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">dec_technical()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L543" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns the DEC Technical character set translation table.</p><h2 id="dec_technical/0-returns" class="section-heading"><a href="#dec_technical/0-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li>Map containing DEC Technical character translations</li></ul><h2 id="dec_technical/0-examples" class="section-heading"><a href="#dec_technical/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Raxol.Terminal.ANSI.CharacterTranslations</span><span class="o">.</span><span class="n">dec_technical</span><span class="p" data-group-id="5206442945-1">(</span><span class="p" data-group-id="5206442945-1">)</span><span class="w">
+</span><span class="p" data-group-id="5206442945-2">%{</span><span class="n">...</span><span class="p" data-group-id="5206442945-2">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="french/0">
+
+  <div class="detail-header">
+    <a href="#french/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">french()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L473" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns the French character set translation table.</p><h2 id="french/0-returns" class="section-heading"><a href="#french/0-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li>Map containing French character translations</li></ul><h2 id="french/0-examples" class="section-heading"><a href="#french/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Raxol.Terminal.ANSI.CharacterTranslations</span><span class="o">.</span><span class="n">french</span><span class="p" data-group-id="9011916473-1">(</span><span class="p" data-group-id="9011916473-1">)</span><span class="w">
+</span><span class="p" data-group-id="9011916473-2">%{</span><span class="n">...</span><span class="p" data-group-id="9011916473-2">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="german/0">
+
+  <div class="detail-header">
+    <a href="#german/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">german()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L487" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns the German character set translation table.</p><h2 id="german/0-returns" class="section-heading"><a href="#german/0-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li>Map containing German character translations</li></ul><h2 id="german/0-examples" class="section-heading"><a href="#german/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Raxol.Terminal.ANSI.CharacterTranslations</span><span class="o">.</span><span class="n">german</span><span class="p" data-group-id="2061647072-1">(</span><span class="p" data-group-id="2061647072-1">)</span><span class="w">
+</span><span class="p" data-group-id="2061647072-2">%{</span><span class="n">...</span><span class="p" data-group-id="2061647072-2">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="latin1/0">
+
+  <div class="detail-header">
+    <a href="#latin1/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">latin1()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L501" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns the Latin-1 character set translation table.</p><h2 id="latin1/0-returns" class="section-heading"><a href="#latin1/0-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li>Map containing Latin-1 character translations</li></ul><h2 id="latin1/0-examples" class="section-heading"><a href="#latin1/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Raxol.Terminal.ANSI.CharacterTranslations</span><span class="o">.</span><span class="n">latin1</span><span class="p" data-group-id="3991123406-1">(</span><span class="p" data-group-id="3991123406-1">)</span><span class="w">
+</span><span class="p" data-group-id="3991123406-2">%{</span><span class="n">...</span><span class="p" data-group-id="3991123406-2">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="translate_char/2">
+
+  <div class="detail-header">
+    <a href="#translate_char/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">translate_char(char, charset)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L582" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> translate_char(char_codepoint :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), charset :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()</pre>
+
+      </div>
+
+<p>Translates a character from the source character set to the target character set.</p><h2 id="translate_char/2-parameters" class="section-heading"><a href="#translate_char/2-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">char_codepoint</code> - The Unicode codepoint of the character to translate</li><li><code class="inline">charset</code> - The target character set to translate to (e.g., <code class="inline">:us_ascii</code>, <code class="inline">:uk</code>, <code class="inline">:french</code>)</li></ul><h2 id="translate_char/2-returns" class="section-heading"><a href="#translate_char/2-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li>Binary containing the translated character in UTF-8 encoding</li><li>The original character if no translation exists</li></ul><h2 id="translate_char/2-examples" class="section-heading"><a href="#translate_char/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Raxol.Terminal.ANSI.CharacterTranslations</span><span class="o">.</span><span class="n">translate_char</span><span class="p" data-group-id="2624437925-1">(</span><span class="sc">?é</span><span class="p">,</span><span class="w"> </span><span class="ss">:us_ascii</span><span class="p" data-group-id="2624437925-1">)</span><span class="w">
+</span><span class="s">&quot;e&quot;</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Raxol.Terminal.ANSI.CharacterTranslations</span><span class="o">.</span><span class="n">translate_char</span><span class="p" data-group-id="2624437925-2">(</span><span class="sc">?a</span><span class="p">,</span><span class="w"> </span><span class="ss">:us_ascii</span><span class="p" data-group-id="2624437925-2">)</span><span class="w">
+</span><span class="s">&quot;a&quot;</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="translate_string/2">
+
+  <div class="detail-header">
+    <a href="#translate_string/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">translate_string(string, charset)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L606" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> translate_string(string :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), charset :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
+      </div>
+
+<p>Translates a string from the source character set to the target character set.
+Handles invalid bytes gracefully by passing them through as-is.</p>
+  </section>
+</section>
+<section class="detail" id="uk/0">
+
+  <div class="detail-header">
+    <a href="#uk/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">uk()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L459" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns the UK character set translation table.</p><h2 id="uk/0-returns" class="section-heading"><a href="#uk/0-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li>Map containing UK character translations</li></ul><h2 id="uk/0-examples" class="section-heading"><a href="#uk/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Raxol.Terminal.ANSI.CharacterTranslations</span><span class="o">.</span><span class="n">uk</span><span class="p" data-group-id="2182602900-1">(</span><span class="p" data-group-id="2182602900-1">)</span><span class="w">
+</span><span class="p" data-group-id="2182602900-2">%{</span><span class="n">...</span><span class="p" data-group-id="2182602900-2">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="unicode_to_ansi/0">
+
+  <div class="detail-header">
+    <a href="#unicode_to_ansi/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">unicode_to_ansi()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L632" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Map of Unicode codepoints to their ANSI terminal equivalents.</p>
+  </section>
+</section>
+<section class="detail" id="us_ascii/0">
+
+  <div class="detail-header">
+    <a href="#us_ascii/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">us_ascii()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/terminal/ansi/character_translations.ex#L445" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Returns the US ASCII character set translation table.</p><h2 id="us_ascii/0-returns" class="section-heading"><a href="#us_ascii/0-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li>Map containing US ASCII character translations</li></ul><h2 id="us_ascii/0-examples" class="section-heading"><a href="#us_ascii/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Raxol.Terminal.ANSI.CharacterTranslations</span><span class="o">.</span><span class="n">us_ascii</span><span class="p" data-group-id="2756492824-1">(</span><span class="p" data-group-id="2756492824-1">)</span><span class="w">
+</span><span class="p" data-group-id="2756492824-2">%{</span><span class="n">...</span><span class="p" data-group-id="2756492824-2">}</span></code></pre>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_terminal/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_terminal/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Terminal.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

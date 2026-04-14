@@ -1,0 +1,31 @@
+# Raxol MCP v2.4.0 - API Reference
+
+## Modules
+
+- [Raxol.MCP.AgentBridge](Raxol.MCP.AgentBridge.md): Bridges Raxol Agent Actions to MCP tools.
+- [Raxol.MCP.CircuitBreaker](Raxol.MCP.CircuitBreaker.md): Lightweight ETS-backed circuit breaker for MCP tool/resource callbacks.
+- [Raxol.MCP.Client](Raxol.MCP.Client.md): MCP (Model Context Protocol) client for consuming external tool servers.
+- [Raxol.MCP.ContextTree](Raxol.MCP.ContextTree.md): Assembles a structured context tree from multiple sources.
+- [Raxol.MCP.Diff](Raxol.MCP.Diff.md): Simple map diff utility for detecting resource/model changes.
+- [Raxol.MCP.FocusLens](Raxol.MCP.FocusLens.md): Attention-aware tool filtering for MCP surfaces.
+- [Raxol.MCP.Protocol](Raxol.MCP.Protocol.md): JSON-RPC 2.0 message encoding/decoding for the Model Context Protocol.
+- [Raxol.MCP.Registry](Raxol.MCP.Registry.md): ETS-backed registry for MCP tools and resources.
+- [Raxol.MCP.ResourceProvider](Raxol.MCP.ResourceProvider.md): Behaviour for TEA apps that expose model state as MCP resources.
+- [Raxol.MCP.ResourceRouter](Raxol.MCP.ResourceRouter.md): Routes `raxol://` resource URIs to the appropriate data source.
+- [Raxol.MCP.Server](Raxol.MCP.Server.md): Transport-agnostic MCP server.
+- [Raxol.MCP.StructuredScreenshot](Raxol.MCP.StructuredScreenshot.md): Converts a view tree into a clean, JSON-friendly widget summary.
+- [Raxol.MCP.Supervisor](Raxol.MCP.Supervisor.md): Supervision tree for the MCP subsystem.
+- [Raxol.MCP.Test](Raxol.MCP.Test.md): Test harness for Raxol MCP applications.
+- [Raxol.MCP.Test.Assertions](Raxol.MCP.Test.Assertions.md): ExUnit assertion macros for Raxol MCP tests.
+- [Raxol.MCP.Test.Session](Raxol.MCP.Test.Session.md): Struct representing a test session for MCP testing.
+- [Raxol.MCP.ToolProvider](Raxol.MCP.ToolProvider.md): Behaviour for widgets that expose MCP tools.
+- [Raxol.MCP.ToolSynchronizer](Raxol.MCP.ToolSynchronizer.md): Per-session GenServer that bridges the render pipeline to the MCP Registry.
+- [Raxol.MCP.Transport.SSE](Raxol.MCP.Transport.SSE.md): HTTP/SSE transport for MCP.
+- [Raxol.MCP.Transport.Stdio](Raxol.MCP.Transport.Stdio.md): Stdio transport for MCP.
+- [Raxol.MCP.TreeWalker](Raxol.MCP.TreeWalker.md): Traverses a view element tree and derives namespaced MCP tools from widgets.
+- [RaxolMcp](RaxolMcp.md): MCP (Model Context Protocol) server and client for Raxol.
+
+## Mix Tasks
+
+- [mix mcp.server](Mix.Tasks.Mcp.Server.md): Starts the Raxol MCP server with stdio transport.
+

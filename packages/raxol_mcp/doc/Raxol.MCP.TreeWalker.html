@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol MCP v2.4.0">
+
+
+    <title>Raxol.MCP.TreeWalker — Raxol MCP v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-C84C43A4.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol MCP
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol MCP</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>MCP.<wbr>TreeWalker</span> 
+      <small class="app-vsn" translate="no">(Raxol MCP v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.MCP.TreeWalker.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/mcp/tree_walker.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Traverses a view element tree and derives namespaced MCP tools from widgets.</p><p>The view tree is the output of a TEA app's <code class="inline">view/1</code> function -- nested maps
+with <code class="inline">:type</code>, <code class="inline">:id</code>, <code class="inline">:attrs</code>, <code class="inline">:children</code> keys. TreeWalker walks this tree,
+finds widgets that implement <a href="Raxol.MCP.ToolProvider.html"><code class="inline">Raxol.MCP.ToolProvider</code></a>, calls <code class="inline">mcp_tools/1</code>
+to get tool specs, namespaces them by widget ID, and wraps callbacks that
+dispatch TEA messages through the session's Dispatcher.</p><h2 id="module-usage" class="section-heading"><a href="#module-usage" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Usage</span></h2><pre><code class="makeup elixir" translate="no"><span class="n">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7223976303-1">%{</span><span class="ss">dispatcher_pid</span><span class="p">:</span><span class="w"> </span><span class="n">dispatcher_pid</span><span class="p" data-group-id="7223976303-1">}</span><span class="w">
+</span><span class="n">tools</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">TreeWalker</span><span class="o">.</span><span class="n">derive_tools</span><span class="p" data-group-id="7223976303-2">(</span><span class="n">view_tree</span><span class="p">,</span><span class="w"> </span><span class="n">context</span><span class="p" data-group-id="7223976303-2">)</span><span class="w">
+</span><span class="nc">Raxol.MCP.Registry</span><span class="o">.</span><span class="n">register_tools</span><span class="p" data-group-id="7223976303-3">(</span><span class="n">tools</span><span class="p" data-group-id="7223976303-3">)</span></code></pre><p>Tool names are namespaced as <code class="inline">&quot;widget_id.action&quot;</code>, e.g., <code class="inline">&quot;search_input.type_into&quot;</code>.
+Nodes without an <code class="inline">:id</code> key are skipped (layout containers like <code class="inline">:column</code>, <code class="inline">:row</code>).</p><h2 id="module-excluding-widgets" class="section-heading"><a href="#module-excluding-widgets" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Excluding Widgets</span></h2><p>Set <code class="inline">mcp_exclude: true</code> in a widget's attrs to suppress tool derivation:</p><pre><code class="makeup elixir" translate="no"><span class="p" data-group-id="6177839281-1">%{</span><span class="ss">type</span><span class="p">:</span><span class="w"> </span><span class="ss">:text_input</span><span class="p">,</span><span class="w"> </span><span class="ss">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;internal&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">attrs</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6177839281-2">%{</span><span class="ss">mcp_exclude</span><span class="p">:</span><span class="w"> </span><span class="no">true</span><span class="p" data-group-id="6177839281-2">}</span><span class="p" data-group-id="6177839281-1">}</span></code></pre><p>The widget and its children still render normally -- only MCP tool
+exposure is suppressed. Useful for decorative or internal widgets.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-types summary">
+  <h3>
+    <a href="#types">Types</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:context/0" data-no-tooltip="" translate="no">context()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#derive_tools/2" data-no-tooltip="" translate="no">derive_tools(tree, context)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Derives MCP tool definitions from a view element tree.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h2>
+
+    <div class="types-list">
+<section class="detail" id="t:context/0">
+
+  <div class="detail-header">
+    <a href="#t:context/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">context()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/mcp/tree_walker.ex#L71" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> context() :: %{
+  dispatcher_pid: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">pid</a>() | nil,
+  type_map: %{required(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">module</a>()}
+}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="derive_tools/2">
+
+  <div class="detail-header">
+    <a href="#derive_tools/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">derive_tools(tree, context)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/mcp/tree_walker.ex#L88" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> derive_tools(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>() | [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()], <a href="#t:context/0">context</a>()) :: [<a href="Raxol.MCP.Registry.html#t:tool_def/0">Raxol.MCP.Registry.tool_def</a>()]</pre>
+
+      </div>
+
+<p>Derives MCP tool definitions from a view element tree.</p><p>Returns a list of <code class="inline">Registry.tool_def()</code> maps with namespaced names and
+wrapped callbacks that dispatch TEA messages.</p><h2 id="derive_tools/2-options-in-context" class="section-heading"><a href="#derive_tools/2-options-in-context" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Options in context</span></h2><ul><li><code class="inline">:dispatcher_pid</code> - pid of the session's Dispatcher (for message dispatch)</li><li><code class="inline">:type_map</code> - optional override for widget type -&gt; module mapping</li></ul>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_mcp/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_mcp/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol MCP.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>
