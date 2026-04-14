@@ -1,7 +1,7 @@
 defmodule RaxolSensor.MixProject do
   use Mix.Project
 
-  @version "2.3.1"
+  @version "2.4.0"
   @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
@@ -52,8 +52,7 @@ defmodule RaxolSensor.MixProject do
       licenses: ["MIT"],
       links: %{
         "GitHub" => @source_url,
-        "Docs" => "https://hexdocs.pm/raxol_sensor",
-        "Changelog" => "#{@source_url}/blob/main/packages/raxol_sensor/CHANGELOG.md"
+        "Docs" => "https://hexdocs.pm/raxol_sensor"
       },
       maintainers: ["Raxol Team"]
     ]
