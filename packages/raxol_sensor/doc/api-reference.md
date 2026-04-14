@@ -1,0 +1,18 @@
+# Raxol Sensor v2.4.0 - API Reference
+
+## Modules
+
+- [Raxol.Sensor.Behaviour](Raxol.Sensor.Behaviour.md): Behaviour for sensor implementations.
+- [Raxol.Sensor.Feed](Raxol.Sensor.Feed.md): GenServer managing a single sensor's polling lifecycle.
+- [Raxol.Sensor.Fusion](Raxol.Sensor.Fusion.md): Batches sensor readings and produces fused state.
+- [Raxol.Sensor.Fusion.NxBackend](Raxol.Sensor.Fusion.NxBackend.md): Nx-accelerated sensor fusion operations.
+- [Raxol.Sensor.HUD](Raxol.Sensor.HUD.md): Pure functional HUD rendering for sensor data.
+- [Raxol.Sensor.HUDOverlay](Raxol.Sensor.HUDOverlay.md): Glue layer: subscribes to Fusion updates, renders HUD widgets,
+writes cells to a buffer.
+
+- [Raxol.Sensor.MockSensor](Raxol.Sensor.MockSensor.md): Configurable test/demo sensor.
+- [Raxol.Sensor.Reading](Raxol.Sensor.Reading.md): A timestamped sensor reading with quality indicator.
+
+- [Raxol.Sensor.Supervisor](Raxol.Sensor.Supervisor.md): Supervisor for the sensor fusion subsystem.
+- [RaxolSensor](RaxolSensor.md): Sensor fusion framework for Elixir built on OTP.
+

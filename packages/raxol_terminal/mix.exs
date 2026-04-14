@@ -43,7 +43,7 @@ defmodule RaxolTerminal.MixProject do
 
   defp deps do
     [
-      {:raxol_core, "~> 2.4", path: "../raxol_core"},
+      raxol_dep(:raxol_core, "~> 2.4", "../raxol_core"),
       {:uuid, "~> 1.1"},
       {:jason, "~> 1.4"},
 
@@ -56,6 +56,15 @@ defmodule RaxolTerminal.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mox, "~> 1.2", only: :test}
     ]
+  end
+
+  # Use path dep for local dev, Hex dep for publishing
+  defp raxol_dep(name, version, path) do
+    if File.dir?(path) do
+      {name, version, path: path}
+    else
+      {name, version}
+    end
   end
 
   defp description do

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Core v2.4.0">
+
+
+    <title>Raxol.Core.Accessibility.Preferences — Raxol Core v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-4AF930F7.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Core
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Core</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Core.<wbr>Accessibility.<wbr>Preferences</span> 
+      <small class="app-vsn" translate="no">(Raxol Core v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Core.Accessibility.Preferences.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/accessibility/preferences.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Manages accessibility preferences and settings.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#default_prefs_name/0" data-no-tooltip="" translate="no">default_prefs_name()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get the default preferences name.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_option/3" data-no-tooltip="" translate="no">get_option(key, user_preferences_pid_or_name \\ nil, default \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get an accessibility option value.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_text_scale/1" data-no-tooltip="" translate="no">get_text_scale(user_preferences_pid_or_name \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get the current text scale factor based on the large text setting.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#handle_preference_changed/2" data-no-tooltip="" translate="no">handle_preference_changed(arg, user_preferences_pid_or_name)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_high_contrast/2" data-no-tooltip="" translate="no">set_high_contrast(enabled, user_preferences_pid_or_name \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Enable or disable high contrast mode.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_large_text/2" data-no-tooltip="" translate="no">set_large_text(enabled, user_preferences_pid_or_name \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Enable or disable large text mode.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_option/3" data-no-tooltip="" translate="no">set_option(key, value, user_preferences_pid_or_name \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Set an accessibility option value.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_reduced_motion/2" data-no-tooltip="" translate="no">set_reduced_motion(enabled, user_preferences_pid_or_name \\ nil)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Enable or disable reduced motion.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="default_prefs_name/0">
+
+  <div class="detail-header">
+    <a href="#default_prefs_name/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">default_prefs_name()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/accessibility/preferences.ex#L21" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Get the default preferences name.</p><h2 id="default_prefs_name/0-examples" class="section-heading"><a href="#default_prefs_name/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Preferences</span><span class="o">.</span><span class="n">default_prefs_name</span><span class="p" data-group-id="7063990702-1">(</span><span class="p" data-group-id="7063990702-1">)</span><span class="w">
+</span><span class="nc">Raxol.Core.UserPreferences</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="get_option/3">
+
+    <span id="get_option/1"></span>
+
+    <span id="get_option/2"></span>
+
+  <div class="detail-header">
+    <a href="#get_option/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_option(key, user_preferences_pid_or_name \\ nil, default \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/accessibility/preferences.ex#L72" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Get an accessibility option value.</p><h2 id="get_option/3-parameters" class="section-heading"><a href="#get_option/3-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">option_name</code> - The atom representing the accessibility option (e.g., <code class="inline">:high_contrast</code>).</li><li><code class="inline">user_preferences_pid_or_name</code> - The PID or registered name of the UserPreferences process to use (optional).</li><li><code class="inline">default</code> - The default value to return if the option is not set (optional).</li></ul><h2 id="get_option/3-examples" class="section-heading"><a href="#get_option/3-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Preferences</span><span class="o">.</span><span class="n">get_option</span><span class="p" data-group-id="3226336705-1">(</span><span class="ss">:high_contrast</span><span class="p" data-group-id="3226336705-1">)</span><span class="w">
+</span><span class="no">false</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="get_text_scale/1">
+
+    <span id="get_text_scale/0"></span>
+
+  <div class="detail-header">
+    <a href="#get_text_scale/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_text_scale(user_preferences_pid_or_name \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/accessibility/preferences.ex#L263" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Get the current text scale factor based on the large text setting.</p><h2 id="get_text_scale/1-parameters" class="section-heading"><a href="#get_text_scale/1-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">user_preferences_pid_or_name</code> - The PID or registered name of the UserPreferences process to use (optional).</li></ul><h2 id="get_text_scale/1-examples" class="section-heading"><a href="#get_text_scale/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Preferences</span><span class="o">.</span><span class="n">get_text_scale</span><span class="p" data-group-id="0342218385-1">(</span><span class="p" data-group-id="0342218385-1">)</span><span class="w">
+</span><span class="mf">1.0</span><span class="w"> </span><span class="c1"># or 1.5 if large_text is enabled</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="handle_preference_changed/2">
+
+  <div class="detail-header">
+    <a href="#handle_preference_changed/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">handle_preference_changed(arg, user_preferences_pid_or_name)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/accessibility/preferences.ex#L290" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="set_high_contrast/2">
+
+    <span id="set_high_contrast/1"></span>
+
+  <div class="detail-header">
+    <a href="#set_high_contrast/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_high_contrast(enabled, user_preferences_pid_or_name \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/accessibility/preferences.ex#L147" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Enable or disable high contrast mode.</p><h2 id="set_high_contrast/2-parameters" class="section-heading"><a href="#set_high_contrast/2-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">enabled</code> - <code class="inline">true</code> to enable high contrast, <code class="inline">false</code> to disable.</li><li><code class="inline">user_preferences_pid_or_name</code> - The PID or registered name of the UserPreferences process to use (optional).</li></ul><h2 id="set_high_contrast/2-examples" class="section-heading"><a href="#set_high_contrast/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Preferences</span><span class="o">.</span><span class="n">set_high_contrast</span><span class="p" data-group-id="6593738606-1">(</span><span class="no">true</span><span class="p" data-group-id="6593738606-1">)</span><span class="w">
+</span><span class="ss">:ok</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="set_large_text/2">
+
+    <span id="set_large_text/1"></span>
+
+  <div class="detail-header">
+    <a href="#set_large_text/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_large_text(enabled, user_preferences_pid_or_name \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/accessibility/preferences.ex#L218" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Enable or disable large text mode.</p><h2 id="set_large_text/2-parameters" class="section-heading"><a href="#set_large_text/2-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">enabled</code> - <code class="inline">true</code> to enable large text, <code class="inline">false</code> to disable.</li><li><code class="inline">user_preferences_pid_or_name</code> - The PID or registered name of the UserPreferences process to use (optional).</li></ul><h2 id="set_large_text/2-examples" class="section-heading"><a href="#set_large_text/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Preferences</span><span class="o">.</span><span class="n">set_large_text</span><span class="p" data-group-id="4707724794-1">(</span><span class="no">true</span><span class="p" data-group-id="4707724794-1">)</span><span class="w">
+</span><span class="ss">:ok</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="set_option/3">
+
+    <span id="set_option/2"></span>
+
+  <div class="detail-header">
+    <a href="#set_option/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_option(key, value, user_preferences_pid_or_name \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/accessibility/preferences.ex#L114" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Set an accessibility option value.</p><h2 id="set_option/3-parameters" class="section-heading"><a href="#set_option/3-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">key</code> - The option key to set</li><li><code class="inline">value</code> - The value to set</li><li><code class="inline">user_preferences_pid_or_name</code> - The PID or registered name of the UserPreferences process to use (optional).</li></ul><h2 id="set_option/3-examples" class="section-heading"><a href="#set_option/3-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Preferences</span><span class="o">.</span><span class="n">set_option</span><span class="p" data-group-id="9260141298-1">(</span><span class="ss">:high_contrast</span><span class="p">,</span><span class="w"> </span><span class="no">true</span><span class="p" data-group-id="9260141298-1">)</span><span class="w">
+</span><span class="ss">:ok</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="set_reduced_motion/2">
+
+    <span id="set_reduced_motion/1"></span>
+
+  <div class="detail-header">
+    <a href="#set_reduced_motion/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_reduced_motion(enabled, user_preferences_pid_or_name \\ nil)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/accessibility/preferences.ex#L181" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Enable or disable reduced motion.</p><h2 id="set_reduced_motion/2-parameters" class="section-heading"><a href="#set_reduced_motion/2-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">enabled</code> - <code class="inline">true</code> to enable reduced motion, <code class="inline">false</code> to disable.</li><li><code class="inline">user_preferences_pid_or_name</code> - The PID or registered name of the UserPreferences process to use (optional).</li></ul><h2 id="set_reduced_motion/2-examples" class="section-heading"><a href="#set_reduced_motion/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Preferences</span><span class="o">.</span><span class="n">set_reduced_motion</span><span class="p" data-group-id="0698453418-1">(</span><span class="no">true</span><span class="p" data-group-id="0698453418-1">)</span><span class="w">
+</span><span class="ss">:ok</span></code></pre>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_core/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_core/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Core.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

@@ -32,7 +32,7 @@ defmodule RaxolLiveView.MixProject do
   defp deps do
     [
       # Core dependency (Buffer, Events, etc.)
-      {:raxol_core, "~> 2.4", path: "../raxol_core", override: true},
+      raxol_dep(:raxol_core, "~> 2.4", "../raxol_core", override: true),
 
       # PubSub for LiveView <-> Lifecycle communication
       {:phoenix_pubsub, "~> 2.1"},
@@ -47,6 +47,10 @@ defmodule RaxolLiveView.MixProject do
       # Dev/test only
       {:ex_doc, "~> 0.31", only: :dev, runtime: false}
     ]
+  end
+
+  defp raxol_dep(name, version, path, opts \\ []) do
+    if File.dir?(path), do: {name, version, [path: path] ++ opts}, else: {name, version, opts}
   end
 
   defp description do

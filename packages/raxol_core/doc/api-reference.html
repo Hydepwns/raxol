@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Core v2.4.0">
+
+
+    <title>API Reference — Raxol Core v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-4AF930F7.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Core
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-extra" id="main" data-type="extras">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Core</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>API Reference <small class="app-vsn">Raxol Core v#2.4.0</small></h1>
+<a href="api-reference.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+      <a href="https://github.com/DROOdotFOO/raxol" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+    <section class="details-list">
+      <h2 id="modules" class="section-heading">Modules</h2>
+      <div class="summary">
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Accessibility.html" translate="no">Raxol.<wbr>Core.<wbr>Accessibility</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Refactored Accessibility module that delegates to the unified GenAccessibilityServer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Accessibility.AccessibilityServer.html" translate="no">Raxol.<wbr>Core.<wbr>Accessibility.<wbr>AccessibilityServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified GenServer implementation for accessibility features in Raxol.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Accessibility.AnnouncementQueue.html" translate="no">Raxol.<wbr>Core.<wbr>Accessibility.<wbr>AnnouncementQueue</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pure-functional helpers for announcement queue management, priority sorting,
+history tracking, and delivery.  Used by AccessibilityServer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Accessibility.Announcements.html" translate="no">Raxol.<wbr>Core.<wbr>Accessibility.<wbr>Announcements</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles screen reader announcements and announcement queue management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Accessibility.Behaviour.html" translate="no">Raxol.<wbr>Core.<wbr>Accessibility.<wbr>Behaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for accessibility implementations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Accessibility.EventHandler.html" translate="no">Raxol.<wbr>Core.<wbr>Accessibility.<wbr>EventHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles accessibility-related events and notifications.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Accessibility.FocusManager.html" translate="no">Raxol.<wbr>Core.<wbr>Accessibility.<wbr>FocusManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pure-functional helpers for focus tracking, announcements, and
+event handler registration within the AccessibilityServer state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Accessibility.Metadata.html" translate="no">Raxol.<wbr>Core.<wbr>Accessibility.<wbr>Metadata</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles accessibility metadata for UI elements and component styles.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Accessibility.MetadataRegistry.html" translate="no">Raxol.<wbr>Core.<wbr>Accessibility.<wbr>MetadataRegistry</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pure-functional helpers for accessibility metadata and component style
+registration within the AccessibilityServer state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Accessibility.PreferenceManager.html" translate="no">Raxol.<wbr>Core.<wbr>Accessibility.<wbr>PreferenceManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Preference sync helpers for AccessibilityServer.
+Handles merging, setting, and syncing preferences to UserPreferences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Accessibility.Preferences.html" translate="no">Raxol.<wbr>Core.<wbr>Accessibility.<wbr>Preferences</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages accessibility preferences and settings.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Behaviours.BaseManager.html" translate="no">Raxol.<wbr>Core.<wbr>Behaviours.<wbr>BaseManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Base behavior for manager GenServers to reduce code duplication.
+Provides common patterns for state management, lifecycle, and error handling.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Behaviours.BaseRegistry.html" translate="no">Raxol.<wbr>Core.<wbr>Behaviours.<wbr>BaseRegistry</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Base behavior for registry GenServers to reduce code duplication.
+Provides common patterns for registering, unregistering, and looking up resources.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Behaviours.BaseServer.html" translate="no">Raxol.<wbr>Core.<wbr>Behaviours.<wbr>BaseServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Base behavior for general-purpose GenServers to reduce code duplication.
+Provides common patterns for server lifecycle, error handling, and state management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Behaviours.Lifecycle.html" translate="no">Raxol.<wbr>Core.<wbr>Behaviours.<wbr>Lifecycle</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Common behavior for lifecycle management across different components.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Behaviours.Metrics.html" translate="no">Raxol.<wbr>Core.<wbr>Behaviours.<wbr>Metrics</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Common behavior for metrics collection and reporting.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Behaviours.StateManager.html" translate="no">Raxol.<wbr>Core.<wbr>Behaviours.<wbr>StateManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for state management systems.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Config.html" translate="no">Raxol.<wbr>Core.<wbr>Config</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pure functional configuration management for Raxol.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Config.ConfigServer.html" translate="no">Raxol.<wbr>Core.<wbr>Config.<wbr>ConfigServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Backward-compatible configuration server.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Config.Store.html" translate="no">Raxol.<wbr>Core.<wbr>Config.<wbr>Store</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ETS-backed configuration store for fast concurrent reads.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Defaults.html" translate="no">Raxol.<wbr>Core.<wbr>Defaults</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Canonical default values for the Raxol framework.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.ErrorHandler.html" translate="no">Raxol.<wbr>Core.<wbr>ErrorHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Deprecated. Use <a href="Raxol.Core.ErrorHandling.html"><code class="inline">Raxol.Core.ErrorHandling</code></a> instead.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.ErrorHandling.html" translate="no">Raxol.<wbr>Core.<wbr>ErrorHandling</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Functional error handling patterns for Raxol.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.ErrorRecovery.html" translate="no">Raxol.<wbr>Core.<wbr>ErrorRecovery</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Error recovery strategies for the Raxol application.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Events.Event.html" translate="no">Raxol.<wbr>Core.<wbr>Events.<wbr>Event</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the structure for events in the Raxol system, providing a standardized format
+for key presses, mouse actions, and other UI events that components need to process.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Events.EventManager.html" translate="no">Raxol.<wbr>Core.<wbr>Events.<wbr>EventManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Event management system that wraps :telemetry for backward compatibility.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Events.EventManager.EventManagerServer.html" translate="no">Raxol.<wbr>Core.<wbr>Events.<wbr>EventManager.<wbr>EventManagerServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GenServer implementation for event management in Raxol applications.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Events.Manager.html" translate="no">Raxol.<wbr>Core.<wbr>Events.<wbr>Manager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Alias module for Raxol.Core.Events.EventManager.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Events.Subscription.html" translate="no">Raxol.<wbr>Core.<wbr>Events.<wbr>Subscription</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provides helpers for managing event subscriptions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Events.TelemetryAdapter.html" translate="no">Raxol.<wbr>Core.<wbr>Events.<wbr>TelemetryAdapter</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Adapter to migrate from EventManager to :telemetry.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Events.TermboxConverter.html" translate="no">Raxol.<wbr>Core.<wbr>Events.<wbr>TermboxConverter</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Converts rrex_termbox v2.0.1 NIF events to Raxol.Core.Events.Event structs.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Focus.html" translate="no">Raxol.<wbr>Core.<wbr>Focus</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Convenience module for focus management in TEA applications.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.FocusManager.html" translate="no">Raxol.<wbr>Core.<wbr>FocusManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Refactored FocusManager that delegates to GenServer implementation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.FocusManager.Behaviour.html" translate="no">Raxol.<wbr>Core.<wbr>FocusManager.<wbr>Behaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the behaviour for focus management services.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.FocusManager.FocusServer.html" translate="no">Raxol.<wbr>Core.<wbr>FocusManager.<wbr>FocusServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GenServer implementation for focus management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.GlobalRegistry.html" translate="no">Raxol.<wbr>Core.<wbr>GlobalRegistry</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Unified registry interface consolidating different registry patterns across Raxol.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.GlobalRegistry.RegistryBehaviour.html" translate="no">Raxol.<wbr>Core.<wbr>GlobalRegistry.<wbr>RegistryBehaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for unified registry operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.I18n.html" translate="no">Raxol.<wbr>Core.<wbr>I18n</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Refactored internationalization module using GenServer for state management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.I18n.I18nServer.html" translate="no">Raxol.<wbr>Core.<wbr>I18n.<wbr>I18nServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ETS-backed internationalization server.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.KeyboardNavigator.html" translate="no">Raxol.<wbr>Core.<wbr>KeyboardNavigator</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Refactored KeyboardNavigator that delegates to GenServer implementation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.KeyboardNavigator.NavigatorServer.html" translate="no">Raxol.<wbr>Core.<wbr>KeyboardNavigator.<wbr>NavigatorServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>BaseManager implementation for keyboard navigation in Raxol terminal UI applications.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.KeyboardShortcuts.html" translate="no">Raxol.<wbr>Core.<wbr>KeyboardShortcuts</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Refactored KeyboardShortcuts that delegates to GenServer implementation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.KeyboardShortcuts.ShortcutsServer.html" translate="no">Raxol.<wbr>Core.<wbr>KeyboardShortcuts.<wbr>ShortcutsServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GenServer implementation for keyboard shortcuts management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.KeyboardShortcutsBehaviour.html" translate="no">Raxol.<wbr>Core.<wbr>KeyboardShortcutsBehaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behavior for KeyboardShortcuts implementation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.NavigationUtils.html" translate="no">Raxol.<wbr>Core.<wbr>NavigationUtils</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Shared utilities for navigation path management.
+Used by both KeyboardNavigator and WindowManager to avoid code duplication.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Preferences.html" translate="no">Raxol.<wbr>Core.<wbr>Preferences</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages user preferences and settings for the Raxol terminal UI.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Preferences.Persistence.html" translate="no">Raxol.<wbr>Core.<wbr>Preferences.<wbr>Persistence</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles persistence (loading/saving) of user preferences to a file.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Preferences.Store.html" translate="no">Raxol.<wbr>Core.<wbr>Preferences.<wbr>Store</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles storage and retrieval of user preferences.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Log.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Log</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Centralized logging system for Raxol with structured context, performance tracking,
+and consistent formatting across all modules.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.CellProcessor.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>CellProcessor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>This module is responsible for processing cells in the Raxol runtime.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.CommandHelper.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>CommandHelper</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles plugin command registration and dispatch for the Plugin Manager.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.CommandRegistry.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>CommandRegistry</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages command registration and execution for plugins.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.DependencyResolver.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>DependencyResolver</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Install-time and load-time dependency resolution for plugins.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.Discovery.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>Discovery</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles plugin discovery and initialization.
+This module is responsible for</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.EventFilter.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>EventFilter</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles event filtering for plugins.
+This module is responsible for</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.FileWatcher.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>FileWatcher</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles file watching and plugin reloading functionality.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.FileWatcherBehaviour.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>FileWatcherBehaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behavior for file watcher plugins.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.Lifecycle.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>Lifecycle</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the behaviour for plugin lifecycle management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.LifecycleHelper.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>LifecycleHelper</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Helper functions for plugin lifecycle management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>LifecycleHelper.<wbr>Behaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behavior for plugin lifecycle management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.LifecycleManager.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>LifecycleManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles plugin lifecycle operations including loading, unloading, enabling, and disabling plugins.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.Loader.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>Loader</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages plugin loading operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.LoaderBehaviour.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>LoaderBehaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behavior for plugin loading functionality.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.Manifest.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>Manifest</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Declarative plugin metadata struct.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.MissionProfile.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>MissionProfile</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Named set of plugins with configuration overrides.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.Plugin.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>Plugin</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the behaviour for Raxol plugins.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginCommandHandler.<wbr>Behaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behavior for plugin command handling.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginCommandManager.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginCommandManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages plugin command registration and dispatch.
+Coordinates between plugins and the command system.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginErrorHandler.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginErrorHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles plugin error handling and logging.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginEventFilter.Behaviour.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginEventFilter.<wbr>Behaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behavior for plugin event filtering.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginEventProcessor.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginEventProcessor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles event processing and filtering through plugins.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginInitializer.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginInitializer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles initialization of plugins, including state setup and command registration.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginLifecycle.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginLifecycle</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GenServer for plugin lifecycle coordination.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginLifecycleCallbacks.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginLifecycleCallbacks</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles plugin lifecycle callback implementations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginManager.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Facade for plugin management operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginMetadataProvider.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginMetadataProvider</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the behaviour for plugins that provide metadata like ID, version, and dependencies.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginRegistry.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginRegistry</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pure functional plugin registry backed by ETS for fast concurrent lookups.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginReloader.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginReloader</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles plugin reloading operations including reloading by ID and from disk.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginReloader.Behaviour.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginReloader.<wbr>Behaviour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for plugin reloading operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginSupervisor.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginSupervisor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Supervisor for plugin tasks and processes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginUnloader.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginUnloader</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles unloading of plugins, including command and state cleanup.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginValidator.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginValidator</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Comprehensive validation system for plugins before loading.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.PluginsState.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>PluginsState</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Defines the state struct for the plugin manager.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.ResourceBudget.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>ResourceBudget</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Runtime resource monitoring per plugin.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>SafeLifecycleOperations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Enhanced version of LifecycleOperations with comprehensive error handling.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.Security.BeamAnalyzer.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>Security.<wbr>BeamAnalyzer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>BEAM bytecode analyzer for detecting security-sensitive operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.Security.CapabilityDetector.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>Security.<wbr>CapabilityDetector</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>High-level capability detection for plugins.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.StateManager.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>StateManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Namespaced alias for StateManager.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.Plugins.TimerManager.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>Plugins.<wbr>TimerManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Handles timer management for plugin operations including periodic ticks and file event timers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Runtime.ProcessStore.html" translate="no">Raxol.<wbr>Core.<wbr>Runtime.<wbr>ProcessStore</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Replacement for Process dictionary usage.
+Provides a functional alternative using Agent for state storage.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Telemetry.Context.html" translate="no">Raxol.<wbr>Core.<wbr>Telemetry.<wbr>Context</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Trace context propagation for telemetry events.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Telemetry.TraceContext.html" translate="no">Raxol.<wbr>Core.<wbr>Telemetry.<wbr>TraceContext</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Trace context management for request correlation across telemetry events.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.UserPreferences.html" translate="no">Raxol.<wbr>Core.<wbr>UserPreferences</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manages user preferences for the terminal emulator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.UserPreferences.State.html" translate="no">Raxol.<wbr>Core.<wbr>UserPreferences.<wbr>State</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Internal state for the UserPreferences GenServer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Utils.Debounce.html" translate="no">Raxol.<wbr>Core.<wbr>Utils.<wbr>Debounce</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Purely functional debounce utilities for delayed operations.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Utils.GenServerHelpers.html" translate="no">Raxol.<wbr>Core.<wbr>Utils.<wbr>GenServerHelpers</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Common GenServer patterns and utilities to reduce code duplication.
+Provides standardized handlers for common operations like state retrieval,
+metrics collection, and configuration management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Utils.List.html" translate="no">Raxol.<wbr>Core.<wbr>Utils.<wbr>List</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Shared list and collection utilities.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Utils.Math.html" translate="no">Raxol.<wbr>Core.<wbr>Utils.<wbr>Math</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Shared numeric utilities.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Utils.TimerManager.html" translate="no">Raxol.<wbr>Core.<wbr>Utils.<wbr>TimerManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Centralized timer management utilities for consistent timer handling across the codebase.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Utils.TimerUtils.html" translate="no">Raxol.<wbr>Core.<wbr>Utils.<wbr>TimerUtils</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Consolidated timer utilities for standardized timer management across Raxol.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Raxol.Core.Utils.Validation.html" translate="no">Raxol.<wbr>Core.<wbr>Utils.<wbr>Validation</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Common validation utilities to reduce code duplication across the codebase.
+Provides standardized validation functions for dimensions, configs, and common patterns.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="RaxolCore.html" translate="no">RaxolCore</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Core behaviours, utilities, events, config, accessibility, and plugin
+infrastructure for Raxol.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="StateManager.html" translate="no">StateManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Plugin state management utilities with full functionality.</p></div>
+
+</div>
+
+      </div>
+    </section>
+
+
+</div>
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_core/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_core/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Core.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

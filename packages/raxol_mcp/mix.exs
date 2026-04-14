@@ -31,7 +31,7 @@ defmodule RaxolMcp.MixProject do
 
   defp deps do
     [
-      {:raxol_core, "~> 2.4", path: "../raxol_core"},
+      raxol_dep(:raxol_core, "~> 2.4", "../raxol_core"),
       {:jason, "~> 1.4"},
       {:plug, "~> 1.16", optional: true},
 
@@ -41,6 +41,10 @@ defmodule RaxolMcp.MixProject do
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
+  end
+
+  defp raxol_dep(name, version, path) do
+    if File.dir?(path), do: {name, version, path: path}, else: {name, version}
   end
 
   defp description do

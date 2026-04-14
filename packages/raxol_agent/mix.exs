@@ -35,8 +35,8 @@ defmodule RaxolAgent.MixProject do
 
   defp deps do
     [
-      {:raxol, "~> 2.4", path: "../..", override: true},
-      {:raxol_mcp, "~> 2.4", path: "../raxol_mcp"},
+      raxol_dep(:raxol, "~> 2.4", "../..", override: true),
+      raxol_dep(:raxol_mcp, "~> 2.4", "../raxol_mcp"),
       {:circular_buffer, "~> 1.0"},
       {:jason, "~> 1.4"},
       {:req, "~> 0.5", optional: true},
@@ -46,6 +46,10 @@ defmodule RaxolAgent.MixProject do
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
+  end
+
+  defp raxol_dep(name, version, path, opts \\ []) do
+    if File.dir?(path), do: {name, version, [path: path] ++ opts}, else: {name, version, opts}
   end
 
   defp description do

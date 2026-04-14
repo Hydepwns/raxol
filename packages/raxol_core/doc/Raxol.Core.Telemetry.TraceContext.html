@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Core v2.4.0">
+
+
+    <title>Raxol.Core.Telemetry.TraceContext — Raxol Core v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-4AF930F7.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Core
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Core</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Core.<wbr>Telemetry.<wbr>TraceContext</span> 
+      <small class="app-vsn" translate="no">(Raxol Core v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Core.Telemetry.TraceContext.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Trace context management for request correlation across telemetry events.</p><p>Provides trace_id and span_id generation and propagation for debugging
+and observability. Trace context flows through the process dictionary
+for automatic inclusion in telemetry events.</p><h2 id="module-usage" class="section-heading"><a href="#module-usage" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Usage</span></h2><pre><code class="makeup elixir" translate="no"><span class="c1"># Start a new trace for a request/operation</span><span class="w">
+</span><span class="nc">TraceContext</span><span class="o">.</span><span class="n">start_trace</span><span class="p" data-group-id="6985800443-1">(</span><span class="p" data-group-id="6985800443-1">)</span><span class="w">
+
+</span><span class="c1"># Or with a custom trace_id (for distributed tracing)</span><span class="w">
+</span><span class="nc">TraceContext</span><span class="o">.</span><span class="n">start_trace</span><span class="p" data-group-id="6985800443-2">(</span><span class="ss">trace_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;abc123&quot;</span><span class="p" data-group-id="6985800443-2">)</span><span class="w">
+
+</span><span class="c1"># Start a child span within a trace</span><span class="w">
+</span><span class="nc">TraceContext</span><span class="o">.</span><span class="n">start_span</span><span class="p" data-group-id="6985800443-3">(</span><span class="s">&quot;render_component&quot;</span><span class="p" data-group-id="6985800443-3">)</span><span class="w">
+
+</span><span class="c1"># Get current context for logging/telemetry</span><span class="w">
+</span><span class="n">ctx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">TraceContext</span><span class="o">.</span><span class="n">current</span><span class="p" data-group-id="6985800443-4">(</span><span class="p" data-group-id="6985800443-4">)</span><span class="w">
+</span><span class="c1"># =&gt; %{trace_id: &quot;abc123&quot;, span_id: &quot;def456&quot;, parent_span_id: nil}</span><span class="w">
+
+</span><span class="c1"># End the current span</span><span class="w">
+</span><span class="nc">TraceContext</span><span class="o">.</span><span class="n">end_span</span><span class="p" data-group-id="6985800443-5">(</span><span class="p" data-group-id="6985800443-5">)</span></code></pre><h2 id="module-process-dictionary-keys" class="section-heading"><a href="#module-process-dictionary-keys" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Process Dictionary Keys</span></h2><ul><li><code class="inline">:raxol_trace_id</code> - Current trace identifier</li><li><code class="inline">:raxol_span_id</code> - Current span identifier</li><li><code class="inline">:raxol_parent_span_id</code> - Parent span for nested operations</li><li><code class="inline">:raxol_span_stack</code> - Stack of span IDs for nesting</li></ul><h2 id="module-integration" class="section-heading"><a href="#module-integration" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Integration</span></h2><p>The TelemetryAdapter automatically includes trace context in all events
+when available. No manual instrumentation needed for basic tracing.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-types summary">
+  <h3>
+    <a href="#types">Types</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:context/0" data-no-tooltip="" translate="no">context()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:span_id/0" data-no-tooltip="" translate="no">span_id()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:trace_id/0" data-no-tooltip="" translate="no">trace_id()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#active?/0" data-no-tooltip="" translate="no">active?()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if there is an active trace context.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear/0" data-no-tooltip="" translate="no">clear()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Clears the current trace context.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#current/0" data-no-tooltip="" translate="no">current()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the current trace context, or empty context if none active.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#end_span/0" data-no-tooltip="" translate="no">end_span()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Ends the current span and restores the parent span.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#format/0" data-no-tooltip="" translate="no">format()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Formats the current context as a string for logging.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#from_headers/1" data-no-tooltip="" translate="no">from_headers(headers)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates context from HTTP headers (for distributed tracing).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#start_span/1" data-no-tooltip="" translate="no">start_span(name)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Starts a child span within the current trace.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#start_trace/1" data-no-tooltip="" translate="no">start_trace(opts \\ [])</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Starts a new trace, optionally with a provided trace_id.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#to_headers/0" data-no-tooltip="" translate="no">to_headers()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns context as a map suitable for HTTP headers or metadata.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#with_span/2" data-no-tooltip="" translate="no">with_span(name, fun)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Executes a function within a new span.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#with_trace/1" data-no-tooltip="" translate="no">with_trace(fun)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Executes a function within a new trace.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h2>
+
+    <div class="types-list">
+<section class="detail" id="t:context/0">
+
+  <div class="detail-header">
+    <a href="#t:context/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">context()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L43" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> context() :: %{
+  trace_id: <a href="#t:trace_id/0">trace_id</a>() | nil,
+  span_id: <a href="#t:span_id/0">span_id</a>() | nil,
+  parent_span_id: <a href="#t:span_id/0">span_id</a>() | nil
+}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:span_id/0">
+
+  <div class="detail-header">
+    <a href="#t:span_id/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">span_id()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L41" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> span_id() :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:trace_id/0">
+
+  <div class="detail-header">
+    <a href="#t:trace_id/0" class="detail-link" data-no-tooltip="" aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">trace_id()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L40" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@type</span> trace_id() :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="active?/0">
+
+  <div class="detail-header">
+    <a href="#active?/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">active?()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L168" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> active?() :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
+      </div>
+
+<p>Checks if there is an active trace context.</p>
+  </section>
+</section>
+<section class="detail" id="clear/0">
+
+  <div class="detail-header">
+    <a href="#clear/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">clear()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L156" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> clear() :: :ok</pre>
+
+      </div>
+
+<p>Clears the current trace context.</p><p>Call this when a request/operation completes to clean up.</p>
+  </section>
+</section>
+<section class="detail" id="current/0">
+
+  <div class="detail-header">
+    <a href="#current/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">current()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L142" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> current() :: <a href="#t:context/0">context</a>()</pre>
+
+      </div>
+
+<p>Returns the current trace context, or empty context if none active.</p><h2 id="current/0-examples" class="section-heading"><a href="#current/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="n">ctx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">TraceContext</span><span class="o">.</span><span class="n">current</span><span class="p" data-group-id="7673267574-1">(</span><span class="p" data-group-id="7673267574-1">)</span><span class="w">
+</span><span class="p" data-group-id="7673267574-2">%{</span><span class="ss">trace_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;abc&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">span_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;def&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">parent_span_id</span><span class="p">:</span><span class="w"> </span><span class="no">nil</span><span class="p" data-group-id="7673267574-2">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="end_span/0">
+
+  <div class="detail-header">
+    <a href="#end_span/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">end_span()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L108" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> end_span() :: <a href="#t:context/0">context</a>()</pre>
+
+      </div>
+
+<p>Ends the current span and restores the parent span.</p>
+  </section>
+</section>
+<section class="detail" id="format/0">
+
+  <div class="detail-header">
+    <a href="#format/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">format()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L228" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> format() :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
+      </div>
+
+<p>Formats the current context as a string for logging.</p><h2 id="format/0-examples" class="section-heading"><a href="#format/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="nc">TraceContext</span><span class="o">.</span><span class="n">format</span><span class="p" data-group-id="1401041555-1">(</span><span class="p" data-group-id="1401041555-1">)</span><span class="w">
+</span><span class="c1"># =&gt; &quot;[trace:abc123 span:def456]&quot;</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="from_headers/1">
+
+  <div class="detail-header">
+    <a href="#from_headers/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">from_headers(headers)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L266" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> from_headers(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="#t:context/0">context</a>()</pre>
+
+      </div>
+
+<p>Creates context from HTTP headers (for distributed tracing).</p><h2 id="from_headers/1-examples" class="section-heading"><a href="#from_headers/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="nc">TraceContext</span><span class="o">.</span><span class="n">from_headers</span><span class="p" data-group-id="1170324463-1">(</span><span class="p" data-group-id="1170324463-2">%{</span><span class="s">&quot;x-trace-id&quot;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="s">&quot;abc123&quot;</span><span class="p" data-group-id="1170324463-2">}</span><span class="p" data-group-id="1170324463-1">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="start_span/1">
+
+  <div class="detail-header">
+    <a href="#start_span/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">start_span(name)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L88" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> start_span(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="#t:context/0">context</a>()</pre>
+
+      </div>
+
+<p>Starts a child span within the current trace.</p><p>Returns the new context with the child span active.
+The parent span is preserved on a stack for proper nesting.</p><h2 id="start_span/1-examples" class="section-heading"><a href="#start_span/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="nc">TraceContext</span><span class="o">.</span><span class="n">start_span</span><span class="p" data-group-id="7629410100-1">(</span><span class="s">&quot;database_query&quot;</span><span class="p" data-group-id="7629410100-1">)</span><span class="w">
+</span><span class="c1"># ... do work ...</span><span class="w">
+</span><span class="nc">TraceContext</span><span class="o">.</span><span class="n">end_span</span><span class="p" data-group-id="7629410100-2">(</span><span class="p" data-group-id="7629410100-2">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="start_trace/1">
+
+    <span id="start_trace/0"></span>
+
+  <div class="detail-header">
+    <a href="#start_trace/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">start_trace(opts \\ [])</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L63" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> start_trace(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">keyword</a>()) :: <a href="#t:context/0">context</a>()</pre>
+
+      </div>
+
+<p>Starts a new trace, optionally with a provided trace_id.</p><h2 id="start_trace/1-options" class="section-heading"><a href="#start_trace/1-options" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Options</span></h2><ul><li><code class="inline">:trace_id</code> - Use existing trace_id (for distributed tracing)</li><li><code class="inline">:span_name</code> - Name for the root span (default: &quot;root&quot;)</li></ul><h2 id="start_trace/1-examples" class="section-heading"><a href="#start_trace/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="nc">TraceContext</span><span class="o">.</span><span class="n">start_trace</span><span class="p" data-group-id="4197296441-1">(</span><span class="p" data-group-id="4197296441-1">)</span><span class="w">
+</span><span class="nc">TraceContext</span><span class="o">.</span><span class="n">start_trace</span><span class="p" data-group-id="4197296441-2">(</span><span class="ss">trace_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;external-123&quot;</span><span class="p" data-group-id="4197296441-2">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="to_headers/0">
+
+  <div class="detail-header">
+    <a href="#to_headers/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">to_headers()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L249" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> to_headers() :: %{optional(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) =&gt; <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+
+      </div>
+
+<p>Returns context as a map suitable for HTTP headers or metadata.</p><h2 id="to_headers/0-examples" class="section-heading"><a href="#to_headers/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="n">headers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">TraceContext</span><span class="o">.</span><span class="n">to_headers</span><span class="p" data-group-id="4827244820-1">(</span><span class="p" data-group-id="4827244820-1">)</span><span class="w">
+</span><span class="c1"># =&gt; %{&quot;x-trace-id&quot; =&gt; &quot;abc123&quot;, &quot;x-span-id&quot; =&gt; &quot;def456&quot;}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="with_span/2">
+
+  <div class="detail-header">
+    <a href="#with_span/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">with_span(name, fun)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L185" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> with_span(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), (-&gt; result)) :: result when result: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Executes a function within a new span.</p><p>Automatically starts the span before execution and ends it after,
+even if the function raises an exception.</p><h2 id="with_span/2-examples" class="section-heading"><a href="#with_span/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">TraceContext</span><span class="o">.</span><span class="n">with_span</span><span class="p" data-group-id="6399219157-1">(</span><span class="s">&quot;render&quot;</span><span class="p">,</span><span class="w"> </span><span class="k" data-group-id="6399219157-2">fn</span><span class="w"> </span><span class="o">-&gt;</span><span class="w">
+  </span><span class="n">render_component</span><span class="p" data-group-id="6399219157-3">(</span><span class="p" data-group-id="6399219157-3">)</span><span class="w">
+</span><span class="k" data-group-id="6399219157-2">end</span><span class="p" data-group-id="6399219157-1">)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="with_trace/1">
+
+  <div class="detail-header">
+    <a href="#with_trace/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">with_trace(fun)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/telemetry/trace_context.ex#L209" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> with_trace((-&gt; result)) :: result when result: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Executes a function within a new trace.</p><p>Creates a new trace context, executes the function, and clears
+the context after completion.</p><h2 id="with_trace/1-examples" class="section-heading"><a href="#with_trace/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">TraceContext</span><span class="o">.</span><span class="n">with_trace</span><span class="p" data-group-id="1485662642-1">(</span><span class="k" data-group-id="1485662642-2">fn</span><span class="w"> </span><span class="o">-&gt;</span><span class="w">
+  </span><span class="c1"># All telemetry events here will have trace_id</span><span class="w">
+  </span><span class="n">process_request</span><span class="p" data-group-id="1485662642-3">(</span><span class="p" data-group-id="1485662642-3">)</span><span class="w">
+</span><span class="k" data-group-id="1485662642-2">end</span><span class="p" data-group-id="1485662642-1">)</span></code></pre>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_core/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_core/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Core.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

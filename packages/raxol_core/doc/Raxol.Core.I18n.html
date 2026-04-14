@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Raxol Core v2.4.0">
+
+
+    <title>Raxol.Core.I18n — Raxol Core v2.4.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-4AF930F7.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Raxol Core
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v2.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Raxol Core</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Raxol.<wbr>Core.<wbr>I18n</span> 
+      <small class="app-vsn" translate="no">(Raxol Core v2.4.0)</small>
+
+    </h1>
+
+<a href="Raxol.Core.I18n.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/i18n.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Refactored internationalization module using GenServer for state management.</p><p>This module provides the same API as the original I18n module but delegates
+all state management to a supervised GenServer, eliminating Process dictionary usage.</p><h2 id="module-migration-guide" class="section-heading"><a href="#module-migration-guide" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Migration Guide</span></h2><ol><li><p>Add the I18n.I18nServer to your supervision tree:</p><p> children = [
+   {Raxol.Core.I18n.I18nServer, name: Raxol.Core.I18n.I18nServer, config: config}
+ ]</p></li><li><p>Replace <a href="Raxol.Core.I18n.html"><code class="inline">Raxol.Core.I18n</code></a> with <a href="Raxol.Core.I18n.html"><code class="inline">Raxol.Core.I18n</code></a> in your code</p></li><li><p>All API calls remain the same</p></li></ol>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#add_translations/2" data-no-tooltip="" translate="no">add_translations(locale, translations)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Add or update translations for a locale.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#available_locales/0" data-no-tooltip="" translate="no">available_locales()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get all available locales.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cleanup/0" data-no-tooltip="" translate="no">cleanup()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Clean up i18n resources.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#format_currency/2" data-no-tooltip="" translate="no">format_currency(amount, currency_code)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Format a currency amount according to the current locale.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#format_datetime/1" data-no-tooltip="" translate="no">format_datetime(datetime)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Format a datetime according to the current locale.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_locale/0" data-no-tooltip="" translate="no">get_locale()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get the current locale.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#handle_locale_changed/1" data-no-tooltip="" translate="no">handle_locale_changed(event)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Handle locale changed events.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#init/1" data-no-tooltip="" translate="no">init(config \\ [])</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Initialize the i18n framework.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#rtl?/0" data-no-tooltip="" translate="no">rtl?()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if the current locale is right-to-left.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#set_locale/1" data-no-tooltip="" translate="no">set_locale(locale)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Set the current locale.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t/2" data-no-tooltip="" translate="no">t(key, bindings \\ %{})</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get a translated string for the given key.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="add_translations/2">
+
+  <div class="detail-header">
+    <a href="#add_translations/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">add_translations(locale, translations)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/i18n.ex#L194" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Add or update translations for a locale.</p><h2 id="add_translations/2-examples" class="section-heading"><a href="#add_translations/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">add_translations</span><span class="p" data-group-id="3584244239-1">(</span><span class="s">&quot;en&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3584244239-2">%{</span><span class="w">
+</span><span class="gp unselectable">...&gt; </span><span class="w">  </span><span class="s">&quot;new_key&quot;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="s">&quot;New translation&quot;</span><span class="p">,</span><span class="w">
+</span><span class="gp unselectable">...&gt; </span><span class="w">  </span><span class="s">&quot;another_key&quot;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="s">&quot;Another translation&quot;</span><span class="w">
+</span><span class="gp unselectable">...&gt; </span><span class="p" data-group-id="3584244239-2">}</span><span class="p" data-group-id="3584244239-1">)</span><span class="w">
+</span><span class="ss">:ok</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="available_locales/0">
+
+  <div class="detail-header">
+    <a href="#available_locales/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">available_locales()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/i18n.ex#L178" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Get all available locales.</p>
+  </section>
+</section>
+<section class="detail" id="cleanup/0">
+
+  <div class="detail-header">
+    <a href="#cleanup/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cleanup()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/i18n.ex#L156" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Clean up i18n resources.</p><p>With GenServer, cleanup happens automatically when the server stops.</p>
+  </section>
+</section>
+<section class="detail" id="format_currency/2">
+
+  <div class="detail-header">
+    <a href="#format_currency/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">format_currency(amount, currency_code)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/i18n.ex#L119" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Format a currency amount according to the current locale.</p><h2 id="format_currency/2-examples" class="section-heading"><a href="#format_currency/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">format_currency</span><span class="p" data-group-id="6958924758-1">(</span><span class="mf">1234.56</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;USD&quot;</span><span class="p" data-group-id="6958924758-1">)</span><span class="w">
+</span><span class="s">&quot;$1,234.56&quot;</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">set_locale</span><span class="p" data-group-id="6958924758-2">(</span><span class="s">&quot;fr&quot;</span><span class="p" data-group-id="6958924758-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">format_currency</span><span class="p" data-group-id="6958924758-3">(</span><span class="mf">1234.56</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;EUR&quot;</span><span class="p" data-group-id="6958924758-3">)</span><span class="w">
+</span><span class="s">&quot;1 234,56 €&quot;</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="format_datetime/1">
+
+  <div class="detail-header">
+    <a href="#format_datetime/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">format_datetime(datetime)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/i18n.ex#L134" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Format a datetime according to the current locale.</p><h2 id="format_datetime/1-examples" class="section-heading"><a href="#format_datetime/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">dt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">DateTime</span><span class="o">.</span><span class="n">utc_now</span><span class="p" data-group-id="5443537357-1">(</span><span class="p" data-group-id="5443537357-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">format_datetime</span><span class="p" data-group-id="5443537357-2">(</span><span class="n">dt</span><span class="p" data-group-id="5443537357-2">)</span><span class="w">
+</span><span class="s">&quot;December 12, 2025 at 3:45 PM&quot;</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="get_locale/0">
+
+  <div class="detail-header">
+    <a href="#get_locale/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">get_locale()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/i18n.ex#L84" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Get the current locale.</p><h2 id="get_locale/0-examples" class="section-heading"><a href="#get_locale/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">get_locale</span><span class="p" data-group-id="7829282142-1">(</span><span class="p" data-group-id="7829282142-1">)</span><span class="w">
+</span><span class="s">&quot;en&quot;</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="handle_locale_changed/1">
+
+  <div class="detail-header">
+    <a href="#handle_locale_changed/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">handle_locale_changed(event)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/i18n.ex#L144" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Handle locale changed events.</p><p>This is now handled internally by the server.</p>
+  </section>
+</section>
+<section class="detail" id="init/1">
+
+    <span id="init/0"></span>
+
+  <div class="detail-header">
+    <a href="#init/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">init(config \\ [])</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/i18n.ex#L30" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Initialize the i18n framework.</p><p>Now initializes the GenServer state instead of Process dictionary.</p>
+  </section>
+</section>
+<section class="detail" id="rtl?/0">
+
+  <div class="detail-header">
+    <a href="#rtl?/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">rtl?()</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/i18n.ex#L102" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Check if the current locale is right-to-left.</p><h2 id="rtl?/0-examples" class="section-heading"><a href="#rtl?/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">set_locale</span><span class="p" data-group-id="2222400897-1">(</span><span class="s">&quot;ar&quot;</span><span class="p" data-group-id="2222400897-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">rtl?</span><span class="p" data-group-id="2222400897-2">(</span><span class="p" data-group-id="2222400897-2">)</span><span class="w">
+</span><span class="no">true</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">set_locale</span><span class="p" data-group-id="2222400897-3">(</span><span class="s">&quot;en&quot;</span><span class="p" data-group-id="2222400897-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">rtl?</span><span class="p" data-group-id="2222400897-4">(</span><span class="p" data-group-id="2222400897-4">)</span><span class="w">
+</span><span class="no">false</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="set_locale/1">
+
+  <div class="detail-header">
+    <a href="#set_locale/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">set_locale(locale)</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/i18n.ex#L71" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Set the current locale.</p><h2 id="set_locale/1-examples" class="section-heading"><a href="#set_locale/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">set_locale</span><span class="p" data-group-id="3637305759-1">(</span><span class="s">&quot;fr&quot;</span><span class="p" data-group-id="3637305759-1">)</span><span class="w">
+</span><span class="ss">:ok</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">set_locale</span><span class="p" data-group-id="3637305759-2">(</span><span class="s">&quot;invalid&quot;</span><span class="p" data-group-id="3637305759-2">)</span><span class="w">
+</span><span class="p" data-group-id="3637305759-3">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="ss">:locale_not_available</span><span class="p" data-group-id="3637305759-3">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="t/2">
+
+    <span id="t/1"></span>
+
+  <div class="detail-header">
+    <a href="#t/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">t(key, bindings \\ %{})</h1>
+
+
+        <a href="https://github.com/DROOdotFOO/raxol/blob/v2.4.0/lib/raxol/core/i18n.ex#L55" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Get a translated string for the given key.</p><h2 id="t/2-examples" class="section-heading"><a href="#t/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">t</span><span class="p" data-group-id="1950667612-1">(</span><span class="s">&quot;welcome_message&quot;</span><span class="p" data-group-id="1950667612-1">)</span><span class="w">
+</span><span class="s">&quot;Welcome!&quot;</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">I18n</span><span class="o">.</span><span class="n">t</span><span class="p" data-group-id="1950667612-2">(</span><span class="s">&quot;hello_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1950667612-3">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;John&quot;</span><span class="p" data-group-id="1950667612-3">}</span><span class="p" data-group-id="1950667612-2">)</span><span class="w">
+</span><span class="s">&quot;Hello, John!&quot;</span></code></pre>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/raxol_core/2.4.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/raxol_core/2.4.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Raxol Core.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

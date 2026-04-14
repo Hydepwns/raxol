@@ -32,7 +32,7 @@ defmodule RaxolPlugin.MixProject do
   defp deps do
     [
       # Core dependency - plugin behaviours and runtime
-      {:raxol_core, "~> 2.4", path: "../raxol_core"},
+      raxol_dep(:raxol_core, "~> 2.4", "../raxol_core"),
 
       # Dev/test only
       {:mox, "~> 1.2", only: :test},
@@ -40,6 +40,10 @@ defmodule RaxolPlugin.MixProject do
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
+  end
+
+  defp raxol_dep(name, version, path) do
+    if File.dir?(path), do: {name, version, path: path}, else: {name, version}
   end
 
   defp description do
