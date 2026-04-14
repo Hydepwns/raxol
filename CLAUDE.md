@@ -136,9 +136,9 @@ Cross-package references use `@compile {:no_warn_undefined, Module}` and `Code.e
 cd packages/raxol_core && MIX_ENV=test mix test       # ~719 tests
 cd packages/raxol_terminal && MIX_ENV=test mix test    # ~1874 tests
 cd packages/raxol_sensor && MIX_ENV=test mix test      # ~55 tests
-cd packages/raxol_agent && MIX_ENV=test mix test       # ~378 tests
+cd packages/raxol_agent && MIX_ENV=test mix test       # ~401 tests
 cd packages/raxol_mcp && MIX_ENV=test mix test         # ~222 tests + 31 properties
-cd packages/raxol_payments && MIX_ENV=test mix test    # ~94 tests
+cd packages/raxol_payments && MIX_ENV=test mix test    # ~347 tests
 cd packages/raxol_liveview && MIX_ENV=test mix test    # ~37 tests
 cd packages/raxol_plugin && MIX_ENV=test mix test      # ~50 tests
 ```

@@ -1,22 +1,51 @@
-## [Unreleased]
+## [2.4.0] - 2026-04-14
 
 ### Added
 
 - **Phase 14B: Xochi Integration** -- Xochi as default agent-facing protocol for cross-chain payments. Cash-positive with tier-based fees (0.10-0.30%). Riddler solves intents behind the scenes.
   - `Raxol.Payments.Xochi.Client` -- HTTP client for Xochi intent API (quote, execute, status, history)
   - `Raxol.Payments.Xochi.Schemas` -- 5 typed structs (QuoteRequest, QuoteResponse, ExecuteRequest, ExecuteResponse, IntentStatus)
-  - `Raxol.Payments.Protocols.Xochi` -- full intent flow: `get_quote/2` -> `execute/3` (EIP-712 wallet signing) -> `poll_status/3`. Convenience `transfer/4` wraps the full lifecycle
+  - `Raxol.Payments.Protocols.Xochi` -- full intent flow: `get_quote/2` -> `execute/3` (EIP-712 wallet signing) -> `poll_status/3`
   - `Raxol.Payments.Riddler.Client` -- Commerce API client (B2B/direct solver access, not default)
-  - `Raxol.Payments.Riddler.Schemas` -- 6 typed structs (Chain, Route, QuoteRequest, QuoteResponse, OrderRequest, OrderStatus)
-  - `Raxol.Payments.Protocols.Riddler` -- ERC-3009/Permit2 signing, poll flow for direct solver
-  - `Raxol.Payments.Router` -- cross-chain routes to `:xochi`, privacy (stealth/shielded) routes to `:xochi`, same-chain stays `:x402`. Force via `:protocol` option
-  - 49 new tests (94 total in raxol_payments, was 45)
+  - `Raxol.Payments.Router` -- cross-chain routes to `:xochi`, privacy to `:xochi`, same-chain stays `:x402`
+- **Phase 14C: PXE-Bridge Integration** -- Aztec Private eXecution Environment as settlement target for high-trust privacy tiers.
+  - `Raxol.Payments.Pxe.Client` -- JSON-RPC 2.0 client (aztec_createNote, aztec_getVersion, /status)
+  - `Raxol.Payments.Pxe.Schemas` -- CreateNoteParams, CreateNoteResult, HealthStatus
+  - `Raxol.Payments.PrivacyTier` -- Glass Cube model (6 tiers: open, public, standard, stealth, private, sovereign), attestation gating, downgrade logic
+  - Router settlement routing with trust-score-aware privacy depth
+- **Phase 14D: Stealth Settlement** -- Full ERC-5564/ERC-6538 in `Xochi.Stealth` (~300 LOC).
+  - ECDH stealth address derivation (secp256k1)
+  - View tag scanning (256x speedup, 1:256 false positive rate)
+  - Domain-separated key derivation from EVM signature
+  - Meta-address encode/decode (st:eth:0x format)
+  - 44 tests (32 unit + 12 e2e), stress-tested 500 round-trips at 0% failure
+- **Phase 14E: ZKSAR + Trust Tiers** -- Zero-knowledge attestation verification and trust scoring.
+  - `Raxol.Payments.Zksar` -- 6 ZK proof type verification (type, expiry, issuer, structure), batch verify, JSON parsing
+  - `Raxol.Payments.Zksar.TrustScore` -- diminishing-returns aggregation: `score = sum(weight_i / ln(rank + 1))`, capped at 100
+  - PrivacyTier attestation requirements per tier, downgrade logic
+  - Router attestation-aware routing with `trust_score_for/1`
+- **AutoPay wiring** -- `Backend.HTTP` accepts `:req_plugins` for transparent HTTP 402 handling. `Raxol.Payments.Req.AgentPlugin.auto_pay/1` builds the closure.
+- **Riddler solver wiring (ADR-0005)** -- Complete on both sides. 9 Xochi endpoints, fee policy (5 tiers + privacy premiums), stealth/ERC-4337 settlement, ZKSAR attestation, EIP-712 typed data. 119 Riddler tests + 347 raxol_payments tests.
+- **raxol_liveview package** -- TerminalBridge, TEALive, TerminalComponent, 5 themes, CSS asset. 37 tests.
+- **raxol_plugin package** -- `use Raxol.Plugin` macro, API facade, Manifest, Testing helpers, generator. 50 tests.
+- **Hex publishing readiness** -- All packages at v2.4.0 with LICENSE.md, README.md, package metadata, version-constrained path deps. Publishing order: raxol_sensor + raxol_core -> raxol_terminal/mcp/plugin/liveview -> raxol -> raxol_agent -> raxol_payments.
+
+### Changed
+
+- Deprecated `Protocols.Riddler` -- now delegates to Xochi internally
+- All sub-packages bumped to v2.4.0 (raxol_payments stays at 0.1.0)
+- Path deps now include version constraints (`~> 2.4`) for Hex compatibility
 
 ### Fixed
 
 - **Dashboard demo** -- `status_dot/1` used identical character for all scheduler load levels; now uses distinct ASCII indicators per threshold
+- **String.to_atom on external input** -- Replaced 6 unsafe catch-all `String.to_atom(s)` in schema parsers with explicit clauses + `:unknown`/`nil` fallback
+- **Duplicated `maybe_put/3`** -- Extracted to `Schemas.put_non_nil/3` shared helper
+- **Dialyzer specs** -- Tightened `{:error, term()}` to actual error tuple shapes in `metrics.ex`
+- **QuoteRequest validation** -- Added `validate/1` with eth address format checks
+- **Attestation filtering** -- PrivacyTier now filters attestations by `valid: true`
 
-## [2.4.0] - 2026-04-05
+## [2.3.2] - 2026-03-30
 
 ### Added
 
