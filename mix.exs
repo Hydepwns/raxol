@@ -416,9 +416,6 @@ defmodule Raxol.MixProject do
         {"docs/cookbook/PERFORMANCE_OPTIMIZATION.md", [title: "Performance"]},
         {"docs/bench/README.md", [title: "Benchmarks", filename: "benchmarks"]},
         {"docs/features/README.md", [title: "Features", filename: "features"]},
-        {"docs/features/VIM_NAVIGATION.md", [title: "Vim Navigation"]},
-        {"docs/features/COMMAND_PARSER.md", [title: "Command Parser"]},
-        {"docs/features/FUZZY_SEARCH.md", [title: "Fuzzy Search"]},
         {"docs/features/FILESYSTEM.md", [title: "Virtual Filesystem"]},
         {"docs/features/CURSOR_EFFECTS.md", [title: "Cursor Effects"]},
         {"docs/features/AGENT_FRAMEWORK.md", [title: "Agent Framework"]},
@@ -456,9 +453,6 @@ defmodule Raxol.MixProject do
         ),
         Features: ~w(
           docs/features/README.md
-          docs/features/VIM_NAVIGATION.md
-          docs/features/COMMAND_PARSER.md
-          docs/features/FUZZY_SEARCH.md
           docs/features/FILESYSTEM.md
           docs/features/CURSOR_EFFECTS.md
           docs/features/AGENT_FRAMEWORK.md
