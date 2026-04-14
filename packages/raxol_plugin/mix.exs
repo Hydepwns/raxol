@@ -73,12 +73,7 @@ defmodule RaxolPlugin.MixProject do
       source_url: @source_url,
       source_ref: "v#{@version}",
       extras: [
-        "README.md",
-        "../../docs/plugins/BUILDING_PLUGINS.md",
-        "../../docs/plugins/SPOTIFY.md"
-      ],
-      groups_for_extras: [
-        "Plugin Development": Path.wildcard("../../docs/plugins/*.md")
+        "README.md"
       ]
     ]
   end
