@@ -1,9 +1,0 @@
-Mix.Tasks.Raxol.Gen.Plugin.md
-Raxol.Plugin.API.md
-Raxol.Plugin.Manifest.md
-Raxol.Plugin.Testing.md
-Raxol.Plugin.md
-RaxolPlugin.md
-api-reference.md
-llms.txt
-readme.md
