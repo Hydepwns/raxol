@@ -192,6 +192,8 @@ lib/raxol/
 
 **Agent Payments** (in `packages/raxol_payments/`): Agents that can pay for things. Two wallet backends behind `Raxol.Payments.Wallet`: `Wallets.Env` (key from env var) and `Wallets.Op` (key from 1Password via GenServer). Three protocols behind `Raxol.Payments.Protocol`: `Protocols.X402` (Coinbase x402, EIP-712/ERC-3009 signing), `Protocols.MPP` (Stripe/Tempo machine payments), and `Protocols.Xochi` (cross-chain intent settlement). `Raxol.Payments.Req.AutoPay` is a Req response step that handles HTTP 402 flows transparently. `SpendingPolicy` + `Ledger` (ETS-backed GenServer) + `SpendingHook` (CommandHook) enforce per-request/session/lifetime spending limits. Five Agent Actions: `payment_get_balance`, `payment_get_quote`, `payment_transfer`, `payment_spending_status`, `payment_list_history`. Depends on raxol_agent at compile time only (`runtime: false`). See `docs/features/AGENTIC_COMMERCE.md`.
 
+**Privacy & Stealth** (in `packages/raxol_payments/`): `Xochi.Stealth` implements ERC-5564/ERC-6538 stealth addresses (~300 LOC, secp256k1). ECDH derivation, view tag scanning (256x speedup), domain-separated key derivation, meta-address encode/decode. `Pxe.Client` is a JSON-RPC 2.0 client for the Aztec Private eXecution Environment (shielded settlement). `PrivacyTier` maps trust scores to privacy tiers (Glass Cube model, 6 tiers). `Zksar` verifies ZKSAR attestation proofs (6 ZK proof types). `Zksar.TrustScore` aggregates with diminishing returns. Router is attestation-aware. Riddler solver wiring (ADR-0005) is complete on both sides.
+
 **Payment Protocol Routing**: `Raxol.Payments.Router.select/1` picks the protocol. Same-chain HTTP 402 goes to x402/MPP (auto-pay). Cross-chain goes to Xochi (cash-positive, tier fees 0.10-0.30%). Privacy (stealth/shielded) also goes to Xochi. The intent flow: `get_quote/2` -> `execute/3` (wallet signs EIP-712) -> `poll_status/3`. `Xochi.Client` talks to the Xochi API (`/api/intent/quote`, `/api/intent/execute`, `/api/intent/:id/status`). Riddler solves intents behind the scenes. `Protocols.Riddler` + `Riddler.Client` give direct solver access (Commerce API, B2B only -- don't use for agent payments, it's cash-negative). See `../riddler/docs/architecture/decisions/0005-xochi-integration.md` for the rationale.
 
 **Cross-repo payment method types** (canonical in Xochi `src/types/intent.ts`):
@@ -298,6 +300,7 @@ These namespaces are settled -- don't create new top-level alternatives:
 
 - `CI=true` - Triggers CI-specific config
 - `RAXOL_SKIP_TERMINAL_INIT=true` - Skip terminal init in certain contexts
+- `HEX_BUILD=1` - Strip path deps for Hex publishing (`HEX_BUILD=1 mix hex.publish`)
 
 ## Dialyzer
 
@@ -316,6 +319,33 @@ flyctl logs --app raxol    # Logs
 ```
 
 Configuration: `fly.toml`, Dockerfile: `docker/Dockerfile.web`
+
+## Hex Publishing
+
+All 8 packages are published to Hex. Publish order matters (dependency chain):
+
+```bash
+# 1. No raxol deps (parallel)
+cd packages/raxol_sensor && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+cd packages/raxol_core && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+
+# 2. Depend on raxol_core (parallel)
+cd packages/raxol_terminal && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+cd packages/raxol_mcp && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+cd packages/raxol_plugin && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+cd packages/raxol_liveview && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+
+# 3. Main (depends on all above)
+HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+
+# 4. Depend on main raxol
+cd packages/raxol_agent && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+
+# 5. Depends on raxol_agent
+cd packages/raxol_payments && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+```
+
+`HEX_BUILD=1` strips `path:` and `override:` from deps so `mix hex.build` sees only Hex packages. Without it, local path deps are used for development.
 
 ## Project Notes
 
