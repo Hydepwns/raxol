@@ -241,16 +241,16 @@ The Unix/macOS backend uses a termbox2 NIF; Windows uses a pure Elixir driver (u
 
 **Standalone packages** -- grab just the subsystem you need:
 
-| Package | Hex | What |
-|---------|-----|------|
-| [`raxol_core`](https://hex.pm/packages/raxol_core) | `{:raxol_core, "~> 2.4"}` | Behaviours, events, config, plugins |
-| [`raxol_terminal`](https://hex.pm/packages/raxol_terminal) | `{:raxol_terminal, "~> 2.4"}` | Terminal emulation, termbox2 NIF |
-| [`raxol_mcp`](https://hex.pm/packages/raxol_mcp) | `{:raxol_mcp, "~> 2.4"}` | MCP server, client, registry, test harness |
-| [`raxol_agent`](https://hex.pm/packages/raxol_agent) | `{:raxol_agent, "~> 2.4"}` | AI agent framework |
-| [`raxol_sensor`](https://hex.pm/packages/raxol_sensor) | `{:raxol_sensor, "~> 2.4"}` | Sensor fusion (zero deps) |
+| Package                                                    | Hex                           | What                                       |
+| ---------------------------------------------------------- | ----------------------------- | ------------------------------------------ |
+| [`raxol_core`](https://hex.pm/packages/raxol_core)         | `{:raxol_core, "~> 2.4"}`     | Behaviours, events, config, plugins        |
+| [`raxol_terminal`](https://hex.pm/packages/raxol_terminal) | `{:raxol_terminal, "~> 2.4"}` | Terminal emulation, termbox2 NIF           |
+| [`raxol_mcp`](https://hex.pm/packages/raxol_mcp)           | `{:raxol_mcp, "~> 2.4"}`      | MCP server, client, registry, test harness |
+| [`raxol_agent`](https://hex.pm/packages/raxol_agent)       | `{:raxol_agent, "~> 2.4"}`    | AI agent framework                         |
+| [`raxol_sensor`](https://hex.pm/packages/raxol_sensor)     | `{:raxol_sensor, "~> 2.4"}`   | Sensor fusion (zero deps)                  |
 | [`raxol_payments`](https://hex.pm/packages/raxol_payments) | `{:raxol_payments, "~> 0.1"}` | Agent payments, Xochi cross-chain, stealth |
-| [`raxol_liveview`](https://hex.pm/packages/raxol_liveview) | `{:raxol_liveview, "~> 2.4"}` | Phoenix LiveView bridge, themes, CSS |
-| [`raxol_plugin`](https://hex.pm/packages/raxol_plugin) | `{:raxol_plugin, "~> 2.4"}` | Plugin SDK, testing, generator |
+| [`raxol_liveview`](https://hex.pm/packages/raxol_liveview) | `{:raxol_liveview, "~> 2.4"}` | Phoenix LiveView bridge, themes, CSS       |
+| [`raxol_plugin`](https://hex.pm/packages/raxol_plugin)     | `{:raxol_plugin, "~> 2.4"}`   | Plugin SDK, testing, generator             |
 
 ## Development
 

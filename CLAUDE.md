@@ -198,14 +198,14 @@ lib/raxol/
 
 **Cross-repo payment method types** (canonical in Xochi `src/types/intent.ts`):
 
-| Method      | raxol protocol          | Xochi type  | Gasless | Route                          |
-| ----------- | ----------------------- | ----------- | ------- | ------------------------------ |
-| Direct Auth | Protocols.X402/Riddler  | `erc3009`   | yes     | USDC via ERC-3009              |
-| Permit2     | Protocols.Riddler       | `permit2`   | yes     | Most ERC-20 tokens             |
-| Sponsored   | Protocols.Xochi         | `pimlico`   | yes     | ERC-4337 stealth claims        |
-| Pay-per-call| Protocols.X402          | `x402`      | no      | HTTP 402 micropayments         |
-| Agent Relay | Protocols.MPP           | `mpp`       | yes     | Stripe/Tempo machine payments  |
-| Approval    | (on-chain)              | `approval`  | no      | Fallback, requires gas         |
+| Method       | raxol protocol         | Xochi type | Gasless | Route                         |
+| ------------ | ---------------------- | ---------- | ------- | ----------------------------- |
+| Direct Auth  | Protocols.X402/Riddler | `erc3009`  | yes     | USDC via ERC-3009             |
+| Permit2      | Protocols.Riddler      | `permit2`  | yes     | Most ERC-20 tokens            |
+| Sponsored    | Protocols.Xochi        | `pimlico`  | yes     | ERC-4337 stealth claims       |
+| Pay-per-call | Protocols.X402         | `x402`     | no      | HTTP 402 micropayments        |
+| Agent Relay  | Protocols.MPP          | `mpp`      | yes     | Stripe/Tempo machine payments |
+| Approval     | (on-chain)             | `approval` | no      | Fallback, requires gas        |
 
 **Swarm Discovery**: `Raxol.Swarm.Discovery` wraps libcluster (optional dep) with strategy presets: `:gossip` (LAN multicast), `:epmd` (static hosts), `:dns` (Fly.io/K8s), `:tailscale` (mesh via `tailscale status --json`, tag-filtered). NodeMonitor auto-wires `:nodeup`/`:nodedown` events to Topology (elections) and TacticalOverlay (peer sync). Custom strategy: `Raxol.Swarm.Strategy.Tailscale`.
 
