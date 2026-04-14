@@ -180,6 +180,85 @@ defmodule Raxol.Payments.PrivacyTierTest do
     end
   end
 
+  describe "attestation validity filtering" do
+    test "attestations with valid: false are filtered out" do
+      invalid_attestations = [
+        %{
+          type: :compliance,
+          subject: "0x",
+          issuer: "0x",
+          issued_at: 0,
+          expires_at: 0,
+          valid: false
+        },
+        %{
+          type: :non_membership,
+          subject: "0x",
+          issuer: "0x",
+          issued_at: 0,
+          expires_at: 0,
+          valid: false
+        }
+      ]
+
+      # Score 80 -> sovereign, but sovereign requires compliance + non_membership
+      # with valid: true. All attestations are invalid, so downgrade walks down
+      # to stealth (first tier with no attestation requirements).
+      tier = PrivacyTier.from_trust_score(80, attestations: invalid_attestations)
+      assert tier.tier == :stealth
+    end
+
+    test "mixed valid/invalid attestations -- only valid ones count" do
+      attestations = [
+        %{
+          type: :compliance,
+          subject: "0x",
+          issuer: "0x",
+          issued_at: 0,
+          expires_at: 0,
+          valid: true
+        },
+        %{
+          type: :non_membership,
+          subject: "0x",
+          issuer: "0x",
+          issued_at: 0,
+          expires_at: 0,
+          valid: false
+        }
+      ]
+
+      # Only compliance is valid, so private (requires compliance) is met,
+      # but sovereign (requires compliance + non_membership) is not.
+      tier = PrivacyTier.from_trust_score(80, attestations: attestations)
+      assert tier.tier == :private
+    end
+
+    test "sovereign tier requires both compliance and non_membership with valid: true" do
+      valid_attestations = [
+        %{
+          type: :compliance,
+          subject: "0x",
+          issuer: "0x",
+          issued_at: 0,
+          expires_at: 0,
+          valid: true
+        },
+        %{
+          type: :non_membership,
+          subject: "0x",
+          issuer: "0x",
+          issued_at: 0,
+          expires_at: 0,
+          valid: true
+        }
+      ]
+
+      tier = PrivacyTier.from_trust_score(80, attestations: valid_attestations)
+      assert tier.tier == :sovereign
+    end
+  end
+
   describe "shielded?/1" do
     test "true for shielded settlement" do
       tier = PrivacyTier.from_trust_score(60)

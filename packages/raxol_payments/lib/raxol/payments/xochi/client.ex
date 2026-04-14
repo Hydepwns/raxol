@@ -42,10 +42,12 @@ defmodule Raxol.Payments.Xochi.Client do
   @doc "Request an intent quote."
   @spec get_quote(config(), QuoteRequest.t()) :: {:ok, QuoteResponse.t()} | error()
   def get_quote(config, %QuoteRequest{} = request) do
-    config
-    |> build_req()
-    |> Req.post(url: "/xochi/quote", json: QuoteRequest.to_json(request))
-    |> handle_response(&QuoteResponse.from_json/1)
+    with :ok <- QuoteRequest.validate(request) do
+      config
+      |> build_req()
+      |> Req.post(url: "/xochi/quote", json: QuoteRequest.to_json(request))
+      |> handle_response(&QuoteResponse.from_json/1)
+    end
   end
 
   @doc "Execute a quoted intent with a signed payload."
@@ -120,11 +122,21 @@ defmodule Raxol.Payments.Xochi.Client do
   # -- Private --
 
   defp build_req(config) do
+    validate_base_url!(config.base_url)
+
     Req.new(
       base_url: config.base_url,
       headers: [{"authorization", "Bearer #{config.auth_token}"}],
       receive_timeout: 30_000
     )
+  end
+
+  defp validate_base_url!("https://" <> _), do: :ok
+  defp validate_base_url!("http://localhost" <> _), do: :ok
+  defp validate_base_url!("http://127.0.0.1" <> _), do: :ok
+
+  defp validate_base_url!(url) do
+    raise ArgumentError, "Xochi client requires HTTPS base_url, got: #{inspect(url)}"
   end
 
   defp handle_response({:ok, %Req.Response{status: status, body: body}}, transform)

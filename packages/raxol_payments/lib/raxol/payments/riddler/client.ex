@@ -64,10 +64,12 @@ defmodule Raxol.Payments.Riddler.Client do
   @doc "Get a cross-chain transfer quote."
   @spec get_quote(config(), QuoteRequest.t()) :: {:ok, QuoteResponse.t()} | error()
   def get_quote(config, %QuoteRequest{} = request) do
-    config
-    |> build_req()
-    |> Req.get(url: "/commerce/quote", params: QuoteRequest.to_query(request))
-    |> handle_response(&QuoteResponse.from_json/1)
+    with :ok <- QuoteRequest.validate(request) do
+      config
+      |> build_req()
+      |> Req.get(url: "/commerce/quote", params: QuoteRequest.to_query(request))
+      |> handle_response(&QuoteResponse.from_json/1)
+    end
   end
 
   @doc "Submit a signed order."
@@ -91,11 +93,21 @@ defmodule Raxol.Payments.Riddler.Client do
   # -- Private --
 
   defp build_req(config) do
+    validate_base_url!(config.base_url)
+
     Req.new(
       base_url: config.base_url,
       headers: [{"authorization", "Bearer #{config.api_key}"}],
       receive_timeout: 15_000
     )
+  end
+
+  defp validate_base_url!("https://" <> _), do: :ok
+  defp validate_base_url!("http://localhost" <> _), do: :ok
+  defp validate_base_url!("http://127.0.0.1" <> _), do: :ok
+
+  defp validate_base_url!(url) do
+    raise ArgumentError, "Riddler client requires HTTPS base_url, got: #{inspect(url)}"
   end
 
   defp handle_response({:ok, %Req.Response{status: status, body: body}}, transform)

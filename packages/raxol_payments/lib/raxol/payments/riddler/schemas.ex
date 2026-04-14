@@ -82,6 +82,34 @@ defmodule Raxol.Payments.Riddler.Schemas do
             fallback: String.t()
           }
 
+    @eth_address_re ~r/\A0x[0-9a-fA-F]{40}\z/
+
+    @spec validate(t()) :: :ok | {:error, term()}
+    def validate(%__MODULE__{} = req) do
+      cond do
+        not Regex.match?(@eth_address_re, req.refund_address) ->
+          {:error, {:invalid_refund_address, "must be 0x + 40 hex chars"}}
+
+        not Regex.match?(@eth_address_re, req.input_token) ->
+          {:error, {:invalid_input_token, "must be 0x + 40 hex chars"}}
+
+        not Regex.match?(@eth_address_re, req.output_address) ->
+          {:error, {:invalid_output_address, "must be 0x + 40 hex chars"}}
+
+        not Regex.match?(@eth_address_re, req.output_token) ->
+          {:error, {:invalid_output_token, "must be 0x + 40 hex chars"}}
+
+        req.input_chain_id < 1 ->
+          {:error, {:invalid_chain_id, "input_chain_id must be positive"}}
+
+        req.output_chain_id < 1 ->
+          {:error, {:invalid_chain_id, "output_chain_id must be positive"}}
+
+        true ->
+          :ok
+      end
+    end
+
     @spec to_query(t()) :: keyword()
     def to_query(%__MODULE__{} = req) do
       params = [

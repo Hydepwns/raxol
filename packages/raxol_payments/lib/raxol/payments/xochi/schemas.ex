@@ -7,6 +7,16 @@ defmodule Raxol.Payments.Xochi.Schemas do
   intents behind the scenes.
   """
 
+  @eth_address_re ~r/\A0x[0-9a-fA-F]{40}\z/
+
+  @doc false
+  @spec validate_eth_address(String.t()) :: :ok | {:error, :invalid_address}
+  def validate_eth_address(addr) when is_binary(addr) do
+    if Regex.match?(@eth_address_re, addr), do: :ok, else: {:error, :invalid_address}
+  end
+
+  def validate_eth_address(_), do: {:error, :invalid_address}
+
   @doc false
   @spec put_non_nil(map(), String.t(), term()) :: map()
   def put_non_nil(map, _key, nil), do: map
@@ -54,6 +64,31 @@ defmodule Raxol.Payments.Xochi.Schemas do
             gasless: boolean(),
             attestations: [map()]
           }
+
+    @spec validate(t()) :: :ok | {:error, term()}
+    def validate(%__MODULE__{} = req) do
+      alias Raxol.Payments.Xochi.Schemas
+
+      cond do
+        Schemas.validate_eth_address(req.wallet) != :ok ->
+          {:error, {:invalid_wallet, "must be 0x + 40 hex chars"}}
+
+        Schemas.validate_eth_address(req.from_token) != :ok ->
+          {:error, {:invalid_from_token, "must be 0x + 40 hex chars"}}
+
+        Schemas.validate_eth_address(req.to_token) != :ok ->
+          {:error, {:invalid_to_token, "must be 0x + 40 hex chars"}}
+
+        req.from_chain_id < 1 ->
+          {:error, {:invalid_chain_id, "from_chain_id must be positive"}}
+
+        req.to_chain_id < 1 ->
+          {:error, {:invalid_chain_id, "to_chain_id must be positive"}}
+
+        true ->
+          :ok
+      end
+    end
 
     @spec to_json(t()) :: map()
     def to_json(%__MODULE__{} = req) do

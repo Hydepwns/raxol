@@ -110,7 +110,10 @@ defmodule Raxol.Payments.PrivacyTier do
         nil
 
       attestations when is_list(attestations) ->
-        attestations |> Enum.map(& &1.type) |> MapSet.new()
+        attestations
+        |> Enum.filter(&(&1[:valid] == true))
+        |> Enum.map(& &1.type)
+        |> MapSet.new()
     end
   end
 

@@ -109,11 +109,16 @@ defmodule Raxol.Payments.Router do
     end
   end
 
+  @max_trust_score 100
+
   defp maybe_compute_trust_score(opts) do
     case {Keyword.get(opts, :trust_score), Keyword.get(opts, :attestations)} do
       {nil, attestations} when is_list(attestations) and attestations != [] ->
         score = Zksar.TrustScore.aggregate(attestations)
-        Keyword.put(opts, :trust_score, score)
+        Keyword.put(opts, :trust_score, min(score, @max_trust_score))
+
+      {score, _} when is_integer(score) ->
+        Keyword.put(opts, :trust_score, min(score, @max_trust_score))
 
       _ ->
         opts

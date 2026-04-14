@@ -50,7 +50,7 @@ defmodule Raxol.Payments.Req.AutoPay do
     headers = Raxol.Payments.Headers.flatten(response.headers)
 
     with {:ok, protocol_mod, challenge} <- detect_and_parse(protocols, headers),
-         :ok <- check_budget(protocol_mod, challenge, opts),
+         :ok <- try_spend_budget(protocol_mod, challenge, opts),
          {:ok, payment_headers} <- protocol_mod.build_payment(challenge, wallet) do
       # Build retry request: add payment headers and strip the auto_pay step
       # to prevent infinite loops if the server returns 402 again.
@@ -61,7 +61,6 @@ defmodule Raxol.Payments.Req.AutoPay do
 
       case Req.Request.run(retry_request) do
         {_req, %Req.Response{status: status} = paid_response} when status in 200..299 ->
-          maybe_record(protocol_mod, challenge, paid_response, opts)
           {request, paid_response}
 
         {_req, %Req.Response{} = failed_response} ->
@@ -99,8 +98,8 @@ defmodule Raxol.Payments.Req.AutoPay do
     end)
   end
 
-  @spec check_budget(module(), map(), keyword()) :: :ok | {:error, term()}
-  defp check_budget(protocol_mod, challenge, opts) do
+  @spec try_spend_budget(module(), map(), keyword()) :: :ok | {:error, term()}
+  defp try_spend_budget(protocol_mod, challenge, opts) do
     case {Keyword.get(opts, :ledger), Keyword.get(opts, :policy)} do
       {nil, _} ->
         :ok
@@ -112,7 +111,12 @@ defmodule Raxol.Payments.Req.AutoPay do
         agent_id = Keyword.get(opts, :agent_id, :unknown)
         amount = protocol_mod.amount(challenge)
 
-        case Ledger.check_budget(ledger, agent_id, amount, policy) do
+        metadata = %{
+          protocol: protocol_mod.name(),
+          domain: "pending"
+        }
+
+        case Ledger.try_spend(ledger, agent_id, amount, policy, metadata) do
           :ok -> :ok
           {:over_limit, limit_type} -> {:error, {:over_budget, limit_type, amount}}
         end
@@ -132,31 +136,4 @@ defmodule Raxol.Payments.Req.AutoPay do
 
     %{request | response_steps: steps}
   end
-
-  defp maybe_record(protocol_mod, challenge, response, opts) do
-    case Keyword.get(opts, :ledger) do
-      nil ->
-        :ok
-
-      ledger ->
-        agent_id = Keyword.get(opts, :agent_id, :unknown)
-        amount = protocol_mod.amount(challenge)
-        paid_headers = Raxol.Payments.Headers.flatten(response.headers)
-        receipt = protocol_mod.parse_receipt(paid_headers)
-
-        metadata = %{
-          protocol: protocol_mod.name(),
-          tx_hash: get_in_ok(receipt, :tx_hash),
-          domain: extract_domain(response)
-        }
-
-        Ledger.record_spend(ledger, agent_id, amount, metadata)
-    end
-  end
-
-  defp get_in_ok({:ok, map}, key), do: Map.get(map, key)
-  defp get_in_ok(_, _key), do: nil
-
-  defp extract_domain(%{url: %URI{host: host}}) when is_binary(host), do: host
-  defp extract_domain(_), do: "unknown"
 end

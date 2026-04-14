@@ -71,5 +71,12 @@ defmodule Raxol.Payments.Protocol do
   def resolve(:mpp), do: Raxol.Payments.Protocols.MPP
   def resolve(:riddler), do: Raxol.Payments.Protocols.Riddler
   def resolve(:xochi), do: Raxol.Payments.Protocols.Xochi
-  def resolve(module) when is_atom(module), do: module
+
+  def resolve(module) when is_atom(module) do
+    if Code.ensure_loaded?(module) and function_exported?(module, :detect?, 2) do
+      module
+    else
+      raise ArgumentError, "unknown payment protocol: #{inspect(module)}"
+    end
+  end
 end

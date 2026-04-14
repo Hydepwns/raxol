@@ -124,5 +124,44 @@ defmodule Raxol.Payments.RouterTest do
       # Score 80 would be sovereign/shielded, but override to stealth
       assert Router.settlement_for(trust_score: 80, tier_override: :stealth) == :stealth
     end
+
+    test "trust_score 999 gets clamped to 100, still maps to sovereign/shielded" do
+      assert Router.settlement_for(trust_score: 999) == :shielded
+    end
+
+    test "attestations with valid: false do not count for tier requirements" do
+      invalid_compliance = %{
+        type: :compliance,
+        subject: "0x",
+        issuer: "0x",
+        issued_at: 0,
+        expires_at: 0,
+        valid: false
+      }
+
+      invalid_non_membership = %{
+        type: :non_membership,
+        subject: "0x",
+        issuer: "0x",
+        issued_at: 0,
+        expires_at: 0,
+        valid: false
+      }
+
+      # Score 80 qualifies for sovereign, but invalid attestations should
+      # cause downgrade since they don't satisfy requirements.
+      # Downgrades to stealth (first tier with no attestation requirements).
+      settlement =
+        Router.settlement_for(
+          trust_score: 80,
+          attestations: [invalid_compliance, invalid_non_membership]
+        )
+
+      assert settlement == :stealth
+    end
+
+    test "empty attestation list does not affect routing" do
+      assert Router.settlement_for(trust_score: 80, attestations: []) == :shielded
+    end
   end
 end

@@ -111,6 +111,66 @@ defmodule Raxol.Payments.Xochi.SchemasTest do
     end
   end
 
+  @valid_addr "0x" <> String.duplicate("ab", 20)
+
+  describe "QuoteRequest.validate/1" do
+    test "valid request returns :ok" do
+      req = %QuoteRequest{
+        wallet: @valid_addr,
+        from_chain_id: 1,
+        to_chain_id: 8453,
+        from_token: @valid_addr,
+        to_token: @valid_addr,
+        from_amount: "1000000",
+        settlement_preference: "public"
+      }
+
+      assert :ok = QuoteRequest.validate(req)
+    end
+
+    test "invalid wallet address returns error" do
+      req = %QuoteRequest{
+        wallet: "not_an_address",
+        from_chain_id: 1,
+        to_chain_id: 8453,
+        from_token: @valid_addr,
+        to_token: @valid_addr,
+        from_amount: "1000000",
+        settlement_preference: "public"
+      }
+
+      assert {:error, {:invalid_wallet, _}} = QuoteRequest.validate(req)
+    end
+
+    test "invalid token address returns error" do
+      req = %QuoteRequest{
+        wallet: @valid_addr,
+        from_chain_id: 1,
+        to_chain_id: 8453,
+        from_token: "0xshort",
+        to_token: @valid_addr,
+        from_amount: "1000000",
+        settlement_preference: "public"
+      }
+
+      assert {:error, {:invalid_from_token, _}} = QuoteRequest.validate(req)
+    end
+
+    test "chain ID of 0 returns error" do
+      req = %QuoteRequest{
+        wallet: @valid_addr,
+        from_chain_id: 0,
+        to_chain_id: 8453,
+        from_token: @valid_addr,
+        to_token: @valid_addr,
+        from_amount: "1000000",
+        settlement_preference: "public"
+      }
+
+      assert {:error, {:invalid_chain_id, _}} = QuoteRequest.validate(req)
+    end
+  end
+
   describe "QuoteResponse.from_json/1" do
     test "parses JSON response" do
       json = %{

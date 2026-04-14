@@ -74,6 +74,66 @@ defmodule Raxol.Payments.Riddler.SchemasTest do
     end
   end
 
+  @valid_addr "0x" <> String.duplicate("ab", 20)
+
+  describe "QuoteRequest.validate/1" do
+    test "valid request returns :ok" do
+      req = %QuoteRequest{
+        refund_address: @valid_addr,
+        input_token: @valid_addr,
+        input_chain_id: 1,
+        output_address: @valid_addr,
+        output_token: @valid_addr,
+        output_chain_id: 8453,
+        input_amount: "1000000"
+      }
+
+      assert :ok = QuoteRequest.validate(req)
+    end
+
+    test "invalid refund_address returns error" do
+      req = %QuoteRequest{
+        refund_address: "bad_address",
+        input_token: @valid_addr,
+        input_chain_id: 1,
+        output_address: @valid_addr,
+        output_token: @valid_addr,
+        output_chain_id: 8453,
+        input_amount: "1000000"
+      }
+
+      assert {:error, {:invalid_refund_address, _}} = QuoteRequest.validate(req)
+    end
+
+    test "invalid input_token returns error" do
+      req = %QuoteRequest{
+        refund_address: @valid_addr,
+        input_token: "0xtooshort",
+        input_chain_id: 1,
+        output_address: @valid_addr,
+        output_token: @valid_addr,
+        output_chain_id: 8453,
+        input_amount: "1000000"
+      }
+
+      assert {:error, {:invalid_input_token, _}} = QuoteRequest.validate(req)
+    end
+
+    test "chain ID of 0 returns error" do
+      req = %QuoteRequest{
+        refund_address: @valid_addr,
+        input_token: @valid_addr,
+        input_chain_id: 0,
+        output_address: @valid_addr,
+        output_token: @valid_addr,
+        output_chain_id: 8453,
+        input_amount: "1000000"
+      }
+
+      assert {:error, {:invalid_chain_id, _}} = QuoteRequest.validate(req)
+    end
+  end
+
   describe "QuoteResponse.from_json/1" do
     test "parses quote response with deposit address" do
       json = %{

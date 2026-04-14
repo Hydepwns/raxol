@@ -115,7 +115,7 @@ defmodule Raxol.Payments.Pxe.Client do
     opts = [
       base_url: url,
       headers: headers,
-      receive_timeout: 120_000
+      receive_timeout: 15_000
     ]
 
     opts =

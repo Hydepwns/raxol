@@ -91,6 +91,93 @@ defmodule Raxol.Payments.LedgerTest do
     end
   end
 
+  describe "try_spend/5" do
+    test "atomically checks and records a spend within limits", %{ledger: ledger} do
+      policy = %SpendingPolicy{
+        per_request_max: Decimal.new("1.00"),
+        session_max: Decimal.new("5.00"),
+        session_window_ms: 60_000,
+        lifetime_max: Decimal.new("100.00")
+      }
+
+      assert :ok =
+               Ledger.try_spend(ledger, "agent_1", Decimal.new("0.50"), policy, %{
+                 domain: "example.com"
+               })
+
+      entries = Ledger.get_history(ledger, "agent_1")
+      assert length(entries) == 1
+      assert Decimal.equal?(hd(entries).amount, Decimal.new("0.50"))
+    end
+
+    test "rejects spend over per_request limit", %{ledger: ledger} do
+      policy = %SpendingPolicy{
+        per_request_max: Decimal.new("0.10"),
+        session_max: Decimal.new("5.00"),
+        session_window_ms: 60_000,
+        lifetime_max: Decimal.new("100.00")
+      }
+
+      assert {:over_limit, :per_request} =
+               Ledger.try_spend(ledger, "agent_1", Decimal.new("0.50"), policy)
+
+      assert Ledger.get_history(ledger, "agent_1") == []
+    end
+
+    test "rejects spend over session limit after prior spends", %{ledger: ledger} do
+      policy = %SpendingPolicy{
+        per_request_max: Decimal.new("1.00"),
+        session_max: Decimal.new("0.30"),
+        session_window_ms: 60_000,
+        lifetime_max: Decimal.new("100.00")
+      }
+
+      assert :ok = Ledger.try_spend(ledger, "agent_1", Decimal.new("0.20"), policy)
+      assert :ok = Ledger.try_spend(ledger, "agent_1", Decimal.new("0.08"), policy)
+
+      assert {:over_limit, :session} =
+               Ledger.try_spend(ledger, "agent_1", Decimal.new("0.05"), policy)
+
+      entries = Ledger.get_history(ledger, "agent_1")
+      assert length(entries) == 2
+
+      total = Enum.reduce(entries, Decimal.new(0), &Decimal.add(&1.amount, &2))
+      assert Decimal.equal?(total, Decimal.new("0.28"))
+    end
+
+    test "concurrent safety -- total recorded never exceeds session_max", %{ledger: ledger} do
+      policy = %SpendingPolicy{
+        per_request_max: Decimal.new("0.20"),
+        session_max: Decimal.new("1.00"),
+        session_window_ms: 60_000,
+        lifetime_max: Decimal.new("100.00")
+      }
+
+      # Each task gets unique metadata so ETS :bag does not dedup
+      # entries that land on the same millisecond timestamp.
+      tasks =
+        for i <- 1..20 do
+          Task.async(fn ->
+            Ledger.try_spend(ledger, "agent_c", Decimal.new("0.10"), policy, %{seq: i})
+          end)
+        end
+
+      results = Task.await_many(tasks, 5_000)
+
+      ok_count = Enum.count(results, &(&1 == :ok))
+      over_count = Enum.count(results, &match?({:over_limit, _}, &1))
+      assert ok_count + over_count == 20
+
+      # At most 10 spends of $0.10 fit within $1.00 session_max
+      assert ok_count <= 10
+      assert ok_count >= 1
+
+      entries = Ledger.get_history(ledger, "agent_c")
+      total = Enum.reduce(entries, Decimal.new(0), &Decimal.add(&1.amount, &2))
+      assert Decimal.compare(total, Decimal.new("1.00")) in [:lt, :eq]
+    end
+  end
+
   describe "get_totals/3" do
     test "returns session and lifetime totals", %{ledger: ledger} do
       policy = %SpendingPolicy{

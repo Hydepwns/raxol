@@ -174,6 +174,47 @@ defmodule Raxol.Payments.ZksarTest do
     end
   end
 
+  describe "adversarial cases" do
+    test "expired proof (expires_at = now - 1) returns :expired" do
+      proof = %{@valid_proof | expires_at: @now - 1}
+      assert {:error, :expired} = Zksar.verify(proof, now: @now)
+    end
+
+    test "proof with empty signature returns :malformed" do
+      proof = %{@valid_proof | signature: ""}
+      assert {:error, :malformed} = Zksar.verify(proof, now: @now)
+    end
+
+    test "proof with empty subject returns :malformed" do
+      proof = %{@valid_proof | subject: ""}
+      assert {:error, :malformed} = Zksar.verify(proof, now: @now)
+    end
+
+    test "batch with mix of valid and invalid proofs returns both lists" do
+      valid = @valid_proof
+      expired = %{@valid_proof | expires_at: @now - 1}
+      malformed = %{@valid_proof | subject: ""}
+      unknown = %{@valid_proof | type_code: 0xFF}
+
+      {verified, errors} =
+        Zksar.verify_batch([valid, expired, malformed, unknown], now: @now)
+
+      assert length(verified) == 1
+      assert hd(verified).type == :compliance
+      assert length(errors) == 3
+
+      error_reasons = Enum.map(errors, fn {_proof, reason} -> reason end)
+      assert :expired in error_reasons
+      assert :malformed in error_reasons
+      assert :unknown_type in error_reasons
+    end
+
+    test "proof with unknown type_code 0xFF returns :unknown_type" do
+      proof = %{@valid_proof | type_code: 0xFF}
+      assert {:error, :unknown_type} = Zksar.verify(proof, now: @now)
+    end
+  end
+
   describe "proof_types/0" do
     test "returns all six types" do
       types = Zksar.proof_types()

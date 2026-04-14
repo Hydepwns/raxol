@@ -98,9 +98,8 @@ defmodule Raxol.Payments.Wallets.Env do
   @spec sign_typed_data(map(), map(), map(), String.t()) ::
           {:ok, binary()} | {:error, term()}
   def sign_typed_data(domain, types, message, env_var) do
-    with {:ok, privkey} <- load_key(env_var) do
-      hash = eip712_hash(domain, types, message)
-
+    with {:ok, privkey} <- load_key(env_var),
+         {:ok, hash} <- eip712_hash(domain, types, message) do
       case ExSecp256k1.sign(hash, privkey) do
         {:ok, {r, s, v}} ->
           {:ok, <<r::binary-size(32), s::binary-size(32), v::8>>}
@@ -138,12 +137,13 @@ defmodule Raxol.Payments.Wallets.Env do
   end
 
   @doc false
-  @spec eip712_hash(map(), map(), map()) :: binary()
+  @spec eip712_hash(map(), map(), map()) :: {:ok, binary()} | {:error, term()}
   def eip712_hash(domain, types, message) do
-    domain_separator = hash_struct("EIP712Domain", domain, eip712_domain_types(domain))
-    message_hash = hash_struct(primary_type(types), message, types)
-
-    ExKeccak.hash_256(<<0x19, 0x01, domain_separator::binary, message_hash::binary>>)
+    with {:ok, domain_separator} <-
+           hash_struct("EIP712Domain", domain, eip712_domain_types(domain)),
+         {:ok, message_hash} <- hash_struct(primary_type(types), message, types) do
+      {:ok, ExKeccak.hash_256(<<0x19, 0x01, domain_separator::binary, message_hash::binary>>)}
+    end
   end
 
   defp eip712_domain_types(domain) do
@@ -169,12 +169,15 @@ defmodule Raxol.Payments.Wallets.Env do
     |> List.first()
   end
 
-  # EIP-712: hashStruct(s) = keccak256(typeHash ‖ encodeData(s))
+  # EIP-712: hashStruct(s) = keccak256(typeHash || encodeData(s))
   # where typeHash = keccak256(encodeType(s)) and encodeType returns the string.
   defp hash_struct(type_name, data, types) do
     type_hash = encode_type(type_name, types)
-    encoded_data = encode_data(type_name, data, types)
-    ExKeccak.hash_256(<<type_hash::binary, encoded_data::binary>>)
+
+    case encode_data(type_name, data, types) do
+      {:error, _} = err -> err
+      encoded_data -> {:ok, ExKeccak.hash_256(<<type_hash::binary, encoded_data::binary>>)}
+    end
   end
 
   defp encode_type(type_name, types) do
@@ -195,48 +198,70 @@ defmodule Raxol.Payments.Wallets.Env do
     fields = Map.get(types, type_name, [])
 
     fields
-    |> Enum.map(fn {name, type} ->
-      value = Map.get(data, String.to_atom(name)) || Map.get(data, name)
-      encode_value(type, value)
+    |> Enum.reduce_while(<<>>, fn {name, type}, acc ->
+      value = Map.get(data, name) || safe_atom_get(data, name)
+
+      case encode_value(type, value) do
+        {:ok, encoded} -> {:cont, <<acc::binary, encoded::binary>>}
+        {:error, _} = err -> {:halt, err}
+      end
     end)
-    |> IO.iodata_to_binary()
+  end
+
+  # Look up a string key as an existing atom. Returns nil if the atom
+  # doesn't exist, avoiding atom table exhaustion from external input.
+  defp safe_atom_get(data, name) do
+    Map.get(data, String.to_existing_atom(name))
+  rescue
+    ArgumentError -> nil
   end
 
   defp encode_value("address", value) when is_binary(value) do
-    value
-    |> String.trim_leading("0x")
-    |> Base.decode16!(case: :mixed)
-    |> pad_left(32)
+    hex = String.trim_leading(value, "0x")
+
+    case Base.decode16(hex, case: :mixed) do
+      {:ok, bytes} when byte_size(bytes) == 20 ->
+        {:ok, pad_left(bytes, 32)}
+
+      {:ok, bytes} ->
+        {:error, {:invalid_address_length, byte_size(bytes)}}
+
+      :error ->
+        {:error, {:invalid_hex, "address"}}
+    end
   end
 
   defp encode_value("uint256", value) when is_integer(value) do
-    <<value::unsigned-big-256>>
+    {:ok, <<value::unsigned-big-256>>}
   end
 
   defp encode_value("uint256", value) when is_binary(value) do
-    value
-    |> String.to_integer()
-    |> then(&<<&1::unsigned-big-256>>)
+    case Integer.parse(value) do
+      {int, ""} -> {:ok, <<int::unsigned-big-256>>}
+      _ -> {:error, {:invalid_uint256, value}}
+    end
   end
 
   defp encode_value("bytes32", value) when is_binary(value) do
-    value
-    |> String.trim_leading("0x")
-    |> Base.decode16!(case: :mixed)
-    |> pad_right(32)
+    hex = String.trim_leading(value, "0x")
+
+    case Base.decode16(hex, case: :mixed) do
+      {:ok, bytes} -> {:ok, pad_right(bytes, 32)}
+      :error -> {:error, {:invalid_hex, "bytes32"}}
+    end
   end
 
   defp encode_value("string", value) when is_binary(value) do
-    ExKeccak.hash_256(value)
+    {:ok, ExKeccak.hash_256(value)}
   end
 
-  defp encode_value("bool", true), do: <<1::unsigned-big-256>>
-  defp encode_value("bool", false), do: <<0::unsigned-big-256>>
+  defp encode_value("bool", true), do: {:ok, <<1::unsigned-big-256>>}
+  defp encode_value("bool", false), do: {:ok, <<0::unsigned-big-256>>}
 
-  defp encode_value(_type, nil), do: <<0::unsigned-big-256>>
+  defp encode_value(_type, nil), do: {:ok, <<0::unsigned-big-256>>}
 
   defp encode_value(_type, value) when is_binary(value) do
-    pad_left(value, 32)
+    {:ok, pad_left(value, 32)}
   end
 
   defp pad_left(bytes, size) do

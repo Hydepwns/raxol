@@ -56,11 +56,28 @@ defmodule Raxol.Payments.Ledger do
 
   Returns `:ok` or `{:over_limit, limit_type}` where limit_type is
   `:per_request`, `:session`, or `:lifetime`.
+
+  Note: For concurrent use, prefer `try_spend/5` which atomically checks
+  and records to prevent TOCTOU races.
   """
   @spec check_budget(GenServer.server(), term(), Decimal.t(), SpendingPolicy.t()) ::
           :ok | {:over_limit, atom()}
   def check_budget(server, agent_id, amount, policy) do
     GenServer.call(server, {:check, agent_id, amount, policy})
+  end
+
+  @doc """
+  Atomically check budget and record spend in a single operation.
+
+  Prevents TOCTOU races where concurrent requests both pass `check_budget`
+  before either calls `record_spend`.
+
+  Returns `:ok` or `{:over_limit, limit_type}`.
+  """
+  @spec try_spend(GenServer.server(), term(), Decimal.t(), SpendingPolicy.t(), map()) ::
+          :ok | {:over_limit, atom()}
+  def try_spend(server, agent_id, amount, policy, metadata \\ %{}) do
+    GenServer.call(server, {:try_spend, agent_id, amount, policy, metadata})
   end
 
   @doc """
@@ -90,7 +107,7 @@ defmodule Raxol.Payments.Ledger do
 
     table =
       :ets.new(table_name, [
-        :bag,
+        :duplicate_bag,
         :protected,
         read_concurrency: true
       ])
@@ -116,6 +133,25 @@ defmodule Raxol.Payments.Ledger do
   def handle_call({:check, agent_id, amount, policy}, _from, state) do
     result = do_check_budget(state.table, agent_id, amount, policy)
     {:reply, result, state}
+  end
+
+  def handle_call({:try_spend, agent_id, amount, policy, metadata}, _from, state) do
+    case do_check_budget(state.table, agent_id, amount, policy) do
+      :ok ->
+        entry = %{
+          agent_id: agent_id,
+          amount: amount,
+          currency: Map.get(metadata, :currency, "USDC"),
+          timestamp_ms: System.system_time(:millisecond),
+          metadata: metadata
+        }
+
+        :ets.insert(state.table, {agent_id, entry})
+        {:reply, :ok, state}
+
+      {:over_limit, _} = over ->
+        {:reply, over, state}
+    end
   end
 
   def handle_call({:history, agent_id, opts}, _from, state) do
