@@ -30,6 +30,7 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 - **Phase 14C: PXE-Bridge Integration** -- Aztec Private eXecution Environment as settlement target for high-trust privacy tiers. PXE client (JSON-RPC 2.0), schemas, PrivacyTier (Glass Cube, 6 tiers), Router settlement routing. 51 tests.
 - **Phase 14D: Stealth Settlement** -- Full ERC-5564/ERC-6538 in `Xochi.Stealth` (~300 LOC). ECDH derivation, view tag scanning (256x speedup), domain-separated key derivation, meta-address encode/decode. 44 tests (32 unit + 12 e2e).
 - **Phase 14E: ZKSAR + Trust Tiers** -- ZKSAR attestation verification (6 ZK proof types), diminishing-returns trust score aggregation, attestation-gated privacy tiers, privacy depth routing. 52 tests.
+- **Riddler Solver Wiring (ADR-0005)** -- Xochi adapter wired to Riddler's intent engine: 9 endpoints, fee policy (5 tiers + privacy premiums), stealth/ERC-4337 settlement, ZKSAR attestation, EIP-712 typed data, PropertyTable stores. 119 Riddler tests + 291 raxol_payments tests. Aztec shielded settlement deferred (sidecar deployment).
 
 ---
 
@@ -37,15 +38,12 @@ Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
 
 ### Ship It
 
-| Task           | Description                                                    | Effort |
-| -------------- | -------------------------------------------------------------- | ------ |
-| Publish to Hex | `mix hex.publish` -- build succeeds, docs clean, zero warnings | Small  |
-
-### Xochi + Payments
-
-| Task                    | Description                                              | Effort |
-| ----------------------- | -------------------------------------------------------- | ------ |
-| Riddler solver in Xochi | Wire Xochi adapter to Riddler's intent engine (ADR-0005) | Large  |
+| Task              | Description                                                    | Effort |
+| ----------------- | -------------------------------------------------------------- | ------ |
+| Hex: raxol_sensor | Zero deps, 55 tests, standalone -- publish first               | Small  |
+| Hex: raxol_mcp    | Full MCP surface, test harness, 222+ tests                     | Small  |
+| Hex: raxol_agent  | Agent framework, depends on raxol + raxol_mcp                  | Medium |
+| Hex: raxol        | Main package, depends on all above                             | Medium |
 
 ### AI Backend Providers
 
