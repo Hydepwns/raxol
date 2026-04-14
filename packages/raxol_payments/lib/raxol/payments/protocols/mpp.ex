@@ -43,12 +43,17 @@ defmodule Raxol.Payments.Protocols.MPP do
   @spec parse_challenge(Headers.headers()) :: {:ok, map()} | {:error, term()}
   def parse_challenge(headers) do
     with {:ok, auth_header} <- Headers.require(headers, "www-authenticate"),
-         {:ok, challenge_data} <- extract_payment_challenge(auth_header) do
+         {:ok, challenge_data} when is_map(challenge_data) <-
+           extract_payment_challenge(auth_header),
+         amount when not is_nil(amount) <- challenge_data["amount"],
+         :ok <- validate_positive_amount(amount),
+         recipient when not is_nil(recipient) <-
+           challenge_data["recipient"] || challenge_data["pay_to"] do
       {:ok,
        %{
-         amount: challenge_data["amount"],
+         amount: amount,
          currency: challenge_data["currency"] || "USDC",
-         recipient: challenge_data["recipient"] || challenge_data["pay_to"],
+         recipient: recipient,
          methods: challenge_data["methods"] || [],
          network: challenge_data["network"],
          nonce: challenge_data["nonce"],
@@ -56,6 +61,10 @@ defmodule Raxol.Payments.Protocols.MPP do
          description: challenge_data["description"],
          extra: challenge_data
        }}
+    else
+      nil -> {:error, :missing_required_field}
+      {:error, _} = err -> err
+      _ -> {:error, :invalid_challenge}
     end
   end
 
@@ -130,6 +139,20 @@ defmodule Raxol.Payments.Protocols.MPP do
         {:error, :invalid_auth_header}
     end
   end
+
+  defp validate_positive_amount(amount) when is_integer(amount) and amount > 0, do: :ok
+  defp validate_positive_amount(amount) when is_float(amount) and amount > 0, do: :ok
+
+  defp validate_positive_amount(amount) when is_binary(amount) do
+    case Decimal.parse(amount) do
+      {dec, ""} -> if Decimal.positive?(dec), do: :ok, else: {:error, {:invalid_amount, amount}}
+      _ -> {:error, {:invalid_amount, amount}}
+    end
+  rescue
+    Decimal.Error -> {:error, {:invalid_amount, amount}}
+  end
+
+  defp validate_positive_amount(amount), do: {:error, {:invalid_amount, amount}}
 
   defp select_method([]), do: "evm"
 

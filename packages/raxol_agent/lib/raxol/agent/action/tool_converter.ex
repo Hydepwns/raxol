@@ -19,12 +19,22 @@ defmodule Raxol.Agent.Action.ToolConverter do
     end)
   end
 
+  # Max nesting depth for LLM-supplied argument maps
+  @max_arg_depth 4
+  # Max total keys across all nesting levels
+  @max_arg_keys 64
+  # Max byte size for string argument values
+  @max_arg_value_bytes 10_000
+
   @doc """
   Dispatch an LLM tool call to the matching action module.
 
   The `tool_call` map should have `"name"` and `"arguments"` keys
   (standard OpenAI/Anthropic function calling format). Arguments can
   be a string (JSON) or a pre-parsed map with string keys.
+
+  Validates argument depth, key count, and value sizes before dispatch
+  to prevent resource exhaustion from malformed LLM output.
 
   Returns `{:ok, result}` or `{:error, reason}`.
   """
@@ -35,7 +45,8 @@ defmodule Raxol.Agent.Action.ToolConverter do
     raw_args = Map.get(tool_call, "arguments") || Map.get(tool_call, :arguments, %{})
 
     with {:ok, module} <- find_action(name, action_modules),
-         {:ok, params} <- parse_arguments(raw_args, module) do
+         {:ok, params} <- parse_arguments(raw_args, module),
+         :ok <- validate_arg_limits(params) do
       module.call(params, context)
     end
   end
@@ -89,4 +100,48 @@ defmodule Raxol.Agent.Action.ToolConverter do
   rescue
     ArgumentError -> str
   end
+
+  defp validate_arg_limits(params) when is_map(params) do
+    case check_depth_and_size(params, 0, 0) do
+      {:ok, _key_count} -> :ok
+      {:error, _} = err -> err
+    end
+  end
+
+  defp check_depth_and_size(_value, depth, _keys) when depth > @max_arg_depth do
+    {:error, :arguments_too_deep}
+  end
+
+  defp check_depth_and_size(map, depth, keys) when is_map(map) do
+    new_keys = keys + map_size(map)
+    if new_keys > @max_arg_keys, do: throw({:error, :too_many_argument_keys})
+
+    Enum.reduce_while(map, {:ok, new_keys}, fn {_k, v}, {:ok, acc_keys} ->
+      case check_depth_and_size(v, depth + 1, acc_keys) do
+        {:ok, updated} -> {:cont, {:ok, updated}}
+        {:error, _} = err -> {:halt, err}
+      end
+    end)
+  catch
+    {:error, _} = err -> err
+  end
+
+  defp check_depth_and_size(list, depth, keys) when is_list(list) do
+    Enum.reduce_while(list, {:ok, keys}, fn v, {:ok, acc_keys} ->
+      case check_depth_and_size(v, depth + 1, acc_keys) do
+        {:ok, updated} -> {:cont, {:ok, updated}}
+        {:error, _} = err -> {:halt, err}
+      end
+    end)
+  end
+
+  defp check_depth_and_size(str, _depth, keys) when is_binary(str) do
+    if byte_size(str) > @max_arg_value_bytes do
+      {:error, :argument_value_too_large}
+    else
+      {:ok, keys}
+    end
+  end
+
+  defp check_depth_and_size(_value, _depth, keys), do: {:ok, keys}
 end

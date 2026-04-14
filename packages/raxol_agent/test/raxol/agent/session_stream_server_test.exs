@@ -45,10 +45,11 @@ defmodule Raxol.Agent.SessionStreamServerTest do
     end
 
     test "returns event history", %{streamer: streamer} do
-      SessionStreamer.emit(:test_session, {:text_delta, "hello"}, streamer)
+      # Use string session ID to match how HTTP path params are parsed
+      SessionStreamer.emit("test_session", {:text_delta, "hello"}, streamer)
 
       SessionStreamer.emit(
-        :test_session,
+        "test_session",
         {:tool_use, %{name: "read", arguments: %{}, id: "t1"}},
         streamer
       )
@@ -102,7 +103,7 @@ defmodule Raxol.Agent.SessionStreamServerTest do
       ]
 
       for event <- events do
-        SessionStreamer.emit(:serial_test, event, streamer)
+        SessionStreamer.emit("serial_test", event, streamer)
       end
 
       Process.sleep(50)

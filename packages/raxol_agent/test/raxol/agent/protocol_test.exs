@@ -67,13 +67,26 @@ defmodule Raxol.Agent.ProtocolTest do
       assert {:error, :invalid_format} = Protocol.decode("not a map")
     end
 
-    test "decode returns error for invalid atoms" do
-      assert {:error, :invalid_atom} =
+    test "decode returns error for invalid type" do
+      assert {:error, {:invalid_type, "also_not_real_atom_456"}} =
                Protocol.decode(%{
                  "from" => "nonexistent_atom_xyz_123",
                  "to" => "another_fake_atom_abc",
                  "type" => "also_not_real_atom_456"
                })
+    end
+
+    test "decode keeps unknown from/to as strings instead of creating atoms" do
+      {:ok, msg} =
+        Protocol.decode(%{
+          "from" => "unknown_agent_xyz",
+          "to" => "unknown_agent_abc",
+          "type" => "directive"
+        })
+
+      assert msg.from == "unknown_agent_xyz"
+      assert msg.to == "unknown_agent_abc"
+      assert msg.type == :directive
     end
   end
 

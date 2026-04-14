@@ -70,15 +70,28 @@ defmodule Raxol.Payments.SpendingPolicy do
   Check if a domain is approved under this policy.
 
   Returns true if `approved_domains` is nil (all domains allowed)
-  or if the domain is in the list.
+  or if the domain matches an entry in the list. Matching is
+  case-insensitive and respects domain boundaries -- `evil-example.com`
+  does not match `example.com`, but `api.example.com` does.
+
+  Empty strings in the approved list are ignored. An empty domain
+  string never matches.
   """
   @spec domain_approved?(t(), String.t()) :: boolean()
   def domain_approved?(%__MODULE__{approved_domains: nil}, _domain), do: true
+  def domain_approved?(_policy, ""), do: false
 
   def domain_approved?(%__MODULE__{approved_domains: domains}, domain) do
+    downcased = String.downcase(domain)
+
     Enum.any?(domains, fn approved ->
-      String.ends_with?(domain, approved)
+      approved = String.downcase(approved)
+      approved != "" and domain_matches?(downcased, approved)
     end)
+  end
+
+  defp domain_matches?(domain, approved) do
+    domain == approved or String.ends_with?(domain, "." <> approved)
   end
 
   @doc """

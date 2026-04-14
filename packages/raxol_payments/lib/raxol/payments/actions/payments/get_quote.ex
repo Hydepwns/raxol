@@ -42,9 +42,20 @@ defmodule Raxol.Payments.Actions.Payments.GetQuote do
     end
   end
 
+  @allowed_methods %{
+    "get" => :get,
+    "head" => :head,
+    "post" => :post,
+    "options" => :options
+  }
+
   defp probe_url(url, method) do
     if Code.ensure_loaded?(Req) do
-      req_method = String.downcase(method) |> String.to_existing_atom()
+      req_method =
+        case Map.fetch(@allowed_methods, String.downcase(method)) do
+          {:ok, atom} -> atom
+          :error -> :get
+        end
 
       case apply(Req, req_method, url: url) do
         {:ok, %{status: 402} = response} ->

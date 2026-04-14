@@ -197,11 +197,12 @@ defmodule Raxol.Payments.Protocols.Riddler do
   defp map_xochi_status(other), do: other
 
   defp parse_expiry(nil), do: 0
-  defp parse_expiry(val) when is_integer(val), do: val
+  defp parse_expiry(val) when is_integer(val) and val >= 0, do: val
+  defp parse_expiry(val) when is_integer(val), do: 0
 
   defp parse_expiry(val) when is_binary(val) do
     case Integer.parse(val) do
-      {int, ""} -> int
+      {int, ""} when int >= 0 -> int
       _ -> 0
     end
   end

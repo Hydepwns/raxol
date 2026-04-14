@@ -156,14 +156,14 @@ defmodule Raxol.Payments.Wallets.Op do
   end
 
   defp do_sign_typed_data(privkey, domain, types, message) do
-    hash = Raxol.Payments.Wallets.Env.eip712_hash(domain, types, message)
+    with {:ok, hash} <- Raxol.Payments.Wallets.Env.eip712_hash(domain, types, message) do
+      case ExSecp256k1.sign(hash, privkey) do
+        {:ok, {r, s, v}} ->
+          {:ok, <<r::binary-size(32), s::binary-size(32), v::8>>}
 
-    case ExSecp256k1.sign(hash, privkey) do
-      {:ok, {r, s, v}} ->
-        {:ok, <<r::binary-size(32), s::binary-size(32), v::8>>}
-
-      {:error, reason} ->
-        {:error, {:sign_failed, reason}}
+        {:error, reason} ->
+          {:error, {:sign_failed, reason}}
+      end
     end
   end
 end

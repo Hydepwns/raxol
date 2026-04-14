@@ -67,17 +67,18 @@ defmodule Raxol.Payments.Req.AutoPay do
           {request, failed_response}
 
         {:error, reason} ->
-          {request, %{response | body: %{error: :payment_retry_failed, reason: reason}}}
+          {request,
+           %{response | body: %{error: :payment_retry_failed, reason: sanitize_error(reason)}}}
       end
     else
       {:error, :no_matching_protocol} ->
         {request, response}
 
-      {:error, {:over_budget, _limit_type, _amount}} = err ->
-        {request, %{response | body: %{error: :budget_exceeded, details: err}}}
+      {:error, {:over_budget, limit_type, _amount}} ->
+        {request, %{response | body: %{error: :budget_exceeded, limit: limit_type}}}
 
       {:error, reason} ->
-        {request, %{response | body: %{error: :payment_failed, reason: reason}}}
+        {request, %{response | body: %{error: :payment_failed, reason: sanitize_error(reason)}}}
     end
   end
 
@@ -128,6 +129,14 @@ defmodule Raxol.Payments.Req.AutoPay do
       Req.Request.put_header(req, key, value)
     end)
   end
+
+  # Strip internal details from error reasons before including in response bodies.
+  # Prevents leaking API URLs, internal state, or cryptographic details.
+  defp sanitize_error({:sign_failed, _}), do: :sign_failed
+  defp sanitize_error({:op_failed, _code, _output}), do: :wallet_unavailable
+  defp sanitize_error({:request_failed, _}), do: :upstream_error
+  defp sanitize_error(reason) when is_atom(reason), do: reason
+  defp sanitize_error(_), do: :internal_error
 
   defp remove_auto_pay_step(request) do
     steps =

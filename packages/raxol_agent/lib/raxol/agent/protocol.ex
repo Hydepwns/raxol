@@ -27,6 +27,9 @@ defmodule Raxol.Agent.Protocol do
 
   @correlation_id_bytes 8
 
+  @valid_types ~w(directive observation query response takeover release status_update alert)
+  @valid_type_atoms Map.new(@valid_types, fn t -> {t, String.to_existing_atom(t)} end)
+
   @enforce_keys [:from, :to, :type, :payload]
   defstruct [:from, :to, :type, :payload, :timestamp, :correlation_id]
 
@@ -79,24 +82,41 @@ defmodule Raxol.Agent.Protocol do
   Decodes a map into a protocol message.
   """
   @spec decode(map()) :: {:ok, t()} | {:error, term()}
-  def decode(%{"from" => from, "to" => to, "type" => type} = map) do
-    {:ok,
-     %__MODULE__{
-       from: String.to_existing_atom(from),
-       to: decode_to(to),
-       type: String.to_existing_atom(type),
-       payload: Map.get(map, "payload"),
-       timestamp: decode_timestamp(Map.get(map, "timestamp")),
-       correlation_id: Map.get(map, "correlation_id")
-     }}
-  rescue
-    ArgumentError -> {:error, :invalid_atom}
+  def decode(%{"from" => from, "to" => to, "type" => type} = map)
+      when is_binary(from) and is_binary(to) and is_binary(type) do
+    with {:ok, type_atom} <- decode_type(type) do
+      {:ok,
+       %__MODULE__{
+         from: safe_agent_atom(from),
+         to: decode_to(to),
+         type: type_atom,
+         payload: Map.get(map, "payload"),
+         timestamp: decode_timestamp(Map.get(map, "timestamp")),
+         correlation_id: Map.get(map, "correlation_id")
+       }}
+    end
   end
 
   def decode(_), do: {:error, :invalid_format}
 
+  defp decode_type(type) do
+    case Map.fetch(@valid_type_atoms, type) do
+      {:ok, atom} -> {:ok, atom}
+      :error -> {:error, {:invalid_type, type}}
+    end
+  end
+
   defp decode_to("broadcast"), do: :broadcast
-  defp decode_to(to), do: String.to_existing_atom(to)
+  defp decode_to(to), do: safe_agent_atom(to)
+
+  # Convert agent name to atom only if it already exists in the atom table.
+  # Falls back to keeping the string -- callers that need atoms for Registry
+  # lookups should pre-register expected agent names.
+  defp safe_agent_atom(name) do
+    String.to_existing_atom(name)
+  rescue
+    ArgumentError -> name
+  end
 
   defp decode_timestamp(nil), do: DateTime.utc_now()
 

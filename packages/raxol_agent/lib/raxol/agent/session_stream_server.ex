@@ -161,10 +161,8 @@ if Code.ensure_loaded?(Plug.Router) do
     defp parse_session_id(id) do
       case Integer.parse(id) do
         {n, ""} -> n
-        _ -> String.to_existing_atom(id)
+        _ -> id
       end
-    rescue
-      ArgumentError -> id
     end
 
     defp lookup_session_info(session_id) do
