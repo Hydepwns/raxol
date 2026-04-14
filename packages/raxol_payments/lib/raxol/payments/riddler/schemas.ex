@@ -253,6 +253,6 @@ defmodule Raxol.Payments.Riddler.Schemas do
     defp parse_status("refunded"), do: :refunded
     defp parse_status("awaiting_deposit"), do: :awaiting_deposit
     defp parse_status("expired"), do: :expired
-    defp parse_status(other), do: String.to_atom(other)
+    defp parse_status(_other), do: :unknown
   end
 end
