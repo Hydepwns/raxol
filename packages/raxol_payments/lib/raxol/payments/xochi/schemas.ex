@@ -7,6 +7,11 @@ defmodule Raxol.Payments.Xochi.Schemas do
   intents behind the scenes.
   """
 
+  @doc false
+  @spec put_non_nil(map(), String.t(), term()) :: map()
+  def put_non_nil(map, _key, nil), do: map
+  def put_non_nil(map, key, val), do: Map.put(map, key, val)
+
   defmodule QuoteRequest do
     @moduledoc false
     @enforce_keys [
@@ -29,7 +34,8 @@ defmodule Raxol.Payments.Xochi.Schemas do
       settlement_preference: "public",
       deadline: nil,
       slippage_bps: 50,
-      gasless: false
+      gasless: false,
+      attestations: []
     ]
 
     @type settlement :: String.t()
@@ -45,7 +51,8 @@ defmodule Raxol.Payments.Xochi.Schemas do
             deadline: integer() | nil,
             slippage_bps: non_neg_integer(),
             trust_score: non_neg_integer() | nil,
-            gasless: boolean()
+            gasless: boolean(),
+            attestations: [map()]
           }
 
     @spec to_json(t()) :: map()
@@ -63,10 +70,42 @@ defmodule Raxol.Payments.Xochi.Schemas do
         "gasless" => req.gasless
       }
 
-      if req.trust_score do
-        Map.put(base, "trust_score", req.trust_score)
-      else
-        base
+      base
+      |> Raxol.Payments.Xochi.Schemas.put_non_nil("trust_score", req.trust_score)
+      |> maybe_put_attestations(req.attestations)
+    end
+
+    defp maybe_put_attestations(map, []), do: map
+
+    defp maybe_put_attestations(map, attestations) when is_list(attestations) do
+      Map.put(map, "attestations", Enum.map(attestations, &attestation_to_json/1))
+    end
+
+    defp attestation_to_json(
+           %{
+             type_code: code,
+             issuer: issuer,
+             subject: subject,
+             issued_at: issued,
+             expires_at: expires,
+             signature: sig
+           } = proof
+         ) do
+      base = %{
+        "typeCode" => code,
+        "issuer" => issuer,
+        "subject" => subject,
+        "issuedAt" => issued,
+        "expiresAt" => expires,
+        "signature" => sig
+      }
+
+      case Map.get(proof, :payload) do
+        nil ->
+          base
+
+        payload when is_binary(payload) ->
+          Map.put(base, "payload", Base.encode16(payload, case: :lower))
       end
     end
   end
@@ -153,12 +192,9 @@ defmodule Raxol.Payments.Xochi.Schemas do
       }
 
       base
-      |> maybe_put("pull_signature", req.pull_signature)
-      |> maybe_put("aztec_proof", req.aztec_proof)
+      |> Raxol.Payments.Xochi.Schemas.put_non_nil("pull_signature", req.pull_signature)
+      |> Raxol.Payments.Xochi.Schemas.put_non_nil("aztec_proof", req.aztec_proof)
     end
-
-    defp maybe_put(map, _key, nil), do: map
-    defp maybe_put(map, key, val), do: Map.put(map, key, val)
   end
 
   defmodule ExecuteResponse do
@@ -204,7 +240,12 @@ defmodule Raxol.Payments.Xochi.Schemas do
     end
 
     defp parse_status(nil), do: :unknown
-    defp parse_status(s) when is_binary(s), do: String.to_atom(s)
+    defp parse_status("pending"), do: :pending
+    defp parse_status("executing"), do: :executing
+    defp parse_status("settling"), do: :settling
+    defp parse_status("completed"), do: :completed
+    defp parse_status("failed"), do: :failed
+    defp parse_status(_s), do: :unknown
   end
 
   defmodule IntentStatus do
@@ -219,6 +260,12 @@ defmodule Raxol.Payments.Xochi.Schemas do
       :updated_at,
       :substatus,
       :substatus_message,
+      # PXE shielded settlement fields (present when settlement = :shielded)
+      :note_commitment,
+      :nullifier_hash,
+      :l2_tx_hash,
+      :settlement_type,
+      :attestation_status,
       terminal: false
     ]
 
@@ -235,6 +282,9 @@ defmodule Raxol.Payments.Xochi.Schemas do
             | :failed
             | :expired
 
+    @type settlement_type :: :public | :stealth | :shielded | nil
+    @type attestation_status :: :verified | :rejected | :not_required | nil
+
     @type t :: %__MODULE__{
             intent_id: String.t(),
             status: status(),
@@ -244,6 +294,11 @@ defmodule Raxol.Payments.Xochi.Schemas do
             updated_at: String.t() | nil,
             substatus: String.t() | nil,
             substatus_message: String.t() | nil,
+            note_commitment: String.t() | nil,
+            nullifier_hash: String.t() | nil,
+            l2_tx_hash: String.t() | nil,
+            settlement_type: settlement_type(),
+            attestation_status: attestation_status(),
             terminal: boolean()
           }
 
@@ -262,6 +317,11 @@ defmodule Raxol.Payments.Xochi.Schemas do
         updated_at: json["updatedAt"],
         substatus: json["substatus"],
         substatus_message: json["substatusMessage"],
+        note_commitment: json["noteCommitment"],
+        nullifier_hash: json["nullifierHash"],
+        l2_tx_hash: json["l2TxHash"],
+        settlement_type: parse_settlement_type(json["settlementType"]),
+        attestation_status: parse_attestation_status(json["attestationStatus"]),
         terminal: json["terminal"] || status in @terminal_statuses
       }
     end
@@ -269,7 +329,35 @@ defmodule Raxol.Payments.Xochi.Schemas do
     @spec terminal?(t()) :: boolean()
     def terminal?(%__MODULE__{terminal: t}), do: t
 
+    @spec shielded?(t()) :: boolean()
+    def shielded?(%__MODULE__{settlement_type: :shielded}), do: true
+    def shielded?(%__MODULE__{note_commitment: c}) when is_binary(c), do: true
+    def shielded?(_), do: false
+
     defp parse_status(nil), do: :unknown
-    defp parse_status(s) when is_binary(s), do: String.to_atom(s)
+    defp parse_status("idle"), do: :idle
+    defp parse_status("pending"), do: :pending
+    defp parse_status("quoting"), do: :quoting
+    defp parse_status("quoted"), do: :quoted
+    defp parse_status("signing"), do: :signing
+    defp parse_status("executing"), do: :executing
+    defp parse_status("bridging"), do: :bridging
+    defp parse_status("settling"), do: :settling
+    defp parse_status("completed"), do: :completed
+    defp parse_status("failed"), do: :failed
+    defp parse_status("expired"), do: :expired
+    defp parse_status(_s), do: :unknown
+
+    defp parse_settlement_type(nil), do: nil
+    defp parse_settlement_type("public"), do: :public
+    defp parse_settlement_type("stealth"), do: :stealth
+    defp parse_settlement_type("shielded"), do: :shielded
+    defp parse_settlement_type(_s), do: nil
+
+    defp parse_attestation_status(nil), do: nil
+    defp parse_attestation_status("verified"), do: :verified
+    defp parse_attestation_status("rejected"), do: :rejected
+    defp parse_attestation_status("not_required"), do: :not_required
+    defp parse_attestation_status(_s), do: nil
   end
 end

@@ -124,9 +124,10 @@ defmodule Raxol.Payments.Protocols.Riddler do
           {:ok, OrderStatus.t()} | {:error, term()}
   def poll_status(config, intent_id, opts \\ []) do
     xochi_config = to_xochi_config(config)
+
     xochi_opts = [
       interval_ms: Keyword.get(opts, :interval_ms, @default_poll_interval_ms),
-      timeout_ms: Keyword.get(opts, :timeout_ms, @default_poll_timeout_ms),
+      timeout_ms: Keyword.get(opts, :timeout_ms, @default_poll_timeout_ms)
     ]
 
     case XochiProtocol.poll_status(xochi_config, intent_id, xochi_opts) do
@@ -154,7 +155,7 @@ defmodule Raxol.Payments.Protocols.Riddler do
       to_token: req.output_token,
       from_amount: req.input_amount,
       settlement_preference: "public",
-      slippage_bps: 50,
+      slippage_bps: 50
     }
   end
 
@@ -163,7 +164,7 @@ defmodule Raxol.Payments.Protocols.Riddler do
       quote_id: resp.quote_id,
       output_amount: resp.to_amount,
       quote_expires: parse_expiry(resp.expiry),
-      eip712_data: resp.eip712_data,
+      eip712_data: resp.eip712_data
     }
   end
 
@@ -174,7 +175,7 @@ defmodule Raxol.Payments.Protocols.Riddler do
       can_solve: true,
       to_amount: resp.output_amount,
       expiry: to_string(resp.quote_expires),
-      eip712_data: resp.eip712_data,
+      eip712_data: resp.eip712_data
     }
   end
 
@@ -184,7 +185,7 @@ defmodule Raxol.Payments.Protocols.Riddler do
       status: map_xochi_status(status.status),
       input_transaction: status.tx_hash,
       output_transaction: status.receiving_tx_hash,
-      error_reason: status.error,
+      error_reason: status.error
     }
   end
 

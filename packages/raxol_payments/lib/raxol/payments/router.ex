@@ -9,10 +9,16 @@ defmodule Raxol.Payments.Router do
       Explicit privacy request      -> Xochi with stealth/shielded settlement
       Direct solver access          -> Riddler (internal, not default)
 
+  When a trust score is provided, the router also determines the
+  settlement target (public/stealth/shielded) via `PrivacyTier`.
+
   Xochi is the default for cross-chain because it's the revenue-positive
   path with tier-based fees. Riddler Commerce is B2B (Coinbase/Shopify)
   and not intended for agent use.
   """
+
+  alias Raxol.Payments.PrivacyTier
+  alias Raxol.Payments.Zksar
 
   @type privacy :: :public | :stealth | :shielded | :auto
 
@@ -26,6 +32,8 @@ defmodule Raxol.Payments.Router do
   - `:cross_chain` -- true if source and dest chains differ (default: false)
   - `:privacy` -- `:public`, `:stealth`, `:shielded`, or `:auto` (default: `:auto`)
   - `:protocol` -- force a specific protocol (overrides routing)
+  - `:trust_score` -- trust score for privacy tier resolution (used by `settlement_for/1`)
+  - `:attestations` -- list of verified ZKSAR proofs (computes trust score if `:trust_score` absent)
   """
   @spec select(keyword()) :: atom()
   def select(opts \\ []) do
@@ -35,11 +43,81 @@ defmodule Raxol.Payments.Router do
     end
   end
 
+  @doc """
+  Determine the settlement target for a payment.
+
+  Uses trust score when available, falls back to explicit privacy option.
+
+  ## Options
+
+  - `:trust_score` -- non-negative integer trust score
+  - `:privacy` -- explicit privacy level (overrides trust score derivation)
+  - `:tier_override` -- passed through to `PrivacyTier.from_trust_score/2`
+  - `:attestations` -- list of verified ZKSAR proofs (computes trust score if absent)
+  """
+  @spec settlement_for(keyword()) :: PrivacyTier.settlement()
+  def settlement_for(opts \\ []) do
+    case Keyword.get(opts, :privacy) do
+      p when p in [:public, :stealth, :shielded] ->
+        p
+
+      _ ->
+        opts = maybe_compute_trust_score(opts)
+        score = Keyword.get(opts, :trust_score)
+        tier_opts = Keyword.take(opts, [:tier_override, :attestations])
+        tier = PrivacyTier.from_trust_score(score, tier_opts)
+        tier.settlement
+    end
+  end
+
+  @doc """
+  Compute effective trust score from options.
+
+  Returns the explicit `:trust_score` if present, otherwise aggregates
+  from `:attestations`. Returns 0 if neither is provided.
+  """
+  @spec trust_score_for(keyword()) :: non_neg_integer()
+  def trust_score_for(opts \\ []) do
+    opts = maybe_compute_trust_score(opts)
+    Keyword.get(opts, :trust_score, 0)
+  end
+
   defp auto_select(opts) do
-    select_protocol(
-      Keyword.get(opts, :privacy, :auto),
-      Keyword.get(opts, :cross_chain, false)
-    )
+    privacy = Keyword.get(opts, :privacy, :auto)
+    cross_chain = Keyword.get(opts, :cross_chain, false)
+
+    resolved_privacy =
+      case privacy do
+        :auto -> resolve_privacy_from_score(opts)
+        explicit -> explicit
+      end
+
+    select_protocol(resolved_privacy, cross_chain)
+  end
+
+  defp resolve_privacy_from_score(opts) do
+    opts = maybe_compute_trust_score(opts)
+
+    case Keyword.get(opts, :trust_score) do
+      nil ->
+        :auto
+
+      score ->
+        tier_opts = Keyword.take(opts, [:tier_override, :attestations])
+        tier = PrivacyTier.from_trust_score(score, tier_opts)
+        tier.settlement
+    end
+  end
+
+  defp maybe_compute_trust_score(opts) do
+    case {Keyword.get(opts, :trust_score), Keyword.get(opts, :attestations)} do
+      {nil, attestations} when is_list(attestations) and attestations != [] ->
+        score = Zksar.TrustScore.aggregate(attestations)
+        Keyword.put(opts, :trust_score, score)
+
+      _ ->
+        opts
+    end
   end
 
   defp select_protocol(privacy, _cross_chain) when privacy in [:stealth, :shielded], do: :xochi

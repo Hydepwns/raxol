@@ -50,6 +50,65 @@ defmodule Raxol.Payments.Xochi.SchemasTest do
       json = QuoteRequest.to_json(req)
       assert json["trust_score"] == 75
     end
+
+    test "omits trust_score when nil" do
+      req = %QuoteRequest{
+        wallet: "0xabc",
+        from_chain_id: 1,
+        to_chain_id: 8453,
+        from_token: "0xA0b8",
+        to_token: "0x8335",
+        from_amount: "1000000",
+        settlement_preference: "public"
+      }
+
+      json = QuoteRequest.to_json(req)
+      refute Map.has_key?(json, "trust_score")
+    end
+
+    test "includes attestations when non-empty" do
+      attestation = %{
+        type_code: 0x01,
+        issuer: "0xoracle",
+        subject: "0xsubject",
+        issued_at: 1000,
+        expires_at: 2000,
+        signature: "0xsig",
+        payload: <<0xDE, 0xAD>>
+      }
+
+      req = %QuoteRequest{
+        wallet: "0xabc",
+        from_chain_id: 1,
+        to_chain_id: 8453,
+        from_token: "0xA0b8",
+        to_token: "0x8335",
+        from_amount: "1000000",
+        settlement_preference: "public",
+        attestations: [attestation]
+      }
+
+      json = QuoteRequest.to_json(req)
+      assert [att] = json["attestations"]
+      assert att["typeCode"] == 0x01
+      assert att["issuer"] == "0xoracle"
+      assert att["payload"] == "dead"
+    end
+
+    test "omits attestations when empty" do
+      req = %QuoteRequest{
+        wallet: "0xabc",
+        from_chain_id: 1,
+        to_chain_id: 8453,
+        from_token: "0xA0b8",
+        to_token: "0x8335",
+        from_amount: "1000000",
+        settlement_preference: "public"
+      }
+
+      json = QuoteRequest.to_json(req)
+      refute Map.has_key?(json, "attestations")
+    end
   end
 
   describe "QuoteResponse.from_json/1" do
@@ -185,6 +244,97 @@ defmodule Raxol.Payments.Xochi.SchemasTest do
         status = IntentStatus.from_json(json)
         refute IntentStatus.terminal?(status), "expected #{s} to be non-terminal"
       end
+    end
+
+    test "parses PXE shielded settlement fields" do
+      json = %{
+        "intentId" => "intent_pxe",
+        "status" => "completed",
+        "settlementType" => "shielded",
+        "noteCommitment" => "0xcommit123",
+        "nullifierHash" => "0xnull456",
+        "l2TxHash" => "0xl2tx789"
+      }
+
+      status = IntentStatus.from_json(json)
+      assert status.settlement_type == :shielded
+      assert status.note_commitment == "0xcommit123"
+      assert status.nullifier_hash == "0xnull456"
+      assert status.l2_tx_hash == "0xl2tx789"
+    end
+
+    test "parses stealth settlement type" do
+      json = %{
+        "intentId" => "i",
+        "status" => "completed",
+        "settlementType" => "stealth"
+      }
+
+      status = IntentStatus.from_json(json)
+      assert status.settlement_type == :stealth
+    end
+
+    test "nil settlement type when not present" do
+      json = %{"intentId" => "i", "status" => "pending"}
+      status = IntentStatus.from_json(json)
+      assert status.settlement_type == nil
+    end
+
+    test "shielded? returns true for shielded settlement_type" do
+      json = %{
+        "intentId" => "i",
+        "status" => "completed",
+        "settlementType" => "shielded"
+      }
+
+      status = IntentStatus.from_json(json)
+      assert IntentStatus.shielded?(status)
+    end
+
+    test "shielded? returns true when note_commitment present" do
+      json = %{
+        "intentId" => "i",
+        "status" => "completed",
+        "noteCommitment" => "0xcommit"
+      }
+
+      status = IntentStatus.from_json(json)
+      assert IntentStatus.shielded?(status)
+    end
+
+    test "shielded? returns false for public settlement" do
+      json = %{
+        "intentId" => "i",
+        "status" => "completed",
+        "settlementType" => "public"
+      }
+
+      status = IntentStatus.from_json(json)
+      refute IntentStatus.shielded?(status)
+    end
+
+    test "parses attestation_status verified" do
+      json = %{"intentId" => "i", "status" => "completed", "attestationStatus" => "verified"}
+      status = IntentStatus.from_json(json)
+      assert status.attestation_status == :verified
+    end
+
+    test "parses attestation_status rejected" do
+      json = %{"intentId" => "i", "status" => "failed", "attestationStatus" => "rejected"}
+      status = IntentStatus.from_json(json)
+      assert status.attestation_status == :rejected
+    end
+
+    test "parses attestation_status not_required" do
+      json = %{"intentId" => "i", "status" => "completed", "attestationStatus" => "not_required"}
+      status = IntentStatus.from_json(json)
+      assert status.attestation_status == :not_required
+    end
+
+    test "attestation_status nil when not present" do
+      json = %{"intentId" => "i", "status" => "pending"}
+      status = IntentStatus.from_json(json)
+      assert status.attestation_status == nil
     end
   end
 end

@@ -14,6 +14,21 @@ defmodule Raxol.Agent.Backend.HTTP do
         provider: :anthropic,  # or :openai, :ollama, :kimi (auto-detected if omitted)
         timeout: 30_000
       ]
+
+  ## Req Plugins
+
+  Pass `:req_plugins` to attach Req response steps (e.g., auto-pay for HTTP 402):
+
+      opts = [
+        api_key: "sk-...",
+        req_plugins: [
+          fn req -> Raxol.Payments.Req.AutoPay.attach(req, wallet: MyWallet) end
+        ]
+      ]
+
+  Each plugin is a function `(Req.Request.t() -> Req.Request.t())` applied
+  before the request is sent. This keeps Backend.HTTP agnostic to payment
+  details while letting callers wire in transparent 402 handling.
   """
 
   @behaviour Raxol.Agent.AIBackend
@@ -27,10 +42,11 @@ defmodule Raxol.Agent.Backend.HTTP do
   def complete(messages, opts \\ []) do
     provider = detect_provider(opts)
     timeout = Keyword.get(opts, :timeout, @default_timeout)
+    plugins = Keyword.get(opts, :req_plugins, [])
 
     {url, headers, body} = build_request(provider, messages, opts)
 
-    case do_request(url, headers, body, timeout) do
+    case do_request(url, headers, body, timeout, plugins) do
       {:ok, response_body} ->
         {:ok, parse_response(provider, response_body)}
 
@@ -55,6 +71,7 @@ defmodule Raxol.Agent.Backend.HTTP do
     if available?() do
       provider = detect_provider(opts)
       timeout = Keyword.get(opts, :timeout, @default_timeout)
+      plugins = Keyword.get(opts, :req_plugins, [])
       {url, headers, body} = build_request(provider, messages, opts)
       body = Map.put(body, :stream, true)
 
@@ -63,7 +80,7 @@ defmodule Raxol.Agent.Backend.HTTP do
 
       task_pid =
         spawn_link(fn ->
-          stream_request(url, headers, body, timeout, caller, ref)
+          stream_request(url, headers, body, timeout, caller, ref, plugins)
         end)
 
       stream =
@@ -90,17 +107,22 @@ defmodule Raxol.Agent.Backend.HTTP do
     end
   end
 
-  defp stream_request(url, headers, body, timeout, caller, ref) do
+  defp stream_request(url, headers, body, timeout, caller, ref, plugins) do
     try do
-      case Req.post(url,
-             json: body,
-             headers: headers,
-             receive_timeout: timeout,
-             into: fn {:data, data}, {req, resp} ->
-               send(caller, {:sse_data, ref, data})
-               {:cont, {req, resp}}
-             end
-           ) do
+      req =
+        Req.new(
+          url: url,
+          json: body,
+          headers: headers,
+          receive_timeout: timeout,
+          into: fn {:data, data}, {req, resp} ->
+            send(caller, {:sse_data, ref, data})
+            {:cont, {req, resp}}
+          end
+        )
+        |> apply_plugins(plugins)
+
+      case Req.post(req) do
         {:ok, %{status: status}} when status in 200..299 ->
           :ok
 
@@ -491,9 +513,13 @@ defmodule Raxol.Agent.Backend.HTTP do
 
   # -- Helpers ----------------------------------------------------------------
 
-  defp do_request(url, headers, body, timeout) do
+  defp do_request(url, headers, body, timeout, plugins) do
     if Code.ensure_loaded?(Req) do
-      case Req.post(url, json: body, headers: headers, receive_timeout: timeout) do
+      req =
+        Req.new(url: url, json: body, headers: headers, receive_timeout: timeout)
+        |> apply_plugins(plugins)
+
+      case Req.post(req) do
         {:ok, %{status: status, body: resp_body}} when status in 200..299 ->
           {:ok, resp_body}
 
@@ -506,6 +532,12 @@ defmodule Raxol.Agent.Backend.HTTP do
     else
       {:error, :req_not_available}
     end
+  end
+
+  defp apply_plugins(req, []), do: req
+
+  defp apply_plugins(req, plugins) when is_list(plugins) do
+    Enum.reduce(plugins, req, fn plugin, acc -> plugin.(acc) end)
   end
 
   defp detect_provider(opts) do
