@@ -116,6 +116,7 @@ jobs:
       run: |
         mix local.hex --force
         mix local.rebar --force
+        mix deps.clean --unused
         mix deps.get
         mix deps.compile
 
@@ -278,6 +279,7 @@ jobs:
       run: |
         mix local.hex --force
         mix local.rebar --force
+        mix deps.clean --unused
         mix deps.get
         mix deps.compile
 
@@ -626,6 +628,7 @@ jobs:
       run: |
         mix local.hex --force
         mix local.rebar --force
+        mix deps.clean --unused
         mix deps.get
         mix deps.compile
 

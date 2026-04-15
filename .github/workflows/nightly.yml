@@ -94,6 +94,7 @@ jobs:
       - name: Install dependencies
         run: |
           # setup-beam has installed Hex/Rebar compatible with this OTP version
+          mix deps.clean --unused
           mix deps.get
           mix deps.compile
 
@@ -142,6 +143,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          mix deps.clean --unused
           mix deps.get
           mix deps.compile
 
@@ -206,9 +208,10 @@ jobs:
 
       - name: Install dependencies
         run: |
+          mix deps.clean --unused
           mix deps.get
           mix deps.compile
-      
+
       - name: Build PLTs
         run: |
           mix dialyzer --plt
@@ -270,6 +273,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          mix deps.clean --unused
           mix deps.get
           mix deps.compile
 

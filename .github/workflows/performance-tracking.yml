@@ -98,6 +98,7 @@ jobs:
         run: |
           mix local.hex --force
           mix local.rebar --force
+          mix deps.clean --unused
           mix deps.get
 
       - name: Compile project
@@ -179,6 +180,7 @@ jobs:
         run: |
           mix local.hex --force
           mix local.rebar --force
+          mix deps.clean --unused
           mix deps.get
 
       - name: Compile project

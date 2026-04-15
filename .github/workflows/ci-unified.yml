@@ -110,10 +110,10 @@ jobs:
             deps-${{ runner.os }}-
       
       - name: Install dependencies
-        if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
           mix local.hex --force
           mix local.rebar --force
+          mix deps.clean --unused
           mix deps.get
           mix deps.compile
 
@@ -486,9 +486,10 @@ jobs:
         run: |
           mix local.hex --force
           mix local.rebar --force
+          mix deps.clean --unused
           mix deps.get
           mix deps.compile
-      
+
       - name: Run tests (Unix)
         if: runner.os != 'Windows'
         run: mix test --exclude slow --exclude docker --exclude integration --exclude skip_on_ci

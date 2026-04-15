@@ -61,6 +61,7 @@ jobs:
         run: |
           mix local.hex --force
           mix local.rebar --force
+          mix deps.clean --unused
           mix deps.get
 
       - name: Build release
@@ -119,6 +120,7 @@ jobs:
         run: |
           mix local.hex --force
           mix local.rebar --force
+          mix deps.clean --unused
           mix deps.get
 
       - name: Publish to Hex

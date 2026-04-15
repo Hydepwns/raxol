@@ -59,7 +59,9 @@ jobs:
           mix local.rebar --force
 
       - name: Install dependencies
-        run: mix deps.get
+        run: |
+          mix deps.clean --unused
+          mix deps.get
 
       - name: Check for vulnerable dependencies
         run: |
@@ -95,7 +97,9 @@ jobs:
           mix local.rebar --force
 
       - name: Install dependencies
-        run: mix deps.get
+        run: |
+          mix deps.clean --unused
+          mix deps.get
 
       - name: Run Sobelow
         run: |
