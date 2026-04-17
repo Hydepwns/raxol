@@ -1,9 +1,10 @@
 defmodule Raxol do
   @moduledoc """
-  Terminal UI framework for Elixir, built on OTP.
+  Multi-surface application runtime for Elixir, built on OTP.
 
-  Raxol provides a component model, layout engine, and render pipeline for
-  building terminal applications. Apps follow The Elm Architecture (TEA):
+  Raxol provides a component model, layout engine, and render pipeline that
+  renders one TEA module to terminal, browser (LiveView), SSH, and MCP (agents).
+  Apps follow The Elm Architecture (TEA):
 
       defmodule Counter do
         use Raxol.Core.Runtime.Application

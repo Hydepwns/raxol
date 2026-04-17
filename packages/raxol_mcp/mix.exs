@@ -51,7 +51,7 @@ defmodule RaxolMcp.MixProject do
     """
     MCP (Model Context Protocol) server and client for Raxol. Provides JSON-RPC 2.0
     protocol handling, tool/resource registry, stdio and SSE transports.
-    Build a TUI app, get an AI interface for free.
+    Auto-derives agent tools from your widget tree.
     """
   end
 

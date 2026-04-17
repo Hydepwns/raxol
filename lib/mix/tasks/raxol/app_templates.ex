@@ -12,7 +12,7 @@ defmodule Mix.Raxol.AppTemplates do
     """
     defmodule #{module} do
       @moduledoc \"\"\"
-      A Raxol TUI application.
+      A Raxol application.
 
       Run with: mix run lib/#{app}.ex
       \"\"\"
@@ -53,7 +53,7 @@ defmodule Mix.Raxol.AppTemplates do
     """
     defmodule #{module} do
       @moduledoc \"\"\"
-      A Raxol TUI counter application using The Elm Architecture (TEA).
+      A Raxol counter application using The Elm Architecture (TEA).
 
       Run with: mix run lib/#{app}.ex
       \"\"\"
@@ -114,7 +114,7 @@ defmodule Mix.Raxol.AppTemplates do
     """
     defmodule #{module} do
       @moduledoc \"\"\"
-      A Raxol TUI todo application using The Elm Architecture (TEA).
+      A Raxol todo application using The Elm Architecture (TEA).
 
       Run with: mix run lib/#{app}.ex
       \"\"\"
@@ -243,7 +243,7 @@ defmodule Mix.Raxol.AppTemplates do
     """
     defmodule #{module} do
       @moduledoc \"\"\"
-      A Raxol TUI dashboard application using The Elm Architecture (TEA).
+      A Raxol dashboard application using The Elm Architecture (TEA).
 
       Run with: mix run lib/#{app}.ex
       \"\"\"

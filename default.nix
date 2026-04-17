@@ -54,7 +54,7 @@ EOF
   '';
   
   meta = with pinnedPkgs.lib; {
-    description = "Modern TUI framework for Elixir";
+    description = "Multi-surface application runtime for Elixir";
     homepage = "https://github.com/DROOdotFOO/raxol";
     license = licenses.mit;
     platforms = platforms.unix;

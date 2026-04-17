@@ -3,7 +3,7 @@ defmodule Raxol.MCP.Test do
   Test harness for Raxol MCP applications.
 
   Provides session management, semantic interaction helpers, and a
-  pipe-friendly API for testing TUI apps via their MCP tool interface.
+  pipe-friendly API for testing apps via their MCP tool interface.
 
   ## Usage
 

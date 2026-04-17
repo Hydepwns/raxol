@@ -1,6 +1,6 @@
 # Raxol Roadmap
 
-Terminal built for your Gundam. AGI-ready terminal framework for Elixir.
+Multi-surface application runtime for Elixir. One TEA module, four render targets.
 
 ## Current Version: v2.4.0
 

@@ -226,7 +226,7 @@ html = """
   <div class="wordmark">
     <div class="title">RAXOL</div>
     <div class="tagline">
-      <span class="accent">OTP</span>-native terminal framework for <span class="accent">Elixir</span>
+      One app. Terminal, browser, SSH, or agent.
     </div>
   </div>
 </div>

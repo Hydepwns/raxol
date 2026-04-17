@@ -59,9 +59,8 @@ defmodule RaxolLiveView.MixProject do
 
   defp description do
     """
-    Phoenix LiveView integration for Raxol terminal buffers. Render terminal
-    UIs in web browsers with real-time updates, keyboard/mouse events, and
-    themeable CSS.
+    Phoenix LiveView integration for Raxol. Render the same TEA app in web
+    browsers with real-time updates, keyboard/mouse events, and themeable CSS.
     """
   end
 

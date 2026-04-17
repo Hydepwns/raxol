@@ -1,6 +1,6 @@
 # Raxol MCP
 
-MCP (Model Context Protocol) server and client for Elixir. JSON-RPC 2.0 protocol, tool/resource registry, stdio and SSE transports. Build a TUI app, get an AI interface for free.
+MCP (Model Context Protocol) server and client for Elixir. JSON-RPC 2.0 protocol, tool/resource registry, stdio and SSE transports. Auto-derives agent tools from your widget tree.
 
 ## Install
 

@@ -265,7 +265,7 @@ defmodule Raxol.Demo.Showcase do
     column style: %{gap: 1} do
       [
         text("-- About Raxol --", style: [:bold]),
-        text("Raxol is a terminal UI framework for Elixir."),
+        text("Raxol is a multi-surface application runtime for Elixir."),
         text("Architecture: TEA (The Elm Architecture)"),
         text("Callbacks: init/1, update/2, view/1, subscribe/1"),
         text("Layout: Flexbox + CSS Grid engines"),

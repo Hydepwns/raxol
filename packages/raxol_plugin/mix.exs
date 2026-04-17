@@ -48,9 +48,9 @@ defmodule RaxolPlugin.MixProject do
 
   defp description do
     """
-    Plugin system for Raxol terminal applications. Build extensible terminal
-    UIs with a simple plugin behavior defining init, handle_input, render, and
-    cleanup callbacks. Includes testing utilities and documentation generators.
+    Plugin system for Raxol applications. Build extensible apps with a simple
+    plugin behavior defining init, handle_input, render, and cleanup callbacks.
+    Includes testing utilities and documentation generators.
     """
   end
 

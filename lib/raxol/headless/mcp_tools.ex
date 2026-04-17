@@ -16,7 +16,7 @@ defmodule Raxol.Headless.McpTools do
       %{
         name: "raxol_start",
         description: """
-        Starts a headless Raxol TUI session. Accepts either a module name
+        Starts a headless Raxol session. Accepts either a module name
         (atom) or a file path to an example script. Returns the session ID.
 
         Examples:

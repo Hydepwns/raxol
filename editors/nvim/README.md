@@ -1,6 +1,6 @@
 # Raxol.nvim
 
-Neovim plugin for Raxol terminal UI framework development with LSP and treesitter support.
+Neovim plugin for Raxol development with LSP and treesitter support.
 
 ## Features
 

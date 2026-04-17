@@ -1,6 +1,6 @@
-# Why OTP for TUIs
+# Why OTP for multi-surface apps
 
-Most TUI frameworks implement crash recovery with try/catch, state management with global stores, concurrency with goroutines or async/await, distribution with gRPC. Raxol gets all of that from OTP.
+Most UI frameworks implement crash recovery with try/catch, state management with global stores, concurrency with goroutines or async/await, distribution with gRPC. Raxol gets all of that from OTP.
 
 ## The Natural Mapping
 

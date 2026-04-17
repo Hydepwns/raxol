@@ -1,6 +1,6 @@
 # Quickstart Guide
 
-Let's build a terminal UI app. By the end of this page you'll have a working counter in your terminal.
+Let's build a raxol app. By the end of this page you'll have a working counter running in your terminal.
 
 What you'll learn:
 
@@ -199,7 +199,7 @@ Try `mix raxol.playground` for an interactive catalog of 29 widget demos you can
 
 ### Explore Further
 
-These features set Raxol apart from other TUI frameworks:
+These features set Raxol apart:
 
 **SSH App Serving** -- Serve your app over SSH. Each connection gets its own process:
 

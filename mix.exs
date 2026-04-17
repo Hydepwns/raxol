@@ -363,9 +363,10 @@ defmodule Raxol.MixProject do
 
   defp description do
     """
-    AGI-ready terminal framework for Elixir. 30+ widgets, flexbox + CSS grid,
-    TEA on OTP, AI agent runtime, distributed swarm with CRDTs, time-travel
-    debugging, session recording, sandboxed REPL, and SSH serving.
+    Multi-surface application runtime for Elixir. One TEA module renders to
+    terminal, browser (LiveView), SSH, and MCP (agents). 30+ widgets, flexbox +
+    CSS grid, AI agent runtime, distributed swarm with CRDTs, time-travel
+    debugging, session recording, sandboxed REPL, and agentic commerce.
     """
   end
 

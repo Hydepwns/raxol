@@ -5,15 +5,157 @@
 [![CI](https://github.com/DROOdotFOO/raxol/actions/workflows/ci-unified.yml/badge.svg?branch=master)](https://github.com/DROOdotFOO/raxol/actions/workflows/ci-unified.yml)
 [![Hex](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
 
-[OTP](https://en.wikipedia.org/wiki/Open_Telecom_Platform)-native terminal framework for Elixir.
-Same app runs in a terminal, a browser via LiveView, or over SSH.
+Write one app. Render it to a terminal, a browser, or an agent.
 
-Your app is a [GenServer](https://hexdocs.pm/elixir/GenServer.html).
-Components crash and restart without taking down the UI.
-You can hot-reload your view function while it's running.
-No other TUI framework does this; Raxol inherits it from the runtime.
+Your application is a single [TEA](https://guide.elm-lang.org/architecture/) module (`init`, `update`, `view`) running as an [OTP](https://en.wikipedia.org/wiki/Open_Telecom_Platform) GenServer. Raxol renders that module to four surfaces from one codebase:
 
-## Try It
+```
+                          +---> termbox2 NIF (terminal)
+                          |
+  TEA module (GenServer) -+---> Phoenix LiveView (browser)
+                          |
+                          +---> SSH daemon (remote terminal)
+                          |
+                          +---> MCP tools (agents)
+```
+
+The interesting part is the runtime, not the terminal. Your app gets crash isolation per component, hot code reload without restart, distributed clustering with CRDTs, and an agent surface where LLMs interact with structured widget trees instead of scraping pixels. Bubble Tea, Ratatui, and Textual are excellent renderers. A2UI and AG-UI define agent-UI wire formats. Raxol is the runtime that renders all four surfaces from one source module.
+
+## Built with Raxol: Xochi
+
+[Xochi](https://xochi.fi) is a private cross-chain DEX: intent-based swaps across 5 chains, sub-3s settlement, stealth addresses by default, ZKSAR compliance proofs. Its entire trading surface is raxol:
+
+- **Trader terminal** serves over SSH, zero install, dark-pool aesthetic
+- **Web trading UI** renders the same TEA module via LiveView
+- **Solver agent surface** lets Riddler's sub-2ms solver consume auto-derived MCP tools to bid on intents
+- **Ops cockpit** runs a BEAM dashboard with sensor fusion on solver health, validator peers, settlement latency
+
+One TEA module. Four surfaces. The solver agent and the human trader interact with the same widget tree through different projections. That's the pitch nothing else in this space can match.
+
+## Install
+
+```elixir
+# mix.exs
+def deps do
+  [{:raxol, "~> 2.4"}]
+end
+```
+
+Or generate a new project:
+
+```bash
+mix raxol.new my_app
+```
+
+## Hello World
+
+```elixir
+defmodule Counter do
+  use Raxol.Core.Runtime.Application
+
+  def init(_ctx), do: %{count: 0}
+
+  def update(:inc, model), do: {%{model | count: model.count + 1}, []}
+  def update(:dec, model), do: {%{model | count: model.count - 1}, []}
+  def update(_, model), do: {model, []}
+
+  def view(model) do
+    column style: %{padding: 1, gap: 1} do
+      [
+        text("Count: #{model.count}", style: [:bold]),
+        row style: %{gap: 1} do
+          [button("+", on_click: :inc), button("-", on_click: :dec)]
+        end
+      ]
+    end
+  end
+
+  def subscribe(_model), do: []
+end
+```
+
+That module runs three ways without changes:
+
+```bash
+# Terminal
+mix run examples/getting_started/counter.exs
+
+# LiveView (mount in your Phoenix app)
+# live "/counter", Raxol.LiveView.TEALive, app: Counter
+
+# MCP (an agent clicks the "+" button)
+# session |> click("+") |> assert_widget("Count: 1")
+```
+
+The GUI-vs-TUI debate is a rendering argument. Whether your app can be consumed by agents at the same time is a runtime problem, and that's what raxol solves.
+
+## Agents that can pay
+
+`raxol_payments` gives agents wallets, spending controls, and three payment protocols. An agent hits a 402'd resource. The Req plugin handles the rest.
+
+```elixir
+# Agent auto-pays for a resource via Xochi cross-chain settlement
+client = Req.new(base_url: "https://api.example.com")
+  |> Raxol.Payments.Req.AutoPay.attach(
+    wallet: {:op, "Agent Wallet"},
+    protocol: :xochi,
+    spending_policy: %{per_request: 50_000, session: 500_000}  # in wei
+  )
+
+{:ok, response} = Req.get(client, url: "/premium-data")
+# If 402 -> wallet signs EIP-712 -> Xochi settles cross-chain -> response arrives
+```
+
+Three protocols behind one interface: x402 (Coinbase HTTP 402, same-chain), MPP (Stripe/Tempo machine payments), and Xochi (cross-chain intent settlement, 0.10-0.30% fees, stealth-capable). Per-request, per-session, and lifetime spending limits enforced by a ledger GenServer. See [Agentic Commerce docs](docs/features/AGENTIC_COMMERCE.md).
+
+## Agent surface (MCP)
+
+Every interactive widget automatically exposes MCP tools. Button gives you `click`, TextInput gives you `type_into`/`clear`/`get_value`. A focus lens tracks what's relevant and filters to ~15 tools per interaction, so agents work with a contextual slice of the widget tree rather than a flat dump of every possible action.
+
+Where A2UI and AG-UI define how agents talk to UIs at the wire level, raxol generates both the UI and the agent surface from a single widget tree. Same source of truth, two projections.
+
+```elixir
+import Raxol.MCP.Test
+import Raxol.MCP.Test.Assertions
+
+session = start_session(MyApp)
+
+session
+|> type_into("search", "elixir")
+|> click("submit")
+|> assert_widget("results", fn w -> w[:content] != nil end)
+|> stop_session()
+```
+
+`mix mcp.server` starts the MCP server on stdio for Claude Code integration.
+
+## Why OTP matters here
+
+Raxol's interface runtime is built on the BEAM, a VM originally designed for telephone switches. Systems that couldn't go down, couldn't lose state, and had to hot-swap code on live calls. Those constraints turn out to be exactly right for multi-surface apps.
+
+| What you need | Raxol | Building it yourself |
+|---|---|---|
+| Same UI for human + agent | one TEA module, four renderers | two codebases, glue layer, drift |
+| Crash one widget, keep the rest up | OTP supervisor per component | process-per-widget, DIY restart |
+| Deploy a fix without closing sessions | hot code reload | full restart, reconnect |
+| Replay an incident from recording | asciinema v2 session capture | build your own |
+| Multi-region coordination | libcluster + CRDTs | DIY discovery, DIY conflict resolution |
+
+For the TUI-framework audience, here's the comparison you'd expect:
+
+| Capability                     | Raxol | Ratatui | Bubble Tea |       Textual       | Ink |
+| ------------------------------ | :---: | :-----: | :--------: | :-----------------: | :-: |
+| Crash isolation per component  |  yes  |   --    |     --     |         --          | --  |
+| Hot code reload (no restart)   |  yes  |   --    |     --     |         --          | --  |
+| Same app in terminal + browser |  yes  |   --    |     --     |       partial       | --  |
+| Built-in SSH serving           |  yes  |   --    |  via lib   |         --          | --  |
+| AI agent runtime               |  yes  |   --    |     --     |         --          | --  |
+| Distributed clustering (CRDTs) |  yes  |   --    |     --     |         --          | --  |
+| Time-travel debugging          |  yes  |   --    |     --     | partial<sup>1</sup> | --  |
+
+<sup>1</sup> Textual has devtools with CSS inspection, but not state-level time-travel.
+
+## Try it
 
 ```bash
 git clone https://github.com/DROOdotFOO/raxol.git
@@ -22,7 +164,7 @@ mix raxol.playground          # 30 live demos, browse/search/filter
 mix raxol.playground --ssh    # same thing, served over SSH (port 2222)
 ```
 
-The flagship demo is a live BEAM dashboard: scheduler utilization, memory sparklines, process table, all updating in real time.
+The flagship demo is a live BEAM dashboard with scheduler utilization, memory sparklines, and a process table, all updating in real time:
 
 ```bash
 mix run examples/demo.exs
@@ -50,162 +192,46 @@ mix phx.server                                    # Web playground at /playgroun
 
 See [examples/README.md](examples/README.md) for the full learning path.
 
-## Hello World
-
-Every Raxol app follows [The Elm Architecture](https://guide.elm-lang.org/architecture/): `init`, `update`, `view`.
-
-```elixir
-defmodule Counter do
-  use Raxol.Core.Runtime.Application
-
-  def init(_ctx), do: %{count: 0}
-
-  def update(:inc, model), do: {%{model | count: model.count + 1}, []}
-  def update(:dec, model), do: {%{model | count: model.count - 1}, []}
-  def update(_, model), do: {model, []}
-
-  def view(model) do
-    column style: %{padding: 1, gap: 1} do
-      [
-        text("Count: #{model.count}", style: [:bold]),
-        row style: %{gap: 1} do
-          [button("+", on_click: :inc), button("-", on_click: :dec)]
-        end
-      ]
-    end
-  end
-
-  def subscribe(_model), do: []
-end
-```
-
-```bash
-mix run examples/getting_started/counter.exs
-```
-
-That counter works in a terminal. The same module renders in Phoenix LiveView or serves over SSH -- no changes needed.
-
-## Install
-
-```elixir
-# mix.exs
-def deps do
-  [{:raxol, "~> 2.4"}]
-end
-```
-
-Or generate a new project:
-
-```bash
-mix raxol.new my_app
-```
-
-## Architecture
-
-Your app is a GenServer running [The Elm Architecture](https://guide.elm-lang.org/architecture/). The terminal backend is a real VT100 emulator, not raw escape codes -- agents can interact with structured screen buffers like they would with a browser DOM. Each component can run in its own OTP process. Crash one, the rest keep going.
-
-One TEA app renders to terminal (termbox2 NIF on Unix, pure Elixir on Windows), Phoenix LiveView, and SSH. One codebase, three targets.
-
-## Why OTP
-
-These capabilities come from the [BEAM VM](<https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine)>), not a library:
-
-| Capability                     | Raxol | Ratatui | Bubble Tea |       Textual       | Ink |
-| ------------------------------ | :---: | :-----: | :--------: | :-----------------: | :-: |
-| Crash isolation per component  |  yes  |   --    |     --     |         --          | --  |
-| Hot code reload (no restart)   |  yes  |   --    |     --     |         --          | --  |
-| Same app in terminal + browser |  yes  |   --    |     --     |       partial       | --  |
-| Built-in SSH serving           |  yes  |   --    |  via lib   |         --          | --  |
-| AI agent runtime               |  yes  |   --    |     --     |         --          | --  |
-| Distributed clustering (CRDTs) |  yes  |   --    |     --     |         --          | --  |
-| Time-travel debugging          |  yes  |   --    |     --     | partial<sup>1</sup> | --  |
-
-Ratatui and Bubble Tea have excellent rendering and large ecosystems. Raxol's edge is structural -- OTP gives you these things for free.
-
-<sup>1</sup> Textual has devtools with CSS inspection, but not state-level time-travel (stepping back/forward through update cycles).
-
 ## Features
-
-### Core
 
 **Process isolation.** Wrap any widget in `process_component/2` and it runs in its own process. Crashes restart cleanly; the rest of the UI stays up.
 
 **Hot code reload.** Change your `view/1`, save, the running app picks it up. No restart.
 
-**Widgets and layout.** Button, TextInput, Table, Tree, Modal, SelectList, Checkbox, Sparkline, Charts. Keyboard-navigable with focus management. Flexbox (`row`/`column` with `flex`, `gap`, `align_items`) and CSS Grid (`template_columns`, `template_rows`), nested freely. Virtual DOM diffing with damage tracking.
+**Widgets and layout.** Button, TextInput, Table, Tree, Modal, SelectList, Checkbox, Sparkline, Charts. Keyboard-navigable with focus management. Flexbox and CSS Grid, nested freely. Virtual DOM diffing with damage tracking.
 
-**Theming.** Named colors, RGB, 256-color, and hex -- downsampled to the terminal's capability. Inline images via Kitty graphics protocol, with Sixel and iTerm2 fallbacks.
-
-### Multi-target
+**Theming.** Named colors, RGB, 256-color, and hex, downsampled to the terminal's capability. Inline images via Kitty, Sixel, and iTerm2.
 
 **SSH serving.** `Raxol.SSH.serve(MyApp, port: 2222)`. Each connection gets its own supervised process.
 
-**LiveView bridge.** Same TEA app renders in Phoenix LiveView with a shared state model. See `examples/liveview/tea_counter_live.ex`.
+**LiveView bridge.** Same TEA app renders in Phoenix LiveView with a shared state model.
 
 **Distributed swarm.** CRDTs (LWW registers, OR-sets), node monitoring, seniority-based election. Discovery via libcluster with gossip, epmd, DNS, or Tailscale.
 
-### AI and agents
-
-An agent is a TEA app where input comes from LLMs instead of a keyboard. `use Raxol.Agent`, implement `init/update/view`, and you get supervised agents with inter-agent messaging. SSE streaming to Anthropic, OpenAI, Ollama, Groq. Free tier via LLM7.io.
-
-```elixir
-defmodule MyAgent do
-  use Raxol.Agent
-
-  def init(_ctx), do: %{findings: []}
-
-  def update({:agent_message, _from, {:analyze, file}}, model) do
-    {model, [shell("wc -l #{file}")]}
-  end
-
-  def update({:command_result, {:shell_result, %{output: out}}}, model) do
-    {%{model | findings: [out | model.findings]}, []}
-  end
-end
-
-{:ok, _} = Raxol.Agent.Session.start_link(app_module: MyAgent, id: :my_agent)
-Raxol.Agent.Session.send_message(:my_agent, {:analyze, "lib/raxol.ex"})
-```
-
-**Agentic commerce.** Agents can pay for things autonomously. `raxol_payments` provides wallet management, spending controls with per-request/session/lifetime limits, and three payment protocols: x402 (Coinbase HTTP 402 auto-pay), MPP (Stripe/Tempo machine payments), and Xochi (cross-chain intent settlement). A Req plugin handles 402 flows transparently. See [docs](docs/features/AGENTIC_COMMERCE.md).
-
-**Sensor fusion.** Poll sensors, fuse readings with weighted averaging, render gauges and sparklines. Self-adapting layout tracks usage and recommends changes (optional Nx/Axon ML backend).
-
-### Developer tools
-
-**Headless sessions and MCP.** Run any TEA app without a terminal for programmatic testing and AI integration. Tools are auto-derived from the widget tree -- Button exposes `click`, TextInput exposes `type_into`/`clear`/`get_value`. A focus lens filters to ~15 relevant tools per interaction. `mix mcp.server` starts the MCP server on stdio for Claude Code. Test with a pipe-friendly API:
-
-```elixir
-import Raxol.MCP.Test
-import Raxol.MCP.Test.Assertions
-
-session = start_session(MyApp)
-
-session
-|> type_into("search", "elixir")
-|> click("submit")
-|> assert_widget("results", fn w -> w[:content] != nil end)
-|> stop_session()
-```
+**Sensor fusion.** Poll sensors, fuse readings with weighted averaging, render gauges and sparklines. Self-adapting layout tracks usage and recommends changes.
 
 **Time-travel debugging.** Snapshots every `update/2` cycle: step back, forward, jump, restore. Zero cost when disabled.
 
 **Session recording.** Captures to asciinema v2 `.cast` files with pause, seek, speed control, and auto-save on crash.
 
-**Sandboxed REPL.** `mix raxol.repl` with three safety levels. AST-based scanning blocks dangerous operations; safe for SSH in strict mode. The playground has 30 demos across 8 categories.
+**Sandboxed REPL.** `mix raxol.repl` with three safety levels. AST-based scanning blocks dangerous operations; safe for SSH exposure in strict mode.
 
 ## Performance
 
-Full frame in 2.1ms on Apple M1 Pro (Elixir 1.19 / OTP 27) -- 13% of the 60fps budget.
+Full frame in 2.1ms on Apple M1 Pro (Elixir 1.19 / OTP 27), which is 13% of the 60fps budget. In a system like Xochi where the solver loop targets sub-2ms, raxol sits within that frame budget without adding overhead to the hot path.
 
 | What                              | Time    |
 | --------------------------------- | ------- |
 | Full frame (create + fill + diff) | 2.1 ms  |
-| Tree diff (100 nodes)             | 4 μs    |
-| Cell write                        | 0.97 μs |
-| ANSI parse                        | 38 μs   |
+| Tree diff (100 nodes)             | 4 us    |
+| Cell write                        | 0.97 us |
+| ANSI parse                        | 38 us   |
 
-The Unix/macOS backend uses a termbox2 NIF; Windows uses a pure Elixir driver (usable, not yet tuned). See the [benchmark suite](docs/bench/README.md) for methodology.
+Unix/macOS backend uses a termbox2 NIF; Windows uses a pure Elixir driver (usable, not yet tuned). See the [benchmark suite](docs/bench/README.md).
+
+## Accessibility
+
+The structured widget tree already carries type, label, and state metadata on every widget. That's semantically richer than a pixel buffer, so screen reader support is a serialization step on top of existing structure rather than a redesign. On the roadmap, tracked, contributions welcome.
 
 ## Documentation
 
@@ -237,9 +263,9 @@ The Unix/macOS backend uses a termbox2 NIF; Windows uses a pure Elixir driver (u
 - [Sensor Fusion](docs/features/SENSOR_FUSION.md)
 - [Distributed Swarm](docs/features/DISTRIBUTED_SWARM.md)
 - [Recording & Replay](docs/features/RECORDING_REPLAY.md)
-- [Why OTP for TUIs](docs/WHY_OTP.md)
+- [Why OTP](docs/WHY_OTP.md)
 
-**Standalone packages** -- grab just the subsystem you need:
+**Standalone packages** (grab just the subsystem you need):
 
 | Package                                                    | Hex                           | What                                       |
 | ---------------------------------------------------------- | ----------------------------- | ------------------------------------------ |
@@ -264,16 +290,9 @@ mix raxol.check --quick      # skip dialyzer
 mix raxol.demo               # run built-in demos
 ```
 
-## Accessibility
+## Origin
 
-Screen reader support and semantic annotations aren't implemented yet. Tracked as a roadmap item. Contributions welcome.
-
-## Origin Vision
-
-> Raxol started as two converging ideas: a terminal for AGI, where AI agents
-> interact with a real terminal emulator the same way humans do;
-> and an interface for the cockpit of a Gundam Wing Suit, where fault isolation,
-> real-time responsiveness, and sensor fusion are survival-critical.
+Raxol started as two converging ideas: a terminal for AGI, where AI agents interact with a real terminal emulator the same way humans do; and an interface for the cockpit of a Gundam Wing Suit, where fault isolation, real-time responsiveness, and sensor fusion are survival-critical. The Gundam thing sounds like a joke. Then you look at the constraint set and it's exactly what OTP was built for: systems that can't go down, can't lose state, and have to hot-swap components while running.
 
 ## License
 

@@ -1,10 +1,10 @@
 # Raxol Documentation
 
-Complete guide to Raxol -- OTP-native terminal framework for Elixir.
+Complete guide to Raxol -- multi-surface application runtime for Elixir.
 
 ## Start Here
 
-- [Why OTP for TUIs](WHY_OTP.md) -- why the BEAM runtime changes what's possible
+- [Why OTP](WHY_OTP.md) -- why the BEAM runtime changes what's possible
 - [Quickstart](getting-started/QUICKSTART.md) -- build your first terminal app
 - [Core Concepts](getting-started/CORE_CONCEPTS.md) -- architecture and design
 - [Widget Gallery](getting-started/WIDGET_GALLERY.md) -- all widgets with examples

@@ -85,7 +85,7 @@ mix docs                      # Generate documentation
 
 ## Architecture
 
-Raxol is a terminal framework for Elixir built on OTP. It covers the component model, agent runtime, sensor fusion, distributed swarm, and time-travel debugging. Four UI paradigms: React, LiveView, HEEx, Raw.
+Raxol is a multi-surface application runtime for Elixir built on OTP. One TEA module renders to terminal, browser (LiveView), SSH, and MCP (agent surface). It covers the component model, agent runtime, sensor fusion, distributed swarm, and time-travel debugging. Four UI paradigms: React, LiveView, HEEx, Raw.
 
 ### Application Model
 

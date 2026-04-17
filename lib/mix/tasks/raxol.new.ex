@@ -1,6 +1,6 @@
 defmodule Mix.Tasks.Raxol.New do
   @moduledoc """
-  Generates a new Raxol TUI application.
+  Generates a new Raxol application.
 
   ## Usage
 
@@ -37,7 +37,7 @@ defmodule Mix.Tasks.Raxol.New do
 
   alias Mix.Raxol.{Generator, Templates}
 
-  @shortdoc "Generate a new Raxol TUI application"
+  @shortdoc "Generate a new Raxol application"
 
   @raxol_version Mix.Project.config()[:version]
 

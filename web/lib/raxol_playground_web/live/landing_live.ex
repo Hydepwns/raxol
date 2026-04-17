@@ -159,7 +159,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
       </h1>
 
       <p class="text-xl md:text-2xl text-gray-300 font-medium mb-4">
-        OTP-native terminal framework for Elixir
+        One app. Terminal, browser, SSH, or agent.
       </p>
 
       <pre class="bg-gray-900 border border-gray-800 rounded-lg inline-block px-6 py-3 mb-10 font-mono text-sm text-gray-300"><code><%= raw("{:raxol, \"~> #{@raxol_version}\"}") %></code></pre>
