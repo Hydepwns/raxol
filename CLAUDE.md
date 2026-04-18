@@ -111,7 +111,10 @@ packages/
 ├── raxol_mcp/       # MCP protocol: server, client, registry, tool derivation, test harness
 ├── raxol_payments/  # Agent payments: x402/MPP auto-pay, Xochi cross-chain, wallet, spending
 ├── raxol_liveview/  # LiveView bridge: TerminalBridge, TEALive, TerminalComponent, themes
-└── raxol_plugin/    # Plugin SDK: use macro, API facade, testing utils, generator
+├── raxol_plugin/    # Plugin SDK: use macro, API facade, testing utils, generator
+├── raxol_speech/    # Speech surface: TTS (say/espeak), STT (Bumblebee/Whisper), voice commands
+├── raxol_telegram/  # Telegram surface: bot handler, per-chat sessions, inline keyboard navigation
+└── raxol_watch/     # Watch surface: APNS/FCM push, glanceable summaries, tap-to-event actions
 ```
 
 **Dependency graph** (arrows = "depends on"):
@@ -124,6 +127,9 @@ raxol_liveview --> raxol_core (+ phoenix_live_view optional)
 raxol_plugin --> raxol_core
 raxol_agent --> raxol, raxol_mcp (main does NOT depend on raxol_agent)
 raxol_payments --> raxol_agent (runtime: false, compile-time only)
+raxol_speech --> raxol_core (+ bumblebee/nx/exla optional for STT)
+raxol_telegram --> raxol_core, raxol (optional, for Lifecycle runtime; + telegex optional)
+raxol_watch --> raxol_core (+ pigeon optional for APNS/FCM)
 raxol_core --> telemetry (only external dep)
 raxol_sensor --> (none)
 ```
@@ -141,6 +147,9 @@ cd packages/raxol_mcp && MIX_ENV=test mix test         # ~222 tests + 31 propert
 cd packages/raxol_payments && MIX_ENV=test mix test    # ~347 tests
 cd packages/raxol_liveview && MIX_ENV=test mix test    # ~37 tests
 cd packages/raxol_plugin && MIX_ENV=test mix test      # ~50 tests
+cd packages/raxol_speech && MIX_ENV=test mix test      # ~28 tests
+cd packages/raxol_telegram && MIX_ENV=test mix test    # ~34 tests
+cd packages/raxol_watch && MIX_ENV=test mix test       # ~34 tests
 ```
 
 ### Core Layers (main raxol)
@@ -326,7 +335,7 @@ Configuration: `fly.toml`, Dockerfile: `docker/Dockerfile.web`
 
 ## Hex Publishing
 
-All 8 packages are published to Hex. Publish order matters (dependency chain):
+All 11 packages are published to Hex. Publish order matters (dependency chain):
 
 ```bash
 # 1. No raxol deps (parallel)
@@ -338,12 +347,15 @@ cd packages/raxol_terminal && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.pu
 cd packages/raxol_mcp && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
 cd packages/raxol_plugin && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
 cd packages/raxol_liveview && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+cd packages/raxol_speech && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+cd packages/raxol_watch && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
 
 # 3. Main (depends on all above)
 HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
 
-# 4. Depend on main raxol
+# 4. Depend on main raxol (parallel)
 cd packages/raxol_agent && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+cd packages/raxol_telegram && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
 
 # 5. Depends on raxol_agent
 cd packages/raxol_payments && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
