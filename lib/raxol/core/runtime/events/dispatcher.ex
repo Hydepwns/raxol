@@ -584,10 +584,22 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         do: FocusManager.get_focused_element(),
         else: nil
 
+    reduced_motion =
+      try do
+        if Code.ensure_loaded?(Raxol.Animation.Framework) do
+          Raxol.Animation.Framework.should_reduce_motion?()
+        else
+          false
+        end
+      catch
+        :exit, _ -> false
+      end
+
     render_context = %{
       model: state.model,
       theme_id: state.current_theme_id,
-      focused_element: focused_element
+      focused_element: focused_element,
+      reduced_motion: reduced_motion
     }
 
     Raxol.Core.Runtime.Log.debug(

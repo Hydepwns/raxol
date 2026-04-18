@@ -94,6 +94,16 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
     def handle_event(_event, _params, socket), do: {:noreply, socket}
 
     @impl true
+    def handle_info({:render_update, html, animation_css}, socket) do
+      socket =
+        socket
+        |> assign(:terminal_html, html)
+        |> assign(:animation_css, animation_css)
+
+      {:noreply, socket}
+    end
+
+    @impl true
     def handle_info({:render_update, html}, socket) do
       {:noreply, assign(socket, :terminal_html, html)}
     end
@@ -104,6 +114,9 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
     @impl true
     def render(assigns) do
       ~H"""
+      <%= if assigns[:animation_css] && assigns[:animation_css] != "" do %>
+        <%= Phoenix.HTML.raw(assigns[:animation_css]) %>
+      <% end %>
       <div
         id="raxol-terminal"
         phx-hook="RaxolTerminal"

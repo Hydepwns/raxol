@@ -11,6 +11,8 @@ defmodule Raxol.Demo.Showcase do
 
   use Raxol.Core.Runtime.Application
 
+  import Raxol.Animation.Helpers
+
   @tab_count 5
   @tab_labels [
     "Text & Layout",
@@ -142,11 +144,25 @@ defmodule Raxol.Demo.Showcase do
 
   # -- Section views --
 
-  defp section_content(%{tab: 0}), do: section_text_layout()
-  defp section_content(%{tab: 1} = m), do: section_form_inputs(m)
-  defp section_content(%{tab: 2} = m), do: section_data_display(m)
-  defp section_content(%{tab: 3} = m), do: section_interactive(m)
-  defp section_content(%{tab: _}), do: section_about()
+  defp section_content(model) do
+    section =
+      case model.tab do
+        0 -> section_text_layout()
+        1 -> section_form_inputs(model)
+        2 -> section_data_display(model)
+        3 -> section_interactive(model)
+        _ -> section_about()
+      end
+
+    section
+    |> animate(
+      property: :opacity,
+      from: 0.0,
+      to: 1.0,
+      duration: 250,
+      easing: :ease_out_cubic
+    )
+  end
 
   defp section_text_layout do
     column style: %{gap: 1} do
@@ -162,17 +178,27 @@ defmodule Raxol.Demo.Showcase do
         end,
         text("-- Box Borders --", style: [:bold]),
         row style: %{gap: 1} do
-          [
-            box style: %{border: :single, padding: 1, width: 16} do
-              text("single")
-            end,
-            box style: %{border: :double, padding: 1, width: 16} do
-              text("double")
-            end,
-            box style: %{border: :rounded, padding: 1, width: 16} do
-              text("rounded")
-            end
-          ]
+          stagger(
+            [
+              box id: "box-single",
+                  style: %{border: :single, padding: 1, width: 16} do
+                text("single")
+              end,
+              box id: "box-double",
+                  style: %{border: :double, padding: 1, width: 16} do
+                text("double")
+              end,
+              box id: "box-rounded",
+                  style: %{border: :rounded, padding: 1, width: 16} do
+                text("rounded")
+              end
+            ],
+            property: :opacity,
+            from: 0.0,
+            to: 1.0,
+            duration: 300,
+            offset: 100
+          )
         end,
         text("-- Row / Column / Spacer --", style: [:bold]),
         row style: %{gap: 1} do
@@ -216,8 +242,19 @@ defmodule Raxol.Demo.Showcase do
       |> Enum.map(fn {row_data, idx} ->
         prefix = if idx == model.table_cursor, do: "> ", else: "  "
         style = if idx == model.table_cursor, do: [:bold], else: []
-        text(prefix <> Enum.join(row_data, "  |  "), style: style)
+
+        text(prefix <> Enum.join(row_data, "  |  "),
+          id: "row-#{idx}",
+          style: style
+        )
       end)
+      |> stagger(
+        property: :opacity,
+        from: 0.0,
+        to: 1.0,
+        duration: 200,
+        offset: 40
+      )
 
     column style: %{gap: 1} do
       [

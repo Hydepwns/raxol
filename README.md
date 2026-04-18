@@ -204,7 +204,7 @@ See [examples/README.md](examples/README.md) for the full learning path.
 
 **SSH serving.** `Raxol.SSH.serve(MyApp, port: 2222)`. Each connection gets its own supervised process.
 
-**LiveView bridge.** Same TEA app renders in Phoenix LiveView with a shared state model.
+**LiveView bridge.** Same TEA app renders in Phoenix LiveView. Animation hints declared in `view/1` become CSS transitions automatically, with `prefers-reduced-motion` respected.
 
 **Distributed swarm.** CRDTs (LWW registers, OR-sets), node monitoring, seniority-based election. Discovery via libcluster with gossip, epmd, DNS, or Tailscale.
 

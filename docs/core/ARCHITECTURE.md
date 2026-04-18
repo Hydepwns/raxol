@@ -58,6 +58,7 @@ Produces: `%{type: :column, children: [%{type: :text, ...}, %{type: :row, ...}],
 - Text measurement handles CJK double-width characters, fullwidth symbols, and combining characters correctly via `Raxol.Terminal.CharacterHandling`
 - On terminal resize, only the layout phase re-runs -- text measurements are cached and reused when content hasn't changed
 - `prepare_incremental/2` compares content hashes to skip re-measurement of unchanged nodes
+- `PreparedElement` also carries `animation_hints` -- declarative metadata attached via `Raxol.Animation.Helpers.animate/2` in `view/1`. These hints flow through to backends untouched; the Preparer just preserves them alongside measurements
 
 ### 3. Layout Engine -> Positioned Elements
 
@@ -87,9 +88,10 @@ Platform-detected backend writes ANSI escape sequences:
 
 - **Unix/macOS**: Native C NIF via termbox2 (`lib/termbox2_nif/c_src/`)
 - **Windows**: Pure Elixir `IOTerminal` using `IO.write/1`
-- **Browser**: LiveView bridge via PubSub (`Raxol.LiveView.TEALive` in `raxol_liveview` package)
+- **Browser**: LiveView bridge via PubSub (`Raxol.LiveView.TEALive` in `raxol_liveview` package). When positioned elements carry animation hints, `TerminalBridge.animation_css/1` emits CSS `transition` rules targeting `data-raxol-id` selectors, plus a `prefers-reduced-motion` media query. The browser handles interpolation client-side instead of re-rendering every frame from the server.
 - **SSH**: Erlang `:ssh` module (`Raxol.SSH.Server`)
-- **MCP**: Tool/resource derivation from widget tree (`Raxol.MCP.Server`, see ADR-0012)
+- **Telegram**: Buffer-to-plaintext via an `io_writer` callback (`Raxol.Core.Runtime.Rendering.Backends.render_to_telegram/2`)
+- **MCP**: Tool/resource derivation from widget tree (`Raxol.MCP.Server`, see ADR-0012). `StructuredScreenshot` includes animation hints in JSON widget summaries so agents can reason about animated state.
 
 ### MCP as Rendering Target (ADR-0012)
 
@@ -181,6 +183,8 @@ The component gets its own GenServer under a DynamicSupervisor. If it crashes, i
 | `Raxol.Terminal.Renderer`              | Cell grid -> ANSI string            |
 | `Raxol.Terminal.Driver`                | Platform backend selection          |
 | `Raxol.Core.Renderer.View`             | View DSL macros                     |
+| `Raxol.Animation.Helpers`              | `animate/2`, `stagger/2`, `sequence/2` for view hints |
+| `Raxol.Animation.Hint`                 | Hint struct, CSS property/timing mapping |
 
 ## References
 

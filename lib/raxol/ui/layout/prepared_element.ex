@@ -14,7 +14,8 @@ defmodule Raxol.UI.Layout.PreparedElement do
     :measured_width,
     :measured_height,
     :children,
-    :content_hash
+    :content_hash,
+    animation_hints: []
   ]
 
   @type t :: %__MODULE__{
@@ -23,6 +24,7 @@ defmodule Raxol.UI.Layout.PreparedElement do
           measured_width: non_neg_integer(),
           measured_height: non_neg_integer(),
           children: [t()] | nil,
-          content_hash: integer() | nil
+          content_hash: integer() | nil,
+          animation_hints: [Raxol.Animation.Hint.t()]
         }
 end

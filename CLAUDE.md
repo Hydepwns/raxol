@@ -239,13 +239,16 @@ IO.write(Renderer.apply_diff(diff))  # NOT Enum.each(diff, &IO.write/1)
 
 ### Render Pipeline
 
-`view(model)` -> Preparer (text measurement) -> LayoutEngine (positioning) -> UIRenderer (cell tuples) -> ScreenBuffer (diff) -> Terminal.Renderer (ANSI). See `docs/core/ARCHITECTURE.md` for the full layer-by-layer walkthrough.
+`view(model)` -> Preparer (text measurement + animation hints) -> LayoutEngine (positioning) -> UIRenderer (cell tuples) -> ScreenBuffer (diff) -> Terminal.Renderer (ANSI). See `docs/core/ARCHITECTURE.md` for the full layer-by-layer walkthrough.
+
+Before calling `view/1`, the Engine applies animations to the model via `Raxol.Animation.Framework.apply_animations_to_state/1` (try/catch guarded). Animation hints declared via `Raxol.Animation.Helpers.animate/2` in `view/1` attach `%Raxol.Animation.Hint{}` metadata to elements. Hints flow through Preparer -> LayoutEngine -> backends. Terminal ignores them (server computes frames). LiveView emits CSS `transition` rules via `TerminalBridge.animation_css/1` with `data-raxol-id` selectors and `prefers-reduced-motion` media query. MCP includes hints in `StructuredScreenshot` JSON. The Dispatcher includes `reduced_motion` in the render context.
 
 Key rules:
 
 - Use `Raxol.UI.TextMeasure` for display width, never `String.length` -- CJK chars are double-width
 - `ScrollContent` behaviour enables lazy content for Viewport (`ListScrollContent`, `StreamScrollContent`)
 - **Never embed raw ANSI codes** (`\e[...m`) in strings passed to `text()` or the View DSL. ANSI codes are only applied at the final Terminal.Renderer stage. Components must use `text("content", fg: :cyan, style: [:bold])` -- not `text("\e[36mcontent\e[0m")`
+- **Animation hints are declarative metadata**, not imperative commands. Use `import Raxol.Animation.Helpers` then `element |> animate(property: :opacity, to: 1.0, duration: 300)` in `view/1`. Hints describe intent; surfaces that understand them (LiveView) can accelerate rendering. Surfaces that don't (terminal) compute frames server-side via `Animation.Framework`. Also: `stagger/2` for cascaded delays, `sequence/2` for chained animations.
 
 ### Testing Patterns
 
@@ -288,6 +291,7 @@ These namespaces are settled -- don't create new top-level alternatives:
 - `Raxol.MCP.*` - MCP protocol (server, client, registry, transports, tool derivation)
 - `Raxol.Payments.*` - Agent payments (protocols, wallets, spending, actions) in raxol_payments package
 - `Raxol.Plugin` - Plugin SDK macro (`use Raxol.Plugin`), API, testing in raxol_plugin package
+- `Raxol.Animation.*` - Animation hints (`Helpers`, `Hint`) in main raxol; CSS mapping in `Raxol.Core.Animation.Hint` (raxol_core package)
 
 ## Environment Variables
 

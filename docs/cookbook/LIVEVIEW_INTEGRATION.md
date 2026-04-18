@@ -293,6 +293,36 @@ end
 
 ---
 
+## Animation Hints
+
+When a TEA app uses `Raxol.Animation.Helpers.animate/2` in its `view/1`, the rendering engine passes those hints through to `TerminalBridge`, which emits CSS `transition` rules targeting `data-raxol-id` selectors. The browser handles interpolation -- no per-frame server re-renders needed.
+
+```elixir
+import Raxol.Animation.Helpers
+
+def view(model) do
+  box id: "panel", style: %{border: :single} do
+    text("Hello")
+  end
+  |> animate(property: :opacity, from: 0.0, to: 1.0, duration: 300)
+end
+```
+
+The generated HTML includes `data-raxol-id="panel"` on the relevant spans, and a `<style>` block with:
+
+```css
+[data-raxol-id="panel"] { transition: opacity 300ms cubic-bezier(0.33, 1, 0.68, 1) 0ms; }
+@media (prefers-reduced-motion: reduce) {
+  [data-raxol-id] { transition-duration: 0.01ms !important; }
+}
+```
+
+`stagger/2` adds incrementing delays across a list of elements. `sequence/2` chains animations on a single element so they play one after another. Both are pure functions that attach metadata -- they don't start server-side timers.
+
+The terminal backend ignores hints entirely and relies on server-computed frames via `Animation.Framework`. MCP includes hints in `StructuredScreenshot` JSON so agents can see what's animating.
+
+---
+
 ## CSS Customization
 
 ```css

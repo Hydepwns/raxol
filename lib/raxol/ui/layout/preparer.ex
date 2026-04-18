@@ -37,7 +37,8 @@ defmodule Raxol.UI.Layout.Preparer do
       element: element,
       measured_width: width,
       measured_height: height,
-      content_hash: :erlang.phash2(text)
+      content_hash: :erlang.phash2(text),
+      animation_hints: Map.get(element, :animation_hints, [])
     }
   end
 
@@ -50,7 +51,8 @@ defmodule Raxol.UI.Layout.Preparer do
       element: element,
       measured_width: width,
       measured_height: 1,
-      content_hash: :erlang.phash2(text)
+      content_hash: :erlang.phash2(text),
+      animation_hints: Map.get(element, :animation_hints, [])
     }
   end
 
@@ -63,7 +65,8 @@ defmodule Raxol.UI.Layout.Preparer do
       element: element,
       measured_width: width,
       measured_height: 1,
-      content_hash: :erlang.phash2(text)
+      content_hash: :erlang.phash2(text),
+      animation_hints: Map.get(element, :animation_hints, [])
     }
   end
 
@@ -77,7 +80,8 @@ defmodule Raxol.UI.Layout.Preparer do
       element: element,
       measured_width: width,
       measured_height: 1,
-      content_hash: :erlang.phash2(label)
+      content_hash: :erlang.phash2(label),
+      animation_hints: Map.get(element, :animation_hints, [])
     }
   end
 
@@ -90,7 +94,8 @@ defmodule Raxol.UI.Layout.Preparer do
       element: element,
       measured_width: 0,
       measured_height: 0,
-      children: prepared_children
+      children: prepared_children,
+      animation_hints: Map.get(element, :animation_hints, [])
     }
   end
 
@@ -99,7 +104,8 @@ defmodule Raxol.UI.Layout.Preparer do
       type: type,
       element: element,
       measured_width: Map.get(element, :width, 0),
-      measured_height: Map.get(element, :height, 0)
+      measured_height: Map.get(element, :height, 0),
+      animation_hints: Map.get(element, :animation_hints, [])
     }
   end
 
@@ -108,7 +114,8 @@ defmodule Raxol.UI.Layout.Preparer do
       type: Map.get(other, :type, :unknown),
       element: other,
       measured_width: 0,
-      measured_height: 0
+      measured_height: 0,
+      animation_hints: Map.get(other, :animation_hints, [])
     }
   end
 
@@ -144,7 +151,8 @@ defmodule Raxol.UI.Layout.Preparer do
       element: element,
       measured_width: 0,
       measured_height: 0,
-      children: prepared_children
+      children: prepared_children,
+      animation_hints: Map.get(element, :animation_hints, [])
     }
   end
 

@@ -13,6 +13,8 @@ defmodule Raxol.Demo.Dashboard do
 
   use Raxol.Core.Runtime.Application
 
+  import Raxol.Animation.Helpers
+
   @panels [:runtime, :schedulers, :log, :processes]
   @spark ~w(▁ ▂ ▃ ▄ ▅ ▆ ▇ █)
   @bar_fill "█"
@@ -162,7 +164,8 @@ defmodule Raxol.Demo.Dashboard do
   defp runtime_panel(model) do
     active = model.panel == :runtime
 
-    box style: %{border: panel_border(active), width: 30, padding: 1} do
+    box id: "runtime-panel",
+        style: %{border: panel_border(active), width: 30, padding: 1} do
       column style: %{gap: 0} do
         [
           text(panel_title("BEAM Runtime", active),
@@ -178,6 +181,7 @@ defmodule Raxol.Demo.Dashboard do
         ]
       end
     end
+    |> maybe_animate_active(active)
   end
 
   defp runtime_version_rows(model) do
@@ -211,12 +215,18 @@ defmodule Raxol.Demo.Dashboard do
       spacer(size: 1),
       text("  #{spark_bar(model.mem_history)}", fg: :cyan),
       spacer(size: 1),
-      row style: %{gap: 1} do
+      row id: "mem-bar", style: %{gap: 1} do
         [
           text(bar(pct, 14), fg: bar_color(pct)),
           text("#{pct}%", style: [:bold], fg: bar_color(pct))
         ]
       end
+      |> animate(
+        property: :fg,
+        to: bar_color(pct),
+        duration: 500,
+        easing: :ease_out_sine
+      )
     ]
   end
 
@@ -225,7 +235,8 @@ defmodule Raxol.Demo.Dashboard do
   defp scheduler_panel(model) do
     active = model.panel == :schedulers
 
-    box style: %{border: panel_border(active), width: 28, padding: 1} do
+    box id: "sched-panel",
+        style: %{border: panel_border(active), width: 28, padding: 1} do
       column style: %{gap: 0} do
         [
           text(panel_title("Schedulers", active),
@@ -238,6 +249,7 @@ defmodule Raxol.Demo.Dashboard do
         ]
       end
     end
+    |> maybe_animate_active(active)
   end
 
   defp sched_util_rows(sched_utils) do
@@ -288,7 +300,8 @@ defmodule Raxol.Demo.Dashboard do
         end
       end)
 
-    box style: %{border: panel_border(active), width: 36, padding: 1} do
+    box id: "log-panel",
+        style: %{border: panel_border(active), width: 36, padding: 1} do
       column style: %{gap: 0} do
         [
           text(panel_title("Event Log#{tick_label}", active),
@@ -300,6 +313,7 @@ defmodule Raxol.Demo.Dashboard do
         ]
       end
     end
+    |> maybe_animate_active(active)
   end
 
   # -- Process Table --
@@ -307,7 +321,8 @@ defmodule Raxol.Demo.Dashboard do
   defp process_table(model) do
     active = model.panel == :processes
 
-    box style: %{border: panel_border(active), width: :fill, padding: 1} do
+    box id: "proc-panel",
+        style: %{border: panel_border(active), width: :fill, padding: 1} do
       column style: %{gap: 0} do
         [
           text(panel_title("Top Processes", active),
@@ -321,6 +336,7 @@ defmodule Raxol.Demo.Dashboard do
         ]
       end
     end
+    |> maybe_animate_active(active)
   end
 
   defp proc_table_header do
@@ -456,6 +472,12 @@ defmodule Raxol.Demo.Dashboard do
       do: :magenta,
       else: :white
   end
+
+  defp maybe_animate_active(element, true),
+    do:
+      element |> animate(property: :opacity, from: 0.8, to: 1.0, duration: 200)
+
+  defp maybe_animate_active(element, false), do: element
 
   defp panel_border(true), do: :double
   defp panel_border(false), do: :single

@@ -32,6 +32,7 @@ defmodule RaxolDemo do
   use Raxol.Core.Runtime.Application
 
   require Raxol.Core.Runtime.Log
+  import Raxol.Animation.Helpers
 
   @panels [:runtime, :schedulers, :log, :processes]
   @spark ~w(▁ ▂ ▃ ▄ ▅ ▆ ▇ █)
@@ -197,38 +198,52 @@ defmodule RaxolDemo do
     uptime = System.monotonic_time(:second) - model.start_time
     pct = mem_percent()
 
-    box style: %{border: panel_border(active), width: 30, padding: 1} do
-      column style: %{gap: 0} do
-        [
-          text(panel_title("BEAM Runtime", active),
-            style: [:bold],
-            fg: title_color(active)
-          ),
-          divider(char: "-"),
-          text("Elixir     #{System.version()}"),
-          text("OTP        #{:erlang.system_info(:otp_release)}"),
-          text("Uptime     #{fmt_uptime(uptime)}"),
-          spacer(size: 1),
-          text("Processes  #{:erlang.system_info(:process_count)}"),
-          text("Ports      #{length(:erlang.ports())}"),
-          text("Atoms      #{fmt_num(:erlang.system_info(:atom_count))}"),
-          text("ETS        #{length(:ets.all())}"),
-          spacer(size: 1),
-          text("Memory", style: [:bold], fg: :cyan),
-          text("  Total    #{mem.total} MB"),
-          text("  Used     #{mem.used} MB"),
-          text("  Binary   #{mem.binary} MB"),
-          spacer(size: 1),
-          text("  #{spark_bar(model.mem_history)}", fg: :cyan),
-          spacer(size: 1),
-          row style: %{gap: 1} do
-            [
-              text(bar(pct, 14), fg: bar_color(pct)),
-              text("#{pct}%", style: [:bold], fg: bar_color(pct))
-            ]
-          end
-        ]
+    panel =
+      box id: "runtime-panel",
+          style: %{border: panel_border(active), width: 30, padding: 1} do
+        column style: %{gap: 0} do
+          [
+            text(panel_title("BEAM Runtime", active),
+              style: [:bold],
+              fg: title_color(active)
+            ),
+            divider(char: "-"),
+            text("Elixir     #{System.version()}"),
+            text("OTP        #{:erlang.system_info(:otp_release)}"),
+            text("Uptime     #{fmt_uptime(uptime)}"),
+            spacer(size: 1),
+            text("Processes  #{:erlang.system_info(:process_count)}"),
+            text("Ports      #{length(:erlang.ports())}"),
+            text("Atoms      #{fmt_num(:erlang.system_info(:atom_count))}"),
+            text("ETS        #{length(:ets.all())}"),
+            spacer(size: 1),
+            text("Memory", style: [:bold], fg: :cyan),
+            text("  Total    #{mem.total} MB"),
+            text("  Used     #{mem.used} MB"),
+            text("  Binary   #{mem.binary} MB"),
+            spacer(size: 1),
+            text("  #{spark_bar(model.mem_history)}", fg: :cyan),
+            spacer(size: 1),
+            row id: "mem-bar", style: %{gap: 1} do
+              [
+                text(bar(pct, 14), fg: bar_color(pct)),
+                text("#{pct}%", style: [:bold], fg: bar_color(pct))
+              ]
+            end
+            |> animate(
+              property: :fg,
+              to: bar_color(pct),
+              duration: 500,
+              easing: :ease_out_sine
+            )
+          ]
+        end
       end
+
+    if active do
+      panel |> animate(property: :opacity, from: 0.8, to: 1.0, duration: 200)
+    else
+      panel
     end
   end
 
@@ -253,35 +268,43 @@ defmodule RaxolDemo do
 
     avg = if utils == [], do: 0, else: round(Enum.sum(utils) / length(utils))
 
-    box style: %{border: panel_border(active), width: 28, padding: 1} do
-      column style: %{gap: 0} do
-        [
-          text(panel_title("Schedulers", active),
-            style: [:bold],
-            fg: title_color(active)
-          ),
-          divider(char: "-")
-          | sched_rows ++
-              [
-                spacer(size: 1),
-                divider(char: "-"),
-                row style: %{gap: 1} do
-                  [
-                    text("Avg", style: [:bold]),
-                    text(bar(avg, 12), fg: bar_color(avg)),
-                    text("#{String.pad_leading("#{avg}", 3)}%",
-                      style: [:bold],
-                      fg: bar_color(avg)
-                    )
-                  ]
-                end,
-                spacer(size: 1),
-                text("#{status_dot(avg)} #{sched_status(avg)}",
-                  fg: bar_color(avg)
-                )
-              ]
-        ]
+    panel =
+      box id: "sched-panel",
+          style: %{border: panel_border(active), width: 28, padding: 1} do
+        column style: %{gap: 0} do
+          [
+            text(panel_title("Schedulers", active),
+              style: [:bold],
+              fg: title_color(active)
+            ),
+            divider(char: "-")
+            | sched_rows ++
+                [
+                  spacer(size: 1),
+                  divider(char: "-"),
+                  row style: %{gap: 1} do
+                    [
+                      text("Avg", style: [:bold]),
+                      text(bar(avg, 12), fg: bar_color(avg)),
+                      text("#{String.pad_leading("#{avg}", 3)}%",
+                        style: [:bold],
+                        fg: bar_color(avg)
+                      )
+                    ]
+                  end,
+                  spacer(size: 1),
+                  text("#{status_dot(avg)} #{sched_status(avg)}",
+                    fg: bar_color(avg)
+                  )
+                ]
+          ]
+        end
       end
+
+    if active do
+      panel |> animate(property: :opacity, from: 0.8, to: 1.0, duration: 200)
+    else
+      panel
     end
   end
 
@@ -302,17 +325,25 @@ defmodule RaxolDemo do
         end
       end)
 
-    box style: %{border: panel_border(active), width: 36, padding: 1} do
-      column style: %{gap: 0} do
-        [
-          text(panel_title("Event Log#{tick_label}", active),
-            style: [:bold],
-            fg: title_color(active)
-          ),
-          divider(char: "-")
-          | entries
-        ]
+    panel =
+      box id: "log-panel",
+          style: %{border: panel_border(active), width: 36, padding: 1} do
+        column style: %{gap: 0} do
+          [
+            text(panel_title("Event Log#{tick_label}", active),
+              style: [:bold],
+              fg: title_color(active)
+            ),
+            divider(char: "-")
+            | entries
+          ]
+        end
       end
+
+    if active do
+      panel |> animate(property: :opacity, from: 0.8, to: 1.0, duration: 200)
+    else
+      panel
     end
   end
 
@@ -348,19 +379,27 @@ defmodule RaxolDemo do
         end
       end)
 
-    box style: %{border: panel_border(active), width: :fill, padding: 1} do
-      column style: %{gap: 0} do
-        [
-          text(panel_title("Top Processes", active),
-            style: [:bold],
-            fg: title_color(active)
-          ),
-          divider(char: "-"),
-          header,
-          divider(char: "-")
-          | rows
-        ]
+    panel =
+      box id: "proc-panel",
+          style: %{border: panel_border(active), width: :fill, padding: 1} do
+        column style: %{gap: 0} do
+          [
+            text(panel_title("Top Processes", active),
+              style: [:bold],
+              fg: title_color(active)
+            ),
+            divider(char: "-"),
+            header,
+            divider(char: "-")
+            | rows
+          ]
+        end
       end
+
+    if active do
+      panel |> animate(property: :opacity, from: 0.8, to: 1.0, duration: 200)
+    else
+      panel
     end
   end
 

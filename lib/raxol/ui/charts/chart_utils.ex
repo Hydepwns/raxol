@@ -205,7 +205,7 @@ defmodule Raxol.UI.Charts.ChartUtils do
   @doc """
   Formats a number as an axis label string with configurable precision.
   """
-  @spec format_axis_label(number(), non_neg_integer()) :: String.t()
+  @spec format_axis_label(number(), 0..253) :: String.t()
   def format_axis_label(value, precision) when is_number(value) do
     :erlang.float_to_binary(value * 1.0, decimals: precision)
   end

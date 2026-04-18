@@ -364,7 +364,6 @@ defmodule Raxol.Commands.FileSystem do
     end
   end
 
-  @spec dir_node(timestamp()) :: node_entry()
   defp dir_node(now) do
     %{
       type: :directory,
@@ -376,7 +375,6 @@ defmodule Raxol.Commands.FileSystem do
     }
   end
 
-  @spec file_node(String.t(), timestamp()) :: node_entry()
   defp file_node(content, now) do
     %{
       type: :file,

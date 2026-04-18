@@ -61,23 +61,90 @@ defmodule Raxol.Core.Runtime.Rendering.Backends do
 
   @doc """
   Renders cells to the LiveView backend via PubSub broadcast.
+
+  When `positioned_elements` carry animation hints, generates a companion
+  `<style>` block with CSS transitions and broadcasts it alongside the
+  terminal HTML. LiveView receives `{:render_update, html, animation_css}`.
   """
-  def render_to_liveview(cells, state) do
+  @compile {:no_warn_undefined, [Raxol.LiveView.TerminalBridge, Phoenix.PubSub]}
+  def render_to_liveview(cells, state, positioned_elements \\ []) do
     updated_buffer = apply_cells_to_buffer(cells, state)
 
-    html =
-      Raxol.LiveView.TerminalBridge.buffer_to_html(updated_buffer,
-        use_inline_styles: true
-      )
+    if Code.ensure_loaded?(Raxol.LiveView.TerminalBridge) do
+      element_id_map = build_element_id_map(positioned_elements)
 
-    _ =
-      if state.liveview_topic && Code.ensure_loaded?(Phoenix.PubSub) do
-        Phoenix.PubSub.broadcast(
-          Raxol.PubSub,
-          state.liveview_topic,
-          {:render_update, html}
+      html =
+        Raxol.LiveView.TerminalBridge.buffer_to_html(updated_buffer,
+          use_inline_styles: true,
+          element_id_map: element_id_map
         )
+
+      animation_css =
+        Raxol.LiveView.TerminalBridge.animation_css(positioned_elements)
+
+      _ =
+        if state.liveview_topic && Code.ensure_loaded?(Phoenix.PubSub) do
+          Phoenix.PubSub.broadcast(
+            Raxol.PubSub,
+            state.liveview_topic,
+            {:render_update, html, animation_css}
+          )
+        end
+
+      {:ok, %{state | buffer: updated_buffer}}
+    else
+      {:ok, %{state | buffer: updated_buffer}}
+    end
+  end
+
+  # Builds a map of {x, y} -> element_id from positioned elements.
+  # Only includes elements that have a string :id field.
+  # Used by TerminalBridge to emit data-raxol-id attributes on spans.
+  defp build_element_id_map(elements) when is_list(elements) do
+    elements
+    |> Enum.reduce(%{}, fn element, acc ->
+      acc = fill_element_coords(element, acc)
+
+      children = Map.get(element, :children, [])
+
+      if is_list(children) do
+        Enum.reduce(children, acc, fn child, inner_acc ->
+          fill_element_coords(child, inner_acc)
+        end)
+      else
+        acc
       end
+    end)
+  end
+
+  defp build_element_id_map(_), do: %{}
+
+  defp fill_element_coords(%{id: id, x: x, y: y, width: w, height: h}, acc)
+       when is_binary(id) and is_integer(x) and is_integer(y) and
+              is_integer(w) and is_integer(h) do
+    for row <- y..(y + h - 1)//1,
+        col <- x..(x + w - 1)//1,
+        reduce: acc do
+      acc -> Map.put_new(acc, {col, row}, id)
+    end
+  end
+
+  defp fill_element_coords(_, acc), do: acc
+
+  @doc """
+  Renders cells to a Telegram chat via an io_writer function.
+
+  Converts the buffer to plain text (no ANSI) and delivers it to
+  the session's io_writer callback, which sends/edits the Telegram message.
+  """
+  @spec render_to_telegram(list(), map()) :: {:ok, map()}
+  def render_to_telegram(cells, state) do
+    updated_buffer = apply_cells_to_buffer(cells, state)
+
+    # Deliver buffer to io_writer -- the Session will format for Telegram
+    if is_function(state.io_writer, 1) do
+      state.io_writer.(%{buffer: updated_buffer, view_tree: state[:view_tree]})
+    end
 
     {:ok, %{state | buffer: updated_buffer}}
   end

@@ -57,6 +57,124 @@ defmodule Raxol.MCP.StructuredScreenshotTest do
     end
   end
 
+  describe "animation_hints in from_view_tree/1" do
+    test "includes animation_hints when present" do
+      node = %{
+        type: :box,
+        id: "panel",
+        animation_hints: [
+          %{property: :opacity, from: 0.0, to: 1.0, duration_ms: 300, easing: :ease_out_cubic, delay_ms: 0}
+        ]
+      }
+
+      [summary] = StructuredScreenshot.from_view_tree(node)
+      assert [hint] = summary.animation_hints
+      assert hint.property == :opacity
+      assert hint.from == 0.0
+      assert hint.to == 1.0
+      assert hint.duration_ms == 300
+      assert hint.easing == :ease_out_cubic
+      assert hint.delay_ms == 0
+    end
+
+    test "omits animation_hints key when not present" do
+      node = %{type: :text, id: "label", content: "Hello"}
+      [summary] = StructuredScreenshot.from_view_tree(node)
+      refute Map.has_key?(summary, :animation_hints)
+    end
+
+    test "omits animation_hints key when empty list" do
+      node = %{type: :box, id: "panel", animation_hints: []}
+      [summary] = StructuredScreenshot.from_view_tree(node)
+      refute Map.has_key?(summary, :animation_hints)
+    end
+
+    test "serializes multiple hints" do
+      node = %{
+        type: :box,
+        id: "card",
+        animation_hints: [
+          %{property: :opacity, to: 1.0, duration_ms: 300, easing: :ease_out_cubic, delay_ms: 0},
+          %{property: :fg, to: :cyan, duration_ms: 200, easing: :linear, delay_ms: 100}
+        ]
+      }
+
+      [summary] = StructuredScreenshot.from_view_tree(node)
+      assert length(summary.animation_hints) == 2
+      assert Enum.map(summary.animation_hints, & &1.property) == [:opacity, :fg]
+    end
+
+    test "preserves hints in nested children" do
+      tree = %{
+        type: :column,
+        id: "root",
+        children: [
+          %{
+            type: :box,
+            id: "child",
+            animation_hints: [
+              %{property: :opacity, to: 1.0, duration_ms: 500, easing: :ease_in_out, delay_ms: 50}
+            ]
+          }
+        ]
+      }
+
+      [summary] = StructuredScreenshot.from_view_tree(tree)
+      refute Map.has_key?(summary, :animation_hints)
+      [child] = summary.children
+      assert [hint] = child.animation_hints
+      assert hint.property == :opacity
+      assert hint.delay_ms == 50
+    end
+
+    test "applies defaults for missing hint fields" do
+      node = %{
+        type: :box,
+        id: "minimal",
+        animation_hints: [%{property: :width}]
+      }
+
+      [summary] = StructuredScreenshot.from_view_tree(node)
+      [hint] = summary.animation_hints
+      assert hint.property == :width
+      assert hint.duration_ms == 300
+      assert hint.easing == :ease_out_cubic
+      assert hint.delay_ms == 0
+      refute Map.has_key?(hint, :from)
+      refute Map.has_key?(hint, :to)
+    end
+
+    test "filters out non-map hints" do
+      node = %{
+        type: :box,
+        id: "mixed",
+        animation_hints: [
+          %{property: :opacity, to: 1.0, duration_ms: 300, easing: :linear, delay_ms: 0},
+          "not a hint",
+          42
+        ]
+      }
+
+      [summary] = StructuredScreenshot.from_view_tree(node)
+      assert length(summary.animation_hints) == 1
+    end
+
+    test "hints appear in JSON output" do
+      node = %{
+        type: :box,
+        id: "animated",
+        animation_hints: [
+          %{property: :opacity, to: 1.0, duration_ms: 300, easing: :ease_out_cubic, delay_ms: 0}
+        ]
+      }
+
+      [summary] = StructuredScreenshot.from_view_tree(node)
+      json = StructuredScreenshot.to_json([summary])
+      assert json =~ "animation_hints"
+      assert json =~ "opacity"
+    end
+  end
+
   describe "to_json/1" do
     test "serializes summaries to JSON string" do
       summaries = [%{type: :button, id: "btn", children: []}]

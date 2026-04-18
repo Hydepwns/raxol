@@ -38,6 +38,7 @@ MIX_ENV=test mix compile   # or MIX_ENV=dev mix compile
 | [code_review_agent](agents/code_review_agent.exs) | Agent framework, shell commands, async processing | `mix run examples/agents/code_review_agent.exs` |
 | [agent_team](agents/agent_team.exs) | Team supervision, inter-agent messaging | `mix run examples/agents/agent_team.exs` |
 | [ai_cockpit](agents/ai_cockpit.exs) | Multi-agent cockpit, LLM streaming, pilot takeover | `mix run examples/agents/ai_cockpit.exs` |
+| [cockpit_demo](agents/cockpit_demo.exs) | OTP supervision, crash recovery, animation hints, sparklines | `mix run examples/agents/cockpit_demo.exs` |
 | [sensor_hud](sensor_hud_demo.exs) | Sensor feeds, fusion, HUD widget rendering | `mix run examples/sensor_hud_demo.exs` |
 | [adaptive_ui](adaptive_ui_demo.exs) | Behavior tracking, layout recommendations, feedback | `mix run examples/adaptive_ui_demo.exs` |
 | [ssh_counter](ssh/ssh_counter.exs) | SSH serving, per-connection process isolation | `mix run examples/ssh/ssh_counter.exs` |
@@ -45,7 +46,7 @@ MIX_ENV=test mix compile   # or MIX_ENV=dev mix compile
 
 ## Interactive Playground
 
-29 widget demos across 8 categories, searchable and filterable:
+30 widget demos across 8 categories, searchable and filterable:
 
 ```bash
 mix raxol.playground                # Terminal mode

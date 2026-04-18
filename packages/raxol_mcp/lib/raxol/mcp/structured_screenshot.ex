@@ -11,7 +11,8 @@ defmodule Raxol.MCP.StructuredScreenshot do
           required(:type) => atom(),
           required(:id) => String.t() | nil,
           required(:children) => [widget_summary()],
-          optional(:content) => String.t()
+          optional(:content) => String.t(),
+          optional(:animation_hints) => [map()]
         }
 
   @doc """
@@ -39,18 +40,6 @@ defmodule Raxol.MCP.StructuredScreenshot do
   # -- Private -----------------------------------------------------------------
 
   defp summarize_node(node) when is_map(node) do
-    base = %{
-      type: Map.get(node, :type, :unknown),
-      id: Map.get(node, :id)
-    }
-
-    base =
-      case Map.get(node, :content) do
-        nil -> base
-        content when is_binary(content) -> Map.put(base, :content, content)
-        _ -> base
-      end
-
     children =
       case Map.get(node, :children) do
         nil -> []
@@ -58,8 +47,44 @@ defmodule Raxol.MCP.StructuredScreenshot do
         _ -> []
       end
 
-    Map.put(base, :children, children)
+    %{
+      type: Map.get(node, :type, :unknown),
+      id: Map.get(node, :id),
+      children: children
+    }
+    |> maybe_put_content(Map.get(node, :content))
+    |> maybe_put_hints(Map.get(node, :animation_hints))
   end
 
   defp summarize_node(_), do: %{type: :unknown, id: nil, children: []}
+
+  defp maybe_put_content(summary, content) when is_binary(content),
+    do: Map.put(summary, :content, content)
+
+  defp maybe_put_content(summary, _), do: summary
+
+  defp maybe_put_hints(summary, [_ | _] = hints) do
+    case hints |> Enum.map(&serialize_hint/1) |> Enum.reject(&is_nil/1) do
+      [] -> summary
+      serialized -> Map.put(summary, :animation_hints, serialized)
+    end
+  end
+
+  defp maybe_put_hints(summary, _), do: summary
+
+  defp serialize_hint(%{property: property} = hint) do
+    %{
+      property: property,
+      duration_ms: Map.get(hint, :duration_ms, 300),
+      easing: Map.get(hint, :easing, :ease_out_cubic),
+      delay_ms: Map.get(hint, :delay_ms, 0)
+    }
+    |> maybe_put(:from, Map.get(hint, :from))
+    |> maybe_put(:to, Map.get(hint, :to))
+  end
+
+  defp serialize_hint(_), do: nil
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

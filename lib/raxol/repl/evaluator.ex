@@ -159,7 +159,6 @@ defmodule Raxol.REPL.Evaluator do
       {:error, Exception.format(kind, reason, __STACKTRACE__)}
   end
 
-  @spec capture_io((-> term())) :: {String.t(), term()}
   defp capture_io(fun) do
     {:ok, string_io} = StringIO.open("")
     original_gl = Process.group_leader()

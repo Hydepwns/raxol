@@ -184,12 +184,10 @@ defmodule Raxol.REPL.VfsHelpers do
     IO.puts("#{prefix}#{name}")
   end
 
-  @spec print_error(String.t(), atom()) :: :ok
   defp print_error(command, reason) do
     IO.puts("#{@ansi_red}#{command}: #{format_error(reason)}#{@ansi_reset}")
   end
 
-  @spec format_error(atom()) :: String.t()
   defp format_error(atom) when is_atom(atom) do
     atom |> Atom.to_string() |> String.replace("_", " ")
   end

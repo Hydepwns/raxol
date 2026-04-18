@@ -239,6 +239,7 @@ defmodule CockpitDemo do
 
   alias Raxol.Agent.Session
   alias Raxol.Style.Colors.{Color, Gradient}
+  import Raxol.Animation.Helpers
 
   # Agent boot stagger (ticks within :running phase, 200ms per tick)
   @boot_schedule [
@@ -607,15 +608,24 @@ defmodule CockpitDemo do
 
     column style: %{padding: 0, gap: 0} do
       [
-        box style: %{border: :double, width: :fill, padding: 0} do
+        box id: "mission-header",
+            style: %{border: :double, width: :fill, padding: 0} do
           text("  " <> gradient_text("MISSION COMPLETE", @success_gradient),
             style: [:bold]
           )
-        end,
+        end
+        |> animate(
+          property: :opacity,
+          from: 0.0,
+          to: 1.0,
+          duration: 500,
+          easing: :ease_out_cubic
+        ),
         spacer(size: 1),
         logo_element(),
         spacer(size: 1),
-        box style: %{border: :single, width: :fill, padding: 1} do
+        box id: "restart-summary",
+            style: %{border: :single, width: :fill, padding: 1} do
           column style: %{gap: 0} do
             [
               row style: %{gap: 1} do
@@ -629,9 +639,18 @@ defmodule CockpitDemo do
               end
             ]
           end
-        end,
+        end
+        |> animate(
+          property: :opacity,
+          from: 0.0,
+          to: 1.0,
+          duration: 400,
+          delay: 200,
+          easing: :ease_out_cubic
+        ),
         spacer(size: 1),
-        box style: %{border: :single, width: :fill, padding: 1} do
+        box id: "stats-summary",
+            style: %{border: :single, width: :fill, padding: 1} do
           column style: %{gap: 0} do
             [
               row style: %{gap: 2} do
@@ -865,7 +884,8 @@ defmodule CockpitDemo do
       tick >= @warn_phase_3 and m != nil ->
         hb = heartbeat(tick, :erratic)
 
-        box style: %{border: :double, width: :fill, padding: 1} do
+        box id: "chaos-critical",
+            style: %{border: :double, width: :fill, padding: 1} do
           column style: %{gap: 0} do
             [
               row style: %{gap: 1} do
@@ -881,6 +901,13 @@ defmodule CockpitDemo do
             ]
           end
         end
+        |> animate(
+          property: :fg,
+          from: :yellow,
+          to: :red,
+          duration: 400,
+          easing: :ease_in_expo
+        )
 
       # Warning phase 2: bold border, UNSTABLE
       tick >= @warn_phase_2 and m != nil ->
@@ -921,7 +948,8 @@ defmodule CockpitDemo do
 
       # Recovered state
       m != nil and model.crashes > 0 and model.restarted ->
-        box style: %{border: :double, width: :fill, padding: 1} do
+        box id: "chaos-recovered",
+            style: %{border: :double, width: :fill, padding: 1} do
           column style: %{gap: 0} do
             [
               row style: %{gap: 1} do
@@ -939,6 +967,20 @@ defmodule CockpitDemo do
             ]
           end
         end
+        |> animate(
+          property: :fg,
+          from: :red,
+          to: :green,
+          duration: 600,
+          easing: :ease_out_cubic
+        )
+        |> animate(
+          property: :opacity,
+          from: 0.0,
+          to: 1.0,
+          duration: 400,
+          easing: :ease_out_cubic
+        )
 
       # Normal working state
       m != nil ->
@@ -1092,29 +1134,46 @@ defmodule CockpitDemo do
     uptime = Keyword.get(opts, :uptime)
     uptime_str = if uptime, do: " #{uptime}s", else: ""
     title_style = Keyword.get(opts, :title_style, [:bold])
+    box_id = title |> String.downcase() |> String.replace(~r/[^a-z0-9]+/, "-")
 
-    box style: %{border: border, width: :fill, padding: 1} do
-      column style: %{gap: 0} do
-        [
-          row style: %{gap: 1} do
-            [
-              text(status_dot(status), fg: fg),
-              text(title, style: title_style, fg: fg),
-              text(pid_str, style: [:dim]),
-              text(uptime_str, style: [:dim])
-            ]
-          end,
-          divider(char: "-")
-          | content_rows
-        ]
+    panel =
+      box id: box_id, style: %{border: border, width: :fill, padding: 1} do
+        column style: %{gap: 0} do
+          [
+            row style: %{gap: 1} do
+              [
+                text(status_dot(status), fg: fg),
+                text(title, style: title_style, fg: fg),
+                text(pid_str, style: [:dim]),
+                text(uptime_str, style: [:dim])
+              ]
+            end,
+            divider(char: "-")
+            | content_rows
+          ]
+        end
       end
+
+    # Fade in when agent first appears
+    if status != :idle do
+      panel
+      |> animate(
+        property: :opacity,
+        from: 0.0,
+        to: 1.0,
+        duration: 400,
+        easing: :ease_out_cubic
+      )
+    else
+      panel
     end
   end
 
   defp crash_flash_box(old_pid, flash_tick) do
     alert = if rem(flash_tick, 2) == 0, do: "KILLED", else: "X X X"
 
-    box style: %{border: :double, width: :fill, padding: 1} do
+    box id: "crash-flash",
+        style: %{border: :double, width: :fill, padding: 1} do
       column style: %{gap: 0} do
         [
           row style: %{gap: 1} do
@@ -1131,6 +1190,14 @@ defmodule CockpitDemo do
         ]
       end
     end
+    |> animate(property: :bg, to: :red, duration: 150, easing: :ease_in_expo)
+    |> animate(
+      property: :opacity,
+      from: 0.5,
+      to: 1.0,
+      duration: 150,
+      easing: :linear
+    )
   end
 
   defp stat_line(label, value) do

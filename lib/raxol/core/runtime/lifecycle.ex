@@ -516,7 +516,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   @spec handle_error(term(), term()) ::
-          {:stop, :normal, map()}
+          {:stop, :normal, %{}}
           | {:ok, :continue | :reinitialize_resources | :restart_components}
   def handle_error(error, _context) do
     case error do

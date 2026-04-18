@@ -17,7 +17,7 @@ end
 
 | Module | Purpose |
 |--------|---------|
-| `Raxol.LiveView.TerminalBridge` | Buffer-to-HTML conversion with run-length encoded spans, style-to-CSS, diff highlighting |
+| `Raxol.LiveView.TerminalBridge` | Buffer-to-HTML conversion with RLE spans, style-to-CSS, diff highlighting, animation hint to CSS transition generation (`animation_css/1`) |
 | `Raxol.LiveView.InputAdapter` | Translates browser keydown events to Raxol Event structs |
 | `Raxol.LiveView.TEALive` | Phoenix.LiveView that mounts and runs a TEA app via PubSub |
 | `Raxol.LiveView.TerminalComponent` | Phoenix.LiveComponent wrapper for embedding terminals in existing LiveViews |

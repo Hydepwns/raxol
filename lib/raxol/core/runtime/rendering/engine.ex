@@ -106,11 +106,22 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
           "Rendering Engine got render context: Model=#{inspect(current_model)}, Theme=#{inspect(current_theme_id)}"
         )
 
+        # Apply active animations to the model before rendering.
+        # This injects interpolated values (opacity, color, etc.) into
+        # model.elements so view/1 reads animated state naturally.
+        # Falls back to unmodified model if animation system isn't running.
+        animated_model =
+          try do
+            Raxol.Animation.Framework.apply_animations_to_state(current_model)
+          catch
+            :exit, _ -> current_model
+          end
+
         # Fetch the actual theme struct using the ID
         theme =
           Theme.get(current_theme_id) || Theme.get(Theme.default_theme_id())
 
-        case do_render_frame(current_model, theme, state) do
+        case do_render_frame(animated_model, theme, state) do
           {:ok, new_state} ->
             {:noreply, new_state}
 
@@ -154,10 +165,17 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   def handle_call(:render_frame_sync, _from, state) do
     case GenServer.call(state.dispatcher_pid, :get_render_context) do
       {:ok, %{model: current_model, theme_id: current_theme_id}} ->
+        animated_model =
+          try do
+            Raxol.Animation.Framework.apply_animations_to_state(current_model)
+          catch
+            :exit, _ -> current_model
+          end
+
         theme =
           Theme.get(current_theme_id) || Theme.get(Theme.default_theme_id())
 
-        case do_render_frame(current_model, theme, state) do
+        case do_render_frame(animated_model, theme, state) do
           {:ok, new_state} ->
             {:reply, :ok, new_state}
 
@@ -269,7 +287,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   defp render_cells_to_backend(positioned_elements, theme, state) do
     with {:ok, cells} <- safe_render_to_cells(positioned_elements, theme),
          {:ok, final_cells} <- safe_apply_plugin_transforms(cells, state),
-         {:ok, new_state} <- safe_render_to_backend(final_cells, state) do
+         {:ok, new_state} <-
+           safe_render_to_backend(final_cells, state, positioned_elements) do
       t5 = profiler_now(state.cycle_profiler)
       {:ok, new_state, t5}
     end
@@ -415,8 +434,10 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
-  # Safe backend rendering -- dispatches to Backends module
-  defp safe_render_to_backend(final_cells, state) do
+  # Safe backend rendering -- dispatches to Backends module.
+  # positioned_elements carries the element tree with animation hints
+  # for surfaces that can use them (LiveView emits CSS transitions).
+  defp safe_render_to_backend(final_cells, state, positioned_elements) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Sending final cells to backend: #{state.environment}"
     )
@@ -429,10 +450,13 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         Backends.render_to_vscode(final_cells, state)
 
       :liveview ->
-        Backends.render_to_liveview(final_cells, state)
+        Backends.render_to_liveview(final_cells, state, positioned_elements)
 
       :ssh ->
         Backends.render_to_ssh(final_cells, state)
+
+      :telegram ->
+        Backends.render_to_telegram(final_cells, state)
 
       :agent ->
         # Agent environment: buffer maintained for inspection, no output written

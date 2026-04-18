@@ -109,6 +109,7 @@ defmodule Raxol.LiveView.TerminalBridge do
     show_cursor = Keyword.get(opts, :show_cursor, false)
     cursor_pos = Keyword.get(opts, :cursor_position)
     cursor_style = Keyword.get(opts, :cursor_style, :block)
+    element_id_map = Keyword.get(opts, :element_id_map, %{})
 
     terminal_class = "#{css_prefix}-terminal"
 
@@ -127,7 +128,8 @@ defmodule Raxol.LiveView.TerminalBridge do
           use_inline: use_inline,
           show_cursor: show_cursor,
           cursor_pos: cursor_pos,
-          cursor_style: cursor_style
+          cursor_style: cursor_style,
+          element_id_map: element_id_map
         })
       end)
 
@@ -164,39 +166,150 @@ defmodule Raxol.LiveView.TerminalBridge do
     """
   end
 
+  @doc """
+  Generates CSS transition rules from animation hints on positioned elements.
+
+  Takes a list of positioned element maps (output of LayoutEngine) and
+  extracts animation hints from elements that have an `:id` field. Returns
+  a `<style>` block with CSS `transition` rules targeting `[data-raxol-id]`
+  selectors, plus a `prefers-reduced-motion` media query.
+
+  Returns an empty string if no elements carry animation hints.
+
+  ## Examples
+
+      elements = [
+        %{id: "panel", type: :box, animation_hints: [
+          %{property: :opacity, duration_ms: 300, easing: :ease_out_cubic, delay_ms: 0}
+        ]}
+      ]
+      css = animation_css(elements)
+      # => "<style>[data-raxol-id=\\"panel\\"] { transition: opacity 300ms cubic-bezier(...) 0ms; }\\n..."
+
+  """
+  @spec animation_css([map()]) :: String.t()
+  def animation_css(elements) when is_list(elements) do
+    rules =
+      elements
+      |> collect_hinted_elements([])
+      |> Enum.map(fn {id, hints} ->
+        transitions =
+          hints
+          |> Enum.map(&hint_to_transition/1)
+          |> Enum.reject(&is_nil/1)
+          |> Enum.join(", ")
+
+        if transitions != "" do
+          ~s([data-raxol-id="#{id}"] { transition: #{transitions}; })
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    case rules do
+      [] ->
+        ""
+
+      rules ->
+        body = Enum.join(rules, "\n")
+
+        "<style>\n#{body}\n@media (prefers-reduced-motion: reduce) {\n  [data-raxol-id] { transition-duration: 0.01ms !important; }\n}\n</style>"
+    end
+  end
+
+  def animation_css(_), do: ""
+
+  defp collect_hinted_elements([], acc), do: acc
+
+  defp collect_hinted_elements([element | rest], acc) do
+    acc =
+      case element do
+        %{id: id, animation_hints: [_ | _] = hints} when is_binary(id) ->
+          [{id, hints} | acc]
+
+        _ ->
+          acc
+      end
+
+    # Recurse into children
+    children = Map.get(element, :children, [])
+
+    acc =
+      if is_list(children) do
+        collect_hinted_elements(children, acc)
+      else
+        acc
+      end
+
+    collect_hinted_elements(rest, acc)
+  end
+
+  defp hint_to_transition(%{property: property, duration_ms: duration_ms, easing: easing, delay_ms: delay_ms}) do
+    alias Raxol.Core.Animation.Hint
+
+    case Hint.to_css_property(property) do
+      nil ->
+        nil
+
+      css_prop ->
+        timing = Hint.to_css_timing(easing)
+        "#{css_prop} #{duration_ms}ms #{timing} #{delay_ms}ms"
+    end
+  end
+
+  defp hint_to_transition(_), do: nil
+
+  # CSS mapping functions now in Raxol.Core.Animation.Hint (raxol_core package)
+
   # Private Functions
 
   # Run-length encoded line renderer: groups consecutive cells with
-  # identical styles into single spans. For monospace text in a <pre>,
-  # the browser handles character positioning via white-space:pre.
-  defp render_line_rle(cells, _y, opts) do
-    runs = rle_cells(cells, opts)
+  # identical styles and element IDs into single spans. For monospace
+  # text in a <pre>, the browser handles character positioning via
+  # white-space:pre. When element_id_map is provided, spans for elements
+  # with IDs get data-raxol-id attributes for CSS transition targeting.
+  defp render_line_rle(cells, y, opts) do
+    runs = rle_cells(cells, y, opts)
 
-    Enum.map_join(runs, "", fn {style_key, chars} ->
+    Enum.map_join(runs, "", fn {style_key, element_id, chars} ->
       text = Enum.join(chars)
 
-      if style_key == :default do
-        escape_html_text(text)
-      else
-        ~s(<span style="#{style_key}">#{escape_html_text(text)}</span>)
+      case {style_key, element_id} do
+        {:default, nil} ->
+          escape_html_text(text)
+
+        {:default, id} ->
+          ~s(<span data-raxol-id="#{id}">#{escape_html_text(text)}</span>)
+
+        {style, nil} ->
+          ~s(<span style="#{style}">#{escape_html_text(text)}</span>)
+
+        {style, id} ->
+          ~s(<span style="#{style}" data-raxol-id="#{id}">#{escape_html_text(text)}</span>)
       end
     end)
   end
 
-  # Group consecutive cells by their computed inline style string.
-  # Returns [{style_string, [char, ...]}, ...]
-  defp rle_cells(cells, opts) do
+  # Group consecutive cells by their computed inline style string AND
+  # element ID. Returns [{style_string, element_id | nil, [char, ...]}, ...]
+  defp rle_cells(cells, y, opts) do
+    id_map = Map.get(opts, :element_id_map, %{})
+
     cells
-    |> Enum.reduce([], fn cell, acc ->
+    |> Enum.with_index()
+    |> Enum.reduce([], fn {cell, x}, acc ->
       style_str = cell_style_key(cell, opts)
+      element_id = Map.get(id_map, {x, y})
       char = cell.char || " "
 
       case acc do
-        [{^style_str, chars} | rest] -> [{style_str, [char | chars]} | rest]
-        _ -> [{style_str, [char]} | acc]
+        [{^style_str, ^element_id, chars} | rest] ->
+          [{style_str, element_id, [char | chars]} | rest]
+
+        _ ->
+          [{style_str, element_id, [char]} | acc]
       end
     end)
-    |> Enum.map(fn {key, chars} -> {key, Enum.reverse(chars)} end)
+    |> Enum.map(fn {key, id, chars} -> {key, id, Enum.reverse(chars)} end)
     |> Enum.reverse()
   end
 
