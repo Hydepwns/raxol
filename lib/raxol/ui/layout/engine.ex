@@ -207,6 +207,8 @@ defmodule Raxol.UI.Layout.Engine do
     # Add component_type, potentially pass placeholder/value info if Renderer needs it
     component_attrs = Map.put(attrs, :component_type, :text_input)
 
+    style_map = style_to_map(Map.get(attrs, :style, %{}))
+
     text_input_elements = [
       # Input box
       %{
@@ -224,8 +226,15 @@ defmodule Raxol.UI.Layout.Engine do
         x: space.x + 2,
         y: space.y + 1,
         text: display_text,
+        fg: Map.get(attrs, :fg),
+        bg: Map.get(attrs, :bg),
+        style: style_map,
         # Pass component_attrs; Renderer can check :value == "" and use placeholder style
-        attrs: Map.merge(component_attrs, %{placeholder: value == ""})
+        attrs:
+          Map.merge(component_attrs, %{
+            placeholder: value == "",
+            style: style_map
+          })
       }
     ]
 
@@ -240,6 +249,8 @@ defmodule Raxol.UI.Layout.Engine do
 
     checkbox_text = get_checkbox_text(checked)
 
+    style_map = style_to_map(Map.get(attrs, :style, %{}))
+
     checkbox_elements = [
       # Checkbox text (box + label)
       %{
@@ -247,8 +258,11 @@ defmodule Raxol.UI.Layout.Engine do
         x: space.x,
         y: space.y,
         text: "#{checkbox_text} #{label}",
+        fg: Map.get(attrs, :fg),
+        bg: Map.get(attrs, :bg),
+        style: style_map,
         # Pass attributes for theme styling
-        attrs: component_attrs
+        attrs: Map.put(component_attrs, :style, style_map)
       }
     ]
 
@@ -288,11 +302,15 @@ defmodule Raxol.UI.Layout.Engine do
   # Process button elements in new View DSL format (no :attrs key)
   def process_element(%{type: :button, text: text} = button, space, acc)
       when is_binary(text) do
+    style_map = style_to_map(Map.get(button, :style, %{}))
+
     component_attrs = %{
       component_type: :button,
       label: text,
       on_click: Map.get(button, :on_click),
-      style: Map.get(button, :style, %{})
+      fg: Map.get(button, :fg),
+      bg: Map.get(button, :bg),
+      style: style_map
     }
 
     build_button_elements(text, component_attrs, space) ++ acc
@@ -390,6 +408,9 @@ defmodule Raxol.UI.Layout.Engine do
         x: space.x + 2,
         y: space.y + 1,
         text: text,
+        fg: Map.get(component_attrs, :fg),
+        bg: Map.get(component_attrs, :bg),
+        style: Map.get(component_attrs, :style, %{}),
         attrs: component_attrs
       }
     ]
@@ -643,8 +664,9 @@ defmodule Raxol.UI.Layout.Engine do
   defp convert_attrs_to_map(attrs), do: attrs
 
   defp style_to_map(styles) when is_list(styles) do
-    Enum.reduce(styles, %{}, fn attr, acc when is_atom(attr) ->
-      Map.put(acc, attr, true)
+    Enum.reduce(styles, %{}, fn
+      attr, acc when is_atom(attr) -> Map.put(acc, attr, true)
+      _other, acc -> acc
     end)
   end
 

@@ -177,10 +177,15 @@ defmodule Raxol.UI.ElementRenderer do
     cell_fg = Map.get(style, :foreground, Map.get(style, :fg, :white))
     cell_bg = Map.get(style, :background, Map.get(style, :bg, :black))
 
+    attrs =
+      Enum.filter([:bold, :italic, :underline], fn attr ->
+        Map.get(style, attr, false) == true
+      end)
+
     String.graphemes(cell_text)
     |> Enum.reduce({[], x}, fn char, {cells, cur_x} ->
       w = Raxol.UI.TextMeasure.char_display_width(char)
-      {[{cur_x, y, char, cell_fg, cell_bg, []} | cells], cur_x + w}
+      {[{cur_x, y, char, cell_fg, cell_bg, attrs} | cells], cur_x + w}
     end)
     |> elem(0)
     |> Enum.reverse()
