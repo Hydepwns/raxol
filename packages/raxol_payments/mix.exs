@@ -57,8 +57,8 @@ defmodule RaxolPayments.MixProject do
 
   defp description do
     """
-    Autonomous payment capabilities for Raxol agents. x402/MPP auto-pay,
-    wallet management, spending controls, and cross-chain settlement.
+    Autonomous payment capabilities for Raxol agents. Xochi cross-chain
+    intent settlement, x402/MPP auto-pay, wallet management, and spending controls.
     """
   end
 

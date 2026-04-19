@@ -10,7 +10,7 @@ Agent payment protocols for Elixir. Autonomous agents that can pay for things --
 
 ## Features
 
-- **Protocol behaviour** -- pluggable payment protocols (x402, MPP, Xochi, Riddler)
+- **Protocol behaviour** -- pluggable payment protocols (Xochi, x402, MPP)
 - **Wallet behaviour** -- `Wallets.Env` (env var) and `Wallets.Op` (1Password via GenServer)
 - **AutoPay** -- Req response step handling HTTP 402 transparently
 - **Xochi** -- cross-chain intent settlement (quote -> sign -> execute -> poll)

@@ -139,13 +139,13 @@ Cross-package references use `@compile {:no_warn_undefined, Module}` and `Code.e
 **Package test commands:**
 
 ```bash
-cd packages/raxol_core && MIX_ENV=test mix test       # ~719 tests
-cd packages/raxol_terminal && MIX_ENV=test mix test    # ~1874 tests
+cd packages/raxol_core && MIX_ENV=test mix test       # ~730 tests
+cd packages/raxol_terminal && MIX_ENV=test mix test    # ~1928 tests
 cd packages/raxol_sensor && MIX_ENV=test mix test      # ~55 tests
 cd packages/raxol_agent && MIX_ENV=test mix test       # ~401 tests
-cd packages/raxol_mcp && MIX_ENV=test mix test         # ~222 tests + 31 properties
+cd packages/raxol_mcp && MIX_ENV=test mix test         # ~232 tests + 31 properties
 cd packages/raxol_payments && MIX_ENV=test mix test    # ~347 tests
-cd packages/raxol_liveview && MIX_ENV=test mix test    # ~37 tests
+cd packages/raxol_liveview && MIX_ENV=test mix test    # ~50 tests
 cd packages/raxol_plugin && MIX_ENV=test mix test      # ~50 tests
 cd packages/raxol_speech && MIX_ENV=test mix test      # ~28 tests
 cd packages/raxol_telegram && MIX_ENV=test mix test    # ~34 tests
