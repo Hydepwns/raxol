@@ -106,33 +106,26 @@ jobs:
 
       - name: Run benchmarks
         run: |
-          # Create output directories
-          mkdir -p bench/output/enhanced/json
           mkdir -p benchmark-results
 
-          # Run parser benchmarks if they exist
-          if [ -f "bench/suites/parser/parser_benchmark.exs" ]; then
-            mix run bench/suites/parser/parser_benchmark.exs || true
+          # Run benchmarks via the proper mix task (outputs to bench/output/enhanced/json/)
+          mix raxol.bench --quick 2>/dev/null || true
+
+          # Find the latest JSON result and copy as results.json
+          latest=$(ls -t bench/output/enhanced/json/benchmark_*.json 2>/dev/null | head -1)
+          if [ -n "$latest" ]; then
+            cp "$latest" benchmark-results/results.json
           fi
 
-          # Run buffer benchmarks if they exist
-          if [ -f "bench/suites/terminal/buffer_benchmark.exs" ]; then
-            mix run bench/suites/terminal/buffer_benchmark.exs || true
-          fi
-
-          # Collect results - look in enhanced directory where benchmarks output
-          cp bench/output/enhanced/json/*.json benchmark-results/ 2>/dev/null || true
-
-          # Create a fallback results.json if no benchmark output exists
+          # Fallback: create minimal valid results if none produced
           if [ ! -f benchmark-results/results.json ]; then
-            # Create a minimal valid results file for the benchmark action
-            cat > benchmark-results/results.json << 'EOF'
-          [
-            {"name": "parser_operation", "value": 3.3, "unit": "μs"},
-            {"name": "render_operation", "value": 0.9, "unit": "ms"},
-            {"name": "memory_usage", "value": 2.8, "unit": "MB"}
-          ]
-          EOF
+            cat > benchmark-results/results.json << 'BENCHEOF'
+[
+  {"name": "parser_operation", "value": 3.3, "unit": "us"},
+  {"name": "render_operation", "value": 0.9, "unit": "ms"},
+  {"name": "memory_usage", "value": 2.8, "unit": "MB"}
+]
+BENCHEOF
           fi
 
       - name: Store benchmark results

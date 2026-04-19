@@ -205,7 +205,12 @@ defmodule Raxol.HeadlessTest do
 
       # Quit command kills the lifecycle
       Headless.send_key(:monitor_test, "q")
-      Process.sleep(300)
+
+      # Poll for monitor cleanup (macOS CI can be slow)
+      Enum.reduce_while(1..40, nil, fn _, _ ->
+        Process.sleep(50)
+        if :monitor_test in Headless.list(), do: {:cont, nil}, else: {:halt, :ok}
+      end)
 
       refute :monitor_test in Headless.list()
     end
