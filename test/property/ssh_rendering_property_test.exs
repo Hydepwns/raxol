@@ -6,6 +6,7 @@ defmodule Raxol.Property.SSHRenderingTest do
   2. render_to_terminal and render_to_ssh produce structurally equivalent output
   3. Lifecycle.terminate/2 invokes terminate_manager/2 (orphaned callback fix)
   4. alternate_screen escapes are written on enter/leave for :ssh and :terminal envs
+  5. Silent fallback paths: missing io_writer, terminal IO.write
 
   Bug class: rendering backend parity gaps and orphaned callbacks (see issue #212).
   """
@@ -125,7 +126,64 @@ defmodule Raxol.Property.SSHRenderingTest do
     end
   end
 
-  # -- Property 3: terminate/2 callback is wired --
+  # -- Property 3: write_output fallback paths --
+
+  describe "write_output/3 edge cases" do
+    property "nil io_writer does not crash" do
+      check all(
+              cells <- cells_gen(),
+              max_runs: 50
+            ) do
+        state = %{
+          width: 80,
+          height: 24,
+          buffer: nil,
+          io_writer: nil,
+          sync_output: false
+        }
+
+        # Should not crash — logs warning and returns gracefully
+        {:ok, _new_state} = Backends.render_to_ssh(cells, state)
+      end
+    end
+
+    property "non-function io_writer does not crash" do
+      check all(
+              cells <- cells_gen(),
+              writer <- member_of([:not_a_fn, "string", 42]),
+              max_runs: 50
+            ) do
+        state = %{
+          width: 80,
+          height: 24,
+          buffer: nil,
+          io_writer: writer,
+          sync_output: false
+        }
+
+        {:ok, _new_state} = Backends.render_to_ssh(cells, state)
+      end
+    end
+
+    property "nil io_writer with sync_output does not crash" do
+      check all(
+              cells <- cells_gen(),
+              max_runs: 50
+            ) do
+        state = %{
+          width: 80,
+          height: 24,
+          buffer: nil,
+          io_writer: nil,
+          sync_output: true
+        }
+
+        {:ok, _new_state} = Backends.render_to_ssh(cells, state)
+      end
+    end
+  end
+
+  # -- Property 4: terminate/2 callback is wired --
 
   describe "Lifecycle.terminate/2 wiring" do
     property "terminate/2 delegates to terminate_manager/2" do
@@ -147,10 +205,10 @@ defmodule Raxol.Property.SSHRenderingTest do
     end
   end
 
-  # -- Property 4: alternate_screen escapes --
+  # -- Property 5: alternate_screen escapes --
 
   describe "alternate_screen lifecycle" do
-    property "alternate_screen: true enters alt-screen for :ssh env" do
+    property "alternate_screen: true sends leave-escape on terminate for :ssh" do
       check all(
               app_name <- member_of([:app_a, :app_b, :app_c]),
               max_runs: 10
@@ -164,11 +222,34 @@ defmodule Raxol.Property.SSHRenderingTest do
           options: [environment: :ssh, io_writer: fn data -> send(self(), {:escape, data}) end]
         }
 
-        # Test the enter path via terminate (which calls leave)
         Lifecycle.terminate(:shutdown, state)
 
         assert_received {:escape, "\e[?1049l"},
                          "leave-alt-screen escape not sent on terminate"
+      end
+    end
+
+    property "alternate_screen: true sends leave-escape via IO.write for :terminal" do
+      check all(
+              reason <- member_of([:normal, :shutdown]),
+              max_runs: 5
+            ) do
+        state = %Lifecycle.State{
+          app_module: TestApp,
+          app_name: :test_app,
+          alternate_screen: true,
+          plugin_manager: nil,
+          command_registry_table: nil,
+          options: [environment: :terminal]
+        }
+
+        output =
+          ExUnit.CaptureIO.capture_io(fn ->
+            Lifecycle.terminate(reason, state)
+          end)
+
+        assert output == "\e[?1049l",
+               "terminal leave-alt-screen escape not written, got #{inspect(output)}"
       end
     end
 
@@ -214,6 +295,49 @@ defmodule Raxol.Property.SSHRenderingTest do
 
         refute_received {:escape, _},
                          "escape sequence sent for non-terminal env #{env}"
+      end
+    end
+
+    property "ssh env with missing io_writer silently skips alt-screen" do
+      check all(
+              reason <- member_of([:normal, :shutdown]),
+              max_runs: 10
+            ) do
+        state = %Lifecycle.State{
+          app_module: TestApp,
+          app_name: :test_app,
+          alternate_screen: true,
+          plugin_manager: nil,
+          command_registry_table: nil,
+          options: [environment: :ssh]
+        }
+
+        # No io_writer in options — should not crash
+        assert Lifecycle.terminate(reason, state) == :ok
+      end
+    end
+  end
+
+  # -- Property 6: build_initial_state captures alternate_screen --
+
+  describe "Lifecycle.State alternate_screen field" do
+    property "alternate_screen defaults to false" do
+      check all(
+              _n <- integer(1..5),
+              max_runs: 5
+            ) do
+        state = %Lifecycle.State{}
+        refute state.alternate_screen
+      end
+    end
+
+    property "alternate_screen can be set to true" do
+      check all(
+              _n <- integer(1..5),
+              max_runs: 5
+            ) do
+        state = %Lifecycle.State{alternate_screen: true}
+        assert state.alternate_screen
       end
     end
   end
