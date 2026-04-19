@@ -138,18 +138,26 @@ defmodule Raxol.Core.Runtime.Lifecycle do
             rendering_engine_pid
           )
 
-        maybe_enter_alternate_screen(state)
-
         Log.info_with_context(
           "[#{__MODULE__}] successfully initialized for #{inspect(app_module)}. Dispatcher PID: #{inspect(dispatcher_pid)}"
         )
 
-        {:ok, state}
+        if state.alternate_screen do
+          {:ok, state, {:continue, :enter_alternate_screen}}
+        else
+          {:ok, state}
+        end
 
       {:error, reason, cleanup_fun} ->
         _ = cleanup_fun.()
         {:stop, reason}
     end
+  end
+
+  @impl GenServer
+  def handle_continue(:enter_alternate_screen, state) do
+    maybe_enter_alternate_screen(state)
+    {:noreply, state}
   end
 
   defp build_initial_state(
@@ -336,8 +344,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     terminate_manager(reason, state)
   end
 
-  @spec terminate_manager(term(), Raxol.Core.Runtime.Lifecycle.State.t()) :: :ok
-  def terminate_manager(reason, state) do
+  defp terminate_manager(reason, state) do
     Log.info_with_context(
       "[#{__MODULE__}] terminating for #{inspect(state.app_name)}. Reason: #{inspect(reason)}"
     )
