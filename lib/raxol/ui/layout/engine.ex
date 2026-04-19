@@ -172,13 +172,18 @@ defmodule Raxol.UI.Layout.Engine do
   # Process text elements in new widget format (flat map with :content)
   def process_element(%{type: :text, content: content} = element, space, acc)
       when is_binary(content) do
+    style_map = style_to_map(Map.get(element, :style, %{}))
+
     text_element = %{
       type: :text,
       x: space.x,
       y: space.y,
       text: content,
+      fg: Map.get(element, :fg),
+      bg: Map.get(element, :bg),
+      style: style_map,
       attrs: %{
-        style: Map.get(element, :style, %{}),
+        style: style_map,
         id: Map.get(element, :id),
         original_type: :text
       }
@@ -636,6 +641,15 @@ defmodule Raxol.UI.Layout.Engine do
 
   defp convert_attrs_to_map(attrs) when is_list(attrs), do: Map.new(attrs)
   defp convert_attrs_to_map(attrs), do: attrs
+
+  defp style_to_map(styles) when is_list(styles) do
+    Enum.reduce(styles, %{}, fn attr, acc when is_atom(attr) ->
+      Map.put(acc, attr, true)
+    end)
+  end
+
+  defp style_to_map(styles) when is_map(styles), do: styles
+  defp style_to_map(_), do: %{}
 
   # Resolve style map from an element, defaulting to empty map.
   defp resolve_style(element) do

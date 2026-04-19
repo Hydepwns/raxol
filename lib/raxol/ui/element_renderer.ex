@@ -253,12 +253,17 @@ defmodule Raxol.UI.ElementRenderer do
     fg = Map.get(style, :fg) || Map.get(style, :foreground, :white)
     bg = Map.get(style, :bg) || Map.get(style, :background, :black)
 
+    attrs =
+      Enum.filter([:bold, :italic, :underline], fn attr ->
+        Map.get(style, attr, false) == true
+      end)
+
     # Width-aware text rendering - CJK/fullwidth chars advance x by 2
     text
     |> String.graphemes()
     |> Enum.reduce({[], x}, fn char, {cells, cur_x} ->
       w = Raxol.UI.TextMeasure.char_display_width(char)
-      {[{cur_x, y, char, fg, bg, []} | cells], cur_x + w}
+      {[{cur_x, y, char, fg, bg, attrs} | cells], cur_x + w}
     end)
     |> elem(0)
     |> Enum.reverse()

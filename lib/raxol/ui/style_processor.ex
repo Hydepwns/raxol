@@ -72,14 +72,21 @@ defmodule Raxol.UI.StyleProcessor do
     :dim
   ]
 
-  # Direct implementation with cascading inheritance
+  # Direct implementation with cascading inheritance.
+  # Priority (highest wins): child top-level attrs > child :style map > parent inherited
   defp flatten_merged_style_direct(parent_style, child_element, theme) do
     parent_style_map = extract_parent_style(parent_style)
     child_style_map = Map.get(child_element, :style, %{})
 
     inherited = Map.take(parent_style_map, @inheritable_properties)
     merged_style_map = Map.merge(inherited, child_style_map)
-    all_attrs = Map.merge(Map.drop(child_element, [:style]), merged_style_map)
+
+    child_top_level =
+      child_element
+      |> Map.drop([:style])
+      |> Map.filter(fn {_k, v} -> v != nil end)
+
+    all_attrs = Map.merge(merged_style_map, child_top_level)
 
     promote_colors(all_attrs, theme)
   end
