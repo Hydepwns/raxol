@@ -215,7 +215,7 @@ jobs:
           MIX_TEST_PARTITION: 1
       
       - name: Upload coverage
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v4.4.3
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: coverage-unit
           path: cover/unit.coverdata
@@ -270,7 +270,7 @@ jobs:
           MIX_TEST_PARTITION: 2
       
       - name: Upload coverage
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v4.4.3
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: coverage-integration
           path: cover/integration.coverdata
@@ -306,7 +306,7 @@ jobs:
           MIX_TEST_PARTITION: 3
       
       - name: Upload coverage
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v4.4.3
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: coverage-property
           path: cover/property.coverdata
@@ -545,7 +545,7 @@ jobs:
           mix coveralls.json --import-cover cover/**/*.coverdata
       
       - name: Upload to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./cover/excoveralls.json
