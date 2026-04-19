@@ -8,9 +8,15 @@ defmodule Raxol.Adaptive.SupervisorTest do
       {:ok, sup} =
         AdaptiveSup.start_link(
           name: :"adaptive_sup_#{:erlang.unique_integer([:positive])}",
-          behavior_tracker: [name: :"tracker_#{:erlang.unique_integer([:positive])}"],
-          layout_recommender: [name: :"recommender_#{:erlang.unique_integer([:positive])}"],
-          feedback_loop: [name: :"feedback_#{:erlang.unique_integer([:positive])}"]
+          behavior_tracker: [
+            name: :"tracker_#{:erlang.unique_integer([:positive])}"
+          ],
+          layout_recommender: [
+            name: :"recommender_#{:erlang.unique_integer([:positive])}"
+          ],
+          feedback_loop: [
+            name: :"feedback_#{:erlang.unique_integer([:positive])}"
+          ]
         )
 
       children = Elixir.Supervisor.which_children(sup)
@@ -27,7 +33,9 @@ defmodule Raxol.Adaptive.SupervisorTest do
         AdaptiveSup.start_link(
           name: :"adaptive_sup_acc_#{:erlang.unique_integer([:positive])}",
           behavior_tracker: [name: tracker_name],
-          layout_recommender: [name: :"recommender_acc_#{:erlang.unique_integer([:positive])}"],
+          layout_recommender: [
+            name: :"recommender_acc_#{:erlang.unique_integer([:positive])}"
+          ],
           feedback_loop: [name: feedback_name]
         )
 

@@ -28,7 +28,9 @@ defmodule Raxol.Adaptive.LayoutRecommenderTest do
       LayoutRecommender.subscribe(pid)
 
       # scout gets 1.5%, others are balanced (no expand trigger)
-      aggregate = make_aggregate(%{scout: 0.15, analyst: 3.5, comms: 3.5, ops: 2.85})
+      aggregate =
+        make_aggregate(%{scout: 0.15, analyst: 3.5, comms: 3.5, ops: 2.85})
+
       send(pid, {:behavior_aggregate, aggregate})
 
       assert_receive {:layout_recommendation, rec}, 200
@@ -52,7 +54,7 @@ defmodule Raxol.Adaptive.LayoutRecommenderTest do
       send(pid, {:behavior_aggregate, aggregate})
 
       assert_receive {:layout_recommendation, rec}, 200
-      [change] = rec.layout_changes
+      assert [change | _] = rec.layout_changes
       assert change.action == :expand
       assert change.pane_id == :analyst
     end
@@ -76,7 +78,7 @@ defmodule Raxol.Adaptive.LayoutRecommenderTest do
       send(pid, {:behavior_aggregate, aggregate})
 
       assert_receive {:layout_recommendation, rec}, 200
-      [change] = rec.layout_changes
+      assert [change | _] = rec.layout_changes
       assert change.action == :show
       assert change.pane_id == :hidden_pane
     end

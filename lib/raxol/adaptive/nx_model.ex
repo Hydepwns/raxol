@@ -19,26 +19,32 @@ if Code.ensure_loaded?(Axon) do
     `:hide`, `:show`, `:expand`, `:shrink`, `:none`
     """
 
-    @feature_size 4
+    @feature_size 10
     @num_actions 5
     @actions [:hide, :show, :expand, :shrink, :none]
+    @model_version 2
 
     @doc "Returns the ordered list of action atoms."
     @spec actions() :: nonempty_list(:hide | :show | :expand | :shrink | :none)
     def actions, do: @actions
 
     @doc "Returns the number of input features per pane."
-    @spec feature_size() :: 4
+    @spec feature_size() :: 10
     def feature_size, do: @feature_size
+
+    @doc "Returns the model version for parameter compatibility checking."
+    @spec model_version() :: 2
+    def model_version, do: @model_version
 
     @doc """
     Build the Axon model graph.
 
-    Architecture: input(4) -> dense(16, relu) -> dense(5, softmax)
+    Architecture: input(10) -> dense(32, relu) -> dense(16, relu) -> dense(5, softmax)
     """
     @spec build_model() :: Axon.t()
     def build_model do
       Axon.input("features", shape: {nil, @feature_size})
+      |> Axon.dense(32, activation: :relu)
       |> Axon.dense(16, activation: :relu)
       |> Axon.dense(@num_actions, activation: :softmax)
     end
@@ -76,7 +82,20 @@ if Code.ensure_loaded?(Axon) do
     Extract per-pane feature tensors from a behavior aggregate.
 
     Returns `{features_tensor, pane_ids}` where features_tensor has
-    shape `[n_panes, 4]`.
+    shape `[n_panes, #{@feature_size}]`.
+
+    ## Features (per pane)
+
+    1. `dwell_pct` -- fraction of total dwell time
+    2. `is_most_used` -- 1.0 if highest dwell
+    3. `is_least_used` -- 1.0 if in least-used set
+    4. `alert_response_norm` -- normalized alert response time
+    5. `scroll_freq_norm` -- normalized scroll frequency
+    6. `scroll_vel_norm` -- normalized scroll velocity
+    7. `command_conc_pct` -- fraction of commands targeting this pane
+    8. `takeover_pct` -- fraction of takeover time on this pane
+    9. `pane_count_norm` -- total panes / 10 (normalized)
+    10. `dwell_rank_norm` -- rank position / pane_count (0.0 = most used, 1.0 = least)
     """
     @spec extract_features(map(), [atom()]) :: {Nx.Tensor.t(), [atom()]}
     def extract_features(aggregate, pane_ids) do
@@ -85,6 +104,32 @@ if Code.ensure_loaded?(Axon) do
       alert_ms = Map.get(aggregate, :avg_alert_response_ms, 0.0)
       alert_norm = min(alert_ms / 10_000.0, 1.0)
       least_used = Map.get(aggregate, :least_used_panes, [])
+
+      scroll_freq = Map.get(aggregate, :scroll_frequency, %{})
+
+      max_scroll =
+        scroll_freq |> Map.values() |> Enum.max(fn -> 1 end) |> max(1)
+
+      scroll_vel = Map.get(aggregate, :scroll_velocity, %{})
+
+      max_vel =
+        scroll_vel |> Map.values() |> Enum.max(fn -> 1.0 end) |> max(1.0)
+
+      cmd_conc = Map.get(aggregate, :command_concentration, %{})
+      total_cmds = cmd_conc |> Map.values() |> Enum.sum() |> max(1)
+
+      takeover_ms = Map.get(aggregate, :takeover_duration_ms, %{})
+      total_takeover = takeover_ms |> Map.values() |> Enum.sum() |> max(1.0)
+
+      n_panes = length(pane_ids)
+      pane_count_norm = min(n_panes / 10.0, 1.0)
+
+      # Rank panes by dwell (descending)
+      ranked =
+        pane_ids
+        |> Enum.sort_by(fn id -> Map.get(dwell_times, id, 0) end, :desc)
+        |> Enum.with_index()
+        |> Map.new()
 
       {most_used_pane, _} =
         if map_size(dwell_times) > 0 do
@@ -99,7 +144,28 @@ if Code.ensure_loaded?(Axon) do
           dwell_pct = if total_dwell > 0, do: dwell / total_dwell, else: 0.0
           is_most = if pane_id == most_used_pane, do: 1.0, else: 0.0
           is_least = if pane_id in least_used, do: 1.0, else: 0.0
-          [dwell_pct * 1.0, is_most, is_least, alert_norm * 1.0]
+          scroll_freq_norm = Map.get(scroll_freq, pane_id, 0) / max_scroll
+          scroll_vel_norm = Map.get(scroll_vel, pane_id, 0.0) / max_vel
+          cmd_conc_pct = Map.get(cmd_conc, pane_id, 0) / total_cmds
+          takeover_pct = Map.get(takeover_ms, pane_id, 0.0) / total_takeover
+
+          rank_idx = Map.get(ranked, pane_id, n_panes - 1)
+
+          dwell_rank_norm =
+            if n_panes > 1, do: rank_idx / (n_panes - 1), else: 0.0
+
+          [
+            dwell_pct * 1.0,
+            is_most,
+            is_least,
+            alert_norm * 1.0,
+            scroll_freq_norm * 1.0,
+            scroll_vel_norm * 1.0,
+            cmd_conc_pct * 1.0,
+            takeover_pct * 1.0,
+            pane_count_norm,
+            dwell_rank_norm * 1.0
+          ]
         end)
 
       {Nx.tensor(features_list, type: :f32), pane_ids}

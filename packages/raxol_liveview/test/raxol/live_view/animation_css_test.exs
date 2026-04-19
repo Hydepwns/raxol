@@ -10,7 +10,12 @@ defmodule Raxol.LiveView.AnimationCSSTest do
           id: "panel",
           type: :box,
           animation_hints: [
-            %{property: :opacity, duration_ms: 300, easing: :ease_out_cubic, delay_ms: 0}
+            %{
+              property: :opacity,
+              duration_ms: 300,
+              easing: :ease_out_cubic,
+              delay_ms: 0
+            }
           ]
         }
       ]
@@ -29,7 +34,12 @@ defmodule Raxol.LiveView.AnimationCSSTest do
           id: "card",
           type: :box,
           animation_hints: [
-            %{property: :opacity, duration_ms: 300, easing: :ease_out_cubic, delay_ms: 0},
+            %{
+              property: :opacity,
+              duration_ms: 300,
+              easing: :ease_out_cubic,
+              delay_ms: 0
+            },
             %{property: :color, duration_ms: 200, easing: :linear, delay_ms: 50}
           ]
         }
@@ -47,14 +57,24 @@ defmodule Raxol.LiveView.AnimationCSSTest do
           id: "header",
           type: :box,
           animation_hints: [
-            %{property: :opacity, duration_ms: 500, easing: :linear, delay_ms: 0}
+            %{
+              property: :opacity,
+              duration_ms: 500,
+              easing: :linear,
+              delay_ms: 0
+            }
           ]
         },
         %{
           id: "body",
           type: :box,
           animation_hints: [
-            %{property: :bg, duration_ms: 300, easing: :ease_in_out_cubic, delay_ms: 100}
+            %{
+              property: :bg,
+              duration_ms: 300,
+              easing: :ease_in_out_cubic,
+              delay_ms: 100
+            }
           ]
         }
       ]
@@ -72,7 +92,12 @@ defmodule Raxol.LiveView.AnimationCSSTest do
           id: "panel",
           type: :box,
           animation_hints: [
-            %{property: :opacity, duration_ms: 300, easing: :linear, delay_ms: 0}
+            %{
+              property: :opacity,
+              duration_ms: 300,
+              easing: :linear,
+              delay_ms: 0
+            }
           ]
         }
       ]
@@ -101,7 +126,12 @@ defmodule Raxol.LiveView.AnimationCSSTest do
         %{
           type: :box,
           animation_hints: [
-            %{property: :opacity, duration_ms: 300, easing: :linear, delay_ms: 0}
+            %{
+              property: :opacity,
+              duration_ms: 300,
+              easing: :linear,
+              delay_ms: 0
+            }
           ]
         }
       ]
@@ -115,7 +145,12 @@ defmodule Raxol.LiveView.AnimationCSSTest do
           id: "widget",
           type: :box,
           animation_hints: [
-            %{property: :custom_thing, duration_ms: 300, easing: :linear, delay_ms: 0}
+            %{
+              property: :custom_thing,
+              duration_ms: 300,
+              easing: :linear,
+              delay_ms: 0
+            }
           ]
         }
       ]
@@ -132,7 +167,12 @@ defmodule Raxol.LiveView.AnimationCSSTest do
               id: "nested",
               type: :text,
               animation_hints: [
-                %{property: :opacity, duration_ms: 200, easing: :linear, delay_ms: 0}
+                %{
+                  property: :opacity,
+                  duration_ms: 200,
+                  easing: :linear,
+                  delay_ms: 0
+                }
               ]
             }
           ]
@@ -151,7 +191,12 @@ defmodule Raxol.LiveView.AnimationCSSTest do
           id: "delayed",
           type: :box,
           animation_hints: [
-            %{property: :opacity, duration_ms: 300, easing: :ease_in_expo, delay_ms: 150}
+            %{
+              property: :opacity,
+              duration_ms: 300,
+              easing: :ease_in_expo,
+              delay_ms: 150
+            }
           ]
         }
       ]
@@ -168,7 +213,12 @@ defmodule Raxol.LiveView.AnimationCSSTest do
           id: "el",
           type: :box,
           animation_hints: [
-            %{property: :opacity, duration_ms: 100, easing: :linear, delay_ms: 0}
+            %{
+              property: :opacity,
+              duration_ms: 100,
+              easing: :linear,
+              delay_ms: 0
+            }
           ]
         }
       ]
@@ -177,6 +227,69 @@ defmodule Raxol.LiveView.AnimationCSSTest do
 
       assert String.starts_with?(css, "<style>")
       assert String.ends_with?(css, "</style>")
+    end
+
+    test "generates border_beam CSS with conic-gradient for beam hint" do
+      elements = [
+        %{
+          id: "beam-panel",
+          type: :box,
+          animation_hints: [
+            %{
+              type: :border_beam,
+              variant: :ocean,
+              size: :full,
+              strength: 0.8,
+              duration_ms: 2000,
+              brightness: 1.3,
+              saturation: 1.2,
+              hue_range: 30,
+              active: true,
+              static_colors: false
+            }
+          ]
+        }
+      ]
+
+      css = TerminalBridge.animation_css(elements)
+
+      assert css =~ "conic-gradient"
+      assert css =~ "beam-panel"
+      assert css =~ "mask-composite"
+    end
+
+    test "border_beam hints coexist with regular transition hints" do
+      elements = [
+        %{
+          id: "combo",
+          type: :box,
+          animation_hints: [
+            %{
+              property: :opacity,
+              duration_ms: 300,
+              easing: :linear,
+              delay_ms: 0
+            },
+            %{
+              type: :border_beam,
+              variant: :colorful,
+              size: :full,
+              strength: 0.8,
+              duration_ms: 2000,
+              brightness: 1.3,
+              saturation: 1.2,
+              hue_range: 30,
+              active: true,
+              static_colors: false
+            }
+          ]
+        }
+      ]
+
+      css = TerminalBridge.animation_css(elements)
+
+      assert css =~ "opacity 300ms"
+      assert css =~ "conic-gradient"
     end
   end
 end

@@ -57,6 +57,11 @@ defmodule Raxol.Core.Renderer.View.LayoutHelpers do
     base
     |> maybe_add_panel_opt(:title, Keyword.get(opts, :title))
     |> maybe_add_panel_opt(:style, Keyword.get(opts, :style, []))
+    |> maybe_add_panel_opt(:border_beam, Keyword.get(opts, :border_beam))
+    |> maybe_add_panel_opt(
+      :border_beam_opts,
+      Keyword.get(opts, :border_beam_opts)
+    )
   end
 
   defp maybe_add_panel_opt(opts, _key, nil), do: opts

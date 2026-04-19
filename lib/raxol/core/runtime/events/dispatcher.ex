@@ -371,6 +371,15 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   @impl true
+  def handle_manager_cast(
+        {:dispatch, {:layout_recommendation, _rec} = msg},
+        state
+      ) do
+    # Layout recommendations go directly to update/2
+    dispatch_raw_message(msg, state)
+  end
+
+  @impl true
   def handle_manager_cast({:dispatch, event}, state) do
     Raxol.Core.Runtime.Log.debug(
       "[Dispatcher] handle_cast :dispatch event: #{inspect(event)}"

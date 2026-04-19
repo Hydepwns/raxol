@@ -124,4 +124,51 @@ defmodule Raxol.Animation.Helpers do
 
     result
   end
+
+  @doc """
+  Attaches a border beam animation hint to an element.
+
+  The beam creates an animated glow that orbits the element's border.
+  Surfaces handle it differently: terminal computes frames server-side,
+  LiveView generates CSS conic-gradient + mask animations, MCP includes
+  the hint in structured screenshots.
+
+  ## Options
+
+    * `:variant` - Color variant: `:colorful` (default), `:mono`, `:ocean`, `:sunset`
+    * `:size` - Size preset: `:full` (default), `:compact`, `:line`
+    * `:strength` - Effect intensity 0.0-1.0 (default: 0.8)
+    * `:duration` - Orbit duration in ms (default: 2000)
+    * `:brightness` - Glow brightness multiplier (default: 1.3, LiveView only)
+    * `:saturation` - Color saturation multiplier (default: 1.2, LiveView only)
+    * `:hue_range` - Hue rotation degrees (default: 30, LiveView only)
+    * `:active` - Whether the beam is running (default: true)
+    * `:static_colors` - Disable color cycling (default: false)
+
+  ## Examples
+
+      panel(id: "status", border: :rounded)
+      |> border_beam(variant: :ocean, duration: 2000)
+
+      panel(id: "card", border: :single)
+      |> border_beam(variant: :sunset, strength: 0.6, size: :compact)
+  """
+  @spec border_beam(map(), keyword()) :: map()
+  def border_beam(element, opts \\ []) when is_map(element) and is_list(opts) do
+    hint = %{
+      type: :border_beam,
+      variant: Keyword.get(opts, :variant, :colorful),
+      size: Keyword.get(opts, :size, :full),
+      strength: Keyword.get(opts, :strength, 0.8),
+      duration_ms: Keyword.get(opts, :duration, 2000),
+      brightness: Keyword.get(opts, :brightness, 1.3),
+      saturation: Keyword.get(opts, :saturation, 1.2),
+      hue_range: Keyword.get(opts, :hue_range, 30),
+      active: Keyword.get(opts, :active, true),
+      static_colors: Keyword.get(opts, :static_colors, false)
+    }
+
+    existing = Map.get(element, :animation_hints, [])
+    Map.put(element, :animation_hints, [hint | existing])
+  end
 end

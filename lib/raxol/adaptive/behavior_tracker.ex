@@ -37,7 +37,12 @@ defmodule Raxol.Adaptive.BehaviorTracker do
           command_frequency: %{String.t() => non_neg_integer()},
           avg_alert_response_ms: float(),
           most_used_panes: [atom()],
-          least_used_panes: [atom()]
+          least_used_panes: [atom()],
+          scroll_frequency: %{atom() => non_neg_integer()},
+          scroll_velocity: %{atom() => float()},
+          takeover_duration_ms: %{atom() => float()},
+          layout_override_count: non_neg_integer(),
+          command_concentration: %{atom() => non_neg_integer()}
         }
 
   @type t :: %__MODULE__{
@@ -48,7 +53,8 @@ defmodule Raxol.Adaptive.BehaviorTracker do
           window_size_ms: pos_integer(),
           tracking_enabled: boolean(),
           subscribers: MapSet.t(pid()),
-          aggregate_ref: reference() | nil
+          aggregate_ref: reference() | nil,
+          current_focus: atom() | nil
         }
 
   defstruct session_id: nil,
@@ -58,7 +64,8 @@ defmodule Raxol.Adaptive.BehaviorTracker do
             window_size_ms: @default_window_size_ms,
             tracking_enabled: true,
             subscribers: MapSet.new(),
-            aggregate_ref: nil
+            aggregate_ref: nil,
+            current_focus: nil
 
   # -- Public API --
 
@@ -166,6 +173,14 @@ defmodule Raxol.Adaptive.BehaviorTracker do
 
   @impl true
   def handle_cast({:record, event_type, data}, %__MODULE__{} = state) do
+    # Annotate command events with current focus pane for concentration tracking
+    data =
+      if event_type == :command_issued and state.current_focus != nil do
+        Map.put_new(data, :focused_pane, state.current_focus)
+      else
+        data
+      end
+
     event = %{
       timestamp: System.monotonic_time(:millisecond),
       type: event_type,
@@ -173,7 +188,16 @@ defmodule Raxol.Adaptive.BehaviorTracker do
     }
 
     events = CircularBuffer.insert(state.events, event)
-    {:noreply, %__MODULE__{state | events: events}}
+
+    # Track focus changes
+    current_focus =
+      case event_type do
+        :pane_focus -> Map.get(data, :pane_id, state.current_focus)
+        _ -> state.current_focus
+      end
+
+    {:noreply,
+     %__MODULE__{state | events: events, current_focus: current_focus}}
   end
 
   @impl true
@@ -229,6 +253,10 @@ defmodule Raxol.Adaptive.BehaviorTracker do
     pane_dwell_times = compute_pane_dwell_times(events)
     command_frequency = compute_command_frequency(events)
     avg_alert_response = compute_avg_alert_response(events)
+    {scroll_frequency, scroll_velocity} = compute_scroll_metrics(events)
+    takeover_duration_ms = compute_takeover_duration(events)
+    layout_override_count = compute_layout_overrides(events)
+    command_concentration = compute_command_concentration(events)
 
     sorted_panes =
       pane_dwell_times
@@ -241,7 +269,12 @@ defmodule Raxol.Adaptive.BehaviorTracker do
       command_frequency: command_frequency,
       avg_alert_response_ms: avg_alert_response,
       most_used_panes: Enum.take(sorted_panes, 3),
-      least_used_panes: sorted_panes |> Enum.reverse() |> Enum.take(3)
+      least_used_panes: sorted_panes |> Enum.reverse() |> Enum.take(3),
+      scroll_frequency: scroll_frequency,
+      scroll_velocity: scroll_velocity,
+      takeover_duration_ms: takeover_duration_ms,
+      layout_override_count: layout_override_count,
+      command_concentration: command_concentration
     }
   end
 
@@ -276,6 +309,65 @@ defmodule Raxol.Adaptive.BehaviorTracker do
       [] -> 0.0
       list -> Enum.sum(list) / length(list)
     end
+  end
+
+  defp compute_scroll_metrics(events) do
+    scroll_events =
+      Enum.filter(events, fn e -> e.type == :scroll_pattern end)
+
+    by_pane =
+      Enum.group_by(scroll_events, fn e -> Map.get(e.data, :pane_id) end)
+
+    frequency =
+      Map.new(by_pane, fn {pane_id, pane_events} ->
+        {pane_id, length(pane_events)}
+      end)
+
+    velocity =
+      Map.new(by_pane, fn {pane_id, pane_events} ->
+        deltas =
+          Enum.map(pane_events, fn e ->
+            abs(Map.get(e.data, :delta, 0))
+          end)
+
+        avg = if deltas == [], do: 0.0, else: Enum.sum(deltas) / length(deltas)
+        {pane_id, avg * 1.0}
+      end)
+
+    {frequency, velocity}
+  end
+
+  defp compute_takeover_duration(events) do
+    # Pair takeover_start/end events per pane and sum durations
+    events
+    |> Enum.filter(fn e -> e.type in [:takeover_start, :takeover_end] end)
+    |> Enum.group_by(fn e -> Map.get(e.data, :pane_id) end)
+    |> Map.new(fn {pane_id, pane_events} ->
+      sorted = Enum.sort_by(pane_events, & &1.timestamp)
+      duration = sum_takeover_pairs(sorted, 0)
+      {pane_id, duration * 1.0}
+    end)
+  end
+
+  defp sum_takeover_pairs([], acc), do: acc
+
+  defp sum_takeover_pairs([start, stop | rest], acc)
+       when start.type == :takeover_start and stop.type == :takeover_end do
+    sum_takeover_pairs(rest, acc + (stop.timestamp - start.timestamp))
+  end
+
+  defp sum_takeover_pairs([_ | rest], acc), do: sum_takeover_pairs(rest, acc)
+
+  defp compute_layout_overrides(events) do
+    Enum.count(events, fn e -> e.type == :layout_override end)
+  end
+
+  defp compute_command_concentration(events) do
+    events
+    |> Enum.filter(fn e -> e.type == :command_issued end)
+    |> Enum.group_by(fn e -> Map.get(e.data, :focused_pane) end)
+    |> Map.delete(nil)
+    |> Map.new(fn {pane_id, pane_events} -> {pane_id, length(pane_events)} end)
   end
 
   defp cap_aggregates(aggregates)

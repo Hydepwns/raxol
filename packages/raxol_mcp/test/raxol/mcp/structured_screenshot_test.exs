@@ -9,7 +9,13 @@ defmodule Raxol.MCP.StructuredScreenshotTest do
     end
 
     test "summarizes a single node" do
-      node = %{type: :button, id: "submit", content: "Go", on_click: fn -> :noop end}
+      node = %{
+        type: :button,
+        id: "submit",
+        content: "Go",
+        on_click: fn -> :noop end
+      }
+
       [summary] = StructuredScreenshot.from_view_tree(node)
 
       assert summary.type == :button
@@ -63,7 +69,14 @@ defmodule Raxol.MCP.StructuredScreenshotTest do
         type: :box,
         id: "panel",
         animation_hints: [
-          %{property: :opacity, from: 0.0, to: 1.0, duration_ms: 300, easing: :ease_out_cubic, delay_ms: 0}
+          %{
+            property: :opacity,
+            from: 0.0,
+            to: 1.0,
+            duration_ms: 300,
+            easing: :ease_out_cubic,
+            delay_ms: 0
+          }
         ]
       }
 
@@ -94,8 +107,20 @@ defmodule Raxol.MCP.StructuredScreenshotTest do
         type: :box,
         id: "card",
         animation_hints: [
-          %{property: :opacity, to: 1.0, duration_ms: 300, easing: :ease_out_cubic, delay_ms: 0},
-          %{property: :fg, to: :cyan, duration_ms: 200, easing: :linear, delay_ms: 100}
+          %{
+            property: :opacity,
+            to: 1.0,
+            duration_ms: 300,
+            easing: :ease_out_cubic,
+            delay_ms: 0
+          },
+          %{
+            property: :fg,
+            to: :cyan,
+            duration_ms: 200,
+            easing: :linear,
+            delay_ms: 100
+          }
         ]
       }
 
@@ -113,7 +138,13 @@ defmodule Raxol.MCP.StructuredScreenshotTest do
             type: :box,
             id: "child",
             animation_hints: [
-              %{property: :opacity, to: 1.0, duration_ms: 500, easing: :ease_in_out, delay_ms: 50}
+              %{
+                property: :opacity,
+                to: 1.0,
+                duration_ms: 500,
+                easing: :ease_in_out,
+                delay_ms: 50
+              }
             ]
           }
         ]
@@ -149,7 +180,13 @@ defmodule Raxol.MCP.StructuredScreenshotTest do
         type: :box,
         id: "mixed",
         animation_hints: [
-          %{property: :opacity, to: 1.0, duration_ms: 300, easing: :linear, delay_ms: 0},
+          %{
+            property: :opacity,
+            to: 1.0,
+            duration_ms: 300,
+            easing: :linear,
+            delay_ms: 0
+          },
           "not a hint",
           42
         ]
@@ -164,7 +201,13 @@ defmodule Raxol.MCP.StructuredScreenshotTest do
         type: :box,
         id: "animated",
         animation_hints: [
-          %{property: :opacity, to: 1.0, duration_ms: 300, easing: :ease_out_cubic, delay_ms: 0}
+          %{
+            property: :opacity,
+            to: 1.0,
+            duration_ms: 300,
+            easing: :ease_out_cubic,
+            delay_ms: 0
+          }
         ]
       }
 
@@ -172,6 +215,59 @@ defmodule Raxol.MCP.StructuredScreenshotTest do
       json = StructuredScreenshot.to_json([summary])
       assert json =~ "animation_hints"
       assert json =~ "opacity"
+    end
+  end
+
+  describe "border_beam hint serialization" do
+    test "serializes border_beam type hint" do
+      node = %{
+        type: :box,
+        id: "beam-box",
+        animation_hints: [
+          %{
+            type: :border_beam,
+            variant: :ocean,
+            size: :full,
+            strength: 0.6,
+            duration_ms: 3000,
+            active: true
+          }
+        ]
+      }
+
+      [summary] = StructuredScreenshot.from_view_tree(node)
+
+      assert [hint] = summary.animation_hints
+      assert hint.type == :border_beam
+      assert hint.variant == :ocean
+      assert hint.strength == 0.6
+      assert hint.duration_ms == 3000
+    end
+
+    test "border_beam hints coexist with property hints" do
+      node = %{
+        type: :box,
+        id: "combo",
+        animation_hints: [
+          %{property: :opacity, duration_ms: 300, easing: :linear, delay_ms: 0},
+          %{
+            type: :border_beam,
+            variant: :colorful,
+            strength: 0.8,
+            duration_ms: 2000,
+            active: true
+          }
+        ]
+      }
+
+      [summary] = StructuredScreenshot.from_view_tree(node)
+
+      assert length(summary.animation_hints) == 2
+
+      types =
+        Enum.map(summary.animation_hints, &Map.get(&1, :type, :transition))
+
+      assert :border_beam in types
     end
   end
 

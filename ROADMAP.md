@@ -38,12 +38,12 @@ Multi-surface application runtime for Elixir. One TEA module, four render target
 
 ### Ship It
 
-| Task              | Description                                                    | Effort |
-| ----------------- | -------------------------------------------------------------- | ------ |
-| Hex: raxol_sensor | Zero deps, 55 tests, standalone -- publish first               | Small  |
-| Hex: raxol_mcp    | Full MCP surface, test harness, 222+ tests                     | Small  |
-| Hex: raxol_agent  | Agent framework, depends on raxol + raxol_mcp                  | Medium |
-| Hex: raxol        | Main package, depends on all above                             | Medium |
+| Task              | Description                                      | Effort |
+| ----------------- | ------------------------------------------------ | ------ |
+| Hex: raxol_sensor | Zero deps, 55 tests, standalone -- publish first | Small  |
+| Hex: raxol_mcp    | Full MCP surface, test harness, 222+ tests       | Small  |
+| Hex: raxol_agent  | Agent framework, depends on raxol + raxol_mcp    | Medium |
+| Hex: raxol        | Main package, depends on all above               | Medium |
 
 ### AI Backend Providers
 

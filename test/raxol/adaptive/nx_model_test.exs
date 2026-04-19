@@ -3,6 +3,14 @@ defmodule Raxol.Adaptive.NxModelTest do
 
   alias Raxol.Adaptive.NxModel
 
+  setup do
+    # Clear cached compiled model between tests (feature size may change)
+    :persistent_term.erase({NxModel, :compiled})
+    :ok
+  rescue
+    ArgumentError -> :ok
+  end
+
   describe "actions/0" do
     test "returns 5 actions" do
       assert length(NxModel.actions()) == 5
@@ -32,7 +40,11 @@ defmodule Raxol.Adaptive.NxModelTest do
   describe "predict/2" do
     test "returns probabilities summing to ~1 per row" do
       params = NxModel.init_params()
-      features = Nx.tensor([[0.5, 1.0, 0.0, 0.1]], type: :f32)
+
+      features =
+        Nx.tensor([[0.5, 1.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.3, 0.0]],
+          type: :f32
+        )
 
       result = NxModel.predict(params, features)
 
@@ -47,9 +59,9 @@ defmodule Raxol.Adaptive.NxModelTest do
       features =
         Nx.tensor(
           [
-            [0.6, 1.0, 0.0, 0.05],
-            [0.3, 0.0, 0.0, 0.05],
-            [0.1, 0.0, 1.0, 0.05]
+            [0.6, 1.0, 0.0, 0.05, 0.2, 0.1, 0.5, 0.0, 0.3, 0.0],
+            [0.3, 0.0, 0.0, 0.05, 0.1, 0.0, 0.3, 0.0, 0.3, 0.5],
+            [0.1, 0.0, 1.0, 0.05, 0.0, 0.0, 0.2, 0.0, 0.3, 1.0]
           ],
           type: :f32
         )
@@ -65,14 +77,18 @@ defmodule Raxol.Adaptive.NxModelTest do
       aggregate = %{
         pane_dwell_times: %{panel_a: 6000, panel_b: 3000, panel_c: 1000},
         avg_alert_response_ms: 2000.0,
-        least_used_panes: [:panel_c]
+        least_used_panes: [:panel_c],
+        scroll_frequency: %{panel_a: 5},
+        scroll_velocity: %{panel_a: 2.0},
+        command_concentration: %{panel_a: 3, panel_b: 1},
+        takeover_duration_ms: %{}
       }
 
       pane_ids = [:panel_a, :panel_b, :panel_c]
       {features, ids} = NxModel.extract_features(aggregate, pane_ids)
 
       assert ids == pane_ids
-      assert {3, 4} == Nx.shape(features)
+      assert {3, 10} == Nx.shape(features)
 
       # panel_a: dwell_pct=0.6, most=1.0, least=0.0, alert=0.2
       row_a = Nx.to_flat_list(features[0])
@@ -92,9 +108,13 @@ defmodule Raxol.Adaptive.NxModelTest do
       pane_ids = [:panel_a]
       {features, _ids} = NxModel.extract_features(aggregate, pane_ids)
 
-      assert {1, 4} == Nx.shape(features)
-      # all zeros
-      assert Nx.to_flat_list(features[0]) == [0.0, 0.0, 0.0, 0.0]
+      assert {1, 10} == Nx.shape(features)
+      # first 4 features are all zeros
+      row = Nx.to_flat_list(features[0])
+      assert Enum.at(row, 0) == 0.0
+      assert Enum.at(row, 1) == 0.0
+      assert Enum.at(row, 2) == 0.0
+      assert Enum.at(row, 3) == 0.0
     end
   end
 
@@ -152,14 +172,16 @@ defmodule Raxol.Adaptive.NxModelTest do
     @tag :slow
     test "trains model and returns params" do
       # Generate synthetic training data: high dwell -> expand
+      zeros6 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
       training_data =
         for _ <- 1..20 do
-          features = Nx.tensor([[0.7, 1.0, 0.0, 0.05]], type: :f32)
+          features = Nx.tensor([[0.7, 1.0, 0.0, 0.05] ++ zeros6], type: :f32)
           label = NxModel.action_to_one_hot(:expand)
           {features, label}
         end ++
           for _ <- 1..20 do
-            features = Nx.tensor([[0.03, 0.0, 1.0, 0.1]], type: :f32)
+            features = Nx.tensor([[0.03, 0.0, 1.0, 0.1] ++ zeros6], type: :f32)
             label = NxModel.action_to_one_hot(:hide)
             {features, label}
           end
@@ -170,7 +192,7 @@ defmodule Raxol.Adaptive.NxModelTest do
       assert map_size(params) > 0
 
       # Verify the model learned the pattern
-      high_dwell = Nx.tensor([[0.7, 1.0, 0.0, 0.05]], type: :f32)
+      high_dwell = Nx.tensor([[0.7, 1.0, 0.0, 0.05] ++ zeros6], type: :f32)
       preds = NxModel.predict(params, high_dwell)
       probs = Nx.to_flat_list(preds)
 

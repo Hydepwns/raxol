@@ -15,6 +15,8 @@ defmodule Raxol.Adaptive.LayoutRecommender do
 
   @compile {:no_warn_undefined, Raxol.Adaptive.NxModel}
 
+  alias Raxol.Adaptive.TrendDetector
+
   require Logger
 
   @default_confidence_threshold 0.7
@@ -34,6 +36,15 @@ defmodule Raxol.Adaptive.LayoutRecommender do
           timestamp: integer()
         }
 
+  @default_override_suppress_windows 3
+
+  @type context :: %{
+          terminal_width: pos_integer(),
+          terminal_height: pos_integer(),
+          visible_pane_count: non_neg_integer(),
+          hidden_panes: [atom()]
+        }
+
   @type t :: %__MODULE__{
           confidence_threshold: float(),
           recommendation_cooldown_ms: pos_integer(),
@@ -41,7 +52,10 @@ defmodule Raxol.Adaptive.LayoutRecommender do
           last_recommendation: recommendation() | nil,
           subscribers: MapSet.t(pid()),
           pane_ids: [atom()],
-          model_params: map() | nil
+          model_params: map() | nil,
+          suppress_remaining: non_neg_integer(),
+          context: context() | nil,
+          tracker_server: GenServer.server() | nil
         }
 
   defstruct confidence_threshold: @default_confidence_threshold,
@@ -50,7 +64,10 @@ defmodule Raxol.Adaptive.LayoutRecommender do
             last_recommendation: nil,
             subscribers: MapSet.new(),
             pane_ids: [],
-            model_params: nil
+            model_params: nil,
+            suppress_remaining: 0,
+            context: nil,
+            tracker_server: nil
 
   # -- Public API --
 
@@ -80,6 +97,11 @@ defmodule Raxol.Adaptive.LayoutRecommender do
     GenServer.call(server, {:subscribe, self()})
   end
 
+  @spec set_context(GenServer.server(), context()) :: :ok
+  def set_context(server \\ __MODULE__, context) do
+    GenServer.cast(server, {:set_context, context})
+  end
+
   # -- Callbacks --
 
   @impl true
@@ -92,7 +114,16 @@ defmodule Raxol.Adaptive.LayoutRecommender do
       pane_ids: Keyword.get(opts, :pane_ids, [])
     }
 
-    {:ok, state}
+    case Keyword.get(opts, :subscribe_to) do
+      nil -> {:ok, state}
+      target -> {:ok, state, {:continue, {:subscribe_to, target}}}
+    end
+  end
+
+  @impl true
+  def handle_continue({:subscribe_to, target}, %__MODULE__{} = state) do
+    Raxol.Adaptive.BehaviorTracker.subscribe(target)
+    {:noreply, %__MODULE__{state | tracker_server: target}}
   end
 
   @impl true
@@ -119,13 +150,37 @@ defmodule Raxol.Adaptive.LayoutRecommender do
   end
 
   @impl true
+  def handle_cast({:set_context, context}, %__MODULE__{} = state) do
+    {:noreply, %__MODULE__{state | context: context}}
+  end
+
+  @impl true
   def handle_info({:behavior_aggregate, aggregate}, %__MODULE__{} = state) do
     now = System.monotonic_time(:millisecond)
 
-    if on_cooldown?(state, now) do
-      {:noreply, state}
-    else
-      handle_behavior_aggregate(aggregate, state, now)
+    # Check if user manual overrides should suppress recommendations
+    override_count = Map.get(aggregate, :layout_override_count, 0)
+
+    state =
+      if override_count > 2 do
+        %__MODULE__{
+          state
+          | suppress_remaining: @default_override_suppress_windows
+        }
+      else
+        state
+      end
+
+    cond do
+      state.suppress_remaining > 0 ->
+        {:noreply,
+         %__MODULE__{state | suppress_remaining: state.suppress_remaining - 1}}
+
+      on_cooldown?(state, now) ->
+        {:noreply, state}
+
+      true ->
+        handle_behavior_aggregate(aggregate, state, now)
     end
   end
 
@@ -195,8 +250,19 @@ defmodule Raxol.Adaptive.LayoutRecommender do
       :no_recommendation
     else
       case apply_nx_model(aggregate, state) do
-        {:recommend, _, _, _} = result -> result
-        _ -> apply_rule_heuristics(dwell_times, total_dwell, aggregate)
+        {:recommend, _, _, _} = result ->
+          result
+
+        _ ->
+          trends = compute_trends(state.tracker_server)
+
+          apply_rule_heuristics(
+            dwell_times,
+            total_dwell,
+            aggregate,
+            state.context,
+            trends
+          )
       end
     end
   end
@@ -232,26 +298,142 @@ defmodule Raxol.Adaptive.LayoutRecommender do
 
   defp apply_nx_model(_aggregate, _state), do: :no_recommendation
 
-  defp apply_rule_heuristics(dwell_times, total_dwell, aggregate) do
-    case find_best_candidate(dwell_times, total_dwell, aggregate) do
-      nil ->
+  @max_candidates 3
+
+  defp apply_rule_heuristics(
+         dwell_times,
+         total_dwell,
+         aggregate,
+         context,
+         trends
+       ) do
+    case find_best_candidates(
+           dwell_times,
+           total_dwell,
+           aggregate,
+           context,
+           trends
+         ) do
+      [] ->
         :no_recommendation
 
-      %{change: change, confidence: confidence, reasoning: reasoning} ->
-        {:recommend, [change], confidence, reasoning}
+      selected ->
+        changes = Enum.map(selected, & &1.change)
+
+        avg_confidence =
+          selected
+          |> Enum.map(& &1.confidence)
+          |> then(fn confs -> Enum.sum(confs) / length(confs) end)
+
+        reasoning =
+          selected
+          |> Enum.map(& &1.reasoning)
+          |> Enum.join("; ")
+
+        {:recommend, changes, avg_confidence, reasoning}
     end
   end
 
-  @spec find_best_candidate(map(), float(), map()) :: candidate() | nil
-  defp find_best_candidate(dwell_times, total_dwell, aggregate) do
+  @spec find_best_candidates(
+          map(),
+          float(),
+          map(),
+          context() | nil,
+          TrendDetector.trends()
+        ) ::
+          [candidate()]
+  defp find_best_candidates(
+         dwell_times,
+         total_dwell,
+         aggregate,
+         context,
+         trends
+       ) do
     candidates =
       hide_candidates(dwell_times, total_dwell) ++
         expand_candidates(dwell_times, total_dwell) ++
-        alert_candidates(aggregate)
+        shrink_candidates(dwell_times, total_dwell) ++
+        alert_candidates(aggregate) ++
+        scroll_candidates(aggregate) ++
+        command_candidates(aggregate) ++
+        takeover_candidates(aggregate)
 
     candidates
+    |> apply_context_guards(context)
+    |> apply_trend_guards(trends)
     |> Enum.sort_by(& &1.confidence, :desc)
-    |> List.first()
+    |> select_non_conflicting(@max_candidates)
+  end
+
+  defp compute_trends(nil), do: %{}
+
+  defp compute_trends(tracker_server) do
+    try do
+      aggregates =
+        Raxol.Adaptive.BehaviorTracker.get_aggregates(tracker_server, 5)
+
+      TrendDetector.compute(aggregates)
+    catch
+      :exit, _ -> %{}
+    end
+  end
+
+  defp apply_trend_guards(candidates, trends) when map_size(trends) == 0,
+    do: candidates
+
+  defp apply_trend_guards(candidates, trends) do
+    Enum.reject(candidates, fn c ->
+      # Don't hide a pane whose dwell is trending upward
+      c.change.action == :hide and
+        TrendDetector.rising?(trends, c.change.pane_id)
+    end)
+  end
+
+  defp apply_context_guards(candidates, nil), do: candidates
+
+  defp apply_context_guards(candidates, context) do
+    visible = context.visible_pane_count
+    hidden = context.hidden_panes
+
+    Enum.reject(candidates, fn c ->
+      pane_id = c.change.pane_id
+      action = c.change.action
+
+      cond do
+        # Don't hide if only 2 panes visible
+        action == :hide and visible <= 2 -> true
+        # Don't show a pane that isn't actually hidden
+        action == :show and pane_id not in hidden -> true
+        true -> false
+      end
+    end)
+  end
+
+  defp select_non_conflicting(candidates, max) do
+    Enum.reduce(candidates, [], fn candidate, selected ->
+      if length(selected) >= max do
+        selected
+      else
+        if conflicts_with_any?(candidate, selected) do
+          selected
+        else
+          selected ++ [candidate]
+        end
+      end
+    end)
+  end
+
+  defp conflicts_with_any?(candidate, selected) do
+    pane_id = candidate.change.pane_id
+    action = candidate.change.action
+
+    Enum.any?(selected, fn s ->
+      s.change.pane_id == pane_id or
+        (action in [:expand, :show] and s.change.action in [:hide, :shrink] and
+           s.change.pane_id == pane_id) or
+        (action in [:hide, :shrink] and s.change.action in [:expand, :show] and
+           s.change.pane_id == pane_id)
+    end)
   end
 
   defp hide_candidates(dwell_times, total_dwell) do
@@ -321,6 +503,133 @@ defmodule Raxol.Adaptive.LayoutRecommender do
   end
 
   defp alert_candidates(_aggregate), do: []
+
+  defp shrink_candidates(dwell_times, total_dwell) do
+    has_dominant =
+      Enum.any?(dwell_times, fn {_, dwell} -> dwell / total_dwell > 0.40 end)
+
+    if has_dominant do
+      Enum.flat_map(dwell_times, fn {pane_id, dwell} ->
+        pct = dwell / total_dwell
+
+        if pct >= 0.15 and pct <= 0.25 do
+          dwell_pct = Float.round(pct * 100, 1)
+
+          [
+            %{
+              change: %{
+                pane_id: pane_id,
+                action: :shrink,
+                params: %{dwell_pct: dwell_pct}
+              },
+              confidence: 0.75,
+              reasoning:
+                "Pane #{pane_id} at #{dwell_pct}% while another dominates, shrink to give space"
+            }
+          ]
+        else
+          []
+        end
+      end)
+    else
+      []
+    end
+  end
+
+  defp scroll_candidates(aggregate) do
+    scroll_freq = Map.get(aggregate, :scroll_frequency, %{})
+    scroll_vel = Map.get(aggregate, :scroll_velocity, %{})
+
+    if map_size(scroll_freq) == 0 do
+      []
+    else
+      max_freq = scroll_freq |> Map.values() |> Enum.max(fn -> 0 end)
+      threshold = max(max_freq * 0.75, 1)
+
+      Enum.flat_map(scroll_freq, fn {pane_id, freq} ->
+        vel = Map.get(scroll_vel, pane_id, 0.0)
+
+        if freq >= threshold and vel > 3.0 do
+          [
+            %{
+              change: %{
+                pane_id: pane_id,
+                action: :expand,
+                params: %{scroll_freq: freq, scroll_vel: Float.round(vel, 1)}
+              },
+              confidence: 0.8,
+              reasoning:
+                "Pane #{pane_id} scrolled heavily (#{freq}x, avg delta #{Float.round(vel, 1)})"
+            }
+          ]
+        else
+          []
+        end
+      end)
+    end
+  end
+
+  defp command_candidates(aggregate) do
+    concentration = Map.get(aggregate, :command_concentration, %{})
+    total_cmds = concentration |> Map.values() |> Enum.sum()
+
+    if total_cmds == 0 do
+      []
+    else
+      Enum.flat_map(concentration, fn {pane_id, count} ->
+        pct = count / total_cmds
+
+        if pct > 0.60 do
+          cmd_pct = Float.round(pct * 100, 1)
+
+          [
+            %{
+              change: %{
+                pane_id: pane_id,
+                action: :expand,
+                params: %{command_pct: cmd_pct}
+              },
+              confidence: 0.7,
+              reasoning:
+                "Pane #{pane_id} receives #{cmd_pct}% of commands, expand for workflow"
+            }
+          ]
+        else
+          []
+        end
+      end)
+    end
+  end
+
+  defp takeover_candidates(aggregate) do
+    takeover_ms = Map.get(aggregate, :takeover_duration_ms, %{})
+    total_ms = takeover_ms |> Map.values() |> Enum.sum()
+
+    if total_ms == 0 do
+      []
+    else
+      Enum.flat_map(takeover_ms, fn {pane_id, duration} ->
+        pct = duration / total_ms
+
+        if pct > 0.50 do
+          [
+            %{
+              change: %{
+                pane_id: pane_id,
+                action: :expand,
+                params: %{takeover_pct: Float.round(pct * 100, 1)}
+              },
+              confidence: 0.85,
+              reasoning:
+                "Pane #{pane_id} in takeover >50% of window (#{Float.round(pct * 100, 1)}%)"
+            }
+          ]
+        else
+          []
+        end
+      end)
+    end
+  end
 
   defp on_cooldown?(%__MODULE__{last_recommendation_at: nil}, _now), do: false
 

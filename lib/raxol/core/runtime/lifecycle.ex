@@ -41,7 +41,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
             cycle_profiler_pid: pid() | nil,
             model: map(),
             dispatcher_ready: boolean(),
-            plugin_manager_ready: boolean()
+            plugin_manager_ready: boolean(),
+            adaptive_supervisor_pid: pid() | nil
           }
     defstruct app_module: nil,
               options: [],
@@ -60,7 +61,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
               cycle_profiler_pid: nil,
               model: %{},
               dispatcher_ready: false,
-              plugin_manager_ready: false
+              plugin_manager_ready: false,
+              adaptive_supervisor_pid: nil
   end
 
   @doc """
@@ -74,6 +76,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     * `:debug` - Enable debug mode (default: false).
     * `:initial_commands` - A list of `Raxol.Core.Runtime.Command` structs to execute on startup.
     * `:plugin_manager_opts` - Options to pass to the PluginManager's start_link function.
+    * `:adaptive` - Enable adaptive UI (layout recommendations from behavior tracking). Default: false.
   """
   def start_link(app_module, options \\ [])
       when is_atom(app_module) and is_list(options) do
@@ -158,6 +161,9 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     time_travel_pid = Keyword.get(options, :time_travel_pid)
     cycle_profiler_pid = Keyword.get(options, :cycle_profiler_pid)
 
+    adaptive_supervisor_pid =
+      maybe_start_adaptive(options, dispatcher_pid)
+
     %State{
       app_module: app_module,
       options: options,
@@ -179,8 +185,38 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       cycle_profiler_pid: cycle_profiler_pid,
       model: initialized_model,
       dispatcher_ready: false,
-      plugin_manager_ready: pm_pid == nil
+      plugin_manager_ready: pm_pid == nil,
+      adaptive_supervisor_pid: adaptive_supervisor_pid
     }
+  end
+
+  defp maybe_start_adaptive(options, dispatcher_pid) do
+    if Keyword.get(options, :adaptive, false) do
+      case Raxol.Adaptive.Supervisor.start_link(name: nil) do
+        {:ok, sup_pid} ->
+          # Subscribe self() so layout recommendations arrive here,
+          # then get forwarded to dispatcher -> app update/2
+          Raxol.Adaptive.LayoutRecommender.subscribe(
+            Raxol.Adaptive.LayoutRecommender
+          )
+
+          Log.info_with_context(
+            "[#{__MODULE__}] Adaptive UI started (supervisor: #{inspect(sup_pid)}, dispatcher: #{inspect(dispatcher_pid)})"
+          )
+
+          sup_pid
+
+        {:error, reason} ->
+          Log.warning_with_context(
+            "[#{__MODULE__}] Failed to start adaptive UI",
+            %{reason: reason}
+          )
+
+          nil
+      end
+    else
+      nil
+    end
   end
 
   @impl true
@@ -201,6 +237,15 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
     new_state = %{state | plugin_manager_ready: true}
     {:noreply, maybe_process_initial_commands(new_state)}
+  end
+
+  @impl true
+  def handle_info({:layout_recommendation, _rec} = msg, state) do
+    if state.dispatcher_pid do
+      GenServer.cast(state.dispatcher_pid, {:dispatch, msg})
+    end
+
+    {:noreply, state}
   end
 
   @impl true

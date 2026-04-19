@@ -133,13 +133,13 @@ session
 
 Raxol's interface runtime is built on the BEAM, a VM originally designed for telephone switches. Systems that couldn't go down, couldn't lose state, and had to hot-swap code on live calls. Those constraints turn out to be exactly right for multi-surface apps.
 
-| What you need | Raxol | Building it yourself |
-|---|---|---|
-| Same UI for human + agent | one TEA module, four renderers | two codebases, glue layer, drift |
-| Crash one widget, keep the rest up | OTP supervisor per component | process-per-widget, DIY restart |
-| Deploy a fix without closing sessions | hot code reload | full restart, reconnect |
-| Replay an incident from recording | asciinema v2 session capture | build your own |
-| Multi-region coordination | libcluster + CRDTs | DIY discovery, DIY conflict resolution |
+| What you need                         | Raxol                          | Building it yourself                   |
+| ------------------------------------- | ------------------------------ | -------------------------------------- |
+| Same UI for human + agent             | one TEA module, four renderers | two codebases, glue layer, drift       |
+| Crash one widget, keep the rest up    | OTP supervisor per component   | process-per-widget, DIY restart        |
+| Deploy a fix without closing sessions | hot code reload                | full restart, reconnect                |
+| Replay an incident from recording     | asciinema v2 session capture   | build your own                         |
+| Multi-region coordination             | libcluster + CRDTs             | DIY discovery, DIY conflict resolution |
 
 For the TUI-framework audience, here's the comparison you'd expect:
 

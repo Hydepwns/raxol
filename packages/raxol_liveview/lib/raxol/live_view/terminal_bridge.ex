@@ -187,25 +187,38 @@ defmodule Raxol.LiveView.TerminalBridge do
       # => "<style>[data-raxol-id=\\"panel\\"] { transition: opacity 300ms cubic-bezier(...) 0ms; }\\n..."
 
   """
+  @compile {:no_warn_undefined, Raxol.Effects.BorderBeam.CSS}
+
   @spec animation_css([map()]) :: String.t()
   def animation_css(elements) when is_list(elements) do
-    rules =
-      elements
-      |> collect_hinted_elements([])
-      |> Enum.map(fn {id, hints} ->
+    hinted = collect_hinted_elements(elements, [])
+
+    transition_rules =
+      Enum.flat_map(hinted, fn {id, hints} ->
         transitions =
           hints
+          |> Enum.reject(&border_beam_hint?/1)
           |> Enum.map(&hint_to_transition/1)
           |> Enum.reject(&is_nil/1)
           |> Enum.join(", ")
 
         if transitions != "" do
-          ~s([data-raxol-id="#{id}"] { transition: #{transitions}; })
+          [~s([data-raxol-id="#{id}"] { transition: #{transitions}; })]
+        else
+          []
         end
       end)
-      |> Enum.reject(&is_nil/1)
 
-    case rules do
+    beam_rules =
+      Enum.flat_map(hinted, fn {id, hints} ->
+        hints
+        |> Enum.filter(&border_beam_hint?/1)
+        |> Enum.map(fn hint -> generate_beam_css(hint, id) end)
+      end)
+
+    all_rules = transition_rules ++ beam_rules
+
+    case all_rules do
       [] ->
         ""
 
@@ -243,7 +256,12 @@ defmodule Raxol.LiveView.TerminalBridge do
     collect_hinted_elements(rest, acc)
   end
 
-  defp hint_to_transition(%{property: property, duration_ms: duration_ms, easing: easing, delay_ms: delay_ms}) do
+  defp hint_to_transition(%{
+         property: property,
+         duration_ms: duration_ms,
+         easing: easing,
+         delay_ms: delay_ms
+       }) do
     alias Raxol.Core.Animation.Hint
 
     case Hint.to_css_property(property) do
@@ -257,6 +275,65 @@ defmodule Raxol.LiveView.TerminalBridge do
   end
 
   defp hint_to_transition(_), do: nil
+
+  defp border_beam_hint?(%{type: :border_beam}), do: true
+  defp border_beam_hint?(_), do: false
+
+  @beam_css_colors %{
+    colorful:
+      {"#ff0040, #ffaa00, #00ff88, #00ccff, #4400ff, #ff00cc", "#4400ff",
+       "#ff00cc"},
+    mono: {"#ffffff, #cccccc, #999999", "#ffffff", "#cccccc"},
+    ocean: {"#0044ff, #00ccff, #0077ff, #00aaff", "#0077ff", "#00ccff"},
+    sunset: {"#ff4400, #ffaa00, #ff6600, #ffcc00", "#ff4400", "#ffaa00"}
+  }
+
+  defp generate_beam_css(hint, id) do
+    variant = Map.get(hint, :variant, :colorful)
+    strength = Map.get(hint, :strength, 0.8)
+    duration = Map.get(hint, :duration_ms, 2000) / 1000
+    brightness = Map.get(hint, :brightness, 1.3)
+    saturation = Map.get(hint, :saturation, 1.2)
+    hue_range = Map.get(hint, :hue_range, 30)
+    size = Map.get(hint, :size, :full)
+    active = Map.get(hint, :active, true)
+    opacity = if active, do: strength, else: 0
+
+    {stops, glow_hex, _bloom_hex} =
+      Map.get(
+        @beam_css_colors,
+        variant,
+        elem(@beam_css_colors.colorful, 0)
+        |> then(fn _ -> Map.fetch!(@beam_css_colors, :colorful) end)
+      )
+
+    gradient =
+      if size == :line,
+        do: "linear-gradient(90deg, transparent 0%, #{stops}, transparent 80%)",
+        else:
+          "conic-gradient(from var(--bb-angle-#{id}), transparent 0%, #{stops}, transparent 30%)"
+
+    """
+    @property --bb-angle-#{id} { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+    @keyframes bb-spin-#{id} { to { --bb-angle-#{id}: 360deg; } }
+    @keyframes bb-hue-#{id} { to { filter: brightness(#{brightness}) saturate(#{saturation}) hue-rotate(#{hue_range}deg); } }
+    [data-raxol-id="#{id}"]::after {
+      content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 2px;
+      background: #{gradient};
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+      animation: bb-spin-#{id} #{duration}s linear infinite;
+      opacity: #{opacity}; pointer-events: none;
+      filter: brightness(#{brightness}) saturate(#{saturation});
+    }
+    [data-raxol-id="#{id}"]::before {
+      content: ""; position: absolute; inset: 2px; border-radius: inherit;
+      background: conic-gradient(from var(--bb-angle-#{id}), transparent 0%, #{glow_hex}22 10%, transparent 25%);
+      filter: blur(4px); opacity: #{Float.round(opacity * 0.4, 2)};
+      animation: bb-spin-#{id} #{duration}s linear infinite; pointer-events: none;
+    }
+    """
+  end
 
   # CSS mapping functions now in Raxol.Core.Animation.Hint (raxol_core package)
 
@@ -462,8 +539,12 @@ defmodule Raxol.LiveView.TerminalBridge do
     # Merge underline + strikethrough into a single text-decoration value
     text_decorations =
       []
-      |> then(fn acc -> if Map.get(style, :underline), do: ["underline" | acc], else: acc end)
-      |> then(fn acc -> if Map.get(style, :strikethrough), do: ["line-through" | acc], else: acc end)
+      |> then(fn acc ->
+        if Map.get(style, :underline), do: ["underline" | acc], else: acc
+      end)
+      |> then(fn acc ->
+        if Map.get(style, :strikethrough), do: ["line-through" | acc], else: acc
+      end)
 
     styles =
       case text_decorations do

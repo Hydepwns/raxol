@@ -3,16 +3,21 @@ defmodule Raxol.Adaptive.FeedbackLoop do
   Tracks pilot accept/reject decisions on layout recommendations.
 
   Maintains a feedback history and computes acceptance accuracy.
-  Rule-based mode -- `force_retrain/1` is a stub for future Nx
-  integration.
+  When accuracy drops below threshold and enough training data
+  exists, triggers async NxModel retrain and broadcasts new params
+  to the LayoutRecommender.
   """
 
   use GenServer
+
+  @compile {:no_warn_undefined, Raxol.Adaptive.NxModel}
 
   require Logger
 
   @default_accuracy_window 100
   @max_training_examples 500
+  @retrain_accuracy_threshold 0.6
+  @retrain_min_examples 20
 
   @type feedback :: %{
           recommendation_id: binary(),
@@ -24,13 +29,17 @@ defmodule Raxol.Adaptive.FeedbackLoop do
           feedback_history: [feedback()],
           pending_recommendations: %{binary() => map()},
           accuracy_window: pos_integer(),
-          training_examples: [{term(), term()}]
+          training_examples: [{term(), term()}],
+          retrain_in_progress: boolean(),
+          recommender_server: GenServer.server() | nil
         }
 
   defstruct feedback_history: [],
             pending_recommendations: %{},
             accuracy_window: @default_accuracy_window,
-            training_examples: []
+            training_examples: [],
+            retrain_in_progress: false,
+            recommender_server: nil
 
   # -- Public API --
 
@@ -80,7 +89,18 @@ defmodule Raxol.Adaptive.FeedbackLoop do
     accuracy_window =
       Keyword.get(opts, :accuracy_window, @default_accuracy_window)
 
-    {:ok, %__MODULE__{accuracy_window: accuracy_window}}
+    state = %__MODULE__{accuracy_window: accuracy_window}
+
+    case Keyword.get(opts, :subscribe_to) do
+      nil -> {:ok, state}
+      target -> {:ok, state, {:continue, {:subscribe_to, target}}}
+    end
+  end
+
+  @impl true
+  def handle_continue({:subscribe_to, target}, %__MODULE__{} = state) do
+    Raxol.Adaptive.LayoutRecommender.subscribe(target)
+    {:noreply, %__MODULE__{state | recommender_server: target}}
   end
 
   @impl true
@@ -133,6 +153,26 @@ defmodule Raxol.Adaptive.FeedbackLoop do
   end
 
   @impl true
+  def handle_info({:retrain_complete, params}, %__MODULE__{} = state) do
+    Logger.info("FeedbackLoop: retrain complete, broadcasting new model params")
+
+    if state.recommender_server do
+      Raxol.Adaptive.LayoutRecommender.set_model_params(
+        state.recommender_server,
+        params
+      )
+    end
+
+    {:noreply, %__MODULE__{state | retrain_in_progress: false}}
+  end
+
+  @impl true
+  def handle_info({:layout_recommendation, rec}, %__MODULE__{} = state) do
+    pending = Map.put(state.pending_recommendations, rec.id, rec)
+    {:noreply, %__MODULE__{state | pending_recommendations: pending}}
+  end
+
+  @impl true
   def handle_info(msg, %__MODULE__{} = state) do
     Logger.debug("#{__MODULE__} received unexpected message: #{inspect(msg)}")
     {:noreply, state}
@@ -171,7 +211,40 @@ defmodule Raxol.Adaptive.FeedbackLoop do
             training_examples: training_examples
         }
 
+        state = maybe_trigger_retrain(state, history, training_examples)
+
         {:reply, :ok, state}
+    end
+  end
+
+  defp maybe_trigger_retrain(
+         %__MODULE__{retrain_in_progress: true} = state,
+         _history,
+         _examples
+       ),
+       do: state
+
+  defp maybe_trigger_retrain(%__MODULE__{} = state, history, examples) do
+    accuracy = compute_accuracy(history)
+
+    if accuracy < @retrain_accuracy_threshold and
+         length(examples) >= @retrain_min_examples and
+         Code.ensure_loaded?(Raxol.Adaptive.NxModel) do
+      parent = self()
+
+      {:ok, _pid} =
+        Task.start(fn ->
+          Logger.info(
+            "FeedbackLoop: auto-retrain triggered (accuracy=#{Float.round(accuracy * 100, 1)}%)"
+          )
+
+          params = Raxol.Adaptive.NxModel.train(examples)
+          send(parent, {:retrain_complete, params})
+        end)
+
+      %__MODULE__{state | retrain_in_progress: true}
+    else
+      state
     end
   end
 

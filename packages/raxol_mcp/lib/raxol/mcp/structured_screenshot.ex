@@ -23,7 +23,10 @@ defmodule Raxol.MCP.StructuredScreenshot do
   """
   @spec from_view_tree(map() | list() | nil) :: [widget_summary()]
   def from_view_tree(nil), do: []
-  def from_view_tree(nodes) when is_list(nodes), do: Enum.map(nodes, &summarize_node/1)
+
+  def from_view_tree(nodes) when is_list(nodes),
+    do: Enum.map(nodes, &summarize_node/1)
+
   def from_view_tree(node) when is_map(node), do: [summarize_node(node)]
 
   @doc """
@@ -71,6 +74,21 @@ defmodule Raxol.MCP.StructuredScreenshot do
   end
 
   defp maybe_put_hints(summary, _), do: summary
+
+  defp serialize_hint(%{type: :border_beam} = hint) do
+    %{
+      type: :border_beam,
+      variant: Map.get(hint, :variant, :colorful),
+      size: Map.get(hint, :size, :full),
+      strength: Map.get(hint, :strength, 0.8),
+      duration_ms: Map.get(hint, :duration_ms, 2000),
+      brightness: Map.get(hint, :brightness, 1.3),
+      saturation: Map.get(hint, :saturation, 1.2),
+      hue_range: Map.get(hint, :hue_range, 30),
+      active: Map.get(hint, :active, true),
+      static_colors: Map.get(hint, :static_colors, false)
+    }
+  end
 
   defp serialize_hint(%{property: property} = hint) do
     %{

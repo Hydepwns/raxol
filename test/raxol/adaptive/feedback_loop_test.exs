@@ -10,7 +10,14 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
 
   describe "accept/reject" do
     test "accepts a pending recommendation", %{loop: pid} do
-      rec = %{id: "rec1", layout_changes: [], confidence: 0.8, reasoning: "test", timestamp: 0}
+      rec = %{
+        id: "rec1",
+        layout_changes: [],
+        confidence: 0.8,
+        reasoning: "test",
+        timestamp: 0
+      }
+
       FeedbackLoop.submit_recommendation(pid, rec)
       Process.sleep(10)
 
@@ -18,7 +25,14 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
     end
 
     test "rejects a pending recommendation", %{loop: pid} do
-      rec = %{id: "rec2", layout_changes: [], confidence: 0.8, reasoning: "test", timestamp: 0}
+      rec = %{
+        id: "rec2",
+        layout_changes: [],
+        confidence: 0.8,
+        reasoning: "test",
+        timestamp: 0
+      }
+
       FeedbackLoop.submit_recommendation(pid, rec)
       Process.sleep(10)
 
@@ -31,7 +45,14 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
     end
 
     test "cannot accept same recommendation twice", %{loop: pid} do
-      rec = %{id: "rec3", layout_changes: [], confidence: 0.8, reasoning: "test", timestamp: 0}
+      rec = %{
+        id: "rec3",
+        layout_changes: [],
+        confidence: 0.8,
+        reasoning: "test",
+        timestamp: 0
+      }
+
       FeedbackLoop.submit_recommendation(pid, rec)
       Process.sleep(10)
 
@@ -50,8 +71,11 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
         id = "acc#{i}"
 
         rec = %{
-          id: id, layout_changes: [],
-          confidence: 0.8, reasoning: "", timestamp: 0
+          id: id,
+          layout_changes: [],
+          confidence: 0.8,
+          reasoning: "",
+          timestamp: 0
         }
 
         FeedbackLoop.submit_recommendation(pid, rec)
@@ -67,8 +91,11 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
         id = "rej#{i}"
 
         rec = %{
-          id: id, layout_changes: [],
-          confidence: 0.8, reasoning: "", timestamp: 0
+          id: id,
+          layout_changes: [],
+          confidence: 0.8,
+          reasoning: "",
+          timestamp: 0
         }
 
         FeedbackLoop.submit_recommendation(pid, rec)
@@ -81,13 +108,19 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
 
     test "50% with mixed decisions", %{loop: pid} do
       rec1 = %{
-        id: "m1", layout_changes: [],
-        confidence: 0.8, reasoning: "", timestamp: 0
+        id: "m1",
+        layout_changes: [],
+        confidence: 0.8,
+        reasoning: "",
+        timestamp: 0
       }
 
       rec2 = %{
-        id: "m2", layout_changes: [],
-        confidence: 0.8, reasoning: "", timestamp: 0
+        id: "m2",
+        layout_changes: [],
+        confidence: 0.8,
+        reasoning: "",
+        timestamp: 0
       }
 
       FeedbackLoop.submit_recommendation(pid, rec1)
@@ -104,8 +137,11 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
   describe "history" do
     test "returns feedback history", %{loop: pid} do
       rec = %{
-        id: "h1", layout_changes: [],
-        confidence: 0.8, reasoning: "", timestamp: 0
+        id: "h1",
+        layout_changes: [],
+        confidence: 0.8,
+        reasoning: "",
+        timestamp: 0
       }
 
       FeedbackLoop.submit_recommendation(pid, rec)
@@ -120,7 +156,9 @@ defmodule Raxol.Adaptive.FeedbackLoopTest do
   end
 
   describe "force_retrain" do
-    test "returns insufficient_data or rule_based_mode with no history", %{loop: pid} do
+    test "returns insufficient_data or rule_based_mode with no history", %{
+      loop: pid
+    } do
       result = FeedbackLoop.force_retrain(pid)
 
       if Code.ensure_loaded?(Raxol.Adaptive.NxModel) do

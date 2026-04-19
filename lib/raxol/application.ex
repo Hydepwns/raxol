@@ -636,9 +636,15 @@ defmodule Raxol.Application do
 
   defp maybe_register_mcp_tools do
     if module_available?(Raxol.MCP.Registry) and
-         Code.ensure_loaded?(Raxol.Headless.McpTools) and
          Process.whereis(Raxol.MCP.Registry) != nil do
-      Raxol.Headless.McpTools.register(Raxol.MCP.Registry)
+      if Code.ensure_loaded?(Raxol.Headless.McpTools) do
+        Raxol.Headless.McpTools.register(Raxol.MCP.Registry)
+      end
+
+      if Code.ensure_loaded?(Raxol.MCP.AdaptiveTools) and
+           Raxol.MCP.AdaptiveTools.available?() do
+        Raxol.MCP.AdaptiveTools.register(Raxol.MCP.Registry)
+      end
     end
 
     :ok
