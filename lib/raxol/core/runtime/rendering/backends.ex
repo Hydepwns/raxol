@@ -158,7 +158,10 @@ defmodule Raxol.Core.Runtime.Rendering.Backends do
     renderer = Raxol.Terminal.Renderer.new(updated_buffer)
     output_string = Raxol.Terminal.Renderer.render(renderer)
 
-    write_output(state.io_writer, output_string, state.sync_output)
+    # Home cursor and clear screen before each frame, matching render_to_terminal
+    frame = "\e[H\e[2J" <> output_string
+
+    write_output(state.io_writer, frame, state.sync_output)
 
     {:ok, %{state | buffer: updated_buffer}}
   end
