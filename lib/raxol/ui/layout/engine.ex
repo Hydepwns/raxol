@@ -24,6 +24,15 @@ defmodule Raxol.UI.Layout.Engine do
     Table
   }
 
+  @known_style_attrs [
+    :bold,
+    :italic,
+    :underline,
+    :strikethrough,
+    :reverse,
+    :dim
+  ]
+
   @doc """
   Applies layout to a view, calculating absolute positions for all elements.
 
@@ -665,7 +674,7 @@ defmodule Raxol.UI.Layout.Engine do
 
   defp style_to_map(styles) when is_list(styles) do
     Enum.reduce(styles, %{}, fn
-      attr, acc when is_atom(attr) -> Map.put(acc, attr, true)
+      attr, acc when attr in @known_style_attrs -> Map.put(acc, attr, true)
       _other, acc -> acc
     end)
   end

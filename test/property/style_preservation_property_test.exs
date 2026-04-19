@@ -20,7 +20,7 @@ defmodule Raxol.Property.StylePreservationTest do
   # -- Generators --
 
   @named_colors [:red, :green, :blue, :yellow, :cyan, :magenta, :white, :black]
-  @text_attrs [:bold, :italic, :underline]
+  @text_attrs [:bold, :italic, :underline, :strikethrough, :reverse, :dim]
 
   defp color_gen do
     one_of([
@@ -317,7 +317,35 @@ defmodule Raxol.Property.StylePreservationTest do
     end
   end
 
-  # -- Property 5: style_to_map edge cases --
+  # -- Property 5: Renderer consistency --
+
+  describe "ElementRenderer render_text and render_table_cell consistency" do
+    property "render_text and table cell resolve same fg/bg from identical style" do
+      check all(
+              char <- string(:printable, min_length: 1, max_length: 1),
+              fg <- member_of(@named_colors),
+              bg <- member_of(@named_colors),
+              max_runs: 300
+            ) do
+        style = %{fg: fg, bg: bg}
+
+        [{_, _, _, text_fg, text_bg, _}] =
+          ElementRenderer.render_text(0, 0, char, style, %{})
+
+        table_attrs = %{_headers: [], _data: [[char]], _col_widths: [5], row_style: style}
+        table_cells = ElementRenderer.render_table(0, 0, 10, 3, table_attrs, %{})
+        {_, _, _, table_fg, table_bg, _} = hd(table_cells)
+
+        assert text_fg == table_fg,
+               "text fg #{inspect(text_fg)} != table fg #{inspect(table_fg)}"
+
+        assert text_bg == table_bg,
+               "text bg #{inspect(text_bg)} != table bg #{inspect(table_bg)}"
+      end
+    end
+  end
+
+  # -- Property 6: style_to_map edge cases --
 
   describe "Layout.Engine.process_element style_to_map robustness" do
     property "empty style list produces empty map" do
@@ -366,7 +394,6 @@ defmodule Raxol.Property.StylePreservationTest do
               content <- printable_text_gen(),
               max_runs: 100
             ) do
-        # Mix atoms and non-atoms
         input = %{
           type: :text,
           content: content,
@@ -379,6 +406,26 @@ defmodule Raxol.Property.StylePreservationTest do
 
         assert output.style == %{bold: true, italic: true},
                "non-atoms should be skipped, got #{inspect(output.style)}"
+      end
+    end
+
+    property "unknown atom style attrs are filtered out" do
+      check all(
+              content <- printable_text_gen(),
+              max_runs: 100
+            ) do
+        input = %{
+          type: :text,
+          content: content,
+          fg: nil,
+          bg: nil,
+          style: [:bold, :bald, :boldd, :custom, :underline]
+        }
+
+        [output] = Engine.process_element(input, layout_space(), [])
+
+        assert output.style == %{bold: true, underline: true},
+               "unknown atoms should be filtered, got #{inspect(output.style)}"
       end
     end
   end

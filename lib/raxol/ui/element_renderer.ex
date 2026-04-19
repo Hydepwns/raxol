@@ -5,6 +5,8 @@ defmodule Raxol.UI.ElementRenderer do
 
   alias Raxol.UI.{BorderRenderer, CellManager, StyleProcessor, ThemeResolver}
 
+  @text_attrs [:bold, :italic, :underline, :strikethrough, :reverse, :dim]
+
   @doc """
   Renders a box element.
   """
@@ -174,18 +176,14 @@ defmodule Raxol.UI.ElementRenderer do
 
   defp render_table_cell(cell, x, y, _col_width, style) do
     cell_text = to_string(cell)
-    cell_fg = Map.get(style, :foreground, Map.get(style, :fg, :white))
-    cell_bg = Map.get(style, :background, Map.get(style, :bg, :black))
-
-    attrs =
-      Enum.filter([:bold, :italic, :underline], fn attr ->
-        Map.get(style, attr, false) == true
-      end)
+    fg = resolve_fg(style)
+    bg = resolve_bg(style)
+    attrs = extract_text_attrs(style)
 
     String.graphemes(cell_text)
     |> Enum.reduce({[], x}, fn char, {cells, cur_x} ->
       w = Raxol.UI.TextMeasure.char_display_width(char)
-      {[{cur_x, y, char, cell_fg, cell_bg, attrs} | cells], cur_x + w}
+      {[{cur_x, y, char, fg, bg, attrs} | cells], cur_x + w}
     end)
     |> elem(0)
     |> Enum.reverse()
@@ -254,14 +252,9 @@ defmodule Raxol.UI.ElementRenderer do
        do: []
 
   defp render_text_if_valid_coordinates(x, y, text, style) do
-    # Resolve colors properly
-    fg = Map.get(style, :fg) || Map.get(style, :foreground, :white)
-    bg = Map.get(style, :bg) || Map.get(style, :background, :black)
-
-    attrs =
-      Enum.filter([:bold, :italic, :underline], fn attr ->
-        Map.get(style, attr, false) == true
-      end)
+    fg = resolve_fg(style)
+    bg = resolve_bg(style)
+    attrs = extract_text_attrs(style)
 
     # Width-aware text rendering - CJK/fullwidth chars advance x by 2
     text
@@ -306,5 +299,15 @@ defmodule Raxol.UI.ElementRenderer do
 
   defp add_clip_bounds_if_present(child, clip_bounds) do
     Map.put(child, :clip_bounds, clip_bounds)
+  end
+
+  defp resolve_fg(style),
+    do: Map.get(style, :fg) || Map.get(style, :foreground, :white)
+
+  defp resolve_bg(style),
+    do: Map.get(style, :bg) || Map.get(style, :background, :black)
+
+  defp extract_text_attrs(style) do
+    Enum.filter(@text_attrs, fn attr -> Map.get(style, attr, false) == true end)
   end
 end
