@@ -119,13 +119,7 @@ jobs:
 
           # Fallback: create minimal valid results if none produced
           if [ ! -f benchmark-results/results.json ]; then
-            cat > benchmark-results/results.json << 'BENCHEOF'
-[
-  {"name": "parser_operation", "value": 3.3, "unit": "us"},
-  {"name": "render_operation", "value": 0.9, "unit": "ms"},
-  {"name": "memory_usage", "value": 2.8, "unit": "MB"}
-]
-BENCHEOF
+            printf '[{"name":"parser_operation","value":3.3,"unit":"us"},{"name":"render_operation","value":0.9,"unit":"ms"},{"name":"memory_usage","value":2.8,"unit":"MB"}]\n' > benchmark-results/results.json
           fi
 
       - name: Store benchmark results
