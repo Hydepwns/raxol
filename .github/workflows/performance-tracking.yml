@@ -100,6 +100,7 @@ jobs:
           mix local.rebar --force
           mix deps.clean --unused
           mix deps.get
+          mix deps.compile
 
       - name: Compile project
         run: mix compile
@@ -169,6 +170,7 @@ jobs:
           mix local.rebar --force
           mix deps.clean --unused
           mix deps.get
+          mix deps.compile
 
       - name: Compile project
         run: mix compile
