@@ -49,6 +49,7 @@ concurrency:
 permissions:
   contents: read
   actions: read
+  pull-requests: write
 
 env:
   SKIP_TERMBOX2_TESTS: true
