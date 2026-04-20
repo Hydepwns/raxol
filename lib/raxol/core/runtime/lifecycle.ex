@@ -42,7 +42,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
             model: map(),
             dispatcher_ready: boolean(),
             plugin_manager_ready: boolean(),
-            adaptive_supervisor_pid: pid() | nil
+            adaptive_supervisor_pid: pid() | nil,
+            alternate_screen: boolean()
           }
     defstruct app_module: nil,
               options: [],
@@ -62,7 +63,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
               model: %{},
               dispatcher_ready: false,
               plugin_manager_ready: false,
-              adaptive_supervisor_pid: nil
+              adaptive_supervisor_pid: nil,
+              alternate_screen: false
   end
 
   @doc """
@@ -77,6 +79,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     * `:initial_commands` - A list of `Raxol.Core.Runtime.Command` structs to execute on startup.
     * `:plugin_manager_opts` - Options to pass to the PluginManager's start_link function.
     * `:adaptive` - Enable adaptive UI (layout recommendations from behavior tracking). Default: false.
+    * `:alternate_screen` - Enter the alternate screen buffer on startup (DECSET 1049). Prevents TUI frames from polluting the client's scrollback. Default: false.
   """
   def start_link(app_module, options \\ [])
       when is_atom(app_module) and is_list(options) do
@@ -139,12 +142,22 @@ defmodule Raxol.Core.Runtime.Lifecycle do
           "[#{__MODULE__}] successfully initialized for #{inspect(app_module)}. Dispatcher PID: #{inspect(dispatcher_pid)}"
         )
 
-        {:ok, state}
+        if state.alternate_screen do
+          {:ok, state, {:continue, :enter_alternate_screen}}
+        else
+          {:ok, state}
+        end
 
       {:error, reason, cleanup_fun} ->
         _ = cleanup_fun.()
         {:stop, reason}
     end
+  end
+
+  @impl GenServer
+  def handle_continue(:enter_alternate_screen, state) do
+    maybe_enter_alternate_screen(state)
+    {:noreply, state}
   end
 
   defp build_initial_state(
@@ -163,6 +176,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
     adaptive_supervisor_pid =
       maybe_start_adaptive(options, dispatcher_pid)
+
+    alt_screen = Keyword.get(options, :alternate_screen, false)
 
     %State{
       app_module: app_module,
@@ -186,7 +201,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       model: initialized_model,
       dispatcher_ready: false,
       plugin_manager_ready: pm_pid == nil,
-      adaptive_supervisor_pid: adaptive_supervisor_pid
+      adaptive_supervisor_pid: adaptive_supervisor_pid,
+      alternate_screen: alt_screen
     }
   end
 
@@ -322,8 +338,13 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:reply, {:error, :unknown_call}, state}
   end
 
-  @spec terminate_manager(term(), Raxol.Core.Runtime.Lifecycle.State.t()) :: :ok
-  def terminate_manager(reason, state) do
+  @impl GenServer
+  def terminate(reason, state) do
+    maybe_leave_alternate_screen(state)
+    terminate_manager(reason, state)
+  end
+
+  defp terminate_manager(reason, state) do
     Log.info_with_context(
       "[#{__MODULE__}] terminating for #{inspect(state.app_name)}. Reason: #{inspect(reason)}"
     )
@@ -336,6 +357,30 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
     :ok
   end
+
+  defp maybe_enter_alternate_screen(%State{alternate_screen: true} = state) do
+    write_escape(state.options, "\e[?1049h")
+  end
+
+  defp maybe_enter_alternate_screen(_state), do: :ok
+
+  defp maybe_leave_alternate_screen(%State{alternate_screen: true} = state) do
+    write_escape(state.options, "\e[?1049l")
+  end
+
+  defp maybe_leave_alternate_screen(_state), do: :ok
+
+  defp write_escape(options, escape) do
+    env = Keyword.get(options, :environment, :terminal)
+    writer = Keyword.get(options, :io_writer)
+    do_write_escape(env, writer, escape)
+  end
+
+  defp do_write_escape(:ssh, writer, escape) when is_function(writer, 1),
+    do: writer.(escape)
+
+  defp do_write_escape(:terminal, _writer, escape), do: IO.write(escape)
+  defp do_write_escape(_env, _writer, _escape), do: :ok
 
   # Initial commands processing
 
