@@ -162,7 +162,7 @@ defmodule Mix.Tasks.Raxol.DemoTest do
     test "showcase counter on tab 3" do
       model = %{Raxol.Demo.Showcase.init(%{}) | tab: 3}
 
-      event = %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}}
+      event = %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "="}}
       {model, []} = Raxol.Demo.Showcase.update(event, model)
       assert model.counter == 1
 

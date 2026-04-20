@@ -151,9 +151,9 @@ defmodule Raxol.Playground.DemosTest do
       assert model.auto == false
     end
 
-    test "plus increments by 5" do
+    test "equals increments by 5" do
       model = ProgressDemo.init(nil)
-      {model, []} = ProgressDemo.update(key_event("+"), model)
+      {model, []} = ProgressDemo.update(key_event("="), model)
       assert model.value == 55
     end
 
@@ -165,7 +165,7 @@ defmodule Raxol.Playground.DemosTest do
 
     test "value clamps to 0-100" do
       model = %{value: 100, auto: false}
-      {model, []} = ProgressDemo.update(key_event("+"), model)
+      {model, []} = ProgressDemo.update(key_event("="), model)
       assert model.value == 100
 
       model = %{value: 0, auto: false}
@@ -742,18 +742,18 @@ defmodule Raxol.Playground.DemosTest do
       assert model.focus == :left
     end
 
-    test "+/- adjust ratio" do
+    test "=/- adjust ratio" do
       model = SplitPaneDemo.init(nil)
-      {model, []} = SplitPaneDemo.update(key_event("+"), model)
+      {model, []} = SplitPaneDemo.update(key_event("="), model)
       assert model.ratio > 0.5
       {model, []} = SplitPaneDemo.update(key_event("-"), model)
       {model, []} = SplitPaneDemo.update(key_event("-"), model)
       assert model.ratio < 0.5
     end
 
-    test "= resets ratio" do
+    test "r resets ratio" do
       model = %{direction: :horizontal, ratio: 0.8, focus: :left}
-      {model, []} = SplitPaneDemo.update(key_event("="), model)
+      {model, []} = SplitPaneDemo.update(key_event("r"), model)
       assert model.ratio == 0.5
     end
 
@@ -796,9 +796,9 @@ defmodule Raxol.Playground.DemosTest do
       assert model.scroll_offset == 20
     end
 
-    test "+/- adjust visible count" do
+    test "=/- adjust visible count" do
       model = ContainerDemo.init(nil)
-      {model, []} = ContainerDemo.update(key_event("+"), model)
+      {model, []} = ContainerDemo.update(key_event("="), model)
       assert model.visible_count == 11
       {model, []} = ContainerDemo.update(key_event("-"), model)
       assert model.visible_count == 10

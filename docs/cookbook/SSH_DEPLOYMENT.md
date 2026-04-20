@@ -35,7 +35,7 @@ defmodule MySshApp do
       :increment -> {%{model | count: model.count + 1}, []}
       :decrement -> {%{model | count: model.count - 1}, []}
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} -> {model, [command(:quit)]}
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} -> update(:increment, model)
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "="}} -> update(:increment, model)
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}} -> update(:decrement, model)
       _ -> {model, []}
     end
@@ -48,7 +48,7 @@ defmodule MySshApp do
         text("SSH Counter", fg: :cyan, style: [:bold]),
         text("Count: #{model.count}", style: [:bold]),
         row style: %{gap: 1} do
-          [button("+", on_click: :increment), button("-", on_click: :decrement)]
+          [button("=", on_click: :increment), button("-", on_click: :decrement)]
         end,
         text("Press q to disconnect", fg: :magenta)
       ]

@@ -18,7 +18,7 @@ defmodule Raxol.Playground.Demos.ProgressDemo do
   @impl true
   def update(message, model) do
     case message do
-      key_match("+") ->
+      key_match("=") ->
         {%{model | value: min(model.value + @manual_step, @max_progress)}, []}
 
       key_match("-") ->
@@ -64,7 +64,7 @@ defmodule Raxol.Playground.Demos.ProgressDemo do
           end
         end,
         visual_bars(model.value),
-        text("[+/-] adjust  [a] auto  [r] reset", style: [:dim])
+        text("[=/-] adjust  [a] auto  [r] reset", style: [:dim])
       ]
     end
   end

@@ -16,7 +16,7 @@
 #   ssh localhost -p 2222
 #
 # Controls:
-#   +   = increment
+#   =   = increment
 #   -   = decrement
 #   q   = quit (closes SSH session)
 
@@ -31,7 +31,7 @@ defmodule SSHCounterExample do
   @impl true
   def update(message, model) do
     case message do
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "="}} ->
         {%{model | count: model.count + 1}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}} ->
@@ -58,7 +58,7 @@ defmodule SSHCounterExample do
             } do
           text("Count: #{model.count}", style: [:bold])
         end,
-        text("Press '+'/'-' to change, 'q' to quit")
+        text("Press '='/'-' to change, 'q' to quit")
       ]
     end
   end

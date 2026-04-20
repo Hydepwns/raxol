@@ -13,7 +13,7 @@
 #   mix run examples/getting_started/counter.exs
 #
 # Controls:
-#   +       = increment
+#   =       = increment
 #   -       = decrement
 #   q       = quit
 #   Ctrl+C  = quit
@@ -49,7 +49,7 @@ defmodule CounterExample do
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
         {model, [command(:quit)]}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "="}} ->
         {%{model | count: model.count + 1}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}} ->
@@ -86,12 +86,12 @@ defmodule CounterExample do
         # directly to update/2 when clicked.
         row style: %{gap: 1} do
           [
-            button("Increment (+)", on_click: :increment),
+            button("Increment (=)", on_click: :increment),
             button("Reset", on_click: :reset),
             button("Decrement (-)", on_click: :decrement)
           ]
         end,
-        text("Press '+' or '-' keys, or click buttons."),
+        text("Press '=' or '-' keys, or click buttons."),
         text("Press 'q' or Ctrl+C to quit")
       ]
     end

@@ -22,7 +22,7 @@ defmodule Raxol.HeadlessTest do
         %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "q"}} ->
           {model, [command(:quit)]}
 
-        %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} ->
+        %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "="}} ->
           {%{model | count: model.count + 1}, []}
 
         _ ->
@@ -139,7 +139,7 @@ defmodule Raxol.HeadlessTest do
       {:ok, _} = Headless.start(TestApp, id: :key_test)
       Process.sleep(200)
 
-      :ok = Headless.send_key(:key_test, "+")
+      :ok = Headless.send_key(:key_test, "=")
       Process.sleep(100)
 
       {:ok, model} = Headless.get_model(:key_test)
@@ -152,7 +152,7 @@ defmodule Raxol.HeadlessTest do
       {:ok, _} = Headless.start(TestApp, id: :kas_test, width: 40, height: 10)
       Process.sleep(300)
 
-      {:ok, text} = Headless.send_key_and_screenshot(:kas_test, "+")
+      {:ok, text} = Headless.send_key_and_screenshot(:kas_test, "=")
       assert text =~ "Count: 1"
     end
 

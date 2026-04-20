@@ -28,13 +28,13 @@ defmodule Raxol.Playground.Demos.SplitPaneDemo do
       key_match("l") ->
         {%{model | focus: :right}, []}
 
-      key_match("+") ->
+      key_match("=") ->
         {%{model | ratio: min(model.ratio + @ratio_step, @max_ratio)}, []}
 
       key_match("-") ->
         {%{model | ratio: max(model.ratio - @ratio_step, @min_ratio)}, []}
 
-      key_match("=") ->
+      key_match("r") ->
         {%{model | ratio: @default_ratio}, []}
 
       _ ->
@@ -94,7 +94,7 @@ defmodule Raxol.Playground.Demos.SplitPaneDemo do
             text("Focus: #{model.focus}")
           ]
         end,
-        text("[d] direction  [h/l] focus  [+/-] resize  [=] reset",
+        text("[d] direction  [h/l] focus  [=/-] resize  [r] reset",
           style: [:dim]
         )
       ]

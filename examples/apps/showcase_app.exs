@@ -89,7 +89,7 @@ defmodule Raxol.Examples.Showcase do
         {%{model | table_cursor: max(model.table_cursor - 1, 0)}, []}
 
       # -- Section 4: +/-/r for counter --
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}}
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "="}}
       when model.tab == 3 ->
         {%{model | counter: model.counter + 1}, []}
 
@@ -263,12 +263,12 @@ defmodule Raxol.Examples.Showcase do
         end,
         row style: %{gap: 1} do
           [
-            button("Increment (+)", on_click: :increment),
+            button("Increment (=)", on_click: :increment),
             button("Reset (r)", on_click: :reset),
             button("Decrement (-)", on_click: :decrement)
           ]
         end,
-        text("Press +/- keys or r to reset"),
+        text("Press =/- keys or r to reset"),
         text("-- Click Counter --", style: [:bold]),
         text("Total button clicks: #{model.button_clicks}")
       ]
@@ -294,7 +294,7 @@ defmodule Raxol.Examples.Showcase do
         text("  q/Ctrl+C  Quit"),
         text("  Space     Toggle checkbox (section 2)"),
         text("  j/k       Navigate table rows (section 3)"),
-        text("  +/-/r     Counter controls (section 4)")
+        text("  =/-/r     Counter controls (section 4)")
       ]
     end
   end
@@ -305,7 +305,7 @@ defmodule Raxol.Examples.Showcase do
   defp footer(%{tab: 2}), do: text("[j/k] navigate  [1-5] sections  [q] quit")
 
   defp footer(%{tab: 3}),
-    do: text("[+/-] count  [r] reset  [1-5] sections  [q] quit")
+    do: text("[=/-] count  [r] reset  [1-5] sections  [q] quit")
 
   defp footer(_), do: text("[1-5] sections  [Tab] next  [q] quit")
 end

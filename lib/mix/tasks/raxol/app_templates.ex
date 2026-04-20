@@ -69,7 +69,7 @@ defmodule Mix.Raxol.AppTemplates do
           :increment -> {%{model | count: model.count + 1}, []}
           :decrement -> {%{model | count: model.count - 1}, []}
 
-          %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} ->
+          %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "="}} ->
             {%{model | count: model.count + 1}, []}
 
           %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}} ->
@@ -95,11 +95,11 @@ defmodule Mix.Raxol.AppTemplates do
             end,
             row style: %{gap: 1} do
               [
-                button("+", on_click: :increment),
+                button("=", on_click: :increment),
                 button("-", on_click: :decrement)
               ]
             end,
-            text("Press '+'/'-' or click buttons. 'q' to quit.")
+            text("Press '='/'-' or click buttons. 'q' to quit.")
           ]
         end
       end

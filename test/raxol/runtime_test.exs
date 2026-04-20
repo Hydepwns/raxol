@@ -8,7 +8,7 @@ defmodule MockApp do
   def init(_context), do: %{count: 0, last_clipboard: nil}
 
   @impl Raxol.Core.Runtime.Application
-  def update({:event, %Event{type: :key, data: %{char: "+"}}}, model) do
+  def update({:event, %Event{type: :key, data: %{char: "="}}}, model) do
     {%{model | count: model.count + 1}, []}
   end
 

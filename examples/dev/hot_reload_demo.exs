@@ -27,7 +27,7 @@ defmodule HotReloadDemo do
       :decrement ->
         {%{model | count: model.count - 1}, []}
 
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "="}} ->
         {%{model | count: model.count + 1}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}} ->
@@ -56,7 +56,7 @@ defmodule HotReloadDemo do
             } do
           text("Count: #{model.count}", style: [:bold])
         end,
-        text("Press '+'/'-' to change count, 'q' to quit")
+        text("Press '='/'-' to change count, 'q' to quit")
       ]
     end
   end

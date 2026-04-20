@@ -52,7 +52,7 @@ defmodule MyApp do
         {%{model | count: model.count - 1}, []}
 
       # Keyboard events
-      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "+"}} ->
+      %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "="}} ->
         {%{model | count: model.count + 1}, []}
 
       %Raxol.Core.Events.Event{type: :key, data: %{key: :char, char: "-"}} ->
@@ -77,11 +77,11 @@ defmodule MyApp do
         end,
         row style: %{gap: 1} do
           [
-            button("+", on_click: :increment),
+            button("=", on_click: :increment),
             button("-", on_click: :decrement)
           ]
         end,
-        text("Press +/- or click buttons. q to quit.", style: [:dim])
+        text("Press =/- or click buttons. q to quit.", style: [:dim])
       ]
     end
   end

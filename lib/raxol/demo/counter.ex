@@ -4,7 +4,7 @@ defmodule Raxol.Demo.Counter do
 
   Demonstrates basic TEA pattern: init/update/view with keyboard and button input.
 
-  Controls: +/- to count, q/Ctrl+C to quit.
+  Controls: =/- to count, q/Ctrl+C to quit.
   """
 
   use Raxol.Core.Runtime.Application
@@ -24,7 +24,7 @@ defmodule Raxol.Demo.Counter do
       :reset ->
         {%{model | count: 0}, []}
 
-      key_match("+") ->
+      key_match("=") ->
         {%{model | count: model.count + 1}, []}
 
       key_match("-") ->
@@ -56,12 +56,12 @@ defmodule Raxol.Demo.Counter do
         end,
         row style: %{gap: 1} do
           [
-            button("Increment (+)", on_click: :increment),
+            button("Increment (=)", on_click: :increment),
             button("Reset", on_click: :reset),
             button("Decrement (-)", on_click: :decrement)
           ]
         end,
-        text("Press '+' or '-' keys, or click buttons."),
+        text("Press '=' or '-' keys, or click buttons."),
         text("Press 'q' or Ctrl+C to quit")
       ]
     end

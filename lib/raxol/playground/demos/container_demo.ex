@@ -36,7 +36,7 @@ defmodule Raxol.Playground.Demos.ContainerDemo do
     case message do
       key_match("g") -> {%{model | scroll_offset: 0}, []}
       key_match("G") -> {scroll_to_end(model), []}
-      key_match("+") -> {grow_visible(model), []}
+      key_match("=") -> {grow_visible(model), []}
       key_match("-") -> {shrink_visible(model), []}
       _ -> {model, []}
     end
@@ -97,7 +97,7 @@ defmodule Raxol.Playground.Demos.ContainerDemo do
             text("Visible: #{model.visible_count}")
           ]
         end,
-        text("[j/k] scroll  [g/G] top/bottom  [+/-] visible count",
+        text("[j/k] scroll  [g/G] top/bottom  [=/-] visible count",
           style: [:dim]
         )
       ]
