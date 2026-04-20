@@ -371,20 +371,16 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   defp maybe_leave_alternate_screen(_state), do: :ok
 
   defp write_escape(options, escape) do
-    case Keyword.get(options, :environment, :terminal) do
-      :ssh ->
-        case Keyword.get(options, :io_writer) do
-          writer when is_function(writer, 1) -> writer.(escape)
-          _ -> :ok
-        end
-
-      :terminal ->
-        IO.write(escape)
-
-      _ ->
-        :ok
-    end
+    env = Keyword.get(options, :environment, :terminal)
+    writer = Keyword.get(options, :io_writer)
+    do_write_escape(env, writer, escape)
   end
+
+  defp do_write_escape(:ssh, writer, escape) when is_function(writer, 1),
+    do: writer.(escape)
+
+  defp do_write_escape(:terminal, _writer, escape), do: IO.write(escape)
+  defp do_write_escape(_env, _writer, _escape), do: :ok
 
   # Initial commands processing
 
