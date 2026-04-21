@@ -119,10 +119,12 @@ defmodule Raxol.Headless do
     GenServer.call(__MODULE__, {:stop_session, id}, 5_000)
   end
 
-  @doc "Lists all active sessions."
+  @doc "Lists all active sessions. Returns `[]` if the Headless server is not running."
   @spec list() :: [atom()]
   def list do
     GenServer.call(__MODULE__, :list_sessions)
+  catch
+    :exit, _ -> []
   end
 
   # --- GenServer Callbacks ---

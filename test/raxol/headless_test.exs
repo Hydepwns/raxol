@@ -206,10 +206,13 @@ defmodule Raxol.HeadlessTest do
       # Quit command kills the lifecycle
       Headless.send_key(:monitor_test, "q")
 
-      # Poll for monitor cleanup (macOS CI can be slow)
+      # Poll for monitor cleanup (macOS CI can be slow).
+      # Headless.list/0 returns [] if the server itself stopped, which also
+      # means the session is gone -- treat that as success.
       Enum.reduce_while(1..40, nil, fn _, _ ->
         Process.sleep(50)
-        if :monitor_test in Headless.list(), do: {:cont, nil}, else: {:halt, :ok}
+        sessions = Headless.list()
+        if :monitor_test in sessions, do: {:cont, nil}, else: {:halt, :ok}
       end)
 
       refute :monitor_test in Headless.list()
