@@ -344,12 +344,19 @@ defmodule Raxol.Headless do
   end
 
   defp start_headless_app(module, width, height) do
-    Raxol.start_link(module,
-      environment: :agent,
-      width: width,
-      height: height,
-      name: nil
-    )
+    case Raxol.start_link(module,
+           environment: :agent,
+           width: width,
+           height: height,
+           name: nil
+         ) do
+      {:ok, pid} ->
+        Process.unlink(pid)
+        {:ok, pid}
+
+      error ->
+        error
+    end
   end
 
   defp get_session(state, id) do

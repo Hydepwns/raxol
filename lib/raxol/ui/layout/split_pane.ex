@@ -233,6 +233,7 @@ defmodule Raxol.UI.Layout.SplitPane do
       x: x,
       y: space.y,
       text: String.duplicate("|", space.height),
+      style: %{},
       attrs: %{
         component_type: :split_divider,
         pane_index: index,
@@ -254,6 +255,7 @@ defmodule Raxol.UI.Layout.SplitPane do
       x: space.x,
       y: y,
       text: String.duplicate("-", space.width),
+      style: %{},
       attrs: %{
         component_type: :split_divider,
         pane_index: index,

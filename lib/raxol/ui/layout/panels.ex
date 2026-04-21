@@ -63,6 +63,7 @@ defmodule Raxol.UI.Layout.Panels do
       y: space.y,
       width: panel_dimensions.width,
       height: panel_dimensions.height,
+      style: Map.get(attrs, :style, %{}),
       attrs: final_attrs
     }
   end
@@ -80,12 +81,17 @@ defmodule Raxol.UI.Layout.Panels do
   end
 
   defp create_title_element(title_text, attrs, space) do
+    title_attrs = Map.get(attrs, :title_attrs, %{})
+
     %{
       type: :text,
       x: space.x + @title_x_offset,
       y: space.y,
       text: " #{title_text} ",
-      attrs: Map.get(attrs, :title_attrs, %{})
+      fg: Map.get(title_attrs, :fg),
+      bg: Map.get(title_attrs, :bg),
+      style: Map.get(title_attrs, :style, %{}),
+      attrs: title_attrs
     }
   end
 

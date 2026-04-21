@@ -60,7 +60,7 @@ defmodule Raxol.Swarm.Discovery do
              [name: :"#{__MODULE__}.ClusterSupervisor"]
            ]) do
         {:ok, cluster_pid} ->
-          Process.link(cluster_pid)
+          Process.monitor(cluster_pid)
 
           Logger.info(
             "Swarm discovery: started with #{length(topologies)} topology(ies)"
@@ -87,6 +87,17 @@ defmodule Raxol.Swarm.Discovery do
   end
 
   @impl true
+  def handle_info(
+        {:DOWN, _ref, :process, pid, reason},
+        %{cluster_pid: pid} = state
+      ) do
+    Logger.warning(
+      "Swarm discovery: cluster supervisor exited: #{inspect(reason)}"
+    )
+
+    {:noreply, %{state | cluster_pid: nil}}
+  end
+
   def handle_info(msg, state) do
     Logger.debug("#{__MODULE__} received unexpected message: #{inspect(msg)}")
     {:noreply, state}

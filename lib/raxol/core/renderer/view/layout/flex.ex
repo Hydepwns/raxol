@@ -20,7 +20,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
   """
   def row(opts \\ []) do
     children = Keyword.get(opts, :children, [])
-    align = Keyword.get(opts, :align, :start)
+    align = Keyword.get(opts, :align, :stretch)
     justify = Keyword.get(opts, :justify, :start)
     gap = Keyword.get(opts, :gap, 0)
     style = Keyword.get(opts, :style, [])
@@ -70,7 +70,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
         single_child -> [single_child]
       end
 
-    align = Keyword.get(opts, :align, :start)
+    align = Keyword.get(opts, :align, :stretch)
     justify = Keyword.get(opts, :justify, :start)
     gap = Keyword.get(opts, :gap, 0)
     wrap = Keyword.get(opts, :wrap, false)
@@ -105,7 +105,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
   """
   def column(opts \\ []) do
     children = Keyword.get(opts, :children, [])
-    align = Keyword.get(opts, :align, :start)
+    align = Keyword.get(opts, :align, :stretch)
     justify = Keyword.get(opts, :justify, :start)
     gap = Keyword.get(opts, :gap, 0)
     style = Keyword.get(opts, :style, [])

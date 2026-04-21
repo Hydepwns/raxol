@@ -166,11 +166,16 @@ defmodule Raxol.UI.Layout.Engine do
     attrs_map = convert_attrs_to_map(attrs)
 
     # Create a text element at the given position
+    style_map = style_to_map(Map.get(attrs_map, :style, %{}))
+
     text_element = %{
       type: :text,
       x: space.x,
       y: space.y,
       text: Map.get(attrs_map, :content, Map.get(attrs_map, :text, "")),
+      fg: Map.get(attrs_map, :fg),
+      bg: Map.get(attrs_map, :bg),
+      style: style_map,
       # Pass original attributes through, let Renderer handle styling
       attrs: Map.put(attrs_map, :original_type, type)
     }
@@ -227,6 +232,7 @@ defmodule Raxol.UI.Layout.Engine do
         width:
           min(Raxol.UI.TextMeasure.display_width(display_text) + 4, space.width),
         height: 3,
+        style: style_map,
         attrs: component_attrs
       },
       # Input text (or placeholder)
@@ -291,16 +297,19 @@ defmodule Raxol.UI.Layout.Engine do
 
     inner_space = box_inner_space(space, border, padding)
 
+    box_style = Map.get(box, :style, %{})
+
     box_element = %{
       type: :box,
       x: space.x,
       y: space.y,
       width: space.width,
       height: space.height,
+      style: box_style,
       attrs: %{
         border: border,
         padding: padding,
-        style: Map.get(box, :style, %{})
+        style: box_style
       }
     }
 
@@ -344,7 +353,17 @@ defmodule Raxol.UI.Layout.Engine do
         _ -> {space.width, size}
       end
 
-    [%{type: :spacer, x: space.x, y: space.y, width: w, height: h} | acc]
+    [
+      %{
+        type: :spacer,
+        x: space.x,
+        y: space.y,
+        width: w,
+        height: h,
+        style: Map.get(spacer, :style, %{})
+      }
+      | acc
+    ]
   end
 
   def process_element(%{type: :image} = image_el, space, acc) do
@@ -377,7 +396,8 @@ defmodule Raxol.UI.Layout.Engine do
         y: space.y,
         width: space.width,
         height: 1,
-        char: char
+        char: char,
+        style: Map.get(divider, :style, %{})
       }
       | acc
     ]
@@ -694,14 +714,14 @@ defmodule Raxol.UI.Layout.Engine do
   defp box_overhead(element, style) do
     border = Map.get(element, :border) || Map.get(style, :border, :none)
     padding = Map.get(element, :padding, 0)
-    border_offset = if border == :none, do: 0, else: 1
+    border_offset = if border in [:none, false], do: 0, else: 1
     pad = if is_integer(padding), do: padding, else: 0
     2 * (border_offset + pad)
   end
 
   # Build inner space for a box by subtracting border and padding from outer space.
   defp box_inner_space(space, border, padding) do
-    border_offset = if border == :none, do: 0, else: 1
+    border_offset = if border in [:none, false], do: 0, else: 1
     pad = if is_integer(padding), do: padding, else: 0
     inset = border_offset + pad
 

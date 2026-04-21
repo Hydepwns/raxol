@@ -195,8 +195,9 @@ defmodule Raxol.UI.ElementRenderer do
   defp render_clipped_box(_clip_width, 0, _clip_x, _clip_y, _style), do: []
 
   defp render_clipped_box(clip_width, clip_height, clip_x, clip_y, style) do
-    # Check if borders are disabled
-    border_enabled = Map.get(style, :border, true)
+    # Check if borders are disabled -- border can be true, false, :none, or
+    # a style atom like :single/:double/:rounded/:ascii
+    border_enabled = Map.get(style, :border, true) not in [false, :none]
 
     render_box_with_border_option(
       border_enabled,

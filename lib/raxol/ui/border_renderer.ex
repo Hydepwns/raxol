@@ -309,8 +309,14 @@ defmodule Raxol.UI.BorderRenderer do
   end
 
   defp resolve_colors(style) do
-    fg = Map.get(style, :fg) || Map.get(style, :foreground, :white)
-    bg = Map.get(style, :bg) || Map.get(style, :background, :black)
+    fg =
+      Map.get(style, :border_fg) || Map.get(style, :fg) ||
+        Map.get(style, :foreground, :white)
+
+    bg =
+      Map.get(style, :border_bg) || Map.get(style, :bg) ||
+        Map.get(style, :background, :black)
+
     {fg, bg}
   end
 end
