@@ -1,17 +1,59 @@
-# Raxol Agent Skill
+---
+name: raxol-onboarding
+description: >
+  Raxol agent onboarding for external developers and AI agents.
+  TRIGGER when: agent fetches raxol.io/skill.md, user asks about getting
+  started with Raxol agents, user wants to add Raxol to a new project,
+  or agent needs to understand Raxol capabilities for tool selection.
+  DO NOT TRIGGER when: already working inside a Raxol codebase (use the
+  full raxol skill instead), debugging specific Raxol internals, or
+  working with other TUI frameworks.
+metadata:
+  author: droo
+  version: "1.0.0"
+  tags: raxol, agents, onboarding, mcp, elixir, otp, tui
+---
 
-> Multi-surface runtime for Elixir on OTP. One TEA module renders to terminal, browser, SSH, MCP, Telegram, and watch surfaces.
+# Raxol
 
-## What You Can Do With Raxol
+Multi-surface runtime for Elixir on OTP. One TEA module renders to terminal, browser (LiveView), SSH, MCP, Telegram, and watch surfaces. 12 packages, 8,000+ tests.
 
-### Build Agents
-Raxol agents are TEA (The Elm Architecture) apps supervised by OTP. They crash-isolate, hot-reload, and stream from any LLM backend (Anthropic, OpenAI, Ollama, Groq, Kimi, Lumo).
+## Quick Start
+
+```bash
+# Zero install -- try it now
+ssh -p 2222 playground@raxol.io
+
+# Or add to your project
+mix new my_app && cd my_app
+```
 
 ```elixir
-# Add to mix.exs
-{:raxol_agent, "~> 2.4"}
+# mix.exs deps
+{:raxol, "~> 2.4"}         # Full framework
+{:raxol_agent, "~> 2.4"}   # Agent framework only
+```
 
-# Define an agent
+## What You Get
+
+- **TEA apps** -- `init/1`, `update/2`, `view/1` with OTP supervision
+- **AI agents** -- TEA apps where input comes from LLMs, crash-isolated
+- **Agent teams** -- Supervisor groups with coordinator/worker roles
+- **6 surfaces** -- Terminal, Browser (LiveView), SSH, MCP, Telegram, Watch
+- **Agent payments** -- x402, MPP, Xochi cross-chain, stealth addresses
+- **MCP tools** -- Auto-derived from widget tree, 6 built-in headless tools
+- **Distributed swarm** -- CRDTs, gossip/DNS/Tailscale discovery
+
+## See Also
+
+- `raxol` skill -- Full framework internals (TEA agents, process agents, orchestration)
+- `droo-stack` -- General Elixir patterns (pipes, pattern matching, ExUnit)
+- `claude-api` -- Anthropic SDK integration
+
+## Build an Agent
+
+```elixir
+# Correct: always return {model, commands} from update/2
 defmodule MyAgent do
   use Raxol.Agent
 
@@ -24,16 +66,25 @@ defmodule MyAgent do
   def update({:command_result, {:shell_result, %{output: out}}}, model) do
     {%{model | results: [out | model.results]}, []}
   end
+
+  def update(_msg, model), do: {model, []}
 end
 
 # Start it
 {:ok, _} = Raxol.Agent.Session.start_link(app_module: MyAgent, id: :my_agent)
 ```
 
-### Agent Teams
-Coordinate multiple agents with supervisors:
+```elixir
+# Incorrect: returning bare model crashes the runtime
+def update(:some_msg, model), do: model
+# Correct: always return {model, commands} tuple
+def update(:some_msg, model), do: {model, []}
+```
+
+## Agent Teams
 
 ```elixir
+# Correct: coordinator + workers under one supervisor
 Raxol.Agent.Team.start_link(
   team_id: :review_team,
   coordinator: {CodeReviewAgent, id: :reviewer},
@@ -41,15 +92,22 @@ Raxol.Agent.Team.start_link(
 )
 ```
 
-### Agent Payments (raxol_payments)
-Agents that can pay for things autonomously:
-- **x402**: HTTP 402 micropayments (Coinbase, EIP-712/ERC-3009)
-- **MPP**: Stripe/Tempo machine payments
-- **Xochi**: Cross-chain intent settlement (stealth addresses, PXE shielded)
-- Spending controls: per-request/session/lifetime limits via SpendingPolicy + Ledger
+## Agent Commands
 
-### MCP Tools
-Raxol auto-derives MCP tools from the widget tree. Each interactive widget exposes semantic actions.
+| Command | What It Does | Return Shape |
+|---------|-------------|-------------|
+| `shell("cmd")` | Port-based shell execution | `{:shell_result, %{output: str, exit_status: int}}` |
+| `async(fn)` | Async with streaming callback | `{:async_result, result}` |
+| `send_agent(id, payload)` | Inter-agent message via Registry | Arrives as `{:agent_message, from, payload}` |
+
+## Agent Strategies
+
+| Strategy | When to Use |
+|----------|------------|
+| `Strategy.Direct` | Sequential action execution, deterministic pipelines |
+| `Strategy.ReAct` | LLM reasoning loop with tool use, autonomous agents |
+
+## MCP Integration
 
 ```bash
 # Start MCP server (stdio, ~18ms startup)
@@ -58,20 +116,60 @@ mix mcp.server
 
 Six built-in tools: `raxol_start`, `raxol_screenshot`, `raxol_send_key`, `raxol_get_model`, `raxol_stop`, `raxol_list`.
 
-### Try It Now
-
-```bash
-# SSH (zero install)
-ssh -p 2222 playground@raxol.io
-
-# Interactive playground (30 demos, 8 categories)
-mix raxol.playground
-
-# Web
-# https://raxol.io/playground
+```json
+{
+  "mcpServers": {
+    "raxol": {
+      "command": "mix",
+      "args": ["mcp.server"],
+      "cwd": "/path/to/your/raxol/app"
+    }
+  }
+}
 ```
 
-## Architecture at a Glance
+## Agent Payments (raxol_payments)
+
+Agents that can pay for things autonomously:
+
+| Protocol | Route | Gasless |
+|----------|-------|---------|
+| x402 | HTTP 402 micropayments (EIP-712/ERC-3009) | No |
+| MPP | Stripe/Tempo machine payments | Yes |
+| Xochi | Cross-chain intent settlement | Yes |
+
+Spending controls: per-request/session/lifetime limits via `SpendingPolicy` + `Ledger`.
+
+## Headless Sessions
+
+```elixir
+# Correct: start headless, interact programmatically
+{:ok, session} = Raxol.Headless.start(MyApp)
+html = Raxol.Headless.screenshot(session)
+Raxol.Headless.send_key(session, :tab)
+model = Raxol.Headless.get_model(session)
+```
+
+```elixir
+# Incorrect: using string for special keys
+Raxol.Headless.send_key(session, "tab")
+# Correct: atoms for special keys, strings for characters
+Raxol.Headless.send_key(session, :tab)
+Raxol.Headless.send_key(session, "q")
+```
+
+## Common Pitfalls
+
+| Mistake | Why It Fails | Fix |
+|---------|-------------|-----|
+| Returning bare `model` from `update/2` | Runtime expects `{model, commands}` tuple | Always return `{model, Command.none()}` or `{model, []}` |
+| Not replying to `{:call, pid, ref, msg}` | Caller blocks until timeout | `send(pid, {:agent_reply, ref, reply})` |
+| `send_agent` for sync request-reply | Creates deadlock if both agents call each other | Use async `send_agent/2`, break cycles |
+| String keys for special keys in `send_key` | Sends literal character, not the key event | Use atoms: `:tab`, `:enter`, `:escape` |
+| Using real LLM backends in tests | Flaky, slow, costs money | Always use `Backend.Mock` in tests |
+| `view/1` returning complex tree for headless agent | Wastes cycles rendering to nothing | Return `nil` from `view/1` for headless agents |
+
+## Packages
 
 | Package | What It Does | Tests |
 |---------|-------------|-------|
@@ -88,22 +186,14 @@ mix raxol.playground
 | raxol_telegram | Telegram bot surface, per-chat sessions | 34 |
 | raxol_watch | APNS/FCM push, glanceable summaries | 34 |
 
-## Key Patterns
+## Key Conventions
 
-**TEA Model**: `init/1` -> model, `update/2` -> `{model, commands}`, `view/1` -> element tree.
-
-**Agent Commands**:
-- `shell("cmd")` -- Port-based shell execution
-- `async(fn)` -- Async with streaming sender callback
-- `send_agent(target, payload)` -- Inter-agent messaging via Registry
-
-**Agent Strategies**:
-- `Strategy.Direct` -- Sequential action execution
-- `Strategy.ReAct` -- LLM reasoning loop with tool use
-
-**Headless Sessions**: `Raxol.Headless.start(MyApp)` runs TEA apps without a terminal. `screenshot/1` reads the virtual buffer. `send_key/3` injects events.
-
-**View DSL**: Use `text("string")` not `text(content: "string")`. Use style attrs (`fg: :cyan, style: [:bold]`), never raw ANSI codes.
+- All agents auto-register in `Raxol.Agent.Registry` by `:id`
+- Always return `{model, commands}` from `update/2`, never bare `model`
+- `view/1` returning `nil` = headless (no rendering overhead)
+- Use `text("string")` not `text(content: "string")` in the View DSL
+- Use style attrs (`fg: :cyan, style: [:bold]`), never raw ANSI codes
+- Use `Backend.Mock` in tests, never real HTTP backends
 
 ## Links
 
@@ -112,25 +202,4 @@ mix raxol.playground
 - Hex: https://hex.pm/packages/raxol
 - Playground: https://raxol.io/playground
 - SSH: `ssh -p 2222 playground@raxol.io`
-
-## Agent Integration
-
-To give an AI agent access to Raxol's MCP tools, add to your MCP config:
-
-```json
-{
-  "mcpServers": {
-    "raxol": {
-      "command": "mix",
-      "args": ["mcp.server"],
-      "cwd": "/path/to/your/raxol/app"
-    }
-  }
-}
-```
-
-The agent can then start headless TEA apps, take screenshots, send keys, and read model state -- enabling full autonomous UI interaction.
-
----
-
-*Made by [axol.io](https://axol.io). 8,000+ tests across 12 packages.*
+- Skill (this file): https://raxol.io/skill.md
