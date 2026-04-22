@@ -12,7 +12,8 @@ defmodule RaxolPlaygroundWeb.LandingLive do
 
   import RaxolPlaygroundWeb.PlaygroundComponents
 
-  @demo_name "Sparkline"
+  # Disabled: demo embed crashes LiveView in dev. Investigate rendering pipeline.
+  @demo_name nil
 
   @raxol_version (case :application.get_key(:raxol, :vsn) do
                     {:ok, vsn} ->
