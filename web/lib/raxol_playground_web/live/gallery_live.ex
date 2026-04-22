@@ -9,6 +9,8 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
   alias Raxol.Playground.Catalog
   alias RaxolPlaygroundWeb.Playground.Helpers
 
+  import RaxolPlaygroundWeb.PlaygroundComponents
+
   @impl true
   def mount(_params, _session, socket) do
     components = Catalog.list_components()
@@ -32,10 +34,7 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
   end
 
   def handle_event("filter_category", %{"category" => category}, socket) do
-    {:noreply,
-     refilter(
-       assign(socket, :active_category, String.to_existing_atom(category))
-     )}
+    {:noreply, refilter(assign(socket, :active_category, String.to_existing_atom(category)))}
   rescue
     ArgumentError -> {:noreply, socket}
   end
@@ -53,10 +52,7 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
   end
 
   def handle_event("filter_complexity", %{"level" => level}, socket) do
-    {:noreply,
-     refilter(
-       assign(socket, :complexity_filter, String.to_existing_atom(level))
-     )}
+    {:noreply, refilter(assign(socket, :complexity_filter, String.to_existing_atom(level)))}
   rescue
     ArgumentError -> {:noreply, socket}
   end
@@ -78,34 +74,39 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="gallery-container min-h-screen bg-gray-950 text-gray-100">
-      <!-- Header -->
-      <div class="bg-gray-900 border-b border-gray-800">
+    <div class="atmosphere" aria-hidden="true">
+      <div class="pearl-bg"></div>
+      <div class="dark-overlay"></div>
+    </div>
+
+    <div class="relative min-h-screen" style="z-index: 2;">
+      <%!-- Header --%>
+      <header class="surface-bar">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 class="text-3xl font-bold text-gray-100">
-                <a href="/" class="hover:text-blue-400 transition-colors">Raxol</a> Component Gallery
+              <h1 class="font-mono font-bold tracking-wide heading-xl">
+                <a href="/" class="brand-link">Raxol</a> Component Gallery
               </h1>
-              <p class="mt-2 text-gray-400">
+              <p class="font-mono mt-1 detail-text">
                 <%= @total_count %> interactive terminal UI components --
-                <a href="/playground" class="text-blue-400 hover:underline">open playground</a>
+                <a href="/playground" class="text-sky">open playground</a>
               </p>
             </div>
 
-            <div class="flex items-center space-x-4">
-              <div class="flex bg-gray-800 rounded-lg p-1">
+            <div class="flex items-center gap-3">
+              <div class="view-toggle">
                 <button
                   phx-click="toggle_view"
                   phx-value-mode="grid"
-                  class={"px-3 py-1 rounded text-sm font-medium #{if @view_mode == "grid", do: "bg-gray-700 shadow text-gray-100", else: "text-gray-400"}"}
+                  class={"view-toggle-btn #{if @view_mode == "grid", do: "view-toggle-btn--active"}"}
                 >
                   Grid
                 </button>
                 <button
                   phx-click="toggle_view"
                   phx-value-mode="list"
-                  class={"px-3 py-1 rounded text-sm font-medium #{if @view_mode == "list", do: "bg-gray-700 shadow text-gray-100", else: "text-gray-400"}"}
+                  class={"view-toggle-btn #{if @view_mode == "list", do: "view-toggle-btn--active"}"}
                 >
                   List
                 </button>
@@ -118,25 +119,26 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
                   placeholder="Search components..."
                   value={@search_query}
                   phx-debounce="300"
-                  class="w-64 px-4 py-2 bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  aria-label="Search components"
+                  class="w-48 md:w-64 font-mono px-4 py-2 rounded input-dark"
                 />
               </form>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <!-- Filters -->
-      <div class="bg-gray-900 border-b border-gray-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div class="flex items-center space-x-6">
-            <div class="flex items-center space-x-2">
-              <span class="text-sm font-medium text-gray-400">Category:</span>
-              <div class="flex flex-wrap gap-2">
+      <%!-- Filters --%>
+      <div class="surface-bar-subtle">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div class="flex items-center gap-6 flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono label-text-dim">Category:</span>
+              <div class="flex flex-wrap gap-1.5">
                 <button
                   phx-click="filter_category"
                   phx-value-category="all"
-                  class={"px-3 py-1 rounded-full text-sm #{if @active_category == nil, do: "bg-blue-900/50 text-blue-300", else: "bg-gray-800 text-gray-400 hover:bg-gray-700"}"}
+                  class={"category-tag cursor-pointer transition-colors #{if @active_category == nil, do: "toggle-btn--active"}"}
                 >
                   All
                 </button>
@@ -144,7 +146,7 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
                   <button
                     phx-click="filter_category"
                     phx-value-category={cat}
-                    class={"px-3 py-1 rounded-full text-sm #{if @active_category == cat, do: "bg-blue-900/50 text-blue-300", else: "bg-gray-800 text-gray-400 hover:bg-gray-700"}"}
+                    class={"category-tag cursor-pointer transition-colors #{if @active_category == cat, do: "toggle-btn--active"}"}
                   >
                     <%= Helpers.category_label(cat) %>
                   </button>
@@ -153,11 +155,11 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
             </div>
 
             <form phx-change="filter_complexity" id="complexity-filter">
-              <div class="flex items-center space-x-2">
-                <span class="text-sm font-medium text-gray-400">Complexity:</span>
+              <div class="flex items-center gap-2">
+                <span class="font-mono label-text-dim">Complexity:</span>
                 <select
                   name="level"
-                  class="bg-gray-800 border border-gray-700 text-gray-100 rounded px-3 py-1 text-sm"
+                  class="font-mono px-3 py-1 rounded input-dark"
                 >
                   <option value="all" selected={@complexity_filter == nil}>All Levels</option>
                   <option value="basic" selected={@complexity_filter == :basic}>Basic</option>
@@ -170,26 +172,21 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
         </div>
       </div>
 
-      <!-- SSH Callout -->
+      <%!-- SSH Callout --%>
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <div class="bg-gray-900 border border-gray-800 text-green-400 rounded-lg p-4 font-mono text-sm">
-          Try the real terminal experience:
-          <span class="text-white ml-2"><%= RaxolPlaygroundWeb.Playground.Helpers.ssh_command() %></span>
-          <span class="text-gray-500 mx-2">|</span>
-          <span class="text-white">mix raxol.playground</span>
-        </div>
+        <.ssh_callout variant={:banner} />
       </div>
 
-      <!-- Component Grid/List -->
+      <%!-- Component Grid/List --%>
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <%= if @view_mode == "grid" do %>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <%= for comp <- @components do %>
               <.component_card component={comp} />
             <% end %>
           </div>
         <% else %>
-          <div class="space-y-4">
+          <div class="space-y-3">
             <%= for comp <- @components do %>
               <.component_list_item component={comp} />
             <% end %>
@@ -197,7 +194,7 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
         <% end %>
 
         <%= if @components == [] do %>
-          <div class="text-center py-12 text-gray-500">
+          <div class="text-center py-12 font-mono text-pearl-40">
             No components match your filters.
           </div>
         <% end %>
@@ -208,32 +205,24 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
 
   defp component_card(assigns) do
     ~H"""
-    <div class="bg-gray-900 rounded-lg border border-gray-800 hover:border-gray-700 transition-colors duration-200">
-      <div class="p-4">
-        <div class="flex items-start justify-between mb-2">
-          <h3 class="text-lg font-semibold text-gray-100"><%= @component.name %></h3>
-          <.complexity_badge level={@component.complexity} />
-        </div>
-        <p class="text-gray-400 text-sm mb-3"><%= @component.description %></p>
-        <div class="flex flex-wrap gap-1 mb-3">
-          <%= for tag <- @component.tags do %>
-            <span class="px-2 py-1 text-xs bg-gray-800 text-gray-400 rounded"><%= tag %></span>
-          <% end %>
-        </div>
-        <div class="flex space-x-2">
-          <a
-            href={"/demos/#{@component.name}"}
-            class="flex-1 px-3 py-2 bg-blue-600 text-white text-sm text-center rounded hover:bg-blue-500 transition-colors"
-          >
-            Try Live
-          </a>
-          <a
-            href={"/playground?component=#{@component.name}"}
-            class="px-3 py-2 border border-gray-700 text-gray-300 text-sm rounded hover:border-gray-500 transition-colors"
-          >
-            Code
-          </a>
-        </div>
+    <div class="panel panel--glow p-4 transition-all duration-200">
+      <div class="flex items-start justify-between mb-2">
+        <h3 class="font-mono font-semibold name-sky"><%= @component.name %></h3>
+        <.complexity_badge level={@component.complexity} />
+      </div>
+      <p class="font-mono mb-3 detail-text"><%= @component.description %></p>
+      <div class="flex flex-wrap gap-1 mb-3">
+        <%= for tag <- @component.tags do %>
+          <span class="category-tag" style="font-size: 0.55rem;"><%= tag %></span>
+        <% end %>
+      </div>
+      <div class="flex gap-2">
+        <a href={"/demos/#{@component.name}"} class="btn-sky flex-1 text-center" style="padding: 0.375rem 0.75rem; font-size: 0.7rem;">
+          Try Live
+        </a>
+        <a href={"/playground?component=#{@component.name}"} class="btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.7rem;">
+          Code
+        </a>
       </div>
     </div>
     """
@@ -241,50 +230,33 @@ defmodule RaxolPlaygroundWeb.GalleryLive do
 
   defp component_list_item(assigns) do
     ~H"""
-    <div class="bg-gray-900 rounded-lg border border-gray-800 p-6 hover:border-gray-700 transition-colors duration-200">
-      <div class="flex items-start space-x-6">
+    <div class="panel panel--glow p-5 transition-all duration-200">
+      <div class="flex items-start gap-6">
         <div class="flex-1 min-w-0">
           <div class="flex items-start justify-between mb-2">
-            <h3 class="text-xl font-semibold text-gray-100"><%= @component.name %></h3>
+            <h3 class="font-mono font-semibold name-sky"><%= @component.name %></h3>
             <.complexity_badge level={@component.complexity} />
           </div>
-          <p class="text-gray-400 mb-3"><%= @component.description %></p>
-          <div class="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-            <span>Category: <%= Helpers.category_label(@component.category) %></span>
+          <p class="font-mono mb-3 detail-text"><%= @component.description %></p>
+          <div class="flex items-center gap-4 font-mono mb-3 label-text">
+            <span><%= Helpers.category_label(@component.category) %></span>
           </div>
           <div class="flex flex-wrap gap-1 mb-4">
             <%= for tag <- @component.tags do %>
-              <span class="px-2 py-1 text-xs bg-gray-800 text-gray-400 rounded"><%= tag %></span>
+              <span class="category-tag" style="font-size: 0.55rem;"><%= tag %></span>
             <% end %>
           </div>
-          <div class="flex space-x-3">
-            <a
-              href={"/demos/#{@component.name}"}
-              class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-500 transition-colors"
-            >
+          <div class="flex gap-3">
+            <a href={"/demos/#{@component.name}"} class="btn-sky" style="padding: 0.375rem 0.75rem; font-size: 0.7rem;">
               Try Live
             </a>
-            <a
-              href={"/playground?component=#{@component.name}"}
-              class="px-4 py-2 border border-gray-700 text-gray-300 text-sm rounded hover:border-gray-500 transition-colors"
-            >
+            <a href={"/playground?component=#{@component.name}"} class="btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.7rem;">
               View Code
             </a>
           </div>
         </div>
       </div>
     </div>
-    """
-  end
-
-  defp complexity_badge(assigns) do
-    class = Helpers.complexity_class(assigns.level)
-    assigns = assign(assigns, :class, class)
-
-    ~H"""
-    <span class={"px-2 py-1 text-xs font-medium rounded-full #{@class}"}>
-      <%= Helpers.complexity_label(@level) %>
-    </span>
     """
   end
 end

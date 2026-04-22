@@ -43,9 +43,7 @@ defmodule RaxolPlaygroundWeb.Playground.DemoLifecycle do
         end
       rescue
         e ->
-          Logger.warning(
-            "Demo #{component.name} failed: #{Exception.message(e)}"
-          )
+          Logger.warning("Demo #{component.name} failed: #{Exception.message(e)}")
 
           assign(socket, demo_error: "Failed to start demo")
       catch
@@ -86,9 +84,7 @@ defmodule RaxolPlaygroundWeb.Playground.DemoLifecycle do
         GenServer.cast(dpid, {:dispatch, event})
 
       other ->
-        Logger.debug(
-          "No dispatcher found in lifecycle state: #{inspect(other)}"
-        )
+        Logger.debug("No dispatcher found in lifecycle state: #{inspect(other)}")
 
         :ok
     end

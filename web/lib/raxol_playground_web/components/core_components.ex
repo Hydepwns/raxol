@@ -109,9 +109,7 @@ defmodule RaxolPlaygroundWeb.CoreComponents do
     doc: "used for styling and flash lookup"
   )
 
-  attr(:rest, :global,
-    doc: "the arbitrary HTML attributes to add to the flash container"
-  )
+  attr(:rest, :global, doc: "the arbitrary HTML attributes to add to the flash container")
 
   slot(:inner_block,
     doc: "the optional inner block that renders the flash message"
@@ -206,8 +204,7 @@ defmodule RaxolPlaygroundWeb.CoreComponents do
   )
 
   attr(:rest, :global,
-    include:
-      ~w(autocomplete name rel action enctype method novalidate target multipart),
+    include: ~w(autocomplete name rel action enctype method novalidate target multipart),
     doc: "the arbitrary HTML attributes to apply to the form tag"
   )
 
@@ -276,23 +273,19 @@ defmodule RaxolPlaygroundWeb.CoreComponents do
 
   attr(:type, :string,
     default: "text",
-    values:
-      ~w(checkbox color date datetime-local email file hidden month number password
+    values: ~w(checkbox color date datetime-local email file hidden month number password
                range radio search select tel text textarea time url week)
   )
 
   attr(:field, Phoenix.HTML.FormField,
-    doc:
-      "a form field struct retrieved from the form, for example: @form[:email]"
+    doc: "a form field struct retrieved from the form, for example: @form[:email]"
   )
 
   attr(:errors, :list, default: [])
   attr(:checked, :boolean, doc: "the checked flag for checkbox inputs")
   attr(:prompt, :string, default: nil, doc: "the prompt for select inputs")
 
-  attr(:options, :list,
-    doc: "the options to pass to Phoenix.HTML.Form.options_for_select/2"
-  )
+  attr(:options, :list, doc: "the options to pass to Phoenix.HTML.Form.options_for_select/2")
 
   attr(:multiple, :boolean,
     default: false,
@@ -300,8 +293,7 @@ defmodule RaxolPlaygroundWeb.CoreComponents do
   )
 
   attr(:rest, :global,
-    include:
-      ~w(accept autocomplete capture cols disabled form list max maxlength min minlength
+    include: ~w(accept autocomplete capture cols disabled form list max maxlength min minlength
                 multiple pattern placeholder readonly required rows size step)
   )
 
@@ -479,8 +471,7 @@ defmodule RaxolPlaygroundWeb.CoreComponents do
 
   attr(:row_item, :any,
     default: &Function.identity/1,
-    doc:
-      "the function for mapping each row before calling the :col and :action slots"
+    doc: "the function for mapping each row before calling the :col and :action slots"
   )
 
   slot :col, required: true do

@@ -7,7 +7,7 @@ defmodule RaxolPlaygroundWeb do
   """
   def static_paths,
     do:
-      ~w(assets fonts images favicon.ico favicon-16x16.png favicon-32x32.png apple-touch-icon.png robots.txt)
+      ~w(assets fonts images favicon.ico favicon-16x16.png favicon-32x32.png apple-touch-icon.png robots.txt sitemap.xml)
 
   def router do
     quote do

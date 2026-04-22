@@ -10,6 +10,12 @@ defmodule RaxolPlaygroundWeb.Router do
     plug(:put_secure_browser_headers)
   end
 
+  # Raw endpoints (no session, no layout, no CSRF)
+  scope "/", RaxolPlaygroundWeb do
+    get("/health", HealthController, :check)
+    get("/skill.md", SkillController, :show)
+  end
+
   scope "/", RaxolPlaygroundWeb do
     pipe_through(:browser)
 
@@ -19,6 +25,5 @@ defmodule RaxolPlaygroundWeb.Router do
     live("/demos", DemoLive, :index)
     live("/demos/:demo", DemoLive, :show)
     live("/repl", ReplLive, :index)
-    get("/health", HealthController, :check)
   end
 end

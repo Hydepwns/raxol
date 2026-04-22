@@ -1,12 +1,8 @@
 defmodule RaxolPlaygroundWeb.HealthController do
   use RaxolPlaygroundWeb, :controller
 
-  @memory_warn_mb String.to_integer(
-                    System.get_env("HEALTH_MEMORY_WARN_MB") || "500"
-                  )
-  @memory_crit_mb String.to_integer(
-                    System.get_env("HEALTH_MEMORY_CRIT_MB") || "900"
-                  )
+  @memory_warn_mb String.to_integer(System.get_env("HEALTH_MEMORY_WARN_MB") || "500")
+  @memory_crit_mb String.to_integer(System.get_env("HEALTH_MEMORY_CRIT_MB") || "900")
 
   def check(conn, _params) do
     checks = %{

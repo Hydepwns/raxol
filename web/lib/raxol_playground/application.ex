@@ -13,8 +13,7 @@ defmodule RaxolPlayground.Application do
       [
         RaxolPlaygroundWeb.Telemetry,
         {DNSCluster,
-         query:
-           Application.get_env(:raxol_playground, :dns_cluster_query) || :ignore},
+         query: Application.get_env(:raxol_playground, :dns_cluster_query) || :ignore},
         {Phoenix.PubSub, name: RaxolPlayground.PubSub},
         Supervisor.child_spec({Phoenix.PubSub, name: Raxol.PubSub},
           id: :raxol_pubsub

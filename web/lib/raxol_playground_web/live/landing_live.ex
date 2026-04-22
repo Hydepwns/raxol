@@ -1,124 +1,210 @@
 defmodule RaxolPlaygroundWeb.LandingLive do
   @moduledoc """
-  Landing page for raxol.io. Static content -- no GenServer state.
+  Landing page for raxol.io. Dark-native, monospace-first, Xochi-sibling aesthetic.
   """
 
   use RaxolPlaygroundWeb, :live_view
 
-  @package_test_counts %{
-    main: 3695,
-    core: 765,
-    terminal: 1874,
-    agent: 131,
-    sensor: 55
-  }
-  @total_tests (
-                 total = @package_test_counts |> Map.values() |> Enum.sum()
+  require Logger
 
-                 total
-                 |> Integer.to_string()
-                 |> String.replace(~r/(\d)(?=(\d{3})+$)/, "\\1,")
-               )
+  alias Raxol.Playground.Catalog
+  alias RaxolPlaygroundWeb.Playground.{DemoLifecycle, Helpers}
+
+  import RaxolPlaygroundWeb.PlaygroundComponents
+
+  @demo_name "Sparkline"
+
+  @package_test_counts %{
+    main: 3737,
+    core: 730,
+    terminal: 1928,
+    agent: 401,
+    mcp: 263,
+    payments: 347,
+    sensor: 55,
+    liveview: 50,
+    plugin: 50,
+    speech: 28,
+    telegram: 34,
+    watch: 34
+  }
+
+  @total_tests @package_test_counts
+               |> Map.values()
+               |> Enum.sum()
+               |> Integer.to_string()
+               |> String.replace(~r/(\d)(?=(\d{3})+$)/, "\\1,")
 
   @raxol_version (case :application.get_key(:raxol, :vsn) do
                     {:ok, vsn} ->
-                      vsn
-                      |> to_string()
-                      |> String.split(".")
-                      |> Enum.take(2)
-                      |> Enum.join(".")
+                      vsn |> to_string() |> String.split(".") |> Enum.take(2) |> Enum.join(".")
 
                     _ ->
-                      "2.3"
+                      "2.4"
                   end)
 
   @counter_code_html String.trim_leading(~S"""
-                     <span style="color:#bb9af7">defmodule</span> <span style="color:#7aa2f7">Counter</span> <span style="color:#bb9af7">do</span>
-                       <span style="color:#bb9af7">use</span> <span style="color:#7aa2f7">Raxol.Core.Runtime.Application</span>
+                     <span style="color:#ffcd9c">defmodule</span> <span style="color:#58a1c6">Counter</span> <span style="color:#ffcd9c">do</span>
+                       <span style="color:#ffcd9c">use</span> <span style="color:#58a1c6">Raxol.Core.Runtime.Application</span>
 
-                       <span style="color:#9ece6a">@impl true</span>
-                       <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">init</span>(<span style="color:#a9b1d6">_ctx</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">%{</span><span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">0}</span>
+                       <span style="color:#a89a80">@impl true</span>
+                       <span style="color:#ffcd9c">def</span> <span style="color:#58a1c6">init</span>(<span style="color:#e8e4dc">_ctx</span>), <span style="color:#e58476">do:</span> <span style="color:#e8e4dc">%{</span><span style="color:#e58476">count:</span> <span style="color:#e8e4dc">0}</span>
 
-                       <span style="color:#9ece6a">@impl true</span>
-                       <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#7dcfff">:increment</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{%{model |</span> <span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">model.count + 1}, []}</span>
-                       <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#7dcfff">:decrement</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{%{model |</span> <span style="color:#7dcfff">count:</span> <span style="color:#a9b1d6">model.count - 1}, []}</span>
-                       <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">update</span>(<span style="color:#a9b1d6">_</span>, <span style="color:#a9b1d6">model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">{model, []}</span>
+                       <span style="color:#a89a80">@impl true</span>
+                       <span style="color:#ffcd9c">def</span> <span style="color:#58a1c6">update</span>(<span style="color:#e58476">:increment</span>, <span style="color:#e8e4dc">model</span>), <span style="color:#e58476">do:</span> <span style="color:#e8e4dc">{%{model |</span> <span style="color:#e58476">count:</span> <span style="color:#e8e4dc">model.count + 1}, []}</span>
+                       <span style="color:#ffcd9c">def</span> <span style="color:#58a1c6">update</span>(<span style="color:#e58476">:decrement</span>, <span style="color:#e8e4dc">model</span>), <span style="color:#e58476">do:</span> <span style="color:#e8e4dc">{%{model |</span> <span style="color:#e58476">count:</span> <span style="color:#e8e4dc">model.count - 1}, []}</span>
+                       <span style="color:#ffcd9c">def</span> <span style="color:#58a1c6">update</span>(<span style="color:#e8e4dc">_</span>, <span style="color:#e8e4dc">model</span>), <span style="color:#e58476">do:</span> <span style="color:#e8e4dc">{model, []}</span>
 
-                       <span style="color:#9ece6a">@impl true</span>
-                       <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">view</span>(<span style="color:#a9b1d6">model</span>) <span style="color:#bb9af7">do</span>
-                         <span style="color:#7aa2f7">column</span> <span style="color:#7dcfff">style:</span> <span style="color:#a9b1d6">%{</span><span style="color:#7dcfff">padding:</span> <span style="color:#a9b1d6">1,</span> <span style="color:#7dcfff">gap:</span> <span style="color:#a9b1d6">1}</span> <span style="color:#bb9af7">do</span>
-                           <span style="color:#a9b1d6">[</span>
-                             <span style="color:#7aa2f7">text</span>(<span style="color:#9ece6a">"Count: &#35;{model.count}"</span>, <span style="color:#7dcfff">style:</span> <span style="color:#a9b1d6">[</span><span style="color:#7dcfff">:bold</span><span style="color:#a9b1d6">]</span>),
-                             <span style="color:#7aa2f7">row</span> <span style="color:#7dcfff">style:</span> <span style="color:#a9b1d6">%{</span><span style="color:#7dcfff">gap:</span> <span style="color:#a9b1d6">1}</span> <span style="color:#bb9af7">do</span>
-                               <span style="color:#a9b1d6">[</span><span style="color:#7aa2f7">button</span>(<span style="color:#9ece6a">"Increment"</span>, <span style="color:#7dcfff">on_click:</span> <span style="color:#7dcfff">:increment</span>), <span style="color:#7aa2f7">button</span>(<span style="color:#9ece6a">"Decrement"</span>, <span style="color:#7dcfff">on_click:</span> <span style="color:#7dcfff">:decrement</span>)<span style="color:#a9b1d6">]</span>
-                             <span style="color:#bb9af7">end</span>
-                           <span style="color:#a9b1d6">]</span>
-                         <span style="color:#bb9af7">end</span>
-                       <span style="color:#bb9af7">end</span>
-
-                       <span style="color:#9ece6a">@impl true</span>
-                       <span style="color:#bb9af7">def</span> <span style="color:#7aa2f7">subscribe</span>(<span style="color:#a9b1d6">_model</span>), <span style="color:#7dcfff">do:</span> <span style="color:#a9b1d6">[]</span>
-                     <span style="color:#bb9af7">end</span>
+                       <span style="color:#a89a80">@impl true</span>
+                       <span style="color:#ffcd9c">def</span> <span style="color:#58a1c6">view</span>(<span style="color:#e8e4dc">model</span>) <span style="color:#ffcd9c">do</span>
+                         <span style="color:#58a1c6">column</span> <span style="color:#e58476">style:</span> <span style="color:#e8e4dc">%{</span><span style="color:#e58476">padding:</span> <span style="color:#e8e4dc">1,</span> <span style="color:#e58476">gap:</span> <span style="color:#e8e4dc">1}</span> <span style="color:#ffcd9c">do</span>
+                           <span style="color:#e8e4dc">[</span>
+                             <span style="color:#58a1c6">text</span>(<span style="color:#a89a80">"Count: &#35;{model.count}"</span>, <span style="color:#e58476">style:</span> <span style="color:#e8e4dc">[</span><span style="color:#e58476">:bold</span><span style="color:#e8e4dc">]</span>),
+                             <span style="color:#58a1c6">row</span> <span style="color:#e58476">style:</span> <span style="color:#e8e4dc">%{</span><span style="color:#e58476">gap:</span> <span style="color:#e8e4dc">1}</span> <span style="color:#ffcd9c">do</span>
+                               <span style="color:#e8e4dc">[</span><span style="color:#58a1c6">button</span>(<span style="color:#a89a80">"+"</span>, <span style="color:#e58476">on_click:</span> <span style="color:#e58476">:increment</span>), <span style="color:#58a1c6">button</span>(<span style="color:#a89a80">"-"</span>, <span style="color:#e58476">on_click:</span> <span style="color:#e58476">:decrement</span>)<span style="color:#e8e4dc">]</span>
+                             <span style="color:#ffcd9c">end</span>
+                           <span style="color:#e8e4dc">]</span>
+                         <span style="color:#ffcd9c">end</span>
+                       <span style="color:#ffcd9c">end</span>
+                     <span style="color:#ffcd9c">end</span>
                      """)
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok,
-     assign(socket,
-       page_title: "Raxol",
-       counter_code: @counter_code_html,
-       raxol_version: @raxol_version,
-       total_tests: @total_tests,
-       mobile_menu_open: false
-     )}
+    demo_component = Catalog.get_component(@demo_name)
+
+    socket =
+      socket
+      |> assign(
+        page_title: "Raxol",
+        counter_code: @counter_code_html,
+        raxol_version: @raxol_version,
+        total_tests: @total_tests,
+        mobile_menu_open: false,
+        terminal_html: "",
+        lifecycle_pid: nil,
+        topic: nil,
+        demo_error: nil,
+        demo_timer: nil,
+        demo_component: demo_component
+      )
+      |> then(fn s ->
+        if demo_component do
+          DemoLifecycle.start_demo(s, demo_component,
+            timeout_ms: :timer.minutes(5),
+            topic_prefix: "landing"
+          )
+        else
+          s
+        end
+      end)
+
+    {:ok, socket}
   end
 
   @impl true
   def handle_event("toggle_mobile_menu", _params, socket) do
-    {:noreply,
-     assign(socket, :mobile_menu_open, !socket.assigns.mobile_menu_open)}
+    {:noreply, assign(socket, :mobile_menu_open, !socket.assigns.mobile_menu_open)}
+  end
+
+  @impl true
+  def handle_info({:render_update, html}, socket) do
+    {:noreply, assign(socket, :terminal_html, html)}
+  end
+
+  def handle_info(:demo_timeout, socket) do
+    # Silently restart the demo for landing page (loops forever)
+    socket = DemoLifecycle.stop_demo(socket)
+    demo_component = socket.assigns.demo_component
+
+    socket =
+      socket
+      |> assign(terminal_html: "", demo_error: nil)
+      |> then(fn s ->
+        if demo_component do
+          DemoLifecycle.start_demo(s, demo_component,
+            timeout_ms: :timer.minutes(5),
+            topic_prefix: "landing"
+          )
+        else
+          s
+        end
+      end)
+
+    {:noreply, socket}
+  end
+
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, socket) do
+    if pid == socket.assigns[:lifecycle_pid] do
+      {:noreply, assign(socket, lifecycle_pid: nil, demo_error: true)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
+  @impl true
+  def terminate(_reason, socket) do
+    _ = DemoLifecycle.stop_demo(socket)
+    :ok
   end
 
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gray-950 text-gray-100">
+    <div class="atmosphere" aria-hidden="true">
+      <div class="pearl-bg"></div>
+      <div class="dark-overlay"></div>
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+
+    <div class="relative min-h-screen" style="z-index: 2;">
       <.nav_bar mobile_menu_open={@mobile_menu_open} />
-      <.hero_section raxol_version={@raxol_version} />
-      <.comparison_section />
-      <.code_example_section counter_code={@counter_code} />
-      <.features_section />
-      <.performance_section />
-      <.packages_section />
-      <.playground_section />
+      <main>
+        <.hero_section raxol_version={@raxol_version} terminal_html={@terminal_html} />
+        <hr class="section-divider" aria-hidden="true" />
+        <.surfaces_section />
+        <hr class="section-divider" aria-hidden="true" />
+        <.code_example_section counter_code={@counter_code} />
+        <hr class="section-divider" aria-hidden="true" />
+        <.features_section />
+        <hr class="section-divider" aria-hidden="true" />
+        <.comparison_section />
+        <hr class="section-divider" aria-hidden="true" />
+        <.packages_section />
+        <hr class="section-divider" aria-hidden="true" />
+        <.try_section />
+      </main>
       <.footer_section total_tests={@total_tests} />
     </div>
     """
   end
 
   # ===========================================================================
-  # Sections
+  # Navigation
   # ===========================================================================
 
   attr(:mobile_menu_open, :boolean, required: true)
 
   defp nav_bar(assigns) do
     ~H"""
-    <nav class="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-sm border-b border-gray-800/50">
+    <nav class="sticky top-0 z-50 surface-bar">
       <div class="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
-        <a href="/" class="text-lg font-bold text-blue-400">
+        <a href="/" class="font-mono text-lg font-bold text-axol-coral" style="letter-spacing: 0.05em;">
           raxol
         </a>
-        <!-- Desktop links -->
-        <div class="hidden md:flex items-center gap-6 text-sm text-gray-400">
-          <a href="/playground" class="hover:text-gray-200 transition-colors">Playground</a>
-          <a href="/gallery" class="hover:text-gray-200 transition-colors">Gallery</a>
-          <a href="/demos" class="hover:text-gray-200 transition-colors">Demos</a>
-          <a href="https://hexdocs.pm/raxol" class="hover:text-gray-200 transition-colors">Docs</a>
-          <a href="https://github.com/DROOdotFOO/raxol" class="hover:text-gray-200 transition-colors">GitHub</a>
+        <div class="hidden md:flex items-center gap-6 text-sm font-mono" style="letter-spacing: 0.05em;">
+          <a href="/playground" class="nav-link">Playground</a>
+          <a href="/gallery" class="nav-link">Gallery</a>
+          <a href="/demos" class="nav-link">Demos</a>
+          <a href="https://hexdocs.pm/raxol" class="nav-link">Docs</a>
+          <a href="/skill.md" class="nav-link">Skill</a>
+          <a href="https://github.com/DROOdotFOO/raxol" class="nav-link">GitHub</a>
         </div>
-        <!-- Mobile hamburger -->
-        <button phx-click="toggle_mobile_menu" class="md:hidden text-gray-400 hover:text-gray-200 p-1">
+        <button phx-click="toggle_mobile_menu" class="md:hidden p-1 text-pearl-50">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <%= if @mobile_menu_open do %>
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -128,214 +214,204 @@ defmodule RaxolPlaygroundWeb.LandingLive do
           </svg>
         </button>
       </div>
-      <!-- Mobile menu -->
       <%= if @mobile_menu_open do %>
-        <div class="md:hidden border-t border-gray-800/50 px-6 py-4 flex flex-col gap-4 text-sm text-gray-400">
-          <a href="/playground" class="hover:text-gray-200 transition-colors">Playground</a>
-          <a href="/gallery" class="hover:text-gray-200 transition-colors">Gallery</a>
-          <a href="/demos" class="hover:text-gray-200 transition-colors">Demos</a>
-          <a href="https://hexdocs.pm/raxol" class="hover:text-gray-200 transition-colors">Docs</a>
-          <a href="https://github.com/DROOdotFOO/raxol" class="hover:text-gray-200 transition-colors">GitHub</a>
+        <div class="md:hidden px-6 py-4 flex flex-col gap-4 text-sm font-mono border-t border-subtle text-pearl-50">
+          <a href="/playground">Playground</a>
+          <a href="/gallery">Gallery</a>
+          <a href="/demos">Demos</a>
+          <a href="https://hexdocs.pm/raxol">Docs</a>
+          <a href="/skill.md">Skill</a>
+          <a href="https://github.com/DROOdotFOO/raxol">GitHub</a>
         </div>
       <% end %>
     </nav>
     """
   end
 
+  # ===========================================================================
+  # Hero
+  # ===========================================================================
+
   attr(:raxol_version, :string, required: true)
+  attr(:terminal_html, :string, required: true)
 
   defp hero_section(assigns) do
     ~H"""
-    <section class="px-6 py-24 md:py-32 max-w-4xl mx-auto text-center">
-      <a
-        href="https://github.com/DROOdotFOO/raxol"
-        class="inline-block px-4 py-1.5 mb-8 text-sm font-medium text-purple-300 bg-purple-900/40 border border-purple-700/50 rounded-full hover:bg-purple-900/60 transition-colors"
-      >
-        Terminal built for your Gundam
-      </a>
+    <section class="landing-section px-6 pt-24 pb-20 md:pt-32 md:pb-28 max-w-4xl mx-auto text-center" aria-labelledby="hero-title">
+      <div class="mb-10">
+        <span class="badge">Multi-surface runtime</span>
+      </div>
 
-      <h1 class="text-6xl md:text-7xl font-extrabold tracking-tight mb-6 text-blue-400">
+      <h1 id="hero-title" class="font-mono font-bold tracking-wide mb-6" style="font-size: clamp(3rem, 2.5rem + 3vw, 5rem); color: #ffcd9c; line-height: 1.1;">
         raxol
       </h1>
 
-      <p class="text-xl md:text-2xl text-gray-300 font-medium mb-4">
+      <p class="font-mono mb-4" style="font-size: clamp(1rem, 0.9rem + 0.5vw, 1.25rem); color: rgba(232, 228, 220, 0.7); line-height: 1.5; letter-spacing: 0.01em;">
         One app. Terminal, browser, SSH, or agent.
       </p>
 
-      <pre class="bg-gray-900 border border-gray-800 rounded-lg inline-block px-6 py-3 mb-10 font-mono text-sm text-gray-300"><code><%= raw("{:raxol, \"~> #{@raxol_version}\"}") %></code></pre>
+      <p class="body-text-dim mb-10 max-w-2xl mx-auto">
+        Write a TEA module. It renders everywhere. Crash isolation, hot reload,
+        AI agents, and distributed swarm -- all from OTP.
+      </p>
 
-      <div class="flex items-center justify-center gap-4">
-        <a
-          href="/playground"
-          class="px-6 py-3 text-sm font-semibold text-white rounded-lg bg-blue-600 hover:bg-blue-500 transition-colors"
-        >
-          Try Playground
+      <%!-- Live terminal embed --%>
+      <%= if @terminal_html != "" do %>
+        <div class="terminal-chrome mb-10 mx-auto text-left" style="max-width: 42rem;">
+          <div class="terminal-chrome-bar">
+            <div class="terminal-chrome-dot terminal-chrome-dot--red" aria-hidden="true"></div>
+            <div class="terminal-chrome-dot terminal-chrome-dot--yellow" aria-hidden="true"></div>
+            <div class="terminal-chrome-dot terminal-chrome-dot--green" aria-hidden="true"></div>
+            <span class="terminal-chrome-title">raxol -- sparkline demo (live)</span>
+            <span class="ml-auto font-mono" style="font-size: 0.6rem; color: rgba(88, 161, 198, 0.5); letter-spacing: 0.1em; text-transform: uppercase;">live</span>
+          </div>
+          <div
+            id="landing-terminal"
+            phx-hook="RaxolTerminal"
+            class="raxol-terminal p-4 overflow-hidden"
+            style="background: #241b2f; min-height: 10rem; max-height: 16rem;"
+            data-theme="synthwave84"
+            tabindex="-1"
+            role="img"
+            aria-label="Live Raxol sparkline demo rendering in real-time"
+          ><%= Phoenix.HTML.raw(@terminal_html) %></div>
+        </div>
+      <% end %>
+
+      <%!-- SSH command hero --%>
+      <div class="mb-10">
+        <div class="ssh-hero" id="ssh-copy" phx-hook="CopyToClipboard" data-copy={Helpers.ssh_command()}>
+          <span class="prompt">$ </span><%= Helpers.ssh_command() %><span class="cursor-blink" style="color: #ffcd9c;">_</span>
+        </div>
+        <p class="label-text mt-3">
+          Zero install. Click to copy.
+        </p>
+      </div>
+
+      <div class="flex items-center justify-center gap-4 flex-wrap">
+        <a href="/playground" class="btn-primary">
+          Open Playground
         </a>
-        <a
-          href="https://github.com/DROOdotFOO/raxol"
-          class="px-6 py-3 text-sm font-semibold text-gray-300 rounded-lg border border-gray-700 hover:border-gray-500 hover:text-white transition-colors"
-        >
+        <a href="/skill.md" class="btn-sky">
+          Agent Skill
+        </a>
+        <a href="https://github.com/DROOdotFOO/raxol" class="btn-secondary">
           GitHub
         </a>
       </div>
-    </section>
-    """
-  end
 
-  defp comparison_section(assigns) do
-    ~H"""
-    <section class="px-6 py-20 max-w-5xl mx-auto">
-      <h2 class="text-3xl font-bold text-gray-100 mb-4">Why OTP</h2>
-      <p class="text-gray-400 mb-8 max-w-3xl">
-        Every capability below comes from the BEAM VM, not a library.
-      </p>
-
-      <div class="overflow-x-auto -mx-6 px-6">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-gray-800">
-              <th class="text-left py-3 pr-4 text-gray-400 font-medium">Capability</th>
-              <th class="py-3 px-3 text-gray-100 font-semibold">Raxol</th>
-              <th class="py-3 px-3 text-gray-500 font-medium">Ratatui</th>
-              <th class="py-3 px-3 text-gray-500 font-medium">Bubble Tea</th>
-              <th class="py-3 px-3 text-gray-500 font-medium">Textual</th>
-              <th class="py-3 px-3 text-gray-500 font-medium">Ink</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-800/50">
-            <.comparison_row
-              capability="Crash isolation per component"
-              raxol="yes"
-              ratatui="--"
-              bubbletea="--"
-              textual="--"
-              ink="--"
-            />
-            <.comparison_row
-              capability="Hot code reload (no restart)"
-              raxol="yes"
-              ratatui="--"
-              bubbletea="--"
-              textual="--"
-              ink="--"
-            />
-            <.comparison_row
-              capability="Same app in terminal + browser"
-              raxol="yes"
-              ratatui="--"
-              bubbletea="--"
-              textual="partial"
-              ink="--"
-            />
-            <.comparison_row
-              capability="Built-in SSH serving"
-              raxol="yes"
-              ratatui="--"
-              bubbletea="via lib"
-              textual="--"
-              ink="--"
-            />
-            <.comparison_row
-              capability="AI agent runtime"
-              raxol="yes"
-              ratatui="--"
-              bubbletea="--"
-              textual="--"
-              ink="--"
-            />
-            <.comparison_row
-              capability="Distributed clustering (CRDTs)"
-              raxol="yes"
-              ratatui="--"
-              bubbletea="--"
-              textual="--"
-              ink="--"
-            />
-            <.comparison_row
-              capability="Time-travel debugging"
-              raxol="yes"
-              ratatui="--"
-              bubbletea="--"
-              textual="--"
-              ink="--"
-            />
-          </tbody>
-        </table>
+      <div class="mt-10">
+        <code class="font-mono detail-text text-pearl-40 bg-inset border border-subtle" style="padding: 0.5rem 1rem; border-radius: 4px;"><%= raw("{:raxol, \"~> #{@raxol_version}\"}") %></code>
       </div>
-
-      <p class="text-gray-500 text-sm mt-8 max-w-3xl">
-        Ratatui and Bubble Tea have excellent rendering and large ecosystems.
-        Raxol's advantage is structural: crash isolation, hot reload, distribution,
-        and SSH come from OTP, not application code.
-      </p>
     </section>
     """
   end
 
-  attr(:capability, :string, required: true)
-  attr(:raxol, :string, required: true)
-  attr(:ratatui, :string, required: true)
-  attr(:bubbletea, :string, required: true)
-  attr(:textual, :string, required: true)
-  attr(:ink, :string, required: true)
+  # ===========================================================================
+  # Surfaces
+  # ===========================================================================
 
-  defp comparison_row(assigns) do
+  defp surfaces_section(assigns) do
     ~H"""
-    <tr>
-      <td class="py-3 pr-4 text-gray-300"><%= @capability %></td>
-      <td class="py-3 px-3 text-center text-green-400 font-medium"><%= @raxol %></td>
-      <td class="py-3 px-3 text-center text-gray-600"><%= @ratatui %></td>
-      <td class="py-3 px-3 text-center text-gray-600"><%= @bubbletea %></td>
-      <td class="py-3 px-3 text-center text-gray-600"><%= @textual %></td>
-      <td class="py-3 px-3 text-center text-gray-600"><%= @ink %></td>
-    </tr>
+    <section class="landing-section px-6 py-20 max-w-5xl mx-auto" aria-labelledby="surfaces-title">
+      <h2 id="surfaces-title" class="heading-2xl mb-3">
+        One codebase, six surfaces
+      </h2>
+      <p class="body-text mb-10">
+        Write your app once. Raxol projects it to every target.
+      </p>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <.surface_card icon=">" name="Terminal" detail="Native termbox2 NIF" />
+        <.surface_card icon="~" name="Browser" detail="Phoenix LiveView bridge" />
+        <.surface_card icon="$" name="SSH" detail="Each connection supervised" />
+        <.surface_card icon="@" name="MCP" detail="Agent tool derivation" />
+        <.surface_card icon="#" name="Telegram" detail="Per-chat sessions" />
+        <.surface_card icon="!" name="Watch" detail="APNS/FCM push" />
+      </div>
+    </section>
     """
   end
+
+  attr(:icon, :string, required: true)
+  attr(:name, :string, required: true)
+  attr(:detail, :string, required: true)
+
+  defp surface_card(assigns) do
+    ~H"""
+    <div class="panel panel--glow p-5 transition-all duration-200">
+      <div class="font-mono font-bold mb-2 text-sky" style="font-size: clamp(1rem, 0.9rem + 0.5vw, 1.15rem);">
+        <span class="text-pearl-30"><%= @icon %></span> <%= @name %>
+      </div>
+      <p class="detail-text">
+        <%= @detail %>
+      </p>
+    </div>
+    """
+  end
+
+  # ===========================================================================
+  # Code Example
+  # ===========================================================================
 
   attr(:counter_code, :string, required: true)
 
   defp code_example_section(assigns) do
     ~H"""
-    <section class="px-6 py-20 max-w-4xl mx-auto">
-      <h2 class="text-3xl font-bold text-gray-100 mb-4">Hello World</h2>
-      <p class="text-gray-400 mb-8 max-w-3xl">
+    <section class="landing-section px-6 py-20 max-w-4xl mx-auto" aria-labelledby="code-title">
+      <h2 id="code-title" class="heading-2xl mb-3">
+        Hello World
+      </h2>
+      <p class="body-text mb-8">
         Every Raxol app follows The Elm Architecture:
-        <code class="text-gray-300 font-mono text-sm">init</code>,
-        <code class="text-gray-300 font-mono text-sm">update</code>,
-        <code class="text-gray-300 font-mono text-sm">view</code>.
+        <span class="text-axol-coral">init</span>,
+        <span class="text-axol-coral">update</span>,
+        <span class="text-axol-coral">view</span>.
         Here's a counter in 20 lines.
       </p>
 
-      <!-- Terminal window chrome -->
-      <div class="rounded-lg overflow-clip border border-gray-800 mb-6">
-        <div class="bg-gray-800 px-4 py-2.5 flex items-center gap-2">
-          <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-          <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-          <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-          <span class="text-gray-500 text-sm ml-3">counter.exs</span>
+      <div class="terminal-chrome mb-8">
+        <div class="terminal-chrome-bar">
+          <div class="terminal-chrome-dot terminal-chrome-dot--red"></div>
+          <div class="terminal-chrome-dot terminal-chrome-dot--yellow"></div>
+          <div class="terminal-chrome-dot terminal-chrome-dot--green"></div>
+          <span class="terminal-chrome-title">counter.exs</span>
         </div>
-        <pre class="bg-gray-900 px-5 py-4 overflow-x-auto text-sm leading-relaxed font-mono"><code><%= Phoenix.HTML.raw(@counter_code) %></code></pre>
+        <div class="terminal-chrome-body">
+          <pre style="overflow-x: auto; font-size: 0.85rem; line-height: 1.7;"><code><%= Phoenix.HTML.raw(@counter_code) %></code></pre>
+        </div>
       </div>
 
-      <p class="text-gray-400 mb-6">
+      <p class="body-text-dim mb-6">
         That counter works in a terminal. The same module renders in Phoenix LiveView.
         The same module serves over SSH. One codebase, three targets.
-        See the full example with keyboard handling:
       </p>
 
-      <div class="bg-gray-900 border border-gray-800 rounded-lg px-5 py-3 font-mono text-sm text-green-400">
-        $ mix run examples/getting_started/counter.exs
+      <div class="terminal-chrome" style="padding: 0;">
+        <div class="terminal-chrome-body" style="padding: 0.75rem 1.25rem;">
+          <span class="text-pearl-40">$</span>
+          <span class="text-sky" style="margin-left: 0.5rem;">mix run examples/getting_started/counter.exs</span>
+        </div>
       </div>
     </section>
     """
   end
 
+  # ===========================================================================
+  # Features
+  # ===========================================================================
+
   defp features_section(assigns) do
     ~H"""
-    <section class="px-6 py-20 max-w-5xl mx-auto">
-      <h2 class="text-3xl font-bold text-gray-100 mb-8">What's in the box</h2>
+    <section class="landing-section px-6 py-20 max-w-5xl mx-auto" aria-labelledby="features-title">
+      <h2 id="features-title" class="heading-2xl mb-3">
+        What's in the box
+      </h2>
+      <p class="body-text mb-10">
+        Every capability comes from OTP, not a library.
+      </p>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <.feature_card
           title="Crash Isolation"
           description="Wrap any widget in process_component/2. It crashes, it restarts. Your UI keeps running."
@@ -353,8 +429,8 @@ defmodule RaxolPlaygroundWeb.LandingLive do
           description="Raxol.SSH.serve(MyApp, port: 2222). Each connection gets its own supervised process."
         />
         <.feature_card
-          title="LiveView Bridge"
-          description="Same TEA app renders to terminal and Phoenix LiveView. One codebase."
+          title="Agent Payments"
+          description="x402 micropayments, Xochi cross-chain settlement, stealth addresses. Agents that can pay."
         />
         <.feature_card
           title="Distributed Swarm"
@@ -378,82 +454,116 @@ defmodule RaxolPlaygroundWeb.LandingLive do
 
   defp feature_card(assigns) do
     ~H"""
-    <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
-      <h3 class="text-lg font-semibold text-gray-100 mb-2"><%= @title %></h3>
-      <p class="text-gray-400 text-sm leading-relaxed"><%= @description %></p>
+    <div class="panel panel--glow feature-card p-6">
+      <h3 class="name-coral mb-2">
+        <%= @title %>
+      </h3>
+      <p class="detail-text" style="line-height: 1.7;">
+        <%= @description %>
+      </p>
     </div>
     """
   end
 
-  defp performance_section(assigns) do
+  # ===========================================================================
+  # Comparison
+  # ===========================================================================
+
+  defp comparison_section(assigns) do
     ~H"""
-    <section class="px-6 py-20 max-w-4xl mx-auto">
-      <h2 class="text-3xl font-bold text-gray-100 mb-4">Performance</h2>
-      <p class="text-gray-400 mb-8">
-        On Apple M1 Pro (Elixir 1.19 / OTP 27). 13% of the 60fps budget.
+    <section class="landing-section px-6 py-20 max-w-5xl mx-auto" aria-labelledby="comparison-title">
+      <h2 id="comparison-title" class="heading-2xl mb-3">
+        Why OTP
+      </h2>
+      <p class="body-text mb-8">
+        These capabilities come from the BEAM VM, not application code.
       </p>
 
-      <div class="overflow-x-auto">
-        <table class="w-full max-w-lg text-sm">
+      <div class="overflow-x-auto -mx-6 px-6">
+        <table class="w-full font-mono" style="font-size: clamp(0.7rem, 0.65rem + 0.25vw, 0.75rem);">
           <thead>
-            <tr class="border-b border-gray-800">
-              <th class="text-left py-3 pr-4 text-gray-400 font-medium">What</th>
-              <th class="text-right py-3 text-gray-400 font-medium">Time</th>
+            <tr class="border-b border-subtle">
+              <th class="text-left py-3 pr-4 label-text-dim" style="font-weight: 500;">Capability</th>
+              <th class="py-3 px-3 text-axol-coral" style="font-weight: 600;">Raxol</th>
+              <th class="py-3 px-3" style="color: rgba(232, 228, 220, 0.3); font-weight: 500;">Ratatui</th>
+              <th class="py-3 px-3" style="color: rgba(232, 228, 220, 0.3); font-weight: 500;">Bubble Tea</th>
+              <th class="py-3 px-3" style="color: rgba(232, 228, 220, 0.3); font-weight: 500;">Textual</th>
+              <th class="py-3 px-3" style="color: rgba(232, 228, 220, 0.3); font-weight: 500;">Ink</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-800/50">
-            <tr>
-              <td class="py-3 pr-4 text-gray-300">Full frame (create + fill + diff)</td>
-              <td class="py-3 text-right text-gray-100 font-mono">2.1 ms</td>
-            </tr>
-            <tr>
-              <td class="py-3 pr-4 text-gray-300">Tree diff (100 nodes)</td>
-              <td class="py-3 text-right text-gray-100 font-mono">4 μs</td>
-            </tr>
-            <tr>
-              <td class="py-3 pr-4 text-gray-300">Cell write</td>
-              <td class="py-3 text-right text-gray-100 font-mono">0.97 μs</td>
-            </tr>
-            <tr>
-              <td class="py-3 pr-4 text-gray-300">ANSI parse</td>
-              <td class="py-3 text-right text-gray-100 font-mono">38 μs</td>
-            </tr>
+          <tbody>
+            <.comparison_row capability="Crash isolation per component" raxol="yes" ratatui="--" bubbletea="--" textual="--" ink="--" />
+            <.comparison_row capability="Hot code reload (no restart)" raxol="yes" ratatui="--" bubbletea="--" textual="--" ink="--" />
+            <.comparison_row capability="Same app in terminal + browser" raxol="yes" ratatui="--" bubbletea="--" textual="partial" ink="--" />
+            <.comparison_row capability="Built-in SSH serving" raxol="yes" ratatui="--" bubbletea="via lib" textual="--" ink="--" />
+            <.comparison_row capability="AI agent runtime" raxol="yes" ratatui="--" bubbletea="--" textual="--" ink="--" />
+            <.comparison_row capability="Distributed clustering (CRDTs)" raxol="yes" ratatui="--" bubbletea="--" textual="--" ink="--" />
+            <.comparison_row capability="Time-travel debugging" raxol="yes" ratatui="--" bubbletea="--" textual="--" ink="--" />
+            <.comparison_row capability="Agent payments" raxol="yes" ratatui="--" bubbletea="--" textual="--" ink="--" />
           </tbody>
         </table>
       </div>
+
+      <p class="detail-text text-pearl-35 mt-8" style="line-height: 1.7; max-width: 50ch;">
+        Ratatui and Bubble Tea have excellent rendering and large ecosystems.
+        Raxol's advantage is structural: crash isolation, hot reload, distribution,
+        and SSH come from OTP, not application code.
+      </p>
     </section>
     """
   end
 
+  attr(:capability, :string, required: true)
+  attr(:raxol, :string, required: true)
+  attr(:ratatui, :string, required: true)
+  attr(:bubbletea, :string, required: true)
+  attr(:textual, :string, required: true)
+  attr(:ink, :string, required: true)
+
+  defp comparison_row(assigns) do
+    ~H"""
+    <tr class="border-b border-subtle-faint">
+      <td class="py-3 pr-4 text-pearl-60"><%= @capability %></td>
+      <td class={"py-3 px-3 text-center #{comparison_class(@raxol)}"}><%= @raxol %></td>
+      <td class={"py-3 px-3 text-center #{comparison_class(@ratatui)}"}><%= @ratatui %></td>
+      <td class={"py-3 px-3 text-center #{comparison_class(@bubbletea)}"}><%= @bubbletea %></td>
+      <td class={"py-3 px-3 text-center #{comparison_class(@textual)}"}><%= @textual %></td>
+      <td class={"py-3 px-3 text-center #{comparison_class(@ink)}"}><%= @ink %></td>
+    </tr>
+    """
+  end
+
+  defp comparison_class("yes"), do: "comparison-cell--yes"
+  defp comparison_class("partial"), do: "comparison-cell--partial"
+  defp comparison_class(_), do: "comparison-cell--no"
+
+  # ===========================================================================
+  # Packages
+  # ===========================================================================
+
   defp packages_section(assigns) do
     ~H"""
-    <section class="px-6 py-20 max-w-5xl mx-auto">
-      <h2 class="text-3xl font-bold text-gray-100 mb-4">Standalone Packages</h2>
-      <p class="text-gray-400 mb-8">
+    <section class="landing-section px-6 py-20 max-w-5xl mx-auto" aria-labelledby="packages-title">
+      <h2 id="packages-title" class="heading-2xl mb-3">
+        12 packages
+      </h2>
+      <p class="body-text mb-10">
         Use the full framework, or pick just the parts you need.
       </p>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <.package_card
-          name="raxol_core"
-          description="Behaviours, events, config, accessibility, plugins."
-          tests="765 tests"
-        />
-        <.package_card
-          name="raxol_terminal"
-          description="VT100/ANSI emulation, screen buffer, termbox2 NIF."
-          tests="1,874 tests"
-        />
-        <.package_card
-          name="raxol_agent"
-          description="AI agent framework. Supervised agents with LLM streaming."
-          tests="131 tests"
-        />
-        <.package_card
-          name="raxol_sensor"
-          description="Sensor fusion. Zero dependencies."
-          tests="55 tests"
-        />
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <.package_card name="raxol_core" description="Behaviours, events, config, plugins" tests="730" />
+        <.package_card name="raxol_terminal" description="VT100/ANSI, screen buffer, NIF" tests="1,928" />
+        <.package_card name="raxol_agent" description="AI agents, teams, strategies" tests="401" />
+        <.package_card name="raxol_mcp" description="MCP server, tools, derivation" tests="263" />
+        <.package_card name="raxol_payments" description="x402, Xochi, wallets, spending" tests="347" />
+        <.package_card name="raxol_sensor" description="Sensor fusion. Zero deps." tests="55" />
+        <.package_card name="raxol_liveview" description="LiveView bridge, TEALive" tests="50" />
+        <.package_card name="raxol_plugin" description="Plugin SDK, generator" tests="50" />
+        <.package_card name="raxol_speech" description="TTS/STT, voice commands" tests="28" />
+        <.package_card name="raxol_telegram" description="Telegram bot surface" tests="34" />
+        <.package_card name="raxol_watch" description="APNS/FCM push" tests="34" />
+        <.package_card name="raxol" description="Main runtime: TEA, rendering, layout, effects" tests="3,737" accent={true} />
       </div>
     </section>
     """
@@ -462,81 +572,102 @@ defmodule RaxolPlaygroundWeb.LandingLive do
   attr(:name, :string, required: true)
   attr(:description, :string, required: true)
   attr(:tests, :string, required: true)
+  attr(:accent, :boolean, default: false)
 
   defp package_card(assigns) do
     ~H"""
-    <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
-      <h3 class="text-base font-mono font-semibold text-gray-100 mb-2"><%= @name %></h3>
-      <p class="text-gray-400 text-sm mb-3"><%= @description %></p>
-      <span class="text-xs text-gray-500"><%= @tests %></span>
+    <div class="panel p-5">
+      <h3 class="name-sky-sm mb-2" style={"color: #{if @accent, do: "#ffcd9c", else: "#58a1c6"};"}>
+        <%= @name %>
+      </h3>
+      <p class="detail-text mb-3">
+        <%= @description %>
+      </p>
+      <span class="caption-text">
+        <%= @tests %> tests
+      </span>
     </div>
     """
   end
 
-  defp playground_section(assigns) do
-    ~H"""
-    <section class="px-6 py-20 max-w-4xl mx-auto">
-      <h2 class="text-3xl font-bold text-gray-100 mb-8">Try It</h2>
+  # ===========================================================================
+  # Try It
+  # ===========================================================================
 
-      <div class="space-y-3 mb-8">
-        <div class="bg-gray-900 border border-gray-800 rounded-lg px-5 py-3 font-mono text-sm">
-          <span class="text-gray-500">$</span>
-          <span class="text-green-400 ml-2">mix raxol.playground</span>
-          <span class="text-gray-600 ml-4"># <%= RaxolPlaygroundWeb.Playground.Helpers.widget_count() %> demos across <%= RaxolPlaygroundWeb.Playground.Helpers.category_count() %> categories</span>
-        </div>
-        <div class="bg-gray-900 border border-gray-800 rounded-lg px-5 py-3 font-mono text-sm">
-          <span class="text-gray-500">$</span>
-          <span class="text-green-400 ml-2"><%= RaxolPlaygroundWeb.Playground.Helpers.ssh_command() %></span>
-          <span class="text-gray-600 ml-4"># same thing, over SSH</span>
-        </div>
-        <div class="bg-gray-900 border border-gray-800 rounded-lg px-5 py-3 font-mono text-sm">
-          <span class="text-gray-500">$</span>
-          <span class="text-green-400 ml-2">mix run examples/demo.exs</span>
-          <span class="text-gray-600 ml-4"># flagship BEAM dashboard</span>
-        </div>
+  defp try_section(assigns) do
+    ~H"""
+    <section class="landing-section px-6 py-20 max-w-4xl mx-auto" aria-labelledby="try-title">
+      <h2 id="try-title" class="heading-2xl mb-10">
+        Try it
+      </h2>
+
+      <div class="space-y-3 mb-10">
+        <.copyable_command
+          id="copy-ssh"
+          command={Helpers.ssh_command()}
+          comment="zero install"
+          color="#ffcd9c"
+        />
+        <.copyable_command
+          id="copy-playground"
+          command="mix raxol.playground"
+          comment={"#{Helpers.widget_count()} demos, #{Helpers.category_count()} categories"}
+          color="#58a1c6"
+        />
+        <.copyable_command
+          id="copy-demo"
+          command="mix run examples/demo.exs"
+          comment="BEAM dashboard"
+          color="#58a1c6"
+        />
       </div>
 
-      <div class="flex flex-wrap gap-2 mb-10">
-        <span :for={
-          cat <- ~w(input display feedback navigation overlay layout visualization effects)
-        } class="px-3 py-1 text-xs font-medium text-gray-400 bg-gray-900 border border-gray-800 rounded-full">
+      <div class="flex flex-wrap gap-2 mb-10" role="list" aria-label="Widget categories">
+        <span :for={cat <- ~w(input display feedback navigation overlay layout visualization effects)} class="category-tag" role="listitem">
           <%= cat %>
         </span>
       </div>
 
-      <a
-        href="/playground"
-        class="inline-block px-6 py-3 text-sm font-semibold text-white rounded-lg bg-blue-600 hover:bg-blue-500 transition-colors"
-      >
-        Open Playground
-      </a>
+      <div class="flex gap-4 flex-wrap">
+        <a href="/playground" class="btn-primary">
+          Open Playground
+        </a>
+        <a href="/gallery" class="btn-secondary">
+          Browse Gallery
+        </a>
+      </div>
     </section>
     """
   end
+
+  # ===========================================================================
+  # Footer
+  # ===========================================================================
 
   attr(:total_tests, :string, required: true)
 
   defp footer_section(assigns) do
     ~H"""
-    <footer class="px-6 py-16 border-t border-gray-800">
+    <footer class="landing-section px-6 py-16 border-t border-subtle">
       <div class="max-w-4xl mx-auto">
-        <div class="flex flex-wrap gap-6 text-sm text-gray-400 mb-10">
-          <a href="https://github.com/DROOdotFOO/raxol" class="hover:text-gray-200 transition-colors">GitHub</a>
-          <a href="https://hex.pm/packages/raxol" class="hover:text-gray-200 transition-colors">Hex.pm</a>
-          <a href="https://hexdocs.pm/raxol" class="hover:text-gray-200 transition-colors">Docs</a>
-          <a href="/playground" class="hover:text-gray-200 transition-colors">Playground</a>
+        <div class="flex flex-wrap gap-6 font-mono mb-10" style="font-size: clamp(0.7rem, 0.65rem + 0.25vw, 0.75rem); letter-spacing: 0.05em;">
+          <a href="https://github.com/DROOdotFOO/raxol" class="footer-link">GitHub</a>
+          <a href="https://hex.pm/packages/raxol" class="footer-link">Hex.pm</a>
+          <a href="https://hexdocs.pm/raxol" class="footer-link">Docs</a>
+          <a href="/playground" class="footer-link">Playground</a>
+          <a href="/skill.md" class="footer-link">Skill</a>
         </div>
 
-        <blockquote class="border-l-2 border-gray-700 pl-4 text-gray-500 text-sm italic mb-8 max-w-2xl">
+        <blockquote class="mb-10 pl-4 font-mono detail-text text-pearl-35" style="border-left: 2px solid rgba(168, 154, 128, 0.2); line-height: 1.7; max-width: 55ch; font-style: italic;">
           Raxol started as two converging ideas: a terminal for AGI, where AI agents
           interact with a real terminal emulator the same way humans do;
           and an interface for the cockpit of a Gundam Wing Suit, where fault isolation,
-          real-time, responsiveness, and sensor fusion are survival-critical.
+          real-time responsiveness, and sensor fusion are survival-critical.
         </blockquote>
 
-        <div class="flex items-center justify-between text-sm text-gray-600">
-          <span><%= @total_tests %> tests across 5 packages</span>
-          <span>Made by <a href="https://axol.io" class="text-gray-500 hover:text-gray-300 transition-colors">axol.io</a></span>
+        <div class="flex items-center justify-between font-mono caption-text" style="letter-spacing: 0.05em;">
+          <span><%= @total_tests %> tests across 12 packages</span>
+          <span>Made by <a href="https://axol.io" class="axol-link">axol.io</a></span>
         </div>
       </div>
     </footer>

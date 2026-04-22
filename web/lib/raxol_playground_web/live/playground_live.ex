@@ -88,8 +88,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     search = if query == "", do: nil, else: query
     components = Catalog.filter(search: search)
 
-    {:noreply,
-     socket |> assign(:search_query, query) |> assign(:components, components)}
+    {:noreply, socket |> assign(:search_query, query) |> assign(:components, components)}
   end
 
   def handle_event("toggle_code", _params, socket) do
@@ -101,8 +100,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_event("toggle_users_panel", _params, socket) do
-    {:noreply,
-     assign(socket, :show_users_panel, !socket.assigns.show_users_panel)}
+    {:noreply, assign(socket, :show_users_panel, !socket.assigns.show_users_panel)}
   end
 
   def handle_event("toggle_sync", _params, socket) do
@@ -110,8 +108,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_event("toggle_sidebar", _params, socket) do
-    {:noreply,
-     assign(socket, :sidebar_collapsed, !socket.assigns.sidebar_collapsed)}
+    {:noreply, assign(socket, :sidebar_collapsed, !socket.assigns.sidebar_collapsed)}
   end
 
   def handle_event("select_theme", %{"theme" => theme}, socket) do
@@ -165,8 +162,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   def handle_info(
-        {:playground_event, :component_selected,
-         %{component: name, user_id: from}},
+        {:playground_event, :component_selected, %{component: name, user_id: from}},
         socket
       ) do
     if socket.assigns.sync_enabled and from != socket.assigns.user_id do
@@ -183,8 +179,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     Logger.info("Playground session timed out")
     socket = DemoLifecycle.stop_demo(socket)
 
-    {:noreply,
-     assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
+    {:noreply, assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
   end
 
   def handle_info({:DOWN, _ref, :process, pid, reason}, socket) do
@@ -220,47 +215,47 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
 
   @impl true
   def render(assigns) do
-    theme_bg =
-      Helpers.theme_bg(assigns.terminal_theme)
-
+    theme_bg = Helpers.theme_bg(assigns.terminal_theme)
     assigns = assign(assigns, :theme_bg, theme_bg)
 
     ~H"""
-    <div class="playground-container h-screen flex flex-col bg-gray-50">
-      <!-- Header -->
-      <div class="bg-white shadow-sm border-b px-6 py-3">
+    <div class="playground-container h-screen flex flex-col" style="background: var(--obsidian);">
+      <%!-- Header --%>
+      <div class="px-6 py-3 surface-bar">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-4">
-            <h1 class="text-xl font-bold text-gray-900">Raxol Playground</h1>
-            <span class="text-sm text-gray-500">
-              <a href="/" class="hover:underline">Home</a>
-              <span class="mx-2">|</span>
-              <a href="/gallery" class="hover:underline">Gallery</a>
-              <span class="mx-2">|</span>
-              <a href="/demos" class="hover:underline">Demos</a>
+            <h1 class="name-coral">
+              Raxol Playground
+            </h1>
+            <span class="hidden sm:flex items-center gap-2 font-mono" style="font-size: 0.65rem; color: rgba(232, 228, 220, 0.35); letter-spacing: 0.05em;">
+              <a href="/" class="subtle-link">Home</a>
+              <span>|</span>
+              <a href="/gallery" class="subtle-link">Gallery</a>
+              <span>|</span>
+              <a href="/demos" class="subtle-link">Demos</a>
             </span>
           </div>
 
           <div class="flex items-center gap-3">
-            <!-- SSH Callout -->
-            <span class="text-xs text-gray-500 font-mono hidden lg:block">
+            <span class="hidden lg:block font-mono caption-text">
               <%= Helpers.ssh_command() %>
             </span>
 
-            <!-- Users Button -->
             <button
               phx-click="toggle_users_panel"
-              class={"flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm #{if @show_users_panel, do: "bg-blue-50 border-blue-300 text-blue-600", else: "border-gray-300 hover:bg-gray-100"}"}
+              class={"flex items-center gap-2 toggle-btn #{if @show_users_panel, do: "toggle-btn--active"}"}
             >
               <span><%= length(@online_users) %> online</span>
               <%= if length(@online_users) > 1 do %>
-                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                <span class="w-2 h-2 rounded-full animate-pulse" style="background: #58a1c6;"></span>
               <% end %>
             </button>
 
             <button
               phx-click="toggle_shortcuts"
-              class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm"
+              class="font-mono px-3 py-1.5 rounded transition-colors"
+              style="font-size: 0.7rem; border: 1px solid rgba(168, 154, 128, 0.12); color: rgba(232, 228, 220, 0.4);"
+              aria-label="Keyboard shortcuts"
             >
               ?
             </button>
@@ -268,19 +263,18 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
         </div>
       </div>
 
-      <!-- Main Area -->
+      <%!-- Main Area --%>
       <div class="flex-1 flex overflow-hidden">
-        <!-- Sidebar (hidden on mobile) -->
+        <%!-- Sidebar --%>
         <div class="hidden md:block">
           <.sidebar {assigns} />
         </div>
 
-        <!-- Content -->
+        <%!-- Content --%>
         <div class="flex-1 flex flex-col min-w-0">
-          <!-- Toolbar -->
           <.toolbar {assigns} />
 
-          <!-- Demo + Code -->
+          <%!-- Demo + Code --%>
           <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
             <div class="flex-1 flex flex-col">
               <.terminal_chrome title={if @selected, do: @selected.name <> " Demo", else: "Terminal"} />
@@ -296,25 +290,20 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
                 aria-label="Interactive demo terminal"
               >
                 <%= if @demo_error do %>
-                  <div class="text-gray-400 py-8 text-center">
-                    <p class="text-red-400 mb-4"><%= @demo_error %></p>
-                    <button
-                      phx-click="retry_demo"
-                      class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm"
-                    >
-                      Retry
-                    </button>
+                  <div class="py-8 text-center font-mono">
+                    <p class="mb-4" style="color: #e58476;"><%= @demo_error %></p>
+                    <button phx-click="retry_demo" class="btn-primary">Retry</button>
                   </div>
                 <% else %>
                   <%= if @terminal_html != "" do %>
                     <%= Phoenix.HTML.raw(@terminal_html) %>
-                    <div class="mt-2 text-xs text-gray-500 opacity-70 select-none">
+                    <div class="mt-2 select-none font-mono" style="font-size: 0.6rem; color: rgba(232, 228, 220, 0.2);">
                       Click here and use keyboard to interact
                     </div>
                   <% else %>
                     <%= if @lifecycle_pid do %>
-                      <div class="text-gray-500 py-8 text-center" role="status">
-                        <div class="inline-block w-5 h-5 border-2 border-gray-600 border-t-blue-400 rounded-full animate-spin mb-3"></div>
+                      <div class="py-8 text-center font-mono" role="status" style="color: rgba(232, 228, 220, 0.4);">
+                        <div class="loading-spinner mb-3 mx-auto"></div>
                         <p>Starting demo...</p>
                       </div>
                     <% else %>
@@ -332,17 +321,17 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
         </div>
       </div>
 
-      <!-- Shortcuts Overlay -->
+      <%!-- Shortcuts Overlay --%>
       <%= if @show_shortcuts do %>
         <div phx-window-keydown="toggle_shortcuts" phx-key="Escape">
-          <.shortcuts_overlay {assigns} />
+          <.shortcuts_overlay />
         </div>
       <% end %>
 
-      <!-- Users Panel -->
+      <%!-- Users Panel --%>
       <%= if @show_users_panel do %>
         <div phx-window-keydown="toggle_users_panel" phx-key="Escape">
-          <.users_panel {assigns} />
+          <.users_panel online_users={@online_users} user_id={@user_id} sync_enabled={@sync_enabled} />
         </div>
       <% end %>
     </div>
@@ -355,15 +344,19 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
 
   defp sidebar(assigns) do
     ~H"""
-    <div class={"bg-white border-r overflow-y-auto shadow-sm transition-all duration-200 #{if @sidebar_collapsed, do: "w-28", else: "w-72"}"}>
+    <aside
+      class={"overflow-y-auto transition-all duration-200 bg-panel-subtle #{if @sidebar_collapsed, do: "w-28", else: "w-72"}"}
+      style="border-right: 1px solid rgba(168, 154, 128, 0.08);"
+    >
       <div class="p-3">
         <div class="flex items-center justify-between mb-3">
           <%= if not @sidebar_collapsed do %>
-            <h2 class="text-lg font-bold text-gray-800">Components</h2>
+            <h2 class="font-mono font-semibold" style="font-size: 0.8rem; color: #e8e4dc; letter-spacing: 0.05em;">Components</h2>
           <% end %>
           <button
             phx-click="toggle_sidebar"
-            class="p-2 rounded hover:bg-gray-200 text-gray-500 text-lg leading-none"
+            class="font-mono p-2 rounded transition-colors"
+            style="font-size: 0.75rem; color: rgba(232, 228, 220, 0.4);"
             title={if @sidebar_collapsed, do: "Expand sidebar", else: "Collapse sidebar"}
             aria-label={if @sidebar_collapsed, do: "Expand sidebar", else: "Collapse sidebar"}
             aria-expanded={not @sidebar_collapsed}
@@ -381,22 +374,23 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
               value={@search_query}
               phx-debounce="300"
               aria-label="Search components"
-              class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full input-dark"
             />
           </form>
 
-          <div class="space-y-1" role="listbox" aria-label="Components">
+          <div class="space-y-0.5" role="listbox" aria-label="Components">
             <%= for comp <- @components do %>
               <button
                 type="button"
-                class={"w-full text-left p-2 rounded text-sm transition-colors #{if @selected && @selected.name == comp.name, do: "bg-blue-50 border border-blue-200", else: "hover:bg-gray-50 border border-transparent"}"}
+                class="w-full text-left p-2 rounded transition-colors font-mono"
+                style={"border: 1px solid #{if @selected && @selected.name == comp.name, do: "rgba(88, 161, 198, 0.3)", else: "transparent"}; background: #{if @selected && @selected.name == comp.name, do: "rgba(88, 161, 198, 0.08)", else: "transparent"};"}
                 phx-click="select_component"
                 phx-value-component={comp.name}
                 role="option"
                 aria-selected={@selected && @selected.name == comp.name}
               >
-                <div class="font-medium text-gray-900"><%= comp.name %></div>
-                <div class="text-xs text-gray-500"><%= comp.description %></div>
+                <div class="font-medium" style={"font-size: 0.8rem; color: #{if @selected && @selected.name == comp.name, do: "#58a1c6", else: "#e8e4dc"};"}><%= comp.name %></div>
+                <div style="font-size: 0.65rem; color: rgba(232, 228, 220, 0.35); line-height: 1.4;"><%= comp.description %></div>
               </button>
             <% end %>
           </div>
@@ -405,34 +399,33 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
             <%= for comp <- @components do %>
               <button
                 type="button"
-                class={"w-full text-left px-2 py-1.5 rounded transition-colors #{if @selected && @selected.name == comp.name, do: "bg-blue-50 border border-blue-200", else: "hover:bg-gray-50 border border-transparent"}"}
+                class="w-full text-left px-2 py-1.5 rounded transition-colors font-mono"
+                style={"border: 1px solid #{if @selected && @selected.name == comp.name, do: "rgba(88, 161, 198, 0.3)", else: "transparent"}; background: #{if @selected && @selected.name == comp.name, do: "rgba(88, 161, 198, 0.08)", else: "transparent"};"}
                 phx-click="select_component"
                 phx-value-component={comp.name}
                 title={"#{comp.name} -- #{comp.description}"}
                 role="option"
                 aria-selected={@selected && @selected.name == comp.name}
               >
-                <div class="text-xs font-medium text-gray-700 truncate"><%= comp.name %></div>
+                <div class="truncate" style="font-size: 0.7rem; color: rgba(232, 228, 220, 0.6);"><%= comp.name %></div>
               </button>
             <% end %>
           </div>
         <% end %>
       </div>
-    </div>
+    </aside>
     """
   end
 
   defp toolbar(assigns) do
     ~H"""
-    <div class="border-b bg-gray-50 px-4 py-2">
+    <div class="px-4 py-2 surface-toolbar">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <%= if @selected do %>
-            <span class="font-semibold text-gray-900"><%= @selected.name %></span>
-            <span class={"px-2 py-0.5 text-xs font-medium rounded-full #{Helpers.complexity_class(@selected.complexity)}"}>
-              <%= Helpers.complexity_label(@selected.complexity) %>
-            </span>
-            <span class="text-xs text-gray-500"><%= Helpers.category_label(@selected.category) %></span>
+            <span class="font-mono font-semibold" style="font-size: 0.8rem; color: #e8e4dc;"><%= @selected.name %></span>
+            <.complexity_badge level={@selected.complexity} />
+            <span class="font-mono label-text-dim"><%= Helpers.category_label(@selected.category) %></span>
           <% end %>
         </div>
 
@@ -441,12 +434,11 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
             theme={@terminal_theme}
             themes={@themes}
             form_id="theme-selector"
-            class="[&_select]:text-xs [&_select]:border-gray-300"
           />
 
           <button
             phx-click="toggle_code"
-            class={"px-3 py-1 border rounded text-xs #{if @show_code, do: "bg-blue-50 border-blue-300 text-blue-600", else: "border-gray-300 hover:bg-gray-100"}"}
+            class={"toggle-btn #{if @show_code, do: "toggle-btn--active"}"}
           >
             Code
           </button>
@@ -459,34 +451,35 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   defp shortcuts_overlay(assigns) do
     ~H"""
     <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      class="fixed inset-0 flex items-center justify-center z-50"
+      style="background: rgba(10, 10, 12, 0.8); backdrop-filter: blur(4px);"
       phx-click="toggle_shortcuts"
     >
-      <div class="bg-white rounded-lg shadow-xl p-6 max-w-md">
-        <h3 class="text-lg font-bold mb-4">Keyboard Shortcuts</h3>
-        <div class="space-y-2 text-sm">
+      <div class="panel panel--elevated p-6" style="max-width: 28rem; width: 100%;">
+        <h3 class="font-mono font-semibold mb-4" style="font-size: 0.9rem; color: #e8e4dc; letter-spacing: 0.05em;">Keyboard Shortcuts</h3>
+        <div class="space-y-2 font-mono" style="font-size: 0.75rem;">
           <div class="flex justify-between gap-8">
-            <span>Navigate components</span>
-            <span class="font-mono text-gray-600">j / k</span>
+            <span class="text-pearl-60">Navigate components</span>
+            <span class="text-gold">j / k</span>
           </div>
           <div class="flex justify-between gap-8">
-            <span>Select component</span>
-            <span class="font-mono text-gray-600">Enter</span>
+            <span class="text-pearl-60">Select component</span>
+            <span class="text-gold">Enter</span>
           </div>
           <div class="flex justify-between gap-8">
-            <span>Toggle code panel</span>
-            <span class="font-mono text-gray-600">c</span>
+            <span class="text-pearl-60">Toggle code panel</span>
+            <span class="text-gold">c</span>
           </div>
           <div class="flex justify-between gap-8">
-            <span>Search</span>
-            <span class="font-mono text-gray-600">/</span>
+            <span class="text-pearl-60">Search</span>
+            <span class="text-gold">/</span>
           </div>
           <div class="flex justify-between gap-8">
-            <span>Toggle shortcuts</span>
-            <span class="font-mono text-gray-600">?</span>
+            <span class="text-pearl-60">Toggle shortcuts</span>
+            <span class="text-gold">?</span>
           </div>
         </div>
-        <div class="mt-4 pt-4 border-t text-xs text-gray-500">
+        <div class="mt-4 pt-4 font-mono border-t border-subtle caption-text">
           Click anywhere to close
         </div>
       </div>
@@ -494,56 +487,61 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     """
   end
 
+  attr(:online_users, :list, required: true)
+  attr(:user_id, :any, required: true)
+  attr(:sync_enabled, :boolean, required: true)
+
   defp users_panel(assigns) do
     ~H"""
-    <div class="fixed right-4 top-16 w-72 bg-white rounded-lg shadow-xl border z-50">
-      <div class="p-4 border-b flex justify-between items-center">
-        <h3 class="font-semibold text-gray-800">Online (<%= length(@online_users) %>)</h3>
-        <button phx-click="toggle_users_panel" class="text-gray-400 hover:text-gray-600">
+    <div class="fixed right-4 top-16 w-72 panel panel--elevated z-50">
+      <div class="p-4 flex justify-between items-center border-b border-subtle">
+        <h3 class="font-mono font-semibold" style="font-size: 0.8rem; color: #e8e4dc;">Online (<%= length(@online_users) %>)</h3>
+        <button phx-click="toggle_users_panel" class="font-mono" style="color: rgba(232, 228, 220, 0.4); font-size: 1rem;">
           &times;
         </button>
       </div>
 
-      <div class="p-3 border-b">
+      <div class="p-3" style="border-bottom: 1px solid rgba(168, 154, 128, 0.08);">
         <label class="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
             checked={@sync_enabled}
             phx-click="toggle_sync"
-            class="rounded text-blue-600"
+            class="rounded"
+            style="accent-color: #58a1c6;"
           />
-          <span class="text-sm text-gray-700">Sync with others</span>
+          <span class="font-mono" style="font-size: 0.75rem; color: rgba(232, 228, 220, 0.6);">Sync with others</span>
         </label>
-        <p class="text-xs text-gray-500 mt-1">
+        <p class="font-mono mt-1 caption-text">
           Selections sync across sessions when enabled
         </p>
       </div>
 
       <div class="max-h-64 overflow-y-auto">
         <%= if @online_users == [] do %>
-          <div class="p-4 text-center text-gray-500 text-sm">No other users online</div>
+          <div class="p-4 text-center font-mono" style="font-size: 0.75rem; color: rgba(232, 228, 220, 0.35);">No other users online</div>
         <% else %>
-          <ul class="divide-y divide-gray-100">
+          <ul>
             <%= for user <- @online_users do %>
-              <li class="p-3 flex items-center gap-3">
+              <li class="p-3 flex items-center gap-3" style="border-bottom: 1px solid rgba(168, 154, 128, 0.06);">
                 <div
-                  class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
-                  style={"background-color: #{user.color}"}
+                  class="w-7 h-7 rounded-full flex items-center justify-center text-white font-mono"
+                  style={"background-color: #{user.color}; font-size: 0.65rem; font-weight: 600;"}
                 >
                   <%= String.first(user.name) %>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <span class={"text-sm font-medium #{if user.user_id == @user_id, do: "text-blue-600", else: "text-gray-800"}"}>
+                  <span class="font-mono font-medium" style={"font-size: 0.75rem; color: #{if user.user_id == @user_id, do: "#58a1c6", else: "#e8e4dc"};"}>
                     <%= user.name %>
                     <%= if user.user_id == @user_id, do: "(you)" %>
                   </span>
                   <%= if user.current_component do %>
-                    <div class="text-xs text-gray-500 truncate">
+                    <div class="font-mono truncate" style="font-size: 0.6rem; color: rgba(232, 228, 220, 0.35);">
                       Viewing: <%= user.current_component %>
                     </div>
                   <% end %>
                 </div>
-                <div class="w-2 h-2 rounded-full bg-green-400"></div>
+                <div class="w-2 h-2 rounded-full" style="background: #58a1c6;"></div>
               </li>
             <% end %>
           </ul>

@@ -6,6 +6,36 @@ import {LiveSocket} from "phoenix_live_view"
 // Phoenix LiveView hooks
 let Hooks = {}
 
+// Copy to Clipboard Hook
+Hooks.CopyToClipboard = {
+  mounted() {
+    this.el.addEventListener('click', () => {
+      const text = this.el.dataset.copy
+      if (!text) return
+
+      navigator.clipboard.writeText(text).then(() => {
+        const original = this.el.innerHTML
+        this.el.innerHTML = '<span style="color: #58a1c6;">copied</span>'
+        setTimeout(() => { this.el.innerHTML = original }, 1500)
+      }).catch(() => {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea')
+        textarea.value = text
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+
+        const original = this.el.innerHTML
+        this.el.innerHTML = '<span style="color: #58a1c6;">copied</span>'
+        setTimeout(() => { this.el.innerHTML = original }, 1500)
+      })
+    })
+  }
+}
+
 // Code Editor Hook
 Hooks.CodeEditor = {
   mounted() {
@@ -34,10 +64,7 @@ Hooks.CodeEditor = {
     this.el.addEventListener('keydown', this.handleKeydown)
   },
 
-  updated() {
-    // Keep cursor position when content updates
-    // This ensures smooth editing experience
-  },
+  updated() {},
 
   destroyed() {
     if (this.handleKeydown) {
@@ -48,28 +75,18 @@ Hooks.CodeEditor = {
 
 // Terminal Output Hook
 Hooks.TerminalOutput = {
-  mounted() {
-    this.scrollToBottom()
-  },
-
-  updated() {
-    this.scrollToBottom()
-  },
-
-  scrollToBottom() {
-    this.el.scrollTop = this.el.scrollHeight
-  }
+  mounted() { this.scrollToBottom() },
+  updated() { this.scrollToBottom() },
+  scrollToBottom() { this.el.scrollTop = this.el.scrollHeight }
 }
 
 // Flash Hook - auto-dismiss flash messages
 Hooks.Flash = {
   mounted() {
-    // Auto-dismiss after 5 seconds
     this.timer = setTimeout(() => {
       this.pushEvent("lv:clear-flash", {})
     }, 5000)
   },
-
   destroyed() {
     if (this.timer) clearTimeout(this.timer)
   }
@@ -78,14 +95,10 @@ Hooks.Flash = {
 // Raxol Terminal Hook - renders demo output and captures keyboard input
 Hooks.RaxolTerminal = {
   mounted() {
-    // Focus on click anywhere in terminal area
-    this.el.addEventListener('click', () => {
-      this.el.focus()
-    })
+    this.el.addEventListener('click', () => this.el.focus())
 
-    // Visual focus indicator
     this.el.addEventListener('focus', () => {
-      this.el.style.outline = '2px solid rgba(99, 102, 241, 0.5)'
+      this.el.style.outline = '2px solid rgba(88, 161, 198, 0.4)'
       this.el.style.outlineOffset = '-2px'
     })
     this.el.addEventListener('blur', () => {
@@ -98,7 +111,6 @@ Hooks.RaxolTerminal = {
 
   updated() {
     this.scrollToBottom()
-    // Re-focus terminal after demo content updates
     this.el.focus()
   },
 
@@ -122,9 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault()
       const searchInput = document.querySelector('input[placeholder="Search..."]') ||
         document.querySelector('input[placeholder="Search components..."]')
-      if (searchInput) {
-        searchInput.focus()
-      }
+      if (searchInput) searchInput.focus()
     }
   })
 })
