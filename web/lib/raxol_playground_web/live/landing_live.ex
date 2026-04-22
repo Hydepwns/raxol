@@ -90,6 +90,10 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     {:noreply, assign(socket, :terminal_html, html)}
   end
 
+  def handle_info({:render_update, html, _animation_css}, socket) do
+    {:noreply, assign(socket, :terminal_html, html)}
+  end
+
   def handle_info(:demo_timeout, socket) do
     # Silently restart the demo for landing page (loops forever)
     socket = DemoLifecycle.stop_demo(socket)

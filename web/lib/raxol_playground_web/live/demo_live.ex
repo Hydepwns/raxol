@@ -96,6 +96,10 @@ defmodule RaxolPlaygroundWeb.DemoLive do
     {:noreply, assign(socket, :terminal_html, html)}
   end
 
+  def handle_info({:render_update, html, _animation_css}, socket) do
+    {:noreply, assign(socket, :terminal_html, html)}
+  end
+
   def handle_info(:demo_timeout, socket) do
     Logger.info("Demo session timed out")
     socket = DemoLifecycle.stop_demo(socket)
