@@ -406,22 +406,18 @@ defmodule Raxol.LiveView.TerminalBridge do
   end
 
   defp escape_html_text(text) do
-    text
-    |> String.to_charlist()
-    |> escape_chars([])
-    |> IO.iodata_to_binary()
+    escape_html_binary(text, [])
   end
 
-  defp escape_chars([], acc), do: Enum.reverse(acc)
-  defp escape_chars([?& | rest], acc), do: escape_chars(rest, [~c"&amp;" | acc])
-  defp escape_chars([?< | rest], acc), do: escape_chars(rest, [~c"&lt;" | acc])
-  defp escape_chars([?> | rest], acc), do: escape_chars(rest, [~c"&gt;" | acc])
+  defp escape_html_binary(<<>>, acc), do: acc |> Enum.reverse() |> IO.iodata_to_binary()
+  defp escape_html_binary(<<?&, rest::binary>>, acc), do: escape_html_binary(rest, ["&amp;" | acc])
+  defp escape_html_binary(<<?<, rest::binary>>, acc), do: escape_html_binary(rest, ["&lt;" | acc])
+  defp escape_html_binary(<<?>, rest::binary>>, acc), do: escape_html_binary(rest, ["&gt;" | acc])
+  defp escape_html_binary(<<?", rest::binary>>, acc), do: escape_html_binary(rest, ["&quot;" | acc])
+  defp escape_html_binary(<<?', rest::binary>>, acc), do: escape_html_binary(rest, ["&#39;" | acc])
 
-  defp escape_chars([?" | rest], acc),
-    do: escape_chars(rest, [~c"&quot;" | acc])
-
-  defp escape_chars([?' | rest], acc), do: escape_chars(rest, [~c"&#39;" | acc])
-  defp escape_chars([c | rest], acc), do: escape_chars(rest, [c | acc])
+  defp escape_html_binary(<<c::utf8, rest::binary>>, acc),
+    do: escape_html_binary(rest, [<<c::utf8>> | acc])
 
   @spec render_line_with_diff(
           Buffer.line(),

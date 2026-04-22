@@ -45,7 +45,8 @@ defmodule RaxolLiveView.MixProject do
       {:phoenix_html, "~> 4.0 or ~> 3.3", optional: true},
 
       # Dev/test only
-      {:ex_doc, "~> 0.31", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.31", only: :dev, runtime: false},
+      {:stream_data, "~> 1.1", only: [:dev, :test]}
     ]
   end
 
