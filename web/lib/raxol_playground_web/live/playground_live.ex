@@ -38,7 +38,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       |> assign(:components, components)
       |> assign(:selected, selected)
       |> assign(:search_query, "")
-      |> assign(:terminal_html, "")
+      |> assign(:terminal_html, false)
       |> assign(:lifecycle_pid, nil)
       |> assign(:topic, nil)
       |> assign(:show_code, false)
@@ -125,7 +125,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       socket
       |> DemoLifecycle.stop_demo()
       |> assign(:demo_error, nil)
-      |> assign(:terminal_html, "")
+      |> assign(:terminal_html, false)
       |> DemoLifecycle.start_demo(comp,
         timeout_ms: @demo_timeout_ms,
         topic_prefix: "playground"
@@ -151,11 +151,17 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
 
   @impl true
   def handle_info({:render_update, html}, socket) do
-    {:noreply, assign(socket, :terminal_html, html)}
+    {:noreply,
+     socket
+     |> assign(:terminal_html, true)
+     |> push_event("terminal_html", %{html: html})}
   end
 
   def handle_info({:render_update, html, _animation_css}, socket) do
-    {:noreply, assign(socket, :terminal_html, html)}
+    {:noreply,
+     socket
+     |> assign(:terminal_html, true)
+     |> push_event("terminal_html", %{html: html})}
   end
 
   def handle_info(
@@ -295,18 +301,14 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
               >
                 <%= if @demo_error do %>
                   <div class="py-8 text-center font-mono">
-                    <p class="mb-4" style="color: #e58476;"><%= @demo_error %></p>
+                    <p class="mb-4 text-coral-red"><%= @demo_error %></p>
                     <button phx-click="retry_demo" class="btn-primary">Retry</button>
                   </div>
                 <% else %>
-                  <%= if @terminal_html != "" do %>
-                    <%= Phoenix.HTML.raw(@terminal_html) %>
-                    <div class="mt-2 select-none font-mono" style="font-size: 0.6rem; color: rgba(232, 228, 220, 0.2);">
-                      Click here and use keyboard to interact
-                    </div>
-                  <% else %>
+                  <%!-- Terminal HTML injected by RaxolTerminal hook via push_event --%>
+                  <%= if not @terminal_html do %>
                     <%= if @lifecycle_pid do %>
-                      <div class="py-8 text-center font-mono" role="status" style="color: rgba(232, 228, 220, 0.4);">
+                      <div class="py-8 text-center font-mono text-pearl-40" role="status">
                         <div class="loading-spinner mb-3 mx-auto"></div>
                         <p>Starting demo...</p>
                       </div>
@@ -590,7 +592,7 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
     socket
     |> DemoLifecycle.stop_demo()
     |> assign(:selected, comp)
-    |> assign(:terminal_html, "")
+    |> assign(:terminal_html, false)
     |> assign(:demo_error, nil)
     |> DemoLifecycle.start_demo(comp,
       timeout_ms: @demo_timeout_ms,

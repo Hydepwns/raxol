@@ -27,7 +27,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
       |> assign(:component, component)
       |> assign(:prev_component, prev_comp)
       |> assign(:next_component, next_comp)
-      |> assign(:terminal_html, "")
+      |> assign(:terminal_html, false)
       |> assign(:lifecycle_pid, nil)
       |> assign(:topic, nil)
       |> assign(:terminal_theme, :synthwave84)
@@ -81,7 +81,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
       socket
       |> DemoLifecycle.stop_demo()
       |> assign(:demo_error, nil)
-      |> assign(:terminal_html, "")
+      |> assign(:terminal_html, false)
       |> DemoLifecycle.start_demo(comp, timeout_ms: @demo_timeout_ms)
 
     {:noreply, socket}
@@ -93,11 +93,17 @@ defmodule RaxolPlaygroundWeb.DemoLive do
 
   @impl true
   def handle_info({:render_update, html}, socket) do
-    {:noreply, assign(socket, :terminal_html, html)}
+    {:noreply,
+     socket
+     |> assign(:terminal_html, true)
+     |> push_event("terminal_html", %{html: html})}
   end
 
   def handle_info({:render_update, html, _animation_css}, socket) do
-    {:noreply, assign(socket, :terminal_html, html)}
+    {:noreply,
+     socket
+     |> assign(:terminal_html, true)
+     |> push_event("terminal_html", %{html: html})}
   end
 
   def handle_info(:demo_timeout, socket) do
@@ -250,12 +256,8 @@ defmodule RaxolPlaygroundWeb.DemoLive do
                 </button>
               </div>
             <% else %>
-              <%= if @terminal_html != "" do %>
-                <%= Phoenix.HTML.raw(@terminal_html) %>
-                <div class="mt-2 select-none font-mono text-pearl-25" style="font-size: 0.65rem;">
-                  Click here and use keyboard to interact
-                </div>
-              <% else %>
+              <%!-- Terminal HTML injected by RaxolTerminal hook via push_event --%>
+              <%= if not @terminal_html do %>
                 <%= if @lifecycle_pid do %>
                   <div class="py-8 text-center font-mono text-pearl-40" role="status">
                     <div class="loading-spinner mb-3 mx-auto"></div>

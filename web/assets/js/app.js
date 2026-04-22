@@ -92,7 +92,10 @@ Hooks.Flash = {
   }
 }
 
-// Raxol Terminal Hook - renders demo output and captures keyboard input
+// Raxol Terminal Hook - renders demo output via direct innerHTML injection.
+// Raw HTML from TerminalBridge changes structure every frame. LiveView's
+// morphdom differ can't patch it reliably, so we bypass it: the server
+// pushes terminal_html via push_event, and this hook sets innerHTML directly.
 Hooks.RaxolTerminal = {
   mounted() {
     this.el.addEventListener('click', () => this.el.focus())
@@ -105,13 +108,18 @@ Hooks.RaxolTerminal = {
       this.el.style.outline = 'none'
     })
 
+    // Receive terminal HTML directly, bypassing LiveView differ
+    this.handleEvent("terminal_html", ({html}) => {
+      this.el.innerHTML = html
+      this.scrollToBottom()
+    })
+
     this.el.focus()
     this.scrollToBottom()
   },
 
   updated() {
     this.scrollToBottom()
-    this.el.focus()
   },
 
   scrollToBottom() {

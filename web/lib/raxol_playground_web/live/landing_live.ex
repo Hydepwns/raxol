@@ -60,7 +60,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
         counter_code: @counter_code_html,
         raxol_version: @raxol_version,
         mobile_menu_open: false,
-        terminal_html: "",
+        terminal_html: false,
         lifecycle_pid: nil,
         topic: nil,
         demo_error: nil,
@@ -88,11 +88,17 @@ defmodule RaxolPlaygroundWeb.LandingLive do
 
   @impl true
   def handle_info({:render_update, html}, socket) do
-    {:noreply, assign(socket, :terminal_html, html)}
+    {:noreply,
+     socket
+     |> assign(:terminal_html, true)
+     |> push_event("terminal_html", %{html: html})}
   end
 
   def handle_info({:render_update, html, _animation_css}, socket) do
-    {:noreply, assign(socket, :terminal_html, html)}
+    {:noreply,
+     socket
+     |> assign(:terminal_html, true)
+     |> push_event("terminal_html", %{html: html})}
   end
 
   def handle_info(:demo_timeout, socket) do
@@ -102,7 +108,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
 
     socket =
       socket
-      |> assign(terminal_html: "", demo_error: nil)
+      |> assign(terminal_html: false, demo_error: nil)
       |> then(fn s ->
         if demo_component do
           DemoLifecycle.start_demo(s, demo_component,
@@ -216,7 +222,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
   # ===========================================================================
 
   attr(:raxol_version, :string, required: true)
-  attr(:terminal_html, :string, required: true)
+  attr(:terminal_html, :boolean, required: true)
 
   defp hero_section(assigns) do
     ~H"""
@@ -238,15 +244,15 @@ defmodule RaxolPlaygroundWeb.LandingLive do
         AI agents, and distributed swarm -- all from OTP.
       </p>
 
-      <%!-- Live terminal embed --%>
-      <%= if @terminal_html != "" do %>
+      <%!-- Live terminal embed (HTML injected by RaxolTerminal hook) --%>
+      <%= if @terminal_html do %>
         <div class="terminal-chrome mb-10 mx-auto text-left" style="max-width: 42rem;">
           <div class="terminal-chrome-bar">
             <div class="terminal-chrome-dot terminal-chrome-dot--red" aria-hidden="true"></div>
             <div class="terminal-chrome-dot terminal-chrome-dot--yellow" aria-hidden="true"></div>
             <div class="terminal-chrome-dot terminal-chrome-dot--green" aria-hidden="true"></div>
-            <span class="terminal-chrome-title">raxol -- sparkline demo (live)</span>
-            <span class="ml-auto font-mono" style="font-size: 0.6rem; color: rgba(88, 161, 198, 0.5); letter-spacing: 0.1em; text-transform: uppercase;">live</span>
+            <span class="terminal-chrome-title">raxol -- live demo</span>
+            <span class="ml-auto font-mono label-text text-sky">live</span>
           </div>
           <div
             id="landing-terminal"
@@ -256,8 +262,8 @@ defmodule RaxolPlaygroundWeb.LandingLive do
             data-theme="synthwave84"
             tabindex="-1"
             role="img"
-            aria-label="Live Raxol sparkline demo rendering in real-time"
-          ><%= Phoenix.HTML.raw(@terminal_html) %></div>
+            aria-label="Live Raxol demo rendering in real-time"
+          ></div>
         </div>
       <% end %>
 
