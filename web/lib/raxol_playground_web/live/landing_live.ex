@@ -249,9 +249,10 @@ defmodule RaxolPlaygroundWeb.LandingLive do
           <div
             id="landing-terminal"
             phx-hook="RaxolTerminal"
-            class="raxol-terminal p-4 overflow-hidden"
-            style="background: #241b2f; min-height: 10rem; max-height: 16rem;"
+            class="raxol-terminal p-4"
+            style="background: #241b2f;"
             data-theme="synthwave84"
+            data-no-scroll="true"
             tabindex="-1"
             role="img"
             aria-label="Raxol demo"

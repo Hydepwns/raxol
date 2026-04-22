@@ -108,18 +108,22 @@ Hooks.RaxolTerminal = {
       this.el.style.outline = 'none'
     })
 
+    this.noScroll = this.el.dataset.noScroll === "true"
+
     // Receive terminal HTML directly, bypassing LiveView differ
     this.handleEvent("terminal_html", ({html}) => {
       this.el.innerHTML = html
-      this.scrollToBottom()
+      if (!this.noScroll) this.scrollToBottom()
     })
 
-    this.el.focus()
-    this.scrollToBottom()
+    if (!this.noScroll) {
+      this.el.focus()
+      this.scrollToBottom()
+    }
   },
 
   updated() {
-    this.scrollToBottom()
+    if (!this.noScroll) this.scrollToBottom()
   },
 
   scrollToBottom() {
