@@ -14,27 +14,6 @@ defmodule RaxolPlaygroundWeb.LandingLive do
 
   @demo_name "Sparkline"
 
-  @package_test_counts %{
-    main: 3737,
-    core: 730,
-    terminal: 1928,
-    agent: 401,
-    mcp: 263,
-    payments: 347,
-    sensor: 55,
-    liveview: 50,
-    plugin: 50,
-    speech: 28,
-    telegram: 34,
-    watch: 34
-  }
-
-  @total_tests @package_test_counts
-               |> Map.values()
-               |> Enum.sum()
-               |> Integer.to_string()
-               |> String.replace(~r/(\d)(?=(\d{3})+$)/, "\\1,")
-
   @raxol_version (case :application.get_key(:raxol, :vsn) do
                     {:ok, vsn} ->
                       vsn |> to_string() |> String.split(".") |> Enum.take(2) |> Enum.join(".")
@@ -79,7 +58,6 @@ defmodule RaxolPlaygroundWeb.LandingLive do
         page_title: "Raxol",
         counter_code: @counter_code_html,
         raxol_version: @raxol_version,
-        total_tests: @total_tests,
         mobile_menu_open: false,
         terminal_html: "",
         lifecycle_pid: nil,
@@ -178,7 +156,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
         <hr class="section-divider" aria-hidden="true" />
         <.try_section />
       </main>
-      <.footer_section total_tests={@total_tests} />
+      <.footer_section />
     </div>
     """
   end
@@ -545,47 +523,79 @@ defmodule RaxolPlaygroundWeb.LandingLive do
     ~H"""
     <section class="landing-section px-6 py-20 max-w-5xl mx-auto" aria-labelledby="packages-title">
       <h2 id="packages-title" class="heading-2xl mb-3">
-        12 packages
+        Pick what you need
       </h2>
       <p class="body-text mb-10">
-        Use the full framework, or pick just the parts you need.
+        Use the full framework, or just the parts that matter for your use case.
       </p>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <.package_card name="raxol_core" description="Behaviours, events, config, plugins" tests="730" />
-        <.package_card name="raxol_terminal" description="VT100/ANSI, screen buffer, NIF" tests="1,928" />
-        <.package_card name="raxol_agent" description="AI agents, teams, strategies" tests="401" />
-        <.package_card name="raxol_mcp" description="MCP server, tools, derivation" tests="263" />
-        <.package_card name="raxol_payments" description="x402, Xochi, wallets, spending" tests="347" />
-        <.package_card name="raxol_sensor" description="Sensor fusion. Zero deps." tests="55" />
-        <.package_card name="raxol_liveview" description="LiveView bridge, TEALive" tests="50" />
-        <.package_card name="raxol_plugin" description="Plugin SDK, generator" tests="50" />
-        <.package_card name="raxol_speech" description="TTS/STT, voice commands" tests="28" />
-        <.package_card name="raxol_telegram" description="Telegram bot surface" tests="34" />
-        <.package_card name="raxol_watch" description="APNS/FCM push" tests="34" />
-        <.package_card name="raxol" description="Main runtime: TEA, rendering, layout, effects" tests="3,737" accent={true} />
+        <.package_card
+          name="raxol"
+          dep={~s({:raxol, "~> 2.4"})}
+          description="Full framework: TEA runtime, rendering, widgets, layout, effects"
+          accent={true}
+        />
+        <.package_card
+          name="raxol_agent"
+          dep={~s({:raxol_agent, "~> 2.4"})}
+          description="AI agents with teams, strategies, LLM streaming, shell commands"
+        />
+        <.package_card
+          name="raxol_mcp"
+          dep={~s({:raxol_mcp, "~> 2.4"})}
+          description="MCP server, tool auto-derivation from widgets, test harness"
+        />
+        <.package_card
+          name="raxol_payments"
+          dep={~s({:raxol_payments, "~> 0.1"})}
+          description="Agent commerce: x402, MPP, Xochi cross-chain, spending controls"
+        />
+        <.package_card
+          name="raxol_liveview"
+          dep={~s({:raxol_liveview, "~> 2.4"})}
+          description="Render TEA apps in Phoenix LiveView via TerminalBridge"
+        />
+        <.package_card
+          name="raxol_sensor"
+          dep={~s({:raxol_sensor, "~> 2.4"})}
+          description="Sensor fusion engine. Zero dependencies."
+        />
+        <.package_card
+          name="raxol_terminal"
+          dep={~s({:raxol_terminal, "~> 2.4"})}
+          description="VT100/ANSI emulation, screen buffer, termbox2 NIF"
+        />
+        <.package_card
+          name="raxol_core"
+          dep={~s({:raxol_core, "~> 2.4"})}
+          description="Behaviours, events, config, accessibility, plugin infra"
+        />
+        <.package_card
+          name="raxol_plugin"
+          dep={~s({:raxol_plugin, "~> 2.4"})}
+          description="Plugin SDK: use macro, API facade, generator, testing utils"
+        />
       </div>
     </section>
     """
   end
 
   attr(:name, :string, required: true)
+  attr(:dep, :string, required: true)
   attr(:description, :string, required: true)
-  attr(:tests, :string, required: true)
   attr(:accent, :boolean, default: false)
 
   defp package_card(assigns) do
     ~H"""
-    <div class="panel p-5">
-      <h3 class="name-sky-sm mb-2" style={"color: #{if @accent, do: "#ffcd9c", else: "#58a1c6"};"}>
+    <div class="panel panel--glow p-5">
+      <h3 class="name-sky-sm mb-1" style={"color: #{if @accent, do: "#ffcd9c", else: "#58a1c6"};"}>
         <%= @name %>
       </h3>
-      <p class="detail-text mb-3">
+      <code class="caption-text"><%= @dep %></code>
+      <p class="detail-text mt-2">
         <%= @description %>
       </p>
-      <span class="caption-text">
-        <%= @tests %> tests
-      </span>
     </div>
     """
   end
@@ -644,8 +654,6 @@ defmodule RaxolPlaygroundWeb.LandingLive do
   # Footer
   # ===========================================================================
 
-  attr(:total_tests, :string, required: true)
-
   defp footer_section(assigns) do
     ~H"""
     <footer class="landing-section px-6 py-16 border-t border-subtle">
@@ -666,7 +674,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
         </blockquote>
 
         <div class="flex items-center justify-between font-mono caption-text" style="letter-spacing: 0.05em;">
-          <span><%= @total_tests %> tests across 12 packages</span>
+          <span>Elixir on OTP</span>
           <span>Made by <a href="https://axol.io" class="axol-link">axol.io</a></span>
         </div>
       </div>

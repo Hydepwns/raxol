@@ -16,7 +16,7 @@ metadata:
 
 # Raxol
 
-Multi-surface runtime for Elixir on OTP. One TEA module renders to terminal, browser (LiveView), SSH, MCP, Telegram, and watch surfaces. 12 packages, 8,000+ tests.
+Multi-surface runtime for Elixir on OTP. One TEA module renders to terminal, browser (LiveView), SSH, MCP, Telegram, and watch surfaces.
 
 ## Quick Start
 
@@ -29,20 +29,21 @@ mix new my_app && cd my_app
 ```
 
 ```elixir
-# mix.exs deps
-{:raxol, "~> 2.4"}         # Full framework
-{:raxol_agent, "~> 2.4"}   # Agent framework only
+# mix.exs -- pick what you need
+{:raxol, "~> 2.4"}         # Full framework (TUI + rendering + widgets)
+{:raxol_agent, "~> 2.4"}   # Agent framework only (teams, strategies, streaming)
+{:raxol_mcp, "~> 2.4"}     # MCP server + tool derivation only
 ```
 
 ## What You Get
 
-- **TEA apps** -- `init/1`, `update/2`, `view/1` with OTP supervision
-- **AI agents** -- TEA apps where input comes from LLMs, crash-isolated
-- **Agent teams** -- Supervisor groups with coordinator/worker roles
-- **6 surfaces** -- Terminal, Browser (LiveView), SSH, MCP, Telegram, Watch
-- **Agent payments** -- x402, MPP, Xochi cross-chain, stealth addresses
-- **MCP tools** -- Auto-derived from widget tree, 6 built-in headless tools
-- **Distributed swarm** -- CRDTs, gossip/DNS/Tailscale discovery
+- **TEA apps** -- `init/1`, `update/2`, `view/1` with OTP crash isolation and hot reload
+- **AI agents** -- TEA apps where input comes from LLMs, supervised and streaming
+- **Agent teams** -- Coordinator/worker groups under one supervisor
+- **6 surfaces** -- Same module renders to terminal, browser, SSH, MCP, Telegram, watch
+- **Agent payments** -- Autonomous transactions via x402, MPP, Xochi cross-chain
+- **MCP tools** -- Auto-derived from widget tree; headless sessions for programmatic UI
+- **Distributed swarm** -- CRDTs, elections, gossip/DNS/Tailscale discovery
 
 ## See Also
 
@@ -84,7 +85,6 @@ def update(:some_msg, model), do: {model, []}
 ## Agent Teams
 
 ```elixir
-# Correct: coordinator + workers under one supervisor
 Raxol.Agent.Team.start_link(
   team_id: :review_team,
   coordinator: {CodeReviewAgent, id: :reviewer},
@@ -110,11 +110,10 @@ Raxol.Agent.Team.start_link(
 ## MCP Integration
 
 ```bash
-# Start MCP server (stdio, ~18ms startup)
-mix mcp.server
+mix mcp.server   # stdio, fast startup
 ```
 
-Six built-in tools: `raxol_start`, `raxol_screenshot`, `raxol_send_key`, `raxol_get_model`, `raxol_stop`, `raxol_list`.
+Built-in tools: `raxol_start`, `raxol_screenshot`, `raxol_send_key`, `raxol_get_model`, `raxol_stop`, `raxol_list`. Widgets also auto-derive tools via `ToolProvider`.
 
 ```json
 {
@@ -128,7 +127,7 @@ Six built-in tools: `raxol_start`, `raxol_screenshot`, `raxol_send_key`, `raxol_
 }
 ```
 
-## Agent Payments (raxol_payments)
+## Agent Payments
 
 Agents that can pay for things autonomously:
 
@@ -136,7 +135,7 @@ Agents that can pay for things autonomously:
 |----------|-------|---------|
 | x402 | HTTP 402 micropayments (EIP-712/ERC-3009) | No |
 | MPP | Stripe/Tempo machine payments | Yes |
-| Xochi | Cross-chain intent settlement | Yes |
+| Xochi | Cross-chain intent settlement (stealth addresses) | Yes |
 
 Spending controls: per-request/session/lifetime limits via `SpendingPolicy` + `Ledger`.
 
@@ -158,33 +157,31 @@ Raxol.Headless.send_key(session, :tab)
 Raxol.Headless.send_key(session, "q")
 ```
 
+## Which Package Do I Need?
+
+| I want to... | Add this dep |
+|-------------|-------------|
+| Build a TUI app | `{:raxol, "~> 2.4"}` |
+| Build an AI agent | `{:raxol_agent, "~> 2.4"}` |
+| Serve MCP tools | `{:raxol_mcp, "~> 2.4"}` |
+| Render in LiveView | `{:raxol_liveview, "~> 2.4"}` |
+| Add agent payments | `{:raxol_payments, "~> 0.1"}` |
+| Use sensor fusion | `{:raxol_sensor, "~> 2.4"}` (zero deps) |
+| Build a plugin | `{:raxol_plugin, "~> 2.4"}` |
+| Add voice commands | `{:raxol_speech, "~> 0.1"}` |
+| Telegram bot surface | `{:raxol_telegram, "~> 0.1"}` |
+| Watch/push surface | `{:raxol_watch, "~> 0.1"}` |
+
 ## Common Pitfalls
 
 | Mistake | Why It Fails | Fix |
 |---------|-------------|-----|
-| Returning bare `model` from `update/2` | Runtime expects `{model, commands}` tuple | Always return `{model, Command.none()}` or `{model, []}` |
+| Returning bare `model` from `update/2` | Runtime expects `{model, commands}` tuple | Always return `{model, []}` |
 | Not replying to `{:call, pid, ref, msg}` | Caller blocks until timeout | `send(pid, {:agent_reply, ref, reply})` |
-| `send_agent` for sync request-reply | Creates deadlock if both agents call each other | Use async `send_agent/2`, break cycles |
+| `send_agent` for sync request-reply | Deadlock if both agents call each other | Use async `send_agent/2`, break cycles |
 | String keys for special keys in `send_key` | Sends literal character, not the key event | Use atoms: `:tab`, `:enter`, `:escape` |
 | Using real LLM backends in tests | Flaky, slow, costs money | Always use `Backend.Mock` in tests |
-| `view/1` returning complex tree for headless agent | Wastes cycles rendering to nothing | Return `nil` from `view/1` for headless agents |
-
-## Packages
-
-| Package | What It Does | Tests |
-|---------|-------------|-------|
-| raxol | Main runtime: TEA, rendering, layout, widgets, effects | 3,700+ |
-| raxol_core | Behaviours, events, config, accessibility, plugins | 730 |
-| raxol_terminal | VT100/ANSI emulation, screen buffer, termbox2 NIF | 1,928 |
-| raxol_agent | AI agent framework, teams, strategies, streaming | 401 |
-| raxol_mcp | MCP server, client, registry, tool derivation | 263 |
-| raxol_payments | x402/MPP/Xochi, wallets, spending controls | 347 |
-| raxol_sensor | Sensor fusion (zero deps) | 55 |
-| raxol_liveview | LiveView bridge, TerminalBridge, TEALive | 50 |
-| raxol_plugin | Plugin SDK, generator, testing utils | 50 |
-| raxol_speech | TTS/STT, voice commands (Bumblebee/Whisper) | 28 |
-| raxol_telegram | Telegram bot surface, per-chat sessions | 34 |
-| raxol_watch | APNS/FCM push, glanceable summaries | 34 |
+| `view/1` returning complex tree for headless | Wastes cycles rendering to nothing | Return `nil` from `view/1` |
 
 ## Key Conventions
 
@@ -202,4 +199,3 @@ Raxol.Headless.send_key(session, "q")
 - Hex: https://hex.pm/packages/raxol
 - Playground: https://raxol.io/playground
 - SSH: `ssh -p 2222 playground@raxol.io`
-- Skill (this file): https://raxol.io/skill.md
