@@ -16,8 +16,7 @@ defmodule RaxolPlayground.MixProject do
   def application do
     [
       extra_applications: [:logger, :ssh, :public_key, :crypto],
-      mod: {RaxolPlayground.Application, []},
-      included_applications: [:raxol]
+      mod: {RaxolPlayground.Application, []}
     ]
   end
 
