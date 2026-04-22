@@ -244,8 +244,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
             <div class="terminal-chrome-dot terminal-chrome-dot--red" aria-hidden="true"></div>
             <div class="terminal-chrome-dot terminal-chrome-dot--yellow" aria-hidden="true"></div>
             <div class="terminal-chrome-dot terminal-chrome-dot--green" aria-hidden="true"></div>
-            <span class="terminal-chrome-title">raxol -- live</span>
-            <span class="ml-auto font-mono label-text text-sky">live</span>
+            <span class="terminal-chrome-title">raxol</span>
           </div>
           <div
             id="landing-terminal"
@@ -255,7 +254,7 @@ defmodule RaxolPlaygroundWeb.LandingLive do
             data-theme="synthwave84"
             tabindex="-1"
             role="img"
-            aria-label="Live Raxol demo"
+            aria-label="Raxol demo"
           ></div>
         </div>
       <% end %>

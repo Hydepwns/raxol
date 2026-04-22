@@ -1145,6 +1145,13 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Override default black cell backgrounds -- the container sets the theme bg,
+   cells should be transparent unless they have a non-default background. */
+.raxol-terminal span[style*="background-color: #000000"],
+.raxol-terminal span[style*="background-color:#000000"] {
+  background-color: transparent !important;
+}
+
 .raxol-terminal pre {
   margin: 0;
   padding: 0;
