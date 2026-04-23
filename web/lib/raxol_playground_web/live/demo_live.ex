@@ -81,10 +81,10 @@ defmodule RaxolPlaygroundWeb.DemoLive do
       socket
       |> DemoLifecycle.stop_demo()
       |> assign(:demo_error, nil)
-      |> assign(:terminal_html, false)
+      |> maybe_push_reset()
       |> DemoLifecycle.start_demo(comp, timeout_ms: @demo_timeout_ms)
 
-    {:noreply, socket}
+    {:noreply, maybe_push_error(socket)}
   end
 
   def handle_event(_event, _params, socket), do: {:noreply, socket}
@@ -108,9 +108,13 @@ defmodule RaxolPlaygroundWeb.DemoLive do
 
   def handle_info(:demo_timeout, socket) do
     Logger.info("Demo session timed out")
-    socket = DemoLifecycle.stop_demo(socket)
 
-    {:noreply, assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
+    socket =
+      DemoLifecycle.stop_demo(socket)
+      |> assign(demo_error: "Session timed out. Click Retry to restart.")
+      |> maybe_push_error()
+
+    {:noreply, socket}
   end
 
   def handle_info({:DOWN, _ref, :process, pid, reason}, socket) do
@@ -122,11 +126,12 @@ defmodule RaxolPlaygroundWeb.DemoLive do
 
       Logger.warning("Demo #{name} crashed: #{inspect(reason)}")
 
-      {:noreply,
-       assign(socket,
-         lifecycle_pid: nil,
-         demo_error: "Demo crashed. Click Retry."
-       )}
+      socket =
+        socket
+        |> assign(lifecycle_pid: nil, demo_error: "Demo crashed. Click Retry.")
+        |> maybe_push_error()
+
+      {:noreply, socket}
     else
       {:noreply, socket}
     end
@@ -294,6 +299,22 @@ defmodule RaxolPlaygroundWeb.DemoLive do
   end
 
   # -- Helpers --
+
+  defp maybe_push_reset(socket) do
+    if socket.assigns.terminal_html do
+      push_event(socket, "terminal_reset", %{})
+    else
+      assign(socket, :terminal_html, false)
+    end
+  end
+
+  defp maybe_push_error(socket) do
+    if socket.assigns.terminal_html && socket.assigns.demo_error do
+      push_event(socket, "terminal_error", %{message: socket.assigns.demo_error})
+    else
+      socket
+    end
+  end
 
   defp neighbor_components(name) do
     all = Catalog.list_components()

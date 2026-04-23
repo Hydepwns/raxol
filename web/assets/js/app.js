@@ -116,6 +116,28 @@ Hooks.RaxolTerminal = {
       if (!this.noScroll) this.scrollToBottom()
     })
 
+    // Demo switching: show spinner while new demo starts
+    this.handleEvent("terminal_reset", () => {
+      this.el.innerHTML =
+        '<div class="py-8 text-center font-mono" style="color: rgba(232, 228, 220, 0.4);">' +
+        '<div class="loading-spinner mb-3 mx-auto"></div>' +
+        '<p>Starting demo...</p></div>'
+    })
+
+    // Demo error: show message with retry button
+    this.handleEvent("terminal_error", ({message}) => {
+      this.el.innerHTML =
+        '<div class="py-8 text-center font-mono">' +
+        '<p class="mb-4" style="color: #c75a6a;">' +
+        message.replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+        '</p>' +
+        '<button class="raxol-retry-btn" style="font-size: 0.75rem; padding: 0.5rem 1.25rem; ' +
+        'border: 1px solid rgba(88, 161, 198, 0.3); border-radius: 0.375rem; ' +
+        'color: #58a1c6; background: rgba(88, 161, 198, 0.08); cursor: pointer;">Retry</button></div>'
+      const btn = this.el.querySelector('.raxol-retry-btn')
+      if (btn) btn.addEventListener('click', () => this.pushEvent("retry_demo", {}))
+    })
+
     if (!this.noScroll) {
       this.el.focus()
       this.scrollToBottom()

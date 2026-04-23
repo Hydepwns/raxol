@@ -25,6 +25,9 @@ defmodule RaxolPlaygroundWeb.Playground.DemoLifecycle do
                height: 24
              ) do
           {:ok, pid} ->
+            # Unlink so Lifecycle crashes don't kill the LiveView.
+            # The monitor below is sufficient for detecting death.
+            Process.unlink(pid)
             Process.monitor(pid)
 
             timer =

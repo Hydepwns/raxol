@@ -125,13 +125,13 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
       socket
       |> DemoLifecycle.stop_demo()
       |> assign(:demo_error, nil)
-      |> assign(:terminal_html, false)
+      |> maybe_push_reset()
       |> DemoLifecycle.start_demo(comp,
         timeout_ms: @demo_timeout_ms,
         topic_prefix: "playground"
       )
 
-    {:noreply, socket}
+    {:noreply, maybe_push_error(socket)}
   end
 
   def handle_event("keydown", params, socket) do
@@ -187,9 +187,13 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
 
   def handle_info(:demo_timeout, socket) do
     Logger.info("Playground session timed out")
-    socket = DemoLifecycle.stop_demo(socket)
 
-    {:noreply, assign(socket, demo_error: "Session timed out. Click Retry to restart.")}
+    socket =
+      DemoLifecycle.stop_demo(socket)
+      |> assign(demo_error: "Session timed out. Click Retry to restart.")
+      |> maybe_push_error()
+
+    {:noreply, socket}
   end
 
   def handle_info({:DOWN, _ref, :process, pid, reason}, socket) do
@@ -201,11 +205,12 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
 
       Logger.warning("Playground demo #{name} crashed: #{inspect(reason)}")
 
-      {:noreply,
-       assign(socket,
-         lifecycle_pid: nil,
-         demo_error: "Demo crashed. Click Retry."
-       )}
+      socket =
+        socket
+        |> assign(lifecycle_pid: nil, demo_error: "Demo crashed. Click Retry.")
+        |> maybe_push_error()
+
+      {:noreply, socket}
     else
       {:noreply, socket}
     end
@@ -589,14 +594,37 @@ defmodule RaxolPlaygroundWeb.PlaygroundLive do
   end
 
   defp switch_demo(socket, comp) do
-    socket
-    |> DemoLifecycle.stop_demo()
-    |> assign(:selected, comp)
-    |> assign(:terminal_html, false)
-    |> assign(:demo_error, nil)
-    |> DemoLifecycle.start_demo(comp,
-      timeout_ms: @demo_timeout_ms,
-      topic_prefix: "playground"
-    )
+    socket =
+      socket
+      |> DemoLifecycle.stop_demo()
+      |> assign(:selected, comp)
+      |> assign(:demo_error, nil)
+      |> maybe_push_reset()
+      |> DemoLifecycle.start_demo(comp,
+        timeout_ms: @demo_timeout_ms,
+        topic_prefix: "playground"
+      )
+
+    maybe_push_error(socket)
+  end
+
+  # Once the hook owns display (terminal_html=true), push state changes
+  # through it instead of the template. This avoids morphdom trying to
+  # patch DOM that the hook replaced via innerHTML.
+  defp maybe_push_reset(socket) do
+    if socket.assigns.terminal_html do
+      push_event(socket, "terminal_reset", %{})
+    else
+      assign(socket, :terminal_html, false)
+    end
+  end
+
+  # If start_demo set an error and the hook owns display, push it.
+  defp maybe_push_error(socket) do
+    if socket.assigns.terminal_html && socket.assigns.demo_error do
+      push_event(socket, "terminal_error", %{message: socket.assigns.demo_error})
+    else
+      socket
+    end
   end
 end
