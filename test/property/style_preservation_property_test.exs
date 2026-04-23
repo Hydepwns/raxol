@@ -214,7 +214,7 @@ defmodule Raxol.Property.StylePreservationTest do
         style = %{fg: fg, bg: :black}
         cells = ElementRenderer.render_text(0, 0, content, style, %{})
 
-        assert length(cells) > 0, "render_text produced no cells"
+        assert cells != [], "render_text produced no cells"
 
         for {_x, _y, _char, cell_fg, _bg, _attrs} <- cells do
           assert cell_fg == fg,
@@ -232,7 +232,7 @@ defmodule Raxol.Property.StylePreservationTest do
         style = %{fg: :white, bg: bg}
         cells = ElementRenderer.render_text(0, 0, content, style, %{})
 
-        assert length(cells) > 0
+        assert cells != []
 
         for {_x, _y, _char, _fg, cell_bg, _attrs} <- cells do
           assert cell_bg == bg,
@@ -254,7 +254,7 @@ defmodule Raxol.Property.StylePreservationTest do
 
         cells = ElementRenderer.render_text(0, 0, content, style_map, %{})
 
-        assert length(cells) > 0
+        assert cells != []
 
         for {_x, _y, _char, _fg, _bg, cell_attrs} <- cells do
           for attr <- attrs do
@@ -305,7 +305,7 @@ defmodule Raxol.Property.StylePreservationTest do
         cells = ElementRenderer.render_table(0, 0, 80, 5, table_attrs, %{})
 
         # All cells from a headerless single-row table are data cells
-        assert length(cells) > 0, "table produced no cells"
+        assert cells != [], "table produced no cells"
 
         for {_x, _y, _char, _fg, _bg, cell_attrs} <- cells do
           for attr <- attrs do

@@ -349,7 +349,7 @@ defmodule Raxol.Effects.BorderBeamTest do
       for variant <- [:colorful, :mono, :ocean, :sunset] do
         pal = Colors.palette(variant)
         assert is_list(pal)
-        assert length(pal) > 0
+        assert pal != []
         assert Enum.all?(pal, &is_atom/1)
       end
     end
