@@ -119,6 +119,20 @@ defmodule Raxol.Test.PropertyGenerators do
     member_of(@border_types)
   end
 
+  # OTP exit reasons for process crash isolation tests
+  def crash_reason_gen do
+    one_of([
+      constant(:normal),
+      constant(:shutdown),
+      constant(:kill),
+      constant(:noproc),
+      constant({:shutdown, :timeout}),
+      constant({:shutdown, :brutal_kill}),
+      tuple({constant(:error), atom(:alphanumeric)}),
+      tuple({constant(:exit), atom(:alphanumeric)})
+    ])
+  end
+
   @session_atoms for i <- 0..99, do: :"test_session_#{i}"
 
   def session_id_gen do
