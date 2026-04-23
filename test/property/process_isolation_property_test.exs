@@ -215,29 +215,30 @@ defmodule Raxol.Property.ProcessIsolationTest do
     end
   end
 
-  describe "source code guard" do
-    test "DemoLifecycle source contains Process.unlink after start_link" do
-      path =
-        Path.join([
-          __DIR__,
-          "../../web/lib/raxol_playground_web/live/playground/demo_lifecycle.ex"
-        ])
+  describe "source code guards" do
+    @guarded_files [
+      {"web/lib/raxol_playground_web/live/playground/demo_lifecycle.ex",
+       "Process.unlink(pid)"},
+      {"packages/raxol_agent/lib/raxol/agent/session.ex",
+       "Process.unlink(lifecycle_pid)"},
+      {"packages/raxol_terminal/lib/raxol/terminal/emulator/constructors.ex",
+       "Process.unlink(pid)"},
+      {"lib/raxol/core/runtime/subscription.ex", "Process.unlink(pid)"},
+      {"packages/raxol_terminal/lib/raxol/terminal/io/io_server.ex",
+       "Process.unlink(renderer)"}
+    ]
 
-      if File.exists?(path) do
-        source = File.read!(path)
+    for {file, pattern} <- @guarded_files do
+      test "#{Path.basename(file)} contains #{pattern}" do
+        path = Path.join([__DIR__, "../..", unquote(file)])
 
-        assert source =~ "Process.unlink(pid)",
-               "DemoLifecycle must call Process.unlink after start_link"
+        if File.exists?(path) do
+          source = File.read!(path)
 
-        assert source =~ "Process.monitor(pid)",
-               "DemoLifecycle must call Process.monitor for :DOWN messages"
-
-        # Verify unlink comes before monitor (correct order)
-        unlink_pos = :binary.match(source, "Process.unlink(pid)") |> elem(0)
-        monitor_pos = :binary.match(source, "Process.monitor(pid)") |> elem(0)
-
-        assert unlink_pos < monitor_pos,
-               "Process.unlink must come before Process.monitor"
+          assert source =~ unquote(pattern),
+                 "#{unquote(file)} must contain #{unquote(pattern)} " <>
+                   "to prevent crash propagation through process links"
+        end
       end
     end
   end

@@ -276,7 +276,13 @@ defmodule Raxol.Terminal.Emulator.Constructors do
 
   # Private functions
 
-  defp get_pid({:ok, pid}), do: pid
+  # Unlink child processes so caller isn't killed by child crashes.
+  # Emulator children are managed by the Emulator struct, not a supervisor.
+  defp get_pid({:ok, pid}) do
+    Process.unlink(pid)
+    pid
+  end
+
   defp get_pid({:error, {:already_started, pid}}), do: pid
 
   defp get_pid({:error, reason}),

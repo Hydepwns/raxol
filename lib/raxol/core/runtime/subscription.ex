@@ -280,6 +280,8 @@ defmodule Raxol.Core.Runtime.Subscription do
             watch_file(path, events, context.pid)
           end)
 
+        # Unlink so file watch crashes don't kill the dispatcher.
+        Process.unlink(pid)
         {:ok, {:file_watch, pid}}
     end
   end
@@ -288,8 +290,12 @@ defmodule Raxol.Core.Runtime.Subscription do
     %{module: module, args: args} = data
 
     case module.start_link(args, context) do
-      {:ok, pid} -> {:ok, {:custom, pid}}
-      error -> error
+      {:ok, pid} ->
+        Process.unlink(pid)
+        {:ok, {:custom, pid}}
+
+      error ->
+        error
     end
   end
 

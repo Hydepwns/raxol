@@ -274,6 +274,7 @@ defmodule Raxol.Terminal.IO.IOServer do
 
     scroll_buffer = Raxol.Terminal.Buffer.Scroll.new(config.scrollback_limit)
     {:ok, renderer} = RenderServer.start_link(config.rendering)
+    Process.unlink(renderer)
     command_history = History.new(config.command_history_limit)
 
     new_state = %{
@@ -558,6 +559,7 @@ defmodule Raxol.Terminal.IO.IOServer do
       Raxol.Terminal.Buffer.Scroll.new(config.scrollback_limit || @default_scrollback)
 
     {:ok, new_renderer} = RenderServer.start_link(config.rendering || %{})
+    Process.unlink(new_renderer)
     new_command_history = History.new(config.command_history_limit || @default_scrollback)
 
     {new_buffer_manager, new_scroll_buffer, new_renderer, new_command_history}

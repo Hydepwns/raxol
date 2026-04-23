@@ -88,6 +88,10 @@ defmodule Raxol.Agent.Session do
         name: :"agent_lifecycle_#{inspect(id)}"
       )
 
+    # Unlink so Lifecycle crashes don't kill the Session.
+    Process.unlink(lifecycle_pid)
+    Process.monitor(lifecycle_pid)
+
     Logger.info("[Agent.Session] Started agent #{inspect(id)} (#{inspect(app_module)})")
 
     {:ok,
@@ -163,6 +167,21 @@ defmodule Raxol.Agent.Session do
   @impl true
   def handle_call(_msg, _from, state),
     do: {:reply, {:error, :unknown_call}, state}
+
+  @impl true
+  def handle_info({:DOWN, _ref, :process, pid, reason}, state) do
+    if pid == state.lifecycle_pid do
+      Logger.warning(
+        "[Agent.Session] Lifecycle for #{inspect(state.id)} crashed: #{inspect(reason)}"
+      )
+
+      {:noreply, %{state | lifecycle_pid: nil}}
+    else
+      {:noreply, state}
+    end
+  end
+
+  def handle_info(_msg, state), do: {:noreply, state}
 
   @impl true
   def terminate(_reason, state) do
