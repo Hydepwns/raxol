@@ -585,7 +585,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   @impl true
   def handle_manager_call(:get_render_context, _from, state) do
     Raxol.Core.Runtime.Log.debug(
-      "Dispatcher received :get_render_context call. State: #{inspect(state)}"
+      "Dispatcher received :get_render_context call for #{inspect(state.app_module)}"
     )
 
     focused_element =

@@ -87,7 +87,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     new_state = %{state | buffer: initial_buffer, sync_output: sync_supported}
 
     Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine init completed. State: #{inspect(new_state)}"
+      "Rendering Engine init completed for #{inspect(new_state.app_module)}, buffer #{new_state.buffer.width}x#{new_state.buffer.height}"
     )
 
     {:ok, new_state}
@@ -96,7 +96,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   @impl true
   def handle_cast(:render_frame, state) do
     Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine received :render_frame cast. State: #{inspect(state)}"
+      "Rendering Engine received :render_frame for #{inspect(state.app_module)}"
     )
 
     # Fetch the latest model AND theme context from the Dispatcher
@@ -198,7 +198,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # Functional rendering pipeline replacing try/catch
   defp do_render_frame(model, theme, state) do
     Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine executing do_render_frame. Model=#{inspect(model)}, Theme=#{inspect(theme)}, State=#{inspect(state)}"
+      "Rendering Engine do_render_frame for #{inspect(state.app_module)}, theme=#{inspect(Map.get(theme, :id))}"
     )
 
     case prepare_view_tree(model, state) do
@@ -404,14 +404,14 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # Safe cell rendering using functional error handling
   defp safe_render_to_cells(positioned_elements, theme) do
     Raxol.Core.Runtime.Log.debug(
-      "Rendering Engine: Rendering to cells with theme: #{inspect(theme)}"
+      "Rendering Engine: Rendering to cells, theme=#{inspect(Map.get(theme, :id))}, #{length(positioned_elements)} elements"
     )
 
     Raxol.Core.ErrorHandling.safe_call(fn ->
       cells = UIRenderer.render_to_cells(positioned_elements, theme)
 
       Raxol.Core.Runtime.Log.debug(
-        "Rendering Engine: Got cells: #{inspect(cells)}"
+        "Rendering Engine: Got #{length(cells)} cells"
       )
 
       {:ok, cells}
