@@ -14,7 +14,15 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
     on_exit(fn ->
       pid = Process.whereis(Aggregator)
-      if pid && Process.alive?(pid), do: GenServer.stop(Aggregator)
+
+      if pid && Process.alive?(pid) do
+        try do
+          GenServer.stop(Aggregator)
+        catch
+          :exit, _ -> :ok
+        end
+      end
+
       cleanup_meck()
     end)
 

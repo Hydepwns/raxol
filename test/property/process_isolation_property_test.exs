@@ -143,7 +143,8 @@ defmodule Raxol.Property.ProcessIsolationTest do
 
     property "multiple concurrent child crashes don't kill parent" do
       check all(
-              reasons <- list_of(abnormal_reason_gen(), min_length: 2, max_length: 10),
+              reasons <-
+                list_of(abnormal_reason_gen(), min_length: 2, max_length: 10),
               max_runs: 100
             ) do
         children =
@@ -157,8 +158,10 @@ defmodule Raxol.Property.ProcessIsolationTest do
           crash_child(pid, reason)
         end)
 
-        # Wait for all to die
-        Process.sleep(50)
+        # Wait for every child's :DOWN message
+        for {_pid, ref} <- children do
+          assert {:ok, _} = await_down(ref)
+        end
 
         # Parent alive, all children dead
         assert Process.alive?(self())
