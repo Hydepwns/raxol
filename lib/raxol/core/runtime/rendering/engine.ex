@@ -287,12 +287,54 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   defp render_cells_to_backend(positioned_elements, theme, state) do
     with {:ok, cells} <- safe_render_to_cells(positioned_elements, theme),
          {:ok, final_cells} <- safe_apply_plugin_transforms(cells, state),
+         {:ok, beamed_cells} <-
+           safe_apply_border_beam(final_cells, positioned_elements),
          {:ok, new_state} <-
-           safe_render_to_backend(final_cells, state, positioned_elements) do
+           safe_render_to_backend(beamed_cells, state, positioned_elements) do
       t5 = profiler_now(state.cycle_profiler)
       {:ok, new_state, t5}
     end
   end
+
+  defp safe_apply_border_beam(cells, positioned_elements) do
+    hints_with_bounds = collect_border_beam_hints(positioned_elements)
+
+    case hints_with_bounds do
+      [] ->
+        {:ok, cells}
+
+      hints ->
+        Raxol.Core.ErrorHandling.safe_call(fn ->
+          {:ok, Raxol.Effects.BorderBeam.CellApplier.apply_hints(cells, hints)}
+        end)
+        |> case do
+          {:ok, result} -> result
+          {:error, _reason} -> {:ok, cells}
+        end
+    end
+  end
+
+  defp collect_border_beam_hints(elements) when is_list(elements) do
+    Enum.flat_map(elements, &border_beam_hints_for/1)
+  end
+
+  defp border_beam_hints_for(%{
+         animation_hints: hints,
+         x: x,
+         y: y,
+         width: w,
+         height: h
+       })
+       when is_list(hints) and is_integer(x) and is_integer(y) and w > 0 and
+              h > 0 do
+    bounds = %{x: x, y: y, width: w, height: h}
+
+    hints
+    |> Enum.filter(&match?(%{type: :border_beam}, &1))
+    |> Enum.map(&{&1, bounds})
+  end
+
+  defp border_beam_hints_for(_), do: []
 
   defp log_render_error(reason, state) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(

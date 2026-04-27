@@ -349,10 +349,16 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
 
       hint = %{
         type: :border_beam,
+        effect: Keyword.get(beam_opts, :effect, :stroke),
         variant: Keyword.get(beam_opts, :variant, :colorful),
         size: Keyword.get(beam_opts, :size, :full),
         strength: Keyword.get(beam_opts, :strength, 0.8),
         duration_ms: Keyword.get(beam_opts, :duration, 2000),
+        period_ms: Keyword.get(beam_opts, :period_ms, 1800),
+        density: Keyword.get(beam_opts, :density, 0.75),
+        frequency: Keyword.get(beam_opts, :frequency, 25),
+        bucket_ms: Keyword.get(beam_opts, :bucket_ms, 60),
+        softness: Keyword.get(beam_opts, :softness, 0.45),
         brightness: Keyword.get(beam_opts, :brightness, 1.3),
         saturation: Keyword.get(beam_opts, :saturation, 1.2),
         hue_range: Keyword.get(beam_opts, :hue_range, 30),

@@ -289,6 +289,35 @@ defmodule Raxol.LiveView.TerminalBridge do
   }
 
   defp generate_beam_css(hint, id) do
+    case Map.get(hint, :effect, :stroke) do
+      :stroke -> generate_stroke_css(hint, id)
+      other -> warn_unsupported_effect(other) && ""
+    end
+  end
+
+  defp warn_unsupported_effect(effect) do
+    flag = {:raxol_border_beam_unsupported, effect}
+
+    case Process.get(flag) do
+      nil ->
+        Process.put(flag, true)
+
+        require Logger
+
+        Logger.warning(
+          "Raxol.LiveView.TerminalBridge: border_beam effect #{inspect(effect)} " <>
+            "has no CSS implementation; rendering only on terminal surfaces. " <>
+            "Use effect: :stroke for cross-surface support."
+        )
+
+        true
+
+      _ ->
+        true
+    end
+  end
+
+  defp generate_stroke_css(hint, id) do
     variant = Map.get(hint, :variant, :colorful)
     strength = Map.get(hint, :strength, 0.8)
     duration = Map.get(hint, :duration_ms, 2000) / 1000

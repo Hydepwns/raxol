@@ -362,8 +362,8 @@ defmodule Raxol.Effects.BorderBeamTest do
     end
 
     test "beam_color with static returns first color" do
-      assert Colors.beam_color(:colorful, 0.5, true) == :red
-      assert Colors.beam_color(:ocean, 0.9, true) == :blue
+      assert Colors.beam_color(:colorful, 0.5, true) == :bright_red
+      assert Colors.beam_color(:ocean, 0.9, true) == :bright_cyan
     end
 
     test "glow_color returns atom" do

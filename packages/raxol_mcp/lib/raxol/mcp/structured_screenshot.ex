@@ -76,18 +76,26 @@ defmodule Raxol.MCP.StructuredScreenshot do
   defp maybe_put_hints(summary, _), do: summary
 
   defp serialize_hint(%{type: :border_beam} = hint) do
-    %{
+    base = %{
       type: :border_beam,
+      effect: Map.get(hint, :effect, :stroke),
       variant: Map.get(hint, :variant, :colorful),
       size: Map.get(hint, :size, :full),
       strength: Map.get(hint, :strength, 0.8),
       duration_ms: Map.get(hint, :duration_ms, 2000),
-      brightness: Map.get(hint, :brightness, 1.3),
-      saturation: Map.get(hint, :saturation, 1.2),
-      hue_range: Map.get(hint, :hue_range, 30),
-      active: Map.get(hint, :active, true),
-      static_colors: Map.get(hint, :static_colors, false)
+      active: Map.get(hint, :active, true)
     }
+
+    base
+    |> maybe_put(:brightness, Map.get(hint, :brightness))
+    |> maybe_put(:saturation, Map.get(hint, :saturation))
+    |> maybe_put(:hue_range, Map.get(hint, :hue_range))
+    |> maybe_put(:static_colors, Map.get(hint, :static_colors))
+    |> maybe_put(:period_ms, Map.get(hint, :period_ms))
+    |> maybe_put(:density, Map.get(hint, :density))
+    |> maybe_put(:frequency, Map.get(hint, :frequency))
+    |> maybe_put(:bucket_ms, Map.get(hint, :bucket_ms))
+    |> maybe_put(:softness, Map.get(hint, :softness))
   end
 
   defp serialize_hint(%{property: property} = hint) do

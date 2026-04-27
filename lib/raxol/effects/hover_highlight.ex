@@ -2,9 +2,9 @@ defmodule Raxol.Effects.HoverHighlight do
   @moduledoc """
   Visual hover feedback for terminal widgets.
 
-  Highlights the widget region under the mouse cursor with a subtle
-  border glow. Integrates with the MCP FocusLens to provide visual
-  feedback when mouse tracking is active.
+  Highlights the widget region under the mouse cursor with a border
+  glow, fill tint, or underline. Integrates with the MCP FocusLens to
+  provide visual feedback when mouse tracking is active.
 
   ## Example
 
@@ -17,17 +17,15 @@ defmodule Raxol.Effects.HoverHighlight do
       config = %{
         color: :cyan,
         style: :border,      # :border | :fill | :underline
-        intensity: 0.6,       # 0.0-1.0
+        intensity: 0.6,       # 0.0-1.0 peak intensity
         fade_ms: 200,         # ms to fade after mouse leaves
         enabled: true
       }
-
-      highlight = HoverHighlight.new(config)
   """
 
   alias Raxol.Core.Buffer
 
-  @type position :: {non_neg_integer(), non_neg_integer()}
+  @type position :: {integer(), integer()}
 
   @type bounds :: %{
           x: non_neg_integer(),
@@ -73,24 +71,20 @@ defmodule Raxol.Effects.HoverHighlight do
   end
 
   @doc """
-  Set the target widget bounds to highlight.
-
-  Pass `nil` to clear the highlight (starts fade-out).
+  Set the target widget bounds. Pass `nil` to start fade-out.
   """
   @spec set_target(t(), bounds() | nil, String.t() | nil) :: t()
   def set_target(%{config: %{enabled: false}} = highlight, _bounds, _widget_id),
     do: highlight
 
-  def set_target(highlight, nil, _widget_id) do
-    if highlight.active do
-      %{
-        highlight
-        | active: false,
-          fade_start: System.monotonic_time(:millisecond)
-      }
-    else
+  def set_target(%{active: false} = highlight, nil, _widget_id), do: highlight
+
+  def set_target(%{active: true} = highlight, nil, _widget_id) do
+    %{
       highlight
-    end
+      | active: false,
+        fade_start: System.monotonic_time(:millisecond)
+    }
   end
 
   def set_target(highlight, bounds, widget_id) do
@@ -103,26 +97,24 @@ defmodule Raxol.Effects.HoverHighlight do
     }
   end
 
-  @doc """
-  Apply the hover highlight to a buffer.
-
-  Renders a border, fill, or underline on the target widget bounds.
-  """
+  @doc "Apply the hover highlight to a buffer."
   @spec apply(t(), Buffer.t()) :: Buffer.t()
   def apply(%{config: %{enabled: false}}, buffer), do: buffer
   def apply(%{target: nil}, buffer), do: buffer
-
   def apply(%{active: false, fade_start: nil}, buffer), do: buffer
 
-  def apply(%{active: false, fade_start: start} = highlight, buffer) do
+  def apply(
+        %{active: false, fade_start: start, config: config} = highlight,
+        buffer
+      ) do
     elapsed = System.monotonic_time(:millisecond) - start
-    fade_ms = highlight.config.fade_ms
+    fade_ms = config.fade_ms
 
     if elapsed >= fade_ms do
       buffer
     else
       fade_factor = 1.0 - elapsed / fade_ms
-      do_apply(highlight, buffer, highlight.config.intensity * fade_factor)
+      do_apply(highlight, buffer, config.intensity * fade_factor)
     end
   end
 
@@ -132,9 +124,8 @@ defmodule Raxol.Effects.HoverHighlight do
 
   @doc "Enable or disable the effect."
   @spec set_enabled(t(), boolean()) :: t()
-  def set_enabled(highlight, enabled) do
-    put_in(highlight.config.enabled, enabled)
-  end
+  def set_enabled(highlight, enabled),
+    do: put_in(highlight.config.enabled, enabled)
 
   @doc "Update configuration."
   @spec update_config(t(), config()) :: t()
@@ -142,86 +133,95 @@ defmodule Raxol.Effects.HoverHighlight do
     %{highlight | config: Map.merge(current, new_config)}
   end
 
-  @doc "Clear the highlight immediately."
+  @doc "Clear the highlight immediately (no fade)."
   @spec clear(t()) :: t()
   def clear(highlight) do
     %{highlight | target: nil, widget_id: nil, active: false, fade_start: nil}
   end
 
-  @doc "Check if the highlight is currently visible."
+  @doc "Whether anything would render right now."
   @spec visible?(t()) :: boolean()
   def visible?(%{config: %{enabled: false}}), do: false
   def visible?(%{target: nil}), do: false
   def visible?(%{active: true}), do: true
-
   def visible?(%{active: false, fade_start: nil}), do: false
 
   def visible?(%{active: false, fade_start: start, config: config}) do
-    elapsed = System.monotonic_time(:millisecond) - start
-    elapsed < config.fade_ms
+    System.monotonic_time(:millisecond) - start < config.fade_ms
   end
 
-  # -- Private -----------------------------------------------------------------
+  # -- Private --
 
-  defp do_apply(%{target: bounds, config: config}, buffer, intensity)
-       when intensity > 0.01 do
-    color = config.color
+  defp do_apply(_highlight, buffer, intensity) when intensity <= 0.01,
+    do: buffer
+
+  defp do_apply(%{target: bounds, config: config}, buffer, intensity) do
+    paint = paint_fn(intensity, config.color)
 
     case config.style do
-      :border -> apply_border(buffer, bounds, color, intensity)
-      :fill -> apply_fill(buffer, bounds, color, intensity)
-      :underline -> apply_underline(buffer, bounds, color, intensity)
-      _ -> apply_border(buffer, bounds, color, intensity)
+      :fill -> apply_fill(buffer, bounds, paint)
+      :underline -> apply_underline(buffer, bounds, paint)
+      _ -> apply_border(buffer, bounds, paint)
     end
   end
 
-  defp do_apply(_, buffer, _intensity), do: buffer
+  # Returns a `(buffer, x, y) -> buffer` painter that bakes the current
+  # intensity into a style. Cells brighter than 0.6 get the bg color and
+  # `:bold`; mid-fade gets bg only; near-fade-out drops to fg-only with
+  # `:dim` so the box visibly fades away rather than popping off.
+  defp paint_fn(intensity, color) do
+    style = intensity_style(intensity, color)
+    fn buffer, x, y -> paint_cell(buffer, x, y, style) end
+  end
 
-  defp apply_border(
-         buffer,
-         %{x: x, y: y, width: w, height: h},
-         color,
-         _intensity
-       ) do
+  defp intensity_style(intensity, color) when intensity >= 0.6 do
+    %{bg_color: color, fg_color: nil, attrs: [:bold]}
+  end
+
+  defp intensity_style(intensity, color) when intensity >= 0.3 do
+    %{bg_color: color, fg_color: nil, attrs: []}
+  end
+
+  defp intensity_style(_intensity, color) do
+    # Near fade-out: drop the bg entirely and tint fg dim instead so the
+    # background flicker doesn't dominate the visual fade.
+    %{bg_color: nil, fg_color: color, attrs: [:dim]}
+  end
+
+  defp apply_border(buffer, %{x: x, y: y, width: w, height: h}, paint) do
     buffer
-    |> apply_horizontal_line(x, y, w, color)
-    |> apply_horizontal_line(x, y + h - 1, w, color)
-    |> apply_vertical_line(x, y, h, color)
-    |> apply_vertical_line(x + w - 1, y, h, color)
+    |> apply_horizontal_line(x, y, w, paint)
+    |> apply_horizontal_line(x, y + h - 1, w, paint)
+    |> apply_vertical_line(x, y, h, paint)
+    |> apply_vertical_line(x + w - 1, y, h, paint)
   end
 
-  defp apply_fill(buffer, %{x: x, y: y, width: w, height: h}, color, _intensity) do
+  defp apply_fill(buffer, %{x: x, y: y, width: w, height: h}, paint) do
     Enum.reduce(y..(y + h - 1)//1, buffer, fn row, buf ->
-      apply_horizontal_line(buf, x, row, w, color)
+      apply_horizontal_line(buf, x, row, w, paint)
     end)
   end
 
-  defp apply_underline(
-         buffer,
-         %{x: x, y: y, width: w, height: h},
-         color,
-         _intensity
-       ) do
-    apply_horizontal_line(buffer, x, y + h - 1, w, color)
+  defp apply_underline(buffer, %{x: x, y: y, width: w, height: h}, paint) do
+    apply_horizontal_line(buffer, x, y + h - 1, w, paint)
   end
 
-  defp apply_horizontal_line(buffer, x, y, width, color) do
+  defp apply_horizontal_line(buffer, x, y, width, paint) do
     Enum.reduce(x..(x + width - 1)//1, buffer, fn col, buf ->
-      apply_cell_highlight(buf, col, y, color)
+      paint.(buf, col, y)
     end)
   end
 
-  defp apply_vertical_line(buffer, x, y, height, color) do
+  defp apply_vertical_line(buffer, x, y, height, paint) do
     Enum.reduce(y..(y + height - 1)//1, buffer, fn row, buf ->
-      apply_cell_highlight(buf, x, row, color)
+      paint.(buf, x, row)
     end)
   end
 
-  defp apply_cell_highlight(buffer, x, y, color) do
+  defp paint_cell(buffer, x, y, style) do
     cell = Buffer.get_cell(buffer, x, y)
     char = Map.get(cell, :char, " ")
-    style = Map.get(cell, :style, %{})
-    highlighted_style = Map.put(style, :bg_color, color)
-    Buffer.set_cell(buffer, x, y, char, highlighted_style)
+    base_style = Map.get(cell, :style, %{})
+    Buffer.set_cell(buffer, x, y, char, Map.merge(base_style, style))
   end
 end

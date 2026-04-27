@@ -298,6 +298,7 @@ defmodule Raxol.UI.Layout.Engine do
     inner_space = box_inner_space(space, border, padding)
 
     box_style = Map.get(box, :style, %{})
+    animation_hints = Map.get(box, :animation_hints, [])
 
     box_element = %{
       type: :box,
@@ -306,6 +307,7 @@ defmodule Raxol.UI.Layout.Engine do
       width: space.width,
       height: space.height,
       style: box_style,
+      animation_hints: animation_hints,
       attrs: %{
         border: border,
         padding: padding,

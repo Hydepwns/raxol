@@ -6,40 +6,71 @@ defmodule Raxol.Effects.BorderBeam.Colors do
   colorful (rainbow), mono (grayscale), ocean (blue-purple), sunset (orange-red).
   """
 
-  @type variant :: :colorful | :mono | :ocean | :sunset
+  @type variant ::
+          :colorful | :mono | :ocean | :sunset | :electric | :neon | :matrix
   @type color :: atom()
 
   @palettes %{
-    colorful: [:red, :yellow, :green, :cyan, :blue, :magenta],
-    mono: [:white, :white, :white],
-    ocean: [:blue, :cyan, :blue, :cyan],
-    sunset: [:red, :yellow, :red, :yellow]
+    colorful: [
+      :bright_red,
+      :bright_yellow,
+      :bright_green,
+      :bright_cyan,
+      :bright_blue,
+      :bright_magenta
+    ],
+    mono: [:bright_white, :white, :bright_black],
+    ocean: [:bright_cyan, :cyan, :bright_blue, :blue],
+    sunset: [:bright_yellow, :yellow, :bright_red, :red],
+    electric: [:bright_yellow, :bright_cyan, :bright_white, :cyan],
+    neon: [:bright_magenta, :bright_cyan, :magenta, :bright_blue],
+    matrix: [:bright_green, :green, :bright_black]
   }
 
   @css_palettes %{
     colorful: ["#ff0040", "#ffaa00", "#00ff88", "#00ccff", "#4400ff", "#ff00cc"],
     mono: ["#ffffff", "#cccccc", "#999999"],
     ocean: ["#0044ff", "#00ccff", "#0077ff", "#00aaff"],
-    sunset: ["#ff4400", "#ffaa00", "#ff6600", "#ffcc00"]
+    sunset: ["#ff4400", "#ffaa00", "#ff6600", "#ffcc00"],
+    electric: ["#fff700", "#00ffff", "#ffffff", "#00d4ff"],
+    neon: ["#ff00ff", "#00ffff", "#ff00cc", "#7700ff"],
+    matrix: ["#00ff66", "#00cc44", "#006622", "#003311"]
   }
 
   @glow_colors %{
     colorful: :blue,
     mono: :white,
     ocean: :blue,
-    sunset: :red
+    sunset: :red,
+    electric: :yellow,
+    neon: :magenta,
+    matrix: :green
   }
 
   @bloom_colors %{
     colorful: :magenta,
     mono: :white,
     ocean: :cyan,
-    sunset: :yellow
+    sunset: :yellow,
+    electric: :cyan,
+    neon: :cyan,
+    matrix: :green
   }
+
+  @palette_tuples Map.new(@palettes, fn {k, list} ->
+                    {k, List.to_tuple(list)}
+                  end)
 
   @doc "Returns the terminal color palette for a variant."
   @spec palette(variant()) :: [color()]
   def palette(variant), do: Map.fetch!(@palettes, variant)
+
+  @doc """
+  Returns the palette as a tuple for O(1) `elem/2` access. Use this in
+  per-cell hot loops to avoid the O(n) cost of `Enum.at(list, idx)`.
+  """
+  @spec palette_tuple(variant()) :: tuple()
+  def palette_tuple(variant), do: Map.fetch!(@palette_tuples, variant)
 
   @doc "Returns the CSS hex palette for a variant."
   @spec css_palette(variant()) :: [String.t()]
