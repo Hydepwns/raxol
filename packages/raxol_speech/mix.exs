@@ -2,7 +2,7 @@ defmodule RaxolSpeech.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/raxol/raxol"
+  @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
     [
@@ -66,15 +66,23 @@ defmodule RaxolSpeech.MixProject do
 
   defp package do
     [
+      name: "raxol_speech",
+      files: ~w(lib .formatter.exs mix.exs README.md LICENSE.md CHANGELOG.md),
       licenses: ["MIT"],
-      links: %{"GitHub" => @source_url},
-      files: ~w(lib mix.exs README.md)
+      links: %{
+        "GitHub" => @source_url,
+        "Docs" => "https://hexdocs.pm/raxol_speech",
+        "Changelog" =>
+          "https://github.com/DROOdotFOO/raxol/blob/master/packages/raxol_speech/CHANGELOG.md"
+      },
+      maintainers: ["Raxol Team"]
     ]
   end
 
   defp docs do
     [
       main: "readme",
+      source_url: @source_url,
       source_ref: "v#{@version}",
       extras: ["README.md"]
     ]

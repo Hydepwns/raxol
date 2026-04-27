@@ -1,5 +1,8 @@
 # Raxol Watch
 
+[![Hex.pm](https://img.shields.io/hexpm/v/raxol_watch.svg)](https://hex.pm/packages/raxol_watch)
+[![HexDocs](https://img.shields.io/badge/hex-docs-blue.svg)](https://hexdocs.pm/raxol_watch)
+
 Watch notification bridge for Raxol. Pushes glanceable summaries and accessibility announcements to Apple Watch (APNS) and Wear OS (FCM). Tap actions route back as events to the TEA app.
 
 ## Install
@@ -63,3 +66,7 @@ event = Raxol.Watch.ActionHandler.handle_action("details")
 Implement the `Raxol.Watch.Push.Backend` behaviour. Use `Raxol.Watch.Push.Noop` for testing.
 
 See [main docs](../../README.md) for the full Raxol framework.
+
+## License
+
+MIT. See [LICENSE.md](LICENSE.md).

@@ -2,7 +2,7 @@ defmodule RaxolWatch.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/raxol/raxol"
+  @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
     [
@@ -38,7 +38,6 @@ defmodule RaxolWatch.MixProject do
 
       # Push notifications (optional -- only needed with real APNS/FCM)
       {:pigeon, "~> 2.0", optional: true},
-
       {:jason, "~> 1.4"},
 
       # Dev/test only
@@ -66,15 +65,23 @@ defmodule RaxolWatch.MixProject do
 
   defp package do
     [
+      name: "raxol_watch",
+      files: ~w(lib .formatter.exs mix.exs README.md LICENSE.md CHANGELOG.md),
       licenses: ["MIT"],
-      links: %{"GitHub" => @source_url},
-      files: ~w(lib mix.exs README.md)
+      links: %{
+        "GitHub" => @source_url,
+        "Docs" => "https://hexdocs.pm/raxol_watch",
+        "Changelog" =>
+          "https://github.com/DROOdotFOO/raxol/blob/master/packages/raxol_watch/CHANGELOG.md"
+      },
+      maintainers: ["Raxol Team"]
     ]
   end
 
   defp docs do
     [
       main: "readme",
+      source_url: @source_url,
       source_ref: "v#{@version}",
       extras: ["README.md"]
     ]

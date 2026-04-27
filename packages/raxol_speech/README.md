@@ -1,5 +1,8 @@
 # Raxol Speech
 
+[![Hex.pm](https://img.shields.io/hexpm/v/raxol_speech.svg)](https://hex.pm/packages/raxol_speech)
+[![HexDocs](https://img.shields.io/badge/hex-docs-blue.svg)](https://hexdocs.pm/raxol_speech)
+
 Speech surface for Raxol. TTS reads accessibility announcements aloud, STT captures voice input via Bumblebee/Whisper and injects as events.
 
 ## Install
@@ -68,3 +71,7 @@ def speaking?, do: false
 Use `Raxol.Speech.TTS.Noop` for testing.
 
 See [main docs](../../README.md) for the full Raxol framework.
+
+## License
+
+MIT. See [LICENSE.md](LICENSE.md).

@@ -2,7 +2,7 @@ defmodule RaxolTelegram.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/raxol/raxol"
+  @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
     [
@@ -72,15 +72,23 @@ defmodule RaxolTelegram.MixProject do
 
   defp package do
     [
+      name: "raxol_telegram",
       licenses: ["MIT"],
-      links: %{"GitHub" => @source_url},
-      files: ~w(lib mix.exs README.md)
+      links: %{
+        "GitHub" => @source_url,
+        "Docs" => "https://hexdocs.pm/raxol_telegram",
+        "Changelog" =>
+          "https://github.com/DROOdotFOO/raxol/blob/master/packages/raxol_telegram/CHANGELOG.md"
+      },
+      maintainers: ["Raxol Team"],
+      files: ~w(lib .formatter.exs mix.exs README.md LICENSE.md CHANGELOG.md)
     ]
   end
 
   defp docs do
     [
       main: "readme",
+      source_url: @source_url,
       source_ref: "v#{@version}",
       extras: ["README.md"]
     ]

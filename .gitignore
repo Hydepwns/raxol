@@ -33,9 +33,6 @@
 # Used to debug crashes
 erl_crash.dump
 
-# Also ignore archive artifacts (built via "mix archive.build").
-*.ez
-
 # NIF compilation artifacts
 packages/raxol_terminal/lib/termbox2_nif/c_src/*.o
 packages/raxol_terminal/lib/termbox2_nif/c_src/*.so
@@ -47,8 +44,9 @@ priv/termbox2_nif.so
 .claude/settings.local.json
 .claude/worktrees/**
 
-# Ignore package tarball and unpacked dir (built via "mix hex.build").
-raxol-*.tar
+# Archive artifacts (mix archive.build) and Hex package tarballs (mix hex.build).
+*.ez
+*.tar
 raxol-*/
 
 # Temporary files, for example, from tests.
@@ -95,13 +93,6 @@ yarn-error.log
 # Build output and generated files
 **/dist/
 
-# Benchmark output files
-bench/output/
-bench/results/
-
-# Phoenix
-/priv/static/cache_manifest.json
-
 # Elixir
 .elixir_ls/
 
@@ -126,7 +117,6 @@ _dialyzer_core.plt
 *.pid
 *.beam
 *.dump
-*.ez
 *.iml
 .vscode/
 priv/themes/working_version.json
@@ -156,13 +146,10 @@ last_test_output.txt
 
 # Benchmark artifacts
 bench/output/
+bench/results/
 bench/results/**/*.benchee
 bench/results/**/*_summary.json
 bench/snapshots/
-*.tar
-erl_crash.dump
-bench/output/*.html
-bench/output/*.json
 
 # Package build artifacts
 packages/**/_build/

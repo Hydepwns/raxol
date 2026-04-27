@@ -1,5 +1,8 @@
 # Raxol Telegram
 
+[![Hex.pm](https://img.shields.io/hexpm/v/raxol_telegram.svg)](https://hex.pm/packages/raxol_telegram)
+[![HexDocs](https://img.shields.io/badge/hex-docs-blue.svg)](https://hexdocs.pm/raxol_telegram)
+
 Telegram surface bridge for Raxol. Renders TEA apps as monospace code blocks in Telegram chats with inline keyboard navigation.
 
 ## Install
@@ -53,3 +56,7 @@ The `SessionRouter` enforces a configurable `max_sessions` cap (default: 1000) t
 ```
 
 See [main docs](../../README.md) for the full Raxol framework.
+
+## License
+
+MIT. See [LICENSE.md](LICENSE.md).

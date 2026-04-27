@@ -30,7 +30,13 @@ Multi-surface application runtime for Elixir. One TEA module, four render target
 - **Phase 14C: PXE-Bridge Integration** -- Aztec Private eXecution Environment as settlement target for high-trust privacy tiers. PXE client (JSON-RPC 2.0), schemas, PrivacyTier (Glass Cube, 6 tiers), Router settlement routing. 51 tests.
 - **Phase 14D: Stealth Settlement** -- Full ERC-5564/ERC-6538 in `Xochi.Stealth` (~300 LOC). ECDH derivation, view tag scanning (256x speedup), domain-separated key derivation, meta-address encode/decode. 44 tests (32 unit + 12 e2e).
 - **Phase 14E: ZKSAR + Trust Tiers** -- ZKSAR attestation verification (6 ZK proof types), diminishing-returns trust score aggregation, attestation-gated privacy tiers, privacy depth routing. 52 tests.
-- **Riddler Solver Wiring (ADR-0005)** -- Xochi adapter wired to Riddler's intent engine: 9 endpoints, fee policy (5 tiers + privacy premiums), stealth/ERC-4337 settlement, ZKSAR attestation, EIP-712 typed data, PropertyTable stores. 119 Riddler tests + 291 raxol_payments tests. Aztec shielded settlement deferred (sidecar deployment).
+- **Riddler Solver Wiring (ADR-0005)** -- Xochi adapter wired to Riddler's intent engine: 9 endpoints, fee policy (5 tiers + privacy premiums), stealth/ERC-4337 settlement, ZKSAR attestation, EIP-712 typed data, PropertyTable stores. 119 Riddler tests + 347 raxol_payments tests. Aztec shielded settlement deferred (sidecar deployment).
+- **Phase 15A-E: Animation Hints** -- Declarative metadata flowing from `view/1` to all surfaces. `Animation.Helpers` DSL (`animate`, `stagger`, `sequence`), terminal frames computed server-side via `Animation.Framework`, LiveView CSS via `TerminalBridge.animation_css/1` with `prefers-reduced-motion`, MCP `StructuredScreenshot` JSON hints, `reduced_motion` in render context.
+- **Phase 17: Telegram bridge** (`raxol_telegram`) -- Bot, per-chat session router (1000 max, 5s cooldown), inline keyboard navigation, message edit dedup, 10min idle timeout. 34 tests.
+- **Phase 18: Speech interface** (`raxol_speech`) -- TTS (OsSay/espeak, accessibility subscription), STT (Whisper via Bumblebee), Listener (sox Port, bounded), 21 default voice commands. 28 tests.
+- **Phase 19: Watch notifications** (`raxol_watch`) -- APNS/FCM push via `pigeon`, ETS-backed device registry, 1s debounce, 160-char glanceable summaries, tap-to-event actions. 34 tests.
+- **Adaptive UI Overhaul** -- 8-rule LayoutRecommender (was 3), multi-recommendation, TrendDetector, NxModel expanded to 10 features with auto-retrain, Lifecycle integration (`adaptive: true`), 5 MCP tools. 67 tests.
+- **BorderBeam Effect** -- Three-layer animated border glow (beam stroke, inner glow, outer bloom). Four variants (colorful/mono/ocean/sunset). Terminal exponential decay, LiveView conic-gradient + mask CSS, MCP hint serialization. Pipe + prop DSL. 99 effects tests.
 
 ---
 
@@ -61,14 +67,14 @@ Supported now:
 
 ### Longer Term
 
-- Nx-backed layout learning (replace rule engine with trained model)
 - Multi-node cockpit (swarm coordination across physical terminals)
 - Plugin marketplace
 - VS Code extension for component previews
 - Burrito packaging (single standalone binary)
-- Telegram bridge (`raxol_telegram`)
-- Speech interface (`raxol_speech`)
-- Watch interface
+- FLAME integration (elastic compute for Nx training bursts)
+- SSH session multiplexing (tmux-like panes)
+- Collaborative sessions (multi-user terminal sharing)
+- Documentation site (widget gallery, tutorials, examples)
 
 ---
 
