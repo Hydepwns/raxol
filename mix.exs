@@ -342,6 +342,11 @@ defmodule Raxol.MixProject do
       ],
       "explain.credo": ["run scripts/explain_credo_warning.exs"],
       lint: ["credo"],
+      # Verifies mix.lock is consistent with mix.exs without fetching new deps.
+      # Run after editing mix.exs to confirm the lockfile is committed too.
+      # This is the same check CI runs to prevent the failure mode where a new
+      # dep was added but mix.lock was forgotten.
+      "lockfile.check": ["deps.get --check-locked"],
       # Dialyzer commands
       "dialyzer.setup": ["dialyzer --plt"],
       "dialyzer.check": ["dialyzer --format dialyxir"],
