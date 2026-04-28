@@ -1,5 +1,8 @@
 IO.puts("[TestHelper] === TEST HELPER STARTING ===")
 
+# Capture boot start time for the boot-budget telemetry below.
+boot_start_us = System.monotonic_time(:microsecond)
+
 # Start Mox - wrapped in try/catch for safety
 try do
   {:ok, _} = Application.ensure_all_started(:mox)
@@ -269,3 +272,54 @@ Raxol.Test.IsolationHelper.reset_global_state()
 IO.puts("[TestHelper] Global state reset for test isolation")
 
 IO.puts("[TestHelper] Test helper setup complete!")
+
+# Boot-budget telemetry. Captures elapsed time and resident memory after
+# the test_helper finishes. Written to _build/test/boot_metrics.json for
+# CI artifact upload, also printed to stderr in JSON for easy log scrape.
+#
+# Today this is informational. When we have a stable baseline, add a CI
+# step that fails if either metric exceeds budget so memory regressions
+# (the kind that triggered the runner OOMs in late April 2026) are caught
+# at the moment they're introduced rather than when they cascade.
+defmodule Raxol.Test.BootMetrics do
+  @moduledoc false
+
+  def emit(start_us) do
+    elapsed_ms = div(System.monotonic_time(:microsecond) - start_us, 1000)
+    mem_total = :erlang.memory(:total)
+    mem_processes = :erlang.memory(:processes)
+    mem_binary = :erlang.memory(:binary)
+    mem_ets = :erlang.memory(:ets)
+    proc_count = :erlang.system_info(:process_count)
+
+    payload = %{
+      kind: "raxol.test.boot_budget",
+      elapsed_ms: elapsed_ms,
+      memory_total_mb: div(mem_total, 1_048_576),
+      memory_processes_mb: div(mem_processes, 1_048_576),
+      memory_binary_mb: div(mem_binary, 1_048_576),
+      memory_ets_mb: div(mem_ets, 1_048_576),
+      process_count: proc_count,
+      ci: System.get_env("CI") == "true",
+      mix_env: to_string(Mix.env())
+    }
+
+    IO.puts(:stderr, "[TestHelper.boot_budget] #{Jason.encode!(payload)}")
+
+    out_dir = Path.join([Mix.Project.build_path(), "test"])
+    File.mkdir_p!(out_dir)
+
+    File.write!(
+      Path.join(out_dir, "boot_metrics.json"),
+      Jason.encode_to_iodata!(payload)
+    )
+  rescue
+    e ->
+      IO.puts(
+        :stderr,
+        "[TestHelper.boot_budget] failed to emit metrics: #{inspect(e)}"
+      )
+  end
+end
+
+Raxol.Test.BootMetrics.emit(boot_start_us)
