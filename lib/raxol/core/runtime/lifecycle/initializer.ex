@@ -207,8 +207,14 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
 
     environment = Keyword.get(options, :environment, :terminal)
 
+    # :ssh is multi-instance (one Lifecycle per channel). Without [name: nil]
+    # the second concurrent SSH session collides on the registered Dispatcher
+    # name. Callers always reach the Dispatcher via state.dispatcher_pid, so
+    # dropping the registered name is safe.
     dispatcher_opts =
-      if environment in [:agent, :liveview], do: [name: nil], else: []
+      if environment in [:agent, :liveview, :ssh],
+        do: [name: nil],
+        else: []
 
     case Dispatcher.start_link(
            self(),
