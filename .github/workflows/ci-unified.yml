@@ -151,6 +151,9 @@ jobs:
       - name: Check formatting
         run: mix format --check-formatted
 
+      - name: Check singleton allowlist
+        run: bash scripts/check_singletons.sh
+
   compile:
     name: Compilation Check
     needs: setup
