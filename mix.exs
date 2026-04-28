@@ -104,10 +104,11 @@ defmodule Raxol.MixProject do
         [
           :kernel,
           :stdlib,
-          :phoenix,
-          :phoenix_html,
-          :phoenix_live_view,
-          :phoenix_pubsub,
+          # Phoenix/PubSub: only autoload outside :test. The `Code.ensure_loaded?`
+          # guards in `Raxol.Core.Runtime.Rendering.Backends` and `Raxol.PubSub`
+          # mean the modules are referenced lazily, and no test exercises them.
+          # Loading them on every test run added ~50-100MB of supervisor state
+          # for zero benefit.
           # :ecto_sql,  # Removed to prevent auto-starting Repo
           # :postgrex,  # Removed to prevent auto-starting Repo
           :runtime_tools,
@@ -117,12 +118,12 @@ defmodule Raxol.MixProject do
           :jason,
           :telemetry,
           :file_system,
-          :mnesia,
-          :os_mon,
+          # :mnesia, :os_mon -- removed: unused at runtime in tests, os_mon
+          # also produces misleading process_memory_high_watermark log noise.
           :ssh,
           :public_key,
           :crypto
-        ] ++ test_applications()
+        ] ++ phoenix_applications() ++ test_applications()
     ]
   end
 
@@ -141,6 +142,17 @@ defmodule Raxol.MixProject do
       [:mox]
     else
       []
+    end
+  end
+
+  # Phoenix is auto-started in dev and prod (the dev endpoint serves Tidewave;
+  # prod can use the LiveView bridge). In test, no test references Phoenix
+  # directly, so skip it -- saves significant memory on the GitHub runner.
+  defp phoenix_applications do
+    if Mix.env() == :test do
+      []
+    else
+      [:phoenix, :phoenix_html, :phoenix_live_view, :phoenix_pubsub]
     end
   end
 
