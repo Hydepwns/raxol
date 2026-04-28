@@ -126,6 +126,14 @@ defmodule Raxol.Core.Runtime.Lifecycle.Initializer do
 
         {:ok, pm_pid}
 
+      # PluginLifecycle is registered as a VM singleton (name: __MODULE__) and
+      # all client calls go through the registered name, so concurrent Raxol
+      # Lifecycles share one plugin manager. PluginRegistry is ETS-backed and
+      # StateManager namespaces by plugin_id, so this is safe -- adopt the
+      # existing pid rather than failing init.
+      {:error, {:already_started, pm_pid}} ->
+        {:ok, pm_pid}
+
       {:error, reason} ->
         {:error, {:plugin_manager_start_failed, reason}, fn -> :ok end}
     end
