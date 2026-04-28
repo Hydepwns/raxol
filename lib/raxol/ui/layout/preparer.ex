@@ -99,6 +99,36 @@ defmodule Raxol.UI.Layout.Preparer do
     }
   end
 
+  # Absolute layer: prepare the flow child and each overlay element. Both
+  # contribute to the measurement cache so symbolic widths in overlays still
+  # benefit from the prepare pass.
+  def prepare(%{type: :absolute_layer} = element) do
+    flow_child = Map.get(element, :flow_child)
+    overlays = Map.get(element, :overlays, [])
+
+    prepared_flow = if flow_child, do: prepare(flow_child), else: nil
+
+    prepared_overlays =
+      overlays
+      |> Enum.map(fn
+        %{element: el} -> prepare(el)
+        _ -> nil
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    children =
+      [prepared_flow | prepared_overlays] |> Enum.reject(&is_nil/1)
+
+    %PreparedElement{
+      type: :absolute_layer,
+      element: element,
+      measured_width: 0,
+      measured_height: 0,
+      children: children,
+      animation_hints: Map.get(element, :animation_hints, [])
+    }
+  end
+
   def prepare(%{type: type} = element) do
     %PreparedElement{
       type: type,

@@ -340,6 +340,40 @@ defmodule Raxol.UI.Layout.Engine do
     SplitPane.process(split, space, acc)
   end
 
+  # Absolute layer: lay out the flow child against the parent's full available
+  # space (overlays consume nothing), then resolve each overlay against the
+  # same space at declared coordinates. Overlays render after flow content so
+  # they sit on top in the renderer's last-write-wins cell merge.
+  #
+  # Element shape:
+  #   %{
+  #     type: :absolute_layer,
+  #     flow_child: element | nil,
+  #     overlays: [
+  #       %{x: 0, y: 0, element: top_border},
+  #       %{x: 0, y: :bottom, element: bottom_border},
+  #       %{x: :right, y: :center, element: side_panel}
+  #     ]
+  #   }
+  #
+  # Overlay coordinates are relative to the layer's space. Symbolic
+  # coordinates (`:left`, `:right`, `:top`, `:bottom`, `:center`) and negative
+  # integers (offset from far edge) are resolved against the current space.
+  def process_element(%{type: :absolute_layer} = layer, space, acc) do
+    flow_child = Map.get(layer, :flow_child)
+    overlays = Map.get(layer, :overlays, [])
+
+    flow_acc =
+      case flow_child do
+        nil -> acc
+        child -> process_element(child, space, acc)
+      end
+
+    Enum.reduce(overlays, flow_acc, fn overlay, current_acc ->
+      process_overlay(overlay, space, current_acc)
+    end)
+  end
+
   def process_element(%{type: :table} = table_element, space, acc) do
     # Delegate table measurement and positioning to the dedicated module
     Table.measure_and_position(table_element, space, acc)
@@ -454,6 +488,54 @@ defmodule Raxol.UI.Layout.Engine do
     Enum.reduce(children, acc, fn child, current_acc ->
       process_element(child, space, current_acc)
     end)
+  end
+
+  # Resolve an overlay descriptor into a positioned space inside `parent_space`
+  # and dispatch the overlay's element through process_element/3. Coordinates
+  # outside the parent space are clipped (the overlay is silently dropped).
+  defp process_overlay(%{element: nil}, _parent_space, acc), do: acc
+
+  defp process_overlay(%{element: element} = overlay, parent_space, acc) do
+    raw_x = Map.get(overlay, :x, 0)
+    raw_y = Map.get(overlay, :y, 0)
+
+    x = resolve_axis(raw_x, parent_space.x, parent_space.width)
+    y = resolve_axis(raw_y, parent_space.y, parent_space.height)
+
+    if in_bounds?(x, y, parent_space) do
+      overlay_space = %{
+        x: x,
+        y: y,
+        width: max(parent_space.x + parent_space.width - x, 0),
+        height: max(parent_space.y + parent_space.height - y, 0)
+      }
+
+      process_element(element, overlay_space, acc)
+    else
+      acc
+    end
+  end
+
+  defp process_overlay(_, _, acc), do: acc
+
+  # Resolve a coordinate (integer, negative offset, or symbolic atom) against
+  # the parent space's origin and length on a single axis.
+  defp resolve_axis(:left, origin, _length), do: origin
+  defp resolve_axis(:top, origin, _length), do: origin
+  defp resolve_axis(:right, origin, length), do: origin + max(length - 1, 0)
+  defp resolve_axis(:bottom, origin, length), do: origin + max(length - 1, 0)
+  defp resolve_axis(:center, origin, length), do: origin + div(length, 2)
+
+  defp resolve_axis(value, origin, length) when is_integer(value) and value < 0,
+    do: origin + max(length + value, 0)
+
+  defp resolve_axis(value, origin, _length) when is_integer(value),
+    do: origin + value
+
+  defp resolve_axis(_other, origin, _length), do: origin
+
+  defp in_bounds?(x, y, %{x: px, y: py, width: w, height: h}) do
+    x >= px and x < px + w and y >= py and y < py + h
   end
 
   # --- End Element Processing ---

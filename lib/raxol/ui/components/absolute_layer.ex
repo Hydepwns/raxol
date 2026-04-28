@@ -1,0 +1,90 @@
+defmodule Raxol.UI.Components.AbsoluteLayer do
+  @moduledoc """
+  Absolute / overlay layer primitive for terminal chrome.
+
+  Wraps a flow child with positioned overlays that draw at fixed coordinates
+  inside the layer's available space without consuming layout flow. Use this
+  for screen frames, status rails, breadcrumb borders, and other decorative
+  chrome that must not push or reflow body content.
+
+  ## Element shape
+
+      %{
+        type: :absolute_layer,
+        flow_child: body_element,
+        overlays: [
+          %{x: 0, y: 0, element: top_border},
+          %{x: 0, y: :bottom, element: bottom_border},
+          %{x: 0, y: 1, element: left_rail},
+          %{x: :right, y: 1, element: right_rail}
+        ]
+      }
+
+  Coordinates accept:
+
+    * non-negative integers -- pixel offsets from the layer's top-left corner
+    * negative integers -- offsets from the far edge (`-1` = last cell)
+    * `:left` / `:top` -- alias for `0`
+    * `:right` -- last column (`width - 1`)
+    * `:bottom` -- last row (`height - 1`)
+    * `:center` -- midpoint on the axis
+
+  Overlays whose resolved coordinates fall outside the layer's space are
+  clipped silently (no cells emitted).
+
+  ## Usage
+
+      import Raxol.UI.Components.AbsoluteLayer
+
+      def view(model) do
+        absolute_layer(
+          body(model),
+          [
+            overlay(0, 0, top_border()),
+            overlay(0, :bottom, bottom_border()),
+            overlay(0, 1, left_rail()),
+            overlay(:right, 1, right_rail())
+          ]
+        )
+      end
+  """
+
+  @type axis_coord ::
+          non_neg_integer()
+          | integer()
+          | :left
+          | :right
+          | :top
+          | :bottom
+          | :center
+
+  @type overlay :: %{
+          required(:x) => axis_coord(),
+          required(:y) => axis_coord(),
+          required(:element) => map()
+        }
+
+  @doc """
+  Builds an `:absolute_layer` element wrapping `flow_child` with `overlays`.
+
+  Either argument may be `nil` / `[]` -- a layer with neither flow nor
+  overlays is a no-op but is still valid.
+  """
+  @spec absolute_layer(map() | nil, [overlay()]) :: map()
+  def absolute_layer(flow_child, overlays \\ [])
+      when is_list(overlays) do
+    %{
+      type: :absolute_layer,
+      flow_child: flow_child,
+      overlays: overlays
+    }
+  end
+
+  @doc """
+  Builds a single overlay descriptor at coordinates `{x, y}`.
+  """
+  @spec overlay(axis_coord(), axis_coord(), map()) :: overlay()
+  def overlay(x, y, element) when is_map(element) do
+    %{x: x, y: y, element: element}
+  end
+end
