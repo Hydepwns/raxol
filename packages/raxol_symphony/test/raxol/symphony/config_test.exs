@@ -1,0 +1,239 @@
+defmodule Raxol.Symphony.ConfigTest do
+  use ExUnit.Case, async: false
+
+  alias Raxol.Symphony.Config
+
+  describe "from_workflow/2 -- defaults" do
+    test "applies defaults for an empty config" do
+      workflow = %{config: %{}, prompt_template: ""}
+      config = Config.from_workflow(workflow)
+
+      assert config.polling.interval_ms == 30_000
+      assert config.hooks.timeout_ms == 60_000
+      assert config.agent.max_concurrent_agents == 10
+      assert config.agent.max_turns == 20
+      assert config.agent.max_retry_backoff_ms == 300_000
+      assert config.codex.command == "codex app-server"
+      assert config.codex.turn_timeout_ms == 3_600_000
+      assert config.codex.read_timeout_ms == 5_000
+      assert config.codex.stall_timeout_ms == 300_000
+      assert config.runner.kind == "raxol_agent"
+      assert config.tracker.active_states == ["Todo", "In Progress"]
+
+      assert config.tracker.terminal_states == [
+               "Closed",
+               "Cancelled",
+               "Canceled",
+               "Duplicate",
+               "Done"
+             ]
+    end
+
+    test "default linear endpoint applied when kind is linear" do
+      workflow = %{config: %{tracker: %{kind: "linear"}}, prompt_template: ""}
+      config = Config.from_workflow(workflow)
+
+      assert config.tracker.endpoint == "https://api.linear.app/graphql"
+    end
+
+    test "default workspace root is under system temp" do
+      workflow = %{config: %{}, prompt_template: ""}
+      config = Config.from_workflow(workflow)
+
+      assert config.workspace.root |> String.contains?("symphony_workspaces")
+      assert Path.type(config.workspace.root) == :absolute
+    end
+  end
+
+  describe "$VAR resolution" do
+    test "resolves $VAR from environment" do
+      System.put_env("SYMPHONY_TEST_KEY", "secret-token")
+
+      workflow = %{
+        config: %{tracker: %{kind: "linear", api_key: "$SYMPHONY_TEST_KEY"}},
+        prompt_template: ""
+      }
+
+      config = Config.from_workflow(workflow)
+      assert config.tracker.api_key == "secret-token"
+    after
+      System.delete_env("SYMPHONY_TEST_KEY")
+    end
+
+    test "treats unset env var as nil" do
+      System.delete_env("SYMPHONY_DEFINITELY_UNSET")
+
+      workflow = %{
+        config: %{tracker: %{kind: "linear", api_key: "$SYMPHONY_DEFINITELY_UNSET"}},
+        prompt_template: ""
+      }
+
+      config = Config.from_workflow(workflow)
+      assert config.tracker.api_key == nil
+    end
+
+    test "treats empty env var as nil" do
+      System.put_env("SYMPHONY_EMPTY", "")
+
+      workflow = %{
+        config: %{tracker: %{kind: "linear", api_key: "$SYMPHONY_EMPTY"}},
+        prompt_template: ""
+      }
+
+      config = Config.from_workflow(workflow)
+      assert config.tracker.api_key == nil
+    after
+      System.delete_env("SYMPHONY_EMPTY")
+    end
+
+    test "default api_key for linear pulls LINEAR_API_KEY" do
+      System.put_env("LINEAR_API_KEY", "lin_abc")
+
+      workflow = %{config: %{tracker: %{kind: "linear"}}, prompt_template: ""}
+      config = Config.from_workflow(workflow)
+
+      assert config.tracker.api_key == "lin_abc"
+    after
+      System.delete_env("LINEAR_API_KEY")
+    end
+
+    test "literal values pass through" do
+      workflow = %{
+        config: %{tracker: %{kind: "linear", api_key: "literal"}},
+        prompt_template: ""
+      }
+
+      config = Config.from_workflow(workflow)
+      assert config.tracker.api_key == "literal"
+    end
+  end
+
+  describe "workspace root normalization" do
+    test "expands ~" do
+      workflow = %{
+        config: %{workspace: %{root: "~/code/symphony"}},
+        prompt_template: ""
+      }
+
+      config = Config.from_workflow(workflow)
+
+      assert Path.type(config.workspace.root) == :absolute
+      assert config.workspace.root == Path.join(System.user_home!(), "code/symphony")
+    end
+
+    test "resolves relative paths against workflow path directory" do
+      workflow_path = "/tmp/proj/WORKFLOW.md"
+
+      workflow = %{
+        config: %{workspace: %{root: "workspaces"}},
+        prompt_template: ""
+      }
+
+      config = Config.from_workflow(workflow, workflow_path)
+      assert config.workspace.root == "/tmp/proj/workspaces"
+    end
+
+    test "leaves absolute paths alone (just normalizes)" do
+      workflow = %{
+        config: %{workspace: %{root: "/abs/path/workspaces"}},
+        prompt_template: ""
+      }
+
+      config = Config.from_workflow(workflow)
+      assert config.workspace.root == "/abs/path/workspaces"
+    end
+
+    test "resolves $VAR in workspace root" do
+      System.put_env("SYMPHONY_WS", "/var/lib/sym")
+
+      workflow = %{
+        config: %{workspace: %{root: "$SYMPHONY_WS"}},
+        prompt_template: ""
+      }
+
+      config = Config.from_workflow(workflow)
+      assert config.workspace.root == "/var/lib/sym"
+    after
+      System.delete_env("SYMPHONY_WS")
+    end
+  end
+
+  describe "max_concurrent_agents_by_state" do
+    test "normalizes state keys to lowercase strings" do
+      workflow = %{
+        config: %{
+          agent: %{
+            max_concurrent_agents_by_state: %{
+              "In Progress" => 5,
+              "Todo" => 2
+            }
+          }
+        },
+        prompt_template: ""
+      }
+
+      config = Config.from_workflow(workflow)
+      assert config.agent.max_concurrent_agents_by_state == %{"in progress" => 5, "todo" => 2}
+    end
+
+    test "drops invalid (non-positive) entries" do
+      workflow = %{
+        config: %{
+          agent: %{
+            max_concurrent_agents_by_state: %{
+              "Todo" => -1,
+              "In Progress" => 0,
+              "Done" => 3
+            }
+          }
+        },
+        prompt_template: ""
+      }
+
+      config = Config.from_workflow(workflow)
+      assert config.agent.max_concurrent_agents_by_state == %{"done" => 3}
+    end
+  end
+
+  describe "load_and_validate/1" do
+    @tag :tmp_dir
+    test "returns the validated config", %{tmp_dir: tmp_dir} do
+      System.put_env("LINEAR_API_KEY", "lin_xyz")
+      path = Path.join(tmp_dir, "WORKFLOW.md")
+
+      File.write!(path, """
+      ---
+      tracker:
+        kind: linear
+        project_slug: "demo-project"
+      ---
+      hello
+      """)
+
+      assert {:ok, config} = Config.load_and_validate(path)
+      assert config.tracker.kind == "linear"
+      assert config.tracker.project_slug == "demo-project"
+      assert config.tracker.api_key == "lin_xyz"
+      assert config.prompt_template == "hello"
+    after
+      System.delete_env("LINEAR_API_KEY")
+    end
+
+    @tag :tmp_dir
+    test "fails when validation fails", %{tmp_dir: tmp_dir} do
+      System.delete_env("LINEAR_API_KEY")
+      path = Path.join(tmp_dir, "WORKFLOW.md")
+
+      File.write!(path, """
+      ---
+      tracker:
+        kind: linear
+        project_slug: "demo-project"
+      ---
+      hello
+      """)
+
+      assert {:error, :missing_tracker_api_key} = Config.load_and_validate(path)
+    end
+  end
+end

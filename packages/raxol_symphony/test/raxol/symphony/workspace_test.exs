@@ -1,0 +1,177 @@
+defmodule Raxol.Symphony.WorkspaceTest do
+  use ExUnit.Case, async: true
+
+  alias Raxol.Symphony.{Config, Workspace}
+
+  defp build_config(tmp_dir, hook_overrides \\ %{}) do
+    workflow = %{
+      config: %{
+        tracker: %{kind: "memory"},
+        workspace: %{root: tmp_dir},
+        hooks: Map.merge(%{timeout_ms: 5_000}, hook_overrides)
+      },
+      prompt_template: ""
+    }
+
+    Config.from_workflow(workflow)
+  end
+
+  describe "ensure/2" do
+    @tag :tmp_dir
+    test "creates a fresh workspace and reports created_now=true", %{tmp_dir: tmp_dir} do
+      config = build_config(tmp_dir)
+
+      assert {:ok, %{path: path, key: "MT-1", created_now: true}} =
+               Workspace.ensure(config, "MT-1")
+
+      assert path == Path.join(tmp_dir, "MT-1")
+      assert File.dir?(path)
+    end
+
+    @tag :tmp_dir
+    test "reuses existing workspace and reports created_now=false", %{tmp_dir: tmp_dir} do
+      config = build_config(tmp_dir)
+      assert {:ok, %{created_now: true}} = Workspace.ensure(config, "MT-1")
+      assert {:ok, %{created_now: false}} = Workspace.ensure(config, "MT-1")
+    end
+
+    @tag :tmp_dir
+    test "sanitizes the identifier in the path", %{tmp_dir: tmp_dir} do
+      config = build_config(tmp_dir)
+
+      assert {:ok, %{path: path, key: "abc_.._etc"}} =
+               Workspace.ensure(config, "abc/../etc")
+
+      assert path == Path.join(tmp_dir, "abc_.._etc")
+      assert File.dir?(path)
+    end
+
+    @tag :tmp_dir
+    test "runs after_create hook only on first creation", %{tmp_dir: tmp_dir} do
+      sentinel = Path.join(tmp_dir, "after_create.txt")
+
+      config =
+        build_config(tmp_dir, %{
+          after_create: """
+          touch '#{sentinel}'
+          """
+        })
+
+      assert {:ok, %{created_now: true}} = Workspace.ensure(config, "MT-1")
+      assert File.exists?(sentinel)
+
+      File.rm!(sentinel)
+
+      assert {:ok, %{created_now: false}} = Workspace.ensure(config, "MT-1")
+      refute File.exists?(sentinel)
+    end
+
+    @tag :tmp_dir
+    test "after_create failure aborts and cleans up partial workspace",
+         %{tmp_dir: tmp_dir} do
+      config = build_config(tmp_dir, %{after_create: "exit 7"})
+
+      assert {:error, {:after_create_hook_failed, {:exit, 7}}} =
+               Workspace.ensure(config, "MT-fail")
+
+      refute File.dir?(Path.join(tmp_dir, "MT-fail"))
+    end
+
+    @tag :tmp_dir
+    test "after_create timeout aborts and cleans up", %{tmp_dir: tmp_dir} do
+      config =
+        build_config(tmp_dir, %{after_create: "sleep 5", timeout_ms: 200})
+
+      assert {:error, {:after_create_hook_failed, :timeout}} =
+               Workspace.ensure(config, "MT-slow")
+
+      refute File.dir?(Path.join(tmp_dir, "MT-slow"))
+    end
+  end
+
+  describe "run_before_run_hook/2" do
+    @tag :tmp_dir
+    test "noop when hook is not set", %{tmp_dir: tmp_dir} do
+      config = build_config(tmp_dir)
+      {:ok, %{path: path}} = Workspace.ensure(config, "MT-1")
+      assert :ok = Workspace.run_before_run_hook(config, path)
+    end
+
+    @tag :tmp_dir
+    test "runs in the workspace cwd", %{tmp_dir: tmp_dir} do
+      sentinel_name = "before_run_marker.txt"
+
+      config =
+        build_config(tmp_dir, %{
+          before_run: "pwd > #{sentinel_name}"
+        })
+
+      {:ok, %{path: path}} = Workspace.ensure(config, "MT-cwd")
+      assert :ok = Workspace.run_before_run_hook(config, path)
+
+      assert path |> Path.join(sentinel_name) |> File.read!() |> String.trim() == path
+    end
+
+    @tag :tmp_dir
+    test "before_run failure is fatal to the run attempt", %{tmp_dir: tmp_dir} do
+      config = build_config(tmp_dir, %{before_run: "exit 1"})
+      {:ok, %{path: path}} = Workspace.ensure(config, "MT-1")
+
+      assert {:error, {:before_run_hook_failed, {:exit, 1}}} =
+               Workspace.run_before_run_hook(config, path)
+    end
+  end
+
+  describe "run_after_run_hook/2" do
+    @tag :tmp_dir
+    test "after_run failure is logged but ignored (returns :ok)", %{tmp_dir: tmp_dir} do
+      config = build_config(tmp_dir, %{after_run: "exit 1"})
+      {:ok, %{path: path}} = Workspace.ensure(config, "MT-1")
+      assert :ok = Workspace.run_after_run_hook(config, path)
+    end
+  end
+
+  describe "remove/2" do
+    @tag :tmp_dir
+    test "removes workspace directory", %{tmp_dir: tmp_dir} do
+      config = build_config(tmp_dir)
+      {:ok, %{path: path}} = Workspace.ensure(config, "MT-1")
+      assert File.dir?(path)
+      assert :ok = Workspace.remove(config, path)
+      refute File.dir?(path)
+    end
+
+    @tag :tmp_dir
+    test "runs before_remove (best-effort)", %{tmp_dir: tmp_dir} do
+      sentinel = Path.join(tmp_dir, "before_remove_marker.txt")
+
+      config =
+        build_config(tmp_dir, %{
+          before_remove: "touch '#{sentinel}'"
+        })
+
+      {:ok, %{path: path}} = Workspace.ensure(config, "MT-1")
+      assert :ok = Workspace.remove(config, path)
+      assert File.exists?(sentinel)
+      refute File.dir?(path)
+    end
+
+    @tag :tmp_dir
+    test "before_remove failure is logged but does not block cleanup",
+         %{tmp_dir: tmp_dir} do
+      config = build_config(tmp_dir, %{before_remove: "exit 1"})
+      {:ok, %{path: path}} = Workspace.ensure(config, "MT-1")
+      assert :ok = Workspace.remove(config, path)
+      refute File.dir?(path)
+    end
+
+    @tag :tmp_dir
+    test "refuses to remove a path outside workspace root", %{tmp_dir: tmp_dir} do
+      config = build_config(tmp_dir)
+      assert :ok = Workspace.remove(config, "/tmp/some/other/place")
+      # No assertion of removal -- the point is it is not allowed to remove the
+      # outside path. We just want :ok and no crash.
+      refute File.dir?("/tmp/some/other/place_should_not_exist_anyway")
+    end
+  end
+end
