@@ -220,12 +220,20 @@ jobs:
           mix test --exclude integration --exclude property --exclude slow --exclude skip_on_ci
         env:
           MIX_TEST_PARTITION: 1
-      
+
       - name: Upload coverage
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: coverage-unit
           path: cover/unit.coverdata
+
+      - name: Upload boot metrics
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: boot-metrics-unit
+          path: _build/test/boot_metrics.json
+          if-no-files-found: ignore
 
   test-integration:
     name: Integration Tests
