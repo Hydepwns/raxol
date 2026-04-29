@@ -114,7 +114,11 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
           mix deps.clean --unused
-          mix deps.get
+          # --check-locked fails fast if mix.exs was edited without committing
+          # an updated mix.lock. Catches the failure mode where new deps land
+          # without their lockfile entries and surface as confusing compile
+          # errors downstream.
+          mix deps.get --check-locked
           mix deps.compile
 
   # ========================================
@@ -487,7 +491,11 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
           mix deps.clean --unused
-          mix deps.get
+          # --check-locked fails fast if mix.exs was edited without committing
+          # an updated mix.lock. Catches the failure mode where new deps land
+          # without their lockfile entries and surface as confusing compile
+          # errors downstream.
+          mix deps.get --check-locked
           mix deps.compile
 
       - name: Run tests (Unix)
