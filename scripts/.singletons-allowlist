@@ -1,0 +1,47 @@
+# Allowlist of files registering `name: __MODULE__` GenServer/Agent/Supervisor.
+# One file path per line. Lines starting with # are comments.
+#
+# Adding to this file is OK for supervisors and explicit VM-wide services.
+# For per-instance processes, follow the [name: nil] pattern in
+# `Raxol.Core.Runtime.Lifecycle.Initializer.start_dispatcher/5` instead.
+#
+# Document the reasoning for every entry in `docs/core/SINGLETONS.md`.
+
+# Supervisors -- canonical, harmless
+lib/raxol/core/core_supervisor.ex
+lib/raxol/core/runtime/runtime_supervisor.ex
+lib/raxol/core/server_registry.ex
+lib/raxol/dynamic_supervisor.ex
+packages/raxol_terminal/lib/raxol/terminal/terminal_supervisor.ex
+packages/raxol_core/lib/raxol/core/runtime/plugins/plugin_supervisor.ex
+packages/raxol_agent/lib/raxol/agent/supervisor.ex
+packages/raxol_mcp/lib/raxol/mcp/supervisor.ex
+packages/raxol_speech/lib/raxol/speech/supervisor.ex
+packages/raxol_telegram/lib/raxol/telegram/supervisor.ex
+packages/raxol_watch/lib/raxol/watch/supervisor.ex
+
+# Intentional VM-wide services
+lib/raxol/rbac.ex
+lib/raxol/rate_limit.ex
+lib/raxol/dev/code_reloader.ex
+packages/raxol_core/lib/raxol/core/runtime/process_store.ex
+packages/raxol_core/lib/raxol/core/config/config_store.ex
+packages/raxol_core/lib/raxol/core/accessibility/announcements.ex
+packages/raxol_core/lib/raxol/core/runtime/plugins/plugin_lifecycle.ex
+packages/raxol_core/lib/raxol/core/runtime/plugins/resource_budget.ex
+packages/raxol_speech/lib/raxol/speech/recognizer.ex
+packages/raxol_speech/lib/raxol/speech/listener.ex
+packages/raxol_speech/lib/raxol/speech/speaker.ex
+packages/raxol_speech/lib/raxol/speech/tts/os_say.ex
+packages/raxol_speech/lib/raxol/speech/tts/noop.ex
+packages/raxol_telegram/lib/raxol/telegram/session_router.ex
+packages/raxol_watch/lib/raxol/watch/notifier.ex
+packages/raxol_watch/lib/raxol/watch/device_registry.ex
+packages/raxol_watch/lib/raxol/watch/push/noop.ex
+packages/raxol_symphony/lib/raxol/symphony/runners/noop.ex
+
+# Re-evaluate when next touched (see docs/core/SINGLETONS.md)
+lib/raxol/demo/session_manager.ex
+lib/raxol/core/metrics/metrics_collector.ex
+lib/raxol/recording/recorder.ex
+packages/raxol_terminal/lib/raxol/terminal/buffer/safe_manager.ex
