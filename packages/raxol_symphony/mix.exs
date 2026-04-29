@@ -36,8 +36,10 @@ defmodule RaxolSymphony.MixProject do
     [
       raxol_dep(:raxol_core, "~> 2.4", "../raxol_core"),
 
-      # Main raxol (Lifecycle runtime, Recording for evidence). Optional at compile time.
-      {:raxol, "~> 2.4", optional: true},
+      # Main raxol (Lifecycle runtime, Recording for evidence). Compile-time only --
+      # runtime: false keeps :raxol out of this package's .app applications list so
+      # the host (which owns raxol) controls its boot, avoiding circular OTP startup.
+      {:raxol, "~> 2.4", optional: true, runtime: false},
 
       # Agent runner backend. Optional at compile time so the orchestrator core
       # can be exercised in tests with a noop runner.

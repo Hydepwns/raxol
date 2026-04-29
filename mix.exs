@@ -192,8 +192,7 @@ defmodule Raxol.MixProject do
       raxol_dep(:raxol_sensor, "~> 2.4", "packages/raxol_sensor"),
       raxol_dep(:raxol_mcp, "~> 2.4", "packages/raxol_mcp"),
       raxol_dep(:raxol_liveview, "~> 2.4", "packages/raxol_liveview"),
-      raxol_dep(:raxol_plugin, "~> 2.4", "packages/raxol_plugin"),
-      raxol_dep(:raxol_symphony, "~> 0.1", "packages/raxol_symphony")
+      raxol_dep(:raxol_plugin, "~> 2.4", "packages/raxol_plugin")
     ]
   end
 
