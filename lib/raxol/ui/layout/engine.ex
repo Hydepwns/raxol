@@ -33,6 +33,61 @@ defmodule Raxol.UI.Layout.Engine do
     :dim
   ]
 
+  @typedoc """
+  Terminal viewport dimensions in cells.
+  """
+  @type dimensions :: %{
+          required(:width) => non_neg_integer(),
+          required(:height) => non_neg_integer()
+        }
+
+  @typedoc """
+  Available space for a layout pass. Origin (`x`, `y`) and extent
+  (`width`, `height`) all in cell units relative to the viewport.
+  """
+  @type space :: %{
+          required(:x) => non_neg_integer(),
+          required(:y) => non_neg_integer(),
+          required(:width) => non_neg_integer(),
+          required(:height) => non_neg_integer()
+        }
+
+  @typedoc """
+  Input element. Every layout element has a `:type` atom; the rest of the
+  shape is type-specific. Containers carry `:children`; leaves carry
+  primitive fields like `:text`, `:content`, or `:width`/`:height`.
+
+  Container types: `:view`, `:panel`, `:row`, `:column`, `:grid`, `:flex`,
+  `:css_grid`, `:responsive`, `:responsive_grid`, `:box`, `:split_pane`,
+  `:absolute_layer`.
+
+  Leaf types: `:text`, `:label`, `:button`, `:text_input`, `:checkbox`,
+  `:image`, `:divider`, `:spacer`, `:table`.
+  """
+  @type element :: %{required(:type) => atom(), optional(atom()) => any()}
+
+  @typedoc """
+  Output of `apply_layout/3`: a flat list of positioned elements where each
+  carries absolute coordinates and dimensions. The renderer consumes these
+  in order to produce cell tuples.
+  """
+  @type positioned_element :: %{
+          required(:type) => atom(),
+          required(:x) => non_neg_integer(),
+          required(:y) => non_neg_integer(),
+          optional(:width) => non_neg_integer(),
+          optional(:height) => non_neg_integer(),
+          optional(atom()) => any()
+        }
+
+  @typedoc """
+  Intrinsic measurement -- the minimum space an element wants when laid out.
+  """
+  @type measurement :: %{
+          required(:width) => non_neg_integer(),
+          required(:height) => non_neg_integer()
+        }
+
   @doc """
   Applies layout to a view, calculating absolute positions for all elements.
 
@@ -49,6 +104,8 @@ defmodule Raxol.UI.Layout.Engine do
 
   A list of positioned elements with absolute coordinates.
   """
+  @spec apply_layout(element(), dimensions(), PreparedElement.t() | nil) ::
+          [positioned_element()]
   def apply_layout(view, dimensions, prepared_tree \\ nil) do
     # Build a flat lookup from element identity to cached measurements.
     # Uses :erlang.phash2 on the element map as key so measure_element
@@ -105,6 +162,16 @@ defmodule Raxol.UI.Layout.Engine do
   # --- Element Processing Logic ---
   # Moved all process_element/3 definitions here for grouping
 
+  @doc """
+  Lays out a single element against `space`, prepending positioned elements
+  to `acc`. Dispatches by `:type`; falls through to a logged warning for
+  unknown types.
+
+  Used internally by `apply_layout/3` and by container layout modules
+  (`Containers`, `Flexbox`, `Grid`, etc.) when recursing into children.
+  """
+  @spec process_element(element() | any(), space(), [positioned_element()]) ::
+          [positioned_element()]
   # Process a view element
   def process_element(%{type: :view, children: children}, space, acc)
       when is_list(children) do
@@ -558,6 +625,7 @@ defmodule Raxol.UI.Layout.Engine do
 
   A map representing the dimensions: `%{width: integer(), height: integer()}`.
   """
+  @spec measure_element(element() | any(), map()) :: measurement()
   def measure_element(element, available_space \\ %{})
 
   # Handles valid elements (maps with :type and :attrs)
