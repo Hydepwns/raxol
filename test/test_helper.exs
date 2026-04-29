@@ -40,7 +40,19 @@ end
 
 # Start ExUnit
 IO.puts("[TestHelper] Starting ExUnit...")
-ExUnit.start(max_failures: 10)
+
+# Cap concurrent async test cases on CI to half the default (schedulers * 2).
+# GitHub Actions runners have 4 cores and ~7GB RAM; 8 concurrent test
+# processes each holding module heap + GenServer state pushed peak memory
+# over the runner's OOM threshold. 4 fits comfortably.
+exunit_opts =
+  if System.get_env("CI") == "true" do
+    [max_failures: 10, max_cases: System.schedulers_online()]
+  else
+    [max_failures: 10]
+  end
+
+ExUnit.start(exunit_opts)
 ExUnit.configure(formatters: [ExUnit.CLIFormatter, JUnitFormatter])
 
 # Set test environment
@@ -143,10 +155,11 @@ Application.put_env(:raxol, :web, test_mode: true)
 Application.put_env(:raxol, :core, test_mode: true)
 Application.put_env(:raxol, :plugins, test_mode: true)
 
-# Start the endpoint globally for all tests
-IO.puts("[TestHelper] Starting endpoint globally for tests...")
-Application.ensure_all_started(:phoenix)
-Application.ensure_all_started(:plug_cowboy)
+# Phoenix and plug_cowboy are intentionally NOT started here. No test in this
+# suite exercises an HTTP endpoint, and Phoenix was removed from
+# `extra_applications` in :test env (mix.exs phoenix_applications/0) to cut
+# test boot memory. Tests that need Phoenix can start it in their own setup.
+IO.puts("[TestHelper] Skipping Phoenix/plug_cowboy auto-start in test env")
 
 # Configure Mox mocks after application is started
 IO.puts("[TestHelper] Configuring Mox mocks...")
