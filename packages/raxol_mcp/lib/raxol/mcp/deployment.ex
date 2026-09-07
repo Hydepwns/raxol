@@ -38,6 +38,19 @@ defmodule Raxol.MCP.Deployment do
 
   Defaults to `production?/0`; override with
   `config :raxol_mcp, require_authorization: boolean`.
+
+  > #### This got looser in dev, deliberately {: .warning}
+  >
+  > `production?/0` used to be captured at compile time, which read `:prod` for
+  > a path dependency whatever the umbrella's environment was. That made this
+  > `true` inside a raxol DEV session, so SSE refused to boot there without an
+  > authorizer. Reading the environment at runtime corrects the misreading and,
+  > as a consequence, stops the gate biting in dev and test.
+  >
+  > That is the intended posture -- a dev session is not production and should
+  > not be gated as one -- but it is a relaxation as well as a correction. A
+  > dev or staging deployment that wants the production posture has to ask for
+  > it: `config :raxol_mcp, require_authorization: true`.
   """
   @spec require_authorization?() :: boolean()
   def require_authorization? do

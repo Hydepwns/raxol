@@ -130,11 +130,22 @@ config :raxol,
 
 A value that is not a 3-arity fun raises at boot rather than being ignored, so a deployment cannot believe it configured a policy while running without one.
 
+**In a release, the fun form only works from `config/runtime.exs`.** `config/config.exs` is evaluated at build time and its result is written to `sys.config`, which holds serializable terms only; an anonymous function is not one. Name the function instead, which survives into `sys.config`:
+
+```elixir
+# config/config.exs, or runtime.exs: either works for this form.
+config :raxol, mcp_authorizer: {MyApp.McpPolicy, :authorize}
+```
+
+The module and its 3-arity function are checked when the authorizer is resolved, so a typo is a boot failure naming the module rather than a tool that denies for a reason nobody can see.
+
 ### Defaults
 
-Outside production, unconfigured resolves to `Raxol.MCP.Authorizer.allow_all/0`: what the implicit `nil` already did, now visible at the call site so `mix mcp.server` keeps working.
+Configuration binds in every environment. `mcp_allowed_tools` restricts the tools in dev exactly as it does in production; the environment decides only what happens when nothing is configured.
 
-In production it resolves to a deny-by-default allowlist:
+Unconfigured outside production resolves to `Raxol.MCP.Authorizer.allow_all/0`: what the implicit `nil` already did, now visible at the call site so `mix mcp.server` keeps working.
+
+Unconfigured in production resolves to a deny-by-default allowlist:
 
 ```elixir
 config :raxol,
