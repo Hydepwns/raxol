@@ -14,15 +14,42 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.ResolveCharsetNameTest do
   The fix is not "never reach the loader" -- it is "never reach it with
   something that cannot be a module". A charset module still resolves through
   `Code.ensure_loaded?/1`, so its answer does not depend on what the VM happens
-  to have loaded; everything else is answered from a table or by shape.
+  to have loaded; every NAME is answered from a table.
 
   These cover both halves: that resolution is correct and load-order
-  independent, and that nothing on the hot path is shaped like a module.
+  independent, and that no charset name the emulator can designate reaches the
+  loader -- asserted through an Erlang module that shares a charset name's
+  spelling, which is observable, rather than through wall-clock time, which
+  would flake.
+
+  `async: false`: two tests mutate the node-global code path and purge modules.
   """
-  use ExUnit.Case, async: true
+  # Not async: `Code.prepend_path/1` and `:code.purge/1` are node-global.
+  use ExUnit.Case, async: false
 
   alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.ANSI.CharacterSets.StateManager
+
+  # The closed codomain of `charset_code_to_atom/1`, plus `:us` from the
+  # module's own `@type charset`. Every one of these must be answered without
+  # touching the loader, and the ten national replacement sets are the ones a
+  # three-entry table silently missed.
+  @charset_names [
+    :us_ascii,
+    :dec_special_graphics,
+    :uk,
+    :us,
+    :finnish,
+    :french,
+    :french_canadian,
+    :german,
+    :italian,
+    :norwegian_danish,
+    :portuguese,
+    :spanish,
+    :swedish,
+    :swiss
+  ]
 
   describe "resolving the charset modules" do
     test "each module `charset_code_to_module/1` can produce resolves to its name" do
@@ -42,19 +69,43 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.ResolveCharsetNameTest do
       end
     end
 
-    test "every charset code maps to a module the table knows" do
-      for code <- [?B, ?0, ?A] do
+    test "the three module-backed codes resolve to their declared names" do
+      # Only these three codes have a module: `charset_code_to_module/1` returns
+      # nil for the other twelve, and `resolve_charset_name(nil)` is nil, so a
+      # loop over every code could not assert anything here. Asserting the
+      # expected name rather than `refute result == module` also catches a table
+      # entry pointing a code at the wrong set.
+      for {code, name} <- [
+            {?B, :us_ascii},
+            {?0, :dec_special_graphics},
+            {?A, :uk}
+          ] do
         module = CharacterSets.charset_code_to_module(code)
-        refute StateManager.resolve_charset_name(module) == module
+        assert StateManager.resolve_charset_name(module) == name
       end
     end
   end
 
   describe "pass-through" do
-    test "an already-resolved name is returned unchanged" do
-      for name <- [:us_ascii, :dec_special_graphics, :uk, :us] do
+    test "every charset name the emulator can designate is returned unchanged" do
+      for name <- @charset_names do
         assert StateManager.resolve_charset_name(name) == name
       end
+    end
+
+    test "the pass-through set covers what charset_code_to_atom/1 produces" do
+      # Guards against the two halves drifting: a code whose name is missing
+      # from the table would still resolve correctly, just slowly, so no other
+      # test in this file would notice.
+      produced =
+        for code <- 0..255,
+            name = StateManager.charset_code_to_atom(code),
+            not is_nil(name),
+            uniq: true,
+            do: name
+
+      assert produced != []
+      assert Enum.sort(produced -- @charset_names) == []
     end
 
     test "nil, the usual single_shift, is returned unchanged" do
@@ -68,24 +119,23 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.ResolveCharsetNameTest do
   end
 
   describe "the loader is off the hot path" do
-    # The cost this guards against came from reaching the code server with
-    # atoms that are not modules: a load MISS is an uncached full code-path
-    # search, and `nil` and `:us_ascii` are the two commonest arguments here.
-    #
-    # `module_atom?/1` is the discriminator that keeps them off it, so the
-    # property is asserted directly on that predicate rather than through a
-    # wall-clock measurement, which would be a flake.
-    test "nothing that reaches the hot path is shaped like a module" do
-      for argument <- [nil, :us_ascii, :dec_special_graphics, :uk, :us] do
-        refute StateManager.module_atom?(argument),
-               "#{inspect(argument)} would be handed to the code server, and a " <>
-                 "miss there is an uncached code-path search per character"
-      end
-    end
+    test "a charset name is answered by the table even when a module shares its spelling" do
+      # The observable consequence of asking the loader about a NAME: an Erlang
+      # module can be spelled exactly like one, so a stray `german.beam`
+      # anywhere on the code path would hijack the German replacement set and
+      # translate against whatever its `name/0` returns.
+      #
+      # This is a cost assertion made behavioural. Timing it would flake; the
+      # hijack either happens or it does not.
+      module = compile_erlang_module(:german, :hijacked)
 
-    test "a module atom is the only thing that may reach the loader" do
-      assert StateManager.module_atom?(CharacterSets.ASCII)
-      refute StateManager.module_atom?(:no_such_module_anywhere)
+      assert Code.ensure_loaded?(module),
+             "precondition: the impostor must be loadable, or this proves nothing"
+
+      assert function_exported?(module, :name, 0)
+      assert module.name() == :hijacked
+
+      assert StateManager.resolve_charset_name(:german) == :german
     end
 
     test "an unloadable atom resolves without consulting the loader" do
@@ -108,6 +158,17 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.ResolveCharsetNameTest do
       assert StateManager.resolve_charset_name(Enum) == Enum
     end
 
+    test "an Erlang module exporting name/0 resolves through it too" do
+      # The original contract was "any loadable module exporting name/0", not
+      # "any Elixir-namespaced one". A shape test on the `Elixir.` prefix made
+      # this branch unreachable for Erlang modules, which then fell through to
+      # `CharsetData.translate/2`'s nil branch and identity-translated with no
+      # error, no log and no crash.
+      module = compile_erlang_module(:raxol_erlang_probe_charset, :erlang_probe)
+
+      assert StateManager.resolve_charset_name(module) == :erlang_probe
+    end
+
     # The regression this replaces a purge-the-world test with. An earlier fix
     # used `:erlang.module_loaded/1` here, which answers "in memory right now"
     # rather than "is this a charset module", so this same call returned the
@@ -118,10 +179,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.ResolveCharsetNameTest do
     # The probe is compiled to a temp directory rather than declared inline: a
     # module defined in an .exs file exists only in memory, so purging it makes
     # it unloadABLE, not merely unloaded, and the test would prove nothing.
-    # Nothing else in the suite references this module or this code path entry,
-    # so unloading it cannot disturb a concurrently running test. The previous
-    # version purged `CharacterSets.Translator`, a production module on the
-    # character path, out from under an `async: true` suite.
     test "an unloaded charset module resolves to its name, not to itself" do
       module = compile_probe_charset()
 
@@ -137,8 +194,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.ResolveCharsetNameTest do
 
     defp compile_probe_charset do
       module = Raxol.Terminal.ANSI.CharacterSets.OnDiskProbeCharset
-      dir = Path.join(System.tmp_dir!(), "charset_probe_#{System.unique_integer([:positive])}")
-      File.mkdir_p!(dir)
+      dir = temp_dir("charset_probe")
 
       source = Path.join(dir, "on_disk_probe_charset.ex")
 
@@ -149,17 +205,74 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.ResolveCharsetNameTest do
       end
       """)
 
-      Kernel.ParallelCompiler.compile_to_path([source], dir, return_diagnostics: true)
+      # Matched, not discarded: a probe that fails to compile would otherwise be
+      # swallowed, and the test would fail later at the resolution assertion
+      # with a message pointing at resolve_charset_name/1 rather than at the
+      # fixture. `return_diagnostics: true` is also dead configuration if the
+      # result is ignored.
+      assert {:ok, [^module], _diagnostics} =
+               Kernel.ParallelCompiler.compile_to_path([source], dir, return_diagnostics: true)
+
       Code.prepend_path(dir)
 
       on_exit(fn ->
         Code.delete_path(dir)
-        :code.purge(module)
-        :code.delete(module)
+        unload(module)
         File.rm_rf!(dir)
       end)
 
       module
     end
+  end
+
+  # An Erlang module, so the atom is bare (`:german`) rather than
+  # `Elixir.`-prefixed. That is the only way to spell a module that collides
+  # with a charset name.
+  defp compile_erlang_module(module, name) do
+    dir = temp_dir("erl_probe")
+    source = Path.join(dir, "#{module}.erl")
+
+    File.write!(source, """
+    -module(#{module}).
+    -export([name/0]).
+    name() -> #{name}.
+    """)
+
+    assert {:ok, ^module} =
+             :compile.file(String.to_charlist(source), [
+               {:outdir, String.to_charlist(dir)},
+               :return_errors
+             ])
+
+    Code.prepend_path(dir)
+
+    on_exit(fn ->
+      Code.delete_path(dir)
+      unload(module)
+      File.rm_rf!(dir)
+    end)
+
+    module
+  end
+
+  # purge / delete / purge: delete moves current code to the old slot, and only
+  # a second purge reclaims it. Stopping after delete leaves the chunk resident
+  # for the life of the VM.
+  defp unload(module) do
+    :code.purge(module)
+    :code.delete(module)
+    :code.purge(module)
+    :ok
+  end
+
+  defp temp_dir(prefix) do
+    dir =
+      Path.join(
+        System.tmp_dir!(),
+        "#{prefix}_#{System.unique_integer([:positive])}"
+      )
+
+    File.mkdir_p!(dir)
+    dir
   end
 end
