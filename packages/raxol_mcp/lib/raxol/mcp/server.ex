@@ -89,6 +89,7 @@ defmodule Raxol.MCP.Server do
     :authorizer,
     :read_authorizer,
     authorizer_source: :default,
+    transport: :unknown,
     initialized: false,
     log_level: :info,
     subscribers: %{},
@@ -108,11 +109,27 @@ defmodule Raxol.MCP.Server do
   """
   @type authorizer_source :: :configured | :default
 
+  # Transports a caller can declare this server fronts. `:unknown` is the
+  # default: the server is transport-agnostic and a transport attaches after it
+  # boots, so absent a declaration nobody has said. Validated, not trusted --
+  # see `transport!/1`.
+  @transports [:stdio, :sse, :unknown]
+
+  @typedoc """
+  Which transport carries this server's clients, as DECLARED at start.
+
+  Server-derived rather than client-asserted, which is what makes it usable in
+  an authorization decision: a policy can tell a stdio caller (which inherits
+  the OS process boundary) from a network one.
+  """
+  @type transport :: :stdio | :sse | :unknown
+
   @type t :: %__MODULE__{
           registry: GenServer.server(),
           authorizer: Authorizer.t() | nil,
           read_authorizer: Authorizer.t() | nil,
           authorizer_source: authorizer_source(),
+          transport: transport(),
           initialized: boolean(),
           log_level:
             :debug
@@ -272,6 +289,7 @@ defmodule Raxol.MCP.Server do
     registry = Keyword.get(opts, :registry, Registry)
     authorizer = Keyword.get(opts, :authorizer)
     read_authorizer = Keyword.get(opts, :read_authorizer)
+    transport = transport!(Keyword.get(opts, :transport, :unknown))
 
     authorizer_source =
       authorizer_source!(Keyword.get(opts, :authorizer_source, :default))
@@ -284,6 +302,7 @@ defmodule Raxol.MCP.Server do
        authorizer_source: authorizer_source,
        authorizer: authorizer,
        read_authorizer: read_authorizer,
+       transport: transport,
        elicitation_timeout_ms:
          Keyword.get(
            opts,
@@ -402,7 +421,9 @@ defmodule Raxol.MCP.Server do
   # Only four messages care WHICH connection sent them: `initialize` (whose
   # capabilities are that client's alone), `tools/call` (which may park an
   # elicitation owned by it), and the two response shapes that answer one. The
-  # rest are connection-independent and fall through to `dispatch/2`.
+  # rest route by method alone and fall through to `dispatch_common/3` -- which
+  # still receives the connection, flattened into the authorization context,
+  # because every gated surface authorizes against WHO is asking.
 
   defp dispatch(%{method: "initialize", id: id} = msg, state, conn_id) do
     result = %{
@@ -465,7 +486,11 @@ defmodule Raxol.MCP.Server do
         {nil, answer_parked(state, pending, resume(pending, result, state))}
 
       :error ->
-        dispatch(%{id: id, result: result}, state)
+        dispatch_common(
+          %{id: id, result: result},
+          state,
+          authz_context(state, conn_id)
+        )
     end
   end
 
@@ -486,17 +511,22 @@ defmodule Raxol.MCP.Server do
          )}
 
       :error ->
-        dispatch(%{id: id, error: error}, state)
+        dispatch_common(
+          %{id: id, error: error},
+          state,
+          authz_context(state, conn_id)
+        )
     end
   end
 
-  defp dispatch(msg, state, _conn_id), do: dispatch(msg, state)
+  defp dispatch(msg, state, conn_id),
+    do: dispatch_common(msg, state, authz_context(state, conn_id))
 
-  defp dispatch(%{method: "notifications/initialized"}, state) do
+  defp dispatch_common(%{method: "notifications/initialized"}, state, _ctx) do
     {nil, state}
   end
 
-  defp dispatch(%{method: "ping", id: id}, state) do
+  defp dispatch_common(%{method: "ping", id: id}, state, _ctx) do
     {Protocol.response(id, %{}), state}
   end
 
@@ -504,8 +534,8 @@ defmodule Raxol.MCP.Server do
 
   # tools/list is a read/metadata surface too: names, descriptions, and
   # input schemas are the same enumeration class the other gates close.
-  defp dispatch(%{method: "tools/list", id: id}, state) do
-    case authorize_read("tools/list", %{}, state) do
+  defp dispatch_common(%{method: "tools/list", id: id}, state, ctx) do
+    case authorize_read("tools/list", %{}, state, ctx) do
       :allow ->
         tools = Registry.list_tools(state.registry)
         {Protocol.response(id, %{tools: tools}), state}
@@ -516,14 +546,15 @@ defmodule Raxol.MCP.Server do
   end
 
   # The direct-caller entry to the conn-aware clause, guarded on the SAME keys
-  # that clause matches. Without the guard the two arities bounce a `tools/call`
-  # missing either key between them forever: the 3-arity clause declines it, the
-  # generic 3-arity forwards it here, and here forwards it back. That runs
-  # inside a `GenServer.call(:infinity)`, so one malformed frame -- which the
-  # SSE transport will happily decode, since `normalize_body_params/1` only sets
-  # `:params` when the client sent one -- spins the server forever and it never
-  # serves another request, for any client.
-  defp dispatch(%{method: "tools/call"} = msg, state)
+  # that clause matches. Without the guard the two layers bounce a `tools/call`
+  # missing either key between them forever: the conn-aware clause declines it,
+  # the generic clause forwards it to `dispatch_common/3`, and here forwards it
+  # back. That runs inside a `GenServer.call(:infinity)`, so one malformed
+  # frame -- which the SSE transport will happily decode, since
+  # `normalize_body_params/1` only sets `:params` when the client sent one --
+  # spins the server forever and it never serves another request, for any
+  # client.
+  defp dispatch_common(%{method: "tools/call"} = msg, state, _ctx)
        when is_map_key(msg, :id) and is_map_key(msg, :params) do
     dispatch(msg, state, @default_conn)
   end
@@ -531,7 +562,7 @@ defmodule Raxol.MCP.Server do
   # A `tools/call` that names no tool. Answered as bad parameters rather than
   # left to the catch-all, which would report a method it plainly recognises as
   # unknown.
-  defp dispatch(%{method: "tools/call", id: id}, state) do
+  defp dispatch_common(%{method: "tools/call", id: id}, state, _ctx) do
     {Protocol.error_response(
        id,
        Protocol.invalid_params(),
@@ -541,8 +572,8 @@ defmodule Raxol.MCP.Server do
 
   # -- Resources ---
 
-  defp dispatch(%{method: "resources/list", id: id}, state) do
-    case authorize_read("resources/list", %{}, state) do
+  defp dispatch_common(%{method: "resources/list", id: id}, state, ctx) do
+    case authorize_read("resources/list", %{}, state, ctx) do
       :allow ->
         resources = Registry.list_resources(state.registry)
         {Protocol.response(id, %{resources: resources}), state}
@@ -552,10 +583,14 @@ defmodule Raxol.MCP.Server do
     end
   end
 
-  defp dispatch(%{method: "resources/subscribe", id: id, params: params}, state) do
+  defp dispatch_common(
+         %{method: "resources/subscribe", id: id, params: params},
+         state,
+         ctx
+       ) do
     uri = Map.get(params, "uri") || Map.get(params, :uri, "")
 
-    case authorize_read("resources/subscribe", %{"uri" => uri}, state) do
+    case authorize_read("resources/subscribe", %{"uri" => uri}, state, ctx) do
       :allow ->
         # Track that this URI has active subscribers. Notifications for
         # subscribed URIs go to all transport-level subscribers.
@@ -571,13 +606,14 @@ defmodule Raxol.MCP.Server do
   # Gated like subscribe: subscriptions are URI-global (one set for all
   # transport subscribers), so an ungated unsubscribe would let a
   # denied-everything client delete another client's subscription.
-  defp dispatch(
+  defp dispatch_common(
          %{method: "resources/unsubscribe", id: id, params: params},
-         state
+         state,
+         ctx
        ) do
     uri = Map.get(params, "uri") || Map.get(params, :uri, "")
 
-    case authorize_read("resources/unsubscribe", %{"uri" => uri}, state) do
+    case authorize_read("resources/unsubscribe", %{"uri" => uri}, state, ctx) do
       :allow ->
         new_subs = Map.delete(state.resource_subscriptions, uri)
 
@@ -588,10 +624,14 @@ defmodule Raxol.MCP.Server do
     end
   end
 
-  defp dispatch(%{method: "resources/read", id: id, params: params}, state) do
+  defp dispatch_common(
+         %{method: "resources/read", id: id, params: params},
+         state,
+         ctx
+       ) do
     uri = Map.get(params, "uri") || Map.get(params, :uri, "")
 
-    case authorize_read("resources/read", %{"uri" => uri}, state) do
+    case authorize_read("resources/read", %{"uri" => uri}, state, ctx) do
       :allow ->
         {do_read_resource(id, uri, state), state}
 
@@ -602,8 +642,8 @@ defmodule Raxol.MCP.Server do
 
   # -- Prompts ---
 
-  defp dispatch(%{method: "prompts/list", id: id}, state) do
-    case authorize_read("prompts/list", %{}, state) do
+  defp dispatch_common(%{method: "prompts/list", id: id}, state, ctx) do
+    case authorize_read("prompts/list", %{}, state, ctx) do
       :allow ->
         prompts = Registry.list_prompts(state.registry)
         {Protocol.response(id, %{prompts: prompts}), state}
@@ -613,14 +653,19 @@ defmodule Raxol.MCP.Server do
     end
   end
 
-  defp dispatch(%{method: "prompts/get", id: id, params: params}, state) do
+  defp dispatch_common(
+         %{method: "prompts/get", id: id, params: params},
+         state,
+         ctx
+       ) do
     name = Map.get(params, "name") || Map.get(params, :name, "")
     arguments = Map.get(params, "arguments") || Map.get(params, :arguments, %{})
 
     case authorize_read(
            "prompts/get",
            %{"name" => name, "arguments" => arguments},
-           state
+           state,
+           ctx
          ) do
       :allow ->
         {do_get_prompt(id, name, arguments, state), state}
@@ -632,7 +677,11 @@ defmodule Raxol.MCP.Server do
 
   # -- Logging ---
 
-  defp dispatch(%{method: "logging/setLevel", id: id, params: params}, state) do
+  defp dispatch_common(
+         %{method: "logging/setLevel", id: id, params: params},
+         state,
+         _ctx
+       ) do
     level_str = Map.get(params, "level") || Map.get(params, :level, "info")
 
     case Map.fetch(@level_map, level_str) do
@@ -656,11 +705,15 @@ defmodule Raxol.MCP.Server do
 
   # Gated as a read surface: completions enumerate tool names, resource
   # URIs, prompt names, and LIVE headless session ids.
-  defp dispatch(%{method: "completion/complete", id: id, params: params}, state) do
+  defp dispatch_common(
+         %{method: "completion/complete", id: id, params: params},
+         state,
+         ctx
+       ) do
     ref = Map.get(params, "ref") || Map.get(params, :ref, %{})
     argument = Map.get(params, "argument") || Map.get(params, :argument, %{})
 
-    case authorize_read("completion/complete", %{"ref" => ref}, state) do
+    case authorize_read("completion/complete", %{"ref" => ref}, state, ctx) do
       :allow ->
         completions = compute_completions(ref, argument, state)
         {Protocol.response(id, %{completion: %{values: completions}}), state}
@@ -673,13 +726,13 @@ defmodule Raxol.MCP.Server do
   # -- Catch-all ---
 
   # Notifications we don't handle -- no response
-  defp dispatch(%{method: _method} = msg, state)
+  defp dispatch_common(%{method: _method} = msg, state, _ctx)
        when not is_map_key(msg, :id) do
     {nil, state}
   end
 
   # Unknown method with an id -- error response
-  defp dispatch(%{method: method, id: id}, state) do
+  defp dispatch_common(%{method: method, id: id}, state, _ctx) do
     error =
       Protocol.error_response(
         id,
@@ -695,20 +748,20 @@ defmodule Raxol.MCP.Server do
   # says ignore it. Answering "Missing method" would bounce an error response AT
   # a response, which a strict peer can answer in turn -- a loop. Must sit above
   # the malformed-message clause, which would otherwise claim it.
-  defp dispatch(msg, state)
+  defp dispatch_common(msg, state, _ctx)
        when is_map_key(msg, :result) or is_map_key(msg, :error) do
     {nil, state}
   end
 
   # Malformed message
-  defp dispatch(%{id: id}, state) do
+  defp dispatch_common(%{id: id}, state, _ctx) do
     error =
       Protocol.error_response(id, Protocol.invalid_request(), "Missing method")
 
     {error, state}
   end
 
-  defp dispatch(_msg, state) do
+  defp dispatch_common(_msg, state, _ctx) do
     {nil, state}
   end
 
@@ -812,6 +865,21 @@ defmodule Raxol.MCP.Server do
     end
   end
 
+  # What an authorizer at either seam is told about the CALLER, as opposed to
+  # the call. Server-derived facts only: the connection the request arrived on
+  # and the transport this server was told it fronts. Without it no policy can
+  # tell a stdio caller from an unauthenticated network one, which is most of
+  # what a policy would want to key on.
+  #
+  # NOTHING the client asserts belongs in here -- not the `clientInfo` name or
+  # version from `initialize`, not a header it chose. A policy keyed on a
+  # client-asserted value is bypassed by asserting a different one, so shipping
+  # one in this map would be shipping the bypass alongside the gate. Anything
+  # added here must be something only the server can know.
+  defp authz_context(state, conn_id) do
+    %{conn_id: conn_id, transport: state.transport}
+  end
+
   # Read surfaces (resources/read, resources/subscribe, resources/list,
   # prompts/get, prompts/list, completion/complete) consult the DEDICATED
   # :read_authorizer, not the tools/call authorizer: an existing tool
@@ -821,10 +889,10 @@ defmodule Raxol.MCP.Server do
   # OS boundary). There is no elicitation path here: ASK resolves to deny,
   # because the elicitation flow is shaped around approving a tool RUN --
   # and the operator-facing prompt is NOT echoed to the denied client.
-  defp authorize_read(_op, _detail, %{read_authorizer: nil}), do: :allow
+  defp authorize_read(_op, _detail, %{read_authorizer: nil}, _ctx), do: :allow
 
-  defp authorize_read(op, detail, state) do
-    case Authorizer.decide(state.read_authorizer, op, detail, %{}) do
+  defp authorize_read(op, detail, state, ctx) do
+    case Authorizer.decide(state.read_authorizer, op, detail, ctx) do
       :allow -> :allow
       {:ask, _prompt} -> {:deny, :interactive_approval_unsupported}
       {:deny, reason} -> {:deny, reason}
@@ -886,7 +954,9 @@ defmodule Raxol.MCP.Server do
   defp authorize_and_call(id, name, arguments, state, conn_id) do
     # Authorize before the tool runs. A nil authorizer allows (stdio inherits
     # the OS boundary).
-    case safe_decide(state.authorizer, name, arguments) do
+    ctx = authz_context(state, conn_id)
+
+    case safe_decide(state.authorizer, name, arguments, ctx) do
       :allow ->
         {call_tool_response(
            id,
@@ -915,8 +985,8 @@ defmodule Raxol.MCP.Server do
   # not an authorizer that said yes. The reason is deliberately coarse in the
   # response (`authz_detail/1` renders it to the client) while the log keeps
   # the stacktrace.
-  defp safe_decide(authorizer, name, arguments) do
-    case Authorizer.decide(authorizer, name, arguments, %{}) do
+  defp safe_decide(authorizer, name, arguments, ctx) do
+    case Authorizer.decide(authorizer, name, arguments, ctx) do
       :allow ->
         :allow
 
@@ -959,6 +1029,17 @@ defmodule Raxol.MCP.Server do
   defp authorizer_source!(other) do
     raise ArgumentError,
           "Raxol.MCP.Server :authorizer_source must be :configured or :default, got: #{inspect(other)}"
+  end
+
+  # A typo'd transport must not read as "some other transport". This value is
+  # handed to authorizers as fact, so `:SSE` silently reading as neither stdio
+  # nor SSE would quietly change what every policy keyed on it decides.
+  defp transport!(transport) when transport in @transports, do: transport
+
+  defp transport!(other) do
+    raise ArgumentError,
+          "Raxol.MCP.Server :transport must be one of #{inspect(@transports)}, " <>
+            "got: #{inspect(other)}"
   end
 
   # Registering a tool that declares itself destructive/sensitive while no
