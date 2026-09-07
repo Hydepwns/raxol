@@ -28,12 +28,13 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.ResolveCharsetNameTest do
   use ExUnit.Case, async: false
 
   alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets.Handler
   alias Raxol.Terminal.ANSI.CharacterSets.StateManager
+  alias Raxol.Terminal.Emulator
 
-  # The closed codomain of `charset_code_to_atom/1`, plus `:us` from the
-  # module's own `@type charset`. Every one of these must be answered without
-  # touching the loader, and the ten national replacement sets are the ones a
-  # three-entry table silently missed.
+  # Spot-check list for the "returned unchanged" test below. The AUTHORITATIVE
+  # pass-through set is `StateManager.pass_through_name?/1`; asserting against a
+  # copy of the list is what let the live designation table drift away from it.
   @charset_names [
     :us_ascii,
     :dec_special_graphics,
@@ -93,19 +94,61 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.ResolveCharsetNameTest do
       end
     end
 
-    test "the pass-through set covers what charset_code_to_atom/1 produces" do
-      # Guards against the two halves drifting: a code whose name is missing
-      # from the table would still resolve correctly, just slowly, so no other
-      # test in this file would notice.
-      produced =
-        for code <- 0..255,
-            name = StateManager.charset_code_to_atom(code),
-            not is_nil(name),
-            uniq: true,
-            do: name
+    test "every designator the LIVE designation path accepts is pass-through" do
+      # Anchored to `Handler.designate_charset/3`, the function the emulator
+      # actually calls for `ESC ( ) * +`. The previous version of this test
+      # enumerated `StateManager.charset_code_to_atom/1`, which has no
+      # production callers -- so it certified a table nothing reads while the
+      # live one drifted.
+      #
+      # A name missing from the pass-through set still RESOLVES correctly, just
+      # via an uncached code-server walk on every character, so only an
+      # assertion about the set itself can catch the regression.
+      designated =
+        for code <- 0..255, uniq: true do
+          Handler.designate_charset(StateManager.new(), 0, code).g0
+        end
 
-      assert produced != []
-      assert Enum.sort(produced -- @charset_names) == []
+      assert designated != []
+
+      for name <- designated do
+        assert StateManager.pass_through_name?(name),
+               "#{inspect(name)} is designable but reaches Code.ensure_loaded?/1"
+      end
+    end
+
+    test "the G-set reference a fresh emulator puts in :active is pass-through" do
+      # Every Emulator constructor seeds `charset_state.active` with a G-set
+      # REFERENCE, and `CharacterSets.translate_char/2` resolves that field
+      # directly -- so this runs per printable character on a brand-new
+      # emulator, with no escape sequence involved.
+      active = Emulator.new(80, 24).charset_state.active
+
+      assert active in [:g0, :g1, :g2, :g3]
+
+      assert StateManager.pass_through_name?(active),
+             "a fresh emulator's :active reaches Code.ensure_loaded?/1"
+    end
+
+    test "the DEC and SCS sets the other designators emit are pass-through" do
+      # CSIHandler.handle_scs/3, Charset.Operations.get_charset_for_params/2 and
+      # Escape.Parsers.SCSParser designate these; none appears in
+      # Handler.code_to_charset/1, so the test above cannot see them.
+      for name <- [
+            :dec_special,
+            :dec_supplemental,
+            :dec_supplemental_graphics,
+            :dec_supplementary,
+            :dec_technical,
+            :dec_hebrew,
+            :dec_greek,
+            :dec_turkish,
+            :uk_ascii,
+            :dutch
+          ] do
+        assert StateManager.pass_through_name?(name),
+               "#{inspect(name)} is designable but reaches Code.ensure_loaded?/1"
+      end
     end
 
     test "nil, the usual single_shift, is returned unchanged" do

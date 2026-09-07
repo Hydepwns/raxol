@@ -211,15 +211,36 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   # modules. `Code.ensure_loaded?/1` on a NAME is an uncached full code-path
   # search, ~0.32ms, every character. On a module atom it is a hit or a single
   # load, ~94ns thereafter. `@charset_names` is what keeps the former off the
-  # path: it is the CLOSED codomain of `charset_code_to_atom/1` plus `:us`, so
-  # every value the emulator can actually designate is answered by a map-key
-  # guard and nothing a terminal produces ever reaches the loader.
+  # path: it must contain every atom that can reach `resolve_charset_name/1`
+  # from a live producer, or that producer's charset pays the uncached walk on
+  # every character.
+  #
+  # The producers, enumerated. Getting this list from
+  # `charset_code_to_atom/1` was wrong: that function has NO production
+  # callers, so freezing its codomain froze the wrong table.
+  #
+  #   * `Handler.designate_charset/3` -> `code_to_charset/1` -- the live
+  #     `ESC ( ) * +` path. Guarded for real by the test that drives every
+  #     designator byte through the public function, not by this comment.
+  #   * `Emulator` construction seeds `charset_state.active` with a G-SET
+  #     REFERENCE (`:g0`), not a charset name, and `CharacterSets.translate_char/2`
+  #     reads that field directly. So `:g0..:g3` reach here too, on a freshly
+  #     built emulator, with no escape sequence involved.
+  #   * `CSIHandler.handle_scs/3` adds `:dec_technical`; `Charset.Operations`
+  #     adds the other DEC sets; `Escape.Parsers.SCSParser` adds `:uk_ascii`
+  #     and `:dutch`.
+  #
+  # Every entry below resolves to ITSELF, which is exactly what the loader
+  # fallback already returned for it (none of these atoms names a loadable
+  # module). Listing them changes no result -- it only takes the code server
+  # off the path.
   #
   # Deriving this from `Map.values(@charset_module_names)` -- three names --
   # was the bug: the ten national replacement sets fell through to the
   # `is_atom` clause and paid an `Atom.to_string/1` heap allocation three times
   # per printable character, forever, in exactly the locales that use them.
   @charset_names [
+    # Pass-through names from Handler.code_to_charset/1.
     :us_ascii,
     :dec_special_graphics,
     :uk,
@@ -233,7 +254,25 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
     :portuguese,
     :spanish,
     :swedish,
-    :swiss
+    :swiss,
+    # G-set references. `charset_state.active` is seeded with one of these by
+    # every Emulator constructor, and translate_char/2 resolves that field.
+    :g0,
+    :g1,
+    :g2,
+    :g3,
+    # DEC sets designated via CSIHandler.handle_scs/3 and Charset.Operations.
+    :dec_special,
+    :dec_supplemental,
+    :dec_supplemental_graphics,
+    :dec_supplementary,
+    :dec_technical,
+    :dec_hebrew,
+    :dec_greek,
+    :dec_turkish,
+    # SCSParser designators.
+    :uk_ascii,
+    :dutch
   ]
 
   @resolved_names Map.new(@charset_names, &{&1, &1})
@@ -268,6 +307,15 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   end
 
   def resolve_charset_name(charset), do: charset
+
+  @doc false
+  # Whether `name` is answered by a compile-time map-key guard rather than by
+  # `Code.ensure_loaded?/1`. Exposed so a test can assert the pass-through set
+  # against THIS attribute instead of a copy of the list: a copy drifts
+  # silently, because a name missing from the table still resolves to the same
+  # value -- just via the code server.
+  def pass_through_name?(name),
+    do: is_map_key(@resolved_names, name) or is_map_key(@charset_module_names, name)
 
   @doc """
   Validates character set state.
