@@ -68,6 +68,7 @@ defmodule Raxol.MCP.Server do
   @compile {:no_warn_undefined, Raxol.Headless}
 
   alias Raxol.MCP.Authorizer
+  alias Raxol.MCP.Deployment
   alias Raxol.MCP.Protocol
   alias Raxol.MCP.Registry
   alias Raxol.MCP.ResourceRouter
@@ -114,6 +115,10 @@ defmodule Raxol.MCP.Server do
   # boots, so absent a declaration nobody has said. Validated, not trusted --
   # see `transport!/1`.
   @transports [:stdio, :sse, :unknown]
+
+  # Of those, the ones that carry clients over a network and so cannot lean on
+  # the OS process boundary for anything.
+  @network_transports [:sse]
 
   @typedoc """
   Which transport carries this server's clients, as DECLARED at start.
@@ -282,6 +287,23 @@ defmodule Raxol.MCP.Server do
     :exit, _ -> false
   end
 
+  @doc """
+  Whether the READ seam has an authorizer. The network boot guards use this to
+  refuse a server that would serve `resources/read` -- live model state -- to
+  any client that connects. Returns `false` if the server is unreachable.
+
+  Presence, not source: unlike `authorization_configured?/1` there is no
+  framework fallback here worth telling apart. A read authorizer exists only
+  because someone configured one, and `Raxol.MCP.Deployment`'s tool-seam gate
+  is what carries the "nobody decided" argument.
+  """
+  @spec read_authorization_configured?(GenServer.server()) :: boolean()
+  def read_authorization_configured?(server \\ __MODULE__) do
+    GenServer.call(server, :read_authorization_configured?)
+  catch
+    :exit, _ -> false
+  end
+
   # -- GenServer Callbacks -------------------------------------------------------
 
   @impl Raxol.Core.Behaviours.BaseManager
@@ -295,6 +317,7 @@ defmodule Raxol.MCP.Server do
       authorizer_source!(Keyword.get(opts, :authorizer_source, :default))
 
     refuse_unguarded_sensitive_tools!(registry, authorizer)
+    refuse_unguarded_reads!(transport, read_authorizer)
 
     {:ok,
      %__MODULE__{
@@ -321,6 +344,11 @@ defmodule Raxol.MCP.Server do
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(:authorization_configured?, _from, state) do
     {:reply, state.authorizer != nil and state.authorizer_source == :configured, state}
+  end
+
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:read_authorization_configured?, _from, state) do
+    {:reply, state.read_authorizer != nil, state}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
@@ -1099,6 +1127,27 @@ defmodule Raxol.MCP.Server do
                 "(Raxol.MCP.Authorizer.allow_all/0 opts out, explicitly)."
     end
   end
+
+  # The read seam's boot gate. `Deployment.enforce_authorization!/2` counts only
+  # the TOOL authorizer, so an embedder could satisfy the network gate while
+  # leaving `:read_authorizer` nil -- and `resources/read` serves live model
+  # state, `completion/complete` enumerates live session ids. The network gate
+  # was satisfied; the reads were wide open.
+  #
+  # The per-call default stays `:allow`: stdio embedders rely on it and the OS
+  # process boundary is a real boundary. What changes is that a server DECLARED
+  # to front a network transport refuses to boot with the read seam open,
+  # loudly, rather than serving model state quietly. stdio (and an undeclared
+  # transport) is untouched.
+  defp refuse_unguarded_reads!(transport, read_authorizer)
+       when transport in @network_transports do
+    Deployment.enforce_read_authorization!(
+      read_authorizer != nil,
+      "Raxol.MCP.Server fronting the #{transport} transport"
+    )
+  end
+
+  defp refuse_unguarded_reads!(_transport, _read_authorizer), do: :ok
 
   defp sensitive_tool_names(registry) do
     registry

@@ -110,4 +110,36 @@ defmodule Raxol.MCP.Deployment do
       :ok
     end
   end
+
+  @doc """
+  Fail-closed boot check for the READ seam. Raises when authorization is
+  required in this environment but the fronted server has no
+  `:read_authorizer`; a no-op otherwise. `context` names the caller.
+
+  Separate from `enforce_authorization!/2` because the two seams are separately
+  configured and a network deployment needs both. The tool gate is satisfied by
+  naming `:mcp_authorizer` or `:mcp_allowed_tools`, neither of which says
+  anything about reads -- and `resources/read` serves live model state,
+  `completion/complete` enumerates live session ids. Satisfying the tool gate
+  alone used to be enough to expose them.
+  """
+  @spec enforce_read_authorization!(boolean(), String.t()) :: :ok
+  def enforce_read_authorization!(read_authorizer_configured?, context \\ "MCP transport")
+
+  def enforce_read_authorization!(true, _context), do: :ok
+
+  def enforce_read_authorization!(false, context) do
+    if require_authorization?() do
+      raise ArgumentError,
+            "#{context} refuses to boot: authorization is required in this environment " <>
+              "but no :read_authorizer is configured on the MCP server, so " <>
+              "resources/read would serve live model state to any client that " <>
+              "connects. Configure `config :raxol, :mcp_read_authorizer` (or " <>
+              "`:mcp_allowed_read_methods`), pass :read_authorizer to " <>
+              "Raxol.MCP.Server.start_link/1, or override with " <>
+              "`config :raxol_mcp, require_authorization: false`."
+    else
+      :ok
+    end
+  end
 end
