@@ -151,7 +151,7 @@ defmodule Raxol.Recording.Index do
     }
   end
 
-  defp clamp_dimension(value, default, ceiling)
+  defp clamp_dimension(value, _default, ceiling)
        when is_integer(value) and value > 0,
        do: min(value, ceiling)
 
