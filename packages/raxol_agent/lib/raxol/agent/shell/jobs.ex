@@ -600,10 +600,38 @@ defmodule Raxol.Agent.Shell.Jobs do
     end
   end
 
+  # NOT linked to the caller: the caller is an agent turn, and linking would
+  # make a turn's death close every background job's port -- the exact
+  # cross-turn survival this module exists to provide.
+  #
+  # Supervised anyway, under the agent subsystem's DynamicSupervisor. An
+  # unlinked, unsupervised `GenServer.start/3` was the wrong way to get that:
+  # a crash in any handle_call lost the whole job table at once AND skipped
+  # `terminate/2`, orphaning the OS process groups `Interrupt.kill_os_pid/1`
+  # exists to reap, and nothing stopped it on application shutdown either.
+  # DynSup gives the same independence from the turn plus restart and orderly
+  # shutdown.
+  #
+  # The bare fallback is for a VM with no agent subtree at all -- a plain
+  # script or a focused test -- where there is nothing to supervise under.
   defp lazy_start do
-    # `start`, not `start_link`: the caller is an agent turn, and linking would
-    # make a turn's death close every background job's port -- the exact
-    # cross-turn survival this module exists to provide.
+    case Process.whereis(Raxol.Agent.DynSup) do
+      nil -> unsupervised_start()
+      _sup -> supervised_start()
+    end
+  end
+
+  defp supervised_start do
+    case DynamicSupervisor.start_child(Raxol.Agent.DynSup, {__MODULE__, []}) do
+      {:ok, pid} -> pid
+      {:error, {:already_started, pid}} -> pid
+      # A DynSup that refuses the child must not silently become an
+      # unsupervised singleton; fall back loudly rather than quietly.
+      {:error, reason} -> raise "could not start #{inspect(__MODULE__)}: #{inspect(reason)}"
+    end
+  end
+
+  defp unsupervised_start do
     case GenServer.start(__MODULE__, [], name: __MODULE__) do
       {:ok, pid} -> pid
       {:error, {:already_started, pid}} -> pid

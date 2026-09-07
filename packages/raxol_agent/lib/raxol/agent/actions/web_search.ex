@@ -249,7 +249,14 @@ defmodule Raxol.Agent.Actions.WebSearch do
         {body, _truncated?} = Fetch.collect(response.chunks, @max_response_bytes)
         {:ok, body}
 
-      {:ok, %{status: status}} ->
+      {:ok, %{status: status} = response} ->
+        # `Fetch.transport/1` issues `into: :self`, so the response streams body
+        # chunks into THIS process's mailbox until consumed or cancelled.
+        # Dropping it on the floor leaked the Finch connection and left the
+        # provider's error body — a 429 rate-limit JSON blob, a CDN's 502 HTML
+        # page — accumulating unread, once per call. `Fetch` cancels on every
+        # non-2xx path for the same reason.
+        Fetch.cancel(response)
         {:error, {:search_provider_error, status}}
 
       {:error, reason} ->

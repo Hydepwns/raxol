@@ -66,6 +66,14 @@ defmodule Raxol.Recording.Index do
   @default_width 80
   @default_height 24
 
+  # Ceilings, not defaults: these bound what an untrusted `.cast` header can
+  # make this module allocate. 1000x1000 is far past any real terminal and
+  # still only a megapixel of cells; 2048 keyframes is ~8.5 hours at the 15s
+  # default.
+  @max_width 1000
+  @max_height 1000
+  @max_keyframes 2048
+
   @type keyframe :: %{
           us: non_neg_integer(),
           event_index: non_neg_integer(),
@@ -91,11 +99,31 @@ defmodule Raxol.Recording.Index do
     * `:interval_us` - minimum spacing between keyframes in microseconds
       (default: #{@default_interval_us}). See the module docs for the trade-off.
     * `:width` / `:height` - terminal size (default: the session header's).
+
+  Dimensions are clamped. `session.width`/`session.height` come verbatim from
+  the `.cast` header, which is `Jason.decode!`d without validation, and they
+  are multiplied straight into an `Emulator.new/2` allocation -- so
+  `mix raxol.replay evil.cast --index` on a header claiming 100000x100000
+  allocated before reading a single event. The keyframe count is capped for the
+  same reason: at the 15s default a 24-hour recording is ~5760 keyframes of
+  emulator snapshots, and `--info --index` builds one just to print its size.
   """
   @spec build(Session.t(), keyword()) :: t()
   def build(%Session{} = session, opts \\ []) do
-    width = Keyword.get(opts, :width) || session.width || @default_width
-    height = Keyword.get(opts, :height) || session.height || @default_height
+    width =
+      clamp_dimension(
+        Keyword.get(opts, :width) || session.width,
+        @default_width,
+        @max_width
+      )
+
+    height =
+      clamp_dimension(
+        Keyword.get(opts, :height) || session.height,
+        @default_height,
+        @max_height
+      )
+
     interval_us = Keyword.get(opts, :interval_us, @default_interval_us)
 
     emulator = Emulator.new(width, height)
@@ -110,6 +138,7 @@ defmodule Raxol.Recording.Index do
       )
       |> elem(0)
       |> Enum.reverse()
+      |> cap_keyframes()
 
     %{
       keyframes: keyframes,
@@ -121,6 +150,21 @@ defmodule Raxol.Recording.Index do
       height: height
     }
   end
+
+  defp clamp_dimension(value, default, ceiling)
+       when is_integer(value) and value > 0,
+       do: min(value, ceiling)
+
+  defp clamp_dimension(_value, default, _ceiling), do: default
+
+  # Keeps the FIRST @max_keyframes. Dropping the tail costs seek speed late in
+  # a very long recording (`keyframe_before/2` falls back to an earlier frame
+  # and replays further), never correctness: `us: 0` stays a keyframe and
+  # replay from any keyframe is exact.
+  defp cap_keyframes(keyframes) when length(keyframes) <= @max_keyframes,
+    do: keyframes
+
+  defp cap_keyframes(keyframes), do: Enum.take(keyframes, @max_keyframes)
 
   @doc """
   Nearest keyframe at or before `us`.

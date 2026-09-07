@@ -27,8 +27,12 @@ defmodule Raxol.Agent.Actions.Fetch do
   It requires an `http`/`https` scheme, resolves the host (A and AAAA), and
   refuses the whole request when ANY resolved address is loopback,
   link-local, private, carrier-grade NAT, unspecified, multicast or
-  reserved — including the IPv4-mapped, IPv4-compatible and NAT64 forms
-  that smuggle a v4 address through a v6 literal. Refusing on ANY resolved
+  reserved — including every form that smuggles a v4 address through a v6
+  literal: IPv4-mapped, IPv4-compatible, IPv4-translated, NAT64 (both the
+  /96 and the RFC 8215 local-use prefix) and 6to4, which carries the address
+  in a different pair of groups than the rest. Teredo is refused outright
+  rather than decomposed, since it obfuscates the addresses it tunnels.
+  Refusing on ANY resolved
   address (rather than the first) is deliberate: a host with one public and
   one loopback record must not be reachable by luck of resolver ordering.
 
@@ -310,19 +314,39 @@ defmodule Raxol.Agent.Actions.Fetch do
   def blocked?({0, 0, 0, 0, 0, 0, 0, 0}), do: true
   def blocked?({0, 0, 0, 0, 0, 0, 0, 1}), do: true
 
-  # The three ways a v4 address hides inside a v6 one: ::ffff:a.b.c.d
-  # (IPv4-mapped), ::a.b.c.d (IPv4-compatible) and 64:ff9b::a.b.c.d (NAT64).
-  # Each is decomposed and judged as the v4 address it carries, so
-  # `http://[::ffff:169.254.169.254]/` cannot walk past the v4 clauses above.
+  # Every way a v4 address hides inside a v6 one. Each is decomposed and judged
+  # as the v4 address it carries, so `http://[::ffff:169.254.169.254]/` cannot
+  # walk past the v4 clauses above.
+  #
+  # ::ffff:a.b.c.d (IPv4-mapped) and ::a.b.c.d (IPv4-compatible).
   def blocked?({0, 0, 0, 0, 0, 0xFFFF, hi, lo}), do: blocked?(v4_from(hi, lo))
   def blocked?({0, 0, 0, 0, 0, 0, hi, lo}), do: blocked?(v4_from(hi, lo))
-  def blocked?({0x64, 0xFF9B, 0, 0, 0, 0, hi, lo}), do: blocked?(v4_from(hi, lo))
 
-  def blocked?({a, _b, _c, _d, _e, _f, _g, _h}) do
-    # fc00::/7 unique-local, fe80::/10 link-local, ff00::/8 multicast.
+  # ::ffff:0:a.b.c.d (IPv4-translated, RFC 2765). A different prefix from
+  # IPv4-mapped and it was missing, so `[::ffff:0:169.254.169.254]` resolved
+  # to the generic clause below and was allowed.
+  def blocked?({0, 0, 0, 0, 0xFFFF, 0, hi, lo}), do: blocked?(v4_from(hi, lo))
+
+  # 64:ff9b::/96 (NAT64, RFC 6052) and 64:ff9b:1::/48 (local-use, RFC 8215).
+  # The local-use form carries a nonzero third group, which the /96 pattern
+  # pinned to 0, so it too fell through.
+  def blocked?({0x64, 0xFF9B, 0, 0, 0, 0, hi, lo}), do: blocked?(v4_from(hi, lo))
+  def blocked?({0x64, 0xFF9B, _u, _v, _w, _x, hi, lo}), do: blocked?(v4_from(hi, lo))
+
+  # 2002::/16 (6to4, RFC 3056) embeds the v4 address in the SECOND and THIRD
+  # groups, so `2002:a9fe:a9fe::` is a route to 169.254.169.254 and
+  # `2002:7f00:1::` one to 127.0.0.1. Neither matched anything above.
+  def blocked?({0x2002, hi, lo, _d, _e, _f, _g, _h}), do: blocked?(v4_from(hi, lo))
+
+  def blocked?({a, b, _c, _d, _e, _f, _g, _h}) do
+    # fc00::/7 unique-local, fe80::/10 link-local, ff00::/8 multicast,
+    # 2001:0::/32 Teredo (a v4 tunnel whose server and client addresses are
+    # obfuscated rather than plainly embedded, so it is refused outright
+    # instead of decomposed).
     Bitwise.band(a, 0xFE00) == 0xFC00 or
       Bitwise.band(a, 0xFFC0) == 0xFE80 or
-      Bitwise.band(a, 0xFF00) == 0xFF00
+      Bitwise.band(a, 0xFF00) == 0xFF00 or
+      (a == 0x2001 and b == 0)
   end
 
   # Anything that is not an address tuple is not something to connect to.
@@ -677,8 +701,22 @@ defmodule Raxol.Agent.Actions.Fetch do
     _error -> :ok
   end
 
-  defp cancel(%{cancel: fun}) when is_function(fun, 0), do: fun.()
-  defp cancel(_response), do: :ok
+  @doc """
+  Release an in-flight async response without reading its body.
+
+  Public because `Raxol.Agent.Actions.WebSearch` runs its provider requests
+  through `transport/1` and so inherits `into: :self`: a response it abandons
+  keeps the Finch connection checked out and streams chunks into its mailbox
+  until something cancels it. Every non-2xx and unsupported-type path in this
+  module calls it for the same reason.
+  """
+  @spec cancel(map()) :: :ok
+  def cancel(%{cancel: fun}) when is_function(fun, 0) do
+    _ = fun.()
+    :ok
+  end
+
+  def cancel(_response), do: :ok
 
   defp remaining(deadline) do
     case deadline - System.monotonic_time(:millisecond) do
