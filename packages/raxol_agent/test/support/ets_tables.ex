@@ -25,13 +25,25 @@ defmodule Raxol.Agent.Test.EtsTables do
   @doc """
   Deletes `tables`, tolerating any that are already gone.
 
+  Named tables only. `:ets.whereis/1` is specified for atoms, so a tid or any
+  other term would make the rescue below raise a second, different
+  `ArgumentError` and discard the original -- pointing the failure at this
+  helper instead of the caller. The guard turns that into a
+  `FunctionClauseError` at the call site instead.
+
   A table that is still live and still refuses the delete is a real badarg and
-  is reraised. Mirrors `Raxol.Symphony.Test.EtsTables`, which cannot use this
-  one: `test/support` is not shipped with the package.
+  is reraised. Every adapter in this repo creates `:public` tables, where a
+  non-owner delete succeeds, so that branch is unreachable today; it exists so
+  that an adapter switching to `:protected` fails loudly rather than silently
+  leaking. `test/ets_tables_test.exs` covers it.
+
+  Mirrors `Raxol.Symphony.Test.EtsTables`, which cannot use this one:
+  `test/support` is not shipped with the package. Keep the two `drop/1` bodies
+  identical.
   """
   def drop(tables) when is_list(tables), do: Enum.each(tables, &drop/1)
 
-  def drop(table) do
+  def drop(table) when is_atom(table) do
     :ets.delete(table)
     :ok
   rescue

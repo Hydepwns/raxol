@@ -293,7 +293,7 @@ defmodule Raxol.Symphony.Runners.RaxolAgentTurnErrorTest do
         :"sym_test_threadlog_error_#{:erlang.unique_integer([:positive])}"
 
       on_exit(fn ->
-        EtsTables.drop(thread_log_table)
+        EtsTables.drop([thread_log_table, :"#{thread_log_table}_seq"])
       end)
 
       adapter = {Raxol.Agent.ThreadLog.Ets, %{table: thread_log_table}}

@@ -34,7 +34,7 @@ defmodule Raxol.Symphony.Runners.RaxolAgentThreadLogTest do
 
   defp ets_thread_log do
     table = :"sym_runner_thread_log_test_#{:erlang.unique_integer([:positive])}"
-    on_exit(fn -> EtsTables.drop(table) end)
+    on_exit(fn -> EtsTables.drop([table, :"#{table}_seq"]) end)
     {Raxol.Agent.ThreadLog.Ets, %{table: table}}
   end
 

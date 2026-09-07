@@ -111,10 +111,15 @@ defmodule Raxol.Symphony.Runners.RaxolAgentModuleMetadataTest do
 
   describe "agent.module thread_log default" do
     test "module.thread_log/0 is used when agent.thread_log is unset" do
+      # Fixed name, declared by AgentWithMetadata.thread_log/0, so it cannot be
+      # uniquified here. All the more reason to drop the sequence counter too:
+      # a surviving :symphony_test_module_thread_log_seq would be paired with a
+      # freshly created events table on the next run of this file, because
+      # ThreadLog.Ets.ensure_tables/1 checks each name independently.
       table = :symphony_test_module_thread_log
 
       on_exit(fn ->
-        EtsTables.drop(table)
+        EtsTables.drop([table, :"#{table}_seq"])
       end)
 
       Memory.put_issue(%{issue() | state: "Done"})
@@ -143,7 +148,7 @@ defmodule Raxol.Symphony.Runners.RaxolAgentModuleMetadataTest do
       table = :"direct_thread_log_#{:erlang.unique_integer([:positive])}"
 
       on_exit(fn ->
-        EtsTables.drop(table)
+        EtsTables.drop([table, :"#{table}_seq"])
       end)
 
       direct = {Raxol.Agent.ThreadLog.Ets, %{table: table}}
