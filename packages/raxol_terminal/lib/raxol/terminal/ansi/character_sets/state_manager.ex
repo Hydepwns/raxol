@@ -183,9 +183,10 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   # serialized through one process, so parallel tests queued behind each other
   # and ANSI-heavy suites timed out.
   #
-  # A table lookup answers the real question for the closed set, and the two
-  # commonest arguments -- `nil` and an already-resolved short name -- are
-  # answered by a second table rather than by asking anything about modules.
+  # Two tables answer it instead. `@charset_module_names` maps the three
+  # charset MODULES to their names; `@charset_names` passes every already
+  # resolved NAME straight through. Both are map-key guards, so neither
+  # allocates and neither asks anything about modules.
   #
   # The dynamic branch below is what a custom charset module reaches, and it is
   # deliberately NOT `:erlang.module_loaded/1`. That predicate answers "is this
@@ -196,14 +197,57 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   # change removes: it turns a wrong glyph into a wrong glyph that reproduces
   # only sometimes. The loader is consulted, restoring the original contract.
   #
+  # Note what the loader NO LONGER decides: `@charset_module_names` freezes the
+  # three bundled modules' `name/0` values into this module's guards at compile
+  # time, so a runtime hot reload of `character_sets.ex` alone does not change
+  # them -- `StateManager` keeps returning the pre-reload constants until it is
+  # itself recompiled. Mix handles that automatically for `mix compile`, because
+  # the attribute is a compile-time reference; it is live `:code.load_file/1`
+  # and IEx `r` that go stale. Reload still works for any charset module
+  # outside the table, which takes the `name/0` branch below.
+  #
   # The cost that made the loader unusable is gone anyway, because it was never
   # the loader itself -- it was reaching the loader with atoms that are not
   # modules. `Code.ensure_loaded?/1` on a NAME is an uncached full code-path
-  # search, ~0.32ms, every character. On an Elixir module atom it is a hit or a
-  # single load, ~94ns thereafter. `module_atom?/1` is what keeps the former off
-  # the path: only an `Elixir.`-prefixed atom can name a module, so `nil`,
-  # `:us_ascii` and anything else short-circuit before the loader is involved.
-  @resolved_names Map.new(Map.values(@charset_module_names), &{&1, &1})
+  # search, ~0.32ms, every character. On a module atom it is a hit or a single
+  # load, ~94ns thereafter. `@charset_names` is what keeps the former off the
+  # path: it is the CLOSED codomain of `charset_code_to_atom/1` plus `:us`, so
+  # every value the emulator can actually designate is answered by a map-key
+  # guard and nothing a terminal produces ever reaches the loader.
+  #
+  # Deriving this from `Map.values(@charset_module_names)` -- three names --
+  # was the bug: the ten national replacement sets fell through to the
+  # `is_atom` clause and paid an `Atom.to_string/1` heap allocation three times
+  # per printable character, forever, in exactly the locales that use them.
+  @charset_names [
+    :us_ascii,
+    :dec_special_graphics,
+    :uk,
+    :us,
+    :finnish,
+    :french,
+    :french_canadian,
+    :german,
+    :italian,
+    :norwegian_danish,
+    :portuguese,
+    :spanish,
+    :swedish,
+    :swiss
+  ]
+
+  @resolved_names Map.new(@charset_names, &{&1, &1})
+
+  # A name dropped from the list above would silently fall back onto the
+  # allocating path with every test still green, because the RESULT is
+  # unchanged either way. Fail the compile instead.
+  @missing_names Map.values(@charset_module_names) -- @charset_names
+  if @missing_names != [] do
+    raise "charset names missing from @charset_names: #{inspect(@missing_names)}"
+  end
+
+  # `nil` first: no single shift is the single commonest argument on this path.
+  def resolve_charset_name(nil), do: nil
 
   def resolve_charset_name(charset)
       when is_map_key(@charset_module_names, charset),
@@ -213,31 +257,17 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
       when is_map_key(@resolved_names, charset),
       do: charset
 
-  def resolve_charset_name(nil), do: nil
-
+  # Only a custom charset module reaches here: every name is answered above, so
+  # there is no shape test to keep names off the loader and therefore no reason
+  # to restrict the contract to `Elixir.`-prefixed atoms. An Erlang module
+  # exporting `name/0` resolves too, as it did before this path was rewritten.
   def resolve_charset_name(charset) when is_atom(charset) do
-    if module_atom?(charset) and Code.ensure_loaded?(charset) and
-         function_exported?(charset, :name, 0),
-       do: charset.name(),
-       else: charset
+    if Code.ensure_loaded?(charset) and function_exported?(charset, :name, 0),
+      do: charset.name(),
+      else: charset
   end
 
   def resolve_charset_name(charset), do: charset
-
-  @doc """
-  Whether `atom` is shaped like an Elixir module name.
-
-  Public so the property the fast path depends on is testable directly: every
-  atom this answers `false` for is one `resolve_charset_name/1` returns without
-  reaching the code server. Asserting that through timing would be a flake.
-  """
-  @spec module_atom?(atom()) :: boolean()
-  def module_atom?(atom) when is_atom(atom) do
-    case Atom.to_string(atom) do
-      "Elixir." <> _rest -> true
-      _not_a_module -> false
-    end
-  end
 
   @doc """
   Validates character set state.
