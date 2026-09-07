@@ -241,6 +241,35 @@ defmodule Raxol.UI.RegistryConformanceTest do
     end
   end
 
+  describe "Raxol.Core.Renderer.View is the complete DSL" do
+    # `view.ex:330` says "Delegate unique Components functions so View is the
+    # single complete DSL", and `use Raxol.Core.Runtime.Application` imports
+    # ONLY `Raxol.Core.Renderer.View`. So a helper added to
+    # `Raxol.View.Components` and not delegated is invisible to every TEA app
+    # and every `examples/*.exs` -- which is how `scrubber/1` shipped with a
+    # demo that could not compile. Nothing compiles `examples/`, so this is
+    # the guard.
+    test "every Raxol.View.Components helper is reachable from View" do
+      missing =
+        exported_names(Raxol.View.Components)
+        |> MapSet.difference(exported_names(Raxol.Core.Renderer.View))
+        |> Enum.sort()
+
+      assert missing == [],
+             "not delegated from Raxol.Core.Renderer.View, so no TEA app or example can call them: #{inspect(missing)}"
+    end
+  end
+
+  # Names, not name/arity: `defdelegate f(opts \\ [])` generates f/0 and f/1
+  # while several View helpers are defined with a required argument, so the
+  # arity sets legitimately differ. A helper missing at EVERY arity is the
+  # defect worth failing on.
+  defp exported_names(module) do
+    module.__info__(:functions)
+    |> Enum.map(&elem(&1, 0))
+    |> MapSet.new()
+  end
+
   # Carries every prop the Providers key off (label, disabled, focused, and the
   # visual `role` variant Button folds into state) so that Provider output
   # diverges from `default_extract/2` for all 16 types.

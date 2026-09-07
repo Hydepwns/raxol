@@ -62,8 +62,10 @@ defmodule ScrubberDemo do
       # The human path: every key the widget understands, including space to
       # toggle, arrows to step, 0-9 for deciles, and [ / ] for speed.
       %Event{} = event ->
-        {%{model | scrubber: Scrubber.handle_event(model.scrubber, event, %{})}
-         |> describe(event), []}
+        {scrubber, _commands} =
+          Scrubber.handle_event(event, model.scrubber, %{})
+
+        {describe(%{model | scrubber: scrubber}, event), []}
 
       _ ->
         {model, []}
@@ -94,11 +96,9 @@ defmodule ScrubberDemo do
   end
 
   defp act(model, message, description) do
-    %{
-      model
-      | scrubber: Scrubber.update(message, model.scrubber),
-        last_action: description
-    }
+    {scrubber, _commands} = Scrubber.update(message, model.scrubber)
+
+    %{model | scrubber: scrubber, last_action: description}
   end
 
   defp tick(%{scrubber: %{playing?: true, position: pos, max: max}} = model)
