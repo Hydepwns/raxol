@@ -318,16 +318,29 @@ defmodule Raxol.Application do
   # `:mcp_allowed_read_methods`.
   defp maybe_add_mcp_supervisor do
     if module_available?(Raxol.MCP.Supervisor) do
-      production? = mcp_production?()
-
-      {Raxol.MCP.Supervisor,
-       [
-         authorizer: resolve_mcp_authorizer(:mcp_authorizer, production?),
-         read_authorizer:
-           resolve_mcp_authorizer(:mcp_read_authorizer, production?),
-         authorizer_source: mcp_authorizer_source()
-       ]}
+      {Raxol.MCP.Supervisor, mcp_supervisor_opts()}
     end
+  end
+
+  @doc false
+  # Public so a test can start the supervisor the way the application does.
+  # Asserting against `Process.whereis(Raxol.MCP.Server)` instead made the
+  # end-to-end checks no-ops: `determine_startup_mode/1` returns `:test` under
+  # `mix test`, and `get_children_for_mode(:test)` never calls
+  # `maybe_add_mcp_supervisor/0`, so the server was always absent and every
+  # such test took its `nil -> :ok` branch. Reverting this function to
+  # `{Raxol.MCP.Supervisor, []}` -- the bug this PR fixes -- left the suite
+  # green.
+  @spec mcp_supervisor_opts() :: keyword()
+  def mcp_supervisor_opts do
+    production? = mcp_production?()
+
+    [
+      authorizer: resolve_mcp_authorizer(:mcp_authorizer, production?),
+      read_authorizer:
+        resolve_mcp_authorizer(:mcp_read_authorizer, production?),
+      authorizer_source: mcp_authorizer_source()
+    ]
   end
 
   # Whether the tool authorizer above is an operator's choice or our fallback.

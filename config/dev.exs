@@ -36,7 +36,23 @@ config :raxol, Raxol.Repo,
 # LiteLLM) doesn't take the whole app down with :eaddrinuse. The probe
 # binds the same interface with no SO_REUSEADDR as the endpoint itself
 # binds -- a truthful free/busy read, not a false positive.
-dev_bind_ip = {127, 0, 0, 1}
+# Loopback by default, because Tidewave's `project_eval` evaluates Elixir in
+# the running node and this endpoint mounts it. RAXOL_DEV_BIND_IP exists
+# because a developer in Docker, WSL or a VM otherwise finds the endpoint
+# unreachable with no diagnostic, the only explanation being this comment in a
+# file they have no reason to open. Widening it exposes an eval endpoint on
+# that interface -- pair it with endpoint-level auth.
+dev_bind_ip =
+  case System.get_env("RAXOL_DEV_BIND_IP", "127.0.0.1")
+       |> String.to_charlist()
+       |> :inet.parse_address() do
+    {:ok, address} ->
+      address
+
+    {:error, _} ->
+      raise "RAXOL_DEV_BIND_IP must be an IP address, got: " <>
+              inspect(System.get_env("RAXOL_DEV_BIND_IP"))
+  end
 
 resolve_dev_port = fn ->
   case System.get_env("RAXOL_DEV_PORT") do

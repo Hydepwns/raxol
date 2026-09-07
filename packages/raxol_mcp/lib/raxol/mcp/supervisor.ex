@@ -26,7 +26,9 @@ defmodule Raxol.MCP.Supervisor do
     server_name = Keyword.get(opts, :server_name, Raxol.MCP.Server)
     authorizer = Keyword.get(opts, :authorizer)
     read_authorizer = Keyword.get(opts, :read_authorizer)
-    authorizer_source = Keyword.get(opts, :authorizer_source, :configured)
+    # `:default`, not `:configured`: an embedder who forgets this option must
+    # leave the SSE boot gate shut rather than satisfy it by omission.
+    authorizer_source = Keyword.get(opts, :authorizer_source, :default)
 
     children = [
       {Raxol.MCP.Registry, name: registry_name},

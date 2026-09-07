@@ -15,13 +15,16 @@ defmodule Raxol.MCP.AuthorizerTest do
     }
   end
 
-  defp start_server(authorizer, tools \\ nil) do
+  defp start_server(authorizer, tools \\ nil, opts \\ []) do
     tools = tools || [add_tool()]
     reg = :"reg_#{System.unique_integer([:positive])}"
     srv = :"srv_#{System.unique_integer([:positive])}"
     {:ok, _} = Registry.start_link(name: reg)
     Registry.register_tools(reg, tools)
-    {:ok, _} = Server.start_link(name: srv, registry: reg, authorizer: authorizer)
+
+    {:ok, _} =
+      Server.start_link([name: srv, registry: reg, authorizer: authorizer] ++ opts)
+
     srv
   end
 
@@ -112,9 +115,30 @@ defmodule Raxol.MCP.AuthorizerTest do
   end
 
   describe "authorization_configured?/1" do
-    test "reflects whether an authorizer is set" do
-      assert Server.authorization_configured?(start_server(Authorizer.allow_all()))
-      refute Server.authorization_configured?(start_server(nil))
+    # NOT `authorizer != nil`. A framework may supply a restrictive fallback,
+    # and the value alone cannot be told apart from a policy an operator wrote,
+    # so treating the fallback as configured would satisfy the SSE boot gate
+    # with a default -- removing the forcing function the gate exists to be.
+    test "requires an authorizer AND a :configured source" do
+      assert Server.authorization_configured?(
+               start_server(Authorizer.allow_all(), nil, authorizer_source: :configured)
+             )
+
+      refute Server.authorization_configured?(
+               start_server(nil, nil, authorizer_source: :configured)
+             )
+    end
+
+    test "a :default source answers false however strict the authorizer" do
+      # deny_all is as strict as an authorizer gets, and it still must not open
+      # a network transport: nobody DECIDED that this server should serve.
+      refute Server.authorization_configured?(
+               start_server(Authorizer.deny_all(), nil, authorizer_source: :default)
+             )
+    end
+
+    test "the source defaults to :default, so a forgetful embedder fails closed" do
+      refute Server.authorization_configured?(start_server(Authorizer.allow_all()))
     end
 
     test "returns false for an unreachable server" do
