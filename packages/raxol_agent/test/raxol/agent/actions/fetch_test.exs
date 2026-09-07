@@ -311,4 +311,50 @@ defmodule Raxol.Agent.Actions.FetchTest do
       assert %{provenance: %{trust: :trusted}} = fold(model, tool_result("read_file"))
     end
   end
+
+  describe "a byte cap does not have to land on a character" do
+    # `collect/3` cuts at a BYTE cap and `tidy/1` runs a `u`-flagged regex over
+    # the result. `:re` raises badarg on an invalid UTF-8 subject, so a page
+    # over the cap whose cap-th byte falls inside a multi-byte character used
+    # to crash the tool rather than return its prefix.
+    test "markup cut mid-character still extracts" do
+      # Sized so the 3-byte em-dash STRADDLES the cut: "<p>" is 3 bytes, so
+      # `cap - 4` filler bytes put the character's first byte at `cap - 1` and
+      # its other two past the cap.
+      cap = 64
+      filler = String.duplicate("a", cap - 4)
+      body = "<p>" <> filler <> "\u2014 tail</p>"
+      {truncated, true} = Fetch.collect([body], cap)
+
+      refute String.valid?(truncated),
+             "the fixture must actually cut a character, or this proves nothing"
+
+      assert is_binary(Fetch.extract(truncated, :markup))
+      assert is_binary(Fetch.extract(truncated, :text))
+    end
+
+    test "scrub_utf8/1 leaves valid input untouched" do
+      assert Fetch.scrub_utf8("plain \u2014 text") == "plain \u2014 text"
+    end
+  end
+
+  describe "the deadline bounds the body read, not only the hops" do
+    # `receive_timeout` is an IDLE timeout, so every per-read bound can be
+    # satisfied while a slow-drip server holds the turn for cap-many reads.
+    test "collect/3 stops once the deadline has passed" do
+      already_past = System.monotonic_time(:millisecond) - 1
+
+      chunks =
+        Stream.repeatedly(fn -> "x" end) |> Stream.take(10_000)
+
+      {body, truncated?} = Fetch.collect(chunks, 1_000_000, already_past)
+
+      assert truncated?
+      assert byte_size(body) < 10_000
+    end
+
+    test "collect/3 with no deadline still reads to the end" do
+      assert {"abc", false} = Fetch.collect(["a", "b", "c"], 100)
+    end
+  end
 end

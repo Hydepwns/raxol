@@ -47,6 +47,14 @@ defmodule Raxol.Agent.Actions.WebSearch do
   coding TUI's approval prompt. A search discloses the session's questions
   to a third party and spends the user's search quota, so it is gated like
   the other consequential tools.
+
+  A second, coarser gate sits in front of that one:
+  `Raxol.Agent.Actions.Code.network_allow/1` refuses outright in a jailed
+  (multi-tenant) session unless the context says `network: true`. This tool
+  is in the DEFAULT toolset, so without that gate standing up a hosted
+  tenant surface would hand every tenant outbound HTTP from the operator's
+  address, and the operator's search quota, as a side effect of a change
+  that reads as "add a tool".
   """
 
   alias Raxol.Agent.Actions.Fetch
@@ -118,7 +126,8 @@ defmodule Raxol.Agent.Actions.WebSearch do
   def run(%{query: query} = params, context) do
     limit = limit(Map.get(params, :limit))
 
-    with {:ok, provider, key} <- configured_provider(),
+    with :ok <- Raxol.Agent.Actions.Code.network_allow(context),
+         {:ok, provider, key} <- configured_provider(),
          {:ok, body} <- search(provider, key, query, limit, context),
          {:ok, decoded} <- decode(body) do
       {:ok,

@@ -53,7 +53,9 @@ defmodule RaxolPlaygroundWeb.ReplayLiveTest do
   end
 
   defp seek(socket, frame) do
-    {:noreply, socket} = ReplayLive.handle_event("seek", %{"frame" => frame}, socket)
+    {:noreply, socket} =
+      ReplayLive.handle_event("seek", %{"frame" => frame}, socket)
+
     socket
   end
 
@@ -155,6 +157,60 @@ defmodule RaxolPlaygroundWeb.ReplayLiveTest do
       refute html =~ "scroll_region"
       refute html =~ "charset_state"
       assert byte_size(html) < 64_000
+    end
+  end
+
+  describe "the seek event is bounded and total" do
+    setup do
+      previous =
+        Application.get_env(:raxol_playground, :replay_min_seek_interval_ms)
+
+      Application.put_env(
+        :raxol_playground,
+        :replay_min_seek_interval_ms,
+        5_000
+      )
+
+      on_exit(fn ->
+        Application.put_env(
+          :raxol_playground,
+          :replay_min_seek_interval_ms,
+          previous
+        )
+      end)
+
+      :ok
+    end
+
+    # Each seek is an emulator replay, ~70 ms by this page's own measurement,
+    # on a public unauthenticated socket. The client hook coalesces, but that
+    # is the client's courtesy: nothing stops a socket pushing `seek` in a
+    # loop. The bound has to be on the server.
+    test "a burst of seeks does not run a replay per event" do
+      first = seek(mounted(), 1)
+      moved = first.assigns.position_us
+
+      after_burst =
+        Enum.reduce(2..20, first, fn frame, acc -> seek(acc, frame) end)
+
+      assert after_burst.assigns.position_us == moved,
+             "every seek in the burst ran a replay; the rate limit is not enforced"
+
+      assert after_burst.assigns.pending_seek == 20,
+             "the last position asked for must still be pending, not dropped"
+    end
+
+    # `frame` is whatever the client puts on the wire. A list matched neither
+    # `to_frame/1` clause and raised FunctionClauseError, killing the socket:
+    # the `handle_event/3` catch-all covers an unknown EVENT, not a known one
+    # carrying a value of an unexpected shape.
+    test "a malformed frame does not crash the view" do
+      socket = mounted()
+
+      for bad <- [[], %{}, nil, {1, 2}, "not a number"] do
+        assert {:noreply, _socket} =
+                 ReplayLive.handle_event("seek", %{"frame" => bad}, socket)
+      end
     end
   end
 end

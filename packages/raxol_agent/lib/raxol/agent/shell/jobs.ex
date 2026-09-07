@@ -42,10 +42,14 @@ defmodule Raxol.Agent.Shell.Jobs do
     * Every job carries a wall-clock deadline (10 minutes by default, one hour
       at most). It fires the same process-tree kill an explicit `kill/2` does,
       so a forgotten job cannot outlive it even with nothing reaping.
-    * At most eight jobs run at once and at most sixteen entries are retained.
-      Starting past the running cap is refused rather than queued, because a
-      refusal the model can see beats an unbounded fan-out it cannot; finished
-      entries are pruned oldest-first.
+    * At most eight jobs run at once PER OWNER and at most sixteen entries are
+      retained per owner, with a host-wide ceiling of thirty-two running.
+      Starting past a cap is refused rather than queued, because a refusal the
+      model can see beats an unbounded fan-out it cannot; finished entries are
+      pruned oldest-first, within the owner. Both limits are per-owner because
+      the ownership model above is: global ones put the budget in a different
+      scope from the isolation, so one session could refuse every other
+      session's `shell_start` and evict their finished job records.
     * Retained output is capped at 128KB per job and the excess is DROPPED
       rather than rotated, which is what keeps a cursor a plain absolute offset
       so a poll is idempotent and replayable. `output_bytes` reports what the
@@ -67,6 +71,7 @@ defmodule Raxol.Agent.Shell.Jobs do
   alias Raxol.Agent.SpawnedPort
 
   @max_running 8
+  @max_running_host 32
   @max_retained 16
   @max_output_bytes 131_072
   @default_timeout_ms 600_000
@@ -112,9 +117,18 @@ defmodule Raxol.Agent.Shell.Jobs do
   @spec max_wait_ms() :: pos_integer()
   def max_wait_ms, do: @max_wait_ms
 
-  @doc "How many jobs may run at once."
+  @doc "How many jobs one owner may run at once."
   @spec max_running() :: pos_integer()
   def max_running, do: @max_running
+
+  @doc """
+  How many jobs may run at once across every owner.
+
+  A backstop on the host, not a budget: owners are unbounded in number, so a
+  per-owner cap alone bounds nothing about the machine.
+  """
+  @spec max_running_host() :: pos_integer()
+  def max_running_host, do: @max_running_host
 
   @doc "Retained output cap per job, in bytes."
   @spec max_output_bytes() :: pos_integer()
@@ -200,10 +214,17 @@ defmodule Raxol.Agent.Shell.Jobs do
 
   @impl true
   def handle_call({:start, command, opts}, _from, state) do
-    if running_count(state) >= @max_running do
-      {:reply, {:error, :job_limit_reached}, state}
-    else
-      do_start(command, opts, prune(state))
+    owner = Keyword.fetch!(opts, :owner)
+
+    cond do
+      running_count(state, owner) >= @max_running ->
+        {:reply, {:error, :job_limit_reached}, state}
+
+      running_count(state) >= @max_running_host ->
+        {:reply, {:error, :host_job_limit_reached}, state}
+
+      true ->
+        do_start(command, opts, prune(state, owner))
     end
   end
 
@@ -408,10 +429,23 @@ defmodule Raxol.Agent.Shell.Jobs do
     end
   end
 
+  # The cursor is a BYTE offset into raw command output, so either end of this
+  # slice can land inside a multi-byte character: the cap in `append/2` cuts at
+  # `room` bytes, and a cursor from a previous poll is a port-read boundary,
+  # which is wherever the OS happened to split the pipe. The result goes back
+  # to the model as a tool result and is JSON-encoded, and `Jason.encode/1`
+  # raises on invalid UTF-8 -- so an ordinary command emitting box drawing or
+  # an emoji could fail a poll outright.
+  #
+  # Scrubbed rather than realigned, so the cursor stays a plain absolute byte
+  # offset (which is what makes a poll idempotent and replayable) and at most
+  # the few bytes of one straddling character are lost at a boundary.
   defp slice(job, cursor) do
     size = byte_size(job.output)
     from = cursor |> max(0) |> min(size)
-    {binary_part(job.output, from, size - from), size}
+    chunk = binary_part(job.output, from, size - from)
+
+    {Raxol.Agent.Actions.Fetch.scrub_utf8(chunk), size}
   end
 
   defp kill_and_finish(job, status, exit_code) do
@@ -516,15 +550,36 @@ defmodule Raxol.Agent.Shell.Jobs do
   defp running_count(state),
     do: Enum.count(state.jobs, fn {_id, job} -> job.status == :running end)
 
+  defp running_count(state, owner),
+    do:
+      Enum.count(state.jobs, fn {_id, job} ->
+        job.owner == owner and job.status == :running
+      end)
+
   # Retention is bounded by dropping the oldest FINISHED entries; a running job
   # is never pruned, because its port would be closed under it.
-  defp prune(state) do
-    over = map_size(state.jobs) - @max_retained + 1
+  #
+  # Per OWNER, like the running cap above. Both were global, which put the
+  # limits in a different scope from the ownership model this module documents
+  # at length: one session filling the eight running slots refused every other
+  # session's `shell_start`, and its finished jobs evicted another session's
+  # completed records, so a poll for a job that had finished normally answered
+  # `:job_not_found`. On the multi-tenant SSH surface, where `:owner` is the
+  # tenant's own cwd, that is one tenant degrading the rest.
+  #
+  # `@max_running_host` keeps the host itself bounded, since owners are
+  # unbounded in number. It is the ceiling nobody should reach, not the budget.
+  defp prune(state, owner) do
+    mine =
+      state.jobs
+      |> Map.values()
+      |> Enum.filter(&(&1.owner == owner))
+
+    over = length(mine) - @max_retained + 1
 
     if over > 0 do
       dropped =
-        state.jobs
-        |> Map.values()
+        mine
         |> Enum.reject(&(&1.status == :running))
         |> Enum.sort_by(& &1.finished_at)
         |> Enum.take(over)

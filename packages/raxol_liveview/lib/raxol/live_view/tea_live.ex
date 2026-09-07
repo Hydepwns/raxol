@@ -164,8 +164,21 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
     # TerminalBridge so they cannot drift from the ones buffer_to_html/2 emits
     # for the same :aria_mode -- a second nested live region re-reads the whole
     # screen on every change.
+    #
+    # The mode is READ BACK from the screen rather than fixed at mount. This
+    # function strips the <pre> buffer_to_html/2 wrote, container semantics
+    # included, and the template writes a new one -- so a hardcoded :log
+    # silently reversed an app that had rendered in :application mode, putting
+    # its whole screen back inside a live region that re-announces on every
+    # change. That is exactly what :application opts out of, and the only
+    # person who would notice is a screen-reader user.
     defp put_screen(socket, html) do
-      assign(socket, :rows, TerminalBridge.html_to_rows(html))
+      socket
+      |> assign(:rows, TerminalBridge.html_to_rows(html))
+      |> assign(
+        :container_attrs,
+        TerminalBridge.container_attrs(TerminalBridge.aria_mode_of(html))
+      )
     end
 
     # The screen-reader announcement region is always present so assistive

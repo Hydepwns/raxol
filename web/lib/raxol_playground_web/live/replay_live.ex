@@ -86,6 +86,14 @@ defmodule RaxolPlaygroundWeb.ReplayLive do
   # to that exclusive bound by one microsecond.
   @inclusive 1
 
+  # The floor on how often one socket can make the server replay. Chosen
+  # against the measured ~70 ms median seek: below this the page is not more
+  # responsive, because the server cannot answer faster anyway.
+  #
+  # Overridable so a test can drive many seeks in a row deterministically
+  # without sleeping; `min_seek_interval_ms/0` is what the code reads.
+  @min_seek_interval_ms 80
+
   @impl true
   def mount(_params, _session, socket) do
     recording = recording()
@@ -93,6 +101,12 @@ defmodule RaxolPlaygroundWeb.ReplayLive do
     socket
     |> assign_page()
     |> assign_recording(recording)
+    # `nil`, not a timestamp: Erlang's monotonic clock has an arbitrary
+    # (commonly negative) origin, so no literal is reliably "long ago", and
+    # seeding it one interval back would still defer the first seek whenever
+    # the configured interval is wider than the one used to seed. Never-seeked
+    # is its own state and is always allowed.
+    |> assign(last_seek_at: nil, pending_seek: nil, seek_timer: nil)
     |> seek_to(0)
     |> then(&{:ok, &1})
   end
@@ -135,10 +149,73 @@ defmodule RaxolPlaygroundWeb.ReplayLive do
 
   @impl true
   def handle_event("seek", %{"frame" => frame}, socket) do
-    {:noreply, seek_to(socket, to_frame(frame))}
+    {:noreply, request_seek(socket, to_frame(frame))}
   end
 
   def handle_event(_event, _params, socket), do: {:noreply, socket}
+
+  @impl true
+  def handle_info(:seek_tick, socket) do
+    frame = socket.assigns.pending_seek
+    socket = assign(socket, pending_seek: nil, seek_timer: nil)
+
+    if frame,
+      do: {:noreply, request_seek(socket, frame)},
+      else: {:noreply, socket}
+  end
+
+  # A seek is an emulator replay forward from the nearest keyframe, measured at
+  # a ~70 ms median for this recording. That cost is inherent -- a `.cast` has
+  # no frames, so the screen at an instant exists only once something has
+  # consumed the bytes before it -- which leaves the RATE as the thing to bound.
+  #
+  # `ReplayTransport` already coalesces to one seek in flight, but that is the
+  # client's own courtesy and this page is public and unauthenticated: nothing
+  # stops a socket pushing `seek` in a loop, and each one buys ~70 ms of server
+  # CPU. Enforced here, one socket cannot exceed one seek per
+  # `@min_seek_interval_ms` however it behaves.
+  #
+  # Coalescing rather than dropping, so an honest drag still lands where the
+  # reader let go: an early seek is remembered and released by `:seek_tick`, and
+  # only the last position asked for is ever rendered.
+  #
+  # Residual, stated rather than implied: this bounds ONE socket. N sockets
+  # still multiply, and a bound on that belongs at the endpoint rather than in
+  # a LiveView.
+  @doc false
+  @spec min_seek_interval_ms() :: non_neg_integer()
+  def min_seek_interval_ms do
+    Application.get_env(
+      :raxol_playground,
+      :replay_min_seek_interval_ms,
+      @min_seek_interval_ms
+    )
+  end
+
+  defp request_seek(socket, frame) do
+    interval = min_seek_interval_ms()
+    now = System.monotonic_time(:millisecond)
+
+    since =
+      case socket.assigns.last_seek_at do
+        nil -> interval
+        last -> now - last
+      end
+
+    cond do
+      since >= interval ->
+        socket
+        |> assign(last_seek_at: now, pending_seek: nil)
+        |> seek_to(frame)
+
+      socket.assigns.seek_timer ->
+        assign(socket, :pending_seek, frame)
+
+      true ->
+        timer = Process.send_after(self(), :seek_tick, interval - since)
+        assign(socket, pending_seek: frame, seek_timer: timer)
+    end
+  end
 
   # -- Render --
 
@@ -329,6 +406,12 @@ defmodule RaxolPlaygroundWeb.ReplayLive do
     end
   end
 
+  # Everything else, because `frame` is whatever the client put on the wire.
+  # `{"frame": []}` matched neither clause above and raised FunctionClauseError,
+  # killing the LiveView process -- the `handle_event/3` catch-all covers an
+  # unknown EVENT, not a known event carrying a value of an unexpected shape.
+  defp to_frame(_other), do: 0
+
   # -- Recording --
 
   # Built once per node. The index is ~1.9 MB of emulator snapshots for a 4 s
@@ -345,13 +428,31 @@ defmodule RaxolPlaygroundWeb.ReplayLive do
     key = {__MODULE__, @recording}
 
     case :persistent_term.get(key, nil) do
+      nil -> build_and_publish(key)
+      built -> built
+    end
+  end
+
+  # Re-read before writing. A `put` over an EXISTING key runs the
+  # persistent-term GC, which scans every process on the node for references to
+  # the value being replaced -- so the "wasted work rather than a wrong answer"
+  # of two cold mounts racing was not only wasted work, it was a global pause
+  # bought for nothing. The re-read collapses the common race (a dead render
+  # and its connected mount, which is every first visit) to a single write.
+  #
+  # Still not atomic, and deliberately not worth a process: what remains is two
+  # writes of an equal term in the window between this read and the put, on the
+  # first request after a deploy.
+  defp build_and_publish(key) do
+    built = build_recording()
+
+    case :persistent_term.get(key, nil) do
       nil ->
-        built = build_recording()
         :persistent_term.put(key, built)
         built
 
-      built ->
-        built
+      published ->
+        published
     end
   end
 

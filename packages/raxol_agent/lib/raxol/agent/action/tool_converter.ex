@@ -469,6 +469,13 @@ defmodule Raxol.Agent.Action.ToolConverter do
       "[Tool error for #{name}]: the search provider's response could not be " <>
         "read, so there are no results to report."
 
+  # The remedy is the operator's, not the model's, so it says so rather than
+  # inviting a retry.
+  def public_error(name, :network_disabled),
+    do:
+      "[Tool error for #{name}]: network tools are disabled for this session. " <>
+        "Nothing was requested. Use the local tools instead."
+
   def public_error(name, :req_not_available),
     do:
       "[Tool error for #{name}]: this build has no HTTP client, so network " <>
@@ -487,8 +494,16 @@ defmodule Raxol.Agent.Action.ToolConverter do
 
   def public_error(name, :job_limit_reached),
     do:
-      "[Tool error for #{name}]: too many background jobs are running; wait " <>
-        "for one or shell_kill it before starting another."
+      "[Tool error for #{name}]: too many background jobs are running in this " <>
+        "session; wait for one or shell_kill it before starting another."
+
+  # Distinct from the per-session limit above, because the remedy is not the
+  # model's: killing its own jobs does not help when the host is full.
+  def public_error(name, :host_job_limit_reached),
+    do:
+      "[Tool error for #{name}]: this host is running its maximum number of " <>
+        "background jobs across all sessions. Retry shortly, or run the " <>
+        "command in the foreground with bash."
 
   def public_error(name, :pty_unavailable),
     do:

@@ -205,7 +205,14 @@ defmodule Raxol.LiveView.TerminalBridge do
 
   # Strips the `<pre ...>` open tag and the trailing `</pre>\n`. The open tag
   # carries no `>` inside its attribute values, so the first `>` ends it.
-  defp pre_body(html) do
+  #
+  # Guarded on the `<pre` prefix, because this is string surgery on a document
+  # whose shape it does not own: the render backend broadcasts an
+  # already-rendered screen, and anything that is not `buffer_to_html/2`'s
+  # output would be cut at its first `>` and silently mangled. A string that is
+  # not a `<pre>` passes through whole and becomes one row, which is wrong
+  # visibly rather than wrong in a way that still looks like rendered content.
+  defp pre_body("<pre" <> _ = html) do
     case String.split(html, ">", parts: 2) do
       [_open_tag, rest] ->
         rest |> String.trim_trailing() |> String.trim_trailing("</pre>")
@@ -213,6 +220,33 @@ defmodule Raxol.LiveView.TerminalBridge do
       _ ->
         html
     end
+  end
+
+  defp pre_body(html), do: html
+
+  @doc """
+  The `:aria_mode` a screen rendered by `buffer_to_html/2` was rendered in.
+
+  A caller that owns the `<pre>` itself (see `buffer_to_rows/2`) strips the one
+  `buffer_to_html/2` wrote, and the container semantics with it. Reading the
+  mode back off the markup keeps the two in step without a second channel:
+  `Raxol.LiveView.TEALive` receives the screen as a bare string and has nothing
+  else to learn it from. It previously hardcoded `:log`, so an app rendering in
+  `:application` mode had that silently reversed and its screen became a
+  whole-screen live region again -- which is the exact thing `:application`
+  exists to opt out of, and the failure is audible only to a screen-reader user.
+
+  Defaults to `:log`, matching `buffer_to_html/2`'s own default.
+  """
+  @spec aria_mode_of(String.t()) :: aria_mode()
+  def aria_mode_of(html) when is_binary(html) do
+    # The open tag only: a cell's text is escaped, so it cannot contain this,
+    # but there is no reason to scan a whole screen to find out.
+    head = binary_part(html, 0, min(byte_size(html), 200))
+
+    if String.contains?(head, ~s(role="application")),
+      do: :application,
+      else: :log
   end
 
   @doc """
