@@ -203,6 +203,14 @@ Hooks.RaxolTerminal = {
 // hidden sibling of the visible one, so a seek is a `hidden` toggle over nodes
 // the browser is already holding: routing it through the LiveView would add a
 // round trip, a diff and a morphdom patch to reveal markup that is on the page.
+//
+// The keys in NAVIGATION_KEYS are the browser's own: arrows and Home/End
+// scroll the page, and on a focusable control they move between or within
+// items. A player may claim them where the reader is plainly addressing the
+// player, and not merely because focus is somewhere inside a large container
+// the player also lives in.
+const NAVIGATION_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'Home', 'End'])
+
 const Transport = {
   // Distinct indices, not element count: a player may carry the same sequence
   // in more than one pane (the hero's terminal and browser panes do), so the
@@ -666,10 +674,19 @@ Hooks.HeroDemo = {
   // sits inside the hero: a tabpanel, the scrub bar, the transport buttons.
   // The tablist is excluded because it owns those same keys under the ARIA
   // tabs pattern, and Space there has to select the tab it is on.
+  //
+  // The hero is most of the viewport, so "focus is inside it" is close to "the
+  // page has focus" and is far too wide a claim for the keys the browser
+  // already owns. Arrows, Home and End are honoured only inside the transport
+  // cluster; otherwise `End` on one of the hero's links stopped scrolling the
+  // page and stepped a frame instead. Space and the digits stay wide: nothing
+  // else in the hero does anything with them, and a focused button keeps Space
+  // through the guard in `Transport.intent`.
   onTransportKey(e) {
     if (e.target.closest('.hero-tab')) return
     const seekEl = this.el.querySelector('[data-role="player-seek"]')
     if (!Transport.owns(e.target, seekEl)) return
+    if (!e.target.closest('.hd-controls') && NAVIGATION_KEYS.has(e.key)) return
     const count = Transport.count(this.frameNodes())
     if (count < 2) return
     const act = Transport.intent(e, {

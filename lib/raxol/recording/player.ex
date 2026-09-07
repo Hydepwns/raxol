@@ -116,6 +116,9 @@ defmodule Raxol.Recording.Player do
       paused: false,
       total_us: total_us,
       input_marks: input_marks(events),
+      # `{track_width, columns}`, filled on the first repaint. See
+      # `ensure_mark_columns/3`.
+      mark_columns: nil,
       session: session
     }
 
@@ -124,8 +127,7 @@ defmodule Raxol.Recording.Player do
     reader = start_input_reader()
 
     try do
-      show_status_bar(state)
-      loop(state)
+      state |> show_status_bar() |> loop()
     after
       Process.unlink(reader)
       Process.exit(reader, :kill)
@@ -186,8 +188,7 @@ defmodule Raxol.Recording.Player do
     do: jump_to_percent(state, pct) |> continue()
 
   defp continue(state) do
-    show_status_bar(state)
-    loop(state)
+    state |> show_status_bar() |> loop()
   end
 
   # -- Seeking --
@@ -313,35 +314,77 @@ defmodule Raxol.Recording.Player do
   # player's own. The transport glyph replaces the old " [PAUSED]" text and
   # the track replaces the old "(33%)": both said the same thing twice.
 
+  # Returns the updated state: this is on the hot path, and the mark columns it
+  # memoizes are what keep it off `O(marks log marks)` per frame.
   defp show_status_bar(state) do
-    IO.write(
-      "\e7\e[#{state.session.height};1H\e[7m#{status_bar(state)}\e[0m\e8"
+    props = scrubber_props(state)
+    track_width = track_width(state, props)
+    {columns, state} = ensure_mark_columns(state, props, track_width)
+
+    bar = render_bar(props, track_width, columns, state.session.width)
+    IO.write("\e7\e[#{state.session.height};1H\e[7m#{bar}\e[0m\e8")
+
+    state
+  end
+
+  # The track is sized from the chrome beside it, which is not a constant: the
+  # clock widens with the recording's length and the speed label disappears at
+  # 1x. `Scrubber.chrome_width/1` measures exactly those parts.
+  #
+  # It used to be measured by rendering a whole `Scrubber.line/1` at the
+  # minimum track width and subtracting the track. That drew a track, and
+  # resolved every mark to a column, purely to find out how wide to draw the
+  # real one -- and then did the mark work a second time for the real render.
+  # Both passes run `sanitize_marks/3` (filter, uniq, sort) over every `:input`
+  # event in the recording, and this function runs on EVERY output event, so a
+  # recording with many keystrokes paid `O(events * marks log marks)` to repaint
+  # a bar at most 40 columns wide. The previous status bar was string
+  # interpolation.
+  defp track_width(state, props) do
+    chrome = Scrubber.chrome_width(props) + String.length(@status_hints) + 4
+
+    Raxol.Core.Utils.Math.clamp(
+      state.session.width - chrome,
+      @min_track,
+      @max_track
     )
+  end
+
+  # Keyed on the width, because that is the only thing the columns depend on
+  # that can change during playback: `input_marks/1` is fixed for the recording
+  # and the width moves only when the speed label appears or disappears.
+  defp ensure_mark_columns(state, props, width) do
+    case state.mark_columns do
+      {^width, columns} ->
+        {columns, state}
+
+      _stale_or_absent ->
+        columns = Scrubber.mark_columns(%{props | width: width})
+        {columns, %{state | mark_columns: {width, columns}}}
+    end
+  end
+
+  defp render_bar(props, track_width, columns, width) do
+    line =
+      Scrubber.line(%{props | width: track_width, mark_columns: columns})
+
+    (" " <> line <> " | " <> @status_hints)
+    |> String.slice(0, width)
+    |> String.pad_trailing(width)
   end
 
   @doc false
   @spec status_bar(map()) :: String.t()
   def status_bar(state) do
-    width = state.session.width
     props = scrubber_props(state)
+    track_width = track_width(state, props)
 
-    # The chrome around the track is not a constant: the clock widens with
-    # the recording's length and the speed label disappears at 1x. Render
-    # once at the minimum track width to measure it, then spend whatever
-    # columns are left on the track itself.
-    chrome =
-      String.length(Scrubber.line(props)) - @min_track +
-        String.length(@status_hints) + 4
-
-    track_width =
-      Raxol.Core.Utils.Math.clamp(width - chrome, @min_track, @max_track)
-
-    bar =
-      " " <>
-        Scrubber.line(%{props | width: track_width}) <>
-        " | " <> @status_hints
-
-    bar |> String.slice(0, width) |> String.pad_trailing(width)
+    render_bar(
+      props,
+      track_width,
+      Scrubber.mark_columns(%{props | width: track_width}),
+      state.session.width
+    )
   end
 
   defp scrubber_props(state) do

@@ -42,6 +42,7 @@ defmodule Raxol.UI.Components.Input.Scrubber do
   - `:label` - Optional leading label.
   - `:on_seek` - `(position -> message)`, run on every position change.
   - `:on_play` / `:on_pause` - `(-> message)`, run on the transport toggle.
+  - `:on_speed` - `(speed -> message)`, run when the speed ladder moves.
   - `:disabled` - Inert: no key handling, no MCP tools.
   - `:aria_label`, `:tooltip` - Accessibility passthrough.
 
@@ -100,6 +101,7 @@ defmodule Raxol.UI.Components.Input.Scrubber do
           on_seek: (integer() -> any()) | nil,
           on_play: (-> any()) | nil,
           on_pause: (-> any()) | nil,
+          on_speed: (float() -> any()) | nil,
           disabled: boolean(),
           focused: boolean(),
           style: map(),
@@ -183,6 +185,7 @@ defmodule Raxol.UI.Components.Input.Scrubber do
       on_seek: Map.get(props, :on_seek),
       on_play: Map.get(props, :on_play),
       on_pause: Map.get(props, :on_pause),
+      on_speed: Map.get(props, :on_speed),
       disabled: Map.get(props, :disabled, false),
       focused: false,
       style: Map.get(props, :style, %{}),
@@ -249,14 +252,20 @@ defmodule Raxol.UI.Components.Input.Scrubber do
   # `:key` -- read both rather than assuming a backend.
   defp action_for(data) do
     char = Map.get(data, :char)
+    key = Map.get(data, :key)
 
-    if is_binary(char) and char =~ ~r/^[0-9]$/ do
-      {:percent, String.to_integer(char) * 10}
-    else
-      Map.get(@key_mapping, Map.get(data, :key)) ||
-        Map.get(@key_mapping, char) || :none
+    # The digit is read from BOTH fields, as the comment above promises and as
+    # every other binding here already does. Reading it only from `:char` meant
+    # a backend that delivers "5" in `:key` got `:none` from the table lookup
+    # and the decile jump silently did not exist on that backend.
+    case digit(char) || digit(key) do
+      nil -> Map.get(@key_mapping, key) || Map.get(@key_mapping, char) || :none
+      percent -> {:percent, percent}
     end
   end
+
+  defp digit(<<code>>) when code in ?0..?9, do: (code - ?0) * 10
+  defp digit(_other), do: nil
 
   defp apply_action(:none, state), do: {state, []}
 
@@ -298,11 +307,23 @@ defmodule Raxol.UI.Components.Input.Scrubber do
     end
   end
 
-  defp apply_action(:speed_up, state),
-    do: {%{state | speed: step_speed(state.speed, 1)}, []}
+  defp apply_action(:speed_up, state), do: step_speed_with(state, 1)
+  defp apply_action(:speed_down, state), do: step_speed_with(state, -1)
 
-  defp apply_action(:speed_down, state),
-    do: {%{state | speed: step_speed(state.speed, -1)}, []}
+  # `on_speed` for the same reason `on_seek` exists: the widget holds the
+  # playback rate but does not own the timer that reads it, so a parent driving
+  # playback had no way to learn that `+` was pressed and the ladder moved
+  # nothing outside the widget's own render. Silent at the ends of the ladder,
+  # as `seek_with/2` is at the ends of the track.
+  defp step_speed_with(state, direction) do
+    speed = step_speed(state.speed, direction)
+
+    if speed == state.speed do
+      {state, []}
+    else
+      {%{state | speed: speed}, callback(state.on_speed, speed)}
+    end
+  end
 
   # No callback and no command when the clamp lands on the position we were
   # already at: holding `left` at zero should not emit a seek per keypress.
@@ -360,21 +381,65 @@ defmodule Raxol.UI.Components.Input.Scrubber do
     min = Map.get(opts, :min, 0)
     max_pos = max(min, Map.get(opts, :max, 0))
     position = Math.clamp(Map.get(opts, :position, min), min, max_pos)
-    marks = sanitize_marks(Map.get(opts, :marks, []), min, max_pos)
 
     last = width - 1
     head = column_for(position, min, max_pos, last)
-    mark_columns = MapSet.new(marks, &column_for(&1, min, max_pos, last))
+    columns = Map.get_lazy(opts, :mark_columns, fn -> mark_columns(opts) end)
 
     0..last
     |> Enum.map_join(fn col ->
       cond do
         col == head -> @playhead
-        MapSet.member?(mark_columns, col) -> @mark
+        MapSet.member?(columns, col) -> @mark
         col < head -> @filled
         true -> @remaining
       end
     end)
+  end
+
+  @doc """
+  The set of track columns carrying a mark, for a given width and range.
+
+  `track/1` computes this itself unless `:mark_columns` is supplied, which is
+  the point of exposing it: the work is `O(marks log marks)` and it depends on
+  nothing that changes between frames. A caller repainting per event
+  (`Raxol.Recording.Player` repaints its status bar on every output event)
+  computes it once and passes it back, instead of re-sorting the whole mark
+  list to draw at most `width` columns.
+  """
+  @spec mark_columns(t() | keyword() | map()) :: MapSet.t(non_neg_integer())
+  def mark_columns(opts) do
+    opts = normalize_props(opts)
+    width = max(@min_width, Map.get(opts, :width, @default_width))
+    min = Map.get(opts, :min, 0)
+    max_pos = max(min, Map.get(opts, :max, 0))
+    last = width - 1
+
+    opts
+    |> Map.get(:marks, [])
+    |> sanitize_marks(min, max_pos)
+    |> MapSet.new(&column_for(&1, min, max_pos, last))
+  end
+
+  @doc """
+  The columns `line/1` spends on everything except the track.
+
+  A caller sizing the track to a terminal needs this and nothing else, so it
+  must not be obtained by rendering a whole line and subtracting: that draws
+  the track (and resolves every mark) purely to measure the parts beside it,
+  which on a per-frame repaint is the dominant cost of the frame.
+  """
+  @spec chrome_width(t() | keyword() | map()) :: non_neg_integer()
+  def chrome_width(opts) do
+    opts = normalize_props(opts)
+
+    parts =
+      [transport(opts), clock(opts), speed_label(opts)]
+      |> Enum.reject(&(&1 == ""))
+
+    # The track is always rendered, so it is always one more joined part than
+    # `parts` holds: that is `length(parts)` separators of two columns each.
+    Enum.reduce(parts, 0, &(String.length(&1) + &2)) + 2 * length(parts)
   end
 
   @doc """
