@@ -28,14 +28,24 @@ defmodule Raxol.UI.BorderRenderer do
   Gets border characters for a given border style.
   """
   @spec get_border_chars(border_style()) :: border_chars()
-  # Glyph sets come from `Raxol.UI.Theming.BorderChars`. The five style names
-  # this module accepted are unchanged, as is the `:none` result for an
-  # unknown style. The fallback stays here rather than in `BorderChars`
-  # because `Raxol.Core.Box` falls back to `:single` instead, so there is no
-  # single right default to centralize.
+  # Glyph sets come from `Raxol.UI.Theming.BorderChars`, narrowed to the five
+  # style names this module has always accepted.
+  #
+  # `BorderChars.get/1` knows nine (`:bold`, `:heavy`, `:dashed` and
+  # `:dashed_fine` as well), so delegating to it directly widened this public
+  # function's accepted set from five to nine -- those four returned glyphs
+  # where they had previously fallen through to `:none` -- while `@type
+  # border_style` above and this very comment still said five. Widen the type
+  # deliberately if that is wanted; do not widen it by delegation.
+  #
+  # The `:none` fallback stays here rather than in `BorderChars` because
+  # `Raxol.Core.Box` falls back to `:single` instead, so there is no single
+  # right default to centralize.
+  @accepted_styles [:single, :double, :rounded, :ascii, :none]
+
   def get_border_chars(style) do
-    Raxol.UI.Theming.BorderChars.get(style) ||
-      Raxol.UI.Theming.BorderChars.get(:none)
+    chars = Raxol.UI.Theming.BorderChars.subset(@accepted_styles)
+    Map.get(chars, style) || Map.fetch!(chars, :none)
   end
 
   @doc """

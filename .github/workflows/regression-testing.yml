@@ -165,6 +165,14 @@ jobs:
         # -f: the benchmark build re-resolves transitive deps and dirties
         # mix.lock; force past it (untracked benchmark outputs are unaffected).
         git checkout -f "$BASELINE_REF"
+        # `_build` is shared across both checkouts in this step, and it holds
+        # COMPILED sibling raxol packages resolved through path deps. Without
+        # clearing it, the baseline's 2.6.x .app files survive into the head
+        # compile below and `mix deps.get` refuses them against `~> 2.7`:
+        # `the dependency does not match the requirement "~> 2.7", got
+        # "2.6.0"`, which killed this job and all three memory-regression
+        # cells before a single benchmark ran.
+        rm -rf _build
         # Baseline is only compiled to run benchmarks against; it may predate
         # warning fixes on this branch, so do not gate it on warnings.
         mix deps.get && mix compile
@@ -196,6 +204,8 @@ jobs:
         echo "[OK] Baseline benchmarks complete"
 
         git checkout -f ${{ github.sha }}
+        # Same reason as above, in the other direction.
+        rm -rf _build
         mix deps.get && mix compile --warnings-as-errors
 
     - name: Download cached baselines
@@ -361,6 +371,10 @@ jobs:
         # -f: the benchmark build re-resolves transitive deps and dirties
         # mix.lock; force past it (untracked benchmark outputs are unaffected).
         git checkout -f "$BASELINE_REF"
+        # See the performance job: `_build` is shared across both checkouts and
+        # holds compiled sibling raxol packages, so the baseline's 2.6.x .app
+        # files otherwise survive into the head compile and fail `~> 2.7`.
+        rm -rf _build
         # Baseline is only compiled to run benchmarks against; it may predate
         # warning fixes on this branch, so do not gate it on warnings.
         mix deps.get && mix compile
@@ -420,6 +434,7 @@ jobs:
         echo "Baseline memory benchmarks complete for ${{ matrix.scenario }}"
 
         git checkout -f ${{ github.sha }}
+        rm -rf _build
         mix deps.get && mix compile --warnings-as-errors
 
     - name: Download cached memory baselines

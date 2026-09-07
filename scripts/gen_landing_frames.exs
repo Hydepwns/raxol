@@ -96,12 +96,24 @@ defmodule Harness do
   use Raxol.Core.Runtime.Application
   alias Raxol.UI.Components.Harness.ToolCallBlock, as: T
 
+  @mark [
+    "⣀⡀⠀⢰⡾⠛⣷⡄⠀⠀⣠",
+    "⠀⠉⠻⣮⡻⢶⣿⡗⠚⠁⠀",
+    "⠀⠀⠀⠈⢿⣿⠟⠀⠀⠀⠀"
+  ]
+  @job [
+    "VIRTUALS PROTOCOL   acp job #4812",
+    "bugfix   spend gate off-by-one",
+    "escrow   40.00 USDC on base 8453"
+  ]
   @calls [
     {"read", "spend_gate.ex"},
     {"edit", "spend_gate.ex:42"},
-    {"shell", "mix test"}
+    {"shell", "mix test"},
+    {"submit", "deliverable -> job #4812"},
+    {"settle", "escrow released to seller"}
   ]
-  @ladder [0, 0, 1, 1, 1, 1, 1, 2, 2, 3]
+  @ladder [0, 0, 1, 1, 1, 2, 2, 3, 4, 5]
   def init(_), do: %{t: 0}
   def update(:tick, m), do: {%{m | t: m.t + 1}, []}
   def update(_, m), do: {m, []}
@@ -112,11 +124,14 @@ defmodule Harness do
 
     column style: %{gap: 1} do
       [
-        text("virtuals acp  bugfix  40.00 USDC", fg: :cyan),
+        row(style: %{gap: 2}, do: [mark(), job()]),
         column(do: Enum.with_index(@calls, &call(&1, &2, at, m.t)))
       ]
     end
   end
+
+  defp mark, do: column(do: Enum.map(@mark, &text(&1, fg: :cyan)))
+  defp job, do: column(do: Enum.map(@job, &text(&1)))
 
   defp call({n, a}, i, x, t) do
     {:ok, s} = T.init(name: n, args: a, status: st(i, x), frame: t)
@@ -355,17 +370,19 @@ defmodule GenLandingFrames do
   #          tracks, and the field reads as noise either way.
   #   harness
   #          `@ladder` is the dwell, one entry per frame, so the ten frames it
-  #          holds are the loop. The dwell is uneven on purpose: `edit` sits
-  #          for five of them because it is the call a reader wants to watch,
-  #          and one call per tick went by too fast to follow. All-done gets a
-  #          single frame -- it is the one state with no spinner, so a second
-  #          frame of it would be identical to the first.
+  #          holds are the loop. The dwell is uneven on purpose: the three
+  #          calls that edit code sit longest because they are what a reader
+  #          wants to watch, while `submit` and `settle` are on-chain writes
+  #          that take one frame each -- a job ends in one transaction, and
+  #          dwelling there would say it takes as long as the work. All-done
+  #          gets a single frame -- it is the one state with no spinner, so a
+  #          second frame of it would be identical to the first.
   #   settle five receipt steps; route facts are fixed, while the cursor moves
   #          through real receipt stages without inventing transaction hashes.
   @examples [
     {"pulse", Pulse, {62, 13}, 90, 63},
     {"halo", Halo, {70, 14}, 110, 48},
-    {"harness", Harness, {36, 5}, 200, 10},
+    {"harness", Harness, {48, 9}, 200, 10},
     {"settle", Settle, {56, 7}, 200, 5}
   ]
 

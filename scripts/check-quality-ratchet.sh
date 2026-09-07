@@ -335,6 +335,14 @@ if [ "$UPDATE" = 1 ]; then
   staged="$TMPDIR_SELF/baseline.json"
   cp "$BASELINE" "$staged"
 
+  # `breakdown`, `by_tree` and `runtime_seconds` are DERIVED from a specific
+  # run and are not recomputed here, so carrying them forward would leave them
+  # describing an earlier commit -- a maintainer diffing `by_tree` to locate a
+  # regression would get an answer from the wrong sha. This file's own
+  # `_comment` forbids restating gate numbers in prose because "prose has
+  # nothing validating it"; the same applies inside the file. Deleted rather
+  # than recomputed: absent beats stale, and the authoritative number is
+  # `count`.
   for r in "${results[@]}"; do
     gate=${r%%:*}
     count=${r##*:}
@@ -343,7 +351,8 @@ if [ "$UPDATE" = 1 ]; then
        --arg sha "$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" \
        '.gates[$g].count = $c
         | .gates[$g].measured_at = $d
-        | .gates[$g].measured_at_sha = $sha' \
+        | .gates[$g].measured_at_sha = $sha
+        | del(.gates[$g].breakdown, .gates[$g].by_tree, .gates[$g].runtime_seconds)' \
        "$staged" > "$staged.next" || die "jq failed to update $gate"
     mv "$staged.next" "$staged"
   done

@@ -27,17 +27,33 @@ description = """
 EIP-712 / Permit2 / Xochi signing test vectors. These suites assert exact
 signature bytes, so they must embed deterministic private keys, digests and
 signatures. Scoped to test, fixture and example paths only -- nothing under a
-lib/ tree is exempted by path.
+lib/ tree is exempted by path, and no script is either.
 """
 paths = [
   '''packages/raxol_payments/test/.*''',
   '''packages/raxol_payments/examples/.*''',
   '''packages/raxol_earn/test/.*''',
-  '''packages/raxol_acp/test/.*''',
-  '''packages/raxol_acp/examples/.*''',
   '''packages/raxol_agent/test/.*''',
   '''test/raxol/core/runtime/debug_test\.exs''',
-  '''scripts/run_live_gates\.sh''',
+]
+
+[[allowlists]]
+description = """
+Public Base mainnet token contract addresses (USDC, USDT) in
+`scripts/run_live_gates.sh`. Contract addresses are published, not secret;
+`generic-api-key` matches them on entropy alone.
+
+Allowlisted BY VALUE, not by path. That script is the most
+credential-adjacent file in the repo -- it reads GATE_KEY, GATE_XOCHI_TOKEN
+and GATE_RELAY_TOKEN and names two 1Password production refs -- so a path
+exemption there, in a list whose own description claims "test, fixture and
+example paths only", would let a pasted mainnet signing key ship green at the
+same commit this gate became blocking. By value, any OTHER key-shaped string
+in that file still fails.
+"""
+regexes = [
+  '''0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913''',
+  '''0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2''',
 ]
 
 [[allowlists]]

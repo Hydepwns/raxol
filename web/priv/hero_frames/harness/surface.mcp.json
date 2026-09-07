@@ -5,11 +5,72 @@
     "children": [
       {
         "id": null,
-        "label": "virtuals acp  bugfix  40.00 USDC",
-        "type": "text",
-        "children": [],
-        "role": "text",
-        "content": "virtuals acp  bugfix  40.00 USDC"
+        "type": "flex",
+        "children": [
+          {
+            "id": null,
+            "type": "flex",
+            "children": [
+              {
+                "id": null,
+                "label": "⣀⡀⠀⢰⡾⠛⣷⡄⠀⠀⣠",
+                "type": "text",
+                "children": [],
+                "role": "text",
+                "content": "⣀⡀⠀⢰⡾⠛⣷⡄⠀⠀⣠"
+              },
+              {
+                "id": null,
+                "label": "⠀⠉⠻⣮⡻⢶⣿⡗⠚⠁⠀",
+                "type": "text",
+                "children": [],
+                "role": "text",
+                "content": "⠀⠉⠻⣮⡻⢶⣿⡗⠚⠁⠀"
+              },
+              {
+                "id": null,
+                "label": "⠀⠀⠀⠈⢿⣿⠟⠀⠀⠀⠀",
+                "type": "text",
+                "children": [],
+                "role": "text",
+                "content": "⠀⠀⠀⠈⢿⣿⠟⠀⠀⠀⠀"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "id": null,
+            "type": "flex",
+            "children": [
+              {
+                "id": null,
+                "label": "VIRTUALS PROTOCOL   acp job #4812",
+                "type": "text",
+                "children": [],
+                "role": "text",
+                "content": "VIRTUALS PROTOCOL   acp job #4812"
+              },
+              {
+                "id": null,
+                "label": "bugfix   spend gate off-by-one",
+                "type": "text",
+                "children": [],
+                "role": "text",
+                "content": "bugfix   spend gate off-by-one"
+              },
+              {
+                "id": null,
+                "label": "escrow   40.00 USDC on base 8453",
+                "type": "text",
+                "children": [],
+                "role": "text",
+                "content": "escrow   40.00 USDC on base 8453"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "group"
       },
       {
         "id": null,
@@ -104,6 +165,68 @@
                 "children": [],
                 "role": "text",
                 "content": "mix test"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "id": null,
+            "type": "row",
+            "children": [
+              {
+                "id": "tool-call-4-glyph",
+                "label": "○",
+                "type": "text",
+                "children": [],
+                "role": "text",
+                "content": "○"
+              },
+              {
+                "id": "tool-call-4-name",
+                "label": "submit",
+                "type": "text",
+                "children": [],
+                "role": "text",
+                "content": "submit"
+              },
+              {
+                "id": "tool-call-4-args",
+                "label": "deliverable -> job #4812",
+                "type": "text",
+                "children": [],
+                "role": "text",
+                "content": "deliverable -> job #4812"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "id": null,
+            "type": "row",
+            "children": [
+              {
+                "id": "tool-call-5-glyph",
+                "label": "○",
+                "type": "text",
+                "children": [],
+                "role": "text",
+                "content": "○"
+              },
+              {
+                "id": "tool-call-5-name",
+                "label": "settle",
+                "type": "text",
+                "children": [],
+                "role": "text",
+                "content": "settle"
+              },
+              {
+                "id": "tool-call-5-args",
+                "label": "escrow released to seller",
+                "type": "text",
+                "children": [],
+                "role": "text",
+                "content": "escrow released to seller"
               }
             ],
             "role": "group"

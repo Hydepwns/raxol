@@ -51,15 +51,26 @@ check_file() {
   done < <(grep -oE ':raxol[a-z_]*, "~> [0-9]+\.[0-9]+' "$file")
 }
 
-# mix.exs: tracked files only, like the Markdown sweep below. A bare `find`
+# mix.exs: tracked files, plus untracked-but-not-ignored ones. A bare `find`
 # also descends into sibling git worktrees (.claude/worktrees/*, other
 # branches) and into the deliberately malformed mix.exs fixtures that
 # Raxol.Release.PackageCheckTest leaves under tmp/, which made the verdict
-# depend on whether the suite had run. Tracked files are also exactly what a
-# CI checkout and a Hex publish see.
+# depend on whether the suite had run. `git ls-files` sees neither.
+#
+# `--others --exclude-standard` is unioned in because a NEW package's mix.exs
+# is untracked until it is staged, and that file is the one most likely to
+# carry a lagging `~> 2.6`: a developer adding a package otherwise got a green
+# local run and a red CI one, which is the wrong way round for a gate whose
+# whole job is to catch drift before it lands. CI is unaffected -- a checkout
+# has no untracked files.
 while IFS= read -r file; do
   check_file "$file"
-done < <(git ls-files 'mix.exs' '*/mix.exs')
+done < <(
+  {
+    git ls-files 'mix.exs' '*/mix.exs'
+    git ls-files --others --exclude-standard 'mix.exs' '*/mix.exs'
+  } | sort -u
+)
 
 # Prose: install snippets in tracked Markdown. CHANGELOGs and migration guides
 # cite older versions deliberately.

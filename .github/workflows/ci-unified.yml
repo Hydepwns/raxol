@@ -408,15 +408,26 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
           version-type: strict
 
+      # Keyed on every mix.exs, not only this package's mix.lock.
+      #
+      # The cached path includes `_build`, which holds COMPILED sibling raxol
+      # packages resolved through path deps. A version bump changes no
+      # lockfile, so the key matched exactly, the cache restored 2.6.x sibling
+      # .app files, and `mix deps.get --check-locked` refused them against the
+      # new `~> 2.7` requirements: `the dependency does not match the
+      # requirement "~> 2.7", got "2.6.0"`, in eight of these cells at once.
+      # Path deps are not in a lockfile at all, so mix.lock cannot see them.
+      #
+      # The restore-keys prefix is deliberately gone as well: falling back to a
+      # stale-versioned `_build` is precisely the failure being fixed, and a
+      # cold compile is cheaper than a red matrix nobody can explain.
       - name: Cache package dependencies
         uses: actions/cache@v6
         with:
           path: |
             packages/${{ matrix.package }}/deps
             packages/${{ matrix.package }}/_build
-          key: pkg-${{ matrix.package }}-${{ runner.os }}-${{ needs.setup.outputs.elixir-version }}-${{ needs.setup.outputs.otp-version }}-${{ hashFiles(format('packages/{0}/mix.lock', matrix.package)) }}
-          restore-keys: |
-            pkg-${{ matrix.package }}-${{ runner.os }}-${{ needs.setup.outputs.elixir-version }}-${{ needs.setup.outputs.otp-version }}-
+          key: pkg-${{ matrix.package }}-${{ runner.os }}-${{ needs.setup.outputs.elixir-version }}-${{ needs.setup.outputs.otp-version }}-${{ hashFiles(format('packages/{0}/mix.lock', matrix.package)) }}-${{ hashFiles('mix.exs', 'packages/*/mix.exs') }}
 
       - name: Install hex and rebar
         run: |
@@ -551,15 +562,15 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
 
+      # Same reason as the package matrix above: `_build` holds compiled
+      # sibling raxol packages, and a version bump changes no lockfile.
       - name: Cache raxol_terminal deps
         uses: actions/cache@v6
         with:
           path: |
             packages/raxol_terminal/deps
             packages/raxol_terminal/_build
-          key: pkg-raxol_terminal-canary-${{ runner.os }}-${{ needs.setup.outputs.elixir-version }}-${{ needs.setup.outputs.otp-version }}-${{ hashFiles('packages/raxol_terminal/mix.lock') }}
-          restore-keys: |
-            pkg-raxol_terminal-canary-${{ runner.os }}-${{ needs.setup.outputs.elixir-version }}-${{ needs.setup.outputs.otp-version }}-
+          key: pkg-raxol_terminal-canary-${{ runner.os }}-${{ needs.setup.outputs.elixir-version }}-${{ needs.setup.outputs.otp-version }}-${{ hashFiles('packages/raxol_terminal/mix.lock') }}-${{ hashFiles('mix.exs', 'packages/*/mix.exs') }}
 
       - name: Run input protocol canary
         working-directory: packages/raxol_terminal
@@ -740,9 +751,10 @@ jobs:
           mix credo diff --strict --from-git-merge-base "origin/${base}"
 
   dialyzer:
-    name: Dialyzer
+    name: Dialyzer (advisory)
     needs: [setup, compile]
     runs-on: ubuntu-latest
+    continue-on-error: true
     if: needs.setup.outputs.should-run-heavy == 'true'
     
     steps:
@@ -804,7 +816,26 @@ jobs:
       # deps PLT and lets the analysis run rebuild it correctly, and refuses
       # to report a count when `unknown_function` dominates.
       #
-      # Blocking, against priv/quality_baseline.json. Counts may only go down.
+      # Advisory, and nightly.yml's ratchet is what fails on a regression --
+      # the same split this workflow already applies to credo, for a related
+      # reason.
+      #
+      # The count is not reproducible across environments yet, so it cannot be
+      # a merge gate. A warm local PLT reports 91 (matching the baseline) while
+      # CI reported 100 on the same tree, and the cause is upstream of the
+      # ratchet: the cache key above includes
+      # `hashFiles('packages/*/lib/**/*.ex')`, so any PR touching packages/ --
+      # most of them -- misses the exact key, restores through restore-keys,
+      # and then has its deps PLT discarded as stale. Cold and warm PLTs
+      # disagree by 9 findings, and blocking a merge on which one CI happened
+      # to get is a gate that fails for environmental reasons rather than code
+      # reasons. That is how a gate gets routinely overridden, which is worse
+      # than an advisory one nobody can dismiss silently.
+      #
+      # Nightly runs the identical ratchet with no PR to block and time to
+      # build a cold PLT properly, which is where the number means something.
+      # Make this blocking again once a PR-time run reproduces the nightly
+      # count -- prebuilding the PLT on a schedule is the obvious way.
       - name: Dialyzer ratchet
         run: ./scripts/check-quality-ratchet.sh --gate dialyzer
         timeout-minutes: 90
@@ -1043,10 +1074,13 @@ jobs:
   # ========================================
   ci-status:
     name: CI Status
-    # `credo` is intentionally NOT listed: it is advisory (see its job
-    # comment) and was previously declared here while no step ever read
-    # `needs.credo.result`, so it looked gated and was not. Credo is enforced
-    # by nightly.yml's `credo-ratchet`. `dialyzer` IS listed and IS read.
+    # Neither `credo` nor `dialyzer` is listed: both are advisory (see their
+    # job comments) and both are enforced by nightly.yml's ratchet jobs.
+    #
+    # Listing a job here without reading its `result` is the trap this comment
+    # exists to prevent -- `credo` was declared and never read, so it looked
+    # gated and was not. If either becomes blocking again, add it to `needs`
+    # AND add a case that reads its result.
     needs:
       [
         format,
@@ -1055,7 +1089,6 @@ jobs:
         test-unit,
         package-tests,
         input-canary,
-        dialyzer,
         security
       ]
     runs-on: ubuntu-latest
@@ -1095,17 +1128,9 @@ jobs:
             exit 1
           fi
 
-          # `skipped` is legitimate: the job is gated on should-run-heavy.
-          # Anything else non-success is not -- an earlier revision matched
-          # only "failure", so `cancelled` and `timed_out` passed the gate.
-          case "${{ needs.dialyzer.result }}" in
-            success|skipped) ;;
-            *)
-              echo "❌ Dialyzer gate did not pass: ${{ needs.dialyzer.result }}"
-              echo "   (count rose above priv/quality_baseline.json, or the run did not complete)"
-              exit 1
-              ;;
-          esac
+          # Dialyzer is deliberately absent: it is advisory until a PR-time run
+          # reproduces the nightly count (see its job comment). nightly.yml's
+          # `dialyzer` ratchet is what fails on a regression.
 
           if [ "${{ needs.security.result }}" != "success" ]; then
             echo "⚠️ Security scan found issues (non-blocking)"
