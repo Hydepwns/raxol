@@ -79,6 +79,8 @@ defmodule Raxol.Agent.Shell.Jobs do
   @default_wait_ms 30_000
   @max_wait_ms 120_000
   @call_timeout_ms 15_000
+  # Ceiling on `terminate/2`'s concurrent reap; see that callback.
+  @terminate_timeout_ms 10_000
 
   @typedoc "Terminal states are everything but `:running`."
   @type status :: :running | :exited | :killed | :timed_out
@@ -108,6 +110,10 @@ defmodule Raxol.Agent.Shell.Jobs do
   @doc "Hard ceiling on a job's wall-clock cap, in ms."
   @spec max_timeout_ms() :: pos_integer()
   def max_timeout_ms, do: @max_timeout_ms
+
+  @doc "Ceiling on `terminate/2`'s concurrent reap, in ms."
+  @spec terminate_timeout_ms() :: pos_integer()
+  def terminate_timeout_ms, do: @terminate_timeout_ms
 
   @doc "Default bounded wait, in ms."
   @spec default_wait_ms() :: pos_integer()
@@ -146,6 +152,22 @@ defmodule Raxol.Agent.Shell.Jobs do
       {:ok, pid} -> {:ok, pid}
       {:error, {:already_started, pid}} -> {:ok, pid}
     end
+  end
+
+  @doc """
+  Child spec with a shutdown budget that covers `terminate/2`'s reap.
+
+  `use GenServer`'s default declares `shutdown: 5_000`, which is shorter than
+  the bounded teardown below, so the supervisor used to brutal-kill this
+  process mid-reap and orphan the surviving OS process groups. See
+  `terminate/2`.
+  """
+  # Not `@impl` -- child_spec/1 comes from Supervisor, not the GenServer
+  # behaviour this module implements.
+  def child_spec(opts) do
+    opts
+    |> super()
+    |> Map.put(:shutdown, @terminate_timeout_ms + 2_000)
   end
 
   @doc """
@@ -324,9 +346,35 @@ defmodule Raxol.Agent.Shell.Jobs do
 
   def handle_info(_message, state), do: {:noreply, state}
 
+  # Teardown was sequential, and could not finish inside the supervisor's
+  # shutdown budget. Reaping ONE running job costs up to
+  # `Interrupt.default_grace_ms/0` (300ms) of cooperative wait plus a 500ms
+  # out-of-band group-death confirmation, both of which shell out to `ps`. With
+  # `@max_running_host` at 32 a full table needed on the order of 26 seconds,
+  # against the `shutdown: 5_000` that `use GenServer`'s default child_spec
+  # declares. The supervisor therefore brutal-killed this process at 5s and
+  # every group not yet reaped was orphaned -- precisely the leak this callback
+  # exists to prevent, and worst exactly when it matters most (many jobs
+  # running).
+  #
+  # Two halves, both needed. Kill concurrently, so wall time is one job's reap
+  # rather than the sum of all of them; and declare a shutdown budget that
+  # actually covers that bound, so the supervisor waits for the reap it asked
+  # for. `on_timeout: :kill_task` keeps a wedged `ps` from holding the whole
+  # shutdown open past the budget.
+
   @impl true
   def terminate(_reason, state) do
-    Enum.each(Map.values(state.jobs), &terminate_job/1)
+    state.jobs
+    |> Map.values()
+    |> Task.async_stream(&terminate_job/1,
+      max_concurrency: @max_running_host,
+      timeout: @terminate_timeout_ms,
+      on_timeout: :kill_task,
+      ordered: false
+    )
+    |> Stream.run()
+
     :ok
   end
 
