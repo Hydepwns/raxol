@@ -1093,17 +1093,22 @@ defmodule Raxol.Release.PackageCheck do
   defp require_links(errors, _links, _class),
     do: ["package links are missing" | errors]
 
-  # Two accepted spellings, both pinned to the version. `vX.Y.Z` is the root
-  # `raxol` tag, correct for the packages on that version line. The independent
-  # 0.x packages cannot use it: `v0.2.0` is a root tag pointing at raxol from
-  # 2025, so a bare ref sends every source link in their published docs to
-  # unrelated code. They tag `<package>-vX.Y.Z` instead.
+  # `vX.Y.Z` is the root `raxol` tag, correct for the packages that share that
+  # version line. The independently versioned 0.x packages cannot use it:
+  # `v0.2.0` is a root tag pointing at raxol from 2025, so a bare ref sends
+  # every source link in their published docs to unrelated code. They tag
+  # `<package>-vX.Y.Z` instead.
+  #
+  # Accepting BOTH spellings for every package contradicted that paragraph and
+  # made the gate unable to flag the case it was written for -- which is live:
+  # raxol_payments 0.2.0 shipped with a bare ref. The major version is the
+  # discriminator the comment already names, so it is the one enforced.
   defp require_docs_source_ref(errors, docs, _app, _version)
        when docs in [nil, []],
        do: errors
 
   defp require_docs_source_ref(errors, docs, app, version) do
-    accepted = ["v#{version}", "#{app}-v#{version}"]
+    accepted = accepted_source_refs(app, version)
 
     if docs[:source_ref] in accepted do
       errors
@@ -1113,6 +1118,23 @@ defmodule Raxol.Release.PackageCheck do
           "#{inspect(accepted)}: got #{inspect(docs[:source_ref])}"
         | errors
       ]
+    end
+  end
+
+  defp accepted_source_refs(app, version) do
+    if independently_versioned?(version) do
+      ["#{app}-v#{version}"]
+    else
+      ["v#{version}", "#{app}-v#{version}"]
+    end
+  end
+
+  # 0.x means the package sets its own version rather than following the root's
+  # line, so a root `v0.Y.Z` tag is unrelated to it.
+  defp independently_versioned?(version) do
+    case Version.parse(version) do
+      {:ok, %Version{major: 0}} -> true
+      _ -> false
     end
   end
 

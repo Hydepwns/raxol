@@ -46,6 +46,36 @@ defmodule Raxol.Agent.Actions.FetchTest do
       end
     end
 
+    test "every v6 form that embeds a v4 address is decomposed and refused" do
+      # `::ffff:` was the only embedding the blocklist decomposed, and the
+      # moduledoc claimed three. Each of these is a working route to the cloud
+      # metadata address or to loopback, and each resolved to the generic
+      # "is it fc00/fe80/ff00" clause, which said no.
+      for {label, url} <- [
+            {"IPv4-translated (RFC 2765)", "http://[::ffff:0:169.254.169.254]/latest/meta-data/"},
+            {"NAT64 local-use (RFC 8215)",
+             "http://[64:ff9b:1::169.254.169.254]/latest/meta-data/"},
+            {"6to4 to metadata (RFC 3056)", "http://[2002:a9fe:a9fe::]/"},
+            {"6to4 to loopback", "http://[2002:7f00:1::]/"},
+            {"Teredo", "http://[2001:0:1234::1]/"}
+          ] do
+        assert {:error, {:blocked_address, _host}} =
+                 Fetch.call(
+                   %{url: url},
+                   %{http_transport: refusing_transport()}
+                 ),
+               "#{label} reached the transport"
+      end
+    end
+
+    test "a public v6 address is still allowed" do
+      # The blocklist must not have become "refuse all IPv6": 6to4 and NAT64
+      # are prefix matches, and an over-broad one would be invisible here
+      # otherwise.
+      refute Fetch.blocked?({0x2606, 0x4700, 0x4700, 0, 0, 0, 0, 0x1111})
+      refute Fetch.blocked?({0x2002, 0x0808, 0x0808, 0, 0, 0, 0, 0})
+    end
+
     test "refuses a redirect into a private range and names it as a redirect" do
       transport = fn url, _opts ->
         if url == "http://93.184.216.34/" do
