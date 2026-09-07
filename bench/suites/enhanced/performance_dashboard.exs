@@ -14,7 +14,7 @@ defmodule PerformanceDashboard do
   """
 
   alias Raxol.Terminal.{Emulator, Parser}
-  alias Raxol.Terminal.ANSI.SGRProcessor
+  alias Raxol.Terminal.ANSI.SGR
   alias Raxol.Terminal.Buffer.Writer
   alias Raxol.Terminal.Cursor.CursorManager
 
@@ -131,13 +131,13 @@ defmodule PerformanceDashboard do
         CursorManager.move_to_bounds(cursor, 40, 12, 80, 24)
       end,
       "sgr_single_color" => fn ->
-        SGRProcessor.process_sgr_codes([31], style)
+        SGR.Processor.process_params([31], style)
       end,
       "sgr_complex_format" => fn ->
-        SGRProcessor.process_sgr_codes([1, 4, 31, 48, 5, 196], style)
+        SGR.Processor.process_params([1, 4, 31, 48, 5, 196], style)
       end,
       "sgr_rgb_color" => fn ->
-        SGRProcessor.process_sgr_codes([38, 2, 255, 128, 64], style)
+        SGR.Processor.process_params([38, 2, 255, 128, 64], style)
       end
     }
 

@@ -4,7 +4,7 @@ Logger.configure(level: :error)
 alias Raxol.Terminal.Emulator
 alias Raxol.Terminal.Parser
 alias Raxol.Terminal.Parser.States.{GroundState, EscapeState, CSIParamState}
-alias Raxol.Terminal.ANSI.{SGRProcessor, SequenceHandlers}
+alias Raxol.Terminal.ANSI.{SGR, SequenceHandlers}
 
 IO.puts("ANSI Parsing Profile")
 IO.puts("=" <> String.duplicate("=", 40))
@@ -22,17 +22,17 @@ IO.puts("\n1. Component-level timing:")
 style = %Raxol.Terminal.ANSI.TextFormatting{}
 {time_sgr, _} = :timer.tc(fn ->
   Enum.each(1..1000, fn _ ->
-    SGRProcessor.process_sgr_codes([31], style)
+    SGR.Processor.process_params([31], style)
   end)
 end)
-IO.puts("SGRProcessor.process [31]: #{Float.round(time_sgr/1000, 2)} μs/op")
+IO.puts("SGR.Processor.process_params [31]: #{Float.round(time_sgr/1000, 2)} μs/op")
 
 {time_sgr_reset, _} = :timer.tc(fn ->
   Enum.each(1..1000, fn _ ->
-    SGRProcessor.process_sgr_codes([0], style)
+    SGR.Processor.process_params([0], style)
   end)
 end)
-IO.puts("SGRProcessor.process [0]: #{Float.round(time_sgr_reset/1000, 2)} μs/op")
+IO.puts("SGR.Processor.process_params [0]: #{Float.round(time_sgr_reset/1000, 2)} μs/op")
 
 # Test sequence parsing
 {time_parse_seq, _} = :timer.tc(fn ->

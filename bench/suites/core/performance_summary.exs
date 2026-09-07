@@ -8,7 +8,7 @@ Logger.configure(level: :error)
 alias Raxol.Terminal.Emulator
 alias Raxol.Terminal.EmulatorLite
 alias Raxol.Terminal.Parser
-alias Raxol.Terminal.ANSI.SGRProcessor
+alias Raxol.Terminal.ANSI.SGR
 
 defmodule BenchmarkResults do
   defstruct [
@@ -129,7 +129,7 @@ defmodule PerformanceSummary do
     for {name, codes} <- test_codes do
       {time, _} = :timer.tc(fn ->
         Enum.each(1..10000, fn _ ->
-          SGRProcessor.process_sgr_codes(codes, style)
+          SGR.Processor.process_params(codes, style)
         end)
       end)
       

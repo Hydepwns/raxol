@@ -682,21 +682,30 @@ jobs:
   # ========================================
   # Code Quality Checks
   # ========================================
-  # Advisory ONLY, and deliberately so: one repo-wide `mix credo --strict`
-  # pass takes ~62 min (measured), because `mix credo <path>` analyzes nothing
-  # against the root .credo.exs and the scan cannot be sharded by path. This
-  # job exists for fast PR feedback; nightly.yml's `credo-ratchet` job is what
-  # actually fails on a regression, against priv/quality_baseline.json.
+  # Advisory ONLY. nightly.yml's `credo-ratchet` job is what actually fails on
+  # a regression, against priv/quality_baseline.json.
+  #
+  # `credo diff`, not `credo --strict`. A repo-wide pass takes ~50 min and
+  # cannot be sharded by path (`mix credo <path>` analyzes nothing against the
+  # root .credo.exs), so running one here spent most of an hour per PR on a
+  # result nothing reads and that nobody waits for -- which is not feedback,
+  # it is a queue. `diff` reports only what this branch introduced against its
+  # merge base, which is both the fast answer and the only one an author can
+  # act on: the other 1,182 findings are not theirs.
   credo:
     name: Credo Analysis (advisory)
     needs: [setup, compile]
     runs-on: ubuntu-latest
     continue-on-error: true
-    timeout-minutes: 90
-    
+    timeout-minutes: 20
+
     steps:
+      # `credo diff` resolves a merge base, which needs real history; the
+      # default shallow clone has none and the command cannot run.
       - uses: actions/checkout@v7
-      
+        with:
+          fetch-depth: 0
+
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
@@ -720,8 +729,15 @@ jobs:
 
       # No `|| true`: `continue-on-error` above already makes this advisory,
       # and stacking both hid the count from the job's own exit status too.
-      - name: Run Credo
-        run: mix credo --strict
+      #
+      # Against the merge base with the PR's own base branch, not a hardcoded
+      # master: this repo stacks PRs (a branch's base is often another branch),
+      # and diffing a stacked branch against master would report the parent
+      # PR's findings as this one's.
+      - name: Run Credo (new findings only)
+        run: |
+          base="${{ github.event.pull_request.base.ref || 'master' }}"
+          mix credo diff --strict --from-git-merge-base "origin/${base}"
 
   dialyzer:
     name: Dialyzer
