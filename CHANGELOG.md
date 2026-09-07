@@ -23,6 +23,7 @@
 
 ### Changed
 
+- **`Raxol.LiveView.TEALive` renders one DOM node per screen row** (`raxol_liveview`). Its `:terminal_html` assign is replaced by `:rows` and `:container_attrs`, which is breaking for anything that read the old assign or overrode `render/1` against it. The screen was one dynamic, so LiveView resent all of it on every frame: measured 2.8 KB per frame at 62x13 and 7.0 KB at 60x34, against 0.3 KB for a one-row change at either size. `TerminalBridge.buffer_to_rows/2` and `html_to_rows/2` produce the rows, and `container_attrs/1` and `aria_mode_of/1` are public so a caller owning the `<pre>` cannot drift from the semantics `buffer_to_html/2` emits for the same `:aria_mode`.
 - **Phoenix LiveDashboard 0.9.0** in the root development environment, including
   its resolved runtime companions Phoenix LiveView 1.2.11, telemetry_metrics
   1.2.0, and Ecto 3.14.2.

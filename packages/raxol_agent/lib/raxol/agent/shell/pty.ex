@@ -142,20 +142,49 @@ defmodule Raxol.Agent.Shell.Pty do
   """
   @spec kill_tree(non_neg_integer() | nil) :: {boolean(), boolean()}
   def kill_tree(os_pid) do
-    results = os_pid |> inner_groups() |> Enum.map(&Interrupt.kill_os_pid/1)
+    results =
+      os_pid
+      |> inner_groups()
+      |> Enum.filter(&still_child_of?(&1, os_pid))
+      |> Enum.map(&Interrupt.kill_os_pid/1)
+
     _teardown = Interrupt.kill_os_pid(os_pid)
 
     {results != [] and Enum.all?(results, fn {disposition, _, _} -> disposition == :killed end),
      results != [] and Enum.all?(results, fn {_, confirmed?, _} -> confirmed? end)}
   end
 
+  # Re-checked immediately before signalling, because what gets signalled is a
+  # process GROUP derived from a pid read out of a `ps` snapshot. Between that
+  # scan and the kill the child can exit and the OS can reuse its pid, and
+  # `Interrupt.kill_os_pid/1` cannot tell the difference: it verifies that the
+  # pid leads its own group, which a reused pid may also do. The result would
+  # be signalling an unrelated group.
+  #
+  # This narrows the window to one `ps` call rather than closing it -- nothing
+  # available here makes read-then-signal atomic -- and it fails CLOSED: a pid
+  # that no longer reports `os_pid` as its parent is not killed, and the group
+  # kill of `script` itself still runs.
+  defp still_child_of?(pid, parent) do
+    case System.cmd("ps", ["-o", "ppid=", "-p", Integer.to_string(pid)], stderr_to_stdout: true) do
+      {out, 0} -> String.trim(out) == Integer.to_string(parent)
+      _not_running -> false
+    end
+  rescue
+    _ -> false
+  catch
+    _, _ -> false
+  end
+
   # -- flavour resolution ----------------------------------------------------
 
   defp flavour(shell_path) do
-    case :persistent_term.get(cache_key(), :unknown) do
+    key = cache_key(shell_path)
+
+    case :persistent_term.get(key, :unknown) do
       :unknown ->
         resolved = probe(shell_path)
-        :persistent_term.put(cache_key(), resolved)
+        :persistent_term.put(key, resolved)
         resolved
 
       cached ->
@@ -163,7 +192,14 @@ defmodule Raxol.Agent.Shell.Pty do
     end
   end
 
-  defp cache_key, do: {__MODULE__, :flavour}
+  # Keyed on the shell, because the shell is an input to what the probe
+  # measures: the util-linux form runs the command through `$SHELL`, so the
+  # answer is about this `script` AND this shell. A bare `{__MODULE__,
+  # :flavour}` let the first caller's shell decide for every later one, and the
+  # symptom would be a command silently running under the wrong shell rather
+  # than an error anyone could see. One entry per distinct shell path, and a
+  # deployment has one or two.
+  defp cache_key(shell_path), do: {__MODULE__, :flavour, shell_path}
 
   defp probe(shell_path) do
     case script_path() do

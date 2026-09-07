@@ -347,4 +347,51 @@ defmodule Raxol.Agent.Actions.ShellJobsTest do
     Process.sleep(10)
     read_marker_pid(marker, budget_ms - 10)
   end
+
+  # The caps and the ownership model have to be in the same scope. They were
+  # not: both were global, so one session could fill every running slot and
+  # evict every other session's finished records -- on the multi-tenant SSH
+  # surface, one tenant degrading the rest through a limit that never mentions
+  # tenancy.
+  describe "limits are per owner" do
+    setup do
+      other =
+        Path.join(System.tmp_dir!(), "raxol-jobs-other-#{System.unique_integer([:positive])}")
+
+      File.mkdir_p!(other)
+
+      on_exit(fn ->
+        Jobs.reap(other)
+        File.rm_rf(other)
+      end)
+
+      %{other: other}
+    end
+
+    test "one owner at its running cap does not refuse another", %{owner: owner, other: other} do
+      for _ <- 1..Jobs.max_running() do
+        assert {:ok, _} = Jobs.start("sleep 30", owner: owner, timeout_ms: 20_000)
+      end
+
+      assert {:error, :job_limit_reached} =
+               Jobs.start("sleep 30", owner: owner, timeout_ms: 20_000)
+
+      assert {:ok, _} = Jobs.start("sleep 30", owner: other, timeout_ms: 20_000),
+             "one owner filling its own cap refused another owner's job"
+    end
+
+    test "pruning never drops another owner's record", %{owner: owner, other: other} do
+      {:ok, mine} = Jobs.start("true", owner: owner, timeout_ms: 20_000)
+      assert %{running: false} = Jobs.await(mine.job_id, owner, 5_000) |> elem(1)
+
+      # Churn well past the retention cap under a DIFFERENT owner.
+      for _ <- 1..(Jobs.max_running() * 3) do
+        {:ok, job} = Jobs.start("true", owner: other, timeout_ms: 20_000)
+        Jobs.await(job.job_id, other, 5_000)
+      end
+
+      assert {:ok, _} = Jobs.poll(mine.job_id, owner, 0),
+             "another owner's churn evicted a finished job this owner can still poll"
+    end
+  end
 end

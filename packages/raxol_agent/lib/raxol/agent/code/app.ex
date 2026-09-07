@@ -68,8 +68,9 @@ defmodule Raxol.Agent.Code.App do
 
   @approval_timeout_ms 300_000
 
-  # The tools that read from outside the workspace. Their results are the
-  # taint entry point in `taint_network_result/2`.
+  # The BUILT-IN tools that read from outside the workspace. Not the whole
+  # test: see `foreign_result?/1`, which also covers every `mcp__*` tool and
+  # anything declaring its own result untrusted.
   @network_tools ["fetch", "web_search"]
 
   # -- init -------------------------------------------------------------------
@@ -1047,9 +1048,9 @@ defmodule Raxol.Agent.Code.App do
   # authored, which is the confusion a prompt injection needs. Taint only ever
   # adds at this seam (an already-tainted event is left alone), matching
   # `Raxol.Harness.EventBoundary`'s own absorbing rule.
-  defp taint_network_result(normalized, %{payload: payload}) when is_map(payload) do
-    if item_type(payload) == :tool_result and
-         tool_name(payload) in @network_tools do
+  defp taint_network_result(normalized, %{payload: payload})
+       when is_map(payload) do
+    if item_type(payload) == :tool_result and foreign_result?(payload) do
       %{normalized | provenance: tainted(normalized.provenance)}
     else
       normalized
@@ -1057,6 +1058,34 @@ defmodule Raxol.Agent.Code.App do
   end
 
   defp taint_network_result(normalized, _event), do: normalized
+
+  # Three tests rather than one name list, because a hardcoded list of two
+  # names stops being true the moment anything else reaches outside the
+  # workspace -- and `Raxol.Agent.Code.McpLoader` turns any server declared in
+  # `.mcp.json` into a session tool, so "anything else" is a config file away.
+  # A marker that silently under-covers is worse than none, because a reader
+  # learns to trust its absence.
+  #
+  #   * the two built-in network tools, by name;
+  #   * any `mcp__*` tool, since an MCP server is by definition another party's
+  #     process answering with content this session did not author;
+  #   * any result that declares `trust: "untrusted"` itself, which is how a
+  #     new tool opts in without editing this module.
+  defp foreign_result?(payload) do
+    name = tool_name(payload)
+
+    name in @network_tools or
+      (is_binary(name) and String.starts_with?(name, "mcp__")) or
+      declares_untrusted?(payload)
+  end
+
+  defp declares_untrusted?(payload) do
+    case Map.get(payload, :result) || Map.get(payload, "result") do
+      %{trust: "untrusted"} -> true
+      %{"trust" => "untrusted"} -> true
+      _otherwise -> false
+    end
+  end
 
   defp tainted(provenance) when is_map(provenance),
     do: Map.put(provenance, :trust, :tainted)

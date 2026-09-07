@@ -451,4 +451,35 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
       )
     end)
   end
+
+  describe "aria_mode_of/1" do
+    # `TEALive` strips the <pre> this wrote and writes its own, so it has to be
+    # able to learn the mode back off the screen. Hardcoding :log there put an
+    # :application screen inside a live region again, which is the one thing
+    # :application exists to prevent and the only person who hears it is a
+    # screen-reader user.
+    test "round-trips the mode buffer_to_html/2 rendered in" do
+      buffer = Buffer.create_blank_buffer(4, 2)
+
+      for mode <- [:log, :application] do
+        html = TerminalBridge.buffer_to_html(buffer, aria_mode: mode)
+        assert TerminalBridge.aria_mode_of(html) == mode
+      end
+    end
+
+    test "an unrecognised screen reads as the default" do
+      assert TerminalBridge.aria_mode_of("") == :log
+      assert TerminalBridge.aria_mode_of("not markup") == :log
+    end
+  end
+
+  describe "html_to_rows/2 does not guess" do
+    # String surgery over a document this module does not own: anything that is
+    # not buffer_to_html/2 output was cut at its first ">" and silently
+    # mangled. One visibly-wrong row beats content that still looks rendered.
+    test "a non-pre string is returned whole as a single row" do
+      assert [%{html: "plain <b>text</b>", y: 0}] =
+               TerminalBridge.html_to_rows("plain <b>text</b>")
+    end
+  end
 end

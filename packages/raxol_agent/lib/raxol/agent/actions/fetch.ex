@@ -47,10 +47,15 @@ defmodule Raxol.Agent.Actions.Fetch do
 
   A response is capped at `max_bytes` (512KB default, 2MB ceiling) and the
   whole chain — connect, read and every hop — at 15s. The cap is applied
-  while the body streams: `collect/2` stops the chunk enumeration, which
+  while the body streams: `collect/3` stops the chunk enumeration, which
   cancels the in-flight request, so an endless or multi-gigabyte body is
   never buffered. The model gets the prefix with `truncated: true` rather
   than an error, because a truncated page is usually still an answer.
+
+  The deadline is enforced by that same halt, not only between hops. It has
+  to be: `receive_timeout` is an IDLE timeout, so a server dripping one byte
+  just inside it would otherwise hold the turn for `max_bytes` times that
+  timeout while every per-read bound was satisfied.
 
   ## Transport seam
 
@@ -77,6 +82,14 @@ defmodule Raxol.Agent.Actions.Fetch do
   Fetching is read-only against the filesystem but not free of
   consequence — it discloses to a third party what the session is working
   on — which is why it is gated rather than auto-allowed.
+
+  A second, coarser gate sits in front of that one:
+  `Raxol.Agent.Actions.Code.network_allow/1` refuses outright in a jailed
+  (multi-tenant) session unless the context says `network: true`. This tool
+  is in the DEFAULT toolset, so without that gate standing up a hosted
+  tenant surface would hand every tenant outbound HTTP from the operator's
+  address, and the operator's search quota, as a side effect of a change
+  that reads as "add a tool".
   """
 
   use Raxol.Agent.Action,
@@ -127,10 +140,12 @@ defmodule Raxol.Agent.Actions.Fetch do
 
   @impl true
   def run(%{url: url} = params, context) do
-    deadline = System.monotonic_time(:millisecond) + @total_timeout_ms
-    cap = cap(Map.get(params, :max_bytes))
+    with :ok <- Raxol.Agent.Actions.Code.network_allow(context) do
+      deadline = System.monotonic_time(:millisecond) + @total_timeout_ms
+      cap = cap(Map.get(params, :max_bytes))
 
-    hop(url, url, cap, deadline, @max_redirects, transport(context))
+      hop(url, url, cap, deadline, @max_redirects, transport(context))
+    end
   end
 
   defp cap(bytes) when is_integer(bytes) and bytes > 0,
@@ -152,7 +167,7 @@ defmodule Raxol.Agent.Actions.Fetch do
     end
   end
 
-  defp dispatch(%{status: status} = response, requested, url, cap, _dl, _hops, _t)
+  defp dispatch(%{status: status} = response, requested, url, cap, dl, _hops, _t)
        when status in 200..299 do
     content_type = header(response, "content-type")
 
@@ -162,7 +177,7 @@ defmodule Raxol.Agent.Actions.Fetch do
         {:error, {:unsupported_content_type, content_type}}
 
       kind ->
-        {body, truncated?} = collect(response.chunks, cap)
+        {body, truncated?} = collect(response.chunks, cap, dl)
 
         {:ok,
          %{
@@ -331,23 +346,43 @@ defmodule Raxol.Agent.Actions.Fetch do
   The halt is on strictly EXCEEDING the cap so that `truncated?` is honest
   both ways: a body of exactly `cap` bytes reads to its natural end and
   reports `false`, and any body with more to give reports `true`.
+
+  `deadline` is a `System.monotonic_time(:millisecond)` value, and the same
+  halt enforces it. Without it the 15s budget bounded the connect and each
+  individual read but nothing about the whole body: `receive_timeout` is an
+  IDLE timeout, so a server dripping one byte just inside it holds the turn
+  for `cap` times that, and the moduledoc's claim that the whole chain is
+  bounded was false. A body cut short by the deadline reports `truncated?`,
+  because a prefix of a page is what was actually read.
   """
-  @spec collect(Enumerable.t(), pos_integer()) :: {binary(), boolean()}
-  def collect(chunks, cap) do
-    {acc, size} =
-      Enum.reduce_while(chunks, {[], 0}, fn chunk, {acc, size} ->
+  @spec collect(Enumerable.t(), pos_integer(), integer() | nil) ::
+          {binary(), boolean()}
+  def collect(chunks, cap, deadline \\ nil) do
+    {acc, size, expired?} =
+      Enum.reduce_while(chunks, {[], 0, false}, fn chunk, {acc, size, _} ->
         size = size + byte_size(chunk)
         acc = [chunk | acc]
 
-        if size > cap, do: {:halt, {acc, size}}, else: {:cont, {acc, size}}
+        cond do
+          size > cap -> {:halt, {acc, size, false}}
+          expired?(deadline) -> {:halt, {acc, size, true}}
+          true -> {:cont, {acc, size, false}}
+        end
       end)
 
     body = acc |> Enum.reverse() |> IO.iodata_to_binary()
 
-    if size > cap,
-      do: {binary_part(body, 0, cap), true},
-      else: {body, false}
+    cond do
+      size > cap -> {binary_part(body, 0, cap), true}
+      expired? -> {body, true}
+      true -> {body, false}
+    end
   end
+
+  defp expired?(nil), do: false
+
+  defp expired?(deadline),
+    do: System.monotonic_time(:millisecond) >= deadline
 
   # -- text extraction ---------------------------------------------------------
 
@@ -378,11 +413,22 @@ defmodule Raxol.Agent.Actions.Fetch do
   scripts and layout, and paying for those in the context window buys
   nothing. Block boundaries become newlines, headings keep their `#` markers
   and list items a `-`, so the shape of the page survives the strip.
+
+  The body is scrubbed to valid UTF-8 first. `tidy/1` applies a `u`-flagged
+  regex, and `:re` raises `badarg` on an invalid UTF-8 subject, so any body
+  that is not valid UTF-8 crashed the tool rather than returning text. The
+  commonest way to get one is not a hostile server: `collect/3` cuts at a BYTE
+  cap, and a page over 512KB whose 524_288th byte falls inside a multi-byte
+  character produces exactly this. Scrubbing rather than trimming keeps
+  `bytes:` honest about what was received.
   """
   @spec extract(binary(), :markup | :text) :: String.t()
-  def extract(body, :text), do: body |> entities() |> String.trim()
+  def extract(body, :text),
+    do: body |> scrub_utf8() |> entities() |> String.trim()
 
   def extract(body, :markup) do
+    body = scrub_utf8(body)
+
     text =
       body
       |> drop_comments()
@@ -408,6 +454,27 @@ defmodule Raxol.Agent.Actions.Fetch do
     if heading == title,
       do: text,
       else: "# " <> title <> "\n\n" <> text
+  end
+
+  @doc """
+  `binary` if it is valid UTF-8, otherwise a copy with the invalid bytes
+  dropped.
+
+  Public because `Raxol.Agent.Shell.Jobs` needs the same guarantee for the
+  same reason: both hand a byte-sliced buffer to something that requires
+  valid UTF-8 (a `u`-flagged regex here, `Jason.encode/1` there), and both
+  slice at an offset that has no idea where a character begins.
+
+  The comprehension is the cheapest form of this in Elixir: `<<c::utf8 <- b>>`
+  simply does not match an invalid sequence, so the invalid bytes fall out.
+  """
+  @spec scrub_utf8(binary()) :: binary()
+  def scrub_utf8(binary) when is_binary(binary) do
+    if String.valid?(binary) do
+      binary
+    else
+      for <<c::utf8 <- binary>>, into: "", do: <<c::utf8>>
+    end
   end
 
   defp drop_comments(html), do: String.replace(html, ~r/<!--.*?-->/s, " ")
