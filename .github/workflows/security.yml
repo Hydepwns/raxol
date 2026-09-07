@@ -60,9 +60,11 @@ jobs:
         run: |
           mix deps.clean --unused
           mix deps.get
-          # `mix help deps.audit` below can only see the task once the dep is
-          # COMPILED, and mix_audit is `only: [:dev, :test], runtime: false`.
-          mix deps.compile mix_audit
+          # mix_audit derives `Jason.Encoder`, so jason has to be compiled
+          # first or the derive fails with "could not load module
+          # Jason.Encoder due to reason :unavailable". Named in order rather
+          # than compiling every dep, which this job does not need.
+          mix deps.compile jason mix_audit
 
       # Blocking. Previously `continue-on-error: true`, which made the job
       # conclude success even on a hit -- and the "Create issue for critical
