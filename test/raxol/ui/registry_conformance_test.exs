@@ -17,9 +17,12 @@ defmodule Raxol.UI.RegistryConformanceTest do
   """
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureLog
+
   alias Raxol.Core.Accessibility.{Projection, Provider}
   alias Raxol.MCP.{ToolProvider, TreeWalker}
   alias Raxol.Playground.Catalog
+  alias Raxol.UI.Layout.Engine
   alias Raxol.UI.Registry
 
   describe "registry entries" do
@@ -114,6 +117,76 @@ defmodule Raxol.UI.RegistryConformanceTest do
     defp ui_component?(module) do
       String.starts_with?(Atom.to_string(module), "Elixir.Raxol.UI.") and
         Code.ensure_loaded?(module)
+    end
+  end
+
+  # The third drift axis, and the one whose failure mode is invisible.
+  #
+  # `Engine.process_element/3` and `measure_element/2` dispatch on `:type`
+  # too, and their catch-all logs a warning and returns the accumulator
+  # unchanged -- so a widget whose type reaches the engine with no layout
+  # clause renders NOTHING. Not a crash, not a stack trace: a blank region.
+  # The scrubber needed both clauses hand-added, and the two map assertions
+  # above would have passed without either.
+  #
+  # Most registered types never reach the engine: their `render/2` returns a
+  # DIFFERENT node type, so the registry entry is only a discovery key for MCP
+  # and a11y. `Raxol.UI.Components.Input.TextArea.render/2` delegates straight
+  # to `MultiLineInput.render/2`, for instance, so no tree ever carries
+  # `type: :text_area`. The scrubber is the exception: `Components.scrubber/1`
+  # stamps its own type onto the node the engine has to lay out.
+  #
+  # Naming them here rather than skipping the axis: a new widget that stamps
+  # its own type and forgets the engine has to add itself to this list on
+  # purpose, and say why.
+  @layout_alias_only [
+    :text_area,
+    :password_field,
+    :select_list,
+    :menu,
+    :tabs,
+    :modal,
+    :tree,
+    :viewport,
+    :bar_chart,
+    :line_chart,
+    :scatter_chart
+  ]
+
+  describe "Raxol.UI.Layout.Engine reach" do
+    test "every type that reaches the engine has a layout clause" do
+      space = %{x: 0, y: 0, width: 40, height: 10}
+
+      for type <- Registry.types(), type not in @layout_alias_only do
+        log =
+          capture_log(fn ->
+            Engine.process_element(probe_node(type), space, [])
+            Engine.measure_element(probe_node(type), space)
+          end)
+
+        refute log =~ "Unknown or unhandled element type",
+               "#{inspect(type)} is registered but the layout engine has no " <>
+                 "clause for it, so it renders as a blank region with only a " <>
+                 "log line to say so. Add the clause, or add the type to " <>
+                 "@layout_alias_only with the node type it renders as."
+      end
+    end
+
+    test "the alias-only list names no type the engine already handles" do
+      # Stops the list becoming a dumping ground: an entry that IS handled is
+      # a stale exclusion suppressing a live axis.
+      space = %{x: 0, y: 0, width: 40, height: 10}
+
+      for type <- @layout_alias_only, type in Registry.types() do
+        log =
+          capture_log(fn ->
+            Engine.process_element(probe_node(type), space, [])
+          end)
+
+        assert log =~ "Unknown or unhandled element type",
+               "#{inspect(type)} is excluded from the layout axis but the " <>
+                 "engine handles it -- drop it from @layout_alias_only"
+      end
     end
   end
 

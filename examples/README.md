@@ -29,7 +29,7 @@ MIX_ENV=test mix compile   # or MIX_ENV=dev mix compile
 | [file_browser](apps/file_browser.exs) | Tree widget, filesystem I/O, preview pane | `mix run examples/apps/file_browser.exs` |
 | [demo](demo.exs) | BEAM introspection, sparklines, scheduler stats | `mix run examples/demo.exs` |
 | [chart_showcase](charts/chart_showcase.exs) | Line/bar/scatter/heatmap on a braille canvas | `mix run examples/charts/chart_showcase.exs` |
-| scrubber_demo (`lib/raxol/playground/demos/scrubber_demo.ex`) | Transport control over a timeline: seek, tick marks, speed, and the MCP tool messages an agent sends | `mix raxol.playground` (pick "Scrubber") |
+| [scrubber_demo](components/scrubber_demo.exs) | Transport control over a timeline: seek, tick marks, speed, and the MCP tool messages an agent sends | `mix run examples/components/scrubber_demo.exs` |
 
 ### Advanced: Agents, Sensors, Distributed Systems
 

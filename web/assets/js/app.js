@@ -320,7 +320,11 @@ Hooks.CardLoop = {
     this.frames = Array.from(this.el.querySelectorAll('[data-frame]'))
     this.count = Transport.count(this.frames)
     if (this.count < 2) return
-    this.ms = parseInt(this.el.dataset.frameMs, 10) || 200
+    // `|| 200` is not a validation: parseInt('-5') is -5, which is truthy, so
+    // a negative tick reaches the accumulator loop below and `acc -= ms`
+    // grows acc forever. Match HeroDemo's guard.
+    const declaredMs = parseInt(this.el.dataset.frameMs, 10)
+    this.ms = Number.isFinite(declaredMs) && declaredMs > 0 ? declaredMs : 200
     this.i = 0
     this.acc = 0
     this.last = null

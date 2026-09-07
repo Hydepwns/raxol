@@ -274,9 +274,15 @@ defmodule Raxol.View.Components do
   Composed by `Raxol.UI.Components.Input.Scrubber.render/2`, then stamped
   `type: :scrubber` so MCP's `TreeWalker` and the accessibility projection
   dispatch on the widget rather than on the `:row` it lays out as (the same
-  discovery-alias trick `chart/1` uses for `:box`). The transport fields are
-  carried on the node because `mcp_tools/1` and `a11y_node/1` read the
-  declaration, not the component state.
+  discovery-alias trick `Raxol.UI.Layout.Engine` uses to lay the chart types
+  out as `:box`). The transport fields are carried on the node because
+  `mcp_tools/1` and `a11y_node/1` read the declaration, not the component
+  state.
+
+  Builds a declaration rather than instantiating: `init/1` mints an id when
+  none is given, and a `view/1` helper runs every frame, so instantiating here
+  churned the id -- and with it every MCP tool handle -- once per repaint. Pass
+  `:id` to address this scrubber from an agent or to focus it.
 
   ## Options
 
@@ -295,11 +301,7 @@ defmodule Raxol.View.Components do
   """
   @spec scrubber(keyword() | map()) :: map()
   def scrubber(opts \\ []) do
-    opts = if is_list(opts), do: Map.new(opts), else: opts
-
-    {:ok, state} = Raxol.UI.Components.Input.Scrubber.init(opts)
-
-    Raxol.UI.Components.Input.Scrubber.to_node(state)
+    Raxol.UI.Components.Input.Scrubber.declaration(opts)
   end
 
   @doc """

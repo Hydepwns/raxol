@@ -148,7 +148,7 @@ defmodule Raxol.Recording.Player do
   end
 
   defp loop(state) do
-    {elapsed_us, :output, data} = current_event(state)
+    {elapsed_us, kind, data} = current_event(state)
     prev_us = prev_elapsed_us(state)
 
     delay_us = elapsed_us - prev_us
@@ -158,7 +158,14 @@ defmodule Raxol.Recording.Player do
 
     case wait_with_input(actual_delay) do
       :timeout ->
-        IO.write(data)
+        # Only `:output` is written. This used to hard-match `:output` and
+        # raise MatchError on anything else -- while `input_marks/1` exists
+        # precisely to tick the `:input` events on the scrub bar, so the
+        # track advertised positions playback could not reach.
+        # `Asciicast.decode_event_type("i")` produces them, so they are part
+        # of the format, not a hypothetical. An input event is what the user
+        # typed, not terminal output: honour its timestamp, do not echo it.
+        if kind == :output, do: IO.write(data)
         %{state | index: state.index + 1} |> continue()
 
       key ->
