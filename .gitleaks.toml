@@ -1,0 +1,66 @@
+# Gitleaks configuration.
+#
+# Exists because `.github/workflows/security.yml` runs Gitleaks as a BLOCKING
+# check. Without this file the gate is unusable: a scan of the current history
+# reports 109 findings (105 `generic-api-key`, 4 `curl-auth-header`), every one
+# of them a test vector, a vendored asset, or a publicly documented dev key.
+# A blocking gate that always fails is worse than no gate -- it trains people
+# to ignore it, and the daily `schedule` run would file a new issue every day
+# via security.yml's "Create issue for critical findings" step.
+#
+# The allowlists below are deliberately narrow. They exempt specific paths that
+# contain only cryptographic TEST VECTORS, and one specific well-known key BY
+# VALUE. A genuine credential committed anywhere else -- including elsewhere in
+# these same files, for the by-value entry -- still fails the build.
+#
+# Re-verify after changing this file:
+#   gitleaks detect --source . --no-banner --redact --report-format json \
+#     --report-path /tmp/gl.json --exit-code 0 && jq length /tmp/gl.json
+# That must print 0. If it does not, do NOT widen a path pattern to make it
+# pass; check whether the new finding is real.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = """
+EIP-712 / Permit2 / Xochi signing test vectors. These suites assert exact
+signature bytes, so they must embed deterministic private keys, digests and
+signatures. Scoped to test, fixture and example paths only -- nothing under a
+lib/ tree is exempted by path.
+"""
+paths = [
+  '''packages/raxol_payments/test/.*''',
+  '''packages/raxol_payments/examples/.*''',
+  '''packages/raxol_earn/test/.*''',
+  '''packages/raxol_acp/test/.*''',
+  '''packages/raxol_acp/examples/.*''',
+  '''packages/raxol_agent/test/.*''',
+  '''test/raxol/core/runtime/debug_test\.exs''',
+  '''scripts/run_live_gates\.sh''',
+]
+
+[[allowlists]]
+description = """
+Vendored third-party minified bundles. Not our source; high-entropy strings in
+a minified bundle are not credentials.
+"""
+paths = [
+  '''priv/static/assets/vendor/.*''',
+]
+
+[[allowlists]]
+description = """
+Anvil / Hardhat deterministic development account #0. This key is published in
+the Foundry and Hardhat documentation and is funded only on local devnets;
+every Ethereum developer has it. Allowlisted BY VALUE rather than by path, so
+any OTHER key-shaped string in the same file still fails.
+
+It appears in a `@moduledoc` usage example
+(packages/raxol_payments/lib/raxol/payments/wallets/env.ex). Prefer an
+obviously-fake placeholder in docs; this entry keeps the gate green until that
+example is reworded.
+"""
+regexes = [
+  '''0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80''',
+]

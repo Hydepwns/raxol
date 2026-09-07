@@ -51,9 +51,15 @@ check_file() {
   done < <(grep -oE ':raxol[a-z_]*, "~> [0-9]+\.[0-9]+' "$file")
 }
 
+# mix.exs: tracked files only, like the Markdown sweep below. A bare `find`
+# also descends into sibling git worktrees (.claude/worktrees/*, other
+# branches) and into the deliberately malformed mix.exs fixtures that
+# Raxol.Release.PackageCheckTest leaves under tmp/, which made the verdict
+# depend on whether the suite had run. Tracked files are also exactly what a
+# CI checkout and a Hex publish see.
 while IFS= read -r file; do
   check_file "$file"
-done < <(find . -name mix.exs -not -path '*/deps/*' -not -path '*/_build/*')
+done < <(git ls-files 'mix.exs' '*/mix.exs')
 
 # Prose: install snippets in tracked Markdown. CHANGELOGs and migration guides
 # cite older versions deliberately.

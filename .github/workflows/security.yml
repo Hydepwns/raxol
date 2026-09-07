@@ -145,17 +145,33 @@ jobs:
       # and with `continue-on-error: true` this job concluded success on a
       # hit, which also disabled the "Create issue for critical findings"
       # step gated on `needs.secrets-scan.result == 'failure'`.
+      #
+      # Blocking is only safe because the noise was measured and suppressed
+      # first. An unconfigured Gitleaks run over this history reports 109
+      # findings -- all EIP-712/Permit2 test vectors, vendored minified
+      # bundles, and the public Anvil dev key -- so a blocking gate without
+      # `.gitleaks.toml` would fail every PR and, on the daily `schedule`
+      # trigger, file a new issue every day. With the config committed the
+      # same scan reports "no leaks found" over all 3,710 commits, so a hit
+      # now means something real.
+      #
+      # `--only-verified` on TruffleHog for the same reason: unverified
+      # high-entropy matches in signing test vectors are not credentials, and
+      # only a verified live secret should be able to stop a merge.
       - name: TruffleHog OSS
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
           head: HEAD
+          extra_args: --only-verified
 
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Repo-scoped config; without it this job cannot pass. See above.
+          GITLEAKS_CONFIG: .gitleaks.toml
 
   npm-audit:
     name: NPM Security Audit

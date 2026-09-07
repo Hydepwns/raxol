@@ -309,10 +309,10 @@ jobs:
       - name: Dialyzer ratchet
         run: ./scripts/check-quality-ratchet.sh --gate dialyzer
 
-  # Credo is enforced here rather than in ci-unified because one repo-wide
-  # pass takes ~62 min: `mix credo <path>` analyzes nothing against the root
-  # .credo.exs, so the scan cannot be sharded by path. ci-unified runs it
-  # advisory-only for fast feedback; this job is what actually fails.
+  # Credo is enforced here rather than in ci-unified because the scan cannot
+  # be sharded: `mix credo <path>` analyzes nothing against the root
+  # .credo.exs (verified), so it must run as one repo-wide pass. ci-unified
+  # runs it advisory-only for fast feedback; this job is what actually fails.
   credo-ratchet:
     name: Credo Ratchet
     runs-on: ubuntu-latest
@@ -327,8 +327,27 @@ jobs:
           version-file: mise.toml
           version-type: strict
 
+      # Without a cache this job compiled the whole umbrella from cold before
+      # a multi-minute analysis, against a 90 min ceiling -- and a timeout
+      # here silently removes the only enforcing credo gate.
+      - name: Restore cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            deps
+            _build
+          key: credo-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            credo-${{ runner.os }}-
+
       - name: Install dependencies
         run: mix deps.get
+
+      # Compile explicitly so a compile failure is reported as a compile
+      # failure, not as an unparseable credo document 10 minutes later.
+      - name: Compile
+        run: mix compile
+        timeout-minutes: 30
 
       - name: Credo ratchet
         run: ./scripts/check-quality-ratchet.sh --gate credo

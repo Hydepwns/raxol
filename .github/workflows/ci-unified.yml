@@ -753,13 +753,23 @@ jobs:
       - name: Fetch dependencies
         run: mix deps.get
 
-      # The PLT key MUST include the packages/ sources, not just mix.lock.
-      # dialyxir keys its deps PLT off the deps hash, and raxol_* are path
-      # dependencies: editing a callback spec in packages/raxol_core does not
-      # move mix.lock, so a mix.lock-only key restores a PLT holding the OLD
-      # spec and dialyzer reports against stale types. This was observed
-      # locally -- a fix that removed 16 callback_type_mismatch errors read as
-      # a no-op across two full runs until the deps PLT was deleted.
+      # The exact key includes the packages/ sources so a matching hit means
+      # the PLT was built against exactly this code. dialyxir keys its own
+      # deps PLT off the DEPS hash, which a path dependency does not move:
+      # editing a callback spec in packages/raxol_core does not touch
+      # mix.lock, so a mix.lock-only key restores a PLT describing the OLD
+      # spec and dialyzer reports against stale types. Observed locally -- a
+      # fix removing 16 callback_type_mismatch errors read as a no-op across
+      # two full runs.
+      #
+      # `restore-keys` still allows a looser hit, which is deliberate: a
+      # partial restore saves the PLT build for unrelated dependencies, and
+      # check-quality-ratchet.sh detects the mismatch by CONTENT HASH and
+      # rebuilds. An earlier revision detected it by mtime, which is wrong
+      # here -- actions/checkout writes sources with mtime=now while
+      # actions/cache restores the PLT with its archived mtime, so the check
+      # fired on every warm-cache run and turned this blocking gate into an
+      # unconditional failure.
       - name: Restore PLT cache
         uses: actions/cache@v6
         with:
@@ -769,9 +779,19 @@ jobs:
             plt-${{ runner.os }}-${{ needs.setup.outputs.otp-version }}-${{ needs.setup.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}-
             plt-${{ runner.os }}-${{ needs.setup.outputs.otp-version }}-${{ needs.setup.outputs.elixir-version }}-
 
+      # No separate `mix dialyzer --plt` step: that call produces a deps PLT
+      # the size of core.plt with none of the dependency apps in it, and
+      # dialyxir then reports "PLT is up to date!" permanently because it
+      # keys freshness off a 20-byte .plt.hash. Analysing against it yields a
+      # fabricated regression (observed: 2055 findings, 1845 of them
+      # `unknown_function`, against a true 97). The ratchet discards a stale
+      # deps PLT and lets the analysis run rebuild it correctly, and refuses
+      # to report a count when `unknown_function` dominates.
+      #
       # Blocking, against priv/quality_baseline.json. Counts may only go down.
       - name: Dialyzer ratchet
         run: ./scripts/check-quality-ratchet.sh --gate dialyzer
+        timeout-minutes: 90
 
   # ========================================
   # Security Scanning
@@ -1059,11 +1079,17 @@ jobs:
             exit 1
           fi
 
-          # Skipped when should-run-heavy is false; only a real failure blocks.
-          if [ "${{ needs.dialyzer.result }}" = "failure" ]; then
-            echo "❌ Dialyzer ratchet failed: error count rose above priv/quality_baseline.json"
-            exit 1
-          fi
+          # `skipped` is legitimate: the job is gated on should-run-heavy.
+          # Anything else non-success is not -- an earlier revision matched
+          # only "failure", so `cancelled` and `timed_out` passed the gate.
+          case "${{ needs.dialyzer.result }}" in
+            success|skipped) ;;
+            *)
+              echo "❌ Dialyzer gate did not pass: ${{ needs.dialyzer.result }}"
+              echo "   (count rose above priv/quality_baseline.json, or the run did not complete)"
+              exit 1
+              ;;
+          esac
 
           if [ "${{ needs.security.result }}" != "success" ]; then
             echo "⚠️ Security scan found issues (non-blocking)"
