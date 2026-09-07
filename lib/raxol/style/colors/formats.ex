@@ -9,6 +9,8 @@ defmodule Raxol.Style.Colors.Formats do
   - Named colors
   """
 
+  alias Raxol.Core.Colors.Ansi256
+
   @doc """
   Converts a color to its hex representation.
 
@@ -82,7 +84,7 @@ defmodule Raxol.Style.Colors.Formats do
   # `Raxol.UI.Theming.Colors.ansi_to_rgb/1` (same function name, different
   # module) disagreed with this one for every index but the 8 that coincide.
   def ansi_to_rgb(code) when code in 16..255//1 do
-    Raxol.Core.Colors.Ansi256.to_rgb(code)
+    Ansi256.to_rgb(code)
   end
 
   @doc """
@@ -179,6 +181,22 @@ defmodule Raxol.Style.Colors.Formats do
     end
   end
 
+  # The encode half of the `ansi_to_rgb/1` <-> `rgb_to_ansi/1` pair. It MUST
+  # quantize against the ramp the decode half returns, which is now
+  # `Ansi256.to_rgb/1`'s xterm ramp.
+  #
+  # `div(v * 6, 256)` was the exact inverse of the deleted `n * 51` ladder
+  # (51 -> 1, 102 -> 2, ...) and is wrong for xterm's `0/95/135/175/215/255`:
+  # only level 0 maps to itself, so 208 of the 216 cube indices stopped
+  # round-tripping. `Adaptive.adapt_color/1` composes exactly this pair for a
+  # 256-colour terminal, so every adapted colour came out a full cube step too
+  # bright -- `{95, 0, 0}` picked index 88 and decoded to `{135, 0, 0}`
+  # instead of index 52.
+  #
+  # The 4 achromatic CUBE entries (59, 102, 145, 188) still round-trip to the
+  # nearer grayscale-ramp index rather than to themselves. That is unchanged
+  # from before the ramp move and within 4 per channel; the branch below has
+  # always preferred the ramp for `r == g == b`.
   defp find_closest_ansi_256(r, g, b) do
     if r == g and g == b do
       cond do
@@ -187,10 +205,8 @@ defmodule Raxol.Style.Colors.Formats do
         true -> 232 + div(r - 4, 10)
       end
     else
-      ir = div(r * 6, 256)
-      ig = div(g * 6, 256)
-      ib = div(b * 6, 256)
-      16 + 36 * ir + 6 * ig + ib
+      16 + 36 * Ansi256.cube_index(r) + 6 * Ansi256.cube_index(g) +
+        Ansi256.cube_index(b)
     end
   end
 end

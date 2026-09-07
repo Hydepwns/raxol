@@ -49,6 +49,41 @@ defmodule Raxol.Core.Colors.Ansi256 do
   def cube_level(n) when n in 1..5, do: 55 + n * 40
 
   @doc """
+  The cube axis whose level is nearest `value` -- the inverse of `cube_level/1`.
+
+  Lives here, next to the ramp it inverts, because the two halves drifting
+  apart is the defect this replaces: `Raxol.Style.Colors.Formats` decoded with
+  this module's xterm ramp while still encoding with `div(v * 6, 256)`, the
+  exact inverse of the OLD `n * 51` ladder, so 208 of the 216 cube colors
+  stopped round-tripping.
+
+  Thresholds are the midpoints between adjacent levels, so this returns the
+  genuinely nearest axis for every 0..255 input, ties resolving to the darker
+  level. A `cond` rather than a search: this is on the colour-adaptation path
+  and allocates nothing.
+
+      iex> Raxol.Core.Colors.Ansi256.cube_index(0)
+      0
+      iex> Raxol.Core.Colors.Ansi256.cube_index(95)
+      1
+      iex> Raxol.Core.Colors.Ansi256.cube_index(255)
+      5
+      iex> Raxol.Core.Colors.Ansi256.cube_index(100)
+      1
+  """
+  @spec cube_index(0..255) :: 0..5
+  def cube_index(value) when value in 0..255 do
+    cond do
+      value < 48 -> 0
+      value <= 115 -> 1
+      value <= 155 -> 2
+      value <= 195 -> 3
+      value <= 235 -> 4
+      true -> 5
+    end
+  end
+
+  @doc """
   RGB for a cube index (16-231).
 
       iex> Raxol.Core.Colors.Ansi256.cube_rgb(16)

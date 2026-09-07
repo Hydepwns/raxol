@@ -14,6 +14,7 @@ defmodule Raxol.UI.Theming.Ansi256AgreementTest do
   """
   use ExUnit.Case, async: true
 
+  alias Raxol.Style.Colors.Formats
   alias Raxol.UI.Theming.Colors
 
   # Cube indices whose RGB is byte-identical to one of the basic 16 colors.
@@ -21,6 +22,11 @@ defmodule Raxol.UI.Theming.Ansi256AgreementTest do
   # returns the lower index for these, so they cannot round-trip and are not
   # expected to.
   @basic_aliases [196, 201, 226, 231, 46, 51, 21, 16]
+
+  # The 4 cube indices whose RGB is achromatic (`r == g == b`).
+  # `Formats.rgb_to_ansi/1` routes those to the grayscale ramp, so they do not
+  # round-trip to themselves -- true before the ramp move as well.
+  @achromatic_cube [59, 102, 145, 188]
 
   describe "cube round-trip" do
     test "every cube index round-trips, except exact basic-color aliases" do
@@ -55,6 +61,50 @@ defmodule Raxol.UI.Theming.Ansi256AgreementTest do
     test "uses the xterm ramp, not the naive linear one" do
       assert Colors.ansi_to_rgb(17) == {0, 0, 95}
       refute Colors.ansi_to_rgb(17) == {0, 0, 51}
+    end
+  end
+
+  # `Raxol.UI.Theming.Colors` is only ONE of the two reverse lookups.
+  # `Formats.rgb_to_ansi/1` is the other, and the tests above cannot see it:
+  # they never call it. It kept quantizing with `div(v * 6, 256)` -- the exact
+  # inverse of the deleted `n * 51` ladder -- after `ansi_to_rgb/1` moved to
+  # the xterm ramp, so the pair stopped round-tripping for 208 of 216 indices
+  # while this file stayed green.
+  describe "Formats is the other half of the same pair" do
+    test "every cube index round-trips through rgb_to_ansi/ansi_to_rgb" do
+      mismatches =
+        for index <- 16..231,
+            index not in @achromatic_cube,
+            rgb = Formats.ansi_to_rgb(index),
+            Formats.rgb_to_ansi(rgb) != index,
+            do: {index, rgb, Formats.rgb_to_ansi(rgb)}
+
+      assert mismatches == [],
+             "Formats encode/decode disagree for: #{inspect(mismatches)}"
+    end
+
+    test "the achromatic cube entries prefer the nearer grayscale index" do
+      # Unchanged from before the ramp move: the `r == g == b` branch has
+      # always preferred the grayscale ramp, which is within 4 per channel.
+      # Pinned so the exemption above stays honest rather than open-ended.
+      for index <- @achromatic_cube do
+        {v, v, v} = Formats.ansi_to_rgb(index)
+        resolved = Formats.rgb_to_ansi({v, v, v})
+
+        assert resolved in 232..255
+        {r, _, _} = Formats.ansi_to_rgb(resolved)
+        assert abs(r - v) <= 4
+      end
+    end
+
+    test "quantizes to the xterm ramp, not the naive linear one" do
+      # The concrete regression: Adaptive.adapt_color/1 composes exactly this
+      # pair, so a full cube step of error lands on every adapted colour.
+      assert Formats.rgb_to_ansi({95, 0, 0}) == 52
+      refute Formats.rgb_to_ansi({95, 0, 0}) == 88
+
+      assert Formats.ansi_to_rgb(17) == {0, 0, 95}
+      assert Formats.rgb_to_ansi({0, 0, 95}) == 17
     end
   end
 end
