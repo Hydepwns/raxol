@@ -75,7 +75,7 @@ The agent subsystems ship as standalone packages:
 ```elixir
 # mix.exs
 def deps do
-  [{:raxol, "~> 2.6"}]
+  [{:raxol, "~> 2.7"}]
 end
 ```
 

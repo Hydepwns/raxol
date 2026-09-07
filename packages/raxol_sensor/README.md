@@ -5,13 +5,13 @@ Sensor fusion framework for Elixir built on OTP. Poll sensors, fuse readings wit
 ## Install
 
 ```elixir
-{:raxol_sensor, "~> 2.6"}
+{:raxol_sensor, "~> 2.7"}
 ```
 
 Optional Nx backend for vectorized fusion:
 
 ```elixir
-{:raxol_sensor, "~> 2.6"},
+{:raxol_sensor, "~> 2.7"},
 {:nx, "~> 0.9"}
 ```
 

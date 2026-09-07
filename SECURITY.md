@@ -11,7 +11,7 @@ and the commit or release you tested.
 
 ## Supported versions
 
-Only the latest published release line (2.6.x) and master receive security
+Only the latest published release line (2.7.x) and master receive security
 fixes. Pre-alpha packages (`raxol_earn`, `raxol_symphony`, `raxol_gateway`,
 `raxol_cli`, `raxol_console`, `raxol_agent_client_protocol`) carry no
 support commitment yet.

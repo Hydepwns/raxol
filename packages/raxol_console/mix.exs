@@ -1,7 +1,7 @@
 defmodule RaxolConsole.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
@@ -76,7 +76,7 @@ defmodule RaxolConsole.MixProject do
       # The agent runtime (scheduler, skills, memory, MCP dynamic tools) and the
       # messaging gateway (channels + per-chat sessions) are the boot substrate;
       # raxol_earn is the ACP package format + seller/registration seam.
-      raxol_dep(:raxol_agent, "~> 2.6", "../raxol_agent"),
+      raxol_dep(:raxol_agent, "~> 2.7", "../raxol_agent"),
       raxol_dep(:raxol_gateway, "~> 0.1", "../raxol_gateway"),
       raxol_dep(:raxol_earn, "~> 0.2", "../raxol_earn"),
       {:jason, "~> 1.4"},

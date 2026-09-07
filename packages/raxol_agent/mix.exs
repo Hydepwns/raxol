@@ -1,7 +1,7 @@
 defmodule RaxolAgent.MixProject do
   use Mix.Project
 
-  @version "2.6.0"
+  @version "2.7.0"
   @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
@@ -36,8 +36,8 @@ defmodule RaxolAgent.MixProject do
 
   defp deps do
     [
-      raxol_dep(:raxol, "~> 2.6", "../.."),
-      raxol_dep(:raxol_mcp, "~> 2.6", "../raxol_mcp"),
+      raxol_dep(:raxol, "~> 2.7", "../.."),
+      raxol_dep(:raxol_mcp, "~> 2.7", "../raxol_mcp"),
       {:circular_buffer, "~> 1.0"},
       {:jason, "~> 1.4"},
       {:yaml_elixir, "~> 2.12"},

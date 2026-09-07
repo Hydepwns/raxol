@@ -1,7 +1,7 @@
 defmodule RaxolLiveView.MixProject do
   use Mix.Project
 
-  @version "2.6.0"
+  @version "2.7.0"
   @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
@@ -32,8 +32,12 @@ defmodule RaxolLiveView.MixProject do
 
   defp deps do
     [
-      # Core dependency (Buffer, Events, etc.)
-      raxol_dep(:raxol_core, "~> 2.6", "../raxol_core"),
+      # Core dependency (Buffer, Events, etc.).
+      #
+      # 2.7, not 2.6: TerminalBridge's color_256_to_rgb/1 calls
+      # Raxol.Core.Colors.Ansi256, a module raxol_core gained this release.
+      # Under "~> 2.6" a Hex consumer could resolve 2.6.0, which lacks it.
+      raxol_dep(:raxol_core, "~> 2.7", "../raxol_core"),
 
       # PubSub for LiveView <-> Lifecycle communication
       {:phoenix_pubsub, "~> 2.1"},

@@ -4,7 +4,7 @@ Elixir/OTP implementation of [ACP (Agent Client Protocol)](https://agentclientpr
 the JSON-RPC 2.0 protocol between code editors and AI coding agents (the protocol
 Zed and a growing ecosystem of editors/agents speak).
 
-**Status: pre-alpha (`0.1.0-rc.0`), not yet published to Hex.**
+**Status: pre-alpha, not yet published to Hex.**
 
 > Not to be confused with `Raxol.Earn` (`packages/raxol_earn/`), the Virtuals
 > **Agent Commerce Protocol**, an unrelated on-chain payments protocol. This

@@ -30,9 +30,9 @@ mix new my_app && cd my_app
 
 ```elixir
 # mix.exs: pick what you need
-{:raxol, "~> 2.6"}         # Full framework (TUI + rendering + widgets)
-{:raxol_agent, "~> 2.6"}   # Agent framework only (teams, strategies, streaming)
-{:raxol_mcp, "~> 2.6"}     # MCP server + tool derivation only
+{:raxol, "~> 2.7"}         # Full framework (TUI + rendering + widgets)
+{:raxol_agent, "~> 2.7"}   # Agent framework only (teams, strategies, streaming)
+{:raxol_mcp, "~> 2.7"}     # MCP server + tool derivation only
 ```
 
 ## What you get
@@ -161,13 +161,13 @@ Raxol.Headless.send_key(session, "q")
 
 | I want to... | Add this dep |
 |-------------|-------------|
-| Build a TUI app | `{:raxol, "~> 2.6"}` |
-| Build an AI agent | `{:raxol_agent, "~> 2.6"}` |
-| Serve MCP tools | `{:raxol_mcp, "~> 2.6"}` |
-| Render in LiveView | `{:raxol_liveview, "~> 2.6"}` |
+| Build a TUI app | `{:raxol, "~> 2.7"}` |
+| Build an AI agent | `{:raxol_agent, "~> 2.7"}` |
+| Serve MCP tools | `{:raxol_mcp, "~> 2.7"}` |
+| Render in LiveView | `{:raxol_liveview, "~> 2.7"}` |
 | Add agent payments | `{:raxol_payments, "~> 0.2"}` |
-| Use sensor fusion | `{:raxol_sensor, "~> 2.6"}` (zero deps) |
-| Build a plugin | `{:raxol_plugin, "~> 2.6"}` |
+| Use sensor fusion | `{:raxol_sensor, "~> 2.7"}` (zero deps) |
+| Build a plugin | `{:raxol_plugin, "~> 2.7"}` |
 | Add voice commands | `{:raxol_speech, "~> 0.2"}` |
 | Telegram bot surface | `{:raxol_telegram, "~> 0.2"}` |
 | Watch/push surface | `{:raxol_watch, "~> 0.2"}` |

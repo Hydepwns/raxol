@@ -1,7 +1,7 @@
 defmodule RaxolPayments.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.2.1"
   @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
@@ -39,9 +39,9 @@ defmodule RaxolPayments.MixProject do
   defp deps do
     [
       # Compile-time only: Action macro, CommandHook behaviour, Command struct
-      raxol_dep(:raxol_agent, "~> 2.6", "../raxol_agent", runtime: false),
+      raxol_dep(:raxol_agent, "~> 2.7", "../raxol_agent", runtime: false),
       # Raxol.Core.Stores.Dets/Naming back Raxol.Payments.Mandate.Store
-      raxol_dep(:raxol_core, "~> 2.6", "../raxol_core", []),
+      raxol_dep(:raxol_core, "~> 2.7", "../raxol_core", []),
       {:req, "~> 0.5"},
       {:ex_secp256k1, "~> 0.8"},
       {:ex_keccak, "~> 0.7"},

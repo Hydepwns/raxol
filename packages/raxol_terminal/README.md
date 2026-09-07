@@ -5,7 +5,7 @@ Terminal emulation and driver infrastructure for Raxol. Depends on raxol_core fo
 ## Install
 
 ```elixir
-{:raxol_terminal, "~> 2.6"}
+{:raxol_terminal, "~> 2.7"}
 ```
 
 ## What's included

@@ -1,7 +1,7 @@
 defmodule RaxolWatch.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.2.1"
   @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
@@ -35,7 +35,7 @@ defmodule RaxolWatch.MixProject do
 
   defp deps do
     [
-      raxol_dep(:raxol_core, "~> 2.6", "../raxol_core"),
+      raxol_dep(:raxol_core, "~> 2.7", "../raxol_core"),
       {:telemetry, "~> 1.3"},
 
       # Push notifications (optional -- only needed with real APNS/FCM)

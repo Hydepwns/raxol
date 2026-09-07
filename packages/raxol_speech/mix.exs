@@ -1,7 +1,7 @@
 defmodule RaxolSpeech.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.2.1"
   @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
@@ -33,7 +33,7 @@ defmodule RaxolSpeech.MixProject do
   defp deps do
     [
       # Core dependency (Events, Accessibility, Behaviours)
-      raxol_dep(:raxol_core, "~> 2.6", "../raxol_core"),
+      raxol_dep(:raxol_core, "~> 2.7", "../raxol_core"),
       {:telemetry, "~> 1.3"},
 
       # Speech recognition (optional -- STT works without these)

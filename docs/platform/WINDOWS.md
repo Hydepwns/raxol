@@ -31,7 +31,7 @@ Standard installation, nothing special for Windows:
 
 ```powershell
 # Add to mix.exs
-{:raxol, "~> 2.6"}
+{:raxol, "~> 2.7"}
 
 # Install dependencies
 mix deps.get
