@@ -162,6 +162,85 @@ defmodule Raxol.MCP.AuthorizerTest do
     end
   end
 
+  describe "authorization context" do
+    # An authorizer that cannot tell WHO is asking can only decide on the tool
+    # name, which makes a stdio caller and an unauthenticated network client
+    # the same principal. Both seams are handed the same server-derived facts.
+    test "both seams are told the connection and the transport" do
+      test = self()
+
+      spy = fn _op, _args, ctx ->
+        send(test, {:ctx, ctx})
+        :allow
+      end
+
+      srv = start_server(spy, nil, transport: :sse, read_authorizer: spy)
+
+      {:reply, resp} =
+        Server.handle_message(
+          srv,
+          %{
+            id: 1,
+            method: "tools/call",
+            params: %{"name" => "add", "arguments" => %{"a" => 2, "b" => 3}}
+          },
+          "conn-a"
+        )
+
+      assert resp.result.content == [%{type: "text", text: "5"}]
+      assert_received {:ctx, %{conn_id: "conn-a", transport: :sse}}
+
+      # The read seam is a separate call site into the authorizer, and it must
+      # not hand policy a poorer context than the tool seam does.
+      {:reply, _} =
+        Server.handle_message(srv, %{id: 2, method: "resources/list"}, "conn-b")
+
+      assert_received {:ctx, %{conn_id: "conn-b", transport: :sse}}
+    end
+
+    # Authorizing on a value the client asserts is a bypass: the client picks
+    # the value. Only facts the server derives belong in the context.
+    test "the context carries nothing the client asserted" do
+      test = self()
+
+      spy = fn _op, _args, ctx ->
+        send(test, {:ctx, ctx})
+        :allow
+      end
+
+      srv = start_server(spy, nil, transport: :sse)
+
+      {:reply, _} =
+        Server.handle_message(
+          srv,
+          %{
+            id: 1,
+            method: "initialize",
+            params: %{
+              "clientInfo" => %{"name" => "trusted-agent", "version" => "9.9"},
+              "capabilities" => %{}
+            }
+          },
+          "conn-a"
+        )
+
+      {:reply, _} =
+        Server.handle_message(
+          srv,
+          %{id: 2, method: "tools/call", params: %{"name" => "add", "arguments" => %{}}},
+          "conn-a"
+        )
+
+      assert_received {:ctx, ctx}
+
+      # A tripwire, deliberately exact. Another SERVER-derived fact is welcome
+      # here -- add it to this list. Anything the CLIENT asserted (the
+      # clientInfo above, a header it chose) is a bypass wearing a policy's
+      # clothes, and this assertion is what makes adding one a decision.
+      assert Enum.sort(Map.keys(ctx)) == [:conn_id, :transport]
+    end
+  end
+
   describe "authorization_configured?/1" do
     # NOT `authorizer != nil`. A framework may supply a restrictive fallback,
     # and the value alone cannot be told apart from a policy an operator wrote,

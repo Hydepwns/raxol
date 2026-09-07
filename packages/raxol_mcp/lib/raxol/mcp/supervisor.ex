@@ -26,6 +26,11 @@ defmodule Raxol.MCP.Supervisor do
     server_name = Keyword.get(opts, :server_name, Raxol.MCP.Server)
     authorizer = Keyword.get(opts, :authorizer)
     read_authorizer = Keyword.get(opts, :read_authorizer)
+    # Which transport this server fronts, for the authorization context the
+    # server hands its authorizers. Declared, not inferred: a transport
+    # attaches after the server boots, and SSE is mounted in the embedder's own
+    # Plug pipeline, so the server cannot work it out for itself.
+    transport = Keyword.get(opts, :transport, :unknown)
     # `:default`, not `:configured`: an embedder who forgets this option must
     # leave the SSE boot gate shut rather than satisfy it by omission.
     authorizer_source = Keyword.get(opts, :authorizer_source, :default)
@@ -37,6 +42,7 @@ defmodule Raxol.MCP.Supervisor do
        registry: registry_name,
        authorizer: authorizer,
        read_authorizer: read_authorizer,
+       transport: transport,
        authorizer_source: authorizer_source}
     ]
 
