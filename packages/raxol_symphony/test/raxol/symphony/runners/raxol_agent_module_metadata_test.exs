@@ -9,6 +9,7 @@ defmodule Raxol.Symphony.Runners.RaxolAgentModuleMetadataTest do
 
   alias Raxol.Symphony.{Config, Issue}
   alias Raxol.Symphony.Runners.RaxolAgent
+  alias Raxol.Symphony.Test.EtsTables
   alias Raxol.Symphony.TestSupport.AgentWithMetadata
   alias Raxol.Symphony.Trackers.Memory
 
@@ -113,7 +114,7 @@ defmodule Raxol.Symphony.Runners.RaxolAgentModuleMetadataTest do
       table = :symphony_test_module_thread_log
 
       on_exit(fn ->
-        if :ets.whereis(table) != :undefined, do: :ets.delete(table)
+        EtsTables.drop(table)
       end)
 
       Memory.put_issue(%{issue() | state: "Done"})
@@ -142,7 +143,7 @@ defmodule Raxol.Symphony.Runners.RaxolAgentModuleMetadataTest do
       table = :"direct_thread_log_#{:erlang.unique_integer([:positive])}"
 
       on_exit(fn ->
-        if :ets.whereis(table) != :undefined, do: :ets.delete(table)
+        EtsTables.drop(table)
       end)
 
       direct = {Raxol.Agent.ThreadLog.Ets, %{table: table}}
