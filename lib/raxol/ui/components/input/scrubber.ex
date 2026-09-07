@@ -794,22 +794,6 @@ defmodule Raxol.UI.Components.Input.Scrubber do
     {:ok, "Paused", [{:scrubber_pause, context.widget_id}]}
   end
 
-  def handle_tool_call("get_position", _args, context) do
-    node = context.widget_state
-    {min, max_pos} = tool_range(node)
-
-    {:ok,
-     %{
-       position: node_get(node, :position) || min,
-       min: min,
-       max: max_pos,
-       playing: node_get(node, :playing?) == true
-     }}
-  end
-
-  def handle_tool_call(action, _args, _ctx),
-    do: {:error, "Unknown action: #{action}"}
-
   defp tool_label(node) do
     node_get(node, :aria_label) || node_get(node, :label) || "scrubber"
   end

@@ -372,8 +372,14 @@ defmodule Raxol.Recording.Player do
   end
 
   defp render_bar(props, track_width, columns, width) do
+    # `Map.merge/2`, not `%{props | ...}`: the update syntax requires every key
+    # to already exist, and `scrubber_props/1` has no `:mark_columns` -- so the
+    # struct-update form raised `KeyError` on the first repaint and the type
+    # checker flagged it as an incompatible call.
     line =
-      Scrubber.line(%{props | width: track_width, mark_columns: columns})
+      Scrubber.line(
+        Map.merge(props, %{width: track_width, mark_columns: columns})
+      )
 
     (" " <> line <> " | " <> @status_hints)
     |> String.slice(0, width)
