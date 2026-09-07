@@ -88,7 +88,7 @@ defmodule Raxol.MCP.Server do
     :registry,
     :authorizer,
     :read_authorizer,
-    authorizer_source: :configured,
+    authorizer_source: :default,
     initialized: false,
     log_level: :info,
     subscribers: %{},
@@ -193,14 +193,21 @@ defmodule Raxol.MCP.Server do
   connection is safe (it can still make ordinary requests, and simply cannot
   elicit), whereas reusing one client's id for another hands over its approvals.
   """
-  @spec handle_message(GenServer.server(), map(), conn_id()) :: {:reply, map() | nil}
-  def handle_message(server, message, conn_id) do
-    # :infinity, not the default 5s: tool callbacks run inline in the server
-    # (Registry.call_tool invokes them in the calling process), and a slow
-    # tool — an agent turn, a screenshot of a busy app — must stall the
-    # transport, never crash it with a call-timeout exit. Slow tools bound
-    # their own work; the transport's job is to wait for the reply.
-    GenServer.call(server, {:handle_message, message, conn_id}, :infinity)
+  #
+  # `timeout` defaults to `:infinity`, not the usual 5s: tool callbacks run
+  # inline in the server (`Registry.call_tool/3` invokes them in the calling
+  # process), and a slow tool -- an agent turn, a screenshot of a busy app --
+  # must stall a stdio or SSE transport rather than crash it with a call-timeout
+  # exit. Slow tools bound their own work; that transport's job is to wait.
+  #
+  # A surface that previously ran its callbacks CONCURRENTLY should pass a
+  # bound instead. Everything now funnels through this one process, so an
+  # unbounded wait there turns one slow tool into head-of-line blocking for
+  # every other client -- see `Raxol.Headless.MCPTools`.
+  @spec handle_message(GenServer.server(), map(), conn_id(), timeout()) ::
+          {:reply, map() | nil}
+  def handle_message(server, message, conn_id, timeout \\ :infinity) do
+    GenServer.call(server, {:handle_message, message, conn_id}, timeout)
   end
 
   @doc """
@@ -245,8 +252,11 @@ defmodule Raxol.MCP.Server do
   exists to be: nobody had to decide that a network transport should serve.
 
   So a server started with `authorizer_source: :default` answers `false` however
-  strict its authorizer is. The default source is `:configured`, so a caller that
-  passes an authorizer without saying otherwise is taken at its word.
+  strict its authorizer is. `:default` is also the DEFAULT source: for a
+  predicate whose whole purpose is "nobody had to decide that a network
+  transport should serve", an embedder who forgets the option must fail closed,
+  not be taken at its word. `Raxol.Application` passes `:configured`
+  explicitly when `mcp_authorizer_source/0` says an operator named a key.
   """
   @spec authorization_configured?(GenServer.server()) :: boolean()
   def authorization_configured?(server \\ __MODULE__) do
@@ -262,7 +272,9 @@ defmodule Raxol.MCP.Server do
     registry = Keyword.get(opts, :registry, Registry)
     authorizer = Keyword.get(opts, :authorizer)
     read_authorizer = Keyword.get(opts, :read_authorizer)
-    authorizer_source = authorizer_source!(Keyword.get(opts, :authorizer_source, :configured))
+
+    authorizer_source =
+      authorizer_source!(Keyword.get(opts, :authorizer_source, :default))
 
     refuse_unguarded_sensitive_tools!(registry, authorizer)
 
@@ -944,7 +956,14 @@ defmodule Raxol.MCP.Server do
         ToolDef.sensitive?(tool)
     end)
   catch
-    :exit, _ -> false
+    # Fail CLOSED. This is the runtime backstop that makes the documented
+    # "enforced twice" guarantee true, and it is consulted only when
+    # `state.authorizer == nil`. A registry that is restarting made every
+    # sensitive tool read as non-sensitive, so the backstop fell straight
+    # through -- the one condition under which it is the only thing left.
+    # Refusing a call while the registry is unavailable is the safe answer;
+    # the caller can retry.
+    :exit, _ -> true
   end
 
   # -- Elicitation --------------------------------------------------------------

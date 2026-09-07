@@ -540,14 +540,40 @@ defmodule Raxol.Headless.McpToolsTest do
       registry = registry!()
       :ok = McpTools.register(registry)
 
-      assert {:ok, server} =
+      assert {:ok, _server} =
+               Raxol.MCP.Server.start_link(
+                 name: :"srv_#{System.unique_integer([:positive])}",
+                 registry: registry,
+                 authorizer: Raxol.MCP.Authorizer.allow_all()
+               )
+    end
+
+    # Booting and satisfying the SSE gate are different questions, and an
+    # authorizer alone answers only the first. `:authorizer_source` defaults to
+    # `:default` so an embedder who forgets it fails closed rather than being
+    # taken at its word -- which is the point of the gate.
+    test "an authorizer alone does not satisfy the SSE gate" do
+      registry = registry!()
+      :ok = McpTools.register(registry)
+
+      assert {:ok, defaulted} =
                Raxol.MCP.Server.start_link(
                  name: :"srv_#{System.unique_integer([:positive])}",
                  registry: registry,
                  authorizer: Raxol.MCP.Authorizer.allow_all()
                )
 
-      assert Raxol.MCP.Server.authorization_configured?(server)
+      refute Raxol.MCP.Server.authorization_configured?(defaulted)
+
+      assert {:ok, configured} =
+               Raxol.MCP.Server.start_link(
+                 name: :"srv_#{System.unique_integer([:positive])}",
+                 registry: registry,
+                 authorizer: Raxol.MCP.Authorizer.allow_all(),
+                 authorizer_source: :configured
+               )
+
+      assert Raxol.MCP.Server.authorization_configured?(configured)
     end
   end
 

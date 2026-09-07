@@ -278,6 +278,10 @@ defmodule Raxol.Headless.McpTools do
     end
   end
 
+  # Bounded because `do_inject/2` runs inside `Application.start/2`; see the
+  # comment on the waits below.
+  @inject_timeout_ms 500
+
   defp do_inject(owner, server) do
     # The ETS table is :protected so only the owner can write.
     # We use :erpc to run the insert in the owning process's context.
@@ -288,17 +292,26 @@ defmodule Raxol.Headless.McpTools do
     # Send a function to the owner process via a monitored intermediary
     # Since the owner is a Supervisor, it handles :code_change but not
     # arbitrary calls. Use :sys.replace_state to safely inject.
+    # Both waits are bounded well under a second. This runs synchronously
+    # inside `Application.start/2`, and the pair used to be OTP's default 5s
+    # plus another 5s here -- so a slow or wedged Tidewave supervisor added up
+    # to ~10s to every dev boot before the failure was downgraded to a debug
+    # log. Nothing depends on the result; it is a dev convenience.
     try do
-      :sys.replace_state(owner, fn sup_state ->
-        do_ets_inject(server)
-        send(me, {:inject_done, ref})
-        sup_state
-      end)
+      :sys.replace_state(
+        owner,
+        fn sup_state ->
+          do_ets_inject(server)
+          send(me, {:inject_done, ref})
+          sup_state
+        end,
+        @inject_timeout_ms
+      )
 
       receive do
         {:inject_done, ^ref} -> :ok
       after
-        5_000 -> {:error, :inject_timeout}
+        @inject_timeout_ms -> {:error, :inject_timeout}
       end
     catch
       :exit, reason -> {:error, {:sys_replace_failed, reason}}
@@ -331,16 +344,27 @@ defmodule Raxol.Headless.McpTools do
     filtered_dispatch =
       Map.drop(existing_dispatch, Enum.map(our_tools, & &1.name))
 
-    new_dispatch =
-      Map.merge(
-        filtered_dispatch,
-        Map.new(our_tools, fn t -> {t.name, gated_callback(server, t.name)} end)
-      )
+    gated =
+      Map.new(our_tools, fn t -> {t.name, gated_callback(server, t.name)} end)
+
+    new_dispatch = Map.merge(filtered_dispatch, gated)
+
+    # The ADVERTISED entries carry a `:callback` as well, and only the dispatch
+    # map above used to be gated -- so each of the six entries went into
+    # Tidewave's table holding its raw capture (`&start_session/1` and
+    # friends). Any consumer reaching for `tool.callback` rather than going
+    # through the dispatch map bypassed the authorizer, the sensitive-tool
+    # gate and elicitation entirely. Substitute in both places: one enforcement
+    # point is only true if every copy of the entry point routes through it.
+    gated_tools =
+      Enum.map(our_tools, fn t ->
+        Map.put(t, :callback, Map.fetch!(gated, t.name))
+      end)
 
     :ets.insert(
       :tidewave_tools,
       {:tools,
-       {filtered_tools ++ our_tools, new_dispatch, browser_tools,
+       {filtered_tools ++ gated_tools, new_dispatch, browser_tools,
         browser_dispatch}}
     )
   end
@@ -377,7 +401,12 @@ defmodule Raxol.Headless.McpTools do
           {:error, reason}
 
         other ->
-          {:error, inspect(other)}
+          # Never render an internal server term into a client-facing string.
+          Raxol.Core.Runtime.Log.debug(
+            "unexpected MCP reply on the Tidewave path: #{inspect(other)}"
+          )
+
+          {:error, "the Raxol MCP server returned an unexpected reply"}
       end
     end
   end
@@ -398,12 +427,42 @@ defmodule Raxol.Headless.McpTools do
   # cannot be prompted, and no other client is involved.
   @tidewave_conn :tidewave
 
+  # Bounded, unlike stdio and SSE. Tidewave used to invoke the callback in its
+  # own request process; routing through the server is right, but inheriting
+  # `:infinity` there meant one slow `raxol_screenshot` stalled the stdio
+  # client, every SSE client and every other Tidewave request, with nothing
+  # able to break it. Long enough for a screenshot of a busy app, short enough
+  # that a wedged tool cannot hold the whole surface.
+  @tidewave_call_timeout_ms 30_000
+
   defp safe_handle_message(server, message) do
-    Raxol.MCP.Server.handle_message(server, message, @tidewave_conn)
+    Raxol.MCP.Server.handle_message(
+      server,
+      message,
+      @tidewave_conn,
+      @tidewave_call_timeout_ms
+    )
   catch
-    :exit, _reason ->
+    # A crashed server exits with its own reason and must not be reported as an
+    # absent one: an operator-supplied authorizer that raises looks identical to
+    # "not running" otherwise, and the real fault never surfaces.
+    :exit, {:noproc, _} ->
       {:error,
        "the Raxol MCP server is not running, so this call cannot be authorized"}
+
+    :exit, {:timeout, _} ->
+      {:error,
+       "the Raxol MCP server did not answer within " <>
+         "#{@tidewave_call_timeout_ms}ms, so this call was not authorized"}
+
+    :exit, reason ->
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "Raxol MCP server exited while authorizing a Tidewave call: " <>
+          "#{inspect(reason)}",
+        %{}
+      )
+
+      {:error, "the Raxol MCP server failed while authorizing this call"}
   end
 
   defp content_text([%{text: text} | _]) when is_binary(text), do: text

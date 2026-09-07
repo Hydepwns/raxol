@@ -243,12 +243,15 @@ defmodule Raxol.ApplicationTest do
         |> Enum.uniq()
         |> MapSet.new()
 
-      # Guard the guard. A regex that quietly stops matching would make the
-      # subset check below vacuously true, and this test would pass while
-      # asserting nothing at all.
-      assert MapSet.size(gated) == 8,
-             "found #{MapSet.size(gated)} gated read methods, not 8: server.ex " <>
-               "changed shape and this test no longer reads it"
+      # A regex that quietly stops matching would make the subset check below
+      # vacuously true, so assert it still finds SOMETHING -- but not a fixed
+      # count. `== 8` pre-empted the guard it was protecting: the ninth gated
+      # read method, which is exactly the case this test exists to catch, would
+      # fail here first with "server.ex changed shape", the wrong diagnosis,
+      # and the subset check that names the unclassified method never ran.
+      refute Enum.empty?(gated),
+             "the authorize_read/3 regex matched nothing: server.ex changed " <>
+               "shape and this guard no longer reads it"
 
       read =
         Raxol.Application.resolve_mcp_authorizer(:mcp_read_authorizer, true)
@@ -331,17 +334,27 @@ defmodule Raxol.ApplicationTest do
 
     # The end-to-end assertion the unit cases above cannot make: the booted
     # application actually handed the server an authorizer.
-    test "the running MCP server has an authorizer configured" do
-      case Process.whereis(Raxol.MCP.Server) do
-        nil ->
-          # The MCP supervisor is not part of every startup mode.
-          :ok
+    #
+    # Started explicitly rather than found with `Process.whereis/1`.
+    # `determine_startup_mode/1` returns `:test` under `mix test` and
+    # `get_children_for_mode(:test)` never calls `maybe_add_mcp_supervisor/0`,
+    # so the server is never running here and the old `nil -> :ok` branch made
+    # this test a no-op: reverting the opts to `[]` -- the bug this PR fixes --
+    # left it green.
+    test "the application's own supervisor opts carry an authorizer" do
+      server = start_mcp_server!()
 
-        _pid ->
-          assert Raxol.MCP.Server.authorization_configured?(Raxol.MCP.Server),
-                 "Raxol.Application started the MCP supervisor without an " <>
-                   "authorizer; every tool would run unguarded"
-      end
+      assert Raxol.MCP.Server.authorization_configured?(server) ==
+               (Raxol.Application.mcp_authorizer_source() == :configured)
+
+      refute is_nil(
+               Keyword.fetch!(
+                 Raxol.Application.mcp_supervisor_opts(),
+                 :authorizer
+               )
+             ),
+             "Raxol.Application would start the MCP supervisor without an " <>
+               "authorizer; every tool would run unguarded"
     end
 
     # The production fallback is a deny-everything allowlist, which is a non-nil
@@ -459,24 +472,38 @@ defmodule Raxol.ApplicationTest do
     # production allowlist and `mix mcp.server` denied every tool. Asserting a
     # non-nil authorizer could not see it; asserting a call SUCCEEDS can.
     test "a tool actually runs outside production" do
-      case Process.whereis(Raxol.MCP.Server) do
-        nil ->
-          :ok
+      server = start_mcp_server!()
 
-        server ->
-          assert {:reply, %{result: result}} =
-                   Raxol.MCP.Server.handle_message(server, %{
-                     jsonrpc: "2.0",
-                     id: System.unique_integer([:positive]),
-                     method: "tools/call",
-                     params: %{"name" => "raxol_list", "arguments" => %{}}
-                   })
+      assert {:reply, %{result: result}} =
+               Raxol.MCP.Server.handle_message(server, %{
+                 jsonrpc: "2.0",
+                 id: System.unique_integer([:positive]),
+                 method: "tools/call",
+                 params: %{"name" => "raxol_list", "arguments" => %{}}
+               })
 
-          refute Map.get(result, :isError) == true,
-                 "the dev/test default denied a read tool, so this environment " <>
-                   "resolved the production allowlist: #{inspect(result)}"
-      end
+      refute Map.get(result, :isError) == true,
+             "the dev/test default denied a read tool, so this environment " <>
+               "resolved the production allowlist: #{inspect(result)}"
     end
+  end
+
+  # Starts the MCP tree under the test's supervision with exactly the opts
+  # `Raxol.Application` would pass, and registers the same headless tools the
+  # application registers -- so a `tools/call` here exercises the real
+  # resolution rather than a hand-assembled server. The whole supervisor,
+  # because the server calls into `Raxol.MCP.Registry` and a bare server has
+  # none.
+  #
+  # `mix test` never starts this tree (`get_children_for_mode(:test)` does not
+  # call `maybe_add_mcp_supervisor/0`), so the default names are free.
+  defp start_mcp_server! do
+    start_supervised!(
+      {Raxol.MCP.Supervisor, Raxol.Application.mcp_supervisor_opts()}
+    )
+
+    Raxol.Headless.McpTools.register(Raxol.MCP.Registry)
+    Raxol.MCP.Server
   end
 
   @doc false
