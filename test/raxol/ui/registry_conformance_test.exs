@@ -75,6 +75,46 @@ defmodule Raxol.UI.RegistryConformanceTest do
                "#{inspect(type)} names demo #{inspect(demo)}, absent from Raxol.Playground.Catalog"
       end
     end
+
+    # The reverse direction, and the one that catches a silent LOSS of reach.
+    # `TreeWalker`'s map used to carry `approval_prompt`, which derived nothing
+    # (`Harness.ApprovalPrompt` exports no `mcp_tools/1`), and it was dropped so
+    # the map would agree with this registry. Harmless exactly because the entry
+    # was inert -- but nothing was watching the condition that made it inert.
+    # Give that Component `mcp_tools/1` tomorrow and it becomes tool-providing
+    # everywhere except in the map that decides, with every assertion above
+    # still green.
+    #
+    # So: a Component that CAN provide tools must be registered, or named here
+    # as a deliberate exclusion.
+    @unregistered_tool_providers []
+
+    test "every Component implementing ToolProvider is registered" do
+      registered = MapSet.new(Registry.list(), & &1.module)
+      excluded = MapSet.new(@unregistered_tool_providers)
+
+      {:ok, modules} = :application.get_key(:raxol, :modules)
+
+      missing =
+        modules
+        |> Enum.filter(&ui_component?/1)
+        |> Enum.filter(&ToolProvider.tool_provider?/1)
+        |> MapSet.new()
+        |> MapSet.difference(registered)
+        |> MapSet.difference(excluded)
+
+      assert MapSet.size(missing) == 0,
+             "these Components derive MCP tools but no declaration type maps " <>
+               "to them, so an agent can never reach them: " <>
+               inspect(MapSet.to_list(missing)) <>
+               ". Register them, or list them in " <>
+               "@unregistered_tool_providers with a reason."
+    end
+
+    defp ui_component?(module) do
+      String.starts_with?(Atom.to_string(module), "Elixir.Raxol.UI.") and
+        Code.ensure_loaded?(module)
+    end
   end
 
   describe "Raxol.MCP.TreeWalker default type map" do
@@ -113,7 +153,10 @@ defmodule Raxol.UI.RegistryConformanceTest do
         probe = probe_node(type)
 
         under_default = Projection.descriptor(probe)
-        under_registry = Projection.descriptor(probe, type_map: Registry.type_map())
+
+        under_registry =
+          Projection.descriptor(probe, type_map: Registry.type_map())
+
         under_fallback = Projection.descriptor(probe, type_map: %{})
 
         assert under_default == under_registry,

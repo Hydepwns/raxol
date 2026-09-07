@@ -70,7 +70,8 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
       assert Scrubber.clock(elapsed_ms: 63_000, duration_ms: 125_000) ==
                "01:03 / 02:05"
 
-      assert Scrubber.clock(elapsed_ms: 0, duration_ms: 4_300) == "00:00 / 00:04"
+      assert Scrubber.clock(elapsed_ms: 0, duration_ms: 4_300) ==
+               "00:00 / 00:04"
     end
 
     test "falls back to the index pair when no duration is known" do
@@ -165,7 +166,9 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
       assert {%{position: 0}, _} = Scrubber.handle_event(char("["), state, %{})
 
       past_last = %{state | position: 33}
-      assert {%{position: 33}, []} = Scrubber.handle_event(char("]"), past_last, %{})
+
+      assert {%{position: 33}, []} =
+               Scrubber.handle_event(char("]"), past_last, %{})
     end
 
     test "speed walks the ladder and stops at both ends" do
@@ -188,7 +191,13 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
 
     test "disabled ignores every key" do
       state =
-        Scrubber.new(min: 0, max: 9, position: 4, disabled: true, playing?: true)
+        Scrubber.new(
+          min: 0,
+          max: 9,
+          position: 4,
+          disabled: true,
+          playing?: true
+        )
 
       assert {^state, []} = Scrubber.handle_event(key(:right), state, %{})
       assert {^state, []} = Scrubber.handle_event(key(:space), state, %{})
@@ -236,7 +245,8 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
 
   describe "render/2" do
     test "emits a row of identified segments" do
-      state = Scrubber.new(id: "replay", min: 0, max: 9, position: 3, label: "Replay")
+      state =
+        Scrubber.new(id: "replay", min: 0, max: 9, position: 3, label: "Replay")
 
       row = Scrubber.render(state, %{})
 
@@ -254,10 +264,17 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
     test "drops the speed segment at 1x" do
       state = Scrubber.new(id: "s", min: 0, max: 9)
 
-      refute Enum.any?(Scrubber.render(state, %{}).children, &(&1.id == "s-speed"))
+      refute Enum.any?(
+               Scrubber.render(state, %{}).children,
+               &(&1.id == "s-speed")
+             )
 
       fast = %{state | speed: 4.0}
-      assert Enum.any?(Scrubber.render(fast, %{}).children, &(&1.id == "s-speed"))
+
+      assert Enum.any?(
+               Scrubber.render(fast, %{}).children,
+               &(&1.id == "s-speed")
+             )
     end
   end
 
@@ -306,7 +323,12 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
 
     test "seek dispatches the position and rejects one out of range" do
       node =
-        Raxol.View.Components.scrubber(id: "replay", min: 0, max: 47, position: 12)
+        Raxol.View.Components.scrubber(
+          id: "replay",
+          min: 0,
+          max: 47,
+          position: 12
+        )
 
       assert {:ok, _, [{:scrubber_seek, "replay", 20}]} =
                Scrubber.handle_tool_call(
@@ -357,7 +379,11 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
         )
 
       assert {:ok, %{position: 9, min: 7, max: 11, playing: true}} =
-               Scrubber.handle_tool_call("get_position", %{}, tool_context(node))
+               Scrubber.handle_tool_call(
+                 "get_position",
+                 %{},
+                 tool_context(node)
+               )
     end
 
     test "an unknown action is an error, not a crash" do
@@ -395,6 +421,78 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
       node = Raxol.View.Components.scrubber(id: "replay", min: 0, max: 9)
 
       assert %{state: %{playing?: false}} = Projection.project(node)
+    end
+  end
+
+  describe "the speed ladder reports out" do
+    # The widget holds the rate but does not own the timer that reads it, so
+    # without a callback `+` moved nothing outside the widget's own render and
+    # a parent driving playback could not learn the rate had changed.
+    test "stepping up and down runs :on_speed with the new rate" do
+      state =
+        Scrubber.new(max: 10, speed: 1.0, on_speed: &{:speed_changed, &1})
+
+      assert {%{speed: 2.0}, [{:speed_changed, 2.0}]} =
+               Scrubber.handle_event(char("+"), state, %{})
+
+      assert {%{speed: 0.5}, [{:speed_changed, 0.5}]} =
+               Scrubber.handle_event(char("-"), state, %{})
+    end
+
+    # Silent at the ends, as a clamped seek is at the ends of the track.
+    test "no callback when the ladder is already at its end" do
+      top = Scrubber.new(max: 10, speed: 8.0, on_speed: &{:speed_changed, &1})
+
+      assert {%{speed: 8.0}, []} = Scrubber.handle_event(char("+"), top, %{})
+    end
+  end
+
+  describe "digit bindings" do
+    # The keymap is read from BOTH `:char` and `:key` for every other binding.
+    # The decile jump was read only from `:char`, so on a backend that delivers
+    # "5" in `:key` it silently did not exist.
+    test "a decile jump arrives on either field" do
+      state = Scrubber.new(min: 0, max: 100)
+
+      assert {%{position: 50}, _} =
+               Scrubber.handle_event(char("5"), state, %{})
+
+      assert {%{position: 50}, _} = Scrubber.handle_event(key("5"), state, %{})
+    end
+  end
+
+  describe "measuring without rendering" do
+    # `chrome_width/1` and `mark_columns/1` exist so a per-frame caller does not
+    # have to render a whole line, and re-sort every mark, just to size a track.
+    # They have to agree with what `line/1` actually draws or the sizing is
+    # wrong in a way only a narrow terminal would show.
+    test "chrome_width/1 is line/1 minus the track it drew" do
+      for props <- [
+            %{min: 0, max: 47, position: 12, width: 3},
+            %{min: 0, max: 47, position: 12, width: 3, speed: 2.0},
+            %{min: 0, max: 47, position: 12, width: 3, playing?: true},
+            %{
+              min: 0,
+              max: 47,
+              position: 12,
+              width: 3,
+              elapsed_ms: 1_100,
+              duration_ms: 4_300
+            }
+          ] do
+        assert Scrubber.chrome_width(props) ==
+                 String.length(Scrubber.line(props)) - props.width,
+               "chrome_width disagreed with line/1 for #{inspect(props)}"
+      end
+    end
+
+    test "a precomputed mark_columns draws the same track" do
+      props = %{min: 0, max: 47, position: 12, width: 24, marks: [0, 18, 33]}
+
+      assert Scrubber.track(props) ==
+               Scrubber.track(
+                 Map.put(props, :mark_columns, Scrubber.mark_columns(props))
+               )
     end
   end
 end
