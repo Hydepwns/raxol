@@ -128,20 +128,25 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
           mix deps.clean --unused
-          # Prefer the committed lock (fast-fails if mix.exs was edited without
-          # a committed mix.lock). Fall back to a plain resolve so pure upstream
-          # drift -- a transitive dep publishing a newer patch after the lock was
-          # committed -- does not red the whole pipeline. The pre-commit hook and
-          # `mix raxol.check` still guard genuinely uncommitted lock changes.
+          # `--check-locked`, with no fallback. The `|| mix deps.get` this
+          # replaces made the check advisory: on a mismatch mix rewrote
+          # mix.lock in place and the pipeline carried on green, so a green run
+          # never established that the COMMITTED lock is what CI built. The
+          # package job two hundred lines down already uses the hard form, and
+          # its own comment explains why -- a rewriting fetch lets a package
+          # build green here and be impossible to reproduce anywhere else.
           #
-          # The fallback has a cost every consumer of this cache pays. It
-          # rewrites mix.lock in place, so deps/ ends up holding versions the
-          # COMMITTED lock does not name -- while the cache saved here is keyed
-          # on a hash of that committed lock. A consumer restoring that key then
-          # dies on "lock mismatch" for a dependency nobody touched: on
-          # 2026-08-12 a sobelow-only dependabot bump red-ed master via nx and
-          # phoenix. Hence the `mix deps.get` each consumer runs before use.
-          mix deps.get --check-locked || mix deps.get
+          # The fallback also had a cost every consumer of this cache paid. It
+          # left deps/ holding versions the committed lock does not name while
+          # the cache saved here is keyed on a hash of THAT lock, so a consumer
+          # restoring the key died on "lock mismatch" for a dependency nobody
+          # touched: on 2026-08-12 a sobelow-only dependabot bump red-ed master
+          # via nx and phoenix.
+          #
+          # Pure upstream drift -- a transitive dep publishing a newer patch
+          # after the lock was committed -- now fails here, loudly, naming the
+          # dependency. That is a lockfile commit, not a mystery.
+          mix deps.get --check-locked
           mix deps.compile
 
   # ========================================

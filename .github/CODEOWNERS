@@ -1,0 +1,23 @@
+# Review assignment. This file exists because `reviewers:` in
+# .github/dependabot.yml is a deprecated key that Dependabot silently ignores:
+# every dependency PR it opened reported reviews:0 with nobody assigned, and
+# with auto-merge off nothing merged them either, which is how one sat red and
+# two sat unreviewed.
+#
+# Last match wins, so the specific entries below override the catch-all.
+
+* @DROOdotFOO
+
+# Gates and release plumbing. A change here alters what every other PR is
+# allowed to do, so it should never land as a drive-by.
+/.github/                       @DROOdotFOO
+/scripts/check-lockstep-deps.sh @DROOdotFOO
+/scripts/check-quality-ratchet.sh @DROOdotFOO
+/scripts/check_singletons.sh    @DROOdotFOO
+/priv/quality_baseline.json     @DROOdotFOO
+/.dialyzer_ignore.exs           @DROOdotFOO
+/.gitleaks.toml                 @DROOdotFOO
+/.credo.exs                     @DROOdotFOO
+
+# Security posture and the documents people act on during an incident.
+/SECURITY.md                    @DROOdotFOO

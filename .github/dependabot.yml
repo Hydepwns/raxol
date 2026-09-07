@@ -1,4 +1,14 @@
 version: 2
+
+# `reviewers` is NOT used anywhere in this file: Dependabot deprecated the key
+# and silently ignores it, so every PR it opened had reviews:0 and nobody
+# assigned. .github/CODEOWNERS does that job instead.
+#
+# Labels are limited to ones that EXIST. Requesting a missing label makes
+# Dependabot post a failure comment on every PR it opens ("The following
+# labels could not be found: `elixir`"), which is the same channel its real
+# advisory text and compatibility scores arrive on -- so a permanent error
+# there trains reviewers to skip reading it.
 updates:
   # Elixir dependencies
   - package-ecosystem: "mix"
@@ -8,11 +18,8 @@ updates:
       day: "monday"
       time: "04:00"
     open-pull-requests-limit: 5
-    reviewers:
-      - "droo"
     labels:
       - "dependencies"
-      - "elixir"
     groups:
       dev-dependencies:
         patterns:
@@ -30,7 +37,33 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    
+
+  # The 18 package lockfiles. `directory: "/"` alone scanned NONE of them, yet
+  # every package publishes to Hex -- so an advisory against a dependency only
+  # a package locks (ex_doc, mox, credo, dialyxir all differ from the root)
+  # produced no PR and no alert, indefinitely. `directories` takes a list, so
+  # one entry covers them all.
+  - package-ecosystem: "mix"
+    directories:
+      - "/packages/*"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    groups:
+      # One PR per package rather than one per dependency: these are the same
+      # dev/test toolchain repeated eighteen times, and eighteen separate
+      # ex_doc bumps a week is how a review channel gets muted.
+      package-toolchain:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -39,26 +72,20 @@ updates:
       day: "monday"
       time: "04:00"
     open-pull-requests-limit: 3
-    reviewers:
-      - "droo"
     labels:
       - "dependencies"
-      - "github-actions"
     commit-message:
       prefix: "ci"
       include: "scope"
-    
+
   # Docker dependencies
   - package-ecosystem: "docker"
     directory: "/docker"
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 2
-    reviewers:
-      - "droo"
     labels:
       - "dependencies"
-      - "docker"
     commit-message:
       prefix: "build"
       include: "scope"

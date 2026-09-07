@@ -13,10 +13,16 @@ name: Lockstep Deps
 # '**.md', so its `mix raxol.check_docs` step skips exactly the pull requests
 # that change prose and links. The `prose` job below closes that hole.
 
+# `**/mix.lock` is in the triggers even though `check-lockstep-deps.sh` reads
+# only `mix.exs`. Without it this workflow could not fire on a dependency-bump
+# PR AT ALL -- Dependabot's diffs touch nothing but a lockfile, so the
+# "Constraint consistency" check was simply absent from every one of them
+# while looking, on the PR page, like coverage it never provided.
 on:
   pull_request:
     paths:
       - "**/mix.exs"
+      - "**/mix.lock"
       - "**/*.md"
       - "docs/**"
       - "scripts/check-lockstep-deps.sh"
@@ -27,6 +33,7 @@ on:
     branches: [master]
     paths:
       - "**/mix.exs"
+      - "**/mix.lock"
       - "**/*.md"
       - "docs/**"
       - "scripts/prose_lint.exs"

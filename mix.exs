@@ -267,7 +267,11 @@ defmodule Raxol.MixProject do
       {:phoenix_live_view, "~> 1.2.3"},
       {:phoenix_html, "~> 4.3"},
       {:plug_cowboy, "~> 2.7"},
-      {:phoenix_live_dashboard, "~> 0.9.0", only: :dev},
+      # phoenix_live_dashboard is deliberately absent: nothing in lib/, web/ or
+      # config/ mounted it or referenced it, so Dependabot regenerated a PR for
+      # it on every release and a reviewer spent a CI matrix on a dependency
+      # with no consumer. Add it back together with the route that uses it,
+      # behind auth -- it exposes process, ETS and OS-mon internals.
       {:phoenix_live_reload, "~> 1.7.0", only: :dev}
     ]
   end
