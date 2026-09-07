@@ -43,6 +43,13 @@ defmodule Raxol.MCP.AuthorizerTest do
     resp.result.content |> hd() |> Map.fetch!(:text) |> Jason.decode!()
   end
 
+  # The contained authorizer paths log at :error on purpose; keep that out of
+  # the suite's output while still asserting on the response.
+  defp capture_log_and_call(srv, name \\ "add") do
+    {resp, _log} = ExUnit.CaptureLog.with_log(fn -> call(srv, name) end)
+    resp
+  end
+
   describe "Authorizer builders" do
     test "allow_all, deny_all, allowlist, and nil->allow" do
       assert :allow = Authorizer.decide(Authorizer.allow_all(), "x", %{}, %{})
@@ -112,6 +119,47 @@ defmodule Raxol.MCP.AuthorizerTest do
       call(srv, "spy")
       refute_received :callback_ran
     end
+
+    test "an authorizer that raises denies, and does not take the server down" do
+      test = self()
+
+      spy = %{
+        name: "spy",
+        description: "records if it ran",
+        inputSchema: %{type: "object"},
+        callback: fn _args ->
+          send(test, :callback_ran)
+          {:ok, "x"}
+        end
+      }
+
+      boom = fn _tool, _args, _ctx -> raise "policy blew up" end
+      srv = start_server(boom, [spy])
+
+      resp = capture_log_and_call(srv, "spy")
+
+      assert resp.result.isError == true
+      assert payload(resp)["decision"] == "deny"
+      refute_received :callback_ran
+
+      # The client picks when and how often to call, so a raise here is a lever
+      # on the supervisor's restart intensity. The server must still be serving.
+      assert Process.alive?(Process.whereis(srv))
+      assert capture_log_and_call(srv, "spy").result.isError == true
+    end
+
+    test "an authorizer returning an off-contract term denies rather than crashing" do
+      # `case` over Authorizer.decision() would raise CaseClauseError from
+      # inside the same call, which is the crash above by another route.
+      confused = fn _tool, _args, _ctx -> true end
+      srv = start_server(confused)
+
+      resp = capture_log_and_call(srv)
+
+      assert resp.result.isError == true
+      assert payload(resp)["decision"] == "deny"
+      assert Process.alive?(Process.whereis(srv))
+    end
   end
 
   describe "authorization_configured?/1" do
@@ -143,6 +191,34 @@ defmodule Raxol.MCP.AuthorizerTest do
 
     test "returns false for an unreachable server" do
       refute Server.authorization_configured?(:no_such_server)
+    end
+  end
+
+  describe "Deployment.production?/0 outside a mix session" do
+    test "an unstarted Mix reads as production instead of raising" do
+      # `Code.ensure_loaded?(Mix)` is true in any node with Elixir's stdlib on
+      # the code path, but `Mix.env/0` reads `:ets.lookup(Mix.State, :env)` and
+      # needs the `:mix` APPLICATION running. `elixir -e` loads Mix and does not
+      # start it, which is the same shape as an escript or a release shipping
+      # `:mix` unstarted -- and this predicate is on
+      # `Raxol.Application.start/2`'s `:mcp` path, so it raised at boot.
+      #
+      # Run in a real separate node because this suite runs UNDER mix, where
+      # the broken environment cannot be reproduced in-process.
+      ebin = Application.app_dir(:raxol_mcp, "ebin")
+
+      {out, status} =
+        System.cmd(
+          "elixir",
+          ["-pa", ebin, "-e", "IO.write(inspect(Raxol.MCP.Deployment.production?()))"],
+          stderr_to_stdout: true
+        )
+
+      assert status == 0,
+             "production?/0 crashed in a node with Mix loaded but not started:\n#{out}"
+
+      # Fail-closed: an environment the predicate cannot identify is production.
+      assert out =~ "true"
     end
   end
 

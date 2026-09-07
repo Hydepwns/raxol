@@ -19,18 +19,50 @@ defmodule Raxol.MCP.Deployment do
   under this package's own `mix test` and `true` inside a dev session of an
   application depending on it, so a dev session read as production.
 
-  `Mix` being absent is the honest signal for a release; a dev or test session
-  has it and answers for that session. Called at transport boot rather than per
-  request, so reaching the loader here costs nothing.
+  `Mix` being unusable is the signal for a release; a dev or test session has a
+  RUNNING Mix and answers for that session. Called at transport boot rather
+  than per request, so reaching the loader here costs nothing.
 
   Note this is no longer a compile-time constant, which the previous shape
   hoisted to a module attribute to avoid: inlined, `@mix_env not in [:dev, :test]`
   compared two atoms the type checker knew were disjoint and warned on every
   build. `Mix.env/0` is opaque to it, so the comparison is now an ordinary one.
+
+  ## Loadable is not the same as started
+
+  `Code.ensure_loaded?(Mix)` alone was wrong: it asks whether the MODULE is
+  reachable, while `Mix.env/0` reads `:ets.lookup(Mix.State, :env)` and so
+  needs the `:mix` APPLICATION to be running. Any node that has Elixir's
+  standard lib on its code path but has not started `:mix` -- `elixir -e`, an
+  escript, a release that ships `:mix` without starting it -- satisfies the
+  guard and then raises `ArgumentError: the table identifier does not refer to
+  an existing ETS table`. That is on `Raxol.Application.start/2`'s `:mcp` path,
+  so the failure mode was a boot crash in exactly the deployment shape the
+  `else` branch was written to answer for.
+
+  Unusable Mix now resolves to `true` rather than raising, which is also the
+  fail-closed direction: an environment this predicate cannot identify is
+  treated as production.
   """
   @spec production?() :: boolean()
   def production? do
-    if Code.ensure_loaded?(Mix), do: Mix.env() not in [:dev, :test], else: true
+    case mix_env() do
+      {:ok, env} -> env not in [:dev, :test]
+      :unavailable -> true
+    end
+  end
+
+  @spec mix_env() :: {:ok, atom()} | :unavailable
+  defp mix_env do
+    if Code.ensure_loaded?(Mix) and function_exported?(Mix, :env, 0) do
+      {:ok, Mix.env()}
+    else
+      :unavailable
+    end
+  rescue
+    # Mix is loaded but `:mix` is not running, so `Mix.State`'s ETS table does
+    # not exist. Not an environment we can identify: treat it as production.
+    ArgumentError -> :unavailable
   end
 
   @doc """

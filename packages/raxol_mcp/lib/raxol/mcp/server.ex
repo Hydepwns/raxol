@@ -886,7 +886,7 @@ defmodule Raxol.MCP.Server do
   defp authorize_and_call(id, name, arguments, state, conn_id) do
     # Authorize before the tool runs. A nil authorizer allows (stdio inherits
     # the OS boundary).
-    case Authorizer.decide(state.authorizer, name, arguments, %{}) do
+    case safe_decide(state.authorizer, name, arguments) do
       :allow ->
         {call_tool_response(
            id,
@@ -900,6 +900,55 @@ defmodule Raxol.MCP.Server do
       {:deny, reason} ->
         {authorization_required(id, name, :deny, reason), state}
     end
+  end
+
+  # An authorizer is operator-supplied code, and this is the one place it runs
+  # on a client-driven path. Letting it raise is fail-closed for the call that
+  # hit it -- the tool never runs -- but the CLIENT chooses when and how often,
+  # so a policy bug or an argument shape the policy did not expect becomes a
+  # remote lever on the supervisor's restart intensity: enough `tools/call`s
+  # and the server is gone, taking every other connection with it. A term
+  # outside `Authorizer.decision()` is worse, since `case` would raise
+  # CaseClauseError from inside the same call.
+  #
+  # Contain both as a deny, and log them: an authorizer that cannot answer is
+  # not an authorizer that said yes. The reason is deliberately coarse in the
+  # response (`authz_detail/1` renders it to the client) while the log keeps
+  # the stacktrace.
+  defp safe_decide(authorizer, name, arguments) do
+    case Authorizer.decide(authorizer, name, arguments, %{}) do
+      :allow ->
+        :allow
+
+      {:ask, prompt} ->
+        {:ask, prompt}
+
+      {:deny, reason} ->
+        {:deny, reason}
+
+      other ->
+        Logger.error(
+          "[MCP.Server] authorizer returned #{inspect(other)} for #{inspect(name)}; " <>
+            "expected :allow | {:ask, prompt} | {:deny, reason}. Denying."
+        )
+
+        {:deny, :authorizer_contract_violation}
+    end
+  rescue
+    exception ->
+      Logger.error(
+        "[MCP.Server] authorizer raised for #{inspect(name)}: " <>
+          Exception.format(:error, exception, __STACKTRACE__) <> " Denying."
+      )
+
+      {:deny, :authorizer_failed}
+  catch
+    kind, reason ->
+      Logger.error(
+        "[MCP.Server] authorizer #{kind} for #{inspect(name)}: #{inspect(reason)}. Denying."
+      )
+
+      {:deny, :authorizer_failed}
   end
 
   # A typo here would silently answer `false` forever and keep a network
