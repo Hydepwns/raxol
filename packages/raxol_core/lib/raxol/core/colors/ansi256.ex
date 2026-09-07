@@ -62,8 +62,7 @@ defmodule Raxol.Core.Colors.Ansi256 do
   def cube_rgb(index) when index in 16..231 do
     n = index - 16
 
-    {cube_level(div(n, 36)), cube_level(rem(div(n, 6), 6)),
-     cube_level(rem(n, 6))}
+    {cube_level(div(n, 36)), cube_level(rem(div(n, 6), 6)), cube_level(rem(n, 6))}
   end
 
   @doc """

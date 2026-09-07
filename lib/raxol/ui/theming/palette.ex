@@ -215,7 +215,7 @@ defmodule Raxol.UI.Theming.Palette do
   @doc """
   Slot -> ANSI-16 color name, the inverse of `ansi_16_codes/0`.
   """
-  @spec ansi_16_slots() :: %{0..15 => atom()}
+  @spec ansi_16_slots() :: %{(0..15) => atom()}
   def ansi_16_slots,
     do: Map.new(@ansi_16_codes, fn {name, code} -> {code, name} end)
 

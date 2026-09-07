@@ -158,7 +158,14 @@ defmodule Raxol.UI.ColorResolver do
 
   alias Raxol.UI.ColorIntent
   alias Raxol.UI.Harness.Prominence
-  alias Raxol.UI.Theming.{Ansi16Salience, Colors, Palette, Salience, SalienceTheme}
+
+  alias Raxol.UI.Theming.{
+    Ansi16Salience,
+    Colors,
+    Palette,
+    Salience,
+    SalienceTheme
+  }
 
   # Cross-package read of the terminal's classified color depth. The
   # DECISION of which color depth to render at lives here; byte emission
