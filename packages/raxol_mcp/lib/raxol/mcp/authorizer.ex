@@ -43,10 +43,10 @@ defmodule Raxol.MCP.Authorizer do
   They are deliberately separate: a tool allowlist knows nothing about
   method names and would otherwise deny every read. On read surfaces an
   `{:ask, _}` decision resolves to deny (no elicitation for reads) and the
-  prompt is not echoed to the client. Network deployments should configure
-  BOTH seams -- the SSE boot guard (`Raxol.MCP.Deployment`) enforces only
-  `:authorizer`, and a nil `:read_authorizer` serves model state to any
-  connected client.
+  prompt is not echoed to the client. Network deployments must configure
+  BOTH seams: a nil `:read_authorizer` serves model state to any connected
+  client, so the SSE boot guard (`Raxol.MCP.Deployment`) refuses to boot
+  without one, exactly as it refuses without a tool authorizer.
   """
 
   @type context :: map()

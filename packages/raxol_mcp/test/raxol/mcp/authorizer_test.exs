@@ -33,16 +33,21 @@ defmodule Raxol.MCP.AuthorizerTest do
   end
 
   defp start_server(authorizer, tools \\ nil, opts \\ []) do
+    {srv, result} = boot_server(authorizer, tools, opts)
+    {:ok, _} = result
+    srv
+  end
+
+  # For the boots that are supposed to be REFUSED: `start_server/3` insists on
+  # `{:ok, _}`, and the refusal arrives as a start_link error.
+  defp boot_server(authorizer, tools, opts) do
     tools = tools || [add_tool()]
     reg = :"reg_#{System.unique_integer([:positive])}"
     srv = :"srv_#{System.unique_integer([:positive])}"
     {:ok, _} = Registry.start_link(name: reg)
     Registry.register_tools(reg, tools)
 
-    {:ok, _} =
-      Server.start_link([name: srv, registry: reg, authorizer: authorizer] ++ opts)
-
-    srv
+    {srv, Server.start_link([name: srv, registry: reg, authorizer: authorizer] ++ opts)}
   end
 
   defp call(srv, name \\ "add") do
@@ -390,6 +395,78 @@ defmodule Raxol.MCP.AuthorizerTest do
 
       # ...but a configured authorizer boots even when required.
       assert :ok = Deployment.enforce_authorization!(true, "MCP SSE transport")
+    end
+
+    # The tool gate counts `:mcp_authorizer`/`:mcp_allowed_tools` only, so an
+    # embedder could satisfy it and still leave the read seam open -- and
+    # `resources/read` serves live model state. Refuse at boot instead.
+    test "a server declared to front SSE refuses to boot with reads unguarded" do
+      Application.put_env(:raxol_mcp, :require_authorization, true)
+      Process.flag(:trap_exit, true)
+
+      {_srv, result} =
+        boot_server(Authorizer.allow_all(), nil,
+          transport: :sse,
+          authorizer_source: :configured
+        )
+
+      assert {:error, {%ArgumentError{message: message}, _stack}} = result
+      assert message =~ "refuses to boot"
+      assert message =~ "mcp_read_authorizer"
+    end
+
+    test "the same server boots once the read seam is configured" do
+      Application.put_env(:raxol_mcp, :require_authorization, true)
+
+      srv =
+        start_server(Authorizer.allow_all(), nil,
+          transport: :sse,
+          authorizer_source: :configured,
+          read_authorizer: Authorizer.allow_all()
+        )
+
+      {:reply, resp} =
+        Server.handle_message(srv, %{id: 1, method: "resources/list", params: %{}})
+
+      assert resp.result.resources == []
+    end
+
+    # stdio inherits the OS process boundary, so the gate must not bite there:
+    # existing embedders serve reads with no read authorizer and are entitled
+    # to keep doing it.
+    test "stdio boots with the read seam open" do
+      Application.put_env(:raxol_mcp, :require_authorization, true)
+
+      srv =
+        start_server(Authorizer.allow_all(), nil,
+          transport: :stdio,
+          authorizer_source: :configured
+        )
+
+      {:reply, resp} =
+        Server.handle_message(srv, %{id: 1, method: "resources/list", params: %{}})
+
+      assert resp.result.resources == []
+    end
+
+    # The transport that actually exposes the network, booted for real: the
+    # embedder mounts it in its own Plug pipeline, so it never declared a
+    # transport on the server and the check above cannot fire for it.
+    test "mounting the SSE transport refuses a server whose reads are unguarded" do
+      Application.put_env(:raxol_mcp, :require_authorization, true)
+      srv = start_server(Authorizer.allow_all(), nil, authorizer_source: :configured)
+
+      # The tool seam satisfies the older gate...
+      assert :ok =
+               Deployment.enforce_authorization!(
+                 Server.authorization_configured?(srv),
+                 "MCP SSE transport"
+               )
+
+      # ...and the transport still refuses, because the reads are open.
+      assert_raise ArgumentError, ~r/mcp_read_authorizer/, fn ->
+        Raxol.MCP.Transport.SSE.init(server: srv)
+      end
     end
   end
 end
