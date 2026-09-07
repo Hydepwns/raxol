@@ -15,6 +15,23 @@ defmodule Raxol.MCP.AuthorizerTest do
     }
   end
 
+  defp secret_tool do
+    %{
+      name: "secret",
+      description: "Reads the vault",
+      inputSchema: %{type: "object"},
+      callback: fn _args -> {:ok, [%{type: "text", text: "shh"}]} end
+    }
+  end
+
+  defp list_tool_names(srv) do
+    {:reply, resp} = Server.handle_message(srv, %{id: 7, method: "tools/list"})
+
+    resp.result.tools
+    |> Enum.map(fn tool -> Map.get(tool, :name) || Map.get(tool, "name") end)
+    |> Enum.sort()
+  end
+
   defp start_server(authorizer, tools \\ nil, opts \\ []) do
     tools = tools || [add_tool()]
     reg = :"reg_#{System.unique_integer([:positive])}"
@@ -238,6 +255,53 @@ defmodule Raxol.MCP.AuthorizerTest do
       # clientInfo above, a header it chose) is a bypass wearing a policy's
       # clothes, and this assertion is what makes adding one a decision.
       assert Enum.sort(Map.keys(ctx)) == [:conn_id, :transport]
+    end
+  end
+
+  describe "tools/list filtering" do
+    # The method-level gate is about enumerating at all. Passing it used to
+    # return the whole live surface, annotations included, so an accepted
+    # client learned every tool it was about to be denied.
+    test "a tool the authorizer denies is not advertised" do
+      srv = start_server(Authorizer.allowlist(["add"]), [add_tool(), secret_tool()])
+
+      assert list_tool_names(srv) == ["add"]
+    end
+
+    # An entry the caller cannot invoke without an approval it has not got is
+    # not callable, so it must not advertise itself as callable.
+    test "a tool the authorizer only ASKs about is hidden as well" do
+      gated = fn
+        "add", _args, _ctx -> :allow
+        _tool, _args, _ctx -> {:ask, "Approve?"}
+      end
+
+      srv = start_server(gated, [add_tool(), secret_tool()])
+
+      assert list_tool_names(srv) == ["add"]
+    end
+
+    test "a nil authorizer still lists everything" do
+      srv = start_server(nil, [add_tool(), secret_tool()])
+
+      assert list_tool_names(srv) == ["add", "secret"]
+    end
+
+    # Filtering runs operator code once per tool on a client-driven path, so a
+    # policy that raises must cost the tool its listing, not the server its
+    # life -- the client picks how often to ask.
+    test "a raising authorizer hides the tool instead of crashing the server" do
+      boom = fn
+        "add", _args, _ctx -> :allow
+        _tool, _args, _ctx -> raise "policy blew up"
+      end
+
+      srv = start_server(boom, [add_tool(), secret_tool()])
+
+      {names, _log} = ExUnit.CaptureLog.with_log(fn -> list_tool_names(srv) end)
+
+      assert names == ["add"]
+      assert Process.alive?(Process.whereis(srv))
     end
   end
 

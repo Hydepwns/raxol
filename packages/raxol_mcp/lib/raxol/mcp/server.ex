@@ -11,7 +11,7 @@ defmodule Raxol.MCP.Server do
   - `initialize` -- MCP handshake, returns server capabilities
   - `notifications/initialized` -- client acknowledgement (no reply)
   - `ping` -- health check
-  - `tools/list` -- list registered tools
+  - `tools/list` -- list the registered tools this caller may call
   - `tools/call` -- invoke a tool
   - `resources/list` -- list registered resources
   - `resources/read` -- read a resource
@@ -533,12 +533,14 @@ defmodule Raxol.MCP.Server do
   # -- Tools ---
 
   # tools/list is a read/metadata surface too: names, descriptions, and
-  # input schemas are the same enumeration class the other gates close.
+  # input schemas are the same enumeration class the other gates close. The
+  # method-level gate answers "may this caller enumerate at all"; the listing
+  # itself is then filtered per tool, because "yes" to enumerating is not yes
+  # to the whole surface.
   defp dispatch_common(%{method: "tools/list", id: id}, state, ctx) do
     case authorize_read("tools/list", %{}, state, ctx) do
       :allow ->
-        tools = Registry.list_tools(state.registry)
-        {Protocol.response(id, %{tools: tools}), state}
+        {Protocol.response(id, %{tools: visible_tools(state, ctx)}), state}
 
       {:deny, detail} ->
         {authz_error_response(id, "tools/list", detail), state}
@@ -897,6 +899,39 @@ defmodule Raxol.MCP.Server do
       {:ask, _prompt} -> {:deny, :interactive_approval_unsupported}
       {:deny, reason} -> {:deny, reason}
     end
+  end
+
+  # The entries of a `tools/list` this caller may actually invoke.
+  #
+  # A listing is an advertisement, and it must not advertise what the caller
+  # cannot call. Each entry carries the tool's name, description, input schema
+  # and its sensitive/destructive annotations, so an unfiltered listing hands
+  # any accepted client a map of the live capability surface with the
+  # interesting entries marked. Every entry therefore goes through the SAME
+  # authorizer `tools/call` will consult.
+  #
+  # ASK hides exactly like DENY. An entry that needs an approval the caller
+  # has not got is not callable now, and for a client that cannot elicit an
+  # ASK is a flat deny -- advertising it as callable would be a lie about this
+  # caller's surface.
+  #
+  # Decided with no arguments, because there is no call yet: a policy that can
+  # only answer with arguments in hand has not said yes to the tool. It runs
+  # through `safe_decide/4`, so a policy that raises on the empty map hides the
+  # tool rather than taking the listing (and the server) down with it.
+  #
+  # A nil authorizer lists everything: stdio inherits the OS process boundary,
+  # and that is the behaviour every embedder without a policy already has.
+  defp visible_tools(%{authorizer: nil} = state, _ctx),
+    do: Registry.list_tools(state.registry)
+
+  defp visible_tools(state, ctx) do
+    state.registry
+    |> Registry.list_tools()
+    |> Enum.filter(fn tool ->
+      name = Map.get(tool, :name) || Map.get(tool, "name")
+      safe_decide(state.authorizer, name, %{}, ctx) == :allow
+    end)
   end
 
   # JSON-RPC application-defined error code for an authorization denial on a
