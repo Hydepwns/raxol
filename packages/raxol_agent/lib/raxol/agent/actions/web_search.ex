@@ -28,7 +28,7 @@ defmodule Raxol.Agent.Actions.WebSearch do
   `@providers` and the model controls only the query string, so there is no
   attacker-chosen address to guard; adding a DNS check would only make the
   action's tests depend on a resolver. Requests still go through
-  `Fetch.transport/1` and `Fetch.collect/2`, so the timeout, the response
+  `Fetch.transport/1` and `Fetch.collect/3`, so the timeout, the response
   cap and the context override are the same ones `fetch` uses rather than a
   second HTTP path with its own bounds.
 
@@ -91,6 +91,13 @@ defmodule Raxol.Agent.Actions.WebSearch do
   @default_limit 5
   @max_limit 20
   @timeout_ms 10_000
+  # `@timeout_ms` is an IDLE timeout, so it bounds no single call's total
+  # duration: a provider dripping one byte just inside it satisfies every
+  # per-read bound while holding the turn for `@max_response_bytes` times that
+  # timeout. `Fetch` carries the same total budget for the same reason, and
+  # `Action.__call__/3` invokes an action inline with no Task and no outer
+  # timeout, so nothing upstream would cut it short.
+  @total_timeout_ms 15_000
   # A search response is a small JSON document; anything near this size is a
   # provider malfunction, not an answer worth buffering.
   @max_response_bytes 262_144
@@ -232,6 +239,7 @@ defmodule Raxol.Agent.Actions.WebSearch do
   # -- request -----------------------------------------------------------------
 
   defp search(provider, key, query, limit, context) do
+    deadline = System.monotonic_time(:millisecond) + @total_timeout_ms
     transport = Fetch.transport(context)
     url = url(provider, query, limit)
 
@@ -246,7 +254,9 @@ defmodule Raxol.Agent.Actions.WebSearch do
 
     case transport.(url, opts) do
       {:ok, %{status: status} = response} when status in 200..299 ->
-        {body, _truncated?} = Fetch.collect(response.chunks, @max_response_bytes)
+        {body, _truncated?} =
+          Fetch.collect(response.chunks, @max_response_bytes, deadline)
+
         {:ok, body}
 
       {:ok, %{status: status} = response} ->
