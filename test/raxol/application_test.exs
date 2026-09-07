@@ -250,7 +250,7 @@ defmodule Raxol.ApplicationTest do
       # fail here first with "server.ex changed shape", the wrong diagnosis,
       # and the subset check that names the unclassified method never ran.
       refute Enum.empty?(gated),
-             "the authorize_read/3 regex matched nothing: server.ex changed " <>
+             "the authorize_read regex matched nothing: server.ex changed " <>
                "shape and this guard no longer reads it"
 
       read =
