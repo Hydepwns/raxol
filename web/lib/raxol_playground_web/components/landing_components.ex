@@ -113,8 +113,8 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
   # product's. What is authored is the turn (which tools, in what state), the
   # way `pulse` authors a wave.
   #
-  # The job beside the mark is the other half of the story raxol_earn tells:
-  # agents do not only spend, they sell services on the Virtuals Agent
+  # The job line above the turn is the other half of the story raxol_earn
+  # tells: agents do not only spend, they sell services on the Virtuals Agent
   # Commerce Protocol and get paid for them, and the harness is how the work
   # a job was funded for actually gets done. It stays authored text rather
   # than a call into `Raxol.Earn`, because the web app does not depend on
@@ -122,56 +122,28 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
   # dependency edge added for one line of a hero pane would start a seller
   # supervision tree in the deployed site.
   #
-  # `@mark` is the Virtuals Protocol mark, which the integrations row below
-  # inlines as SVG and this pane cannot: a terminal's smallest unit is a cell,
-  # so the mark is resampled onto a grid of them. Braille carries two by four
-  # dots per cell, which is what makes it read at three rows instead of eight.
-  # The rows are a literal because the source is on screen beside the pane and
-  # a rasterizer inlined here would be most of what a reader sees -- but they
-  # are not hand-drawn: `RaxolPlayground.BrandMarks.cells/2` produces them from
-  # the same official file the row inlines, and a test holds this literal
-  # against that call, so the mark cannot drift from the artwork it claims to
-  # be. Eleven by three is the size, because a cell is 2.42 times taller than
-  # it is wide and the mark is 1.55 times wider than it is tall: eleven columns
-  # is the whole-number grid nearest the mark's own proportions, 2.3% off,
-  # where ten is 11% off and their brand guide forbids distorting it.
-  #
   # The turn finishes rather than sitting on `edit` forever with only the
   # spinner moving, which read as a hang once `settle` beside it started
-  # completing. `@ladder` is the dwell per frame. The statuses come from the
-  # tick, so `@calls` carries name and args only and `st/2` decides done,
-  # running or pending -- that, and the shorter alias, is what fits: the pane
-  # clips at thirty lines and sixty-seven columns.
+  # completing. `@ladder` is the dwell per frame, uneven so `edit` holds long
+  # enough to read. The statuses come from the tick, so `@calls` carries name
+  # and args only and `st/2` decides done, running or pending -- that, and the
+  # shorter alias, is what fits: the pane clips at thirty lines and sixty-seven
+  # columns.
   #
   # The job is a paid coding job, not `usdc_transfer`. A pane that announced a
   # transfer offering and then edited `router.ex` described no one's work: the
   # harness earns by doing the thing it is good at, so the job is a bugfix at a
-  # price, and the calls are that bugfix. They run to `submit` and `settle`
-  # because a job that stops at a green test has not been paid for: the seller
-  # writes the deliverable on chain and the escrow releases, which is the step
-  # that makes this the earning pane rather than a second spending one.
+  # price, and the calls are that bugfix.
   @harness_source ~S"""
   defmodule Harness do
     use Raxol.Core.Runtime.Application
     alias Raxol.UI.Components.Harness.ToolCallBlock, as: T
-    @mark [
-      "⣀⡀⠀⢰⡾⠛⣷⡄⠀⠀⣠",
-      "⠀⠉⠻⣮⡻⢶⣿⡗⠚⠁⠀",
-      "⠀⠀⠀⠈⢿⣿⠟⠀⠀⠀⠀"
-    ]
-    @job [
-      "VIRTUALS PROTOCOL   acp job #4812",
-      "bugfix   spend gate off-by-one",
-      "escrow   40.00 USDC on base 8453"
-    ]
     @calls [
       {"read", "spend_gate.ex"},
       {"edit", "spend_gate.ex:42"},
-      {"shell", "mix test"},
-      {"submit", "deliverable -> job #4812"},
-      {"settle", "escrow released to seller"}
+      {"shell", "mix test"}
     ]
-    @ladder [0, 0, 1, 1, 1, 2, 2, 3, 4, 5]
+    @ladder [0, 0, 1, 1, 1, 1, 1, 2, 2, 3]
     def init(_), do: %{t: 0}
     def update(:tick, m), do: {%{m | t: m.t + 1}, []}
     def update(_, m), do: {m, []}
@@ -180,13 +152,11 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
       at = Enum.at(@ladder, rem(m.t, length(@ladder)))
       column style: %{gap: 1} do
         [
-          row(style: %{gap: 2}, do: [mark(), job()]),
+          text("virtuals acp  bugfix  40.00 USDC", fg: :cyan),
           column(do: Enum.with_index(@calls, &call(&1, &2, at, m.t)))
         ]
       end
     end
-    defp mark, do: column(do: Enum.map(@mark, &text(&1, fg: :cyan)))
-    defp job, do: column(do: Enum.map(@job, &text(&1)))
     defp call({n, a}, i, x, t) do
       {:ok, s} = T.init(name: n, args: a, status: st(i, x), frame: t)
       T.render(s, %{})
