@@ -9,15 +9,32 @@
 # via security.yml's "Create issue for critical findings" step.
 #
 # The allowlists below are deliberately narrow. They exempt specific paths that
-# contain only cryptographic TEST VECTORS, and one specific well-known key BY
+# contain only cryptographic TEST VECTORS, and specific well-known keys BY
 # VALUE. A genuine credential committed anywhere else -- including elsewhere in
-# these same files, for the by-value entry -- still fails the build.
+# these same files, for the by-value entries -- still fails the build.
+#
+# EVERY allowlist here sets `targetRules`, and new ones must too. Without it a
+# top-level `[[allowlists]]` is GLOBAL: a `paths` entry meant to silence
+# entropy hits also switched off `private-key`, `aws-access-token`,
+# `github-pat` and every other inherited rule for that whole subtree. One of
+# those subtrees is `packages/raxol_agent/test/`, which is where the LLM
+# backends' credential handling is exercised -- `ANTHROPIC_API_KEY`,
+# `OPENAI_API_KEY`, 1Password `op://` refs, and a live test whose documented
+# invocation is `LONGCAT_API_KEY=<key> mix test --only live_longcat`. That is
+# precisely the tree where a real key gets pasted over a placeholder, and it
+# was exempt from every rule at the same commit this gate became blocking.
+#
+# The rule ids are not guesses. Scanning only these paths with
+# `useDefault = true` and no allowlists yields 70 `generic-api-key` and 1
+# `curl-auth-header`, and nothing else -- so those are the only two any path
+# entry needs to suppress.
 #
 # Re-verify after changing this file:
 #   gitleaks detect --source . --no-banner --redact --report-format json \
 #     --report-path /tmp/gl.json --exit-code 0 && jq length /tmp/gl.json
 # That must print 0. If it does not, do NOT widen a path pattern to make it
-# pass; check whether the new finding is real.
+# pass, and do NOT add a rule to `targetRules` to make it pass; check whether
+# the new finding is real.
 
 [extend]
 useDefault = true
@@ -29,6 +46,7 @@ signature bytes, so they must embed deterministic private keys, digests and
 signatures. Scoped to test, fixture and example paths only -- nothing under a
 lib/ tree is exempted by path, and no script is either.
 """
+targetRules = ["generic-api-key", "curl-auth-header"]
 paths = [
   '''packages/raxol_payments/test/.*''',
   '''packages/raxol_payments/examples/.*''',
@@ -51,6 +69,7 @@ example paths only", would let a pasted mainnet signing key ship green at the
 same commit this gate became blocking. By value, any OTHER key-shaped string
 in that file still fails.
 """
+targetRules = ["generic-api-key"]
 regexes = [
   '''0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913''',
   '''0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2''',
@@ -61,6 +80,7 @@ description = """
 Vendored third-party minified bundles. Not our source; high-entropy strings in
 a minified bundle are not credentials.
 """
+targetRules = ["generic-api-key"]
 paths = [
   '''priv/static/assets/vendor/.*''',
 ]
@@ -77,6 +97,7 @@ It appears in a `@moduledoc` usage example
 obviously-fake placeholder in docs; this entry keeps the gate green until that
 example is reworded.
 """
+targetRules = ["generic-api-key"]
 regexes = [
   '''0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80''',
 ]
