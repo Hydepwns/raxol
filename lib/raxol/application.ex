@@ -343,6 +343,12 @@ defmodule Raxol.Application do
   # Naming either key counts, including `mcp_allowed_tools: []`. An operator who
   # writes the empty list has decided to expose a transport that serves nothing,
   # which is a coherent thing to want and is theirs to choose.
+  #
+  # The two READ keys deliberately do not count. This value gates `tools/call`
+  # exposure over the network, and `Raxol.MCP.Deployment.enforce_authorization!/2`
+  # asks only about the tool authorizer; a deployment that configured reads and
+  # nothing else has not decided anything about running tools, so it still gets
+  # `:default` and SSE still refuses. Fail-closed, and narrow on purpose.
   @doc false
   @spec mcp_authorizer_source() :: :configured | :default
   def mcp_authorizer_source do
@@ -366,21 +372,67 @@ defmodule Raxol.Application do
       fun when is_function(fun, 3) ->
         fun
 
+      # A release cannot express the fun form. `config/config.exs` is evaluated
+      # at build time and its result is written to `sys.config`, which holds
+      # only serializable terms -- an anonymous function is not one. That left
+      # `runtime.exs` as the only place the documented shape worked, and an MFA
+      # tuple (the obvious workaround) raising at boot. Both forms are accepted
+      # now, and the module is checked here rather than at the first call, so a
+      # typo is a boot failure with a name in it instead of a denied tool.
+      {module, function} when is_atom(module) and is_atom(function) ->
+        mfa_authorizer(key, module, function)
+
       other ->
         # Ignoring this would reinstate the exact bug the explicit opts fix: a
         # deployment that believes it configured a policy, running without one.
         raise ArgumentError,
               "config :raxol, #{inspect(key)} must be a 3-arity fun " <>
                 "(tool_name, arguments, context) -> :allow | {:ask, prompt} | " <>
-                "{:deny, reason}, got: #{inspect(other)}"
+                "{:deny, reason}, or a {module, function} tuple naming one " <>
+                "(for releases, where sys.config cannot hold a fun), " <>
+                "got: #{inspect(other)}"
     end
   end
 
-  # Outside production: `allow_all/0`. Behaviourally what the implicit nil already
-  # did, but said out loud, so `mix mcp.server` and the Tidewave dev endpoint keep
-  # working and the opt-out is visible in the code rather than implied by an empty
-  # list.
-  defp default_mcp_authorizer(_key, false), do: Raxol.MCP.Authorizer.allow_all()
+  defp mfa_authorizer(key, module, function) do
+    unless Code.ensure_loaded?(module) and
+             function_exported?(module, function, 3) do
+      raise ArgumentError,
+            "config :raxol, #{inspect(key)} names " <>
+              "#{inspect(module)}.#{function}/3, which does not exist"
+    end
+
+    fn tool, args, ctx -> apply(module, function, [tool, args, ctx]) end
+  end
+
+  # An operator's allowlist binds in EVERY environment.
+  #
+  # It used to bind only in production, because this clause matched any key
+  # whenever `production?` was false and returned `allow_all/0` before the
+  # allowlist was ever read. So `mcp_allowed_tools: ["raxol_screenshot"]` in a
+  # dev or staging session produced an allow-everything authorizer -- while
+  # `mcp_authorizer_source/0`, which only checks whether the key is PRESENT,
+  # reported `:configured` and satisfied the SSE boot gate. The one setting that
+  # reads as "restrict the tools" did nothing except open the network gate.
+  #
+  # The environment now decides only what happens when nobody configured
+  # anything.
+  defp default_mcp_authorizer(key, production?) do
+    case Application.get_env(:raxol, allowlist_key(key)) do
+      nil -> unconfigured_mcp_authorizer(key, production?)
+      names -> Raxol.MCP.Authorizer.allowlist(names)
+    end
+  end
+
+  defp allowlist_key(:mcp_authorizer), do: :mcp_allowed_tools
+  defp allowlist_key(:mcp_read_authorizer), do: :mcp_allowed_read_methods
+
+  # Outside production, unconfigured: `allow_all/0`. Behaviourally what the
+  # implicit nil already did, but said out loud, so `mix mcp.server` and the
+  # Tidewave dev endpoint keep working and the opt-out is visible in the code
+  # rather than implied by an empty list.
+  defp unconfigured_mcp_authorizer(_key, false),
+    do: Raxol.MCP.Authorizer.allow_all()
 
   # In production: a real authorizer, and specifically NOT `allow_all/0`, which
   # would serve every tool to whatever transport reached the server.
@@ -395,11 +447,8 @@ defmodule Raxol.Application do
   # `authorizer != nil`, so this fallback would have satisfied the SSE boot gate
   # and let a network transport start because raxol chose a default. The server
   # now reports `:authorizer_source` instead; see `mcp_authorizer_source/0`.
-  defp default_mcp_authorizer(:mcp_authorizer, true) do
-    Raxol.MCP.Authorizer.allowlist(
-      Application.get_env(:raxol, :mcp_allowed_tools, [])
-    )
-  end
+  defp unconfigured_mcp_authorizer(:mcp_authorizer, true),
+    do: Raxol.MCP.Authorizer.allowlist([])
 
   # Reads cannot default to the same empty list: `tools/list` is a read, so
   # denying everything would leave even an allowlisted tool undiscoverable and
@@ -407,15 +456,8 @@ defmodule Raxol.Application do
   # method DISCLOSES -- listing methods reveal names, which are already the
   # server's advertised surface, while `resources/read` and the subscribe pair
   # stream live model state to whoever connects.
-  defp default_mcp_authorizer(:mcp_read_authorizer, true) do
-    Raxol.MCP.Authorizer.allowlist(
-      Application.get_env(
-        :raxol,
-        :mcp_allowed_read_methods,
-        @default_production_read_methods
-      )
-    )
-  end
+  defp unconfigured_mcp_authorizer(:mcp_read_authorizer, true),
+    do: Raxol.MCP.Authorizer.allowlist(@default_production_read_methods)
 
   # One predicate, not two. `Raxol.MCP.Deployment.production?/0` used to capture
   # `Mix.env()` at raxol_mcp's compile time, which reads `:prod` for a path

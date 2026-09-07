@@ -153,6 +153,48 @@ defmodule Raxol.ApplicationTest do
       assert authorizer.("raxol_stop", %{}, %{}) == {:deny, :not_allowlisted}
     end
 
+    # The regression that made the one restricting setting a no-op. The
+    # non-production clause matched any key and returned `allow_all/0` before
+    # the allowlist was read, so this same config produced allow-everything in
+    # dev and staging -- while `mcp_authorizer_source/0`, which only checks
+    # whether the key is PRESENT, reported `:configured` and satisfied the SSE
+    # boot gate. Naming an allowlist opened the network gate and restricted
+    # nothing.
+    test "an allowlist binds outside production too" do
+      Application.put_env(:raxol, :mcp_allowed_tools, ["raxol_screenshot"])
+      on_exit(fn -> Application.delete_env(:raxol, :mcp_allowed_tools) end)
+
+      authorizer =
+        Raxol.Application.resolve_mcp_authorizer(:mcp_authorizer, false)
+
+      assert authorizer.("raxol_screenshot", %{}, %{}) == :allow
+
+      assert authorizer.("raxol_stop", %{}, %{}) == {:deny, :not_allowlisted},
+             "a named allowlist was ignored outside production, so the SSE " <>
+               "gate reported configured authorization over an allow-all"
+    end
+
+    test "a read allowlist binds outside production too" do
+      Application.put_env(:raxol, :mcp_allowed_read_methods, ["tools/list"])
+
+      on_exit(fn ->
+        Application.delete_env(:raxol, :mcp_allowed_read_methods)
+      end)
+
+      read =
+        Raxol.Application.resolve_mcp_authorizer(:mcp_read_authorizer, false)
+
+      assert read.("tools/list", %{}, %{}) == :allow
+      assert read.("resources/read", %{}, %{}) == {:deny, :not_allowlisted}
+    end
+
+    test "unconfigured outside production is still allow_all" do
+      for key <- [:mcp_authorizer, :mcp_read_authorizer] do
+        authorizer = Raxol.Application.resolve_mcp_authorizer(key, false)
+        assert authorizer.("anything", %{}, %{}) == :allow
+      end
+    end
+
     # Reads cannot take the same empty default: `tools/list` is a read, so
     # denying every read would leave an allowlisted tool undiscoverable and the
     # server unusable rather than closed.
@@ -255,6 +297,35 @@ defmodule Raxol.ApplicationTest do
 
       assert_raise ArgumentError, ~r/must be a 3-arity fun/, fn ->
         Raxol.Application.resolve_mcp_authorizer(:mcp_authorizer, false)
+      end
+    end
+
+    # The fun form is the documented one and a release cannot express it:
+    # `config/config.exs` is evaluated at build time into `sys.config`, which
+    # holds only serializable terms. That left `runtime.exs` as the only place
+    # the documented shape worked, and the obvious workaround -- an MFA tuple --
+    # hitting the malformed-value raise above and taking the node down at boot.
+    test "a {module, function} tuple is accepted, for releases" do
+      Application.put_env(
+        :raxol,
+        :mcp_authorizer,
+        {__MODULE__, :deny_everything}
+      )
+
+      authorizer =
+        Raxol.Application.resolve_mcp_authorizer(:mcp_authorizer, true)
+
+      assert authorizer.("raxol_list", %{}, %{}) == {:deny, :from_mfa}
+    end
+
+    # Checked at resolution, not at the first call: a typo should be a boot
+    # failure naming the module, not a tool that denies for a reason nobody can
+    # see.
+    test "a {module, function} tuple naming nothing raises at resolution" do
+      Application.put_env(:raxol, :mcp_authorizer, {__MODULE__, :no_such_fun})
+
+      assert_raise ArgumentError, ~r/which does not exist/, fn ->
+        Raxol.Application.resolve_mcp_authorizer(:mcp_authorizer, true)
       end
     end
 
@@ -407,4 +478,10 @@ defmodule Raxol.ApplicationTest do
       end
     end
   end
+
+  @doc false
+  # The target of the {module, function} authorizer tests above. A named
+  # function, because that is the whole point of the tuple form: it survives
+  # into sys.config, where a closure cannot.
+  def deny_everything(_tool, _args, _ctx), do: {:deny, :from_mfa}
 end
