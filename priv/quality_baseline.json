@@ -57,8 +57,20 @@
         "same run reports 232 instead of 1182, because packages/ is ~58% of the",
         "source tree. A narrowed scope makes the gate report a false improvement",
         "and, on --update, bakes the narrower coverage in permanently.",
-        "One pass takes ~50 min repo-wide and cannot be sharded: mix credo <path>",
-        "analyzes nothing against this config. Run nightly, not per-PR."
+        "CANNOT BE SHARDED: mix credo <path> analyzes nothing against this",
+        "config, so the repo-wide count must come from one pass.",
+        "The 2991s in runtime_seconds above is NOT the cost of the analysis.",
+        "One full --strict pass measured 95.4s of analysis in CI (73 checks,",
+        "3405 files, run 34168895863) and 161s locally including the compile,",
+        "so 2991 covers a cold umbrella compile, not the scan. This gate is",
+        "blocking per-PR on that basis; re-measure before demoting it.",
+        "DO NOT swap this gate for `credo diff`. Its issue identity is not",
+        "stable across the two revisions it compares, so it invents both",
+        "halves of a delta: on a PR touching only YAML and JSON it reported",
+        "209 new refactoring, 108 new readability and 138 new design findings",
+        "while also claiming 659 refactoring and 49 readability were fixed.",
+        "The absolute count here has no such ambiguity, and is the same number",
+        "nightly measures."
       ]
     },
     "dialyzer": {

@@ -267,8 +267,34 @@ jobs:
           retention-days: 90
           if-no-files-found: warn
 
-  dialyzer-full:
-    name: Full Dialyzer Check
+  # Populates the dialyzer PLT once, on a schedule, and publishes it under a
+  # key both the enforcing nightly ratchet and the per-PR dialyzer job can
+  # restore.
+  #
+  # Why this job exists: the dialyzer count is not currently reproducible
+  # across environments -- a warm local PLT reports 91 (the baseline) while CI
+  # reported 100 on the same tree. The cause is upstream of the ratchet.
+  # ci-unified's cache key includes `hashFiles('packages/*/lib/**/*.ex')`, so
+  # any PR touching packages/ -- most of them -- misses the exact key,
+  # restores through restore-keys, and then has its deps PLT discarded as
+  # stale, leaving cold and warm runs disagreeing by 9 findings. Blocking a
+  # merge on which one a runner happened to get is a gate that fails for
+  # environmental reasons, so dialyzer stays advisory per-PR until the two
+  # agree. This is the "prebuild the PLT on a schedule" the dialyzer job's
+  # own comment names as the way to close that gap.
+  #
+  # The key deliberately omits packages/ sources and keys only on the
+  # toolchain and mix.lock, so it is STABLE across PRs -- that is the whole
+  # point. Staleness with respect to packages/ is not this key's job:
+  # check-quality-ratchet.sh detects it by content hash and discards the deps
+  # PLT so the analysis rebuilds that part correctly.
+  #
+  # The PLT is populated by a real analysis run, never `mix dialyzer --plt`;
+  # see the prohibition in priv/quality_baseline.json. `|| true` because a
+  # nonzero exit here just means findings exist, which is expected and not
+  # this job's business -- the artifact is the populated PLT.
+  plt-prebuild:
+    name: Prebuild Dialyzer PLT
     runs-on: ubuntu-latest
 
     steps:
@@ -289,8 +315,44 @@ jobs:
             deps
             _build
             priv/plts
+          key: plt-prebuilt-${{ runner.os }}-27.2-1.19.0-${{ hashFiles('**/mix.lock') }}
+
+      - name: Install dependencies
+        run: |
+          mix deps.get
+          mix deps.compile
+
+      - name: Populate the PLT via a full analysis run
+        run: mix dialyzer --format short || true
+        timeout-minutes: 90
+
+  dialyzer-full:
+    name: Full Dialyzer Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.19.0"
+          otp-version: "27.2"
+          install-hex: true
+          install-rebar: true
+
+      # Keyed the same way `plt-prebuild` saves, so the enforcing run analyses
+      # against the PLT that job populated rather than building its own.
+      - name: Cache dependencies and PLTs
+        uses: actions/cache@v6
+        with:
+          path: |
+            deps
+            _build
+            priv/plts
           key: plt-${{ runner.os }}-27.2-1.19.0-${{ hashFiles('**/mix.exs') }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
+            plt-prebuilt-${{ runner.os }}-27.2-1.19.0-${{ hashFiles('**/mix.lock') }}
             plt-${{ runner.os }}-27.2-1.19.0-${{ hashFiles('**/mix.exs') }}-
 
       - name: Install dependencies
@@ -299,15 +361,23 @@ jobs:
           mix deps.get
           mix deps.compile
 
-      - name: Build PLTs
-        run: |
-          mix dialyzer --plt
-        timeout-minutes: 20
-        continue-on-error: true
-
+      # No `mix dialyzer --plt` step. priv/quality_baseline.json and
+      # ci-unified's dialyzer job both prohibit that call, and this job was
+      # the last place still making it: it produces a deps PLT the size of
+      # core.plt with none of the dependency apps in it, after which dialyxir
+      # reports "PLT is up to date!" permanently because freshness comes from
+      # a 20-byte .plt.hash. Analysing against it yielded 2055 findings, 1845
+      # of them unknown_function, against a true 91 -- and this is the job
+      # that ENFORCES the count.
+      #
+      # It was `continue-on-error: true` as well, so that corruption was
+      # silent. The ratchet builds what it needs correctly on its own and
+      # refuses to report a count when unknown_function dominates.
+      #
       # Enforced against priv/quality_baseline.json. Counts may only go down.
       - name: Dialyzer ratchet
         run: ./scripts/check-quality-ratchet.sh --gate dialyzer
+        timeout-minutes: 90
 
   # Credo is enforced here rather than in ci-unified because the scan cannot
   # be sharded: `mix credo <path>` analyzes nothing against the root
