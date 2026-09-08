@@ -109,8 +109,8 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
 
   # A coding agent accepts and completes a paid Virtuals ACP job through the
   # real raxol_earn state machine. The frame generator runs these calls against
-  # a supervised JobSession; only the external Virtuals events (funding and
-  # approval) use apply_event/3.
+  # a supervised JobSession; recorded external events are explicitly marked as
+  # demo observations rather than authenticated chain activity.
   @harness_source ~S"""
   defmodule Harness do
     use Raxol.Core.Runtime.Application
@@ -118,29 +118,29 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
     @mark ["     ▄█▀█▄     ", "▀▀█▄▄█▄▄▄█▄▄  ▀",
            "    ▀█▄███     ", "     ▀██▀      "]
     @states ~w(open budget_set funded submitted completed)a
-    @actions [set_budget: [AssetToken.usdc(40, 8453)],
-              apply_event: [:funded], submit: [%{patch: "gate.ex"}],
-              apply_event: [:completed]]
+    @r Map.new(Enum.with_index(@states))
+    # :recorded events represent chain/SSE observations.
+    @actions [{:call,:set_budget,[AssetToken.usdc(40,8453)]},
+              {:recorded,:funded},{:call,:submit,[%{patch: "gate"}]},
+              {:recorded,:completed}]
+    @info ["RECORDED ACP #4812","gate.ex · 40 USDC","raxol_earn",""]
     def init(_) do
-      {:ok, job} = JobSession.Supervisor.start_session(
-        chain_id: 8453, job_id: 4812, role: :provider)
-      %{job: job, at: 0}
+      {:ok,j}=JobSession.Supervisor.start_session(chain_id: 8453,
+      job_id: 4812,role: :provider)
+      %{j: j,a: 0,s: JobSession.status(j)}
     end
-    def update(:tick, %{at: at} = m) when at < 4 do
-      {fun, args} = Enum.at(@actions, at)
-      {:ok, _} = apply(JobSession, fun, [m.job | args])
-      {%{m | at: at + 1}, []}
+    def update(:tick,%{j: j,a: a}=m) when a<4 do
+      {:ok,s}=run(j,Enum.at(@actions,a)); {%{m|a: a+1,s: s},[]}
     end
-    def update(_, m), do: {m, []}
-    def subscribe(_), do: [subscribe_interval(200, :tick)]
-    def view(m) do
-      info = ["VIRTUALS ACP · BASE · JOB #4812",
-              "fix_spend_gate · 40 USDC", "raxol_earn", ""]
-      head = Enum.zip_with(@mark, info, &text(&1 <> " " <> &2))
-      rows = Enum.with_index(@states, &row(&1, &2, m.at))
-      column(do: head ++ [text(" ")] ++ rows)
-    end
-    defp row(s,i,a),do: text("#{if i<=a,do: "✓",else: "○"} #{s}")
+    def update(_,m),do: {m,[]}
+    def subscribe(_),do: [subscribe_interval(200,:tick)]
+    def view(%{s: s}),do: column(do: head()++[text(" ")]++rows(s))
+    defp head,do: Enum.zip_with(@mark,@info,&text(&1<>" "<>&2))
+    defp rows(t),do: Enum.map(@states,&r(&1,t))
+    defp run(j,{:call,f,a}),do: apply(JobSession,f,[j|a])
+    defp run(j,{:recorded,s}),
+      do: JobSession.apply_event(j,s,%{source: :recorded_demo})
+    defp r(s,t),do: text(if @r[s]<=@r[t],do: "✓ #{s}",else: "○ #{s}")
   end
   """
 
@@ -371,8 +371,8 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
     # also ACP: the group beside it is Agent CLIENT Protocol editors and this
     # one is the Agent COMMERCE Protocol, so putting the abbreviation on both
     # would have the row name two unrelated things with one word. Hardcoded
-    # rather than derived because raxol_earn is not a dependency of the web
-    # app and `RaxolEarn.Application` self-starts outside `:test`.
+    # rather than derived because raxol_earn is a dev-only frame-generation
+    # dependency and is intentionally absent from the production release.
     #
     # "Virtuals Protocol" in full, never "Virtuals" or "$VIRTUAL": their
     # editorial guide names the short forms specifically, and a partner's own
