@@ -5,6 +5,24 @@ defmodule Raxol.Headless.McpTools do
   Registers `raxol_start`, `raxol_screenshot`, `raxol_send_key`,
   `raxol_get_model`, `raxol_stop`, and `raxol_list` as MCP tools
   via `Raxol.MCP.Registry`.
+
+  ## Authorization
+
+  The three tools that change something -- `raxol_start`, `raxol_send_key`,
+  `raxol_stop` -- are annotated sensitive, so `Raxol.MCP.Server` refuses to run
+  them when no authorizer is configured. The other three are reads and are not
+  gated.
+
+  The annotation is only half of it: it does nothing until an authorizer exists
+  at the call site, and denies permanently if one never does. `Raxol.Application`
+  supplies one (`config :raxol, :mcp_authorizer`, defaulting to `allow_all/0`
+  outside production and to a deny-by-default allowlist in production), which is
+  what makes these annotations meaningful rather than merely restrictive.
+
+  Both entry points land on that same gate. `register/1` is the ordinary one;
+  `inject_into_tidewave/1` routes through `Raxol.MCP.Server` as well rather than
+  handing Tidewave the raw callbacks, so neither surface can drift from the
+  policy the other enforces.
   """
 
   @doc """
@@ -62,6 +80,13 @@ defmodule Raxol.Headless.McpTools do
             }
           }
         },
+        # Starting a session spawns a supervised process, and where a deployment
+        # has set a headless path root the "path" argument reaches the compiler,
+        # where compiling a `defmodule` executes its body. `destructiveHint` is
+        # the wrong word for that -- nothing is destroyed -- so this uses
+        # `sensitive`, raxol_mcp's own flag for a tool that must not run
+        # unattended. `Raxol.MCP.ToolDef.sensitive?/1` honours either.
+        annotations: %{sensitive: true},
         callback: &start_session/1
       },
       %{
@@ -127,6 +152,10 @@ defmodule Raxol.Headless.McpTools do
             }
           }
         },
+        # A keystroke is the session's whole input surface: whatever the running
+        # app does on a key, this tool can cause. It is not destructive on its
+        # own, so `sensitive` rather than `destructiveHint`.
+        annotations: %{sensitive: true},
         callback: &send_key/1
       },
       %{
@@ -162,6 +191,9 @@ defmodule Raxol.Headless.McpTools do
             }
           }
         },
+        # Tears down a running session and its state. Destructive in the plain
+        # MCP sense, so it carries the spec's own hint.
+        annotations: %{destructiveHint: true},
         callback: &stop_session/1
       },
       %{
@@ -199,22 +231,45 @@ defmodule Raxol.Headless.McpTools do
   Call after Tidewave.MCP has initialized (typically from Application.start).
   Safe to call multiple times -- tools are merged, not duplicated.
 
+  What is injected is NOT the raw tool callback. Tidewave dispatches straight out
+  of its own map, so a callback written there would never reach
+  `Raxol.MCP.Server` and no authorizer, annotation, or elicitation would apply to
+  it -- the one route that bypasses every gate the rest of this module relies on.
+  Each entry is instead a closure that re-enters through `tools/call` on the
+  server named by `:server`, so this surface inherits exactly the policy the
+  supervisor was started with. If that server is not running, calls are refused
+  rather than executed.
+
+  > #### This gates Raxol's tools, not Tidewave's {: .warning}
+  >
+  > Tidewave's own tools are untouched and ungated by anything here; `project_eval`
+  > in particular evaluates Elixir in the running node. Whether that endpoint may
+  > be reached at all is an endpoint-level decision (authentication, bind address),
+  > not one this function can make.
+
   The Tidewave ETS table is `:protected`, so the insert must run in the
   owning process. We spawn a task linked to that process to do the write.
+
+  ## Options
+
+    * `:server` -- the MCP server calls are routed through. Defaults to
+      `Raxol.MCP.Server`.
   """
-  @spec inject_into_tidewave() ::
+  @spec inject_into_tidewave(keyword()) ::
           :ok
           | {:error,
              :inject_timeout
              | :tidewave_not_started
              | :tidewave_owner_not_alive
              | {:sys_replace_failed, term()}}
-  def inject_into_tidewave do
+  def inject_into_tidewave(opts \\ []) do
+    server = Keyword.get(opts, :server, Raxol.MCP.Server)
+
     if :ets.whereis(:tidewave_tools) != :undefined do
       owner = :ets.info(:tidewave_tools, :owner)
 
       if owner && Process.alive?(owner) do
-        do_inject(owner)
+        do_inject(owner, server)
       else
         {:error, :tidewave_owner_not_alive}
       end
@@ -223,7 +278,11 @@ defmodule Raxol.Headless.McpTools do
     end
   end
 
-  defp do_inject(owner) do
+  # Bounded because `do_inject/2` runs inside `Application.start/2`; see the
+  # comment on the waits below.
+  @inject_timeout_ms 500
+
+  defp do_inject(owner, server) do
     # The ETS table is :protected so only the owner can write.
     # We use :erpc to run the insert in the owning process's context.
     # Since we're on the same node, this is safe and synchronous.
@@ -233,17 +292,26 @@ defmodule Raxol.Headless.McpTools do
     # Send a function to the owner process via a monitored intermediary
     # Since the owner is a Supervisor, it handles :code_change but not
     # arbitrary calls. Use :sys.replace_state to safely inject.
+    # Both waits are bounded well under a second. This runs synchronously
+    # inside `Application.start/2`, and the pair used to be OTP's default 5s
+    # plus another 5s here -- so a slow or wedged Tidewave supervisor added up
+    # to ~10s to every dev boot before the failure was downgraded to a debug
+    # log. Nothing depends on the result; it is a dev convenience.
     try do
-      :sys.replace_state(owner, fn sup_state ->
-        do_ets_inject()
-        send(me, {:inject_done, ref})
-        sup_state
-      end)
+      :sys.replace_state(
+        owner,
+        fn sup_state ->
+          do_ets_inject(server)
+          send(me, {:inject_done, ref})
+          sup_state
+        end,
+        @inject_timeout_ms
+      )
 
       receive do
         {:inject_done, ^ref} -> :ok
       after
-        5_000 -> {:error, :inject_timeout}
+        @inject_timeout_ms -> {:error, :inject_timeout}
       end
     catch
       :exit, reason -> {:error, {:sys_replace_failed, reason}}
@@ -259,7 +327,7 @@ defmodule Raxol.Headless.McpTools do
   # is exactly what happened here, and it has to fail loudly enough to reach
   # `{:error, {:sys_replace_failed, _}}` rather than write a record Tidewave
   # will later fail to read.
-  defp do_ets_inject do
+  defp do_ets_inject(server) do
     [
       {:tools,
        {existing_tools, existing_dispatch, browser_tools, browser_dispatch}}
@@ -276,19 +344,130 @@ defmodule Raxol.Headless.McpTools do
     filtered_dispatch =
       Map.drop(existing_dispatch, Enum.map(our_tools, & &1.name))
 
-    new_dispatch =
-      Map.merge(
-        filtered_dispatch,
-        Map.new(our_tools, fn t -> {t.name, t.callback} end)
-      )
+    gated =
+      Map.new(our_tools, fn t -> {t.name, gated_callback(server, t.name)} end)
+
+    new_dispatch = Map.merge(filtered_dispatch, gated)
+
+    # The ADVERTISED entries carry a `:callback` as well, and only the dispatch
+    # map above used to be gated -- so each of the six entries went into
+    # Tidewave's table holding its raw capture (`&start_session/1` and
+    # friends). Any consumer reaching for `tool.callback` rather than going
+    # through the dispatch map bypassed the authorizer, the sensitive-tool
+    # gate and elicitation entirely. Substitute in both places: one enforcement
+    # point is only true if every copy of the entry point routes through it.
+    gated_tools =
+      Enum.map(our_tools, fn t ->
+        Map.put(t, :callback, Map.fetch!(gated, t.name))
+      end)
 
     :ets.insert(
       :tidewave_tools,
       {:tools,
-       {filtered_tools ++ our_tools, new_dispatch, browser_tools,
+       {filtered_tools ++ gated_tools, new_dispatch, browser_tools,
         browser_dispatch}}
     )
   end
+
+  # Re-enters through `tools/call` rather than invoking the callback directly, so
+  # a Tidewave-dispatched call is subject to the same authorizer, sensitive-tool
+  # gate, and elicitation handling as one arriving over stdio or SSE. Routing
+  # through the server rather than re-implementing the checks here is the point:
+  # there is one enforcement point, and this surface cannot drift from it.
+  #
+  # A server that is down denies rather than falling back to the raw callback.
+  # The fallback is the whole vulnerability -- an ungated path that appears
+  # exactly when the gate is unavailable.
+  defp gated_callback(server, name) do
+    fn args ->
+      message = %{
+        jsonrpc: "2.0",
+        id: System.unique_integer([:positive]),
+        method: "tools/call",
+        params: %{"name" => name, "arguments" => args}
+      }
+
+      case safe_handle_message(server, message) do
+        {:reply, %{result: %{content: content, isError: true}}} ->
+          {:error, content_text(content)}
+
+        {:reply, %{result: %{content: content}}} ->
+          {:ok, content_text(content)}
+
+        {:reply, %{error: %{message: reason}}} ->
+          {:error, reason}
+
+        {:error, reason} ->
+          {:error, reason}
+
+        other ->
+          # Never render an internal server term into a client-facing string.
+          Raxol.Core.Runtime.Log.debug(
+            "unexpected MCP reply on the Tidewave path: #{inspect(other)}"
+          )
+
+          {:error, "the Raxol MCP server returned an unexpected reply"}
+      end
+    end
+  end
+
+  # Its OWN connection id, never the shared default.
+  #
+  # `Raxol.MCP.Server.handle_message/2` attributes a call to the `:default`
+  # connection, which is also what `Transport.Stdio` subscribes as. Sharing it
+  # crossed two clients: an `{:ask, _}` decision on a call that arrived here sent
+  # the prompt to the STDIO client and let that client's answer resolve THIS
+  # call, while Tidewave -- whose request had parked -- got back the server's
+  # `nil` placeholder rendered as the string `"{:reply, nil}"`.
+  #
+  # A distinct id settles it by making the truth checkable. `elicitation_capable?`
+  # requires the connection to be subscribed, and Tidewave never subscribes: it
+  # dispatches synchronously and has no channel to be asked on. So ASK resolves
+  # to a machine-readable deny here, which is the right answer for a caller that
+  # cannot be prompted, and no other client is involved.
+  @tidewave_conn :tidewave
+
+  # Bounded, unlike stdio and SSE. Tidewave used to invoke the callback in its
+  # own request process; routing through the server is right, but inheriting
+  # `:infinity` there meant one slow `raxol_screenshot` stalled the stdio
+  # client, every SSE client and every other Tidewave request, with nothing
+  # able to break it. Long enough for a screenshot of a busy app, short enough
+  # that a wedged tool cannot hold the whole surface.
+  @tidewave_call_timeout_ms 30_000
+
+  defp safe_handle_message(server, message) do
+    Raxol.MCP.Server.handle_message(
+      server,
+      message,
+      @tidewave_conn,
+      @tidewave_call_timeout_ms
+    )
+  catch
+    # A crashed server exits with its own reason and must not be reported as an
+    # absent one: an operator-supplied authorizer that raises looks identical to
+    # "not running" otherwise, and the real fault never surfaces.
+    :exit, {:noproc, _} ->
+      {:error,
+       "the Raxol MCP server is not running, so this call cannot be authorized"}
+
+    :exit, {:timeout, _} ->
+      {:error,
+       "the Raxol MCP server did not answer within " <>
+         "#{@tidewave_call_timeout_ms}ms, so this call was not authorized"}
+
+    :exit, reason ->
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "Raxol MCP server exited while authorizing a Tidewave call: " <>
+          "#{inspect(reason)}",
+        %{}
+      )
+
+      {:error, "the Raxol MCP server failed while authorizing this call"}
+  end
+
+  defp content_text([%{text: text} | _]) when is_binary(text), do: text
+  defp content_text([%{"text" => text} | _]) when is_binary(text), do: text
+  defp content_text(other), do: inspect(other)
 
   # --- Tool Callbacks ---
 

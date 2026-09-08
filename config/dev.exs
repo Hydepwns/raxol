@@ -34,8 +34,26 @@ config :raxol, Raxol.Repo,
 # RAXOL_DEV_PORT pins an explicit port; otherwise probe upward from 4000
 # for the first free one, so a co-resident service on 4000 (e.g. a local
 # LiteLLM) doesn't take the whole app down with :eaddrinuse. The probe
-# binds all interfaces with no SO_REUSEADDR to match how the endpoint
-# itself binds -- a truthful free/busy read, not a false positive.
+# binds the same interface with no SO_REUSEADDR as the endpoint itself
+# binds -- a truthful free/busy read, not a false positive.
+# Loopback by default, because Tidewave's `project_eval` evaluates Elixir in
+# the running node and this endpoint mounts it. RAXOL_DEV_BIND_IP exists
+# because a developer in Docker, WSL or a VM otherwise finds the endpoint
+# unreachable with no diagnostic, the only explanation being this comment in a
+# file they have no reason to open. Widening it exposes an eval endpoint on
+# that interface -- pair it with endpoint-level auth.
+dev_bind_ip =
+  case System.get_env("RAXOL_DEV_BIND_IP", "127.0.0.1")
+       |> String.to_charlist()
+       |> :inet.parse_address() do
+    {:ok, address} ->
+      address
+
+    {:error, _} ->
+      raise "RAXOL_DEV_BIND_IP must be an IP address, got: " <>
+              inspect(System.get_env("RAXOL_DEV_BIND_IP"))
+  end
+
 resolve_dev_port = fn ->
   case System.get_env("RAXOL_DEV_PORT") do
     nil ->
@@ -43,7 +61,7 @@ resolve_dev_port = fn ->
 
       port =
         Enum.find(base..(base + 50), base, fn candidate ->
-          case :gen_tcp.listen(candidate, [:binary]) do
+          case :gen_tcp.listen(candidate, [:binary, {:ip, dev_bind_ip}]) do
             {:ok, socket} -> :gen_tcp.close(socket) == :ok
             {:error, _} -> false
           end
@@ -64,8 +82,17 @@ resolve_dev_port = fn ->
   end
 end
 
+# Loopback, explicitly. Phoenix binds 0.0.0.0 when `ip:` is absent, and this
+# endpoint mounts Tidewave, whose `project_eval` evaluates Elixir in the running
+# BEAM with no authentication in front of it. On 0.0.0.0 that is remote code
+# execution on the developer's machine for anyone who can reach the port, which
+# on a shared or public network is anyone on it. Nothing here needs to be
+# reachable off-host: it is a dev tool for an MCP client running locally.
+#
+# Widening this back to 0.0.0.0 (to drive the endpoint from a phone, a VM, or a
+# container) re-exposes `project_eval`. Put it behind something first.
 config :raxol, Raxol.Endpoint,
-  http: [port: resolve_dev_port.()],
+  http: [ip: dev_bind_ip, port: resolve_dev_port.()],
   server: true,
   secret_key_base: String.duplicate("dev", 22)
 

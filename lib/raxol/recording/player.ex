@@ -22,12 +22,19 @@ defmodule Raxol.Recording.Player do
     * `q` / `ESC` - Quit
   """
 
-  alias Raxol.Recording.{Asciicast, Session}
+  alias Raxol.Core.Buffer
+  alias Raxol.Core.Renderer
+  alias Raxol.Recording.{Asciicast, Index, Session}
+  alias Raxol.Terminal.Emulator
+  alias Raxol.UI.Components.Input.Scrubber
 
   @default_speed 1.0
   @default_max_delay 5.0
   @speed_steps [0.25, 0.5, 1.0, 2.0, 4.0, 8.0]
   @seek_step_us 5_000_000
+  @status_hints "space:pause +/-:speed </>:seek q:quit"
+  @min_track 3
+  @max_track 40
 
   @doc """
   Plays a .cast file or session struct.
@@ -37,6 +44,9 @@ defmodule Raxol.Recording.Player do
     * `:speed` - Playback speed multiplier (default: 1.0). 2.0 = double speed.
     * `:max_delay` - Cap on delay between events in seconds (default: 5.0).
     * `:interactive` - Enable keyboard controls (default: true).
+    * `:index` - A `Raxol.Recording.Index` for the same session. Optional: with
+      no index, seeking replays the recording's prefix from the start, which is
+      O(n) per seek. With one, a seek repaints from the nearest keyframe.
   """
   @spec play(Path.t() | Session.t(), keyword()) :: :ok | {:error, term()}
   def play(path_or_session, opts \\ [])
@@ -111,6 +121,11 @@ defmodule Raxol.Recording.Player do
       max_delay: max_delay,
       paused: false,
       total_us: total_us,
+      input_marks: input_marks(events),
+      # `{track_width, columns}`, filled on the first repaint. See
+      # `ensure_mark_columns/3`.
+      mark_columns: nil,
+      keyframe_index: Keyword.get(opts, :index),
       session: session
     }
 
@@ -119,8 +134,7 @@ defmodule Raxol.Recording.Player do
     reader = start_input_reader()
 
     try do
-      show_status_bar(state)
-      loop(state)
+      state |> show_status_bar() |> loop()
     after
       Process.unlink(reader)
       Process.exit(reader, :kill)
@@ -141,7 +155,7 @@ defmodule Raxol.Recording.Player do
   end
 
   defp loop(state) do
-    {elapsed_us, :output, data} = current_event(state)
+    {elapsed_us, kind, data} = current_event(state)
     prev_us = prev_elapsed_us(state)
 
     delay_us = elapsed_us - prev_us
@@ -151,7 +165,14 @@ defmodule Raxol.Recording.Player do
 
     case wait_with_input(actual_delay) do
       :timeout ->
-        IO.write(data)
+        # Only `:output` is written. This used to hard-match `:output` and
+        # raise MatchError on anything else -- while `input_marks/1` exists
+        # precisely to tick the `:input` events on the scrub bar, so the
+        # track advertised positions playback could not reach.
+        # `Asciicast.decode_event_type("i")` produces them, so they are part
+        # of the format, not a hypothetical. An input event is what the user
+        # typed, not terminal output: honour its timestamp, do not echo it.
+        if kind == :output, do: IO.write(data)
         %{state | index: state.index + 1} |> continue()
 
       key ->
@@ -181,8 +202,7 @@ defmodule Raxol.Recording.Player do
     do: jump_to_percent(state, pct) |> continue()
 
   defp continue(state) do
-    show_status_bar(state)
-    loop(state)
+    state |> show_status_bar() |> loop()
   end
 
   # -- Seeking --
@@ -198,7 +218,9 @@ defmodule Raxol.Recording.Player do
     jump_to_us(state, target_us)
   end
 
-  defp jump_to_us(state, target_us) do
+  @doc false
+  @spec jump_to_us(map(), integer()) :: map()
+  def jump_to_us(state, target_us) do
     target_us = Raxol.Core.Utils.Math.clamp(target_us, 0, state.total_us)
 
     idx =
@@ -206,7 +228,14 @@ defmodule Raxol.Recording.Player do
         elapsed_us >= target_us
       end) || state.event_count
 
-    # Replay all output up to idx to reconstruct screen state
+    repaint(state, target_us, idx)
+
+    %{state | index: idx}
+  end
+
+  # No index: nothing to seek from, so clear the screen and rewrite every
+  # output event from the start of the recording. O(n) per seek.
+  defp repaint(%{keyframe_index: nil} = state, _target_us, idx) do
     IO.write("\e[2J\e[H")
 
     state.events
@@ -215,8 +244,43 @@ defmodule Raxol.Recording.Player do
       {_, :output, data} -> IO.write(data)
       _ -> :ok
     end)
+  end
 
-    %{state | index: idx}
+  # With an index, the nearest keyframe replaces the prefix: paint that
+  # keyframe, then write only the recorded bytes between it and the target. The
+  # bytes are the recording's own, so cursor, pending SGR state, and scroll
+  # region past the keyframe are byte-exact rather than reconstructed, and the
+  # emulator never runs during a seek.
+  #
+  # The keyframe itself is painted as a diff from blank, which positions every
+  # row absolutely: raw mode strips the CR from a bare "\n", so a line-joined
+  # paint would stagger down the screen. The cursor is then put where the
+  # recording had it at the keyframe, which matters when the target lands on
+  # the keyframe and no bytes follow to move it.
+  defp repaint(%{keyframe_index: index} = state, target_us, idx) do
+    keyframe = Index.keyframe_before(index, target_us)
+    blank = Buffer.create_blank_buffer(index.width, index.height)
+    {row, col} = Emulator.get_cursor_position(keyframe.emulator)
+
+    paint =
+      blank
+      |> Renderer.render_diff(keyframe.buffer)
+      |> Renderer.apply_diff()
+
+    forward =
+      state.events
+      |> Enum.slice(keyframe.event_index, max(idx - keyframe.event_index, 0))
+      |> Enum.flat_map(fn
+        {_us, :output, data} -> [data]
+        _input -> []
+      end)
+
+    IO.write([
+      "\e[2J\e[H",
+      paint,
+      "\e[0m\e[#{row + 1};#{col + 1}H"
+      | forward
+    ])
   end
 
   # -- Key reading --
@@ -301,36 +365,120 @@ defmodule Raxol.Recording.Player do
   end
 
   # -- Status bar --
+  #
+  # The clock, track, transport glyph, and speed all come from
+  # `Raxol.UI.Components.Input.Scrubber`, the widget the time-travel debugger
+  # and the web replay also render. Only the key hints below are the
+  # player's own. The transport glyph replaces the old " [PAUSED]" text and
+  # the track replaces the old "(33%)": both said the same thing twice.
 
+  # Returns the updated state: this is on the hot path, and the mark columns it
+  # memoizes are what keep it off `O(marks log marks)` per frame.
   defp show_status_bar(state) do
-    height = state.session.height
-    current_us = current_elapsed_us(state)
-    current_s = Float.round(current_us / 1_000_000, 1)
-    total_s = Float.round(state.total_us / 1_000_000, 1)
+    props = scrubber_props(state)
+    track_width = track_width(state, props)
+    {columns, state} = ensure_mark_columns(state, props, track_width)
 
-    pct =
-      if state.total_us > 0,
-        do: round(current_us / state.total_us * 100),
-        else: 0
+    bar = render_bar(props, track_width, columns, state.session.width)
+    IO.write("\e7\e[#{state.session.height};1H\e[7m#{bar}\e[0m\e8")
 
-    speed_label = format_speed(state.speed)
-    pause_label = if state.paused, do: " [PAUSED]", else: ""
+    state
+  end
 
-    bar =
-      " #{current_s}s/#{total_s}s (#{pct}%) | #{speed_label}#{pause_label} | " <>
-        "space:pause +/-:speed </>:seek q:quit"
+  # The track is sized from the chrome beside it, which is not a constant: the
+  # clock widens with the recording's length and the speed label disappears at
+  # 1x. `Scrubber.chrome_width/1` measures exactly those parts.
+  #
+  # It used to be measured by rendering a whole `Scrubber.line/1` at the
+  # minimum track width and subtracting the track. That drew a track, and
+  # resolved every mark to a column, purely to find out how wide to draw the
+  # real one -- and then did the mark work a second time for the real render.
+  # Both passes run `sanitize_marks/3` (filter, uniq, sort) over every `:input`
+  # event in the recording, and this function runs on EVERY output event, so a
+  # recording with many keystrokes paid `O(events * marks log marks)` to repaint
+  # a bar at most 40 columns wide. The previous status bar was string
+  # interpolation.
+  defp track_width(state, props) do
+    chrome = Scrubber.chrome_width(props) + String.length(@status_hints) + 4
 
-    # Truncate to width
-    bar = String.slice(bar, 0, state.session.width)
-
-    # Save cursor, move to status line, write inverted, restore cursor
-    IO.write(
-      "\e7\e[#{height};1H\e[7m#{String.pad_trailing(bar, state.session.width)}\e[0m\e8"
+    Raxol.Core.Utils.Math.clamp(
+      state.session.width - chrome,
+      @min_track,
+      @max_track
     )
   end
 
-  defp format_speed(speed) when speed == round(speed), do: "#{round(speed)}x"
-  defp format_speed(speed), do: "#{speed}x"
+  # Keyed on the width, because that is the only thing the columns depend on
+  # that can change during playback: `input_marks/1` is fixed for the recording
+  # and the width moves only when the speed label appears or disappears.
+  defp ensure_mark_columns(state, props, width) do
+    case state.mark_columns do
+      {^width, columns} ->
+        {columns, state}
+
+      _stale_or_absent ->
+        columns = Scrubber.mark_columns(%{props | width: width})
+        {columns, %{state | mark_columns: {width, columns}}}
+    end
+  end
+
+  defp render_bar(props, track_width, columns, width) do
+    # `Map.merge/2`, not `%{props | ...}`: the update syntax requires every key
+    # to already exist, and `scrubber_props/1` has no `:mark_columns` -- so the
+    # struct-update form raised `KeyError` on the first repaint and the type
+    # checker flagged it as an incompatible call.
+    line =
+      Scrubber.line(
+        Map.merge(props, %{width: track_width, mark_columns: columns})
+      )
+
+    (" " <> line <> " | " <> @status_hints)
+    |> String.slice(0, width)
+    |> String.pad_trailing(width)
+  end
+
+  @doc false
+  @spec status_bar(map()) :: String.t()
+  def status_bar(state) do
+    props = scrubber_props(state)
+    track_width = track_width(state, props)
+
+    render_bar(
+      props,
+      track_width,
+      Scrubber.mark_columns(%{props | width: track_width}),
+      state.session.width
+    )
+  end
+
+  defp scrubber_props(state) do
+    %{
+      min: 0,
+      max: max(state.event_count - 1, 0),
+      position: state.index,
+      playing?: not state.paused,
+      speed: state.speed,
+      elapsed_ms: div(current_elapsed_us(state), 1_000),
+      duration_ms: div(state.total_us, 1_000),
+      marks: state.input_marks,
+      width: @min_track
+    }
+  end
+
+  # `:input` events are the moments a human typed. In a recording those are
+  # the natural jump targets -- the boundaries between "someone is showing
+  # you something" and "output is scrolling past" -- so they are what the
+  # track ticks. Computed once per playback, not per status-bar repaint.
+  @doc false
+  @spec input_marks([Session.event()]) :: [non_neg_integer()]
+  def input_marks(events) do
+    events
+    |> Enum.with_index()
+    |> Enum.flat_map(fn
+      {{_us, :input, _data}, index} -> [index]
+      _other -> []
+    end)
+  end
 
   # -- Event helpers --
 

@@ -269,6 +269,42 @@ defmodule Raxol.View.Components do
   end
 
   @doc """
+  Creates a scrubber: a transport control over an ordered position.
+
+  Composed by `Raxol.UI.Components.Input.Scrubber.render/2`, then stamped
+  `type: :scrubber` so MCP's `TreeWalker` and the accessibility projection
+  dispatch on the widget rather than on the `:row` it lays out as (the same
+  discovery-alias trick `Raxol.UI.Layout.Engine` uses to lay the chart types
+  out as `:box`). The transport fields are carried on the node because
+  `mcp_tools/1` and `a11y_node/1` read the declaration, not the component
+  state.
+
+  Builds a declaration rather than instantiating: `init/1` mints an id when
+  none is given, and a `view/1` helper runs every frame, so instantiating here
+  churned the id -- and with it every MCP tool handle -- once per repaint. Pass
+  `:id` to address this scrubber from an agent or to focus it.
+
+  ## Options
+
+  - `:min` / `:max` - Addressable position range (default `0`/`0`)
+  - `:position` - Playhead position, clamped into the range
+  - `:playing?` - Transport state (default `false`)
+  - `:speed` - Playback multiplier, rendered when not `1.0`
+  - `:marks` - Positions to tick on the track
+  - `:width` - Track width in columns (default `24`)
+  - `:elapsed_ms` / `:duration_ms` - Clock readout; omit for `position/max`
+  - `:label`, `:aria_label`, `:tooltip`, `:disabled`, `:style`, `:id`
+
+  ## Example
+
+      scrubber(id: "replay", min: 0, max: 47, position: 12, marks: [0, 18])
+  """
+  @spec scrubber(keyword() | map()) :: map()
+  def scrubber(opts \\ []) do
+    Raxol.UI.Components.Input.Scrubber.declaration(opts)
+  end
+
+  @doc """
   Creates a modal component.
   """
   @spec modal(keyword() | map()) :: map()

@@ -3,6 +3,7 @@ defmodule Raxol.Agent.ThreadLogRouterTest do
 
   alias Raxol.Agent.Policy.{Cache, Retry, Timeout}
   alias Raxol.Agent.PolicyApplier
+  alias Raxol.Agent.Test.EtsTables
   alias Raxol.Agent.ThreadLog
   alias Raxol.Agent.ThreadLog.Ets, as: EtsLog
   alias Raxol.Agent.ThreadLogRouter
@@ -16,9 +17,7 @@ defmodule Raxol.Agent.ThreadLogRouterTest do
 
     on_exit(fn ->
       ThreadLogRouter.detach(handler_id)
-      if :ets.whereis(cache_table) != :undefined, do: :ets.delete(cache_table)
-      if :ets.whereis(log_table) != :undefined, do: :ets.delete(log_table)
-      if :ets.whereis(log_seq) != :undefined, do: :ets.delete(log_seq)
+      EtsTables.drop([cache_table, log_table, log_seq])
     end)
 
     {:ok,

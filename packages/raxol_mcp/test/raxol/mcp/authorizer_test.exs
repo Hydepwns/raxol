@@ -15,14 +15,39 @@ defmodule Raxol.MCP.AuthorizerTest do
     }
   end
 
-  defp start_server(authorizer, tools \\ nil) do
+  defp secret_tool do
+    %{
+      name: "secret",
+      description: "Reads the vault",
+      inputSchema: %{type: "object"},
+      callback: fn _args -> {:ok, [%{type: "text", text: "shh"}]} end
+    }
+  end
+
+  defp list_tool_names(srv) do
+    {:reply, resp} = Server.handle_message(srv, %{id: 7, method: "tools/list"})
+
+    resp.result.tools
+    |> Enum.map(fn tool -> Map.get(tool, :name) || Map.get(tool, "name") end)
+    |> Enum.sort()
+  end
+
+  defp start_server(authorizer, tools \\ nil, opts \\ []) do
+    {srv, result} = boot_server(authorizer, tools, opts)
+    {:ok, _} = result
+    srv
+  end
+
+  # For the boots that are supposed to be REFUSED: `start_server/3` insists on
+  # `{:ok, _}`, and the refusal arrives as a start_link error.
+  defp boot_server(authorizer, tools, opts) do
     tools = tools || [add_tool()]
     reg = :"reg_#{System.unique_integer([:positive])}"
     srv = :"srv_#{System.unique_integer([:positive])}"
     {:ok, _} = Registry.start_link(name: reg)
     Registry.register_tools(reg, tools)
-    {:ok, _} = Server.start_link(name: srv, registry: reg, authorizer: authorizer)
-    srv
+
+    {srv, Server.start_link([name: srv, registry: reg, authorizer: authorizer] ++ opts)}
   end
 
   defp call(srv, name \\ "add") do
@@ -38,6 +63,13 @@ defmodule Raxol.MCP.AuthorizerTest do
 
   defp payload(resp) do
     resp.result.content |> hd() |> Map.fetch!(:text) |> Jason.decode!()
+  end
+
+  # The contained authorizer paths log at :error on purpose; keep that out of
+  # the suite's output while still asserting on the response.
+  defp capture_log_and_call(srv, name \\ "add") do
+    {resp, _log} = ExUnit.CaptureLog.with_log(fn -> call(srv, name) end)
+    resp
   end
 
   describe "Authorizer builders" do
@@ -109,16 +141,232 @@ defmodule Raxol.MCP.AuthorizerTest do
       call(srv, "spy")
       refute_received :callback_ran
     end
+
+    test "an authorizer that raises denies, and does not take the server down" do
+      test = self()
+
+      spy = %{
+        name: "spy",
+        description: "records if it ran",
+        inputSchema: %{type: "object"},
+        callback: fn _args ->
+          send(test, :callback_ran)
+          {:ok, "x"}
+        end
+      }
+
+      boom = fn _tool, _args, _ctx -> raise "policy blew up" end
+      srv = start_server(boom, [spy])
+
+      resp = capture_log_and_call(srv, "spy")
+
+      assert resp.result.isError == true
+      assert payload(resp)["decision"] == "deny"
+      refute_received :callback_ran
+
+      # The client picks when and how often to call, so a raise here is a lever
+      # on the supervisor's restart intensity. The server must still be serving.
+      assert Process.alive?(Process.whereis(srv))
+      assert capture_log_and_call(srv, "spy").result.isError == true
+    end
+
+    test "an authorizer returning an off-contract term denies rather than crashing" do
+      # `case` over Authorizer.decision() would raise CaseClauseError from
+      # inside the same call, which is the crash above by another route.
+      confused = fn _tool, _args, _ctx -> true end
+      srv = start_server(confused)
+
+      resp = capture_log_and_call(srv)
+
+      assert resp.result.isError == true
+      assert payload(resp)["decision"] == "deny"
+      assert Process.alive?(Process.whereis(srv))
+    end
+  end
+
+  describe "authorization context" do
+    # An authorizer that cannot tell WHO is asking can only decide on the tool
+    # name, which makes a stdio caller and an unauthenticated network client
+    # the same principal. Both seams are handed the same server-derived facts.
+    test "both seams are told the connection and the transport" do
+      test = self()
+
+      spy = fn _op, _args, ctx ->
+        send(test, {:ctx, ctx})
+        :allow
+      end
+
+      srv = start_server(spy, nil, transport: :sse, read_authorizer: spy)
+
+      {:reply, resp} =
+        Server.handle_message(
+          srv,
+          %{
+            id: 1,
+            method: "tools/call",
+            params: %{"name" => "add", "arguments" => %{"a" => 2, "b" => 3}}
+          },
+          "conn-a"
+        )
+
+      assert resp.result.content == [%{type: "text", text: "5"}]
+      assert_received {:ctx, %{conn_id: "conn-a", transport: :sse}}
+
+      # The read seam is a separate call site into the authorizer, and it must
+      # not hand policy a poorer context than the tool seam does.
+      {:reply, _} =
+        Server.handle_message(srv, %{id: 2, method: "resources/list"}, "conn-b")
+
+      assert_received {:ctx, %{conn_id: "conn-b", transport: :sse}}
+    end
+
+    # Authorizing on a value the client asserts is a bypass: the client picks
+    # the value. Only facts the server derives belong in the context.
+    test "the context carries nothing the client asserted" do
+      test = self()
+
+      spy = fn _op, _args, ctx ->
+        send(test, {:ctx, ctx})
+        :allow
+      end
+
+      srv = start_server(spy, nil, transport: :sse)
+
+      {:reply, _} =
+        Server.handle_message(
+          srv,
+          %{
+            id: 1,
+            method: "initialize",
+            params: %{
+              "clientInfo" => %{"name" => "trusted-agent", "version" => "9.9"},
+              "capabilities" => %{}
+            }
+          },
+          "conn-a"
+        )
+
+      {:reply, _} =
+        Server.handle_message(
+          srv,
+          %{id: 2, method: "tools/call", params: %{"name" => "add", "arguments" => %{}}},
+          "conn-a"
+        )
+
+      assert_received {:ctx, ctx}
+
+      # A tripwire, deliberately exact. Another SERVER-derived fact is welcome
+      # here -- add it to this list. Anything the CLIENT asserted (the
+      # clientInfo above, a header it chose) is a bypass wearing a policy's
+      # clothes, and this assertion is what makes adding one a decision.
+      assert Enum.sort(Map.keys(ctx)) == [:conn_id, :transport]
+    end
+  end
+
+  describe "tools/list filtering" do
+    # The method-level gate is about enumerating at all. Passing it used to
+    # return the whole live surface, annotations included, so an accepted
+    # client learned every tool it was about to be denied.
+    test "a tool the authorizer denies is not advertised" do
+      srv = start_server(Authorizer.allowlist(["add"]), [add_tool(), secret_tool()])
+
+      assert list_tool_names(srv) == ["add"]
+    end
+
+    # An entry the caller cannot invoke without an approval it has not got is
+    # not callable, so it must not advertise itself as callable.
+    test "a tool the authorizer only ASKs about is hidden as well" do
+      gated = fn
+        "add", _args, _ctx -> :allow
+        _tool, _args, _ctx -> {:ask, "Approve?"}
+      end
+
+      srv = start_server(gated, [add_tool(), secret_tool()])
+
+      assert list_tool_names(srv) == ["add"]
+    end
+
+    test "a nil authorizer still lists everything" do
+      srv = start_server(nil, [add_tool(), secret_tool()])
+
+      assert list_tool_names(srv) == ["add", "secret"]
+    end
+
+    # Filtering runs operator code once per tool on a client-driven path, so a
+    # policy that raises must cost the tool its listing, not the server its
+    # life -- the client picks how often to ask.
+    test "a raising authorizer hides the tool instead of crashing the server" do
+      boom = fn
+        "add", _args, _ctx -> :allow
+        _tool, _args, _ctx -> raise "policy blew up"
+      end
+
+      srv = start_server(boom, [add_tool(), secret_tool()])
+
+      {names, _log} = ExUnit.CaptureLog.with_log(fn -> list_tool_names(srv) end)
+
+      assert names == ["add"]
+      assert Process.alive?(Process.whereis(srv))
+    end
   end
 
   describe "authorization_configured?/1" do
-    test "reflects whether an authorizer is set" do
-      assert Server.authorization_configured?(start_server(Authorizer.allow_all()))
-      refute Server.authorization_configured?(start_server(nil))
+    # NOT `authorizer != nil`. A framework may supply a restrictive fallback,
+    # and the value alone cannot be told apart from a policy an operator wrote,
+    # so treating the fallback as configured would satisfy the SSE boot gate
+    # with a default -- removing the forcing function the gate exists to be.
+    test "requires an authorizer AND a :configured source" do
+      assert Server.authorization_configured?(
+               start_server(Authorizer.allow_all(), nil, authorizer_source: :configured)
+             )
+
+      refute Server.authorization_configured?(
+               start_server(nil, nil, authorizer_source: :configured)
+             )
+    end
+
+    test "a :default source answers false however strict the authorizer" do
+      # deny_all is as strict as an authorizer gets, and it still must not open
+      # a network transport: nobody DECIDED that this server should serve.
+      refute Server.authorization_configured?(
+               start_server(Authorizer.deny_all(), nil, authorizer_source: :default)
+             )
+    end
+
+    test "the source defaults to :default, so a forgetful embedder fails closed" do
+      refute Server.authorization_configured?(start_server(Authorizer.allow_all()))
     end
 
     test "returns false for an unreachable server" do
       refute Server.authorization_configured?(:no_such_server)
+    end
+  end
+
+  describe "Deployment.production?/0 outside a mix session" do
+    test "an unstarted Mix reads as production instead of raising" do
+      # `Code.ensure_loaded?(Mix)` is true in any node with Elixir's stdlib on
+      # the code path, but `Mix.env/0` reads `:ets.lookup(Mix.State, :env)` and
+      # needs the `:mix` APPLICATION running. `elixir -e` loads Mix and does not
+      # start it, which is the same shape as an escript or a release shipping
+      # `:mix` unstarted -- and this predicate is on
+      # `Raxol.Application.start/2`'s `:mcp` path, so it raised at boot.
+      #
+      # Run in a real separate node because this suite runs UNDER mix, where
+      # the broken environment cannot be reproduced in-process.
+      ebin = Application.app_dir(:raxol_mcp, "ebin")
+
+      {out, status} =
+        System.cmd(
+          "elixir",
+          ["-pa", ebin, "-e", "IO.write(inspect(Raxol.MCP.Deployment.production?()))"],
+          stderr_to_stdout: true
+        )
+
+      assert status == 0,
+             "production?/0 crashed in a node with Mix loaded but not started:\n#{out}"
+
+      # Fail-closed: an environment the predicate cannot identify is production.
+      assert out =~ "true"
     end
   end
 
@@ -147,6 +395,78 @@ defmodule Raxol.MCP.AuthorizerTest do
 
       # ...but a configured authorizer boots even when required.
       assert :ok = Deployment.enforce_authorization!(true, "MCP SSE transport")
+    end
+
+    # The tool gate counts `:mcp_authorizer`/`:mcp_allowed_tools` only, so an
+    # embedder could satisfy it and still leave the read seam open -- and
+    # `resources/read` serves live model state. Refuse at boot instead.
+    test "a server declared to front SSE refuses to boot with reads unguarded" do
+      Application.put_env(:raxol_mcp, :require_authorization, true)
+      Process.flag(:trap_exit, true)
+
+      {_srv, result} =
+        boot_server(Authorizer.allow_all(), nil,
+          transport: :sse,
+          authorizer_source: :configured
+        )
+
+      assert {:error, {%ArgumentError{message: message}, _stack}} = result
+      assert message =~ "refuses to boot"
+      assert message =~ "mcp_read_authorizer"
+    end
+
+    test "the same server boots once the read seam is configured" do
+      Application.put_env(:raxol_mcp, :require_authorization, true)
+
+      srv =
+        start_server(Authorizer.allow_all(), nil,
+          transport: :sse,
+          authorizer_source: :configured,
+          read_authorizer: Authorizer.allow_all()
+        )
+
+      {:reply, resp} =
+        Server.handle_message(srv, %{id: 1, method: "resources/list", params: %{}})
+
+      assert resp.result.resources == []
+    end
+
+    # stdio inherits the OS process boundary, so the gate must not bite there:
+    # existing embedders serve reads with no read authorizer and are entitled
+    # to keep doing it.
+    test "stdio boots with the read seam open" do
+      Application.put_env(:raxol_mcp, :require_authorization, true)
+
+      srv =
+        start_server(Authorizer.allow_all(), nil,
+          transport: :stdio,
+          authorizer_source: :configured
+        )
+
+      {:reply, resp} =
+        Server.handle_message(srv, %{id: 1, method: "resources/list", params: %{}})
+
+      assert resp.result.resources == []
+    end
+
+    # The transport that actually exposes the network, booted for real: the
+    # embedder mounts it in its own Plug pipeline, so it never declared a
+    # transport on the server and the check above cannot fire for it.
+    test "mounting the SSE transport refuses a server whose reads are unguarded" do
+      Application.put_env(:raxol_mcp, :require_authorization, true)
+      srv = start_server(Authorizer.allow_all(), nil, authorizer_source: :configured)
+
+      # The tool seam satisfies the older gate...
+      assert :ok =
+               Deployment.enforce_authorization!(
+                 Server.authorization_configured?(srv),
+                 "MCP SSE transport"
+               )
+
+      # ...and the transport still refuses, because the reads are open.
+      assert_raise ArgumentError, ~r/mcp_read_authorizer/, fn ->
+        Raxol.MCP.Transport.SSE.init(server: srv)
+      end
     end
   end
 end

@@ -11,7 +11,7 @@ defmodule Raxol.MCP.Server do
   - `initialize` -- MCP handshake, returns server capabilities
   - `notifications/initialized` -- client acknowledgement (no reply)
   - `ping` -- health check
-  - `tools/list` -- list registered tools
+  - `tools/list` -- list the registered tools this caller may call
   - `tools/call` -- invoke a tool
   - `resources/list` -- list registered resources
   - `resources/read` -- read a resource
@@ -68,6 +68,7 @@ defmodule Raxol.MCP.Server do
   @compile {:no_warn_undefined, Raxol.Headless}
 
   alias Raxol.MCP.Authorizer
+  alias Raxol.MCP.Deployment
   alias Raxol.MCP.Protocol
   alias Raxol.MCP.Registry
   alias Raxol.MCP.ResourceRouter
@@ -88,6 +89,8 @@ defmodule Raxol.MCP.Server do
     :registry,
     :authorizer,
     :read_authorizer,
+    authorizer_source: :default,
+    transport: :unknown,
     initialized: false,
     log_level: :info,
     subscribers: %{},
@@ -97,10 +100,41 @@ defmodule Raxol.MCP.Server do
     elicitation_timeout_ms: @default_elicitation_timeout_ms
   ]
 
+  @typedoc """
+  Where this server's `:authorizer` came from.
+
+  `:configured` -- a caller chose it. `:default` -- a framework fallback stood in
+  because nobody chose one. The distinction exists for
+  `authorization_configured?/1`; see that function for why the two cannot be told
+  apart by the authorizer's value.
+  """
+  @type authorizer_source :: :configured | :default
+
+  # Transports a caller can declare this server fronts. `:unknown` is the
+  # default: the server is transport-agnostic and a transport attaches after it
+  # boots, so absent a declaration nobody has said. Validated, not trusted --
+  # see `transport!/1`.
+  @transports [:stdio, :sse, :unknown]
+
+  # Of those, the ones that carry clients over a network and so cannot lean on
+  # the OS process boundary for anything.
+  @network_transports [:sse]
+
+  @typedoc """
+  Which transport carries this server's clients, as DECLARED at start.
+
+  Server-derived rather than client-asserted, which is what makes it usable in
+  an authorization decision: a policy can tell a stdio caller (which inherits
+  the OS process boundary) from a network one.
+  """
+  @type transport :: :stdio | :sse | :unknown
+
   @type t :: %__MODULE__{
           registry: GenServer.server(),
           authorizer: Authorizer.t() | nil,
           read_authorizer: Authorizer.t() | nil,
+          authorizer_source: authorizer_source(),
+          transport: transport(),
           initialized: boolean(),
           log_level:
             :debug
@@ -181,14 +215,21 @@ defmodule Raxol.MCP.Server do
   connection is safe (it can still make ordinary requests, and simply cannot
   elicit), whereas reusing one client's id for another hands over its approvals.
   """
-  @spec handle_message(GenServer.server(), map(), conn_id()) :: {:reply, map() | nil}
-  def handle_message(server, message, conn_id) do
-    # :infinity, not the default 5s: tool callbacks run inline in the server
-    # (Registry.call_tool invokes them in the calling process), and a slow
-    # tool — an agent turn, a screenshot of a busy app — must stall the
-    # transport, never crash it with a call-timeout exit. Slow tools bound
-    # their own work; the transport's job is to wait for the reply.
-    GenServer.call(server, {:handle_message, message, conn_id}, :infinity)
+  #
+  # `timeout` defaults to `:infinity`, not the usual 5s: tool callbacks run
+  # inline in the server (`Registry.call_tool/3` invokes them in the calling
+  # process), and a slow tool -- an agent turn, a screenshot of a busy app --
+  # must stall a stdio or SSE transport rather than crash it with a call-timeout
+  # exit. Slow tools bound their own work; that transport's job is to wait.
+  #
+  # A surface that previously ran its callbacks CONCURRENTLY should pass a
+  # bound instead. Everything now funnels through this one process, so an
+  # unbounded wait there turns one slow tool into head-of-line blocking for
+  # every other client -- see `Raxol.Headless.MCPTools`.
+  @spec handle_message(GenServer.server(), map(), conn_id(), timeout()) ::
+          {:reply, map() | nil}
+  def handle_message(server, message, conn_id, timeout \\ :infinity) do
+    GenServer.call(server, {:handle_message, message, conn_id}, timeout)
   end
 
   @doc """
@@ -221,13 +262,44 @@ defmodule Raxol.MCP.Server do
   end
 
   @doc """
-  Whether an authorizer is configured on this server. Network transport boot
-  guards use this to fail closed (see `Raxol.MCP.Deployment`). Returns `false` if
-  the server is unreachable.
+  Whether authorization on this server was CHOSEN by a caller. Network transport
+  boot guards use this to fail closed (see `Raxol.MCP.Deployment`). Returns
+  `false` if the server is unreachable.
+
+  Deliberately not `authorizer != nil`. A framework may supply a restrictive
+  fallback -- a deny-everything allowlist is a sensible default for an
+  unconfigured production server -- and the value alone cannot be told apart from
+  a policy an operator wrote. Treating the fallback as configured would satisfy
+  this gate with a default, which removes exactly the forcing function the gate
+  exists to be: nobody had to decide that a network transport should serve.
+
+  So a server started with `authorizer_source: :default` answers `false` however
+  strict its authorizer is. `:default` is also the DEFAULT source: for a
+  predicate whose whole purpose is "nobody had to decide that a network
+  transport should serve", an embedder who forgets the option must fail closed,
+  not be taken at its word. `Raxol.Application` passes `:configured`
+  explicitly when `mcp_authorizer_source/0` says an operator named a key.
   """
   @spec authorization_configured?(GenServer.server()) :: boolean()
   def authorization_configured?(server \\ __MODULE__) do
     GenServer.call(server, :authorization_configured?)
+  catch
+    :exit, _ -> false
+  end
+
+  @doc """
+  Whether the READ seam has an authorizer. The network boot guards use this to
+  refuse a server that would serve `resources/read` -- live model state -- to
+  any client that connects. Returns `false` if the server is unreachable.
+
+  Presence, not source: unlike `authorization_configured?/1` there is no
+  framework fallback here worth telling apart. A read authorizer exists only
+  because someone configured one, and `Raxol.MCP.Deployment`'s tool-seam gate
+  is what carries the "nobody decided" argument.
+  """
+  @spec read_authorization_configured?(GenServer.server()) :: boolean()
+  def read_authorization_configured?(server \\ __MODULE__) do
+    GenServer.call(server, :read_authorization_configured?)
   catch
     :exit, _ -> false
   end
@@ -239,14 +311,21 @@ defmodule Raxol.MCP.Server do
     registry = Keyword.get(opts, :registry, Registry)
     authorizer = Keyword.get(opts, :authorizer)
     read_authorizer = Keyword.get(opts, :read_authorizer)
+    transport = transport!(Keyword.get(opts, :transport, :unknown))
+
+    authorizer_source =
+      authorizer_source!(Keyword.get(opts, :authorizer_source, :default))
 
     refuse_unguarded_sensitive_tools!(registry, authorizer)
+    refuse_unguarded_reads!(transport, read_authorizer)
 
     {:ok,
      %__MODULE__{
        registry: registry,
+       authorizer_source: authorizer_source,
        authorizer: authorizer,
        read_authorizer: read_authorizer,
+       transport: transport,
        elicitation_timeout_ms:
          Keyword.get(
            opts,
@@ -264,7 +343,12 @@ defmodule Raxol.MCP.Server do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call(:authorization_configured?, _from, state) do
-    {:reply, state.authorizer != nil, state}
+    {:reply, state.authorizer != nil and state.authorizer_source == :configured, state}
+  end
+
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:read_authorization_configured?, _from, state) do
+    {:reply, state.read_authorizer != nil, state}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
@@ -365,7 +449,9 @@ defmodule Raxol.MCP.Server do
   # Only four messages care WHICH connection sent them: `initialize` (whose
   # capabilities are that client's alone), `tools/call` (which may park an
   # elicitation owned by it), and the two response shapes that answer one. The
-  # rest are connection-independent and fall through to `dispatch/2`.
+  # rest route by method alone and fall through to `dispatch_common/3` -- which
+  # still receives the connection, flattened into the authorization context,
+  # because every gated surface authorizes against WHO is asking.
 
   defp dispatch(%{method: "initialize", id: id} = msg, state, conn_id) do
     result = %{
@@ -428,7 +514,11 @@ defmodule Raxol.MCP.Server do
         {nil, answer_parked(state, pending, resume(pending, result, state))}
 
       :error ->
-        dispatch(%{id: id, result: result}, state)
+        dispatch_common(
+          %{id: id, result: result},
+          state,
+          authz_context(state, conn_id)
+        )
     end
   end
 
@@ -449,29 +539,36 @@ defmodule Raxol.MCP.Server do
          )}
 
       :error ->
-        dispatch(%{id: id, error: error}, state)
+        dispatch_common(
+          %{id: id, error: error},
+          state,
+          authz_context(state, conn_id)
+        )
     end
   end
 
-  defp dispatch(msg, state, _conn_id), do: dispatch(msg, state)
+  defp dispatch(msg, state, conn_id),
+    do: dispatch_common(msg, state, authz_context(state, conn_id))
 
-  defp dispatch(%{method: "notifications/initialized"}, state) do
+  defp dispatch_common(%{method: "notifications/initialized"}, state, _ctx) do
     {nil, state}
   end
 
-  defp dispatch(%{method: "ping", id: id}, state) do
+  defp dispatch_common(%{method: "ping", id: id}, state, _ctx) do
     {Protocol.response(id, %{}), state}
   end
 
   # -- Tools ---
 
   # tools/list is a read/metadata surface too: names, descriptions, and
-  # input schemas are the same enumeration class the other gates close.
-  defp dispatch(%{method: "tools/list", id: id}, state) do
-    case authorize_read("tools/list", %{}, state) do
+  # input schemas are the same enumeration class the other gates close. The
+  # method-level gate answers "may this caller enumerate at all"; the listing
+  # itself is then filtered per tool, because "yes" to enumerating is not yes
+  # to the whole surface.
+  defp dispatch_common(%{method: "tools/list", id: id}, state, ctx) do
+    case authorize_read("tools/list", %{}, state, ctx) do
       :allow ->
-        tools = Registry.list_tools(state.registry)
-        {Protocol.response(id, %{tools: tools}), state}
+        {Protocol.response(id, %{tools: visible_tools(state, ctx)}), state}
 
       {:deny, detail} ->
         {authz_error_response(id, "tools/list", detail), state}
@@ -479,14 +576,15 @@ defmodule Raxol.MCP.Server do
   end
 
   # The direct-caller entry to the conn-aware clause, guarded on the SAME keys
-  # that clause matches. Without the guard the two arities bounce a `tools/call`
-  # missing either key between them forever: the 3-arity clause declines it, the
-  # generic 3-arity forwards it here, and here forwards it back. That runs
-  # inside a `GenServer.call(:infinity)`, so one malformed frame -- which the
-  # SSE transport will happily decode, since `normalize_body_params/1` only sets
-  # `:params` when the client sent one -- spins the server forever and it never
-  # serves another request, for any client.
-  defp dispatch(%{method: "tools/call"} = msg, state)
+  # that clause matches. Without the guard the two layers bounce a `tools/call`
+  # missing either key between them forever: the conn-aware clause declines it,
+  # the generic clause forwards it to `dispatch_common/3`, and here forwards it
+  # back. That runs inside a `GenServer.call(:infinity)`, so one malformed
+  # frame -- which the SSE transport will happily decode, since
+  # `normalize_body_params/1` only sets `:params` when the client sent one --
+  # spins the server forever and it never serves another request, for any
+  # client.
+  defp dispatch_common(%{method: "tools/call"} = msg, state, _ctx)
        when is_map_key(msg, :id) and is_map_key(msg, :params) do
     dispatch(msg, state, @default_conn)
   end
@@ -494,7 +592,7 @@ defmodule Raxol.MCP.Server do
   # A `tools/call` that names no tool. Answered as bad parameters rather than
   # left to the catch-all, which would report a method it plainly recognises as
   # unknown.
-  defp dispatch(%{method: "tools/call", id: id}, state) do
+  defp dispatch_common(%{method: "tools/call", id: id}, state, _ctx) do
     {Protocol.error_response(
        id,
        Protocol.invalid_params(),
@@ -504,8 +602,8 @@ defmodule Raxol.MCP.Server do
 
   # -- Resources ---
 
-  defp dispatch(%{method: "resources/list", id: id}, state) do
-    case authorize_read("resources/list", %{}, state) do
+  defp dispatch_common(%{method: "resources/list", id: id}, state, ctx) do
+    case authorize_read("resources/list", %{}, state, ctx) do
       :allow ->
         resources = Registry.list_resources(state.registry)
         {Protocol.response(id, %{resources: resources}), state}
@@ -515,10 +613,14 @@ defmodule Raxol.MCP.Server do
     end
   end
 
-  defp dispatch(%{method: "resources/subscribe", id: id, params: params}, state) do
+  defp dispatch_common(
+         %{method: "resources/subscribe", id: id, params: params},
+         state,
+         ctx
+       ) do
     uri = Map.get(params, "uri") || Map.get(params, :uri, "")
 
-    case authorize_read("resources/subscribe", %{"uri" => uri}, state) do
+    case authorize_read("resources/subscribe", %{"uri" => uri}, state, ctx) do
       :allow ->
         # Track that this URI has active subscribers. Notifications for
         # subscribed URIs go to all transport-level subscribers.
@@ -534,13 +636,14 @@ defmodule Raxol.MCP.Server do
   # Gated like subscribe: subscriptions are URI-global (one set for all
   # transport subscribers), so an ungated unsubscribe would let a
   # denied-everything client delete another client's subscription.
-  defp dispatch(
+  defp dispatch_common(
          %{method: "resources/unsubscribe", id: id, params: params},
-         state
+         state,
+         ctx
        ) do
     uri = Map.get(params, "uri") || Map.get(params, :uri, "")
 
-    case authorize_read("resources/unsubscribe", %{"uri" => uri}, state) do
+    case authorize_read("resources/unsubscribe", %{"uri" => uri}, state, ctx) do
       :allow ->
         new_subs = Map.delete(state.resource_subscriptions, uri)
 
@@ -551,10 +654,14 @@ defmodule Raxol.MCP.Server do
     end
   end
 
-  defp dispatch(%{method: "resources/read", id: id, params: params}, state) do
+  defp dispatch_common(
+         %{method: "resources/read", id: id, params: params},
+         state,
+         ctx
+       ) do
     uri = Map.get(params, "uri") || Map.get(params, :uri, "")
 
-    case authorize_read("resources/read", %{"uri" => uri}, state) do
+    case authorize_read("resources/read", %{"uri" => uri}, state, ctx) do
       :allow ->
         {do_read_resource(id, uri, state), state}
 
@@ -565,8 +672,8 @@ defmodule Raxol.MCP.Server do
 
   # -- Prompts ---
 
-  defp dispatch(%{method: "prompts/list", id: id}, state) do
-    case authorize_read("prompts/list", %{}, state) do
+  defp dispatch_common(%{method: "prompts/list", id: id}, state, ctx) do
+    case authorize_read("prompts/list", %{}, state, ctx) do
       :allow ->
         prompts = Registry.list_prompts(state.registry)
         {Protocol.response(id, %{prompts: prompts}), state}
@@ -576,14 +683,19 @@ defmodule Raxol.MCP.Server do
     end
   end
 
-  defp dispatch(%{method: "prompts/get", id: id, params: params}, state) do
+  defp dispatch_common(
+         %{method: "prompts/get", id: id, params: params},
+         state,
+         ctx
+       ) do
     name = Map.get(params, "name") || Map.get(params, :name, "")
     arguments = Map.get(params, "arguments") || Map.get(params, :arguments, %{})
 
     case authorize_read(
            "prompts/get",
            %{"name" => name, "arguments" => arguments},
-           state
+           state,
+           ctx
          ) do
       :allow ->
         {do_get_prompt(id, name, arguments, state), state}
@@ -595,7 +707,11 @@ defmodule Raxol.MCP.Server do
 
   # -- Logging ---
 
-  defp dispatch(%{method: "logging/setLevel", id: id, params: params}, state) do
+  defp dispatch_common(
+         %{method: "logging/setLevel", id: id, params: params},
+         state,
+         _ctx
+       ) do
     level_str = Map.get(params, "level") || Map.get(params, :level, "info")
 
     case Map.fetch(@level_map, level_str) do
@@ -619,11 +735,15 @@ defmodule Raxol.MCP.Server do
 
   # Gated as a read surface: completions enumerate tool names, resource
   # URIs, prompt names, and LIVE headless session ids.
-  defp dispatch(%{method: "completion/complete", id: id, params: params}, state) do
+  defp dispatch_common(
+         %{method: "completion/complete", id: id, params: params},
+         state,
+         ctx
+       ) do
     ref = Map.get(params, "ref") || Map.get(params, :ref, %{})
     argument = Map.get(params, "argument") || Map.get(params, :argument, %{})
 
-    case authorize_read("completion/complete", %{"ref" => ref}, state) do
+    case authorize_read("completion/complete", %{"ref" => ref}, state, ctx) do
       :allow ->
         completions = compute_completions(ref, argument, state)
         {Protocol.response(id, %{completion: %{values: completions}}), state}
@@ -636,13 +756,13 @@ defmodule Raxol.MCP.Server do
   # -- Catch-all ---
 
   # Notifications we don't handle -- no response
-  defp dispatch(%{method: _method} = msg, state)
+  defp dispatch_common(%{method: _method} = msg, state, _ctx)
        when not is_map_key(msg, :id) do
     {nil, state}
   end
 
   # Unknown method with an id -- error response
-  defp dispatch(%{method: method, id: id}, state) do
+  defp dispatch_common(%{method: method, id: id}, state, _ctx) do
     error =
       Protocol.error_response(
         id,
@@ -658,20 +778,20 @@ defmodule Raxol.MCP.Server do
   # says ignore it. Answering "Missing method" would bounce an error response AT
   # a response, which a strict peer can answer in turn -- a loop. Must sit above
   # the malformed-message clause, which would otherwise claim it.
-  defp dispatch(msg, state)
+  defp dispatch_common(msg, state, _ctx)
        when is_map_key(msg, :result) or is_map_key(msg, :error) do
     {nil, state}
   end
 
   # Malformed message
-  defp dispatch(%{id: id}, state) do
+  defp dispatch_common(%{id: id}, state, _ctx) do
     error =
       Protocol.error_response(id, Protocol.invalid_request(), "Missing method")
 
     {error, state}
   end
 
-  defp dispatch(_msg, state) do
+  defp dispatch_common(_msg, state, _ctx) do
     {nil, state}
   end
 
@@ -775,6 +895,21 @@ defmodule Raxol.MCP.Server do
     end
   end
 
+  # What an authorizer at either seam is told about the CALLER, as opposed to
+  # the call. Server-derived facts only: the connection the request arrived on
+  # and the transport this server was told it fronts. Without it no policy can
+  # tell a stdio caller from an unauthenticated network one, which is most of
+  # what a policy would want to key on.
+  #
+  # NOTHING the client asserts belongs in here -- not the `clientInfo` name or
+  # version from `initialize`, not a header it chose. A policy keyed on a
+  # client-asserted value is bypassed by asserting a different one, so shipping
+  # one in this map would be shipping the bypass alongside the gate. Anything
+  # added here must be something only the server can know.
+  defp authz_context(state, conn_id) do
+    %{conn_id: conn_id, transport: state.transport}
+  end
+
   # Read surfaces (resources/read, resources/subscribe, resources/list,
   # prompts/get, prompts/list, completion/complete) consult the DEDICATED
   # :read_authorizer, not the tools/call authorizer: an existing tool
@@ -784,14 +919,47 @@ defmodule Raxol.MCP.Server do
   # OS boundary). There is no elicitation path here: ASK resolves to deny,
   # because the elicitation flow is shaped around approving a tool RUN --
   # and the operator-facing prompt is NOT echoed to the denied client.
-  defp authorize_read(_op, _detail, %{read_authorizer: nil}), do: :allow
+  defp authorize_read(_op, _detail, %{read_authorizer: nil}, _ctx), do: :allow
 
-  defp authorize_read(op, detail, state) do
-    case Authorizer.decide(state.read_authorizer, op, detail, %{}) do
+  defp authorize_read(op, detail, state, ctx) do
+    case Authorizer.decide(state.read_authorizer, op, detail, ctx) do
       :allow -> :allow
       {:ask, _prompt} -> {:deny, :interactive_approval_unsupported}
       {:deny, reason} -> {:deny, reason}
     end
+  end
+
+  # The entries of a `tools/list` this caller may actually invoke.
+  #
+  # A listing is an advertisement, and it must not advertise what the caller
+  # cannot call. Each entry carries the tool's name, description, input schema
+  # and its sensitive/destructive annotations, so an unfiltered listing hands
+  # any accepted client a map of the live capability surface with the
+  # interesting entries marked. Every entry therefore goes through the SAME
+  # authorizer `tools/call` will consult.
+  #
+  # ASK hides exactly like DENY. An entry that needs an approval the caller
+  # has not got is not callable now, and for a client that cannot elicit an
+  # ASK is a flat deny -- advertising it as callable would be a lie about this
+  # caller's surface.
+  #
+  # Decided with no arguments, because there is no call yet: a policy that can
+  # only answer with arguments in hand has not said yes to the tool. It runs
+  # through `safe_decide/4`, so a policy that raises on the empty map hides the
+  # tool rather than taking the listing (and the server) down with it.
+  #
+  # A nil authorizer lists everything: stdio inherits the OS process boundary,
+  # and that is the behaviour every embedder without a policy already has.
+  defp visible_tools(%{authorizer: nil} = state, _ctx),
+    do: Registry.list_tools(state.registry)
+
+  defp visible_tools(state, ctx) do
+    state.registry
+    |> Registry.list_tools()
+    |> Enum.filter(fn tool ->
+      name = Map.get(tool, :name) || Map.get(tool, "name")
+      safe_decide(state.authorizer, name, %{}, ctx) == :allow
+    end)
   end
 
   # JSON-RPC application-defined error code for an authorization denial on a
@@ -849,7 +1017,9 @@ defmodule Raxol.MCP.Server do
   defp authorize_and_call(id, name, arguments, state, conn_id) do
     # Authorize before the tool runs. A nil authorizer allows (stdio inherits
     # the OS boundary).
-    case Authorizer.decide(state.authorizer, name, arguments, %{}) do
+    ctx = authz_context(state, conn_id)
+
+    case safe_decide(state.authorizer, name, arguments, ctx) do
       :allow ->
         {call_tool_response(
            id,
@@ -863,6 +1033,76 @@ defmodule Raxol.MCP.Server do
       {:deny, reason} ->
         {authorization_required(id, name, :deny, reason), state}
     end
+  end
+
+  # An authorizer is operator-supplied code, and this is the one place it runs
+  # on a client-driven path. Letting it raise is fail-closed for the call that
+  # hit it -- the tool never runs -- but the CLIENT chooses when and how often,
+  # so a policy bug or an argument shape the policy did not expect becomes a
+  # remote lever on the supervisor's restart intensity: enough `tools/call`s
+  # and the server is gone, taking every other connection with it. A term
+  # outside `Authorizer.decision()` is worse, since `case` would raise
+  # CaseClauseError from inside the same call.
+  #
+  # Contain both as a deny, and log them: an authorizer that cannot answer is
+  # not an authorizer that said yes. The reason is deliberately coarse in the
+  # response (`authz_detail/1` renders it to the client) while the log keeps
+  # the stacktrace.
+  defp safe_decide(authorizer, name, arguments, ctx) do
+    case Authorizer.decide(authorizer, name, arguments, ctx) do
+      :allow ->
+        :allow
+
+      {:ask, prompt} ->
+        {:ask, prompt}
+
+      {:deny, reason} ->
+        {:deny, reason}
+
+      other ->
+        Logger.error(
+          "[MCP.Server] authorizer returned #{inspect(other)} for #{inspect(name)}; " <>
+            "expected :allow | {:ask, prompt} | {:deny, reason}. Denying."
+        )
+
+        {:deny, :authorizer_contract_violation}
+    end
+  rescue
+    exception ->
+      Logger.error(
+        "[MCP.Server] authorizer raised for #{inspect(name)}: " <>
+          Exception.format(:error, exception, __STACKTRACE__) <> " Denying."
+      )
+
+      {:deny, :authorizer_failed}
+  catch
+    kind, reason ->
+      Logger.error(
+        "[MCP.Server] authorizer #{kind} for #{inspect(name)}: #{inspect(reason)}. Denying."
+      )
+
+      {:deny, :authorizer_failed}
+  end
+
+  # A typo here would silently answer `false` forever and keep a network
+  # transport from ever booting, which reads as "the gate is broken" rather than
+  # "the option is wrong". Refuse instead.
+  defp authorizer_source!(source) when source in [:configured, :default], do: source
+
+  defp authorizer_source!(other) do
+    raise ArgumentError,
+          "Raxol.MCP.Server :authorizer_source must be :configured or :default, got: #{inspect(other)}"
+  end
+
+  # A typo'd transport must not read as "some other transport". This value is
+  # handed to authorizers as fact, so `:SSE` silently reading as neither stdio
+  # nor SSE would quietly change what every policy keyed on it decides.
+  defp transport!(transport) when transport in @transports, do: transport
+
+  defp transport!(other) do
+    raise ArgumentError,
+          "Raxol.MCP.Server :transport must be one of #{inspect(@transports)}, " <>
+            "got: #{inspect(other)}"
   end
 
   # Registering a tool that declares itself destructive/sensitive while no
@@ -888,6 +1128,27 @@ defmodule Raxol.MCP.Server do
     end
   end
 
+  # The read seam's boot gate. `Deployment.enforce_authorization!/2` counts only
+  # the TOOL authorizer, so an embedder could satisfy the network gate while
+  # leaving `:read_authorizer` nil -- and `resources/read` serves live model
+  # state, `completion/complete` enumerates live session ids. The network gate
+  # was satisfied; the reads were wide open.
+  #
+  # The per-call default stays `:allow`: stdio embedders rely on it and the OS
+  # process boundary is a real boundary. What changes is that a server DECLARED
+  # to front a network transport refuses to boot with the read seam open,
+  # loudly, rather than serving model state quietly. stdio (and an undeclared
+  # transport) is untouched.
+  defp refuse_unguarded_reads!(transport, read_authorizer)
+       when transport in @network_transports do
+    Deployment.enforce_read_authorization!(
+      read_authorizer != nil,
+      "Raxol.MCP.Server fronting the #{transport} transport"
+    )
+  end
+
+  defp refuse_unguarded_reads!(_transport, _read_authorizer), do: :ok
+
   defp sensitive_tool_names(registry) do
     registry
     |> Registry.list_tools()
@@ -909,7 +1170,14 @@ defmodule Raxol.MCP.Server do
         ToolDef.sensitive?(tool)
     end)
   catch
-    :exit, _ -> false
+    # Fail CLOSED. This is the runtime backstop that makes the documented
+    # "enforced twice" guarantee true, and it is consulted only when
+    # `state.authorizer == nil`. A registry that is restarting made every
+    # sensitive tool read as non-sensitive, so the backstop fell straight
+    # through -- the one condition under which it is the only thing left.
+    # Refusing a call while the registry is unavailable is the safe answer;
+    # the caller can retry.
+    :exit, _ -> true
   end
 
   # -- Elicitation --------------------------------------------------------------

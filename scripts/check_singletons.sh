@@ -15,11 +15,17 @@ if [[ ! -f "$ALLOWLIST" ]]; then
   exit 2
 fi
 
-# Match real start_link calls. The call must be at line start modulo whitespace,
-# with an optional `case ` or `{...} =`/`{...} <-` binding prefix so idempotent
-# wrappers still register -- this skips comment lines like
+# Match real start/start_link calls. The call must be at line start modulo
+# whitespace, with an optional `case ` or `{...} =`/`{...} <-` binding prefix so
+# idempotent wrappers still register -- this skips comment lines like
 # "# Usage: ... start_link(name: __MODULE__)".
-pattern='^[[:space:]]*(case[[:space:]]+|\{[^}]*\}[[:space:]]*[=<-]+[[:space:]]*)?(GenServer|Agent|Supervisor|DynamicSupervisor)\.start_link.*name: __MODULE__'
+#
+# `start` as well as `start_link`: an UNLINKED named singleton is the more
+# dangerous of the two, since nothing supervises it, a crash takes its whole
+# state with it and skips `terminate/2`, and nothing stops it on application
+# shutdown. Matching only `start_link` meant the guard could not see exactly
+# the shape it most needs to flag.
+pattern='^[[:space:]]*(case[[:space:]]+|\{[^}]*\}[[:space:]]*[=<-]+[[:space:]]*)?(GenServer|Agent|Supervisor|DynamicSupervisor)\.start(_link)?\(.*name: __MODULE__'
 
 # First-party paths only -- skip vendored deps and _build.
 roots=(

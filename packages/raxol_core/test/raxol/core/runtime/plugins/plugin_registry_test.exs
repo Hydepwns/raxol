@@ -2,6 +2,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginRegistryTest do
   use ExUnit.Case, async: false
 
   alias Raxol.Core.Runtime.Plugins.PluginRegistry
+  alias Raxol.Test.TestUtils
 
   # Fixture modules
   defmodule PluginWithCommands do
@@ -24,13 +25,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginRegistryTest do
     PluginRegistry.init()
 
     on_exit(fn ->
-      if :ets.whereis(:raxol_plugin_registry) != :undefined do
-        :ets.delete_all_objects(:raxol_plugin_registry)
-      end
-
-      if :ets.whereis(:raxol_plugin_commands) != :undefined do
-        :ets.delete_all_objects(:raxol_plugin_commands)
-      end
+      TestUtils.clear_ets_tables([
+        :raxol_plugin_registry,
+        :raxol_plugin_commands
+      ])
     end)
 
     :ok
@@ -46,6 +44,77 @@ defmodule Raxol.Core.Runtime.Plugins.PluginRegistryTest do
       assert :ok = PluginRegistry.init()
       assert :ok = PluginRegistry.init()
       assert :ets.whereis(:raxol_plugin_registry) != :undefined
+    end
+
+    test "registration still works after a repeated init/0" do
+      assert :ok = PluginRegistry.init()
+      assert :ok = PluginRegistry.register(:after_reinit, PluginWithCommands)
+      assert {:ok, entry} = PluginRegistry.get(:after_reinit)
+      assert entry.module == PluginWithCommands
+      assert :after_reinit in PluginRegistry.find_by_command(:help)
+    end
+
+    test "adopts tables owned by another process" do
+      drop_tables()
+
+      owner = spawn_table_owner()
+
+      assert :ok = PluginRegistry.init()
+      assert :ok = PluginRegistry.register(:foreign_owner, PluginWithCommands)
+      assert {:ok, _entry} = PluginRegistry.get(:foreign_owner)
+      assert :foreign_owner in PluginRegistry.find_by_command(:help)
+
+      stop_and_await(owner)
+    end
+
+    # Regression: init/0 used to be check-then-act
+    # (`if :ets.whereis(t) == :undefined, do: :ets.new(t, ...)`), so callers
+    # racing to create the tables could all observe :undefined and then all
+    # call :ets.new/2. Every loser crashed with ArgumentError "table name
+    # already exists". Creation is attempted directly now, so no caller can
+    # lose. The callers are released from a spin barrier rather than by
+    # sequential sends so that they reach :ets.new/2 together, and several
+    # rounds are run because one round only samples one interleaving.
+    test "concurrent callers never crash creating the tables" do
+      for _round <- 1..10 do
+        drop_tables()
+
+        parent = self()
+        barrier = :atomics.new(1, [])
+
+        callers =
+          for _ <- 1..32 do
+            spawn(fn ->
+              send(parent, {self(), :waiting})
+              await_barrier(barrier)
+
+              result =
+                try do
+                  {:ok, PluginRegistry.init()}
+                rescue
+                  error -> {:raised, error}
+                end
+
+              send(parent, {self(), result})
+              # Stay alive so the created tables outlive the assertions.
+              receive do: (:stop -> :ok)
+            end)
+          end
+
+        for caller <- callers, do: assert_receive({^caller, :waiting}, 5_000)
+        :atomics.put(barrier, 1, 1)
+
+        for caller <- callers do
+          assert_receive {^caller, result}, 5_000
+          assert result == {:ok, :ok}
+        end
+
+        assert PluginRegistry.initialized?()
+        assert :ok = PluginRegistry.register(:raced, PluginWithCommands)
+        assert {:ok, _entry} = PluginRegistry.get(:raced)
+
+        Enum.each(callers, &stop_and_await/1)
+      end
     end
   end
 
@@ -348,5 +417,49 @@ defmodule Raxol.Core.Runtime.Plugins.PluginRegistryTest do
     test "returns empty list for no matches" do
       assert [] = PluginRegistry.find_by_metadata(:category, :nonexistent)
     end
+  end
+
+  # Removes the tables created by setup/0 (owned by this process) so that the
+  # code under test has to create them.
+  defp drop_tables do
+    Enum.each([:raxol_plugin_registry, :raxol_plugin_commands], fn table ->
+      case :ets.whereis(table) do
+        :undefined -> :ok
+        _tid -> :ets.delete(table)
+      end
+    end)
+  end
+
+  # Spawns a process that creates the registry tables and then stays alive, so
+  # the tables are owned by somebody other than the test process.
+  defp spawn_table_owner do
+    parent = self()
+
+    owner =
+      spawn(fn ->
+        PluginRegistry.init()
+        send(parent, {self(), :initialized})
+        receive do: (:stop -> :ok)
+      end)
+
+    assert_receive {^owner, :initialized}, 5_000
+    owner
+  end
+
+  # Spin (rather than block on a message) so that every caller leaves the
+  # barrier in the same scheduler slice; sequential sends stagger the wake-ups
+  # enough that the first caller usually wins uncontended.
+  defp await_barrier(barrier) do
+    if :atomics.get(barrier, 1) == 1 do
+      :ok
+    else
+      await_barrier(barrier)
+    end
+  end
+
+  defp stop_and_await(pid) do
+    ref = Process.monitor(pid)
+    send(pid, :stop)
+    assert_receive {:DOWN, ^ref, :process, ^pid, _reason}, 5_000
   end
 end
