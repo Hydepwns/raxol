@@ -6,6 +6,10 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
   alias Raxol.MCP.TreeWalker
   alias Raxol.UI.Components.Input.Scrubber
 
+  # The moduledoc's rendered example drifted six ways from its own props while
+  # nothing executed it. It is a doctest now, so it cannot.
+  doctest Raxol.UI.Components.Input.Scrubber
+
   defp key(k), do: %Event{type: :key, data: %{key: k}}
   defp char(c), do: %Event{type: :key, data: %{key: :char, char: c}}
 
@@ -70,7 +74,8 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
       assert Scrubber.clock(elapsed_ms: 63_000, duration_ms: 125_000) ==
                "01:03 / 02:05"
 
-      assert Scrubber.clock(elapsed_ms: 0, duration_ms: 4_300) == "00:00 / 00:04"
+      assert Scrubber.clock(elapsed_ms: 0, duration_ms: 4_300) ==
+               "00:00 / 00:04"
     end
 
     test "falls back to the index pair when no duration is known" do
@@ -165,7 +170,9 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
       assert {%{position: 0}, _} = Scrubber.handle_event(char("["), state, %{})
 
       past_last = %{state | position: 33}
-      assert {%{position: 33}, []} = Scrubber.handle_event(char("]"), past_last, %{})
+
+      assert {%{position: 33}, []} =
+               Scrubber.handle_event(char("]"), past_last, %{})
     end
 
     test "speed walks the ladder and stops at both ends" do
@@ -188,7 +195,13 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
 
     test "disabled ignores every key" do
       state =
-        Scrubber.new(min: 0, max: 9, position: 4, disabled: true, playing?: true)
+        Scrubber.new(
+          min: 0,
+          max: 9,
+          position: 4,
+          disabled: true,
+          playing?: true
+        )
 
       assert {^state, []} = Scrubber.handle_event(key(:right), state, %{})
       assert {^state, []} = Scrubber.handle_event(key(:space), state, %{})
@@ -236,7 +249,8 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
 
   describe "render/2" do
     test "emits a row of identified segments" do
-      state = Scrubber.new(id: "replay", min: 0, max: 9, position: 3, label: "Replay")
+      state =
+        Scrubber.new(id: "replay", min: 0, max: 9, position: 3, label: "Replay")
 
       row = Scrubber.render(state, %{})
 
@@ -254,10 +268,17 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
     test "drops the speed segment at 1x" do
       state = Scrubber.new(id: "s", min: 0, max: 9)
 
-      refute Enum.any?(Scrubber.render(state, %{}).children, &(&1.id == "s-speed"))
+      refute Enum.any?(
+               Scrubber.render(state, %{}).children,
+               &(&1.id == "s-speed")
+             )
 
       fast = %{state | speed: 4.0}
-      assert Enum.any?(Scrubber.render(fast, %{}).children, &(&1.id == "s-speed"))
+
+      assert Enum.any?(
+               Scrubber.render(fast, %{}).children,
+               &(&1.id == "s-speed")
+             )
     end
   end
 
@@ -295,6 +316,27 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
                "replay.get_position"
              ]
     end
+
+    test "scrubber/1 is stable across frames when no :id is given" do
+      # A view/1 helper runs every frame. Minting an id here produced
+      # scrubber-1, scrubber-2, ... so an agent's tool handle
+      # ("#{widget_id}.seek") went stale one frame after it was derived and
+      # FocusHelper could never match a stable focused_element.
+      first = Raxol.View.Components.scrubber(min: 0, max: 47)
+      second = Raxol.View.Components.scrubber(min: 0, max: 47)
+
+      assert first.id == second.id
+      assert first == second
+    end
+
+    test "an unnamed scrubber derives no tools rather than unaddressable ones" do
+      # TreeWalker requires a non-empty binary id, so nil is the safe
+      # stable value: no handle at all beats a handle that names nothing.
+      node = Raxol.View.Components.scrubber(min: 0, max: 47)
+
+      assert node.id == nil
+      assert TreeWalker.derive_tools(node, %{dispatcher_pid: nil}) == []
+    end
   end
 
   describe "mcp_tools/1 and handle_tool_call/3" do
@@ -304,9 +346,35 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
              ) == []
     end
 
+    test "a disabled scrubber also refuses to EXECUTE a transport tool" do
+      # Not advertising is not the same as not accepting.
+      # TreeWalker.build_tool_def/5 closes over the node at walk time, so an
+      # agent holding a def registered before the widget was disabled would
+      # otherwise still move an inert transport.
+      node = Raxol.View.Components.scrubber(id: "s", disabled: true)
+      ctx = %{widget_id: "s", widget_state: node, dispatcher_pid: nil}
+
+      assert {:error, message} =
+               Scrubber.handle_tool_call("seek", %{"position" => 3}, ctx)
+
+      assert message =~ "disabled"
+
+      assert {:error, _} = Scrubber.handle_tool_call("play", %{}, ctx)
+      assert {:error, _} = Scrubber.handle_tool_call("pause", %{}, ctx)
+
+      # Reading is still allowed: the a11y projection exposes the same fields.
+      assert {:ok, %{position: _}} =
+               Scrubber.handle_tool_call("get_position", %{}, ctx)
+    end
+
     test "seek dispatches the position and rejects one out of range" do
       node =
-        Raxol.View.Components.scrubber(id: "replay", min: 0, max: 47, position: 12)
+        Raxol.View.Components.scrubber(
+          id: "replay",
+          min: 0,
+          max: 47,
+          position: 12
+        )
 
       assert {:ok, _, [{:scrubber_seek, "replay", 20}]} =
                Scrubber.handle_tool_call(
@@ -357,7 +425,11 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
         )
 
       assert {:ok, %{position: 9, min: 7, max: 11, playing: true}} =
-               Scrubber.handle_tool_call("get_position", %{}, tool_context(node))
+               Scrubber.handle_tool_call(
+                 "get_position",
+                 %{},
+                 tool_context(node)
+               )
     end
 
     test "an unknown action is an error, not a crash" do
@@ -395,6 +467,112 @@ defmodule Raxol.UI.Components.Input.ScrubberTest do
       node = Raxol.View.Components.scrubber(id: "replay", min: 0, max: 9)
 
       assert %{state: %{playing?: false}} = Projection.project(node)
+    end
+  end
+
+  describe "the speed ladder reports out" do
+    # The widget holds the rate but does not own the timer that reads it, so
+    # without a callback `+` moved nothing outside the widget's own render and
+    # a parent driving playback could not learn the rate had changed.
+    test "stepping up and down runs :on_speed with the new rate" do
+      state =
+        Scrubber.new(max: 10, speed: 1.0, on_speed: &{:speed_changed, &1})
+
+      assert {%{speed: 2.0}, [{:speed_changed, 2.0}]} =
+               Scrubber.handle_event(char("+"), state, %{})
+
+      assert {%{speed: 0.5}, [{:speed_changed, 0.5}]} =
+               Scrubber.handle_event(char("-"), state, %{})
+    end
+
+    # Silent at the ends, as a clamped seek is at the ends of the track.
+    test "no callback when the ladder is already at its end" do
+      top = Scrubber.new(max: 10, speed: 8.0, on_speed: &{:speed_changed, &1})
+
+      assert {%{speed: 8.0}, []} = Scrubber.handle_event(char("+"), top, %{})
+    end
+
+    # `speed_label/1` matched `1.0 ->` exactly, so integer `1` rendered "1x",
+    # while `step_speed/2` twelve lines up compares with `==` and does accept
+    # it. Two comparison semantics for one field in one module.
+    test "the label is suppressed for integer 1 as well as 1.0" do
+      for speed <- [1, 1.0] do
+        refute Scrubber.line(Scrubber.new(max: 10, speed: speed)) =~ "1x"
+      end
+
+      assert Scrubber.line(Scrubber.new(max: 10, speed: 2)) =~ "2x"
+    end
+  end
+
+  describe "width boundaries" do
+    # `Map.get/3`'s default only fires on an ABSENT key, and in Erlang term
+    # order an atom sorts above every number, so `max(3, nil)` was `nil` and
+    # the next `nil - 1` raised ArithmeticError.
+    test "an explicit nil width falls back to the default" do
+      assert %{width: width} = Scrubber.new(max: 10, width: nil)
+      assert width == 24
+      assert is_binary(Scrubber.line(Scrubber.new(max: 10, width: nil)))
+    end
+
+    test "a width under the floor is raised to it rather than crashing" do
+      for requested <- [0, 1, 2] do
+        assert %{width: 3} = Scrubber.new(max: 10, width: requested)
+      end
+    end
+
+    test "nil survives a prop merge back onto live state" do
+      state = Scrubber.new(max: 10)
+      assert {%{width: 3}, _} = Scrubber.update(%{width: 1}, state)
+      assert {%{width: 24}, _} = Scrubber.update(%{width: nil}, state)
+    end
+  end
+
+  describe "digit bindings" do
+    # The keymap is read from BOTH `:char` and `:key` for every other binding.
+    # The decile jump was read only from `:char`, so on a backend that delivers
+    # "5" in `:key` it silently did not exist.
+    test "a decile jump arrives on either field" do
+      state = Scrubber.new(min: 0, max: 100)
+
+      assert {%{position: 50}, _} =
+               Scrubber.handle_event(char("5"), state, %{})
+
+      assert {%{position: 50}, _} = Scrubber.handle_event(key("5"), state, %{})
+    end
+  end
+
+  describe "measuring without rendering" do
+    # `chrome_width/1` and `mark_columns/1` exist so a per-frame caller does not
+    # have to render a whole line, and re-sort every mark, just to size a track.
+    # They have to agree with what `line/1` actually draws or the sizing is
+    # wrong in a way only a narrow terminal would show.
+    test "chrome_width/1 is line/1 minus the track it drew" do
+      for props <- [
+            %{min: 0, max: 47, position: 12, width: 3},
+            %{min: 0, max: 47, position: 12, width: 3, speed: 2.0},
+            %{min: 0, max: 47, position: 12, width: 3, playing?: true},
+            %{
+              min: 0,
+              max: 47,
+              position: 12,
+              width: 3,
+              elapsed_ms: 1_100,
+              duration_ms: 4_300
+            }
+          ] do
+        assert Scrubber.chrome_width(props) ==
+                 String.length(Scrubber.line(props)) - props.width,
+               "chrome_width disagreed with line/1 for #{inspect(props)}"
+      end
+    end
+
+    test "a precomputed mark_columns draws the same track" do
+      props = %{min: 0, max: 47, position: 12, width: 24, marks: [0, 18, 33]}
+
+      assert Scrubber.track(props) ==
+               Scrubber.track(
+                 Map.put(props, :mark_columns, Scrubber.mark_columns(props))
+               )
     end
   end
 end

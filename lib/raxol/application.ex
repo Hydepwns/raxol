@@ -62,6 +62,9 @@ defmodule Raxol.Application do
     # Register headless tools with MCP registry (all environments)
     maybe_register_mcp_tools()
 
+    # Put those same tools in front of a Tidewave client, gated the same way.
+    maybe_inject_tidewave_tools()
+
     # Record startup metrics
     record_startup_metrics(start_time, mode, result)
 
@@ -281,11 +284,203 @@ defmodule Raxol.Application do
     end
   end
 
+  # Listing methods, and only listing methods. These return the names the server
+  # already advertises to anyone it talks to, so serving them discloses nothing
+  # the advertisement did not.
+  #
+  # The rest of the read surface (`server.ex` gates eight methods) is absent on
+  # purpose, and each for its own reason rather than by falling off a list:
+  # `resources/read` and the subscribe pair stream live model state;
+  # `prompts/get` returns prompt CONTENT, not names; and `completion/complete`
+  # exists to enumerate valid argument values, which is an enumeration primitive
+  # rather than a disclosure of what is already public.
+  #
+  # This is therefore a denylist by omission of a vocabulary raxol_mcp owns: a
+  # read method added there is denied here until it is named. Denial is the safe
+  # direction, but it should stay deliberate rather than accidental, so
+  # `Raxol.ApplicationTest` reads the gated methods back out of `server.ex` and
+  # fails when one appears that this list has never classified either way.
+  @default_production_read_methods [
+    "tools/list",
+    "resources/list",
+    "prompts/list"
+  ]
+
+  # Empty opts meant `authorizer: nil`, and a nil authorizer is ALLOW -- see
+  # `Raxol.MCP.Authorizer`, which documents that default as safe because a stdio
+  # transport already inherits the OS process boundary. That reasoning holds for
+  # stdio and holds for nothing else, so the decision is made HERE rather than
+  # inherited from an empty list.
+  #
+  # `config :raxol, :mcp_authorizer` / `:mcp_read_authorizer` take a 3-arity
+  # `(tool_name, arguments, context) -> decision` fun and win when set. Otherwise
+  # production resolves an allowlist driven by `:mcp_allowed_tools` /
+  # `:mcp_allowed_read_methods`.
   defp maybe_add_mcp_supervisor do
     if module_available?(Raxol.MCP.Supervisor) do
-      {Raxol.MCP.Supervisor, []}
+      {Raxol.MCP.Supervisor, mcp_supervisor_opts()}
     end
   end
+
+  @doc false
+  # Public so a test can start the supervisor the way the application does.
+  # Asserting against `Process.whereis(Raxol.MCP.Server)` instead made the
+  # end-to-end checks no-ops: `determine_startup_mode/1` returns `:test` under
+  # `mix test`, and `get_children_for_mode(:test)` never calls
+  # `maybe_add_mcp_supervisor/0`, so the server was always absent and every
+  # such test took its `nil -> :ok` branch. Reverting this function to
+  # `{Raxol.MCP.Supervisor, []}` -- the bug this PR fixes -- left the suite
+  # green.
+  @spec mcp_supervisor_opts() :: keyword()
+  def mcp_supervisor_opts do
+    production? = mcp_production?()
+
+    [
+      authorizer: resolve_mcp_authorizer(:mcp_authorizer, production?),
+      read_authorizer:
+        resolve_mcp_authorizer(:mcp_read_authorizer, production?),
+      authorizer_source: mcp_authorizer_source()
+    ]
+  end
+
+  # Whether the tool authorizer above is an operator's choice or our fallback.
+  # `Raxol.MCP.Server.authorization_configured?/1` reports this, and the SSE boot
+  # gate refuses to expose tools over the network unless it is `:configured`.
+  #
+  # The production fallback is a deny-everything allowlist, which is restrictive
+  # enough to LOOK like a decision. Reporting it as one would let a network
+  # transport boot because raxol picked a default, which is precisely the
+  # accident the gate exists to prevent: SSE previously refused outright here,
+  # and it must keep refusing until somebody says otherwise on purpose.
+  #
+  # Naming either key counts, including `mcp_allowed_tools: []`. An operator who
+  # writes the empty list has decided to expose a transport that serves nothing,
+  # which is a coherent thing to want and is theirs to choose.
+  #
+  # The two READ keys deliberately do not count. This value gates `tools/call`
+  # exposure over the network, and `Raxol.MCP.Deployment.enforce_authorization!/2`
+  # asks only about the tool authorizer; a deployment that configured reads and
+  # nothing else has not decided anything about running tools, so it still gets
+  # `:default` and SSE still refuses. Fail-closed, and narrow on purpose.
+  @doc false
+  @spec mcp_authorizer_source() :: :configured | :default
+  def mcp_authorizer_source do
+    configured? =
+      Enum.any?(
+        [:mcp_authorizer, :mcp_allowed_tools],
+        &(Application.get_env(:raxol, &1) != nil)
+      )
+
+    if configured?, do: :configured, else: :default
+  end
+
+  @doc false
+  @spec resolve_mcp_authorizer(atom(), boolean()) ::
+          (String.t(), map(), map() -> term())
+  def resolve_mcp_authorizer(key, production?) do
+    case Application.get_env(:raxol, key) do
+      nil ->
+        default_mcp_authorizer(key, production?)
+
+      fun when is_function(fun, 3) ->
+        fun
+
+      # A release cannot express the fun form. `config/config.exs` is evaluated
+      # at build time and its result is written to `sys.config`, which holds
+      # only serializable terms -- an anonymous function is not one. That left
+      # `runtime.exs` as the only place the documented shape worked, and an MFA
+      # tuple (the obvious workaround) raising at boot. Both forms are accepted
+      # now, and the module is checked here rather than at the first call, so a
+      # typo is a boot failure with a name in it instead of a denied tool.
+      {module, function} when is_atom(module) and is_atom(function) ->
+        mfa_authorizer(key, module, function)
+
+      other ->
+        # Ignoring this would reinstate the exact bug the explicit opts fix: a
+        # deployment that believes it configured a policy, running without one.
+        raise ArgumentError,
+              "config :raxol, #{inspect(key)} must be a 3-arity fun " <>
+                "(tool_name, arguments, context) -> :allow | {:ask, prompt} | " <>
+                "{:deny, reason}, or a {module, function} tuple naming one " <>
+                "(for releases, where sys.config cannot hold a fun), " <>
+                "got: #{inspect(other)}"
+    end
+  end
+
+  defp mfa_authorizer(key, module, function) do
+    unless Code.ensure_loaded?(module) and
+             function_exported?(module, function, 3) do
+      raise ArgumentError,
+            "config :raxol, #{inspect(key)} names " <>
+              "#{inspect(module)}.#{function}/3, which does not exist"
+    end
+
+    fn tool, args, ctx -> apply(module, function, [tool, args, ctx]) end
+  end
+
+  # An operator's allowlist binds in EVERY environment.
+  #
+  # It used to bind only in production, because this clause matched any key
+  # whenever `production?` was false and returned `allow_all/0` before the
+  # allowlist was ever read. So `mcp_allowed_tools: ["raxol_screenshot"]` in a
+  # dev or staging session produced an allow-everything authorizer -- while
+  # `mcp_authorizer_source/0`, which only checks whether the key is PRESENT,
+  # reported `:configured` and satisfied the SSE boot gate. The one setting that
+  # reads as "restrict the tools" did nothing except open the network gate.
+  #
+  # The environment now decides only what happens when nobody configured
+  # anything.
+  defp default_mcp_authorizer(key, production?) do
+    case Application.get_env(:raxol, allowlist_key(key)) do
+      nil -> unconfigured_mcp_authorizer(key, production?)
+      names -> Raxol.MCP.Authorizer.allowlist(names)
+    end
+  end
+
+  defp allowlist_key(:mcp_authorizer), do: :mcp_allowed_tools
+  defp allowlist_key(:mcp_read_authorizer), do: :mcp_allowed_read_methods
+
+  # Outside production, unconfigured: `allow_all/0`. Behaviourally what the
+  # implicit nil already did, but said out loud, so `mix mcp.server` and the
+  # Tidewave dev endpoint keep working and the opt-out is visible in the code
+  # rather than implied by an empty list.
+  defp unconfigured_mcp_authorizer(_key, false),
+    do: Raxol.MCP.Authorizer.allow_all()
+
+  # In production: a real authorizer, and specifically NOT `allow_all/0`, which
+  # would serve every tool to whatever transport reached the server.
+  #
+  # An empty allowlist is TIGHTER than the nil this replaced, not merely more
+  # explicit: `Authorizer.decide/4` treats nil as allow, so a production server
+  # previously ran any tool nobody had annotated sensitive. Now nothing runs
+  # until a deployment names it.
+  #
+  # Tightening tool execution must not loosen transport exposure, and it nearly
+  # did. This value is non-nil, and `authorization_configured?/1` used to be
+  # `authorizer != nil`, so this fallback would have satisfied the SSE boot gate
+  # and let a network transport start because raxol chose a default. The server
+  # now reports `:authorizer_source` instead; see `mcp_authorizer_source/0`.
+  defp unconfigured_mcp_authorizer(:mcp_authorizer, true),
+    do: Raxol.MCP.Authorizer.allowlist([])
+
+  # Reads cannot default to the same empty list: `tools/list` is a read, so
+  # denying everything would leave even an allowlisted tool undiscoverable and
+  # the server unusable rather than merely closed. The split is by what the
+  # method DISCLOSES -- listing methods reveal names, which are already the
+  # server's advertised surface, while `resources/read` and the subscribe pair
+  # stream live model state to whoever connects.
+  defp unconfigured_mcp_authorizer(:mcp_read_authorizer, true),
+    do: Raxol.MCP.Authorizer.allowlist(@default_production_read_methods)
+
+  # One predicate, not two. `Raxol.MCP.Deployment.production?/0` used to capture
+  # `Mix.env()` at raxol_mcp's compile time, which reads `:prod` for a path
+  # dependency whatever the umbrella's env is, so it answered `true` inside a dev
+  # session. That is why this once had its own copy. It now reads the same value
+  # at runtime, so the copy would only be a second thing to keep in step.
+  #
+  # Reached only from `maybe_add_mcp_supervisor/0`, which has already established
+  # that raxol_mcp is loaded.
+  defp mcp_production?, do: Raxol.MCP.Deployment.production?()
 
   defp maybe_add_performance_monitoring do
     if feature_enabled?(:performance_monitoring) do
@@ -892,6 +1087,82 @@ defmodule Raxol.Application do
     end
 
     :ok
+  end
+
+  # Tidewave dispatches out of its own map, so without this its client sees
+  # Tidewave's tools and none of ours. `inject_into_tidewave/1` supplies closures
+  # that re-enter through `Raxol.MCP.Server`, so what lands there answers to the
+  # same authorizer as every other MCP surface.
+  #
+  # Dev-scoped by construction rather than by a check here: `:tidewave` is an
+  # `only: :dev` dependency, so outside dev the module does not exist and this is
+  # false. `Raxol.Endpoint`, which mounts it, is likewise dev-only.
+  #
+  # Set `config :raxol, inject_tidewave_tools: false` to opt out.
+  defp maybe_inject_tidewave_tools do
+    if Code.ensure_loaded?(Tidewave) and
+         Code.ensure_loaded?(Raxol.Headless.McpTools) do
+      apply_tidewave_decision(
+        tidewave_injection_decision(
+          Application.get_env(:raxol, :inject_tidewave_tools, true),
+          Process.whereis(Raxol.MCP.Server)
+        )
+      )
+    end
+
+    :ok
+  end
+
+  @doc false
+  # Whether to put the raxol tools in Tidewave's dispatch map.
+  #
+  # Split out and pure because the interesting case cannot be reached from a test
+  # otherwise: `:tidewave` is an `only: :dev` dependency, so the caller above is
+  # unreachable under `mix test` and any check living inside it would be
+  # unverifiable.
+  @spec tidewave_injection_decision(boolean(), pid() | nil) ::
+          :inject | {:skip, :disabled | :no_mcp_server}
+  def tidewave_injection_decision(enabled?, mcp_server)
+
+  def tidewave_injection_decision(false, _mcp_server), do: {:skip, :disabled}
+
+  # Not every startup mode builds the MCP supervisor -- `:minimal` does not --
+  # and every injected callback re-enters through that server. Injecting anyway
+  # would advertise six tools to a Tidewave client and then refuse all six.
+  # Absent is a better answer than present-and-permanently-broken.
+  def tidewave_injection_decision(true, nil), do: {:skip, :no_mcp_server}
+
+  def tidewave_injection_decision(true, server) when is_pid(server), do: :inject
+
+  defp apply_tidewave_decision(:inject), do: inject_tidewave_tools()
+
+  defp apply_tidewave_decision({:skip, :disabled}), do: :ok
+
+  defp apply_tidewave_decision({:skip, :no_mcp_server}) do
+    Log.debug(
+      "Raxol tools were not injected into Tidewave: Raxol.MCP.Server is not " <>
+        "running in this startup mode, so every call would have been refused."
+    )
+
+    :ok
+  end
+
+  # A convenience, not a boot requirement: Tidewave refuses to start without Mix
+  # running, and a release has no Tidewave at all, so "not started" is an
+  # ordinary outcome rather than a failure worth taking the application down for.
+  defp inject_tidewave_tools do
+    case Raxol.Headless.McpTools.inject_into_tidewave() do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        Log.debug(
+          "Raxol tools were not injected into Tidewave (#{inspect(reason)}); " <>
+            "Tidewave's own tools are unaffected."
+        )
+
+        :ok
+    end
   end
 
   defp mix_env, do: if(Code.ensure_loaded?(Mix), do: Mix.env(), else: :prod)

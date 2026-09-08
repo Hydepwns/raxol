@@ -42,6 +42,7 @@ defmodule Raxol.UI.Components.Input.Scrubber do
   - `:label` - Optional leading label.
   - `:on_seek` - `(position -> message)`, run on every position change.
   - `:on_play` / `:on_pause` - `(-> message)`, run on the transport toggle.
+  - `:on_speed` - `(speed -> message)`, run when the speed ladder moves.
   - `:disabled` - Inert: no key handling, no MCP tools.
   - `:aria_label`, `:tooltip` - Accessibility passthrough.
 
@@ -62,20 +63,24 @@ defmodule Raxol.UI.Components.Input.Scrubber do
 
   ### Example
 
-      Scrubber.new(
-        min: 0,
-        max: 47,
-        position: 12,
-        duration_ms: 4_300,
-        elapsed_ms: 1_100,
-        marks: [0, 18, 33],
-        playing?: true,
-        on_seek: &{:seek, &1}
-      )
+  A doctest, not a transcription: the previous hand-written "Rendered:" line
+  disagreed with its own props in six ways (separator width, the mark at
+  column 0, filled glyphs right of the playhead, two missing marks, two
+  missing columns, and a `2x` label that `speed_label/1` suppresses at 1.0),
+  and nothing executed it.
 
-  Rendered:
-
-      > 00:01 / 00:04  ━━━━━●━━┃━────────────  2x
+      iex> alias Raxol.UI.Components.Input.Scrubber
+      iex> Scrubber.new(
+      ...>   min: 0,
+      ...>   max: 47,
+      ...>   position: 12,
+      ...>   duration_ms: 4_300,
+      ...>   elapsed_ms: 1_100,
+      ...>   marks: [0, 18, 33],
+      ...>   playing?: true
+      ...> )
+      ...> |> Scrubber.line()
+      ">   00:01 / 00:04  ┃━━━━━●──┃──────┃───────"
   """
 
   alias Raxol.Core.Utils.Math
@@ -100,6 +105,7 @@ defmodule Raxol.UI.Components.Input.Scrubber do
           on_seek: (integer() -> any()) | nil,
           on_play: (-> any()) | nil,
           on_pause: (-> any()) | nil,
+          on_speed: (float() -> any()) | nil,
           disabled: boolean(),
           focused: boolean(),
           style: map(),
@@ -177,12 +183,13 @@ defmodule Raxol.UI.Components.Input.Scrubber do
       playing?: Map.get(props, :playing?, false),
       speed: Map.get(props, :speed, 1.0),
       marks: sanitize_marks(Map.get(props, :marks, []), min, max),
-      width: max(@min_width, Map.get(props, :width, @default_width)),
+      width: max(@min_width, Map.get(props, :width) || @default_width),
       elapsed_ms: Map.get(props, :elapsed_ms),
       duration_ms: Map.get(props, :duration_ms),
       on_seek: Map.get(props, :on_seek),
       on_play: Map.get(props, :on_play),
       on_pause: Map.get(props, :on_pause),
+      on_speed: Map.get(props, :on_speed),
       disabled: Map.get(props, :disabled, false),
       focused: false,
       style: Map.get(props, :style, %{}),
@@ -192,6 +199,34 @@ defmodule Raxol.UI.Components.Input.Scrubber do
     }
 
     {:ok, state}
+  end
+
+  @doc """
+  Normalizes `props` into a view-tree node without minting an id.
+
+  `init/1` mints one when `:id` is absent, which is right for a mounted
+  component: it runs once, in the owning app's process, which is the premise
+  `Raxol.Core.ID`'s per-process counter is documented against. A `view/1`
+  helper runs on every frame, so minting there yielded `scrubber-1`,
+  `scrubber-2`, ... on successive repaints -- churning the MCP tool handles
+  (`TreeWalker` names them `"\#{widget_id}.seek"`), making
+  `FocusHelper.focused?/2` unable to match a stable `focused_element`, and
+  rewriting the `"\#{id}-track"` segment ids every frame.
+
+  A declaration therefore carries whatever `:id` the caller gave, `nil`
+  included. `TreeWalker.do_walk/4` requires a non-empty binary id, so an
+  unnamed scrubber derives no tools rather than tools nobody can address --
+  the same contract `progress/1` and the other declaration helpers have.
+  """
+  @spec declaration(keyword() | map()) :: map()
+  def declaration(props) do
+    {:ok, state} =
+      props
+      |> normalize_props()
+      |> Map.put_new(:id, nil)
+      |> init()
+
+    to_node(state)
   end
 
   # -- Update ---------------------------------------------------------------
@@ -249,14 +284,20 @@ defmodule Raxol.UI.Components.Input.Scrubber do
   # `:key` -- read both rather than assuming a backend.
   defp action_for(data) do
     char = Map.get(data, :char)
+    key = Map.get(data, :key)
 
-    if is_binary(char) and char =~ ~r/^[0-9]$/ do
-      {:percent, String.to_integer(char) * 10}
-    else
-      Map.get(@key_mapping, Map.get(data, :key)) ||
-        Map.get(@key_mapping, char) || :none
+    # The digit is read from BOTH fields, as the comment above promises and as
+    # every other binding here already does. Reading it only from `:char` meant
+    # a backend that delivers "5" in `:key` got `:none` from the table lookup
+    # and the decile jump silently did not exist on that backend.
+    case digit(char) || digit(key) do
+      nil -> Map.get(@key_mapping, key) || Map.get(@key_mapping, char) || :none
+      percent -> {:percent, percent}
     end
   end
+
+  defp digit(<<code>>) when code in ?0..?9, do: (code - ?0) * 10
+  defp digit(_other), do: nil
 
   defp apply_action(:none, state), do: {state, []}
 
@@ -298,11 +339,23 @@ defmodule Raxol.UI.Components.Input.Scrubber do
     end
   end
 
-  defp apply_action(:speed_up, state),
-    do: {%{state | speed: step_speed(state.speed, 1)}, []}
+  defp apply_action(:speed_up, state), do: step_speed_with(state, 1)
+  defp apply_action(:speed_down, state), do: step_speed_with(state, -1)
 
-  defp apply_action(:speed_down, state),
-    do: {%{state | speed: step_speed(state.speed, -1)}, []}
+  # `on_speed` for the same reason `on_seek` exists: the widget holds the
+  # playback rate but does not own the timer that reads it, so a parent driving
+  # playback had no way to learn that `+` was pressed and the ladder moved
+  # nothing outside the widget's own render. Silent at the ends of the ladder,
+  # as `seek_with/2` is at the ends of the track.
+  defp step_speed_with(state, direction) do
+    speed = step_speed(state.speed, direction)
+
+    if speed == state.speed do
+      {state, []}
+    else
+      {%{state | speed: speed}, callback(state.on_speed, speed)}
+    end
+  end
 
   # No callback and no command when the clamp lands on the position we were
   # already at: holding `left` at zero should not emit a seek per keypress.
@@ -356,25 +409,69 @@ defmodule Raxol.UI.Components.Input.Scrubber do
   @spec track(t() | keyword() | map()) :: String.t()
   def track(opts) do
     opts = normalize_props(opts)
-    width = max(@min_width, Map.get(opts, :width, @default_width))
+    width = max(@min_width, Map.get(opts, :width) || @default_width)
     min = Map.get(opts, :min, 0)
     max_pos = max(min, Map.get(opts, :max, 0))
     position = Math.clamp(Map.get(opts, :position, min), min, max_pos)
-    marks = sanitize_marks(Map.get(opts, :marks, []), min, max_pos)
 
     last = width - 1
     head = column_for(position, min, max_pos, last)
-    mark_columns = MapSet.new(marks, &column_for(&1, min, max_pos, last))
+    columns = Map.get_lazy(opts, :mark_columns, fn -> mark_columns(opts) end)
 
     0..last
     |> Enum.map_join(fn col ->
       cond do
         col == head -> @playhead
-        MapSet.member?(mark_columns, col) -> @mark
+        MapSet.member?(columns, col) -> @mark
         col < head -> @filled
         true -> @remaining
       end
     end)
+  end
+
+  @doc """
+  The set of track columns carrying a mark, for a given width and range.
+
+  `track/1` computes this itself unless `:mark_columns` is supplied, which is
+  the point of exposing it: the work is `O(marks log marks)` and it depends on
+  nothing that changes between frames. A caller repainting per event
+  (`Raxol.Recording.Player` repaints its status bar on every output event)
+  computes it once and passes it back, instead of re-sorting the whole mark
+  list to draw at most `width` columns.
+  """
+  @spec mark_columns(t() | keyword() | map()) :: MapSet.t(non_neg_integer())
+  def mark_columns(opts) do
+    opts = normalize_props(opts)
+    width = max(@min_width, Map.get(opts, :width) || @default_width)
+    min = Map.get(opts, :min, 0)
+    max_pos = max(min, Map.get(opts, :max, 0))
+    last = width - 1
+
+    opts
+    |> Map.get(:marks, [])
+    |> sanitize_marks(min, max_pos)
+    |> MapSet.new(&column_for(&1, min, max_pos, last))
+  end
+
+  @doc """
+  The columns `line/1` spends on everything except the track.
+
+  A caller sizing the track to a terminal needs this and nothing else, so it
+  must not be obtained by rendering a whole line and subtracting: that draws
+  the track (and resolves every mark) purely to measure the parts beside it,
+  which on a per-frame repaint is the dominant cost of the frame.
+  """
+  @spec chrome_width(t() | keyword() | map()) :: non_neg_integer()
+  def chrome_width(opts) do
+    opts = normalize_props(opts)
+
+    parts =
+      [transport(opts), clock(opts), speed_label(opts)]
+      |> Enum.reject(&(&1 == ""))
+
+    # The track is always rendered, so it is always one more joined part than
+    # `parts` holds: that is `length(parts)` separators of two columns each.
+    Enum.reduce(parts, 0, &(String.length(&1) + &2)) + 2 * length(parts)
   end
 
   @doc """
@@ -429,11 +526,12 @@ defmodule Raxol.UI.Components.Input.Scrubber do
     if normalize_props(opts) |> Map.get(:playing?, false), do: "> ", else: "||"
   end
 
+  # `== 1.0` and not `1.0 ->`: pattern matching is exact, so integer `1` -- which
+  # `step_speed/2` accepts, because it compares with `==` -- rendered "1x".
   defp speed_label(opts) do
-    case Map.get(opts, :speed, 1.0) do
-      1.0 -> ""
-      speed -> "#{trim_float(speed)}x"
-    end
+    speed = Map.get(opts, :speed, 1.0)
+
+    if speed == 1.0, do: "", else: "#{trim_float(speed)}x"
   end
 
   defp trim_float(speed) do
@@ -588,7 +686,7 @@ defmodule Raxol.UI.Components.Input.Scrubber do
       | max: max_pos,
         position: Math.clamp(state.position, min, max_pos),
         marks: sanitize_marks(state.marks, min, max_pos),
-        width: max(@min_width, state.width)
+        width: max(@min_width, state.width || @default_width)
     }
   end
 
@@ -639,28 +737,22 @@ defmodule Raxol.UI.Components.Input.Scrubber do
     ]
   end
 
+  # `mcp_tools/1` refusing to ADVERTISE a disabled scrubber is not enough to
+  # stop a call: `TreeWalker.build_tool_def/5` closes over the node at walk
+  # time, so an agent holding a tool def registered before the widget was
+  # disabled would still move an inert transport. Refuse execution too, the way
+  # `Button.handle_tool_call/3` already does. `get_position` stays allowed --
+  # reading a disabled widget is what the a11y projection does anyway.
   @impl Raxol.MCP.ToolProvider
-  def handle_tool_call("seek", %{"position" => position}, context)
-      when is_integer(position) do
-    {min, max_pos} = tool_range(context.widget_state)
+  def handle_tool_call(action, args, context)
+      when action in ["seek", "play", "pause"] do
+    node = context.widget_state
 
-    if position < min or position > max_pos do
-      {:error, "Position #{position} out of range (#{min}..#{max_pos})"}
+    if node_get(node, :disabled) == true do
+      {:error, "Scrubber '#{tool_label(node)}' is disabled"}
     else
-      {:ok, "Sought to #{position}",
-       [{:scrubber_seek, context.widget_id, position}]}
+      do_tool_call(action, args, context)
     end
-  end
-
-  def handle_tool_call("seek", _args, _context),
-    do: {:error, "seek requires an integer 'position'"}
-
-  def handle_tool_call("play", _args, context) do
-    {:ok, "Playing", [{:scrubber_play, context.widget_id}]}
-  end
-
-  def handle_tool_call("pause", _args, context) do
-    {:ok, "Paused", [{:scrubber_pause, context.widget_id}]}
   end
 
   def handle_tool_call("get_position", _args, context) do
@@ -678,6 +770,29 @@ defmodule Raxol.UI.Components.Input.Scrubber do
 
   def handle_tool_call(action, _args, _ctx),
     do: {:error, "Unknown action: #{action}"}
+
+  defp do_tool_call("seek", %{"position" => position}, context)
+       when is_integer(position) do
+    {min, max_pos} = tool_range(context.widget_state)
+
+    if position < min or position > max_pos do
+      {:error, "Position #{position} out of range (#{min}..#{max_pos})"}
+    else
+      {:ok, "Sought to #{position}",
+       [{:scrubber_seek, context.widget_id, position}]}
+    end
+  end
+
+  defp do_tool_call("seek", _args, _context),
+    do: {:error, "seek requires an integer 'position'"}
+
+  defp do_tool_call("play", _args, context) do
+    {:ok, "Playing", [{:scrubber_play, context.widget_id}]}
+  end
+
+  defp do_tool_call("pause", _args, context) do
+    {:ok, "Paused", [{:scrubber_pause, context.widget_id}]}
+  end
 
   defp tool_label(node) do
     node_get(node, :aria_label) || node_get(node, :label) || "scrubber"

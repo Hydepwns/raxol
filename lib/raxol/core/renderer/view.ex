@@ -342,6 +342,7 @@ defmodule Raxol.Core.Renderer.View do
   defdelegate container(opts \\ []), to: Raxol.View.Components
   defdelegate tabs(opts \\ []), to: Raxol.View.Components
   defdelegate span(content, opts \\ []), to: Raxol.View.Components
+  defdelegate scrubber(opts \\ []), to: Raxol.View.Components
 
   # Chart components
   defdelegate line_chart(opts \\ []), to: Raxol.View.Components

@@ -374,4 +374,112 @@ defmodule Raxol.LiveView.TerminalBridgeTest do
       refute html =~ "aria-live"
     end
   end
+
+  describe "buffer_to_rows/2" do
+    test "a one-cell edit changes exactly one row" do
+      before = styled_screen()
+      after_edit = Buffer.set_cell(before, 3, 5, "X", style: %{fg_color: :red})
+
+      rows_before = TerminalBridge.buffer_to_rows(before)
+      rows_after = TerminalBridge.buffer_to_rows(after_edit)
+
+      changed =
+        Enum.zip(rows_before, rows_after)
+        |> Enum.reject(fn {old, new} -> old == new end)
+        |> Enum.map(fn {_old, new} -> new.y end)
+
+      assert changed == [5]
+    end
+
+    test "the screen is the rows joined by newlines" do
+      buffer = styled_screen()
+
+      joined =
+        TerminalBridge.buffer_to_rows(buffer, use_inline_styles: true)
+        |> Enum.map_join("\n", & &1.html)
+
+      html = TerminalBridge.buffer_to_html(buffer, use_inline_styles: true)
+
+      assert html ==
+               ~s(<pre class="raxol-terminal" role="log" aria-live="polite" aria-atomic="false">) <>
+                 joined <> "</pre>\n"
+    end
+
+    test "row ids carry the css prefix and survive a frame change" do
+      before = styled_screen()
+      after_edit = Buffer.set_cell(before, 3, 5, "X", style: %{fg_color: :red})
+
+      ids = fn buffer ->
+        buffer
+        |> TerminalBridge.buffer_to_rows(css_prefix: "term")
+        |> Enum.map(& &1.id)
+      end
+
+      assert ids.(before) == ids.(after_edit)
+      assert Enum.take(ids.(before), 2) == ["term-row-0", "term-row-1"]
+    end
+  end
+
+  describe "html_to_rows/2" do
+    test "inverts buffer_to_html/2 back into buffer_to_rows/2 rows" do
+      buffer = styled_screen()
+      opts = [use_inline_styles: true]
+
+      html = TerminalBridge.buffer_to_html(buffer, opts)
+
+      assert TerminalBridge.html_to_rows(html) ==
+               TerminalBridge.buffer_to_rows(buffer, opts)
+    end
+
+    test "an unrendered screen has no rows" do
+      assert TerminalBridge.html_to_rows("") == []
+    end
+  end
+
+  # A screen with enough style variation that rows differ from one another,
+  # so "only one row changed" cannot pass by every row being identical.
+  defp styled_screen do
+    colors = [:cyan, :green, :yellow, :magenta, :blue, :red]
+
+    Enum.reduce(0..11, Buffer.create_blank_buffer(30, 12), fn y, buffer ->
+      buffer
+      |> Buffer.write_string(0, y, "row #{y} <load>",
+        style: %{fg_color: Enum.at(colors, rem(y, 6))}
+      )
+      |> Buffer.write_string(16, y, String.duplicate("#", rem(y * 3, 12)),
+        style: %{fg_color: Enum.at(colors, rem(y + 2, 6)), bold: true}
+      )
+    end)
+  end
+
+  describe "aria_mode_of/1" do
+    # `TEALive` strips the <pre> this wrote and writes its own, so it has to be
+    # able to learn the mode back off the screen. Hardcoding :log there put an
+    # :application screen inside a live region again, which is the one thing
+    # :application exists to prevent and the only person who hears it is a
+    # screen-reader user.
+    test "round-trips the mode buffer_to_html/2 rendered in" do
+      buffer = Buffer.create_blank_buffer(4, 2)
+
+      for mode <- [:log, :application] do
+        html = TerminalBridge.buffer_to_html(buffer, aria_mode: mode)
+        assert TerminalBridge.aria_mode_of(html) == mode
+      end
+    end
+
+    test "an unrecognised screen reads as the default" do
+      assert TerminalBridge.aria_mode_of("") == :log
+      assert TerminalBridge.aria_mode_of("not markup") == :log
+    end
+  end
+
+  describe "html_to_rows/2 does not guess" do
+    # String surgery over a document this module does not own: anything that is
+    # not buffer_to_html/2 output was cut at its first ">" and silently
+    # mangled. One visibly-wrong row beats content that still looks rendered.
+    test "a non-pre string is returned whole as a single row" do
+      assert [%{html: "plain <b>text</b>", y: 0}] =
+               TerminalBridge.html_to_rows("plain <b>text</b>")
+    end
+  end
 end

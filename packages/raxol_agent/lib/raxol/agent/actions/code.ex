@@ -646,6 +646,30 @@ defmodule Raxol.Agent.Actions.Code do
   end
 
   @doc """
+  Whether `context` may reach the network (`fetch`, `web_search`).
+
+  Default-on, and off by default in a jail. `fetch` and `web_search` joined
+  the DEFAULT toolset, which changes what a hosted multi-tenant session is:
+  every tenant gets outbound HTTP from the operator's address and spends the
+  operator's search quota, on a surface whose whole premise is that tenants do
+  not share. A path sandbox does not bear on that either way, which is why
+  this is its own gate rather than a second reading of `jailed?/1` -- but a
+  jail is the marker this codebase has for "this session is somebody else's",
+  so it is the right default.
+
+  `network: true` in the context re-enables it for a deployment that means to
+  offer it, and `network: false` disables it anywhere.
+  """
+  @spec network_allow(map()) :: :ok | {:error, :network_disabled}
+  def network_allow(context) do
+    case is_map(context) and Map.get(context, :network) do
+      true -> :ok
+      false -> {:error, :network_disabled}
+      _unset -> if jailed?(context), do: {:error, :network_disabled}, else: :ok
+    end
+  end
+
+  @doc """
   Whether `context` marks a jailed (multi-tenant) session.
 
   The one definition of what a jail is. `Raxol.Agent.Code.Hooks` used to carry

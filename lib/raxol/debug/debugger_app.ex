@@ -140,11 +140,18 @@ defmodule Raxol.Debug.DebuggerApp do
   # do" instead of two that can drift. `space` and the speed ladder are
   # deliberately NOT routed: `space` already toggles recording here, and a
   # snapshot ring has no playback rate.
-  defp handle_navigation_keys(
-         %Raxol.Core.Events.Event{type: :key, data: data} = message,
-         model
-       ) do
-    if data[:char] in @scrub_chars or data[:key] in @scrub_keys do
+  #
+  # Matched by SHAPE rather than by struct name. Every other handler here goes
+  # through `key_match/1`, which is shape-tolerant, so pinning this one to
+  # `%Raxol.Core.Events.Event{}` made it the only handler that stops working if
+  # a surface delivers a key event as a plain map -- and it would stop silently,
+  # falling through to the `nil` clause with `h` and `l` doing nothing at all.
+  # `data` is read with `Map.get/2` for the same reason: bracket access raises
+  # on a struct that does not implement Access.
+  defp handle_navigation_keys(%{type: :key, data: data} = message, model)
+       when is_map(data) do
+    if Map.get(data, :char) in @scrub_chars or
+         Map.get(data, :key) in @scrub_keys do
       scrub(model, message)
     end
   end

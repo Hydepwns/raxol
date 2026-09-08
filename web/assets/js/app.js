@@ -203,6 +203,28 @@ Hooks.RaxolTerminal = {
 // hidden sibling of the visible one, so a seek is a `hidden` toggle over nodes
 // the browser is already holding: routing it through the LiveView would add a
 // round trip, a diff and a morphdom patch to reveal markup that is on the page.
+//
+// The keys in NAVIGATION_KEYS are the browser's own: arrows and Home/End
+// scroll the page, and on a focusable control they move between or within
+// items. A player may claim them where the reader is plainly addressing the
+// player, and not merely because focus is somewhere inside a large container
+// the player also lives in.
+const NAVIGATION_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'Home', 'End'])
+
+
+// The keys a native range steps itself. Named because `intent` needs to tell
+// "the input will handle this" from "this key means nothing here", and at a
+// boundary the input handles it by doing nothing at all.
+const STEP_KEYS = new Set([
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'Home',
+  'End',
+  'PageUp',
+  'PageDown'
+])
 const Transport = {
   // Distinct indices, not element count: a player may carry the same sequence
   // in more than one pane (the hero's terminal and browser panes do), so the
@@ -267,7 +289,16 @@ const Transport = {
     if (e.key === ',' || e.key === '<') return {type: 'seek', index: index - 1}
     if (e.key === '.' || e.key === '>') return {type: 'seek', index: index + 1}
 
-    if (fromRange) return null
+    // A stepping key pressed on the range is the input's own to handle: it
+    // moves the value and fires `input`, which is where the seek happens, so
+    // intercepting it would step twice per press. But at either end the value
+    // does NOT change, so no `input` fires, `seek` never runs and the "a seek
+    // takes the wheel" rule silently did not apply -- hold ArrowLeft at frame
+    // zero and playback kept advancing under you. `grab` carries the half of
+    // the intent that survives at a boundary: the reader is driving, pause.
+    // Callers must not preventDefault it, or native stepping breaks
+    // everywhere the value CAN still move.
+    if (fromRange) return STEP_KEYS.has(e.key) ? {type: 'grab'} : null
 
     switch (e.key) {
       case 'ArrowLeft':
@@ -312,7 +343,11 @@ Hooks.CardLoop = {
     this.frames = Array.from(this.el.querySelectorAll('[data-frame]'))
     this.count = Transport.count(this.frames)
     if (this.count < 2) return
-    this.ms = parseInt(this.el.dataset.frameMs, 10) || 200
+    // `|| 200` is not a validation: parseInt('-5') is -5, which is truthy, so
+    // a negative tick reaches the accumulator loop below and `acc -= ms`
+    // grows acc forever. Match HeroDemo's guard.
+    const declaredMs = parseInt(this.el.dataset.frameMs, 10)
+    this.ms = Number.isFinite(declaredMs) && declaredMs > 0 ? declaredMs : 200
     this.i = 0
     this.acc = 0
     this.last = null
@@ -342,6 +377,8 @@ Hooks.CardLoop = {
         fromRange: e.target === this.seekEl
       })
       if (!act) return
+      // No preventDefault: the range still has to do its own stepping.
+      if (act.type === 'grab') return this.setPaused(true)
       e.preventDefault()
       if (act.type === 'toggle') this.setPaused(!this.paused)
       else this.seek(act.index)
@@ -666,10 +703,19 @@ Hooks.HeroDemo = {
   // sits inside the hero: a tabpanel, the scrub bar, the transport buttons.
   // The tablist is excluded because it owns those same keys under the ARIA
   // tabs pattern, and Space there has to select the tab it is on.
+  //
+  // The hero is most of the viewport, so "focus is inside it" is close to "the
+  // page has focus" and is far too wide a claim for the keys the browser
+  // already owns. Arrows, Home and End are honoured only inside the transport
+  // cluster; otherwise `End` on one of the hero's links stopped scrolling the
+  // page and stepped a frame instead. Space and the digits stay wide: nothing
+  // else in the hero does anything with them, and a focused button keeps Space
+  // through the guard in `Transport.intent`.
   onTransportKey(e) {
     if (e.target.closest('.hero-tab')) return
     const seekEl = this.el.querySelector('[data-role="player-seek"]')
     if (!Transport.owns(e.target, seekEl)) return
+    if (!e.target.closest('.hd-controls') && NAVIGATION_KEYS.has(e.key)) return
     const count = Transport.count(this.frameNodes())
     if (count < 2) return
     const act = Transport.intent(e, {
@@ -678,9 +724,191 @@ Hooks.HeroDemo = {
       fromRange: e.target === seekEl
     })
     if (!act) return
+    // No preventDefault: the range still has to do its own stepping.
+    if (act.type === 'grab') return this.setPaused(true)
     e.preventDefault()
     if (act.type === 'toggle') this.setPaused(!this.userPaused)
     else this.seek(act.index)
+  }
+}
+
+// The /replay transport. Same keymap and the same native range as the two
+// prerecorded players above, and it reuses `Transport` for both, so the keys
+// a reader learns on the hero work here. What is different is where a seek is
+// answered: there are no frames on the page to reveal, so every position is
+// computed on the server from the recorded ANSI and comes back as the rows
+// that changed.
+//
+// This hook owns the slider's value and `aria-valuetext`; the server owns the
+// screen and the clock. That split is deliberate. If the value were a
+// server-rendered dynamic, a diff arriving mid-drag would set the thumb back
+// to the position the pointer had one round trip ago, and the control would
+// fight the hand holding it.
+//
+// Reduced motion pauses the AUTO-ADVANCE and nothing else. A drag or an arrow
+// key is an interaction, not an animation, so a seek is always answered.
+Hooks.ReplayTransport = {
+  mounted() {
+    this.count = parseInt(this.el.dataset.frameCount, 10) || 0
+    if (this.count < 2) return
+    this.ms = parseInt(this.el.dataset.frameMs, 10) || 120
+    this.secs = (this.el.dataset.frameSecs || '').split(',')
+    this.seekEl = this.el.querySelector('[data-role="player-seek"]')
+    this.i = 0
+    this.acc = 0
+    this.last = null
+    this.paused = false
+    this.inflight = false
+    this.pending = null
+    this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
+
+    this.onInput = (e) => {
+      if (e.target === this.seekEl) this.seek(parseInt(this.seekEl.value, 10))
+    }
+    this.el.addEventListener('input', this.onInput)
+
+    this.onClick = (e) => {
+      if (e.target.closest('[data-role="player-toggle"]')) {
+        this.setPaused(!this.paused)
+        return
+      }
+      // A mark carries the frame its keystroke landed in. Seeking through the
+      // hook rather than through a phx-click keeps the thumb and the announced
+      // time with the screen, and pauses the loop the way any other seek does.
+      const mark = e.target.closest('.replay-mark')
+      if (mark) this.seek(parseInt(mark.dataset.frame, 10))
+    }
+    this.el.addEventListener('click', this.onClick)
+
+    // On `window`, not on the container: this page IS the player, so Space
+    // with nothing focused has to reach it. `Transport.owns` still hands any
+    // key pressed inside a text field back to that field.
+    this.onKeydown = (e) => {
+      if (!Transport.owns(e.target, this.seekEl)) return
+      const act = Transport.intent(e, {
+        count: this.count,
+        index: this.i,
+        fromRange: e.target === this.seekEl
+      })
+      if (!act) return
+      // No preventDefault: the range still has to do its own stepping.
+      if (act.type === 'grab') return this.setPaused(true)
+      e.preventDefault()
+      if (act.type === 'toggle') this.setPaused(!this.paused)
+      else this.seek(act.index)
+    }
+    window.addEventListener('keydown', this.onKeydown)
+
+    this.onMql = () => this.syncToggle()
+    this.reduced.addEventListener('change', this.onMql)
+
+    this.syncToggle()
+    this.readout()
+
+    // Auto-advance is gated on the previous seek being answered, not on the
+    // wall clock alone. A frame here is a round trip, and the recording's own
+    // tick is 120 ms: on a server that cannot answer that fast, a purely
+    // clock-driven loop runs the thumb and the announced time ahead of the
+    // screen underneath them, which reads as a broken player rather than as a
+    // slow one. Gated, playback runs at whichever is slower, the recording's
+    // tick or the round trip, and the thumb, the clock and the screen always
+    // agree.
+    const step = (t) => {
+      this.raf = requestAnimationFrame(step)
+      if (!this.advancing() || this.inflight) {
+        this.last = t
+        return
+      }
+      if (this.last == null) this.last = t
+      // Clamp dt: rAF suspends in a background tab, and an unclamped
+      // accumulator would fast-forward the whole hidden interval on return.
+      this.acc += Math.min(t - this.last, 1000)
+      this.last = t
+      if (this.acc < this.ms) return
+      // Reset rather than subtract the tick: banked credit from a slow round
+      // trip would be spent sprinting through frames afterwards, and a frame
+      // the server never rendered is a frame nobody saw.
+      this.acc = 0
+      this.show((this.i + 1) % this.count)
+    }
+
+    this.raf = requestAnimationFrame(step)
+  },
+
+  destroyed() {
+    if (this.raf) cancelAnimationFrame(this.raf)
+    if (!this.onKeydown) return
+    this.el.removeEventListener('input', this.onInput)
+    this.el.removeEventListener('click', this.onClick)
+    window.removeEventListener('keydown', this.onKeydown)
+    this.reduced.removeEventListener('change', this.onMql)
+  },
+
+  advancing() {
+    return !this.paused && !this.reduced.matches
+  },
+
+  // Seeking pauses the auto-advance, the rule both prerecorded players
+  // already follow: the reader has taken the wheel.
+  seek(n) {
+    if (!Number.isInteger(n)) return
+    this.setPaused(true)
+    this.show(Transport.clamp(n, this.count))
+  },
+
+  show(i) {
+    this.i = i
+    this.readout()
+    this.request(i)
+  },
+
+  // One seek in flight at a time, always converging on the last position the
+  // reader asked for. A drag fires `input` up to once per animation frame and
+  // each position costs the server a forward replay through the emulator, so
+  // pushing every one would queue work for positions already scrolled past.
+  // Coalescing keeps the round trips serial and the last one authoritative.
+  request(i) {
+    if (this.inflight) {
+      this.pending = i
+      return
+    }
+    this.inflight = true
+    this.pushEvent('seek', {frame: i}, () => {
+      this.inflight = false
+      if (this.pending === null) return
+      const next = this.pending
+      this.pending = null
+      this.request(next)
+    })
+  },
+
+  // The slider's value is a frame offset, and what a reader of a recording
+  // wants announced is the instant. The times come from a static data
+  // attribute written at mount, so this never waits for the server.
+  readout() {
+    if (!this.seekEl) return
+    this.seekEl.value = String(this.i)
+    const at = this.secs[this.i]
+    const end = this.secs[this.count - 1]
+    if (at && end) this.seekEl.setAttribute('aria-valuetext', `${at}s of ${end}s`)
+  },
+
+  setPaused(v) {
+    this.paused = v
+    this.acc = 0
+    this.syncToggle()
+  },
+
+  // Glyph for sight, word for everything else. Reduced motion reports as
+  // paused because that is what it is, and this button is the override.
+  syncToggle() {
+    const btn = this.el.querySelector('[data-role="player-toggle"]')
+    if (!btn) return
+    const running = this.advancing()
+    const label = `${running ? 'Pause' : 'Play'} the ${btn.dataset.name} replay`
+    btn.textContent = running ? '||' : '|>'
+    btn.setAttribute('aria-label', label)
+    btn.setAttribute('title', label)
   }
 }
 

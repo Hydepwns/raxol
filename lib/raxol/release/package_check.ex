@@ -524,7 +524,14 @@ defmodule Raxol.Release.PackageCheck do
       []
       |> project_errors(spec, config)
       |> package_errors(spec, package)
-      |> content_errors(package_path, package, docs, config[:version], file_set)
+      |> content_errors(
+        spec,
+        package_path,
+        package,
+        docs,
+        config[:version],
+        file_set
+      )
 
     {dep_errors, dep_warnings} = validate_dependency_constraints(config, opts)
 
@@ -556,9 +563,17 @@ defmodule Raxol.Release.PackageCheck do
     |> require_links(package[:links], spec.class)
   end
 
-  defp content_errors(errors, package_path, package, docs, version, file_set) do
+  defp content_errors(
+         errors,
+         spec,
+         package_path,
+         package,
+         docs,
+         version,
+         file_set
+       ) do
     errors
-    |> require_docs_source_ref(docs, version)
+    |> require_docs_source_ref(docs, spec.app, version)
     |> require_package_files(package_path, package[:files])
     |> require_readme(file_set)
     |> require_license(file_set)
@@ -1078,16 +1093,49 @@ defmodule Raxol.Release.PackageCheck do
   defp require_links(errors, _links, _class),
     do: ["package links are missing" | errors]
 
-  defp require_docs_source_ref(errors, docs, _version) when docs in [nil, []],
-    do: errors
+  # `vX.Y.Z` is the root `raxol` tag, correct for the packages that share that
+  # version line. The independently versioned 0.x packages cannot use it:
+  # `v0.2.0` is a root tag pointing at raxol from 2025, so a bare ref sends
+  # every source link in their published docs to unrelated code. They tag
+  # `<package>-vX.Y.Z` instead.
+  #
+  # Accepting BOTH spellings for every package contradicted that paragraph and
+  # made the gate unable to flag the case it was written for -- which is live:
+  # raxol_payments 0.2.0 shipped with a bare ref. The major version is the
+  # discriminator the comment already names, so it is the one enforced.
+  defp require_docs_source_ref(errors, docs, _app, _version)
+       when docs in [nil, []],
+       do: errors
 
-  defp require_docs_source_ref(errors, docs, version) do
-    require_equal(
-      errors,
-      docs[:source_ref],
-      "v#{version}",
-      "docs source_ref must match version"
-    )
+  defp require_docs_source_ref(errors, docs, app, version) do
+    accepted = accepted_source_refs(app, version)
+
+    if docs[:source_ref] in accepted do
+      errors
+    else
+      [
+        "docs source_ref must match version, as one of " <>
+          "#{inspect(accepted)}: got #{inspect(docs[:source_ref])}"
+        | errors
+      ]
+    end
+  end
+
+  defp accepted_source_refs(app, version) do
+    if independently_versioned?(version) do
+      ["#{app}-v#{version}"]
+    else
+      ["v#{version}", "#{app}-v#{version}"]
+    end
+  end
+
+  # 0.x means the package sets its own version rather than following the root's
+  # line, so a root `v0.Y.Z` tag is unrelated to it.
+  defp independently_versioned?(version) do
+    case Version.parse(version) do
+      {:ok, %Version{major: 0}} -> true
+      _ -> false
+    end
   end
 
   defp require_package_files(errors, package_path, files) when is_list(files) do
