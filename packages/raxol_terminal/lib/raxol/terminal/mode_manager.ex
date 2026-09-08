@@ -30,6 +30,7 @@ defmodule Raxol.Terminal.ModeManager do
             interlacing_mode: false,
             alternate_buffer_active: false,
             mouse_report_mode: :none,
+            mouse_encoding: :x10,
             focus_events_enabled: false,
             alt_screen_mode: nil,
             bracketed_paste_mode: false,

@@ -49,15 +49,22 @@ if Code.ensure_loaded?(Plug.Router) do
     plug(Plug.Parsers, parsers: [:json], json_decoder: Jason)
     plug(:dispatch)
 
-    # SSE exposes tools over the network, so unlike stdio it fails closed: outside
-    # dev/test it refuses to boot unless the server it fronts has an authorizer
-    # configured. Override with `config :raxol_mcp, require_authorization: false`.
+    # SSE exposes tools AND reads over the network, so unlike stdio it fails
+    # closed: outside dev/test it refuses to boot unless the server it fronts
+    # has both seams configured. A tool authorizer alone used to be enough,
+    # which left `resources/read` -- live model state -- open to anyone who
+    # connected. Override with `config :raxol_mcp, require_authorization: false`.
     @doc false
     def init(opts) do
       server = Keyword.get(opts, :server, Server)
 
       Deployment.enforce_authorization!(
         Server.authorization_configured?(server),
+        "MCP SSE transport"
+      )
+
+      Deployment.enforce_read_authorization!(
+        Server.read_authorization_configured?(server),
         "MCP SSE transport"
       )
 

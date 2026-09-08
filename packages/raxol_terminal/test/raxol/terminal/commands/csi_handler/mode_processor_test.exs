@@ -6,12 +6,10 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ModeProcessorTest do
   is silently discarded.
 
   These assertions exist because SGR mouse encoding (`CSI ? 1006 h`) was
-  implemented end to end -- `ModeState`, `ModeTypes`, and
-  `DECPrivateHandler.handle_mouse_report_sgr/2` all handle it, and
-  `Terminal.Driver` itself emits `\\e[?1000h\\e[?1006h` -- while being
-  unreachable, because 1006 was missing from this one allow-list. The only
-  tests covering mode names asserted against `CSIHandler.ModeHandlers`, a fork
-  with no production callers, so the suite was green throughout.
+  implemented below the live `ModeProcessor` allow-list but never reached.
+  Reporting modes and encoding modes are independent: the driver enables
+  press/release reporting with 1000 and extended coordinate encoding with
+  1006.
   """
   use ExUnit.Case, async: true
 
@@ -33,19 +31,24 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ModeProcessorTest do
     end
 
     test "CSI ? 1006 h enables SGR mouse encoding", %{emulator: emulator} do
-      assert emulator.mode_manager.mouse_report_mode == :none
+      assert emulator.mode_manager.mouse_encoding == :x10
 
       result = set_private(emulator, 1006)
 
-      assert result.mode_manager.mouse_report_mode == :sgr
+      assert result.mode_manager.mouse_encoding == :sgr
+      assert result.mode_manager.mouse_report_mode == :none
     end
 
-    test "CSI ? 1006 l disables SGR mouse encoding", %{emulator: emulator} do
-      enabled = set_private(emulator, 1006)
-      assert enabled.mode_manager.mouse_report_mode == :sgr
+    test "CSI ? 1006 l disables only SGR encoding", %{emulator: emulator} do
+      enabled =
+        emulator
+        |> set_private(1000)
+        |> set_private(1006)
 
-      assert reset_private(enabled, 1006).mode_manager.mouse_report_mode ==
-               :none
+      reset = reset_private(enabled, 1006)
+
+      assert reset.mode_manager.mouse_encoding == :x10
+      assert reset.mode_manager.mouse_report_mode == :x10
     end
 
     test "CSI ? 1000 h enables X10 mouse reporting", %{emulator: emulator} do
@@ -60,15 +63,16 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ModeProcessorTest do
                :cell_motion
     end
 
-    test "the driver's own mouse handshake is honoured", %{emulator: emulator} do
-      # Terminal.Driver writes `\e[?1000h\e[?1006h` on startup. Both halves
-      # must land, with SGR winning as the later request.
+    test "the driver's own mouse handshake keeps reporting and encoding", %{
+      emulator: emulator
+    } do
       result =
         emulator
         |> set_private(1000)
         |> set_private(1006)
 
-      assert result.mode_manager.mouse_report_mode == :sgr
+      assert result.mode_manager.mouse_report_mode == :x10
+      assert result.mode_manager.mouse_encoding == :sgr
     end
   end
 

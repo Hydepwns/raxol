@@ -12,10 +12,10 @@
     "bin/"
   ],
   "optionalDependencies": {
-    "@raxol/cli-darwin-arm64": "0.2.6",
-    "@raxol/cli-linux-x64": "0.2.6",
-    "@raxol/cli-linux-arm64": "0.2.6",
-    "@raxol/cli-win32-x64": "0.2.6"
+    "@raxol/cli-darwin-arm64": "0.2.7",
+    "@raxol/cli-linux-x64": "0.2.7",
+    "@raxol/cli-linux-arm64": "0.2.7",
+    "@raxol/cli-win32-x64": "0.2.7"
   },
   "keywords": [
     "raxol",

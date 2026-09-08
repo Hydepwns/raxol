@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     alt_screen_buffer: &__MODULE__.handle_alt_screen_buffer/2,
     mouse_report_x10: &__MODULE__.handle_mouse_report_x10/2,
     mouse_report_cell_motion: &__MODULE__.handle_mouse_report_cell_motion/2,
-    mouse_report_sgr: &__MODULE__.handle_mouse_report_sgr/2
+    mouse_encoding_sgr: &__MODULE__.handle_mouse_encoding_sgr/2
   }
 
   @doc """
@@ -317,17 +317,13 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
      }}
   end
 
-  def handle_mouse_report_sgr(value, emulator) do
-    mouse_mode =
-      case value do
-        true -> :sgr
-        false -> :none
-      end
+  def handle_mouse_encoding_sgr(value, emulator) do
+    encoding = if value, do: :sgr, else: :x10
 
     {:ok,
      %{
        emulator
-       | mode_manager: %{emulator.mode_manager | mouse_report_mode: mouse_mode}
+       | mode_manager: %{emulator.mode_manager | mouse_encoding: encoding}
      }}
   end
 

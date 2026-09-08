@@ -159,20 +159,163 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
     %{state | active: resolve_charset_name(active_charset)}
   end
 
-  @doc false
-  def resolve_charset_name(charset) when is_atom(charset) do
-    case Code.ensure_loaded(charset) do
-      {:module, _} ->
-        if function_exported?(charset, :name, 0),
-          do: charset.name(),
-          else: charset
+  # The closed set this resolves. `charset_code_to_module/1` produces exactly
+  # these three, and they are the only modules in the package defining `name/0`.
+  @charset_module_names %{
+    Raxol.Terminal.ANSI.CharacterSets.ASCII => :us_ascii,
+    Raxol.Terminal.ANSI.CharacterSets.DEC => :dec_special_graphics,
+    Raxol.Terminal.ANSI.CharacterSets.UK => :uk
+  }
 
-      _ ->
-        charset
-    end
+  @doc false
+  # Runs up to three times per TRANSLATED CHARACTER: `CharacterSets.translate_char/2`
+  # resolves the active set and the single shift, then `Translator.translate_char/3`
+  # resolves once more.
+  #
+  # It used to do that with `Code.ensure_loaded/1`, a synchronous call into the
+  # single global `:code_server`. For a module already loaded that is merely
+  # wasteful, but the two commonest arguments on this path are `nil` (no single
+  # shift) and an already-resolved short name like `:us_ascii` -- neither of
+  # which is a module, so each call was a guaranteed load MISS. The code server
+  # does not cache misses, so every character re-walked the whole code path on
+  # disk: measured at ~0.32ms for `:us_ascii` and ~0.17ms for `nil`, against
+  # ~94ns for a loaded module. Roughly half a millisecond per character, and
+  # serialized through one process, so parallel tests queued behind each other
+  # and ANSI-heavy suites timed out.
+  #
+  # Two tables answer it instead. `@charset_module_names` maps the three
+  # charset MODULES to their names; `@charset_names` passes every already
+  # resolved NAME straight through. Both are map-key guards, so neither
+  # allocates and neither asks anything about modules.
+  #
+  # The dynamic branch below is what a custom charset module reaches, and it is
+  # deliberately NOT `:erlang.module_loaded/1`. That predicate answers "is this
+  # module in memory right now", not "is this a charset module", so a custom
+  # module that happened not to be loaded yet resolved to the module atom, and
+  # the same call after something else loaded it resolved to its name. Making
+  # the value depend on VM load order is a worse defect than the cost this
+  # change removes: it turns a wrong glyph into a wrong glyph that reproduces
+  # only sometimes. The loader is consulted, restoring the original contract.
+  #
+  # Note what the loader NO LONGER decides: `@charset_module_names` freezes the
+  # three bundled modules' `name/0` values into this module's guards at compile
+  # time, so a runtime hot reload of `character_sets.ex` alone does not change
+  # them -- `StateManager` keeps returning the pre-reload constants until it is
+  # itself recompiled. Mix handles that automatically for `mix compile`, because
+  # the attribute is a compile-time reference; it is live `:code.load_file/1`
+  # and IEx `r` that go stale. Reload still works for any charset module
+  # outside the table, which takes the `name/0` branch below.
+  #
+  # The cost that made the loader unusable is gone anyway, because it was never
+  # the loader itself -- it was reaching the loader with atoms that are not
+  # modules. `Code.ensure_loaded?/1` on a NAME is an uncached full code-path
+  # search, ~0.32ms, every character. On a module atom it is a hit or a single
+  # load, ~94ns thereafter. `@charset_names` is what keeps the former off the
+  # path: it must contain every atom that can reach `resolve_charset_name/1`
+  # from a live producer, or that producer's charset pays the uncached walk on
+  # every character.
+  #
+  # The producers, enumerated. Getting this list from
+  # `charset_code_to_atom/1` was wrong: that function has NO production
+  # callers, so freezing its codomain froze the wrong table.
+  #
+  #   * `Handler.designate_charset/3` -> `code_to_charset/1` -- the live
+  #     `ESC ( ) * +` path. Guarded for real by the test that drives every
+  #     designator byte through the public function, not by this comment.
+  #   * `Emulator` construction seeds `charset_state.active` with a G-SET
+  #     REFERENCE (`:g0`), not a charset name, and `CharacterSets.translate_char/2`
+  #     reads that field directly. So `:g0..:g3` reach here too, on a freshly
+  #     built emulator, with no escape sequence involved.
+  #   * `CSIHandler.handle_scs/3` adds `:dec_technical`; `Charset.Operations`
+  #     adds the other DEC sets; `Escape.Parsers.SCSParser` adds `:uk_ascii`
+  #     and `:dutch`.
+  #
+  # Every entry below resolves to ITSELF, which is exactly what the loader
+  # fallback already returned for it (none of these atoms names a loadable
+  # module). Listing them changes no result -- it only takes the code server
+  # off the path.
+  #
+  # Deriving this from `Map.values(@charset_module_names)` -- three names --
+  # was the bug: the ten national replacement sets fell through to the
+  # `is_atom` clause and paid an `Atom.to_string/1` heap allocation three times
+  # per printable character, forever, in exactly the locales that use them.
+  @charset_names [
+    # Pass-through names from Handler.code_to_charset/1.
+    :us_ascii,
+    :dec_special_graphics,
+    :uk,
+    :us,
+    :finnish,
+    :french,
+    :french_canadian,
+    :german,
+    :italian,
+    :norwegian_danish,
+    :portuguese,
+    :spanish,
+    :swedish,
+    :swiss,
+    # G-set references. `charset_state.active` is seeded with one of these by
+    # every Emulator constructor, and translate_char/2 resolves that field.
+    :g0,
+    :g1,
+    :g2,
+    :g3,
+    # DEC sets designated via CSIHandler.handle_scs/3 and Charset.Operations.
+    :dec_special,
+    :dec_supplemental,
+    :dec_supplemental_graphics,
+    :dec_supplementary,
+    :dec_technical,
+    :dec_hebrew,
+    :dec_greek,
+    :dec_turkish,
+    # SCSParser designators.
+    :uk_ascii,
+    :dutch
+  ]
+
+  @resolved_names Map.new(@charset_names, &{&1, &1})
+
+  # A name dropped from the list above would silently fall back onto the
+  # allocating path with every test still green, because the RESULT is
+  # unchanged either way. Fail the compile instead.
+  @missing_names Map.values(@charset_module_names) -- @charset_names
+  if @missing_names != [] do
+    raise "charset names missing from @charset_names: #{inspect(@missing_names)}"
+  end
+
+  # `nil` first: no single shift is the single commonest argument on this path.
+  def resolve_charset_name(nil), do: nil
+
+  def resolve_charset_name(charset)
+      when is_map_key(@charset_module_names, charset),
+      do: :erlang.map_get(charset, @charset_module_names)
+
+  def resolve_charset_name(charset)
+      when is_map_key(@resolved_names, charset),
+      do: charset
+
+  # Only a custom charset module reaches here: every name is answered above, so
+  # there is no shape test to keep names off the loader and therefore no reason
+  # to restrict the contract to `Elixir.`-prefixed atoms. An Erlang module
+  # exporting `name/0` resolves too, as it did before this path was rewritten.
+  def resolve_charset_name(charset) when is_atom(charset) do
+    if Code.ensure_loaded?(charset) and function_exported?(charset, :name, 0),
+      do: charset.name(),
+      else: charset
   end
 
   def resolve_charset_name(charset), do: charset
+
+  @doc false
+  # Whether `name` is answered by a compile-time map-key guard rather than by
+  # `Code.ensure_loaded?/1`. Exposed so a test can assert the pass-through set
+  # against THIS attribute instead of a copy of the list: a copy drifts
+  # silently, because a name missing from the table still resolves to the same
+  # value -- just via the code server.
+  def pass_through_name?(name),
+    do: is_map_key(@resolved_names, name) or is_map_key(@charset_module_names, name)
 
   @doc """
   Validates character set state.

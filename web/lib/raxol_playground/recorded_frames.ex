@@ -120,7 +120,21 @@ defmodule RaxolPlayground.RecordedFrames do
                     interval =
                       case File.read(path) do
                         {:ok, raw} ->
-                          raw |> String.trim() |> String.to_integer()
+                          value = raw |> String.trim() |> String.to_integer()
+
+                          # A negative tick parses fine here and reaches the
+                          # browser as data-frame-ms, where
+                          # `parseInt("-5", 10) || 200` is -5 -- truthy, so the
+                          # fallback never fires -- and the rAF accumulator
+                          # loop `while (acc >= ms) acc -= ms` grows acc
+                          # forever and hangs the tab. `0` escapes only by
+                          # accident, being falsy.
+                          if value <= 0 do
+                            raise "#{path} must be a positive integer of " <>
+                                    "milliseconds, got #{value}"
+                          end
+
+                          value
 
                         {:error, _} ->
                           raise "#{path} is missing; rerun gen_landing_frames.exs"
@@ -211,12 +225,20 @@ defmodule RaxolPlayground.RecordedFrames do
                   |> Enum.sort()
                   |> Enum.map(&File.read!/1)
 
+                path = Path.join(dir, "interval_ms")
+
                 interval =
-                  dir
-                  |> Path.join("interval_ms")
+                  path
                   |> File.read!()
                   |> String.trim()
                   |> String.to_integer()
+
+                # Same trap as the hero intervals above: a negative tick hangs
+                # the browser's accumulator loop rather than failing here.
+                if interval <= 0 do
+                  raise "#{path} must be a positive integer of milliseconds, " <>
+                          "got #{interval}"
+                end
 
                 {slug, %{frames: frames, interval_ms: interval}}
               end)

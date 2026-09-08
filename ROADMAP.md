@@ -8,13 +8,13 @@ Multi-surface application runtime for Elixir. One TEA module, four render target
 
 ## What's Done
 
-**Framework core (Phases 1-6):** TEA architecture, full render pipeline, 23 widgets, focus + W3C-style event capture/bubble, terminal compat (color downsampling, Unicode width, synchronized output), playground (41 demos / 8 categories), 7 braille-resolution charts, Hex packaging, `mix raxol.new`, session recording.
+**Framework core (Phases 1-6):** TEA architecture, full render pipeline, 16 first-class widget types (`Raxol.UI.Registry`), focus + W3C-style event capture/bubble, terminal compat (color downsampling, Unicode width, synchronized output), playground (42 demos / 8 categories), 7 braille-resolution charts, Hex packaging, `mix raxol.new`, session recording.
 
 **OTP differentiators:** process-per-component crash isolation, hot code reload, LiveView bridge, SSH app serving, time-travel debugging (snapshot every `update/2`), distributed swarm (CRDTs, topology election, libcluster + Tailscale).
 
 **Adaptive UI + effects:** 8-rule LayoutRecommender, TrendDetector, Nx auto-retrain, Lifecycle integration, 5 MCP tools. Animation hints (Phase 15): declarative `view/1` metadata to every surface (`animate`/`stagger`/`sequence`), terminal frames server-side, LiveView CSS with `prefers-reduced-motion`, MCP JSON hints. BorderBeam effect (three-layer glow, 4 variants, terminal + LiveView + MCP).
 
-**MCP surface (Phases 8-13):** extracted `raxol_mcp` (server/client/registry, stdio + SSE). Auto-derives tools from the widget tree (15 widgets) with a focus/hover lens; `@mcp_exclude` opt-out. Full spec coverage (prompts, logging, completion, notifications, circuit breaker). Resources + ContextTree + StructuredScreenshot + model-projection diffs. Pipe-friendly test harness with functor-law property tests.
+**MCP surface (Phases 8-13):** extracted `raxol_mcp` (server/client/registry, stdio + SSE). Auto-derives tools from the widget tree (16 Component modules implement `ToolProvider`) with a focus/hover lens; `@mcp_exclude` opt-out. Full spec coverage (prompts, logging, completion, notifications, circuit breaker). Resources + ContextTree + StructuredScreenshot + model-projection diffs. Pipe-friendly test harness with functor-law property tests.
 
 **Agent framework:** TEA-based agents, coordinator/worker teams, 7 harness gaps closed (compaction, hooks, permissions, MCP client, streams, LSP, SSE). AI cockpit with SSE streaming for 9 backends. Virtual File System (pure-functional in-memory VFS, REPL helpers, 7 agent actions).
 
@@ -81,11 +81,11 @@ Distilled from a fast-follow gap analysis vs [NousResearch/hermes-agent](https:/
 
 Tracked in [#940](https://github.com/DROOdotFOO/raxol/issues/940). The Hermes analysis above measures the agent against a personal assistant; this measures `mix raxol.code` against a coding agent, [omp](https://github.com/can1357/oh-my-pi) (31 tools, 60+ providers, 14 LSP ops, 28 DAP ops). Both comparisons are kept, because they pull in different directions and neither alone describes the product.
 
-Shipped: `AGENTS.md`/`CLAUDE.md` discovery on all three surfaces, the hash-anchored edit format (`read_file` anchors every line, `edit_file` addresses ranges by anchor), actionable model-facing tool errors, and parallel sub-agent fan-out under a supervisor.
+Shipped: `AGENTS.md`/`CLAUDE.md` discovery on all three surfaces, the hash-anchored edit format (`read_file` anchors every line, `edit_file` addresses ranges by anchor), actionable model-facing tool errors, parallel sub-agent fan-out under a supervisor, and the LSP tools ([#943](https://github.com/DROOdotFOO/raxol/pull/943)): `Raxol.Agent.Actions.Lsp` exposes `lsp` (diagnostics, symbols, definition, references, hover) plus a gated `lsp_rename` that applies the server's own `textDocument/rename` edits inside a blast-radius cap, both registered in `Raxol.Agent.Code.App`'s default actions, and `write_file`/`edit_file` append the file's diagnostics to their own results.
 
 | Item | What | Effort |
 | ---- | ---- | ------ |
-| LSP | `Raxol.Agent.LSPContext` is a working client wired to nothing: expose it as a tool, surface diagnostics after every write, rename through `workspace/willRenameFiles` ([#932](https://github.com/DROOdotFOO/raxol/issues/932)) | M |
+| File-move rename | `Raxol.Agent.LSPContext.will_rename/3` speaks `workspace/willRenameFiles` and the client advertises the capability, but no tool calls it, so moving a file still breaks every reference to it ([#932](https://github.com/DROOdotFOO/raxol/issues/932)) | S |
 | Reach | `web_search` + `fetch`, so the agent can read outside the workspace ([#933](https://github.com/DROOdotFOO/raxol/issues/933)) | M |
 | `todo` | Session-scoped plan tracking that survives compaction ([#934](https://github.com/DROOdotFOO/raxol/issues/934)) | S |
 | Routing | Model roles, fallback chains, credential rotation; the sub-agent fan-out is the first beneficiary and the cost ledger makes it measurable ([#937](https://github.com/DROOdotFOO/raxol/issues/937)) | M |

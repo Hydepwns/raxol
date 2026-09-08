@@ -131,7 +131,7 @@ defmodule Raxol.Terminal.Modes.Types.ModeTypes do
       name: :mouse_report_x10,
       default_value: false,
       dependencies: [],
-      conflicts: [:mouse_report_cell_motion, :mouse_report_sgr]
+      conflicts: [:mouse_report_cell_motion]
     },
     1002 => %{
       category: :mouse,
@@ -139,15 +139,15 @@ defmodule Raxol.Terminal.Modes.Types.ModeTypes do
       name: :mouse_report_cell_motion,
       default_value: false,
       dependencies: [],
-      conflicts: [:mouse_report_x10, :mouse_report_sgr]
+      conflicts: [:mouse_report_x10]
     },
     1006 => %{
       category: :mouse,
       code: 1006,
-      name: :mouse_report_sgr,
+      name: :mouse_encoding_sgr,
       default_value: false,
       dependencies: [],
-      conflicts: [:mouse_report_x10, :mouse_report_cell_motion]
+      conflicts: []
     },
     # Focus events
     1004 => %{

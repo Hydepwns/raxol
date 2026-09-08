@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.EventHandler do
   """
 
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.ANSI.Mouse
 
   @doc """
   Processes a mouse event.
@@ -80,9 +81,6 @@ defmodule Raxol.Terminal.EventHandler do
       :cell_motion ->
         process_mouse_any_event(emulator, :press, button, x, y)
 
-      :sgr ->
-        process_mouse_any_event(emulator, :press, button, x, y)
-
       _ ->
         {:ok, emulator}
     end
@@ -97,13 +95,9 @@ defmodule Raxol.Terminal.EventHandler do
         {:ok, emulator}
 
       :x10 ->
-        # X10 mode only reports press events, not releases
-        {:ok, emulator}
+        process_mouse_button_event(emulator, :release, button, x, y)
 
       :cell_motion ->
-        process_mouse_any_event(emulator, :release, button, x, y)
-
-      :sgr ->
         process_mouse_any_event(emulator, :release, button, x, y)
 
       _ ->
@@ -124,9 +118,6 @@ defmodule Raxol.Terminal.EventHandler do
         {:ok, emulator}
 
       :cell_motion ->
-        process_mouse_move_event(emulator, x, y)
-
-      :sgr ->
         process_mouse_move_event(emulator, x, y)
 
       _ ->
@@ -169,29 +160,20 @@ defmodule Raxol.Terminal.EventHandler do
   # Mouse Event Processing
 
   defp process_mouse_button_event(emulator, type, button, x, y) do
-    # Convert mouse coordinates to terminal coordinates
     {term_x, term_y} = convert_to_terminal_coordinates(emulator, x, y)
+    command = encode_mouse_event(emulator, type, button, term_x, term_y)
 
-    # Generate appropriate command based on event type
-    command = generate_mouse_command(type, button, term_x, term_y)
-
-    # Process the command - Emulator.process_input always returns {emulator, output}
     {updated_emulator, _} = Emulator.process_input(emulator, command)
     {:ok, updated_emulator}
   end
 
   defp process_mouse_any_event(emulator, type, button, x, y) do
-    # Similar to button events but with different command generation
-    {term_x, term_y} = convert_to_terminal_coordinates(emulator, x, y)
-    command = generate_mouse_any_command(type, button, term_x, term_y)
-
-    {updated_emulator, _} = Emulator.process_input(emulator, command)
-    {:ok, updated_emulator}
+    process_mouse_button_event(emulator, type, button, x, y)
   end
 
   defp process_mouse_move_event(emulator, x, y) do
     {term_x, term_y} = convert_to_terminal_coordinates(emulator, x, y)
-    command = generate_mouse_move_command(term_x, term_y)
+    command = encode_mouse_event(emulator, :move, :left, term_x, term_y)
 
     {updated_emulator, _} = Emulator.process_input(emulator, command)
     {:ok, updated_emulator}
@@ -229,44 +211,9 @@ defmodule Raxol.Terminal.EventHandler do
     {x, y}
   end
 
-  defp generate_mouse_command(type, button, x, y) do
-    # Generate standard mouse command sequence
-    # Format: ESC [ M <button> <x+32> <y+32>
-    button_code = encode_mouse_button(button, type)
-    <<27, "[M", button_code, x + 32, y + 32>>
-  end
-
-  defp generate_mouse_any_command(type, button, x, y) do
-    # For "any event" mode, use SGR format which is more reliable
-    # Format: ESC [ < <button> ; <x> ; <y> <M or m>
-    button_code = encode_sgr_button(button, type)
-    suffix = if type == :press, do: "M", else: "m"
-    "\e[<#{button_code};#{x};#{y}#{suffix}"
-  end
-
-  defp generate_mouse_move_command(x, y) do
-    # Mouse move events typically use button code 32 (motion)
-    <<27, "[M", 32, x + 32, y + 32>>
-  end
-
-  # Mouse button encoding for standard format (X10 mode only reports press events)
-  defp encode_mouse_button(button, :press) do
-    case button do
-      :left -> 0
-      :middle -> 1
-      :right -> 2
-      _ -> 0
-    end
-  end
-
-  # Mouse button encoding for SGR format
-  defp encode_sgr_button(button, _type) do
-    case button do
-      :left -> 0
-      :middle -> 1
-      :right -> 2
-      _ -> 0
-    end
+  defp encode_mouse_event(emulator, type, button, x, y) do
+    encoding = Emulator.get_mode_manager(emulator).mouse_encoding
+    Mouse.format_mouse_event({button, type, x, y}, encoding)
   end
 
   defp generate_normal_key_command(_key, _modifiers) do

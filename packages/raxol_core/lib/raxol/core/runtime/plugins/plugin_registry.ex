@@ -55,25 +55,21 @@ defmodule Raxol.Core.Runtime.Plugins.PluginRegistry do
   def init do
     # Main registry table
     _ =
-      if :ets.whereis(@table_name) == :undefined do
-        :ets.new(@table_name, [
-          :named_table,
-          :public,
-          :set,
-          read_concurrency: true
-        ])
-      end
+      create_table!(@table_name, [
+        :named_table,
+        :public,
+        :set,
+        read_concurrency: true
+      ])
 
     # Commands lookup table (command -> plugin_id)
     _ =
-      if :ets.whereis(@commands_table) == :undefined do
-        :ets.new(@commands_table, [
-          :named_table,
-          :public,
-          :bag,
-          read_concurrency: true
-        ])
-      end
+      create_table!(@commands_table, [
+        :named_table,
+        :public,
+        :bag,
+        read_concurrency: true
+      ])
 
     :ok
   end
@@ -317,6 +313,57 @@ defmodule Raxol.Core.Runtime.Plugins.PluginRegistry do
   defp ensure_initialized! do
     unless initialized?() do
       init()
+    end
+  end
+
+  # Table creation is act-then-verify on purpose. Do not "simplify" this back
+  # to `if :ets.whereis(name) == :undefined, do: :ets.new(name, options)`.
+  #
+  # These tables are owned by whichever process happens to call init/0 --
+  # raxol_core's mix.exs declares no `mod:`, so no supervision tree creates
+  # them at boot and the owner is usually a test process or the caller of
+  # PluginManager.start_link/1. Deciding whether to create from an earlier
+  # :ets.whereis/1 answer loses two ways:
+  #
+  #   * Two callers both read :undefined, both call :ets.new/2, and the loser
+  #     crashes with ArgumentError "table name already exists".
+  #   * :ets.whereis/1 can resolve a table whose owner has already exited but
+  #     whose reap has not landed. Skipping creation on that stale answer
+  #     hands the caller a table that vanishes under it, so the following
+  #     :ets.insert_new/2 raises instead.
+  #
+  # :ets.new/2 is atomic, so attempt it and tolerate exactly one outcome: the
+  # name is already held by a table with a live owner, which is the state we
+  # wanted anyway. A name held by a dead owner is retried until the reap frees
+  # it. Anything else is reraised -- a failed create is never reported as :ok.
+  @create_attempts 100
+
+  defp create_table!(name, options, attempts \\ @create_attempts) do
+    :ets.new(name, options)
+  rescue
+    error in ArgumentError ->
+      owner = existing_table_owner(name)
+
+      cond do
+        is_pid(owner) and Process.alive?(owner) ->
+          name
+
+        attempts > 0 ->
+          # Either the owner is gone and the reap is still in flight, or the
+          # name was freed between our failed create and this check. Yield so
+          # the reap can finish, then try to create the table again.
+          _ = :erlang.yield()
+          create_table!(name, options, attempts - 1)
+
+        true ->
+          reraise error, __STACKTRACE__
+      end
+  end
+
+  defp existing_table_owner(name) do
+    case :ets.whereis(name) do
+      :undefined -> :undefined
+      tid -> :ets.info(tid, :owner)
     end
   end
 

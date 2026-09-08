@@ -1,17 +1,14 @@
 # Gitleaks configuration.
 #
 # Exists because `.github/workflows/security.yml` runs Gitleaks as a BLOCKING
-# check. Without this file the gate is unusable: a scan of the current history
-# reports 109 findings (105 `generic-api-key`, 4 `curl-auth-header`), every one
-# of them a test vector, a vendored asset, or a publicly documented dev key.
-# A blocking gate that always fails is worse than no gate -- it trains people
-# to ignore it, and the daily `schedule` run would file a new issue every day
-# via security.yml's "Create issue for critical findings" step.
+# check. Without this file the gate is unusable: existing history contains
+# deterministic signing vectors, vendored assets, and published development
+# keys that match generic entropy rules.
 #
-# The allowlists below are deliberately narrow. They exempt specific paths that
-# contain only cryptographic TEST VECTORS, and specific well-known keys BY
-# VALUE. A genuine credential committed anywhere else -- including elsewhere in
-# these same files, for the by-value entries -- still fails the build.
+# Historical test-vector findings are accepted by exact fingerprint in
+# `.gitleaksignore`. Each fingerprint binds the exception to a commit, path,
+# rule, and line, so a new key-shaped value in the same test tree still fails.
+# The allowlists below cover only published values and vendored assets.
 #
 # EVERY allowlist here sets `targetRules`, and new ones must too. Without it a
 # top-level `[[allowlists]]` is GLOBAL: a `paths` entry meant to silence
@@ -24,36 +21,15 @@
 # precisely the tree where a real key gets pasted over a placeholder, and it
 # was exempt from every rule at the same commit this gate became blocking.
 #
-# The rule ids are not guesses. Scanning only these paths with
-# `useDefault = true` and no allowlists yields 70 `generic-api-key` and 1
-# `curl-auth-header`, and nothing else -- so those are the only two any path
-# entry needs to suppress.
-#
 # Re-verify after changing this file:
-#   gitleaks detect --source . --no-banner --redact --report-format json \
-#     --report-path /tmp/gl.json --exit-code 0 && jq length /tmp/gl.json
-# That must print 0. If it does not, do NOT widen a path pattern to make it
-# pass, and do NOT add a rule to `targetRules` to make it pass; check whether
-# the new finding is real.
+#   gitleaks git --no-banner --redact --report-format json \
+#     --report-path /tmp/gl.json --exit-code 0
+# That must report no leaks. If it does not, do NOT widen a path pattern or add
+# a detector to `targetRules`; check whether the new finding is real.
 
 [extend]
 useDefault = true
 
-[[allowlists]]
-description = """
-EIP-712 / Permit2 / Xochi signing test vectors. These suites assert exact
-signature bytes, so they must embed deterministic private keys, digests and
-signatures. Scoped to test, fixture and example paths only -- nothing under a
-lib/ tree is exempted by path, and no script is either.
-"""
-targetRules = ["generic-api-key", "curl-auth-header"]
-paths = [
-  '''packages/raxol_payments/test/.*''',
-  '''packages/raxol_payments/examples/.*''',
-  '''packages/raxol_earn/test/.*''',
-  '''packages/raxol_agent/test/.*''',
-  '''test/raxol/core/runtime/debug_test\.exs''',
-]
 
 [[allowlists]]
 description = """
@@ -85,19 +61,3 @@ paths = [
   '''priv/static/assets/vendor/.*''',
 ]
 
-[[allowlists]]
-description = """
-Anvil / Hardhat deterministic development account #0. This key is published in
-the Foundry and Hardhat documentation and is funded only on local devnets;
-every Ethereum developer has it. Allowlisted BY VALUE rather than by path, so
-any OTHER key-shaped string in the same file still fails.
-
-It appears in a `@moduledoc` usage example
-(packages/raxol_payments/lib/raxol/payments/wallets/env.ex). Prefer an
-obviously-fake placeholder in docs; this entry keeps the gate green until that
-example is reworded.
-"""
-targetRules = ["generic-api-key"]
-regexes = [
-  '''0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80''',
-]

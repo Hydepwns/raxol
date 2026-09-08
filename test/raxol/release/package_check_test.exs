@@ -412,6 +412,55 @@ defmodule Raxol.Release.PackageCheckTest do
       assert Enum.any?(errors, &(&1 =~ "docs source_ref must match version"))
     end
 
+    # The independent 0.x packages cannot tag `vX.Y.Z`: those tags are the root
+    # `raxol` version line, where v0.2.0 is raxol from 2025, so a bare ref would
+    # send every source link in their published docs to unrelated code.
+    test "accepts a package-scoped docs source_ref", %{tmp_dir: root} do
+      fixture_package!(root)
+
+      config = put_in(valid_config()[:docs][:source_ref], "fixture-v1.2.3")
+
+      {errors, warnings} =
+        PackageCheck.validate_project_config(spec(), config, root, [])
+
+      assert errors == []
+      assert warnings == []
+    end
+
+    # The case the gate existed to catch and could not: it accepted BOTH
+    # spellings for every package, so an independently versioned 0.x package
+    # shipping a bare root ref passed. raxol_payments 0.2.0 did exactly that.
+    test "rejects a bare root ref on an independently versioned 0.x package",
+         %{tmp_dir: root} do
+      fixture_package!(root)
+
+      config =
+        valid_config()
+        |> Keyword.put(:version, "0.2.0")
+        |> put_in([:docs, :source_ref], "v0.2.0")
+
+      {errors, _warnings} =
+        PackageCheck.validate_project_config(spec(), config, root, [])
+
+      assert Enum.any?(errors, &(&1 =~ "docs source_ref must match version")),
+             "a 0.x package with a bare root ref must be rejected"
+
+      assert Enum.any?(errors, &(&1 =~ "fixture-v0.2.0")),
+             "the error should name the only accepted spelling"
+    end
+
+    test "accepts the package-scoped ref on a 0.x package", %{tmp_dir: root} do
+      fixture_package!(root)
+
+      config =
+        valid_config()
+        |> Keyword.put(:version, "0.2.0")
+        |> put_in([:docs, :source_ref], "fixture-v0.2.0")
+
+      assert {[], []} =
+               PackageCheck.validate_project_config(spec(), config, root, [])
+    end
+
     # ex_doc's keyword-literal spelling puts an atom where the other two
     # spellings put a string. `Path.expand/2` raises on an atom, which would
     # abort the whole run rather than report a finding.

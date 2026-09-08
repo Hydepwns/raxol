@@ -94,7 +94,11 @@ defmodule RaxolPayments.MixProject do
     [
       main: "readme",
       source_url: @source_url,
-      source_ref: "v#{@version}",
+      # `raxol_payments-v0.2.0`, not `v0.2.0`: the bare form is a root `raxol`
+      # tag, and `v0.2.0` there points at raxol from 2025 -- so every source
+      # link in the published docs went to unrelated code. Matches
+      # raxol_earn and raxol_gateway.
+      source_ref: "raxol_payments-v#{@version}",
       extras: ["README.md"]
     ]
   end

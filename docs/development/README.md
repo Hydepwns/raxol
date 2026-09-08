@@ -6,6 +6,7 @@ Also in this directory:
 - [ASCII Standards](ASCII_STANDARDS.md): bracketed tags instead of emoji in output
 - [Debug Mode](DEBUG_MODE.md): `Raxol.Debug` verbosity levels and structured logging
 - [Type Spec Generator](TYPE_SPEC_GENERATOR.md): `mix raxol.gen.specs`
+- [Release Checklist](RELEASE_CHECKLIST.md): publish order, the gates that must be green first, and the per-package manual checks
 
 ## Setup
 
@@ -91,7 +92,7 @@ regenerate the references with `mix raxol.rate --gen` and commit them.
 
 ### Development
 ```bash
-mix raxol.playground   # Component playground (41 demos)
+mix raxol.playground   # Component playground (42 demos)
 mix raxol.repl         # Interactive REPL with sandboxing
 iex -S mix            # Interactive shell
 ```
