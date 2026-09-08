@@ -39,8 +39,8 @@ defmodule Raxol.Terminal.ModeState do
     1002 => :mouse_report_cell_motion,
     # Send FocusIn/FocusOut events
     1004 => :focus_events,
-    # SGR Mouse Mode
-    1006 => :mouse_report_sgr,
+    # SGR mouse event encoding
+    1006 => :mouse_encoding_sgr,
     # Use Alt Screen, Save/Restore State (no clear)
     1047 => :dec_alt_screen_save,
     # Save/Restore Cursor Position (and attributes)
@@ -77,6 +77,7 @@ defmodule Raxol.Terminal.ModeState do
             interlacing_mode: false,
             alternate_buffer_active: false,
             mouse_report_mode: :none,
+            mouse_encoding: :x10,
             focus_events_enabled: false,
             alt_screen_mode: nil,
             bracketed_paste_mode: false,
@@ -119,6 +120,7 @@ defmodule Raxol.Terminal.ModeState do
     case categorize_mode(mode) do
       :basic -> check_basic_mode(state, mode)
       :mouse -> check_mouse_mode(state, mode)
+      :mouse_encoding -> check_mouse_encoding(state, mode)
       :column -> check_column_mode(state, mode)
       :alt_screen -> check_alt_screen_mode(state, mode)
       :decckm -> state.cursor_keys_mode == :application
@@ -144,12 +146,10 @@ defmodule Raxol.Terminal.ModeState do
        do: :basic
 
   defp categorize_mode(mode)
-       when mode in [
-              :mouse_report_x10,
-              :mouse_report_cell_motion,
-              :mouse_report_sgr
-            ],
+       when mode in [:mouse_report_x10, :mouse_report_cell_motion],
        do: :mouse
+
+  defp categorize_mode(:mouse_encoding_sgr), do: :mouse_encoding
 
   defp categorize_mode(mode) when mode in [:deccolm_80, :deccolm_132],
     do: :column
@@ -216,9 +216,11 @@ defmodule Raxol.Terminal.ModeState do
     case mode do
       :mouse_report_x10 -> state.mouse_report_mode == :x10
       :mouse_report_cell_motion -> state.mouse_report_mode == :cell_motion
-      :mouse_report_sgr -> state.mouse_report_mode == :sgr
     end
   end
+
+  defp check_mouse_encoding(state, :mouse_encoding_sgr),
+    do: state.mouse_encoding == :sgr
 
   defp check_column_mode(state, mode) do
     case mode do
@@ -245,6 +247,7 @@ defmodule Raxol.Terminal.ModeState do
     case categorize_mode(mode) do
       :basic -> set_basic_mode(state, mode)
       :mouse -> set_mouse_mode(state, mode)
+      :mouse_encoding -> %{state | mouse_encoding: :sgr}
       :column -> set_column_mode(state, mode)
       :decckm -> %{state | cursor_keys_mode: :application}
       :unknown -> state
@@ -277,7 +280,6 @@ defmodule Raxol.Terminal.ModeState do
     case mode do
       :mouse_report_x10 -> %{state | mouse_report_mode: :x10}
       :mouse_report_cell_motion -> %{state | mouse_report_mode: :cell_motion}
-      :mouse_report_sgr -> %{state | mouse_report_mode: :sgr}
     end
   end
 
@@ -302,6 +304,7 @@ defmodule Raxol.Terminal.ModeState do
     case categorize_mode(mode) do
       :basic -> reset_basic_mode(state, mode)
       :mouse -> reset_mouse_mode(state)
+      :mouse_encoding -> %{state | mouse_encoding: :x10}
       :column -> reset_column_mode(state)
       :decckm -> %{state | cursor_keys_mode: :normal}
       :unknown -> state

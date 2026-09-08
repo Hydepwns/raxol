@@ -5,7 +5,7 @@ adapter that owns only its own I/O and translation; routing, per-chat sessions, 
 authorization, and history all live in the gateway. A chat becomes an OTP process, so
 platform fan-out is supervision rather than a single-process message queue.
 
-The package (`raxol_gateway`, pre-alpha `0.1.0`) depends on `raxol_core`, with `raxol_agent`
+The package (`raxol_gateway`, pre-alpha) depends on `raxol_core`, with `raxol_agent`
 optional (used only to record turns to a durable conversation log). It has no auto-started
 tree: you wire the supervisor yourself.
 

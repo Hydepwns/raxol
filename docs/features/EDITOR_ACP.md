@@ -10,7 +10,7 @@
 The Agent Client Protocol is to agentic coding what LSP is to language tooling: a JSON-RPC
 2.0 protocol between a **client** (an editor or CLI host such as Zed) and an **agent** (the
 AI coding process), spoken over a byte stream, almost always the agent's stdio. Raxol's
-implementation (`raxol_agent_client_protocol`, pre-alpha `0.1.0-rc.0`) has zero raxol
+implementation (`raxol_agent_client_protocol`, pre-alpha) has zero raxol
 dependencies (only `jason`) and implements both roles.
 
 ## The protocol shape

@@ -19,6 +19,7 @@ defmodule Raxol.Terminal.ModeManagerTest do
       assert manager.interlacing_mode == false
       assert manager.alternate_buffer_active == false
       assert manager.mouse_report_mode == :none
+      assert manager.mouse_encoding == :x10
       assert manager.focus_events_enabled == false
       assert manager.alt_screen_mode == nil
       assert manager.bracketed_paste_mode == false
@@ -63,7 +64,7 @@ defmodule Raxol.Terminal.ModeManagerTest do
       assert ModeManager.lookup_private(1000) == :mouse_report_x10
       assert ModeManager.lookup_private(1002) == :mouse_report_cell_motion
       assert ModeManager.lookup_private(1004) == :focus_events
-      assert ModeManager.lookup_private(1006) == :mouse_report_sgr
+      assert ModeManager.lookup_private(1006) == :mouse_encoding_sgr
       assert ModeManager.lookup_private(1047) == :dec_alt_screen_save
       assert ModeManager.lookup_private(1048) == :decsc_deccara
       assert ModeManager.lookup_private(1049) == :alt_screen_buffer

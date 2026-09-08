@@ -1,7 +1,7 @@
 defmodule RaxolCli.MixProject do
   use Mix.Project
 
-  @version "0.2.6"
+  @version "0.2.7"
   @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
@@ -155,8 +155,8 @@ defmodule RaxolCli.MixProject do
       # Main raxol for the terminal runtime + the Playground app; raxol_agent for
       # the interactive agent turn. raxol_agent pulls main raxol transitively, but
       # the direct dep documents the CLI's reliance on Raxol.start_link/Playground.
-      raxol_dep(:raxol, "~> 2.6", "../.."),
-      raxol_dep(:raxol_agent, "~> 2.6", "../raxol_agent"),
+      raxol_dep(:raxol, "~> 2.7", "../.."),
+      raxol_dep(:raxol_agent, "~> 2.7", "../raxol_agent"),
 
       # Packaging + argv access. Runtime (not build-only) here: the CLI reads the
       # wrapped argv via `Burrito.Util.Args` at startup, so the module must ship

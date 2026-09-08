@@ -53,6 +53,9 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ModeProcessor do
       1000 -> :mouse_report_x10
       1002 -> :mouse_report_cell_motion
       1003 -> :mouse_any_event
+      # SGR is an encoding mode, independent of the 1000/1002 reporting mode.
+      # Terminal.Driver enables both with `\e[?1000h\e[?1006h`.
+      1006 -> :mouse_encoding_sgr
       1004 -> :focus_events
       1047 -> :dec_alt_screen_save
       1048 -> :decsc_deccara

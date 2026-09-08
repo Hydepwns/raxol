@@ -71,13 +71,24 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Colors do
     end
   end
 
+  # `{:index, n}`, not `{:indexed, n}`. The tag is declared once, by
+  # `TextFormatting.color/0`, and every other producer and consumer in the
+  # package uses `:index` -- `ANSI.SGR`, `TextFormatting.SGR`,
+  # `Terminal.Renderer.underline_color_ansi/1`, `Style.StyleManager`. This was
+  # the only site spelling it `:indexed`, so anything it produced matched no
+  # renderer clause and fell through to the default colour.
+  #
+  # It was invisible because this function has no callers: the SGR paths reach
+  # `ANSI.SGR.Processor` instead. Corrected rather than deleted, because the
+  # tuple-param shape it handles is the one `CSIHandler` passes and a future
+  # caller landing on it should not reintroduce the divergence.
   def handle_tuple_color_param(tuple, style) do
     case tuple do
       {38, 5, n} when n >= 0 and n <= 255 ->
-        %{style | foreground: {:indexed, n}}
+        %{style | foreground: {:index, n}}
 
       {48, 5, n} when n >= 0 and n <= 255 ->
-        %{style | background: {:indexed, n}}
+        %{style | background: {:index, n}}
 
       {38, 2, r, g, b}
       when r >= 0 and r <= 255 and g >= 0 and g <= 255 and b >= 0 and b <= 255 ->

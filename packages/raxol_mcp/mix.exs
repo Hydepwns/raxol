@@ -1,7 +1,7 @@
 defmodule RaxolMcp.MixProject do
   use Mix.Project
 
-  @version "2.6.0"
+  @version "2.7.0"
   @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
@@ -32,7 +32,7 @@ defmodule RaxolMcp.MixProject do
 
   defp deps do
     [
-      raxol_dep(:raxol_core, "~> 2.6", "../raxol_core"),
+      raxol_dep(:raxol_core, "~> 2.7", "../raxol_core"),
       {:jason, "~> 1.4"},
       {:plug, "~> 1.16", optional: true},
 

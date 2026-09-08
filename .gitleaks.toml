@@ -1,0 +1,63 @@
+# Gitleaks configuration.
+#
+# Exists because `.github/workflows/security.yml` runs Gitleaks as a BLOCKING
+# check. Without this file the gate is unusable: existing history contains
+# deterministic signing vectors, vendored assets, and published development
+# keys that match generic entropy rules.
+#
+# Historical test-vector findings are accepted by exact fingerprint in
+# `.gitleaksignore`. Each fingerprint binds the exception to a commit, path,
+# rule, and line, so a new key-shaped value in the same test tree still fails.
+# The allowlists below cover only published values and vendored assets.
+#
+# EVERY allowlist here sets `targetRules`, and new ones must too. Without it a
+# top-level `[[allowlists]]` is GLOBAL: a `paths` entry meant to silence
+# entropy hits also switched off `private-key`, `aws-access-token`,
+# `github-pat` and every other inherited rule for that whole subtree. One of
+# those subtrees is `packages/raxol_agent/test/`, which is where the LLM
+# backends' credential handling is exercised -- `ANTHROPIC_API_KEY`,
+# `OPENAI_API_KEY`, 1Password `op://` refs, and a live test whose documented
+# invocation is `LONGCAT_API_KEY=<key> mix test --only live_longcat`. That is
+# precisely the tree where a real key gets pasted over a placeholder, and it
+# was exempt from every rule at the same commit this gate became blocking.
+#
+# Re-verify after changing this file:
+#   gitleaks git --no-banner --redact --report-format json \
+#     --report-path /tmp/gl.json --exit-code 0
+# That must report no leaks. If it does not, do NOT widen a path pattern or add
+# a detector to `targetRules`; check whether the new finding is real.
+
+[extend]
+useDefault = true
+
+
+[[allowlists]]
+description = """
+Public Base mainnet token contract addresses (USDC, USDT) in
+`scripts/run_live_gates.sh`. Contract addresses are published, not secret;
+`generic-api-key` matches them on entropy alone.
+
+Allowlisted BY VALUE, not by path. That script is the most
+credential-adjacent file in the repo -- it reads GATE_KEY, GATE_XOCHI_TOKEN
+and GATE_RELAY_TOKEN and names two 1Password production refs -- so a path
+exemption there, in a list whose own description claims "test, fixture and
+example paths only", would let a pasted mainnet signing key ship green at the
+same commit this gate became blocking. By value, any OTHER key-shaped string
+in that file still fails.
+"""
+targetRules = ["generic-api-key"]
+regexes = [
+  '''0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913''',
+  '''0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2''',
+]
+
+[[allowlists]]
+description = """
+Vendored third-party minified bundles. Not our source; high-entropy strings in
+a minified bundle are not credentials.
+"""
+targetRules = ["generic-api-key"]
+paths = [
+  '''priv/static/assets/vendor/.*''',
+]
+

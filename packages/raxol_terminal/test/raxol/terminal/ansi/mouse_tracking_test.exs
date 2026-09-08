@@ -146,6 +146,24 @@ defmodule Raxol.Terminal.ANSI.MouseTrackingTest do
     end
   end
 
+  describe "format_mouse_event/2" do
+    test "formats X10 coordinates as bytes" do
+      assert MouseTracking.format_mouse_event({:left, :press, 3, 4}, :x10) ==
+               <<27, "[M", 32, 35, 36>>
+    end
+
+    test "formats SGR press, release, and motion events" do
+      assert MouseTracking.format_mouse_event({:left, :press, 3, 4}, :sgr) ==
+               "\e[<0;3;4M"
+
+      assert MouseTracking.format_mouse_event({:left, :release, 3, 4}, :sgr) ==
+               "\e[<0;3;4m"
+
+      assert MouseTracking.format_mouse_event({:left, :move, 3, 4}, :sgr) ==
+               "\e[<32;3;4M"
+    end
+  end
+
   describe "format_focus_event/1" do
     test ~c"formats focus in" do
       assert MouseTracking.format_focus_event(:focus_in) == "\e[I"

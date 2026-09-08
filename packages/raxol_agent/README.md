@@ -5,7 +5,7 @@ AI agent framework for Elixir built on OTP. TEA-based agents with crash isolatio
 ## Install
 
 ```elixir
-{:raxol_agent, "~> 2.6"}
+{:raxol_agent, "~> 2.7"}
 ```
 
 ## Quick start

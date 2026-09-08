@@ -1,6 +1,6 @@
 {
   "name": "raxol-console",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Raxol runtime for the Virtuals ACP Console: a self-contained BEAM release (via Burrito) wrapped as an npm package so the acp-cli installs and runs it out of the box.",
   "bin": {
     "raxol-console": "bin/launcher.js"

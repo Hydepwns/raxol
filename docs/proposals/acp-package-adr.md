@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Package is pre-alpha (`0.1.0-rc.0`), not yet published to Hex.
+Accepted. Package is pre-alpha, not yet published to Hex.
 Module root: `Raxol.AgentClientProtocol`.
 
 ## Context

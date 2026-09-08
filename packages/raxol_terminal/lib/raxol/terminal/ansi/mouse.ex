@@ -518,6 +518,20 @@ defmodule Raxol.Terminal.ANSI.Mouse do
     end
 
     @doc """
+    Formats a mouse event with the requested coordinate encoding.
+    """
+    def format_mouse_event({button, action, x, y}, :x10) do
+      button_code = get_mouse_button_code(button, action) + 32
+      <<27, "[M", button_code, x + 32, y + 32>>
+    end
+
+    def format_mouse_event({button, action, x, y}, :sgr) do
+      button_code = sgr_button_code(button, action)
+      suffix = if action == :release, do: "m", else: "M"
+      "\e[<#{button_code};#{x};#{y}#{suffix}"
+    end
+
+    @doc """
     Formats a focus event into a tracking sequence.
     """
     def format_focus_event(:focus_in), do: "\e[I"
@@ -607,6 +621,10 @@ defmodule Raxol.Terminal.ANSI.Mouse do
       end
     end
 
+    defp sgr_button_code(_button, :move), do: 32
+    defp sgr_button_code(button, :release), do: get_mouse_button_code(button, :press)
+    defp sgr_button_code(button, action), do: get_mouse_button_code(button, action)
+
     defp get_button_code(button) do
       Enum.find_value(@mouse_buttons, 0, fn {code, b} ->
         if b == button, do: code, else: nil
@@ -636,5 +654,6 @@ defmodule Raxol.Terminal.ANSI.Mouse do
   defdelegate parse_mouse_sequence(sequence), to: Tracking
   defdelegate parse_focus_sequence(sequence), to: Tracking
   defdelegate format_mouse_event(event), to: Tracking
+  defdelegate format_mouse_event(event, encoding), to: Tracking
   defdelegate format_focus_event(event), to: Tracking
 end

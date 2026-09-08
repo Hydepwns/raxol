@@ -17,13 +17,16 @@
       #
       # These are the files included in the analysis.
       #
-      # `packages/` is in scope: the 18 extracted packages are ~58% of the
-      # source tree, and leaving them out meant every package-local
-      # regression was invisible to the gate. The `/deps/` and `/_build/`
-      # exclusions below already cover the per-package checkouts that a
-      # package-local `mix` run leaves behind (e.g.
-      # packages/raxol_payments/deps/raxol_terminal).
+      # `packages/` is in scope: the extracted packages are ~58% of the source
+      # tree, and leaving them out meant every package-local regression was
+      # invisible to the gate. The `/deps/` and `/_build/` exclusions below
+      # already cover the per-package checkouts a package-local `mix` run
+      # leaves behind (e.g. packages/raxol_payments/deps/raxol_terminal).
       #
+      # priv/quality_baseline.json's credo count is measured against THIS
+      # scope. Narrowing it here without re-measuring makes the gate report a
+      # false improvement and, on `--update`, silently bake the narrower
+      # coverage into the baseline.
       files: %{
         #
         # You can give explicit globs or simply directories.

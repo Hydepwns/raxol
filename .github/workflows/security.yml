@@ -60,17 +60,47 @@ jobs:
         run: |
           mix deps.clean --unused
           mix deps.get
+          # mix_audit derives `Jason.Encoder`, so jason has to be compiled
+          # first or the derive fails with "could not load module
+          # Jason.Encoder due to reason :unavailable". Named in order rather
+          # than compiling every dep, which this job does not need.
+          mix deps.compile jason mix_audit
 
+      # Blocking. Previously `continue-on-error: true`, which made the job
+      # conclude success even on a hit -- and the "Create issue for critical
+      # findings" step below is gated on `needs.dependency-audit.result ==
+      # 'failure'`, so it could never fire. A known-vulnerable dependency
+      # produced a green run and no issue.
+      #
+      # No `mix archive.install hex mix_audit` fallback. mix_audit is a real
+      # dependency (mix.exs), and the archive form installs the escript WITHOUT
+      # its own deps -- so `yaml_elixir` was absent and every run died with
+      # `UndefinedFunctionError YamlElixir.read_from_file/1` from
+      # `MixAudit.Repo.map_advisory/1`. Under `continue-on-error` that crash
+      # reported SUCCESS, so the gate had never actually audited anything. A
+      # fallback that silently swaps a working tool for a broken one is worse
+      # than no fallback: fail loudly if the dep is missing.
       - name: Check for vulnerable dependencies
-        run: |
-          # Install mix_audit if not present
-          if ! mix help deps.audit &>/dev/null; then
-            mix archive.install hex mix_audit --force
-          fi
-          
-          mix deps.audit
+        run: mix deps.audit
+
+      # `mix deps.audit` and `mix hex.audit` read DIFFERENT databases:
+      # mix_audit uses the Elixir Security Advisories mirror, hex.audit uses
+      # Hex's own OSV-backed data. They disagree today -- deps.audit is clean
+      # while hex.audit reports three advisories against cowlib 2.19.0
+      # (EEF-CVE-2026-43966 and -43971 MEDIUM, -43969 LOW), reached
+      # transitively through cowboy.
+      #
+      # Advisory rather than blocking, and deliberately: 2.19.0 is the LATEST
+      # cowlib release, so there is no version to move to and a blocking gate
+      # here would be permanently red on something nobody can fix. Blocking on
+      # an unfixable finding is how a gate gets ignored. Revisit when cowlib
+      # publishes a fix; `mix hex.audit` is what will say so.
+      - name: Check Hex advisories (OSV)
+        run: mix hex.audit
         continue-on-error: true
-      
+
+      # Advisory: being behind is not a vulnerability, and `mix hex.outdated`
+      # exits nonzero for any available upgrade.
       - name: Check for outdated dependencies
         run: |
           mix hex.outdated
@@ -123,6 +153,7 @@ jobs:
             p/security-audit
             p/owasp-top-ten
             p/elixir
+        # Advisory: SAST false-positive rate is too high to block a PR on.
         continue-on-error: true
 
   secrets-scan:
@@ -134,19 +165,51 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for scanning
       
-      - name: TruffleHog OSS
+      # Both blocking. A committed credential is not an advisory condition,
+      # and with `continue-on-error: true` this job concluded success on a
+      # hit, which also disabled the "Create issue for critical findings"
+      # step gated on `needs.secrets-scan.result == 'failure'`.
+      #
+      # Blocking is only safe because measured historical false positives are
+      # accepted by exact fingerprint in `.gitleaksignore`. Public values and
+      # vendored assets use narrow allowlists in `.gitleaks.toml`; no test tree
+      # is exempt by path. A new key-shaped value therefore fails this job.
+      #
+      # `--only-verified` on TruffleHog for the same reason: unverified
+      # high-entropy matches in signing test vectors are not credentials, and
+      # only a verified live secret should be able to stop a merge.
+      #
+      # But verified-only is the BLOCKING verdict, not the whole scan. A
+      # verifier that does not exist for a given credential type, a key that
+      # was rotated here and is still live elsewhere, and every match during a
+      # provider outage or rate-limit all report unverified -- so a
+      # verified-only run cannot distinguish "no secret" from "could not
+      # check", and narrowing the scan at the same commit it became
+      # authoritative would hide that difference silently. The second run
+      # below keeps unverified hits on the record without gating on them.
+      - name: TruffleHog OSS (verified only, blocking)
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
           head: HEAD
+          extra_args: --only-verified
+
+      - name: TruffleHog OSS (all findings, advisory)
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --results=verified,unknown
         continue-on-error: true
-      
+
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
+          # Repo-scoped config; without it this job cannot pass. See above.
+          GITLEAKS_CONFIG: .gitleaks.toml
 
   npm-audit:
     name: NPM Security Audit

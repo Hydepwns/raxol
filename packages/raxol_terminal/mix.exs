@@ -1,7 +1,7 @@
 defmodule RaxolTerminal.MixProject do
   use Mix.Project
 
-  @version "2.6.1"
+  @version "2.7.0"
   @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
@@ -44,7 +44,10 @@ defmodule RaxolTerminal.MixProject do
 
   defp deps do
     [
-      raxol_dep(:raxol_core, "~> 2.6", "../raxol_core"),
+      # 2.7, not 2.6: SixelPalette calls Raxol.Core.Colors.Ansi256, a module
+      # raxol_core gained this release. Under "~> 2.6" a Hex consumer could
+      # resolve raxol_core 2.6.0, which lacks it.
+      raxol_dep(:raxol_core, "~> 2.7", "../raxol_core"),
       {:uuid, "~> 1.1"},
       {:jason, "~> 1.4"},
 

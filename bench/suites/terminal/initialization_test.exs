@@ -15,7 +15,7 @@ modules = [
   Raxol.Terminal.Input.InputHandler,
   Raxol.Terminal.Input.CharacterProcessor,
   Raxol.Terminal.ANSI.TextFormatting,
-  Raxol.Terminal.ANSI.SGRProcessor,
+  Raxol.Terminal.ANSI.SGR.Processor,
   Raxol.Terminal.ScreenBuffer,
   Raxol.Terminal.EmulatorLite
 ]

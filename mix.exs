@@ -1,7 +1,7 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "2.6.1"
+  @version "2.7.0"
   @source_url "https://github.com/DROOdotFOO/raxol"
 
   def project do
@@ -209,12 +209,21 @@ defmodule Raxol.MixProject do
 
   defp modular_packages do
     [
-      raxol_dep(:raxol_core, "~> 2.6", "packages/raxol_core"),
-      raxol_dep(:raxol_terminal, "~> 2.6", "packages/raxol_terminal"),
-      raxol_dep(:raxol_sensor, "~> 2.6", "packages/raxol_sensor"),
-      raxol_dep(:raxol_mcp, "~> 2.6", "packages/raxol_mcp"),
-      raxol_dep(:raxol_liveview, "~> 2.6", "packages/raxol_liveview"),
-      raxol_dep(:raxol_plugin, "~> 2.6", "packages/raxol_plugin")
+      # The framework family moves to 2.7 together. raxol_core gained a
+      # public module this release (Raxol.Core.Colors.Ansi256, which
+      # Raxol.Style.Colors.Formats.ansi_to_rgb/1 calls), and adding public API
+      # is a MINOR bump: under the old "~> 2.6" a Hex consumer could resolve
+      # raxol_core 2.6.0, which lacks the module, and get an
+      # UndefinedFunctionError on any 256-color render. Expressing the
+      # requirement as a minor bump keeps the one-constraint-form rule that
+      # Raxol.Release.PackageCheck enforces ("~> major.minor" exactly);
+      # patch-pinning "~> 2.6.2" would have violated it.
+      raxol_dep(:raxol_core, "~> 2.7", "packages/raxol_core"),
+      raxol_dep(:raxol_terminal, "~> 2.7", "packages/raxol_terminal"),
+      raxol_dep(:raxol_sensor, "~> 2.7", "packages/raxol_sensor"),
+      raxol_dep(:raxol_mcp, "~> 2.7", "packages/raxol_mcp"),
+      raxol_dep(:raxol_liveview, "~> 2.7", "packages/raxol_liveview"),
+      raxol_dep(:raxol_plugin, "~> 2.7", "packages/raxol_plugin")
     ]
   end
 
@@ -258,7 +267,11 @@ defmodule Raxol.MixProject do
       {:phoenix_live_view, "~> 1.2.3"},
       {:phoenix_html, "~> 4.3"},
       {:plug_cowboy, "~> 2.7"},
-      {:phoenix_live_dashboard, "~> 0.9.0", only: :dev},
+      # phoenix_live_dashboard is deliberately absent: nothing in lib/, web/ or
+      # config/ mounted it or referenced it, so Dependabot regenerated a PR for
+      # it on every release and a reviewer spent a CI matrix on a dependency
+      # with no consumer. Add it back together with the route that uses it,
+      # behind auth -- it exposes process, ETS and OS-mon internals.
       {:phoenix_live_reload, "~> 1.7.0", only: :dev}
     ]
   end
@@ -449,7 +462,28 @@ defmodule Raxol.MixProject do
           CHANGELOG.md
           ROADMAP.md
         ),
-      exclude_patterns: [~r/\.so$/, ~r/\.o$/, ~r/\.dylib$/],
+      exclude_patterns: [
+        ~r/\.so$/,
+        ~r/\.o$/,
+        ~r/\.dylib$/,
+        # Benchmark/memory tooling. Dev-only: every module under these trees
+        # drives `benchee`, which is `only: [:dev, :test]`, so shipping them
+        # gave consumers modules that raise UndefinedFunctionError on any
+        # entry point. Guarded at compile time by `@compile
+        # {:no_warn_undefined, Benchee}`, which silences the warning without
+        # making the call work.
+        #
+        # Verified excludable: zero inbound references from shipped code to
+        # `Raxol.Benchmark.*`, `Raxol.Bench.*` or `Raxol.Memory.*`.
+        # `lib/raxol/performance/` is deliberately NOT excluded -- it looks
+        # like the same category, but `Raxol.Performance.ETSCacheManager` is a
+        # live runtime cache used by `lib/raxol/ui/theme_resolver.ex`.
+        ~r{^lib/raxol/benchmark/},
+        ~r{^lib/raxol/bench/},
+        ~r{^lib/raxol/memory/},
+        ~r{^lib/mix/tasks/raxol\.bench.*\.ex$},
+        ~r{^lib/mix/tasks/raxol\.memory.*\.ex$}
+      ],
       maintainers: ["DROO AMOR"],
       licenses: ["MIT"],
       links: %{
