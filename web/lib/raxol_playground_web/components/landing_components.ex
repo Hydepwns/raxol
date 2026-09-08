@@ -107,63 +107,40 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
   end
   """
 
-  # The coding agent, as the harness's own components render it: the rows are
-  # `ToolCallBlock`, the module `mix raxol.code` draws a tool call with, rather
-  # than a picture of one -- so the glyph, the spinner and the layout are the
-  # product's. What is authored is the turn (which tools, in what state), the
-  # way `pulse` authors a wave.
-  #
-  # The job line above the turn is the other half of the story raxol_earn
-  # tells: agents do not only spend, they sell services on the Virtuals Agent
-  # Commerce Protocol and get paid for them, and the harness is how the work
-  # a job was funded for actually gets done. It stays authored text rather
-  # than a call into `Raxol.Earn`, because the web app does not depend on
-  # raxol_earn and `RaxolEarn.Application` self-starts outside `:test` -- a
-  # dependency edge added for one line of a hero pane would start a seller
-  # supervision tree in the deployed site.
-  #
-  # The turn finishes rather than sitting on `edit` forever with only the
-  # spinner moving, which read as a hang once `settle` beside it started
-  # completing. `@ladder` is the dwell per frame, uneven so `edit` holds long
-  # enough to read. The statuses come from the tick, so `@calls` carries name
-  # and args only and `st/2` decides done, running or pending -- that, and the
-  # shorter alias, is what fits: the pane clips at thirty lines and sixty-seven
-  # columns.
-  #
-  # The job is a paid coding job, not `usdc_transfer`. A pane that announced a
-  # transfer offering and then edited `router.ex` described no one's work: the
-  # harness earns by doing the thing it is good at, so the job is a bugfix at a
-  # price, and the calls are that bugfix.
+  # A coding agent accepts and completes a paid Virtuals ACP job through the
+  # real raxol_earn state machine. The frame generator runs these calls against
+  # a supervised JobSession; only the external Virtuals events (funding and
+  # approval) use apply_event/3.
   @harness_source ~S"""
   defmodule Harness do
     use Raxol.Core.Runtime.Application
-    alias Raxol.UI.Components.Harness.ToolCallBlock, as: T
-    @calls [
-      {"read", "spend_gate.ex"},
-      {"edit", "spend_gate.ex:42"},
-      {"shell", "mix test"}
-    ]
-    @ladder [0, 0, 1, 1, 1, 1, 1, 2, 2, 3]
-    def init(_), do: %{t: 0}
-    def update(:tick, m), do: {%{m | t: m.t + 1}, []}
+    alias Raxol.Earn.{AssetToken, JobSession}
+    @mark ["     ▄█▀█▄     ", "▀▀█▄▄█▄▄▄█▄▄  ▀",
+           "    ▀█▄███     ", "     ▀██▀      "]
+    @states ~w(open budget_set funded submitted completed)a
+    @actions [set_budget: [AssetToken.usdc(40, 8453)],
+              apply_event: [:funded], submit: [%{patch: "gate.ex"}],
+              apply_event: [:completed]]
+    def init(_) do
+      {:ok, job} = JobSession.Supervisor.start_session(
+        chain_id: 8453, job_id: 4812, role: :provider)
+      %{job: job, at: 0}
+    end
+    def update(:tick, %{at: at} = m) when at < 4 do
+      {fun, args} = Enum.at(@actions, at)
+      {:ok, _} = apply(JobSession, fun, [m.job | args])
+      {%{m | at: at + 1}, []}
+    end
     def update(_, m), do: {m, []}
     def subscribe(_), do: [subscribe_interval(200, :tick)]
     def view(m) do
-      at = Enum.at(@ladder, rem(m.t, length(@ladder)))
-      column style: %{gap: 1} do
-        [
-          text("virtuals acp  bugfix  40.00 USDC", fg: :cyan),
-          column(do: Enum.with_index(@calls, &call(&1, &2, at, m.t)))
-        ]
-      end
+      info = ["VIRTUALS ACP · BASE · JOB #4812",
+              "fix_spend_gate · 40 USDC", "raxol_earn", ""]
+      head = Enum.zip_with(@mark, info, &text(&1 <> " " <> &2))
+      rows = Enum.with_index(@states, &row(&1, &2, m.at))
+      column(do: head ++ [text(" ")] ++ rows)
     end
-    defp call({n, a}, i, x, t) do
-      {:ok, s} = T.init(name: n, args: a, status: st(i, x), frame: t)
-      T.render(s, %{})
-    end
-    defp st(i, x) when i < x, do: :done
-    defp st(i, i), do: :running
-    defp st(_, _), do: :pending
+    defp row(s,i,a),do: text("#{if i<=a,do: "✓",else: "○"} #{s}")
   end
   """
 
@@ -230,8 +207,7 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
                          @pulse_source},
                         {"halo", "halo.exs", "the mark, as a program",
                          @halo_source},
-                        {"harness", "harness.ex",
-                         "a Virtuals ACP job, worked by the coding agent",
+                        {"harness", "harness.ex", "a Virtuals ACP job, run by raxol_earn",
                          @harness_source}
                       ] do
                     [_, module] = Regex.run(~r/defmodule (\w+)/, source)
