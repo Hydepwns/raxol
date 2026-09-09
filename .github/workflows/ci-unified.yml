@@ -833,26 +833,17 @@ jobs:
       # deps PLT and lets the analysis run rebuild it correctly, and refuses
       # to report a count when `unknown_function` dominates.
       #
-      # Advisory, and nightly.yml's ratchet is what fails on a regression --
-      # the same split this workflow already applies to credo, for a related
-      # reason.
+      # Advisory in pull requests; nightly.yml enforces the same ratchet.
       #
-      # The count is not reproducible across environments yet, so it cannot be
-      # a merge gate. A warm local PLT reports 91 (matching the baseline) while
-      # CI reported 100 on the same tree, and the cause is upstream of the
-      # ratchet: the cache key above includes
-      # `hashFiles('packages/*/lib/**/*.ex')`, so any PR touching packages/ --
-      # most of them -- misses the exact key, restores through restore-keys,
-      # and then has its deps PLT discarded as stale. Cold and warm PLTs
-      # disagree by 9 findings, and blocking a merge on which one CI happened
-      # to get is a gate that fails for environmental reasons rather than code
-      # reasons. That is how a gate gets routinely overridden, which is worse
-      # than an advisory one nobody can dismiss silently.
+      # Both workflows now read the reference toolchain from mise.toml and
+      # restore PLTs keyed by the versions setup-beam actually resolved. The
+      # former split -- 1.20/OTP 29 here, 1.19/OTP 27 nightly -- produced
+      # different counts against one baseline and made the nightly verdict
+      # unrelated to this feedback.
       #
-      # Nightly runs the identical ratchet with no PR to block and time to
-      # build a cold PLT properly, which is where the number means something.
-      # Make this blocking again once a PR-time run reproduces the nightly
-      # count -- prebuilding the PLT on a schedule is the obvious way.
+      # check-quality-ratchet.sh still validates the PLT against package source
+      # content before measuring, so a loose cache restore cannot make a stale
+      # package contract look current.
       - name: Dialyzer ratchet
         run: ./scripts/check-quality-ratchet.sh --gate dialyzer
         timeout-minutes: 90
@@ -1091,9 +1082,8 @@ jobs:
   # ========================================
   ci-status:
     name: CI Status
-    # `credo` is listed AND read below. `dialyzer` is deliberately neither:
-    # it stays advisory until a PR-time run reproduces the nightly count (see
-    # its job comment and the plt-prebuild job in nightly.yml).
+    # `dialyzer` is deliberately absent: pull requests get advisory feedback,
+    # while nightly.yml enforces the same ratchet on the reference toolchain.
     #
     # Listing a job here without reading its `result` is the trap this comment
     # exists to prevent -- `credo` was once declared and never read, so it
@@ -1153,10 +1143,9 @@ jobs:
             exit 1
           fi
 
-          # Dialyzer is deliberately absent: it is advisory until a PR-time run
-          # reproduces the nightly count (see its job comment and nightly.yml's
-          # plt-prebuild job). nightly.yml's `dialyzer` ratchet is what fails
-          # on a regression.
+          # Dialyzer is deliberately absent: nightly.yml enforces that ratchet;
+          # this workflow exposes the same reference-toolchain result without
+          # making the expensive job part of the aggregate PR status.
 
           if [ "${{ needs.security.result }}" != "success" ]; then
             echo "⚠️ Security scan found issues (non-blocking)"
