@@ -2005,11 +2005,76 @@ html {
   font-weight: 700;
 }
 
+@property --hd-border-beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes hd-border-beam {
+  to { --hd-border-beam-angle: 360deg; }
+}
+
+/* The same three-layer treatment as Raxol.Effects.BorderBeam: a traveling
+   stroke, a tight inner glow, and a soft bloom outside the control. */
+.hd-control--next {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  box-shadow: inset 0 0 0.65rem var(--coral-25);
+}
+
+.hd-control--next::before,
+.hd-control--next::after {
+  content: "";
+  /* Declared on each pseudo-element, not inherited from the button. Registered
+     custom properties do not inherit, and resolving this gradient on the
+     parent freezes its angle even while the pseudo's angle keeps animating. */
+  --hd-border-beam:
+    conic-gradient(
+      from var(--hd-border-beam-angle),
+      transparent 0deg 250deg,
+      var(--sky) 282deg,
+      var(--axol-coral) 318deg,
+      var(--pearl-cream) 342deg,
+      transparent 360deg
+    );
+  position: absolute;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: hd-border-beam 4s linear infinite;
+}
+
+.hd-control--next::before {
+  z-index: -1;
+  inset: -0.3rem;
+  background: var(--hd-border-beam);
+  filter: blur(0.35rem);
+  opacity: 0.55;
+}
+
+.hd-control--next::after {
+  z-index: 1;
+  inset: -2px;
+  padding: 2px;
+  background: var(--hd-border-beam);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
 .hd-control--next:hover,
 .hd-control--next:focus-visible {
   color: var(--obsidian);
   border-color: var(--pearl-cream);
   background: var(--pearl-cream);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hd-control--next::before,
+  .hd-control--next::after {
+    animation: none;
+  }
 }
 
 .hero-tabs {
@@ -2053,7 +2118,7 @@ html {
 
 .hero-panes {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
 }
 
 .hero-pane {
@@ -2830,6 +2895,35 @@ input[type="range"].player-seek:focus-visible {
   letter-spacing: 0.03em;
 }
 
+/* The token has one explicit header action rather than hiding among footer
+   metadata. It stays compact enough to share the mobile row with the menu. */
+.screen-token-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 1.75rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--coral-40);
+  border-radius: 4px;
+  color: var(--axol-coral);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+
+.screen-token-link:hover,
+.screen-token-link:focus-visible {
+  color: var(--pearl-cream);
+  border-color: var(--pearl-cream);
+  background: var(--coral-10);
+}
+
 .screen-menu-btn {
   font-family: var(--font-mono);
   font-size: 0.8rem;
@@ -2968,7 +3062,7 @@ input[type="range"].player-seek:focus-visible {
 .integrations-track {
   display: flex;
   width: max-content;
-  animation: integrations-scroll 45s linear infinite;
+  animation: integrations-scroll 60s linear infinite;
 }
 
 /* Half the track is exactly one run, so the seam never shows. */

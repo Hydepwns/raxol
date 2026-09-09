@@ -34,10 +34,9 @@
 
 alias Raxol.LiveView.TerminalBridge
 
-# The modules the hero displays. web/'s landing hero (@pulse_source,
-# @halo_source, @harness_source and @settle_source in landing_components.ex)
-# shows these exact sources; keep each pair byte-identical (the whole point of
-# recording is that the pane and the frames are the same program).
+# The modules the hero displays. web/'s landing hero carries the same parsed
+# programs in a compact layout that fits its source pane;
+# landing_components_test.exs rejects semantic drift between the copies.
 defmodule Pulse do
   use Raxol.Core.Runtime.Application
 
@@ -130,35 +129,55 @@ end
 
 defmodule Settle do
   use Raxol.Core.Runtime.Application
+  alias Raxol.Payments.Actions.Payments, as: P
+  alias RaxolPlayground.SettlementSandbox, as: Sandbox
 
-  @route "USDC 1.10  Base Sepolia 84532 -> Arc Testnet 5042002"
-  @steps [
-    {"spend gate", "before signature"},
-    {"intent", "EIP-712 quote signed"},
-    {"execution", "submitted to solver"},
-    {"source tx", "base-sepolia.blockscout.com/tx"},
-    {"dest tx", "testnet.arcscan.app/tx"}
-  ]
-  def init(_), do: %{t: 0}
+  @payment %{
+    amount: "25.00",
+    from_chain_id: 8453,
+    to_chain_id: 42_161,
+    settlement: "stealth",
+    trust_score: 25,
+    slippage_bps: 50,
+    min_to_amount: "24900000"
+  }
+
+  def init(_) do
+    {:ok, demo} = Sandbox.start(@payment)
+
+    {:ok, intent} =
+      P.ExecuteXochiIntent.call(demo.payment, demo.context)
+
+    {:ok, receipt} =
+      P.PollXochiStatus.call(
+        %{intent_id: intent.intent_id},
+        demo.context
+      )
+
+    signed = Sandbox.Wallet.signatures()
+
+    {:error, denied} =
+      P.ExecuteXochiIntent.call(
+        %{demo.payment | amount: "75.00"},
+        demo.context
+      )
+
+    %{
+      demo: demo,
+      intent: intent,
+      receipt: receipt,
+      denied: denied,
+      safe?: Sandbox.Wallet.signatures() == signed,
+      t: 0
+    }
+  end
+
   def update(:tick, m), do: {%{m | t: m.t + 1}, []}
+  def update(_, m), do: {m, []}
   def subscribe(_), do: [subscribe_interval(200, :tick)]
 
-  def view(m) do
-    at = rem(m.t, length(@steps))
-
-    head = [
-      text("XOCHI RECEIPT", style: [:bold]),
-      text(@route, fg: :magenta)
-    ]
-
-    column(do: head ++ Enum.with_index(@steps, &step(&1, &2, at)))
-  end
-
-  defp step({k, v}, i, at) do
-    mark = if(i == at, do: ">", else: " ")
-    key = String.pad_trailing(k, 10)
-    text("#{mark} [OK] #{key} #{v}", fg: :cyan)
-  end
+  def view(m),
+    do: column(do: Enum.map(Sandbox.lines(m), &text/1))
 end
 
 defmodule GenLandingFrames do
@@ -360,13 +379,13 @@ defmodule GenLandingFrames do
   #          and one call per tick went by too fast to follow. All-done gets a
   #          single frame -- it is the one state with no spinner, so a second
   #          frame of it would be identical to the first.
-  #   settle five receipt steps; route facts are fixed, while the cursor moves
-  #          through real receipt stages without inventing transaction hashes.
+  #   settle five sandbox replay stages; the action results are fixed while the
+  #          cursor moves through request, execution, receipt, and denial.
   @examples [
     {"pulse", Pulse, {62, 13}, 90, 63},
     {"halo", Halo, {70, 14}, 110, 48},
     {"harness", Harness, {36, 5}, 200, 10},
-    {"settle", Settle, {56, 7}, 200, 5}
+    {"settle", Settle, {54, 9}, 200, 5}
   ]
 
   defp hero(base \\ @hero_dir) do

@@ -267,32 +267,22 @@ jobs:
           retention-days: 90
           if-no-files-found: warn
 
-  # Populates the dialyzer PLT once, on a schedule, and publishes it under a
-  # key both the enforcing nightly ratchet and the per-PR dialyzer job can
-  # restore.
+  # Populates the Dialyzer PLT once, on a schedule, and publishes it under a
+  # key both the enforcing nightly ratchet and the per-PR advisory job restore.
   #
-  # Why this job exists: the dialyzer count is not currently reproducible
-  # across environments -- a warm local PLT reports 91 (the baseline) while CI
-  # reported 100 on the same tree. The cause is upstream of the ratchet.
-  # ci-unified's cache key includes `hashFiles('packages/*/lib/**/*.ex')`, so
-  # any PR touching packages/ -- most of them -- misses the exact key,
-  # restores through restore-keys, and then has its deps PLT discarded as
-  # stale, leaving cold and warm runs disagreeing by 9 findings. Blocking a
-  # merge on which one a runner happened to get is a gate that fails for
-  # environmental reasons, so dialyzer stays advisory per-PR until the two
-  # agree. This is the "prebuild the PLT on a schedule" the dialyzer job's
-  # own comment names as the way to close that gap.
+  # Both jobs use mise.toml, the repository's reference toolchain. The old
+  # 1.19/OTP 27 literals made nightly report 111 findings while PR CI and a
+  # clean local run on the reference 1.20/OTP 29 toolchain reported 118. One
+  # baseline cannot ratchet measurements from different analyzers.
   #
-  # The key deliberately omits packages/ sources and keys only on the
-  # toolchain and mix.lock, so it is STABLE across PRs -- that is the whole
-  # point. Staleness with respect to packages/ is not this key's job:
-  # check-quality-ratchet.sh detects it by content hash and discards the deps
-  # PLT so the analysis rebuilds that part correctly.
+  # The prebuilt key deliberately omits packages/ sources and keys only on the
+  # resolved toolchain and mix.lock, so it is stable across PRs. Staleness with
+  # respect to packages/ is not this key's job: check-quality-ratchet.sh
+  # detects it by content hash and discards the deps PLT when necessary.
   #
   # The PLT is populated by a real analysis run, never `mix dialyzer --plt`;
-  # see the prohibition in priv/quality_baseline.json. `|| true` because a
-  # nonzero exit here just means findings exist, which is expected and not
-  # this job's business -- the artifact is the populated PLT.
+  # see the prohibition in priv/quality_baseline.json. `|| true` is correct
+  # here: findings are expected and this job only publishes the populated PLT.
   plt-prebuild:
     name: Prebuild Dialyzer PLT
     runs-on: ubuntu-latest
@@ -301,12 +291,11 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Setup Elixir
+        id: beam
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: "1.19.0"
-          otp-version: "27.2"
-          install-hex: true
-          install-rebar: true
+          version-file: mise.toml
+          version-type: strict
 
       - name: Cache dependencies and PLTs
         uses: actions/cache@v6
@@ -315,7 +304,7 @@ jobs:
             deps
             _build
             priv/plts
-          key: plt-prebuilt-${{ runner.os }}-27.2-1.19.0-${{ hashFiles('**/mix.lock') }}
+          key: plt-prebuilt-${{ runner.os }}-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
 
       - name: Install dependencies
         run: |
@@ -334,12 +323,11 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Setup Elixir
+        id: beam
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: "1.19.0"
-          otp-version: "27.2"
-          install-hex: true
-          install-rebar: true
+          version-file: mise.toml
+          version-type: strict
 
       # Keyed the same way `plt-prebuild` saves, so the enforcing run analyses
       # against the PLT that job populated rather than building its own.
@@ -350,10 +338,10 @@ jobs:
             deps
             _build
             priv/plts
-          key: plt-${{ runner.os }}-27.2-1.19.0-${{ hashFiles('**/mix.exs') }}-${{ hashFiles('**/mix.lock') }}
+          key: plt-${{ runner.os }}-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}-${{ hashFiles('**/mix.exs') }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            plt-prebuilt-${{ runner.os }}-27.2-1.19.0-${{ hashFiles('**/mix.lock') }}
-            plt-${{ runner.os }}-27.2-1.19.0-${{ hashFiles('**/mix.exs') }}-
+            plt-prebuilt-${{ runner.os }}-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
+            plt-${{ runner.os }}-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}-${{ hashFiles('**/mix.exs') }}-
 
       - name: Install dependencies
         run: |
@@ -367,8 +355,8 @@ jobs:
       # core.plt with none of the dependency apps in it, after which dialyxir
       # reports "PLT is up to date!" permanently because freshness comes from
       # a 20-byte .plt.hash. Analysing against it yielded 2055 findings, 1845
-      # of them unknown_function, against a true 91 -- and this is the job
-      # that ENFORCES the count.
+      # of them unknown_function. This job enforces the healthy reference
+      # count.
       #
       # It was `continue-on-error: true` as well, so that corruption was
       # silent. The ratchet builds what it needs correctly on its own and
