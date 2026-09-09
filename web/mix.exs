@@ -5,7 +5,7 @@ defmodule RaxolPlayground.MixProject do
     [
       app: :raxol_playground,
       version: "0.1.0",
-      elixir: "~> 1.16 or ~> 1.17",
+      elixir: "~> 1.17 or ~> 1.18 or ~> 1.19 or ~> 1.20",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       releases: releases(),
@@ -29,10 +29,7 @@ defmodule RaxolPlayground.MixProject do
       {:raxol, path: ".."},
       # The hosted coding agent over SSH (RAXOL_SSH_CODE) needs the agent
       # framework on the release code path. Main raxol keeps raxol_agent
-      # optional (no dependency edge), so the deploy app opts in here; without
-      # it, Raxol.Application.maybe_add_ssh_code/0 logs and skips. The ACP
-      # sibling package rides along as a source-build transitive dep and is
-      # harmless (nothing auto-serves it in the web release).
+      # optional (no dependency edge), so the deploy app opts in here.
       {:raxol_agent, path: "../packages/raxol_agent"},
 
       # The hosted agent's spend gate. Raxol.Application refuses to serve
@@ -40,6 +37,10 @@ defmodule RaxolPlayground.MixProject do
       # credential), and the ledger lives here -- so without this dep the
       # coding agent cannot start at all, whatever else is configured.
       {:raxol_payments, path: "../packages/raxol_payments"},
+
+      # Frame generation runs in dev; production serves only the committed
+      # recordings and must not boot the commerce supervision tree.
+      {:raxol_earn, path: "../packages/raxol_earn", only: :dev},
 
       # The HTTP client behind every remote provider. raxol_agent declares it
       # optional and optional deps do not propagate, so a release depending on

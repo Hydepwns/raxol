@@ -25,8 +25,8 @@
 #
 # The paths above resolve from __DIR__, so the working directory only decides
 # which project's deps are loadable. It has to be web/: `settle` renders the
-# real fee schedule and the real USDC deployment table, and raxol_payments is
-# a dep of web/ rather than of root raxol (root would fail to compile it).
+# real fee schedule from raxol_payments, while `harness` executes a supervised
+# ACP lifecycle from raxol_earn.
 #
 # Frames are committed; rerun when a hero example or a demo's first render
 # changes. A demo that fails to start headless is skipped with a warning (its
@@ -93,38 +93,33 @@ end
 
 defmodule Harness do
   use Raxol.Core.Runtime.Application
-  alias Raxol.UI.Components.Harness.ToolCallBlock, as: T
-
-  @calls [
-    {"read", "spend_gate.ex"},
-    {"edit", "spend_gate.ex:42"},
-    {"shell", "mix test"}
-  ]
-  @ladder [0, 0, 1, 1, 1, 1, 1, 2, 2, 3]
-  def init(_), do: %{t: 0}
-  def update(:tick, m), do: {%{m | t: m.t + 1}, []}
-  def update(_, m), do: {m, []}
-  def subscribe(_), do: [subscribe_interval(200, :tick)]
-
-  def view(m) do
-    at = Enum.at(@ladder, rem(m.t, length(@ladder)))
-
-    column style: %{gap: 1} do
-      [
-        text("virtuals acp  bugfix  40.00 USDC", fg: :cyan),
-        column(do: Enum.with_index(@calls, &call(&1, &2, at, m.t)))
-      ]
-    end
+  alias Raxol.Earn.{AssetToken, JobSession}
+  @mark ["     ▄█▀█▄     ", "▀▀█▄▄█▄▄▄█▄▄  ▀",
+         "    ▀█▄███     ", "     ▀██▀      "]
+  @states ~w(open budget_set funded submitted completed)a
+  @r Map.new(Enum.with_index(@states))
+  # :recorded events represent chain/SSE observations.
+  @actions [{:call,:set_budget,[AssetToken.usdc(40,8453)]},
+            {:recorded,:funded},{:call,:submit,[%{patch: "gate"}]},
+            {:recorded,:completed}]
+  @info ["RECORDED ACP #4812","gate.ex · 40 USDC","raxol_earn",""]
+  def init(_) do
+    {:ok,j}=JobSession.Supervisor.start_session(chain_id: 8453,
+    job_id: 4812,role: :provider)
+    %{j: j,a: 0,s: JobSession.status(j)}
   end
-
-  defp call({n, a}, i, x, t) do
-    {:ok, s} = T.init(name: n, args: a, status: st(i, x), frame: t)
-    T.render(s, %{})
+  def update(:tick,%{j: j,a: a}=m) when a<4 do
+    {:ok,s}=run(j,Enum.at(@actions,a)); {%{m|a: a+1,s: s},[]}
   end
-
-  defp st(i, x) when i < x, do: :done
-  defp st(i, i), do: :running
-  defp st(_, _), do: :pending
+  def update(_,m),do: {m,[]}
+  def subscribe(_),do: [subscribe_interval(200,:tick)]
+  def view(%{s: s}),do: column(do: head()++[text(" ")]++rows(s))
+  defp head,do: Enum.zip_with(@mark,@info,&text(&1<>" "<>&2))
+  defp rows(t),do: Enum.map(@states,&r(&1,t))
+  defp run(j,{:call,f,a}),do: apply(JobSession,f,[j|a])
+  defp run(j,{:recorded,s}),
+    do: JobSession.apply_event(j,s,%{source: :recorded_demo})
+  defp r(s,t),do: text(if @r[s]<=@r[t],do: "✓ #{s}",else: "○ #{s}")
 end
 
 defmodule Settle do
@@ -235,9 +230,7 @@ defmodule GenLandingFrames do
   # app's own interval message explicitly, so a recording is a fold of demo
   # state rather than a sample of scheduler timing.
   #
-  # The tick frame zero is taken at. Not zero: the first couple of renders of a
-  # chart are a half-drawn axis, and the hero should open on a real picture.
-  @hero_start_tick 4
+  # Each hero declares its own deterministic poster-frame tick below.
   @hero_distinct_tick_limit 64
 
   # The previews boot with subscriptions unarmed and are DRIVEN: each demo's
@@ -354,11 +347,13 @@ defmodule GenLandingFrames do
     end
   end
 
-  # `{name, module, {w, h}, tick_ms, frames}`.
+  # `{name, module, {w, h}, tick_ms, frames, start_tick}`.
   #
   # The tick is the module's own `subscribe_interval`, and it is what the page
   # plays the recording back at -- written beside the frames so the player does
   # not carry a constant that has to be kept in step with this list by hand.
+  # `start_tick` pins each poster frame to module state: charts start populated,
+  # settle starts completed, and harness starts at the newly opened job.
   #
   # The frame count is chosen so the loop closes where the ANIMATION closes,
   # which is the only thing that stops a recording snapping back in the middle
@@ -373,23 +368,20 @@ defmodule GenLandingFrames do
   #          never repeats, so nothing divides it; the face is what an eye
   #          tracks, and the field reads as noise either way.
   #   harness
-  #          `@ladder` is the dwell, one entry per frame, so the ten frames it
-  #          holds are the loop. The dwell is uneven on purpose: `edit` sits
-  #          for five of them because it is the call a reader wants to watch,
-  #          and one call per tick went by too fast to follow. All-done gets a
-  #          single frame -- it is the one state with no spinner, so a second
-  #          frame of it would be identical to the first.
+  #          records every ACP state once: open, budget_set, funded, submitted,
+  #          completed. Each later frame is produced only after the real
+  #          JobSession call changes the model.
   #   settle five sandbox replay stages; the action results are fixed while the
   #          cursor moves through request, execution, receipt, and denial.
   @examples [
-    {"pulse", Pulse, {62, 13}, 90, 63},
-    {"halo", Halo, {70, 14}, 110, 48},
-    {"harness", Harness, {36, 5}, 200, 10},
-    {"settle", Settle, {54, 9}, 200, 5}
+    {"pulse", Pulse, {62, 13}, 90, 63, 4},
+    {"halo", Halo, {70, 14}, 110, 48, 4},
+    {"harness", Harness, {56, 11}, 200, 5, 0},
+    {"settle", Settle, {54, 9}, 200, 5, 4}
   ]
 
   defp hero(base \\ @hero_dir) do
-    for {name, module, {w, h}, tick_ms, frame_count} <- @examples do
+    for {name, module, {w, h}, tick_ms, frame_count, start_tick} <- @examples do
       dir = Path.join(base, name)
       File.mkdir_p!(dir)
 
@@ -413,7 +405,7 @@ defmodule GenLandingFrames do
 
       try do
         messages = hero_messages!(id, module, name)
-        drive_ticks!(id, messages, @hero_start_tick)
+        drive_ticks!(id, messages, start_tick)
 
         Enum.reduce(0..(frame_count - 1), nil, fn n, previous ->
           buffer =
@@ -549,43 +541,21 @@ defmodule GenLandingFrames do
   end
 
   # What the MCP surface serves: the structured content behind
-  # `raxol_screenshot`, taken from the view tree, which is that tool's input.
-  # Folded from `init/1` rather than read off the running session. The MCP
-  # artifact is the one thing here that does NOT come from a buffer, so it was
-  # reading the dispatcher's model -- which is a moving target, and churned on
-  # every run even while the frames beside it were stable. These modules are
-  # pure, so the model at tick `t` is a fold and nothing has to be sampled.
-  defp mcp(module, _id) do
-    # Component ids are per-process counters. Reset them so this fold mints
-    # the ids a fresh boot would, whatever folded in this process before it:
-    # without this, the harness tree's ids depend on recording order.
+  # `raxol_screenshot`, taken from the same pinned frame-zero model as the
+  # terminal buffer. Subscriptions are disabled and ticks are driven above, so
+  # this model cannot move between the buffer and tree projections. Reading it
+  # also matters for stateful examples: folding `init/1` a second time would
+  # create a second ACP JobSession instead of projecting the recorded one.
+  defp mcp(module, id) do
+    # Component ids are per-process counters. Reset them so this projection
+    # mints the ids a fresh boot would, regardless of recording order.
     Raxol.Core.ID.reset()
-
-    model = drive_model(module, @hero_start_tick)
+    {:ok, model} = Raxol.Headless.get_model(id)
 
     model
     |> module.view()
     |> Raxol.MCP.StructuredScreenshot.from_view_tree()
     |> Raxol.MCP.StructuredScreenshot.to_json()
-  end
-
-  defp drive_model(module, ticks) when ticks <= 0, do: module.init(nil)
-
-  defp drive_model(module, ticks) do
-    model = module.init(nil)
-
-    messages =
-      case interval_messages(model, module) do
-        [{_interval_ms, msgs} | _] -> msgs
-        [] -> []
-      end
-
-    Enum.reduce(1..ticks, model, fn _tick, acc ->
-      Enum.reduce(messages, acc, fn msg, m ->
-        {m, _cmds} = module.update(msg, m)
-        m
-      end)
-    end)
   end
 
   defp previews(dir \\ @preview_dir) do

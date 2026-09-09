@@ -107,63 +107,40 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
   end
   """
 
-  # The coding agent, as the harness's own components render it: the rows are
-  # `ToolCallBlock`, the module `mix raxol.code` draws a tool call with, rather
-  # than a picture of one -- so the glyph, the spinner and the layout are the
-  # product's. What is authored is the turn (which tools, in what state), the
-  # way `pulse` authors a wave.
-  #
-  # The job line above the turn is the other half of the story raxol_earn
-  # tells: agents do not only spend, they sell services on the Virtuals Agent
-  # Commerce Protocol and get paid for them, and the harness is how the work
-  # a job was funded for actually gets done. It stays authored text rather
-  # than a call into `Raxol.Earn`, because the web app does not depend on
-  # raxol_earn and `RaxolEarn.Application` self-starts outside `:test` -- a
-  # dependency edge added for one line of a hero pane would start a seller
-  # supervision tree in the deployed site.
-  #
-  # The turn finishes rather than sitting on `edit` forever with only the
-  # spinner moving, which read as a hang once `settle` beside it started
-  # completing. `@ladder` is the dwell per frame, uneven so `edit` holds long
-  # enough to read. The statuses come from the tick, so `@calls` carries name
-  # and args only and `st/2` decides done, running or pending -- that, and the
-  # shorter alias, is what fits: the pane clips at thirty lines and sixty-seven
-  # columns.
-  #
-  # The job is a paid coding job, not `usdc_transfer`. A pane that announced a
-  # transfer offering and then edited `router.ex` described no one's work: the
-  # harness earns by doing the thing it is good at, so the job is a bugfix at a
-  # price, and the calls are that bugfix.
+  # A coding agent accepts and completes a paid Virtuals ACP job through the
+  # real raxol_earn state machine. The frame generator runs these calls against
+  # a supervised JobSession; recorded external events are explicitly marked as
+  # demo observations rather than authenticated chain activity.
   @harness_source ~S"""
   defmodule Harness do
     use Raxol.Core.Runtime.Application
-    alias Raxol.UI.Components.Harness.ToolCallBlock, as: T
-    @calls [
-      {"read", "spend_gate.ex"},
-      {"edit", "spend_gate.ex:42"},
-      {"shell", "mix test"}
-    ]
-    @ladder [0, 0, 1, 1, 1, 1, 1, 2, 2, 3]
-    def init(_), do: %{t: 0}
-    def update(:tick, m), do: {%{m | t: m.t + 1}, []}
-    def update(_, m), do: {m, []}
-    def subscribe(_), do: [subscribe_interval(200, :tick)]
-    def view(m) do
-      at = Enum.at(@ladder, rem(m.t, length(@ladder)))
-      column style: %{gap: 1} do
-        [
-          text("virtuals acp  bugfix  40.00 USDC", fg: :cyan),
-          column(do: Enum.with_index(@calls, &call(&1, &2, at, m.t)))
-        ]
-      end
+    alias Raxol.Earn.{AssetToken, JobSession}
+    @mark ["     ▄█▀█▄     ", "▀▀█▄▄█▄▄▄█▄▄  ▀",
+           "    ▀█▄███     ", "     ▀██▀      "]
+    @states ~w(open budget_set funded submitted completed)a
+    @r Map.new(Enum.with_index(@states))
+    # :recorded events represent chain/SSE observations.
+    @actions [{:call,:set_budget,[AssetToken.usdc(40,8453)]},
+              {:recorded,:funded},{:call,:submit,[%{patch: "gate"}]},
+              {:recorded,:completed}]
+    @info ["RECORDED ACP #4812","gate.ex · 40 USDC","raxol_earn",""]
+    def init(_) do
+      {:ok,j}=JobSession.Supervisor.start_session(chain_id: 8453,
+      job_id: 4812,role: :provider)
+      %{j: j,a: 0,s: JobSession.status(j)}
     end
-    defp call({n, a}, i, x, t) do
-      {:ok, s} = T.init(name: n, args: a, status: st(i, x), frame: t)
-      T.render(s, %{})
+    def update(:tick,%{j: j,a: a}=m) when a<4 do
+      {:ok,s}=run(j,Enum.at(@actions,a)); {%{m|a: a+1,s: s},[]}
     end
-    defp st(i, x) when i < x, do: :done
-    defp st(i, i), do: :running
-    defp st(_, _), do: :pending
+    def update(_,m),do: {m,[]}
+    def subscribe(_),do: [subscribe_interval(200,:tick)]
+    def view(%{s: s}),do: column(do: head()++[text(" ")]++rows(s))
+    defp head,do: Enum.zip_with(@mark,@info,&text(&1<>" "<>&2))
+    defp rows(t),do: Enum.map(@states,&r(&1,t))
+    defp run(j,{:call,f,a}),do: apply(JobSession,f,[j|a])
+    defp run(j,{:recorded,s}),
+      do: JobSession.apply_event(j,s,%{source: :recorded_demo})
+    defp r(s,t),do: text(if @r[s]<=@r[t],do: "✓ #{s}",else: "○ #{s}")
   end
   """
 
@@ -230,8 +207,7 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
                          @pulse_source},
                         {"halo", "halo.exs", "the mark, as a program",
                          @halo_source},
-                        {"harness", "harness.ex",
-                         "a Virtuals ACP job, worked by the coding agent",
+                        {"harness", "harness.ex", "a Virtuals ACP job, run by raxol_earn",
                          @harness_source}
                       ] do
                     [_, module] = Regex.run(~r/defmodule (\w+)/, source)
@@ -395,8 +371,8 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
     # also ACP: the group beside it is Agent CLIENT Protocol editors and this
     # one is the Agent COMMERCE Protocol, so putting the abbreviation on both
     # would have the row name two unrelated things with one word. Hardcoded
-    # rather than derived because raxol_earn is not a dependency of the web
-    # app and `RaxolEarn.Application` self-starts outside `:test`.
+    # rather than derived because raxol_earn is a dev-only frame-generation
+    # dependency and is intentionally absent from the production release.
     #
     # "Virtuals Protocol" in full, never "Virtuals" or "$VIRTUAL": their
     # editorial guide names the short forms specifically, and a partner's own
