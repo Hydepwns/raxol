@@ -167,36 +167,45 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
   end
   """
 
-  # Payments as an operator receipt, not a toy progress list. The Arc corridor
-  # is testnet-only until Xochi publishes it in capabilities, so this pane names
-  # the funded-run shape and the Blockscout chains without inventing tx hashes.
+  # One real, deterministic payment path rather than a hand-authored receipt.
+  # The sandbox replaces only the external Xochi service and signing key; quote
+  # validation, the spend gate, signing boundary, submission, polling and
+  # ledger accounting run through the production Actions.
+  #
+  # The actions finish once in init and the interval replays those observed
+  # results for the prerecorded hero. The pane says REPLAY and NO FUNDS rather
+  # than presenting the animation as a live mainnet settlement. The final
+  # over-limit request also checks that the wallet was not asked to sign.
   @settle_source ~S"""
   defmodule Settle do
     use Raxol.Core.Runtime.Application
-    @route "USDC 1.10  Base Sepolia 84532 -> Arc Testnet 5042002"
-    @steps [
-      {"spend gate", "before signature"},
-      {"intent", "EIP-712 quote signed"},
-      {"execution", "submitted to solver"},
-      {"source tx", "base-sepolia.blockscout.com/tx"},
-      {"dest tx", "testnet.arcscan.app/tx"}
-    ]
-    def init(_), do: %{t: 0}
+    alias Raxol.Payments.Actions.Payments, as: P
+    alias RaxolPlayground.SettlementSandbox, as: Sandbox
+    @payment %{
+      amount: "25.00", from_chain_id: 8453,
+      to_chain_id: 42_161, settlement: "stealth",
+      trust_score: 25, slippage_bps: 50,
+      min_to_amount: "24900000"
+    }
+    def init(_) do
+      {:ok, demo} = Sandbox.start(@payment)
+      {:ok, intent} =
+        P.ExecuteXochiIntent.call(demo.payment, demo.context)
+      {:ok, receipt} = P.PollXochiStatus.call(
+        %{intent_id: intent.intent_id}, demo.context)
+      signed = Sandbox.Wallet.signatures()
+      {:error, denied} = P.ExecuteXochiIntent.call(
+        %{demo.payment | amount: "75.00"}, demo.context)
+      %{demo: demo, intent: intent, receipt: receipt,
+        denied: denied,
+        safe?: Sandbox.Wallet.signatures() == signed,
+        t: 0}
+    end
     def update(:tick, m), do: {%{m | t: m.t + 1}, []}
+    def update(_, m), do: {m, []}
     def subscribe(_), do: [subscribe_interval(200, :tick)]
-    def view(m) do
-      at = rem(m.t, length(@steps))
-      head = [
-        text("XOCHI RECEIPT", style: [:bold]),
-        text(@route, fg: :magenta)
-      ]
-      column(do: head ++ Enum.with_index(@steps, &step(&1, &2, at)))
-    end
-    defp step({k, v}, i, at) do
-      mark = if(i == at, do: ">", else: " ")
-      key = String.pad_trailing(k, 10)
-      text("#{mark} [OK] #{key} #{v}", fg: :cyan)
-    end
+    def view(m),
+      do: column(do: Enum.map(Sandbox.lines(m), &text/1))
   end
   """
 
@@ -215,18 +224,22 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
   # `settle.ex` cannot be expected to infer which noun it is answering, so each
   # example says so in the title bar.
   @hero_examples (for {name, file, blurb, source} <- [
-                        {"settle", "settle.ex", "gate, EIP-712, solver, explorers",
-                         @settle_source},
-                        {"pulse", "pulse.exs", "one module, four surfaces", @pulse_source},
-                        {"halo", "halo.exs", "the mark, as a program", @halo_source},
+                        {"settle", "settle.ex",
+                         "quote, gate, sign, poll -- no funds", @settle_source},
+                        {"pulse", "pulse.exs", "one module, four surfaces",
+                         @pulse_source},
+                        {"halo", "halo.exs", "the mark, as a program",
+                         @halo_source},
                         {"harness", "harness.ex",
-                         "a Virtuals ACP job, worked by the coding agent", @harness_source}
+                         "a Virtuals ACP job, worked by the coding agent",
+                         @harness_source}
                       ] do
                     [_, module] = Regex.run(~r/defmodule (\w+)/, source)
 
                     lines = source |> String.trim() |> String.split("\n")
 
-                    {name, file, module, blurb, Makeup.highlight_inner_html(source),
+                    {name, file, module, blurb,
+                     Makeup.highlight_inner_html(source),
                      %{
                        lines: length(lines),
                        cols: lines |> Enum.map(&String.length/1) |> Enum.max()
@@ -278,6 +291,7 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
         <nav class="screen-nav" aria-label="Main navigation">
           <a :for={{href, label} <- nav_links()} href={href} class="nav-link">{label}</a>
         </nav>
+        <a href="/token" class="screen-token-link">$RAXOL</a>
 
         <button
           type="button"
@@ -309,7 +323,10 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
 
   def screen_hero(assigns) do
     assigns =
-      assign(assigns, halo_faces: @halo_faces, install_command: @install_command)
+      assign(assigns,
+        halo_faces: @halo_faces,
+        install_command: @install_command
+      )
 
     ~H"""
     <%!-- The brand mark beside the claim rather than above it: an upright box
@@ -499,14 +516,11 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
   end
 
   def screen_footer(assigns) do
-    assigns = assign(assigns, :repo_url, @repo_url)
-
     ~H"""
     <footer class="screen-footer" role="contentinfo">
       <div class="screen-bar">
         <span class="screen-meta">
           <a href="https://hex.pm/packages/raxol" class="subtle-link">Hex</a>
-          <a href="/token" class="subtle-link">$RAXOL</a>
           <.github_mark />
         </span>
       </div>
@@ -541,11 +555,12 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
   #
   # The other topic pages sit on the hero and demo path, so listing them here
   # would restate that path rather than add to it. /payments is the exception.
-  # Its only inbound link was the line at the foot of /token, and /token is
-  # itself only reachable from the landing footer's $RAXOL mark, which left the
-  # payment rails two hops deep behind the token page -- the one adjacency the
-  # copy on both pages exists to deny. The header slot is the fix; /token keeps
-  # pointing here, now as a cross-reference rather than the only way in.
+  # Its only inbound link was the line at the foot of /token, and /token was
+  # itself reachable only from the landing footer's former $RAXOL mark. That
+  # left the payment rails two hops deep behind the token page -- the one
+  # adjacency the copy on both pages exists to deny. The header slot is the fix;
+  # /token keeps pointing here, now as a cross-reference rather than the only
+  # way in.
   @nav_links [
     {"/gallery", "Components"},
     {"/payments", "Payments"},
@@ -806,12 +821,6 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
       </div>
 
       <div class="hero-panes">
-        <div class="hero-pane">
-          <%!-- The examples differ in length, and the pane is a fixed slice
-               of one screen, so the type size follows the line count rather
-               than being tuned per example. --%>
-          <pre class="hero-code" style={"--hero-lines: #{@source_grid.lines}; --hero-cols: #{@source_grid.cols}"}><code class="syntax-elixir">{raw(@source)}</code></pre>
-        </div>
 
         <div class="hero-pane">
           <%!-- `tabindex=0` on each panel is what gives the keyboard somewhere
@@ -910,6 +919,12 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
             <pre class="hero-pre hero-cmd" aria-hidden="true"><span class="hc">$ mix mcp.server</span></pre>
             <pre class="hero-pre hero-src" style={"--src-lines: #{@mcp_lines}"}>{raw(@out_mcp)}</pre>
           </div>
+        </div>
+        <div class="hero-pane">
+          <%!-- The examples differ in length, and the pane is a fixed slice
+               of one screen, so the type size follows the line count rather
+               than being tuned per example. --%>
+          <pre class="hero-code" style={"--hero-lines: #{@source_grid.lines}; --hero-cols: #{@source_grid.cols}"}><code class="syntax-elixir">{raw(@source)}</code></pre>
         </div>
       </div>
 
@@ -1025,7 +1040,8 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
 
   @doc "Line and column counts of one example's source, as the pane sizes from."
   def example_grid(name) do
-    Enum.find_value(@hero_examples, %{lines: 1, cols: 1}, fn {n, _t, _m, _b, _c, grid} ->
+    Enum.find_value(@hero_examples, %{lines: 1, cols: 1}, fn {n, _t, _m, _b, _c,
+                                                              grid} ->
       n == name && grid
     end)
   end
@@ -1474,7 +1490,8 @@ defmodule RaxolPlaygroundWeb.LandingComponents do
         routes: routes(),
         payment_actions: payment_actions(),
         action_groups: action_groups(),
-        show_future_svm: not Enum.any?(assigns.matrix.chains, &(&1.vm_type == :svm)),
+        show_future_svm:
+          not Enum.any?(assigns.matrix.chains, &(&1.vm_type == :svm)),
         live?: assigns.matrix.source == :live
       )
 
